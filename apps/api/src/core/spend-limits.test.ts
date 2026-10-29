@@ -21,13 +21,18 @@ import { LeasePool, type LeaseTransport } from "./lease-pool";
 import {
 	__resetSpendLimitsForTests,
 	checkSpendLimit,
+	createSpendLimitSlot,
+	ENFORCE_WAIT_MS,
+	enforcedSpendLimit,
 	flushSpendRecordsForTests,
 	getSpendLimitMode,
 	recordShadowSpend,
 	recordSpend,
 	releaseSpend,
+	settleEnforcedSpend,
 	shadowSpendLimit,
 	shadowSpendLimitOnce,
+	slotAdmission,
 } from "./spend-limits";
 import { SPEND_LEASE, type SpendDenial, type SpendLeaseMeta } from "./spend-limits.shared";
 
@@ -38,14 +43,20 @@ const DAY = 86_400_000;
 type Row = { requestId: string; keyId: string | null; success: boolean; cost: number; createdAt: number };
 type KeyConfig = { workspaceId: string; softBlocked?: boolean; daily?: [number, number]; weekly?: [number, number]; monthly?: [number, number] };
 type Budget = { id: string; interval: "daily" | "weekly" | "monthly" | "lifetime"; limit: number; holds?: number };
+type DepartmentBudget = { id: string; departmentId: string; name: string; interval: "daily" | "weekly" | "monthly"; limit: number; keyIds: string[] };
 
 // A JavaScript model of gateway_spend_limit_seed (the PGlite contract test pins the SQL itself).
 class FakeDatabase {
 	rows: Row[] = [];
 	keys = new Map<string, KeyConfig>();
 	budgets: Budget[] = [];
+	departments: DepartmentBudget[] = [];
+	/** Seeds as written before department budgets could block (no department_budgets field). */
+	legacyShape = false;
 	calls: Array<{ keyIds: string[]; exclude: string[] }> = [];
 	fail = false;
+	/** Holds every seed read until resolved (a stalled Postgres call). */
+	stall: Promise<void> | null = null;
 
 	static windows(now: number) {
 		const date = new Date(now);
@@ -93,10 +104,22 @@ class FakeDatabase {
 				window_start: start === null ? null : iso(start), reset_at: end === null ? null : iso(end),
 			};
 		});
+		const department_budgets = this.departments.map((budget) => {
+			const start = windows[budget.interval];
+			const usage = this.rows.filter((row) => row.keyId !== null && budget.keyIds.includes(row.keyId) && row.success &&
+				row.createdAt >= start && row.createdAt <= now && !exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0);
+			const end = budget.interval === "daily" ? start + DAY : budget.interval === "weekly" ? start + 7 * DAY
+				: Date.UTC(new Date(start).getUTCFullYear(), new Date(start).getUTCMonth() + 1, 1);
+			return {
+				id: budget.id, department_id: budget.departmentId, department_name: budget.name, interval: budget.interval,
+				limit_nanos: budget.limit, usage_nanos: usage, window_start: iso(start), reset_at: iso(end), key_ids: [...budget.keyIds],
+			};
+		});
 		return {
 			now: iso(now), day_start: iso(windows.daily), week_start: iso(windows.weekly), month_start: iso(windows.monthly),
 			keys,
 			budget_status: { ok: true, budgets },
+			...(this.legacyShape ? {} : { department_budgets }),
 			excluded_rows: this.rows.filter((row) => exclude.includes(row.requestId))
 				.map((row) => ({ request_id: row.requestId, key_id: row.keyId, success: row.success, cost_nanos: row.cost, created_at: iso(row.createdAt) })),
 		};
@@ -110,6 +133,7 @@ let coordinator: SpendLimitDurableObject;
 class TestSpendLimitDurableObject extends SpendLimitDurableObject {
 	protected override async loadSeed(workspaceId: string, keyIds: string[], exclude: string[]): Promise<SpendLimitSeed> {
 		await Promise.resolve();
+		if (database.stall) await database.stall;
 		return database.seed(workspaceId, keyIds, exclude);
 	}
 }
@@ -548,5 +572,193 @@ describe("spend-limit coordinator", () => {
 				keyId: API_KEY, coordinator: expect.objectContaining({ outcome: "denied", reason: "daily_request_limit_reached" }),
 			}));
 		} finally { warn.mockRestore(); }
+	});
+
+	describe("department budgets", () => {
+		const ENG_A = "eng-a";
+		const ENG_B = "eng-b";
+		const OUTSIDER = "outsider";
+		const engineering = (limit: number): DepartmentBudget => ({
+			id: "dept-budget-1", departmentId: "dept-eng", name: "Engineering", interval: "daily", limit, keyIds: [ENG_A, ENG_B],
+		});
+		const admit = (keyId: string, admissionId: string, wantUnits = 0) =>
+			coordinator.acquire(WORKSPACE, keyId, { requests: 1, units: 0 }, { requests: 1, units: wantUnits }, [], admissionId);
+
+		beforeEach(() => {
+			for (const keyId of [ENG_A, ENG_B, OUTSIDER]) database.keys.set(keyId, { workspaceId: WORKSPACE });
+		});
+
+		it("blocks every key of a department once its budget is used, and no other key", async () => {
+			database.departments.push(engineering(1_000));
+			database.rows.push(
+				{ requestId: "a-1", keyId: ENG_A, success: true, cost: 600, createdAt: Date.now() - 1_000 },
+				{ requestId: "a-yesterday", keyId: ENG_A, success: true, cost: 5_000, createdAt: Date.parse("2026-10-08T23:59:59Z") },
+				{ requestId: "o-1", keyId: OUTSIDER, success: true, cost: 9_000, createdAt: Date.now() - 1_000 },
+			);
+			// Below the budget: admitted (its own cost is unknown until it completes).
+			const allowed = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: ENG_B, admissionId: "b-1" });
+			if (allowed.outcome !== "allowed") throw new Error("expected admission");
+			expect(allowed.admission.unlimited).toBe(false);
+			recordSpend({ workspaceId: WORKSPACE, keyId: ENG_B, billingRequestId: "b-1", requestId: "b-1", costNanos: 450, admission: allowed.admission });
+			await flush();
+			for (const keyId of [ENG_A, ENG_B]) {
+				expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId, admissionId: `${keyId}-2` })).toMatchObject({
+					outcome: "denied",
+					contended: false,
+					keyLimit: {
+						ok: false, reason: "department_daily_cost_budget_reached", limitWindow: "daily", limitMetric: "cost",
+						currentValue: 1_050, limitValue: 1_000, resetAt: "2026-10-10T00:00:00.000Z",
+						departmentId: "dept-eng", departmentName: "Engineering",
+					},
+				});
+			}
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: OUTSIDER, admissionId: "o-2" }))
+				.toMatchObject({ outcome: "allowed", admission: { unlimited: true } });
+		});
+
+		it("comes after the key's own limits and before workspace budgets", async () => {
+			database.departments.push(engineering(100));
+			database.budgets.push({ id: "ws-daily", interval: "daily", limit: 100 });
+			database.keys.set(ENG_A, { workspaceId: WORKSPACE, daily: [0, 100] });
+			database.rows.push({ requestId: "a-1", keyId: ENG_A, success: true, cost: 150, createdAt: Date.now() - 1_000 });
+			expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: ENG_A, admissionId: "a" })).keyLimit?.reason).toBe("daily_cost_limit_reached");
+			expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: ENG_B, admissionId: "b" })).keyLimit?.reason).toBe("department_daily_cost_budget_reached");
+			expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: OUTSIDER, admissionId: "o" })).keyLimit?.reason).toBe("workspace_daily_cost_budget_reached");
+		});
+
+		it("caps slices by the department's remainder and reports a held remainder as contended", async () => {
+			database.departments.push(engineering(1_000));
+			const granted = await admit(ENG_A, "a-1", 1_000_000);
+			// (1,000 - 5% reserve) / 4 shares.
+			expect(granted).toMatchObject({ ok: true, lease: { units: 237 } });
+			// Spend from another key of the department (no slice) brings usage to 800: with 237 held, nothing is left.
+			await coordinator.record(WORKSPACE, { keyId: ENG_B, billingRequestId: "b-1", requestId: "b-1", costNanos: 800, requests: 1 });
+			const denied = await admit(ENG_B, "b-2");
+			expect(denied).toMatchObject({ ok: false, denial: { contended: true, gate: { reason: "department_daily_cost_budget_reached", currentValue: 800 } } });
+			// Holders of any key's slices are asked to hand them back.
+			expect((await coordinator.record(WORKSPACE, { keyId: ENG_A, billingRequestId: "a-x", requestId: "a-x", costNanos: 0, requests: 1 })).drainKeyIds)
+				.toEqual([ENG_A]);
+			if (!("lease" in granted)) throw new Error("expected lease");
+			await coordinator.returnLeases(WORKSPACE, [{ id: granted.lease.id, usedRequests: 1, usedUnits: 0, inFlightRequests: 0 }]);
+			expect(await admit(ENG_B, "b-3")).toMatchObject({ ok: true });
+			// A key outside the department is never held back by it.
+			expect(await admit(OUTSIDER, "o-1")).toMatchObject({ ok: true, lease: { meta: { unlimited: true } } });
+		});
+
+		it("admits across a department's keys and isolates exactly while its spend is below the budget", async () => {
+			database.departments.push(engineering(1_000));
+			const nodes = [isolate(ENG_A), isolate(ENG_B), isolate(ENG_A)];
+			let allowed = 0;
+			let denial: SpendDenial | null = null;
+			for (let i = 0; i < 300 && !denial; i++) {
+				const node = nodes[i % nodes.length];
+				const result = await node.admit();
+				if ("denial" in result) { denial = result.denial; break; }
+				allowed++;
+				await node.succeed(result.ticket, 7);
+				await flush();
+			}
+			// Same rule as one key's cost limit: 142 * 7 = 994 < 1,000, so the 143rd is admitted.
+			expect(allowed).toBe(143);
+			expect(denial?.gate).toMatchObject({ reason: "department_daily_cost_budget_reached", currentValue: 1_001, limitValue: 1_000 });
+		});
+
+		it("ignores department budgets missing from older seeds", async () => {
+			database.departments.push(engineering(1));
+			database.legacyShape = true;
+			database.rows.push({ requestId: "a-1", keyId: ENG_A, success: true, cost: 600, createdAt: Date.now() - 1_000 });
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: ENG_A, admissionId: "a" }))
+				.toMatchObject({ outcome: "allowed", admission: { unlimited: true } });
+		});
+	});
+
+	describe("enforce wiring", () => {
+		const API_KEY = "00000000-0000-4000-8000-000000000002";
+
+		beforeEach(() => {
+			database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [1, 0] });
+			runtime.bindings!.GATEWAY_SPEND_LIMIT_DO_MODE = "enforce";
+		});
+
+		it("falls back to the legacy check when the coordinator stalls, and frees the late admission", async () => {
+			let unstall!: () => void;
+			database.stall = new Promise((resolve) => { unstall = resolve; });
+			vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+			try {
+				const slot = createSpendLimitSlot();
+				const decision = enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r-stall", slot });
+				await vi.advanceTimersByTimeAsync(ENFORCE_WAIT_MS);
+				expect(await decision).toMatchObject({ outcome: "unavailable", error: "spend_limit_timeout" });
+				expect(await slotAdmission(slot)).toBeNull();
+			} finally {
+				vi.useFakeTimers({ toFake: ["Date"] });
+			}
+			database.stall = null;
+			unstall();
+			await flush();
+			// The late admission was released, so the key's single daily request is free again.
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r-next" })).toMatchObject({ outcome: "allowed" });
+		});
+
+		it("decides once per request slot, only in enforce mode and only for API keys", async () => {
+			const slot = createSpendLimitSlot();
+			const first = enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r1", slot });
+			expect(enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r1", slot })).toBe(first);
+			expect(await first).toMatchObject({ outcome: "allowed" });
+			expect(database.calls).toHaveLength(1);
+			expect(await slotAdmission(slot)).toMatchObject({ keyId: API_KEY, admissionId: `r1:${slot.attempt}` });
+			// A fallback attempt of the same request is admitted separately.
+			releaseSpend(await slotAdmission(slot));
+			await flush();
+			const retry = createSpendLimitSlot();
+			await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r1", slot: retry });
+			expect((await slotAdmission(retry))?.admissionId).toBe(`r1:${retry.attempt}`);
+			releaseSpend(await slotAdmission(retry));
+
+			expect(enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r2", slot: null })).toBeNull();
+			expect(enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r2", slot: createSpendLimitSlot(), internal: true })).toBeNull();
+			expect(enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: "client_app", requestId: "r2", slot: createSpendLimitSlot() })).toBeNull();
+			for (const mode of ["off", "shadow"]) {
+				runtime.bindings!.GATEWAY_SPEND_LIMIT_DO_MODE = mode;
+				const other = createSpendLimitSlot();
+				expect(enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: `r-${mode}`, slot: other })).toBeNull();
+				expect(other.decision).toBeNull();
+				expect(await slotAdmission(other)).toBeNull();
+			}
+		});
+
+		it("records a charged request against its admission, and releases one that wrote no row", async () => {
+			const slot = createSpendLimitSlot();
+			await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r1", slot });
+			const admission = await slotAdmission(slot);
+			// The single daily request is in flight, so a concurrent one is turned away.
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r2" })).toMatchObject({ outcome: "denied", contended: true });
+			// No row was written (e.g. a testing request): the slot is free again.
+			settleEnforcedSpend({ admission, rowWritten: false, workspaceId: WORKSPACE, keyId: API_KEY, billingRequestId: "b1", requestId: "r1", costNanos: 9 });
+			await flush();
+			const next = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r3" });
+			if (next.outcome !== "allowed") throw new Error(`expected admission: ${next.outcome}`);
+			settleEnforcedSpend({ admission: next.admission, rowWritten: true, workspaceId: WORKSPACE, keyId: API_KEY, billingRequestId: "b3", requestId: "r3", costNanos: 9 });
+			await flush();
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r4" })).toMatchObject({
+				outcome: "denied", contended: false, keyLimit: { reason: "daily_request_limit_reached", currentValue: 1 },
+			});
+		});
+
+		it("records spend without an admission in enforce mode only", async () => {
+			const record = (billingRequestId: string) => settleEnforcedSpend({
+				rowWritten: true, workspaceId: WORKSPACE, keyId: API_KEY, billingRequestId, requestId: billingRequestId, costNanos: 0,
+			});
+			runtime.bindings!.GATEWAY_SPEND_LIMIT_DO_MODE = "shadow";
+			record("shadow");
+			await flush();
+			expect(database.calls).toHaveLength(0);
+			runtime.bindings!.GATEWAY_SPEND_LIMIT_DO_MODE = "enforce";
+			record("enforce");
+			await flush();
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r" })).toMatchObject({
+				outcome: "denied", keyLimit: { reason: "daily_request_limit_reached" },
+			});
+		});
 	});
 });

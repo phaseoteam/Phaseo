@@ -1,4 +1,4 @@
-import { ChevronDown, Network, Search, Star } from "lucide-react";
+import { ChevronDown, Gauge, Network, Search, Star } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import type { AgentProfile, Billing, Connection, FactorySnapshot } from "../../shared/types";
 import { cn } from "../lib/utils";
@@ -19,6 +19,64 @@ export function agentName(agent: AgentProfile) {
 /** "xhigh" reads as "Extra high"; the rest just get a capital. */
 export function effortLabel(effort: string) {
 	return effort === "xhigh" ? "Extra high" : `${effort.charAt(0).toUpperCase()}${effort.slice(1)}`;
+}
+
+/** What each level is for, under its name in the effort menu. */
+const EFFORT_HINT: Record<string, string> = {
+	minimal: "Barely thinks first",
+	low: "Quick answers to simple work",
+	medium: "Balanced speed and depth",
+	high: "Thinks hard on most work",
+	xhigh: "Longer thinking for tricky work",
+	max: "Thinks as long as it needs",
+	ultra: "The deepest thinking it offers",
+};
+
+/** "xhigh" is too long for a segment; the rest fit as they are. */
+function effortShort(effort: string) {
+	return effort === "xhigh" ? "X-High" : effortLabel(effort);
+}
+
+/** The item's effort, when the picker sets it too: what's chosen (if anything) and how to change it. */
+export interface ItemEffort {
+	value?: string;
+	onChange: (effort: string | null) => void;
+}
+
+/** The level that applies: the item's when the agent offers it, otherwise the agent's own. */
+function effectiveEffort(agent: AgentProfile, effort?: ItemEffort) {
+	const chosen = effort?.value && agent.efforts?.includes(effort.value) ? effort.value : undefined;
+	return { chosen, own: agent.effort ?? agent.defaultEffort, shown: chosen ?? (effort ? agent.effort ?? agent.defaultEffort : agent.effort) };
+}
+
+/**
+ * Under the models, how hard the selected agent thinks on this item: "Auto" leaves it to the agent's own
+ * setting, then one segment per level. A line under it says what the hovered or chosen level is for.
+ */
+function EffortRow({ agent, effort }: { agent: AgentProfile; effort: ItemEffort }) {
+	const { chosen, own } = effectiveEffort(agent, effort);
+	const [hovered, setHovered] = useState<string | null>(null);
+	const levels = agent.efforts ?? [];
+	const focus = hovered ?? chosen ?? "";
+	const hint = focus
+		? `${effortLabel(focus)}${focus === agent.defaultEffort ? " (default)" : ""}: ${EFFORT_HINT[focus] ?? "As the tool defines it"}`
+		: own ? `Auto uses ${effortLabel(own)}, from ${agent.effort ? "Settings" : agent.label}` : `Auto uses whatever ${agent.label} does`;
+	return <div className="shrink-0 border-t border-border/70 bg-muted/40 px-3 pt-2 pb-2.5">
+		<div className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+			<Gauge className="size-3.5 shrink-0" />
+			<span>Effort on this item</span>
+		</div>
+		<div role="radiogroup" aria-label="Reasoning effort" className="flex gap-0.5 rounded-md bg-foreground/[0.06] p-0.5" onMouseLeave={() => setHovered(null)}>
+			{["", ...levels].map((level) => {
+				const on = (chosen ?? "") === level;
+				return <button key={level || "auto"} type="button" role="radio" aria-checked={on} onMouseEnter={() => setHovered(level)} onFocus={() => setHovered(level)} onBlur={() => setHovered(null)} onClick={() => effort.onChange(level || null)}
+					className={cn("h-6 flex-auto cursor-pointer rounded-sm px-1 text-xs font-medium whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring", on && "bg-background text-foreground shadow-xs")}>
+					{level ? effortShort(level) : "Auto"}
+				</button>;
+			})}
+		</div>
+		<p className="mt-1.5 truncate text-xs text-muted-foreground/80">{hint}</p>
+	</div>;
 }
 
 /** Starred models, kept on this computer. */
@@ -56,22 +114,27 @@ interface Row {
  * first), a search box, and the selected provider's models. Typing searches every provider. Arrow keys
  * move, Enter picks, Escape closes, Left goes to the rail.
  */
-export function AgentPicker({ snapshot, value, onChange, trigger, allowNone, placeholder = "Assign an agent", noneLabel = "Unassign" }: { snapshot: FactorySnapshot; value?: string; onChange: (agentId: string | null) => void; trigger?: ReactElement; allowNone?: boolean; placeholder?: string; noneLabel?: string }) {
+export function AgentPicker({ snapshot, value, onChange, trigger, allowNone, effort, placeholder = "Assign an agent", noneLabel = "Unassign" }: { snapshot: FactorySnapshot; value?: string; onChange: (agentId: string | null) => void; trigger?: ReactElement; allowNone?: boolean; /** Also sets the item's effort, under the models. */ effort?: ItemEffort; placeholder?: string; noneLabel?: string }) {
 	const [open, setOpen] = useState(false);
 	const selected = snapshot.agents.find((agent) => agent.id === value);
+	const shown = selected && effectiveEffort(selected, effort).shown;
 	return <Popover open={open} onOpenChange={setOpen}>
 		<PopoverTrigger render={trigger ?? <button type="button" className="relative inline-flex h-7 max-w-56 min-w-0 shrink cursor-pointer items-center justify-between gap-1.5 rounded-md border border-transparent px-2.5 text-sm font-medium whitespace-nowrap text-foreground/80 outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent">
 			<span className="flex min-w-0 flex-1 items-center gap-1.5">
 				{selected && <AgentMark agent={selected} plain className="size-4" />}
-				<span className={cn("min-w-0 flex-1 truncate", !selected && "text-muted-foreground")}>{selected ? `${selected.label}${selected.effort ? ` · ${effortLabel(selected.effort)}` : ""}` : placeholder}</span>
+				<span className={cn("min-w-0 truncate", !selected && "text-muted-foreground")}>{selected ? selected.label : placeholder}</span>
+				{shown && <span className="shrink-0 text-muted-foreground">{effortLabel(shown)}</span>}
 			</span>
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</button>} />
 		<PopoverContent align="start" className="w-auto gap-0 overflow-hidden p-0">
-			{open && <PickerContent snapshot={snapshot} value={value} allowNone={allowNone} noneLabel={noneLabel} onPick={(agentId) => {
-				onChange(agentId);
-				setOpen(false);
-			}} onClose={() => setOpen(false)} />}
+			{open && <div className="flex w-screen max-w-[360px] flex-col">
+				<PickerContent snapshot={snapshot} value={value} allowNone={allowNone} noneLabel={noneLabel} onPick={(agentId) => {
+					onChange(agentId);
+					setOpen(false);
+				}} onClose={() => setOpen(false)} />
+				{effort && selected?.efforts?.length ? <EffortRow agent={selected} effort={effort} /> : null}
+			</div>}
 		</PopoverContent>
 	</Popover>;
 }

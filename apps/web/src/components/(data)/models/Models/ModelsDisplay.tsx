@@ -2329,7 +2329,7 @@ function ModelsDisplayContent({
 	return (
 		<div className="flex w-full flex-1">
 			<aside className="hidden lg:block w-[20rem] shrink-0 border-r border-border/70 bg-background/95 [&_[data-slot=separator]]:-mx-4">
-				<div className="sticky top-16 flex h-[calc(100dvh-4rem)] min-h-0 flex-col">
+				<div className="sticky top-[calc(var(--site-notice-height,0px)+4rem)] flex h-[calc(100dvh-var(--site-notice-height,0px)-4rem)] min-h-0 flex-col">
 					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain [&>[data-orientation=vertical]]:opacity-0 [&>[data-orientation=vertical]]:transition-opacity [&>[data-orientation=vertical]]:duration-150 hover:[&>[data-orientation=vertical]]:opacity-100 focus-within:[&>[data-orientation=vertical]]:opacity-100">
 						<div className="space-y-4 px-4 py-2 pb-6">{filtersContent}</div>
 					</ScrollArea>
@@ -2337,7 +2337,7 @@ function ModelsDisplayContent({
 			</aside>
 
 			<section className="min-w-0 flex flex-1 flex-col">
-				<div className="z-40 shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur md:sticky md:top-[3.75rem] lg:px-8">
+				<div className="z-40 shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur md:sticky md:top-[calc(var(--site-notice-height,0px)+3.75rem)] lg:px-8">
 					<div className="md:hidden space-y-2">
 						{showPrimaryHeader ? (
 							<div className="flex items-center gap-2">

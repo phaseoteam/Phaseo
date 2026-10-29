@@ -33,7 +33,7 @@ icon: "gauge"
 
 工作区所有者和管理员也可以在控制台的[设置 → 预算](https://phaseo.app/settings/budgets)中设置、更改和删除预算。该页面显示每项预算目前的支出、已用比例、本周期的预测以及重置时间。每日、每周和每月预算按 UTC 边界重置：午夜、周一 00:00 和每月 1 日。在 CLI 中使用 `phaseo budgets create|update|delete`。
 
-通过 `/v1/department-budgets` API 管理的部门预算不会拒绝请求。部门的支出计入的密钥和 OAuth 请求与下文的部门速率限制相同。当每日、每周或每月预算用到约 80% 以及 100% 时，所有者和管理员会收到移动推送通知。支出来自可能延迟最多一小时的用量数据。
+部门预算通过 `/v1/department-budgets` API 管理。部门的支出计入的密钥和 OAuth 请求与下文的部门速率限制相同。部门用完每日、每周或每月预算后，计入该部门的 API 密钥请求会返回 `429`，错误代码为 `key_limit_exceeded`，原因为 `department_daily_cost_budget_reached`、`department_weekly_cost_budget_reached` 或 `department_monthly_cost_budget_reached`。响应正文中的 `department_id` 和 `department_name` 字段标明是哪个部门，`reset_at` 和 `Retry-After` 说明其预算何时重置。部门预算不会阻止批处理作业、实时会话和 OAuth 请求。如果预算检查短暂不可用，请求会被放行而不是被拒绝，因此部门可能会在短时间内超出预算。当预算用到约 80% 以及 100% 时，所有者和管理员会收到移动推送通知。这些提醒来自可能延迟最多一小时的用量数据，因此请求可能在 100% 提醒送达之前就被拒绝。
 
 所有者和管理员也可以在[设置 → 预算](https://phaseo.app/settings/budgets)中管理部门预算，或使用 Terraform 提供程序的 `phaseo_department_budget` 资源。在 CLI 中使用 `phaseo department-budgets`。
 
@@ -86,7 +86,7 @@ BYOK 请求使用你的提供商账户限制。托管请求使用提供商的共
 
 - Gateway 配额会返回 `429`，原因为 `customer_requests_per_minute` 或 `free_requests_per_day`；请等待 `Retry-After` 指定的秒数。如果配额检查不可用，Gateway 会返回带有重试指引的 `503`。
 - 密钥限制和预算会返回带有 `key_limit_exceeded` 和 `reset_at` 的 `429`。没有 `Retry-After` 时，限制不会自动重置：请提高限制或改用其他密钥，而不是重试。
-- 部门预算从不返回 `429`，只发送提醒。
+- 已用完的部门预算会返回带有 `key_limit_exceeded`、原因 `department_<interval>_cost_budget_reached`、`department_id`、`department_name` 和 `reset_at` 的 `429`；请等待 `Retry-After` 指定的秒数或提高预算。部门预算不会阻止批处理、实时和 OAuth 请求。如果预算检查不可用，请求会被放行。
 - 工作区速率限制策略会返回带有 `rate_limit_exceeded`、`policy_id` 和 `limit_scope` 的 `429`。`x-ratelimit-remaining-requests` 是近似值。
 - `Retry-After` 可以是秒数或 HTTP 日期；安排重试前先校验该值。不要重新提交结果不明确的视频或批处理任务，而应查询其状态。
 </Visibility>

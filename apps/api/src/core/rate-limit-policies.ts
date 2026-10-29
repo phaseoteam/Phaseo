@@ -26,6 +26,7 @@
 //      fails, including reading the plan, admits the request.
 import { getCache, getSupabaseAdmin } from "@/runtime/env";
 import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { invalidateTieredL1, tieredRead } from "@core/tiered-cache";
 import {
 	admitPolicyQuotas, chargePolicyTokens, policyQuotaBindings, policyQuotaReport,
@@ -352,7 +353,7 @@ function departmentsFor(plan: RateLimitPlan, keyId: string | null, userId: strin
 export function applicableRateLimits(plan: RateLimitPlan | null, subject: {
 	keyId?: string | null;
 	userId?: string | null;
-	authMethodIsOAuth?: boolean;
+	keyIdIsOAuthClient?: boolean;
 	guardrailIds?: string[] | null;
 	endUserId?: string | null;
 }): ApplicableRateLimit[] {
@@ -369,8 +370,8 @@ export function applicableRateLimits(plan: RateLimitPlan | null, subject: {
 			scopeKey,
 		});
 	};
-	// OAuth requests carry the OAuth client ID in place of a key ID.
-	const keyId = subject.authMethodIsOAuth ? null : subject.keyId || null;
+	// OAuth access tokens carry the OAuth client ID in place of a key ID.
+	const keyId = subject.keyIdIsOAuthClient ? null : subject.keyId || null;
 	const userId = subject.userId || null;
 	if (keyId) add(plan.keys[keyId], "key", `key:${keyId}`);
 	if (userId) add(plan.members[userId], "member", `member:${userId}`);
@@ -402,7 +403,7 @@ async function resolveRequestLimits(ctx: PipelineContext): Promise<RequestLimits
 	const limits = applicableRateLimits(plan, {
 		keyId: ctx.keyId,
 		userId: ctx.quotaUserId,
-		authMethodIsOAuth: ctx.meta?.authMethod === "oauth",
+		keyIdIsOAuthClient: keyIdIsOAuthClientId(ctx.meta?.apiKeyRef),
 		guardrailIds: ctx.activeGuardrailIds,
 		endUserId: ctx.meta?.requestUserId,
 	});

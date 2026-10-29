@@ -21,7 +21,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-レスポンスには `client_secret`、`connect.url`、`max_duration_seconds`、`idle_timeout_seconds`（API セッションでは常に `null`）が含まれます。`api.phaseo.app` 上の `connect.url` に、WebSocket サブプロトコル `statsync-realtime` と `rtsec.<client_secret>` を指定して WebSocket を開きます。リレーは `statsync-realtime` を選択します。`rtsec.<client_secret>` だけを提示すると、プロトコルが選択されないため、ブラウザーやほとんどの WebSocket ライブラリではハンドシェイクが失敗します。プロバイダーの準備ができるとリレーは `relay.connected` を送信し、その後マイク音声を `{"type": "client.audio", "audio": "<base64 PCM16>"}` として受け付けます。サンプルレートは OpenAI、xAI、ElevenLabs では 24 kHz、Google では 16 kHz です。
+レスポンスには `client_secret`、`connect.url`、`max_duration_seconds`、`idle_timeout_seconds`（API セッションでは常に `null`）が含まれます。`api.phaseo.app` 上の `connect.url` に、WebSocket サブプロトコル `statsync-realtime` と `rtsec.<client_secret>` を指定して WebSocket を開きます。リレーは `statsync-realtime` を選択します。`rtsec.<client_secret>` だけを提示すると、プロトコルが選択されないため、ブラウザーやほとんどの WebSocket ライブラリではハンドシェイクが失敗します。プロバイダーの準備ができるとリレーは `relay.connected` を送信し、その後マイク音声を `{"type": "client.audio", "audio": "<base64 PCM16>"}` として受け付けます。サンプルレートは OpenAI、xAI、ElevenLabs では 24 kHz、Google と Mistral では 16 kHz です。
 
 Phaseo はセッション開始時に $5 のクレジットを確保し、通話が続くにつれて確保額を延長します。
 
@@ -87,6 +87,23 @@ GPT Live の通話は、音声 1 秒単位の料金（1 分あたり $0.05、GPT
 ElevenLabs Realtime には 2 つのモデルがあります。より高速で安価なデフォルトの `eleven-labs/eleven-realtime-v1-mini` と、回答前に推論を行い、複雑な指示や複数ステップのツール使用に適した `eleven-labs/eleven-realtime-v1-max` です。どちらも OpenAI と同じ作成リクエストとリレーを使い、音声は 24 kHz です。Phaseo は自社のキーで ElevenLabs に接続するため、クライアントから見えるのはリレーだけです。
 
 ElevenLabs は通話の接続時間 1 秒ごとに加えて、使用した言語モデルのトークンを請求し、通話中は使用量を報告しません。リレーは通話中に接続時間を計測するため、確保額と当座貸越の上限は他のプロバイダーと同じように機能します。通話が終了すると、Phaseo はその会話に対する ElevenLabs の請求額を読み取り、それと自社の定価による合計額のうち大きい方を請求します。これには通常数秒かかります。それより長くかかる場合、`session.ended` は `billing_status: "pending"` と `final_bill` リクエストを含んで届き、ElevenLabs が報告し次第（通常は数分以内）請求が確定します。それまで確保額はそのまま残ります。24 時間経っても ElevenLabs が請求額を報告しない場合、そのセッションは接続時間だけで請求されるのではなく、請求レビューに回されます。
+
+### ストリーミング文字起こし
+
+Mistral の Voxtral Realtime モデルは、届いたライブ音声をその場で文字起こしします： `mistral/voxtral-mini-transcribe-realtime-3` と `mistral/voxtral-mini-transcribe-realtime`。音声で応答しないため、`voice` や `instructions` を指定せずにセッションを作成します：
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
+```
+
+同じ方法で接続し、16 kHz の PCM16 を `client.audio` として送信します。Mistral のイベントはそのまま転送されます： `session.created`、続いて新しいテキストごとに `transcription.text.delta`、Mistral が送信した場合は `transcription.language` と `transcription.segment` です。文字起こしの設定を変更するには、`language`、`target_streaming_delay_ms`（80〜1,200、または 2,400）、`context_bias`、`diarize`、`turn_detection` のいずれかを含めて `{"type": "session.update", "session": {...}}` を送信します。音声フォーマットを含むその他のフィールドは `relay.client_event_rejected` で拒否されます。音声の送信が始まると設定は固定されるため、`session.update` は最初の `client.audio` より前に送信してください。それ以降の更新も同様に拒否されます。
+
+`session.end` を送信すると、リレーは Mistral への音声ストリームを終了し、完全な文字起こしを含む `transcription.done` を最大 10 秒待ってから精算し、`session.ended` を送信します。送信済みの音声はすべて使われ、破棄されるものはありません。
+
+ストリーミング文字起こしは、送信した音声 1 分ごとに課金されます（Voxtral Mini Transcribe Realtime 3 は 1 分あたり $0.008）。計測はリレーが行います。`transcription.done` に含まれる Mistral 自身の計測値が最低請求額です。手元にある録音には、代わりに[音声文字起こし](/ja/v1/api-reference/endpoint/audio-transcriptions)を使用してください。
 
 ## セッションを終了する
 
@@ -213,6 +230,7 @@ API セッションがアイドル状態を理由に終了されることはな�
 | Google Live | リレーが再開する接続全体で 60 分です。クライアントが約 150 秒間音声の送信を止めた場合も通話は終了します。 |
 | GPT Live | 25 分 |
 | ElevenLabs Realtime | 30 分 |
+| Mistral ストリーミング文字起こし | 60 分 |
 | 当座貸越の上限 | 確保額と空き残高を超えて $1 |
 | アクセスの喪失 | キーが取り消された、期限切れになった、一時停止された、またはワークスペースが削除された場合です。約 1 分以内に検出され、その後猶予期間なしで通話が終了します。 |
 | ポリシーの変更 | `policy_blocked` 警告の 30 秒後に、ポリシーがまだ通話をブロックしている場合 |

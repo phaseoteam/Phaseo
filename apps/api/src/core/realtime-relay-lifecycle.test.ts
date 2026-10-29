@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
 	settleRealtimeSession: vi.fn(async () => ({})),
 	markRealtimeSessionBillingUnresolved: vi.fn(async () => ({ session_id: "rt_test", status: "billing_unresolved" })),
 	getRealtimeSessionForInternal: vi.fn(),
+	claimRealtimeSessionForRelay: vi.fn(),
 }));
 
 vi.mock("@/runtime/env", () => ({ configureRuntime: vi.fn() }));
@@ -15,6 +16,7 @@ vi.mock("@core/realtime-sessions", async (importOriginal) => ({
 	settleRealtimeSession: mocks.settleRealtimeSession,
 	markRealtimeSessionBillingUnresolved: mocks.markRealtimeSessionBillingUnresolved,
 	getRealtimeSessionForInternal: mocks.getRealtimeSessionForInternal,
+	claimRealtimeSessionForRelay: mocks.claimRealtimeSessionForRelay,
 }));
 
 const OPEN = 1;
@@ -422,6 +424,22 @@ describe("Realtime relay lifecycle", () => {
 		expect(object.settle).toHaveBeenCalledWith("expired", "realtime_max_duration");
 	});
 
+	it("bills a duration-priced call cut by a deploy up to the provider's last activity, not until cleanup", async () => {
+		const connectedAt = Date.now() - 10 * 60_000;
+		const storage = relay("spacex-ai").state.storage;
+		await storage.put({ session_id: "rt_test", usage: {
+			provider_connected_at_ms: connectedAt, provider_last_seen_ms: connectedAt + 90_000 } });
+		// A new instance after the deploy: no sockets, nothing in memory.
+		const restored = new RealtimeRelayDurableObject({ waitUntil: vi.fn(), storage } as any, {} as any) as any;
+		mocks.getRealtimeSessionForInternal.mockResolvedValueOnce({ session_id: "rt_test", provider: "spacex-ai",
+			model_id: "spacex-ai/grok-voice-3.0", usage: {} });
+		await restored.restoreStateIfEvicted("rt_test");
+		restored.markProviderClosed();
+		restored.refreshProviderSessionDuration();
+		expect(restored.usage.provider_closed_at_ms).toBe(connectedAt + 90_000);
+		expect(restored.usage.session_audio_ms).toBe(90_000);
+	});
+
 	it("never sends an extra billed closing response when the budget runs out", async () => {
 		const object = relay();
 		await object.beginBudgetClose("realtime_budget_threshold");
@@ -493,5 +511,28 @@ describe("Realtime relay lifecycle", () => {
 		await object.handleUpstreamMessage(JSON.stringify(event));
 		expect(object.providerSetupComplete).toBe(true);
 		expect(object.settle).not.toHaveBeenCalled();
+	});
+});
+
+describe("relay connection claims", () => {
+	const token = `rtsec_${"0123456789abcdefghjkmnpqrstvwxyz".repeat(2).slice(0, 52)}`;
+	const connect = () => new RealtimeRelayDurableObject({ waitUntil: vi.fn(), storage: fakeStorage() } as any, {} as any)
+		.fetch(new Request("https://relay/v1/realtime/sessions/rt_01kwykz81wpycgne47rt6bw6ka/relay", {
+			headers: { Upgrade: "websocket", "Sec-WebSocket-Protocol": `statsync-realtime, rtsec.${token}` } }));
+
+	it.each([
+		["realtime_session_not_found", 401],
+		["realtime_relay_forbidden", 401],
+		["realtime_relay_already_connected", 409],
+		["realtime_session_expired", 410],
+	])("answers a %s claim with %i instead of a server error", async (code, status) => {
+		// Supabase RPC errors are plain objects with a message, not Error instances.
+		mocks.claimRealtimeSessionForRelay.mockRejectedValueOnce({ message: code, code: "P0001" });
+		expect((await connect()).status).toBe(status);
+	});
+
+	it("still fails loudly on anything else", async () => {
+		mocks.claimRealtimeSessionForRelay.mockRejectedValueOnce(new Error("database unavailable"));
+		await expect(connect()).rejects.toThrow("database unavailable");
 	});
 });

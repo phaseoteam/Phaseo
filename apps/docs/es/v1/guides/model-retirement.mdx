@@ -85,11 +85,22 @@ Cuando está activada, una solicitud se envía a un sustituto solo si se cumplen
 - El sustituto supera las mismas comprobaciones que cualquier solicitud: restricciones de modelo del espacio de trabajo, restricciones de claves, guardrails y compatibilidad con el endpoint. Un sustituto nunca se añade por ti a una lista de permitidos.
 - La solicitud indica un modelo directamente. Las solicitudes a `phaseo/auto` o a un ID de modelo con proveedor no se redirigen.
 
+<span id="see-which-of-your-models-are-affected"></span>
+
+### Consulta qué modelos tuyos se ven afectados
+
+En **Tus modelos afectados**, dentro de la misma sección de ajustes, Phaseo muestra los modelos que tu espacio de trabajo usó en los últimos 90 días y que se están retirando o ya no se sirven. Para cada uno verás su sustituto, cómo cambia el precio y si sus solicitudes se redirigirían con tus ajustes actuales y, si no, por qué. También verás cuántas solicitudes de ese modelo respondió otro modelo en los últimos 30 días. Elige **Elegir sustituto** en un modelo para definir tu propio sustituto.
+
 <span id="choose-a-price-policy"></span>
 
 ### Elige una política de precios
 
-La política de precios del espacio de trabajo decide si un sustituto más caro puede atender la solicitud. Se comparan los precios que cobran ambos modelos.
+La política de precios del espacio de trabajo decide si un sustituto más caro puede atender la solicitud. Se comparan los precios por token que cobran ambos modelos. Si el modelo anterior ya no tiene precios vigentes, Phaseo usa sus últimos precios publicados. Cuando solo el sustituto cobra por algo:
+
+- las lecturas de caché no se comparan, porque cuestan menos que el precio de entrada, que sí se compara;
+- las escrituras en caché, y la entrada de imagen, audio o vídeo que el modelo anterior cobraba como entrada normal, se comparan con el precio de entrada del modelo anterior;
+- la búsqueda web, y las entradas o salidas en una modalidad que el modelo anterior no tenía, no se comparan. Una solicitud que las use no se redirige, salvo que la política sea `any` o hayas elegido tú el sustituto;
+- cualquier otro cargo hace que los precios no se puedan comparar.
 
 | `model_successor_price_policy` | Comportamiento |
 | --- | --- |
@@ -150,8 +161,11 @@ Comprueba que:
 - el modelo lleva al menos 72 horas sin servirse;
 - el modelo tiene un sustituto aprobado, o has definido uno propio;
 - el sustituto no cuesta más de lo que permite tu política de precios;
+- la solicitud no usa búsqueda web ni un tipo de entrada o salida que solo cobre el sustituto;
 - el modelo no es gratuito con un sustituto de pago;
 - el sustituto está permitido por las restricciones de modelo de tu espacio de trabajo y de tu clave;
 - la solicitud no usa un ID de modelo con proveedor ni `phaseo/auto`.
+
+**Tus modelos afectados**, en la misma sección de ajustes, muestra cuál de estos puntos se aplica a cada modelo que usas.
 
 **Ha respondido un modelo distinto del que pedí.** Busca el encabezado `X-Phaseo-Model-Substitution`. Para evitar que se sustituya un modelo, añádelo con **No redirigir nunca** en **Tus propios sustitutos**, o desactiva la sustitución automática.

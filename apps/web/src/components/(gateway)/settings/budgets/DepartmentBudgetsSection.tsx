@@ -43,9 +43,9 @@ type Department = { id: string; name: string };
 type Editing = { mode: "create" } | { mode: "edit"; budget: SettingsDepartmentBudget };
 
 /**
- * Department budgets under the workspace budgets. They only alert (owners and
- * admins are pushed at about 80% and 100%), so unlike workspace budgets they
- * never touch the gateway.
+ * Department budgets under the workspace budgets. At 100% the gateway refuses the
+ * department's API-key requests (batch, realtime and OAuth requests excepted);
+ * owners and admins are pushed at about 80% and 100%.
  */
 export default function DepartmentBudgetsSection({ data }: { data: SettingsBudgetsInitialData }) {
 	const t = useTranslations("SettingsUI.budgets");
@@ -63,7 +63,7 @@ export default function DepartmentBudgetsSection({ data }: { data: SettingsBudge
 				<div>
 					<div className="flex flex-wrap items-center gap-2">
 						<h2 className="text-base font-semibold">{t("departments.title")}</h2>
-						<Badge variant="outline" className="rounded-md">{t("departments.alertsOnly")}</Badge>
+						<Badge variant="outline" className="rounded-md">{t("departments.blocksAtLimit")}</Badge>
 					</div>
 					<p className="mt-1 text-sm text-muted-foreground">{t("departments.description")}</p>
 				</div>

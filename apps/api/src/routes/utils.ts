@@ -10,6 +10,7 @@ import { sanitizeRequestHeaders } from "@pipeline/http/sanitize-headers";
 import { attachGatewayTrace, gatewayTraceFor } from "@pipeline/telemetry/gateway-trace";
 import { inheritPreparedAuthentication } from "@pipeline/before/auth";
 import { inheritRequestId } from "@/runtime/request-id";
+import { inheritRequestReceipt } from "@pipeline/telemetry/request-receipt";
 
 type Handler = (req: Request, context?: Context<{ Bindings: GatewayBindings }>) => Promise<Response>;
 type CacheOptions = {
@@ -111,6 +112,7 @@ export function withRuntime(handler: Handler) {
         };
         const sanitized = sanitizeRequestHeaders(c.req.raw, { preserve: ["authorization"] });
         inheritRequestId(c.req.raw, sanitized);
+        inheritRequestReceipt(c.req.raw, sanitized);
         if (c.env.CUSTOMER_RATE_LIMITS_ENABLED === "true") {
             inheritPreparedAuthentication(c.req.raw, sanitized);
         }

@@ -33,7 +33,7 @@ phaseo codex
 
 対応している連携名は `codex`、`claude-code`、`opencode`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor`、`zed` です。分離された CLI ランナーは `cline`、`kilo`、`omp`、`muse`、`minimax` です。
 
-CLI はアシスタントごとに専用の有効期限なし API キーを作成します。クリーンインストールでは Aider と Continue を自動設定し、Zed のプロバイダー/モデル設定も自動で書き込みます。シークレットをエディター UI のみで管理するアシスタントでは、残りの入力項目を表示し、専用ガイドにリンクし、そのアシスタントのキーだけをコピーできます。
+CLI はアシスタントごとに専用の API キーを作成します。キーは 90 日で失効し、月 $100 の支出上限が設定されます。クリーンインストールでは Aider と Continue を自動設定し、Zed のプロバイダー/モデル設定も自動で書き込みます。シークレットをエディター UI のみで管理するアシスタントでは、残りの入力項目を表示し、専用ガイドにリンクし、そのアシスタントのキーだけをコピーできます。
 
 ```bash
 phaseo integrations credential codex
@@ -146,7 +146,7 @@ Aider では、OpenAI 互換のカスタムモデルに `openai/` プレフィ�
 
 `phaseo pi` は専用のプロバイダー拡張機能を追加し、実行時に Phaseo CLI からキーを取得します。`phaseo prime-agent` はコマンド経由のプロバイダーを `~/.prime/agent/models.json` に書き込みます。どちらにも互換性のある Phaseo モデルカタログが追加されます。`phaseo openclaw` は互換モデルカタログと exec ベースの SecretRef を登録し、API キーを `openclaw.json` に保存しません。
 
-`phaseo hermes` は、Hermes が未インストールの場合に Nous Research の公式インストーラーを実行し、インストール後にエージェントを設定します。以前の Hermes モデル設定を保存し、Phaseo をカスタムエンドポイントとして設定します。また、Hermes 公式の `hermes config set` コマンドで専用キーを `~/.hermes/.env` の `OPENAI_API_KEY` に設定します。Hermes はプロバイダー認証情報にこの平文ファイルを意図的に使うため、他の API キーファイルと同様に保護してください。削除時には以前のモデル設定を復元し、`OPENAI_API_KEY` と Phaseo の復旧状態を削除して、キーを失効させます。
+`phaseo hermes` は、Hermes が未インストールの場合に Nous Research の公式インストーラーを実行し、インストール後にエージェントを設定します。以前の Hermes モデル設定を保存し、Phaseo をカスタムエンドポイントとして設定します。また、専用キーを Hermes の `~/.hermes/.env` ファイル（または `HERMES_HOME` 内の `.env`）に、`# >>> phaseo managed (do not edit)` で始まるブロック内の `OPENAI_API_KEY` として書き込みます。そのためキーがコマンドラインに渡されることはなく、ほかの行は変更されません。Hermes はプロバイダー認証情報にこの平文ファイルを意図的に使うため、他の API キーファイルと同様に保護してください。削除時には以前のモデル設定を復元し、`OPENAI_API_KEY` と Phaseo の復旧状態を削除して、キーを失効させます。
 
 ## MiniMax Code
 

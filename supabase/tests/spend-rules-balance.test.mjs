@@ -502,14 +502,14 @@ try {
   const inSlice = await count(`public.workspaces w where w.name like 'Perf %' and (pg_catalog.hashtextextended(w.id::text, 0) % 3 + 3) % 3 = $1`, [slice]);
   assert.ok(inSlice >= 20, `the slice has enough workspaces to rotate (${inSlice})`);
   const limit = Math.ceil(inSlice / 4);
-  const visits = Math.ceil(inSlice / limit) + 1;
+  const visits = Math.ceil(inSlice / limit);
   for (let n = 0; n < visits; n += 1) {
     const result = (await one('select public.sweep_spend_rules($1::timestamptz, $2, false) r', [visit(n), limit])).r;
     assert.ok(result.balance <= limit);
   }
   const reached = await count(`(select distinct l.workspace_id from balance_evaluation_log l join public.workspaces w on w.id = l.workspace_id
     where w.name like 'Perf %' and (pg_catalog.hashtextextended(w.id::text, 0) % 3 + 3) % 3 = $1) r`, [slice]);
-  assert.equal(reached, inSlice, 'every workspace in an over-full balance slice is reached within a few visits');
+  assert.equal(reached, inSlice, 'every workspace in an over-full balance slice is reached within ceil(n / limit) visits');
   await db.exec(`
     drop function private.evaluate_workspace_spend_rules(uuid, timestamptz, boolean);
     alter function private.evaluate_workspace_spend_rules_logged(uuid, timestamptz, boolean) rename to evaluate_workspace_spend_rules;

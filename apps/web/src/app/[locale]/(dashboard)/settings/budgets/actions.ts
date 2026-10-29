@@ -77,7 +77,7 @@ export async function deleteWorkspaceBudget(id: string): Promise<BudgetActionRes
 	}
 }
 
-// Department budgets only alert, so nothing reaches the gateway.
+// The gateway reseeds department budgets about every minute, so changes need no cache invalidation.
 const DEPARTMENT_PATH = `${PATH}/departments`;
 
 export async function createDepartmentBudget(departmentId: string, interval: DepartmentBudgetInterval, limitUsd: number): Promise<DepartmentBudgetActionResult> {

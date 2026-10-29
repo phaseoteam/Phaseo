@@ -17,6 +17,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![El registro de cambios con el filtro Producto activado y la lista de fechas al lado](/images/changelog/2026-10-28--changelog-filters.png)
 
 - El registro de cambios ahora incluye los cambios del producto y de la API junto a los lanzamientos de modelos, con filtros **Producto**, **API y SDK** y **Modelos** que mantienen la lista de fechas ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261)).
+- El editor de preajustes añade **Publicar** junto a **Guardar borrador**, y **Versiones y etiquetas** da a cada etiqueta un selector de versión, así que elegir una versión anterior es una reversión; consulta [Plantillas de prompt](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+- Al abrir una versión publicada de un preajuste se ven sus modelos y mensajes de plantilla, las líneas que difieren de la versión predeterminada y un botón **Ejecutar** para probarla ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
 
 </div>
 
@@ -39,6 +41,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Producto</p>
 
 - La sección **Versions and labels** del editor de presets apunta etiquetas con nombre a versiones publicadas, así que mover una etiqueta revierte las solicitudes con un clic; consulta [Plantillas de prompt](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- El selector de modelos de los preajustes solo ofrece modelos que el gateway sigue sirviendo; antes también mostraba modelos retirados que las solicitudes no podían alcanzar ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260)).
+- Ejecutar un preajuste en un espacio de trabajo sin créditos lo indica y enlaza a **Añadir créditos**; antes mostraba un error genérico ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276)).
+- Las páginas que cargan el catálogo completo de modelos, como el editor de preajustes, lo obtienen de la caché; antes cada carga tardaba unos 3 segundos y algunas fallaban ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278)).
 
 </div>
 
@@ -85,6 +90,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - Todos los espacios de trabajo pueden usar el enrutamiento de modelos retirados: propietarios y administradores lo activan en **Ajustes -> Enrutamiento -> Enrutamiento de modelos retirados** y las solicitudes van al reemplazo aprobado; consulta [Obsolescencia y retirada de modelos](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
 - El enrutamiento de modelos retirados solo usa un reemplazo aprobado que no cueste más que el modelo retirado, salvo que propietarios y administradores permitan un precio mayor; un reemplazo elegido por ellos mismos se usa cueste lo que cueste ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- La lista y el editor de preajustes se abren aunque falle la carga del catálogo completo de modelos; antes la página mostraba un error ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
 
@@ -124,6 +130,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Las políticas de límites de velocidad aplican `concurrent_requests` y devuelven `429` con el motivo `policy_concurrent_requests` y `Retry-After: 1` cuando todas las plazas están ocupadas; consulta [Límites de solicitudes](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Las políticas estrictas (`fail_closed`) comprueban sus límites por minuto antes de enviar la solicitud a un proveedor ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Las solicitudes enviadas a través de los gateways regionales de la UE y EE. UU. ahora llegan a los destinos de Broadcast ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+- Las solicitudes a la mayoría de los modelos vuelven a funcionar; el 23 de octubre, tras una actualización de la política de datos de los proveedores, devolvían `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206)).
 
 </div>
 

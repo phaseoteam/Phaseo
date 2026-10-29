@@ -94,6 +94,8 @@ export interface WorkItem {
 	revisions?: number;
 	/** Default agent for this item's stages. */
 	assigneeId?: string;
+	/** How hard agents think on this item's runs, when the agent offers it. Unset uses the agent's own setting. */
+	effort?: string;
 	/** Written in Factory. */
 	loggedHere?: boolean;
 	/** Issues: the issue Triage says this one repeats. */
@@ -320,6 +322,8 @@ export interface Connection {
 	version?: string;
 	/** Hubs: the base URL agents are pointed at. */
 	baseUrl?: string;
+	/** Hubs: the model ids the hub says it serves. */
+	models?: string[];
 	/** How many agents may run through this connection at once. */
 	slots: number;
 	windows?: UsageWindow[];
@@ -408,6 +412,8 @@ export interface FactorySettings {
 	/** The repository the work list shows. Empty shows all of them. */
 	showRepo: string;
 	hubUrl: string;
+	/** The hub's key, sent the way its clients send one. Saved encrypted where this computer allows. */
+	hubKey: string;
 	/** Cross-model review: the review stage never uses the agent that wrote the fix. */
 	independentReview: boolean;
 	playbooks: Record<WorkKind, Playbook>;
@@ -667,6 +673,8 @@ export interface FactoryApi {
 	startRun(input: StartRunInput): Promise<Run>;
 	cancelRun(runId: string): Promise<void>;
 	assign(itemId: string, agentId: string | null): Promise<void>;
+	/** The reasoning effort for this item's runs; null goes back to each agent's own. */
+	setEffort(itemId: string, effort: string | null): Promise<void>;
 	/** Steer the running agent, or reply to the last run so it carries on. */
 	sendMessage(itemId: string, text: string): Promise<void>;
 	act(itemId: string, action: ItemAction): Promise<void>;

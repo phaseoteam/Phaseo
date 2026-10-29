@@ -11,6 +11,7 @@ import { parseW3cTraceContext } from "@observability/trace-context";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { generatePublicId } from "@pipeline/before/genId";
 import { err, json } from "@pipeline/before/http";
+import { readRealtimeMaintenance, realtimeMaintenanceResponse } from "@core/realtime-maintenance";
 import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFallbacks";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { getRealtimeVoiceFeatureGateName, isRealtimeVoiceAccessEnabled } from "@core/feature-flags";
@@ -240,6 +241,14 @@ function responseForError(error: unknown, requestId?: string, workspaceId?: stri
 			workspace_id: workspaceId,
 		});
 	}
+	if (message === "realtime_transcription_option_not_supported") {
+		return err("validation_error", {
+			reason: message,
+			description: "Streaming transcription sessions don't speak back; remove voice and instructions",
+			request_id: requestId,
+			workspace_id: workspaceId,
+		});
+	}
 	if (message === "realtime_session_not_found") {
 		return err("not_found", {
 			reason: "realtime_session_not_found",
@@ -299,6 +308,7 @@ function normalizedProvider(value: string): string {
 	if (provider === "xai" || provider === "x-ai") return "spacex-ai";
 	if (provider === "google") return "google-ai-studio";
 	if (provider === "eleven-labs") return "elevenlabs";
+	if (provider === "mistralai") return "mistral";
 	return provider;
 }
 
@@ -307,7 +317,8 @@ function providerFromModel(model: string): string | null {
 	if (prefix === "xai" || prefix === "x-ai") return "spacex-ai";
 	if (prefix === "google") return "google-ai-studio";
 	if (prefix === "eleven-labs") return "elevenlabs";
-	return ["openai", "spacex-ai", "google-ai-studio", "elevenlabs"].includes(prefix) ? prefix : null;
+	if (prefix === "mistralai") return "mistral";
+	return ["openai", "spacex-ai", "google-ai-studio", "elevenlabs", "mistral"].includes(prefix) ? prefix : null;
 }
 
 export async function authorizeRealtimeSource(args: {
@@ -344,6 +355,11 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			request_id: auth.value.requestId,
 			workspace_id: auth.value.workspaceId,
 		});
+	}
+	// During a maintenance window no new call starts; calls already running carry on.
+	const maintenance = await readRealtimeMaintenance();
+	if (maintenance) {
+		return realtimeMaintenanceResponse(maintenance, { requestId: auth.value.requestId, workspaceId: auth.value.workspaceId });
 	}
 	const body = await guardJson(req, auth.value.workspaceId, auth.value.requestId);
 	if (body.ok !== true) return body.response;

@@ -49,6 +49,7 @@ import {
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
+import { resolveFailoverMs } from "./timing";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
 import { mergeMessagesStreamUsage } from "@core/usage-normalization";
@@ -140,6 +141,7 @@ function attachStreamTimingMeta(args: {
         providerDurationMs: generationMs,
         providerTtftMs: ctx.meta.provider_ttft_ms ?? null,
         gatewayE2eMs: ctx.meta.end_to_end_ms ?? null,
+        failoverMs: resolveFailoverMs(ctx),
     });
     const throughputTps = calculated.effectiveThroughputTps;
     ctx.meta.throughput_tps = throughputTps ?? undefined;

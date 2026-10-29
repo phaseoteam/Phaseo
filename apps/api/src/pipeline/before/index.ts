@@ -6,10 +6,12 @@
 import { z } from "zod";
 import { getBindings } from "@/runtime/env";
 import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSuccessorRedirectAccessEnabled } from "@core/feature-flags";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
+import { createSpendLimitSlot, releaseSpend, slotAdmission, type SpendLimitSlot } from "@core/spend-limits";
 import { err } from "./http";
 import {
     MAX_REQUEST_MODEL_FALLBACKS,
@@ -270,31 +272,61 @@ export type BeforeRequestObservabilitySnapshot = {
     zeroDataRetention?: boolean;
 };
 
+type BeforeRequestOptions = {
+    dynamicRouteModelOverride?: string | null;
+	/** Replaces the request `model` for a request-level `models` fallback attempt. */
+	requestModelOverride?: string | null;
+	/**
+	 * Whether an unserved model may be redirected to its approved successor.
+	 * Defaults to true unless the request lists fallback models: the
+	 * customer's own list is tried first, and the successor only applies to
+	 * the last model in it.
+	 */
+	allowModelSuccessor?: boolean;
+	autoRouterModelOverride?: string | null;
+	autoRouterClassificationOverride?: AutoRouterClassification | null;
+	classifyAutoRouterRequest?: (args: {
+		endpoint: Endpoint;
+		body: unknown;
+	}) => Promise<AutoRouterClassification | null>;
+    onObservabilitySnapshot?: (snapshot: BeforeRequestObservabilitySnapshot) => void;
+};
+type BeforeRequestResult =
+    | { ok: true; ctx: PipelineContext }
+    | { ok: false; response: Response; unservedModelFallback?: UnservedModelFallback };
+
 export async function beforeRequest(
     req: Request,
     endpoint: Endpoint,
     timer: Timer,
     zodSchema: z.ZodTypeAny | null = schemaFor(endpoint),
-    options?: {
-        dynamicRouteModelOverride?: string | null;
-		/** Replaces the request `model` for a request-level `models` fallback attempt. */
-		requestModelOverride?: string | null;
-		/**
-		 * Whether an unserved model may be redirected to its approved successor.
-		 * Defaults to true unless the request lists fallback models: the
-		 * customer's own list is tried first, and the successor only applies to
-		 * the last model in it.
-		 */
-		allowModelSuccessor?: boolean;
-		autoRouterModelOverride?: string | null;
-		autoRouterClassificationOverride?: AutoRouterClassification | null;
-		classifyAutoRouterRequest?: (args: {
-			endpoint: Endpoint;
-			body: unknown;
-		}) => Promise<AutoRouterClassification | null>;
-        onObservabilitySnapshot?: (snapshot: BeforeRequestObservabilitySnapshot) => void;
-    },
-): Promise<{ ok: true; ctx: PipelineContext } | { ok: false; response: Response; unservedModelFallback?: UnservedModelFallback }> {
+    options?: BeforeRequestOptions,
+): Promise<BeforeRequestResult> {
+    // Enforce mode: the request's spend-limit admission, decided at most once by guardContext.
+    // It rides on the context when the request proceeds and is released when it stops here.
+    const spendLimit = createSpendLimitSlot();
+    let result: BeforeRequestResult;
+    try {
+        result = await runBeforeRequest(req, endpoint, timer, zodSchema, options, spendLimit);
+    } catch (error) {
+        releaseSpend(await slotAdmission(spendLimit));
+        throw error;
+    }
+    if (!spendLimit.decision) return result;
+    const admission = await slotAdmission(spendLimit);
+    if (result.ok) result.ctx.spendAdmission = admission;
+    else releaseSpend(admission);
+    return result;
+}
+
+async function runBeforeRequest(
+    req: Request,
+    endpoint: Endpoint,
+    timer: Timer,
+    zodSchema: z.ZodTypeAny | null,
+    options: BeforeRequestOptions | undefined,
+    spendLimit: SpendLimitSlot,
+): Promise<BeforeRequestResult> {
     const requestStartedAtMs = timer.startedAtMs();
 
     // 1) Auth
@@ -584,7 +616,8 @@ export async function beforeRequest(
 		model: candidateModel,
 		requestId,
 		internal,
-		shadowSpendLimit: a.value.authMethod !== "oauth",
+		shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+		spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
 		testingMode: flags.testingMode,
 		internalOnly: flags.internalOnly,
 		disableCache: debugEnabled,
@@ -979,7 +1012,8 @@ export async function beforeRequest(
                     onCreditCacheWrite,
                     requestId,
                     internal,
-                    shadowSpendLimit: a.value.authMethod !== "oauth",
+                    shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+                    spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
                     testingMode: testingModeEnabled,
                     disableCache: debugEnabled,
                 })
@@ -1733,9 +1767,11 @@ export async function beforeRequest(
         stream,
         req,
         rawBody: rawBody && typeof rawBody === "object" ? (rawBody as Record<string, unknown>) : null,
-        authMethod: apiKeyRef?.startsWith("oauth_") ? "oauth" : "api_key",
-        oauthClientId: apiKeyRef?.startsWith("oauth_") ? (apiKeyKid ?? null) : null,
-        oauthUserId: apiKeyRef?.startsWith("oauth_") ? (userId ?? null) : null,
+        // Delegated OAuth keys authenticate as `kid_…` but belong to an OAuth app, so their
+        // requests are attributed to the app and its user like OAuth access tokens are.
+        authMethod: a.value.authMethod === "oauth" ? "oauth" : "api_key",
+        oauthClientId: a.value.authMethod === "oauth" ? (a.value.oauthClientId ?? null) : null,
+        oauthUserId: a.value.authMethod === "oauth" ? (userId ?? null) : null,
         returnMeta,
         returnRoutingDiagnostics,
         debug,

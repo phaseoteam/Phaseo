@@ -1,7 +1,12 @@
 import { FACTORY_BRANCH_PREFIX, agentForStage, stageAgentIsFixed } from "./intake";
 import { ASK_ROUNDS, asksReporter, hasProof, verdictPassed } from "./report";
 import { currentStage, stagesFor } from "./stages";
-import type { FactorySnapshot, ItemAction, Run, StageId, WorkItem } from "./types";
+import type { AgentProfile, FactorySnapshot, ItemAction, Run, StageId, WorkItem } from "./types";
+
+/** The agent as it runs on an item: with the item's effort when the agent offers it, its own otherwise. */
+export function withItemEffort<T extends Pick<AgentProfile, "efforts" | "effort">>(agent: T, item: Pick<WorkItem, "effort">): T {
+	return item.effort && agent.efforts?.includes(item.effort) ? { ...agent, effort: item.effort } : agent;
+}
 
 /** The buttons that move an item along from where it is now, most useful first. */
 

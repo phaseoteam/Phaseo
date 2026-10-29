@@ -13,7 +13,7 @@ import {
 } from "./installations";
 import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
 import { pageStoreFor } from "./pages";
-import { allowedModels, chooseModel, decideComparison, modelChoiceOn, modelNames, namesCatalogueModel, namesComparison, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
+import { allowedModels, chooseModel, COMPARE_OFF_TEXT, decideComparison, listsCatalogueModels, modelChoiceOn, modelNames, namesCatalogueModel, namesComparison, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
 import { updateQuestionMessage } from "./questions";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
 import { sharedFileRefs } from "./slack-files";
@@ -319,6 +319,11 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 			compare = decided.models;
 			text = decided.prompt;
 		}
+	} else if (!modelChoiceOn(installation) && namesComparison(message) && await listsCatalogueModels(deps.db, message)) {
+		// A Compare while model choice is off would otherwise be answered by one model as if it had compared.
+		console.log("[slack-agent] comparison refused", { installationId: installation.id, eventId, reason: "model_choice_off" });
+		await replyPrivately(slack, target, COMPARE_OFF_TEXT);
+		return "model_refused";
 	} else if (modelChoiceOn(installation) && namesModel(message)) {
 		const names = await modelNames(deps.db, [...installation.allowed_models, installation.model]);
 		const allowed = allowedModels(installation, names);

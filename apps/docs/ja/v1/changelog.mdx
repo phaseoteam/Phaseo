@@ -17,6 +17,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![製品フィルターをオンにした変更履歴と、その横の日付一覧](/images/changelog/2026-10-28--changelog-filters.png)
 
 - 変更履歴に、モデルのリリースに加えて製品と API の変更も掲載され、日付の一覧を残したまま**製品**、**API と SDK**、**モデル**で絞り込めるようになりました ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261))。
+- プリセットエディターの **下書きを保存** の隣に **公開** が加わり、**バージョンとラベル** では各ラベルにバージョンの選択欄が付いて、以前のバージョンを選ぶとロールバックできます。詳しくは [プロンプトテンプレート](./guides/prompt-templates.mdx) を参照してください ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301))。
+- 公開済みのプリセットのバージョンを開くと、モデルとテンプレートのメッセージ、デフォルトのバージョンとの差分の行、試すための **実行** ボタンが表示されます ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301))。
 
 </div>
 
@@ -39,6 +41,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">製品</p>
 
 - プリセットエディターの **Versions and labels** セクションでは、名前付きラベルを公開済みバージョンに割り当てられ、ラベルを移すだけでリクエストを 1 クリックでロールバックできます。詳しくは[プロンプトテンプレート](./guides/prompt-templates.mdx)をご覧ください ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))。
+- プリセットのモデル選択には、ゲートウェイが現在も提供しているモデルだけが表示されます。以前は、リクエストが届かない提供終了済みのモデルも表示されていました ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260))。
+- クレジットが残っていないワークスペースでプリセットを実行すると、その旨と **クレジットを追加** へのリンクが表示されます。以前は一般的なエラーが表示されていました ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276))。
+- プリセットエディターなど、モデルカタログ全体を読み込むページはキャッシュから取得します。以前は読み込みのたびに約 3 秒かかり、失敗することもありました ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278))。
 
 </div>
 
@@ -85,6 +90,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - すべてのワークスペースで提供終了モデルのルーティングを使えます。オーナーと管理者が **設定 -> ルーティング -> 提供終了モデルのルーティング** でオンにすると、リクエストは承認済みの後継モデルに送られます。詳しくは[モデルの非推奨化と提供終了](./guides/model-retirement.mdx)をご覧ください ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))。
 - 提供終了モデルのルーティングは、オーナーと管理者が高い料金を許可しない限り、提供終了モデルより高くならない承認済みの後継モデルだけを使います。オーナーと管理者が自分で選んだ後継モデルは料金にかかわらず使われます ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
+- モデルカタログ全体の読み込みに失敗しても、プリセットの一覧とエディターは開きます。以前はページにエラーが表示されていました ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221))。
 
 </div>
 
@@ -124,6 +130,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - レート制限ポリシーは `concurrent_requests` を適用し、すべての枠が埋まっていると理由 `policy_concurrent_requests` と `Retry-After: 1` を付けて `429` を返します。詳しくは[レート制限](./api-reference/limits.mdx)をご覧ください ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
 - 厳格なポリシー (`fail_closed`) は、リクエストをプロバイダーに送る前に 1 分あたりの上限を確認します ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
 - EU と US のリージョナルゲートウェイを通るリクエストも Broadcast の送信先に届くようになりました ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187))。
+- ほとんどのモデルへのリクエストが再び成功します。10 月 23 日には、プロバイダーのデータポリシー更新の後、`500 gateway_context_failed` が返っていました ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206))。
 
 </div>
 

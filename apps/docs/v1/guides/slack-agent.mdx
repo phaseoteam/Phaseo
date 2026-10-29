@@ -104,7 +104,7 @@ To see how 2 or 3 allowed models answer the same question, start the message wit
 compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
 ```
 
-- Models are matched like `with <model>:`, only from the allowed list. If a model isn't on the list, a name fits more than one model, you name fewer than 2 or more than 3, or there's no question after the colon, the agent replies privately and doesn't answer. That message isn't counted as an answer. A message that names no model at all, such as `compare the two plans, then pick one: …`, is ordinary text and the agent answers it as usual.
+- Models are matched like `with <model>:`, only from the allowed list. If a model isn't on the list, a name fits more than one model, you name fewer than 2 or more than 3, or there's no question after the colon, the agent replies privately and doesn't answer. That message isn't counted as an answer. A message that names no model at all, such as `compare the two plans, then pick one: …`, is ordinary text and the agent answers it as usual. While model choice is off, a `compare …:` message that names catalogue models gets a private reply that Compare is off, and isn't counted as an answer.
 - Each model gets your question, not the rest of the thread, and can search the web and read web pages. They answer at the same time.
 - The reply has a section for each model: its name, linked to its page on Phaseo, what it cost, and its answer. Each model is asked to keep its answer short, and long answers are cut so they all fit in one Slack message.
 - If a model fails, its section says why, and the other answers are still shown.
@@ -580,6 +580,7 @@ When the agent can't answer someone, it replies privately in Slack:
 | "The model this agent uses can't read the files shared here." | No provider of the agent's model reads the images or PDFs shared. | Ask without the files, or choose a model that reads images in **Settings → Slack**. |
 | "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | The answer searched Slack, and no provider of the model with zero data retention could answer. | Choose a model that keeps no data in **Settings → Slack**. If the message started with `with <model>:`, choose a model that keeps no data there, or leave it out to use the agent's model. |
 | "…so I didn't compare them." or "Name 2 or 3 different models to compare…" | The message started with `compare …:`, and a model isn't under **Model choice**, a name fits more than one allowed model, or it named fewer than 2 or more than 3 different models. | Use 2 or 3 models from the reply's list. |
+| "Comparing models isn't turned on here, so I didn't answer." | The message started with `compare …:` and named catalogue models, but model choice is off. | Ask an owner or admin to turn on **Let people choose a model per message** under **Model choice**, or leave out `compare …:`. |
 
 If the agent doesn't reply at all:
 

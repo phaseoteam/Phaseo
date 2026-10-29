@@ -1,0 +1,181 @@
+{
+	"recorded_at": "2026-10-27",
+	"model": "voxtral-mini-transcribe-realtime-3-0",
+	"notes": "Live session through wss://api.mistral.ai/v1/audio/transcriptions/realtime: 8.74 s of 16 kHz pcm_s16le sent as 100 ms input_audio.append chunks, then input_audio.flush and input_audio.end. Mistral reported prompt_audio_seconds 8 (whole seconds).",
+	"sent_audio_ms": 8740,
+	"events": [
+		{
+			"event": {
+				"type": "session.created",
+				"session": {
+					"request_id": "ws-01a17d3b-48a2-712c-8144-19675e7adcb6",
+					"model": "voxtral-mini-transcribe-realtime-3-0-4",
+					"audio_format": {
+						"encoding": "pcm_s16le",
+						"sample_rate": 16000
+					},
+					"target_streaming_delay_ms": null,
+					"diarize": false,
+					"verbatim": false,
+					"context_bias": [],
+					"language": null,
+					"speaker_references": null,
+					"turn_detection": null
+				}
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": "Hello"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " from"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " F"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": "azio"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": "."
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " This"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " is"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " a"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " short"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " streaming"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " transcription"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " test"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": "."
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " The"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " quick"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " brown"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " fox"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " jumps"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " over"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " the"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " lazy"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": " dog"
+			}
+		},
+		{
+			"event": {
+				"type": "transcription.text.delta",
+				"text": "."
+			}
+		},
+		{
+			"event": {
+				"model": "voxtral-mini-transcribe-realtime-3-0-4",
+				"text": "Hello from Fazio. This is a short streaming transcription test. The quick brown fox jumps over the lazy dog.",
+				"language": null,
+				"segments": [],
+				"usage": {
+					"prompt_audio_seconds": 8,
+					"prompt_tokens": 39,
+					"total_tokens": 159,
+					"completion_tokens": 120
+				},
+				"type": "transcription.done"
+			}
+		}
+	]
+}

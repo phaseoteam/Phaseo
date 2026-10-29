@@ -18,6 +18,7 @@
 //      Blocking is best effort: spend is evaluated every 5 minutes from the usage rollup, so a
 //      block starts minutes after the limit and a lift reaches every isolate within a minute.
 import { getBindingsIfConfigured, getCache, getSupabaseAdmin } from "@/runtime/env";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { invalidateTieredL1, tieredRead } from "@core/tiered-cache";
 import { err } from "@pipeline/before/http";
 import type { PipelineContext } from "@pipeline/before/types";
@@ -344,8 +345,8 @@ function entryFor(ctx: PipelineContext): Promise<SpendBlockEntry | null> {
 
 /** The request's subject without a route: provider and free are filled in per route. */
 export function spendSubjectFor(ctx: PipelineContext, baseModel?: string | null): Omit<SpendSubject, "provider" | "free"> {
-	// OAuth-token requests carry the OAuth client id in place of a key id.
-	const keyId = ctx.meta?.authMethod === "oauth" ? null : ctx.keyId || null;
+	// OAuth access tokens carry the OAuth client id in place of a key id; delegated OAuth keys are keys.
+	const keyId = keyIdIsOAuthClientId(ctx.meta?.apiKeyRef) ? null : ctx.keyId || null;
 	const models = [...new Set([ctx.model, baseModel].filter((model): model is string => typeof model === "string" && model.length > 0))];
 	return { keyId, actorUserId: ctx.quotaUserId || null, models };
 }

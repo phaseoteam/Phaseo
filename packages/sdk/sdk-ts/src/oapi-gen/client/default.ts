@@ -3247,7 +3247,7 @@ export type CreateDepartmentBudgetParams = {
 };
 
 /**
- * Creates a daily, weekly, or monthly spend budget for one department. Owners and admins get a mobile push at about 80% and at 100%. Department budgets do not block requests.
+ * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. Batch jobs, realtime sessions and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
  */
 export async function createDepartmentBudget(
   client: Client,
@@ -8809,7 +8809,7 @@ export type DeleteDepartmentBudgetParams = {
 };
 
 /**
- * Removes a department budget and its alerts.
+ * Removes a department budget. Within about a minute, requests are no longer refused because of it, and its alerts stop.
  */
 export async function deleteDepartmentBudget(
   client: Client,

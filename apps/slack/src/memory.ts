@@ -246,7 +246,7 @@ function noteTools(context: MemoryToolContext, workspace: boolean): AgentTool<an
 		},
 		{
 			id: "recall",
-			description: `Search your memory: the notes, pins and to-dos for this conversation${workspace ? " and for the whole workspace" : ""}. Matches any of the words given, best matches then newest first; without words, the newest. Done to-dos only when asked for.`,
+			description: `Search your memory: the notes, pins and to-dos for this conversation${workspace ? " and for the whole workspace" : ""}. Matches any of the words given, best matches then newest first; without words, the newest. To list the to-dos or pins, give the kind and no words. Done to-dos only when asked for.`,
 			parameters: {
 				type: "object",
 				properties: {
@@ -263,16 +263,23 @@ function noteTools(context: MemoryToolContext, workspace: boolean): AgentTool<an
 				const limit = input.limit === undefined || input.limit === null ? 10 : Number(input.limit);
 				if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new ToolInputError("limit must be a whole number from 1 to 20");
 				if (input.include_done !== undefined && input.include_done !== null && typeof input.include_done !== "boolean") throw new ToolInputError("include_done must be true or false");
-				const rows = await db.rpc<NoteRow[]>("search_slack_agent_notes", {
+				const search = (words: string | null) => db.rpc<NoteRow[]>("search_slack_agent_notes", {
 					p_installation_id: installationId,
 					p_channel_id: channel,
 					p_workspace_notes: workspace,
-					p_query: query,
+					p_query: words,
 					p_kind: kind(input.kind, null),
 					p_include_done: input.include_done === true,
 					p_limit: limit,
 				});
+				const rows = await search(query);
 				notes.push(query ? `recall ${oneLine(query).slice(0, 60)}` : "recall");
+				// Words about the list itself ("to-do", "tasks") match no note's text, which
+				// read as an empty memory: the newest are shown instead, saying so.
+				if (query && !rows?.length) {
+					const newest = await search(null);
+					if (newest?.length) return { notes: newest.map(noteView), matched: false, note: "Nothing held those words, so these are the newest instead." };
+				}
 				return { notes: (rows ?? []).map(noteView) };
 			},
 		},

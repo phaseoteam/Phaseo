@@ -10,11 +10,8 @@ CREATE OR REPLACE FUNCTION public.workspace_department_budget_status (
   AS $function$
 -- Each department budget in the workspace with its spend so far in the current UTC period, as
 -- a JSON array ordered by department and period. A department's spend is the cost of the API
--- keys linked to it (keys.department_id), plus, for keys not linked to any department, the keys
--- its members created and their OAuth requests (OAuth requests use the user's delegated key).
--- A member's departments are their department grants, or their directory override when one is
--- enabled, as the gateway's rate limits count them; a member in several departments counts
--- toward each. Spend comes from v2_private_usage_15m, which is rebuilt hourly and so lags, plus
+-- keys private.department_budget_key_departments gives it: keys linked to it, plus, for keys not
+-- linked to any department, the keys its members created and their OAuth requests. Spend comes from v2_private_usage_15m, which is rebuilt hourly and so lags, plus
 -- async jobs and realtime sessions from gateway_requests, which the rollup leaves out.
 declare
   v_result jsonb;
@@ -29,32 +26,9 @@ begin
     cross join lateral private.spend_limit_period(b.interval, p_now) p
     where b.workspace_id = p_workspace_id
   ),
-  overrides as (
-    select o.user_id, o.department_id
-    from public.workspace_member_overrides o
-    where o.workspace_id = p_workspace_id
-      and o.department_override_enabled
-  ),
-  member_departments as (
-    select g.user_id, g.department_id
-    from public.workspace_department_grants g
-    where g.workspace_id = p_workspace_id
-      and not exists (select 1 from overrides o where o.user_id = g.user_id)
-    union
-    select o.user_id, o.department_id from overrides o where o.department_id is not null
-  ),
   key_departments as (
-    select k.id as key_id, k.department_id
-    from public.keys k
-    where k.workspace_id = p_workspace_id
-      and k.department_id in (select b.department_id from budgets b)
-    union
-    select k.id, m.department_id
-    from public.keys k
-    join member_departments m on m.user_id = coalesce(k.oauth_user_id, k.created_by)
-    where k.workspace_id = p_workspace_id
-      and k.department_id is null
-      and m.department_id in (select b.department_id from budgets b)
+    select kd.key_id, kd.department_id
+    from private.department_budget_key_departments(p_workspace_id) kd
   ),
   spend as (
     select u.key_id, u.bucket_start as at, u.cost_nanos

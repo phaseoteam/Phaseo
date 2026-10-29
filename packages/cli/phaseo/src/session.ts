@@ -1,6 +1,7 @@
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { accessSync, constants, realpathSync } from "node:fs";
-import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { homedir, platform as currentPlatform } from "node:os";
 import { delimiter, dirname, isAbsolute, join, win32 } from "node:path";
 
@@ -13,7 +14,7 @@ export type Session = {
 	integrationGatewayKey?: string;
 	integrationGatewayKeyId?: string;
 	integrationGatewayKeyExpiresAt?: number;
-	integrationGatewayCredentials?: Record<string, { key: string; keyId: string }>;
+	integrationGatewayCredentials?: Record<string, { key: string; keyId: string; expiresAt?: number }>;
 };
 
 type SessionBackend = "dpapi-file" | "keychain" | "secret-service" | "file" | "unavailable";
@@ -111,6 +112,7 @@ function parseSession(raw: string): Session | null {
 			if (!parsed.integrationGatewayCredentials || typeof parsed.integrationGatewayCredentials !== "object" || Array.isArray(parsed.integrationGatewayCredentials)) return null;
 			for (const value of Object.values(parsed.integrationGatewayCredentials)) {
 				if (!value || typeof value !== "object" || typeof value.key !== "string" || !value.key || typeof value.keyId !== "string" || !value.keyId) return null;
+				if (value.expiresAt !== undefined && (typeof value.expiresAt !== "number" || !Number.isFinite(value.expiresAt))) return null;
 			}
 		}
 		const integrationFields = [
@@ -135,9 +137,11 @@ function parseSession(raw: string): Session | null {
 	}
 }
 
-async function runCommand(file: string, args: string[], input?: string): Promise<string> {
+export async function runCommand(file: string, args: string[], input?: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const child = spawn(file, args, { stdio: "pipe" });
+		// A helper that exits before reading stdin raises EPIPE here; the exit code reports the failure.
+		child.stdin.on("error", () => undefined);
 		let stdout = "";
 		let stderr = "";
 		child.stdout.setEncoding("utf8");
@@ -225,43 +229,131 @@ async function clearDpapiSession(): Promise<void> {
 	await rm(secureSessionPath(), { force: true }).catch(() => undefined);
 }
 
-async function readKeychainSession(): Promise<Session | null> {
+const SESSION_KEY_SERVICE = "phaseo-cli-session-key";
+const KEYCHAIN_FILE_AAD = Buffer.from("phaseo-cli-session-v1");
+const GCM_NONCE_BYTES = 12;
+const GCM_TAG_BYTES = 16;
+
+export type SecurityCommand = (args: string[], input?: string) => Promise<string>;
+
+function keychainSessionPath(): string {
+	return join(configDir(), "session.keychain.enc");
+}
+
+/**
+ * `security -i` reads commands from stdin, so the value (hex-encoded with -X) never appears in a
+ * process argument list. Interactive input is capped at 4096 bytes, so only a 32-byte data key is
+ * stored this way; the session itself is encrypted with that key in a local file.
+ */
+export function keychainAddCommand(service: string, value: string): { args: string[]; input: string } {
+	return {
+		args: ["-i"],
+		input: `add-generic-password -U -a ${SESSION_ACCOUNT} -s ${service} -X ${Buffer.from(value, "utf8").toString("hex")}\n`,
+	};
+}
+
+export function encryptSessionPayload(session: Session, key: Buffer): string {
+	const iv = randomBytes(GCM_NONCE_BYTES);
+	const cipher = createCipheriv("aes-256-gcm", key, iv, { authTagLength: GCM_TAG_BYTES });
+	cipher.setAAD(KEYCHAIN_FILE_AAD);
+	const data = Buffer.concat([cipher.update(JSON.stringify(session), "utf8"), cipher.final()]);
+	return `${JSON.stringify({ version: 1, iv: iv.toString("base64"), tag: cipher.getAuthTag().toString("base64"), data: data.toString("base64") })}\n`;
+}
+
+export function decryptSessionPayload(payload: string, key: Buffer): Session | null {
 	try {
-		const raw = await runCommand(credentialHelperPath("keychain"), [
-			"find-generic-password",
-			"-a",
-			SESSION_ACCOUNT,
-			"-s",
-			SESSION_SERVICE,
-			"-w",
-		]);
-		return parseSession(raw);
+		const parsed = JSON.parse(payload) as { version?: unknown; iv?: unknown; tag?: unknown; data?: unknown };
+		if (parsed.version !== 1 || typeof parsed.iv !== "string" || typeof parsed.tag !== "string" || typeof parsed.data !== "string") return null;
+		const iv = Buffer.from(parsed.iv, "base64");
+		const tag = Buffer.from(parsed.tag, "base64");
+		// GCM accepts truncated tags unless the length is pinned, which weakens authentication.
+		if (iv.length !== GCM_NONCE_BYTES || tag.length !== GCM_TAG_BYTES) return null;
+		const decipher = createDecipheriv("aes-256-gcm", key, iv, { authTagLength: GCM_TAG_BYTES });
+		decipher.setAAD(KEYCHAIN_FILE_AAD);
+		decipher.setAuthTag(tag);
+		const plain = Buffer.concat([decipher.update(Buffer.from(parsed.data, "base64")), decipher.final()]);
+		return parseSession(plain.toString("utf8"));
 	} catch {
 		return null;
 	}
 }
 
+async function writePrivateFileAtomically(file: string, contents: string): Promise<void> {
+	await mkdir(dirname(file), { recursive: true, mode: 0o700 });
+	const temporary = `${file}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`;
+	try {
+		await writeFile(temporary, contents, { mode: 0o600, flag: "wx" });
+		await chmod(temporary, 0o600);
+		await rename(temporary, file);
+	} catch (error) {
+		await rm(temporary, { force: true }).catch(() => undefined);
+		throw error;
+	}
+}
+
+/**
+ * macOS session storage: a random 32-byte data key in the Keychain and the session in a 0600 file
+ * encrypted with AES-256-GCM. Sessions stored whole in the Keychain by older versions are migrated
+ * on first read.
+ */
+export function createKeychainSessionStore(security: SecurityCommand) {
+	const find = async (service: string) => security(["find-generic-password", "-a", SESSION_ACCOUNT, "-s", service, "-w"]).then((value) => value.trim(), () => null);
+	const remove = (service: string) => security(["delete-generic-password", "-a", SESSION_ACCOUNT, "-s", service]).then(() => undefined, () => undefined);
+	const readKey = async (): Promise<Buffer | null> => {
+		const value = await find(SESSION_KEY_SERVICE);
+		return value && /^[0-9a-f]{64}$/.test(value) ? Buffer.from(value, "hex") : null;
+	};
+	const createKey = async (): Promise<Buffer> => {
+		const value = randomBytes(32).toString("hex");
+		const command = keychainAddCommand(SESSION_KEY_SERVICE, value);
+		await security(command.args, command.input).catch(() => undefined);
+		// Interactive mode can exit 0 after a failed command, so confirm the stored value.
+		const stored = await readKey();
+		if (!stored || stored.toString("hex") !== value) throw new Error("the macOS Keychain did not store the session key");
+		return stored;
+	};
+	const write = async (session: Session): Promise<void> => {
+		const key = await readKey() ?? await createKey();
+		await writePrivateFileAtomically(keychainSessionPath(), encryptSessionPayload(session, key));
+	};
+	return {
+		write,
+		async read(): Promise<Session | null> {
+			const key = await readKey();
+			if (key) {
+				const payload = await readFile(keychainSessionPath(), "utf8").catch(() => null);
+				if (payload !== null) return decryptSessionPayload(payload, key);
+			}
+			const legacy = await find(SESSION_SERVICE);
+			const session = legacy ? parseSession(legacy) : null;
+			if (session) {
+				const migrated = await write(session).then(() => true, () => false);
+				if (migrated) await remove(SESSION_SERVICE);
+			}
+			return session;
+		},
+		async clear(): Promise<void> {
+			await rm(keychainSessionPath(), { force: true }).catch(() => undefined);
+			await remove(SESSION_KEY_SERVICE);
+			await remove(SESSION_SERVICE);
+		},
+	};
+}
+
+function keychainStore() {
+	return createKeychainSessionStore((args, input) => runCommand(credentialHelperPath("keychain"), args, input));
+}
+
+async function readKeychainSession(): Promise<Session | null> {
+	return keychainStore().read();
+}
+
 async function writeKeychainSession(session: Session): Promise<void> {
-	await runCommand(credentialHelperPath("keychain"), [
-		"add-generic-password",
-		"-U",
-		"-a",
-		SESSION_ACCOUNT,
-		"-s",
-		SESSION_SERVICE,
-		"-w",
-		JSON.stringify(session),
-	]);
+	await keychainStore().write(session);
 }
 
 async function clearKeychainSession(): Promise<void> {
-	await runCommand(credentialHelperPath("keychain"), [
-		"delete-generic-password",
-		"-a",
-		SESSION_ACCOUNT,
-		"-s",
-		SESSION_SERVICE,
-	]).catch(() => undefined);
+	await keychainStore().clear();
 }
 
 async function readSecretServiceSession(): Promise<Session | null> {

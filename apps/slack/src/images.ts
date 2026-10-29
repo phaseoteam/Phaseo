@@ -69,7 +69,7 @@ export function generateImageTool(options: {
 }): AgentTool<any, any> {
 	return {
 		id: GENERATE_IMAGE_TOOL_ID,
-		description: `Make an image from a text description and post it in this Slack thread. Use it when someone asks for a picture, illustration, icon or similar; for charts of numbers, use make_chart instead. Describe the image fully in the prompt (subject, style, colours, any text it should show). One answer can make up to ${MAX_IMAGES_PER_ANSWER} images, and each costs a few cents of the answer's limit. The image appears in the thread on its own; in your reply, say briefly what you made.`,
+		description: `Make an image from a text description and post it in this Slack thread. Use it when someone asks for a picture, illustration, icon or similar; for charts of numbers, use make_chart instead. Describe the image fully in the prompt (subject, style, colours, any text it should show). One answer can make up to ${MAX_IMAGES_PER_ANSWER} images, and each costs a few cents of the answer's limit. The image appears in the thread on its own, before or after your reply, so never say it is above or below; in your reply, say briefly what you made.`,
 		parameters: {
 			type: "object",
 			properties: {
