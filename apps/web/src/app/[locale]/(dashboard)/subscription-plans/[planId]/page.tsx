@@ -7,6 +7,7 @@ import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPubl
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 async function fetchPlan(baseId: string) {
 	try {
@@ -48,7 +49,7 @@ export async function generateMetadata(props: {
 	if (primaryPrice) {
 		const t = await getTranslations({ locale: isPublicLocale(locale) ? locale : "en-GB" });
 		priceSnippet = formatSubscriptionPrice(primaryPrice,
-			(amount, currency) => new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 8 }).format(amount),
+			(amount, currency) => new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency, maximumFractionDigits: 8 }).format(amount),
 			localizedSubscriptionPriceLabels(locale, { custom: messages.metadata.customPricing, usage: messages.metadata.usagePricing,
 				unknown: t("Common.status.unknown"), from: t("Common.ui.subscriptionCatalog.starting_at"), seat: t("Common.ui.subscriptionCatalog.seat"),
 				introductory: t("Common.ui.subscriptionCatalog.introductory"), firstCycle: t("Common.ui.subscriptionCatalog.first_billing_cycle"), cycleCount: t("Common.ui.subscriptionCatalog.number_of_cycles") }));

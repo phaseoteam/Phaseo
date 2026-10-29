@@ -20,6 +20,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { applyArtificialAnalysisOrganisationColours, artificialAnalysisChartColour, artificialAnalysisConfigurationRank, artificialAnalysisSummaryRank, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisProgressIndexId, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark, isArtificialAnalysisProgressIndex, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const configurationOrder = ["none", "low", "medium", "high", "xhigh", "max"];
 const metricIcons = {
@@ -76,11 +77,11 @@ type Configuration = NonNullable<PublicBenchmarkRankingEntry["configurations"]>[
 function AnimatedScore({ benchmarkId, score }: { benchmarkId: string; score: number }) {
 	const locale = useLocale();
 	const cost = isArtificialAnalysisCostBenchmark(benchmarkId);
-	return <span className="tabular-nums">{cost ? "$" : ""}<NumberFlow locales={locale} value={score} format={cost ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { minimumFractionDigits: 1, maximumFractionDigits: 1 }} /></span>;
+	return <span className="tabular-nums">{cost ? "$" : ""}<NumberFlow locales={cost ? MONEY_LOCALE : locale} value={score} format={cost ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { minimumFractionDigits: 1, maximumFractionDigits: 1 }} /></span>;
 }
 
 function barScore(benchmarkId: string, score: number, locale: string) {
-	if (isArtificialAnalysisCostBenchmark(benchmarkId)) return `$${new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(score)}`;
+	if (isArtificialAnalysisCostBenchmark(benchmarkId)) return `$${new Intl.NumberFormat(MONEY_LOCALE, { notation: "compact", maximumFractionDigits: 1 }).format(score)}`;
 	return Number(score).toLocaleString(locale, { maximumFractionDigits: 1 });
 }
 

@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 type CatalogTranslator = ReturnType<typeof useTranslations<"SettingsUI">>;
 import type { ReactNode } from "react";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 import { AlertTriangle, Info, Route, Server } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,7 @@ function usePreviewCopy() {
 		if (!Number.isFinite(priceNanos) || !Number.isFinite(unitQuantity) || unitQuantity <= 0) return t("providerCatalogCopy.notListed");
 		const price = (priceNanos / 1_000_000_000) * (1_000_000 / unitQuantity);
 		if (!Number.isFinite(price)) return t("providerCatalogCopy.notListed");
-		return t("providerCatalogCopy.pricePerMillion", {price: new Intl.NumberFormat(locale, {style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: price >= 1 ? 2 : 4}).format(price)});
+		return t("providerCatalogCopy.pricePerMillion", {price: new Intl.NumberFormat(MONEY_LOCALE, {style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: price >= 1 ? 2 : 4}).format(price)});
 	};
 	return {t, locale, formatDate, formatLabel, formatPrice, modalities};
 }

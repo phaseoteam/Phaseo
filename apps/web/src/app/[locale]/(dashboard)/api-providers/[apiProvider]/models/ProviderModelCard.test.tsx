@@ -9,7 +9,7 @@ import { ProviderModelCard } from "./ProviderModelCard";
 jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({
 	useDisplayFormatters: () => ({
 		number: (value: number, options?: Intl.NumberFormatOptions) =>
-			new Intl.NumberFormat("en-GB", options).format(value),
+			new Intl.NumberFormat(options?.style === "currency" ? "en-US" : "en-GB", options).format(value),
 		calendarDate: (value: string) => value.slice(0, 10),
 	}),
 }));

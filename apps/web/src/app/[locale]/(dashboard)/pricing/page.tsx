@@ -34,6 +34,7 @@ import { EnterprisePricingSection } from "./EnterprisePricingSection";
 import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
 	const { locale } = await params;
@@ -817,7 +818,7 @@ export default async function PricingPage() {
 		fee: basicTier.feePct,
 		serviceFee: BYOK_SERVICE_FEE_PERCENT,
 		freeRequests: BYOK_MONTHLY_FREE_REQUESTS,
-		minimum: new Intl.NumberFormat(locale, {
+		minimum: new Intl.NumberFormat(MONEY_LOCALE, {
 			style: "currency",
 			currency: "USD",
 			maximumFractionDigits: 0,

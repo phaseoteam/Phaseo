@@ -5,9 +5,9 @@ describe("AA cost display", () => {
   expect(formatDashboardCost(0, "en-GB")).toBe("$0");
   expect(formatDashboardCost(0.0000123, "en-GB")).toBe("$0.0000123");
   expect(formatDashboardCost(-0.00123, "en-GB")).toBe("-$0.00123");
-  expect(formatDashboardCost(12345, "en-GB", true, 3)).toBe("$12.3k");
+  expect(formatDashboardCost(12345, "en-GB", true, 3)).toBe("$12.3K");
   expect(formatDashboardCost(0.130751908699, "en-GB")).toBe("$0.1308");
-  expect(formatDashboardCost(0.00123, "de-DE")).toContain("0,00123");
+  expect(formatDashboardCost(0.00123, "de-DE")).toBe("$0.00123");
  });
  it("keeps group maxima legible when neighbouring low-cost configurations cluster", () => {
   const labels = [
