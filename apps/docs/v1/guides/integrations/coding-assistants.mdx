@@ -34,7 +34,7 @@ phaseo codex
 
 Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. The isolated CLI runners are `cline`, `kilo`, `omp`, `muse`, and `minimax`.
 
-The CLI creates a separate, non-expiring API key named for that assistant. It configures Aider and Continue automatically on clean installations, and writes Zed's provider/model settings automatically. For assistants that keep secrets exclusively in an editor UI, it prints the exact remaining fields, links the dedicated guide, and lets you copy only that assistant's key:
+The CLI creates a separate API key named for that assistant, which expires after 90 days and has a $100 monthly spend limit. It configures Aider and Continue automatically on clean installations, and writes Zed's provider/model settings automatically. For assistants that keep secrets exclusively in an editor UI, it prints the exact remaining fields, links the dedicated guide, and lets you copy only that assistant's key:
 
 ```bash
 phaseo integrations credential codex

@@ -212,7 +212,7 @@ phaseo cursor
 phaseo zed
 ```
 
-`phaseo <integration>` checks whether a first-party harness is installed when the integration supports managed installation. When it is missing in an interactive terminal, Phaseo shows the exact supported install command and asks for confirmation before running it. After installation, Phaseo creates a dedicated non-expiring gateway key and writes the integration configuration. Non-interactive runs fail with the install command instead of making an unattended system change. Use `--skip-install` when the harness is managed separately, or `--dry-run` to preview the installer and file changes. The explicit `phaseo setup <integration>` form remains supported for scripts and compatibility.
+`phaseo <integration>` checks whether a first-party harness is installed when the integration supports managed installation. When it is missing in an interactive terminal, Phaseo shows the exact supported install command and asks for confirmation before running it. After installation, Phaseo creates a dedicated gateway key (90-day expiry, $100 monthly spend limit) and writes the integration configuration. Non-interactive runs fail with the install command instead of making an unattended system change. Use `--skip-install` when the harness is managed separately, or `--dry-run` to preview the installer and file changes. The explicit `phaseo setup <integration>` form remains supported for scripts and compatibility.
 
 `phaseo claude` is an alias for `phaseo claude-code`, and `phaseo dsh` is an alias for `phaseo deepseek-harness`.
 
@@ -260,7 +260,7 @@ Codex receives a dedicated `phaseo` profile at `~/.codex/phaseo.config.toml`, le
 codex --profile phaseo
 ```
 
-Setup creates one non-expiring gateway key per integration with a descriptive name such as `Phaseo CLI: Codex API Key`. The CLI retains each key in the OS credential store and revokes it when that integration is removed. Codex and Claude Code use credential helpers, so their application configuration never contains the key:
+Setup creates one gateway key per integration with a descriptive name such as `Phaseo CLI: Codex API Key`. Each key expires after 90 days. The CLI retains each key in the OS credential store and revokes it when that integration is removed. Codex and Claude Code use credential helpers, so their application configuration never contains the key:
 
 ```bash
 phaseo login
