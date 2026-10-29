@@ -119,6 +119,21 @@ The workbench page is not only chat:
 
 That makes it useful for onboarding, QA, and internal debugging before you build a more polished end-user UI.
 
+## Token lifetimes
+
+When someone signs in, the token endpoint (`https://api.phaseo.app/oauth/token`) returns two tokens:
+
+| Token | Lasts | Use |
+| --- | --- | --- |
+| `access_token` | 7 days (`expires_in`) | Send it as `Authorization: Bearer` on gateway requests. It spends credits in the workspace the person chose. |
+| `refresh_token` | 90 days from its last use | Send it with `grant_type=refresh_token` to get a new pair. |
+
+- Each refresh returns a new access token and a new refresh token. Store both and drop the old ones: the old access token stops working at once, and the old refresh token can't be used again.
+- You can refresh after the access token has expired, as long as the refresh token hasn't.
+- Using a refresh token a second time ends the sign-in. Phaseo treats it as a leaked token and revokes the access token and every refresh token from that sign-in, so the person has to sign in again.
+- A refresh never adds scopes. It keeps the scopes the person approved, minus any they have since removed.
+- Refreshing fails once the person revokes your app, revokes or turns off its key, or leaves the workspace. Send them through sign-in again.
+
 ## Prerequisites
 
 - Node.js and one supported package manager

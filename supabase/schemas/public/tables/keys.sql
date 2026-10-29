@@ -77,6 +77,12 @@ CREATE TRIGGER protect_revoked_key_status
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_revoked_key_status();
 
+CREATE TRIGGER revoke_oauth_refresh_tokens_for_inactive_key
+  AFTER UPDATE OF status ON public.keys
+  FOR EACH ROW
+  WHEN (((old.status = 'active'::text) AND (new.status IS DISTINCT FROM 'active'::text) AND (new.key_kind = 'oauth_delegated'::text)))
+  EXECUTE FUNCTION public.revoke_oauth_refresh_tokens_for_inactive_key();
+
 CREATE POLICY "keys_delete_own_team" ON "public"."keys"
   FOR DELETE
   TO "authenticated"

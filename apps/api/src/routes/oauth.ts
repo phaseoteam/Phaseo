@@ -503,9 +503,9 @@ oauthRouter.post(
 			application_type: applicationType,
 			redirect_uris: safeRedirectUris,
 			response_types: ["code"],
-			// Dynamic clients receive resource-bound delegated access keys rather
-			// than refresh-token families, so register only the grant we issue.
-			grant_types: ["authorization_code"],
+			// Dynamic clients receive resource-bound delegated access keys with a
+			// refresh token that renews the same key.
+			grant_types: ["authorization_code", "refresh_token"],
 			token_endpoint_auth_method: "none",
 			scope: grantedScopes.join(" "),
 		}, 201, { "Cache-Control": "no-store" });
@@ -989,7 +989,8 @@ oauthRouter.post(
 				return oauthError("invalid_scope", "Management scopes are only available on tokens bound to the Phaseo MCP");
 			}
 			// The CLI retains refreshable sessions for `login`, logout, and token
-			// renewal. Third-party PKCE clients receive durable user-funded keys.
+			// renewal. Third-party PKCE clients receive a user-funded delegated key
+			// and a refresh token that renews that same key.
 			const tokens = isFirstPartyCliClient(client.id)
 				? await issueTokenPairForGrant(
 					{ type: "authorization_code", id: String(data.id) },

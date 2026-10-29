@@ -119,11 +119,26 @@ La página del entorno de trabajo no solo sirve para chatear:
 
 Esto resulta útil para la incorporación, el control de calidad y la depuración interna antes de crear una interfaz más pulida para los usuarios.
 
+## Duración de los tokens
+
+Cuando alguien inicia sesión, el endpoint de tokens (`https://api.phaseo.app/oauth/token`) devuelve dos tokens:
+
+| Token | Duración | Uso |
+| --- | --- | --- |
+| `access_token` | 7 días (`expires_in`) | Envíalo como `Authorization: Bearer` en las solicitudes al gateway. Gasta créditos en el espacio de trabajo que eligió la persona. |
+| `refresh_token` | 90 días desde su último uso | Envíalo con `grant_type=refresh_token` para obtener un par nuevo. |
+
+- Cada actualización devuelve un token de acceso nuevo y un token de actualización nuevo. Guarda ambos y descarta los anteriores: el token de acceso anterior deja de funcionar de inmediato y el token de actualización anterior no se puede volver a usar.
+- Puedes actualizar después de que caduque el token de acceso, siempre que el token de actualización no haya caducado.
+- Usar un token de actualización por segunda vez termina la sesión. Phaseo lo trata como un token filtrado y revoca el token de acceso y todos los tokens de actualización de esa sesión, así que la persona tiene que volver a iniciar sesión.
+- Una actualización nunca añade ámbitos. Conserva los ámbitos que aprobó la persona, menos los que haya quitado desde entonces.
+- La actualización falla en cuanto la persona revoca tu app, revoca o desactiva su clave, o abandona el espacio de trabajo. Pídele que vuelva a iniciar sesión.
+
 ## Requisitos previos
 
-- - Node.js y un administrador de paquetes compatible
-- - un cliente OAuth configurado con la URL de callback local
-- - un secreto de sesión seguro
+- Node.js y un administrador de paquetes compatible
+- un cliente OAuth configurado con la URL de callback local
+- un secreto de sesión seguro
 
 ## Ejecuta el ejemplo
 
@@ -193,9 +208,9 @@ Abre `http://localhost:3000`.
 
 ## Adapta el ejemplo
 
-- - limita la lista de permitidos del proxy a los endpoints que realmente necesita tu producto
-- - mantén el entorno de trabajo para uso interno mientras creas una interfaz más sencilla para los usuarios
-- - sustituye el probador genérico por flujos específicos del producto cuando la integración se estabilice
+- limita la lista de permitidos del proxy a los endpoints que realmente necesita tu producto
+- mantén el entorno de trabajo para uso interno mientras creas una interfaz más sencilla para los usuarios
+- sustituye el probador genérico por flujos específicos del producto cuando la integración se estabilice
 
 ## Guías relacionadas
 

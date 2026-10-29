@@ -150,7 +150,7 @@ Missing Cline, Kilo Code, and oh-my-pi installations are offered interactively. 
 
 ## OAuth apps
 
-Phaseo uses one OAuth authorization server for the first-party CLI, user-created applications, and dynamically registered MCP clients. The CLI uses browser or device login with rotating refresh tokens. Third-party clients use authorization code with PKCE, explicit scopes and workspace consent, revocable delegated access tokens, and optional protected-resource binding.
+Phaseo uses one OAuth authorization server for the first-party CLI, user-created applications, and dynamically registered MCP clients. The CLI uses browser or device login with rotating refresh tokens. Third-party clients use authorization code with PKCE, explicit scopes and workspace consent, and optional protected-resource binding. They get a revocable delegated access token that lasts 7 days and a rotating refresh token that lasts 90 days from its last use; see [Build an OAuth Next.js Workbench](../../cookbook/build-an-oauth-nextjs-workbench) for how refresh works.
 
 The hosted Phaseo API enables third-party OAuth. Self-hosted or preview API deployments keep it disabled unless `PHASEO_THIRD_PARTY_OAUTH_ENABLED` is set to a truthy value. Accepted truthy values are `1`, `true`, `yes`, and `on`, matched case-insensitively after trimming whitespace. Enabling it exposes user-created OAuth app management and dynamic client registration, so pair it with reviewed redirect URI, consent, client-secret, rate-limit, and workspace authorization configuration.
 
