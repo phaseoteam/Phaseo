@@ -5120,8 +5120,9 @@ paths:
         Creates a daily, weekly, or monthly spend budget for one department.
         Once the department has used it, API-key requests that count toward the
         department return 429 key_limit_exceeded until the budget resets. Batch
-        jobs, realtime sessions and OAuth requests are not blocked. Owners and
-        admins get a mobile push at about 80% and at 100%.
+        jobs, realtime sessions and OAuth requests are not blocked. If the budget
+        check is briefly unavailable, requests are allowed rather than refused.
+        Owners and admins get a mobile push at about 80% and at 100%.
       requestBody:
         required: true
         content:
@@ -5202,8 +5203,8 @@ paths:
       operationId: deleteDepartmentBudget
       summary: Delete a department budget
       description: >-
-        Removes a department budget. Requests are no longer refused because of
-        it, and its alerts stop.
+        Removes a department budget. Within about a minute, requests are no
+        longer refused because of it, and its alerts stop.
       responses:
         '200':
           description: Department budget deleted

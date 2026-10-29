@@ -6915,7 +6915,7 @@
 		"departments": {
 			"title": "Abteilungsbudgets",
 			"blocksAtLimit": "Blockiert bei 100 %",
-			"description": "Lege fest, was jede Abteilung pro Tag, Woche oder Monat ausgeben darf. Ist ein Budget aufgebraucht, werden API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, bis zum Zurücksetzen abgelehnt. Inhaber und Admins werden bei etwa 80 % und 100 % benachrichtigt.",
+			"description": "Lege fest, was jede Abteilung pro Tag, Woche oder Monat ausgeben darf. Ist ein Budget aufgebraucht, werden API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, bis zum Zurücksetzen abgelehnt. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Admins werden bei etwa 80 % und 100 % benachrichtigt.",
 			"add": "Abteilungsbudget hinzufügen",
 			"unavailable": "Die Abteilungsbudgets konnten nicht geladen werden. Lade die Seite neu, um es noch einmal zu versuchen.",
 			"empty": "Noch keine Abteilungsbudgets.",
@@ -6928,11 +6928,11 @@
 			"period": "Zeitraum",
 			"createTitle": "Abteilungsbudget hinzufügen",
 			"editTitle": "Abteilungsbudget bearbeiten",
-			"limitHelp": "Erreichen die Ausgaben der Abteilung im Zeitraum diesen Betrag, werden ihre API-Schlüssel-Anfragen abgelehnt, bis der Zeitraum zurückgesetzt wird. Batch-, Echtzeit- und OAuth-Anfragen werden nicht blockiert. Inhaber und Admins werden bei etwa 80 % und 100 % benachrichtigt.",
+			"limitHelp": "Erreichen die Ausgaben der Abteilung im Zeitraum diesen Betrag, werden ihre API-Schlüssel-Anfragen abgelehnt, bis der Zeitraum zurückgesetzt wird. Batch-, Echtzeit- und OAuth-Anfragen werden nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Admins werden bei etwa 80 % und 100 % benachrichtigt.",
 			"saved": "Abteilungsbudget gespeichert",
 			"deleted": "Abteilungsbudget gelöscht",
 			"deleteTitle": "Dieses Abteilungsbudget löschen?",
-			"deleteBody": "Anfragen werden wegen dieses Budgets nicht mehr abgelehnt, und Inhaber und Admins erhalten für {department} in diesem Zeitraum keine Ausgabenbenachrichtigungen mehr.",
+			"deleteBody": "Innerhalb von etwa einer Minute werden Anfragen wegen dieses Budgets nicht mehr abgelehnt, und Inhaber und Admins erhalten für {department} in diesem Zeitraum keine Ausgabenbenachrichtigungen mehr.",
 			"errorDepartment": "Wähle eine Abteilung aus.",
 			"errorConflict": "Diese Abteilung hat für diesen Zeitraum bereits ein Budget. Lade die Seite neu, um es zu bearbeiten.",
 			"errorNotFound": "Diese Abteilung oder dieses Budget gibt es nicht mehr. Lade die Seite neu."

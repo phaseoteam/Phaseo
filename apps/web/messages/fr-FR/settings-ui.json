@@ -6915,7 +6915,7 @@
 		"departments": {
 			"title": "Budgets des départements",
 			"blocksAtLimit": "Bloque à 100 %",
-			"description": "Définissez ce que chaque département peut dépenser par jour, par semaine ou par mois. Une fois un budget épuisé, les requêtes par clé API imputées au département sont refusées jusqu'à sa réinitialisation. Les propriétaires et les administrateurs sont prévenus à environ 80 % et 100 %.",
+			"description": "Définissez ce que chaque département peut dépenser par jour, par semaine ou par mois. Une fois un budget épuisé, les requêtes par clé API imputées au département sont refusées jusqu'à sa réinitialisation. Si la vérification du budget est brièvement indisponible, les requêtes sont acceptées plutôt que refusées. Les propriétaires et les administrateurs sont prévenus à environ 80 % et 100 %.",
 			"add": "Ajouter un budget de département",
 			"unavailable": "Impossible de charger les budgets des départements. Actualisez la page pour réessayer.",
 			"empty": "Aucun budget de département pour le moment.",
@@ -6928,11 +6928,11 @@
 			"period": "Période",
 			"createTitle": "Ajouter un budget de département",
 			"editTitle": "Modifier le budget du département",
-			"limitHelp": "Lorsque les dépenses du département sur la période atteignent ce montant, ses requêtes par clé API sont refusées jusqu'à la réinitialisation de la période. Les requêtes par lots, en temps réel et OAuth ne sont pas bloquées. Les propriétaires et les administrateurs sont prévenus à environ 80 % et 100 %.",
+			"limitHelp": "Lorsque les dépenses du département sur la période atteignent ce montant, ses requêtes par clé API sont refusées jusqu'à la réinitialisation de la période. Les requêtes par lots, en temps réel et OAuth ne sont pas bloquées. Si la vérification du budget est brièvement indisponible, les requêtes sont acceptées plutôt que refusées. Les propriétaires et les administrateurs sont prévenus à environ 80 % et 100 %.",
 			"saved": "Budget du département enregistré",
 			"deleted": "Budget du département supprimé",
 			"deleteTitle": "Supprimer ce budget de département ?",
-			"deleteBody": "Les requêtes ne seront plus refusées à cause de ce budget, et les propriétaires et les administrateurs ne recevront plus d'alertes de dépenses pour {department} sur cette période.",
+			"deleteBody": "D'ici une minute environ, les requêtes ne seront plus refusées à cause de ce budget, et les propriétaires et les administrateurs ne recevront plus d'alertes de dépenses pour {department} sur cette période.",
 			"errorDepartment": "Choisissez un département.",
 			"errorConflict": "Ce département a déjà un budget pour cette période. Actualisez la page pour le modifier.",
 			"errorNotFound": "Ce département ou ce budget n'existe plus. Actualisez la page."

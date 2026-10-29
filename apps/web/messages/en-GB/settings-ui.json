@@ -6915,7 +6915,7 @@
 		"departments": {
 			"title": "Department budgets",
 			"blocksAtLimit": "Blocks at 100%",
-			"description": "Set what each department can spend each day, week or month. Once a budget is used up, API-key requests that count toward the department are refused until it resets. Owners and admins are notified at about 80% and 100%.",
+			"description": "Set what each department can spend each day, week or month. Once a budget is used up, API-key requests that count toward the department are refused until it resets. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins are notified at about 80% and 100%.",
 			"add": "Add department budget",
 			"unavailable": "Department budgets couldn't be loaded. Refresh the page to try again.",
 			"empty": "No department budgets yet.",
@@ -6928,11 +6928,11 @@
 			"period": "Period",
 			"createTitle": "Add a department budget",
 			"editTitle": "Edit department budget",
-			"limitHelp": "Once the department's spend in the period reaches this amount, its API-key requests are refused until the period resets. Batch, realtime and OAuth requests are not blocked. Owners and admins are notified at about 80% and 100%.",
+			"limitHelp": "Once the department's spend in the period reaches this amount, its API-key requests are refused until the period resets. Batch, realtime and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins are notified at about 80% and 100%.",
 			"saved": "Department budget saved",
 			"deleted": "Department budget deleted",
 			"deleteTitle": "Delete this department budget?",
-			"deleteBody": "Requests will no longer be refused because of this budget, and owners and admins will stop getting spend alerts for {department} over this period.",
+			"deleteBody": "Within about a minute, requests will no longer be refused because of this budget, and owners and admins will stop getting spend alerts for {department} over this period.",
 			"errorDepartment": "Choose a department.",
 			"errorConflict": "This department already has a budget for that period. Refresh the page to edit it.",
 			"errorNotFound": "This department or budget no longer exists. Refresh the page."

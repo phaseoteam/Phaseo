@@ -181,7 +181,7 @@ try {
     assert.deepEqual(await sweep(NOW), { budgets: 4, alerted: 2 });
     let sent = await events();
     assert.deepEqual(sent.map(e => [e.kind, e.title, e.body, e.href]).sort(), [
-        ['department_budget_reached', 'Sales has used its daily budget', "$11.00 of $10.00 so far today. Requests from the department's API keys are now refused until the budget resets.", '/settings/usage/overview'],
+        ['department_budget_reached', 'Sales has used its daily budget', "$11.00 of $10.00 so far today. Requests from the department's API keys are now refused until the budget resets (batch jobs, realtime sessions and OAuth requests excepted).", '/settings/usage/overview'],
         ['department_budget_warning', 'Engineering is at about 80% of its monthly budget', '$84.00 of $100.00 so far this month.', '/settings/usage/overview'],
     ]);
     assert.ok(sent.every(e => e.dedupe_key.includes(':department_budget:')));
@@ -199,7 +199,7 @@ try {
     assert.deepEqual(await sweep(NOW), { budgets: 4, alerted: 1 });
     sent = await events();
     assert.equal(sent.at(-1).title, 'Engineering has used its monthly budget');
-    assert.equal(sent.at(-1).body, "$104.00 of $100.00 so far this month. Requests from the department's API keys are now refused until the budget resets.");
+    assert.equal(sent.at(-1).body, "$104.00 of $100.00 so far this month. Requests from the department's API keys are now refused until the budget resets (batch jobs, realtime sessions and OAuth requests excepted).");
 
     // Raising the limit mid-period can warn again at the new limit.
     await db.exec(`update public.workspace_department_budgets set limit_nanos = ${125 * DOLLAR} where department_id = '${ENG}'`);

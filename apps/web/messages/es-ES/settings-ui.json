@@ -6915,7 +6915,7 @@
 		"departments": {
 			"title": "Presupuestos de departamento",
 			"blocksAtLimit": "Bloquea al 100 %",
-			"description": "Define cuánto puede gastar cada departamento al día, a la semana o al mes. Cuando se agota un presupuesto, las solicitudes con clave API que cuentan para el departamento se rechazan hasta que se restablece. Los propietarios y administradores reciben un aviso hacia el 80 % y el 100 %.",
+			"description": "Define cuánto puede gastar cada departamento al día, a la semana o al mes. Cuando se agota un presupuesto, las solicitudes con clave API que cuentan para el departamento se rechazan hasta que se restablece. Si la comprobación del presupuesto no está disponible durante un momento, las solicitudes se permiten en lugar de rechazarse. Los propietarios y administradores reciben un aviso hacia el 80 % y el 100 %.",
 			"add": "Añadir presupuesto de departamento",
 			"unavailable": "No se pudieron cargar los presupuestos de departamento. Actualiza la página para volver a intentarlo.",
 			"empty": "Todavía no hay presupuestos de departamento.",
@@ -6928,11 +6928,11 @@
 			"period": "Periodo",
 			"createTitle": "Añadir un presupuesto de departamento",
 			"editTitle": "Editar presupuesto de departamento",
-			"limitHelp": "Cuando el gasto del departamento en el periodo alcanza este importe, sus solicitudes con clave API se rechazan hasta que el periodo se restablece. Las solicitudes por lotes, en tiempo real y OAuth no se bloquean. Los propietarios y administradores reciben un aviso hacia el 80 % y el 100 %.",
+			"limitHelp": "Cuando el gasto del departamento en el periodo alcanza este importe, sus solicitudes con clave API se rechazan hasta que el periodo se restablece. Las solicitudes por lotes, en tiempo real y OAuth no se bloquean. Si la comprobación del presupuesto no está disponible durante un momento, las solicitudes se permiten en lugar de rechazarse. Los propietarios y administradores reciben un aviso hacia el 80 % y el 100 %.",
 			"saved": "Presupuesto de departamento guardado",
 			"deleted": "Presupuesto de departamento eliminado",
 			"deleteTitle": "¿Eliminar este presupuesto de departamento?",
-			"deleteBody": "Las solicitudes dejarán de rechazarse por este presupuesto, y los propietarios y administradores dejarán de recibir alertas de gasto de {department} para este periodo.",
+			"deleteBody": "En aproximadamente un minuto, las solicitudes dejarán de rechazarse por este presupuesto, y los propietarios y administradores dejarán de recibir alertas de gasto de {department} para este periodo.",
 			"errorDepartment": "Elige un departamento.",
 			"errorConflict": "Este departamento ya tiene un presupuesto para ese periodo. Actualiza la página para editarlo.",
 			"errorNotFound": "Este departamento o presupuesto ya no existe. Actualiza la página."

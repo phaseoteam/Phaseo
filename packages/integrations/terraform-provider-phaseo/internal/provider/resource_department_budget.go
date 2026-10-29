@@ -46,7 +46,7 @@ func (r *departmentBudgetResource) Metadata(_ context.Context, req resource.Meta
 	resp.TypeName = req.ProviderTypeName + "_department_budget"
 }
 func (r *departmentBudgetResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{Description: "A department spend budget. API-key requests that count toward the department are refused once it is used up (batch, realtime and OAuth requests are not), and owners and admins are alerted at about 80% and 100%. Each department can have one budget per interval.", Attributes: map[string]schema.Attribute{
+	resp.Schema = schema.Schema{Description: "A department spend budget. API-key requests that count toward the department are refused once it is used up (batch, realtime and OAuth requests are not). If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins are alerted at about 80% and 100%. Each department can have one budget per interval.", Attributes: map[string]schema.Attribute{
 		"id":            schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 		"department_id": schema.StringAttribute{Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
 		"interval":      schema.StringAttribute{Required: true, Description: "daily, weekly or monthly (UTC periods).", Validators: []validator.String{stringvalidator.OneOf("daily", "weekly", "monthly")}},

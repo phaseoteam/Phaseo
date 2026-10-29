@@ -4869,7 +4869,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: 1 つの部門に日次、週次、または月次の支出予算を作成します。部門が予算を使い切ると、その部門に計上される API キーのリクエストは、予算がリセットされるまで 429 key_limit_exceeded を返します。バッチジョブ、リアルタイムセッション、OAuth リクエストはブロックされません。約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。
+      description: 1 つの部門に日次、週次、または月次の支出予算を作成します。部門が予算を使い切ると、その部門に計上される API キーのリクエストは、予算がリセットされるまで 429 key_limit_exceeded を返します。バッチジョブ、リアルタイムセッション、OAuth リクエストはブロックされません。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。
       requestBody:
         required: true
         content:
@@ -4949,7 +4949,7 @@ paths:
         - Gateway
       operationId: deleteDepartmentBudget
       summary: Delete a department budget
-      description: 部門予算を削除します。この予算によってリクエストが拒否されることはなくなり、アラートも停止します。
+      description: 部門予算を削除します。約 1 分以内に、この予算によってリクエストが拒否されることはなくなり、アラートも停止します。
       responses:
         '200':
           description: Department budget deleted
