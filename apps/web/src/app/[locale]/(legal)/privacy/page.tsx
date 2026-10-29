@@ -17,7 +17,7 @@ export default async function PrivacyPage() {
 	const lastUpdatedDate = new Intl.DateTimeFormat(locale, {
 		dateStyle: "long",
 		timeZone: "UTC",
-	}).format(new Date("2026-08-30T00:00:00Z"));
+	}).format(new Date("2026-10-13T00:00:00Z"));
 	const appliesItems = t.raw("privacyBody.appliesItems") as string[];
 	const dataItems = t.raw("privacyBody.dataItems") as Array<{ label: string; text: string }>;
 	const gatewayStorageItems = t.raw("privacyBody.gatewayStorageItems") as string[];

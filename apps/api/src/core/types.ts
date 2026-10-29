@@ -56,6 +56,8 @@ export type RequestMeta = {
     requestUserId?: string | null;
     sessionId?: string | null;
     trace?: Record<string, unknown> | null;
+    /** The body's `metadata` as string pairs, for Broadcast. */
+    requestMetadata?: Record<string, string> | null;
     otelTraceContext?: {
         traceId: string;
         parentSpanId: string;
@@ -116,7 +118,8 @@ export type RequestMeta = {
     gateway_ttft_ms?: number;     // Gateway request start to first generated output (user-visible TTFT)
     tpot_ms?: number;             // Average time per output token after the first token
     itl_ms?: number;              // Average inter-token latency
-    phaseo_overhead_ms?: number;  // Gateway E2E minus selected provider duration
+    phaseo_overhead_ms?: number;  // Gateway E2E minus selected provider duration and failover
+    failover_ms?: number;         // First upstream dispatch to the selected one (failed attempts)
     end_to_end_ms?: number;       // Request start to completion when available
     preserve_stream_timing?: boolean; // Internal: stream is synthetic and already has authoritative timing
     downstreamDisconnected?: boolean; // Client closed the response while the gateway continued draining upstream

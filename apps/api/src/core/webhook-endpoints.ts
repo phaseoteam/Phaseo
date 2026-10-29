@@ -344,6 +344,36 @@ export function generateWebhookSigningSecret(): string {
 	return `whsec_${randomToken(32)}`;
 }
 
+export const WEBHOOK_TIMESTAMP_HEADER = "x-phaseo-timestamp";
+export const WEBHOOK_SIGNATURE_HEADER = "x-phaseo-signature";
+
+/**
+ * Signs a webhook body the way every Phaseo webhook is signed: hex
+ * HMAC-SHA256 with the destination's secret over `${timestamp}.${body}`,
+ * where the timestamp is Unix seconds. Receivers recompute it from the raw
+ * body and the `x-phaseo-timestamp` header.
+ */
+export async function signWebhookPayload(secret: string, timestamp: string, body: string): Promise<string> {
+	const key = await crypto.subtle.importKey(
+		"raw",
+		new TextEncoder().encode(secret),
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"],
+	);
+	const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`));
+	return Array.from(new Uint8Array(signature)).map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+/** The `x-phaseo-timestamp` and `x-phaseo-signature` headers for one delivery. */
+export async function buildWebhookSignatureHeaders(secret: string, body: string, now?: Date): Promise<Record<string, string>> {
+	const timestamp = String(Math.floor((now ? now.getTime() : Date.now()) / 1000));
+	return {
+		[WEBHOOK_TIMESTAMP_HEADER]: timestamp,
+		[WEBHOOK_SIGNATURE_HEADER]: await signWebhookPayload(secret, timestamp, body),
+	};
+}
+
 export function normalizeWebhookEndpointEvents(value: unknown): string[] {
 	const source = Array.isArray(value) ? value : DEFAULT_WEBHOOK_EVENTS;
 	const out = source

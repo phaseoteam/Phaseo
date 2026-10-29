@@ -71,6 +71,48 @@ describe("non-text adapter bridge", () => {
 		}
 	});
 
+	it("routes Mistral speech through its native adapter and returns decoded audio bytes", async () => {
+		const audio = Buffer.from([9, 8, 7, 6]);
+		let sent: Record<string, unknown> | undefined;
+		const mock = installFetchMock([{
+			match: (url, init) => {
+				sent = JSON.parse(String(init?.body));
+				return url.includes("/audio/speech");
+			},
+			response: jsonResponse({ audio_data: audio.toString("base64") }),
+		}]);
+		const result = await executeNonTextAdapter({
+			ir: {
+				model: "mistral/voxtral-tts-3",
+				input: "hello",
+				voice: "preset-voice",
+				responseFormat: "flac",
+			},
+			requestId: "req_mistral_speech_1",
+			workspaceId: "team_test",
+			providerId: "mistral",
+			endpoint: "audio.speech",
+			providerModelSlug: "voxtral-mini-tts-3-0",
+			byokMeta: [],
+			pricingCard: {
+				...PRICING_CARD,
+				provider: "mistral",
+				endpoint: "audio.speech",
+				rules: [{ ...PRICING_CARD.rules[0], meter: "input_characters", unit: "character", unit_size: 1000, price_per_unit: 0.016 }],
+			},
+			meta: {},
+		} as any);
+		mock.restore();
+
+		expect(sent).toMatchObject({ model: "voxtral-mini-tts-3-0", input: "hello", voice_id: "preset-voice", response_format: "flac", stream: false });
+		expect(result.kind).toBe("completed");
+		if (result.kind === "completed") {
+			expect(result.upstream.headers.get("content-type")).toBe("audio/flac");
+			expect(Buffer.from(await result.upstream.clone().arrayBuffer())).toEqual(audio);
+			expect((result.ir as any)?.audio?.data).toBe(audio.toString("base64"));
+		}
+	});
+
 	it("forwards diarization controls through the transcription IR bridge", async () => {
 		let capturedForm: FormData | undefined;
 		const mock = installFetchMock([{

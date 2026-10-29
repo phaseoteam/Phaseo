@@ -83,8 +83,9 @@ export function renderFeedbackRequestEmail(payload: Record<string, unknown>): Fe
 	const oneClickUnsubscribeUrl = `${baseUrl}/api/_web/feedback/${token}/unsubscribe`;
 	const reward = rewardUsd(bindings.FEEDBACK_REWARD_USD);
 	// The database sets reward_available to false once the campaign's codes are used up.
+	// Only answers sent from the page earn a code; email replies don't.
 	const rewardLine = reward > 0 && payload.reward_available !== false
-		? `As a small thank-you, you'll get ${formatUsd(reward)} of Phaseo credit for answering, whatever you say (while this round's thank-you budget lasts).`
+		? `As a small thank-you, you'll get ${formatUsd(reward)} of Phaseo credit for answering on that page, whatever you say (while this round's thank-you budget lasts).`
 		: null;
 
 	const paragraphs = [

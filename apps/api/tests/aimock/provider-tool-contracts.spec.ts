@@ -12,9 +12,6 @@ import {
 } from "../../../../packages/testing/provider-mock/src/index";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../helpers/runtime";
 import { installLoopbackOnlyFetchGuard } from "../helpers/network-guard";
-import anthropicModels from "../../../../packages/data/catalog/src/data/api_providers/anthropic/models.json";
-import googleModels from "../../../../packages/data/catalog/src/data/api_providers/google-ai-studio/models.json";
-import xaiModels from "../../../../packages/data/catalog/src/data/api_providers/spacex-ai/models.json";
 
 const mock = new ProviderMockServer();
 let restoreFetch: (() => void) | undefined;
@@ -34,18 +31,22 @@ const tool = {
     },
 };
 
-function activeToolModels(models: any[]): string[] {
-    return models.filter((model) => model.is_active_gateway && model.capabilities?.some((capability: any) =>
-        capability.capability_id === "text.generate" && capability.status === "active" &&
-        capability.params?.some((parameter: any) => parameter.param_id === "tools"),
-    )).map((model) => model.provider_model_slug);
-}
+// Active text.generate models that declared the tools parameter in the catalogue (2026-10-28).
+const TOOL_MODELS_BY_PROVIDER: Record<string, string[]> = {
+    anthropic: [
+        "claude-haiku-4-5-20251001", "claude-opus-4-5-20251101", "claude-opus-4-6", "claude-opus-4-7",
+        "claude-opus-5", "claude-sonnet-4-5-20250929", "claude-opus-4-8",
+    ],
+    "google-ai-studio": [
+        "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3-flash-preview",
+        "gemini-3.1-flash-lite", "gemini-3.1-pro-preview", "gemini-3.1-pro-preview-customtools", "gemini-3.5-flash",
+        "gemini-robotics-er-1.6-preview", "gemini-robotics-er-2-preview",
+    ],
+    "x-ai": ["grok-4.20-multi-agent-beta-0309", "grok-4.3", "grok-4.5", "grok-4.6", "grok-build-0.1"],
+};
 
-const modelCases = [
-    ...activeToolModels(anthropicModels as any[]).map((model) => ["anthropic", model] as const),
-    ...activeToolModels(googleModels as any[]).map((model) => ["google-ai-studio", model] as const),
-    ...activeToolModels(xaiModels as any[]).map((model) => ["x-ai", model] as const),
-];
+const modelCases = Object.entries(TOOL_MODELS_BY_PROVIDER).flatMap(([providerId, models]) =>
+    models.map((model) => [providerId, model] as const));
 
 async function execute(providerId: string, model: string, requestId: string, additionalBody: Record<string, unknown> = {}) {
     const executor = resolveProviderExecutor(providerId, "text.generate");

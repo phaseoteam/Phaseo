@@ -21,7 +21,7 @@ import {
 import type { CompareModelOption } from "./types";
 import { ProviderLogo } from "./ProviderLogo";
 import { useCompareModelOptions, usePrefetchCompareModelOptions } from "./useCompareModelOptions";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 
 interface ModelComboboxProps {
 	/** Options the page already has: the selected models. The full list loads when the picker opens. */
@@ -94,6 +94,30 @@ function getReleaseDate(model: CompareModelOption): Date | null {
 
 const NO_GROUPS: GroupedModels[] = [];
 
+function searchText(model: CompareModelOption): string {
+	return `${model.name} ${model.id} ${model.provider?.name ?? ""}`.toLowerCase();
+}
+
+/**
+ * Every word must appear somewhere in the name, id or lab, in any order, so
+ * "qwen max" finds "Qwen 3.8 Max" and "Qwen3 Max". Models Phaseo serves come
+ * first, then names that start with the query, then the newest.
+ */
+export function searchModels(models: CompareModelOption[], query: string): CompareModelOption[] {
+	const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+	if (!words.length) return models;
+	const first = words[0]!;
+	return models
+		.flatMap((model) => {
+			const haystack = searchText(model);
+			if (!words.every((word) => haystack.includes(word))) return [];
+			const time = getReleaseDate(model)?.getTime() ?? Number.NEGATIVE_INFINITY;
+			return [{ model, routed: model.routed ? 0 : 1, prefix: model.name.toLowerCase().startsWith(first) ? 0 : 1, time }];
+		})
+		.sort((a, b) => a.routed - b.routed || a.prefix - b.prefix || b.time - a.time || a.model.name.localeCompare(b.model.name))
+		.map((entry) => entry.model);
+}
+
 /**
  * Groups models by release month, newest first, and sorts each month newest first
  * then by name. Each date is parsed once and each month labelled once: the list
@@ -150,7 +174,6 @@ export default function ModelCombobox({
 	className,
 }: ModelComboboxProps) {
 	const t = useTranslations("Catalogue.compare");
-	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const getReleaseMonthLabel = React.useCallback(
 		(date: Date) => format.dateParts(date, {
@@ -194,29 +217,14 @@ export default function ModelCombobox({
 		[catalogue, dialogOpen, getReleaseMonthLabel, t],
 	);
 
-	const filteredGroups = React.useMemo(() => {
-		const term = searchTerm.trim().toLowerCase();
-		if (!term) return groupedModels;
-
-		return groupedModels
-			.map((group) => {
-				const matchesMonth = group.monthLabel.toLowerCase().includes(term);
-				if (matchesMonth) {
-					return group;
-				}
-				const matchingModels = group.models.filter((model) => {
-					const providerName = model.provider?.name ?? "";
-					return (
-						model.name.toLowerCase().includes(term) ||
-						model.id.toLowerCase().includes(term) ||
-						providerName.toLowerCase().includes(term)
-					);
-				});
-				if (matchingModels.length === 0) return null;
-				return { ...group, models: matchingModels };
-			})
-			.filter(Boolean) as GroupedModels[];
-	}, [groupedModels, searchTerm]);
+	const searching = searchTerm.trim().length > 0;
+	const filteredGroups = React.useMemo<GroupedModels[]>(() => {
+		if (!searching) return groupedModels;
+		const results = catalogue ? searchModels(catalogue, searchTerm) : [];
+		return results.length
+			? [{ monthKey: "results", monthLabel: t("resultCount", { count: results.length }), monthTimestamp: 0, models: results }]
+			: NO_GROUPS;
+	}, [catalogue, groupedModels, searchTerm, searching, t]);
 
 	const modelsById = React.useMemo(() => {
 		const lookup = new Map<string, CompareModelOption>();
@@ -326,6 +334,17 @@ export default function ModelCombobox({
 		setPendingSelection(Array.from(new Set([...current, modelId])).slice(0, MAX_SELECTION));
 	};
 
+	const optionMeta = (model: CompareModelOption) => {
+		const inputs = [...parseTypeSet(model.input_types)];
+		const outputs = [...parseTypeSet(model.output_types)];
+		const releaseDate = getReleaseDate(model);
+		return [
+			model.provider?.name,
+			inputs.length && outputs.length ? `${inputs.join(", ")} → ${outputs.join(", ")}` : null,
+			releaseDate ? format.dateParts(releaseDate, { month: "short", year: "numeric", timeZone: "UTC" }) : null,
+		].filter(Boolean).join(" · ");
+	};
+
 	const buttonLabel =
 		selected.length > 0
 			? labelWhenSelected ?? t("editModels")
@@ -359,7 +378,7 @@ export default function ModelCombobox({
 			</ModelSelectorTrigger>
 			<ModelSelectorContent
 					title={t("pickerTitle")}
-				className="w-[min(92vw,560px)] max-w-none sm:max-w-none"
+				className="top-[8vh] w-[min(92vw,600px)] max-w-none translate-y-0 rounded-md sm:top-[12vh] sm:max-w-none"
 				commandProps={{ shouldFilter: false }}
 			>
 				<ModelSelectorInput
@@ -451,7 +470,9 @@ export default function ModelCombobox({
 														/>
 								<div className="min-w-0 flex-1">
 									<p className="truncate text-sm font-medium">{model.name}</p>
+									<p className="truncate text-xs text-muted-foreground">{optionMeta(model)}</p>
 								</div>
+								<OptionBadge model={model} />
 								{!modelAvailable && !isSelected ? (
 									<span className="shrink-0 text-[10px] text-muted-foreground">
 										{t("incompatible")}
@@ -467,4 +488,18 @@ export default function ModelCombobox({
 			</ModelSelectorContent>
 		</ModelSelector>
 	);
+}
+
+function OptionBadge({ model }: { model: CompareModelOption }) {
+	const t = useTranslations("Catalogue.compareView");
+	const status = model.status?.toLowerCase();
+	if (status === "retired" || status === "deprecated") {
+		return <span className="shrink-0 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 text-[11px] text-amber-700 dark:text-amber-300">{status === "retired" ? t("badgeRetired") : t("badgeDeprecated")}</span>;
+	}
+	if (model.routed) {
+		return <span className="shrink-0 rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 text-[11px] text-emerald-700 dark:text-emerald-300">{t("badgeOnPhaseo")}</span>;
+	}
+	if (status === "preview") return <span className="shrink-0 rounded-sm border border-border px-1.5 text-[11px] text-muted-foreground">{t("badgePreview")}</span>;
+	if (model.routed === false) return <span className="shrink-0 rounded-sm border border-border px-1.5 text-[11px] text-muted-foreground">{t("badgeListedOnly")}</span>;
+	return null;
 }

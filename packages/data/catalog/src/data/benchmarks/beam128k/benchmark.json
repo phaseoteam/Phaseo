@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "beam128k",
-  "benchmark_name": "Beam128K",
-  "category": "long_context",
-  "ascending_order": true,
-  "type": "percentage",
-  "link": "https://research.meta.ai/static/muse-glimmer-methodology",
-  "total_models": 1
-}

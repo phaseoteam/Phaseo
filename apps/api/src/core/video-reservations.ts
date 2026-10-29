@@ -4,6 +4,7 @@
 
 import type { PriceCard } from "@pipeline/pricing/types";
 import { applyByokServiceFee } from "@pipeline/pricing/byok-fee";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { reserveWalletCredits } from "@core/wallet-reservations";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 import { computeVideoPricedUsage } from "@core/video-pricing";
@@ -119,7 +120,8 @@ function hasPositiveVideoPricingRule(card: PriceCard): boolean {
 export async function reserveVideoGenerationCredits(args: {
 	workspaceId: string;
 	keyId?: string | null;
-	authMethod?: "api_key" | "oauth";
+	/** The request's key reference; an OAuth access token's (`oauth_…`) key ID is its client ID. */
+	apiKeyRef?: string | null;
 	onReservationDenied?: (denial: VideoReservationDenial) => void;
 	videoId: string;
 	providerId: string;
@@ -130,8 +132,9 @@ export async function reserveVideoGenerationCredits(args: {
 	isByok?: boolean;
 }): Promise<VideoReservationResult> {
 	const reservationId = `${VIDEO_RESERVATION_PREFIX}${args.videoId}`;
-	const keyId = args.authMethod === "oauth" ? null : args.keyId;
-	if (!keyId && args.authMethod !== "oauth") throw new Error("video_reservation_key_required");
+	const keyIsOAuthClient = keyIdIsOAuthClientId(args.apiKeyRef);
+	const keyId = keyIsOAuthClient ? null : args.keyId;
+	if (!keyId && !keyIsOAuthClient) throw new Error("video_reservation_key_required");
 	const seconds = toPositiveNumber(args.seconds);
 	if (!seconds || !args.pricingCard) {
 		return {

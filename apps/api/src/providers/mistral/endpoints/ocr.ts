@@ -7,7 +7,7 @@ import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { OcrSchema, type OcrRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 
 function normalizeImageUrl(image: string): string {
     const trimmed = image.trim();
@@ -95,7 +95,11 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const usageMeters = buildUsageMeters(json, hasAnnotations);
 
     if (args.pricingCard) {
-        const pricedUsage = computeBill(usageMeters, args.pricingCard);
+        // Annotated pages have their own price (OCR 3: $3 rather than $2 per 1,000 pages),
+        // matched on ocr_params.annotations. https://docs.mistral.ai/models/ocr-3-25-12
+        const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, {
+            ocr_params: { annotations: hasAnnotations },
+        });
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;
         bill.usage = pricedUsage;

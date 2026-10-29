@@ -29,7 +29,7 @@ export function QueryProvider({ children }: PropsWithChildren) {
       persistOptions={{
         persister,
         maxAge: 7 * DAY,
-        buster: "mobile-v3",
+        buster: "mobile-v4",
         dehydrateOptions: { shouldDehydrateQuery: (query) => query.state.status === "success" && isPublicQuery(query.queryKey) },
       }}
     >

@@ -2,6 +2,7 @@ import type { BenchmarkPage, BenchmarkResult } from "@/lib/fetchers/benchmarks/t
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry, PublicIntelligenceValue, PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelBenchmarkRanks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { parseBenchmarkScore } from "@/lib/benchmarks/scoreFormat";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 export const artificialAnalysisMetrics = [
   { id: "aa-intelligence-index-v4", key: "intelligence", label: "Intelligence", description: "Overall model capability" },
@@ -22,6 +23,13 @@ const artificialAnalysisBenchmarkPattern = /^aa-(?:intelligence|coding|agentic)-
 
 export function isArtificialAnalysisBenchmark(id: string) {
   return artificialAnalysisBenchmarkPattern.test(id);
+}
+
+/** AA's version-independent capability scale, shown beside (not among) the index metrics. */
+export const artificialAnalysisProgressIndexId = "aa-progress-index-v1";
+
+export function isArtificialAnalysisProgressIndex(id: string) {
+  return id === artificialAnalysisProgressIndexId;
 }
 
 export function isArtificialAnalysisCostBenchmark(id: string) {
@@ -48,12 +56,12 @@ export function artificialAnalysisChartColour(
 }
 
 export function formatArtificialAnalysisScore(id: string, score: number, locale = "en-US") {
-  return new Intl.NumberFormat(locale, isArtificialAnalysisCostBenchmark(id)
+  return new Intl.NumberFormat(isArtificialAnalysisCostBenchmark(id) ? MONEY_LOCALE : locale, isArtificialAnalysisCostBenchmark(id)
     ? { style: "currency", currency: "USD", maximumFractionDigits: 2 }
     : { maximumFractionDigits: 2 }).format(score);
 }
-export function formatArtificialAnalysisValue(value: number, locale = "en-US") {
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumSignificantDigits: 3 }).format(value);
+export function formatArtificialAnalysisValue(value: number, _locale = "en-US") {
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", maximumSignificantDigits: 3 }).format(value);
 }
 export function artificialAnalysisValueKey(entry: PublicIntelligenceValueEntry) {
 	return entry.configuration_id ?? JSON.stringify([entry.model_id, entry.variant, entry.other_info, entry.updated_at]);

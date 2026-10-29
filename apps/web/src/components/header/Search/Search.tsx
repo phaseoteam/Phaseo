@@ -17,6 +17,8 @@ import { Kbd } from "@/components/ui/kbd";
 import { KeyboardShortcut } from "@/components/ui/keyboard-shortcut";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Logo } from "@/components/Logo";
+import { EpochLogo } from "@/components/EpochLogo";
+import { isEpochSearchResult, benchmarkSearchAliases, isExactBenchmarkAlias } from "./Search.benchmarks";
 import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
@@ -192,6 +194,7 @@ function buildSearchKeywords(item: SearchableItem): string[] {
 		item.logoId,
 		item.flagIso,
 		...(item.keywords ?? []),
+		...benchmarkSearchAliases(item.href ?? ""),
 	];
 
 	for (const term of terms) {
@@ -324,6 +327,7 @@ function getIndexedMatchScore<T extends SearchableItem>(
 	const rawTerm = term.trim().toLowerCase();
 	const normalizedTerm = normalizeSearchTerm(rawTerm);
 	const hasNormalizedTerm = normalizedTerm.length > 0;
+	if (isExactBenchmarkAlias(indexedItem.item.href ?? "", rawTerm)) return 1000;
 
 	if (
 		indexedItem.titleLower === rawTerm ||
@@ -625,6 +629,7 @@ function SearchBrowseIcon({
 	}
 
 	if (effectiveType === "benchmark") {
+		if (isEpochSearchResult(item.href ?? "")) return <EpochLogo size={20} />;
 		if (/\/benchmarks\/(?:artificial-analysis|aa-[^/?#]+)(?:[/?#]|$)/.test(item.href ?? "")) {
 			return <ArtificialAnalysisLogo size={20} />;
 		}

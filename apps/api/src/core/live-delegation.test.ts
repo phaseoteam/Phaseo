@@ -92,7 +92,8 @@ describe("Live delegated usage", () => {
 		usage = ingestLiveUsage(usage, terminal());
 		expect(() => assertLiveFinalUsage(usage)).toThrow("tool_authoritative_usage_pending");
 		expect(() => priceLiveUsage(usage, { ...config, searchCard: undefined })).toThrow("search_price_snapshot_missing");
-		const event = tool(); event.event.item.type = "function_call";
+		// Function calls run on the client; other unpriced tool types are still refused.
+		const event = tool(); event.event.item.type = "mcp_call";
 		expect(() => ingestLiveUsage(usage, event)).toThrow("tool_not_supported");
 		expect(() => ingestLiveUsage({}, tool())).toThrow("tool_identity_missing");
 	});

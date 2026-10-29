@@ -1,0 +1,106 @@
+---
+icon: "phone"
+title: "Voix en temps réel"
+description: "Passez un appel vocal en temps réel via le relais Phaseo avec le SDK TypeScript et obtenez la facture finale à la fin de l’appel."
+---
+
+<Note>
+La voix en temps réel est en bêta et l’accès est ouvert espace de travail par espace de travail.
+</Note>
+
+**Méthode** : `client.realtime.connect()` crée la session (`POST /v1/audio/realtime/sessions`), ouvre le WebSocket du relais et se résout dès que le relais envoie `relay.connected`. Elle envoie votre clé API ; appelez-la donc uniquement sur votre serveur. Node.js 22 ou version ultérieure dispose d’un `WebSocket` global ; sur les environnements d’exécution plus anciens, installez le paquet `ws` ou passez votre propre constructeur via `webSocket`.
+
+Pour un appel qui s’exécute dans le navigateur, créez la session sur votre serveur et ouvrez le socket dans le navigateur avec `connectRealtimeSession()`. Cette fonction reçoit la session créée par votre serveur, y compris son `client_secret`, qui ne fonctionne que pour cette session, et n’a jamais besoin de la clé API. [Appels depuis le navigateur](#browser-calls) montre les deux parties.
+
+Le protocole du relais, les avertissements et les codes de motif sont décrits dans [Sessions vocales en temps réel](/fr/v1/guides/realtime-voice).
+
+### Exemple
+
+```typescript
+import { Phaseo, RealtimeSessionClosedError } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+
+const session = await client.realtime.connect({
+  model: "openai/gpt-realtime-2",
+  voice: "marin",
+  instructions: "Answer in one sentence.",
+});
+
+session.onWarning((warning) => console.warn(warning.code, warning.message));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+
+// PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+session.sendAudio(pcm16Chunk);
+
+try {
+  const ended = await session.end({ reason: "caller hung up" });
+  console.log(ended.reason, ended.duration_seconds, ended.cost.total_usd, ended.billing_status);
+} catch (error) {
+  if (error instanceof RealtimeSessionClosedError) {
+    // The call is still billed. Fetch the final cost later with error.finalBill.path.
+    console.error(error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+Pour lire tous les événements, itérez plutôt sur la session. L’itération s’arrête à la fermeture du socket.
+
+```typescript
+for await (const event of session) {
+  if (event.type === "session.ended") console.log("bill", event.cost);
+}
+```
+
+<span id="browser-calls"></span>
+
+### Appels depuis le navigateur
+
+Ne mettez jamais une clé API Phaseo dans du code exécuté par le navigateur. Sur votre serveur, créez la session avec `client.realtime.createSession()`, qui accepte les mêmes options `model`, `voice`, `instructions`, `provider` et `metadata` que `connect()`, puis renvoyez la réponse à votre page :
+
+```typescript
+// Server route, for example POST /api/voice-session
+const info = await client.realtime.createSession({ model: "openai/gpt-realtime-2", voice: "marin" });
+return Response.json(info);
+```
+
+Dans le navigateur, rejoignez la session avec `connectRealtimeSession()`. Cette fonction ouvre le relais avec le `client_secret` de la session et renvoie le même objet de session que `connect()` :
+
+```typescript
+import { connectRealtimeSession } from "@phaseo/sdk";
+
+const info = await fetch("/api/voice-session", { method: "POST" }).then((response) => response.json());
+const session = await connectRealtimeSession(info);
+session.sendAudio(pcm16Chunk);
+```
+
+`connectRealtimeSession(info, options)` accepte `webSocket` et `connectTimeoutMs` comme `connect()`, ainsi que `baseUrl` (par défaut `https://api.phaseo.app/v1`) si vous utilisez un endpoint régional.
+
+### Options de connexion
+
+- `model` (obligatoire) : un ID de modèle en temps réel, par exemple `openai/gpt-realtime-2`.
+- `voice`, `instructions`, `provider`, `metadata` : transmis à la requête de création de session.
+- `webSocket` : un constructeur WebSocket à utiliser à la place du constructeur global.
+- `connectTimeoutMs` : durée d’attente de `relay.connected`. Par défaut, 30 secondes.
+
+### Session
+
+| Membre | Description |
+| --- | --- |
+| `id`, `info` | L’ID de la session et la réponse de création de session, sans `client_secret`. |
+| `sendAudio(pcm16)` | Envoie un `Uint8Array` ou un `ArrayBuffer` d’audio PCM16 en tant que `client.audio`. Le SDK l’encode en base64. |
+| `send(event)` | Envoie n’importe quel événement en JSON, pour les messages propres au fournisseur. |
+| `on(type, listener)` | S’abonne à un type d’événement, ou à tous les événements avec `"*"`. Renvoie une fonction de désabonnement. Les événements du fournisseur arrivent sans modification. |
+| `onWarning(listener)`, `onEnded(listener)` | Helpers typés pour `session.warning` et `session.ended`. |
+| `[Symbol.asyncIterator]` | Produit tous les événements depuis le début de l’itération jusqu’à la fermeture du socket. |
+| `end({ reason?, cancelResponse?, timeoutMs? })` | Envoie `session.end` et se résout avec `session.ended` : `reason`, `initiated_by`, `duration_seconds`, `usage`, `cost`, `billing_status` et, sauf si la facture est réglée, `final_bill`. Délai d’attente par défaut : 60 secondes. |
+| `ended` | Une promesse de `session.ended`, quelle que soit la façon dont l’appel se termine, y compris les fins déclenchées par le fournisseur ou la passerelle. |
+| `close()` | Ferme le socket sans attendre la facture. L’appel est tout de même facturé. |
+
+### Erreurs
+
+Si le socket se ferme, ou si `end()` dépasse son délai d’attente, sans `session.ended`, `end()` et `ended` sont rejetés avec `RealtimeSessionClosedError`. Cette erreur contient `sessionId`, `closeCode`, `closeReason` et `finalBill`, la requête qui renvoie le coût final une fois réglé : `GET /v1/generations?id=realtime%3A<session_id>`. `realtimeFinalBill(sessionId)` construit la même requête.
+
+`connect()` est rejeté si le relais termine la session avant la connexion ou si `relay.connected` n’arrive pas à temps.

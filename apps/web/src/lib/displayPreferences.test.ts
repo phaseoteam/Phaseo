@@ -132,6 +132,21 @@ describe("display preferences", () => {
 			.toBe("1,250,000");
 	});
 
+	it.each(["en-GB", "de-DE", "fr-FR", "ja-JP"])("formats money in US format under %s", (locale) => {
+		const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale };
+		const usd = { style: "currency", currency: "USD" } as const;
+		expect(formatDisplayNumber(12.5, preferences, usd)).toBe("$12.50");
+		expect(formatDisplayNumber(1_234.5, preferences, usd)).toBe("$1,234.50");
+		expect(formatDisplayNumber(-3, preferences, usd)).toBe("-$3.00");
+		expect(formatDisplayNumber(0.004, preferences, { ...usd, minimumFractionDigits: 4 })).toBe("$0.0040");
+	});
+
+	it("keeps plain numbers in the user's locale", () => {
+		const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale: "de-DE" };
+		expect(formatDisplayNumber(1_234.5, preferences)).toBe("1.234,5");
+		expect(formatDisplayNumber(0.25, preferences, { style: "percent" })).toMatch(/^25\s%$/);
+	});
+
 	it("normalizes appearance preferences and chooses a readable accent foreground", () => {
 		expect(normalizeDisplayPreferences({
 			...DEFAULT_DISPLAY_PREFERENCES,

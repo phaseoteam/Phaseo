@@ -11,10 +11,12 @@ Reusable coding-agent skills that help teams ship against Phaseo faster. Public 
 
 The [`phaseoteam/skills`](https://github.com/phaseoteam/skills) repository mirrors the docs copy for skills.sh (`npx skills add phaseoteam/skills`).
 
-After editing a public skill, run:
+It also copies every skill, public and internal, to `.claude/skills`, because Claude Code only discovers project skills there. Never edit `.claude/skills` directly; CI fails if it drifts from `.agents/skills` (`pnpm skills:check`).
+
+After editing any skill, run:
 
 ```bash
-pnpm skills:sync      # copy to the docs and the plugin
+pnpm skills:sync      # copy to the docs, the plugin and .claude/skills
 pnpm skills:validate  # frontmatter, structure, evals, links and examples
 ```
 
@@ -69,7 +71,7 @@ phaseo-example/
 - Write for an agent that is already capable: include only what it would not know about Phaseo.
 - Use one term per concept (`model ID`, `API key`, `workspace`, `preset`).
 - Give workflows as numbered steps with a checklist the agent can copy, and include a validation step.
-- Use `phaseo/free` for smoke tests and placeholder-free examples. Any other model ID in an example must exist in `packages/data/catalog/src/data` and not be retired; tell agents to confirm IDs with `GET /v1/models`.
+- Use `phaseo/free` for smoke tests and placeholder-free examples. Any other model ID in an example must be in `KnownModelId` in `apps/docs/openapi/v1/openapi.yaml` and not be retired; tell agents to confirm IDs with `GET /v1/models`.
 - `POST /v1/responses` bodies use `input`; `POST /v1/chat/completions` and `POST /v1/messages` bodies use `messages`.
 - No dates or "new"/"latest" claims that go stale; no secrets, even fake-looking ones.
 - Reference files over 100 lines start with a table of contents.
@@ -113,10 +115,11 @@ Run the cases against Haiku, Sonnet and Opus (or the Codex default model) before
 
 ## Internal skills
 
-- `phaseo-model-provider-onboarding`: use Supabase to onboard models, routes, aliases and pricing
+- `phaseo-model-provider-onboarding`: required for every new model; onboard models, routes, capabilities, pricing, plans and benchmarks in Supabase
 - `phaseo-internal-model-onboarding`: admin-only model setup, private logs and public exclusion
 - `phaseo-database-changes`: schema and RPC migrations, with direct Supabase catalogue updates
 - `phaseo-product-docs`: product-facing rewrite workflow for docs, cookbook pages and guides
 - `phaseo-release-spotlight`: monthly recap and release spotlight writing workflow
 - `phaseo-changelog`: combined, product, SDK and data changelog writing workflow
+- `realtime-maintenance`: announced maintenance windows for deploying the `phaseo-realtime` voice relay without ending live calls
 - `next-cache-components`, `seo-audit`, `supabase-postgres-best-practices`, `vercel-react-best-practices`, `yeet`: general development helpers

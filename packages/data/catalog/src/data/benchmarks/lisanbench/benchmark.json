@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "lisanbench",
-  "benchmark_name": "LisanBench",
-  "category": null,
-  "ascending_order": null,
-  "type": "numerical",
-  "link": "https://lisanbench.com/",
-  "total_models": 139
-}

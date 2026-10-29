@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join, resolve } from "node:path";
 import { PassThrough } from "node:stream";
 import test from "node:test";
 import { parse as parseJsonc } from "jsonc-parser";
@@ -9,6 +10,7 @@ import { codexAdapter, renderCodexProfile } from "../src/integrations/adapters/c
 import { claudeCodeAdapter, renderClaudeSettings } from "../src/integrations/adapters/claude-code.js";
 import { deepSeekHarnessAdapter, renderDeepSeekHarnessCredential, renderDeepSeekHarnessPatch } from "../src/integrations/adapters/deepseek-harness.js";
 import { openCodeAdapter, renderOpenCodeAuth, renderOpenCodeConfig } from "../src/integrations/adapters/opencode.js";
+import { fxAdapter, fxEnvPath, renderFxConnection, renderFxEnv, renderFxSettings } from "../src/integrations/adapters/fx.js";
 import { piAdapter, renderPiExtension } from "../src/integrations/adapters/pi.js";
 import { primeAgentAdapter, renderPrimeAgentModels } from "../src/integrations/adapters/prime-agent.js";
 import { openClawModels, renderOpenClawProvider } from "../src/integrations/adapters/openclaw.js";
@@ -17,10 +19,12 @@ import { continueAdapter } from "../src/integrations/adapters/continue.js";
 import { zedAdapter } from "../src/integrations/adapters/zed.js";
 import { applyChanges } from "../src/integrations/files.js";
 import { isIntegrationSetupName, isPrimarySetupName, runIntegrationCommand } from "../src/integrations/index.js";
-import { getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
+import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
+import { HERMES_BLOCK_END, HERMES_BLOCK_START, HermesEnvQuotingError, assertHermesEnvEditable, firstUnsupportedHermesEnvLine, hermesEnvDefinesOpenAIKey, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
-import { acceptsInstallConfirmation, confirmHarnessInstall, installInvocationFor, packageManagerCandidates, packageManagerChildInvocation, renderInstallInvocation } from "../src/integrations/installer.js";
+import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, harnessInstallPlan, installInvocationFor, isVercelFxHelp, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation, windowsCommandInterpreter } from "../src/integrations/installer.js";
+import { updateChildInvocation } from "../src/index.js";
 
 test("Codex profile uses the Responses API without embedding a credential", () => {
 	const profile = renderCodexProfile("anthropic/claude-sonnet-4.6");
@@ -296,15 +300,21 @@ test("catalog filtering keeps only active text chat-completions models", () => {
 		lifecycle: { status: "active" },
 		modalities: { input: ["text", "image"], output: ["text"] },
 		limits: { input_tokens: 128_000, output_tokens: 16_000 },
-		capabilities: { endpoints: ["chat.completions", "responses"] },
+		capabilities: { endpoints: ["text.generate", "responses"] },
 		availability: { status: "active", active_provider_count: 2 },
 	}), { id: "openai/gpt-test", name: "GPT Test", contextWindow: 128_000, maxOutputTokens: 16_000, reasoning: false, input: ["text", "image"] });
 	assert.equal(toIntegrationModel({
 		id: "openai/inactive",
 		modalities: { input: ["text"], output: ["text"] },
-		capabilities: { endpoints: ["chat.completions"] },
+		capabilities: { endpoints: ["chat/completions"] },
 		availability: { status: "inactive", active_provider_count: 0 },
 	}), null);
+	assert.equal(toIntegrationModel({
+		id: "openai/legacy-endpoint-name",
+		modalities: { input: ["text"], output: ["text"] },
+		capabilities: { endpoints: ["chat.completions"] },
+		availability: { status: "active", active_provider_count: 1 },
+	})?.id, "openai/legacy-endpoint-name");
 });
 
 test("catalog sync paginates through every compatible model", async () => {
@@ -320,7 +330,7 @@ test("catalog sync paginates through every compatible model", async () => {
 		lifecycle: { status: "active" },
 		modalities: { input: ["text"], output: ["text"] },
 		limits: { input_tokens: 128_000, output_tokens: 16_000 },
-		capabilities: { endpoints: ["chat.completions"] },
+		capabilities: { endpoints: ["text.generate"] },
 		availability: { status: "active", active_provider_count: 1 },
 	});
 	const requests: string[] = [];
@@ -328,7 +338,7 @@ test("catalog sync paginates through every compatible model", async () => {
 		const url = new URL(String(input));
 		requests.push(url.toString());
 		assert.equal(url.searchParams.get("availability"), "active");
-		assert.equal(url.searchParams.get("endpoints"), "chat.completions");
+		assert.equal(url.searchParams.get("endpoints"), "text.generate");
 		assert.equal(url.searchParams.get("input_types"), "text");
 		assert.equal(url.searchParams.get("output_types"), "text");
 		const offset = Number(url.searchParams.get("offset"));
@@ -384,6 +394,7 @@ test("primary harness installers use supported package commands and verified ins
 		args: ["add", "-g", "--allow-build=openclaw", "openclaw@latest"],
 	});
 	assert.match(installInvocationFor("prime-agent", "npm").args.join(" "), /app\.primeintellect\.ai\/prime-agent\/install\.sh/);
+	assert.deepEqual(installInvocationFor("fx", "npm"), { command: "sh", args: ["-c", "curl -fsSL https://fx.sh/setup.sh | bash"] });
 	const hermes = installInvocationFor("hermes", "npm");
 	assert.match(hermes.args.join(" "), /hermes-agent\.nousresearch\.com\/install\.(?:ps1|sh)/);
 	if (process.platform === "win32") assert.match(renderInstallInvocation(hermes), /-Command "& \(\[scriptblock\]::Create/);
@@ -394,9 +405,54 @@ test("primary harness installers use supported package commands and verified ins
 	);
 	assert.deepEqual(packageManagerCandidates("bun", "win32"), ["bun.cmd", "bun.exe", "bun"]);
 	assert.deepEqual(
-		packageManagerChildInvocation({ command: "npm", executable: "npm.cmd", args: ["--version"] }, "win32", "cmd.exe"),
-		{ command: "cmd.exe", args: ["/d", "/s", "/c", "npm.cmd --version"] },
+		packageManagerChildInvocation({ command: "npm", executable: "C:\\Program Files\\nodejs\\npm.cmd", args: ["--version"] }, "win32", "cmd.exe"),
+		{ command: "cmd.exe", args: ["/d", "/s", "/c", "\"\"C:\\Program Files\\nodejs\\npm.cmd\" --version\""], windowsVerbatimArguments: true },
 	);
+	assert.throws(
+		() => packageManagerChildInvocation({ command: "npm", executable: "C:\\a%PATH%\\npm.cmd", args: ["--version"] }, "win32"),
+		/unsupported Windows command token/,
+	);
+});
+
+test("package managers resolve to absolute paths and never from the current directory", async () => {
+	const root = await mkdtemp(join(tmpdir(), "phaseo-pm-"));
+	const binDir = join(root, "node bin");
+	const cwdDir = join(root, "project");
+	await mkdir(binDir, { recursive: true });
+	await mkdir(cwdDir, { recursive: true });
+	const previousCwd = process.cwd();
+	try {
+		await writeFile(join(binDir, "npm.cmd"), "@echo trusted %*\r\n");
+		await writeFile(join(cwdDir, "npm.cmd"), "@echo planted %*\r\n");
+		process.chdir(cwdDir);
+		// Relative PATH entries (".", "") resolve against the current directory, so they are skipped.
+		const env = { PATH: [".", "", binDir].join(delimiter) };
+		const resolved = await findPackageManagerExecutable("npm", env, "win32");
+		assert.equal(resolved, join(binDir, "npm.cmd"));
+		assert.equal(await findPackageManagerExecutable("npm", { PATH: "." }, "win32"), null);
+		assert.equal(packageManagerChildEnv(env, "win32").NoDefaultCurrentDirectoryInExePath, "1");
+		assert.equal(packageManagerChildEnv(env, "linux").NoDefaultCurrentDirectoryInExePath, undefined);
+
+		const update = await updateChildInvocation("npm", env, "win32", "cmd.exe");
+		assert.equal(update.command, "cmd.exe");
+		assert.equal(update.windowsVerbatimArguments, true);
+		assert.match(update.args[3] ?? "", /^""[^"]+node bin[\\/]npm\.cmd" install -g @phaseo\/cli@latest"$/);
+		await assert.rejects(updateChildInvocation("npm", { PATH: "." }, "win32"), /Could not find npm on PATH/);
+
+		if (process.platform === "win32") {
+			// Runs the stub shims only: the trusted one in a directory with a space, never the planted one in cwd.
+			const child = packageManagerChildInvocation({ command: "npm", executable: resolved!, args: ["--version"] }, "win32");
+			const result = spawnSync(child.command, child.args, {
+				env: packageManagerChildEnv({ ...process.env }),
+				windowsVerbatimArguments: child.windowsVerbatimArguments,
+				encoding: "utf8",
+			});
+			assert.equal(result.stdout.trim(), "trusted --version");
+		}
+	} finally {
+		process.chdir(previousCwd);
+		await rm(root, { recursive: true, force: true });
+	}
 });
 
 test("harness installation requires an explicit yes confirmation", async () => {
@@ -609,6 +665,7 @@ test("one-command setup accepts every persistent integration and keeps runner na
 	assert.equal(isPrimarySetupName("claude"), true);
 	assert.equal(isPrimarySetupName("dsh"), true);
 	assert.equal(isPrimarySetupName("openclaw"), true);
+	assert.equal(isPrimarySetupName("fx"), true);
 	assert.equal(isPrimarySetupName("aider"), false);
 	assert.equal(isIntegrationSetupName("aider"), true);
 	assert.equal(isIntegrationSetupName("continue"), true);
@@ -616,18 +673,18 @@ test("one-command setup accepts every persistent integration and keeps runner na
 	assert.equal(isIntegrationSetupName("not-an-integration"), false);
 	await assert.rejects(
 		runIntegrationCommand(["setup", "aider"], { "dry-run": true }, { primaryOnly: true }),
-		/Phaseo direct setup currently supports codex, claude-code, hermes, opencode, pi, prime-agent, deepseek-harness, and openclaw/,
+		/Phaseo direct setup currently supports codex, claude-code, hermes, opencode, fx, pi, prime-agent, deepseek-harness, and openclaw/,
 	);
 });
 
 test("model catalog flags are limited to catalog-backed harnesses", async () => {
 	await assert.rejects(
 		runIntegrationCommand(["setup", "codex"], { catalog: "all", "dry-run": true }),
-		/only supported for OpenCode, DeepSeek Harness, Pi, Prime Agent, and OpenClaw/,
+		/only supported for OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, and OpenClaw/,
 	);
 });
 
-test("browser login provisions and securely reuses a named non-expiring integration key", async () => {
+test("browser login provisions and securely reuses a named, expiring, spend-limited integration key", async () => {
 	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-integration-credential-"));
 	const previousBackend = process.env.PHASEO_SESSION_BACKEND;
 	const previousConfigDir = process.env.PHASEO_CONFIG_DIR;
@@ -662,10 +719,14 @@ test("browser login provisions and securely reuses a named non-expiring integrat
 		assert.equal(await getIntegrationGatewayCredential("codex"), "phaseo_v1_sk_agent_secret");
 		assert.equal(await getIntegrationGatewayCredential("codex"), "phaseo_v1_sk_agent_secret");
 		assert.equal(requests.filter((request) => request.method === "POST").length, 1);
-		assert.deepEqual(JSON.parse(requests.find((request) => request.method === "POST")?.body ?? "{}"), {
-			name: "Phaseo CLI: Codex API Key",
-		});
+		const created = JSON.parse(requests.find((request) => request.method === "POST")?.body ?? "{}");
+		assert.equal(created.name, "Phaseo CLI: Codex API Key");
+		assert.equal(created.limit, INTEGRATION_KEY_MONTHLY_LIMIT_USD);
+		assert.equal(created.limit_reset, "monthly");
+		const lifetime = Date.parse(created.expires_at) - Date.now();
+		assert.ok(lifetime > INTEGRATION_KEY_LIFETIME_MS - 60_000 && lifetime <= INTEGRATION_KEY_LIFETIME_MS, "key expires after 90 days");
 		assert.equal((await readSession())?.integrationGatewayCredentials?.codex?.keyId, "key_agent");
+		assert.equal((await readSession())?.integrationGatewayCredentials?.codex?.expiresAt, Date.parse(created.expires_at));
 		assert.equal(await revokeIntegrationGatewayCredential("codex"), true);
 		assert.equal((await readSession())?.integrationGatewayCredentials?.codex, undefined);
 		assert.equal(requests.filter((request) => request.method === "DELETE").length, 1);
@@ -760,6 +821,475 @@ test("stale file plans never overwrite newer content", async () => {
 		await writeFile(path, "newer");
 		await assert.rejects(applyChanges(plan), /Refusing to apply stale file change/);
 		assert.equal(await readFile(path, "utf8"), "newer");
+	} finally {
+		await rm(homeDir, { recursive: true, force: true });
+	}
+});
+
+async function withFileSession<T>(fetchImpl: typeof fetch, run: () => Promise<T>): Promise<T> {
+	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-session-"));
+	const previous = { backend: process.env.PHASEO_SESSION_BACKEND, configDir: process.env.PHASEO_CONFIG_DIR, apiKey: process.env.PHASEO_API_KEY, fetch: globalThis.fetch };
+	process.env.PHASEO_SESSION_BACKEND = "file";
+	process.env.PHASEO_CONFIG_DIR = homeDir;
+	delete process.env.PHASEO_API_KEY;
+	globalThis.fetch = fetchImpl;
+	try {
+		return await run();
+	} finally {
+		globalThis.fetch = previous.fetch;
+		for (const [name, value] of [["PHASEO_SESSION_BACKEND", previous.backend], ["PHASEO_CONFIG_DIR", previous.configDir], ["PHASEO_API_KEY", previous.apiKey]] as const) {
+			if (value === undefined) delete process.env[name];
+			else process.env[name] = value;
+		}
+		await rm(homeDir, { recursive: true, force: true });
+	}
+}
+
+test("expired integration keys are replaced; unexpired and pre-expiry keys are kept", async () => {
+	const calls: string[] = [];
+	let keyNumber = 0;
+	await withFileSession(async (input, init) => {
+		const method = init?.method ?? "GET";
+		calls.push(`${method} ${String(input).split("/v1")[1]}`);
+		if (method === "POST") {
+			keyNumber += 1;
+			return new Response(JSON.stringify({ data: { id: `key_new_${keyNumber}`, key: `phaseo_v1_sk_new_${keyNumber}` } }), { status: 201 });
+		}
+		return new Response(null, { status: 204 });
+	}, async () => {
+		await writeSession({
+			accessToken: "t",
+			refreshToken: "r",
+			expiresAt: Date.now() + 3_600_000,
+			apiUrl: "https://api.phaseo.app",
+			integrationGatewayCredentials: {
+				codex: { key: "fresh", keyId: "key_fresh", expiresAt: Date.now() + 60_000 },
+				aider: { key: "legacy", keyId: "key_legacy" },
+				hermes: { key: "expired", keyId: "key_expired", expiresAt: Date.now() - 1_000 },
+			},
+		});
+		assert.equal(await getIntegrationGatewayCredential("codex"), "fresh");
+		assert.equal(await getIntegrationGatewayCredential("aider"), "legacy");
+		assert.deepEqual(calls, []);
+
+		assert.equal(await hasIntegrationGatewayCredential("hermes"), false);
+		assert.equal(await getIntegrationGatewayCredential("hermes"), "phaseo_v1_sk_new_1");
+		// The expired key is only dropped from the session; it already stopped working.
+		assert.deepEqual(calls, ["POST /keys"]);
+		const stored = (await readSession())?.integrationGatewayCredentials;
+		assert.equal(stored?.hermes?.keyId, "key_new_1");
+		assert.ok((stored?.hermes?.expiresAt ?? 0) > Date.now() + INTEGRATION_KEY_LIFETIME_MS - 60_000);
+		assert.equal(stored?.aider?.keyId, "key_legacy");
+	});
+});
+
+test("re-login keeps integration keys only for the same API, account and workspace", async () => {
+	const deleted: string[] = [];
+	const identities: Record<string, { user: string; workspace: string }> = {
+		"old-token": { user: "user_a", workspace: "ws_1" },
+		"same-token": { user: "user_a", workspace: "ws_1" },
+		"other-user-token": { user: "user_b", workspace: "ws_1" },
+		"other-workspace-token": { user: "user_a", workspace: "ws_2" },
+	};
+	await withFileSession(async (input, init) => {
+		const url = String(input);
+		const token = new Headers(init?.headers).get("authorization")?.replace(/^Bearer /, "") ?? "";
+		if (url.endsWith("/v1/me")) {
+			const identity = identities[token];
+			return identity
+				? new Response(JSON.stringify({ data: { user: { id: identity.user }, current_workspace_id: identity.workspace } }), { status: 200 })
+				: new Response(JSON.stringify({ message: "unauthorized" }), { status: 401 });
+		}
+		if (init?.method === "DELETE") {
+			const id = url.split("/").at(-1)!;
+			deleted.push(`${token} ${id}`);
+			return id === "key_stuck" ? new Response(JSON.stringify({ message: "nope" }), { status: 500 }) : new Response(null, { status: 204 });
+		}
+		throw new Error(`Unexpected request ${url}`);
+	}, async () => {
+		const previous = {
+			accessToken: "old-token",
+			refreshToken: "old-refresh",
+			expiresAt: Date.now() + 3_600_000,
+			apiUrl: "https://api.phaseo.app",
+			integrationGatewayCredentials: { codex: { key: "k1", keyId: "key_codex", expiresAt: Date.now() + 1_000_000 }, aider: { key: "k2", keyId: "key_stuck" } },
+			integrationGatewayKey: "legacy",
+			integrationGatewayKeyId: "key_legacy",
+			integrationGatewayKeyExpiresAt: Date.now() + 1_000,
+		};
+		const same = await integrationCredentialsForNewLogin(previous, { apiUrl: "https://api.phaseo.app", accessToken: "same-token" });
+		assert.deepEqual(same.carried.integrationGatewayCredentials, previous.integrationGatewayCredentials);
+		assert.equal(same.carried.integrationGatewayKeyId, "key_legacy");
+		assert.deepEqual(deleted, []);
+
+		for (const accessToken of ["other-user-token", "other-workspace-token", "unknown-token"]) {
+			deleted.length = 0;
+			const result = await integrationCredentialsForNewLogin(previous, { apiUrl: "https://api.phaseo.app", accessToken });
+			assert.deepEqual(result.carried, {}, accessToken);
+			// Revoked with the OLD session's token.
+			assert.deepEqual(deleted.sort(), ["old-token key_codex", "old-token key_legacy", "old-token key_stuck"], accessToken);
+			assert.deepEqual(result.revokeFailures, ["key_stuck"]);
+		}
+
+		deleted.length = 0;
+		const otherApi = await integrationCredentialsForNewLogin(previous, { apiUrl: "http://127.0.0.1:8788", accessToken: "same-token" });
+		assert.deepEqual(otherApi.carried, {});
+		assert.equal(deleted.length, 3);
+
+		assert.deepEqual(await integrationCredentialsForNewLogin(null, { apiUrl: "https://api.phaseo.app", accessToken: "x" }), { carried: {}, revokeFailures: [] });
+	});
+});
+
+const block = (key: string) => `${HERMES_BLOCK_START}\nOPENAI_API_KEY=${key}\n${HERMES_BLOCK_END}\n`;
+
+test("Hermes key is written to its env file as a delimited Phaseo block", () => {
+	assert.equal(renderHermesEnv(null, "phaseo_v1_sk_x"), block("phaseo_v1_sk_x"));
+	assert.equal(renderHermesEnv("A=1", "phaseo_v1_sk_x"), `A=1\n${block("phaseo_v1_sk_x")}`);
+	// Re-setup changes only the key line, in place; CRLF lines elsewhere stay byte-for-byte.
+	const withBlock = `A=1\r\n${block("phaseo_v1_sk_old")}B=2\r\n`;
+	assert.equal(renderHermesEnv(withBlock, "phaseo_v1_sk_new"), `A=1\r\n${block("phaseo_v1_sk_new")}B=2\r\n`);
+	assert.equal(renderHermesEnvWithoutKey(withBlock), "A=1\r\nB=2\r\n");
+	assert.throws(() => renderHermesEnv(`${HERMES_BLOCK_START}\nOPENAI_API_KEY=x\n`, "phaseo_v1_sk_x"), /unterminated Phaseo-managed block/);
+	assert.throws(() => renderHermesEnv(null, "bad\nINJECTED=1"), /invalid gateway credential/);
+	assert.throws(() => renderHermesEnv(null, "bad key"), /invalid gateway credential/);
+});
+
+test("Hermes .env edits never touch user lines and refuse user-defined OPENAI_API_KEY", () => {
+	// Supported files: user lines stay byte-for-byte.
+	const plain = "KEEP=1\n# a comment\nQUOTED=\"two words\"\nSINGLE='x y'\n";
+	const written = renderHermesEnv(plain, "phaseo_v1_sk_x");
+	assert.equal(written, `${plain}${block("phaseo_v1_sk_x")}`);
+	assert.equal(firstUnsupportedHermesEnvLine(written), null, "the managed block itself is supported");
+	assert.equal(renderHermesEnvWithoutKey(written), plain);
+
+	for (const definition of [
+		"OPENAI_API_KEY=secret",
+		"  export OPENAI_API_KEY = secret",
+		"\texport\tOPENAI_API_KEY\t=\t\"secret value\" # note",
+		"OPENAI_API_KEY='secret'",
+		"OPENAI_API_KEY=",
+	]) {
+		assert.equal(hermesEnvDefinesOpenAIKey(`A=1\n${definition}\n`), true, definition);
+		assert.throws(() => renderHermesEnv(`A=1\n${definition}\n`, "phaseo_v1_sk_x"), /outside the Phaseo-managed block/, definition);
+	}
+	// Quoted names and other syntaxes are outside the allowlist, so the file is refused instead.
+	for (const unsupported of ["'OPENAI_API_KEY'=secret", '"OPENAI_API_KEY"="secret"', "OPENAI_API_KEY: secret"]) {
+		assert.throws(() => renderHermesEnv(`A=1\n${unsupported}\n`, "phaseo_v1_sk_x"), HermesEnvQuotingError, unsupported);
+	}
+	assert.equal(hermesEnvDefinesOpenAIKey("# OPENAI_API_KEY=commented\nOPENAI_API_KEY_OLD=1\n"), false);
+
+	// The bare line an earlier Phaseo version wrote is migrated only when it matches the stored key exactly.
+	assert.equal(renderHermesEnv("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\n", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), `A=1\n${block("phaseo_v1_sk_new")}`);
+	assert.throws(() => renderHermesEnv("OPENAI_API_KEY=phaseo_v1_sk_other\n", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), /outside the Phaseo-managed block/);
+	assert.equal(renderHermesEnvWithoutKey("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\n", "phaseo_v1_sk_old"), "A=1\n");
+});
+
+test("Hermes re-setup updates the managed block in place so later references still resolve", () => {
+	// S12: a later line that references the key must stay after the block.
+	const existing = `A=1\n${block("phaseo_v1_sk_old")}KEY_COPY="\${OPENAI_API_KEY:-fallback}"\nB=2\n`;
+	assert.equal(renderHermesEnv(existing, "phaseo_v1_sk_old"), existing, "unchanged key leaves the file identical");
+	const updated = renderHermesEnv(existing, "phaseo_v1_sk_new");
+	assert.equal(updated, `A=1\n${block("phaseo_v1_sk_new")}KEY_COPY="\${OPENAI_API_KEY:-fallback}"\nB=2\n`);
+	const changed = existing.split("\n").map((line, index) => [line, updated.split("\n")[index]]).filter(([a, b]) => a !== b);
+	assert.deepEqual(changed, [["OPENAI_API_KEY=phaseo_v1_sk_old", "OPENAI_API_KEY=phaseo_v1_sk_new"]], "only the key line changes");
+	assert.ok(updated.indexOf(HERMES_BLOCK_END) < updated.indexOf("KEY_COPY"));
+
+	// CRLF block lines keep their line endings.
+	const crlf = existing.replaceAll("\n", "\r\n");
+	assert.equal(renderHermesEnv(crlf, "phaseo_v1_sk_old"), crlf);
+	assert.equal(renderHermesEnv(crlf, "phaseo_v1_sk_new"), crlf.replace("OPENAI_API_KEY=phaseo_v1_sk_old", "OPENAI_API_KEY=phaseo_v1_sk_new"));
+
+	// A legacy line becomes the block where it was, ahead of later references.
+	const legacy = "A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\nKEY_COPY=\"${OPENAI_API_KEY:-fallback}\"\n";
+	assert.equal(renderHermesEnv(legacy, "phaseo_v1_sk_new", "phaseo_v1_sk_old"), `A=1\n${block("phaseo_v1_sk_new")}KEY_COPY="\${OPENAI_API_KEY:-fallback}"\n`);
+	assert.equal(renderHermesEnv("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), `A=1\n${block("phaseo_v1_sk_new").replace(/\n$/, "")}`);
+
+	// A duplicate block is dropped and the first one is kept in place.
+	assert.equal(renderHermesEnv(`${block("phaseo_v1_sk_a")}X=1\n${block("phaseo_v1_sk_b")}`, "phaseo_v1_sk_c"), `${block("phaseo_v1_sk_c")}X=1\n`);
+});
+
+test("typical Hermes .env files are supported, including CRLF", () => {
+	const typical = [
+		"# Hermes Agent provider keys",
+		// Comment lines in the style of Hermes' own .env.example: quotes, backticks and non-ASCII.
+		"# Use 'hermes model' or 'hermes setup' to change it.",
+		"# Backend type: \"local\", \"docker\", or a plugin (`hermes plugins install singularity`).",
+		"# Register a bot: https://dev.botframework.com/ → \"Register a bot\" — then paste C:\\path here",
+		"  # indented comment with Docker's driver",
+		"",
+		"ANTHROPIC_API_KEY=sk-ant-example_123",
+		"export OPENROUTER_API_KEY=sk-or-v1-abc",
+		"  NOUS_API_KEY = nous-key   # trailing comment",
+		"HERMES_DISPLAY_NAME=\"My Hermes agent\"",
+		"TERMINAL_ENV='docker run'",
+		"EMPTY=",
+		"\t",
+	].join("\n");
+	for (const text of [`${typical}\n`, `${typical.replaceAll("\n", "\r\n")}\r\n`, typical]) {
+		assert.equal(firstUnsupportedHermesEnvLine(text), null);
+		const written = renderHermesEnv(text, "phaseo_v1_sk_x");
+		assert.ok(written.startsWith(text), "user lines unchanged");
+		assert.equal(renderHermesEnvWithoutKey(written), text.endsWith("\n") ? text : `${text}\n`);
+	}
+});
+
+test("Hermes .env files outside the allowlist are refused and left unchanged", async () => {
+	for (const unsupported of [
+		'A="open', "A='it\\'s'", "A=`cmd`", 'A="x\\"y"', "﻿# comment after a byte-order mark", "# comment\rOPENAI_API_KEY=hidden", "A='x\\y'", "WIN=C:\\dir", "A=two words",
+		"A=1 # it's", "1BAD=x", "A.B=x", "A=1\rB=2","\ufeffA=1", "A=caf\u00e9", "A=\u000bB", "export=1 x",
+	]) {
+		assert.notEqual(firstUnsupportedHermesEnvLine(`${unsupported}\n`), null, JSON.stringify(unsupported));
+	}
+	// A trailing CR without LF is a lone CR too.
+	assert.equal(firstUnsupportedHermesEnvLine("A=1\r"), 1);
+	assert.equal(firstUnsupportedHermesEnvLine("A=1\r\nB=2\r\n"), null);
+
+	const root = await mkdtemp(join(tmpdir(), "phaseo-hermes-quoting-"));
+	try {
+		const cases = {
+			// python-dotenv reads `\'` as an escaped quote, so OPENAI_API_KEY below is a real definition.
+			escapedSingleQuote: "OTHER='don\\'t'\nOPENAI_API_KEY=user-secret\n",
+			// Literal block markers inside a user's multiline value.
+			markersInMultiline: `NOTE="before\n${HERMES_BLOCK_START}\nOPENAI_API_KEY=user-data\n${HERMES_BLOCK_END}\nafter"\n`,
+			// An exact legacy line inside a user's multiline value.
+			legacyLineInMultiline: "NOTE=\"before\nOPENAI_API_KEY=phaseo_v1_sk_old\nafter\"\n",
+			// Escaped quotes keep the quote count even while the value still spans lines.
+			escapedDoubleQuotes: 'NOTE="before\\"\nOPENAI_API_KEY=phaseo_v1_sk_old\nafter\\""\n',
+			// python-dotenv treats a lone CR as a newline, hiding a user key from a LF-only scan.
+			crOnlyNewlines: "KEEP=1\rOPENAI_API_KEY=user-secret\r",
+			// S10: quotes inside a variable name start a multiline value.
+			quotesInName: "'NOTE\"'=\"before\nOPENAI_API_KEY=phaseo_v1_sk_old\nafter\" # \"\n",
+			// S11: Unicode whitespace Python accepts but JavaScript's \s does not.
+			nelBeforeName: "KEEP=1\n\u0085OPENAI_API_KEY=user-secret\n",
+			nelBeforeEquals: "KEEP=1\nOPENAI_API_KEY\u0085=user-secret\n",
+			nelAfterExport: "KEEP=1\nexport\u0085OPENAI_API_KEY=user-secret\n",
+		};
+		for (const [name, contents] of Object.entries(cases)) {
+			const envPath = join(root, name, ".env");
+			await mkdir(join(root, name));
+			await writeFile(envPath, contents);
+			await assert.rejects(writeHermesKey(envPath, "phaseo_v1_sk_new", "phaseo_v1_sk_old"), (error: Error) => {
+				assert.ok(error instanceof HermesEnvQuotingError, name);
+				assert.match(error.message, /will not edit .*line \d+ is not a blank line, a comment or a single-line NAME=VALUE assignment.*OPENAI_API_KEY=<key>.*phaseo integrations credential hermes/);
+				assert.doesNotMatch(error.message, /phaseo_v1_sk_new|user-secret/, "no key in the error");
+				return true;
+			});
+			await assert.rejects(removeHermesKey(envPath, { key: "phaseo_v1_sk_old" }), /Remove the OPENAI_API_KEY line Phaseo added .* by hand/);
+			await assert.rejects(assertHermesEnvEditable(envPath, "setup"), HermesEnvQuotingError);
+			await assert.rejects(assertHermesEnvEditable(envPath, "remove"), HermesEnvQuotingError);
+			assert.throws(() => renderHermesEnvWithoutKey(contents, "phaseo_v1_sk_old"), HermesEnvQuotingError);
+			assert.equal(await readFile(envPath, "utf8"), contents, `${name} unchanged`);
+			assert.deepEqual(await readdir(join(root, name)), [".env"]);
+		}
+
+		const simple = join(root, "simple.env");
+		await writeFile(simple, "A=1\n");
+		await assertHermesEnvEditable(simple, "setup");
+		await assertHermesEnvEditable(join(root, "missing.env"), "remove");
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
+});
+
+test("Hermes home is resolved like Hermes does, expanding ~ and environment variables", () => {
+	const homeDir = resolve("home-user");
+	const options = { homeDir } as Parameters<typeof hermesEnvPath>[0];
+	assert.equal(hermesEnvPath(options, {}), join(homeDir, ".hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "  " }), join(homeDir, ".hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~/agents/hermes" }), join(homeDir, "agents", "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~" }), join(homeDir, ".env"));
+	const base = resolve("data-root");
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "$DATA/hermes", DATA: base }, "linux"), join(base, "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "${DATA}/hermes", DATA: base }, "linux"), join(base, "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "%DATA%/hermes", DATA: base }, "win32"), join(base, "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "%DATA%/hermes", DATA: base }, "linux"), join(resolve("%DATA%/hermes"), ".env"));
+	assert.equal(resolveHermesHome(options, { HERMES_HOME: "relative-hermes" }), resolve("relative-hermes"));
+	// On other platforms, as in Python's expanduser, "~\\" is not a home prefix.
+	assert.equal(resolveHermesHome(options, { HERMES_HOME: "~\\agents" }, "linux"), resolve("~\\agents"));
+});
+
+test("Hermes home accepts ~\\ on Windows", { skip: process.platform !== "win32" }, () => {
+	const homeDir = resolve("home-user");
+	const options = { homeDir } as Parameters<typeof hermesEnvPath>[0];
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~\\agents\\hermes" }, "win32"), join(homeDir, "agents", "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~/agents/hermes" }, "win32"), join(homeDir, "agents", "hermes", ".env"));
+});
+
+test("Hermes .env writes are atomic, private, keep other lines and refuse symlinks", async () => {
+	const root = await mkdtemp(join(tmpdir(), "phaseo-hermes-env-"));
+	try {
+		const home = join(root, "hermes");
+		const envPath = join(home, ".env");
+		await writeHermesKey(envPath, "phaseo_v1_sk_first");
+		assert.equal(await readFile(envPath, "utf8"), block("phaseo_v1_sk_first"));
+		await writeFile(envPath, `ANTHROPIC_API_KEY=a\n${block("phaseo_v1_sk_first")}`, { mode: 0o644 });
+		await writeHermesKey(envPath, "phaseo_v1_sk_second");
+		assert.equal(await readFile(envPath, "utf8"), `ANTHROPIC_API_KEY=a\n${block("phaseo_v1_sk_second")}`);
+		if (process.platform !== "win32") {
+			assert.equal((await stat(envPath)).mode & 0o777, 0o600);
+			assert.equal((await stat(home)).mode & 0o777, 0o700);
+		}
+		assert.deepEqual((await readdir(home)).sort(), [".env"], "no temporary files left behind");
+		assert.equal(await removeHermesKey(envPath), true);
+		assert.equal(await readFile(envPath, "utf8"), "ANTHROPIC_API_KEY=a\n");
+		// A legacy line that cannot be matched to the stored key is left in place and reported.
+		await writeFile(envPath, "ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=phaseo_v1_sk_unknown\n");
+		assert.equal(await removeHermesKey(envPath, { key: "phaseo_v1_sk_other" }), false);
+		assert.equal(await readFile(envPath, "utf8"), "ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=phaseo_v1_sk_unknown\n");
+		assert.equal(await removeHermesKey(envPath, { key: "phaseo_v1_sk_unknown" }), true);
+		assert.equal(await readFile(envPath, "utf8"), "ANTHROPIC_API_KEY=a\n");
+
+		const target = join(root, "elsewhere.env");
+		await writeFile(target, "SECRET=keep\n");
+		const linkedHome = join(root, "linked-file");
+		await mkdir(linkedHome);
+		const linkedDir = join(root, "linked-dir");
+		try {
+			await symlink(target, join(linkedHome, ".env"), "file");
+			await symlink(home, linkedDir, "junction");
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "EPERM") return; // Windows without symlink rights.
+			throw error;
+		}
+		await assert.rejects(writeHermesKey(join(linkedHome, ".env"), "phaseo_v1_sk_x"), /symbolic link/);
+		await assert.rejects(writeHermesKey(join(linkedDir, ".env"), "phaseo_v1_sk_x"), /symbolic link/);
+		await assert.rejects(removeHermesKey(join(linkedHome, ".env")), /symbolic link/);
+		assert.equal(await readFile(target, "utf8"), "SECRET=keep\n");
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
+});
+
+test("cmd.exe is always an absolute path, even without ComSpec", () => {
+	assert.equal(windowsCommandInterpreter({ ComSpec: String.raw`D:\Windows\system32\cmd.exe` }), String.raw`D:\Windows\system32\cmd.exe`);
+	assert.equal(windowsCommandInterpreter({ SystemRoot: String.raw`D:\Windows` }), String.raw`D:\Windows\System32\cmd.exe`);
+	// A relative ComSpec would be searched for by the parent process, so it is not used.
+	assert.equal(windowsCommandInterpreter({ ComSpec: "cmd.exe", SystemRoot: String.raw`D:\Windows` }), String.raw`D:\Windows\System32\cmd.exe`);
+	assert.equal(windowsCommandInterpreter({ ComSpec: String.raw`\\server\share\cmd.exe` }), String.raw`C:\Windows\System32\cmd.exe`);
+	assert.equal(windowsCommandInterpreter({}), String.raw`C:\Windows\System32\cmd.exe`);
+	const invocation = packageManagerChildInvocation({ command: "npm", executable: String.raw`C:\nodejs\npm.cmd`, args: ["--version"] }, "win32", windowsCommandInterpreter({}));
+	assert.equal(invocation.command, String.raw`C:\Windows\System32\cmd.exe`);
+});
+
+test("fx connection reads its key from the environment and stays within fx limits", () => {
+	const connection = renderFxConnection("openai/gpt-5.6-terra", [
+		{ id: "anthropic/claude-sonnet-4.6", name: "Claude Sonnet 4.6", contextWindow: 200_000, maxOutputTokens: 64_000, input: ["text", "image"] },
+		{ id: "openai/gpt-5.6-terra", name: "GPT-5.6 Terra", contextWindow: 400_000, maxOutputTokens: 400_000, input: ["text"] },
+		{ id: " padded", name: "Invalid" },
+		...Array.from({ length: 300 }, (_, index) => ({ id: `model/${index}`, name: `Model ${index}` })),
+	]) as { auth: unknown; protocol: string; base_url: string; model_metadata: Record<string, Record<string, unknown>> };
+	assert.equal(connection.protocol, "openai-chat-completions");
+	assert.equal(connection.base_url, "https://api.phaseo.app/v1");
+	assert.deepEqual(connection.auth, { type: "bearer", env: "PHASEO_FX_API_KEY" });
+	const ids = Object.keys(connection.model_metadata);
+	assert.equal(ids.length, 256);
+	assert.equal(ids[0], "openai/gpt-5.6-terra");
+	assert.equal(ids.includes(" padded"), false);
+	assert.deepEqual(connection.model_metadata["openai/gpt-5.6-terra"], { context_window: 400_000, supports_vision: false });
+	assert.deepEqual(connection.model_metadata["anthropic/claude-sonnet-4.6"], { context_window: 200_000, max_output_tokens: 64_000, supports_vision: true });
+});
+
+test("fx settings preserve unrelated values and refuse unmanaged connections", () => {
+	const before = JSON.stringify({ provider: "codex", models: { codex: "gpt-5.4-mini" }, providers: { local: { protocol: "openai-chat-completions", base_url: "http://localhost:11434/v1", auth: { type: "none" } } }, session_titles: false }, null, 2);
+	const settings = JSON.parse(renderFxSettings("/tmp/settings.json", before, "openai/gpt-5.6-terra"));
+	assert.equal(settings.provider, "phaseo");
+	assert.deepEqual(settings.models, { codex: "gpt-5.4-mini", phaseo: "openai/gpt-5.6-terra" });
+	assert.equal(settings.providers.local.base_url, "http://localhost:11434/v1");
+	assert.equal(settings.session_titles, false);
+	assert.doesNotMatch(JSON.stringify(settings), /phaseo_v1_sk_/);
+	const existing = renderFxSettings("/tmp/settings.json", null);
+	assert.throws(() => renderFxSettings("/tmp/settings.json", existing), /not managed by Phaseo CLI/);
+	assert.doesNotThrow(() => renderFxSettings("/tmp/settings.json", existing, undefined, undefined, true));
+	assert.throws(() => renderFxSettings("/tmp/settings.json", "{ // comment\n}"), /malformed fx settings/);
+	const full = JSON.stringify({ providers: Object.fromEntries(Array.from({ length: 32 }, (_, index) => [`p${index}`, {}])) });
+	assert.throws(() => renderFxSettings("/tmp/settings.json", full), /at most 32 custom connections/);
+});
+
+test("fx removal deletes the settings file setup created once nothing else is in it", async () => {
+	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-fx-integration-"));
+	const settingsPath = join(homeDir, ".fx", "settings.json");
+	try {
+		const options = { homeDir };
+		await applyChanges(await fxAdapter.planSetup(options));
+		assert.equal(JSON.parse(await readFile(settingsPath, "utf8")).provider, "phaseo");
+		await applyChanges(await fxAdapter.planRemove(options));
+		assert.equal(await readFile(settingsPath, "utf8").catch(() => null), null);
+	} finally {
+		await rm(homeDir, { recursive: true, force: true });
+	}
+});
+
+test("fx install check refuses a different fx command on PATH", async () => {
+	const vercelHelp = "𝒇x v0.0.15\nFast, native coding agent for the terminal.\n";
+	const viewerHelp = "Usage: fx [flags] [--] [file] [code ...]\n";
+	assert.equal(isVercelFxHelp(vercelHelp), true);
+	assert.equal(isVercelFxHelp(viewerHelp), false);
+	const binDir = await mkdtemp(join(tmpdir(), "phaseo-fx-bin-"));
+	const path = process.env.PATH;
+	try {
+		await writeFile(join(binDir, "fx"), "");
+		process.env.PATH = binDir;
+		await assert.rejects(harnessInstallPlan("fx", async () => viewerHelp), /not Vercel Labs' fx coding agent/);
+		assert.equal(await harnessInstallPlan("fx", async () => vercelHelp), null);
+	} finally {
+		process.env.PATH = path;
+		await rm(binDir, { recursive: true, force: true });
+	}
+});
+
+test("fx setup without a catalog keeps the selected model's earlier metadata", () => {
+	const catalog = [{ id: "openai/gpt-5.6-terra", name: "GPT-5.6 Terra", contextWindow: 400_000, maxOutputTokens: 128_000, input: ["text", "image"] as Array<"text" | "image"> }];
+	const synced = renderFxSettings("/tmp/settings.json", null, "openai/gpt-5.6-terra", catalog);
+	const metadata = { context_window: 400_000, max_output_tokens: 128_000, supports_vision: true };
+	assert.deepEqual(JSON.parse(synced).providers.phaseo.model_metadata["openai/gpt-5.6-terra"], metadata);
+	const defaultOnly = JSON.parse(renderFxSettings("/tmp/settings.json", synced, "openai/gpt-5.6-terra", undefined, true));
+	assert.deepEqual(defaultOnly.providers.phaseo.model_metadata, { "openai/gpt-5.6-terra": metadata });
+	const unknown = JSON.parse(renderFxSettings("/tmp/settings.json", synced, "openai/new-model", undefined, true));
+	assert.deepEqual(unknown.providers.phaseo.model_metadata, { "openai/new-model": {} });
+});
+
+test("fx credential file is shell-safe and owner-marked", () => {
+	assert.equal(renderFxEnv("phaseo_v1_sk_abc"), "# Managed by Phaseo CLI. Run `phaseo integrations remove fx` to remove.\nexport PHASEO_FX_API_KEY='phaseo_v1_sk_abc'\n");
+	assert.throws(() => renderFxEnv("bad'key"), /cannot be written to a shell file safely/);
+});
+
+test("fx setup switches the active provider and removal restores it", async () => {
+	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-fx-integration-"));
+	const settingsPath = join(homeDir, ".fx", "settings.json");
+	const original = `${JSON.stringify({ provider: "gateway", models: { gateway: "anthropic/claude-sonnet-4.6" }, permission_mode: "ask" }, null, 2)}\n`;
+	try {
+		await applyChanges([{ path: settingsPath, before: null, after: original, description: "fixture" }]);
+		const options = { homeDir, model: "openai/gpt-5.6-terra" };
+		await applyChanges([...await fxAdapter.planSetup(options), ...await fxAdapter.planCredential?.(options, "phaseo-secret") ?? []]);
+		assert.equal((await fxAdapter.inspect(options)).status, "configured");
+		const configured = JSON.parse(await readFile(settingsPath, "utf8"));
+		assert.equal(configured.provider, "phaseo");
+		assert.equal(configured.models.phaseo, "openai/gpt-5.6-terra");
+		assert.match(await readFile(fxEnvPath(options), "utf8"), /export PHASEO_FX_API_KEY='phaseo-secret'/);
+
+		// Re-running setup keeps the originally recorded provider.
+		await applyChanges(await fxAdapter.planSetup({ ...options, model: "anthropic/claude-sonnet-4.6" }));
+		await applyChanges(await fxAdapter.planRemove(options));
+		const removed = JSON.parse(await readFile(settingsPath, "utf8"));
+		assert.deepEqual(removed, JSON.parse(original));
+		assert.equal(await readFile(fxEnvPath(options), "utf8").catch(() => null), null);
+		assert.notEqual((await fxAdapter.inspect(options)).status, "configured");
+		assert.deepEqual(await fxAdapter.planRemove(options), []);
+	} finally {
+		await rm(homeDir, { recursive: true, force: true });
+	}
+});
+
+test("fx removal leaves a provider the user selected after setup", async () => {
+	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-fx-integration-"));
+	const settingsPath = join(homeDir, ".fx", "settings.json");
+	try {
+		const options = { homeDir };
+		await applyChanges(await fxAdapter.planSetup(options));
+		const configured = JSON.parse(await readFile(settingsPath, "utf8"));
+		await writeFile(settingsPath, `${JSON.stringify({ ...configured, provider: "codex" }, null, 2)}\n`);
+		await applyChanges(await fxAdapter.planRemove(options));
+		assert.deepEqual(JSON.parse(await readFile(settingsPath, "utf8")), { provider: "codex" });
 	} finally {
 		await rm(homeDir, { recursive: true, force: true });
 	}

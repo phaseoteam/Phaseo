@@ -4,7 +4,7 @@
 
 import type { AdapterResult, ProviderExecuteArgs } from "@providers/types";
 import { resolveOpenAICompatKey } from "@providers/openai-compatible/config";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 
 const COHERE_PARSE_URL = "https://api.cohere.com/v2/parse";
 
@@ -49,7 +49,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		finish_reason: null,
 	};
 	if (args.pricingCard) {
-		const pricedUsage = computeBill(usageMeters, args.pricingCard);
+		const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard);
 		bill.cost_cents = pricedUsage.pricing.total_cents;
 		bill.currency = pricedUsage.pricing.currency as "USD";
 		bill.usage = pricedUsage;

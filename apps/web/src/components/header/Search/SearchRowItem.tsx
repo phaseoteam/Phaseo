@@ -1,6 +1,8 @@
 "use client";
 
 import { Logo } from "@/components/Logo";
+import { EpochLogo } from "@/components/EpochLogo";
+import { isEpochSearchResult, benchmarkSearchAliases } from "./Search.benchmarks";
 import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import {
 	CommandItem,
@@ -35,7 +37,7 @@ export function SearchRowItem({
 	type = "default",
 	showSubtitle = true,
 }: SearchRowItemProps) {
-	const commandKeywords = keywords?.filter(Boolean) ?? [];
+	const commandKeywords = [...(keywords?.filter(Boolean) ?? []), ...benchmarkSearchAliases(href)];
 	const commandValue = [title, href]
 		.filter(Boolean)
 		.join(" ");
@@ -89,6 +91,7 @@ function SearchRowIcon({
 	type?: "benchmark" | "comparison" | "default";
 }) {
 	if (type === "benchmark") {
+		if (isEpochSearchResult(href)) return <EpochLogo size={20} />;
 		if (/\/benchmarks\/(?:artificial-analysis|aa-[^/?#]+)(?:[/?#]|$)/.test(href)) {
 			return <ArtificialAnalysisLogo size={20} />;
 		}

@@ -41,7 +41,7 @@ export type DecisionCreateResponse =
               right: number;
               top: number;
             };
-            confidence: number;
+            confidence: number | null;
             name: string | null;
             type: "box";
           }

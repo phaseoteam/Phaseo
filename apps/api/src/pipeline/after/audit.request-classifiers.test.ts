@@ -24,6 +24,12 @@ vi.mock("@/runtime/env", async (importOriginal) => ({
 	...(await importOriginal<Record<string, unknown>>()),
 	getSupabaseAdmin: () => ({ rpc }),
 }));
+// The workspace is in the request classifiers beta (#3061). The real gate reads the runtime
+// bindings, which this test doesn't configure, so classification was silently skipped.
+vi.mock("@core/feature-flags", async (importOriginal) => ({
+	...(await importOriginal<Record<string, unknown>>()),
+	isRequestClassifiersAccessEnabled: async () => true,
+}));
 
 import { handleSuccessAudit } from "./audit";
 
@@ -97,6 +103,8 @@ describe("handleSuccessAudit request classifiers", () => {
 			labels: [{ key: "department", value: "legal", confidence: 0.8 }],
 			response_id: "resp_classifier_1",
 			cost_nanos: 12_000,
+			// How the classifier model was asked (#3066); without a known route it's a schema request.
+			format: "json_schema",
 		}]);
 		expect(rpc).toHaveBeenCalledWith("record_request_classifier_spend", expect.objectContaining({ p_cost_nanos: 12_000 }));
 	});

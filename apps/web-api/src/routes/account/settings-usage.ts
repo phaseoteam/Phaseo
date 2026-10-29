@@ -3,8 +3,10 @@ import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
+import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
@@ -261,7 +263,7 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 		const monthUsageQuery = scope.creatorId || keyId || labelFilter ? null : loadMonthUsage();
 		const [keysResult, current, previous, recent, labelFacetsResult, monthUsage, requestClassifiers] = await Promise.all([
 			context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)
-				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
+				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: true }),
 			loadWindow(from!, to!, bucket),
 			loadWindow(previousFrom!, previousTo!, null),
 			loadWindow(recentFrom, new Date(observedAt).toISOString(), null),
@@ -450,6 +452,13 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 				.limit(500);
 			if (legacyResult.error && v2Result.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 			upstreamRequests = legacyResult.data ?? [];
+			// Legacy rows can hold captured payloads; apply the workspace's contents setting to them.
+			if (upstreamRequests.some((row) => row.request_payload != null || row.response_payload != null)) {
+				const access = await readIoLogContentsAccess(context.client, workspaceId);
+				if (!canReadIoLogContents(access, context.role)) {
+					upstreamRequests = upstreamRequests.map((row) => ({ ...row, request_payload: null, response_payload: null }));
+				}
+			}
 			const requestIds = Array.from(new Set(upstreamRequests.map((row) => row.request_id)));
 			if (requestIds.length) {
 				const latencyResult = await context.client.from("gateway_requests").select("request_id,created_at,gateway_ttft_ms").eq("workspace_id", workspaceId).in("request_id", requestIds);
@@ -460,7 +469,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		const models = Array.from(new Set(upstreamRequests.map((row) => String(row.model_id ?? "").trim()).filter(Boolean)));
 		const providers = Array.from(new Set(upstreamRequests.map((row) => String(row.provider ?? "").trim()).filter(Boolean)));
 		const metadata = await metadataForIds(context, { models, providers });
-		const keysResult = await context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true });
+		const keysResult = await context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: true });
 		return c.json({ data: { availableKeys: keysResult.data ?? [], modelMetadataEntries: metadata.modelMetadataEntries, providerMetadataEntries: metadata.providerMetadataEntries, providerNameEntries: metadata.providerNameEntries, upstreamRequests }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
 	}
 	if (view === "jobs") {
@@ -518,7 +527,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	const labelFilter = labelFilterResult && "key" in labelFilterResult ? labelFilterResult : null;
 	// Only an exact key and value has totals in the label rollup.
 	const exactLabelFilter = isExactLabelFilter(labelFilter) ? labelFilter : null;
-	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput,response_timeline:detail_metadata->response_timeline").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
+	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput,response_timeline:detail_metadata->response_timeline,labels:detail_metadata->labels").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
 	requestQuery = applyRequestLabelFilter(requestQuery, labelFilter);
 	for (const [param, column, operatorParam = `${param}_op`] of [
 		["model", "model_id"], ["provider", "provider"], ["app", "app_id"],
@@ -576,7 +585,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		: null;
 	const [rollupResult, keysResult, facetsResult, labelFacetsResult, labelTotalsResult, requestClassifiers] = await Promise.all([
 		context.client.rpc("get_private_usage_facets", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to }),
-		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
+		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: true }),
 		context.client.rpc("get_gateway_request_facets", {
 			p_workspace_id: workspaceId,
 			p_from: timeRange.from,

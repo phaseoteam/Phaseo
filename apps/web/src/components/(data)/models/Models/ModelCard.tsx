@@ -265,7 +265,7 @@ function formatPrice(
 	}
 	if (value === 0) return options.allowZero ? "$0" : null;
 	const maximumFractionDigits = value < 0.001 ? 4 : value < 0.1 ? 3 : 2;
-	return `$${formatNumber(value, { maximumFractionDigits, notation: "standard" })}`;
+	return formatNumber(value, { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits, notation: "standard" });
 }
 
 // Matches the API's detail-row formatting: cents for fractional amounts of a

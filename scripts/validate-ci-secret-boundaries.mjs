@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { posix } from "node:path";
 import { fileURLToPath } from "node:url";
 
 function extractJob(workflow, name) {
@@ -147,10 +148,22 @@ export function validateAgentSdkReleaseSecretBoundaries(workflow) {
 	}
 }
 
+export function validateInfisicalDeploymentPaths(workflow) {
+	const deployJob = extractJob(workflow, "deploy");
+	for (const step of deployJob.split(/\r?\n {12}- /).slice(1)) {
+		if (!/\buses:\s*Infisical\/secrets-action@/i.test(step)) continue;
+		const path = step.match(/^\s*secret-path:\s*['"]?([^'"\s]+)['"]?\s*$/m)?.[1];
+		if (!path?.startsWith("/") || posix.normalize(path) === "/") {
+			throw new Error("Infisical deployment steps must read an explicit non-root folder");
+		}
+	}
+}
+
 const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isDirectRun) {
 	const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
 	validateCiSecretBoundaries(workflow);
+	validateInfisicalDeploymentPaths(workflow);
 	const agentSdkWorkflow = readFileSync(new URL("../.github/workflows/publish-agent-sdks.yml", import.meta.url), "utf8");
 	validateAgentSdkReleaseSecretBoundaries(agentSdkWorkflow);
 	console.log("CI secret-bearing deployment boundaries are valid.");

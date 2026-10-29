@@ -82,10 +82,11 @@ describe("Live billing", () => {
 			audio: { format: { type: "audio/pcm", rate: 24000 } }, delegation: { type: "responses",
 				responses: { model: "gpt-5.6-luna", max_output_tokens: 4096, service_tier: "default", tools: [] } } });
 	});
-	it("rejects API source, arbitrary backends, tools and client price overrides", () => {
+	it("rejects arbitrary backends, top-level tools and client price overrides", () => {
 		const request = { model: "openai/gpt-live-1", provider: "openai", source: "chat" };
 		expect(createLiveSessionSchema.safeParse(request).success).toBe(true);
-		for (const extra of [{ source: "api" }, { backend_model: "openai/expensive" }, { tools: [] }, { voice: "invalid" }, { final_cost_nanos: 0 }]) {
+		expect(createLiveSessionSchema.safeParse({ ...request, source: "api" }).success).toBe(true);
+		for (const extra of [{ backend_model: "openai/expensive" }, { tools: [] }, { voice: "invalid" }, { final_cost_nanos: 0 }]) {
 			expect(createLiveSessionSchema.safeParse({ ...request, ...extra }).success).toBe(false);
 		}
 		expect(createRealtimeSessionSchema.safeParse({ ...request, backend_model: config.backendModel }).success).toBe(false);

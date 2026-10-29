@@ -5,14 +5,14 @@ description: "Save reusable Gateway configurations for your team."
 icon: "sliders-horizontal"
 ---
 
-Presets are reusable configurations that help teams standardize prompts, model preferences, and routing defaults. They are managed in the Phaseo dashboard and can be shared across a team.
+Presets are reusable configurations that help teams standardize prompts, model preferences, and routing defaults. They are managed with the `phaseo presets` CLI commands, the `/v1/presets` API or the Phaseo dashboard, and can be shared across a team.
 
 ## Quick start
 
 <Steps>
 <Step title="Create a preset">
 
-Open **Dashboard -> Settings -> Presets** and create a preset with a clear slug, such as `release-summary`. Add only the defaults that should be shared across callers.
+Open **Dashboard -> Settings -> Presets** and create a preset with a clear slug, such as `release-summary`. Add only the defaults that should be shared across callers. From the CLI, run `phaseo presets create --name @release-summary --model <model-id>`.
 
 </Step>
 
@@ -66,6 +66,7 @@ Open the request in **Gateway -> Usage** to confirm which defaults were applied 
 ## What a preset can include
 
 - A system prompt to prepend to every request.
+- A [prompt template](./prompt-templates): messages with `{{variables}}` that each request fills in.
 - Allowed models or model families.
 - Provider allow/ignore lists for routing preferences.
 - Default parameters (temperature, top_p, max_tokens, and similar settings).
@@ -73,7 +74,7 @@ Open the request in **Gateway -> Usage** to confirm which defaults were applied 
 
 Preset names are prefixed with `@` to keep them easy to recognize.
 
-Invoke a preset only through the request's `model` field. Phaseo does not expose a separate `preset` request field.
+Invoke a preset through the request's `model` field, or through `prompt.id` when the preset has a [prompt template](./prompt-templates). Phaseo does not expose a separate `preset` request field.
 
 - Private and workspace presets use `@{slug}` and resolve inside the API key's workspace.
 - Public presets use `@{username}/{slug}` and can resolve from any workspace. For example, `@octavia/release-summary`.
@@ -96,6 +97,8 @@ Marketplace copies remain pinned to the exact upstream version they copied. When
 
 Phaseo retains both the immediate source and the complete ancestry of every fork. Marketplace pages can therefore distinguish direct forks from all descendants, even when a preset has been copied and republished several times.
 
+Requests can pin a published version by its label, such as `@support-triage@v3`, or by a named label such as `production` that you point at a version. Moving a label back to an earlier version is a rollback. See [Versions and labels](/v1/guides/prompt-templates#versions-and-labels).
+
 ## How preset merging works
 
 When a request resolves with a preset in gateway context, the preset is applied before provider routing:
@@ -112,6 +115,7 @@ This makes presets the main public surface for reusable request defaults and lig
 The dashboard preset flow is intentionally scoped to a stable, explicit subset of request shaping:
 
 - system prompt injection
+- prompt templates with typed variables
 - model allowlists
 - provider allow/ignore routing constraints
 - decoding and generation defaults
@@ -121,7 +125,7 @@ If you need more complex caller-specific transforms, keep them in one applicatio
 
 ## Manage presets
 
-Create and manage presets in **Dashboard -> Settings -> Presets**. Use separate slugs when workflows need meaningfully different prompt, routing, or caching behavior.
+Create and manage presets in **Dashboard -> Settings -> Presets**, or with `phaseo presets create|update`, `phaseo presets versions create` and `phaseo presets labels set` (the `/v1/presets` API). Use separate slugs when workflows need meaningfully different prompt, routing, or caching behavior.
 
 ## When to use presets
 
@@ -132,6 +136,7 @@ Create and manage presets in **Dashboard -> Settings -> Presets**. Use separate 
 
 ## Related guides
 
+- [Prompt Templates](./prompt-templates)
 - [Collect Feedback for Presets](./preset-feedback)
 - [Routing and Fallbacks](./routing-and-fallbacks)
 - [Inference Parameters](./inference-parameters)

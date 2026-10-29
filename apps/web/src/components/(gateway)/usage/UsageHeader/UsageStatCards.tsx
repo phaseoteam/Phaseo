@@ -16,6 +16,7 @@ import {
 	useDisplayFormatters,
 	useDisplayPreferences,
 } from "@/components/providers/DisplayPreferencesProvider";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 type Delta = { percent: number | null };
 
@@ -73,6 +74,21 @@ export default function UsageStatCards(props: {
 				const Icon = iconMap[c.icon] ?? BarChart3;
 				const iconColor =
 					iconColorMap[c.icon] ?? "text-muted-foreground";
+				const format: Format =
+					c.format ??
+					(c.icon === "spend"
+						? {
+								style: "currency",
+								currency: "USD",
+								currencyDisplay: "narrowSymbol",
+								maximumFractionDigits: 2,
+						  }
+						: {
+								useGrouping: true,
+								notation: preferences.numberNotation,
+								minimumFractionDigits: 0,
+								maximumFractionDigits: 0,
+						  });
 
 				return (
 					<Card key={i}>
@@ -100,30 +116,22 @@ export default function UsageStatCards(props: {
 										) : null}
 										<NumberFlow
 											value={c.value}
-											locales={preferences.locale === "system" ? undefined : preferences.locale}
-											// duration={0.8}
-											format={
-												c.format ??
-												(c.icon === "spend"
-													? {
-															style: "currency",
-															currency: "USD",
-															currencyDisplay:
-																"narrowSymbol",
-															maximumFractionDigits: 2,
-													  }
-													: {
-															useGrouping: true,
-															notation: preferences.numberNotation,
-															minimumFractionDigits: 0,
-															maximumFractionDigits: 0,
-													  })
+											locales={
+												format.style === "currency"
+													? MONEY_LOCALE
+													: preferences.locale === "system"
+														? undefined
+														: preferences.locale
 											}
+											// duration={0.8}
+											format={format}
 											className="leading-none"
-											aria-label={`${c.title}: ${display.number(c.value, {
-												minimumFractionDigits: 0,
-												maximumFractionDigits: 2,
-											})}`}
+											aria-label={`${c.title}: ${format.style === "currency"
+												? new Intl.NumberFormat(MONEY_LOCALE, format).format(c.value)
+												: display.number(c.value, {
+														minimumFractionDigits: 0,
+														maximumFractionDigits: 2,
+													})}`}
 										/>
 										{c.suffix ? (
 											<span

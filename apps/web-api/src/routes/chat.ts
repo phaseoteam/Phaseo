@@ -46,19 +46,18 @@ function realtimeWebSocketUrl(baseUrl: string, path: string): string {
 	return url.toString();
 }
 
-function normalizeRealtimeProvider(value: string): "openai" | "spacex-ai" | "google-ai-studio" | null {
-	if (value === "openai") return "openai";
+// Any catalogue provider id passes through; the gateway rejects providers its relay can't serve.
+function normalizeRealtimeProvider(value: string): string | null {
 	if (value === "xai" || value === "x-ai" || value === "spacex-ai") return "spacex-ai";
 	if (value === "google" || value === "google-ai-studio") return "google-ai-studio";
-	return null;
+	return /^[a-z0-9][a-z0-9-]{0,63}$/.test(value) ? value : null;
 }
 
 function normalizeRealtimeModel(provider: string, model: string): string {
 	if (provider === "spacex-ai") return model.includes("/") ? model.replace(/^(xai|x-ai)\//, "spacex-ai/") : `spacex-ai/${model}`;
 	if (model.includes("/")) return model;
-	if (provider === "openai") return `openai/${model}`;
-	if (provider === "x-ai") return `x-ai/${model}`;
-	return `google/${model}`;
+	if (provider === "google-ai-studio") return `google/${model}`;
+	return `${provider}/${model}`;
 }
 
 for (const [route, path] of Object.entries(POST_PATHS)) {

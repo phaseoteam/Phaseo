@@ -42,7 +42,8 @@ vi.mock("@core/video-public", () => ({
 	toPublicVideoStatus: (status: string | null | undefined) => status ?? "pending",
 }));
 
-vi.mock("@core/webhook-endpoints", () => ({
+vi.mock("@core/webhook-endpoints", async (importOriginal) => ({
+	buildWebhookSignatureHeaders: (await importOriginal<typeof import("@core/webhook-endpoints")>()).buildWebhookSignatureHeaders,
 	getWebhookEndpointSigningConfig: (...args: any[]) =>
 		getWebhookEndpointSigningConfigMock(...args),
 	validateWebhookEndpointUrl: (value: unknown) => {

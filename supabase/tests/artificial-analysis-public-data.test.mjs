@@ -49,6 +49,12 @@ try {
   await assert.rejects(publish(snapshot(2)), /Stale/);
   await assert.rejects(publish({ ...snapshot(4), methodologyVersions: ['4.2.0'] }), /downgrade/);
   await assert.rejects(publish({ ...snapshot(4), coverage: 'page_selection_only' }), /Invalid full/);
+  const lastV4 = (await get(null, 4)).rows[0].data;
+  await publish({ ...snapshot(5), methodologyVersions: ['5.0'] });
+  assert.equal((await get()).rows[0].data.methodology_version, '5.0', 'v5 becomes the default publication');
+  assert.deepEqual((await get(null, 4)).rows[0].data, lastV4, 'the final v4 publication stays selectable and unchanged');
+  await assert.rejects(publish(snapshot(6)), /downgrade/);
+  assert.deepEqual((await get(null, 4)).rows[0].data, lastV4, 'v4 cannot be republished once v5 exists');
   await assert.rejects(db.query('delete from public.artificial_analysis_public_snapshots'), /permission denied/);
   await assert.rejects(db.query('update public.artificial_analysis_public_snapshots set methodology_version=methodology_version'), /permission denied/);
   await db.exec('reset role');

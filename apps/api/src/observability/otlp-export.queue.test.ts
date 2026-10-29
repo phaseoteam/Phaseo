@@ -6,6 +6,14 @@ const state = vi.hoisted(() => ({
 	bindings: {} as Record<string, any>,
 	destinations: [] as Array<Record<string, unknown>>,
 	upserts: [] as Array<Array<Record<string, unknown>>>,
+	keyLookups: [] as Array<{ workspaceId?: string | null; keyId?: string | null }>,
+}));
+
+vi.mock("@pipeline/audit/io-logging", () => ({
+	keyNeverStoresContent: async (input: { workspaceId?: string | null; keyId?: string | null }) => {
+		state.keyLookups.push({ workspaceId: input.workspaceId, keyId: input.keyId });
+		return input.keyId === "key_agent";
+	},
 }));
 
 vi.mock("@core/tiered-cache", () => ({
@@ -55,6 +63,7 @@ describe("enqueueGatewayOtlpExport", () => {
 		state.bindings = { BROADCAST_QUEUE: { send }, BROADCAST_QUEUE_ENABLED: "true" };
 		state.destinations = [destination("destination-1"), destination("destination-2", true)];
 		state.upserts = [];
+		state.keyLookups = [];
 	});
 
 	it("queues one event for every selected destination", async () => {
@@ -85,5 +94,27 @@ describe("enqueueGatewayOtlpExport", () => {
 		expect(state.upserts[0].map((row) => row.destination_id)).toEqual(["destination-1", "destination-2"]);
 		expect(JSON.stringify(state.upserts[0][0].payload)).toContain("secret prompt");
 		expect(JSON.stringify(state.upserts[0][1].payload)).not.toContain("secret prompt");
+	});
+
+	it("never forwards content from a key that never stores content", async () => {
+		const agentRequest = { ...request, keyId: "key_agent" };
+		await enqueueGatewayOtlpExport(agentRequest);
+		const [message] = send.mock.calls[0];
+		expect(state.keyLookups).toEqual([{ workspaceId: "workspace-1", keyId: "key_agent" }]);
+		expect(message.telemetry.args.requestPayload).toEqual({ temperature: 0.2, response_format: { type: "json_object" } });
+		expect(message.telemetry.args.responsePayload).toBeNull();
+		expect(JSON.stringify(message)).not.toContain("secret");
+	});
+
+	it("never writes a never-store key's content to the outbox", async () => {
+		state.bindings = {};
+		expect(await enqueueGatewayOtlpExport({ ...request, keyId: "key_agent" })).toBe(2);
+		expect(JSON.stringify(state.upserts)).not.toContain("secret");
+	});
+
+	it("still forwards content for other keys", async () => {
+		await enqueueGatewayOtlpExport({ ...request, keyId: "key_other" });
+		const [message] = send.mock.calls[0];
+		expect(JSON.stringify(message)).toContain("secret prompt");
 	});
 });

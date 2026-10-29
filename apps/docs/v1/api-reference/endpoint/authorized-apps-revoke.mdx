@@ -1,0 +1,9 @@
+---
+title: "Revoke an authorized app"
+sidebarTitle: "Revoke authorized app"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml DELETE /me/authorized-apps/{id}"
+description: "Revoke an app's access so its tokens stop working."
+"og:image": "https://phaseo.app/og/dynamic?title=Revoke%20an%20authorized%20app&description=Revoke%20an%20app%27s%20access%20so%20its%20tokens%20stop%20working.&pathname=/docs/v1/api-reference/endpoint/authorized-apps-revoke"
+---
+<Note>This endpoint requires an OAuth access token with `oauth_clients:delete`. Revoking the calling app's own authorization signs it out.</Note>

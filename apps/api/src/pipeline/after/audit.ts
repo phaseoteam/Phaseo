@@ -7,6 +7,9 @@ import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
 import { applyRequestClassifiers } from "../classification/request-classifiers";
+import { keyIdIsOAuthClientId } from "@core/request-key";
+import { recordShadowSpend, releaseSpend, settleEnforcedSpend } from "@core/spend-limits";
+import { hasConfiguredKeyLimits } from "../before/context.shared";
 import type { PipelineContext } from "../before/types";
 import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
 import type { RequestResult } from "../execute";
@@ -22,6 +25,7 @@ import { mergeWebFetchObservability } from "./fetch-observability";
 import {
 	buildResponseTimeline,
 	resolveBeforeLatencyMs,
+	resolveFailoverMs,
 	resolveExecuteTotalLatencyMs,
 	resolveNonStreamLatencyMs,
 } from "./timing";
@@ -31,6 +35,54 @@ import {
 	persistDataContribution,
 } from "../classification/data-contribution";
 import { currentDataContributionDiscountNanos } from "../pricing/data-contribution-discount";
+
+/**
+ * Search and fetch details for the request log. A key that never stores content
+ * keeps the counts and statuses, not the queries, results, citations, titles or
+ * URLs, which all come from what was asked.
+ */
+function searchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
+	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
+	const search = value as Record<string, unknown>;
+	return { ...search, results: [], citations: [], nativeSearches: [], managedSearches: [] };
+}
+
+function webFetchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
+	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
+	const fetches = (value as { fetches?: unknown }).fetches;
+	return {
+		...(value as Record<string, unknown>),
+		fetches: Array.isArray(fetches)
+			? fetches.map((entry) => ({ ...(entry as Record<string, unknown>), url: null, finalUrl: null, title: null }))
+			: fetches,
+	};
+}
+
+/** Which preset version served the request, and the ref it pinned, if any. */
+function presetMetadata(ctx: PipelineContext) {
+    const preset = ctx.preset;
+    if (!preset) return null;
+    return {
+        id: preset.id,
+        slug: preset.slug ?? null,
+        version_id: preset.versionId ?? null,
+        version_label: preset.versionLabel ?? null,
+        ref: preset.ref ?? null,
+    };
+}
+
+function promptTemplateMetadata(ctx: PipelineContext) {
+    const template = ctx.promptTemplate;
+    if (!template) return null;
+    return {
+        preset_id: template.presetId,
+        preset_slug: template.presetSlug,
+        version_label: template.versionLabel ?? null,
+        ref: template.ref ?? null,
+        variable_names: template.variableNames,
+        message_count: template.messageCount,
+    };
+}
 
 function getProviderAttempts(ctx: PipelineContext): Array<Record<string, unknown>> {
     return Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : [];
@@ -198,6 +250,8 @@ export async function handleFailureAudit(
     },
 ) {
 	finishStreamingProvider(ctx, "error");
+	// Enforce mode: a failed request frees its spend-limit admission (no-op without one).
+	releaseSpend(ctx.spendAdmission);
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -236,6 +290,7 @@ export async function handleFailureAudit(
             stage: "execute",
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            zeroDataRetention: ctx.zeroDataRetention === true,
             endpoint: ctx.endpoint,
             model: ctx.model,
             requestedModel: ctx.requestedModel ?? ctx.model,
@@ -303,6 +358,8 @@ export async function handleFailureAudit(
                 } : {}),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
+                preset: presetMetadata(ctx),
+                prompt_template: promptTemplateMetadata(ctx),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
                 routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),
                 provider_enablement_diagnostics: sanitizeForAxiom(
@@ -311,9 +368,9 @@ export async function handleFailureAudit(
                 provider_candidate_diagnostics: sanitizeForAxiom(
                     ctx.providerCandidateBuildDiagnostics ?? null,
                 ),
-                web_fetch_observability: sanitizeForAxiom(
+                web_fetch_observability: webFetchObservabilityForLog(ctx, sanitizeForAxiom(
                     mergeWebFetchObservability(ctx.webFetchObservability ?? null),
-                ),
+                )),
                 replay_supported: true,
             },
             usage: (result.bill?.usage && typeof result.bill.usage === "object")
@@ -358,6 +415,7 @@ export async function handleFailureAudit(
             sessionId: ctx.meta.sessionId ?? null,
             edgeColo: ctx.meta.edgeColo ?? null,
             labels: ctx.meta.labels ?? null,
+            metadata: ctx.meta.requestMetadata ?? null,
         }),
         writeAxiom: () => emitGatewayRequestEvent({
             ctx,
@@ -438,6 +496,7 @@ export async function handleSuccessAudit(
         providerDurationMs: generationMs,
         providerTtftMs,
         gatewayE2eMs: endToEndMs,
+        failoverMs: resolveFailoverMs(ctx),
     });
     // Throughput is API-owned: output tokens divided by the full provider duration in seconds.
     ctx.meta.throughput_tps = outputPerformance.effectiveThroughputTps ?? undefined;
@@ -464,24 +523,25 @@ export async function handleSuccessAudit(
             guardrail_enforcement: ctx.guardrailEnforcement,
         })
         : null;
-    const searchObservability = sanitizeForAxiom(
+    const searchObservability = searchObservabilityForLog(ctx, sanitizeForAxiom(
         extractSearchObservability({
             body: ctx.body,
             gatewayResponse: gatewayResponse ?? null,
             providerResponse: result.rawResponse ?? null,
             managedSearch: ctx.searchObservability ?? null,
         }),
-    );
-    const webFetchObservability = sanitizeForAxiom(
+    ));
+    const webFetchObservability = webFetchObservabilityForLog(ctx, sanitizeForAxiom(
         mergeWebFetchObservability(ctx.webFetchObservability ?? null),
-    );
+    ));
 
-    await runGatewayTelemetryPipelines({
+    const deliveries = await runGatewayTelemetryPipelines({
         requestId: ctx.requestId,
         workspaceId: ctx.workspaceId,
         writeSupabase: shouldPersistGatewayAudit(ctx) ? () => auditSuccess({
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            zeroDataRetention: ctx.zeroDataRetention === true,
             provider: result.provider,
             providerApiModelId: result.apiModelId ?? null,
             providerModelSlug: result.providerModelSlug ?? null,
@@ -552,6 +612,8 @@ export async function handleSuccessAudit(
                 labels: ctx.meta.labels ?? [],
                 classifications: ctx.requestClassifications ?? null,
                 client_source: ctx.meta.clientSource ?? null,
+                preset: presetMetadata(ctx),
+                prompt_template: promptTemplateMetadata(ctx),
                 finish_reason: finishReason ?? null,
                 plugin_executions: sanitizeForAxiom(ctx.pluginExecutions ?? null),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
@@ -613,6 +675,7 @@ export async function handleSuccessAudit(
             sessionId: ctx.meta.sessionId ?? null,
             edgeColo: ctx.meta.edgeColo ?? null,
             labels: ctx.meta.labels ?? null,
+            metadata: ctx.meta.requestMetadata ?? null,
         }),
         writeAxiom: () => emitGatewayRequestEvent({
             ctx,
@@ -633,7 +696,42 @@ export async function handleSuccessAudit(
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     });
 
-	if (!isStealthRequest(ctx) && !byok && ctx.teamSettings?.dataContributionEnabled === true) {
+	// Shadow mode only: once the success row is written, the spend-limit coordinator can count it.
+	const rowWritten = deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered);
+	if (rowWritten && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef) && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
+		recordShadowSpend({
+			workspaceId: ctx.workspaceId,
+			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+			billingRequestId: ctx.billingRequestId,
+			requestId: ctx.requestId,
+			costNanos: totalNanos,
+			internal: ctx.internal,
+		});
+	}
+	// Enforce mode only: count the charge with the coordinator (or release the admission when no
+	// row was written). Independent of the legacy key-limit state.
+	if (!keyIdIsOAuthClientId(ctx.meta.apiKeyRef)) {
+		settleEnforcedSpend({
+			admission: ctx.spendAdmission,
+			rowWritten,
+			workspaceId: ctx.workspaceId,
+			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+			billingRequestId: ctx.billingRequestId,
+			requestId: ctx.requestId,
+			costNanos: totalNanos,
+			internal: ctx.internal,
+		});
+	}
+
+	// A key that never stores content, or a request under zero data retention, is never
+	// sampled for data contribution either.
+	if (
+		!isStealthRequest(ctx) &&
+		!byok &&
+		ctx.teamSettings?.dataContributionEnabled === true &&
+		ctx.neverStoreContent !== true &&
+		ctx.zeroDataRetention !== true
+	) {
 		const pricing = (usageWithMultimodal as any)?.pricing;
 		const currentDiscountNanos = currentDataContributionDiscountNanos(pricing, totalNanos);
 		const capture = await persistDataContribution({

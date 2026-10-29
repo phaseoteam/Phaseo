@@ -1,0 +1,80 @@
+---
+icon: "phone"
+title: "リアルタイム音声"
+description: "Python SDK で Phaseo のリレーを通してリアルタイム音声通話を行い、通話終了時に最終請求額を受け取ります。"
+---
+
+<Note>
+リアルタイム音声はベータ版で、ワークスペースごとにアクセスが制限されています。
+</Note>
+
+**メソッド**: `AsyncPhaseo` の `await client.realtime.connect()` はセッションを作成し（`POST /v1/audio/realtime/sessions`）、リレーの WebSocket を開き、リレーが `relay.connected` を送信した時点で戻ります。リアルタイムクライアントは非同期専用で、オプションの `websockets` パッケージが必要です。
+
+```bash
+pip install "phaseo[realtime]"
+```
+
+このパッケージがない場合、`connect()` はそのインストールコマンドを含む `ImportError` を送出します。リレーのプロトコル、警告、理由コードについては [リアルタイム音声セッション](/ja/v1/guides/realtime-voice) を参照してください。
+
+### 例
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo, RealtimeSessionClosedError
+
+async def main(pcm16_chunk: bytes) -> None:
+    client = AsyncPhaseo()  # reads PHASEO_API_KEY
+    session = await client.realtime.connect(
+        "openai/gpt-realtime-2", voice="marin", instructions="Answer in one sentence."
+    )
+    session.on_warning(lambda warning: print("warning", warning["code"]))
+
+    # PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+    await session.send_audio(pcm16_chunk)
+
+    try:
+        ended = await session.end(reason="caller hung up")
+        print(ended["reason"], ended["duration_seconds"], ended["cost"]["total_usd"], ended["billing_status"])
+    except RealtimeSessionClosedError as error:
+        # The call is still billed. Fetch the final cost later with error.final_bill["path"].
+        print(error)
+    finally:
+        await client.close()
+```
+
+代わりにすべてのイベントを読み取るには、セッションを反復処理します。最初のイテレーターは、`connect()` が戻った後に受信したイベントも `relay.connected` から順に受け取ります。反復処理はソケットが閉じると終了します。
+
+```python
+async for event in session:
+    if event["type"] == "response.output_audio.delta":
+        play(event["delta"])
+```
+
+`async with session:` は、ブロックを抜けるときに通話がまだ終了していなければ `end()` で通話を終了します。
+
+### 接続オプション
+
+- `model`（必須）: リアルタイムモデルの ID。例: `openai/gpt-realtime-2`。
+- `voice`、`instructions`、`provider`、`metadata`: セッション作成リクエストに渡されます。
+- `connect_timeout`: `relay.connected` を待つ秒数。デフォルトは 30 です。
+- `websocket_connect`: 接続済みのソケットを返す非同期呼び出し可能オブジェクト `(url, subprotocols)`。別の WebSocket ライブラリを使う場合に指定します。
+
+### セッション
+
+| メンバー | 説明 |
+| --- | --- |
+| `id`, `info` | セッション ID と、`client_secret` を除いたセッション作成レスポンス。 |
+| `await send_audio(pcm16)` | PCM16 の `bytes` を `client.audio` として送信します。SDK が base64 エンコードします。 |
+| `await send(event)` | プロバイダー固有のメッセージ用に、任意のイベントを JSON として送信します。 |
+| `on(type, listener)` | 1 つのイベントタイプ、または `"*"` ですべてのイベントを購読します。購読解除用の関数を返します。プロバイダーのイベントは dict としてそのまま届きます。 |
+| `on_warning(listener)`, `on_ended(listener)` | `session.warning` と `session.ended` 用のヘルパー。 |
+| `async for event in session` | ソケットが閉じるまで、すべてのイベントを返します。 |
+| `await end(reason=None, cancel_response=None, timeout=60)` | `session.end` を送信し、`session.ended` を返します。内容は `reason`、`initiated_by`、`duration_seconds`、`usage`、`cost`、`billing_status`、および請求が確定していない場合は `final_bill` です。 |
+| `ended` | 通話がどのように終了しても `session.ended` を返す Future。プロバイダーやゲートウェイが開始した終了も含みます。 |
+| `await close()` | 請求額を待たずにソケットを閉じます。通話は引き続き課金されます。 |
+
+### エラー
+
+`session.ended` を受け取らないままソケットが閉じた場合、または `end()` がタイムアウトした場合、`end()` と `ended` は `RealtimeSessionClosedError` を送出します。このエラーには `session_id`、`close_code`、`close_reason`、`final_bill` があります。最後の値は、確定後に最終コストを返すリクエスト `GET /v1/generations?id=realtime%3A<session_id>` です。`realtime_final_bill(session_id)` は同じリクエストを作成します。
+
+`connect()` は、接続前にリレーがセッションを終了した場合に例外を送出し、`relay.connected` が時間内に届かない場合は `TimeoutError` を送出します。

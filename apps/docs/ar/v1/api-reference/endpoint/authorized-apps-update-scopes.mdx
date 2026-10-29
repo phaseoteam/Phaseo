@@ -1,0 +1,8 @@
+---
+title: "إزالة نطاقات من تطبيق مصرّح به"
+sidebarTitle: "تقليص نطاقات التطبيق"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml PATCH /me/authorized-apps/{id}"
+description: "قلّص وصول تطبيق مصرّح به إلى عدد أقل من النطاقات."
+---
+<Note>تتطلب نقطة النهاية هذه رمز وصول OAuth يتضمن `oauth_clients:write`. يمكن إزالة النطاقات فقط؛ لإضافتها، صرّح للتطبيق مرة أخرى في المتصفح.</Note>

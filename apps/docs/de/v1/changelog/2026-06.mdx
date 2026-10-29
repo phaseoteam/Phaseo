@@ -3,14 +3,15 @@ title: "Juni"
 description: "Phaseo-Produktupdates, SDK-Änderungen und Modellveröffentlichungen aus Juni 2026."
 ---
 
-<Update label="30. Juni 2026" tags={["Funktionen","Modellveröffentlichungen"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### Funktionen
+<ChangelogFilters labels={{"product":"Produkt","api":"API & SDKs","models":"Modelle"}} clearLabel="Zurücksetzen" />
 
-- Preisrechner unterstützen jetzt Zeitfenster und den direkten Modellvergleich. So lassen sich Kosten für Spitzenlasten, Echtzeitnutzung und einzelne Routen besser einschätzen ([PR #864](https://github.com/phaseoteam/Phaseo/pull/864)).
-- Das Layout des Preisrechners wurde vereinfacht, damit sich Modell, Anbieter und Nutzungsannahmen vor einem Kostenvergleich leichter anpassen lassen ([PR #864](https://github.com/phaseoteam/Phaseo/pull/864)).
+<Update label="30. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![Claude Sonnet 5 Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-30--anthropic--claude-sonnet-5.png)
 
@@ -19,94 +20,221 @@ description: "Phaseo-Produktupdates, SDK-Änderungen und Modellveröffentlichung
 - [Mistral: Leanstral 1.5](https://phaseo.app/models/mistral/leanstral-1.5)
 - [Mistral: OCR 4](https://phaseo.app/models/mistral/ocr-4)
 
+</div>
+
 </Update>
 
-<Update label="29. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="29. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Das Phaseo Agent SDK für TypeScript `0.1.1` ist die erste öffentliche Version und dient zum Bauen mehrstufiger Agent-Schleifen mit Tools auf Basis des Gateways; siehe [Agent SDK Overview](../sdk-reference/agent-sdk/overview.mdx) ([#618](https://github.com/phaseoteam/Phaseo/pull/618), [#610](https://github.com/phaseoteam/Phaseo/pull/610)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 - [Meituan: LongCat 2.0](https://phaseo.app/models/meituan/longcat-2.0)
 
+</div>
+
 </Update>
 
-<Update label="23. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="28. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Die Modellseite listet angekündigte Modelle als **Coming Soon** mit ihren Katalogpreisen und zeigt Modelle nur für Partner als **Limited Access** ([#850](https://github.com/phaseoteam/Phaseo/pull/850), [#852](https://github.com/phaseoteam/Phaseo/pull/852)).
+- Neuer Leitfaden: [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx) beschreibt den Wechsel zu den Stufen Sol, Terra und Luna, einschließlich Reasoning-Aufwand und Cache-Preisen ([#850](https://github.com/phaseoteam/Phaseo/pull/850)).
+
+</div>
+
+</Update>
+
+<Update label="23. Juni 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![Gemini 3.1 Flash Lite image (Nano Banana 2 Lite) Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-23--google--gemini-3-1-flash-lite-image.png)
 
 - [Google: Gemini 3.1 Flash Lite image (Nano Banana 2 Lite)](https://phaseo.app/models/google/gemini-3.1-flash-lite-image)
 
+</div>
+
 </Update>
 
-<Update label="17. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="17. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![Grok Imagine Video 1.5 Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-17--x-ai--grok-imagine-video-1-5.png)
 
 - [xAI: Grok Imagine Video 1.5](https://phaseo.app/models/x-ai/grok-imagine-video-1.5)
 
+</div>
+
 </Update>
 
-<Update label="16. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="16. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![GLM 5.2 Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-16--z-ai--glm-5-2.png)
 
 - [z.AI: GLM 5.2](https://phaseo.app/models/z-ai/glm-5.2)
 
+</div>
+
 </Update>
 
-<Update label="15. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="15. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Anfragen mit `service_tier: "priority"` werden jetzt nur an Anbieter geleitet, die diese Stufe unterstützen, und xAI- und Moonshot-Anfragen werden nach der tatsächlich bedienten Stufe abgerechnet; siehe [Service-Stufen](../guides/service-tiers.mdx) ([#746](https://github.com/phaseoteam/Phaseo/pull/746), [#741](https://github.com/phaseoteam/Phaseo/pull/741), [#745](https://github.com/phaseoteam/Phaseo/pull/745)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 - [ByteDance: Seedance 2.0 Mini (2026-06-15)](https://phaseo.app/models/bytedance/seedance-2.0-mini-260615)
 
+</div>
+
 </Update>
 
-<Update label="14. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="14. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 - [CrofAI: Greg 2 Super](https://phaseo.app/models/crofai/greg-2-super)
 - [CrofAI: Greg 2 Ultra](https://phaseo.app/models/crofai/greg-2-ultra)
 
+</div>
+
 </Update>
 
-<Update label="12. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="12. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Der **Monitor**-Feed zeigt Änderungen an Modell-Links sowie Abkündigungs- und Ausmusterungsdaten, und Preisänderungen mit mehreren Plänen haben einen Planumschalter ([#703](https://github.com/phaseoteam/Phaseo/pull/703), [#704](https://github.com/phaseoteam/Phaseo/pull/704)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Beta:** Die Phaseo CLI `0.1.1` ist die erste öffentliche Version, mit Anmeldung im Browser, `--json`-Ausgabe und Befehlen zum Verwalten von Schlüsseln, Workspaces, Presets und Guthaben; siehe [Phaseo CLI](../guides/integrations/phaseo-cli.mdx) ([#618](https://github.com/phaseoteam/Phaseo/pull/618), [#562](https://github.com/phaseoteam/Phaseo/pull/562)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![Kimi K2.7 Code Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-12--moonshotai--kimi-k2-7-code.png)
 
 - [Moonshot: Kimi K2.7 Code](https://phaseo.app/models/moonshotai/kimi-k2.7-code)
 
+</div>
+
 </Update>
 
-<Update label="11. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="11. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Chat zeigt Anfragefehler direkt unter der fehlgeschlagenen Antwort, und das Eingabefeld bietet Karten, die gängige Evaluierungs- und Produktivitäts-Prompts einfügen ([#691](https://github.com/phaseoteam/Phaseo/pull/691)).
+- Die Einstellungen teilen Activity und Usage in **Observability**-Seiten für Overview, Trends, Explore, Guardrails und Logs auf ([#693](https://github.com/phaseoteam/Phaseo/pull/693)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Server-Tools ergänzen Websuche, Webabruf, Advisor, Bildgenerierung, Apply Patch und Datum/Uhrzeit für Anfragen an Chat Completions, Responses und Messages, abgerechnet pro Nutzung; siehe [Server-Tools](../guides/server-tools/index.mdx) ([#690](https://github.com/phaseoteam/Phaseo/pull/690)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 - [z.AI: GLM 5.2](https://phaseo.app/models/z-ai/glm-5.2)
 
+</div>
+
 </Update>
 
-<Update label="10. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="10. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Neue Konten starten bei **Onboarding**, einer Anleitung in drei Schritten, um einen API-Schlüssel zu erstellen, ein Modell zu wählen und eine erste Anfrage als Vorschau zu sehen ([#689](https://github.com/phaseoteam/Phaseo/pull/689)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Inkompatible Änderung:** `GET /v1/models` ist jetzt der einzige Endpunkt zum Abrufen von Modellen; `/v1/gateway/models` und `/v1/data/models` entfallen, rufe stattdessen `/v1/models` auf; siehe [Modelle auflisten](../api-reference/endpoint/models.mdx) ([#681](https://github.com/phaseoteam/Phaseo/pull/681)).
+- Die Management-API ergänzt `/v1/presets`, `/v1/settings`, `/v1/guardrails` und `/v1/management-keys`, und `GET /v1/me` liefert den Nutzer und Workspace hinter einem OAuth-Token ([#562](https://github.com/phaseoteam/Phaseo/pull/562)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![DiffusionGemma 26B A4B IT Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-10--google--diffusiongemma-26b-a4b-it.png)
 
 - [Google: DiffusionGemma 26B A4B IT](https://phaseo.app/models/google/diffusiongemma-26b-a4b-it)
 
+</div>
+
 </Update>
 
-<Update label="9. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="9. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Die Seite **Monitor** listet neue Modelle, neue Anbieter und Statusänderungen von Anbietern als getrennte Ereignisse, und die Fußzeile verlinkt sie unter **Explore** ([#678](https://github.com/phaseoteam/Phaseo/pull/678), [#679](https://github.com/phaseoteam/Phaseo/pull/679)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![Claude Fable 5 Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-09--anthropic--claude-fable-5.png)
 
@@ -114,32 +242,124 @@ description: "Phaseo-Produktupdates, SDK-Änderungen und Modellveröffentlichung
 - [Anthropic: Claude Mythos 5](https://phaseo.app/models/anthropic/claude-mythos-5)
 - [Google: Gemini 3.5 Live Translate Preview](https://phaseo.app/models/google/gemini-3.5-live-translate-preview)
 
+</div>
+
 </Update>
 
-<Update label="5. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="8. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Die Lebenszykluskarten auf Modellseiten zeigen jedes Ankündigungs-, Veröffentlichungs-, Abkündigungs- und Ausmusterungsdatum mit einem relativen Zeitlabel, das beim Darüberfahren den genauen Abstand nennt ([#671](https://github.com/phaseoteam/Phaseo/pull/671)).
+- Neue **Methodology**-Seiten erklären, wie Phaseo Modellpreise berechnet, Latenz und Durchsatz misst, Benchmarks normalisiert und die Verfügbarkeit von Anbietern verfolgt ([#639](https://github.com/phaseoteam/Phaseo/pull/639)).
+
+</div>
+
+</Update>
+
+<Update label="7. Juni 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Modellseiten öffnen sich jetzt oben; zuvor blieb beim Öffnen weit unten aus der Modellliste die Scrollposition der Liste erhalten ([#631](https://github.com/phaseoteam/Phaseo/pull/631)).
+- Die Modellliste ist wieder nach Veröffentlichungs- oder Ankündigungsdatum sortiert; zuvor erschienen einige ältere Modelle wie Whisper 1 mit einem Datum aus 2026 ganz oben ([#632](https://github.com/phaseoteam/Phaseo/pull/632)).
+- Der Kauf von Guthaben funktioniert wieder für Workspaces mit einem fehlenden oder ungültigen gespeicherten Stripe-Kunden; zuvor startete der Checkout teilweise nicht ([#633](https://github.com/phaseoteam/Phaseo/pull/633)).
+
+</div>
+
+</Update>
+
+<Update label="6. Juni 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Modellseiten können über dem Modellkopf einen Hinweis in den Stufen Info, Warnung oder kritisch zeigen, etwa zu Zugangsbeschränkungen oder Ausmusterungen ([#624](https://github.com/phaseoteam/Phaseo/pull/624)).
+
+</div>
+
+</Update>
+
+<Update label="5. Juni 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Der Quickstart auf Modellseiten hat zwei Schritte, API-Schlüssel holen und fertige Anfrage kopieren, und ein Klick auf eine akzeptierte Modell-ID aktualisiert jetzt das Beispiel ([#556](https://github.com/phaseoteam/Phaseo/pull/556), [#619](https://github.com/phaseoteam/Phaseo/pull/619)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![Nex N2 Mini Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-05--nex-agi--nex-n2-mini.png)
 
 - [Nex AGI: Nex N2 Mini](https://phaseo.app/models/nex-agi/nex-n2-mini)
 - [Nex AGI: Nex N2 Pro](https://phaseo.app/models/nex-agi/nex-n2-pro)
 
+</div>
+
 </Update>
 
-<Update label="3. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="4. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Chat zeigt, welcher Anbieter jede Antwort geliefert hat, und die Modellauswahl gruppiert Modelle nach Veröffentlichungsmonat, mit Favoriten in einem eigenen Abschnitt ([#610](https://github.com/phaseoteam/Phaseo/pull/610)).
+- Chat warnt, wenn ein gespeicherter Chat ein abgekündigtes Modell nutzt, und wechselt zum Nachfolger, wenn der Katalog einen nennt ([#610](https://github.com/phaseoteam/Phaseo/pull/610)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Textanfragen erreichen jetzt auch Anbieter, die nur einen der Endpunkte Responses, Chat Completions oder Messages unterstützen, statt als nicht unterstützt zu scheitern ([#610](https://github.com/phaseoteam/Phaseo/pull/610)).
+
+</div>
+
+</Update>
+
+<Update label="3. Juni 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![Gemma 4 12B Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-03--google--gemma-4-12b.png)
 
 - [Google: Gemma 4 12B](https://phaseo.app/models/google/gemma-4-12b)
 
+</div>
+
 </Update>
 
-<Update label="1. Juni 2026" tags={["Modellveröffentlichungen"]}>
+<Update label="2. Juni 2026">
 
-### Modellveröffentlichungen
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Das Changelog der Dokumentation fasst Produkt-, SDK- und Modell-Neuerungen in einer einzigen Zeitleiste statt auf getrennten Seiten zusammen ([#588](https://github.com/phaseoteam/Phaseo/pull/588)).
+
+</div>
+
+</Update>
+
+<Update label="1. Juni 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
 
 ![MiniMax M3 Grafik zur Modellveröffentlichung](../../../images/model-releases/2026-06-01--minimax--minimax-m3.png)
 
@@ -147,5 +367,6 @@ description: "Phaseo-Produktupdates, SDK-Änderungen und Modellveröffentlichung
 - [Nvidia: Nemotron 3 Ultra](https://phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b)
 - [Qwen: Qwen 3.7 Plus](https://phaseo.app/models/qwen/qwen3.7-plus)
 
-</Update>
+</div>
 
+</Update>

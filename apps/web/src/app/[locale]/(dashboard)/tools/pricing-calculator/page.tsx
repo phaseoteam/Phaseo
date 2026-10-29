@@ -43,7 +43,9 @@ async function PricingCalculatorPageContent({
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
 	const [catalogueResult, cachedModelsResult, resolvedSearchParams] = await Promise.all([
-		fetchFrontendModels().catch(() => []),
+		// Only names, organisations and dates are read below; prices and
+		// providers come from the gateway and pricing fetchers.
+		fetchFrontendModels({ includeGatewayData: false }).catch(() => []),
 		fetchFrontendGatewayModels().catch(() => []),
 		searchParams,
 	]);

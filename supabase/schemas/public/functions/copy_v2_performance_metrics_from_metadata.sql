@@ -22,7 +22,11 @@ begin
     new.itl_ms := nullif(greatest(0, nullif(performance->>'itl_ms', '')::numeric), 0);
   end if;
   if performance ? 'phaseo_overhead_ms' then
-    new.phaseo_overhead_ms := greatest(0, round(nullif(performance->>'phaseo_overhead_ms', '')::numeric))::integer;
+    -- Zero is a real overhead reading; only a missing value becomes NULL.
+    new.phaseo_overhead_ms := case
+      when nullif(performance->>'phaseo_overhead_ms', '') is null then null
+      else greatest(0, round((performance->>'phaseo_overhead_ms')::numeric))::integer
+    end;
   end if;
   return new;
 end;

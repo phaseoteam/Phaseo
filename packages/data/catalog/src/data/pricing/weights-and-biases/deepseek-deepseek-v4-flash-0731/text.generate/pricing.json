@@ -1,8 +1,0 @@
-{
-  "key":"weights-and-biases:deepseek/deepseek-v4-flash-0731:text.generate","api_provider_id":"weights-and-biases","provider_slug":"weights-and-biases","api_model_id":"deepseek/deepseek-v4-flash-0731","capability_id":"text.generate",
-  "rules":[
-    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.13,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-08-21T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://wandb.ai/inference"},
-    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.07,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-08-21T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://wandb.ai/inference"},
-    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.28,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-08-21T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://wandb.ai/inference"}
-  ],"regions":[],"service_tiers":["standard"],"sources":[{"url":"https://wandb.ai/inference","kind":"pricing"}],"verification":{"status":"verified","checked_at":"2026-08-21T00:00:00Z","notes":"Verified against the live W&B model card."}
-}

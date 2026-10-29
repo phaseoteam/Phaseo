@@ -196,6 +196,40 @@ describe("buildGatewayGenAiOtlpPayload", () => {
 		expect(server["phaseo.label.department"]).toEqual({ stringValue: "legal" });
 		expect(server["phaseo.label.topics"]).toEqual({ arrayValue: { values: [{ stringValue: "billing" }, { stringValue: "security" }] } });
 	});
+
+	it("exports request metadata and renames spans from its trace keys", () => {
+		const base = {
+			requestId: "req_metadata",
+			workspaceId: "ws_1",
+			endpoint: "chat.completions" as const,
+			requestedModel: "openai/gpt-5",
+			provider: "openai",
+			providerModel: "gpt-5",
+			statusCode: 200,
+			success: true,
+			startedAtMs: 1,
+			completedAtMs: 2,
+		};
+		const payload = buildGatewayGenAiOtlpPayload({
+			...base,
+			metadata: { trace_name: "checkout", generation_name: "summarise cart", customer_tier: "pro" },
+		}, { ...options, includeSensitiveContent: false });
+		const [server, generation] = spans(payload);
+		expect(server.name).toBe("checkout");
+		expect(generation.name).toBe("summarise cart");
+		expect(attributes(server)["phaseo.metadata.customer_tier"]).toEqual({ stringValue: "pro" });
+		expect(attributes(generation)["phaseo.metadata.trace_name"]).toEqual({ stringValue: "checkout" });
+
+		const named = spans(buildGatewayGenAiOtlpPayload({
+			...base,
+			metadata: { trace_name: "checkout", span_name: "cart step" },
+		}, options));
+		expect(named[0].name).toBe("cart step");
+
+		const plain = spans(buildGatewayGenAiOtlpPayload(base, options));
+		expect(plain[0].name).toBe("POST /v1/chat/completions");
+		expect(plain[1].name).toBe("chat gpt-5");
+	});
 });
 
 describe("async GenAI lifecycle spans", () => {
@@ -233,6 +267,24 @@ describe("async GenAI lifecycle spans", () => {
 				spanId: submission.context.parentSpanId,
 			})],
 		});
+	});
+
+	it("exports batch metadata and names the span from it", () => {
+		const submission = buildAsyncGenAiOtlpPayload({
+			requestId: "req_batch",
+			workspaceId: "ws_1",
+			operation: "batch",
+			phase: "submit",
+			endpoint: "batch",
+			model: "openai/gpt-5",
+			startedAtMs: 1,
+			completedAtMs: 2,
+			success: true,
+			metadata: { span_name: "nightly evals", team: "search" },
+		}, options);
+		const span = spans(submission.payload)[0];
+		expect(span.name).toBe("nightly evals");
+		expect(attributes(span)["phaseo.metadata.team"]).toEqual({ stringValue: "search" });
 	});
 
 	it("models a realtime turn as a GenAI CLIENT span", () => {

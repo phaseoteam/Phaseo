@@ -7,6 +7,7 @@
 // client's raw key from the request body.
 
 import type { IRChatRequest } from "@core/ir";
+import { normalizeProviderId } from "@/lib/config/providerAliases";
 
 // Not "phx_": that is the PostHog personal API key prefix and trips secret scanners.
 const UPSTREAM_KEY_PREFIX = "pck_";
@@ -20,8 +21,9 @@ const UPSTREAM_KEY_HEX_LENGTH = 40;
  * - xAI Responses: https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits
  * - Fireworks chat: https://docs.fireworks.ai/api-reference/post-chatcompletions
  * - Cerebras: https://inference-docs.cerebras.ai/capabilities/prompt-caching
+ * Ids are canonical (see normalizeProviderId): xAI is served as "spacex-ai".
  */
-const DERIVED_KEY_PROVIDERS = new Set(["openai", "openai-eu", "x-ai", "fireworks", "cerebras"]);
+const DERIVED_KEY_PROVIDERS = new Set(["openai", "openai-eu", "spacex-ai", "fireworks", "cerebras"]);
 
 function normalizeKey(value: unknown): string | null {
     if (typeof value !== "string") return null;
@@ -72,7 +74,7 @@ export function applyUpstreamPromptCacheKey(
 ): IRChatRequest {
     const sendKey = upstream && (
         upstream.origin === "client" ||
-        DERIVED_KEY_PROVIDERS.has(String(providerId ?? "").trim().toLowerCase())
+        DERIVED_KEY_PROVIDERS.has(normalizeProviderId(String(providerId ?? "")))
     );
     if (sendKey) {
         if (ir.promptCacheKey === upstream.key) return ir;

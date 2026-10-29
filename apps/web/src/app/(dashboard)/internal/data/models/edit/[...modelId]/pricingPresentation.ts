@@ -1,3 +1,4 @@
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 export function readablePricingLabel(value: string) {
 	return value.replace(/[_.]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
@@ -13,10 +14,10 @@ export function rebasePrice(price: string, oldQuantity: string, quantity: string
 	return String(Number((Number(price) * Number(quantity) / Number(oldQuantity)).toPrecision(12)));
 }
 
-export function formatPrice(price: string, currency: string, locale = "en", invalidPriceLabel = "Enter a price") {
+export function formatPrice(price: string, currency: string, _locale = "en", invalidPriceLabel = "Enter a price") {
 	const amount = Number(price);
 	if (!price.trim() || !Number.isFinite(amount)) return invalidPriceLabel;
-	return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 9 }).format(amount);
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency, maximumFractionDigits: 9 }).format(amount);
 }
 
 export function validatePriceAmounts(meters: Array<{ price_usd: string; unit_quantity: string }>, errors = { empty: "Add at least one charge before saving.", price: "Enter a price of zero or more for every charge.", quantity: "Every billing quantity must be greater than zero." }) {

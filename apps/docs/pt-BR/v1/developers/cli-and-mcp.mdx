@@ -1,6 +1,6 @@
 ---
 title: "CLI e MCP"
-description: "Use a CLI da Phaseo para automatizar tarefas no terminal ou conecte o servidor MCP autenticado a clientes de IA para acessar dados atuais da Phaseo em modo somente leitura."
+description: "Use a CLI da Phaseo para automatizar tarefas no terminal ou conecte o servidor MCP autenticado a clientes de IA para acessar dados atuais da Phaseo e, se você permitir, gerenciar sua conta."
 icon: "square-terminal"
 ---
 
@@ -11,7 +11,7 @@ Use o Phaseo no terminal com a CLI ou conecte um cliente de IA por MCP. Ambos us
 | Interface | Ideal para | Acesso |
 | --- | --- | --- |
 | Phaseo CLI | Fluxos no terminal, CI, administração e automação | Leitura e gravação, limitadas pelos escopos e pelo papel no espaço de trabalho |
-| Phaseo MCP | Dados atuais da Phaseo no Codex, Claude, ChatGPT e outros clientes MCP | Autenticado e somente leitura |
+| Phaseo MCP | Dados atuais da Phaseo no Codex, Claude, ChatGPT e outros clientes MCP, e gerenciamento opcional da conta | Autenticado; somente leitura, a menos que você se conecte com gerenciamento da conta |
 | Docs MCP | Consultar a documentação atual da Phaseo durante o desenvolvimento | Somente documentação e somente leitura |
 | Plugin da Phaseo | Instalar o Phaseo MCP, o Docs MCP e as skills da Phaseo no Claude Code ou no Codex de uma vez | Igual a cada servidor MCP |
 
@@ -75,12 +75,41 @@ Para outro cliente MCP, adicione a mesma URL como um servidor HTTP remoto com st
 
 ### Dados que o MCP pode ler
 
-- modelos, provedores, organizações, famílias de endpoints e preços
+- modelos, provedores, rankings de benchmarks, preços e estimativas de custo
 - créditos, atividade, análises, registros de solicitações e metadados de geração
-- espaços de trabalho, membros, predefinições, configurações e guardrails
-- metadados de chaves de API e de gerenciamento, aplicativos OAuth e webhooks, sem valores secretos
 
-O MCP não executa inferências faturáveis, não retorna valores secretos e não altera recursos da Phaseo. Use o painel, a CLI ou a API de gerenciamento para essas operações.
+Essas ferramentas são somente leitura. Elas nunca retornam prompts, respostas nem valores secretos.
+
+### Gerenciar sua conta (opcional)
+
+Para permitir que um agente altere seu espaço de trabalho da Phaseo, conecte-se com a URL de gerenciamento:
+
+`https://mcp.phaseo.app/mcp?access=manage`
+
+```bash
+codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
+codex mcp login phaseo
+```
+
+Ao entrar, a tela de consentimento lista cada permissão solicitada pela conexão, como gerenciar chaves de API ou excluir orçamentos, e a marca como **Leitura**, **Gravação** ou **Exclusão**. Desmarque as que você não quiser conceder. O agente só recebe ferramentas para as permissões autorizadas, e a Phaseo continua verificando sua função no espaço de trabalho a cada alteração, então um membro que não seja proprietário nem administrador não consegue alterar por aqui as configurações restritas a administradores.
+
+Se você já se conectou com a URL somente leitura, mude o cliente para a URL de gerenciamento e entre novamente. Para voltar ao acesso somente leitura, conecte-se de novo com a URL normal ou revogue o app em **Configurações → Apps conectados**.
+
+| Área | Ferramentas | Permissões |
+| --- | --- | --- |
+| Chaves de API | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
+| Orçamentos | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
+| Regras de gastos | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
+| Chaves de provedores (BYOK) | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
+| Guardrails | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
+| Predefinições | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
+| Configurações | `settings_get`, `settings_update` (modo de roteamento, privacidade e ZDR, registros, restrições de provedores) | `settings:read`, `settings:write` |
+| Webhooks | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
+| Destinos de observabilidade | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+
+As ferramentas que alteram ou excluem algo são marcadas como tal, para que os clientes MCP compatíveis peçam sua confirmação antes de cada chamada. Uma nova chave de API ou um novo segredo de assinatura de webhook aparece uma única vez no resultado da ferramenta e não pode ser exibido de novo. Chaves de provedores salvas e credenciais de destinos nunca são retornadas.
+
+O MCP não tem ferramentas de faturamento, pagamentos, espaços de trabalho, membros, chaves de gerenciamento ou apps OAuth. Para isso, use o painel, a CLI ou a API de gerenciamento.
 
 ## Docs MCP
 

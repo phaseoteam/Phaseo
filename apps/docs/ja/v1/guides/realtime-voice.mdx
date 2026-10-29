@@ -1,0 +1,238 @@
+---
+title: "リアルタイム音声セッション"
+description: "Phaseo のリレーを通してリアルタイム音声通話を行い、正しく終了し、通話終了時に最終請求額を受け取ります。"
+icon: "phone"
+---
+
+<Note>
+リアルタイム音声はベータ版で、ワークスペースごとにアクセスが制限されています。
+</Note>
+
+リアルタイムセッションは、クライアントとプロバイダーのリアルタイムモデルとの間の音声通話で、計測と請求ができるように Phaseo が中継します。リレーはプロバイダー自身のイベントをそのまま転送し、独自のイベントを 3 つ追加します。`session.end`、`session.warning`、`session.ended` です。
+
+## セッションを開始する
+
+サーバーからセッションを作成します。
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
+```
+
+レスポンスには `client_secret`、`connect.url`、`max_duration_seconds`、`idle_timeout_seconds`（API セッションでは常に `null`）が含まれます。`api.phaseo.app` 上の `connect.url` に、WebSocket サブプロトコル `statsync-realtime` と `rtsec.<client_secret>` を指定して WebSocket を開きます。リレーは `statsync-realtime` を選択します。`rtsec.<client_secret>` だけを提示すると、プロトコルが選択されないため、ブラウザーやほとんどの WebSocket ライブラリではハンドシェイクが失敗します。プロバイダーの準備ができるとリレーは `relay.connected` を送信し、その後マイク音声を `{"type": "client.audio", "audio": "<base64 PCM16>"}` として受け付けます。サンプルレートは OpenAI、xAI、ElevenLabs では 24 kHz、Google と Mistral では 16 kHz です。
+
+Phaseo はセッション開始時に $5 のクレジットを確保し、通話が続くにつれて確保額を延長します。
+
+[TypeScript](/ja/v1/sdk-reference/typescript/audio-realtime) と [Python](/ja/v1/sdk-reference/python/audio-realtime) の SDK は、これらをすべて代わりに行います。`client.realtime.connect()` がセッションを作成してソケットを開き、`session.end()` が `session.ended` を返します。その他の SDK にも同じ小さなクライアントがあり、各パッケージの README に例があります。
+
+| SDK | 接続 | WebSocket ライブラリ |
+| --- | --- | --- |
+| Go | `realtime.Connect(ctx, client, realtime.Options{...})` | `github.com/coder/websocket`（別パッケージの `realtime` 内） |
+| Java | `client.realtime.connect(Map.of("model", ...))` | JDK `java.net.http.WebSocket` |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { ... })` | `System.Net.WebSockets.ClientWebSocket` |
+| PHP | `$client->realtime()->connect(["model" => ...])` | `phrity/websocket`（任意、`composer require phrity/websocket`） |
+| Ruby | `client.realtime.connect(model: ...)` | `websocket` gem（任意） |
+| Rust | `client.realtime().connect(RealtimeOptions::new(...))` | `tungstenite`（`realtime` フィーチャーで有効） |
+
+C++ SDK にはリアルタイムクライアントがありません。
+
+### Google Live の接続
+
+通話中は無音も含めて、マイク音声を常に送信し続けてください。Google は約 150 秒間音声を受信しない接続を閉じ（クローズコード `1008`）、通話は `provider_closed` で終了します。リレーは音声のない状態が 2 分続くと、`threshold: "input_idle"` を含む `provider_closing` 警告を送信します。ターン間の無音はどのターンにも含まれないため、課金されません。
+
+Google はまた、約 10 分ごとに各接続を置き換えます。リレーは Google のセッション再開機能を使って通話を新しい接続に移し、ソケットを開いたまま保ち、切り替えが完了すると `{"type": "relay.provider_reconnected", "reconnects": 1}` を送信します。切り替え中（通常は 1 秒未満）に送信した音声は保持され、転送されます。再開された接続はそれまでの会話を再処理し、Google は次のターンでそれを入力トークンとして再度請求するため、長い通話では切り替えのたびにターンあたりのコストが少し増えます。これらはすべて `usage` と請求額に含まれます。リレーが `provider_closing` で警告するのは再開できない場合だけで、その場合は Google が接続を閉じた時点で通話が終了します。
+
+### GPT Live セッション
+
+GPT Live（`openai/gpt-live-1`）は音声を処理し、推論を Responses のバックエンドモデルに引き渡します。`POST /v1/live/sessions` で作成します。
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1",
+    "provider": "openai",
+    "voice": "marin",
+    "backend_model": "openai/gpt-5.6-luna",
+    "backend_settings": {
+      "tools": [{ "type": "function", "name": "get_time", "description": "Returns the current UTC time.", "parameters": { "type": "object", "properties": {} } }]
+    }
+  }'
+```
+
+`voice` は `alloy`、`ash`、`ballad`、`beacon`、`bossa`、`cedar`、`cinder`、`coral`、`delta`、`echo`、`gleam`、`marin`、`meridian`、`quartz`、`ripple`、`sage`、`shimmer`、`stone`、`tempo`、`verse`、`vesper`、`willow` のいずれかです。`backend_model` は `openai/gpt-5.6-luna`（デフォルト）または `openai/gpt-5.6-terra` です。接続と 24 kHz 音声のストリーミングは、他のセッションと同じ方法で行います。
+
+関数ツールはクライアント上で実行されます。バックエンドからの呼び出しは、`event.item.type` が `function_call` である `response.event` として届きます。その名前と `arguments` はモデルが生成したもので、発話者の発言によって誘導される可能性があるため、信頼できない入力として扱ってください。
+
+1. 宣言したツールだけを `name` で検索して実行し、それ以外の名前は拒否します。
+2. `arguments` を JSON として解析し、使用する前にツールの `parameters` スキーマに照らして検証します。
+3. サインイン中のユーザーが呼び出しの要求する操作を行う権限を持っているか確認し、データの変更、支出、誰かへの連絡を伴う操作の前には本人に確認します。
+
+その後、ツールを実行し、結果を送信して、続きの応答を要求します。呼び出しがこれらのチェックに通らなかった場合は、実行せずに理由を示す `output` を送信します。
+
+```json
+{ "type": "response.item.create", "item": { "type": "function_call_output", "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" } }
+{ "type": "response.create" }
+```
+
+リレーが `function_call_output` を受け付けるのは、バックエンドが行った呼び出しに対してのみで、呼び出しごとに 1 回、最大 64 KB までです。また、`response.create` は少なくとも 1 つの出力を送った後にのみ受け付けます。それ以外は `{"type": "relay.client_event_rejected", "reason": "..."}` が返され、通話は継続します。Phaseo が関数ツールを自ら実行することはありません。
+
+GPT Live の通話は、音声 1 秒単位の料金（1 分あたり $0.05、GPT Live 自身の `usage.seconds` に基づく）に加えて、ツール結果の後の応答も含むすべての応答でのバックエンドモデルのトークンに対して課金されます。GPT Live は約 30 秒間音声を受信しないセッションを期限切れにし、通話は `provider_idle_timeout` で終了します。無音も含めて、マイク音声を送信し続けてください。
+
+### ElevenLabs Realtime セッション
+
+ElevenLabs Realtime には 2 つのモデルがあります。より高速で安価なデフォルトの `eleven-labs/eleven-realtime-v1-mini` と、回答前に推論を行い、複雑な指示や複数ステップのツール使用に適した `eleven-labs/eleven-realtime-v1-max` です。どちらも OpenAI と同じ作成リクエストとリレーを使い、音声は 24 kHz です。Phaseo は自社のキーで ElevenLabs に接続するため、クライアントから見えるのはリレーだけです。
+
+ElevenLabs は通話の接続時間 1 秒ごとに加えて、使用した言語モデルのトークンを請求し、通話中は使用量を報告しません。リレーは通話中に接続時間を計測するため、確保額と当座貸越の上限は他のプロバイダーと同じように機能します。通話が終了すると、Phaseo はその会話に対する ElevenLabs の請求額を読み取り、それと自社の定価による合計額のうち大きい方を請求します。これには通常数秒かかります。それより長くかかる場合、`session.ended` は `billing_status: "pending"` と `final_bill` リクエストを含んで届き、ElevenLabs が報告し次第（通常は数分以内）請求が確定します。それまで確保額はそのまま残ります。24 時間経っても ElevenLabs が請求額を報告しない場合、そのセッションは接続時間だけで請求されるのではなく、請求レビューに回されます。
+
+### ストリーミング文字起こし
+
+Mistral の Voxtral Realtime モデルは、届いたライブ音声をその場で文字起こしします： `mistral/voxtral-mini-transcribe-realtime-3` と `mistral/voxtral-mini-transcribe-realtime`。音声で応答しないため、`voice` や `instructions` を指定せずにセッションを作成します：
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
+```
+
+同じ方法で接続し、16 kHz の PCM16 を `client.audio` として送信します。Mistral のイベントはそのまま転送されます： `session.created`、続いて新しいテキストごとに `transcription.text.delta`、Mistral が送信した場合は `transcription.language` と `transcription.segment` です。文字起こしの設定を変更するには、`language`、`target_streaming_delay_ms`（80〜1,200、または 2,400）、`context_bias`、`diarize`、`turn_detection` のいずれかを含めて `{"type": "session.update", "session": {...}}` を送信します。音声フォーマットを含むその他のフィールドは `relay.client_event_rejected` で拒否されます。音声の送信が始まると設定は固定されるため、`session.update` は最初の `client.audio` より前に送信してください。それ以降の更新も同様に拒否されます。
+
+`session.end` を送信すると、リレーは Mistral への音声ストリームを終了し、完全な文字起こしを含む `transcription.done` を最大 10 秒待ってから精算し、`session.ended` を送信します。送信済みの音声はすべて使われ、破棄されるものはありません。
+
+ストリーミング文字起こしは、送信した音声 1 分ごとに課金されます（Voxtral Mini Transcribe Realtime 3 は 1 分あたり $0.008）。計測はリレーが行います。`transcription.done` に含まれる Mistral 自身の計測値が最低請求額です。手元にある録音には、代わりに[音声文字起こし](/ja/v1/api-reference/endpoint/audio-transcriptions)を使用してください。
+
+## セッションを終了する
+
+発話者が電話を切ったら `session.end` を送信します。
+
+```json
+{ "type": "session.end", "reason": "caller hung up" }
+```
+
+| フィールド | 型 | デフォルト | 意味 |
+| --- | --- | --- | --- |
+| `reason` | string | なし | 独自のメモです。印字可能な文字で最大 120 文字まで指定でき、`client_reason` としてそのまま返されます。 |
+| `cancel_response` | boolean | `true` | `true` は再生中の応答をキャンセルします。`false` は最大 20 秒間、応答を最後まで再生させます。 |
+
+その後、リレーは次の処理を行います。
+
+1. 音声の受け付けを停止します。
+2. プロバイダーがまだターンに確定していないマイク音声を破棄します。
+3. 進行中の応答をキャンセルするか最後まで再生させ、その使用量を最大 10 秒間待ちます。
+4. GPT Live の場合は、プロバイダーに `session.close` を送信し、`session.closed` を待ちます。
+5. 請求を確定します。
+6. `session.ended` を送信します。
+7. コード `1000` でソケットを閉じます。
+
+`session.end` を送らずにソケットを閉じても、通話は終了し同じ方法で請求されますが、クライアントは `session.ended` を受信しません。
+
+## session.ended
+
+リレーは、あなたが要求した終了、プロバイダーが開始した終了、ゲートウェイが開始した終了のすべてで `session.ended` を送信します。これはソケットがまだ開いている間、リレーがソケットを閉じる直前に送信されます。
+
+```json
+{
+  "type": "session.ended",
+  "session_id": "rt_01k8...",
+  "reason": "client_requested",
+  "initiated_by": "client",
+  "client_reason": "caller hung up",
+  "duration_seconds": 184.2,
+  "usage": { "input_audio_tokens": 1840, "output_audio_tokens": 3120, "input_text_tokens": 412 },
+  "cost": {
+    "total_usd": 0.231,
+    "total_nanos": 231000000,
+    "estimated": false,
+    "estimate_basis": null,
+    "debt_nanos": 0,
+    "uncollected_nanos": 0,
+    "currency": "USD"
+  },
+  "billing_status": "settled"
+}
+```
+
+| フィールド | 意味 |
+| --- | --- |
+| `reason` | 安定した理由コードです。[理由コード](#reason-codes)を参照してください。 |
+| `initiated_by` | `client`、`gateway`、`provider` のいずれかです。 |
+| `duration_seconds` | リレーが接続してからの時間です。 |
+| `usage` | 課金対象のメーターです。モダリティ別のトークン数と、xAI と GPT Live の場合は `audio_seconds` です。 |
+| `cost.estimated` | 中断されたターンのプロバイダー使用量が届かなかったため、使用量の一部を計測した音声から推定した場合に `true` になります。`estimate_basis` がその理由を示します。 |
+| `cost.debt_nanos` | 確保額と空き残高を超えて当座貸越として請求されたコストの部分です。 |
+| `cost.uncollected_nanos` | 当座貸越の上限を超え、請求されなかったコストです。 |
+| `provider_close_code` | プロバイダーが通話を終了した場合の、プロバイダーの WebSocket クローズコードです。 |
+| `billing_status` | `settled`、`pending`、`unresolved` のいずれかです。 |
+
+確定処理がまだ再試行中の場合、`billing_status` は `pending` になり、`cost` には現時点の見積もりが表示されます。セッションに請求レビューが必要な場合は `unresolved` になります。どちらの場合も、`final_bill` は確定後に最終コストを取得するためのリクエストを示します。
+
+```json
+"final_bill": { "method": "GET", "path": "/v1/generations?id=realtime%3Art_01k8..." }
+```
+
+<span id="reason-codes"></span>
+
+### 理由コード
+
+| `reason` | `initiated_by` | 発生条件 |
+| --- | --- | --- |
+| `client_requested` | client | `session.end` を送信しました。 |
+| `client_disconnected` | client | `session.end` なしでソケットが閉じられました。 |
+| `provider_closed` | provider | プロバイダーが接続を閉じました。たとえば Google が約 150 秒間音声を受信しなかった場合（コード `1008`）や、リレーが再開できなかった `goAway` の後です。 |
+| `provider_idle_timeout` | provider | 約 30 秒間音声を受信しなかったため、GPT Live がセッションを期限切れにしました。 |
+| `provider_error` | provider | プロバイダーとの接続が失敗したか、プロバイダーがエラーを報告しました。 |
+| `max_duration_reached` | gateway | プロバイダーのセッション上限に達しました。 |
+| `insufficient_funds` | gateway | 当座貸越の上限に達しました。 |
+| `key_revoked` | gateway | 通話中に API キーが取り消されたか削除されました。 |
+| `key_expired` | gateway | 通話中に API キーの有効期限が切れました。 |
+| `key_blocked` | gateway | 通話中に API キーが一時停止されました。 |
+| `workspace_disabled` | gateway | ワークスペースが存在しなくなりました。 |
+| `policy_blocked` | gateway | ワークスペースのポリシー変更によってモデルがブロックされたか、プロバイダーが許可リストから削除され、`policy_blocked` 警告から 30 秒後もその状態が続いていました。 |
+| `input_rejected` | gateway | リレーがクライアントの音声を拒否しました。大きすぎる、実時間より速い、またはプロバイダーの処理が追いつかなかったことが原因です。 |
+| `session_reconciled` | gateway | リレーが状態を失い、整合処理によってセッションが閉じられました。 |
+| `gateway_error` | gateway | Phaseo がプロバイダーのイベントを処理できなかったか、使用量を記録できませんでした。 |
+| `idle_timeout` | gateway | Playground のみ：音声のない状態が 5 分間続きました。 |
+| `spend_limit_reached` | gateway | Playground のみ：キーの支出上限またはワークスペースの予算に達しました。 |
+
+新しいコードが追加される可能性があるため、不明な `reason` は `gateway_error` と同様に扱ってください。
+
+## session.warning
+
+警告は、通話を終了させることなく、これから起こることを知らせます。各コードは、しきい値ごとに最大 1 回送信されます。
+
+```json
+{ "type": "session.warning", "code": "max_duration_approaching", "message": "...", "seconds_remaining": 120, "expires_at": "2026-10-22T11:00:00.000Z" }
+```
+
+| `code` | 追加フィールド | 発生条件 |
+| --- | --- | --- |
+| `max_duration_approaching` | `seconds_remaining`、`expires_at` | プロバイダーのセッション上限の 2 分 30 秒前です。 |
+| `provider_closing` | `seconds_remaining`、および無音の場合は `threshold: "input_idle"` | Google が接続を閉じようとしています。リレーが再開できなかった `goAway` の後か、（`input_idle`）2 分間音声が届いていないためです。 |
+| `funds_low` | `remaining_usd` | クレジットの確保額を延長できませんでした。通話は空き残高で継続します。 |
+| `overdraft_in_use` | `remaining_usd`、`overdraft_used_usd` | 空き残高を使い切り、通話は当座貸越で継続しています。上限の残りが $0.25 未満になると再度送信されます。 |
+| `spend_limit_exceeded` | `limit`（`key` または `workspace_budget`） | キーの支出上限またはワークスペースの予算に達しました。通話は継続しますが、新しいリクエストは拒否されます。 |
+| `policy_blocked` | `status`、および `status` が `ending` の場合は `seconds_remaining` と `ends_at` | ワークスペースのポリシーが通話をブロックするようになったか、そのプロバイダーが許可リストから削除されました。変更が取り消されない限り、通話は 30 秒後に終了します。取り消された場合は、`status: "cleared"` を含む 2 回目の警告が届きます。 |
+
+`remaining_usd` は、当座貸越を含めて、通話が終了するまでにまだ使える金額です。
+
+## 上限
+
+API セッションがアイドル状態を理由に終了されることはなく、支出上限は警告だけを行います。通話が自動的に終了するのは、次のいずれかが起きた場合だけです。
+
+| 上限 | 値 |
+| --- | --- |
+| OpenAI Realtime | 60 分 |
+| xAI | 120 分 |
+| Google Live | リレーが再開する接続全体で 60 分です。クライアントが約 150 秒間音声の送信を止めた場合も通話は終了します。 |
+| GPT Live | 25 分 |
+| ElevenLabs Realtime | 30 分 |
+| Mistral ストリーミング文字起こし | 60 分 |
+| 当座貸越の上限 | 確保額と空き残高を超えて $1 |
+| アクセスの喪失 | キーが取り消された、期限切れになった、一時停止された、またはワークスペースが削除された場合です。約 1 分以内に検出され、その後猶予期間なしで通話が終了します。 |
+| ポリシーの変更 | `policy_blocked` 警告の 30 秒後に、ポリシーがまだ通話をブロックしている場合 |
+
+セッションの上限は、セッションが作成された時点からではなく、リレーが接続した時点から数えられます。

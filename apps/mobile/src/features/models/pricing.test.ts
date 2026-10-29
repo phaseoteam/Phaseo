@@ -27,6 +27,19 @@ describe("priceLines", () => {
   it("keeps plans apart", () => {
     expect(priceLines(anthropic, "batch").map((line) => line.value)).toEqual(["$0.05"]);
   });
+
+  it("reads OpenAI's input_tokens tiers too (GPT-6.1 Sol, Ultrafast, 2026-10-18)", () => {
+    const openaiRule = (meter: string, price: number, op: "gt" | "lte") =>
+      ({ meter, unit: "token", unit_size: 1_000_000, price_per_unit: price, pricing_plan: "ultrafast", match: [{ op, path: "input_tokens", value: 272000 }] });
+    const openai = {
+      provider: { api_provider_id: "openai", api_provider_name: "OpenAI", offer_label: null },
+      pricing_rules: [openaiRule("input_text_tokens", 12, "lte"), openaiRule("input_text_tokens", 24, "gt"), openaiRule("output_text_tokens", 60, "lte"), openaiRule("output_text_tokens", 90, "gt")],
+    } as unknown as ProviderPricing;
+    expect(priceLines(openai, "ultrafast").map((line) => [line.label, line.value, line.longContext])).toEqual([
+      ["Input", "$12", { value: "$24", above: "272K" }],
+      ["Output", "$60", { value: "$90", above: "272K" }],
+    ]);
+  });
 });
 
 describe("sortByRoutable", () => {

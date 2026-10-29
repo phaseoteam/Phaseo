@@ -3,42 +3,176 @@ title: "8月"
 description: "Phaseo 2026 年 8 月的模型发布。"
 ---
 
-<Update label="2026年8月28日" tags={["模型发布"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### 模型发布
+<ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
+
+<Update label="2026年8月31日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- BYOK 现在每个工作区每个 UTC 月包含 250,000 次请求且不收取 Phaseo 费用，超出后按提供商等价成本的 2.5% 收费；BYOK 请求级元数据保留 90 天 ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月30日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 错误现在会说明出了什么问题并给出下一步操作，例如重试、登录或选择其他模型；`402` 错误会链接到额度页面和 `phaseo/free` ([#2100](https://github.com/phaseoteam/Phaseo/pull/2100))。
+- Chat 输入框最多扩展到五行，长提示词会在框内滚动，不再遮住对话 ([#2096](https://github.com/phaseoteam/Phaseo/pull/2096))。
+- 模型页面可通过 `?provider=openai` 这样的链接直接打开某个提供商的详情，提供商对话框还会显示可复制的提供商限定模型 ID；请参阅[提供商限定的模型 ID](../guides/provider-qualified-models.mdx) ([#2095](https://github.com/phaseoteam/Phaseo/pull/2095), [#2052](https://github.com/phaseoteam/Phaseo/pull/2052))。
+- 在你更改状态筛选之前，模型搜索只显示可以通过网关路由的模型；请参阅[检查 Gateway 的可靠性和状态](../developers/reliability-and-status.mdx) ([#2057](https://github.com/phaseoteam/Phaseo/pull/2057))。
+- 公开应用排行榜将每个网站合并为一个条目，并使用易读的 URL，例如 `/apps/phaseo-chat` ([#2087](https://github.com/phaseoteam/Phaseo/pull/2087))。
+- Trust Centre 新增安全白皮书、子处理方清单和 DPA 草案；删除账户后，Phaseo 现会在 30 天内从所有在用存储中删除其数据 ([#2058](https://github.com/phaseoteam/Phaseo/pull/2058))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- CLI 在安装缺失的编码代理前会先询问并显示确切的安装命令；对自行管理的工具可传入 `--skip-install`；请参阅[编程智能体](../guides/integrations/coding-assistants.mdx) ([#2066](https://github.com/phaseoteam/Phaseo/pull/2066))。
+- 管理 API 现可通过 `/v1/byok` 管理提供商凭据，通过 `/v1/budgets` 管理工作区预算，所有 SDK 也已相应重新生成；请参阅[列出提供商凭据](../api-reference/endpoint/provider-credentials-list.mdx) ([#2086](https://github.com/phaseoteam/Phaseo/pull/2086))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月29日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 现在可以将文件拖入 Chat 作为附件，包括 HEIC 和 AVIF 图片 ([#2050](https://github.com/phaseoteam/Phaseo/pull/2050))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 请求可在 `X-Phaseo-Metadata` 请求头中携带标签，日志和活动页面可按标签筛选请求和支出；请参阅[请求标签](../guides/request-labels.mdx) ([#2049](https://github.com/phaseoteam/Phaseo/pull/2049))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月28日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 提供商可以通过域名验证认领其 Phaseo 资料，并在提供商设置中提交模型目录源以供审核；请参阅[发布提供商目录](../guides/provider-catalog.mdx) ([#2037](https://github.com/phaseoteam/Phaseo/pull/2037))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Hy4 Preview 模型发布配图](../../../images/model-releases/2026-08-28--tencent--hy4-preview.png)
 
 - [Tencent Hunyuan: Hy4 Preview](https://phaseo.app/models/tencent/hy4-preview)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月27日" tags={["模型发布"]}>
+<Update label="2026年8月27日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 请求详情会列出路由器排序或排除的每个提供商，并显示各项评分因素，以及该提供商是被选中、尝试过还是被降级；请参阅[路由与回退](../guides/routing-and-fallbacks.mdx) ([#2011](https://github.com/phaseoteam/Phaseo/pull/2011), [#2015](https://github.com/phaseoteam/Phaseo/pull/2015))。
+- Chat 会标出日期变化、六小时以上的间隔以及模型切换，并显示新模型的徽标 ([#1992](https://github.com/phaseoteam/Phaseo/pull/1992))。
+- 模型页面现在也会为请求量很少的模型显示性能和可用性；此前请求少于 20 次时这些部分为空 ([#1997](https://github.com/phaseoteam/Phaseo/pull/1997))。
+- 发布日历在小屏幕上显示月度概览和所选日期的日程，“On this day” 使用完整的发布历史 ([#2019](https://github.com/phaseoteam/Phaseo/pull/2019))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 均衡路由现在综合考虑可靠性、延迟、尾部延迟、吞吐量、价格和令牌匹配度，提供商可用性也不再把 `400`、`403`、`413` 或 `429` 响应计为故障；请参阅[路由与回退](../guides/routing-and-fallbacks.mdx) ([#2011](https://github.com/phaseoteam/Phaseo/pull/2011))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Parse v5.0 模型发布配图](../../../images/model-releases/2026-08-27--cohere--parse-v5.0.png)
 
 - [Cohere: Parse v5.0](https://phaseo.app/models/cohere/parse-v5.0)
 - [Inclusion AI: Ling 3.0 Flash Fin](https://phaseo.app/models/inclusionai/ling-3.0-flash-fin)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月26日" tags={["模型发布", "模型更新"]}>
+<Update label="2026年8月26日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 排行榜页面新增每周 **Return Rate** 部分，显示工作区会反复使用哪些模型，并附置信区间 ([#1961](https://github.com/phaseoteam/Phaseo/pull/1961))。
+- 全局搜索在输入后按相关性对实验室、提供商和模型排序，因此 Nvidia 这样的精确匹配会排在最前 ([#1974](https://github.com/phaseoteam/Phaseo/pull/1974))。
+- 模型卡片会用 **End of life** 或 **Deprecated** 徽章标出已停用和已弃用的模型 ([#1977](https://github.com/phaseoteam/Phaseo/pull/1977))。
+- 提供商隐私信息改为显示 **Data policy**、ZDR 和处理地点，不再分别显示训练和保留标签 ([#1954](https://github.com/phaseoteam/Phaseo/pull/1954))。
+- 点击 Phaseo 文字标识会打开品牌菜单，可复制或下载浅色或深色版本的徽标和文字标识，格式为 SVG 或 PNG ([#1734](https://github.com/phaseoteam/Phaseo/pull/1734), [#1968](https://github.com/phaseoteam/Phaseo/pull/1968), [#1983](https://github.com/phaseoteam/Phaseo/pull/1983))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `POST /v1/music/generate` 返回 Phaseo 请求 ID，`GET /v1/music/generate/{music_id}` 对所有提供商都以同一结构返回结果；请参阅[生成音乐](../api-reference/endpoint/music-generate.mdx) ([#1941](https://github.com/phaseoteam/Phaseo/pull/1941), [#1952](https://github.com/phaseoteam/Phaseo/pull/1952))。
+- 失败的请求会转发提供商的 `Retry-After`，BYOK 请求还会返回 `X-Phaseo-Upstream-RateLimit-*` 配额响应头；请参阅[速率限制](../api-reference/limits.mdx) ([#1960](https://github.com/phaseoteam/Phaseo/pull/1960))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![GLM 5.3 Flash 模型发布配图](../../../images/model-releases/2026-08-26--z-ai--glm-5.3-flash.png)
 
-- [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
 - [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash)
+- [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
 - [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) 因确认其实际为 Z.AI GLM-5.3-Flash 而退役。
+
+</div>
 
 </Update>
 
-<Update label="2026年8月25日" tags={["模型发布"]}>
+<Update label="2026年8月25日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 每种工作区提醒都可以发送到各自的通知目标，因此余额不足提醒和模型弃用提醒可以发往不同渠道；请参阅[工作区通知](../guides/workspace-notifications.mdx) ([#1830](https://github.com/phaseoteam/Phaseo/pull/1830))。
+- 模型和价格页面上的 **Priority** 服务层级现在显示为 **Fast**；发送 `priority` 的请求仍可正常使用；请参阅[服务等级](../guides/service-tiers.mdx) ([#1931](https://github.com/phaseoteam/Phaseo/pull/1931))。
+- 在 Compare 中添加模型时会保留当前已选模型，并显示提供商徽标，对有多个方案的提供商还可选择层级 ([#1826](https://github.com/phaseoteam/Phaseo/pull/1826))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Granite 4.2 模型发布配图](../../../images/model-releases/2026-08-25--ibm--granite-4.2.png)
 
@@ -46,42 +180,149 @@ description: "Phaseo 2026 年 8 月的模型发布。"
 - [IBM: Granite 4.2 8B](https://phaseo.app/models/ibm/granite-4.2-8b)
 - [IBM: Granite 4.2 3B](https://phaseo.app/models/ibm/granite-4.2-3b)
 
-</Update>
-
-<Update label="2026年8月23日" tags={["平台"]}>
-
-### 工作区管理
-
-- 为工作区添加了企业版自助附加功能：SSO、SCIM、目录管理和部门管理。
-- 为工作区添加了通知目标：电子邮件、Discord、Slack、Microsoft Teams 和自定义 HTTPS Webhook。
-- 通过 `X-App-Categories` 和 TypeScript SDK 添加了应用类别归因。
+</div>
 
 </Update>
 
-<Update label="2026年8月21日" tags={["模型发布"]}>
+<Update label="2026年8月23日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 工作区所有者可以自助购买面向 100 到 100,000 名成员的 Enterprise 方案，包含 SSO、SCIM 2.0、目录和部门设置，无需承诺模型消费 ([#1754](https://github.com/phaseoteam/Phaseo/pull/1754), [#1743](https://github.com/phaseoteam/Phaseo/pull/1743), [#1749](https://github.com/phaseoteam/Phaseo/pull/1749))。
+- 工作区可以在 **Workspace settings -> Notifications** 中将余额不足、账单和模型弃用提醒发送到邮件、Discord、Slack、Microsoft Teams 或自定义 Webhook；请参阅[工作区通知](../guides/workspace-notifications.mdx) ([#1796](https://github.com/phaseoteam/Phaseo/pull/1796))。
+- 位于 `/trust` 的 Trust Centre 介绍了 Phaseo 的安全实践、数据处理、服务提供商和合规状态 ([#1811](https://github.com/phaseoteam/Phaseo/pull/1811), [#1816](https://github.com/phaseoteam/Phaseo/pull/1816))。
+- 组织页面现更名为 **Labs** 页面，显示汇总性能和近期模型卡片 ([#1807](https://github.com/phaseoteam/Phaseo/pull/1807))。
+- Compare 现在直接打开对比视图，不再先显示预设选择 ([#1803](https://github.com/phaseoteam/Phaseo/pull/1803))。
+- BYOK 设置现按每月 1,000,000 次的额度计算剩余免费请求数；此前使用的是已废止的 100,000 次额度 ([#1595](https://github.com/phaseoteam/Phaseo/pull/1595))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 请求可以通过 `X-App-Categories` 请求头为应用分类，TypeScript SDK 也支持该请求头；请参阅[应用归因](../guides/app-attribution.mdx) ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799))。
+- 模型后缀 `:nitro`、`:cheap` 和 `:fast` 现在决定路由模式，即使请求字段、预设或工作区默认值要求其他模式；请参阅[路由与回退](../guides/routing-and-fallbacks.mdx) ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814))。
+- `provider.quantizations` 现在只路由到量化方式匹配的报价，没有匹配时会返回诊断信息；请参阅[选择量化策略](../guides/quantization-selection.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月21日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 提供商页面可按 BYOK 支持、训练政策、数据保留和数据中心区域筛选，并标出外部提供商 ([#1755](https://github.com/phaseoteam/Phaseo/pull/1755), [#1758](https://github.com/phaseoteam/Phaseo/pull/1758), [#1748](https://github.com/phaseoteam/Phaseo/pull/1748))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![DeepSeek V4 Flash Vision Exp 模型发布配图](../../../images/model-releases/2026-08-21--deepseek--deepseek-v4-flash-vision-exp.png)
 
 - [DeepSeek: DeepSeek V4 Flash Vision Exp](https://phaseo.app/models/deepseek/deepseek-v4-flash-vision-exp)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月14日" tags={["模型发布"]}>
+<Update label="2026年8月20日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面按提供商和服务层级显示价格历史，支持日期范围、标价或实际价格以及 CSV 导出 ([#1557](https://github.com/phaseoteam/Phaseo/pull/1557))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月19日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 在 Chat 回答中选中文本后会显示 Explain、Improve、Shorten、Change tone 和 Fix grammar 操作，并把相应提示词放入输入框 ([#1619](https://github.com/phaseoteam/Phaseo/pull/1619))。
+- Chat 会在登录过程中保留未发送的提示词，并在登录后回到同一个对话和模型 ([#1728](https://github.com/phaseoteam/Phaseo/pull/1728))。
+- 日志会显示每个请求的 **Source**，例如 Direct HTTP、按语言区分的 SDK 或编码代理，并与其 App 分开显示 ([#1723](https://github.com/phaseoteam/Phaseo/pull/1723))。
+- 日志会在侧边栏中打开会话和异步任务，显示请求时间线和上一条、下一条按钮，并可通过 **Investigate** 按请求 ID 查找 ([#1724](https://github.com/phaseoteam/Phaseo/pull/1724))。
+- Connected Apps 按资源分组显示权限，所有者可以移除单个权限范围而无需撤销整个应用 ([#1585](https://github.com/phaseoteam/Phaseo/pull/1585))。
+- 移动端模型筛选会把已启用的筛选显示为可单独移除的标签，在卡片和表格视图之间切换时保留全部筛选 ([#1590](https://github.com/phaseoteam/Phaseo/pull/1590))。
+- Tools 页面新增内容来源检查工具，可检查不超过 20 MB 的图片和音频上传 ([#1529](https://github.com/phaseoteam/Phaseo/pull/1529))。
+- BYOK 密钥又可以保存了，修改后密钥列表会立即更新；此前保存密钥会失败 ([#1591](https://github.com/phaseoteam/Phaseo/pull/1591))。
+- 当保存的工作区不可用时，日志和 Usage Overview 会打开一个可访问的工作区；创建工作区也恢复正常 ([#1589](https://github.com/phaseoteam/Phaseo/pull/1589), [#1592](https://github.com/phaseoteam/Phaseo/pull/1592), [#1593](https://github.com/phaseoteam/Phaseo/pull/1593))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月17日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 以 `@publisher/slug` 引用的公开预设又能正常解析，私有预设只能配合其所有者创建的 API 密钥使用；请参阅[预设](../guides/presets.mdx) ([#1707](https://github.com/phaseoteam/Phaseo/pull/1707), [#1706](https://github.com/phaseoteam/Phaseo/pull/1706))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月14日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 隐私设置现位于 **Workspace -> Privacy**，并适用于整个工作区的 Chat、API 密钥、SDK 流量和应用 ([#1676](https://github.com/phaseoteam/Phaseo/pull/1676), [#1678](https://github.com/phaseoteam/Phaseo/pull/1678))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `phaseo <agent>` 只需一条命令即可为 Codex、Claude Code、OpenCode、Hermes、Pi、Prime Agent、DeepSeek Harness 或 OpenClaw 完成配置，并为其创建专用的 Phaseo 密钥；请参阅[编程智能体](../guides/integrations/coding-assistants.mdx) ([#1685](https://github.com/phaseoteam/Phaseo/pull/1685), [#1662](https://github.com/phaseoteam/Phaseo/pull/1662))。
+- `POST /v1/messages` 的流式响应现在会在文本、推理和工具参数增量到达时立即发送；此前它们会在最后一次性到达；请参阅[创建消息](../api-reference/endpoint/anthropic-messages.mdx) ([#1679](https://github.com/phaseoteam/Phaseo/pull/1679), [#1681](https://github.com/phaseoteam/Phaseo/pull/1681))。
+- 对某个请求参数支持情况未知的提供商仍可参与路由；只有已知不支持的提供商才会被排除 ([#1667](https://github.com/phaseoteam/Phaseo/pull/1667))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![GLM 5.3 模型发布配图](../../../images/model-releases/2026-08-14--z-ai--glm-5.3.png)
 
 - [z.AI: GLM 5.3](https://phaseo.app/models/z-ai/glm-5.3)
 - [Qwen: Qwen 3.8 27B](https://phaseo.app/models/qwen/qwen3.8-27b)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月13日" tags={["模型发布"]}>
+<Update label="2026年8月13日">
 
-### 模型发布
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- DeepSeek V4 Pro 0813 和 DeepSeek V4 Flash 0731 支持 `reasoning_effort`，`minimal` 会按 `low` 发送 ([#1651](https://github.com/phaseoteam/Phaseo/pull/1651), [#1652](https://github.com/phaseoteam/Phaseo/pull/1652), [#1654](https://github.com/phaseoteam/Phaseo/pull/1654))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Gemini 3.7 Flash 模型发布配图](../../../images/model-releases/2026-08-13--google--gemini-3.7-flash.png)
 
@@ -90,77 +331,242 @@ description: "Phaseo 2026 年 8 月的模型发布。"
 - [DeepSeek: DeepSeek V4 Pro 0813](https://phaseo.app/models/deepseek/deepseek-v4-pro-0813)
 - [Dots Studio: dots3-note Preview](https://phaseo.app/models/dots-studio/dots3-note-prev)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月12日" tags={["模型发布"]}>
+<Update label="2026年8月12日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 为每个对话发送一个会话 ID，因此同一对话的请求会在日志中归为一组 ([#1599](https://github.com/phaseoteam/Phaseo/pull/1599))。
+- 模型页面用 **Use This Model** 面板取代了 Quickstart，内容包括密钥设置、按语言划分的代码示例、支持的端点和参数 ([#1637](https://github.com/phaseoteam/Phaseo/pull/1637))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Grok 4.6 模型发布配图](../../../images/model-releases/2026-08-12--spacex-ai--grok-4.6.png)
 
 - [SpaceXAI: Grok 4.6](https://phaseo.app/models/spacex-ai/grok-4.6)
 - [Qwen: Qwen 3.8 2.4T A95B](https://phaseo.app/models/qwen/qwen3.8-2.4t-a95b)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月11日" tags={["模型发布"]}>
+<Update label="2026年8月11日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 设置页面改为使用单一侧边栏，并提供 **Account** 与 **Workspace** 切换器，取代此前分开的导航方式 ([#1509](https://github.com/phaseoteam/Phaseo/pull/1509))。
+- 已登录用户在移动端可以正常打开 Usage Overview；此前可能会被送回登录页面 ([#1556](https://github.com/phaseoteam/Phaseo/pull/1556))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- Gemma 4 请求支持 `reasoning_effort`，并为最终回答预留输出空间；此前输出预算较小时可能返回空的 `502` 响应 ([#1550](https://github.com/phaseoteam/Phaseo/pull/1550))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Nemotron 3.5 Lightning 30B A3B 模型发布配图](../../../images/model-releases/2026-08-11--nvidia--nemotron-3.5-lightning.png)
 
-- [Microsoft: MAI Code 1.1 Flash](https://phaseo.app/models/microsoft/mai-code-1.1-flash)
 - [Nvidia: Nemotron 3.5 Lightning 30B A3B](https://phaseo.app/models/nvidia/nemotron-3.5-lightning)
+- [Microsoft: MAI Code 1.1 Flash](https://phaseo.app/models/microsoft/mai-code-1.1-flash)
 - [SpaceXAI: Grok Imagine Image 2.0](https://phaseo.app/models/spacex-ai/grok-imagine-image-2.0)
+
+</div>
 
 </Update>
 
-<Update label="2026年8月10日" tags={["模型发布"]}>
+<Update label="2026年8月10日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- OAuth 授权页面按资源分组显示所请求的权限，并汇总读取、写入和删除权限 ([#1538](https://github.com/phaseoteam/Phaseo/pull/1538))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** `GET /v1/models` 返回新的 Phaseo 目录结构，包含生命周期、模态、限制、能力、价格和提供商报价；请更新读取旧字段的代码；请参阅[列出模型](../api-reference/endpoint/models.mdx) ([#1531](https://github.com/phaseoteam/Phaseo/pull/1531))。
+- 远程 MCP 服务器支持协议版本 `2026-07-28`，OAuth 客户端可以使用 Client ID Metadata Document URL 注册；请参阅[CLI 与 MCP](../developers/cli-and-mcp.mdx) ([#1531](https://github.com/phaseoteam/Phaseo/pull/1531))。
+- `@phaseo/cli` 0.2.1 新增 `phaseo update` 和 `phaseo doctor`，可识别安装 CLI 的包管理器并报告 PATH 冲突；请参阅[Phaseo CLI](../guides/integrations/phaseo-cli.mdx) ([#1534](https://github.com/phaseoteam/Phaseo/pull/1534), [#1535](https://github.com/phaseoteam/Phaseo/pull/1535))。
+- `phaseo integrations setup` 可将 Codex、Claude Code 或 OpenCode 配置为使用 Phaseo，且不会把 API 密钥写入它们的配置文件；请参阅[编程智能体](../guides/integrations/coding-assistants.mdx) ([#1510](https://github.com/phaseoteam/Phaseo/pull/1510), [#1545](https://github.com/phaseoteam/Phaseo/pull/1545))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Muse Glimmer 30B 模型发布配图](../../../images/model-releases/2026-08-10--meta--muse-glimmer-30b.png)
 
 - [Meta: Muse Glimmer 30B](https://phaseo.app/models/meta/muse-glimmer-30b)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月7日" tags={["模型发布"]}>
+<Update label="2026年8月8日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面在移动端新增章节导航，旧的模型子页面会重定向到模型页面的对应部分 ([#1508](https://github.com/phaseoteam/Phaseo/pull/1508))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月7日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面以图表显示从缓存提供的输入令牌占比，按时间和提供商展示 ([#1499](https://github.com/phaseoteam/Phaseo/pull/1499))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [ByteDance: Seedance 2.5](https://phaseo.app/models/bytedance/seedance-2.5)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月6日" tags={["模型发布"]}>
+<Update label="2026年8月6日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [Upstage: Solar Pro 4](https://phaseo.app/models/upstage/solar-pro-4)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月5日" tags={["模型发布"]}>
+<Update label="2026年8月5日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面以图表显示 P01 到 P99 的 TTFT、输出速度、TPOT、ITL 和 Phaseo 开销，并按是否流式和输入长度区分 ([#1344](https://github.com/phaseoteam/Phaseo/pull/1344))。
+- 预设的修改会先保存为草稿，再发布为编号且不可更改的版本；市场中的分支会固定到某个源版本；请参阅[预设](../guides/presets.mdx) ([#1419](https://github.com/phaseoteam/Phaseo/pull/1419))。
+- Broadcast 的 OTLP 目标会以 OpenTelemetry GenAI 格式导出网关追踪数据；只有选择启用后才会发送提示词和回复内容；请参阅[Broadcast](../guides/broadcast.mdx) ([#1355](https://github.com/phaseoteam/Phaseo/pull/1355))。
+- Chat 会在模型处理或撰写回复时显示动画光球；新增的致谢页面列出了 Phaseo 依赖的开源项目 ([#1459](https://github.com/phaseoteam/Phaseo/pull/1459))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `GET /v1/models/{author}/{slug}/endpoints` 会列出某个模型在每个提供商处的端点、支持的参数和价格；请参阅[列出模型端点能力](../api-reference/endpoint/model-endpoints.mdx) ([#1274](https://github.com/phaseoteam/Phaseo/pull/1274))。
+- `@phaseo/ai-sdk-provider` 支持 AI SDK 7，包括工具、推理、嵌入、图像、转录和语音；AI SDK 6 继续使用 1.x 版本线；请参阅[AI SDK](../guides/integrations/ai-sdk.mdx) ([#1336](https://github.com/phaseoteam/Phaseo/pull/1336))。
+- `POST /v1/feedback` 和 `POST /v1/events` 可记录与请求、会话和预设关联的评分和事件，并使用新的密钥权限范围 `feedback:read` 和 `feedback:write`；请参阅[收集预设反馈](../guides/preset-feedback.mdx) ([#1033](https://github.com/phaseoteam/Phaseo/pull/1033))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Muse Spark 1.2 模型发布配图](../../../images/model-releases/2026-08-05--meta--muse-spark-1.2.png)
 
-- [Inclusion AI: Ling 3.0 Tiny](https://phaseo.app/models/inclusionai/ling-3.0-tiny)
 - [Meta: Muse Spark 1.2](https://phaseo.app/models/meta/muse-spark-1.2)
+- [Inclusion AI: Ling 3.0 Tiny](https://phaseo.app/models/inclusionai/ling-3.0-tiny)
 - [Meta: Muse Spark 1.2 Contributor](https://phaseo.app/models/meta/muse-spark-1.2-contributor)
 - [Mistral: Shieldstral 1.0 3B](https://phaseo.app/models/mistral/shieldstral-1.0-3b)
 
+</div>
+
 </Update>
 
-<Update label="2026年8月3日" tags={["模型发布"]}>
+<Update label="2026年8月4日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 请求详情会列出每次提供商尝试，包括重试和故障转移，并显示结束原因和费用 ([#1276](https://github.com/phaseoteam/Phaseo/pull/1276))。
+- Chat 的并排对比在宽屏上最多可使用 96rem，并在所选模型之间平分空间 ([#1365](https://github.com/phaseoteam/Phaseo/pull/1365))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 服务器工具新增 Subagent、Fusion 和模型搜索，开始执行 `max_uses` 和 `max_tool_calls` 限制，并可抓取最多 100,000 个字符的网页内容；请参阅[服务器工具](../guides/server-tools/index.mdx) ([#1447](https://github.com/phaseoteam/Phaseo/pull/1447))。
+- 请求通过将 `model` 设为 `@slug` 来调用预设，公开预设则使用 `@username/slug`；没有单独的 `preset` 字段；请参阅[预设](../guides/presets.mdx) ([#1418](https://github.com/phaseoteam/Phaseo/pull/1418))。
+- `POST /v1/audio/transcriptions` 支持 OpenAI 的说话人分离响应格式、`chunking_strategy` 和已知说话人字段；请参阅[创建转录](../api-reference/endpoint/audio-transcriptions.mdx) ([#1451](https://github.com/phaseoteam/Phaseo/pull/1451))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月3日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Qwen 3.8 Max 模型发布配图](../../../images/model-releases/2026-08-03--qwen--qwen3.8-max.png)
 
 - [Qwen: Qwen 3.8 Max](https://phaseo.app/models/qwen/qwen3.8-max)
 - [Sakana AI: Namazu](https://phaseo.app/models/sakana/namazu)
+
+</div>
+
+</Update>
+
+<Update label="2026年8月2日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 用量页面新增 **Geography** 标签页，排行榜显示按国家统计的 30 天用量，新用户注册时需选择所在国家 ([#1425](https://github.com/phaseoteam/Phaseo/pull/1425))。
+- 全局搜索会列出你的工作区，选择某个工作区即可切换过去并打开其设置 ([#1417](https://github.com/phaseoteam/Phaseo/pull/1417), [#1424](https://github.com/phaseoteam/Phaseo/pull/1424))。
+- 在 Chat 中未选择模型时按发送会打开模型选择器；此前按钮没有任何反应 ([#1421](https://github.com/phaseoteam/Phaseo/pull/1421), [#1423](https://github.com/phaseoteam/Phaseo/pull/1423))。
+
+</div>
+
+</Update>
+
+<Update label="2026年8月1日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 临时聊天的消息会显示虚线边框，开启或关闭临时模式时会保留你的草稿 ([#1399](https://github.com/phaseoteam/Phaseo/pull/1399), [#1362](https://github.com/phaseoteam/Phaseo/pull/1362))。
+
+</div>
 
 </Update>

@@ -70,9 +70,9 @@ describe("MonitorDataTable", () => {
 	});
 
 	it("shows one token price per column, without a $0 batch line", () => {
-		// en-GB formats US dollars as "US$".
-		expect(html).toContain(">US$2.00<");
-		expect(html).toContain(">US$10.00<");
+		// Money reads in US format even under en-GB.
+		expect(html).toContain(">$2.00<");
+		expect(html).toContain(">$10.00<");
 		expect(html).not.toContain("$0.00");
 	});
 
@@ -81,7 +81,7 @@ describe("MonitorDataTable", () => {
 			route("openai", { provider: { ...route("openai").provider, name: "OpenAI" } }),
 			route("openai", { endpoint: "image.generate", provider: { ...route("openai").provider, name: "OpenAI", inputPrice: 5, outputPrice: 40 } }),
 		]);
-		expect(mixed).toContain(">US$40.00<");
+		expect(mixed).toContain(">$40.00<");
 		expect(mixed).toContain('aria-label="Image generation"');
 		expect(mixed).not.toMatch(/>Image generation</);
 	});

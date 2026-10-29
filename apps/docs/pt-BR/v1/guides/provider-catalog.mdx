@@ -1,6 +1,6 @@
 ---
 title: "Publicar um catálogo de provedor"
-description: "Publique feeds de modelos V1 ou V1.1 com ofertas de níveis de serviço normalizados e limites de taxa."
+description: "Publique feeds de modelos V1, V1.1 ou V1.2 com ofertas de níveis de serviço normalizados, políticas de dados e limites de taxa."
 icon: "list"
 ---
 
@@ -12,7 +12,41 @@ Os feeds V1 existentes continuam funcionando sem alterações. Um documento `{"d
 
 O V1.1 declara `"schema_version": "1.1"` e publica `service_tiers` dentro de cada modelo. O importador seleciona o formato a partir do documento. Parâmetros de consulta da URL, como `?format=phaseo-v1.1`, são convenções opcionais do seu endpoint; a Phaseo não deduz a versão a partir da URL.
 
-Baixe o [esquema V1](https://phaseo.app/api/internal/provider-catalog/schema) ou o [esquema V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1). Versões sem suporte são rejeitadas explicitamente.
+Baixe o [esquema V1](https://phaseo.app/api/internal/provider-catalog/schema), o [esquema V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) ou o [esquema V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2). Versões sem suporte são rejeitadas explicitamente.
+
+### Políticas de dados V1.2
+
+A V1.2 adiciona declarações de treinamento e retenção específicas de cada capacidade a cada nível de serviço. Você pode publicar a V1.2 a qualquer momento. A Phaseo valida as declarações na importação, mas elas não concedem nenhuma garantia até que a Phaseo aprove sua fonte de políticas. Os feeds V1 e V1.1 continuam compatíveis.
+
+A V1.2 também aceita `declarations` opcionais por modelo ou nível para identidade do modelo, limites tipados de entrada/saída, descrições de parâmetros, preços e capacidade por escopo, descontos e detalhes de implantação. Elas são validadas e armazenadas para análise. Não ativam parâmetros nem alteram automaticamente preços faturáveis, aplicação de limites de capacidade ou garantias de residência. O retorno da validação identifica as declarações armazenadas; continue publicando preços e capacidades efetivos pelos campos existentes.
+
+Defina `schema_version` como `"1.2"` e adicione um objeto `data_policy` a cada nível aplicável:
+
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
+
+Este exemplo é o valor `data_policy` do nível, não um feed completo. Os IDs de capacidade são canônicos: use `text.generate` mesmo quando o modelo declarar `responses` ou `chat.completions`.
+
+A declaração cobre prompts e saídas em toda a cadeia de processamento upstream. Ela não descreve metadados de faturamento. Os valores de treinamento são `unknown`, `may_train`, `no_train`, `opt_out_available` e `enterprise_no_train`. Os modos de retenção são `unknown`, `none`, `transient`, `fixed` e `until_deleted`. Use zero dias para none, uma duração máxima positiva para transient/fixed e null para unknown/until-deleted.
+
+Declare os acordos necessários com `contract_mode`: `none`, `customer_agreement` ou `enterprise_agreement`. As configurações de conta necessárias são objetos com `id`, `description` e `documentation_url` HTTPS no array `account_settings`. Programas condicionais usam `zdr_eligibility: "conditional"` e não podem declarar uma garantia ativa com true. Permanecem informativos até que a Phaseo possa verificar o cumprimento dos requisitos.
+
+A Phaseo aprova a fonte da política de forma independente. O feed não pode marcar uma declaração como verificada. Esta versão concede ZDR ativo apenas para geração de texto incondicional em ofertas que não sejam batch, sem treinamento nem retenção de conteúdo. Hospedar um modelo por conta própria não declara ZDR por si só.
+
+Depois que uma oferta adota uma política gerenciada pelo feed, definir false, enviar null, omitir a declaração ou reduzir a versão do feed retira essa garantia. As substituições manuais da Phaseo são mantidas separadamente. Declarações positivas expiram após 24 horas sem validação bem-sucedida do catálogo; revogar a aprovação não exige uma nova consulta ao provedor.
 
 ## Publicar níveis normalizados
 

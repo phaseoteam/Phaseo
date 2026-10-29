@@ -81,6 +81,7 @@ import {
 	updateDynamicRouteAction,
 } from "@/app/(dashboard)/settings/routing/actions";
 import "@xyflow/react/dist/style.css";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 type StudioTab = "editor" | "versions" | "settings";
 type Provider = SettingsDynamicRoutesInitialData["providers"][number];
@@ -200,7 +201,7 @@ function summaryFor(node: DynamicRouteNode, providers: Provider[], locale: strin
 	}
 	if (node.type === "rate_limit") return translate("rateLimitSummary", { count: Number(node.data.maxRequests ?? 0), period: periodLabel(node.data.window ?? "daily", translate) });
 	if (node.type === "budget_limit") {
-		const amount = new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(Number(node.data.maxCostUsd ?? 0));
+		const amount = new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD" }).format(Number(node.data.maxCostUsd ?? 0));
 		return translate("budgetLimitSummary", { amount, period: periodLabel(node.data.window ?? "monthly", translate) });
 	}
 	return NODE_COPY[node.type].description;

@@ -1,13 +1,17 @@
+import { Image } from "expo-image";
 import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { Button, Divider, Screen, Text, TextField } from "@/components/ui";
+import { LogoMark } from "@/components/Logo";
+import { Button, Divider, RouteSheet, Text, TextField } from "@/components/ui";
 import { WEB_ORIGIN } from "@/lib/config";
 import { authErrorMessage, useAuth, type OAuthProvider } from "@/providers/AuthProvider";
 
 type Busy = OAuthProvider | "password" | "code" | null;
+
+const OAUTH_PROVIDERS: [OAuthProvider, string][] = [["google", "Google"], ["github", "GitHub"], ["gitlab", "GitLab"]];
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -38,7 +42,7 @@ export default function SignInScreen() {
 
   if (mfaPending) {
     return (
-      <Screen edges={[]} className="bg-popover">
+      <RouteSheet size="tall">
         <KeyboardAwareScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <Text variant="title">Enter your code</Text>
           <Text variant="muted" className="mt-1">Your account uses two-factor authentication. Enter the 6-digit code from your authenticator app.</Text>
@@ -57,7 +61,7 @@ export default function SignInScreen() {
           <Button className="mt-2" label="Use a different account" variant="ghost" onPress={() => void signOut()} />
           {error ? <Text variant="small" className="mt-4 text-destructive">{error}</Text> : null}
         </KeyboardAwareScrollView>
-      </Screen>
+      </RouteSheet>
     );
   }
 
@@ -65,15 +69,24 @@ export default function SignInScreen() {
   const submit = () => canSubmit && void run("password", () => signInWithPassword(email.trim(), password));
 
   return (
-    <Screen edges={[]} className="bg-popover">
+    <RouteSheet size="tall">
       <KeyboardAwareScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <Text variant="title">Sign in to Phaseo</Text>
+        <Image source={require("../assets/phaseo-icon.png")} style={{ width: 48, height: 48, borderRadius: 8 }} accessibilityLabel="Phaseo" />
+        <Text variant="title" className="mt-4">Sign in to Phaseo</Text>
         <Text variant="muted" className="mt-1">Sign in once to chat, see your usage and manage your workspace. Browsing models never needs an account.</Text>
         {!configured ? <Text variant="small" className="mt-4 text-destructive">{"Sign-in isn't set up in this build."}</Text> : null}
         <View className="mt-6 gap-2">
-          <Button label="Continue with Google" variant="outline" loading={busy === "google"} disabled={!configured || busy != null} onPress={() => void run("google", () => signInWithProvider("google"))} />
-          <Button label="Continue with GitHub" variant="outline" loading={busy === "github"} disabled={!configured || busy != null} onPress={() => void run("github", () => signInWithProvider("github"))} />
-          <Button label="Continue with GitLab" variant="outline" loading={busy === "gitlab"} disabled={!configured || busy != null} onPress={() => void run("gitlab", () => signInWithProvider("gitlab"))} />
+          {OAUTH_PROVIDERS.map(([provider, name]) => (
+            <Button
+              key={provider}
+              label={`Continue with ${name}`}
+              variant="outline"
+              leading={<LogoMark id={provider} size={20} />}
+              loading={busy === provider}
+              disabled={!configured || busy != null}
+              onPress={() => void run(provider, () => signInWithProvider(provider))}
+            />
+          ))}
         </View>
         <View className="my-6 flex-row items-center gap-3">
           <Divider className="flex-1" />
@@ -95,6 +108,6 @@ export default function SignInScreen() {
           </Pressable>
         </View>
       </KeyboardAwareScrollView>
-    </Screen>
+    </RouteSheet>
   );
 }

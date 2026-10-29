@@ -62,7 +62,7 @@ export function encodeStreamInterruption(target: StreamProtocol, ctx: EncodeCont
 	}
 }
 
-type ArgumentsSent = "none" | "delta" | "full";
+export type ArgumentsSent = "none" | "delta" | "full";
 
 function reasoningItemText(item: any): string {
 	const parts = [
@@ -97,7 +97,7 @@ function reasoningFromResponsesFrame(source: StreamSourceFrame | undefined, sawT
  * The tool arguments to send for one event, once per call: streamed deltas, or one full
  * `arguments` (an added or done event) when no delta carried them. Sources send both.
  */
-function argumentsToSend(call: { sent: ArgumentsSent }, event: Extract<UnifiedStreamEvent, { type: "delta_tool" }>): string | null {
+export function argumentsToSend(call: { sent: ArgumentsSent }, event: Extract<UnifiedStreamEvent, { type: "delta_tool" }>): string | null {
 	if (event.argumentsDelta) {
 		if (call.sent === "full") return null;
 		call.sent = "delta";

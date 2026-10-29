@@ -1,0 +1,11 @@
+---
+title: "List trusted workload policies"
+sidebarTitle: "List trusted workload policies"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml GET /workload-identity/policies"
+description: "List the Vercel deployments and GitHub Actions workflows allowed to call Phaseo with an OIDC token."
+"og:image": "https://phaseo.app/og/dynamic?title=List%20trusted%20workload%20policies&description=List%20the%20Vercel%20deployments%20and%20GitHub%20Actions%20workflows%20allowed%20to%20call%20Phaseo%20with%20an%20OIDC%20token.&pathname=/docs/v1/api-reference/endpoint/trusted-workloads-list"
+---
+<Note>Requires `keys:read` on a management key or OAuth token, or a workspace owner or admin. Trusted workloads is in beta; workspaces without it get `404`.</Note>
+
+See [Trusted Workloads](../../developers/trusted-workloads.mdx) for how policies work and how to manage them with Terraform.

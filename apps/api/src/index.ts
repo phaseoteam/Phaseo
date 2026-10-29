@@ -13,6 +13,7 @@ import { sendAxiomWideEvent } from "@/observability/axiom";
 import { requestIdFor } from "@/runtime/request-id";
 import { withErrorObject } from "@/core/error-object";
 import { enforceRegionalSurface } from "@/regional-surface";
+import { markRequestReceived } from "@pipeline/telemetry/request-receipt";
 export { RealtimeRelayDurableObject } from "@core/realtime-relay-durable-object";
 export { ProviderRateLimitDurableObject } from "@core/provider-rate-limit-durable-object";
 export { CustomerRateLimitDurableObject } from "@core/customer-rate-limit-durable-object";
@@ -93,6 +94,7 @@ app.onError((error, c) => {
 
 export default {
 	fetch(request: Request, env: GatewayBindings, ctx: ExecutionContext) {
+		markRequestReceived(request);
 		return runWithRequestScope(ctx?.waitUntil?.bind(ctx), () => app.fetch(request, env, ctx));
 	},
 	async scheduled(event: ScheduledController, env: GatewayBindings) {

@@ -177,3 +177,38 @@ describe("policy token counter", () => {
 		await expect(limiter.peekTokens("other", 10)).rejects.toThrow("customer_scope_mismatch");
 	});
 });
+
+describe("concurrency slots", () => {
+	const scope = "rate-limit-policy:v1:workspace:policy:key:key-1";
+
+	it("holds one slot per request in flight, shared by its attempts, and frees it on release", async () => {
+		const limiter = object();
+		sqlCalls = [];
+		expect(await limiter.acquireConcurrency(scope, "request-1", 2, 60_000)).toEqual({ allowed: true, limit: 2, remaining: 1, retryAfterSeconds: 0 });
+		// A fallback attempt of the same request reuses its slot.
+		expect(await limiter.acquireConcurrency(scope, "request-1", 2, 60_000)).toMatchObject({ allowed: true, remaining: 1 });
+		expect(await limiter.acquireConcurrency(scope, "request-2", 2, 60_000)).toMatchObject({ allowed: true, remaining: 0 });
+		expect(await limiter.acquireConcurrency(scope, "request-3", 2, 60_000)).toEqual({ allowed: false, limit: 2, remaining: 0, retryAfterSeconds: 1 });
+		await limiter.releaseConcurrency(scope, "request-1");
+		expect(await limiter.acquireConcurrency(scope, "request-3", 2, 60_000)).toMatchObject({ allowed: true, remaining: 0 });
+		// Slots are memory only: no storage writes.
+		expect(sqlCalls).toEqual([]);
+	});
+
+	it("frees a slot whose release was lost once it expires, and forgets slots on restart", async () => {
+		const limiter = object();
+		await limiter.acquireConcurrency(scope, "lost", 1, 60_000);
+		expect(await limiter.acquireConcurrency(scope, "next", 1, 60_000)).toMatchObject({ allowed: false });
+		vi.advanceTimersByTime(60_000);
+		expect(await limiter.acquireConcurrency(scope, "next", 1, 60_000)).toMatchObject({ allowed: true });
+		expect(await object().acquireConcurrency(scope, "after-restart", 1, 60_000)).toMatchObject({ allowed: true });
+	});
+
+	it("ignores a release for a slot it does not hold, and rejects a scope mismatch", async () => {
+		const limiter = object();
+		await limiter.acquireConcurrency(scope, "request-1", 1, 60_000);
+		await limiter.releaseConcurrency(scope, "unknown");
+		expect(await limiter.acquireConcurrency(scope, "request-2", 1, 60_000)).toMatchObject({ allowed: false });
+		await expect(limiter.releaseConcurrency("other", "request-1")).rejects.toThrow("customer_scope_mismatch");
+	});
+});

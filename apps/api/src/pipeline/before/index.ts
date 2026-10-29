@@ -5,11 +5,13 @@
 
 import { z } from "zod";
 import { getBindings } from "@/runtime/env";
-import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled } from "@core/feature-flags";
+import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSuccessorRedirectAccessEnabled } from "@core/feature-flags";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
+import { createSpendLimitSlot, releaseSpend, slotAdmission, type SpendLimitSlot } from "@core/spend-limits";
 import { err } from "./http";
 import {
     MAX_REQUEST_MODEL_FALLBACKS,
@@ -37,6 +39,7 @@ import { applyServerToolPlugins } from "@/plugins/server-tool-plugins";
 import { resolveHostedTools } from "./hostedTools";
 import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
 import { withoutNullTextParams } from "./textParamPolicy";
+import { applyPresetPromptTemplate, capabilityViewOfTemplatedRequest, collectTemplateVariableTargets, extractPromptReference, withoutMessagesPlaceholder, type PromptTemplateApplication } from "./promptTemplate";
 import { normalizeLegacySpeedModel } from "./legacySpeedModels";
 import {
 	applyProviderQualifiedModelConstraint,
@@ -46,9 +49,10 @@ import {
 	collectUnsupportedRoutingFields,
 	getEffectiveRoutingHints,
 	normalizeRequestRoutingBody,
+	requestDataLimits,
 	validateProviderQualifiedModelProvider,
 } from "../requestRouting";
-import { fetchWorkspacePolicy, applyWorkspacePolicy } from "./workspacePolicy";
+import { fetchWorkspacePolicy, applyWorkspacePolicy, providerPermittedByPolicy } from "./workspacePolicy";
 import {
     findModelSuccessor,
     findWorkspaceModelSuccessor,
@@ -71,6 +75,10 @@ import {
     type DynamicRouteEvaluation,
 } from "./dynamic-routes";
 import {
+	AUTO_ROUTER_RESIDENCY_REJECTION,
+	autoRouterNeedsZeroDataRetention,
+	autoRouterResidencyRequirement,
+	autoRouterUnmetResidency,
 	buildAutoRouterCandidateEvidence,
 	applyAutoRouterHardRequirements,
 	deterministicAutoRouterClassification,
@@ -78,7 +86,10 @@ import {
 	loadAutoRouterBenchmarks,
 	loadManagedAutoRouterCandidates,
 	loadWorkspaceAutoRouterConfig,
+	providersMeetingResidency,
 	selectAutoRouterModel,
+	unmetResidencyKeys,
+	type AutoRouterResidencyKey,
 	type AutoRouterClassification,
 	type AutoRouterEvaluation,
 } from "./auto-router";
@@ -251,39 +262,84 @@ export type BeforeRequestObservabilitySnapshot = {
     requestPayload: unknown;
     requestedModel: string | null;
     model?: string | null;
+    /** The authenticated key, so failures before the context exists still apply its data policy. */
+    workspaceId?: string | null;
+    apiKeyId?: string | null;
+    /**
+     * The request's preset requires zero data retention, which the raw payload doesn't show,
+     * so failures before the context exists still keep the request's content out.
+     */
+    zeroDataRetention?: boolean;
 };
+
+type BeforeRequestOptions = {
+    dynamicRouteModelOverride?: string | null;
+	/** Replaces the request `model` for a request-level `models` fallback attempt. */
+	requestModelOverride?: string | null;
+	/**
+	 * Whether an unserved model may be redirected to its approved successor.
+	 * Defaults to true unless the request lists fallback models: the
+	 * customer's own list is tried first, and the successor only applies to
+	 * the last model in it.
+	 */
+	allowModelSuccessor?: boolean;
+	autoRouterModelOverride?: string | null;
+	autoRouterClassificationOverride?: AutoRouterClassification | null;
+	classifyAutoRouterRequest?: (args: {
+		endpoint: Endpoint;
+		body: unknown;
+	}) => Promise<AutoRouterClassification | null>;
+    onObservabilitySnapshot?: (snapshot: BeforeRequestObservabilitySnapshot) => void;
+};
+type BeforeRequestResult =
+    | { ok: true; ctx: PipelineContext }
+    | { ok: false; response: Response; unservedModelFallback?: UnservedModelFallback };
 
 export async function beforeRequest(
     req: Request,
     endpoint: Endpoint,
     timer: Timer,
     zodSchema: z.ZodTypeAny | null = schemaFor(endpoint),
-    options?: {
-        dynamicRouteModelOverride?: string | null;
-		/** Replaces the request `model` for a request-level `models` fallback attempt. */
-		requestModelOverride?: string | null;
-		/**
-		 * Whether an unserved model may be redirected to its approved successor.
-		 * Defaults to true unless the request lists fallback models: the
-		 * customer's own list is tried first, and the successor only applies to
-		 * the last model in it.
-		 */
-		allowModelSuccessor?: boolean;
-		autoRouterModelOverride?: string | null;
-		autoRouterClassificationOverride?: AutoRouterClassification | null;
-		classifyAutoRouterRequest?: (args: {
-			endpoint: Endpoint;
-			body: unknown;
-		}) => Promise<AutoRouterClassification | null>;
-        onObservabilitySnapshot?: (snapshot: BeforeRequestObservabilitySnapshot) => void;
-    },
-): Promise<{ ok: true; ctx: PipelineContext } | { ok: false; response: Response; unservedModelFallback?: UnservedModelFallback }> {
+    options?: BeforeRequestOptions,
+): Promise<BeforeRequestResult> {
+    // Enforce mode: the request's spend-limit admission, decided at most once by guardContext.
+    // It rides on the context when the request proceeds and is released when it stops here.
+    const spendLimit = createSpendLimitSlot();
+    let result: BeforeRequestResult;
+    try {
+        result = await runBeforeRequest(req, endpoint, timer, zodSchema, options, spendLimit);
+    } catch (error) {
+        releaseSpend(await slotAdmission(spendLimit));
+        throw error;
+    }
+    if (!spendLimit.decision) return result;
+    const admission = await slotAdmission(spendLimit);
+    if (result.ok) result.ctx.spendAdmission = admission;
+    else releaseSpend(admission);
+    return result;
+}
+
+async function runBeforeRequest(
+    req: Request,
+    endpoint: Endpoint,
+    timer: Timer,
+    zodSchema: z.ZodTypeAny | null,
+    options: BeforeRequestOptions | undefined,
+    spendLimit: SpendLimitSlot,
+): Promise<BeforeRequestResult> {
     const requestStartedAtMs = timer.startedAtMs();
 
     // 1) Auth
     const a = await timer.span("guardAuth", () => guardAuth(req));
     if (!a.ok) return a as { ok: false; response: Response };
     const { requestId, workspaceId, apiKeyId, apiKeyRef, apiKeyKid, userId, internal } = a.value;
+    // Each report adds to the last, so a later model never drops an earlier ZDR flag.
+    let observabilitySnapshot: BeforeRequestObservabilitySnapshot = { requestPayload: null, requestedModel: null, workspaceId, apiKeyId };
+    const reportObservability = (snapshot: Partial<Omit<BeforeRequestObservabilitySnapshot, "workspaceId" | "apiKeyId">>) => {
+        observabilitySnapshot = { ...observabilitySnapshot, ...snapshot };
+        options?.onObservabilitySnapshot?.(observabilitySnapshot);
+    };
+    reportObservability({ requestPayload: null, requestedModel: null });
 	const bindings = getBindings();
 	const perfGatewayAccess = resolvePerfGatewayAccess({
 		environment: bindings.ENV,
@@ -367,12 +423,47 @@ export async function beforeRequest(
         }
         rawBody = withoutRequestModelFallbacks(rawBody);
     }
+    // A prompt template reference names the preset; it fills `model` when absent.
+    const promptReferenceResult = extractPromptReference(rawBody, endpoint);
+    if (promptReferenceResult.ok === false) {
+        const { issue } = promptReferenceResult;
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: issue.reason,
+                description: issue.message,
+                error_type: "user",
+                error_origin: "user",
+                details: [{ message: issue.message, path: issue.path, keyword: issue.reason }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+    rawBody = promptReferenceResult.rawBody;
+    const promptReference = promptReferenceResult.reference;
+    if (promptReference && requestModelFallbacks) {
+        // Fallback attempts replace `model`, which is how the template is found.
+        const message = "\"models\" fallbacks cannot be combined with a prompt template yet; list fallback models in the preset instead";
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: "prompt_model_fallbacks_unsupported",
+                description: message,
+                error_type: "user",
+                error_origin: "user",
+                details: [{ message, path: [REQUEST_MODEL_FALLBACKS_FIELD], keyword: "prompt_model_fallbacks_unsupported" }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
     // Guardrails replace rawBody with redacted clones; fallbacks re-send this original.
     const retryRawBody = rawBody;
     const requestedModel = typeof rawBody?.model === "string" && rawBody.model.trim()
         ? rawBody.model.trim()
         : null;
-    options?.onObservabilitySnapshot?.({
+    reportObservability({
         requestPayload: rawBody,
         requestedModel,
     });
@@ -393,7 +484,7 @@ export async function beforeRequest(
     // 3) Zod (route schema: shape depends on request path)
     const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, workspaceId, requestId));
     if (!v.ok) return v as { ok: false; response: Response };
-    let body = v.value;
+    let body = promptReference ? withoutMessagesPlaceholder(v.value) : v.value;
     const providerQualifiedModelRequest =
         canonicalizeProviderQualifiedModelRequest(body);
     if (providerQualifiedModelRequest.syntaxError) {
@@ -501,7 +592,7 @@ export async function beforeRequest(
 			}),
 		};
 	}
-    options?.onObservabilitySnapshot?.({
+    reportObservability({
         requestPayload: rawBody,
         requestedModel,
         model,
@@ -525,6 +616,8 @@ export async function beforeRequest(
 		model: candidateModel,
 		requestId,
 		internal,
+		shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+		spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
 		testingMode: flags.testingMode,
 		internalOnly: flags.internalOnly,
 		disableCache: debugEnabled,
@@ -582,9 +675,10 @@ export async function beforeRequest(
 			body,
 			bindings.GATEWAY_ROUTING_REGION,
 		);
-		const autoRouterBody = regionalAutoRouterBody.ok
+		// Routing limits under `routing` count as under `provider`, as they do once a model is chosen.
+		const autoRouterBody = normalizeRequestRoutingBody(regionalAutoRouterBody.ok
 			? regionalAutoRouterBody.body
-			: body;
+			: body);
 		if (body?.routing?.auto != null || body?.provider?.auto != null) {
 			return {
 				ok: false,
@@ -602,9 +696,11 @@ export async function beforeRequest(
 			};
 		}
 		const deterministicClassification = deterministicAutoRouterClassification(autoRouterBody);
+		// A request with routing limits the gateway can't honour is refused below
+		// (collectUnsupportedRoutingFields), so its text never goes to the classifier.
 		const classifierPromise = options?.autoRouterClassificationOverride
 			? Promise.resolve(options.autoRouterClassificationOverride)
-			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride
+			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride && !collectUnsupportedRoutingFields(autoRouterBody).length
 				? timer.span("classifyAutoRouterRequest", () => options.classifyAutoRouterRequest!({ endpoint, body: autoRouterBody }))
 					.catch((error) => {
 						console.warn("[beforeRequest] auto_router_classifier_failed", {
@@ -627,9 +723,31 @@ export async function beforeRequest(
 			return { ok: false, response: err("gateway_error", { reason: "auto_router_config_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
 		}
 		const classification = applyAutoRouterHardRequirements(autoRouterBody, await classifierPromise ?? deterministicClassification);
+		const policyLoad = await loadWorkspacePolicy();
+		if ("error" in policyLoad) {
+			console.error("[beforeRequest] workspace_policy_fetch_failed", {
+				workspaceId,
+				requestId,
+				error: policyLoad.error instanceof Error ? policyLoad.error.message : String(policyLoad.error),
+			});
+			return { ok: false, response: err("gateway_error", { reason: "workspace_policy_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
+		}
+		// A request that needs zero data retention (or a workspace or key that only
+		// allows it) picks only among models with a route that offers it.
+		const needsZeroDataRetention = autoRouterNeedsZeroDataRetention(autoRouterBody, policyLoad.value);
+		const residencyRequirement = autoRouterResidencyRequirement(autoRouterBody);
+		// The request's residency requirements, with zero data retention when the workspace or key needs it too.
+		const shortlistResidency = { ...residencyRequirement, requireZeroDataRetention: needsZeroDataRetention };
+		// Which requirements each candidate's providers left unmet, for the error when none qualifies.
+		const unmetByModel = new Map<string, AutoRouterResidencyKey[]>();
 		let candidateUniverse: Awaited<ReturnType<typeof loadManagedAutoRouterCandidates>>;
 		try {
-			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(config, autoRouterBody, classification));
+			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(
+				config,
+				autoRouterBody,
+				classification,
+				{ endpoint, residency: shortlistResidency, providerAllowed: providerPermittedByPolicy(autoRouterBody, policyLoad.value) },
+			));
 		} catch (error) {
 			console.error("[beforeRequest] auto_router_candidates_fetch_failed", {
 				workspaceId,
@@ -643,15 +761,6 @@ export async function beforeRequest(
 			allowedModels: candidateUniverse.models,
 			candidateUniverseSize: candidateUniverse.totalEligible,
 		};
-		const policyLoad = await loadWorkspacePolicy();
-		if ("error" in policyLoad) {
-			console.error("[beforeRequest] workspace_policy_fetch_failed", {
-				workspaceId,
-				requestId,
-				error: policyLoad.error instanceof Error ? policyLoad.error.message : String(policyLoad.error),
-			});
-			return { ok: false, response: err("gateway_error", { reason: "workspace_policy_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
-		}
 		const selection = await timer.span("selectAutoRouterModel", () => selectAutoRouterModel({
 			endpoint,
 			body: autoRouterBody,
@@ -680,13 +789,20 @@ export async function beforeRequest(
 				if (!executableProviders.length) {
 					return { ok: false as const, reason: "no_executable_providers" };
 				}
+				// The request's own zero data retention and regions, which the routing
+				// gate would otherwise only apply after this model was chosen.
+				const residentProviders = providersMeetingResidency(executableProviders, residencyRequirement);
+				if (!residentProviders.length) {
+					unmetByModel.set(candidateModel, unmetResidencyKeys(executableProviders, residencyRequirement));
+					return { ok: false as const, reason: AUTO_ROUTER_RESIDENCY_REJECTION };
+				}
 				const capabilityResult = await validateCapabilities({
 					endpoint,
 					rawBody,
 					body: autoRouterBody,
 					requestId,
 					workspaceId,
-					providers: executableProviders,
+					providers: residentProviders,
 					model: candidateResolvedModel,
 					requiredParams: requiredExecutionParams(endpoint),
 				});
@@ -715,6 +831,31 @@ export async function beforeRequest(
 			},
 		}));
 		if (selection.ok === false) {
+			const unmetRequirements = selection.reason === "no_eligible_models"
+				? autoRouterUnmetResidency({
+					requirement: shortlistResidency,
+					rejected: selection.candidates.map((candidate) => ({ reason: candidate.reason, unmet: unmetByModel.get(candidate.model) })),
+					droppedForResidency: candidateUniverse.droppedForResidency,
+					unmetByDropped: candidateUniverse.unmetByDropped,
+				})
+				: null;
+			if (unmetRequirements) {
+				// The same error a chosen model gets from the routing gate, so callers
+				// can tell a residency requirement apart from no model at all.
+				return {
+					ok: false,
+					response: err("model_region_unavailable", {
+						model,
+						reason: "no_provider_meets_residency_requirements",
+						description: unmetRequirements.description,
+						action: "Relax the residency requirements, or choose a model that meets them.",
+						unmet_requirements: unmetRequirements.unmet,
+						routing_diagnostics: { autoRouter: { candidates: selection.candidates } },
+						request_id: requestId,
+						workspace_id: workspaceId,
+					}),
+				};
+			}
 			return {
 				ok: false,
 				response: err("unsupported_model_or_endpoint", {
@@ -731,7 +872,7 @@ export async function beforeRequest(
 		}
 		autoRouterEvaluation = selection.evaluation;
 		c = selection.selected.contextResult as Awaited<ReturnType<typeof guardContext>>;
-		options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: selection.selected.resolvedModel });
+		reportObservability({ requestPayload: rawBody, requestedModel, model: selection.selected.resolvedModel });
 	} else {
 		const speculative = speculativeContext && !testingModeEnabled ? await speculativeContext : null;
 		if (speculative && "error" in speculative) throw speculative.error;
@@ -751,12 +892,14 @@ export async function beforeRequest(
             ? await timer.span("modelSuccessorRedirect", async () => {
                 const policy = await loadSuccessorRedirectPolicy(workspaceId);
                 if (!policy.enabled) return null;
+                // Checked only once the workspace turned redirects on, so other traffic never waits on Statsig.
+                if (!(await isModelSuccessorRedirectAccessEnabled({ workspaceId }))) return null;
                 const override = workspaceSuccessorOverride(policy, unservedModel!);
                 if (override === null) return null;
                 const resolution = override
                     ? await findWorkspaceModelSuccessor(unservedModel!, override)
                     : await findModelSuccessor(unservedModel!);
-                const substitution = successorRedirectTarget(resolution, policy);
+                const substitution = successorRedirectTarget(resolution, policy, body);
                 if (!substitution) return null;
                 const successorContext = await contextForModel(substitution.to, testingContextFlags);
                 return successorContext.ok ? { successorContext, substitution } : null;
@@ -776,9 +919,19 @@ export async function beforeRequest(
         modelSubstitution = redirected.substitution;
         // Downstream decoding reads the model from the body, not the context.
         body = { ...body, model: modelSubstitution.to };
-        options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
+        reportObservability({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
     }
     let { context, providers, resolvedModel, candidateDiagnostics } = c.value;
+    // A preset's require_zero_data_retention is only in the merged body, so report it now:
+    // a failure from here until the context exists (a preset filter leaving no provider,
+    // say) must keep the request's content out of telemetry and the I/O log too. The merge
+    // decides, as for ctx.zeroDataRetention, since the request's own setting wins.
+    if (context.preset?.config?.provider?.requireZeroDataRetention === true) {
+        const { mergePresetWithBody } = await import("./presetMerge");
+        if (getEffectiveRoutingHints(mergePresetWithBody(body, context.preset, endpoint)).requireZeroDataRetention === true) {
+            reportObservability({ zeroDataRetention: true });
+        }
+    }
     const contextTelemetry = context.contextTelemetry ?? null;
     const contextTimingSpans = {
         context_total: contextTelemetry?.totalMs,
@@ -859,6 +1012,8 @@ export async function beforeRequest(
                     onCreditCacheWrite,
                     requestId,
                     internal,
+                    shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+                    spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
                     testingMode: testingModeEnabled,
                     disableCache: debugEnabled,
                 })
@@ -890,7 +1045,8 @@ export async function beforeRequest(
     let mergedBody = body;
     let presetFilteredProviders = providers;
     let resolvedRoutingMode = context.teamSettings?.routingMode ?? null;
-    let presetInfo: { id: string; name: string; slug?: string | null; config: any } | null = null;
+    let presetInfo: { id: string; name: string; slug?: string | null; config: any; versionId?: string | null; versionLabel?: string | null; ref?: string | null } | null = null;
+    let promptTemplateApplication: PromptTemplateApplication | null = null;
 
     if (context.preset) {
         const {
@@ -901,8 +1057,34 @@ export async function beforeRequest(
             validatePresetModel,
         } = await import("./presetMerge");
 
-        // Merge preset config with request body
-        mergedBody = mergePresetWithBody(body, context.preset, endpoint);
+        // Render the preset prompt template, then merge preset config with the request body
+        const templateResult = applyPresetPromptTemplate({
+            body,
+            preset: context.preset,
+            reference: promptReference,
+            endpoint,
+        });
+        if (templateResult.ok === false) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    reason: templateResult.issues[0]?.keyword ?? "template_invalid",
+                    description: templateResult.issues.map((issue) => issue.message).join("; "),
+                    error_type: "user",
+                    error_origin: "user",
+                    details: templateResult.issues.map((issue) => ({
+                        message: issue.message,
+                        path: issue.path,
+                        keyword: issue.keyword,
+                        ...(issue.params ? { params: issue.params } : {}),
+                    })),
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+        promptTemplateApplication = templateResult.application;
+        mergedBody = mergePresetWithBody(templateResult.body, context.preset, endpoint);
         const presetModelValidationError = validatePresetModel(
             resolvedModel || model,
             context.preset.config,
@@ -942,6 +1124,9 @@ export async function beforeRequest(
             name: context.preset.name,
             slug: context.preset.slug ?? null,
             config: context.preset.config,
+            versionId: context.preset.versionId ?? null,
+            versionLabel: context.preset.versionLabel ?? null,
+            ref: context.preset.ref ?? null,
         };
 
         if (!presetFilteredProviders.length) {
@@ -1119,6 +1304,9 @@ export async function beforeRequest(
 	}
 	mergedBody = deploymentRegionResult.body;
 
+    // Read before the pin below, which is a routing choice rather than a limit on where the content may go.
+    const contentDataLimits = requestDataLimits(mergedBody);
+
     // Keep this as the final request-level provider constraint before workspace
     // policy enforcement. A provider-qualified model is an exact pair, not a
     // provider preference that presets or other routing hints may widen.
@@ -1273,6 +1461,9 @@ export async function beforeRequest(
         workspacePolicy,
         requestId,
         workspaceId,
+        templateVariables: promptTemplateApplication
+            ? collectTemplateVariableTargets(rawBody?.prompt?.variables)
+            : undefined,
     });
     if (!promptInjectionResult.ok) {
         return promptInjectionResult as { ok: false; response: Response };
@@ -1289,6 +1480,9 @@ export async function beforeRequest(
         requestId,
         workspaceId,
         existingEnforcement: promptInjectionResult.enforcement,
+        templateVariables: promptTemplateApplication
+            ? collectTemplateVariableTargets(rawBody?.prompt?.variables)
+            : undefined,
     });
     if (!sensitiveInfoResult.ok) {
         return sensitiveInfoResult as { ok: false; response: Response };
@@ -1304,7 +1498,7 @@ export async function beforeRequest(
     const capabilityValidation = await timer.span("validateCapabilities", () =>
         validateCapabilities({
             endpoint,
-            rawBody,
+            rawBody: promptReference ? capabilityViewOfTemplatedRequest(rawBody, mergedBody) : rawBody,
             body: mergedBody,
             requestId,
             workspaceId,
@@ -1573,9 +1767,11 @@ export async function beforeRequest(
         stream,
         req,
         rawBody: rawBody && typeof rawBody === "object" ? (rawBody as Record<string, unknown>) : null,
-        authMethod: apiKeyRef?.startsWith("oauth_") ? "oauth" : "api_key",
-        oauthClientId: apiKeyRef?.startsWith("oauth_") ? (apiKeyKid ?? null) : null,
-        oauthUserId: apiKeyRef?.startsWith("oauth_") ? (userId ?? null) : null,
+        // Delegated OAuth keys authenticate as `kid_…` but belong to an OAuth app, so their
+        // requests are attributed to the app and its user like OAuth access tokens are.
+        authMethod: a.value.authMethod === "oauth" ? "oauth" : "api_key",
+        oauthClientId: a.value.authMethod === "oauth" ? (a.value.oauthClientId ?? null) : null,
+        oauthUserId: a.value.authMethod === "oauth" ? (userId ?? null) : null,
         returnMeta,
         returnRoutingDiagnostics,
         debug,
@@ -1598,6 +1794,13 @@ export async function beforeRequest(
     const ctx: PipelineContext = {
 		quotaUserId: userId ?? null,
 		activeGuardrailIds: workspacePolicy.activeGuardrailIds ?? [],
+		neverStoreContent: workspacePolicy.neverStoreContent === true,
+		// The workspace setting or one of the key's guardrails, or the request's own (or its
+		// preset's) require_zero_data_retention.
+		zeroDataRetention:
+			workspacePolicyResult.diagnostics.privacyZdrOnly === true ||
+			getEffectiveRoutingHints(mergedBody).requireZeroDataRetention === true,
+		contentDataLimits,
         endpoint,
         capability,
         requestId,
@@ -1625,6 +1828,9 @@ export async function beforeRequest(
             credit: context.credit,
         },
         preset: presetInfo,
+        promptTemplate: promptTemplateApplication && presetInfo
+            ? { presetId: presetInfo.id, presetSlug: presetInfo.slug ?? null, versionLabel: presetInfo.versionLabel ?? null, ref: presetInfo.ref ?? null, ...promptTemplateApplication }
+            : null,
         internal,
         // Enrichment data for observability (wide events)
         teamEnrichment: context.teamEnrichment ?? null,

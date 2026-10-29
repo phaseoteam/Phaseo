@@ -1,5 +1,6 @@
 import { fetchFrontendModelSubscriptionPlans } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ModelSubscriptionsClient from "@/components/(data)/model/pricing/ModelSubscriptionsClient";
+import { toSubscriptionPlanSummaries } from "@/components/(data)/model/pricing/subscriptionPlanSummary";
 
 export default async function ModelSubscriptions({
 	modelId,
@@ -20,7 +21,7 @@ export default async function ModelSubscriptions({
 
 	return (
 		<ModelSubscriptionsClient
-			subscriptionPlans={subscriptionPlans}
+			subscriptionPlans={toSubscriptionPlanSummaries(subscriptionPlans)}
 			ownerOrganisationId={ownerOrganisationId}
 			ownerOrganisationName={ownerOrganisationName}
 			showHeader={showHeader}

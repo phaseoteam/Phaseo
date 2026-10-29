@@ -14,7 +14,7 @@ Instala OpenCode desde su versión oficial y luego usa la CLI de Phaseo para añ
 phaseo opencode --model openai/gpt-5.6-terra
 ```
 
-El comando crea una `Phaseo CLI: OpenCode API Key` que no caduca, conserva los ajustes y credenciales de OpenCode no relacionados y admite `--dry-run`. Actualiza un `opencode.jsonc` global existente si lo hay; de lo contrario, usa `~/.config/opencode/opencode.json`.
+El comando crea una `Phaseo CLI: OpenCode API Key` que caduca a los 90 días y tiene un límite de gasto mensual de 100 $ (vuelve a ejecutar `phaseo opencode` para reemplazar una clave caducada), conserva los ajustes y credenciales de OpenCode no relacionados y admite `--dry-run`. Actualiza un `opencode.jsonc` global existente si lo hay; de lo contrario, usa `~/.config/opencode/opencode.json`.
 
 Usa `--catalog default` para configurar solo el modelo seleccionado.
 

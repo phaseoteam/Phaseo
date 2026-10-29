@@ -20,7 +20,7 @@ icon: "plug-zap"
 تأكد من توفر ما يلي قبل البدء:
 
 - حساب Phaseo لديه صلاحية الوصول إلى Gateway.
-- مفتاح API من [لوحة التحكم](https://phaseo.app/settings/keys).
+- مفتاح API من `phaseo keys create` في [Phaseo CLI](../guides/integrations/phaseo-cli) أو من [لوحة التحكم](https://phaseo.app/settings/keys).
 - عميل HTTP أو حزمة SDK متوافقة مع OpenAI أو حزمة SDK الخاصة بـ Phaseo.
 - معرّف نموذج مدعوم، مثل `google/gemma-3-27b:free` للبدء دون إنفاق رصيد.
 
@@ -28,8 +28,8 @@ icon: "plug-zap"
 
 ## 1. خزّن مفتاح API
 
-1. افتح **Gateway → مفاتيح API** في لوحة تحكم Phaseo.
-2. أنشئ مفتاحاً باسم يحدد التطبيق والبيئة.
+1. نفّذ `phaseo keys create --name <app-and-environment> --json`، أو افتح **Gateway → مفاتيح API** في لوحة تحكم Phaseo.
+2. سمِّ المفتاح باسم يحدد التطبيق والبيئة.
 3. خزّن القيمة في مدير أسرار أو ملف بيئة محلي:
 
 ```bash

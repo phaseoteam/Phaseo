@@ -17,7 +17,8 @@ function providerKeyError(code: string): Error & { code: string } {
     return error;
 }
 
-function orderedMetas(metaList: ByokKeyMeta[]): ByokKeyMeta[] {
+/** BYOK keys in the order they are tried: priority keys first, then by sort order. */
+export function orderedByokMetas(metaList: ByokKeyMeta[]): ByokKeyMeta[] {
     return [...metaList].sort((a, b) => {
 		const aMode = a.routingMode ?? (a.alwaysUse ? "priority" : "fallback");
 		const bMode = b.routingMode ?? (b.alwaysUse ? "priority" : "fallback");
@@ -27,7 +28,7 @@ function orderedMetas(metaList: ByokKeyMeta[]): ByokKeyMeta[] {
 }
 
 function resolveByokKey(metaList: ByokKeyMeta[]): { key: string; byokId: string | null } | null {
-    for (const meta of orderedMetas(metaList)) {
+    for (const meta of orderedByokMetas(metaList)) {
         const key = meta.key;
         if (typeof key === "string" && key.trim().length > 0) {
             return { key, byokId: meta.id ?? null };

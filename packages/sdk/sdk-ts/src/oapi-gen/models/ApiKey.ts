@@ -8,6 +8,10 @@ export interface ApiKey {
   hash: string;
   id: string;
   include_byok_in_limit: boolean;
+  ip_allowlist?: {
+    address: string;
+    label: string;
+  }[];
   label: string | null;
   last_used_at: string | null;
   limit: number | null;
@@ -32,6 +36,7 @@ export interface ApiKey {
   scopes: string | string[];
   soft_blocked: boolean;
   status: string | null;
+  storage_locations?: string[];
   updated_at: string | null;
   usage: number;
   usage_daily: number;

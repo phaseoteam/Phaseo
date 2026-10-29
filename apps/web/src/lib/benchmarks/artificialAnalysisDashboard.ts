@@ -1,4 +1,5 @@
 import type { ArtificialAnalysisPublicData, ArtificialAnalysisPublicConfiguration } from "@/lib/fetchers/benchmarks/types";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 export const dashboardBenchmarks: Record<string, string> = {
 	terminalBench40: "Terminal-Bench 4.0", scicode: "SciCode", hle: "Humanity’s Last Exam", gpqa: "GPQA Diamond", omniscience: "AA-Omniscience", lcr: "AA-LCR", gdpval: "GDPval-AA", critpt: "CritPt", gdpPdfAllPass: "GDP.pdf", automationBenchPartialScore: "AutomationBench-AA", mmmuPro: "MMMU-Pro", livecodebench: "LiveCodeBench", aime25: "AIME 2025", ifbench: "IFBench", tau2: "τ²-Bench Telecom", tauBanking: "τ-Bench Banking", apexAgents: "APEX-Agents", terminalBench21: "Terminal-Bench 2.1",
@@ -106,7 +107,7 @@ export function dashboardTickPrecision(values: number[], format: (value: number,
 
 /** Preserve sub-cent costs while keeping plotted currency labels short. */
 export function formatDashboardCost(value: number, locale: string, compact = false, precision = 4) {
- return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", currencyDisplay: "narrowSymbol", maximumSignificantDigits: precision, ...(compact && Math.abs(value) >= 1000 ? { notation: "compact" } : {}) }).format(value);
+ return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", currencyDisplay: "narrowSymbol", maximumSignificantDigits: precision, ...(compact && Math.abs(value) >= 1000 ? { notation: "compact" } : {}) }).format(value);
 }
 
 /** Prioritise group maxima, then retain only value labels whose padded bounds do not overlap. */

@@ -11,6 +11,7 @@ require_once __DIR__ . "/gen/Models.php";
 require_once __DIR__ . "/gen/Operations.php";
 require_once __DIR__ . "/ModelIds.php";
 require_once __DIR__ . "/Workflows.php";
+require_once __DIR__ . "/Realtime.php";
 
 use Phaseo\Gen\Client as GenClient;
 use RuntimeException;
@@ -64,6 +65,7 @@ class Phaseo
     private TelemetryRecorder $telemetryRecorder;
     private string $basePath;
     private AsyncJobsResource $asyncJobs;
+    private ?Realtime $realtime = null;
 
     public function __construct(
         ?string $apiKey = null,
@@ -138,6 +140,12 @@ class Phaseo
     public function asyncJobs(): AsyncJobsResource
     {
         return $this->asyncJobs;
+    }
+
+    /** Realtime voice sessions (beta). Needs the optional phrity/websocket package. */
+    public function realtime(): Realtime
+    {
+        return $this->realtime ??= new Realtime($this, $this->basePath);
     }
 
     /** @return array<string, mixed>|null */

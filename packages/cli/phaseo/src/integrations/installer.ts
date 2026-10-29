@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
 import { access } from "node:fs/promises";
-import { delimiter, join } from "node:path";
+import { delimiter, isAbsolute, join, win32 } from "node:path";
 import { createInterface } from "node:readline/promises";
 import type { Readable, Writable } from "node:stream";
 import { detectInstalledPackageManager, type PackageManager } from "../installation.js";
@@ -10,7 +10,7 @@ import type { IntegrationId } from "./types.js";
 
 export type RunnerInstallId = "cline" | "kilo" | "omp" | "muse" | "minimax";
 
-export const PRIMARY_HARNESSES = ["codex", "claude-code", "hermes", "opencode", "pi", "prime-agent", "deepseek-harness", "openclaw"] as const satisfies readonly IntegrationId[];
+export const PRIMARY_HARNESSES = ["codex", "claude-code", "hermes", "opencode", "fx", "pi", "prime-agent", "deepseek-harness", "openclaw"] as const satisfies readonly IntegrationId[];
 
 const PACKAGES: Partial<Record<(typeof PRIMARY_HARNESSES)[number], string>> = {
 	codex: "@openai/codex",
@@ -25,6 +25,7 @@ const COMMANDS: Record<(typeof PRIMARY_HARNESSES)[number], string[]> = {
 	codex: ["codex", "codex.exe", "codex.cmd", "codex.ps1"],
 	"claude-code": ["claude", "claude.exe", "claude.cmd", "claude.ps1"],
 	opencode: ["opencode", "opencode.exe", "opencode.cmd", "opencode.ps1"],
+	fx: ["fx"],
 	"deepseek-harness": ["dsh", "dsh.exe", "dsh.cmd", "dsh.ps1"],
 	pi: ["pi", "pi.exe", "pi.cmd", "pi.ps1"],
 	"prime-agent": ["prime-agent", "prime-agent.exe", "prime-agent.cmd"],
@@ -61,6 +62,9 @@ export function installInvocationFor(
 ): InstallInvocation {
 	if (integration === "prime-agent") {
 		return { command: "sh", args: ["-c", "curl -fsSL https://app.primeintellect.ai/prime-agent/install.sh | sh"] };
+	}
+	if (integration === "fx") {
+		return { command: "sh", args: ["-c", "curl -fsSL https://fx.sh/setup.sh | bash"] };
 	}
 	if (integration === "hermes") {
 		return process.platform === "win32"
@@ -136,19 +140,35 @@ export function packageManagerCandidates(manager: PackageManager, platform: Node
 	return platform === "win32" ? [`${manager}.cmd`, `${manager}.exe`, manager] : [manager];
 }
 
-async function findPackageManagerExecutable(manager: PackageManager): Promise<string | null> {
-	const candidates = packageManagerCandidates(manager);
-	for (const directory of (process.env.PATH || "").split(delimiter)) {
-		if (!directory) continue;
+/**
+ * Resolves the package manager to an absolute path from absolute PATH entries only. Returning the
+ * bare name would let `cmd.exe` pick up a same-named script from the current directory first.
+ */
+export async function findPackageManagerExecutable(
+	manager: PackageManager,
+	env: NodeJS.ProcessEnv = process.env,
+	platform: NodeJS.Platform = process.platform,
+): Promise<string | null> {
+	const candidates = packageManagerCandidates(manager, platform);
+	for (const directory of (env.PATH ?? env.Path ?? "").split(delimiter)) {
+		if (!directory || !isAbsolute(directory)) continue;
 		for (const candidate of candidates) {
 			const path = join(directory, candidate);
 			try {
 				await access(path, constants.F_OK);
-				return candidate;
+				return path;
 			} catch {}
 		}
 	}
 	return null;
+}
+
+/** Child environment for package-manager processes: on Windows, never search the current directory. */
+export function packageManagerChildEnv(
+	env: NodeJS.ProcessEnv = process.env,
+	platform: NodeJS.Platform = process.platform,
+): NodeJS.ProcessEnv {
+	return platform === "win32" ? { ...env, NoDefaultCurrentDirectoryInExePath: "1" } : env;
 }
 
 async function availableManager(): Promise<AvailablePackageManager> {
@@ -164,20 +184,34 @@ async function availableManager(): Promise<AvailablePackageManager> {
 	throw new Error("A Node.js package manager is required to install coding harnesses");
 }
 
+/**
+ * Absolute path to cmd.exe: ComSpec when it is an absolute path, otherwise System32 under SystemRoot.
+ * A bare "cmd.exe" would be looked up by the parent process, which can search the current directory.
+ */
+export function windowsCommandInterpreter(env: NodeJS.ProcessEnv = process.env): string {
+	const comSpec = env.ComSpec ?? env.COMSPEC;
+	if (comSpec && win32.isAbsolute(comSpec) && /^[A-Za-z]:[\\/]/.test(comSpec)) return comSpec;
+	const systemRoot = env.SystemRoot ?? env.SYSTEMROOT ?? env.windir ?? env.WINDIR;
+	const root = systemRoot && /^[A-Za-z]:[\\/]/.test(systemRoot) ? systemRoot : "C:\\Windows";
+	return win32.join(root, "System32", "cmd.exe");
+}
+
 export function packageManagerChildInvocation(
 	invocation: InstallInvocation,
 	platform: NodeJS.Platform = process.platform,
-	commandInterpreter = process.env.ComSpec || "cmd.exe",
-): { command: string; args: string[] } {
+	commandInterpreter = windowsCommandInterpreter(),
+): { command: string; args: string[]; windowsVerbatimArguments?: boolean } {
 	const executable = invocation.executable ?? invocation.command;
 	if (platform !== "win32" || !/\.cmd$/i.test(executable)) return { command: executable, args: invocation.args };
-	const tokens = [executable, ...invocation.args];
-	if (tokens.some((value) => !/^[A-Za-z0-9@._/+,:=-]+$/.test(value))) {
+	// The shim path is quoted for cmd.exe, so it may contain spaces but not quotes, % or control characters.
+	if (/["%\u0000-\u001f]/.test(executable) || invocation.args.some((value) => !/^[A-Za-z0-9@._/+,:=-]+$/.test(value))) {
 		throw new Error("Package-manager installation contains an unsupported Windows command token");
 	}
 	return {
 		command: commandInterpreter,
-		args: ["/d", "/s", "/c", tokens.join(" ")],
+		// With /s, cmd.exe strips only the outer pair of quotes, leaving the quoted shim path intact.
+		args: ["/d", "/s", "/c", `""${executable}" ${invocation.args.join(" ")}"`],
+		windowsVerbatimArguments: true,
 	};
 }
 
@@ -193,9 +227,11 @@ async function commandOutput(invocation: InstallInvocation): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const childInvocation = packageManagerChildInvocation(invocation);
 		const child = spawn(childInvocation.command, childInvocation.args, {
+			env: packageManagerChildEnv(),
 			shell: false,
 			stdio: "pipe",
 			windowsHide: true,
+			windowsVerbatimArguments: childInvocation.windowsVerbatimArguments,
 		});
 		let stdout = "";
 		let stderr = "";
@@ -219,12 +255,44 @@ async function packageInstallInvocation(integration: (typeof PRIMARY_HARNESSES)[
 	return { ...installInvocationFor(integration, available.manager, { allowPackageScripts }), executable: available.executable };
 }
 
-export async function harnessInstallPlan(integration: IntegrationId): Promise<InstallInvocation | null> {
-	if (!isPrimaryHarness(integration) || await isCommandAvailable(COMMANDS[integration])) return null;
+/** Vercel Labs' fx opens its help with "Fast, native coding agent for the terminal." */
+export function isVercelFxHelp(output: string): boolean {
+	return /coding agent/i.test(output);
+}
+
+async function fxHelpOutput(): Promise<string> {
+	return new Promise((resolve) => {
+		const child = spawn("fx", ["--help"], { stdio: ["ignore", "pipe", "pipe"], shell: false, timeout: 5000, windowsHide: true });
+		let output = "";
+		child.stdout.setEncoding("utf8");
+		child.stderr.setEncoding("utf8");
+		child.stdout.on("data", (value) => { output = `${output}${value}`.slice(0, 4000); });
+		child.stderr.on("data", (value) => { output = `${output}${value}`.slice(0, 4000); });
+		child.once("error", () => resolve(""));
+		child.once("close", () => resolve(output));
+	});
+}
+
+export async function harnessInstallPlan(integration: IntegrationId, readFxHelp: () => Promise<string> = fxHelpOutput): Promise<InstallInvocation | null> {
+	if (!isPrimaryHarness(integration)) return null;
+	if (await isCommandAvailable(COMMANDS[integration])) {
+		// Another tool, such as the fx JSON viewer, can own the same command name.
+		if (integration === "fx" && !isVercelFxHelp(await readFxHelp())) {
+			throw new Error("The fx command on your PATH is not Vercel Labs' fx coding agent (it may be the fx JSON viewer), so Phaseo will not install over it. Install fx from https://fx.sh into a directory that comes first on PATH, or rename the other command, then rerun with --skip-install.");
+		}
+		return null;
+	}
 	if (integration === "prime-agent") {
 		if (process.platform === "win32") throw new Error("Prime Agent supports macOS and Linux. Run Phaseo setup inside WSL, or use --skip-install for a separately managed installation.");
 		if (!await isCommandAvailable(["sh"]) || !await isCommandAvailable(["curl"])) {
 			throw new Error("Prime Agent installation requires sh and curl");
+		}
+		return installInvocationFor(integration, "npm");
+	}
+	if (integration === "fx") {
+		if (process.platform === "win32") throw new Error("fx supports macOS and Linux. Run Phaseo setup inside WSL, or use --skip-install for a separately managed installation.");
+		if (!await isCommandAvailable(["sh"]) || !await isCommandAvailable(["curl"]) || !await isCommandAvailable(["bash"])) {
+			throw new Error("fx installation requires sh, bash, and curl");
 		}
 		return installInvocationFor(integration, "npm");
 	}
@@ -267,10 +335,13 @@ async function packageInstallInvocationForRunner(runner: RunnerInstallId): Promi
 export async function installHarness(invocation: InstallInvocation, options: { quiet?: boolean; capture?: boolean } = {}): Promise<void> {
 	await new Promise<void>((resolve, reject) => {
 		const packageManagers = new Set(["npm", "pnpm", "yarn", "bun"]);
-		const childInvocation = packageManagers.has(invocation.command)
+		const isPackageManager = packageManagers.has(invocation.command);
+		const childInvocation: { command: string; args: string[]; windowsVerbatimArguments?: boolean } = isPackageManager
 			? packageManagerChildInvocation(invocation)
 			: invocation;
 		const child = spawn(childInvocation.command, childInvocation.args, {
+			...(isPackageManager ? { env: packageManagerChildEnv() } : {}),
+			windowsVerbatimArguments: childInvocation.windowsVerbatimArguments,
 			stdio: options.quiet ? "ignore" : options.capture ? "pipe" : "inherit",
 			shell: false,
 			windowsHide: true,

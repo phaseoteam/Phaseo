@@ -90,7 +90,7 @@ describe("profile helpers", () => {
 		)
 	})
 
-	it("formats profile currency using the selected locale", () => {
-		expect(formatUsdFromNanos(1_234_500_000, "de-DE")).toContain("1,2345")
+	it("formats profile currency in US format whatever the locale", () => {
+		expect(formatUsdFromNanos(1_234_500_000, "de-DE")).toBe("$1.2345")
 	})
 })

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { applyWorkspacePolicy, buildWorkspacePolicy, isOptionalDynamicRouteSchemaUnavailable } from "./workspacePolicy";
+import { applyWorkspacePolicy, buildWorkspacePolicy, isOptionalDynamicRouteSchemaUnavailable, providerPermittedByPolicy } from "./workspacePolicy";
+import { normalizeRequestRoutingBody } from "../requestRouting";
 
 function candidate(args: {
     providerId: string;
@@ -77,6 +78,18 @@ function candidate(args: {
 }
 
 describe("applyWorkspacePolicy", () => {
+	it("tells Auto's shortlist which providers the request and workspace allow, as it filters them", () => {
+		const blocked = buildWorkspacePolicy({ globalSettings: { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"] }, guardrails: [] });
+		const allowed = providerPermittedByPolicy({ provider: { only: ["Anthropic", "openai", "google-vertex"], ignore: ["google-vertex"] } }, blocked);
+		expect(["anthropic", "openai", "google-vertex", "deepseek"].filter(allowed)).toEqual(["anthropic"]);
+		const allowlist = buildWorkspacePolicy({ globalSettings: { provider_restriction_mode: "allowlist", provider_restriction_provider_ids: ["deepseek"] }, guardrails: [] });
+		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy({}, allowlist))).toEqual(["deepseek"]);
+		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy({}, null))).toEqual(["anthropic", "deepseek"]);
+		// Limits under `routing` count once the body is normalised, as Auto's body is.
+		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy(normalizeRequestRoutingBody({ routing: { only: ["deepseek"] } }), null))).toEqual(["deepseek"]);
+		expect(["anthropic", "deepseek"].filter(providerPermittedByPolicy(normalizeRequestRoutingBody({ routing: { ignore: ["deepseek"] } }), null))).toEqual(["anthropic"]);
+	});
+
 	it("keeps workspace route blocks when scoped guardrails allow other routes", () => {
 		const policy = buildWorkspacePolicy({
 			globalSettings: { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"], model_restriction_mode: "blocklist", model_restriction_model_ids: ["test/model"] },
@@ -105,6 +118,14 @@ describe("applyWorkspacePolicy", () => {
 		});
 		expect(policy.privacyEnableInputOutputLogging).toBe(false);
 		expect(policy.privacyZdrOnly).toBe(true);
+	});
+
+	it("carries the key's never_store_content without changing routing", () => {
+		const neverStore = buildWorkspacePolicy({ neverStoreContent: true });
+		const standard = buildWorkspacePolicy({});
+		expect(neverStore.neverStoreContent).toBe(true);
+		expect(standard.neverStoreContent).toBe(false);
+		expect({ ...neverStore, neverStoreContent: false }).toEqual(standard);
 	});
 
 	it("loads every data-handling rule from the workspace baseline", () => {

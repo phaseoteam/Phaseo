@@ -1,44 +1,15 @@
 import { fetch as streamingFetch } from "expo/fetch";
-import { File } from "expo-file-system";
 import { authHeaders, buildUrl, workspaceCookie } from "@/lib/api/http";
+import { endTimer } from "@/lib/diagnostics";
+import { perf } from "@/perf";
+import { buildRequestBody, loggableRequest, type WireMessage } from "./request";
+import type { ModelSettings, RequestCapabilities } from "./settings";
 import { readChatCompletion, StreamError, type StreamHandlers, type StreamUsage } from "./stream";
-import type { ChatMessage } from "./types";
 
 export class ChatRequestError extends Error {
   constructor(message: string, public code: string, public status: number) {
     super(message);
   }
-}
-
-type ContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
-type WireMessage = { role: "user" | "assistant"; content: string | ContentPart[] };
-
-async function userContent(message: ChatMessage): Promise<string | ContentPart[]> {
-  if (!message.attachments.length) return message.content;
-  const parts: ContentPart[] = [];
-  const texts: string[] = [];
-  for (const attachment of message.attachments) {
-    const file = new File(attachment.uri);
-    if (!file.exists) continue;
-    if (attachment.kind === "image") parts.push({ type: "image_url", image_url: { url: `data:${attachment.mimeType};base64,${await file.base64()}` } });
-    else texts.push(`Attached file ${attachment.name}:\n\`\`\`\n${await file.text()}\n\`\`\``);
-  }
-  const text = [message.content, ...texts].filter(Boolean).join("\n\n");
-  return [{ type: "text", text }, ...parts];
-}
-
-/**
- * The conversation one model sees. In a multi-model chat each model keeps its own
- * thread: every user message, plus only that model's finished answers.
- */
-export async function historyFor(messages: ChatMessage[], model: string, upTo: string): Promise<WireMessage[]> {
-  const wire: WireMessage[] = [];
-  for (const message of messages) {
-    if (message.role === "user") wire.push({ role: "user", content: await userContent(message) });
-    else if (message.model === model && message.content && message.status !== "error") wire.push({ role: "assistant", content: message.content });
-    if (message.id === upTo) break;
-  }
-  return wire;
 }
 
 export type CompletionResult = { text: string; reasoning: string; usage?: StreamUsage };
@@ -48,16 +19,22 @@ export type CompletionResult = { text: string; reasoning: string; usage?: Stream
  * workspace with the same managed key as web chat. The proxy picks the workspace
  * from the `activeWorkspaceId` cookie (checked against the user's memberships).
  */
-export async function streamCompletion(args: { model: string; messages: WireMessage[]; workspaceId: string | null; signal: AbortSignal } & StreamHandlers): Promise<CompletionResult> {
-  const headers: Record<string, string> = { ...(await authHeaders()), ...workspaceCookie(args.workspaceId), "content-type": "application/json", accept: "text/event-stream" };
-  const response = await streamingFetch(buildUrl("/api/chat/chat-completions"), {
+export async function streamCompletion(args: { model: string; messages: WireMessage[]; settings?: ModelSettings; capabilities?: RequestCapabilities; workspaceId: string | null; signal: AbortSignal } & StreamHandlers): Promise<CompletionResult> {
+  // The perf build can point chat at a local stand-in (scripts/perf/sse-standin.mjs), which takes no sign-in.
+  const standIn = perf?.chatStandIn() ?? null;
+  const headers: Record<string, string> = { ...(standIn ? standIn.headers : await authHeaders()), ...workspaceCookie(args.workspaceId), "content-type": "application/json", accept: "text/event-stream" };
+  const started = performance.now();
+  const requestBody = buildRequestBody(args);
+  // Opt-in (EXPO_PUBLIC_CHAT_DEBUG=1 at build time) proof of what was sent; the bearer token is in the headers, never logged.
+  if (process.env.EXPO_PUBLIC_CHAT_DEBUG === "1") console.info(`[phaseo-chat] POST /api/chat/chat-completions ${JSON.stringify({ workspaceId: args.workspaceId ? "<workspace>" : null, requestBody: loggableRequest(requestBody) })}`);
+  const body = JSON.stringify({ workspaceId: args.workspaceId, requestBody });
+  endTimer("Request built", started, () => `${args.model}, ${requestBody.messages.length} messages, ${Math.round(body.length / 1024)} KB`);
+  perf?.log("request.body", { model: args.model, ms: Math.round((performance.now() - started) * 10) / 10, kb: Math.round(body.length / 1024), messages: requestBody.messages.length, images: requestBody.messages.reduce((sum, message) => sum + (Array.isArray(message.content) ? message.content.filter((part) => part.type === "image_url").length : 0), 0) });
+  const response = await streamingFetch(standIn ? new URL("/api/chat/chat-completions", standIn.origin).toString() : buildUrl("/api/chat/chat-completions"), {
     method: "POST",
     headers,
     signal: args.signal,
-    body: JSON.stringify({
-      workspaceId: args.workspaceId,
-      requestBody: { model: args.model, messages: args.messages, stream: true, stream_options: { include_usage: true } },
-    }),
+    body,
   });
   if (!response.ok) {
     const text = await response.text().catch(() => "");

@@ -402,7 +402,8 @@ export function checkDraft(draft: SpendRuleDraft): DraftCheck {
 	const issues = draftIssues(draft);
 	if (issues.length) return { ok: false, issues, message: null };
 	const payload = draftToPayload(draft);
-	const parsed = parseSpendRuleInput(payload, { parseTimeZone: (value) => (typeof value === "string" && isValidTimeZone(value.trim()) ? value.trim() : null) });
+	// The server refuses a new block while blocks are off; the editor only offers block then.
+	const parsed = parseSpendRuleInput(payload, { parseTimeZone: (value) => (typeof value === "string" && isValidTimeZone(value.trim()) ? value.trim() : null), blocksEnabled: true });
 	if (parsed.ok === false) return { ok: false, issues: [], message: parsed.message };
 	return { ok: true, payload };
 }

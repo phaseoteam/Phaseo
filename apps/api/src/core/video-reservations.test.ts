@@ -79,12 +79,16 @@ describe("reserveVideoGenerationCredits", () => {
 		expect(isInsufficientVideoReservationStatus(null)).toBe(false);
 	});
 
-	it.each(["api_key", "oauth"] as const)("holds paid video credits for %s authentication", async (authMethod) => {
+	it.each([
+		["an API key", "kid_video", true],
+		["a delegated OAuth key", "kid_delegated", true],
+		["an OAuth access token", "oauth_client", false],
+	] as const)("holds paid video credits for %s", async (_name, apiKeyRef, holdsForKey) => {
 		const result = await reserveVideoGenerationCredits({
 			workspaceId: "ws_video_reserve",
 			keyId: "key_video",
 			videoId: "video_paid_123",
-			authMethod,
+			apiKeyRef,
 			providerId: "openai",
 			model: "openai/sora",
 			seconds: 6,
@@ -117,7 +121,7 @@ describe("reserveVideoGenerationCredits", () => {
 				reservationId: "video_hold:video_paid_123",
 				amountNanos: 300_000_000,
 				holdRefId: "video_paid_123",
-				...(authMethod === "api_key" ? { keyId: "key_video", requestCount: 1 } : {}),
+				...(holdsForKey ? { keyId: "key_video", requestCount: 1 } : {}),
 			},
 		]);
 	});

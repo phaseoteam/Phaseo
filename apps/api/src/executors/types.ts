@@ -102,6 +102,8 @@ export type ExecutorExecuteArgs = {
 		requestUserId?: string | null;
 		trace?: Record<string, unknown> | null;
 		testId?: string | null;
+		/** The request's key reference; `oauth_…` means `apiKeyId` is an OAuth client ID, not a key. */
+		apiKeyRef?: string | null;
 		authMethod?: "api_key" | "oauth";
 		oauthClientId?: string | null;
 		oauthUserId?: string | null;

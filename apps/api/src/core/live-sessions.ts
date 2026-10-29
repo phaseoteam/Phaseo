@@ -1,4 +1,4 @@
-// Playground-only Live protocol and billing. Rates are snapshotted at session creation.
+// GPT Live protocol and billing for playground and API sessions. Rates are snapshotted at session creation.
 // https://developers.openai.com/api/docs/models/gpt-live-1
 import { computeBill } from "@pipeline/pricing/engine";
 import { matchesConditions } from "@pipeline/pricing/conditions";
@@ -34,6 +34,8 @@ export type LiveUsage = {
 	live_billing_error?: string;
 	live_delegations?: Record<string, string>;
 	live_tool_calls?: LiveToolCall[];
+	// Client-executed function calls the backend made; only these may receive an output.
+	live_function_call_ids?: string[];
 };
 
 export function isLiveModel(model: string | undefined | null): boolean {
@@ -80,7 +82,7 @@ export function liveStartEvent(config: LiveConfig, voice: string, instructions?:
 			model: config.backendModel.replace(/^openai\//, ""),
 			instructions: settings.instructions,
 			service_tier: settings.service_tier, max_output_tokens: settings.max_output_tokens,
-			tools: settings.web_search ? [{ type: "web_search" }] : [],
+			tools: [...(settings.web_search ? [{ type: "web_search" }] : []), ...settings.tools],
 			tool_choice: settings.tool_choice, parallel_tool_calls: settings.parallel_tool_calls,
 			...(settings.reasoning_effort || settings.reasoning_summary ? { reasoning: {
 				...(settings.reasoning_effort ? { effort: settings.reasoning_effort } : {}),
@@ -124,7 +126,17 @@ export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>):
 	// granular items instead, preserving their identity across replay/restarts.
 	if (["response.output_item.added", "response.output_item.done"].includes(nested?.type)) {
 		const item = nested.item;
-		if (typeof item?.type === "string" && item.type.endsWith("_call") && item.type !== "web_search_call") throw new Error("live_tool_not_supported");
+		// Function calls are run by the client and cost only the backend tokens
+		// already counted on the response; other tool types are never configured.
+		if (typeof item?.type === "string" && item.type.endsWith("_call") && item.type !== "web_search_call"
+			&& item.type !== "function_call") throw new Error("live_tool_not_supported");
+		if (item?.type === "function_call" && nested.type === "response.output_item.done" && typeof item.call_id === "string" && item.call_id) {
+			const calls = current.live_function_call_ids ?? [];
+			if (!calls.includes(item.call_id)) {
+				if (calls.length >= 1024) throw new Error("live_tool_limit_exceeded");
+				next.live_function_call_ids = [...calls, item.call_id];
+			}
+		}
 		if (item?.type === "web_search_call") {
 			const responseId = id ?? next.live_delegations?.[delegationId];
 			if (typeof item.id !== "string" || !item.id || typeof responseId !== "string" || typeof delegationId !== "string") throw new Error("live_tool_identity_missing");

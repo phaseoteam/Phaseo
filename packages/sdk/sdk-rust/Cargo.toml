@@ -15,8 +15,13 @@ exclude = ["package.json", "tests/smoke_*.rs"]
 
 [dependencies]
 serde_json = "1.0"
+tungstenite = { version = "0.30", default-features = false, features = ["handshake", "rustls-tls-webpki-roots"], optional = true }
 ureq = "2.9"
 url = "2.5"
 
 [lib]
 path = "src/lib.rs"
+
+[features]
+# Realtime voice sessions over the relay WebSocket (adds tungstenite).
+realtime = ["dep:tungstenite"]

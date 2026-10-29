@@ -25,10 +25,10 @@ describe("Novita native video", () => {
 		mocks.fetch.mockResolvedValue(Response.json({ task_id: "native" }));
 		const request = args({ model: "kling-v3.0-std-t2v" });
 		request.apiKeyId = "key-id";
-		request.meta.authMethod = "api_key";
+		request.meta.apiKeyRef = "kid_key";
 		request.onReservationDenied = vi.fn();
 		await execute(request);
-		expect(mocks.reserve).toHaveBeenCalledWith(expect.objectContaining({ keyId: "key-id", authMethod: "api_key", onReservationDenied: request.onReservationDenied }));
+		expect(mocks.reserve).toHaveBeenCalledWith(expect.objectContaining({ keyId: "key-id", apiKeyRef: "kid_key", onReservationDenied: request.onReservationDenied }));
 	});
 	it.each(["kling2.5_turbo_pro", "kling2.1_master"])("submits %s through the unified API without dropping job ownership", async model => {
 		for (const image of [undefined, "https://example.com/start.png"]) {

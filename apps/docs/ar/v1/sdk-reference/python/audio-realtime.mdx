@@ -1,0 +1,80 @@
+---
+icon: "phone"
+title: "الصوت في الوقت الفعلي"
+description: "أجرِ مكالمة صوتية في الوقت الفعلي عبر مرحّل Phaseo باستخدام SDK Python، واحصل على الفاتورة النهائية عند انتهائها."
+---
+
+<Note>
+الصوت في الوقت الفعلي في مرحلة تجريبية (beta)، ويُتاح الوصول إليه لكل مساحة عمل على حدة.
+</Note>
+
+**الطريقة**: تنشئ `await client.realtime.connect()` على `AsyncPhaseo` الجلسة (`POST /v1/audio/realtime/sessions`)، وتفتح اتصال WebSocket بالمرحّل، وتعود بمجرد أن يرسل المرحّل `relay.connected`. عميل الوقت الفعلي غير متزامن فقط، ويحتاج إلى الحزمة الاختيارية `websockets`:
+
+```bash
+pip install "phaseo[realtime]"
+```
+
+من دونها، تطلق `connect()` الاستثناء `ImportError` مع أمر التثبيت هذا. يرد وصف بروتوكول المرحّل والتحذيرات ورموز الأسباب في [جلسات الصوت في الوقت الفعلي](/ar/v1/guides/realtime-voice).
+
+### مثال
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo, RealtimeSessionClosedError
+
+async def main(pcm16_chunk: bytes) -> None:
+    client = AsyncPhaseo()  # reads PHASEO_API_KEY
+    session = await client.realtime.connect(
+        "openai/gpt-realtime-2", voice="marin", instructions="Answer in one sentence."
+    )
+    session.on_warning(lambda warning: print("warning", warning["code"]))
+
+    # PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+    await session.send_audio(pcm16_chunk)
+
+    try:
+        ended = await session.end(reason="caller hung up")
+        print(ended["reason"], ended["duration_seconds"], ended["cost"]["total_usd"], ended["billing_status"])
+    except RealtimeSessionClosedError as error:
+        # The call is still billed. Fetch the final cost later with error.final_bill["path"].
+        print(error)
+    finally:
+        await client.close()
+```
+
+لقراءة كل حدث بدلًا من ذلك، كرّر على الجلسة. يتلقى المكرِّر الأول أيضًا الأحداث المستلمة منذ عودة `connect()`، بدءًا من `relay.connected`، ويتوقف التكرار عند إغلاق المقبس.
+
+```python
+async for event in session:
+    if event["type"] == "response.output_audio.delta":
+        play(event["delta"])
+```
+
+تُنهي `async with session:` المكالمة باستخدام `end()` عند الخروج من الكتلة، إذا لم تكن قد انتهت بالفعل.
+
+### خيارات الاتصال
+
+- `model` (مطلوب): معرّف نموذج للوقت الفعلي، مثل `openai/gpt-realtime-2`.
+- `voice` و`instructions` و`provider` و`metadata`: تُمرَّر إلى طلب إنشاء الجلسة.
+- `connect_timeout`: عدد ثواني انتظار `relay.connected`. القيمة الافتراضية 30.
+- `websocket_connect`: كائن قابل للاستدعاء غير متزامن `(url, subprotocols)` يعيد مقبسًا متصلًا، لاستخدام مكتبة WebSocket أخرى.
+
+### الجلسة
+
+| العضو | الوصف |
+| --- | --- |
+| `id`, `info` | معرّف الجلسة واستجابة إنشاء الجلسة، دون `client_secret`. |
+| `await send_audio(pcm16)` | يرسل `bytes` بصيغة PCM16 بوصفها `client.audio`. تتولى SDK ترميزها بصيغة base64. |
+| `await send(event)` | يرسل أي حدث بصيغة JSON، للرسائل الخاصة بالمزوّد. |
+| `on(type, listener)` | يشترك في نوع حدث واحد، أو في كل الأحداث باستخدام `"*"`. يعيد دالة لإلغاء الاشتراك. تصل أحداث المزوّد دون تغيير بوصفها قواميس. |
+| `on_warning(listener)`, `on_ended(listener)` | دوال مساعدة لـ `session.warning` و`session.ended`. |
+| `async for event in session` | يُنتج كل حدث حتى إغلاق المقبس. |
+| `await end(reason=None, cancel_response=None, timeout=60)` | يرسل `session.end` ويعيد `session.ended`: ‏`reason` و`initiated_by` و`duration_seconds` و`usage` و`cost` و`billing_status`، و`final_bill` ما لم تكن الفاتورة قد سُوّيت. |
+| `ended` | كائن future للحدث `session.ended` أيًّا كانت طريقة انتهاء المكالمة، بما في ذلك حالات الإنهاء التي بدأها المزوّد أو البوابة. |
+| `await close()` | يغلق المقبس دون انتظار الفاتورة. تظل المكالمة خاضعة للفوترة. |
+
+### الأخطاء
+
+إذا أُغلق المقبس، أو انتهت مهلة `end()`، دون وصول `session.ended`، فإن `end()` و`ended` يطلقان الاستثناء `RealtimeSessionClosedError`. يتضمن هذا الاستثناء `session_id` و`close_code` و`close_reason` و`final_bill`، وهو الطلب الذي يعيد التكلفة النهائية بعد تسويتها: `GET /v1/generations?id=realtime%3A<session_id>`. وتبني `realtime_final_bill(session_id)` الطلب نفسه.
+
+تطلق `connect()` استثناءً إذا أنهى المرحّل الجلسة قبل الاتصال، وتطلق `TimeoutError` إذا لم يصل `relay.connected` في الوقت المحدد.

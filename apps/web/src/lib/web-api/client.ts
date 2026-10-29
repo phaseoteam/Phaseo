@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { sdkExportStore, sdkRequestFromChat } from "@/lib/chat/sdkExport";
 import { isPublicLocale } from "@/i18n/locales";
+import { anySignal, timeoutSignal } from "@/lib/abortSignals";
 
 const DEFAULT_WEB_API_ORIGIN = "https://phaseo.app";
 const PUBLIC_WEB_API_TIMEOUT_MS = 15_000;
@@ -9,13 +10,16 @@ export class WebApiError extends Error {
 	readonly status: number;
 	readonly detail?: string;
 	readonly issues?: Array<{ path: string; message: string }>;
+	/** The response's machine-readable `error`, kept even when `detail` is its message. */
+	readonly code?: string;
 
-	constructor(path: string, status: number, detail?: string, issues?: Array<{ path: string; message: string }>) {
+	constructor(path: string, status: number, detail?: string, issues?: Array<{ path: string; message: string }>, code?: string) {
 		super(detail || `Cloudflare web API request failed (${status}): ${path}`);
 		this.name = "WebApiError";
 		this.status = status;
 		this.detail = detail;
 		this.issues = issues;
+		this.code = code;
 	}
 }
 
@@ -61,15 +65,15 @@ async function fetchPublicWebApiUncached<T>(
 ): Promise<T> {
 	// Bound both fetching and reading the body so cached prerenders can reach
 	// their fallback instead of hanging until Next's cache-fill deadline.
-	const timeoutSignal = AbortSignal.timeout(PUBLIC_WEB_API_TIMEOUT_MS);
+	const deadline = timeoutSignal(PUBLIC_WEB_API_TIMEOUT_MS);
 	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		headers: { Accept: "application/json" },
 		// Disable Next's data cache without native fetch's no-cache request
 		// headers, which ask upstream shared caches to revalidate.
 		next: { revalidate: 0 },
 		signal: options.signal
-			? AbortSignal.any([options.signal, timeoutSignal])
-			: timeoutSignal,
+			? anySignal([options.signal, deadline])
+			: deadline,
 		credentials: options.credentials ?? "omit",
 	});
 
@@ -141,6 +145,7 @@ export async function fetchAccountWebApi<T>(
 					? payload.detail
 					: typeof payload?.error === "string" ? payload.error : undefined,
 			Array.isArray(payload?.issues) ? payload.issues.slice(0, 10) : undefined,
+			typeof payload?.error === "string" ? payload.error : undefined,
 		);
 	}
 	return payload as T;

@@ -8,7 +8,7 @@ type InputRef = Ref<ComponentRef<typeof TextInput>>;
 
 export function SearchField({ value, onChangeText, className, placeholder = "Search", ref, ...props }: Omit<TextInputProps, "onChangeText" | "value"> & { value: string; onChangeText(value: string): void; className?: string; ref?: InputRef }) {
   return (
-    <View className={cn("h-11 flex-row items-center gap-2 rounded-lg bg-muted px-3", className)}>
+    <View className={cn("h-11 flex-row items-center gap-2 rounded-md bg-muted px-3", className)}>
       <Icon icon={Search} tone="muted" size={17} />
       <TextInput
         ref={ref}
@@ -38,7 +38,7 @@ export function TextField({ className, ref, ...props }: TextInputProps & { class
     <TextInput
       ref={ref}
       {...props}
-      className={cn("min-h-11 rounded-lg border border-input bg-background px-3 py-2.5 font-sans text-[15px] text-foreground", className)}
+      className={cn("min-h-11 rounded-md border border-input bg-background px-3 py-2.5 font-sans text-[15px] text-foreground", className)}
       placeholderTextColorClassName="accent-muted-foreground"
       cursorColorClassName="accent-primary"
     />
