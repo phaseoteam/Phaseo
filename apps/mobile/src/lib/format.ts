@@ -1,8 +1,8 @@
-import { formatRoundedCount, formatUsdPrice } from "@phaseo/app-kit/format";
+import { formatLatency, formatRoundedCount, formatTokenCountShort, formatTps, formatUsdPrice } from "@phaseo/app-kit/format";
 
 // Money, counts and unit prices are the website's styles, shared through @phaseo/app-kit/format.
-// So are calendar dates, timestamps and "how long ago", in the website's wording.
-export { formatCalendarDate, formatDateParts, formatRelativeTime, formatRelativeUnit, formatTimestamp, formatUsd, formatUsdCost, MONEY_LOCALE } from "@phaseo/app-kit/format";
+// So are calendar dates, timestamps and "how long ago", in the website's wording, and token limits in full.
+export { formatCalendarDate, formatTokenCount, formatDateParts, formatRelativeTime, formatRelativeUnit, formatTimestamp, formatUsd, formatUsdCost, MONEY_LOCALE } from "@phaseo/app-kit/format";
 
 const whole = new Intl.NumberFormat("en-GB");
 const dateFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -48,12 +48,9 @@ export function formatBytes(bytes: number | null | undefined) {
   return `${value >= 100 ? Math.round(value) : Number(value.toFixed(value >= 10 ? 1 : 2))} ${units[unit]}`;
 }
 
-/** Context window: 1M, 128K, 8K. */
+/** A token limit where space is short, as the website's short form: 1M, 131K, 8K. Detail rows use formatTokenCount ("131,072 tokens"). */
 export function formatTokens(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(value) || value <= 0) return "—";
-  if (value >= 1_000_000) return `${Number((value / 1_000_000).toFixed(value % 1_000_000 ? 1 : 0))}M`;
-  if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
-  return String(value);
+  return value == null || !Number.isFinite(value) || value <= 0 ? "—" : formatTokenCountShort(value);
 }
 
 function toDate(value: string | number | Date | null | undefined) {
@@ -113,7 +110,12 @@ export function formatPercent(value: number | null | undefined, digits = 1) {
   return value == null || !Number.isFinite(value) ? "—" : `${value.toFixed(digits)}%`;
 }
 
-export function formatMs(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return value >= 1000 ? `${(value / 1000).toFixed(1)} s` : `${Math.round(value)} ms`;
+/** Latency in seconds, from milliseconds, as the website shows it: "0.85 s", "12.3 s". */
+export function formatSeconds(value: number | null | undefined) {
+  return formatLatency(value) ?? "—";
+}
+
+/** Output speed, as the website shows it: "45.3 tps", "123 tps". */
+export function formatSpeed(value: number | null | undefined) {
+  return formatTps(value) ?? "—";
 }
