@@ -2633,7 +2633,7 @@ export class RealtimeRelayDurableObject {
 			// Still inside its bounded wait for final usage.
 			return Response.json({ active: true, settled: false, healthy: true });
 		}
-		const needsAuthoritativeDrain = this.hasPendingBilling() || this.waitingForOpenAIInputClear;
+		const needsAuthoritativeDrain = this.hasPendingBilling() || this.waitingForOpenAIInputClear || this.mistralFinishPending();
 		if (pending?.phase === "drain" || (!pending && needsAuthoritativeDrain)) {
 			this.pendingSettlement = null;
 			await this.forceAuthoritativeUsage(

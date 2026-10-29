@@ -247,6 +247,22 @@ describe("Mistral realtime relay", () => {
 		expect(mocks.settleRealtimeSession.mock.calls[0][0]).toMatchObject({ status: "expired", disconnectReason: "realtime_max_duration" });
 	});
 
+	it("flushes and waits for the final transcript when reconciliation ends a stuck session", async () => {
+		vi.useFakeTimers();
+		const { object, storage } = relay();
+		await play(object, [created]);
+		await speak(object, 10);
+		// The client socket is gone, so the session is no longer healthy.
+		object.client.readyState = 3;
+		storage.data.set("session_id", "rt_test");
+		await object.reconcile("rt_test");
+		expect(upstreamSent(object).slice(-2)).toEqual([{ type: "input_audio.flush" }, { type: "input_audio.end" }]);
+		expect(mocks.settleRealtimeSession).not.toHaveBeenCalled();
+		await play(object, [done]);
+		expect(mocks.settleRealtimeSession).toHaveBeenCalledOnce();
+		expect(mocks.settleRealtimeSession.mock.calls[0][0]).toMatchObject({ usage: { input_audio_ms: 8_000 } });
+	});
+
 	it("settles at once when no audio was sent", async () => {
 		const { object } = relay();
 		const upstream = object.upstream;
