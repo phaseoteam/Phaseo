@@ -5120,6 +5120,8 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] evaluated
     #   @return [Boolean]
+    # @!attribute [rw] forecast
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] metric
     #   @return [String]
     # @!attribute [rw] next_threshold
@@ -5127,6 +5129,8 @@ module Phaseo
     # @!attribute [rw] percent
     #   @return [Float, nil]
     # @!attribute [rw] period
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] previous_period
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] reached_threshold_percent
     #   @return [Integer, nil]
@@ -5146,7 +5150,7 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] value_usd
     #   @return [Float, nil]
-    SpendRulePreview = Struct.new(:alert, :balance, :base_kind, :base_nanos, :base_ref, :base_usd, :block_at_nanos, :block_at_usd, :computed_at, :evaluated, :metric, :next_threshold, :percent, :period, :reached_threshold_percent, :rule_id, :state, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :value_nanos, :value_usd, keyword_init: true)
+    SpendRulePreview = Struct.new(:alert, :balance, :base_kind, :base_nanos, :base_ref, :base_usd, :block_at_nanos, :block_at_usd, :computed_at, :evaluated, :forecast, :metric, :next_threshold, :percent, :period, :previous_period, :reached_threshold_percent, :rule_id, :state, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :value_nanos, :value_usd, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     SpendRulePreviewResponse = Struct.new(:data, keyword_init: true)

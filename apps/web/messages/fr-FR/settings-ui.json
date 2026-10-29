@@ -7500,7 +7500,9 @@
 			"history": "Historique",
 			"sendTest": "Envoyer un test",
 			"delete": "Supprimer",
-			"runway": "environ {days} jours restants"
+			"runway": "environ {days} jours restants",
+			"projectedBy": "prévu d'ici le {date}",
+			"forecastFrom": "prévision à partir du {date}"
 		},
 		"preview": {
 			"ofBase": "Actuellement {value} sur {base} ({percent})",
@@ -7511,7 +7513,10 @@
 			"afterSave": "La valeur actuelle s'affiche après l'enregistrement.",
 			"savedRuleNote": "Basé sur l'alerte enregistrée. Enregistrez vos modifications pour le mettre à jour.",
 			"balance": "Solde {balance}, dépenses de {burn} par jour : environ {days} jours restants",
-			"balanceNoSpend": "Solde {balance}, aucune dépense au cours des {hours} dernières heures"
+			"balanceNoSpend": "Solde {balance}, aucune dépense au cours des {hours} dernières heures",
+			"forecast": "{value} dépensés jusqu'ici, {projected} prévus d'ici le {date}",
+			"forecastReaches": "{value} dépensés jusqu'ici, {projected} prévus d'ici le {date}. À ce rythme, {limit} sera atteint le {reachDate}.",
+			"forecastPending": "{value} dépensés jusqu'ici. La prévision commence le {date}, une fois qu'une part suffisante de la période est écoulée."
 		},
 		"editor": {
 			"createTitle": "Ajouter une alerte de dépenses",

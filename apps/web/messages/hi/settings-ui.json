@@ -7500,7 +7500,9 @@
 			"history": "इतिहास",
 			"sendTest": "टेस्ट भेजें",
 			"delete": "हटाएँ",
-			"runway": "लगभग {days} दिन बाकी"
+			"runway": "लगभग {days} दिन बाकी",
+			"projectedBy": "{date} तक अनुमानित",
+			"forecastFrom": "{date} से पूर्वानुमान"
 		},
 		"preview": {
 			"ofBase": "अभी {base} में से {value} ({percent})",
@@ -7511,7 +7513,10 @@
 			"afterSave": "सहेजने के बाद मौजूदा मान दिखेगा।",
 			"savedRuleNote": "सहेजे गए अलर्ट पर आधारित। अपडेट करने के लिए बदलाव सहेजें।",
 			"balance": "बैलेंस {balance}, प्रतिदिन {burn} खर्च: लगभग {days} दिन बाकी",
-			"balanceNoSpend": "बैलेंस {balance}, पिछले {hours} घंटों में कोई खर्च नहीं"
+			"balanceNoSpend": "बैलेंस {balance}, पिछले {hours} घंटों में कोई खर्च नहीं",
+			"forecast": "अब तक {value} खर्च, {date} तक अनुमानित {projected}",
+			"forecastReaches": "अब तक {value} खर्च, {date} तक अनुमानित {projected}। इसी रफ़्तार से {reachDate} को {limit} तक पहुँच जाएगा।",
+			"forecastPending": "अब तक {value} खर्च। अवधि का पर्याप्त हिस्सा बीत जाने पर {date} से पूर्वानुमान शुरू होगा।"
 		},
 		"editor": {
 			"createTitle": "खर्च अलर्ट जोड़ें",

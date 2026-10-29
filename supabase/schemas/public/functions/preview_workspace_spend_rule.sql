@@ -17,8 +17,12 @@ CREATE OR REPLACE FUNCTION public.preview_workspace_spend_rule (
 -- preview and by test sends. Balance rules get the rolling burn window as period, the available
 -- balance as value, a "balance" object (balance, reserved, available, burn and burn per day,
 -- runway, which threshold holds, armed, whether auto top-up covers a drop) and the alert text
--- (private.spend_balance_rule_values / spend_balance_alert_text). Other rules without a calendar
--- period (rolling, spike) get period, value and alert null. evaluated is false for rules the evaluator does not handle yet
+-- (private.spend_balance_rule_values / spend_balance_alert_text). Rolling spend and
+-- budget_percent rules get their window as period (with window_hours) and their '-infinity'
+-- state row. Forecast rules get a "forecast" object (ready, from, projected_nanos and
+-- projected_percent, by = the period end, limit_nanos, reaches_at) and their thresholds are
+-- measured against the projection; previous_period bases get "previous_period" {start, end}.
+-- Spike rules get period, value and alert null. evaluated is false for rules the evaluator does not handle yet
 -- (private.spend_rule_evaluable). Errors: spend_rule_not_found (deleted, or another workspace).
 declare
   v_rule public.workspace_spend_rules;
@@ -36,6 +40,7 @@ declare
   v_has_state boolean := false;
   v_balance record;
   v_has_balance boolean := false;
+  v_measure numeric;
 begin
   if p_workspace_id is null or p_rule_id is null or p_now is null then
     raise exception 'invalid_spend_rule_preview' using errcode = '22023';
@@ -142,6 +147,8 @@ begin
       'base_kind', v_rule.base_kind,
       'base_ref', v_rule.base_ref,
       'base_nanos', null,
+      'previous_period', null,
+      'forecast', null,
       'percent', null,
       'threshold_percents', to_jsonb(v_rule.threshold_percents),
       'threshold_amount_nanos', v_rule.threshold_amount_nanos,
@@ -156,17 +163,26 @@ begin
   select state.highest_percent_fired, state.amount_fired_at, state.last_fired_at, state.fire_count
     into v_state
   from public.workspace_spend_rule_state state
-  where state.rule_id = v_rule.id and state.period_start = v_value.period_start;
+  where state.rule_id = v_rule.id
+    and state.period_start = case when v_rule.period = 'rolling' then '-infinity'::timestamptz else v_value.period_start end;
   v_has_state := found;
 
+  -- What thresholds are measured against: spend so far, or a forecast's projection (none until
+  -- the projection is ready).
+  v_measure := case when v_rule.metric = 'forecast' then v_value.projected_nanos else v_value.value_nanos end;
+
   if v_rule.metric in ('budget_percent', 'forecast') and v_value.base_nanos > 0 and v_rule.threshold_percents is not null then
-    select
-      max(threshold) filter (where v_value.value_nanos * 100 >= threshold::numeric * v_value.base_nanos),
-      min(threshold) filter (where v_value.value_nanos * 100 < threshold::numeric * v_value.base_nanos)
-      into v_reached, v_next
-    from unnest(v_rule.threshold_percents) threshold;
+    if v_measure is not null then
+      select
+        max(threshold) filter (where v_measure * 100 >= threshold::numeric * v_value.base_nanos),
+        min(threshold) filter (where v_measure * 100 < threshold::numeric * v_value.base_nanos)
+        into v_reached, v_next
+      from unnest(v_rule.threshold_percents) threshold;
+    else
+      v_next := v_rule.threshold_percents[1];
+    end if;
     v_next_nanos := ceil(v_next::numeric * v_value.base_nanos / 100);
-  elsif v_rule.threshold_amount_nanos is not null and v_value.value_nanos < v_rule.threshold_amount_nanos then
+  elsif v_rule.threshold_amount_nanos is not null and (v_measure is null or v_measure < v_rule.threshold_amount_nanos) then
     v_next_nanos := v_rule.threshold_amount_nanos;
   end if;
 
@@ -177,13 +193,17 @@ begin
     end;
   end if;
 
-  if v_rule.metric = 'spend' or (v_rule.metric = 'budget_percent' and v_value.base_nanos > 0) then
+  if v_rule.metric = 'spend'
+    or (v_rule.metric = 'budget_percent' and v_value.base_nanos > 0)
+    or (v_rule.metric = 'forecast' and v_value.projected_nanos is not null
+      and (v_rule.threshold_amount_nanos is not null or v_value.base_nanos > 0)) then
     select alert.* into v_alert
     from private.spend_rule_alert_text(
       v_workspace_name, v_rule.name, v_rule.metric, v_rule.scope_type, v_rule.scope_id, v_rule.scope_key_id,
       v_rule.scope_user_id, v_rule.scope_department_id, v_rule.period, v_value.period_end, v_value.time_zone,
       v_rule.base_kind, v_rule.base_ref, v_value.base_nanos, v_rule.threshold_percents, v_rule.threshold_amount_nanos,
-      v_value.value_nanos, coalesce(v_reached, v_rule.threshold_percents[1])
+      v_value.value_nanos, coalesce(v_reached, v_rule.threshold_percents[1]), v_rule.window_hours, v_value.projected_nanos,
+      v_value.reaches_at
     ) alert;
     v_has_alert := found;
   end if;
@@ -194,11 +214,24 @@ begin
     'evaluated', v_evaluated,
     'computed_at', p_now,
     'time_zone', v_value.time_zone,
-    'period', jsonb_build_object('kind', v_rule.period, 'start', v_value.period_start, 'end', v_value.period_end),
+    'period', jsonb_strip_nulls(jsonb_build_object('kind', v_rule.period, 'start', v_value.period_start, 'end', v_value.period_end,
+      'window_hours', v_value.window_hours)),
     'value_nanos', v_value.value_nanos,
     'base_kind', v_rule.base_kind,
     'base_ref', v_rule.base_ref,
     'base_nanos', v_value.base_nanos,
+    'previous_period', case when v_value.previous_start is not null then jsonb_build_object(
+      'start', v_value.previous_start, 'end', v_value.previous_end) end,
+    'forecast', case when v_rule.metric = 'forecast' then jsonb_build_object(
+      'ready', v_value.projected_nanos is not null,
+      'from', v_value.forecast_from,
+      'projected_nanos', v_value.projected_nanos,
+      'projected_percent', case when v_value.base_nanos > 0 and v_value.projected_nanos is not null
+        then round(v_value.projected_nanos * 100 / v_value.base_nanos, 1) end,
+      'by', v_value.period_end,
+      'limit_nanos', v_value.limit_nanos,
+      'reaches_at', v_value.reaches_at
+    ) end,
     'percent', case when v_value.base_nanos > 0 then round(v_value.value_nanos * 100 / v_value.base_nanos, 1) end,
     'threshold_percents', to_jsonb(v_rule.threshold_percents),
     'threshold_amount_nanos', v_rule.threshold_amount_nanos,

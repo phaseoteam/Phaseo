@@ -7500,7 +7500,9 @@
 			"history": "History",
 			"sendTest": "Send test",
 			"delete": "Delete",
-			"runway": "about {days} days left"
+			"runway": "about {days} days left",
+			"projectedBy": "projected by {date}",
+			"forecastFrom": "forecast from {date}"
 		},
 		"preview": {
 			"ofBase": "Currently {value} of {base} ({percent})",
@@ -7511,7 +7513,10 @@
 			"afterSave": "The current value appears after you save.",
 			"savedRuleNote": "Based on the saved alert. Save your changes to update it.",
 			"balance": "Balance {balance}, spending {burn} a day: about {days} days left",
-			"balanceNoSpend": "Balance {balance}, with no spend in the last {hours} hours"
+			"balanceNoSpend": "Balance {balance}, with no spend in the last {hours} hours",
+			"forecast": "Spent {value} so far, projected {projected} by {date}",
+			"forecastReaches": "Spent {value} so far, projected {projected} by {date}. At this pace it reaches {limit} on {reachDate}.",
+			"forecastPending": "Spent {value} so far. The forecast starts {date}, once enough of the period has passed."
 		},
 		"editor": {
 			"createTitle": "Add spend alert",

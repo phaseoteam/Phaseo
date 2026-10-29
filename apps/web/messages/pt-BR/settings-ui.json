@@ -7500,7 +7500,9 @@
 			"history": "Histórico",
 			"sendTest": "Enviar teste",
 			"delete": "Excluir",
-			"runway": "restam cerca de {days} dias"
+			"runway": "restam cerca de {days} dias",
+			"projectedBy": "previsto até {date}",
+			"forecastFrom": "previsão a partir de {date}"
 		},
 		"preview": {
 			"ofBase": "Atualmente {value} de {base} ({percent})",
@@ -7511,7 +7513,10 @@
 			"afterSave": "O valor atual aparece depois que você salvar.",
 			"savedRuleNote": "Com base no alerta salvo. Salve as alterações para atualizar.",
 			"balance": "Saldo {balance}, gastando {burn} por dia: restam cerca de {days} dias",
-			"balanceNoSpend": "Saldo {balance}, sem gastos nas últimas {hours} horas"
+			"balanceNoSpend": "Saldo {balance}, sem gastos nas últimas {hours} horas",
+			"forecast": "Gasto de {value} até agora, previsão de {projected} até {date}",
+			"forecastReaches": "Gasto de {value} até agora, previsão de {projected} até {date}. Nesse ritmo, chega a {limit} em {reachDate}.",
+			"forecastPending": "Gasto de {value} até agora. A previsão começa em {date}, quando uma parte suficiente do período tiver passado."
 		},
 		"editor": {
 			"createTitle": "Adicionar alerta de gastos",

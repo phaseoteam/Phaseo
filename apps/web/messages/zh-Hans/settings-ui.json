@@ -7500,7 +7500,9 @@
 			"history": "历史",
 			"sendTest": "发送测试",
 			"delete": "删除",
-			"runway": "约可用 {days} 天"
+			"runway": "约可用 {days} 天",
+			"projectedBy": "预计截至 {date}",
+			"forecastFrom": "{date} 起预测"
 		},
 		"preview": {
 			"ofBase": "当前 {value} / {base}（{percent}）",
@@ -7511,7 +7513,10 @@
 			"afterSave": "保存后将显示当前值。",
 			"savedRuleNote": "基于已保存的警报。保存更改后会更新。",
 			"balance": "余额 {balance}，每天支出 {burn}：约可用 {days} 天",
-			"balanceNoSpend": "余额 {balance}，过去 {hours} 小时内无支出"
+			"balanceNoSpend": "余额 {balance}，过去 {hours} 小时内无支出",
+			"forecast": "目前已支出 {value}，预计到 {date} 达到 {projected}",
+			"forecastReaches": "目前已支出 {value}，预计到 {date} 达到 {projected}。按此速度将在 {reachDate} 达到 {limit}。",
+			"forecastPending": "目前已支出 {value}。周期经过足够时间后，将于 {date} 开始预测。"
 		},
 		"editor": {
 			"createTitle": "添加支出警报",
