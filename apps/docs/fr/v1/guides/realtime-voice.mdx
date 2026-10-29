@@ -1,0 +1,220 @@
+---
+title: "Sessions vocales en temps réel"
+description: "Passez un appel vocal en temps réel via le relais Phaseo, terminez-le proprement et obtenez la facture finale à la fin de l’appel."
+icon: "phone"
+---
+
+<Note>
+La voix en temps réel est en bêta et l’accès est ouvert espace de travail par espace de travail.
+</Note>
+
+Une session en temps réel est un appel vocal entre votre client et le modèle temps réel d’un fournisseur, relayé par Phaseo afin de pouvoir être mesuré et facturé. Le relais transmet sans modification les événements propres au fournisseur et en ajoute trois qui lui sont propres : `session.end`, `session.warning` et `session.ended`.
+
+## Démarrer une session
+
+Créez la session depuis votre serveur :
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
+```
+
+La réponse contient `client_secret`, `connect.url`, `max_duration_seconds` et `idle_timeout_seconds` (toujours `null` pour les sessions API). Ouvrez un WebSocket vers `connect.url` sur `api.phaseo.app` avec les sous-protocoles WebSocket `statsync-realtime` et `rtsec.<client_secret>`. Le relais sélectionne `statsync-realtime` ; les navigateurs et la plupart des bibliothèques WebSocket font échouer le handshake si vous ne proposez que `rtsec.<client_secret>`, car aucun protocole n’est sélectionné. Le relais envoie `relay.connected` dès que le fournisseur est prêt, puis accepte l’audio du microphone sous la forme `{"type": "client.audio", "audio": "<base64 PCM16>"}` : 24 kHz pour OpenAI, xAI et ElevenLabs, 16 kHz pour Google.
+
+Phaseo réserve $5 de crédit au démarrage de la session et prolonge la réservation pendant toute la durée de l’appel.
+
+Les SDK [TypeScript](/fr/v1/sdk-reference/typescript/audio-realtime) et [Python](/fr/v1/sdk-reference/python/audio-realtime) font tout cela pour vous : `client.realtime.connect()` crée la session et ouvre le socket, et `session.end()` renvoie `session.ended`. Les autres SDK proposent le même petit client ; le README de chaque paquet contient un exemple.
+
+| SDK | Connexion | Bibliothèque WebSocket |
+| --- | --- | --- |
+| Go | `realtime.Connect(ctx, client, realtime.Options{...})` | `github.com/coder/websocket`, dans le paquet `realtime` distinct |
+| Java | `client.realtime.connect(Map.of("model", ...))` | `java.net.http.WebSocket` du JDK |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { ... })` | `System.Net.WebSockets.ClientWebSocket` |
+| PHP | `$client->realtime()->connect(["model" => ...])` | `phrity/websocket` (facultatif, `composer require phrity/websocket`) |
+| Ruby | `client.realtime.connect(model: ...)` | gem `websocket` (facultatif) |
+| Rust | `client.realtime().connect(RealtimeOptions::new(...))` | `tungstenite`, derrière la feature `realtime` |
+
+Le SDK C++ n’a pas de client en temps réel.
+
+### Connexions Google Live
+
+Continuez à diffuser l’audio du microphone pendant tout l’appel, silences compris. Google ferme une connexion qui ne reçoit aucun audio pendant environ 150 secondes (code de fermeture `1008`), et l’appel se termine alors avec `provider_closed`. Le relais envoie un avertissement `provider_closing` avec `threshold: "input_idle"` après 2 minutes sans audio. Le silence entre les tours ne fait partie d’aucun tour : il n’est donc pas facturé.
+
+Google remplace aussi chaque connexion au bout d’environ 10 minutes. Le relais bascule l’appel vers une nouvelle connexion grâce à la reprise de session de Google, garde votre socket ouvert et envoie `{"type": "relay.provider_reconnected", "reconnects": 1}` une fois la bascule terminée. L’audio que vous envoyez pendant la bascule (généralement moins d’une seconde) est mis en attente puis transmis. La connexion reprise retraite la conversation jusque-là, et Google la facture à nouveau en jetons d’entrée au tour suivant : un long appel coûte donc un peu plus par tour après chaque bascule. Tout cela est inclus dans `usage` et dans la facture. Le relais n’avertit avec `provider_closing` que s’il ne peut pas reprendre la connexion, et l’appel se termine alors lorsque Google ferme la connexion.
+
+### Sessions GPT Live
+
+GPT Live (`openai/gpt-live-1`) gère la voix et confie le raisonnement à un modèle backend Responses. Créez la session avec `POST /v1/live/sessions` :
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1",
+    "provider": "openai",
+    "voice": "marin",
+    "backend_model": "openai/gpt-5.6-luna",
+    "backend_settings": {
+      "tools": [{ "type": "function", "name": "get_time", "description": "Returns the current UTC time.", "parameters": { "type": "object", "properties": {} } }]
+    }
+  }'
+```
+
+`voice` prend l’une des valeurs `alloy`, `ash`, `ballad`, `beacon`, `bossa`, `cedar`, `cinder`, `coral`, `delta`, `echo`, `gleam`, `marin`, `meridian`, `quartz`, `ripple`, `sage`, `shimmer`, `stone`, `tempo`, `verse`, `vesper` ou `willow`. `backend_model` vaut `openai/gpt-5.6-luna` (par défaut) ou `openai/gpt-5.6-terra`. Connectez-vous et diffusez de l’audio à 24 kHz de la même manière que pour les autres sessions.
+
+Les outils de fonction s’exécutent sur votre client. L’appel du backend arrive sous la forme d’un `response.event` dont `event.item.type` vaut `function_call`. Son nom et ses `arguments` proviennent du modèle, et ce que dit l’appelant peut les orienter. Traitez-les donc comme des entrées non fiables :
+
+1. N’exécutez que les outils que vous avez déclarés, recherchés par `name`, et refusez tout autre nom.
+2. Analysez `arguments` en JSON et validez-le par rapport au schéma `parameters` de l’outil avant de l’utiliser.
+3. Vérifiez que l’utilisateur connecté est autorisé à faire ce que demande l’appel, et demandez-lui confirmation avant toute action qui modifie des données, dépense de l’argent ou contacte quelqu’un.
+
+Exécutez ensuite l’outil, envoyez le résultat et demandez la réponse de suivi. Si un appel échoue à ces vérifications, envoyez à la place un `output` qui en explique la raison :
+
+```json
+{ "type": "response.item.create", "item": { "type": "function_call_output", "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" } }
+{ "type": "response.create" }
+```
+
+Le relais n’accepte un `function_call_output` que pour un appel effectué par le backend, une seule fois par appel et dans la limite de 64 KB, et n’accepte `response.create` qu’après au moins une sortie. Tout le reste reçoit `{"type": "relay.client_event_rejected", "reason": "..."}` et l’appel continue. Phaseo n’exécute jamais lui-même les outils de fonction.
+
+Un appel GPT Live est facturé à la seconde de voix ($0.05 par minute, d’après le `usage.seconds` propre à GPT Live), plus les jetons du modèle backend pour chaque réponse, y compris les réponses qui suivent les résultats d’outils. GPT Live fait expirer une session qui ne reçoit aucun audio pendant environ 30 secondes, ce qui termine l’appel avec `provider_idle_timeout`. Continuez à diffuser l’audio du microphone, silences compris.
+
+### Sessions ElevenLabs Realtime
+
+ElevenLabs Realtime existe en deux modèles : `eleven-labs/eleven-realtime-v1-mini`, le modèle par défaut, plus rapide et moins cher, et `eleven-labs/eleven-realtime-v1-max`, qui raisonne avant de répondre et convient aux instructions complexes et à l’utilisation d’outils en plusieurs étapes. Les deux utilisent la même requête de création et le même relais qu’OpenAI, avec de l’audio à 24 kHz. Phaseo se connecte à ElevenLabs avec sa propre clé ; votre client ne voit jamais que le relais.
+
+ElevenLabs facture un appel pour chaque seconde de connexion, plus les jetons du modèle de langage qu’il utilise, et ne communique pas l’utilisation pendant l’appel. Le relais mesure le temps de connexion pendant l’appel, si bien que les réservations et le plafond de découvert fonctionnent comme pour les autres fournisseurs. À la fin de l’appel, Phaseo lit la facture d’ElevenLabs pour la conversation et prélève le plus élevé des deux montants entre celle-ci et son propre total au prix catalogue. Cela prend généralement quelques secondes. Si cela prend plus de temps, `session.ended` arrive avec `billing_status: "pending"` et une requête `final_bill`, et la facture est réglée dès qu’ElevenLabs la communique, normalement en quelques minutes. Vos réservations restent en place jusque-là. Si ElevenLabs n’a pas communiqué la facture au bout de 24 heures, la session passe en revue de facturation au lieu d’être facturée sur le seul temps de connexion.
+
+## Terminer une session
+
+Envoyez `session.end` lorsque l’appelant raccroche :
+
+```json
+{ "type": "session.end", "reason": "caller hung up" }
+```
+
+| Champ | Type | Valeur par défaut | Signification |
+| --- | --- | --- | --- |
+| `reason` | string | aucune | Votre propre note, jusqu’à 120 caractères imprimables, renvoyée sous la forme `client_reason`. |
+| `cancel_response` | boolean | `true` | `true` annule une réponse encore en cours de lecture. `false` la laisse se terminer, pendant 20 secondes au maximum. |
+
+Le relais ensuite :
+
+1. cesse d’accepter de l’audio ;
+2. supprime l’audio du microphone que le fournisseur n’a pas encore validé dans un tour ;
+3. annule la réponse en cours, ou la laisse se terminer, et attend jusqu’à 10 secondes ses données d’utilisation ;
+4. pour GPT Live, envoie `session.close` au fournisseur et attend `session.closed` ;
+5. règle la facture ;
+6. envoie `session.ended` ;
+7. ferme le socket avec le code `1000`.
+
+Fermer le socket sans `session.end` termine aussi l’appel et le facture de la même manière, mais votre client ne recevra pas `session.ended`.
+
+## session.ended
+
+Le relais envoie `session.ended` à chaque fin d’appel : celle que vous avez demandée, celle déclenchée par le fournisseur et celle déclenchée par le gateway. Il est envoyé pendant que votre socket est encore ouvert, juste avant que le relais ne le ferme.
+
+```json
+{
+  "type": "session.ended",
+  "session_id": "rt_01k8...",
+  "reason": "client_requested",
+  "initiated_by": "client",
+  "client_reason": "caller hung up",
+  "duration_seconds": 184.2,
+  "usage": { "input_audio_tokens": 1840, "output_audio_tokens": 3120, "input_text_tokens": 412 },
+  "cost": {
+    "total_usd": 0.231,
+    "total_nanos": 231000000,
+    "estimated": false,
+    "estimate_basis": null,
+    "debt_nanos": 0,
+    "uncollected_nanos": 0,
+    "currency": "USD"
+  },
+  "billing_status": "settled"
+}
+```
+
+| Champ | Signification |
+| --- | --- |
+| `reason` | Un code de motif stable. Voir les [codes de motif](#reason-codes). |
+| `initiated_by` | `client`, `gateway` ou `provider`. |
+| `duration_seconds` | Temps écoulé depuis la connexion du relais. |
+| `usage` | Les compteurs facturés : nombres de jetons par modalité et, pour xAI et GPT Live, `audio_seconds`. |
+| `cost.estimated` | `true` lorsqu’une partie de l’utilisation a été estimée à partir de l’audio mesuré parce que les données d’utilisation du fournisseur pour un tour interrompu ne sont jamais arrivées. `estimate_basis` en indique la raison. |
+| `cost.debt_nanos` | La part du coût prélevée en découvert, au-delà de vos réservations et de votre solde disponible. |
+| `cost.uncollected_nanos` | Le coût au-delà du plafond de découvert qui n’a pas été prélevé. |
+| `provider_close_code` | Le code de fermeture WebSocket du fournisseur, lorsque c’est le fournisseur qui a mis fin à l’appel. |
+| `billing_status` | `settled`, `pending` ou `unresolved`. |
+
+Si le règlement est encore en cours de nouvelle tentative, `billing_status` vaut `pending` et `cost` affiche l’estimation en cours. Si la session nécessite une revue de facturation, il vaut `unresolved`. Dans les deux cas, `final_bill` fournit la requête permettant de récupérer le coût final une fois réglé :
+
+```json
+"final_bill": { "method": "GET", "path": "/v1/generations?id=realtime%3Art_01k8..." }
+```
+
+<span id="reason-codes"></span>
+
+### Codes de motif
+
+| `reason` | `initiated_by` | Quand |
+| --- | --- | --- |
+| `client_requested` | client | Vous avez envoyé `session.end`. |
+| `client_disconnected` | client | Votre socket s’est fermé sans `session.end`. |
+| `provider_closed` | provider | Le fournisseur a fermé sa connexion, par exemple Google après environ 150 secondes sans audio (code `1008`), ou après un `goAway` dont le relais n’a pas pu reprendre. |
+| `provider_idle_timeout` | provider | GPT Live a fait expirer la session parce qu’elle n’a reçu aucun audio pendant environ 30 secondes. |
+| `provider_error` | provider | La connexion au fournisseur a échoué ou a signalé une erreur. |
+| `max_duration_reached` | gateway | La limite de session du fournisseur a été atteinte. |
+| `insufficient_funds` | gateway | Le plafond de découvert a été atteint. |
+| `key_revoked` | gateway | La clé API a été révoquée ou supprimée pendant l’appel. |
+| `key_expired` | gateway | La clé API a expiré pendant l’appel. |
+| `key_blocked` | gateway | La clé API a été suspendue pendant l’appel. |
+| `workspace_disabled` | gateway | L’espace de travail n’existe plus. |
+| `policy_blocked` | gateway | Une modification d’une politique de l’espace de travail a bloqué le modèle, ou retiré le fournisseur de la liste autorisée, et était toujours en vigueur 30 secondes après l’avertissement `policy_blocked`. |
+| `input_rejected` | gateway | Le relais a rejeté l’audio du client : trop volumineux, plus rapide que le temps réel, ou le fournisseur a pris du retard. |
+| `session_reconciled` | gateway | Le relais a perdu son état et la session a été fermée par réconciliation. |
+| `gateway_error` | gateway | Phaseo n’a pas pu traiter les événements du fournisseur ni enregistrer l’utilisation. |
+| `idle_timeout` | gateway | Playground uniquement : cinq minutes sans audio. |
+| `spend_limit_reached` | gateway | Playground uniquement : une limite de dépenses de clé ou un budget de l’espace de travail a été atteint. |
+
+De nouveaux codes peuvent être ajoutés : traitez donc un `reason` inconnu comme `gateway_error`.
+
+## session.warning
+
+Les avertissements vous indiquent ce qui va se passer sans mettre fin à l’appel. Chaque code est envoyé au plus une fois par seuil.
+
+```json
+{ "type": "session.warning", "code": "max_duration_approaching", "message": "...", "seconds_remaining": 120, "expires_at": "2026-10-22T11:00:00.000Z" }
+```
+
+| `code` | Champs supplémentaires | Quand |
+| --- | --- | --- |
+| `max_duration_approaching` | `seconds_remaining`, `expires_at` | 2 minutes et 30 secondes avant la limite de session du fournisseur. |
+| `provider_closing` | `seconds_remaining`, et `threshold: "input_idle"` en cas d’inactivité | Google va fermer la connexion : après un `goAway` dont le relais n’a pas pu reprendre, ou (`input_idle`) parce qu’aucun audio n’est arrivé depuis 2 minutes. |
+| `funds_low` | `remaining_usd` | La réservation de crédit n’a pas pu être prolongée. L’appel continue sur votre solde disponible. |
+| `overdraft_in_use` | `remaining_usd`, `overdraft_used_usd` | Votre solde disponible est épuisé et l’appel fonctionne sur le découvert. Renvoyé lorsqu’il reste moins de $0.25 du plafond. |
+| `spend_limit_exceeded` | `limit` (`key` ou `workspace_budget`) | Une limite de dépenses de clé ou un budget de l’espace de travail a été atteint. L’appel continue ; les nouvelles requêtes sont refusées. |
+| `policy_blocked` | `status`, plus `seconds_remaining` et `ends_at` lorsque `status` vaut `ending` | Une politique de l’espace de travail bloque désormais l’appel, ou son fournisseur a été retiré de la liste autorisée. L’appel se termine au bout de 30 secondes sauf si la modification est annulée, auquel cas un second avertissement arrive avec `status: "cleared"`. |
+
+`remaining_usd` correspond à ce que l’appel peut encore dépenser avant de se terminer, découvert compris.
+
+## Limites
+
+Les sessions API ne sont jamais terminées pour inactivité, et les limites de dépenses ne font qu’avertir. Un appel ne se termine de lui-même que dans l’un des cas suivants :
+
+| Limite | Valeur |
+| --- | --- |
+| OpenAI Realtime | 60 minutes |
+| xAI | 120 minutes |
+| Google Live | 60 minutes, sur l’ensemble des connexions reprises par le relais. L’appel se termine aussi si votre client cesse d’envoyer de l’audio pendant environ 150 secondes. |
+| GPT Live | 25 minutes |
+| ElevenLabs Realtime | 30 minutes |
+| Plafond de découvert | $1 au-delà de vos réservations et de votre solde disponible |
+| Perte d’accès | La clé est révoquée, expire ou est suspendue, ou l’espace de travail est supprimé. Détectée en une minute environ, après quoi l’appel se termine sans délai de grâce. |
+| Changement de politique | 30 secondes après un avertissement `policy_blocked`, si la politique bloque toujours l’appel |
+
+Les limites de session sont comptées à partir de la connexion du relais, et non de la création de la session.

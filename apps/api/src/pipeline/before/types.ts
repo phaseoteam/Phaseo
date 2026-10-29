@@ -148,6 +148,11 @@ export type PresetData = {
     description: string | null;
     config: PresetConfig;
     visibility: "private" | "team" | "public";
+    /** The published version that served the request (null for presets saved before versions). */
+    versionId?: string | null;
+    versionLabel?: string | null;
+    /** The ref the request pinned ("v3", "production"), or null for the published version. */
+    ref?: string | null;
 };
 
 export type ProviderRolloutStatus =
@@ -736,9 +741,12 @@ export type PipelineContext = {
         name: string;
         slug?: string | null;
         config: PresetConfig;
+        versionId?: string | null;
+        versionLabel?: string | null;
+        ref?: string | null;
     } | null;
     /** Set when the preset rendered a prompt template; variable values are not kept. */
-    promptTemplate?: ({ presetId: string; presetSlug: string | null } & import("./promptTemplate").PromptTemplateApplication) | null;
+    promptTemplate?: ({ presetId: string; presetSlug: string | null; versionLabel: string | null; ref: string | null } & import("./promptTemplate").PromptTemplateApplication) | null;
     internal?: boolean;
     /** The calling key never has its content stored: no I/O log, cached response, detailed telemetry or broadcast content. */
     neverStoreContent?: boolean;
@@ -748,6 +756,12 @@ export type PipelineContext = {
      * contribution sample or detailed telemetry content.
      */
     zeroDataRetention?: boolean;
+    /**
+     * The request's own limits on where its content may go (requestDataLimits),
+     * read before a provider-qualified model pins its provider, for other gateway
+     * requests that send the same content (request classifiers).
+     */
+    contentDataLimits?: Record<string, unknown> | null;
     /** Classifies this request with the caller's credentials during the success audit. */
     requestClassifierCall?: ClassifierCall;
     /** Set on the in-process classifier call itself: never classified, not rate limited. */

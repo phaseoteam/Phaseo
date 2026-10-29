@@ -46,7 +46,6 @@ guides/private/
 /postman/
 /supabase/.temp/
 /apps/web/scripts/reports/
-packages/data/catalog/src/data/monitor-history.json
 packages/sdk/sdk-csharp/bin/
 packages/sdk/sdk-csharp/obj/
 packages/sdk/sdk-csharp/**/bin/
@@ -62,6 +61,7 @@ packages/sdk/sdk-ruby/*.gem
 .vercel
 /apps/desktop/out/
 /apps/desktop/release/
+/apps/desktop/output/
 
 # React Doctor local scan outputs
 /apps/web/.react-doctor-current.json

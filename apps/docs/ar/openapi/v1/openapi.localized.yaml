@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -1150,6 +1156,243 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
+  /live/sessions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createLiveSession
+      summary: إنشاء جلسة GPT Live
+      description: 'ينشئ جلسة صوتية من GPT Live مع احتساب الاستخدام، تفوّض الاستدلال إلى نموذج خلفي من Responses، ويعرض تفاصيل اتصال الترحيل. تعمل أدوات الدوال على عميلك: يمرّر الترحيل كل `function_call` ويقبل `function_call_output` الخاص به متبوعًا بـ `response.create`.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - model
+                - provider
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - live
+                model:
+                  type: string
+                  enum:
+                    - openai/gpt-live-1
+                provider:
+                  type: string
+                  enum:
+                    - openai
+                voice:
+                  type: string
+                  default: marin
+                  enum:
+                    - alloy
+                    - ash
+                    - ballad
+                    - beacon
+                    - bossa
+                    - cedar
+                    - cinder
+                    - coral
+                    - delta
+                    - echo
+                    - gleam
+                    - marin
+                    - meridian
+                    - quartz
+                    - ripple
+                    - sage
+                    - shimmer
+                    - stone
+                    - tempo
+                    - verse
+                    - vesper
+                    - willow
+                instructions:
+                  type: string
+                  maxLength: 4000
+                source:
+                  type: string
+                  default: api
+                  enum:
+                    - api
+                    - chat
+                metadata:
+                  type: object
+                  additionalProperties: true
+                backend_model:
+                  type: string
+                  default: openai/gpt-5.6-luna
+                  enum:
+                    - openai/gpt-5.6-luna
+                    - openai/gpt-5.6-terra
+                backend_settings:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    instructions:
+                      type: string
+                      maxLength: 16000
+                    max_output_tokens:
+                      type: integer
+                      minimum: 16
+                      maximum: 32768
+                      default: 4096
+                    reasoning_effort:
+                      type: string
+                      enum:
+                        - none
+                        - low
+                        - medium
+                        - high
+                        - xhigh
+                    reasoning_summary:
+                      type: string
+                      enum:
+                        - auto
+                        - concise
+                        - detailed
+                    verbosity:
+                      type: string
+                      enum:
+                        - low
+                        - medium
+                        - high
+                    service_tier:
+                      type: string
+                      default: default
+                      enum:
+                        - default
+                        - flex
+                        - priority
+                    web_search:
+                      type: boolean
+                      default: false
+                    tools:
+                      type: array
+                      maxItems: 32
+                      description: أدوات دوال يشغّلها العميل، بأسماء فريدة.
+                      items:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - type
+                          - name
+                        properties:
+                          type:
+                            type: string
+                            enum:
+                              - function
+                          name:
+                            type: string
+                            pattern: ^[a-zA-Z0-9_-]{1,64}$
+                          description:
+                            type: string
+                            maxLength: 1024
+                          parameters:
+                            type: object
+                            additionalProperties: true
+                          strict:
+                            type: boolean
+                    tool_choice:
+                      type: string
+                      default: auto
+                      enum:
+                        - auto
+                        - none
+                        - required
+                    parallel_tool_calls:
+                      type: boolean
+                      default: true
+      responses:
+        '201':
+          description: تم إنشاء جلسة GPT Live
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -2570,6 +2813,136 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: محظور
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: خطأ في الخادم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: بدء شحن الرصيد
+      description: يطلب إضافة رصيد إلى مساحة العمل التي تمت المصادقة عليها. يتطلب النطاق الاختياري billing:write وعضوية مساحة العمل. لا يتم أي خصم هنا. عند وجود بطاقة محفوظة، يتلقى كل مالك ومسؤول في مساحة العمل رابطًا للاستخدام مرة واحدة عبر البريد الإلكتروني، ويؤكد أحدهم الخصم أو يرفضه. وإلا فتتضمن الاستجابة checkout_url يدفع فيه مالك أو مسؤول ببطاقة جديدة تُحفظ لعمليات الشحن اللاحقة. المبالغ من $5 إلى $500. يمكن أن يكون لمساحة العمل 5 عمليات شحن معلقة، وتنتهي صلاحية كل منها بعد 30 دقيقة.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: مفتاح عدم تكرار اختياري. تكراره يعيد عملية الشحن نفسها بدلًا من إنشاء عملية أخرى. مماثل للحقل idempotency_key.
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: عملية الشحن الحالية لمفتاح عدم التكرار هذا
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: تم إنشاء عملية الشحن
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: مبلغ غير صالح (invalid_amount أو amount_below_minimum أو amount_above_maximum)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: محظور
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: تم استخدام مفتاح عدم التكرار لعملية شحن أخرى، أو لا يوجد مالك أو مسؤول يمكنه تأكيدها
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: لدى مساحة العمل بالفعل 5 عمليات شحن معلقة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: خطأ في الخادم
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: الدفع بالبطاقة غير متاح
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: الحصول على عملية شحن رصيد
+      description: يعرض حالة عملية شحن رصيد في مساحة العمل التي تمت المصادقة عليها. يتطلب credits:read أو billing:write. استعلم حتى تصبح قيمة final هي true. تحمل عمليات الشحن المرفوضة والمنتهية والفاشلة رمز سبب؛ لا تُعِد محاولتها تلقائيًا.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: معرّف عملية الشحن.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: حالة عملية الشحن
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: معرّف عملية شحن غير صالح
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: محظور
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يتم العثور على عملية الشحن
           content:
             application/json:
               schema:
@@ -4590,6 +4963,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listWorkloadIdentityPolicies
+      summary: List trusted workload policies
+      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      responses:
+        '200':
+          description: Trusted workload policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyListResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createWorkloadIdentityPolicy
+      summary: Create a trusted workload policy
+      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
+      responses:
+        '201':
+          description: Trusted workload policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Trusted workload policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getWorkloadIdentityPolicy
+      summary: Get a trusted workload policy
+      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateWorkloadIdentityPolicy
+      summary: Update a trusted workload policy
+      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
+      responses:
+        '200':
+          description: Trusted workload policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteWorkloadIdentityPolicy
+      summary: Delete a trusted workload policy
+      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyDeleteResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -5111,6 +5606,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: إرجاع الحظر المرفوع أيضًا، الأحدث أولًا.
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: الحد الأقصى لعدد حالات الحظر المُرجعة.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: عرض حالات حظر الإنفاق
+      description: 'يعرض حالات حظر الإنفاق في مساحة العمل، الأحدث أولًا: وهي حالات الحظر التي بدأتها قواعد الإنفاق ذات الإجراء block عندما بلغ الإنفاق نقطة الحظر. الحظر النشط فقط ما لم تكن قيمة include_lifted هي true. للمالكين والمسؤولين فقط.'
+      responses:
+        '200':
+          description: حالات حظر الإنفاق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: معرّف حظر الإنفاق.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: رفع حظر الإنفاق
+      description: يرفع حظر إنفاق نشطًا حتى تُقبل الطلبات ضمن نطاقه مجددًا خلال دقيقة تقريبًا. لا تحظر القاعدة مرة أخرى حتى يُعاد ضبط فترتها، لكنها تواصل إرسال التنبيهات. للمالكين والمسؤولين فقط؛ يُسجَّل الرفع في سجل التدقيق ويضيف حدث spend_blocked بالحالة lifted إلى قائمة الانتظار. يُرجع 404 لحظر غير معروف و409 spend_block_not_active إذا كان قد رُفع بالفعل.
+      responses:
+        '200':
+          description: حظر الإنفاق المرفوع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -5154,6 +5716,57 @@ paths:
                 $ref: '#/components/schemas/ClassifierResponse'
         default:
           description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: اختبار مصنّف على عينة
+      description: يشغّل مصنّفًا محفوظًا أو مسودة مرة واحدة على مطالبة واستجابة تجريبيتين، بالطلب نفسه الذي ترسله البوابة. هذا طلب نموذج حقيقي ومدفوع يتم ببيانات اعتمادك ويُوسم بـ phaseo.classifier_test. للمالكين والمسؤولين؛ تحتاج بيانات الاعتماد إلى classifiers:write وgateway:access. لا يمكن لمفاتيح الإدارة إجراء طلبات النماذج لذا تُرفض.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: التسميات التي اختارها النموذج
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: مصنّف أو عينة غير صالحة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ليس مالكًا أو مسؤولًا، أو ينقص classifiers:write، أو أن بيانات الاعتماد لا تتضمن gateway:access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يُعثر على المصنّف المحفوظ في مساحة العمل هذه
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: فشل طلب النموذج (مثلًا بسبب عدم كفاية الرصيد)
           content:
             application/json:
               schema:
@@ -8676,6 +9289,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: سرد تسميات الإعداد المسبق
+      description: يسرد التسميات المسمّاة، مثل production أو staging، والإصدار المنشور الذي تشير إليه كل منها.
+      responses:
+        '200':
+          description: قائمة تسميات الإعداد المسبق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: لم يتم العثور على الإعداد المسبق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: تعيين تسمية للإعداد المسبق
+      description: يوجّه تسمية إلى إصدار منشور، مع إنشاء التسمية أو نقلها. تستخدم الطلبات التي تثبّت التسمية، مثل @support-triage@production، الإصدار الجديد خلال دقيقتين تقريبًا. إعادة التسمية إلى إصدار سابق هي تراجع.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: تم حفظ التسمية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: تسمية غير صالحة، أو لم يُرسل أي من version_id وversion أو أُرسلا معًا
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: لا يمكن تغيير التسميات إلا لمنشئ الإعداد المسبق أو لمالك مساحة العمل أو مسؤولها
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يُعثر على الإعداد المسبق أو الإصدار
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: إزالة تسمية من الإعداد المسبق
+      description: يزيل تسمية. تفشل الطلبات التي ما زالت تثبّتها بالخطأ preset_version_not_found.
+      responses:
+        '200':
+          description: أُزيلت التسمية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: تسمية غير صالحة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: لا يمكن تغيير التسميات إلا لمنشئ الإعداد المسبق أو لمالك مساحة العمل أو مسؤولها
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يُعثر على الإعداد المسبق أو التسمية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9047,6 +9757,596 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EndpointCatalogueResponse'
+  /me:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMe
+      summary: جلب المستخدم الذي سجّل الدخول
+      description: يعيد مستخدم رمز OAuth وعميل الرمز ونطاقاته ومساحات العمل التي ينتمي إليها المستخدم. يتطلب رمز OAuth يتضمن me:read؛ تُرفض مفاتيح الإدارة.
+      responses:
+        '200':
+          description: المستخدم الذي سجّل الدخول
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: الرمز لا يتضمن me:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/profile:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMyProfile
+      summary: جلب ملفك الشخصي
+      description: يعيد حقول الملف الشخصي المعروضة في صفحة الملف الشخصي في لوحة التحكم. يتطلب رمز OAuth يتضمن me:read.
+      responses:
+        '200':
+          description: الملف الشخصي
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: الرمز لا يتضمن me:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateMyProfile
+      summary: تحديث ملفك الشخصي
+      description: يغيّر اسم العرض أو مساحة العمل الافتراضية (مساحة تنتمي إليها) أو ما إذا كانت بياناتك مخفية على الشاشة. تُدار كلمة المرور والمصادقة متعددة العوامل ومفاتيح المرور في المتصفح فقط. يتطلب رمز OAuth يتضمن settings:write.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: الملف الشخصي المحدّث
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: حقل غير صالح
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: الرمز لا يتضمن settings:write، أو أن مساحة العمل الافتراضية ليست من مساحاتك
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listAuthorizedApps
+      summary: عرض التطبيقات التي صرّحت لها
+      description: يعرض التطبيقات التي صرّحت لها عبر OAuth في جميع مساحات العمل. يتطلب رمز OAuth يتضمن oauth_clients:read.
+      responses:
+        '200':
+          description: التطبيقات المصرّح بها
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppListResponse'
+        '401':
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: الرمز لا يتضمن oauth_clients:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps/{id}:
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reduceAuthorizedAppScopes
+      summary: إزالة نطاقات من تطبيق مصرّح به
+      description: يقلّص وصول التطبيق إلى النطاقات المحددة. يمكن إزالة النطاقات فقط؛ تتطلب إضافة نطاق موافقتك في المتصفح. يتطلب رمز OAuth يتضمن oauth_clients:write.
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizedAppScopesRequest'
+      responses:
+        '200':
+          description: تم تقليص النطاقات
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppScopesResponse'
+        '400':
+          description: قائمة فارغة، أو نطاق لا يملكه التطبيق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يُعثر على التطبيق المصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: revokeAuthorizedApp
+      summary: إلغاء تصريح تطبيق
+      description: يلغي وصول تطبيق حتى تتوقف رموزه عن العمل. يؤدي إلغاء تصريح التطبيق المستدعي نفسه إلى تسجيل خروجه. يتطلب رمز OAuth يتضمن oauth_clients:delete.
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      responses:
+        '200':
+          description: تم إلغاء التصريح
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
+        '401':
+          description: ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يُعثر على التطبيق المصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/accept:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: acceptWorkspaceInvite
+      summary: قبول دعوة إلى مساحة عمل
+      description: يطلب الانضمام إلى مساحة العمل التي ينتمي إليها رمز الدعوة. بعد ذلك يوافق مالك مساحة العمل أو مسؤولها على الطلب أو يرفضه. يتطلب رمز OAuth يتضمن workspaces:write؛ تُرفض مفاتيح الإدارة لأنها تنتمي إلى مساحة عمل لا إلى شخص.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
+      responses:
+        '201':
+          description: تم إنشاء طلب الانضمام
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
+        '400':
+          description: رمز الدعوة مفقود
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ليس رمز مستخدم OAuth، أو أن الرمز لا يتضمن workspaces:write
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: دعوة غير صالحة أو منتهية الصلاحية
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: أنت عضو بالفعل، أو يوجد طلب قيد الانتظار
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listMyJoinRequests
+      summary: عرض طلباتك للانضمام إلى مساحات العمل
+      description: يعرض طلباتك الخاصة للانضمام إلى مساحات العمل، الأحدث أولًا (100 طلب كحد أقصى). يتطلب رمز OAuth يتضمن workspaces:read.
+      parameters:
+        - name: status
+          in: query
+          description: المعلّقة افتراضيًا؛ تعيد all جميع الحالات.
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - denied
+              - cancelled
+              - all
+      responses:
+        '200':
+          description: طلبات الانضمام الخاصة بك
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestListResponse'
+        '400':
+          description: الحالة غير صالحة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ليس رمز مستخدم OAuth، أو أن الرمز لا يتضمن workspaces:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getRateLimitTier
+      summary: جلب مستوى حد المعدل لمساحة العمل
+      description: يعيد مستوى الثقة لمساحة العمل وعدد طلباتها في الدقيقة وما إذا كان بإمكانها الآن رفع نفسها مستوى واحدًا. لمالكي مساحة العمل ومسؤوليها (OAuth) أو مفاتيح الإدارة التي تتضمن rate_limits:read. تكون canRaise صحيحة لمالك مساحة العمل فقط.
+      responses:
+        '200':
+          description: المستوى وحالة الرفع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ليس مالكًا أو مسؤولًا، أو أن الرمز لا يتضمن rate_limits:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier/raise:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: raiseRateLimitTier
+      summary: رفع مستوى حد المعدل لمساحة العمل
+      description: يرفع مساحة عمل مؤهلة مستوى واحدًا لفترة محدودة. لا يمكن الرفع إلا لمالك مساحة العمل باستخدام رمز OAuth يتضمن rate_limits:write؛ تُرفض مفاتيح الإدارة حتى لا يتمكن مفتاح مسرّب من رفع حدود مساحة العمل الخاصة به.
+      responses:
+        '201':
+          description: تم الرفع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ليس مالك مساحة العمل، أو أنه مفتاح إدارة، أو أن الرمز لا يتضمن rate_limits:write
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: لا يمكن لمساحة العمل رفع حدها الآن (راجع reason)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/auto:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getAutoRoutingSettings
+      summary: جلب إعدادات التوجيه التلقائي
+      description: يعيد الحدود التي يعمل ضمنها الموجّه التلقائي في مساحة العمل هذه. لأي عضو في مساحة العمل؛ يتطلب settings:read.
+      responses:
+        '200':
+          description: إعدادات التوجيه التلقائي
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateAutoRoutingSettings
+      summary: تحديث إعدادات التوجيه التلقائي
+      description: يغيّر الحقول المرسلة؛ ويُتحقق من النتيجة ككل كما تحفظها لوحة التحكم. يحتاج spend_profile المخصص إلى حدّي السعر كليهما. للمالكين والمسؤولين؛ يتطلب settings:write.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
+      responses:
+        '200':
+          description: إعدادات التوجيه التلقائي المحدّثة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '400':
+          description: إعدادات غير صالحة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/successor/replacements:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSuccessorReplacements
+      summary: عرض بدائل النماذج اللاحقة
+      description: يعرض البدائل التي اختارتها مساحة العمل للنماذج التي لم يعد أي مزوّد يقدمها. يوجد مفتاح تشغيل توجيه النماذج اللاحقة وسياسة أسعاره في /settings. لأي عضو في مساحة العمل؛ يتطلب settings:read.
+      responses:
+        '200':
+          description: البدائل
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementListResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: saveSuccessorReplacement
+      summary: حفظ بديل لنموذج لاحق
+      description: يحدد النموذج الذي تُرسل إليه طلبات model، ويستبدل أي اختيار سابق. تعني قيمة successor الفارغة أن طلبات model لا يُعاد توجيهها أبدًا. يجب أن يكون النموذجان في الكتالوج وأن يكون النموذج اللاحق متاحًا. 500 كحد أقصى لكل مساحة عمل. للمالكين والمسؤولين؛ يتطلب settings:write.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuccessorReplacement'
+      responses:
+        '200':
+          description: البديل المحفوظ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementResponse'
+        '400':
+          description: نموذج غير صالح أو غير معروف
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: removeSuccessorReplacement
+      summary: إزالة بديل لنموذج لاحق
+      description: يزيل اختيار مساحة العمل لنموذج، حتى يُطبَّق النموذج اللاحق من الكتالوج مرة أخرى. للمالكين والمسؤولين؛ يتطلب settings:write.
+      parameters:
+        - name: model
+          in: query
+          required: true
+          description: معرّف النموذج المراد إزالة بديله.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+      responses:
+        '200':
+          description: تمت إزالة البديل
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
+        '400':
+          description: النموذج مفقود أو غير صالح
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لا يوجد بديل محفوظ لهذا النموذج
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestinationConfig
+      summary: اختبار إعدادات الوجهة قبل الحفظ
+      description: يرسل تتبعًا تجريبيًا بدون رسائل إلى الإعدادات المحددة، بالطريقة التي تسلّم بها البوابة التتبعات. لا يُحفظ أي شيء. للمالكين والمسؤولين؛ يتطلب settings:write.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
+      responses:
+        '200':
+          description: نتيجة الاختبار؛ تكون ok خاطئة عندما ترفض الوجهة أو يتعذّر الوصول إليها
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '400':
+          description: نوع أو إعدادات غير صالحة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestination
+      summary: التحقق من اتصال الوجهة
+      description: يرسل تتبعًا تجريبيًا بدون رسائل إلى وجهة محفوظة، كما يفعل فحص الحالة في لوحة التحكم. لا تتغير حالة سلامة الوجهة. للمالكين والمسؤولين؛ يتطلب settings:write.
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: نتيجة الاختبار
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يتم العثور على الوجهة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/sample:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendObservabilityDestinationSample
+      summary: إرسال تتبع تجريبي
+      description: يرسل تتبعًا تجريبيًا إلى وجهة محفوظة، مع رسائله ما لم تستبعد الوجهة المطالبات والمخرجات. للمالكين والمسؤولين؛ يتطلب settings:write.
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: نتيجة الإرسال
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: غير مصرّح به
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: لم يتم العثور على الوجهة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /security/report-leaked-key:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reportLeakedKey
+      summary: الإبلاغ عن مفتاح API مسرّب
+      description: يبلّغ عن مفتاح Phaseo عُثر عليه منشورًا للعامة. بدون مصادقة. يعيد دائمًا الرمز 202 بالمحتوى نفسه سواء طابق المفتاح أم لا، لذا لا يمكن استخدام المسار للتحقق من المفاتيح. يخضع لحد معدل لكل عنوان.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeakedKeyReportRequest'
+      responses:
+        '202':
+          description: تم استلام البلاغ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeakedKeyReportResponse'
 tags:
   - name: Gateway
     description: Core Phaseo Gateway operations.
@@ -9104,6 +10404,10 @@ components:
         type: string
     DroppedParams:
       description: معلمات أرسلها العميل ولا يدعمها المزوّد الذي يخدم الطلب، فحذفتها البوابة بدلًا من إرسالها إلى المزوّد أو رفض الطلب، مثل `top_k, min_p`. تُرسل فقط في الاستجابات الناجحة، وفقط عند حذف معلمة واحدة على الأقل من جسم الطلب. لا تُدرج المعلمات التي مصدرها إعداد مسبق أو قيمة افتراضية.
+      schema:
+        type: string
+    SpendWarning:
+      description: يُرسَل عندما تشمل قاعدةُ إنفاقٍ تحظر الطلبَ ويكون الإنفاق قد تجاوز آخر حد تنبيه لها دون أن يبلغ نقطة الحظر بعد. يذكر حتى ثلاث قواعد بصيغة rule_id وscope وresets_at، مثل `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. عندما يبلغ الإنفاق نقطة الحظر، تتلقى الطلبات ضمن النطاق الخطأ 429 بالرمز spend_rule_blocked.
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -9166,6 +10470,21 @@ components:
       description: UUID أو slug أو الاسم المعتمد للإعداد المسبق.
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: اسم التسمية، مثل production. من 1 إلى 32 حرفًا لاتينيًا صغيرًا أو رقمًا أو شرطة أو شرطة سفلية، تبدأ بحرف؛ ولا يمكن أن تشبه تسمية إصدار (v1، v2).
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
+    AuthorizedAppId:
+      name: id
+      in: path
+      required: true
+      description: معرّف التصريح من قائمة التطبيقات المصرّح بها.
+      schema:
+        type: string
     ObservabilityDestinationId:
       name: id
       in: path
@@ -9209,6 +10528,476 @@ components:
         type: string
         format: uuid
   schemas:
+    MeResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                  nullable: true
+                name:
+                  type: string
+                  nullable: true
+            oauth:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                resource:
+                  type: string
+                  nullable: true
+            current_workspace_id:
+              type: string
+            workspaces:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                    nullable: true
+                  slug:
+                    type: string
+                    nullable: true
+                  role:
+                    type: string
+                    nullable: true
+                  current:
+                    type: boolean
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+          nullable: true
+        default_workspace_id:
+          type: string
+          nullable: true
+        obfuscate_info:
+          type: boolean
+          description: ما إذا كان بريدك الإلكتروني واسمك مخفيين على الشاشة في لوحة التحكم.
+    UserProfileResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/UserProfile'
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        default_workspace_id:
+          type: string
+          nullable: true
+          description: مساحة عمل تنتمي إليها، أو null للمسح.
+        obfuscate_info:
+          type: boolean
+      additionalProperties: false
+    AuthorizedApp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: معرّف التصريح.
+        client_id:
+          type: string
+        app_name:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        scopes:
+          type: array
+          items:
+            type: string
+        current:
+          type: boolean
+          description: صحيحة للتصريح الذي ينتمي إليه الرمز المستدعي.
+        authorized_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+    AuthorizedAppListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizedApp'
+    AuthorizedAppScopesRequest:
+      type: object
+      required:
+        - scopes
+      properties:
+        scopes:
+          type: array
+          minItems: 1
+          description: النطاقات التي ستُحتفظ بها؛ يجب أن يكون كل منها ممنوحًا بالفعل.
+          items:
+            type: string
+      additionalProperties: false
+    AuthorizedAppScopesResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            scopes:
+              type: array
+              items:
+                type: string
+    AuthorizedAppRevokedResponse:
+      type: object
+      properties:
+        revoked:
+          type: boolean
+        id:
+          type: string
+    WorkspaceInviteAcceptRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          minLength: 6
+          maxLength: 256
+          description: رمز الدعوة.
+      additionalProperties: false
+    MyJoinRequestCreatedResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            workspace_id:
+              type: string
+            status:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+    MyJoinRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - denied
+            - cancelled
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+    MyJoinRequestListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyJoinRequest'
+    RateLimitTierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            tier:
+              type: string
+            requestsPerMinute:
+              type: number
+            target:
+              type: string
+              nullable: true
+              description: المستوى الذي سينتقل إليه الرفع.
+            targetRequestsPerMinute:
+              type: number
+              nullable: true
+            eligible:
+              type: boolean
+            refusal:
+              type: string
+              nullable: true
+              description: سبب عدم توفر الرفع الآن؛ null عند الأهلية.
+            activeUntil:
+              type: number
+              nullable: true
+              description: موعد انتهاء الرفع النشط (بالمللي ثانية وفق Unix).
+            availableAt:
+              type: number
+              nullable: true
+              description: موعد إمكانية طلب الرفع التالي (بالمللي ثانية وفق Unix).
+            durationDays:
+              type: number
+            thresholds:
+              type: object
+              properties:
+                minAgeDays:
+                  type: number
+                minLifetimePaidSpendUsd:
+                  type: number
+            canRaise:
+              type: boolean
+              description: صحيحة عندما يكون المستدعي مالك مساحة العمل وتكون مساحة العمل مؤهلة.
+    AutoRoutingSettings:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          description: أنماط المزوّد/النموذج التي يمكن للموجّه التلقائي الاختيار منها، مثل openai/*. القائمة الفارغة تسمح بكل النماذج.
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          nullable: true
+          description: دولار أمريكي لكل مليون رمز إدخال؛ يُعيَّن لملف الإنفاق المخصص فقط.
+        max_output_price_per_million:
+          type: number
+          nullable: true
+          description: دولار أمريكي لكل مليون رمز إخراج؛ يُعيَّن لملف الإنفاق المخصص فقط.
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+        revision:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    AutoRoutingSettingsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AutoRoutingSettings'
+    AutoRoutingSettingsUpdateRequest:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        max_output_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+    SuccessorReplacement:
+      type: object
+      required:
+        - model
+        - successor
+      properties:
+        model:
+          type: string
+          description: النموذج الذي يُعاد توجيه طلباته.
+        successor:
+          type: string
+          nullable: true
+          description: النموذج المراد إرسالها إليه، أو null لعدم إعادة توجيهها أبدًا.
+    SuccessorReplacementRow:
+      type: object
+      properties:
+        model:
+          type: string
+        successor:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    SuccessorReplacementListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementRemovedResponse:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+        model:
+          type: string
+    ObservabilityDestinationTestRequest:
+      type: object
+      required:
+        - type
+        - config
+      properties:
+        type:
+          $ref: '#/components/schemas/ObservabilityDestinationType'
+        config:
+          type: object
+          description: إعدادات الوجهة، كما عند إنشاء وجهة.
+          additionalProperties:
+            type: string
+    ObservabilityDestinationTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            ok:
+              type: boolean
+            status:
+              type: string
+            http_status:
+              type: integer
+              nullable: true
+            error:
+              type: string
+              nullable: true
+    ApiKeyIpAllowlist:
+      type: array
+      maxItems: 100
+      description: العناوين المسموح لها باستخدام المفتاح. كل إدخال هو عنوان IPv4 أو IPv6 أو نطاق CIDR مع تسمية. القائمة الفارغة تسمح بأي عنوان.
+      items:
+        type: object
+        required:
+          - label
+          - address
+        properties:
+          label:
+            type: string
+            minLength: 1
+            maxLength: 100
+          address:
+            type: string
+            description: عنوان IPv4 أو IPv6، أو نطاق CIDR.
+    LeakedKeyReportRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          maxLength: 4096
+          description: المفتاح المسرّب كما عُثر عليه.
+        source:
+          type: string
+          maxLength: 64
+          description: مكان العثور عليه، مثل github.
+        reporter_email:
+          type: string
+          maxLength: 320
+        evidence_url:
+          type: string
+          format: uri
+          maxLength: 2048
+        comment:
+          type: string
+          maxLength: 2000
+    LeakedKeyReportResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - received
     ProviderRoutingOptions:
       type: object
       description: تفضيلات توجيه المزوّد لاختياره عبر البوابة.
@@ -16477,6 +18266,8 @@ components:
           description: القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها.
         storage_locations:
           $ref: '#/components/schemas/ApiKeyStorageLocations'
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
         include_byok_in_limit:
           type: boolean
           description: يحدد ما إذا كانت بيانات اعتماد المزوّد تُحتسب ضمن حد إنفاق المفتاح. القيمة حاليًا false دائمًا.
@@ -16731,6 +18522,8 @@ components:
           allOf:
             - $ref: '#/components/schemas/ApiKeyStorageLocations'
           nullable: true
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array
@@ -17232,6 +19025,10 @@ components:
           type: object
           additionalProperties: true
           description: قيم متغيرات القالب. تقبل متغيرات الصور عنوان https أو عنوان data أو جزء صورة.
+        version:
+          type: string
+          maxLength: 64
+          description: 'يشغّل هذا الإصدار المنشور من الإعداد المسبق بدلًا من الإصدار الحالي: نماذجه ومعاملاته وقالبه. استخدم تسمية إصدار مثل v3 أو 1.2.0 أو 2026.10.27، أو تسمية مثل production. يعادل تعيين model إلى @support-triage@production.'
     Preset:
       type: object
       required:
@@ -17424,6 +19221,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: التسميات المسمّاة، مثل production، التي تشير إلى هذا الإصدار. تُعاد عند سرد الإصدارات.
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17452,6 +19254,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: أرسل واحدًا فقط من version_id وversion.
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: الإصدار المنشور الذي ستشير إليه التسمية.
+        version:
+          type: string
+          maxLength: 64
+          description: تسمية إصدار مثل v3 أو 1.2.0 أو 2026.10.27، أو تسمية أخرى مثل staging لنسخ الإصدار الذي تشير إليه.
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
@@ -18425,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: المبلغ بالدولار الأمريكي، بحد أقصى منزلتين عشريتين.
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: اختياري. يجب أن يطابق مساحة العمل التي تمت المصادقة عليها.
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: مفتاح عدم تكرار اختياري. تكراره يعيد عملية الشحن نفسها بدلًا من إنشاء عملية أخرى.
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: تكون true عندما لا تتغير الحالة بعد ذلك (paid أو declined أو expired أو failed). توقف عن الاستعلام حينها.
+        reason:
+          type: string
+          nullable: true
+          description: رمز سبب عمليات الشحن المرفوضة والمنتهية والفاشلة، مثل declined أو expired أو card_declined أو authentication_failed.
+          example: declined
+        message:
+          type: string
+          description: جملة توضح ما سيحدث بعد ذلك.
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout عندما يدفع مالك أو مسؤول ببطاقة جديدة على checkout_url؛ وsaved_card عندما يؤكد مالك أو مسؤول خصمًا من البطاقة المحفوظة عبر البريد الإلكتروني.
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: صفحة Phaseo يدفع فيها مالك أو مسؤول ببطاقة جديدة. تظهر فقط في الاستجابة التي أنشأت عملية شحن checkout معلقة.
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: عدد المالكين والمسؤولين الذين أُرسل إليهم بريد إلكتروني لتأكيد عملية شحن saved_card.
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:
@@ -21259,11 +23271,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: يخبر النموذج متى يختار هذه القيمة.
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: سؤال يجيب عنه المصنّف عن كل طلب. تُكتب الإجابة كتسمية للطلب مفتاحها هو مفتاح هذا البعد. إذا أرسل المستدعي بالفعل تسمية بهذا المفتاح، يُتخطى البعد.
       required:
         - key
         - values
@@ -21283,14 +23295,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: السماح بأكثر من قيمة واحدة لكل طلب.
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: السماح للنموذج بالإجابة بـ "other" عندما لا تناسب أي قيمة مدرجة.
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: من 2 إلى 50 قيمة. لا يُسمح بقيمة واحدة إلا عندما تكون allow_other صحيحة.
           minItems: 1
           maxItems: 50
           items:
@@ -21521,7 +23533,269 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: مسودة للاختبار. تُؤخذ الحقول غير المرسلة من classifier_id عند تحديده.
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: مصنّف محفوظ في مساحة العمل هذه لاختباره، أو لوسم الاختبار به.
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: خاطئة عندما يتعذّر قراءة إجابة النموذج.
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    WorkloadIdentityProvider:
+      type: string
+      enum:
+        - vercel
+        - github_actions
+      description: The platform that issues the OIDC tokens.
+    WorkloadIdentityPolicy:
+      type: object
+      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      required:
+        - id
+        - name
+        - provider
+        - issuer
+        - owner_id
+        - claim_conditions
+        - max_token_lifetime_seconds
+        - status
+        - audience
+        - key_id
+        - last_used_at
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+        owner_id:
+          type: string
+          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+        key_id:
+          type: string
+          format: uuid
+          description: The policy's key. Requests, usage and limits are recorded against it.
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    WorkloadIdentityPolicyInput:
+      type: object
+      required:
+        - name
+        - provider
+        - owner_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+        owner_id:
+          type: string
+          minLength: 1
+          description: The Vercel team ID or GitHub organisation or user ID to pin.
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          default: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkloadIdentityPolicy'
+      additionalProperties: false
+    WorkloadIdentityPolicyListResponse:
+      type: object
+      required:
+        - data
+        - audience
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadIdentityPolicy'
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+      additionalProperties: false
+    WorkloadIdentityPolicyDeleteResponse:
       type: object
       required:
         - data
@@ -21837,7 +24111,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: 'notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق. الحظر غير متاح بعد: تُرفض القاعدة التي تحمل action block برمز 400 إلى أن يصبح متاحًا.'
+      description: notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق. ما دام الحظر متوقفًا في البوابة، تُرفض القاعدة التي ستبدأ الحظر برمز 400، والقاعدة التي تحظر بالفعل تكتفي بالتنبيه.
       enum:
         - notify
         - block
@@ -22559,6 +24833,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 'سبب رفع حظر الإنفاق: manual (مالك أو مسؤول)، أو period_reset، أو below_limit (عاد الإنفاق دون نقطة الحظر، مثلًا بعد رفع ميزانية)، أو rule_changed، أو rule_disabled، أو rule_deleted.'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: حظر بدأته قاعدة إنفاق عندما بلغ الإنفاق نقطة الحظر. ما دام نشطًا، تتلقى الطلبات ضمن نطاقه الخطأ 429 بالرمز spend_rule_blocked مع ضبط Retry-After على resets_at. تُستثنى النماذج المجانية ما لم تكن قيمة block_free_models هي true.
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: القاعدة التي بدأت الحظر؛ وتكون null بعد حذف القاعدة نهائيًا.
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: الاسم المعروض للنطاق (اسم المفتاح أو القسم أو النموذج، أو بريد العضو، أو المعرّف).
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: موعد رفع الحظر تلقائيًا (نهاية فترة القاعدة).
+        spend_nanos:
+          type: integer
+          description: الإنفاق ضمن نطاق القاعدة عند بدء الحظر، بالنانو دولار.
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: نقطة الحظر، بالنانو دولار.
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: المالك أو المسؤول الذي رفع الحظر، في حالات الرفع اليدوي.
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: لم يُرفع، ولم يحن موعد إعادة ضبطه بعد.
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

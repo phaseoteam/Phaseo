@@ -4,10 +4,14 @@ import type { Env } from "./env";
 import { defaultDeps, isRemovalEvent, processEvent, type Deps, type SlackEnvelope } from "./events";
 import { companyApp, hostedApp, SLACK_APP_ID_PATTERN, type SlackAppContext } from "./installations";
 import { handleInteraction, type InteractionPayload } from "./interactions";
+import { finishSignIn, servePage } from "./page-viewer";
+import { runDueSchedules } from "./scheduled-runs";
 import { verifySlackSignature } from "./signature";
 
+export { SlackAgentAdmin } from "./admin";
 export { ThreadCoordinator } from "./coordinator";
 export { WorkspaceMeter } from "./meter";
+export { PageStore } from "./pages";
 export { AgentTurnWorkflow } from "./workflow";
 export { defaultDeps };
 
@@ -16,6 +20,8 @@ export { defaultDeps };
 //   POST /events                Events API, hosted Phaseo app
 //   POST /events/:appId         Events API, a company's own app (Slack app id A...)
 //   POST /interactions[/:appId] Button clicks
+//   GET  /p/:store/:page        A shared page (pages.ts, page-viewer.ts)
+//   GET  /p/signin              Sign in with Slack, for pages shared with a workspace
 //   GET  /health
 //
 // Every Slack request is verified (v0 signature over the raw body, five-minute
@@ -24,6 +30,9 @@ export { defaultDeps };
 // (X-Slack-Retry-Num) are acknowledged too and deduped by event id. The app being
 // removed in Slack is the exception: it is handled before the answer, so Slack
 // retries it if the database is unavailable.
+//
+// The cron trigger (every minute, production only) starts the recurring tasks
+// that are due (scheduled-runs.ts).
 
 const MAX_BODY_BYTES = 512 * 1024;
 
@@ -114,6 +123,8 @@ export function createApp(makeDeps: (env: Env) => Deps = defaultDeps) {
 	app.post("/events/:appId", limit, events);
 	app.post("/interactions", limit, interactions);
 	app.post("/interactions/:appId", limit, interactions);
+	app.get("/p/signin", (c) => finishSignIn(makeDeps(c.env), c.req.raw));
+	app.get("/p/:store/:page", (c) => servePage(makeDeps(c.env), c.req.raw, c.req.param("store"), c.req.param("page")));
 	app.notFound((c) => c.json({ error: "not_found" }, 404));
 	app.onError((error, c) => {
 		console.error("[slack-agent] request failed", { path: c.req.path, error: error.message });
@@ -122,4 +133,11 @@ export function createApp(makeDeps: (env: Env) => Deps = defaultDeps) {
 	return app;
 }
 
-export default createApp();
+const app = createApp();
+
+export default {
+	fetch: app.fetch,
+	async scheduled(_controller, env) {
+		await runDueSchedules(defaultDeps(env));
+	},
+} satisfies ExportedHandler<Env>;

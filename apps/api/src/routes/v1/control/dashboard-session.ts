@@ -38,18 +38,8 @@ export async function authenticateDashboardSession(req: Request, scopes: string[
 	if (!token || !looksLikeJwt(token)) return null;
 	const actor = await getSupabaseActor(token);
 	if (!actor) return null;
-	const client = getSupabaseAdmin();
-	const [membership, workspace] = await Promise.all([
-		client.from("workspace_members").select("role")
-			.eq("workspace_id", workspaceId).eq("user_id", actor.userId).maybeSingle(),
-		client.from("workspaces").select("owner_user_id").eq("id", workspaceId).maybeSingle(),
-	]);
-	if (membership.error || workspace.error || !workspace.data) {
-		return json({ error: "forbidden" }, 403, NO_STORE);
-	}
-	const role = workspace.data.owner_user_id === actor.userId
-		? "owner"
-		: String(membership.data?.role ?? "").toLowerCase();
+	const role = await workspaceRole(workspaceId, actor.userId);
+	if (role === null) return json({ error: "forbidden" }, 403, NO_STORE);
 	return {
 		role,
 		auth: {
@@ -65,4 +55,22 @@ export async function authenticateDashboardSession(req: Request, scopes: string[
 			scopes,
 		},
 	};
+}
+
+/**
+ * The user's role in the workspace as the dashboard sees it: "owner" for the
+ * workspace owner, else the membership role, or "" for non-members. Null when
+ * the workspace cannot be read.
+ */
+export async function workspaceRole(workspaceId: string, userId: string): Promise<string | null> {
+	const client = getSupabaseAdmin();
+	const [membership, workspace] = await Promise.all([
+		client.from("workspace_members").select("role")
+			.eq("workspace_id", workspaceId).eq("user_id", userId).maybeSingle(),
+		client.from("workspaces").select("owner_user_id").eq("id", workspaceId).maybeSingle(),
+	]);
+	if (membership.error || workspace.error || !workspace.data) return null;
+	return workspace.data.owner_user_id === userId
+		? "owner"
+		: String(membership.data?.role ?? "").toLowerCase();
 }

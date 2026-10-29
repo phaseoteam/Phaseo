@@ -3,48 +3,97 @@ title: "mars"
 description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de modèles en mars 2026."
 ---
 
-<Update label="31 mars 2026" tags={["Sorties de modèles"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### Sorties de modèles
+<ChangelogFilters labels={{"product":"Produit","api":"API et SDK","models":"Modèles"}} clearLabel="Effacer" />
+
+<Update label="31 mars 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Veo 3.1 Lite Preview visuel de sortie du modèle](../../../images/model-releases/2026-03-31--google--veo-3-1-lite-preview.png)
 
 - [Google: Veo 3.1 Lite Preview](https://phaseo.app/models/google/veo-3.1-lite-preview)
 
+</div>
+
 </Update>
 
-<Update label="23 mars 2026" tags={["Sorties de modèles"]}>
+<Update label="23 mars 2026">
 
-### Sorties de modèles
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- Les salons de discussion peuvent désormais exécuter des modèles audio, de modération et d’embeddings en plus des modèles de texte ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#157](https://github.com/phaseoteam/Phaseo/pull/157)).
+- Foundry, un nouvel espace pour les projets expérimentaux, ouvre avec LLM Council, qui envoie une même requête à plusieurs modèles et fusionne leurs réponses en une seule ([#201](https://github.com/phaseoteam/Phaseo/pull/201)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- Des SDK Go, C#, Java, PHP et Ruby sont désormais disponibles aux côtés des SDK TypeScript et Python, tous en version `1.1.0` ([#203](https://github.com/phaseoteam/Phaseo/pull/203), [#201](https://github.com/phaseoteam/Phaseo/pull/201)).
+- Les SDK `1.1.0` avertissent lorsqu’une requête cible un modèle obsolète ou retiré, et leurs types de modèles et chemins de routes correspondent à l’API ([#201](https://github.com/phaseoteam/Phaseo/pull/201), [#203](https://github.com/phaseoteam/Phaseo/pull/203)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Voxtral TTS visuel de sortie du modèle](../../../images/model-releases/2026-03-23--mistral--voxtral-tts.png)
 
 - [Mistral: Voxtral TTS](https://phaseo.app/models/mistral/voxtral-tts)
 
-</Update>
-
-<Update label="22 mars 2026" tags={["Fonctionnalités","Sorties de modèles","SDK"]}>
-
-### Fonctionnalités
-
-- De nouveaux SDK ont été publiés, les SDK TypeScript et Python ont été remaniés et les salons de discussion sont devenus multimodaux.
-- Foundry a été lancé, LLM Council en est devenu le premier projet et le SDK `1.1.0` a aligné la disponibilité des modèles et les avertissements de cycle de vie sur l’API.
+</div>
 
 </Update>
 
-<Update label="19 mars 2026" tags={["Sorties de modèles"]}>
+<Update label="22 mars 2026">
 
-### Sorties de modèles
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- Les codes promotionnels peuvent être échangés contre des crédits sur la nouvelle page **Redeem**, accessible depuis **Settings -> Credits** ; les équipes facturées sur facture ne peuvent pas les utiliser ([#188](https://github.com/phaseoteam/Phaseo/pull/188)).
+- L’inscription n’échoue plus lorsqu’une étape facultative de configuration du compte rencontre une erreur ([#187](https://github.com/phaseoteam/Phaseo/pull/187)).
+
+</div>
+
+</Update>
+
+<Update label="19 mars 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 - [Xiaomi: MiMo V2 Omni](https://phaseo.app/models/xiaomi/mimo-v2-omni)
 - [Xiaomi: MiMo V2 Pro](https://phaseo.app/models/xiaomi/mimo-v2-pro)
 - [Xiaomi: MiMo V2 TTS](https://phaseo.app/models/xiaomi/mimo-v2-tts)
 
+</div>
+
 </Update>
 
-<Update label="18 mars 2026" tags={["Sorties de modèles"]}>
+<Update label="18 mars 2026">
 
-### Sorties de modèles
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- Chat affiche le nom du modèle au-dessus de chaque message de l’assistant au lieu de son ID, et ce nom renvoie vers la page du modèle ([#179](https://github.com/phaseoteam/Phaseo/pull/179)).
+- Sur mobile, l’en-tête propose un menu unique avec la navigation, des liens de compte comme les paramètres, les crédits et les clés, et un choix de thème clair, sombre ou système ([#180](https://github.com/phaseoteam/Phaseo/pull/180), [#183](https://github.com/phaseoteam/Phaseo/pull/183), [#181](https://github.com/phaseoteam/Phaseo/pull/181)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![MiniMax M2.7 visuel de sortie du modèle](../../../images/model-releases/2026-03-18--minimax--minimax-m2-7.png)
 
@@ -53,11 +102,15 @@ description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de 
 - [Xiaomi: MiMo V2 Pro](https://phaseo.app/models/xiaomi/mimo-v2-pro)
 - [Xiaomi: MiMo V2 TTS](https://phaseo.app/models/xiaomi/mimo-v2-tts)
 
+</div>
+
 </Update>
 
-<Update label="17 mars 2026" tags={["Sorties de modèles"]}>
+<Update label="17 mars 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Mistral Moderation 2 visuel de sortie du modèle](../../../images/model-releases/2026-03-17--mistral--mistral-moderation-2.png)
 
@@ -65,104 +118,181 @@ description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de 
 - [OpenAI: GPT 5.4 Mini](https://phaseo.app/models/openai/gpt-5.4-mini)
 - [OpenAI: GPT 5.4 Nano](https://phaseo.app/models/openai/gpt-5.4-nano)
 
+</div>
+
 </Update>
 
-<Update label="16 mars 2026" tags={["Sorties de modèles"]}>
+<Update label="16 mars 2026">
 
-### Sorties de modèles
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- Le démarrage rapide du gateway sur les pages de modèles ne propose que les ID de modèle acceptés par l’endpoint sélectionné et ses fournisseurs actifs ([#157](https://github.com/phaseoteam/Phaseo/pull/157)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Leanstral visuel de sortie du modèle](../../../images/model-releases/2026-03-16--mistral--leanstral.png)
 
 - [Mistral: Leanstral](https://phaseo.app/models/mistral/leanstral)
 - [Mistral: Mistral Small 4](https://phaseo.app/models/mistral/mistral-small-4)
 
+</div>
+
 </Update>
 
-<Update label="15 mars 2026" tags={["Sorties de modèles"]}>
+<Update label="15 mars 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![GLM 5 Turbo visuel de sortie du modèle](../../../images/model-releases/2026-03-15--z-ai--glm-5-turbo.png)
 
 - [z.AI: GLM 5 Turbo](https://phaseo.app/models/z-ai/glm-5-turbo)
 
+</div>
+
 </Update>
 
-<Update label="12 mars 2026" tags={["Fonctionnalités","Sorties de modèles"]}>
+<Update label="12 mars 2026">
 
-### Fonctionnalités
+<div data-changelog-category="models">
 
-- La page d’affichage des modèles a été remaniée pour mieux présenter leur disponibilité, la hiérarchie des métadonnées et les informations de prise en charge.
-
-### Sorties de modèles
+<p className="changelog-category">Modèles</p>
 
 - [Nvidia: Nemotron 3 Super](https://phaseo.app/models/nvidia/nemotron-3-super-120b-a12b)
 
+</div>
+
 </Update>
 
-<Update label="11 mars 2026" tags={["Sorties de modèles"]}>
+<Update label="11 mars 2026">
 
-### Sorties de modèles
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- **Settings -> Provisioning Keys** devient **Settings -> Management API Keys**, et l’ancienne adresse redirige vers la nouvelle page ([#153](https://github.com/phaseoteam/Phaseo/pull/153)).
+- La recherche de l’en-tête place d’abord les correspondances sur le nom du modèle, si bien qu’une recherche `Grok 4.20` affiche Grok 4.20 en tête ([#156](https://github.com/phaseoteam/Phaseo/pull/156)).
+- Nouveau guide : [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx) décrit les réglages d’effort de raisonnement et multi-agent pour adopter Grok 4.20 ([#155](https://github.com/phaseoteam/Phaseo/pull/155)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- **Changement incompatible :** Les alias `/v1/provisioning/keys` sont supprimés ; appelez `/v1/management/keys` à la place ; voir [Clés d’API de gestion](../developers/management-api-keys.mdx) ([#153](https://github.com/phaseoteam/Phaseo/pull/153)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Nemotron 3 Super visuel de sortie du modèle](../../../images/model-releases/2026-03-11--nvidia--nemotron-3-super-120b-a12b.png)
 
 - [Nvidia: Nemotron 3 Super](https://phaseo.app/models/nvidia/nemotron-3-super-120b-a12b)
 
+</div>
+
 </Update>
 
-<Update label="10 mars 2026" tags={["Fonctionnalités","Sorties de modèles","Prise en charge des fournisseurs","Documentation"]}>
+<Update label="10 mars 2026">
 
-### Fonctionnalités
+<div data-changelog-category="models">
 
-- La refonte de la marque s’est étendue au site web et à la documentation.
-- La prise en charge d’Alibaba Cloud est arrivée dans Phaseo, les routes de la passerelle et la documentation.
-
-### Sorties de modèles
+<p className="changelog-category">Modèles</p>
 
 ![Aion 2.5 visuel de sortie du modèle](../../../images/model-releases/2026-03-10--aion-labs--aion-2-5.png)
 
 - [Aion Labs: Aion 2.5](https://phaseo.app/models/aion-labs/aion-2.5)
 - [Google: Gemini Embedding 2 Preview](https://phaseo.app/models/google/gemini-embedding-2-preview)
+- Alibaba Cloud est désormais un fournisseur pour les requêtes du gateway.
+
+</div>
 
 </Update>
 
-<Update label="5 mars 2026" tags={["Fonctionnalités","Sorties de modèles","Documentation"]}>
+<Update label="6 mars 2026">
 
-### Fonctionnalités
+<div data-changelog-category="product">
 
-- GPT 5.4 et GPT 5.4 Pro sont désormais disponibles dans le catalogue, la passerelle et la documentation.
+<p className="changelog-category">Produit</p>
 
-### Sorties de modèles
+- Les tableaux de prix des modèles affichent comme **Not Active** les capacités désactivées par un fournisseur, comme batch, au lieu de les masquer ([#141](https://github.com/phaseoteam/Phaseo/pull/141)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- Les requêtes acceptent de nouveau `service_tier` avec la valeur `standard` ou `priority` ; voir [Niveaux de service](../guides/service-tiers.mdx) ([#141](https://github.com/phaseoteam/Phaseo/pull/141)).
+- L’alias `openai/gpt-latest` pointe désormais vers `openai/gpt-5.4` ([#140](https://github.com/phaseoteam/Phaseo/pull/140)).
+
+</div>
+
+</Update>
+
+<Update label="5 mars 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![GPT 5.4 visuel de sortie du modèle](../../../images/model-releases/2026-03-05--openai--gpt-5-4.png)
 
 - [OpenAI: GPT 5.4](https://phaseo.app/models/openai/gpt-5.4)
 - [OpenAI: GPT 5.4 Pro](https://phaseo.app/models/openai/gpt-5.4-pro)
 
+</div>
+
 </Update>
 
-<Update label="3 mars 2026" tags={["Fonctionnalités","Sorties de modèles","Documentation"]}>
+<Update label="3 mars 2026">
 
-### Fonctionnalités
+<div data-changelog-category="api">
 
-- Gemini 3.1 Flash Lite Preview est arrivé dans le produit, le routage de la passerelle et la documentation.
+<p className="changelog-category">API et SDK</p>
 
-### Sorties de modèles
+- L’alias `openai/gpt-chat-latest` pointe désormais vers `openai/gpt-5.3-chat` ([#138](https://github.com/phaseoteam/Phaseo/pull/138)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Gemini 3.1 Flash Lite Preview visuel de sortie du modèle](../../../images/model-releases/2026-03-03--google--gemini-3-1-flash-lite-preview.png)
 
 - [Google: Gemini 3.1 Flash Lite Preview](https://phaseo.app/models/google/gemini-3.1-flash-lite-preview)
 - [OpenAI: GPT 5.3 Chat](https://phaseo.app/models/openai/gpt-5.3-chat)
 
+</div>
+
 </Update>
 
-<Update label="2 mars 2026" tags={["Fonctionnalités","Documentation","Sorties de modèles"]}>
+<Update label="2 mars 2026">
 
-### Fonctionnalités
+<div data-changelog-category="api">
 
-- La prise en charge de `phase` pour l’assistant de l’API Responses est arrivée dans le traitement des requêtes, les réponses et la documentation OpenAPI.
+<p className="changelog-category">API et SDK</p>
 
-### Sorties de modèles
+- L’API Responses accepte et renvoie le `phase` des messages de l’assistant (`commentary` ou `final_answer`), afin que les requêtes multitours puissent le renvoyer ; voir [Créer une réponse](../api-reference/endpoint/responses.mdx) ([#130](https://github.com/phaseoteam/Phaseo/pull/130)).
+- Les requêtes Responses vers les modèles OpenAI acceptent `provider_options.openai.context_management` avec `type: "compaction"` et un `compact_threshold` facultatif ; voir [Paramètres](../api-reference/parameters.mdx) ([#130](https://github.com/phaseoteam/Phaseo/pull/130)).
+- Les requêtes vers OpenAI sans `safety_identifier` en envoient désormais un, tiré de `user` ou `user_id`, ou à défaut de l’ID de la requête ([#130](https://github.com/phaseoteam/Phaseo/pull/130)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
 
 ![Qwen 3.5 0.8B visuel de sortie du modèle](../../../images/model-releases/2026-03-02--qwen--qwen3-5-0-8b.png)
 
@@ -171,5 +301,6 @@ description: "Mises à jour du produit Phaseo, évolutions du SDK et sorties de 
 - [Qwen: Qwen 3.5 4B](https://phaseo.app/models/qwen/qwen3.5-4b)
 - [Qwen: Qwen 3.5 9B](https://phaseo.app/models/qwen/qwen3.5-9b)
 
-</Update>
+</div>
 
+</Update>

@@ -87,6 +87,8 @@ public class Phaseo {
 	private final Set<String> warnedModels = new HashSet<>();
 	private final Map<String, ModelLifecycleInfo> lifecycleCache = new HashMap<>();
 	public final AsyncJobsResource asyncJobs;
+	/** Realtime voice sessions (beta). */
+	public final Realtime realtime;
 
 	public Phaseo() {
 		this(resolveApiKey(null), DEFAULT_BASE_URL);
@@ -165,6 +167,7 @@ public class Phaseo {
 		this.telemetry = new TelemetryRecorder(devtoolsConfig, "3.0.0");
 		this.lifecycleResolver = lifecycleResolver == null ? this::fetchModelLifecycle : lifecycleResolver;
 		this.asyncJobs = new AsyncJobsResource(this);
+		this.realtime = new Realtime(this, this.basePath);
 	}
 
 	public Client rawClient() {

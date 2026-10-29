@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { invalidateWorkspaceGatewayContext } from "./gateway-invalidation";
 import { compilePromptTemplate, type PromptTemplateIssue } from "./prompt-templates";
 import { requireUser } from "@/auth/requireUser";
@@ -8,6 +8,18 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
+import {
+	AUTO_ROUTING_COLUMNS,
+	MAX_SUCCESSOR_PRICE_INCREASE_PERCENT,
+	MAX_SUCCESSOR_REPLACEMENTS,
+	autoRoutingFromRow,
+	parseAutoRoutingUpdate,
+	parseSuccessorReplacement,
+	parseSuccessorSettings,
+	successorModelSlug,
+	successorReplacementCatalogueError,
+	successorSettingsFromRow,
+} from "./workspace-routing-settings";
 
 const GUARDRAIL_COLUMNS = "id,workspace_id,enabled,name,description,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,created_at,updated_at";
 
@@ -129,38 +141,6 @@ function restriction(mode: unknown, ids: unknown) {
 	};
 }
 
-const AUTO_ROUTING_OBJECTIVES = new Set(["balanced", "quality", "cost", "latency"]);
-const AUTO_ROUTING_SPEND_PROFILES = new Set(["economy", "standard", "premium", "unrestricted", "custom"]);
-
-function cleanAutoRoutingPatterns(value: unknown): string[] {
-	if (!Array.isArray(value)) return [];
-	return [...new Set(value
-		.map((pattern) => typeof pattern === "string" ? pattern.trim().toLowerCase() : "")
-		.filter(Boolean))]
-		.slice(0, 16);
-}
-
-function priceLimit(value: unknown): number | null {
-	if (value === null || value === undefined || value === "") return null;
-	const number = Number(value);
-	return Number.isFinite(number) && number >= 0 ? number : null;
-}
-
-function autoRoutingFromRow(row: any) {
-	const objective = String(row?.auto_routing_objective ?? "balanced");
-	const spendProfile = String(row?.auto_routing_spend_profile ?? "standard");
-	return {
-		allowedPatterns: cleanAutoRoutingPatterns(row?.auto_routing_allowed_patterns),
-		spendProfile: AUTO_ROUTING_SPEND_PROFILES.has(spendProfile) ? spendProfile : "standard",
-		maxInputPricePerMillion: priceLimit(row?.auto_routing_max_input_price_per_million),
-		maxOutputPricePerMillion: priceLimit(row?.auto_routing_max_output_price_per_million),
-		objective: AUTO_ROUTING_OBJECTIVES.has(objective) ? objective : "balanced",
-		allowFallbacks: row?.auto_routing_fallbacks_enabled !== false,
-		revision: typeof row?.auto_routing_revision === "string" ? row.auto_routing_revision : null,
-		updatedAt: typeof row?.auto_routing_updated_at === "string" ? row.auto_routing_updated_at : null,
-	};
-}
-
 accountSettingsPolicyRouter.get("/chat/effective-policy", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) return c.json({ guardrails: [], workspace: null, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -234,15 +214,6 @@ accountSettingsPolicyRouter.put("/routing", async (c) => {
 	return c.json({ ok: true, gatewayCacheInvalidated }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
-const SUCCESSOR_PRICE_POLICIES = new Set(["never", "limit", "any"]);
-const SERVABLE_SUCCESSOR_STATUSES = new Set(["active", "deprecated", "retired"]);
-const MAX_SUCCESSOR_REPLACEMENTS = 500;
-
-function successorModelSlug(value: unknown): string | null {
-	const slug = String(value ?? "").trim().toLowerCase();
-	return slug && slug.length <= 512 && /^[a-z0-9][a-z0-9._:/+@-]*$/.test(slug) ? slug : null;
-}
-
 // Successor routing: send requests for a model no provider serves any more to
 // a replacement. The gateway reads these settings with a short cache, so a
 // change takes effect within about a minute.
@@ -263,12 +234,9 @@ accountSettingsPolicyRouter.get("/routing/successor", async (c) => {
 			.limit(MAX_SUCCESSOR_REPLACEMENTS),
 	]);
 	if (settingsResult.error || replacementsResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const pricePolicy = String(settingsResult.data?.model_successor_price_policy ?? "never");
 	return c.json({
 		canManage: ["owner", "admin"].includes(context.role.toLowerCase()),
-		enabled: settingsResult.data?.model_successor_redirect_enabled === true,
-		pricePolicy: SUCCESSOR_PRICE_POLICIES.has(pricePolicy) ? pricePolicy : "never",
-		maxPriceIncreasePercent: Number(settingsResult.data?.model_successor_max_price_increase_percent ?? 0) || 0,
+		...successorSettingsFromRow(settingsResult.data),
 		replacements: (replacementsResult.data ?? []).map((row: any) => ({
 			model: String(row.model_slug),
 			successor: typeof row.successor_model_slug === "string" ? row.successor_model_slug : null,
@@ -284,16 +252,13 @@ accountSettingsPolicyRouter.put("/routing/successor", async (c) => {
 	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const pricePolicy = String(body.pricePolicy ?? "never");
-	const percent = Number(body.maxPriceIncreasePercent ?? 0);
-	if (typeof body.enabled !== "boolean") return c.json({ error: "invalid_enabled" }, 400, PRIVATE_NO_STORE_HEADERS);
-	if (!SUCCESSOR_PRICE_POLICIES.has(pricePolicy)) return c.json({ error: "invalid_price_policy" }, 400, PRIVATE_NO_STORE_HEADERS);
-	if (!Number.isInteger(percent) || percent < 0 || percent > 1000) return c.json({ error: "invalid_max_price_increase_percent", maximum: 1000 }, 400, PRIVATE_NO_STORE_HEADERS);
+	const settings = parseSuccessorSettings(body);
+	if (settings.ok === false) {
+		return c.json(settings.error === "invalid_max_price_increase_percent" ? { error: settings.error, maximum: MAX_SUCCESSOR_PRICE_INCREASE_PERCENT } : { error: settings.error }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
 	const result = await context.client.from("workspace_settings").upsert({
 		workspace_id: workspaceId,
-		model_successor_redirect_enabled: body.enabled,
-		model_successor_price_policy: pricePolicy,
-		model_successor_max_price_increase_percent: pricePolicy === "limit" ? percent : 0,
+		...settings.value,
 		updated_at: new Date().toISOString(),
 	}, { onConflict: "workspace_id" });
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -306,20 +271,16 @@ accountSettingsPolicyRouter.put("/routing/successor/replacements", async (c) => 
 	if (!workspaceId) return c.json({ error: "workspace_required" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const model = successorModelSlug(body.model);
-	// null means "never redirect this model".
-	const successor = body.successor === null ? null : successorModelSlug(body.successor);
-	if (!model) return c.json({ error: "invalid_model" }, 400, PRIVATE_NO_STORE_HEADERS);
-	if (body.successor !== null && !successor) return c.json({ error: "invalid_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
-	if (successor === model) return c.json({ error: "successor_is_model" }, 400, PRIVATE_NO_STORE_HEADERS);
+	// successor null means "never redirect this model".
+	const replacement = parseSuccessorReplacement(body);
+	if (replacement.ok === false) return c.json({ error: replacement.error }, 400, PRIVATE_NO_STORE_HEADERS);
+	const { model, successor } = replacement.value;
 	const slugs = successor ? [model, successor] : [model];
 	const models = await context.client.from("v2_models").select("model_slug,status").in("model_slug", slugs).eq("hidden", false);
 	if (models.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const statuses = new Map((models.data ?? []).map((row: any) => [String(row.model_slug), String(row.status ?? "")]));
-	if (!statuses.has(model)) return c.json({ error: "unknown_model" }, 400, PRIVATE_NO_STORE_HEADERS);
-	if (successor && !statuses.has(successor)) return c.json({ error: "unknown_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
-	// The gateway only redirects to models it can list; anything else would be saved and never used.
-	if (successor && !SERVABLE_SUCCESSOR_STATUSES.has(statuses.get(successor)!)) return c.json({ error: "inactive_successor" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const catalogueError = successorReplacementCatalogueError(replacement.value, statuses);
+	if (catalogueError) return c.json({ error: catalogueError }, 400, PRIVATE_NO_STORE_HEADERS);
 	const existing = await context.client.from("workspace_model_successor_overrides").select("model_slug", { count: "exact", head: true }).eq("workspace_id", workspaceId);
 	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if ((existing.count ?? 0) >= MAX_SUCCESSOR_REPLACEMENTS) {
@@ -366,7 +327,7 @@ accountSettingsPolicyRouter.get("/routing/auto", async (c) => {
 	const [teamResult, settingsResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
 		context.client.from("workspace_settings")
-			.select("auto_routing_allowed_patterns,auto_routing_spend_profile,auto_routing_max_input_price_per_million,auto_routing_max_output_price_per_million,auto_routing_objective,auto_routing_fallbacks_enabled,auto_routing_revision,auto_routing_updated_at")
+			.select(AUTO_ROUTING_COLUMNS)
 			.eq("workspace_id", workspaceId)
 			.maybeSingle(),
 	]);
@@ -388,42 +349,9 @@ accountSettingsPolicyRouter.put("/routing/auto", async (c) => {
 		return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	}
 
-	const rawPatterns = Array.isArray(body.allowedPatterns) ? body.allowedPatterns : [];
-	const allowedPatterns = cleanAutoRoutingPatterns(rawPatterns);
-	const invalidPatterns = rawPatterns
-		.map((pattern) => String(pattern ?? "").trim().toLowerCase())
-		.filter((pattern) => !pattern || pattern.length > 200 || !/^[a-z0-9*][a-z0-9._:/*-]*$/.test(pattern) || !pattern.includes("/"));
-	const objective = String(body.objective ?? "balanced").trim().toLowerCase();
-	const spendProfile = String(body.spendProfile ?? "standard").trim().toLowerCase();
-	const maxInputPricePerMillion = priceLimit(body.maxInputPricePerMillion);
-	const maxOutputPricePerMillion = priceLimit(body.maxOutputPricePerMillion);
-	const allowFallbacks = body.allowFallbacks !== false;
-	if (rawPatterns.length > 16 || invalidPatterns.length) {
-		return c.json({ error: "invalid_model_patterns", patterns: invalidPatterns, maximum: 16 }, 400, PRIVATE_NO_STORE_HEADERS);
-	}
-	if (!AUTO_ROUTING_OBJECTIVES.has(objective)) {
-		return c.json({ error: "invalid_objective" }, 400, PRIVATE_NO_STORE_HEADERS);
-	}
-	if (!AUTO_ROUTING_SPEND_PROFILES.has(spendProfile)) {
-		return c.json({ error: "invalid_spend_profile" }, 400, PRIVATE_NO_STORE_HEADERS);
-	}
-	if (spendProfile === "custom" && (maxInputPricePerMillion === null || maxOutputPricePerMillion === null)) {
-		return c.json({ error: "custom_price_limits_required" }, 400, PRIVATE_NO_STORE_HEADERS);
-	}
-
-	const now = new Date().toISOString();
-	const payload = {
-		workspace_id: workspaceId,
-		auto_routing_allowed_patterns: allowedPatterns,
-		auto_routing_spend_profile: spendProfile,
-		auto_routing_max_input_price_per_million: spendProfile === "custom" ? maxInputPricePerMillion : null,
-		auto_routing_max_output_price_per_million: spendProfile === "custom" ? maxOutputPricePerMillion : null,
-		auto_routing_objective: objective,
-		auto_routing_fallbacks_enabled: allowFallbacks,
-		auto_routing_revision: crypto.randomUUID(),
-		auto_routing_updated_at: now,
-		updated_at: now,
-	};
+	const update = parseAutoRoutingUpdate(body);
+	if (update.ok === false) return c.json(update.error, 400, PRIVATE_NO_STORE_HEADERS);
+	const payload = { workspace_id: workspaceId, ...update.value };
 	const result = await context.client.from("workspace_settings").upsert(payload, { onConflict: "workspace_id" }).select("auto_routing_revision,auto_routing_updated_at").maybeSingle();
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	let gatewayCacheInvalidated = false;
@@ -649,13 +577,82 @@ accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 accountSettingsPolicyRouter.get("/presets/:presetId/versions", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const client = getDataClient(c.env); const id = c.req.param("presetId");
-	const preset = await client.from("presets").select("workspace_id,created_by,visibility").eq("id", id).is("archived_at", null).maybeSingle();
+	const preset = await client.from("presets").select("workspace_id,created_by,visibility,draft_visibility,active_version_id").eq("id", id).is("archived_at", null).maybeSingle();
 	if (preset.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!preset.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (preset.data.visibility === "private" && preset.data.created_by !== user.id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	const versions = await client.from("preset_versions").select("id,version_number,name,slug,description,visibility,release_notes,created_at").eq("preset_id", id).order("version_number", { ascending: false });
-	if (versions.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ versions: versions.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
+	const [versions, labels] = await Promise.all([
+		client.from("preset_versions").select("id,version_number,version_label,name,slug,description,visibility,release_notes,created_at,config").eq("preset_id", id).order("version_number", { ascending: false }),
+		client.from("preset_version_labels").select("label,version_id,updated_at").eq("preset_id", id).order("label", { ascending: true }),
+	]);
+	if (versions.error || labels.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const labelsByVersion = new Map<string, string[]>();
+	for (const row of labels.data ?? []) labelsByVersion.set(String(row.version_id), [...(labelsByVersion.get(String(row.version_id)) ?? []), String(row.label)]);
+	return c.json({
+		versions: (versions.data ?? []).map((version) => ({ ...version, config: presetVersionContent(version.config), labels: labelsByVersion.get(String(version.id)) ?? [] })),
+		labels: labels.data ?? [],
+		activeVersionId: preset.data.active_version_id ?? null,
+		canManageLabels: canManagePresetLabels(context, user.id, preset.data),
+	}, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+/** What the editor shows and compares for a version: its models and prompt template, not the rest of its config. */
+function presetVersionContent(config: unknown): { models: string[]; prompt: unknown } {
+	const value = config && typeof config === "object" && !Array.isArray(config) ? config as Record<string, unknown> : {};
+	return {
+		models: Array.isArray(value.models) ? value.models.filter((model): model is string => typeof model === "string") : [],
+		prompt: value.prompt && typeof value.prompt === "object" && !Array.isArray(value.prompt) ? value.prompt : null,
+	};
+}
+
+/** The rule set_preset_version_label applies: the creator, or an owner or admin when the preset is shared. */
+function canManagePresetLabels(context: AccountWorkspaceContext, userId: string, preset: { created_by?: string | null; visibility?: string | null; draft_visibility?: string | null }) {
+	return canWritePreset(context, userId, { created_by: preset.created_by, visibility: preset.draft_visibility ?? preset.visibility });
+}
+const PRESET_LABEL_PATTERN = /^[a-z][a-z0-9_-]{0,31}$/;
+function normalizePresetLabel(value: unknown): string | null {
+	const label = String(value ?? "").trim().toLowerCase();
+	return PRESET_LABEL_PATTERN.test(label) && !/^v[0-9]+$/.test(label) ? label : null;
+}
+function presetLabelRpcError(message: string): { error: string; status: 400 | 403 | 404 } | null {
+	if (message.includes("invalid_preset_label")) return { error: "invalid_preset_label", status: 400 };
+	if (message.includes("preset_version_not_found")) return { error: "preset_version_not_found", status: 404 };
+	if (message.includes("preset_not_found")) return { error: "not_found", status: 404 };
+	if (message.includes("preset_label_forbidden")) return { error: "forbidden", status: 403 };
+	return null;
+}
+async function presetForLabelChange(c: Context<{ Bindings: Env }>, userId: string) {
+	const client = getDataClient(c.env);
+	const preset = await client.from("presets").select("id,workspace_id,created_by,visibility,draft_visibility").eq("id", String(c.req.param("presetId") ?? "")).is("archived_at", null).maybeSingle();
+	if (preset.error) return { response: c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS) } as const;
+	if (!preset.data?.workspace_id) return { response: c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS) } as const;
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id });
+	if (!context || !canManagePresetLabels(context, userId, preset.data)) return { response: c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS) } as const;
+	return { client, preset: preset.data } as const;
+}
+
+accountSettingsPolicyRouter.put("/presets/:presetId/labels/:label", async (c) => {
+	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const label = normalizePresetLabel(c.req.param("label")); if (!label) return c.json({ error: "invalid_preset_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const body: { versionId?: string } = await c.req.json<{ versionId?: string }>().catch(() => ({})); const versionId = String(body.versionId ?? "").trim();
+	if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(versionId)) return c.json({ error: "preset_version_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const loaded = await presetForLabelChange(c, user.id); if ("response" in loaded) return loaded.response;
+	const saved = await loaded.client.rpc("set_preset_version_label", { p_preset_id: loaded.preset.id, p_label: label, p_version_id: versionId, actor_user_id: user.id });
+	if (saved.error) { const mapped = presetLabelRpcError(saved.error.message ?? ""); return c.json({ error: mapped?.error ?? "settings_unavailable" }, mapped?.status ?? 503, PRIVATE_NO_STORE_HEADERS); }
+	const row = Array.isArray(saved.data) ? saved.data[0] : saved.data;
+	const cache = await purgePresetCache(c, loaded.preset.id);
+	return c.json({ label: row ?? { label, version_id: versionId }, cache }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsPolicyRouter.delete("/presets/:presetId/labels/:label", async (c) => {
+	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const label = normalizePresetLabel(c.req.param("label")); if (!label) return c.json({ error: "invalid_preset_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const loaded = await presetForLabelChange(c, user.id); if ("response" in loaded) return loaded.response;
+	const removed = await loaded.client.rpc("remove_preset_version_label", { p_preset_id: loaded.preset.id, p_label: label, actor_user_id: user.id });
+	if (removed.error) { const mapped = presetLabelRpcError(removed.error.message ?? ""); return c.json({ error: mapped?.error ?? "settings_unavailable" }, mapped?.status ?? 503, PRIVATE_NO_STORE_HEADERS); }
+	if (removed.data !== true) return c.json({ error: "label_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const cache = await purgePresetCache(c, loaded.preset.id);
+	return c.json({ removed: true, label, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
@@ -672,6 +669,7 @@ accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
 	if (published.error) {
 		const message = published.error.message ?? "";
 		if (message.includes("invalid_semver_label")) return c.json({ error: "invalid_semver_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+		if (published.error.code === "23505") return c.json({ error: "version_label_taken" }, 409, PRIVATE_NO_STORE_HEADERS);
 		if (message.includes("preset_not_found")) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 		if (message.includes("preset_publish_forbidden")) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 		return c.json({ error: "version_publish_failed" }, 503, PRIVATE_NO_STORE_HEADERS);

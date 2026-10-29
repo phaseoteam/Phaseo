@@ -2329,7 +2329,7 @@
 			],
 			"cookieControl": "You can control cookies in your browser settings. Blocking some types may affect your experience or prevent certain features from working.",
 			"analyticsIntro": "We may use third-party analytics and error-tracking tools, such as Google Analytics, PostHog or similar services, to understand how people use Phaseo and where we can improve it.",
-			"analyticsDetails": "These tools collect information such as pages visited, actions taken, device and browser information, and approximate location such as country. We configure them so they are not used to store raw prompts, Outputs or other highly sensitive content sent through Gateway.",
+			"analyticsDetails": "These tools collect information such as pages visited, actions taken, device and browser information, and approximate location such as country. We configure them so they are not used to store raw prompts, Outputs or other highly sensitive content sent through Gateway. If you are signed in and have accepted analytics cookies, we link these events, session recordings and survey answers to your Phaseo account and workspace IDs, but not to your name or email address. Session recordings mask form inputs and hide API keys and other secrets shown on screen.",
 			"legalBasesIntro": "We use personal data for the following purposes, under these legal bases (for UK/EU users):",
 			"legalBasesItems": [
 				{

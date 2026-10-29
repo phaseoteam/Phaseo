@@ -107,6 +107,8 @@ phaseo organisations list
 phaseo endpoints list
 phaseo pricing models
 phaseo credits get
+phaseo credits add --amount 20          # needs: phaseo login --scopes billing:write
+phaseo credits topups get <id>
 phaseo activity list --days 7
 phaseo logs list --since 1h --status error --json
 phaseo logs get <request-id> --json
@@ -115,6 +117,78 @@ phaseo webhooks list
 phaseo webhooks create --url https://example.com/phaseo-events --events batch.completed --show-secret
 phaseo api get /v1/models
 ```
+
+## Workspace management
+
+Every `/v1` management area has its own command group, so agents can run a whole workspace from the CLI. Run `phaseo <group> --help` for exact flags.
+
+| Group | Covers |
+| --- | --- |
+| `byok` | Bring-your-own provider keys: list, create, get, update, delete, reorder |
+| `budgets`, `department-budgets` | Workspace and department spend limits |
+| `spend-rules`, `spend-blocks` | Alert and block rules (with test, preview, history) and active blocks (list, lift) |
+| `rate-limits policies`, `rate-limits assignments` | Rate limit policies and where they apply |
+| `observability` | Logging policy and broadcast destinations |
+| `notifications` | Billing and alert settings (including auto top-up), destinations, event routes |
+| `routing dynamic-routes` | Dynamic routes, their keys, and version deploys |
+| `private-models`, `classifiers`, `data-contribution` | Private model endpoints, request classifiers, data contribution |
+| `presets` | Versions, labels, fork, upstream sync, publisher handle (plus the basic CRUD above) |
+| `workspaces` | Member roles, invites, join requests (plus the basic CRUD above) |
+| `identity` | SSO, SCIM and SCIM tokens, directory, departments, group mappings |
+| `workload-identity policies` | Trusted workload policies |
+| `keys`, `webhooks`, `analytics` | Key rotation and cache invalidation, webhook test events, CSV analytics export (plus the commands above) |
+| `events` | Custom observability events (list, create) |
+| `audit-events`, `apps` | Audit log and app attribution (list, update, merge) |
+| `feedback`, `preset-test-runs` | Feedback records and preset test runs (`feedback`, `events` and `preset-test-runs` need `feedback:*` scopes) |
+
+```bash
+printf '%s' "$OPENAI_KEY" | phaseo byok create --provider openai --name "Prod" --key-stdin --json
+phaseo budgets create --interval monthly --limit 500 --json
+phaseo spend-rules create --name "80% alert" --metric budget_percent --threshold-percents 80 --destination-ids <id> --json
+phaseo rate-limits assignments create --policy <id> --target-type key --target <key-id> --json
+phaseo notifications settings update --low-balance-email true --low-balance-threshold-usd 10 --json
+phaseo routing dynamic-routes deploy <route-id> 3 --json
+phaseo workspaces invites create <workspace> --role member --max-uses 5 --show-secret
+phaseo spend-blocks lift <block-id> --yes --json
+```
+
+Secrets never go on the command line, including inside `--body-json`. BYOK keys come from `--key-stdin`, `--key-env <VAR>`, or `PHASEO_BYOK_KEY`; private model credentials from `--credential-stdin`, `--credential-env <VAR>`, or `PHASEO_PRIVATE_MODEL_CREDENTIAL`. Webhook notification targets can be piped with `--target-stdin`. Observability destination configs usually hold credentials, so pass them with `--config-stdin` or `--config-env <VAR>` rather than `--config-json`. One-time secrets in responses (SCIM tokens, invite tokens, signing secrets) are hidden in human output unless you pass `--show-secret`; `--json` always returns them.
+
+Commands that show `[--yes]` (delete, revoke, lift, rotate-secret, merge) ask before they run in an interactive terminal. In scripts, or with `--json`, they fail unless `--yes` is passed.
+
+Scopes: the default login covers every group except `feedback` and `preset-test-runs`, which need `feedback:read` and `feedback:write`. Request them with an explicit list, for example `phaseo login --scopes <default scopes>,feedback:read,feedback:write`. Sessions signed in before the CLI could be granted the BYOK and private model scopes do not have them, so `byok` and `private-models` return `403` until you run `phaseo login` again. The `scope` field of `phaseo login --json` shows what was granted.
+
+### Account, routing, and workspace settings
+
+```bash
+phaseo profile update --display-name "Ada Lovelace"
+phaseo authorized-apps list
+phaseo authorized-apps revoke <authorization-id> --yes
+phaseo invites accept <invite-code>
+phaseo invites requests --status all
+phaseo rate-limits tier get
+phaseo routing auto update --allowed-patterns "openai/*,anthropic/*" --objective cost
+phaseo routing successors set --model openai/gpt-4 --successor openai/gpt-5
+phaseo observability destinations test <destination-id>
+phaseo keys update <key-id> --ip-allowlist "Office=203.0.113.0/24,VPN=2001:db8::1"
+```
+
+`profile`, `authorized-apps` and `invites` act as the signed-in person, so they need an OAuth login rather than a management key. `rate-limits tier raise` is for the workspace owner only.
+
+`phaseo classifiers test` sends a real, billed model request with your session's own credential, so the session needs `gateway:access` as well as `classifiers:write`. The CLI sign-in cannot be granted `gateway:access` today, so the command returns `403 gateway_access_required` until it can; the dashboard's classifier test still works.
+
+```bash
+echo "Why was I charged twice?" | phaseo classifiers test <classifier-id> --prompt-stdin
+```
+
+## Adding credits
+
+`phaseo credits add --amount <usd>` starts a top-up of $5 to $500 for the workspace. Nothing is charged until a person approves it:
+
+- With a saved card, every workspace owner and admin gets an email with a single-use link, and one of them confirms or declines the charge on Phaseo.
+- Without one, the command prints a checkout link where an owner or admin pays with a new card, which is saved for later top-ups.
+
+The command waits until the top-up is paid, declined, expired (after 30 minutes) or failed. Use `--no-wait` to return straight away and `phaseo credits topups get <id>` to check later. It needs the opt-in `billing:write` scope: `phaseo login --scopes billing:write` keeps the default scopes and adds it.
 
 ## Coding-agent integrations
 

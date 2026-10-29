@@ -1,7 +1,10 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
+import { defaultDeps, type Deps } from "./events";
 import { compareTs, MAX_KNOWN_MESSAGES } from "./history";
 import { MAX_OWN_ANSWER_CHARS, QUESTION_TIMEOUT_MS, questionMemory, type QuestionAnswer, type QuestionDraft, type QuestionState } from "./questions";
+import { MAX_FILES_PER_MESSAGE, type SharedFileRef } from "./slack-files";
+import { reportScheduledRunWithRetries } from "./scheduled-runs";
 import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunner, type TurnStart } from "./turns";
 
 // ThreadCoordinator: one per Slack thread, named installation:channel:thread_ts.
@@ -11,6 +14,8 @@ import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunn
 //   starts when the turn reports back (finishTurn). Starting never waits for the
 //   run itself, so the object is idle (and unbilled) while an answer is written.
 // - Holds a cancel flag that the running turn checks between steps.
+// - Records a recurring task's run as failed when it gives up on its turn (its
+//   Workflow couldn't be started, or it timed out), since nothing else would.
 // - Keeps working memory: the bot's earlier replies and short tool summaries, so a
 //   turn has context when Slack's history API is rate limited.
 // - Keeps the timestamps (never the text) of the thread's newest messages it
@@ -26,6 +31,11 @@ import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunn
 //   reply and questions until the turn ends, and the working memory, all gone
 //   within 7 days, as Slack's API terms require. Workflow step outputs carry ids
 //   and statuses only.
+// - Holds the action token Slack sent with a turn's message (search_slack's
+//   permission to search as the person, slack-search.ts) until the turn ends,
+//   and hands it only to the running turn. It never goes in the Workflow's
+//   payload. Search results are never kept here, only how many searches the
+//   turn made, across every run and retry of its answer (reserveSearch).
 
 const RETENTION_MS = 7 * 24 * 60 * 60_000;
 /** A running turn that hasn't reported back after this long is failed, so the queue moves on. While its question waits, this counts from when the question closes (turnDeadline). */
@@ -40,8 +50,12 @@ const MAX_MESSAGE_CHARS = 40_000;
 const MAX_PAUSED_RUN_BYTES = 1_500_000;
 
 export type TurnRequest = Omit<TurnRef, "turnId"> & {
-	/** The person's message, without a `with <model>:` that chose its model. Kept only until the turn ends. */
+	/** The person's message, without a `with <model>:` or `compare <models>:` that chose its models. Kept only until the turn ends. */
 	text: string;
+	/** The files shared with the message (ids and names), kept with its text. */
+	files?: SharedFileRef[];
+	/** Slack's action token from the message, when the turn may search Slack as the person (slack-search.ts). Kept until the turn ends. */
+	actionToken?: string;
 };
 
 export type EnqueueResult =
@@ -62,7 +76,7 @@ export type MemoryEntry = { kind: "reply" | "tool"; text: string; at: number; ts
  * A message from the thread's history (conversations.replies), for one turn only.
  * role: a person, the agent itself, or another bot or app (name: what Slack shows for it).
  */
-export type ContextEntry = { role: "user" | "assistant" | "app"; author: string | null; name?: string; text: string; ts: string | null };
+export type ContextEntry = { role: "user" | "assistant" | "app"; author: string | null; name?: string; text: string; ts: string | null; files?: SharedFileRef[] };
 
 /** What a turn's read of its thread returned (history.ts). Kept for that turn only. */
 export type ThreadContext = {
@@ -81,6 +95,8 @@ export type ThreadReadRecord = { oldest: string; ts: string[]; complete: boolean
 
 export type TurnInput = {
 	text: string;
+	/** The files shared with the message. */
+	files: SharedFileRef[];
 	context: ThreadContext | null;
 	/** The reply message an earlier attempt of this turn started, if any. */
 	replyTs: string | null;
@@ -89,10 +105,25 @@ export type TurnInput = {
 	stagedTools: string[];
 	/** What each attempt of the run spent, in nanodollars, by attempt ("1", "2"; after question n, "n:1" and so on). */
 	attemptCosts: Record<string, number>;
+	/** The charts and images every attempt of the answer made so far. */
+	postedFiles: PostedFile[];
 	memory: MemoryEntry[];
 };
 
+/** A chart or image an answer made; `shown`: it is in the thread. An image counts once it is paid for, shown or not. */
+export type PostedFile = { kind: "chart" | "image"; title: string; shown: boolean };
+
+/** Charts kept per answer. Every image is kept: the answer's image limit counts them (images.ts caps how many are made). */
+const MAX_POSTED_CHARTS = 20;
+
 const MAX_CONTEXT_ENTRIES = 20;
+/** A tool note's tool id ("search_slack \"launch plan\": 1 result" → "search_slack"), without what the model gave it. */
+export function toolNames(notes: string[]): string[] {
+	return notes.flatMap((note) => /^[a-z_]+/.exec(note.trim())?.[0] ?? []);
+}
+
+/** Working memory's note for an answer that searched Slack, in place of its text. */
+export const SEARCHED_REPLY_MEMORY = "(An answer that used Slack search. Its text isn't kept here; it's in the thread.)";
 const MAX_CONTEXT_CHARS = 4_000;
 
 type TurnRow = {
@@ -108,6 +139,10 @@ type TurnRow = {
 	kind: "mention" | "dm";
 	model: string | null;
 	external: number | null;
+	/** A Compare's models, as JSON. */
+	compare: string | null;
+	schedule_id: string | null;
+	schedule_run_at: string | null;
 	status: "queued" | "running";
 	started_at: number | null;
 	/** Since when the turn has been going again after a question: posted (until it expires), answered or closed. */
@@ -135,10 +170,12 @@ function turnRef(row: TurnRow): TurnRef {
 		kind: row.kind,
 		...(row.model ? { model: row.model } : {}),
 		...(row.external ? { external: true } : {}),
+		...(row.compare ? { compare: JSON.parse(row.compare) as string[] } : {}),
+		...(row.schedule_id && row.schedule_run_at ? { schedule: { id: row.schedule_id, runAt: row.schedule_run_at } } : {}),
 	};
 }
 
-const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, status, started_at, waiting_until";
+const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, compare, schedule_id, schedule_run_at, status, started_at, waiting_until";
 
 /** Columns added after the first release, created on objects that predate them. */
 const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
@@ -151,6 +188,13 @@ const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
 	["turns", "external", "INTEGER"],
 	["memory", "ts", "TEXT"],
 	["turns", "waiting_until", "INTEGER"],
+	["turns", "files", "TEXT"],
+	["turns", "posted_files", "TEXT"],
+	["turns", "compare", "TEXT"],
+	["turns", "schedule_id", "TEXT"],
+	["turns", "schedule_run_at", "TEXT"],
+	["turns", "action_token", "TEXT"],
+	["turns", "searches", "INTEGER"],
 ];
 
 /** When a running turn that hasn't reported back is failed: TURN_TIMEOUT_MS after it started, or after its last question was posted or closed. */
@@ -169,10 +213,13 @@ function storedContext(value: string): ThreadContext {
 export class ThreadCoordinator extends DurableObject<Env> {
 	/** Starts turns; replaced in tests. */
 	runner: TurnRunner;
+	/** The database and Slack, to record a scheduled run the thread gives up on; replaced in tests. */
+	deps: Deps;
 
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env);
 		this.runner = createWorkflowTurnRunner(env);
+		this.deps = defaultDeps(env);
 		this.migrate();
 	}
 
@@ -258,10 +305,13 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			if (waiting >= MAX_QUEUED) return { status: "queue_full" };
 			this.setMeta("thread_key", request.threadKey);
 			const row = this.sql.exec<{ id: number }>(
-				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, text, status, created_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
+				`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, model, external, compare, schedule_id, schedule_run_at, text, files, action_token, status, created_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?) RETURNING id`,
 				request.threadKey, request.eventId, request.installationId, request.teamId, request.channel, request.threadTs,
-				request.messageTs, request.slackUserId, request.kind, request.model ?? null, request.external ? 1 : 0, request.text.slice(0, MAX_MESSAGE_CHARS), now,
+				request.messageTs, request.slackUserId, request.kind, request.model ?? null, request.external ? 1 : 0,
+				request.compare?.length ? JSON.stringify(request.compare) : null, request.schedule?.id ?? null, request.schedule?.runAt ?? null,
+				request.text.slice(0, MAX_MESSAGE_CHARS), request.files?.length ? JSON.stringify(request.files.slice(0, MAX_FILES_PER_MESSAGE)) : null,
+				request.actionToken ?? null, now,
 			).one();
 			return { status: "queued", turnId: row.id, position: waiting + (this.running() ? 1 : 0) };
 		});
@@ -296,15 +346,25 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			this.sql.exec("DELETE FROM meta WHERE key = 'cancel_turn_id'");
 			await this.scheduleAlarm(now);
 			let start: TurnStart;
+			let notStarted = false;
 			try {
 				start = await this.runner.start(turnRef({ ...next, status: "running", started_at: now }));
 			} catch (error) {
 				console.error("[slack-agent] turn failed to start", { turnId: next.id, error: error instanceof Error ? error.message : "unknown" });
 				start = { finished: { status: "failed" } };
+				notStarted = true;
 			}
 			if ("started" in start) return;
 			await this.endTurn(next.id, start.finished, now);
+			if (notStarted) await this.reportGivenUp(next, "start_failed");
 		}
+	}
+
+	/** A scheduled run's turn the thread ended itself: no Workflow reports it, so its run is recorded as failed here. */
+	private async reportGivenUp(turn: TurnRow, reason: "start_failed" | "timed_out"): Promise<void> {
+		if (!turn.schedule_id || !turn.schedule_run_at) return;
+		// A Workflow that reports back later changes nothing: each run is recorded once.
+		await reportScheduledRunWithRetries(this.deps, { scheduleId: turn.schedule_id, runAt: turn.schedule_run_at, installationId: turn.installation_id }, { result: "failed", reason });
 	}
 
 	/** The running turn reports back. Stores its working memory and starts the next queued turn. */
@@ -315,8 +375,8 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	}
 
 	private async endTurn(turnId: number, outcome: TurnOutcome, now: number): Promise<boolean> {
-		const turn = this.sql.exec<TurnRow & { staged_reply: string | null; staged_tools: string | null; reply_ts: string | null }>(
-			`SELECT ${TURN_COLUMNS}, staged_reply, staged_tools, reply_ts FROM turns WHERE id = ? AND status = 'running'`, turnId,
+		const turn = this.sql.exec<TurnRow & { staged_reply: string | null; staged_tools: string | null; reply_ts: string | null; searches: number | null }>(
+			`SELECT ${TURN_COLUMNS}, staged_reply, staged_tools, reply_ts, searches FROM turns WHERE id = ? AND status = 'running'`, turnId,
 		).toArray()[0];
 		if (!turn) return false;
 		// A turn that staged its reply reports back with ids only.
@@ -339,7 +399,10 @@ export class ThreadCoordinator extends DurableObject<Env> {
 				if (question.leg) remember(question.leg);
 				if (question.ts) remember({ reply: questionMemory(question, turn.slack_user_id), ts: question.ts, tools: [] });
 			}
-			remember({ reply, ts: turn.reply_ts, tools });
+			// An answer that searched Slack can quote what it found, in its reply and in what its tools were given (a
+			// later query, a chart's title): only that it answered and which tools it used are kept (the reply is in the thread).
+			const searched = (turn.searches ?? 0) > 0;
+			remember({ reply: searched && reply?.trim() ? SEARCHED_REPLY_MEMORY : reply, ts: turn.reply_ts, tools: searched ? toolNames(tools) : tools });
 			this.sql.exec("DELETE FROM memory WHERE id NOT IN (SELECT id FROM memory ORDER BY id DESC LIMIT ?)", MAX_MEMORY_ENTRIES);
 			// The replies and questions are messages in the thread too.
 			const posted = [...questions.flatMap((question) => [question.leg?.ts ?? null, question.ts]), turn.reply_ts].filter((ts): ts is string => ts !== null);
@@ -390,6 +453,11 @@ export class ThreadCoordinator extends DurableObject<Env> {
 
 	private questions(turnId: number): QuestionState[] {
 		return this.sql.exec<{ state: string }>("SELECT state FROM questions WHERE turn_id = ? ORDER BY n", turnId).toArray().map((row) => JSON.parse(row.state) as QuestionState);
+	}
+
+	/** The files shared with the answers to a turn's questions, the latest answer's first. */
+	answeredFiles(turnId: number): SharedFileRef[] {
+		return this.questions(turnId).reverse().flatMap((question) => question.answer?.files ?? []);
 	}
 
 	/** A turn's question n, while the turn is queued or running. */
@@ -489,7 +557,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	 * may answer, and only once, while the question is open. The answer wakes the
 	 * turn's Workflow.
 	 */
-	async answerQuestion(input: { turnId: number; n: number; slackUserId: string; answer: QuestionAnswer; now?: number }): Promise<AnswerResult> {
+	async answerQuestion(input: { turnId: number; n: number; slackUserId: string; answer: QuestionAnswer; actionToken?: string; now?: number }): Promise<AnswerResult> {
 		const now = input.now ?? Date.now();
 		const running = this.running();
 		if (!running || running.id !== input.turnId) return { status: "closed", question: null, askerId: null };
@@ -501,13 +569,17 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			if (question.status !== "open" || expired || this.isCancelled(running.id)) return { status: "closed", question, askerId: running.slack_user_id };
 			const choice = input.answer.by === "button" && input.answer.choice !== null && question.options[input.answer.choice] !== undefined ? input.answer.choice : null;
 			if (input.answer.by === "button" && choice === null) return { status: "closed", question, askerId: running.slack_user_id };
-			const text = choice !== null ? question.options[choice] : input.answer.text.trim().slice(0, MAX_OWN_ANSWER_CHARS);
+			const files = input.answer.by === "message" ? (input.answer.files ?? []).slice(0, MAX_FILES_PER_MESSAGE) : [];
+			const text = choice !== null
+				? question.options[choice]
+				: input.answer.text.trim().slice(0, MAX_OWN_ANSWER_CHARS) || (files.length ? `(shared ${files.map((file) => file.name).join(", ")})` : "");
 			if (!text) return { status: "closed", question, askerId: running.slack_user_id };
 			question.status = "answered";
-			question.answer = { by: input.answer.by, choice, text };
+			question.answer = { by: input.answer.by, choice, text, ...(files.length ? { files } : {}) };
 			this.saveQuestion(running.id, question);
 			// The answer starts the turn's next run: its timeout counts from here.
 			this.sql.exec("UPDATE turns SET waiting_until = ? WHERE id = ?", now, running.id);
+			if (input.actionToken) this.sql.exec("UPDATE turns SET action_token = ? WHERE id = ?", input.actionToken, running.id);
 			return { status: "answered", turnId: running.id, question, askerId: running.slack_user_id };
 		});
 		if (result.status === "answered") {
@@ -520,13 +592,15 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	/**
 	 * A message from the person the running turn waits on, while its question is
 	 * open, is their answer. Null when it isn't one (no open question, or someone
-	 * else wrote it): it is a new message to answer.
+	 * else wrote it): it is a new message to answer. Its action token, if any,
+	 * replaces the turn's, so the run after the question searches with a fresh one.
 	 */
-	async answerWithMessage(input: { slackUserId: string; text: string; now?: number }): Promise<Extract<AnswerResult, { status: "answered" }> | null> {
+	async answerWithMessage(input: { slackUserId: string; text: string; files?: SharedFileRef[]; actionToken?: string; now?: number }): Promise<Extract<AnswerResult, { status: "answered" }> | null> {
 		const running = this.running();
 		const question = running ? this.openQuestion(running.id) : null;
-		if (!running || !question || running.slack_user_id !== input.slackUserId || !input.text.trim()) return null;
-		const result = await this.answerQuestion({ turnId: running.id, n: question.n, slackUserId: input.slackUserId, answer: { by: "message", choice: null, text: input.text }, now: input.now });
+		if (!running || !question || running.slack_user_id !== input.slackUserId || (!input.text.trim() && !input.files?.length)) return null;
+		const answer: QuestionAnswer = { by: "message", choice: null, text: input.text, ...(input.files?.length ? { files: input.files } : {}) };
+		const result = await this.answerQuestion({ turnId: running.id, n: question.n, slackUserId: input.slackUserId, answer, actionToken: input.actionToken, now: input.now });
 		return result.status === "answered" ? result : null;
 	}
 
@@ -558,19 +632,44 @@ export class ThreadCoordinator extends DurableObject<Env> {
 
 	/** What a turn works from, while it is queued or running: its message, thread history, reply and working memory. */
 	turnInput(turnId: number): TurnInput | null {
-		const row = this.sql.exec<{ text: string; context: string | null; reply_ts: string | null; staged_reply: string | null; staged_tools: string | null; attempt_costs: string | null }>(
-			"SELECT text, context, reply_ts, staged_reply, staged_tools, attempt_costs FROM turns WHERE id = ?", turnId,
+		const row = this.sql.exec<{ text: string; files: string | null; context: string | null; reply_ts: string | null; staged_reply: string | null; staged_tools: string | null; attempt_costs: string | null; posted_files: string | null }>(
+			"SELECT text, files, context, reply_ts, staged_reply, staged_tools, attempt_costs, posted_files FROM turns WHERE id = ?", turnId,
 		).toArray()[0];
 		if (!row) return null;
 		return {
 			text: row.text,
+			files: row.files ? JSON.parse(row.files) as SharedFileRef[] : [],
 			context: row.context ? storedContext(row.context) : null,
 			replyTs: row.reply_ts,
 			stagedReply: row.staged_reply,
 			stagedTools: row.staged_tools ? JSON.parse(row.staged_tools) as string[] : [],
 			attemptCosts: row.attempt_costs ? JSON.parse(row.attempt_costs) as Record<string, number> : {},
+			postedFiles: row.posted_files ? JSON.parse(row.posted_files) as PostedFile[] : [],
 			memory: this.workingMemory(),
 		};
+	}
+
+	/** The action token of a running turn's message, for search_slack. Null once the turn has ended, or when Slack sent none. */
+	actionToken(turnId: number): string | null {
+		const row = this.sql.exec<{ action_token: string | null }>("SELECT action_token FROM turns WHERE id = ? AND status = 'running'", turnId).toArray()[0];
+		return row?.action_token ?? null;
+	}
+
+	/**
+	 * Takes one of a running turn's Slack searches, while it has made fewer than
+	 * `max`: true when it may search. The count covers every run and retry of the
+	 * answer, so a run started again can't search afresh.
+	 */
+	reserveSearch(turnId: number, max: number): boolean {
+		return this.sql.exec(
+			"UPDATE turns SET searches = coalesce(searches, 0) + 1 WHERE id = ? AND status = 'running' AND coalesce(searches, 0) < ? RETURNING id", turnId, max,
+		).toArray().length > 0;
+	}
+
+	/** The searches a running turn has made (reserveSearch); null once the turn has ended. */
+	searchCount(turnId: number): number | null {
+		const row = this.sql.exec<{ searches: number | null }>("SELECT searches FROM turns WHERE id = ? AND status = 'running'", turnId).toArray()[0];
+		return row ? row.searches ?? 0 : null;
 	}
 
 	/** The thread's recent messages for one turn; deleted with the turn. */
@@ -581,6 +680,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			...(entry.name ? { name: entry.name } : {}),
 			text: entry.text.slice(0, MAX_CONTEXT_CHARS),
 			ts: entry.ts,
+			...(entry.files?.length ? { files: entry.files.slice(0, MAX_FILES_PER_MESSAGE) } : {}),
 		});
 		const kept: ThreadContext = {
 			root: context.root ? trim(context.root) : null,
@@ -660,6 +760,22 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		});
 	}
 
+	/**
+	 * A chart or image the answer made, kept for every later attempt and run of it:
+	 * a retried run is told what is already in the thread, and the answer's image
+	 * limit counts the images of every run.
+	 */
+	recordPostedFile(turnId: number, file: PostedFile): void {
+		this.ctx.storage.transactionSync(() => {
+			const row = this.sql.exec<{ posted_files: string | null }>("SELECT posted_files FROM turns WHERE id = ?", turnId).toArray()[0];
+			if (!row) return;
+			const files = row.posted_files ? JSON.parse(row.posted_files) as PostedFile[] : [];
+			if (file.kind === "chart" && files.filter((entry) => entry.kind === "chart").length >= MAX_POSTED_CHARTS) return;
+			files.push({ kind: file.kind, title: file.title.slice(0, MAX_TOOL_CHARS), shown: file.shown });
+			this.sql.exec("UPDATE turns SET posted_files = ? WHERE id = ?", JSON.stringify(files), turnId);
+		});
+	}
+
 	/** The bot's earlier replies and tool summaries in this thread, oldest first. */
 	workingMemory(): MemoryEntry[] {
 		return this.sql.exec<MemoryEntry>("SELECT kind, text, at, ts FROM memory ORDER BY id").toArray();
@@ -678,6 +794,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		if (running && deadline !== null && deadline <= now) {
 			console.warn("[slack-agent] turn timed out", { turnId: running.id, installationId: running.installation_id });
 			await this.endTurn(running.id, { status: "failed" }, now);
+			await this.reportGivenUp(running, "timed_out");
 			await this.startNext(now);
 		}
 		const lastActivity = Number(this.meta("last_activity") ?? 0);

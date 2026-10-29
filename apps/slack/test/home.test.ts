@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { sectionTexts } from "../src/home";
 import { processEvent, type SlackEnvelope } from "../src/events";
 import { hostedApp, type Installation } from "../src/installations";
 import { BOT_USER_ID, eventEnvelope, INSTALLATION_ID, installationRow, testWorld, WORKSPACE_ID, type TestWorld } from "./fakes";
@@ -99,6 +100,12 @@ describe("the Home tab", () => {
 		await install({ model_choice_enabled: true, allowed_models: ["anthropic/claude-test", "openai/gpt-6-luna"] });
 		await openHome();
 		expect(published().text).toContain("*Choose a model:* start a message with `with &lt;model&gt;:` and one of Claude Test, GPT-6 Luna &amp; &lt;Co&gt;, for example `with Claude Test: …`.");
+		expect(published().text).toContain("*Compare models:* start a message with `compare &lt;model&gt;, &lt;model&gt;:` and 2 or 3 of them, for example `compare Claude Test, GPT-6 Luna &amp; &lt;Co&gt;: …`. Each answers your question, in one reply.");
+		// With one model to choose, there is nothing to compare.
+		await install({ model_choice_enabled: true, allowed_models: ["anthropic/claude-test"] });
+		await openHome();
+		expect(published().text).toContain("*Choose a model:*");
+		expect(published().text).not.toContain("Compare models");
 		// The agent's own model name is escaped too.
 		await install({ model: "openai/gpt-6-luna" });
 		await openHome();
@@ -109,6 +116,15 @@ describe("the Home tab", () => {
 		await install({ status: "paused" });
 		await openHome();
 		expect(published().text).toContain("The agent is paused in this Slack workspace.");
+	});
+
+	it("splits long text across sections, each within Slack's 3,000-character limit, never splitting a line", () => {
+		const lines = ["*Your recurring tasks*", ...Array.from({ length: 12 }, (_, index) => `• *Task ${index}* ${"x".repeat(290)}`), "_Ask the agent to list or cancel them._"];
+		const texts = sectionTexts(lines);
+		expect(texts.length).toBeGreaterThan(1);
+		for (const text of texts) expect(text.length).toBeLessThanOrEqual(3_000);
+		expect(texts.join("\n")).toBe(lines.join("\n"));
+		expect(sectionTexts(["short", "lines"])).toEqual(["short\nlines"]);
 	});
 
 	it("ignores the Messages tab, and events it can't place", async () => {

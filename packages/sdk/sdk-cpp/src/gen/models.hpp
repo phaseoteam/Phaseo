@@ -140,6 +140,7 @@ struct ApiKey {
 	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
+	std::vector<std::map<std::string, std::any>> ip_allowlist;
 	std::optional<std::string> label;
 	std::optional<std::string> last_used_at;
 	std::optional<double> limit;
@@ -175,6 +176,8 @@ struct ApiKeyCreateRequest {
 	std::vector<std::string> storage_locations;
 	std::string workspace_id;
 };
+
+using ApiKeyIpAllowlist = std::any;
 
 struct ApiKeyLimitBucket {
 	std::optional<double> cost;
@@ -226,6 +229,7 @@ struct ApiKeyUpdateRequest {
 	std::optional<bool> disabled;
 	std::optional<std::string> expires_at;
 	std::optional<bool> include_byok_in_limit;
+	std::vector<std::map<std::string, std::any>> ip_allowlist;
 	std::optional<double> limit;
 	std::any limit_reset;
 	std::map<std::string, std::any> limits;
@@ -257,6 +261,7 @@ struct ApiKeyWithValue {
 	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
+	std::vector<std::map<std::string, std::any>> ip_allowlist;
 	std::string key;
 	std::optional<std::string> label;
 	std::optional<std::string> last_used_at;
@@ -379,6 +384,59 @@ struct AudioTranslationRequest {
 
 struct AudioTranslationResponse {
 	std::string text;
+};
+
+struct AuthorizedApp {
+	std::string app_name;
+	std::string authorized_at;
+	std::string client_id;
+	std::optional<bool> current;
+	std::string id;
+	std::optional<std::string> last_used_at;
+	std::vector<std::string> scopes;
+	std::string workspace_id;
+	std::optional<std::string> workspace_name;
+};
+
+struct AuthorizedAppListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct AuthorizedAppRevokedResponse {
+	std::string id;
+	std::optional<bool> revoked;
+};
+
+struct AuthorizedAppScopesRequest {
+	std::vector<std::string> scopes;
+};
+
+struct AuthorizedAppScopesResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct AutoRoutingSettings {
+	std::optional<bool> allow_fallbacks;
+	std::vector<std::string> allowed_patterns;
+	std::optional<double> max_input_price_per_million;
+	std::optional<double> max_output_price_per_million;
+	std::any objective;
+	std::optional<std::string> revision;
+	std::any spend_profile;
+	std::optional<std::string> updated_at;
+};
+
+struct AutoRoutingSettingsResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct AutoRoutingSettingsUpdateRequest {
+	std::optional<bool> allow_fallbacks;
+	std::vector<std::string> allowed_patterns;
+	std::optional<double> max_input_price_per_million;
+	std::optional<double> max_output_price_per_million;
+	std::any objective;
+	std::any spend_profile;
 };
 
 struct BatchBillingSummary {
@@ -744,6 +802,16 @@ struct ClassifierScope {
 	std::vector<std::string> models;
 };
 
+struct ClassifierTestRequest {
+	std::map<std::string, std::any> classifier;
+	std::string classifier_id;
+	std::map<std::string, std::any> sample;
+};
+
+struct ClassifierTestResponse {
+	std::map<std::string, std::any> data;
+};
+
 struct ClassifierUpdateInput {
 	std::optional<std::string> description;
 	std::vector<std::map<std::string, std::any>> dimensions;
@@ -766,6 +834,38 @@ struct ClassifierValue {
 struct CreditsResponse {
 	std::map<std::string, std::any> credits;
 	std::any ok;
+};
+
+struct CreditTopup {
+	int amount_cents;
+	double amount_usd;
+	std::optional<std::string> checkout_url;
+	std::optional<int> confirmation_recipients;
+	std::string created_at;
+	std::string currency;
+	std::optional<std::string> decided_at;
+	std::string expires_at;
+	bool final;
+	std::any flow;
+	std::string id;
+	std::string message;
+	std::optional<std::any> next_action;
+	std::optional<std::string> paid_at;
+	std::optional<std::map<std::string, std::any>> payment_method;
+	std::optional<std::string> reason;
+	std::any status;
+	std::string workspace_id;
+};
+
+struct CreditTopupCreateRequest {
+	double amount_usd;
+	std::string idempotency_key;
+	std::string workspace_id;
+};
+
+struct CreditTopupResponse {
+	std::any ok;
+	std::map<std::string, std::any> topup;
 };
 
 struct DataContributionCategories {
@@ -1968,6 +2068,18 @@ struct KeyInvalidateResponse {
 
 using KnownModelId = std::any;
 
+struct LeakedKeyReportRequest {
+	std::string comment;
+	std::string evidence_url;
+	std::string reporter_email;
+	std::string source;
+	std::string token;
+};
+
+struct LeakedKeyReportResponse {
+	std::any status;
+};
+
 struct LegacyDecisionBoxQuestion {
 	std::any instructions;
 	std::any type;
@@ -2124,6 +2236,10 @@ struct ManagementKeyUpdateRequest {
 struct ManagementKeyUpdateResponse {
 	std::string message;
 	std::any ok;
+};
+
+struct MeResponse {
+	std::map<std::string, std::any> data;
 };
 
 using MessageContentPart = std::any;
@@ -2294,6 +2410,23 @@ struct MusicGenerateResponse {
 	std::map<std::string, std::any> usage;
 };
 
+struct MyJoinRequest {
+	std::string created_at;
+	std::optional<std::string> decided_at;
+	std::string id;
+	std::any status;
+	std::string workspace_id;
+	std::optional<std::string> workspace_name;
+};
+
+struct MyJoinRequestCreatedResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct MyJoinRequestListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
 struct NotImplementedResponse {
 	std::string description;
 	std::string error;
@@ -2449,6 +2582,15 @@ struct ObservabilityDestinationPolicyInput {
 };
 
 struct ObservabilityDestinationResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct ObservabilityDestinationTestRequest {
+	std::map<std::string, std::any> config;
+	std::any type;
+};
+
+struct ObservabilityDestinationTestResponse {
 	std::map<std::string, std::any> data;
 };
 
@@ -2667,6 +2809,34 @@ struct PresetForkRequest {
 	std::string source_version_id;
 };
 
+struct PresetLabel {
+	std::optional<std::string> created_at;
+	std::string label;
+	std::optional<std::string> updated_at;
+	std::optional<std::string> updated_by;
+	std::string version_id;
+	std::optional<std::string> version_label;
+	std::optional<int> version_number;
+};
+
+struct PresetLabelDeleteResponse {
+	bool deleted;
+	std::string label;
+};
+
+struct PresetLabelListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct PresetLabelResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct PresetLabelSetRequest {
+	std::string version;
+	std::string version_id;
+};
+
 struct PresetListResponse {
 	std::vector<std::map<std::string, std::any>> data;
 	int total_count;
@@ -2789,6 +2959,7 @@ struct PresetVersion {
 	std::string created_by;
 	std::optional<std::string> description;
 	std::string id;
+	std::vector<std::string> labels;
 	std::string name;
 	std::string preset_id;
 	std::optional<std::string> release_notes;
@@ -2902,6 +3073,7 @@ struct PromptCacheOptions {
 struct PromptTemplateReference {
 	std::string id;
 	std::map<std::string, std::any> variables;
+	std::string version;
 };
 
 struct Provider {
@@ -3116,6 +3288,10 @@ struct RateLimitPolicyUpdateInput {
 
 using RateLimitTargetType = std::any;
 
+struct RateLimitTierResponse {
+	std::map<std::string, std::any> data;
+};
+
 struct ReasoningConfig {
 	std::optional<std::any> effort;
 	std::optional<bool> enabled;
@@ -3301,6 +3477,38 @@ struct ServerToolUsage {
 	std::optional<int> web_search_requests;
 };
 
+struct SpendBlock {
+	bool active;
+	bool block_free_models;
+	std::string id;
+	std::optional<std::any> lift_reason;
+	std::optional<std::string> lifted_at;
+	std::optional<std::string> lifted_by;
+	int limit_nanos;
+	double limit_usd;
+	std::string period_start;
+	std::optional<std::string> resets_at;
+	std::optional<std::string> rule_id;
+	std::optional<std::string> rule_name;
+	std::optional<std::string> scope_id;
+	std::string scope_label;
+	std::any scope_type;
+	int spend_nanos;
+	double spend_usd;
+	std::string started_at;
+	std::string workspace_id;
+};
+
+using SpendBlockLiftReason = std::any;
+
+struct SpendBlockListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct SpendBlockResponse {
+	std::map<std::string, std::any> data;
+};
+
 struct SpendRule {
 	std::any action;
 	std::optional<int> base_amount_nanos;
@@ -3475,6 +3683,30 @@ struct SubagentToolDefinition {
 	std::any type;
 };
 
+struct SuccessorReplacement {
+	std::string model;
+	std::optional<std::string> successor;
+};
+
+struct SuccessorReplacementListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct SuccessorReplacementRemovedResponse {
+	std::optional<bool> deleted;
+	std::string model;
+};
+
+struct SuccessorReplacementResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SuccessorReplacementRow {
+	std::string model;
+	std::optional<std::string> successor;
+	std::optional<std::string> updated_at;
+};
+
 struct SupportedParameterDetails {
 };
 
@@ -3571,6 +3803,23 @@ struct Usage {
 
 struct UsageCostDetails {
 	std::optional<double> upstream_inference_cost;
+};
+
+struct UserProfile {
+	std::optional<std::string> default_workspace_id;
+	std::optional<std::string> display_name;
+	std::optional<bool> obfuscate_info;
+	std::string user_id;
+};
+
+struct UserProfileResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct UserProfileUpdateRequest {
+	std::optional<std::string> default_workspace_id;
+	std::string display_name;
+	std::optional<bool> obfuscate_info;
 };
 
 struct VideoBillingSummary {
@@ -3807,6 +4056,54 @@ struct WebSearchPlugin {
 	std::optional<int> max_uses;
 	std::any search_context_size;
 };
+
+struct WorkloadIdentityPolicy {
+	std::string audience;
+	std::map<std::string, std::any> claim_conditions;
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::string id;
+	std::string issuer;
+	std::string key_id;
+	std::optional<std::string> last_used_at;
+	int max_token_lifetime_seconds;
+	std::string name;
+	std::string owner_id;
+	std::any provider;
+	std::any status;
+	std::string updated_at;
+};
+
+struct WorkloadIdentityPolicyDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct WorkloadIdentityPolicyInput {
+	std::map<std::string, std::any> claim_conditions;
+	std::string issuer;
+	std::optional<int> max_token_lifetime_seconds;
+	std::string name;
+	std::string owner_id;
+	std::any provider;
+};
+
+struct WorkloadIdentityPolicyListResponse {
+	std::string audience;
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct WorkloadIdentityPolicyResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct WorkloadIdentityPolicyUpdateInput {
+	std::map<std::string, std::any> claim_conditions;
+	std::optional<int> max_token_lifetime_seconds;
+	std::string name;
+	std::any status;
+};
+
+using WorkloadIdentityProvider = std::any;
 
 struct Workspace {
 	std::optional<std::string> created_at;
@@ -4123,6 +4420,10 @@ struct WorkspaceInvite {
 	std::optional<std::string> token_preview;
 	std::optional<int> uses_count;
 	std::string workspace_id;
+};
+
+struct WorkspaceInviteAcceptRequest {
+	std::string token;
 };
 
 struct WorkspaceInviteCreateRequest {

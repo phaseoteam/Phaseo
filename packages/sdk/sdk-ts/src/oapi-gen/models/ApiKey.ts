@@ -8,6 +8,10 @@ export interface ApiKey {
   hash: string;
   id: string;
   include_byok_in_limit: boolean;
+  ip_allowlist?: {
+    address: string;
+    label: string;
+  }[];
   label: string | null;
   last_used_at: string | null;
   limit: number | null;

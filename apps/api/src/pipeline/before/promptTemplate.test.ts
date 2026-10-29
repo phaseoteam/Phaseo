@@ -67,13 +67,52 @@ describe("extractPromptReference", () => {
 		expect(extractPromptReference(image, "images.generations")).toEqual({ ok: true, rawBody: image, reference: null });
 	});
 
-	it("rejects a conflicting model and version pins", () => {
+	it("rejects a conflicting model", () => {
 		const conflict = extractPromptReference({ model: "openai/gpt-5.4", prompt: { id: "@support-triage" } }, "chat.completions");
 		expect(conflict.ok === false && conflict.issue.reason).toBe("prompt_model_conflict");
 		const same = extractPromptReference({ model: "@Support-Triage", prompt: { id: "@support-triage" } }, "chat.completions");
 		expect(same.ok).toBe(true);
-		const pinned = extractPromptReference({ prompt: { id: "@support-triage", version: "3" } }, "chat.completions");
-		expect(pinned.ok === false && pinned.issue.reason).toBe("prompt_version_unsupported");
+		const otherPreset = extractPromptReference({ model: "@billing@v2", prompt: { id: "@support-triage", version: "v2" } }, "chat.completions");
+		expect(otherPreset.ok === false && otherPreset.issue.reason).toBe("prompt_model_conflict");
+	});
+
+	it("pins the whole preset version from prompt.version", () => {
+		for (const version of ["v3", "1.2.0", "1.2.0-beta.1+build.5", "2026.10.27", "2026.10.27.2", "production"]) {
+			const result = extractPromptReference({ prompt: { id: "@support-triage", version: `  ${version} ` } }, "chat.completions");
+			expect(result.ok && result.rawBody.model).toBe(`@support-triage@${version}`);
+			expect(result.ok && result.reference).toMatchObject({ id: "@support-triage", version });
+		}
+		const publicRef = extractPromptReference({ prompt: { id: "@acme/support-triage", version: "production" } }, "responses");
+		expect(publicRef.ok && publicRef.rawBody.model).toBe("@acme/support-triage@production");
+		const unpinned = extractPromptReference({ prompt: { id: "@support-triage", version: null } }, "chat.completions");
+		expect(unpinned.ok && [unpinned.rawBody.model, unpinned.reference?.version]).toEqual(["@support-triage", null]);
+	});
+
+	it("accepts model as the reference, with or without the same pin", () => {
+		for (const model of ["@support-triage", "@support-triage@v3", "@Support-Triage@v3"]) {
+			const result = extractPromptReference({ model, prompt: { id: "@support-triage", version: "v3" } }, "chat.completions");
+			expect(result.ok && result.rawBody.model.toLowerCase()).toBe("@support-triage@v3");
+		}
+		const modelPin = extractPromptReference({ model: "@support-triage@staging", prompt: { id: "@support-triage" } }, "chat.completions");
+		expect(modelPin.ok && [modelPin.rawBody.model, modelPin.reference?.version]).toEqual(["@support-triage@staging", "staging"]);
+		const idPin = extractPromptReference({ prompt: { id: "@support-triage@v2" } }, "chat.completions");
+		expect(idPin.ok && [idPin.rawBody.model, idPin.reference?.id, idPin.reference?.version]).toEqual(["@support-triage@v2", "@support-triage", "v2"]);
+	});
+
+	it("rejects a different pin in model and prompt.version", () => {
+		const result = extractPromptReference({ model: "@support-triage@v2", prompt: { id: "@support-triage", version: "v3" } }, "chat.completions");
+		expect(result.ok === false && result.issue).toMatchObject({ reason: "prompt_model_conflict", path: ["model"] });
+		const idConflict = extractPromptReference({ prompt: { id: "@support-triage@v2", version: "v3" } }, "chat.completions");
+		expect(idConflict.ok === false && idConflict.issue.reason).toBe("prompt_model_conflict");
+	});
+
+	it("rejects malformed versions", () => {
+		for (const version of [3, "", "   ", "a".repeat(65), "has space", "v3@x", "../v1", { label: "v1" }]) {
+			const result = extractPromptReference({ prompt: { id: "@support-triage", version } }, "chat.completions");
+			expect(result.ok === false && result.issue).toMatchObject({ reason: "prompt_version_invalid", path: ["prompt", "version"] });
+		}
+		const empty = extractPromptReference({ model: "@support-triage@", prompt: { id: "@support-triage" } }, "chat.completions");
+		expect(empty.ok === false && empty.issue.reason).toBe("prompt_version_invalid");
 	});
 });
 

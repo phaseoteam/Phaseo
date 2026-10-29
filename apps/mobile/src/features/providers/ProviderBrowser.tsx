@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { LegendList } from "@legendapp/list/react-native";
 import { usePathname } from "expo-router";
-import { Server } from "lucide-react-native";
+import { CircleCheck, KeyRound, Server, ShieldCheck } from "lucide-react-native";
 import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
-import { Pressable, RefreshControl, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Badge, Chip, ChipRow, EmptyState, ErrorState, Header, Screen, SearchField, SkeletonRows, Text } from "@/components/ui";
@@ -44,9 +44,9 @@ export function ProviderBrowser() {
       <Header large title="Providers" subtitle={providers.data ? `${list.length} of ${providers.data.length}` : null} />
       <View className="px-4 pb-2"><SearchField value={query} onChangeText={setQuery} placeholder="Search providers" /></View>
       <ChipRow className="pb-2">
-        <Chip label="On Phaseo" selected={filter === "phaseo"} onPress={() => setFilter(filter === "phaseo" ? "all" : "phaseo")} />
-        <Chip label="Zero data retention" selected={filter === "zdr"} onPress={() => setFilter(filter === "zdr" ? "all" : "zdr")} />
-        <Chip label="Bring your own key" selected={filter === "byok"} onPress={() => setFilter(filter === "byok" ? "all" : "byok")} />
+        <Chip label="On Phaseo" icon={CircleCheck} selected={filter === "phaseo"} onPress={() => setFilter(filter === "phaseo" ? "all" : "phaseo")} />
+        <Chip label="Zero data retention" icon={ShieldCheck} selected={filter === "zdr"} onPress={() => setFilter(filter === "zdr" ? "all" : "zdr")} />
+        <Chip label="Bring your own key" icon={KeyRound} selected={filter === "byok"} onPress={() => setFilter(filter === "byok" ? "all" : "byok")} />
       </ChipRow>
       {providers.isLoading ? <SkeletonRows /> : providers.isError && !providers.data ? <ErrorState error={providers.error} onRetry={() => void providers.refetch()} /> : (
         <LegendList
@@ -57,7 +57,6 @@ export function ProviderBrowser() {
           estimatedItemSize={63}
           recycleItems
           keyboardDismissMode="on-drag"
-          refreshControl={<RefreshControl refreshing={providers.isRefetching} onRefresh={() => void providers.refetch()} />}
           ListEmptyComponent={<EmptyState icon={Server} title="No providers match" body="Try another search or filter." />}
           contentContainerStyle={{ paddingBottom: 24 }}
         />

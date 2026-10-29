@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "Ermöglicht dieser Anwendung zu prüfen, wer sich anmeldet.",
 			"gatewayPermissionLabel": "AI Gateway mit deinen Credits verwenden",
 			"gatewayPermissionDescription": "Ermöglicht der Anwendung, Modellanfragen über das Guthaben des ausgewählten Teams abzurechnen.",
+			"billingPermissionLabel": "Guthabenaufladungen starten",
+			"billingPermissionDescription": "Ermöglicht der Anwendung, Guthabenkäufe für das ausgewählte Team anzufordern. Jede Belastung muss ein Owner oder Admin des Teams per E-Mail bestätigen.",
 			"readPermissionLabel": "{resource} lesen",
 			"readPermissionDescription": "Ermöglicht dieser Anwendung, {resource} zu lesen.",
 			"managePermissionLabel": "{resource} verwalten",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth-Apps",
 					"description": "Konfiguration von OAuth-Clients und Integrationen."
+				},
+				"billing": {
+					"title": "Abrechnung",
+					"description": "Guthabenkäufe, die ein Owner oder Admin des Teams per E-Mail bestätigt."
 				}
 			},
 			"resources": {
@@ -634,6 +640,7 @@
 				"providerCredentials": "Anbieter-Zugangsdaten",
 				"guardrails": "Leitplanken und Richtlinieneinstellungen",
 				"budgets": "Team-Ausgabenbudgets und Nutzung",
+				"spendRules": "Ausgabenregeln für Warnungen und Sperren",
 				"managementKeys": "Metadaten der Verwaltungsschlüssel auf Maschinenebene",
 				"oauthApps": "OAuth-App- und Integrationseinstellungen",
 				"privateModels": "private Modelle des Arbeitsbereichs"
@@ -2422,6 +2429,8 @@
 			"selectModelsToCompare": "Wähle Modelle zum Vergleichen aus.",
 			"viewFullLeaderboard": "Vollständige Rangliste ansehen",
 			"sourceArtificialAnalysis": "Quelle: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "Über Jahre und Indexversionen hinweg vergleichbar",
 			"fullLeaderboard": "Vollständige Rangliste",
 			"noModelsMatchThisSearch": "Keine Modelle entsprechen dieser Suche.",
 			"noResultsAvailableForThisMetric": "Für diese Kennzahl sind keine Ergebnisse verfügbar.",

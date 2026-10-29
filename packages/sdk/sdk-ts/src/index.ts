@@ -50,6 +50,8 @@ import { PhaseoHttpError, Client, type RawResponse } from "./runtime/client.js";
 import { createTransport, type RequestControls } from "./runtime/transport.js";
 import { withApiKeyProvider, type ApiKeyProvider } from "./runtime/auth.js";
 import { JobHandle } from "./jobHandle.js";
+import { SDK_VERSION } from "./version.js";
+import { openRealtimeSession, type RealtimeConnectOptions, type RealtimeSession, type RealtimeSessionInfo } from "./realtime.js";
 import { paginateItems, paginatePages, type PageOptions } from "./pagination.js";
 import {
   parseOutput,
@@ -63,6 +65,23 @@ import {
   type ParameterSupportReport,
 } from "./helpers.js";
 export { JobHandle } from "./jobHandle.js";
+export { SDK_VERSION } from "./version.js";
+export {
+  RealtimeSession,
+  RealtimeSessionClosedError,
+  connectRealtimeSession,
+  realtimeFinalBill,
+  type RealtimeConnectOptions,
+  type RealtimeEndOptions,
+  type RealtimeEvent,
+  type RealtimeFinalBill,
+  type RealtimeSessionConnectOptions,
+  type RealtimeSessionEndedEvent,
+  type RealtimeSessionInfo,
+  type RealtimeSessionWarningEvent,
+  type RealtimeWebSocket,
+  type RealtimeWebSocketConstructor,
+} from "./realtime.js";
 export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
 export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
 export type { ApiKeyProvider } from "./runtime/auth.js";
@@ -227,7 +246,10 @@ export type ChatStreamChunk = Record<string, unknown> & {
   reasoningTokens?: number | null;
 };
 export type ResponseStreamChunk = Record<string, unknown> & {
+  /** Text added by this event. Empty on `.done` and `response.completed` events, which repeat streamed text. */
   text: string;
+  /** Full text carried by a `.done` event such as `response.output_text.done`. */
+  fullText?: string;
   usage?: GatewayStreamUsage | null;
   reasoningTokens?: number | null;
 };
@@ -633,6 +655,22 @@ export class Phaseo {
     ): Promise<unknown> => this.getProviderDerankStatus(providerId, params),
   };
 
+  /** Realtime voice sessions (beta): create a session and talk to it over the relay WebSocket. */
+  readonly realtime = {
+    /**
+     * Server only: creates a session and returns it with its single-session `client_secret`, without opening the socket.
+     * Hand the result to a browser, which joins with `connectRealtimeSession(info)` and never sees your API key.
+     */
+    createSession: (options: Omit<RealtimeConnectOptions, "webSocket" | "connectTimeoutMs">): Promise<RealtimeSessionInfo> =>
+      ops.createRealtimeSession(this.client, { body: options }),
+    /** Server only (it sends your API key): creates the session and opens the relay socket; resolves once the relay sends `relay.connected`. */
+    connect: async (options: RealtimeConnectOptions): Promise<RealtimeSession> => {
+      const { webSocket, connectTimeoutMs, ...body } = options;
+      const info: RealtimeSessionInfo = await ops.createRealtimeSession(this.client, { body });
+      return openRealtimeSession(this.basePath, info, { webSocket, connectTimeoutMs });
+    },
+  };
+
   readonly asyncJobs = {
     websocketUrl: (kind: AsyncJobKind, jobId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl(kind, jobId, options),
@@ -646,7 +684,7 @@ export class Phaseo {
     this.headers = {
       ...(typeof apiKey === "string" ? { Authorization: `Bearer ${apiKey}` } : {}),
       "X-Phaseo-Client": "phaseo-typescript",
-      "X-Phaseo-Client-Version": "2.2.0",
+      "X-Phaseo-Client-Version": SDK_VERSION,
       ...appAttributionHeaders(opts.app),
       ...(opts.headers ?? {}),
     };
@@ -664,7 +702,7 @@ export class Phaseo {
     this.modelLifecycleChecks = opts.modelLifecycleChecks ?? true;
     this.logger = opts.logger;
 
-    this.telemetry = new TelemetryCapture(opts.devtools, "3.0.0");
+    this.telemetry = new TelemetryCapture(opts.devtools, SDK_VERSION);
 
   }
 
@@ -1258,7 +1296,10 @@ export class Phaseo {
     // An SSE event is named on its `event:` line; data that does not name itself takes that name.
     let eventName: string | undefined;
     for await (const line of this.streamResponse(req, options)) {
-      if (line.startsWith("event:")) eventName = line.slice(6).trim() || undefined;
+      if (line.startsWith("event:")) {
+        eventName = line.slice(6).trim() || undefined;
+        continue;
+      }
       const isData = line.startsWith("data:");
       const chunk = parseResponseStreamLine(line, isData ? eventName : undefined);
       if (isData) eventName = undefined;
@@ -1754,11 +1795,13 @@ function parseResponseStreamLine(line: string, eventName?: string): ResponseStre
     };
   }
 
-  const usage = extractUsage(parsed);
+  const event = eventName && typeof parsed.type !== "string" ? { ...parsed, type: eventName } : parsed;
+  const usage = extractUsage(event);
   return {
-    ...parsed,
-    ...(eventName && typeof parsed.type !== "string" ? { type: eventName } : {}),
-    text: extractResponseChunkText(parsed),
+    ...event,
+    // A `.done` event repeats text already streamed as deltas; `text` stays empty and the full text moves to `fullText`.
+    ...(isDoneEvent(event) && typeof event.text === "string" ? { fullText: event.text } : {}),
+    text: extractResponseChunkText(event),
     usage,
     reasoningTokens: extractReasoningTokens(usage)
   };
@@ -1802,7 +1845,11 @@ function appendMultipartFields(form: FormData, fields: object): void {
   }
 }
 
+// SSE field lines that never carry a payload: `event:`, `id:`, `retry:` and `:` comments.
+const SSE_NON_DATA_LINE = /^(?:event|id|retry)?:/;
+
 function parseSseJson(line: string): unknown | null {
+  if (!line.startsWith("data:") && SSE_NON_DATA_LINE.test(line.trimStart())) return null;
   const data = line.startsWith("data:") ? line.slice(5).trim() : line.trim();
   if (!data || data === "[DONE]") return null;
   try {
@@ -1823,8 +1870,19 @@ function extractChatChunkText(chunk: Record<string, unknown>): string {
     .join("");
 }
 
+function isDoneEvent(chunk: Record<string, unknown>): boolean {
+  return typeof chunk.type === "string" && chunk.type.endsWith(".done");
+}
+
+/**
+ * Text streamed by this event. Only delta events add text: `.done`, `response.completed` and
+ * other typed events repeat what the deltas already sent, so summing `text` gives the answer once.
+ */
 function extractResponseChunkText(chunk: Record<string, unknown>): string {
+  // Reasoning and function-call argument deltas are not reply text.
+  if (typeof chunk.type === "string" && chunk.type.endsWith(".delta") && chunk.type !== "response.output_text.delta") return "";
   if (typeof chunk.delta === "string") return chunk.delta;
+  if (typeof chunk.type === "string" && !chunk.type.endsWith(".delta")) return "";
   if (typeof chunk.text === "string") return chunk.text;
   if (typeof chunk.output_text === "string") return chunk.output_text;
   if (isRecord(chunk.response) && typeof chunk.response.output_text === "string") {

@@ -31,11 +31,11 @@ Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden 
 
 Sind die täglichen, wöchentlichen oder monatlichen Anfrage- und Ausgabenlimits eines API-Schlüssels oder die [Budgets](./endpoint/budgets-list.mdx) des Arbeitsbereichs erreicht, wird `429` mit dem Fehlercode `key_limit_exceeded` zurückgegeben. Die Felder `reason`, `limit_window` und `reset_at` im Antworttext nennen das Limit und den Zeitpunkt, zu dem sein Zeitraum zurückgesetzt wird. `Retry-After` gibt die Sekunden bis zu diesem Zurücksetzen an. Der Header fehlt, wenn sich das Limit nicht von selbst zurücksetzt, etwa bei einem Gesamtbudget oder einem vorübergehend gesperrten Schlüssel; erhöhe dann statt eines erneuten Versuchs das Arbeitsbereichsbudget oder, bei einem Schlüssellimit, das Limit des Schlüssels, oder verwende einen anderen Schlüssel.
 
-Eigentümer und Administratoren des Arbeitsbereichs können Budgets auch im Dashboard unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) festlegen, ändern und löschen. Die Seite zeigt für jedes Budget die bisherigen Ausgaben, den genutzten Anteil, eine Hochrechnung für den Zeitraum und den Zeitpunkt des Zurücksetzens. Tages-, Wochen- und Monatsbudgets werden an UTC-Grenzen zurückgesetzt: um Mitternacht, montags um 00:00 und am 1. des Monats.
+Eigentümer und Administratoren des Arbeitsbereichs können Budgets auch im Dashboard unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) festlegen, ändern und löschen. Die Seite zeigt für jedes Budget die bisherigen Ausgaben, den genutzten Anteil, eine Hochrechnung für den Zeitraum und den Zeitpunkt des Zurücksetzens. Tages-, Wochen- und Monatsbudgets werden an UTC-Grenzen zurückgesetzt: um Mitternacht, montags um 00:00 und am 1. des Monats. Über die CLI: `phaseo budgets create|update|delete`.
 
 Abteilungsbudgets, die über die API `/v1/department-budgets` verwaltet werden, lehnen keine Anfragen ab. Die Ausgaben einer Abteilung umfassen dieselben Schlüssel und OAuth-Anfragen wie die unten beschriebenen Ratenlimits für Abteilungen. Inhaber und Administratoren erhalten eine mobile Push-Benachrichtigung bei etwa 80 % und erneut bei 100 % eines täglichen, wöchentlichen oder monatlichen Budgets. Die Ausgaben stammen aus Nutzungsdaten, die bis zu einer Stunde verzögert sein können.
 
-Inhaber und Admins können Abteilungsbudgets auch unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) verwalten oder mit der Ressource `phaseo_department_budget` des Terraform-Providers.
+Inhaber und Admins können Abteilungsbudgets auch unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) verwalten oder mit der Ressource `phaseo_department_budget` des Terraform-Providers. Über die CLI: `phaseo department-budgets`.
 
 ## Ratenlimit-Richtlinien
 
@@ -47,7 +47,7 @@ Workspace-Admins können über die Management-API `/v1/rate-limits` benannte Rat
 - **Sicherheitsleitplanke:** ein eigenes Kontingent für jeden Schlüssel (oder OAuth-Nutzer), den die Leitplanke abdeckt.
 - **Standard pro Endnutzer:** ein eigenes Kontingent für jeden Endnutzer, erkannt am Feld `user` der Anfrage oder am Header `X-Phaseo-User-Id`. Anfragen ohne Endnutzer-ID werden dadurch nicht begrenzt.
 
-Inhaber und Admins können Richtlinien und ihre Zuweisungen auch unter [Einstellungen → Ratenlimits](https://phaseo.app/settings/rate-limits) verwalten oder mit den Ressourcen `phaseo_rate_limit_policy` und `phaseo_rate_limit_assignment` des Terraform-Providers.
+Inhaber und Admins können Richtlinien und ihre Zuweisungen auch unter [Einstellungen → Ratenlimits](https://phaseo.app/settings/rate-limits) verwalten oder mit den Ressourcen `phaseo_rate_limit_policy` und `phaseo_rate_limit_assignment` des Terraform-Providers. Über die CLI: `phaseo rate-limits policies` und `phaseo rate-limits assignments`.
 
 Gelten mehrere Richtlinien, wird jede gezählt, und die erste ausgeschöpfte lehnt die Anfrage ab. Richtlinienlimits gelten zusätzlich zu den Gateway-Limits oben. Änderungen an Richtlinien werden innerhalb von etwa einer Minute wirksam. Änderungen an Abteilungsmitgliedschaften im Dashboard oder über SCIM können bis zu etwa fünf Minuten dauern.
 

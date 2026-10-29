@@ -19,6 +19,7 @@ from .jobs import JobFailedError, JobTimeoutError, job_status, _validate_options
 from .transport import APIResponse, PhaseoHTTPError, RawResponse, RequestHook, decode_response, request_trace_url, retry_after, validate_controls
 from .media import upload_input
 from .pagination import aiter_items, aiter_pages
+from .realtime import AsyncRealtime
 from gen import models
 
 ParsedOutput = TypeVar("ParsedOutput", bound=BaseModel)
@@ -63,9 +64,20 @@ class AsyncTextResource(AsyncResource):
     async def stream(self, params: dict[str, Any]) -> AsyncIterator[dict[str, Any]]:
         from . import _parse_chat_stream_line, _parse_response_stream_line, _parse_message_stream_line
         parser = {"/responses": _parse_response_stream_line, "/messages": _parse_message_stream_line}.get(self.path, _parse_chat_stream_line)
+        # An SSE event is named on its `event:` line; Responses data that does not name itself takes that name.
+        event_name: str | None = None
         async with self.client._stream("POST", self.path, json={**params, "stream": True}) as response:
             async for line in response.aiter_lines():
-                event = parser(line)
+                if line.startswith("event:"):
+                    event_name = line[6:].strip() or None
+                    continue
+                is_data = line.startswith("data:")
+                if parser is _parse_response_stream_line:
+                    event = _parse_response_stream_line(line, event_name if is_data else None)
+                else:
+                    event = parser(line)
+                if is_data:
+                    event_name = None
                 if event is not None:
                     yield event
 
@@ -288,7 +300,7 @@ class AsyncPhaseo:
                  client_source: str | None = None, client_source_version: str | None = None,
                  on_request: RequestHook | None = None, on_response: RequestHook | None = None,
                  on_retry: RequestHook | None = None):
-        from . import REGIONAL_BASE_URLS, DEFAULT_USER_AGENT
+        from . import REGIONAL_BASE_URLS, DEFAULT_USER_AGENT, __version__
         key = api_key or os.getenv("PHASEO_API_KEY")
         if not key:
             raise ValueError("api_key is required")
@@ -303,7 +315,7 @@ class AsyncPhaseo:
         self._api_key_provider = key if callable(key) else None
         self.headers = {**({} if self._api_key_provider else {"Authorization": f"Bearer {key}"}), "User-Agent": DEFAULT_USER_AGENT,
             "X-Phaseo-Client": client_source or "phaseo-python",
-            "X-Phaseo-Client-Version": client_source_version or DEFAULT_USER_AGENT.removeprefix("phaseo-python/"), **(headers or {})}
+            "X-Phaseo-Client-Version": client_source_version or __version__, **(headers or {})}
         for field, header in (("id", "X-App-Id"), ("name", "X-App-Name"), ("url", "HTTP-Referer")):
             if app and app.get(field):
                 self.headers[header] = app[field]
@@ -328,6 +340,7 @@ class AsyncPhaseo:
         self.music = AsyncJobs(self, "/music/generate", "music")
         self.videos = AsyncListableJobs(self, "/videos", "video")
         self.batches = AsyncListableJobs(self, "/batches", "batch")
+        self.realtime = AsyncRealtime(self)
 
     def with_options(self, *, timeout: float | None = None, max_retries: int | None = None, headers: dict[str, str] | None = None) -> "AsyncPhaseo":
         return AsyncPhaseo(api_key=self._api_key, base_url=self.base_url,

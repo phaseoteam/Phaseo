@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
 	session: null as unknown,
+	management: null as unknown,
+	oauthRole: null as string | null,
 	bindings: {} as Record<string, string>,
 	inputs: null as Record<string, unknown> | null,
 	lastRaise: null as { created_at: string } | null,
@@ -14,7 +16,12 @@ const mocks = vi.hoisted(() => ({
 	raceRaise: null as { created_at: string } | null,
 }));
 
-vi.mock("./dashboard-session", () => ({ authenticateDashboardSession: async () => mocks.session }));
+vi.mock("./dashboard-session", () => ({ authenticateDashboardSession: async () => mocks.session, workspaceRole: async () => mocks.oauthRole }));
+vi.mock("@/pipeline/before/guards", () => ({
+	guardManagementAuth: async () => mocks.management
+		? { ok: true, value: mocks.management }
+		: { ok: false, response: new Response(JSON.stringify({ error: "unauthorised" }), { status: 401 }) },
+}));
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: async (_client: unknown, event: Record<string, unknown>) => { mocks.audits.push(event); } }));
 vi.mock("@core/customer-rate-limit-tiers", () => ({
 	readCustomerRateLimitInputs: async () => {
@@ -63,6 +70,8 @@ const request = (method = "GET") => new Request("https://api.phaseo.test/v1/rate
 
 beforeEach(() => {
 	mocks.session = session("owner");
+	mocks.management = null;
+	mocks.oauthRole = null;
 	mocks.bindings = { CUSTOMER_RATE_LIMIT_LADDER_ENABLED: "true", CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED: "true" };
 	mocks.inputs = {
 		workspace_id: WS, created_at: new Date(Date.now() - 10 * DAY).toISOString(), billing_mode: "wallet", has_paid_top_up: true,
@@ -81,11 +90,44 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("self-serve rate limit raise routes", () => {
-	it("refuses management keys and OAuth tokens, which have no dashboard session", async () => {
+	it("refuses unauthenticated callers", async () => {
 		mocks.session = null;
+		expect((await handleRaiseRateLimitTier(request("POST"))).status).toBe(401);
+		expect(mocks.inserts).toHaveLength(0);
+	});
+
+	it("lets a management key read the tier but never raise", async () => {
+		mocks.session = null;
+		mocks.management = { workspaceId: WS, authMethod: "api_key", scopes: ["rate_limits:read", "rate_limits:write"] };
+		const view = await (await handleGetRateLimitTier(request())).json() as any;
+		expect(view.data).toMatchObject({ tier: "standard", eligible: true, canRaise: false });
+		expect((await handleRaiseRateLimitTier(request("POST"))).status).toBe(403);
+		expect(mocks.inserts).toHaveLength(0);
+	});
+
+	it("requires the rate limit scopes for OAuth tokens", async () => {
+		mocks.session = null;
+		mocks.oauthRole = "owner";
+		mocks.management = { workspaceId: WS, authMethod: "oauth", userId: "user-1", oauthScopes: ["rate_limits:read"] };
+		expect((await handleGetRateLimitTier(request())).status).toBe(200);
 		const response = await handleRaiseRateLimitTier(request("POST"));
 		expect(response.status).toBe(403);
+		expect((await response.json() as any).error).toBe("insufficient_scope");
 		expect(mocks.inserts).toHaveLength(0);
+	});
+
+	it("lets the workspace owner raise with an OAuth token, and refuses admins and members", async () => {
+		mocks.session = null;
+		mocks.management = { workspaceId: WS, authMethod: "oauth", userId: "user-1", oauthScopes: ["rate_limits:read", "rate_limits:write"] };
+		mocks.oauthRole = "member";
+		expect((await handleGetRateLimitTier(request())).status).toBe(403);
+		mocks.oauthRole = "admin";
+		expect((await handleRaiseRateLimitTier(request("POST"))).status).toBe(403);
+		expect(mocks.inserts).toHaveLength(0);
+		mocks.oauthRole = "owner";
+		expect((await handleRaiseRateLimitTier(request("POST"))).status).toBe(201);
+		expect(mocks.inserts).toEqual([expect.objectContaining({ requested_by: "user-1" })]);
+		expect(mocks.audits).toEqual([expect.objectContaining({ actorUserId: "user-1", action: "rate_limit_raise.requested" })]);
 	});
 
 	it("shows owners and admins the tier, and only the owner can raise", async () => {

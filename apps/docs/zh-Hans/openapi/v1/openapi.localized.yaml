@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -1150,6 +1156,243 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
+  /live/sessions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createLiveSession
+      summary: 创建 GPT Live 会话
+      description: 创建计量的 GPT Live 语音会话，将推理委托给 Responses 后端模型，并返回中继连接信息。函数工具在你的客户端运行：中继转发每个 `function_call`，并接受其 `function_call_output`，随后接受 `response.create`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - model
+                - provider
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - live
+                model:
+                  type: string
+                  enum:
+                    - openai/gpt-live-1
+                provider:
+                  type: string
+                  enum:
+                    - openai
+                voice:
+                  type: string
+                  default: marin
+                  enum:
+                    - alloy
+                    - ash
+                    - ballad
+                    - beacon
+                    - bossa
+                    - cedar
+                    - cinder
+                    - coral
+                    - delta
+                    - echo
+                    - gleam
+                    - marin
+                    - meridian
+                    - quartz
+                    - ripple
+                    - sage
+                    - shimmer
+                    - stone
+                    - tempo
+                    - verse
+                    - vesper
+                    - willow
+                instructions:
+                  type: string
+                  maxLength: 4000
+                source:
+                  type: string
+                  default: api
+                  enum:
+                    - api
+                    - chat
+                metadata:
+                  type: object
+                  additionalProperties: true
+                backend_model:
+                  type: string
+                  default: openai/gpt-5.6-luna
+                  enum:
+                    - openai/gpt-5.6-luna
+                    - openai/gpt-5.6-terra
+                backend_settings:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    instructions:
+                      type: string
+                      maxLength: 16000
+                    max_output_tokens:
+                      type: integer
+                      minimum: 16
+                      maximum: 32768
+                      default: 4096
+                    reasoning_effort:
+                      type: string
+                      enum:
+                        - none
+                        - low
+                        - medium
+                        - high
+                        - xhigh
+                    reasoning_summary:
+                      type: string
+                      enum:
+                        - auto
+                        - concise
+                        - detailed
+                    verbosity:
+                      type: string
+                      enum:
+                        - low
+                        - medium
+                        - high
+                    service_tier:
+                      type: string
+                      default: default
+                      enum:
+                        - default
+                        - flex
+                        - priority
+                    web_search:
+                      type: boolean
+                      default: false
+                    tools:
+                      type: array
+                      maxItems: 32
+                      description: 由客户端执行的函数工具，名称须唯一。
+                      items:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - type
+                          - name
+                        properties:
+                          type:
+                            type: string
+                            enum:
+                              - function
+                          name:
+                            type: string
+                            pattern: ^[a-zA-Z0-9_-]{1,64}$
+                          description:
+                            type: string
+                            maxLength: 1024
+                          parameters:
+                            type: object
+                            additionalProperties: true
+                          strict:
+                            type: boolean
+                    tool_choice:
+                      type: string
+                      default: auto
+                      enum:
+                        - auto
+                        - none
+                        - required
+                    parallel_tool_calls:
+                      type: boolean
+                      default: true
+      responses:
+        '201':
+          description: 已创建 GPT Live 会话
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -2570,6 +2813,136 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: 禁止访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: 发起额度充值
+      description: 请求为已认证的工作区添加额度。需要可选的 billing:write 范围，并且必须是工作区成员。此操作本身不会扣款。如果有已保存的银行卡，工作区的每位所有者和管理员都会收到一封含一次性链接的邮件，由其中一人确认或拒绝扣款。如果没有，响应中会包含 checkout_url，由所有者或管理员使用新卡付款，该卡会保存以供之后充值。金额为 $5 至 $500。每个工作区最多有 5 个待处理的充值，每个充值 30 分钟后过期。
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: 可选的幂等键。重复使用时会返回同一个充值，而不是新建一个。与 idempotency_key 字段相同。
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: 此幂等键对应的现有充值
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: 已创建充值
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: 金额无效（invalid_amount、amount_below_minimum 或 amount_above_maximum）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 禁止访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 幂等键已用于其他充值，或没有可以确认的所有者或管理员
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: 该工作区已有 5 个待处理的充值
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 银行卡付款不可用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: 获取额度充值
+      description: 返回已认证工作区中某个额度充值的状态。需要 credits:read 或 billing:write。轮询直到 final 为 true。被拒绝、已过期和失败的充值带有原因代码；不要自动重试。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 充值 ID。
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 充值状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: 充值 ID 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 禁止访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到充值
           content:
             application/json:
               schema:
@@ -4590,6 +4963,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listWorkloadIdentityPolicies
+      summary: List trusted workload policies
+      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      responses:
+        '200':
+          description: Trusted workload policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyListResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createWorkloadIdentityPolicy
+      summary: Create a trusted workload policy
+      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
+      responses:
+        '201':
+          description: Trusted workload policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Trusted workload policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getWorkloadIdentityPolicy
+      summary: Get a trusted workload policy
+      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateWorkloadIdentityPolicy
+      summary: Update a trusted workload policy
+      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
+      responses:
+        '200':
+          description: Trusted workload policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteWorkloadIdentityPolicy
+      summary: Delete a trusted workload policy
+      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyDeleteResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -5111,6 +5606,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: 同时返回已解除的拦截，最新的在前。
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: 返回的拦截数量上限。
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: 列出支出拦截
+      description: 列出工作区的支出拦截，最新的在前：即操作为 block 的支出规则在支出达到拦截点时启动的拦截。除非 include_lifted 为 true，否则只返回生效中的拦截。仅限所有者和管理员。
+      responses:
+        '200':
+          description: 支出拦截
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: 支出拦截 ID。
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: 解除支出拦截
+      description: 解除生效中的支出拦截，使其范围内的请求在约一分钟内重新被接受。在周期重置前，规则不会再次拦截，但会继续发送警报。仅限所有者和管理员；解除操作会记录在审计日志中，并排队一个状态为 lifted 的 spend_blocked 事件。拦截不存在时返回 404，已被解除时返回 409 spend_block_not_active。
+      responses:
+        '200':
+          description: 已解除的支出拦截
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -5154,6 +5716,57 @@ paths:
                 $ref: '#/components/schemas/ClassifierResponse'
         default:
           description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: 在示例上测试分类器
+      description: 在示例提示词和回复上运行一次已保存或草稿分类器，使用与网关发送的相同请求。这是一次使用你自己凭据发起的真实计费模型请求，并标记为 phaseo.classifier_test。仅限所有者和管理员；凭据需要 classifiers:write 和 gateway:access。管理密钥无法发起模型请求，因此会被拒绝。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: 模型选择的标签
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: 分类器或示例无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 不是所有者或管理员、缺少 classifiers:write，或凭据没有 gateway:access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 在此工作区中未找到已保存的分类器
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 模型请求失败（例如额度不足）
           content:
             application/json:
               schema:
@@ -8676,6 +9289,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: 列出预设标签
+      description: 列出 production、staging 等命名标签，以及每个标签指向的已发布版本。
+      responses:
+        '200':
+          description: 预设标签列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: 未找到预设
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: 设置预设标签
+      description: 将标签指向一个已发布的版本，必要时创建或移动该标签。固定到该标签的请求（例如 @support-triage@production）会在约 2 分钟内使用新版本。把标签移回较早的版本就是回滚。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: 标签已保存
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: 标签无效，或 version_id 和 version 都未提供或同时提供
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 只有预设的创建者或工作区所有者或管理员才能更改其标签
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到预设或版本
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: 移除预设标签
+      description: 移除一个标签。仍固定到该标签的请求会以 preset_version_not_found 失败。
+      responses:
+        '200':
+          description: 标签已移除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: 标签无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 只有预设的创建者或工作区所有者或管理员才能更改其标签
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到预设或标签
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9047,6 +9757,596 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EndpointCatalogueResponse'
+  /me:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMe
+      summary: 获取已登录用户
+      description: 返回 OAuth 令牌对应的用户、令牌的客户端和作用域，以及该用户所属的工作区。需要具有 me:read 的 OAuth 令牌；管理密钥会被拒绝。
+      responses:
+        '200':
+          description: 已登录用户
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: 不是 OAuth 令牌，或令牌无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 令牌缺少 me:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/profile:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMyProfile
+      summary: 获取你的个人资料
+      description: 返回控制台个人资料页面上显示的个人资料字段。需要具有 me:read 的 OAuth 令牌。
+      responses:
+        '200':
+          description: 个人资料
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: 不是 OAuth 令牌，或令牌无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 令牌缺少 me:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateMyProfile
+      summary: 更新你的个人资料
+      description: 更改你的显示名称、默认工作区（必须是你所属的工作区）或是否在屏幕上隐藏你的信息。密码、MFA 和通行密钥只能在浏览器中管理。需要具有 settings:write 的 OAuth 令牌。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: 更新后的个人资料
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: 字段无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 不是 OAuth 令牌，或令牌无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 令牌缺少 settings:write，或默认工作区不属于你
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listAuthorizedApps
+      summary: 列出你已授权的应用
+      description: 列出你在所有工作区中通过 OAuth 授权的应用。需要具有 oauth_clients:read 的 OAuth 令牌。
+      responses:
+        '200':
+          description: 已授权应用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppListResponse'
+        '401':
+          description: 不是 OAuth 令牌，或令牌无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 令牌缺少 oauth_clients:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps/{id}:
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reduceAuthorizedAppScopes
+      summary: 移除已授权应用的作用域
+      description: 将应用的访问权限缩减为指定的作用域。作用域只能移除；添加作用域需要你在浏览器中同意。需要具有 oauth_clients:write 的 OAuth 令牌。
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizedAppScopesRequest'
+      responses:
+        '200':
+          description: 作用域已缩减
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppScopesResponse'
+        '400':
+          description: 列表为空，或包含应用不具备的作用域
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 不是 OAuth 令牌，或令牌无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到已授权应用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: revokeAuthorizedApp
+      summary: 撤销已授权应用
+      description: 撤销应用的访问权限，使其令牌失效。撤销调用方应用自身的授权会使其退出登录。需要具有 oauth_clients:delete 的 OAuth 令牌。
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      responses:
+        '200':
+          description: 授权已撤销
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
+        '401':
+          description: 不是 OAuth 令牌，或令牌无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到已授权应用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/accept:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: acceptWorkspaceInvite
+      summary: 接受工作区邀请
+      description: 申请加入邀请码所属的工作区。之后由工作区所有者或管理员批准或拒绝该申请。需要具有 workspaces:write 的 OAuth 令牌；管理密钥属于工作区而不属于个人，因此会被拒绝。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
+      responses:
+        '201':
+          description: 加入申请已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
+        '400':
+          description: 缺少邀请码
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 不是 OAuth 用户令牌，或令牌缺少 workspaces:write
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 邀请无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 已是成员，或已有待处理的申请
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listMyJoinRequests
+      summary: 列出你加入工作区的申请
+      description: 按从新到旧的顺序列出你自己的加入工作区申请（最多 100 条）。需要具有 workspaces:read 的 OAuth 令牌。
+      parameters:
+        - name: status
+          in: query
+          description: 默认返回待处理的申请；all 返回所有状态。
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - denied
+              - cancelled
+              - all
+      responses:
+        '200':
+          description: 你的加入申请
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestListResponse'
+        '400':
+          description: 状态无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 不是 OAuth 用户令牌，或令牌缺少 workspaces:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getRateLimitTier
+      summary: 获取工作区的速率限制等级
+      description: 返回工作区的信任等级、每分钟请求数，以及它现在能否提升一个等级。适用于工作区所有者和管理员（OAuth），或具有 rate_limits:read 的管理密钥。仅当调用者是工作区所有者时 canRaise 才为 true。
+      responses:
+        '200':
+          description: 等级和提升状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 不是所有者或管理员，或令牌缺少 rate_limits:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier/raise:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: raiseRateLimitTier
+      summary: 提升工作区的速率限制等级
+      description: 在限定时间内将符合条件的工作区提升一个等级。只有工作区所有者可以使用具有 rate_limits:write 的 OAuth 令牌提升；管理密钥会被拒绝，以免泄露的密钥解除其所属工作区的限制。
+      responses:
+        '201':
+          description: 已提升
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 不是工作区所有者、使用的是管理密钥，或令牌缺少 rate_limits:write
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 工作区当前无法提升其限制（参见 reason）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/auto:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getAutoRoutingSettings
+      summary: 获取自动路由设置
+      description: 返回此工作区中自动路由器运行时遵循的限制。任何工作区成员均可调用；需要 settings:read。
+      responses:
+        '200':
+          description: 自动路由设置
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateAutoRoutingSettings
+      summary: 更新自动路由设置
+      description: 更改发送的字段；结果会像控制台保存时一样作为整体进行校验。自定义 spend_profile 需要同时设置两个价格上限。仅限所有者和管理员；需要 settings:write。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
+      responses:
+        '200':
+          description: 更新后的自动路由设置
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '400':
+          description: 设置无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/successor/replacements:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSuccessorReplacements
+      summary: 列出后继模型替换
+      description: 列出工作区为已不再由任何提供方提供的模型选择的替换。后继路由的开关和价格策略位于 /settings。任何工作区成员均可调用；需要 settings:read。
+      responses:
+        '200':
+          description: 替换
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementListResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: saveSuccessorReplacement
+      summary: 保存后继模型替换
+      description: 设置 model 的请求要发送到的模型，并替换之前的任何选择。successor 为 null 表示 model 的请求永不重定向。两个模型都必须在目录中，且后继模型必须可用。每个工作区最多 500 个。仅限所有者和管理员；需要 settings:write。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuccessorReplacement'
+      responses:
+        '200':
+          description: 已保存的替换
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementResponse'
+        '400':
+          description: 模型无效或未知
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: removeSuccessorReplacement
+      summary: 移除后继模型替换
+      description: 移除工作区为某个模型做出的选择，使目录中的后继模型重新生效。仅限所有者和管理员；需要 settings:write。
+      parameters:
+        - name: model
+          in: query
+          required: true
+          description: 要移除其替换的模型 ID。
+          schema:
+            $ref: '#/components/schemas/ModelId'
+      responses:
+        '200':
+          description: 替换已移除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
+        '400':
+          description: 缺少模型或模型无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 此模型没有已保存的替换
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestinationConfig
+      summary: 保存前测试目标设置
+      description: 按网关投递追踪的方式，向给定设置发送不含消息的示例追踪。不会保存任何内容。仅限所有者和管理员；需要 settings:write。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
+      responses:
+        '200':
+          description: 测试结果；当目标拒绝或无法访问时，ok 为 false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '400':
+          description: 类型或设置无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestination
+      summary: 检查目标的连接
+      description: 像控制台的状态检查一样，向已保存的目标发送不含消息的示例追踪。目标的健康状态不会改变。仅限所有者和管理员；需要 settings:write。
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: 测试结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到目标
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/sample:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendObservabilityDestinationSample
+      summary: 发送示例追踪
+      description: 向已保存的目标发送示例追踪；除非目标排除了提示词和输出，否则包含消息。仅限所有者和管理员；需要 settings:write。
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: 发送结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到目标
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /security/report-leaked-key:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reportLeakedKey
+      summary: 报告泄露的 API 密钥
+      description: 报告在公开场合发现的 Phaseo 密钥。无需身份验证。无论密钥是否匹配，始终返回相同内容的 202，因此此路由不能用来检查密钥。按地址限速。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeakedKeyReportRequest'
+      responses:
+        '202':
+          description: 已收到报告
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeakedKeyReportResponse'
 tags:
   - name: Gateway
     description: Core Phaseo Gateway operations.
@@ -9104,6 +10404,10 @@ components:
         type: string
     DroppedParams:
       description: 客户端发送、但处理请求的提供商不支持，因而被网关移除（而不是发送给提供商或拒绝请求）的请求参数，例如 `top_k, min_p`。仅在成功的响应中、且至少移除了一个来自请求正文的参数时才会发送。来自预设或默认值的参数不会列出。
+      schema:
+        type: string
+    SpendWarning:
+      description: 当一条会拦截的支出规则覆盖该请求，且支出已超过其最后一个警报阈值但尚未达到拦截点时发送。以 rule_id、scope 和 resets_at 的形式列出最多三条规则，例如 `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`。支出达到拦截点后，范围内的请求会收到代码为 spend_rule_blocked 的 429。
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -9166,6 +10470,21 @@ components:
       description: 预设的 UUID、slug 或规范名称。
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: 标签名称，例如 production。由 1 到 32 个小写字母、数字、连字符或下划线组成，以字母开头；不能看起来像版本标签（v1、v2）。
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
+    AuthorizedAppId:
+      name: id
+      in: path
+      required: true
+      description: 来自已授权应用列表的授权标识符。
+      schema:
+        type: string
     ObservabilityDestinationId:
       name: id
       in: path
@@ -9209,6 +10528,476 @@ components:
         type: string
         format: uuid
   schemas:
+    MeResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                  nullable: true
+                name:
+                  type: string
+                  nullable: true
+            oauth:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                resource:
+                  type: string
+                  nullable: true
+            current_workspace_id:
+              type: string
+            workspaces:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                    nullable: true
+                  slug:
+                    type: string
+                    nullable: true
+                  role:
+                    type: string
+                    nullable: true
+                  current:
+                    type: boolean
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+          nullable: true
+        default_workspace_id:
+          type: string
+          nullable: true
+        obfuscate_info:
+          type: boolean
+          description: 是否在控制台屏幕上隐藏你的邮箱和姓名。
+    UserProfileResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/UserProfile'
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        default_workspace_id:
+          type: string
+          nullable: true
+          description: 你所属的工作区，或设为 null 以清除。
+        obfuscate_info:
+          type: boolean
+      additionalProperties: false
+    AuthorizedApp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 授权 ID。
+        client_id:
+          type: string
+        app_name:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        scopes:
+          type: array
+          items:
+            type: string
+        current:
+          type: boolean
+          description: 对于调用令牌所属的授权为 true。
+        authorized_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+    AuthorizedAppListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizedApp'
+    AuthorizedAppScopesRequest:
+      type: object
+      required:
+        - scopes
+      properties:
+        scopes:
+          type: array
+          minItems: 1
+          description: 要保留的作用域；每个作用域都必须已被授予。
+          items:
+            type: string
+      additionalProperties: false
+    AuthorizedAppScopesResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            scopes:
+              type: array
+              items:
+                type: string
+    AuthorizedAppRevokedResponse:
+      type: object
+      properties:
+        revoked:
+          type: boolean
+        id:
+          type: string
+    WorkspaceInviteAcceptRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          minLength: 6
+          maxLength: 256
+          description: 邀请码。
+      additionalProperties: false
+    MyJoinRequestCreatedResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            workspace_id:
+              type: string
+            status:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+    MyJoinRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - denied
+            - cancelled
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+    MyJoinRequestListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyJoinRequest'
+    RateLimitTierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            tier:
+              type: string
+            requestsPerMinute:
+              type: number
+            target:
+              type: string
+              nullable: true
+              description: 提升后将到达的等级。
+            targetRequestsPerMinute:
+              type: number
+              nullable: true
+            eligible:
+              type: boolean
+            refusal:
+              type: string
+              nullable: true
+              description: 当前无法提升的原因；符合条件时为 null。
+            activeUntil:
+              type: number
+              nullable: true
+              description: 当前提升结束的时间（Unix 毫秒）。
+            availableAt:
+              type: number
+              nullable: true
+              description: 可以申请下一次提升的时间（Unix 毫秒）。
+            durationDays:
+              type: number
+            thresholds:
+              type: object
+              properties:
+                minAgeDays:
+                  type: number
+                minLifetimePaidSpendUsd:
+                  type: number
+            canRaise:
+              type: boolean
+              description: 当调用者是工作区所有者且工作区符合条件时为 true。
+    AutoRoutingSettings:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          description: 自动路由器可选择的提供方/模型模式，例如 openai/*。为空时允许所有模型。
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          nullable: true
+          description: 每百万输入 token 的美元价格；仅在自定义支出档位中设置。
+        max_output_price_per_million:
+          type: number
+          nullable: true
+          description: 每百万输出 token 的美元价格；仅在自定义支出档位中设置。
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+        revision:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    AutoRoutingSettingsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AutoRoutingSettings'
+    AutoRoutingSettingsUpdateRequest:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        max_output_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+    SuccessorReplacement:
+      type: object
+      required:
+        - model
+        - successor
+      properties:
+        model:
+          type: string
+          description: 其请求会被重定向的模型。
+        successor:
+          type: string
+          nullable: true
+          description: 要发送到的模型，或设为 null 表示永不重定向。
+    SuccessorReplacementRow:
+      type: object
+      properties:
+        model:
+          type: string
+        successor:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    SuccessorReplacementListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementRemovedResponse:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+        model:
+          type: string
+    ObservabilityDestinationTestRequest:
+      type: object
+      required:
+        - type
+        - config
+      properties:
+        type:
+          $ref: '#/components/schemas/ObservabilityDestinationType'
+        config:
+          type: object
+          description: 目标的设置，与创建目标时相同。
+          additionalProperties:
+            type: string
+    ObservabilityDestinationTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            ok:
+              type: boolean
+            status:
+              type: string
+            http_status:
+              type: integer
+              nullable: true
+            error:
+              type: string
+              nullable: true
+    ApiKeyIpAllowlist:
+      type: array
+      maxItems: 100
+      description: 允许使用该密钥的地址。每个条目都是带标签的 IPv4 或 IPv6 地址，或 CIDR 范围。为空时允许任何地址。
+      items:
+        type: object
+        required:
+          - label
+          - address
+        properties:
+          label:
+            type: string
+            minLength: 1
+            maxLength: 100
+          address:
+            type: string
+            description: IPv4 或 IPv6 地址，或 CIDR 范围。
+    LeakedKeyReportRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          maxLength: 4096
+          description: 按发现时原样提供的泄露密钥。
+        source:
+          type: string
+          maxLength: 64
+          description: 发现位置，例如 github。
+        reporter_email:
+          type: string
+          maxLength: 320
+        evidence_url:
+          type: string
+          format: uri
+          maxLength: 2048
+        comment:
+          type: string
+          maxLength: 2000
+    LeakedKeyReportResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - received
     ProviderRoutingOptions:
       type: object
       description: 用于网关选择的提供商路由偏好设置。
@@ -16477,6 +18266,8 @@ components:
           description: 此密钥所属的部门，用于部门速率限制和预算。Null 表示该密钥仅计入整个工作区的限制。
         storage_locations:
           $ref: '#/components/schemas/ApiKeyStorageLocations'
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
         include_byok_in_limit:
           type: boolean
           description: 指定提供商凭据是否计入密钥支出上限。目前始终为 false。
@@ -16731,6 +18522,8 @@ components:
           allOf:
             - $ref: '#/components/schemas/ApiKeyStorageLocations'
           nullable: true
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array
@@ -17232,6 +19025,10 @@ components:
           type: object
           additionalProperties: true
           description: 模板变量的值。图像变量接受 https URL、data URL 或图像部分。
+        version:
+          type: string
+          maxLength: 64
+          description: 运行预设的这个已发布版本而不是当前版本：包括其模型、参数和模板。使用 v3、1.2.0 或 2026.10.27 这样的版本标签，或 production 这样的标签。等同于将 model 设为 @support-triage@production。
     Preset:
       type: object
       required:
@@ -17424,6 +19221,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: 指向此版本的命名标签，例如 production。列出版本时返回。
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17452,6 +19254,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: version_id 和 version 二者只能提供一个。
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: 标签要指向的已发布版本。
+        version:
+          type: string
+          maxLength: 64
+          description: 版本标签，例如 v3、1.2.0 或 2026.10.27；或另一个标签（例如 staging），以复制其指向。
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
@@ -18425,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: 以美元计的金额，最多两位小数。
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: 可选。必须与已认证的工作区一致。
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: 可选的幂等键。重复使用时会返回同一个充值，而不是新建一个。
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: 状态不会再改变时为 true（paid、declined、expired 或 failed）。此时停止轮询。
+        reason:
+          type: string
+          nullable: true
+          description: 被拒绝、已过期和失败的充值的原因代码，例如 declined、expired、card_declined 或 authentication_failed。
+          example: declined
+        message:
+          type: string
+          description: 一句说明接下来会发生什么的话。
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout 表示所有者或管理员在 checkout_url 用新卡付款；saved_card 表示所有者或管理员通过邮件确认对已保存银行卡的扣款。
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 所有者或管理员用新卡付款的 Phaseo 页面。仅出现在创建待处理 checkout 充值的响应中。
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: 收到邮件以确认 saved_card 充值的所有者和管理员人数。
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:
@@ -21259,11 +23271,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: 告诉模型何时选择此值。
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: 分类器针对每个请求回答的一个问题。答案会写入一个请求标签，其键为该维度的键。如果调用方已发送了该键的标签，则跳过此维度。
       required:
         - key
         - values
@@ -21283,14 +23295,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: 允许每个请求有多个值。
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: 当没有列出的值合适时，允许模型回答 "other"。
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: 2 到 50 个值。仅当 allow_other 为 true 时才允许只有一个值。
           minItems: 1
           maxItems: 50
           items:
@@ -21521,7 +23533,269 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: 要测试的草稿。如果提供了 classifier_id，未发送的字段取自该分类器。
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: 此工作区中要测试的已保存分类器，或用于标记该测试的分类器。
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: 无法读取模型的回答时为 false。
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    WorkloadIdentityProvider:
+      type: string
+      enum:
+        - vercel
+        - github_actions
+      description: The platform that issues the OIDC tokens.
+    WorkloadIdentityPolicy:
+      type: object
+      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      required:
+        - id
+        - name
+        - provider
+        - issuer
+        - owner_id
+        - claim_conditions
+        - max_token_lifetime_seconds
+        - status
+        - audience
+        - key_id
+        - last_used_at
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+        owner_id:
+          type: string
+          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+        key_id:
+          type: string
+          format: uuid
+          description: The policy's key. Requests, usage and limits are recorded against it.
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    WorkloadIdentityPolicyInput:
+      type: object
+      required:
+        - name
+        - provider
+        - owner_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+        owner_id:
+          type: string
+          minLength: 1
+          description: The Vercel team ID or GitHub organisation or user ID to pin.
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          default: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkloadIdentityPolicy'
+      additionalProperties: false
+    WorkloadIdentityPolicyListResponse:
+      type: object
+      required:
+        - data
+        - audience
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadIdentityPolicy'
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+      additionalProperties: false
+    WorkloadIdentityPolicyDeleteResponse:
       type: object
       required:
         - data
@@ -21837,7 +24111,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。 拦截尚不可用：在其可用之前，action 为 block 的规则会被以 400 拒绝。
+      description: notify，或在支出达到基数的 block_at_percent 或 block_at_amount 时先通知再拦截。拦截为尽力而为，会在达到阈值几分钟后生效。 在网关关闭拦截期间，会开始拦截的规则会被以 400 拒绝，已经设置为拦截的规则只发送通知。
       enum:
         - notify
         - block
@@ -22559,6 +24833,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 支出拦截被解除的原因：manual（所有者或管理员）、period_reset、below_limit（支出重新低于拦截点，例如提高预算之后）、rule_changed、rule_disabled 或 rule_deleted。
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: 支出达到拦截点时由支出规则启动的拦截。生效期间，范围内的请求会收到代码为 spend_rule_blocked 的 429，Retry-After 设为 resets_at。除非 block_free_models 为 true，否则免费模型不受影响。
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 启动此拦截的规则；规则被彻底删除后为 null。
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: 范围的显示名称（密钥、部门或模型名称、成员邮箱，或 ID）。
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 拦截自动解除的时间（规则周期结束时）。
+        spend_nanos:
+          type: integer
+          description: 拦截开始时规则范围内的支出，单位为纳美元。
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: 拦截点，单位为纳美元。
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: 手动解除时，解除拦截的所有者或管理员。
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: 未解除，且尚未到重置时间。
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

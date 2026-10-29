@@ -313,6 +313,19 @@ video_socket_url = client.videos.websocket_url(
 generic_socket_url = client.get_async_job_websocket_url("video", "video_123")
 ```
 
+## Realtime voice (beta)
+
+`AsyncPhaseo.realtime.connect()` creates a realtime session and opens the relay WebSocket. It needs the optional `websockets` package: `pip install "phaseo[realtime]"`. Provider events pass through unchanged.
+
+```python
+session = await client.realtime.connect("openai/gpt-realtime-2", voice="marin")
+session.on_warning(lambda warning: print(warning["code"]))
+await session.send_audio(pcm16_chunk)  # PCM16 bytes; base64 is handled for you
+ended = await session.end(reason="caller hung up")  # session.ended: reason, usage, cost, billing_status
+```
+
+If the socket closes without `session.ended`, `end()` raises `RealtimeSessionClosedError`, whose `final_bill` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.

@@ -24,6 +24,10 @@ describe("groupConsentScopes", () => {
 		]);
 	});
 
+	it("puts billing:write in its own billing group", () => {
+		expect(groupConsentScopes(["credits:read", "billing:write"]).map((group) => group.key)).toEqual(["data", "billing"]);
+	});
+
 	it("deduplicates scopes and keeps unknown resources visible", () => {
 		const groups = groupConsentScopes([
 			"custom_tools:read",

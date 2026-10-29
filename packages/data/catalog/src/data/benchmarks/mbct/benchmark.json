@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "mbct",
-  "benchmark_name": "MBCT",
-  "category": "biology",
-  "ascending_order": true,
-  "type": "percentage",
-  "link": "https://research.meta.ai/static/muse-glimmer-methodology",
-  "total_models": 1
-}

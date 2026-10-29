@@ -1,0 +1,10 @@
+---
+title: "移除预设标签"
+sidebarTitle: "移除标签"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml DELETE /presets/{id}/labels/{label}"
+description: "从预设中移除一个标签。"
+---
+<Note>此端点需要具有 `presets:write` 的管理 API 密钥以及关联的用户身份。预设的创建者可以更改其标签；预设共享时，工作区所有者和管理员也可以。</Note>
+
+仍固定到该标签的请求会以 `preset_version_not_found` 失败，直到你重新添加该标签。

@@ -1,3 +1,5 @@
+import type { SlackAgentAdminBinding } from "@/lib/slack-agent-admin";
+
 export type Env = {
   ENV: "development" | "preview" | "staging" | "production";
 	SUPABASE_URL?: string;
@@ -32,6 +34,8 @@ export type Env = {
 	PHASEO_CONTROL_SECRET?: string;
 	GATEWAY_API_ORIGIN?: string;
 	GATEWAY_INTERNAL_TEST_TOKEN?: string;
+	/** Display only: "true" when the gateway enforces spend rule blocks (mirrors its SPEND_RULE_BLOCKS_ENABLED). */
+	SPEND_RULE_BLOCKS_ENABLED?: string;
 	RESEND_API_KEY?: string;
 	EXPO_ACCESS_TOKEN?: string;
 	FEEDBACK_REWARD_USD?: string;
@@ -83,6 +87,8 @@ export type Env = {
 	SLACK_SECRETS_ENCRYPTION_KEY_VERSION?: string;
 	/** Public web origin for the Slack OAuth redirect and the settings page. Defaults to https://phaseo.app. */
 	PHASEO_WEB_ORIGIN?: string;
+	/** The Slack agent Worker's admin entrypoint (service binding, production only): its shared pages. */
+	SLACK_AGENT?: SlackAgentAdminBinding;
 	PROVIDER_MODEL_REVIEW_SLACK_WEBHOOK?: string;
 	PROVIDER_MODEL_REVIEW_SLACK_USER_ID?: string;
 	STATUS_PAGE_URL?: string;

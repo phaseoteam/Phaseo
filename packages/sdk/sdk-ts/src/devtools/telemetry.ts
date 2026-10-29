@@ -1,5 +1,6 @@
 import { DevToolsWriter, type DevToolsEntry, type EndpointType, type DevToolsConfig } from "./core.js";
 import { randomUUID } from "crypto";
+import { SDK_VERSION } from "../version.js";
 
 // Workers and browsers may have no `process` global at all.
 function nodeProcess(): NodeJS.Process | undefined {
@@ -20,7 +21,7 @@ export class TelemetryCapture {
   private readonly sdkVersion: string;
 
 
-  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "3.0.0") {
+  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = SDK_VERSION) {
 
     // Check if devtools is enabled via env var or config
     const env = nodeProcess()?.env;

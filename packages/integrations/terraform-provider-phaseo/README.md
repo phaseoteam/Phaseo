@@ -1,6 +1,6 @@
 # Terraform Provider for Phaseo
 
-Manage Phaseo infrastructure with Terraform. The provider currently supports Gateway API keys, guardrails, rate limit policies and their assignments, department budgets, BYOK provider credentials, SCIM group mappings, and observability destinations through Phaseo's management API. Read-only data sources expose models, providers, and credits.
+Manage Phaseo infrastructure with Terraform. The provider currently supports Gateway API keys, guardrails, rate limit policies and their assignments, department budgets, trusted workloads, BYOK provider credentials, SCIM group mappings, and observability destinations through Phaseo's management API. Read-only data sources expose models, providers, and credits.
 
 ## Supported surface
 
@@ -11,6 +11,7 @@ Resources:
 - `phaseo_rate_limit_policy`
 - `phaseo_rate_limit_assignment`
 - `phaseo_department_budget`
+- `phaseo_trusted_workload` (beta)
 - `phaseo_provider_credential`
 - `phaseo_scim_group_mapping`
 - `phaseo_observability_destination`

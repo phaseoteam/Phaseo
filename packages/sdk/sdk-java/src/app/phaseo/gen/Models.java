@@ -137,6 +137,7 @@ public final class Models {
 		public String hash;
 		public String id;
 		public Boolean include_byok_in_limit;
+		public java.util.List<Object> ip_allowlist;
 		public String label;
 		public String last_used_at;
 		public Double limit;
@@ -171,6 +172,9 @@ public final class Models {
 		public Boolean soft_blocked;
 		public java.util.List<String> storage_locations;
 		public String workspace_id;
+	}
+
+	public static class ApiKeyIpAllowlist {
 	}
 
 	public static class ApiKeyLimitBucket {
@@ -225,6 +229,7 @@ public final class Models {
 		public Boolean disabled;
 		public String expires_at;
 		public Boolean include_byok_in_limit;
+		public java.util.List<Object> ip_allowlist;
 		public Double limit;
 		public Object limit_reset;
 		public Object limits;
@@ -256,6 +261,7 @@ public final class Models {
 		public String hash;
 		public String id;
 		public Boolean include_byok_in_limit;
+		public java.util.List<Object> ip_allowlist;
 		public String key;
 		public String label;
 		public String last_used_at;
@@ -378,6 +384,59 @@ public final class Models {
 
 	public static class AudioTranslationResponse {
 		public String text;
+	}
+
+	public static class AuthorizedApp {
+		public String app_name;
+		public String authorized_at;
+		public String client_id;
+		public Boolean current;
+		public String id;
+		public String last_used_at;
+		public java.util.List<String> scopes;
+		public String workspace_id;
+		public String workspace_name;
+	}
+
+	public static class AuthorizedAppListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class AuthorizedAppRevokedResponse {
+		public String id;
+		public Boolean revoked;
+	}
+
+	public static class AuthorizedAppScopesRequest {
+		public java.util.List<String> scopes;
+	}
+
+	public static class AuthorizedAppScopesResponse {
+		public Object data;
+	}
+
+	public static class AutoRoutingSettings {
+		public Boolean allow_fallbacks;
+		public java.util.List<String> allowed_patterns;
+		public Double max_input_price_per_million;
+		public Double max_output_price_per_million;
+		public Object objective;
+		public String revision;
+		public Object spend_profile;
+		public String updated_at;
+	}
+
+	public static class AutoRoutingSettingsResponse {
+		public Object data;
+	}
+
+	public static class AutoRoutingSettingsUpdateRequest {
+		public Boolean allow_fallbacks;
+		public java.util.List<String> allowed_patterns;
+		public Double max_input_price_per_million;
+		public Double max_output_price_per_million;
+		public Object objective;
+		public Object spend_profile;
 	}
 
 	public static class BatchBillingSummary {
@@ -746,6 +805,16 @@ public final class Models {
 		public java.util.List<String> models;
 	}
 
+	public static class ClassifierTestRequest {
+		public Object classifier;
+		public String classifier_id;
+		public Object sample;
+	}
+
+	public static class ClassifierTestResponse {
+		public Object data;
+	}
+
 	public static class ClassifierUpdateInput {
 		public String description;
 		public java.util.List<Object> dimensions;
@@ -768,6 +837,38 @@ public final class Models {
 	public static class CreditsResponse {
 		public Object credits;
 		public Object ok;
+	}
+
+	public static class CreditTopup {
+		public Integer amount_cents;
+		public Double amount_usd;
+		public String checkout_url;
+		public Integer confirmation_recipients;
+		public String created_at;
+		public String currency;
+		public String decided_at;
+		public String expires_at;
+		public Boolean final_;
+		public Object flow;
+		public String id;
+		public String message;
+		public Object next_action;
+		public String paid_at;
+		public Object payment_method;
+		public String reason;
+		public Object status;
+		public String workspace_id;
+	}
+
+	public static class CreditTopupCreateRequest {
+		public Double amount_usd;
+		public String idempotency_key;
+		public String workspace_id;
+	}
+
+	public static class CreditTopupResponse {
+		public Object ok;
+		public Object topup;
 	}
 
 	public static class DataContributionCategories {
@@ -1984,6 +2085,18 @@ public final class Models {
 	public static class KnownModelId {
 	}
 
+	public static class LeakedKeyReportRequest {
+		public String comment;
+		public String evidence_url;
+		public String reporter_email;
+		public String source;
+		public String token;
+	}
+
+	public static class LeakedKeyReportResponse {
+		public Object status;
+	}
+
 	public static class LegacyDecisionBoxQuestion {
 		public Object instructions;
 		public Object type;
@@ -2140,6 +2253,10 @@ public final class Models {
 	public static class ManagementKeyUpdateResponse {
 		public String message;
 		public Object ok;
+	}
+
+	public static class MeResponse {
+		public Object data;
 	}
 
 	public static class MessageContentPart {
@@ -2313,6 +2430,23 @@ public final class Models {
 		public Object usage;
 	}
 
+	public static class MyJoinRequest {
+		public String created_at;
+		public String decided_at;
+		public String id;
+		public Object status;
+		public String workspace_id;
+		public String workspace_name;
+	}
+
+	public static class MyJoinRequestCreatedResponse {
+		public Object data;
+	}
+
+	public static class MyJoinRequestListResponse {
+		public java.util.List<Object> data;
+	}
+
 	public static class NotImplementedResponse {
 		public String description;
 		public String error;
@@ -2468,6 +2602,15 @@ public final class Models {
 	}
 
 	public static class ObservabilityDestinationResponse {
+		public Object data;
+	}
+
+	public static class ObservabilityDestinationTestRequest {
+		public Object config;
+		public Object type;
+	}
+
+	public static class ObservabilityDestinationTestResponse {
 		public Object data;
 	}
 
@@ -2691,6 +2834,34 @@ public final class Models {
 		public String source_version_id;
 	}
 
+	public static class PresetLabel {
+		public String created_at;
+		public String label;
+		public String updated_at;
+		public String updated_by;
+		public String version_id;
+		public String version_label;
+		public Integer version_number;
+	}
+
+	public static class PresetLabelDeleteResponse {
+		public Boolean deleted;
+		public String label;
+	}
+
+	public static class PresetLabelListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class PresetLabelResponse {
+		public Object data;
+	}
+
+	public static class PresetLabelSetRequest {
+		public String version;
+		public String version_id;
+	}
+
 	public static class PresetListResponse {
 		public java.util.List<Object> data;
 		public Integer total_count;
@@ -2813,6 +2984,7 @@ public final class Models {
 		public String created_by;
 		public String description;
 		public String id;
+		public java.util.List<String> labels;
 		public String name;
 		public String preset_id;
 		public String release_notes;
@@ -2928,6 +3100,7 @@ public final class Models {
 	public static class PromptTemplateReference {
 		public String id;
 		public Object variables;
+		public String version;
 	}
 
 	public static class Provider {
@@ -3144,6 +3317,10 @@ public final class Models {
 	public static class RateLimitTargetType {
 	}
 
+	public static class RateLimitTierResponse {
+		public Object data;
+	}
+
 	public static class ReasoningConfig {
 		public Object effort;
 		public Boolean enabled;
@@ -3331,6 +3508,39 @@ public final class Models {
 		public Integer web_search_requests;
 	}
 
+	public static class SpendBlock {
+		public Boolean active;
+		public Boolean block_free_models;
+		public String id;
+		public Object lift_reason;
+		public String lifted_at;
+		public String lifted_by;
+		public Integer limit_nanos;
+		public Double limit_usd;
+		public String period_start;
+		public String resets_at;
+		public String rule_id;
+		public String rule_name;
+		public String scope_id;
+		public String scope_label;
+		public Object scope_type;
+		public Integer spend_nanos;
+		public Double spend_usd;
+		public String started_at;
+		public String workspace_id;
+	}
+
+	public static class SpendBlockLiftReason {
+	}
+
+	public static class SpendBlockListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class SpendBlockResponse {
+		public Object data;
+	}
+
 	public static class SpendRule {
 		public Object action;
 		public Integer base_amount_nanos;
@@ -3509,6 +3719,30 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class SuccessorReplacement {
+		public String model;
+		public String successor;
+	}
+
+	public static class SuccessorReplacementListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class SuccessorReplacementRemovedResponse {
+		public Boolean deleted;
+		public String model;
+	}
+
+	public static class SuccessorReplacementResponse {
+		public Object data;
+	}
+
+	public static class SuccessorReplacementRow {
+		public String model;
+		public String successor;
+		public String updated_at;
+	}
+
 	public static class SupportedParameterDetails {
 	}
 
@@ -3608,6 +3842,23 @@ public final class Models {
 
 	public static class UsageCostDetails {
 		public Double upstream_inference_cost;
+	}
+
+	public static class UserProfile {
+		public String default_workspace_id;
+		public String display_name;
+		public Boolean obfuscate_info;
+		public String user_id;
+	}
+
+	public static class UserProfileResponse {
+		public Object data;
+	}
+
+	public static class UserProfileUpdateRequest {
+		public String default_workspace_id;
+		public String display_name;
+		public Boolean obfuscate_info;
 	}
 
 	public static class VideoBillingSummary {
@@ -3845,6 +4096,55 @@ public final class Models {
 		public Integer max_results;
 		public Integer max_uses;
 		public Object search_context_size;
+	}
+
+	public static class WorkloadIdentityPolicy {
+		public String audience;
+		public Object claim_conditions;
+		public String created_at;
+		public String created_by;
+		public String id;
+		public String issuer;
+		public String key_id;
+		public String last_used_at;
+		public Integer max_token_lifetime_seconds;
+		public String name;
+		public String owner_id;
+		public Object provider;
+		public Object status;
+		public String updated_at;
+	}
+
+	public static class WorkloadIdentityPolicyDeleteResponse {
+		public Object data;
+	}
+
+	public static class WorkloadIdentityPolicyInput {
+		public Object claim_conditions;
+		public String issuer;
+		public Integer max_token_lifetime_seconds;
+		public String name;
+		public String owner_id;
+		public Object provider;
+	}
+
+	public static class WorkloadIdentityPolicyListResponse {
+		public String audience;
+		public java.util.List<Object> data;
+	}
+
+	public static class WorkloadIdentityPolicyResponse {
+		public Object data;
+	}
+
+	public static class WorkloadIdentityPolicyUpdateInput {
+		public Object claim_conditions;
+		public Integer max_token_lifetime_seconds;
+		public String name;
+		public Object status;
+	}
+
+	public static class WorkloadIdentityProvider {
 	}
 
 	public static class Workspace {
@@ -4165,6 +4465,10 @@ public final class Models {
 		public String token_preview;
 		public Integer uses_count;
 		public String workspace_id;
+	}
+
+	public static class WorkspaceInviteAcceptRequest {
+		public String token;
 	}
 
 	public static class WorkspaceInviteCreateRequest {

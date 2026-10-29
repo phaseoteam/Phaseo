@@ -1,0 +1,10 @@
+---
+title: "Définir un libellé du préréglage"
+sidebarTitle: "Définir le libellé"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PUT /presets/{id}/labels/{label}"
+description: "Faire pointer un libellé vers une version publiée du préréglage, ou le ramener en arrière."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `presets:write` et une identité utilisateur associée. Le créateur du préréglage peut modifier ses libellés, ainsi que les propriétaires et administrateurs de l’espace de travail lorsque le préréglage est partagé.</Note>
+
+Les requêtes qui épinglent le libellé, comme `@support-triage@production` ou `prompt.version: "production"`, utilisent la nouvelle version en deux minutes environ. Voir [Modèles de prompt](../../guides/prompt-templates.mdx).

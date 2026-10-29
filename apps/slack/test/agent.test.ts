@@ -1,7 +1,11 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, turnErrorText, type AgentTurnRequest, type PausedRun } from "../src/agent";
+import {
+	classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, withZeroDataRetention,
+	type AgentTurnRequest, type AskRequest, type PausedRun,
+} from "../src/agent";
 import { askQuestionTool, type QuestionDraft } from "../src/questions";
+import { noRouteInCountry, noZeroDataRetentionRoute } from "./fakes";
 
 function sse(events: unknown[]): Response {
 	return new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""), { headers: { "Content-Type": "text/event-stream" } });
@@ -229,5 +233,356 @@ describe("the SDK agent runner", () => {
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
 		const failure = await runner.run(request(), { onText: async () => undefined, onStep: async () => undefined }).then(() => null, (caught: unknown) => caught);
 		expect(classifyTurnError(failure)).toBe("no_credits");
+	});
+
+	it("counts what its tools spent on other models against the limit, in each step's cost and in its own", async () => {
+		const fetchImpl = vi.fn(async () => sse([COMPLETED]));
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const steps: number[] = [];
+		const modelCosts: number[] = [];
+		// $0.0021 of its own and $0.498 asked of other models: over $0.50, so it stops.
+		const output = await runner.run(request({ otherCostUsd: () => 0.498 }), {
+			onText: async () => undefined,
+			onStep: async (progress) => { steps.push(progress.costUsd); },
+			onCost: (usd) => { modelCosts.push(usd); },
+		});
+		expect(output).toMatchObject({ costUsd: expect.closeTo(0.5001, 9), stopReason: "max_cost:0.5" });
+		expect(steps).toEqual([expect.closeTo(0.5001, 9)]);
+		expect(modelCosts).toEqual([0.0021]);
+		// Under the limit, it isn't stopped.
+		await expect(runner.run(request({ otherCostUsd: () => 0.1 }), { onText: async () => undefined, onStep: async () => undefined })).resolves.toMatchObject({ stopReason: null });
+	});
+});
+
+describe("asking another model", () => {
+	const RESPONSE = {
+		id: "resp_test_2",
+		model: "anthropic/claude-test",
+		status: "completed",
+		output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "  A second opinion.  " }] }],
+		usage: { input_tokens: 10, output_tokens: 4, total_tokens: 14, cost: 0.0042 },
+	};
+
+	function ask(overrides: Partial<AskRequest> = {}): AskRequest {
+		const { gatewayKey, endUser, sessionId, labels, signal } = request();
+		return { gatewayKey, endUser, sessionId, labels, signal, model: "anthropic/claude-test", instructions: "Answer directly.", prompt: "Is this right?", webTools: false, maxOutputTokens: 4_000, ...overrides };
+	}
+
+	it("sends one non-streaming request with the answer's key, labels, user and session, and no tools", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			seen.push(await capture(input, init));
+			return Response.json(RESPONSE);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await expect(runner.ask(ask())).resolves.toEqual({ text: "A second opinion.", costUsd: 0.0042 });
+		expect(seen).toHaveLength(1);
+		const [sent] = seen;
+		expect(sent.url).toBe("https://gateway.test/v1/responses");
+		expect(sent.headers.get("authorization")).toBe("Bearer phaseo_v1_sk_testkid00000_testsecret");
+		expect(sent.headers.get("x-title")).toBe("Phaseo Slack agent");
+		expect(JSON.parse(sent.headers.get("x-phaseo-metadata")!)).toEqual({
+			labels: [{ key: "app", value: "slack-agent" }, { key: "slack_team", value: "T0TEST0001" }, { key: "slack_channel", value: "C0CHANNEL1" }],
+		});
+		expect(sent.body).toMatchObject({
+			model: "anthropic/claude-test",
+			user: "slack:T0TEST0001:U0PERSON01",
+			session_id: "slack-Ev0TEST0001",
+			stream: false,
+			instructions: "Answer directly.",
+			max_output_tokens: 4_000,
+		});
+		expect(sent.body.tools).toBeUndefined();
+		expect(sent.body).not.toHaveProperty("provider");
+		expect(JSON.stringify(sent.body.input)).toContain("Is this right?");
+	});
+
+	it("lets the gateway search the web for a Compare", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			seen.push(await capture(input, init));
+			return Response.json(RESPONSE);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await runner.ask(ask({ webTools: true }));
+		expect(seen[0].body.tools).toEqual([{ type: "phaseo:web_search" }, { type: "phaseo:web_fetch" }]);
+	});
+
+	it("throws the gateway's refusal for the caller to classify", async () => {
+		const body = { error: { code: "guardrail_blocked" }, code: "guardrail_blocked", error_operational_kind: "data_handling_policy_no_routes" };
+		const fetchImpl = vi.fn(async () => Response.json(body, { status: 403 }));
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const failure = await runner.ask(ask()).then(() => null, (caught: unknown) => caught);
+		expect(classifyTurnError(failure, "anthropic/claude-test")).toBe("model_not_allowed");
+	});
+});
+
+describe("files and images", () => {
+	const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
+	const IMAGE_PART = { type: "input_image", image_url: "data:image/png;base64,iVBORw0KGgo=" };
+
+	it("adds the shared files to the first user message of every Responses request, after its text", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			seen.push(await capture(input, init));
+			return sse([COMPLETED]);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await runner.run(request({ attachments: [IMAGE_PART] }), { onText: async () => {}, onStep: async () => {} });
+		const [user] = seen[0].body.input.filter((item: any) => item.role === "user");
+		expect(user.content).toEqual([{ type: "input_text", text: "New message from <@U0PERSON01>:\nhello" }, IMAGE_PART]);
+		// The rest of the request is as the SDK built it.
+		expect(seen[0].headers.get("authorization")).toBe("Bearer phaseo_v1_sk_testkid00000_testsecret");
+		expect(seen[0].body).toMatchObject({ model: "phaseo/auto", stream: true, session_id: "slack-Ev0TEST0001" });
+	});
+
+	it("leaves requests alone without files, and anything that isn't a Responses request", async () => {
+		const passed = vi.fn(async () => new Response("{}"));
+		expect(withAttachments(passed as unknown as typeof fetch, [])).toBe(passed);
+		const wrapped = withAttachments(passed as unknown as typeof fetch, [IMAGE_PART]);
+		await wrapped("https://gateway.test/v1/models");
+		const sent = (passed.mock.calls[0] as unknown[])[0] as Request;
+		expect(sent.url).toBe("https://gateway.test/v1/models");
+		expect(sent.method).toBe("GET");
+	});
+
+	it("counts the tools' spend with the model's, against the limit and in the cost", async () => {
+		const fetchImpl = vi.fn(async () => sse([COMPLETED]));
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const steps: number[] = [];
+		const modelCosts: number[] = [];
+		const output = await runner.run(request({ otherCostUsd: () => 0.04 }), {
+			onText: async () => {},
+			onStep: async (progress) => { steps.push(progress.costUsd); },
+			onCost: (usd) => { modelCosts.push(usd); },
+		});
+		expect(modelCosts).toEqual([0.0021]);
+		expect(steps.map((usd) => Math.round(usd * 10_000) / 10_000)).toEqual([0.0421]);
+		expect(Math.round(output.costUsd * 10_000) / 10_000).toBe(0.0421);
+
+		// An image that takes the run to its limit stops it there, as model spend would.
+		const tool = { id: "draw", description: "Draw", parameters: { type: "object", properties: {} }, execute: async () => ({ posted: true }) };
+		let calls = 0;
+		const looping = vi.fn(async () => {
+			calls += 1;
+			return sse([{ ...COMPLETED, response: { ...COMPLETED.response, output: [{ type: "function_call", call_id: `call_${calls}`, name: "draw", arguments: "{}" }] } }]);
+		});
+		const stopped = await createSdkAgentRunner({ fetchImpl: looping as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" })
+			.run(request({ tools: [tool], maxCostUsd: 0.5, otherCostUsd: () => 0.5 }), { onText: async () => {}, onStep: async () => {} });
+		expect(stopped.stopReason).toBe("max_cost:0.5");
+		expect(calls).toBe(1);
+	});
+
+	it("makes an image through the gateway with the turn's key, labels, end user and session, and reads its cost", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			seen.push(await capture(input, init));
+			return Response.json({ created: 1, model: "openai/gpt-image-2", data: [{ b64_json: btoa(String.fromCharCode(...PNG)) }], cost_nanos: 42_000_000 });
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const image = await runner.generateImage!({
+			gatewayKey: "phaseo_v1_sk_testkid00000_testsecret", model: "openai/gpt-image-2", prompt: "A lighthouse", size: "1024x1024",
+			endUser: "slack:T0TEST0001:U0PERSON01", sessionId: "slack-Ev0TEST0001", labels: { slackTeam: "T0TEST0001", slackChannel: "C0CHANNEL1" },
+			signal: new AbortController().signal,
+		});
+		expect(image).toEqual({ bytes: PNG, mimeType: "image/png", costUsd: 0.042, model: "openai/gpt-image-2" });
+		expect(seen[0].url).toBe("https://gateway.test/v1/images/generations");
+		expect(seen[0].headers.get("authorization")).toBe("Bearer phaseo_v1_sk_testkid00000_testsecret");
+		expect(seen[0].headers.get("x-title")).toBe("Phaseo Slack agent");
+		expect(seen[0].headers.get("x-phaseo-session-id")).toBe("slack-Ev0TEST0001");
+		expect(JSON.parse(seen[0].headers.get("x-phaseo-metadata")!).labels).toContainEqual({ key: "app", value: "slack-agent" });
+		expect(seen[0].body).toEqual({ model: "openai/gpt-image-2", prompt: "A lighthouse", n: 1, size: "1024x1024", quality: "medium", user: "slack:T0TEST0001:U0PERSON01" });
+	});
+
+	it("turns an image refusal into an error the turn can classify, and refuses anything that isn't an image", async () => {
+		const imageRequest = {
+			gatewayKey: "k", model: "openai/gpt-image-2", prompt: "A cat", size: "1024x1024" as const, endUser: "slack:T:U", sessionId: "s",
+			labels: { slackTeam: "T", slackChannel: "C" }, signal: new AbortController().signal,
+		};
+		const refused = createSdkAgentRunner({ fetchImpl: (async () => Response.json({ error: "insufficient_credits" }, { status: 402 })) as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const error = await refused.generateImage!(imageRequest).catch((caught: unknown) => caught);
+		expect(classifyTurnError(error)).toBe("no_credits");
+		const notImage = createSdkAgentRunner({ fetchImpl: (async () => Response.json({ data: [{ b64_json: btoa("<html>") }], cost_nanos: 40_000_000 })) as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const unread = await notImage.generateImage!(imageRequest).catch((caught: unknown) => caught);
+		// Billed all the same: the cost goes with the error.
+		expect(unread).toBeInstanceOf(ImageNotReadError);
+		expect((unread as ImageNotReadError).costUsd).toBe(0.04);
+		const lostDownload = createSdkAgentRunner({
+			fetchImpl: (async (input: RequestInfo | URL) => String(input).endsWith("/images/generations")
+				? Response.json({ data: [{ url: "https://images.test/fox.png" }], cost_nanos: 40_000_000 })
+				: Promise.reject(new TypeError("network"))) as unknown as typeof fetch,
+			baseUrl: "https://gateway.test/v1",
+		});
+		await expect(lostDownload.generateImage!(imageRequest)).rejects.toMatchObject({ name: "ImageNotReadError", costUsd: 0.04 });
+		// A null or blank cost_nanos is no amount: the usage pricing is read instead of counting $0.
+		const nullNanos = createSdkAgentRunner({
+			fetchImpl: (async () => Response.json({ data: [{ b64_json: btoa(String.fromCharCode(...PNG)) }], cost_nanos: null, usage: { pricing: { total_nanos: "35000000" } } })) as unknown as typeof fetch,
+			baseUrl: "https://gateway.test/v1",
+		});
+		await expect(nullNanos.generateImage!(imageRequest)).resolves.toMatchObject({ costUsd: 0.035 });
+	});
+
+	it("says when the model can't read the files shared", () => {
+		const error = new AgentGatewayError({ status: 400, statusText: "Bad Request", body: { error: "unsupported_modalities", reason: "unsupported_modalities" }, message: "unsupported" });
+		expect(classifyTurnError(error, "phaseo/auto")).toBe("files_unsupported");
+		expect(turnErrorText("files_unsupported")).toBe("The model this agent uses can't read the files shared here. Ask again without them, or an admin can choose a model that reads images and PDFs in Phaseo settings.");
+		expect(turnErrorText("files_unsupported", true)).toContain("The model you chose for this message can't read the files shared here.");
+	});
+});
+
+describe("after a Slack search", () => {
+	const NO_ZDR_ROUTE = noZeroDataRetentionRoute();
+
+	it("sends every request from the first search on only to providers that keep no data, and none before it", async () => {
+		const bodies: Array<Record<string, any>> = [];
+		let searched = false;
+		const asked: boolean[] = [];
+		const search = { id: "search_slack", description: "Search", parameters: { type: "object", properties: {} }, execute: async () => { searched = true; return { found: true }; } };
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			bodies.push((await capture(input, init)).body);
+			if (bodies.length === 1) return sse([{ ...COMPLETED, response: { ...COMPLETED.response, output: [{ type: "function_call", call_id: "call_s1", name: "search_slack", arguments: "{}" }] } }]);
+			return sse([COMPLETED]);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await runner.run(request({ model: "openai/gpt-test", tools: [search], zeroDataRetention: async () => { asked.push(searched); return searched; } }), { onText: async () => undefined, onStep: async () => undefined });
+		expect(bodies).toHaveLength(2);
+		// The first request went before the search; the one that carries its results, and any after, keep no data.
+		expect(bodies[0]).not.toHaveProperty("provider");
+		expect(bodies[1].provider).toEqual({ require_zero_data_retention: true });
+		// Without the gateway's web tools once it has searched: nothing found leaves in a query or a URL.
+		expect(bodies[0].tools.map((tool: { type: string }) => tool.type)).toEqual(expect.arrayContaining(["phaseo:web_search", "phaseo:web_fetch"]));
+		expect(bodies[1].tools.map((tool: { type: string }) => tool.type)).toEqual(["function"]);
+		expect(JSON.stringify(bodies[1].tools)).toContain("search_slack");
+		expect(JSON.stringify(bodies[1].input)).toContain("call_s1");
+		// Asked before each request, not once for the run.
+		expect(asked).toEqual([false, true]);
+		// Never the field the gateway rejects.
+		expect(JSON.stringify(bodies)).not.toContain("data_collection");
+	});
+
+	it("keeps the request's other provider fields, with the files added, and leaves requests that don't go to a model alone", async () => {
+		const sent: Request[] = [];
+		const passed = vi.fn(async (input: RequestInfo | URL) => { sent.push(input as Request); return new Response("{}"); });
+		const wrapped = withZeroDataRetention(withAttachments(passed as unknown as typeof fetch, [{ type: "input_image", image_url: "data:image/png;base64,iVBORw0KGgo=" }]), async () => true);
+		await wrapped("https://gateway.test/v1/responses", { method: "POST", body: JSON.stringify({ model: "openai/gpt-test", provider: { sort: "price", require_zero_data_retention: false }, input: [{ role: "user", content: "hello" }] }) });
+		const body = await sent[0].json() as Record<string, any>;
+		expect(body.provider).toEqual({ sort: "price", require_zero_data_retention: true });
+		expect(body.input[0].content).toHaveLength(2);
+		await wrapped("https://gateway.test/v1/models");
+		await wrapped("https://images.test/fox.png");
+		expect(sent.slice(1).map((request) => `${request.method} ${request.url}`)).toEqual(["GET https://gateway.test/v1/models", "GET https://images.test/fox.png"]);
+		// A model request it can't read isn't sent without the flag.
+		await expect(wrapped("https://gateway.test/v1/responses", { method: "POST", body: "not json" })).rejects.toThrow("zero_data_retention_not_applied");
+		expect(sent).toHaveLength(3);
+		expect(withZeroDataRetention(passed as unknown as typeof fetch, undefined)).toBe(passed);
+	});
+
+	it("sends the models it asks and the images it makes only to providers that keep no data", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const sent = await capture(input, init);
+			seen.push(sent);
+			return sent.url.endsWith("/images/generations")
+				? Response.json({ data: [{ b64_json: btoa(String.fromCharCode(...PNG)) }], cost_nanos: 40_000_000 })
+				: Response.json({ ...COMPLETED.response, output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Yes." }] }] });
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const { gatewayKey, endUser, sessionId, labels, signal } = request();
+		const ask: AskRequest = { gatewayKey, endUser, sessionId, labels, signal, model: "anthropic/claude-test", instructions: "Answer directly.", prompt: "Right?", webTools: false, maxOutputTokens: 4_000 };
+		await runner.ask(ask);
+		await runner.ask({ ...ask, zeroDataRetention: async () => true });
+		await runner.generateImage!({ gatewayKey, endUser, sessionId, labels, signal, model: "openai/gpt-image-2", prompt: "A fox", size: "1024x1024", zeroDataRetention: async () => true });
+		expect(seen.map((sent) => sent.body.provider ?? null)).toEqual([null, { require_zero_data_retention: true }, { require_zero_data_retention: true }]);
+	});
+
+	it("sends Auto's own steps and an Auto consult through the runner with the flag after a search", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const sent = await capture(input, init);
+			seen.push(sent);
+			return sent.body.stream
+				? sse([COMPLETED])
+				: Response.json({ ...COMPLETED.response, output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Yes." }] }] });
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await runner.run(request({ model: "phaseo/auto", zeroDataRetention: async () => true }), { onText: async () => undefined, onStep: async () => undefined });
+		const { gatewayKey, endUser, sessionId, labels, signal } = request();
+		await runner.ask({ gatewayKey, endUser, sessionId, labels, signal, model: "phaseo/auto", instructions: "Answer directly.", prompt: "Right?", webTools: false, maxOutputTokens: 4_000, zeroDataRetention: async () => true });
+		expect(seen.map((sent) => [sent.body.model, sent.body.provider])).toEqual([
+			["phaseo/auto", { require_zero_data_retention: true }],
+			["phaseo/auto", { require_zero_data_retention: true }],
+		]);
+		expect(seen[0].body.tools.map((tool: { type: string }) => tool.type)).not.toEqual(expect.arrayContaining(["phaseo:web_search"]));
+
+		// A workspace without Auto access is still told the model isn't allowed after a search, not that it needs zero data retention.
+		const noAccess = new AgentGatewayError({
+			status: 400,
+			statusText: "Bad Request",
+			body: { error: { code: "not_supported", message: "Auto Routing is currently available to selected Alpha workspaces." }, code: "not_supported", error_type: "user" },
+		});
+		expect(classifyTurnError(noAccess, "phaseo/auto", true)).toBe("model_not_allowed");
+	});
+
+	it("says so when no provider that keeps no data could answer, and only after a search", async () => {
+		const refusal = new AgentGatewayError({ status: 403, statusText: "Forbidden", body: NO_ZDR_ROUTE });
+		expect(classifyTurnError(refusal, "openai/gpt-test", true)).toBe("search_needs_zdr");
+		expect(classifyTurnError(new Error("run failed", { cause: refusal }), "openai/gpt-test", true)).toBe("search_needs_zdr");
+		// The same code before a search isn't about zero data retention.
+		expect(classifyTurnError(refusal, "openai/gpt-test")).toBe("failed");
+		// Other refusals after a search are what they always were.
+		expect(classifyTurnError(new AgentGatewayError({ status: 402, statusText: "Payment Required", body: { error: { code: "insufficient_funds" } } }), "openai/gpt-test", true)).toBe("no_credits");
+		// The gateway's own field for it is enough too.
+		const named = { error: { code: "model_region_unavailable", message: "No provider for this model meets this request's residency requirements." }, code: "model_region_unavailable", unmet_requirements: { zero_data_retention: true } };
+		expect(classifyTurnError(new AgentGatewayError({ status: 403, statusText: "Forbidden", body: named }), "openai/gpt-test", true)).toBe("search_needs_zdr");
+		expect(turnErrorText("search_needs_zdr")).toBe("I stopped here: after a Slack search, I can only use AI providers that keep no data (zero data retention), and none could answer with this agent's model. An admin can choose a model that keeps no data in Phaseo settings.");
+		expect(turnErrorText("search_needs_zdr", true)).toContain("none could answer with the model you chose for this message. Ask again with a model that keeps no data");
+		expect(turnErrorText("search_needs_zdr")).not.toMatch(/region|guardrail|policy/i);
+	});
+
+	it("says no provider kept no data only when the gateway says that is what no route met", () => {
+		const forbidden = (body: Record<string, unknown>) => new AgentGatewayError({ status: 403, statusText: "Forbidden", body });
+		// The same code for a request from a country none of the model's routes serves.
+		expect(classifyTurnError(forbidden(noRouteInCountry()), "openai/gpt-test", true)).toBe("failed");
+		// Or with no diagnostics at all.
+		expect(classifyTurnError(forbidden({ error: { code: "model_region_unavailable" }, code: "model_region_unavailable" }), "openai/gpt-test", true)).toBe("failed");
+		// A residency gate that dropped routes for their region only.
+		const region = noZeroDataRetentionRoute() as { routing_diagnostics: { filterStages: Array<Record<string, any>> } };
+		const regional = structuredClone(region);
+		regional.routing_diagnostics.filterStages[1].droppedProviders = [{ providerId: "us-cloud", reason: "execution_region_mismatch" }];
+		expect(classifyTurnError(forbidden(regional), "openai/gpt-test", true)).toBe("failed");
+		// A route that needs the workspace's own provider key: its body doesn't say zero data retention left only such routes.
+		const byok = new AgentGatewayError({ status: 400, statusText: "Bad Request", body: { error: { code: "byok_credentials_required", message: "The selected route requires your own provider credential." }, code: "byok_credentials_required", error_type: "user" } });
+		expect(classifyTurnError(byok, "openai/gpt-test", true)).toBe(classifyTurnError(byok, "openai/gpt-test"));
+		expect(classifyTurnError(byok, "openai/gpt-test", true)).not.toBe("search_needs_zdr");
+	});
+
+	it("sends Auto's requests after a search with the flag too, and says so when no model Auto may choose keeps no data", async () => {
+		const sent: Array<Record<string, any>> = [];
+		const passed = vi.fn(async (input: RequestInfo | URL) => { sent.push(JSON.parse(await (input as Request).text())); return new Response("{}"); });
+		let searched = false;
+		const wrapped = withZeroDataRetention(passed as unknown as typeof fetch, async () => searched);
+		await wrapped("https://gateway.test/v1/responses", { method: "POST", body: JSON.stringify({ model: "phaseo/auto", input: "hello" }) });
+		searched = true;
+		// The gateway's auto router picks only among models with a provider that keeps no data, and its classifier request carries the flag.
+		await wrapped("https://gateway.test/v1/responses", { method: "POST", body: JSON.stringify({ model: "phaseo/auto", input: "what the search found", tools: [{ type: "phaseo:web_search" }] }) });
+		expect(sent[0]).not.toHaveProperty("provider");
+		expect(sent[1].provider).toEqual({ require_zero_data_retention: true });
+		expect(sent[1].tools).toEqual([]);
+
+		// Auto's refusal when the workspace's Auto settings leave no such model.
+		const autoRefusal = new AgentGatewayError({
+			status: 403,
+			statusText: "Forbidden",
+			body: {
+				error: { code: "model_region_unavailable", message: "No model Auto can choose has a provider that offers zero data retention." },
+				code: "model_region_unavailable",
+				reason: "no_provider_meets_residency_requirements",
+				unmet_requirements: { zero_data_retention: true },
+				routing_diagnostics: { autoRouter: { candidates: [{ model: "openai/gpt-test", eligible: false, reason: "no_residency_compliant_providers" }] } },
+			},
+		});
+		expect(classifyTurnError(autoRefusal, "phaseo/auto", true)).toBe("search_needs_zdr");
+		expect(classifyTurnError(autoRefusal, "phaseo/auto")).not.toBe("search_needs_zdr");
 	});
 });

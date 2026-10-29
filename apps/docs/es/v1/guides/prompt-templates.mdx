@@ -235,6 +235,54 @@ Phaseo comprueba la plantilla al guardarla. Una plantilla con un error de sintax
 
 Los cambios guardados llegan a las solicitudes en unos dos minutos.
 
+## Versiones y etiquetas
+
+Cada vez que publicas un preajuste, Phaseo guarda una versión inmutable (consulta [Preajustes](./presets.mdx)). Las solicitudes ejecutan la última versión publicada, salvo que fijen una. Una solicitud fijada usa a la vez los modelos, los parámetros y la plantilla de esa versión.
+
+Fija una versión con `prompt.version`:
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` acepta una etiqueta de versión como `v3`, `1.2.0` o `2026.10.27`, o una etiqueta como `production`. También puedes poner la versión en el ID del modelo, con o sin plantilla:
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+Los preajustes públicos usan `@publisher/support-triage@production`. Si `model` y `prompt.version` fijan una versión, deben indicar la misma.
+
+### Etiquetas
+
+Una etiqueta es un nombre, como `production` o `staging`, que apunta a una versión publicada. Las etiquetas tienen de 1 a 32 letras minúsculas, números, guiones o guiones bajos, empiezan por una letra y no pueden parecer una etiqueta de versión (`v1`, `v2`).
+
+En **Ajustes -> Preajustes**, abre el preajuste. **Publicar**, junto a **Guardar borrador**, guarda tus cambios y los publica como la siguiente versión. Abre **Versiones y etiquetas** para gestionar las etiquetas: cada etiqueta tiene un selector de versión, así que elegir otra versión mueve la etiqueta y elegir una anterior es una reversión. Usa **Añadir etiqueta** para crear una nueva. Abre una versión para ver sus modelos y mensajes de plantilla y en qué se diferencian de la versión predeterminada (la que ejecutan las solicitudes que no fijan una versión), y usa **Ejecutar** para probar esa versión con los valores de prueba de **Plantilla de prompt**. Quien creó el preajuste puede cambiar sus etiquetas, y también los propietarios y administradores del espacio de trabajo cuando el preajuste está compartido. Con una [clave de API de administración](../developers/management-api-keys.mdx) que tenga `presets:write`:
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+El cuerpo acepta `version` (una etiqueta de versión, u otra etiqueta para copiar a dónde apunta) o `version_id`. `GET /v1/presets/{id}/labels` lista las etiquetas y `DELETE /v1/presets/{id}/labels/{label}` quita una. Las solicitudes que fijan una etiqueta quitada fallan hasta que se vuelve a añadir.
+
+### Revertir
+
+Para revertir, mueve la etiqueta a la versión anterior: elige **Mover production aquí** en esa versión, o envía la misma solicitud con `"version": "v2"`. Las solicitudes que fijan `production` vuelven a ejecutar v2 sin ningún cambio en tu aplicación.
+
+Los cambios de etiqueta llegan a las solicitudes en unos dos minutos, igual que otros cambios del preajuste.
+
 ## Errores
 
 Los problemas de plantilla en una solicitud devuelven `400` con el código `validation_error`. `reason` contiene el código del primer problema y `details` los enumera todos con su ruta:
@@ -268,11 +316,13 @@ Los problemas de plantilla en una solicitud devuelven `400` con el código `vali
 | `template_limit_exceeded` | Las variables o el texto generado superan los límites indicados abajo. |
 | `template_rendered_empty` | La plantilla no generó ningún mensaje de usuario ni de asistente y la solicitud no envió ninguno. |
 | `template_endpoint_unsupported` | El preajuste tiene una plantilla y se llamó desde un endpoint distinto de los tres anteriores. |
-| `prompt_model_conflict` | `model` indica un preajuste o modelo distinto de `prompt.id`. |
-| `prompt_version_unsupported` | La solicitud definió `prompt.version`. |
+| `prompt_model_conflict` | `model` indica un preajuste o modelo distinto de `prompt.id`, o fija una versión distinta de `prompt.version`. |
+| `prompt_version_invalid` | `prompt.version` está vacío, supera los 64 caracteres o tiene caracteres distintos de letras, números, `.`, `_`, `+` y `-`. |
 | `prompt_model_fallbacks_unsupported` | La solicitud definió alternativas en `models`. Indica los modelos alternativos en el preajuste. |
 
 Un `prompt.id` que no corresponde a ningún preajuste de tu espacio de trabajo devuelve `404`.
+
+Una versión o etiqueta fijada que no existe, o que la clave no puede usar, devuelve `404` con el motivo `preset_version_not_found`.
 
 ## Límites
 
@@ -295,7 +345,6 @@ Los metadatos de la solicitud registran el preajuste, los nombres de las variabl
 
 ## Limitaciones actuales
 
-- Las solicitudes usan la plantilla tal como se guardó por última vez. Todavía no se puede fijar una versión anterior con `prompt.version`.
 - Las alternativas de `models` no se pueden combinar con una plantilla. Añade los modelos alternativos al preajuste.
 - Las plantillas solo se aplican a solicitudes de chat completions, Responses y Messages.
 

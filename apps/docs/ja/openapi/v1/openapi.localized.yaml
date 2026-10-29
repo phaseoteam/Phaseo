@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -1150,6 +1156,243 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
+  /live/sessions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createLiveSession
+      summary: GPT Live セッションを作成
+      description: 使用量を計測する GPT Live 音声セッションを作成し、中継接続の詳細を返します。推論は Responses のバックエンドモデルに委任されます。関数ツールはクライアント側で実行されます。中継は各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - model
+                - provider
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - live
+                model:
+                  type: string
+                  enum:
+                    - openai/gpt-live-1
+                provider:
+                  type: string
+                  enum:
+                    - openai
+                voice:
+                  type: string
+                  default: marin
+                  enum:
+                    - alloy
+                    - ash
+                    - ballad
+                    - beacon
+                    - bossa
+                    - cedar
+                    - cinder
+                    - coral
+                    - delta
+                    - echo
+                    - gleam
+                    - marin
+                    - meridian
+                    - quartz
+                    - ripple
+                    - sage
+                    - shimmer
+                    - stone
+                    - tempo
+                    - verse
+                    - vesper
+                    - willow
+                instructions:
+                  type: string
+                  maxLength: 4000
+                source:
+                  type: string
+                  default: api
+                  enum:
+                    - api
+                    - chat
+                metadata:
+                  type: object
+                  additionalProperties: true
+                backend_model:
+                  type: string
+                  default: openai/gpt-5.6-luna
+                  enum:
+                    - openai/gpt-5.6-luna
+                    - openai/gpt-5.6-terra
+                backend_settings:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    instructions:
+                      type: string
+                      maxLength: 16000
+                    max_output_tokens:
+                      type: integer
+                      minimum: 16
+                      maximum: 32768
+                      default: 4096
+                    reasoning_effort:
+                      type: string
+                      enum:
+                        - none
+                        - low
+                        - medium
+                        - high
+                        - xhigh
+                    reasoning_summary:
+                      type: string
+                      enum:
+                        - auto
+                        - concise
+                        - detailed
+                    verbosity:
+                      type: string
+                      enum:
+                        - low
+                        - medium
+                        - high
+                    service_tier:
+                      type: string
+                      default: default
+                      enum:
+                        - default
+                        - flex
+                        - priority
+                    web_search:
+                      type: boolean
+                      default: false
+                    tools:
+                      type: array
+                      maxItems: 32
+                      description: クライアントが実行する関数ツール（名前は一意）。
+                      items:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - type
+                          - name
+                        properties:
+                          type:
+                            type: string
+                            enum:
+                              - function
+                          name:
+                            type: string
+                            pattern: ^[a-zA-Z0-9_-]{1,64}$
+                          description:
+                            type: string
+                            maxLength: 1024
+                          parameters:
+                            type: object
+                            additionalProperties: true
+                          strict:
+                            type: boolean
+                    tool_choice:
+                      type: string
+                      default: auto
+                      enum:
+                        - auto
+                        - none
+                        - required
+                    parallel_tool_calls:
+                      type: boolean
+                      default: true
+      responses:
+        '201':
+          description: GPT Live セッションが作成されました
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -2570,6 +2813,136 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: アクセス禁止
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: クレジットのチャージを開始
+      description: 認証済みワークスペースへのクレジット追加をリクエストします。オプトインの billing:write スコープとワークスペースのメンバーシップが必要です。ここでは請求されません。保存済みのカードがある場合、ワークスペースのすべてのオーナーと管理者に 1 回限りのリンクがメールで送られ、そのうち 1 人が請求を確認または拒否します。ない場合、レスポンスには checkout_url が含まれ、オーナーまたは管理者が新しいカードで支払います。そのカードは以降のチャージ用に保存されます。金額は $5〜$500 です。ワークスペースごとに保留中のチャージは 5 件まで、各チャージは 30 分で期限切れになります。
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: 任意の冪等キー。同じキーを繰り返すと、新しく作成せずに同じチャージを返します。idempotency_key フィールドと同じです。
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: この冪等キーの既存のチャージ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: チャージを作成しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: 無効な金額（invalid_amount、amount_below_minimum、amount_above_maximum）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: アクセス禁止
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 冪等キーが別のチャージで使用済みか、確認できるオーナーまたは管理者がいません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: ワークスペースにはすでに保留中のチャージが 5 件あります
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: カード決済は利用できません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: クレジットのチャージを取得
+      description: 認証済みワークスペースのクレジットチャージの状態を返します。credits:read または billing:write が必要です。final が true になるまでポーリングしてください。拒否・期限切れ・失敗したチャージには理由コードが付きます。自動で再試行しないでください。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: チャージ ID。
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: チャージの状態
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: 無効なチャージ ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: アクセス禁止
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: チャージが見つかりません
           content:
             application/json:
               schema:
@@ -4590,6 +4963,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listWorkloadIdentityPolicies
+      summary: List trusted workload policies
+      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      responses:
+        '200':
+          description: Trusted workload policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyListResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createWorkloadIdentityPolicy
+      summary: Create a trusted workload policy
+      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
+      responses:
+        '201':
+          description: Trusted workload policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Trusted workload policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getWorkloadIdentityPolicy
+      summary: Get a trusted workload policy
+      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateWorkloadIdentityPolicy
+      summary: Update a trusted workload policy
+      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
+      responses:
+        '200':
+          description: Trusted workload policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteWorkloadIdentityPolicy
+      summary: Delete a trusted workload policy
+      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyDeleteResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -5111,6 +5606,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: 解除済みのブロックも新しい順に返します。
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: 返すブロックの最大数。
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: 支出ブロックを一覧表示
+      description: ワークスペースの支出ブロックを新しい順に一覧表示します。アクションが block の支出ルールが、支出がブロック点に達したときに開始したブロックです。include_lifted が true でない限り、有効なブロックのみを返します。オーナーと管理者のみ。
+      responses:
+        '200':
+          description: 支出ブロック
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: 支出ブロックの ID。
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: 支出ブロックを解除
+      description: 有効な支出ブロックを解除し、対象のリクエストが約 1 分以内に再び受け付けられるようにします。ルールは期間がリセットされるまで再びブロックしませんが、アラートは引き続き送信します。オーナーと管理者のみ。解除は監査ログに記録され、状態 lifted の spend_blocked イベントがキューに追加されます。存在しないブロックには 404、すでに解除済みの場合は 409 spend_block_not_active を返します。
+      responses:
+        '200':
+          description: 解除された支出ブロック
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -5154,6 +5716,57 @@ paths:
                 $ref: '#/components/schemas/ClassifierResponse'
         default:
           description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: サンプルで分類器をテスト
+      description: 保存済みまたは下書きの分類器を、サンプルのプロンプトと応答に対して、ゲートウェイが送信するのと同じリクエストで 1 回実行します。自分の認証情報で行われる実際の課金対象モデルリクエストで、phaseo.classifier_test というラベルが付きます。オーナーと管理者が対象で、認証情報には classifiers:write と gateway:access が必要です。管理キーはモデルリクエストを行えないため拒否されます。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: モデルが選んだラベル
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: 分類器またはサンプルが無効です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: オーナーまたは管理者ではない、classifiers:write がない、または認証情報に gateway:access がありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: このワークスペースに保存済みの分類器が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: モデルリクエストが失敗しました (クレジット不足など)
           content:
             application/json:
               schema:
@@ -8676,6 +9289,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: プリセットのラベルを一覧表示
+      description: production や staging などの名前付きラベルと、それぞれが指す公開バージョンを一覧表示します。
+      responses:
+        '200':
+          description: プリセットのラベル一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: プリセットが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: プリセットのラベルを設定
+      description: ラベルを公開バージョンに割り当てます。ラベルがなければ作成し、あれば移動します。@support-triage@production のようにラベルを固定したリクエストは、約 2 分以内に新しいバージョンを使います。ラベルを以前のバージョンに戻すことがロールバックになります。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: ラベルを保存しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: ラベルが無効か、version_id と version のどちらも指定されていないか両方指定されています
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ラベルを変更できるのは、プリセットの作成者またはワークスペースのオーナーか管理者だけです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: プリセットまたはバージョンが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: プリセットのラベルを削除
+      description: ラベルを削除します。まだそのラベルを固定しているリクエストは preset_version_not_found で失敗します。
+      responses:
+        '200':
+          description: ラベルを削除しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: ラベルが無効です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ラベルを変更できるのは、プリセットの作成者またはワークスペースのオーナーか管理者だけです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: プリセットまたはラベルが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9047,6 +9757,596 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EndpointCatalogueResponse'
+  /me:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMe
+      summary: サインイン中のユーザーを取得
+      description: OAuth トークンのユーザー、トークンのクライアントとスコープ、ユーザーが所属するワークスペースを返します。me:read を持つ OAuth トークンが必要です。管理キーは拒否されます。
+      responses:
+        '200':
+          description: サインイン中のユーザー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: OAuth トークンではないか、トークンが無効または期限切れです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: トークンに me:read がありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/profile:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMyProfile
+      summary: プロフィールを取得
+      description: ダッシュボードのプロフィールページに表示されるプロフィール項目を返します。me:read を持つ OAuth トークンが必要です。
+      responses:
+        '200':
+          description: プロフィール
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: OAuth トークンではないか、トークンが無効または期限切れです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: トークンに me:read がありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateMyProfile
+      summary: プロフィールを更新
+      description: 表示名、デフォルトのワークスペース (所属しているもの)、画面上で詳細を隠すかどうかを変更します。パスワード、MFA、パスキーはブラウザーでのみ管理します。settings:write を持つ OAuth トークンが必要です。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: 更新後のプロフィール
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: フィールドが無効です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: OAuth トークンではないか、トークンが無効または期限切れです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: トークンに settings:write がないか、デフォルトのワークスペースが自分のものではありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listAuthorizedApps
+      summary: 承認したアプリを一覧表示
+      description: すべてのワークスペースで OAuth により承認したアプリを一覧表示します。oauth_clients:read を持つ OAuth トークンが必要です。
+      responses:
+        '200':
+          description: 承認済みアプリ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppListResponse'
+        '401':
+          description: OAuth トークンではないか、トークンが無効または期限切れです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: トークンに oauth_clients:read がありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps/{id}:
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reduceAuthorizedAppScopes
+      summary: 承認済みアプリからスコープを削除
+      description: アプリのアクセスを指定したスコープに絞ります。スコープは削除のみ可能で、追加するにはブラウザーでの同意が必要です。oauth_clients:write を持つ OAuth トークンが必要です。
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizedAppScopesRequest'
+      responses:
+        '200':
+          description: スコープを減らしました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppScopesResponse'
+        '400':
+          description: 空のリスト、またはアプリが持たないスコープ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: OAuth トークンではないか、トークンが無効または期限切れです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 承認済みアプリが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: revokeAuthorizedApp
+      summary: 承認済みアプリを取り消す
+      description: アプリのアクセスを取り消し、そのトークンを使用できなくします。呼び出し元アプリ自身の承認を取り消すと、そのアプリはサインアウトされます。oauth_clients:delete を持つ OAuth トークンが必要です。
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      responses:
+        '200':
+          description: 承認を取り消しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
+        '401':
+          description: OAuth トークンではないか、トークンが無効または期限切れです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 承認済みアプリが見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/accept:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: acceptWorkspaceInvite
+      summary: ワークスペースの招待を承諾
+      description: 招待コードが属するワークスペースへの参加をリクエストします。その後、ワークスペースのオーナーまたは管理者がリクエストを承認または却下します。workspaces:write を持つ OAuth トークンが必要です。管理キーは人ではなくワークスペースに属するため拒否されます。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
+      responses:
+        '201':
+          description: 参加リクエストを作成しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
+        '400':
+          description: 招待コードがありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: OAuth ユーザートークンではないか、トークンに workspaces:write がありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 招待が無効または期限切れです
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: すでにメンバーであるか、リクエストが保留中です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listMyJoinRequests
+      summary: ワークスペースへの参加リクエストを一覧表示
+      description: ワークスペースへの自分の参加リクエストを新しい順に一覧表示します (最大 100 件)。workspaces:read を持つ OAuth トークンが必要です。
+      parameters:
+        - name: status
+          in: query
+          description: 既定では保留中のみ。all を指定するとすべての状態を返します。
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - denied
+              - cancelled
+              - all
+      responses:
+        '200':
+          description: 参加リクエスト
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestListResponse'
+        '400':
+          description: ステータスが無効です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: OAuth ユーザートークンではないか、トークンに workspaces:read がありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getRateLimitTier
+      summary: ワークスペースのレート制限ティアを取得
+      description: ワークスペースの信頼ティア、1 分あたりのリクエスト数、今すぐ 1 ティア引き上げられるかどうかを返します。ワークスペースのオーナーと管理者 (OAuth)、または rate_limits:read を持つ管理キーが対象です。canRaise はワークスペースのオーナーの場合にのみ true になります。
+      responses:
+        '200':
+          description: ティアと引き上げの状態
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: オーナーまたは管理者ではないか、トークンに rate_limits:read がありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier/raise:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: raiseRateLimitTier
+      summary: ワークスペースのレート制限ティアを引き上げ
+      description: 対象のワークスペースを期間限定で 1 ティア引き上げます。引き上げられるのは、rate_limits:write を持つ OAuth トークンを使うワークスペースのオーナーだけです。漏えいしたキーが自分のワークスペースの制限を解除できないよう、管理キーは拒否されます。
+      responses:
+        '201':
+          description: 引き上げました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: ワークスペースのオーナーではない、管理キーである、またはトークンに rate_limits:write がありません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: ワークスペースは現在制限を引き上げられません (reason を参照)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/auto:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getAutoRoutingSettings
+      summary: 自動ルーティング設定を取得
+      description: このワークスペースで自動ルーターが動作する範囲の制限を返します。ワークスペースのどのメンバーでも利用でき、settings:read が必要です。
+      responses:
+        '200':
+          description: 自動ルーティング設定
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateAutoRoutingSettings
+      summary: 自動ルーティング設定を更新
+      description: 送信したフィールドを変更します。結果はダッシュボードが保存するときと同様に全体として検証されます。カスタムの spend_profile には両方の価格上限が必要です。オーナーと管理者が対象で、settings:write が必要です。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
+      responses:
+        '200':
+          description: 更新後の自動ルーティング設定
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '400':
+          description: 設定が無効です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/successor/replacements:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSuccessorReplacements
+      summary: 後継モデルの置き換えを一覧表示
+      description: どのプロバイダーも提供しなくなったモデルについて、ワークスペースが選んだ置き換えを一覧表示します。後継ルーティングのオン/オフと価格ポリシーは /settings にあります。ワークスペースのどのメンバーでも利用でき、settings:read が必要です。
+      responses:
+        '200':
+          description: 置き換え
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementListResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: saveSuccessorReplacement
+      summary: 後継モデルの置き換えを保存
+      description: model へのリクエストの送信先モデルを設定し、以前の選択を置き換えます。successor が null の場合、model へのリクエストはリダイレクトされません。両方のモデルがカタログにあり、後継モデルが提供されている必要があります。ワークスペースあたり最大 500 件です。オーナーと管理者が対象で、settings:write が必要です。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuccessorReplacement'
+      responses:
+        '200':
+          description: 保存した置き換え
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementResponse'
+        '400':
+          description: モデルが無効か不明です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: removeSuccessorReplacement
+      summary: 後継モデルの置き換えを削除
+      description: モデルに対するワークスペースの選択を削除し、カタログの後継モデルが再び適用されるようにします。オーナーと管理者が対象で、settings:write が必要です。
+      parameters:
+        - name: model
+          in: query
+          required: true
+          description: 置き換えを削除するモデルの ID。
+          schema:
+            $ref: '#/components/schemas/ModelId'
+      responses:
+        '200':
+          description: 置き換えを削除しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
+        '400':
+          description: モデルがないか無効です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: このモデルの置き換えは保存されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestinationConfig
+      summary: 保存前に送信先の設定をテスト
+      description: ゲートウェイがトレースを配信するのと同じ方法で、指定した設定にメッセージを含まないサンプルトレースを送信します。何も保存されません。オーナーと管理者が対象で、settings:write が必要です。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
+      responses:
+        '200':
+          description: テスト結果。送信先が拒否したか到達できなかった場合、ok は false になります
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '400':
+          description: 種類または設定が無効です
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestination
+      summary: 送信先の接続を確認
+      description: ダッシュボードのステータス確認と同じように、保存済みの送信先にメッセージを含まないサンプルトレースを送信します。送信先のヘルス状態は変わりません。オーナーと管理者が対象で、settings:write が必要です。
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: テスト結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 送信先が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/sample:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendObservabilityDestinationSample
+      summary: サンプルトレースを送信
+      description: 保存済みの送信先にサンプルトレースを送信します。送信先がプロンプトと出力を除外していない限り、メッセージも含まれます。オーナーと管理者が対象で、settings:write が必要です。
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: 送信結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: 認証されていません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 送信先が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /security/report-leaked-key:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reportLeakedKey
+      summary: 漏えいした API キーを報告
+      description: 公開された場所で見つかった Phaseo キーを報告します。認証は不要です。キーが一致したかどうかに関係なく常に同じ本文で 202 を返すため、このルートでキーを確認することはできません。アドレスごとにレート制限があります。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeakedKeyReportRequest'
+      responses:
+        '202':
+          description: 報告を受け付けました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeakedKeyReportResponse'
 tags:
   - name: Gateway
     description: Core Phaseo Gateway operations.
@@ -9104,6 +10404,10 @@ components:
         type: string
     DroppedParams:
       description: 'クライアントが送信したリクエストパラメーターのうち、処理するプロバイダーがサポートしていないため、ゲートウェイがプロバイダーに送信したりリクエストを拒否したりせずに削除したもの。例: `top_k, min_p`。成功したレスポンスで、リクエスト本文のパラメーターが 1 つ以上削除された場合にのみ送信されます。プリセットや既定値から設定されたパラメーターは含まれません。'
+      schema:
+        type: string
+    SpendWarning:
+      description: 'ブロックする支出ルールがリクエストを対象としており、支出が最後のアラートしきい値を超えたもののまだブロック点に達していない間に送信されます。最大 3 件のルールを rule_id、scope、resets_at の形式で示します（例: `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`）。支出がブロック点に達すると、対象のリクエストにはコード spend_rule_blocked の 429 が返されます。'
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -9166,6 +10470,21 @@ components:
       description: プリセットの UUID、slug、または正規名です。
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: production などのラベル名。英字で始まる 1〜32 文字の英小文字、数字、ハイフン、アンダースコアで、バージョンラベル（v1、v2）のような形にはできません。
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
+    AuthorizedAppId:
+      name: id
+      in: path
+      required: true
+      description: 承認済みアプリ一覧の承認 ID。
+      schema:
+        type: string
     ObservabilityDestinationId:
       name: id
       in: path
@@ -9209,6 +10528,476 @@ components:
         type: string
         format: uuid
   schemas:
+    MeResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                  nullable: true
+                name:
+                  type: string
+                  nullable: true
+            oauth:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                resource:
+                  type: string
+                  nullable: true
+            current_workspace_id:
+              type: string
+            workspaces:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                    nullable: true
+                  slug:
+                    type: string
+                    nullable: true
+                  role:
+                    type: string
+                    nullable: true
+                  current:
+                    type: boolean
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+          nullable: true
+        default_workspace_id:
+          type: string
+          nullable: true
+        obfuscate_info:
+          type: boolean
+          description: ダッシュボードの画面上でメールアドレスと名前を隠すかどうか。
+    UserProfileResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/UserProfile'
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        default_workspace_id:
+          type: string
+          nullable: true
+          description: 所属しているワークスペース。クリアするには null を指定します。
+        obfuscate_info:
+          type: boolean
+      additionalProperties: false
+    AuthorizedApp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 承認 ID。
+        client_id:
+          type: string
+        app_name:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        scopes:
+          type: array
+          items:
+            type: string
+        current:
+          type: boolean
+          description: 呼び出し元のトークンが属する承認では true です。
+        authorized_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+    AuthorizedAppListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizedApp'
+    AuthorizedAppScopesRequest:
+      type: object
+      required:
+        - scopes
+      properties:
+        scopes:
+          type: array
+          minItems: 1
+          description: 保持するスコープ。いずれもすでに付与されている必要があります。
+          items:
+            type: string
+      additionalProperties: false
+    AuthorizedAppScopesResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            scopes:
+              type: array
+              items:
+                type: string
+    AuthorizedAppRevokedResponse:
+      type: object
+      properties:
+        revoked:
+          type: boolean
+        id:
+          type: string
+    WorkspaceInviteAcceptRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          minLength: 6
+          maxLength: 256
+          description: 招待コード。
+      additionalProperties: false
+    MyJoinRequestCreatedResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            workspace_id:
+              type: string
+            status:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+    MyJoinRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - denied
+            - cancelled
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+    MyJoinRequestListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyJoinRequest'
+    RateLimitTierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            tier:
+              type: string
+            requestsPerMinute:
+              type: number
+            target:
+              type: string
+              nullable: true
+              description: 引き上げた場合の移動先ティア。
+            targetRequestsPerMinute:
+              type: number
+              nullable: true
+            eligible:
+              type: boolean
+            refusal:
+              type: string
+              nullable: true
+              description: 現在引き上げできない理由。対象の場合は null です。
+            activeUntil:
+              type: number
+              nullable: true
+              description: 有効な引き上げが終了する時刻 (Unix ミリ秒)。
+            availableAt:
+              type: number
+              nullable: true
+              description: 次の引き上げをリクエストできる時刻 (Unix ミリ秒)。
+            durationDays:
+              type: number
+            thresholds:
+              type: object
+              properties:
+                minAgeDays:
+                  type: number
+                minLifetimePaidSpendUsd:
+                  type: number
+            canRaise:
+              type: boolean
+              description: 呼び出し元がワークスペースのオーナーで、ワークスペースが対象である場合は true です。
+    AutoRoutingSettings:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          description: 自動ルーターが選択できるプロバイダー/モデルのパターン (openai/* など)。空の場合はすべてのモデルが許可されます。
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          nullable: true
+          description: 入力トークン 100 万あたりの USD。カスタムの支出プロファイルでのみ設定されます。
+        max_output_price_per_million:
+          type: number
+          nullable: true
+          description: 出力トークン 100 万あたりの USD。カスタムの支出プロファイルでのみ設定されます。
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+        revision:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    AutoRoutingSettingsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AutoRoutingSettings'
+    AutoRoutingSettingsUpdateRequest:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        max_output_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+    SuccessorReplacement:
+      type: object
+      required:
+        - model
+        - successor
+      properties:
+        model:
+          type: string
+          description: リクエストがリダイレクトされるモデル。
+        successor:
+          type: string
+          nullable: true
+          description: 送信先のモデル。リダイレクトしない場合は null。
+    SuccessorReplacementRow:
+      type: object
+      properties:
+        model:
+          type: string
+        successor:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    SuccessorReplacementListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementRemovedResponse:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+        model:
+          type: string
+    ObservabilityDestinationTestRequest:
+      type: object
+      required:
+        - type
+        - config
+      properties:
+        type:
+          $ref: '#/components/schemas/ObservabilityDestinationType'
+        config:
+          type: object
+          description: 送信先を作成するときと同じ送信先の設定。
+          additionalProperties:
+            type: string
+    ObservabilityDestinationTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            ok:
+              type: boolean
+            status:
+              type: string
+            http_status:
+              type: integer
+              nullable: true
+            error:
+              type: string
+              nullable: true
+    ApiKeyIpAllowlist:
+      type: array
+      maxItems: 100
+      description: キーを使用できるアドレス。各エントリはラベル付きの IPv4 または IPv6 アドレス、もしくは CIDR 範囲です。空の場合はすべてのアドレスが許可されます。
+      items:
+        type: object
+        required:
+          - label
+          - address
+        properties:
+          label:
+            type: string
+            minLength: 1
+            maxLength: 100
+          address:
+            type: string
+            description: IPv4 または IPv6 アドレス、もしくは CIDR 範囲。
+    LeakedKeyReportRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          maxLength: 4096
+          description: 見つかったとおりの漏えいキー。
+        source:
+          type: string
+          maxLength: 64
+          description: 見つかった場所 (github など)。
+        reporter_email:
+          type: string
+          maxLength: 320
+        evidence_url:
+          type: string
+          format: uri
+          maxLength: 2048
+        comment:
+          type: string
+          maxLength: 2000
+    LeakedKeyReportResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - received
     ProviderRoutingOptions:
       type: object
       description: ゲートウェイでの選択に使用するプロバイダーのルーティング設定。
@@ -16477,6 +18266,8 @@ components:
           description: 部門のレート制限と予算の対象として、このキーが属する部門。Null の場合、キーはワークスペース全体の制限にのみ計上されます。
         storage_locations:
           $ref: '#/components/schemas/ApiKeyStorageLocations'
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
         include_byok_in_limit:
           type: boolean
           description: プロバイダーの認証情報をキーの支出上限に含めるかどうかを示します。現在は常に false です。
@@ -16731,6 +18522,8 @@ components:
           allOf:
             - $ref: '#/components/schemas/ApiKeyStorageLocations'
           nullable: true
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array
@@ -17232,6 +19025,10 @@ components:
           type: object
           additionalProperties: true
           description: テンプレート変数の値。画像変数には https URL、データ URL、または画像パートを指定します。
+        version:
+          type: string
+          maxLength: 64
+          description: 現在のバージョンではなく、プリセットのこの公開済みバージョン（モデル、パラメーター、テンプレート）を実行します。v3、1.2.0、2026.10.27 などのバージョンラベル、または production などのラベルを指定します。model を @support-triage@production にするのと同じです。
     Preset:
       type: object
       required:
@@ -17424,6 +19221,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: このバージョンを指す production などの名前付きラベル。バージョン一覧の取得時に返されます。
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17452,6 +19254,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: version_id と version のどちらか一方だけを送信します。
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: ラベルを割り当てる公開バージョン。
+        version:
+          type: string
+          maxLength: 64
+          description: v3、1.2.0、2026.10.27 などのバージョンラベル、または指し先をコピーする staging などの別のラベル。
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
@@ -18425,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: 米ドル建ての金額（小数点以下 2 桁まで）。
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: 任意。認証済みワークスペースと一致する必要があります。
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: 任意の冪等キー。同じキーを繰り返すと、新しく作成せずに同じチャージを返します。
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: 状態がこれ以上変わらない場合に true（paid、declined、expired、failed）。その時点でポーリングを止めてください。
+        reason:
+          type: string
+          nullable: true
+          description: '拒否・期限切れ・失敗したチャージの理由コード。例: declined、expired、card_declined、authentication_failed。'
+          example: declined
+        message:
+          type: string
+          description: 次に何が起こるかを説明する文。
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout はオーナーまたは管理者が checkout_url で新しいカードで支払う場合、saved_card はオーナーまたは管理者が保存済みカードへの請求をメールで確認する場合です。
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: オーナーまたは管理者が新しいカードで支払う Phaseo のページ。保留中の checkout チャージを作成したレスポンスにのみ含まれます。
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: saved_card チャージの確認メールを送ったオーナーと管理者の数。
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:
@@ -21259,11 +23271,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: この値を選ぶタイミングをモデルに伝えます。
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: 分類器が各リクエストについて答える 1 つの質問。回答は、このディメンションのキーをキーとするリクエストラベルとして書き込まれます。呼び出し元がすでにそのキーのラベルを送信している場合、このディメンションはスキップされます。
       required:
         - key
         - values
@@ -21283,14 +23295,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: 1 つのリクエストに複数の値を許可します。
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: 一覧の値がどれも当てはまらない場合に、モデルが "other" と答えられるようにします。
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: 2〜50 個の値。値を 1 つだけにできるのは allow_other が true の場合のみです。
           minItems: 1
           maxItems: 50
           items:
@@ -21521,7 +23533,269 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: テストする下書き。classifier_id を指定した場合、送信しないフィールドはそこから取得されます。
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: テストする、またはテストのラベルに使う、このワークスペースの保存済み分類器。
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: モデルの回答を読み取れなかった場合は false です。
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    WorkloadIdentityProvider:
+      type: string
+      enum:
+        - vercel
+        - github_actions
+      description: The platform that issues the OIDC tokens.
+    WorkloadIdentityPolicy:
+      type: object
+      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      required:
+        - id
+        - name
+        - provider
+        - issuer
+        - owner_id
+        - claim_conditions
+        - max_token_lifetime_seconds
+        - status
+        - audience
+        - key_id
+        - last_used_at
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+        owner_id:
+          type: string
+          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+        key_id:
+          type: string
+          format: uuid
+          description: The policy's key. Requests, usage and limits are recorded against it.
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    WorkloadIdentityPolicyInput:
+      type: object
+      required:
+        - name
+        - provider
+        - owner_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+        owner_id:
+          type: string
+          minLength: 1
+          description: The Vercel team ID or GitHub organisation or user ID to pin.
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          default: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkloadIdentityPolicy'
+      additionalProperties: false
+    WorkloadIdentityPolicyListResponse:
+      type: object
+      required:
+        - data
+        - audience
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadIdentityPolicy'
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+      additionalProperties: false
+    WorkloadIdentityPolicyDeleteResponse:
       type: object
       required:
         - data
@@ -21837,7 +24111,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: notify、または支出が基準額の block_at_percent か block_at_amount に達したら通知してからブロックします。ブロックはベストエフォートで、しきい値の数分後に作動します。 ブロックはまだ利用できません。action が block のルールは、利用可能になるまで 400 で拒否されます。
+      description: notify、または支出が基準額の block_at_percent か block_at_amount に達したら通知してからブロックします。ブロックはベストエフォートで、しきい値の数分後に作動します。 ゲートウェイでブロックがオフの間は、ブロックを始めることになるルールは 400 で拒否され、すでにブロックするルールは通知のみを行います。
       enum:
         - notify
         - block
@@ -22559,6 +24833,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: '支出ブロックが解除された理由: manual（オーナーまたは管理者）、period_reset、below_limit（予算の引き上げなどにより支出が再びブロック点を下回った）、rule_changed、rule_disabled、rule_deleted。'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: 支出がブロック点に達したときに支出ルールが開始したブロック。有効な間、対象のリクエストにはコード spend_rule_blocked の 429 が返され、Retry-After は resets_at に設定されます。block_free_models が true でない限り、無料モデルは対象外です。
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ブロックを開始したルール。ルールが完全に削除されると null になります。
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: 対象範囲の表示名（キー、部署、モデルの名前、メンバーのメールアドレス、または ID）。
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: ブロックが自動的に解除される日時（ルールの期間の終わり）。
+        spend_nanos:
+          type: integer
+          description: ブロック開始時点のルール対象範囲の支出（ナノドル）。
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: ブロック点（ナノドル）。
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: 手動解除の場合に、ブロックを解除したオーナーまたは管理者。
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: 解除されておらず、リセット時刻も過ぎていない。
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

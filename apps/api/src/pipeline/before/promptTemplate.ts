@@ -1,7 +1,7 @@
 // Purpose: Apply a preset's prompt template to a request
 // Why: Templates keep prompts in the preset, versioned with its routing, while
 //      each request only sends the values that change
-// How: Read `prompt: {id, variables}` before schema validation, then render the
+// How: Read `prompt: {id, variables, version}` before schema validation, then render the
 //      preset's template and merge it into the protocol body before routing
 
 import type { Endpoint } from "@core/types";
@@ -14,6 +14,7 @@ import {
 	type RenderedPromptPart,
 } from "@core/prompt-templates";
 import type { PresetData } from "./types";
+import { parsePresetReference, pinnedPresetModel } from "./presetReference";
 
 const TEMPLATE_ENDPOINTS = new Set<Endpoint>(["chat.completions", "responses", "messages"]);
 /**
@@ -26,7 +27,13 @@ export type PromptReference = {
 	/** The preset reference, e.g. "@support-triage" or "@publisher/support-triage". */
 	id: string;
 	variables: unknown;
+	/** The pinned version or label ("v3", "1.2.0", "production"), or null for the published version. */
+	version?: string | null;
 };
+
+const MAX_PROMPT_VERSION_LENGTH = 64;
+/** Version labels (v3, 1.2.0, 1.2.0-beta.1+build.5, 2026.10.27.2) and named labels (production). */
+const PROMPT_VERSION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._+-]*$/;
 
 export type PromptReferenceIssue = { reason: string; message: string; path: string[] };
 
@@ -52,30 +59,69 @@ export function extractPromptReference(rawBody: any, endpoint: Endpoint):
 	if (id.length < 2 || /\s/.test(id)) {
 		return { ok: false, issue: { reason: "prompt_id_invalid", message: `"prompt.id" must name a preset, such as "@support-triage"`, path: ["prompt", "id"] } };
 	}
+	const idReference = parsePresetReference(id)!;
+	let version: string | null = null;
 	if (prompt.version !== undefined && prompt.version !== null) {
-		return {
-			ok: false,
-			issue: { reason: "prompt_version_unsupported", message: `"prompt.version" is not supported yet; requests use the preset's published version`, path: ["prompt", "version"] },
-		};
+		const value = typeof prompt.version === "string" ? prompt.version.trim() : "";
+		if (!value || value.length > MAX_PROMPT_VERSION_LENGTH || !PROMPT_VERSION_PATTERN.test(value)) {
+			return {
+				ok: false,
+				issue: {
+					reason: "prompt_version_invalid",
+					message: `"prompt.version" must be a published version such as "v3", "1.2.0" or "2026.10.27", or a label such as "production" (at most ${MAX_PROMPT_VERSION_LENGTH} characters)`,
+					path: ["prompt", "version"],
+				},
+			};
+		}
+		version = value;
 	}
-	const model = typeof rawBody.model === "string" ? rawBody.model.trim() : "";
-	if (model && model.toLowerCase() !== id.toLowerCase()) {
+	if (version !== null && idReference.ref !== null && idReference.ref !== version) {
 		return {
 			ok: false,
 			issue: {
 				reason: "prompt_model_conflict",
-				message: `"model" is "${model}" but "prompt.id" is "${id}". Leave "model" out, or set it to "${id}"`,
+				message: `"prompt.id" pins "${idReference.ref}" but "prompt.version" is "${version}". Send the version in one place`,
+				path: ["prompt", "version"],
+			},
+		};
+	}
+	version ??= idReference.ref;
+
+	// `model` may repeat the reference, with or without the same pinned version.
+	const model = typeof rawBody.model === "string" ? rawBody.model.trim() : "";
+	const modelReference = model ? parsePresetReference(model) : null;
+	if (model && (!modelReference || modelReference.base.toLowerCase() !== idReference.base.toLowerCase())) {
+		return {
+			ok: false,
+			issue: {
+				reason: "prompt_model_conflict",
+				message: `"model" is "${model}" but "prompt.id" is "${id}". Leave "model" out, or set it to "${pinnedPresetModel(idReference.base, version)}"`,
 				path: ["model"],
 			},
 		};
 	}
+	if (modelReference?.ref != null && version !== null && modelReference.ref !== version) {
+		return {
+			ok: false,
+			issue: {
+				reason: "prompt_model_conflict",
+				message: `"model" pins "${modelReference.ref}" but "prompt.version" is "${version}". Leave "model" out, or set it to "${pinnedPresetModel(idReference.base, version)}"`,
+				path: ["model"],
+			},
+		};
+	}
+	version ??= modelReference?.ref ?? null;
+	if (version === "") {
+		return { ok: false, issue: { reason: "prompt_version_invalid", message: `The version after "@" is empty`, path: ["prompt", "id"] } };
+	}
 
-	const next: any = { ...rawBody, model: model || id };
+	// The model names the whole pinned version: its models, parameters and template.
+	const next: any = { ...rawBody, model: pinnedPresetModel(modelReference?.base ?? idReference.base, version) };
 	if (endpoint === "responses" && next.input === undefined) next.input = [];
 	if (endpoint !== "responses" && (next.messages === undefined || (Array.isArray(next.messages) && next.messages.length === 0))) {
 		next.messages = [MESSAGES_PLACEHOLDER];
 	}
-	return { ok: true, rawBody: next, reference: { id, variables: prompt.variables } };
+	return { ok: true, rawBody: next, reference: { id: idReference.base, variables: prompt.variables, version } };
 }
 
 /** Remove the messages placeholder after schema validation. */

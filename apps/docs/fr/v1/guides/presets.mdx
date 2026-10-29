@@ -4,14 +4,14 @@ description: "Enregistrez des configurations Gateway réutilisables pour votre �
 icon: "sliders-horizontal"
 ---
 
-Les préréglages sont des configurations réutilisables qui aident les équipes à uniformiser les prompts, les préférences de modèle et les valeurs de routage par défaut. Ils se gèrent dans le tableau de bord Phaseo et peuvent être partagés avec toute l’équipe.
+Les préréglages sont des configurations réutilisables qui aident les équipes à uniformiser les prompts, les préférences de modèle et les valeurs de routage par défaut. Ils se gèrent dans le tableau de bord Phaseo et peuvent être partagés avec toute l’équipe. Vous pouvez aussi les gérer avec les commandes `phaseo presets` de la CLI ou l’API `/v1/presets`.
 
 ## Démarrage rapide
 
 <Steps>
 <Step title="Créer un préréglage">
 
-Ouvrez **Tableau de bord -> Paramètres -> Préréglages** et créez un préréglage avec un slug explicite, par exemple `release-summary`. Ajoutez uniquement les valeurs par défaut à partager entre les appelants.
+Ouvrez **Tableau de bord -> Paramètres -> Préréglages** et créez un préréglage avec un slug explicite, par exemple `release-summary`. Ajoutez uniquement les valeurs par défaut à partager entre les appelants. Depuis la CLI, lancez `phaseo presets create --name @release-summary --model <model-id>`.
 
 </Step>
 
@@ -98,6 +98,8 @@ Les copies du marketplace restent épinglées à la version exacte de la source 
 
 Phaseo conserve à la fois la source immédiate et l’arborescence complète de chaque fork. Les pages du marketplace peuvent ainsi différencier les forks directs de tous leurs descendants, même lorsqu’un préréglage a été copié et republié plusieurs fois.
 
+Les requêtes peuvent épingler une version publiée par son libellé, comme `@support-triage@v3`, ou par un libellé nommé comme `production` que vous faites pointer vers une version. Ramener un libellé sur une version antérieure est un retour arrière. Voir [Modèles de prompt](./prompt-templates.mdx).
+
 ## Fusion des préréglages
 
 Lorsqu’une requête est associée à un préréglage dans le contexte Gateway, le préréglage est appliqué avant le routage vers un fournisseur :
@@ -124,7 +126,7 @@ Pour des transformations plus complexes propres à l’appelant, centralisez-les
 
 ## Gérer les préréglages
 
-Créez et gérez les préréglages dans **Tableau de bord -> Paramètres -> Préréglages**. Utilisez des slugs distincts lorsque les workflows nécessitent des prompts, un routage ou un comportement de cache sensiblement différents.
+Créez et gérez les préréglages dans **Tableau de bord -> Paramètres -> Préréglages**. Utilisez des slugs distincts lorsque les workflows nécessitent des prompts, un routage ou un comportement de cache sensiblement différents. Depuis la CLI, utilisez `phaseo presets create|update`, `phaseo presets versions create` et `phaseo presets labels set` (l’API `/v1/presets`).
 
 ## Quand utiliser des préréglages
 

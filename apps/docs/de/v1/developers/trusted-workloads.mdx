@@ -65,6 +65,38 @@ Richtlinien greifen innerhalb von etwa einer Minute. Wenn du eine Richtlinie aus
 
 ---
 
+## Richtlinien mit Terraform oder der API verwalten
+
+Du kannst Richtlinien auch als Code verwalten, mit einem [Management-Key](./management-api-keys.mdx), der die Berechtigungen `keys:read`, `keys:write` und `keys:delete` hat. Das geht nur in Workspaces, die Trusted Workloads schon haben.
+
+Verwende in Terraform die Ressource `phaseo_trusted_workload`:
+
+```hcl
+resource "phaseo_trusted_workload" "deploy" {
+  name     = "GitHub deploy (main)"
+  platform = "github_actions"
+  owner_id = "123456"
+
+  claim_conditions = {
+    repository_id = ["987654321"]
+    ref           = ["refs/heads/main"]
+  }
+}
+```
+
+`platform` ist `vercel` oder `github_actions`. Setze bei Vercel zusätzlich `issuer` auf `https://oidc.vercel.com/<team-slug>` oder, im globalen Issuer-Modus, auf `https://oidc.vercel.com`, und verwende Bedingungen wie `project_id` und `environment`. Wenn du Plattform, Issuer oder Owner änderst, wird die Richtlinie ersetzt. Eine Richtlinie hat kein Secret, deshalb landet nichts Vertrauliches im Terraform-State.
+
+Sende über die API dieselben Felder an `/v1/workload-identity/policies`. In der API heißt die Plattform `provider`:
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
+```
+
+---
+
 ## Phaseo mit einem Token aufrufen
 
 <Tabs>

@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "Permet à cette application de vérifier qui se connecte.",
 			"gatewayPermissionLabel": "Utiliser AI Gateway avec vos crédits",
 			"gatewayPermissionDescription": "Permet à l’application d’envoyer des requêtes de modèles facturées sur les crédits de l’équipe sélectionnée.",
+			"billingPermissionLabel": "Lancer des recharges de crédits",
+			"billingPermissionDescription": "Permet à l’application de demander des achats de crédits pour l’équipe sélectionnée. Un propriétaire ou un administrateur de l’équipe doit confirmer chaque débit par e-mail.",
 			"readPermissionLabel": "Lire : {resource}",
 			"readPermissionDescription": "Permet à cette application de lire : {resource}.",
 			"managePermissionLabel": "Gérer : {resource}",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "Applications OAuth",
 					"description": "Configuration des clients OAuth et des intégrations."
+				},
+				"billing": {
+					"title": "Facturation",
+					"description": "Achats de crédits qu’un propriétaire ou un administrateur de l’équipe confirme par e-mail."
 				}
 			},
 			"resources": {
@@ -634,6 +640,7 @@
 				"providerCredentials": "les identifiants des fournisseurs",
 				"guardrails": "les garde-fous et les politiques",
 				"budgets": "les budgets de dépenses et l’utilisation de l’équipe",
+				"spendRules": "règles d’alerte et de blocage des dépenses",
 				"managementKeys": "les informations des clés de gestion machine",
 				"oauthApps": "les paramètres des applications OAuth et des intégrations",
 				"privateModels": "modèles privés de l’espace de travail"
@@ -2422,6 +2429,8 @@
 			"selectModelsToCompare": "Sélectionnez des modèles à comparer.",
 			"viewFullLeaderboard": "Voir le classement complet",
 			"sourceArtificialAnalysis": "Source : Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "Comparable d’une année et d’une version de l’indice à l’autre",
 			"fullLeaderboard": "Classement complet",
 			"noModelsMatchThisSearch": "Aucun modèle ne correspond à cette recherche.",
 			"noResultsAvailableForThisMetric": "Aucun résultat disponible pour cette mesure.",

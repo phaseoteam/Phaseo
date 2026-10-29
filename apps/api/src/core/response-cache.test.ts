@@ -69,6 +69,15 @@ describe("response-cache fingerprinting", () => {
 		expect(stableStringify(payload)).not.toContain("\"debug\"");
 	});
 
+	it("separates pinned preset versions without changing unpinned fingerprints", () => {
+		const base = { workspaceId: "ws_123", endpoint: "responses" as const, model: "openai/gpt-5.4-nano", body: { input: "hello" }, presetId: "preset_1", presetSlug: "triage" };
+		const unpinned = buildResponseCacheFingerprintPayload(base);
+		expect(unpinned.preset).toEqual({ id: "preset_1", slug: "triage" });
+		expect(buildResponseCacheFingerprintPayload({ ...base, presetVersionId: null })).toEqual(unpinned);
+		const pinned = buildResponseCacheFingerprintPayload({ ...base, presetVersionId: "version_2" });
+		expect(pinned.preset).toEqual({ id: "preset_1", slug: "triage", version_id: "version_2" });
+	});
+
 	it("builds versioned Redis cache keys", () => {
 		expect(buildResponseCacheKey("ws_123", "abc123")).toBe(
 			"gateway:response-cache:v1:ws_123:abc123",

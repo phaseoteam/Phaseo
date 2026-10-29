@@ -94,6 +94,19 @@ Console.WriteLine(genericSocketUrl);
 Console.WriteLine(resourceSocketUrl);
 ```
 
+## Realtime voice (beta)
+
+`client.Realtime.ConnectAsync(...)` creates a realtime session and opens the relay WebSocket with `System.Net.WebSockets.ClientWebSocket`; there is no extra dependency. Provider events pass through unchanged as `JsonElement`s.
+
+```csharp
+var session = await client.Realtime.ConnectAsync(new RealtimeConnectOptions { Model = "openai/gpt-realtime-2", Voice = "marin" });
+using var warnings = session.OnWarning(warning => Console.WriteLine(warning.GetProperty("code").GetString()));
+await session.SendAudioAsync(pcm16Chunk); // PCM16 bytes; base64 is handled for you
+var ended = await session.EndAsync(reason: "caller hung up"); // session.ended: reason, usage, cost, billing_status
+```
+
+`await foreach (var item in session.EventsAsync())` reads every event until the socket closes. If the socket closes without `session.ended`, `EndAsync` throws `RealtimeSessionClosedException`, whose `FinalBillPath` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.

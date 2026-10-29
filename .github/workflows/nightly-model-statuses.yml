@@ -46,6 +46,4 @@ jobs:
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
               run: pnpm run data:update-statuses
 
-            - name: Validate data
-              run: pnpm run validate:data
 

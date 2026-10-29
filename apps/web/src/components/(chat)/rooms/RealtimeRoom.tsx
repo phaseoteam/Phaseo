@@ -72,7 +72,10 @@ const RealtimePersona = dynamic(
 	},
 );
 
-type RealtimeProvider = "openai" | "xai" | "google";
+// xAI and Google need their own event handling; every other provider speaks the
+// OpenAI realtime events through the relay, so any catalogue provider id is valid.
+type RealtimeProvider = "openai" | "xai" | "google" | (string & {});
+type RealtimeTranslate = (key: string, values?: Record<string, string>) => string;
 type SessionStatus = "idle" | "connecting" | "connected" | "ended" | "error";
 
 function PersonaLoadingPlaceholder({ className }: { className?: string }) {
@@ -1262,37 +1265,47 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function providerFromGatewayModel(model: GatewaySupportedModel): RealtimeProvider | null {
 	const providerId = model.providerId.trim().toLowerCase();
-	if (providerId === "openai") return "openai";
+	if (!providerId) return null;
 	if (providerId === "x-ai" || providerId === "xai" || providerId === "spacex-ai") {
 		return "xai";
 	}
 	if (providerId === "google-ai-studio" || providerId === "google") {
 		return "google";
 	}
-	return null;
+	return providerId;
 }
 
-function providerLabel(provider: RealtimeProvider): string {
+function providerLabel(provider: RealtimeProvider, providerName?: string | null): string {
 	if (provider === "openai") return "OpenAI";
 	if (provider === "xai") return "xAI";
-	return "Google";
+	if (provider === "google") return "Google";
+	return providerName?.trim() || titleCaseModelId(provider);
 }
 
-function billingLabel(provider: RealtimeProvider, translate: (key: string) => string): RealtimeModel["billing"] {
+function billingLabel(
+	provider: RealtimeProvider,
+	providerName: string,
+	translate: RealtimeTranslate,
+): RealtimeModel["billing"] {
+	if (provider === "openai") return translate("realtimeBillingOpenAI");
 	if (provider === "xai") return translate("realtimeBillingXai");
 	if (provider === "google") return translate("realtimeBillingGoogle");
-	return translate("realtimeBillingOpenAI");
+	return translate("realtimeBillingProvider", { provider: providerName });
 }
 
 function fallbackVoiceOptions(provider: RealtimeProvider): RealtimeVoiceOption[] {
 	const fallback = REALTIME_MODELS.find((model) => model.provider === provider);
-	return fallback?.voices ?? [{ id: fallbackDefaultVoice(provider) }];
+	if (fallback) return fallback.voices;
+	const defaultVoice = fallbackDefaultVoice(provider);
+	return defaultVoice ? [{ id: defaultVoice }] : [];
 }
 
+// Other providers fall back to the gateway's default voice, so an empty id is valid.
 function fallbackDefaultVoice(provider: RealtimeProvider): string {
+	if (provider === "openai") return "marin";
 	if (provider === "xai") return "eve";
 	if (provider === "google") return "Puck";
-	return "marin";
+	return "";
 }
 
 function titleCaseModelId(modelId: string): string {
@@ -1325,7 +1338,12 @@ function readRealtimeVoiceOptions(params: unknown, provider: RealtimeProvider): 
 	const source = isRecord(voice)
 		? voice.values ?? voice.options ?? voice.enum
 		: voice;
-	if (!Array.isArray(source)) return fallbackVoiceOptions(provider);
+	if (!Array.isArray(source)) {
+		const defaultVoice = isRecord(voice) ? voice.default ?? voice.default_voice : null;
+		return typeof defaultVoice === "string" && defaultVoice.trim()
+			? [{ id: defaultVoice.trim(), label: defaultVoice.trim() }]
+			: fallbackVoiceOptions(provider);
+	}
 	const voices = source
 		.map((entry): RealtimeVoiceOption | null => {
 			if (typeof entry === "string" && entry.trim()) {
@@ -1369,7 +1387,7 @@ function readRealtimeDefaultVoice(
 
 function gatewayModelToRealtimeModel(
 	model: GatewaySupportedModel,
-	translate: (key: string) => string,
+	translate: RealtimeTranslate,
 ): RealtimeModel | null {
 	const provider = providerFromGatewayModel(model);
 	if (!provider) return null;
@@ -1377,23 +1395,26 @@ function gatewayModelToRealtimeModel(
 	const voices = readRealtimeVoiceOptions(params, provider);
 	const labelBase = model.modelName?.trim() || titleCaseModelId(model.selectorModelId || model.modelId);
 	const modelKey = model.selectorModelId || model.modelId;
+	const label = providerLabel(provider, model.providerName);
 	const releaseDateOverride =
 		REALTIME_RELEASE_DATE_OVERRIDES[`${provider}:${modelKey}`] ??
 		REALTIME_RELEASE_DATE_OVERRIDES[`${provider}:${model.modelId}`];
 	return {
 		id: `${provider}:${modelKey}`,
-		label: labelBase.startsWith(providerLabel(provider))
+		label: labelBase.startsWith(label)
 			? labelBase
-			: `${providerLabel(provider)} ${labelBase}`,
+			: `${label} ${labelBase}`,
 		provider,
-		providerLabel: providerLabel(provider),
-		logoId: provider === "google" ? "google" : provider,
+		providerLabel: label,
+		logoId: provider === "google" || provider === "xai" || provider === "openai"
+			? provider
+			: model.organisationId || provider,
 		model: modelKey,
 		releaseDate: releaseDateOverride ?? model.releaseDate ?? model.announcementDate ?? null,
 		defaultVoice: readRealtimeDefaultVoice(params, voices, provider),
 		voices,
 		transport: "WebSocket",
-		billing: billingLabel(provider, translate),
+		billing: billingLabel(provider, label, translate),
 	};
 }
 
@@ -1413,7 +1434,7 @@ function compareRealtimeModelsByRelease(a: RealtimeModel, b: RealtimeModel): num
 
 function buildRealtimeModels(
 	models: GatewaySupportedModel[],
-	translate: (key: string) => string,
+	translate: RealtimeTranslate,
 ): RealtimeModel[] {
 	const mapped = filterModelsForRoom(models, "realtime")
 		.map((model) => gatewayModelToRealtimeModel(model, translate))
@@ -1439,7 +1460,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		`${format.number(Math.floor(ms / 1000), { notation: "standard" })}s`;
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const realtimeModels = useMemo(
-		() => buildRealtimeModels(models, (key) => t(key as never)),
+		() => buildRealtimeModels(models, (key, values) => t(key as never, values as never)),
 		[models, t],
 	);
 	const suggestedModels = useMemo(() => {
@@ -2285,7 +2306,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 			if (
 				type === "response.output_audio.delta" &&
-				(provider === "xai" || (provider === "openai" && relaySessionRef.current))
+				(provider === "xai" || (provider !== "google" && relaySessionRef.current))
 			) {
 				assistantResponseInFlightRef.current = true;
 				setPersonaState("speaking");
@@ -2304,7 +2325,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 			if (
 				type === "response.output_audio.done" &&
-				(provider === "xai" || (provider === "openai" && relaySessionRef.current))
+				(provider === "xai" || (provider !== "google" && relaySessionRef.current))
 			) {
 				outputScheduleRef.current = outputAudioContextRef.current?.currentTime ?? 0;
 				if (provider === "xai") {
@@ -3131,8 +3152,10 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				await startOpenAI(session);
 			} else if (session.provider === "google") {
 				await startGoogle(session);
-			} else {
+			} else if (session.provider === "xai") {
 				await startXAI(session);
+			} else {
+				throw new Error(t("realtimeSessionFailed"));
 			}
 		} catch (sessionError) {
 			if (attempt !== startupAttemptRef.current) return;
@@ -3418,7 +3441,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 												{model.label.replace(`${model.providerLabel} `, "")}
 											</p>
 											<p className="mt-2 text-xs text-muted-foreground">
-												{model.id === GPT_LIVE_MODEL.id ? tCopy("liveBillingMeter") : billingLabel(model.provider, (key) => t(key as never))} / {t("realtimeVoicesCount", { count: model.voices.length })}
+												{model.id === GPT_LIVE_MODEL.id ? tCopy("liveBillingMeter") : billingLabel(model.provider, model.providerLabel, (key, values) => t(key as never, values as never))} / {t("realtimeVoicesCount", { count: model.voices.length })}
 											</p>
 										</button>
 									))}

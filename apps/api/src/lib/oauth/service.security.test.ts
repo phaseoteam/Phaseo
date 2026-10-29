@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
 	auditEvents: [] as Array<Record<string, unknown>>,
 	keyUpdates: [] as Array<{ payload: Record<string, unknown>; filters: unknown[][] }>,
 	renewedKeyRow: null as Record<string, unknown> | null,
+	clientRowOverrides: {} as Record<string, unknown>,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -98,6 +99,7 @@ vi.mock("@/runtime/env", () => ({
 										is_first_party: true,
 										beta_status: "private",
 										status: "active",
+										...state.clientRowOverrides,
 									},
 									error: null,
 								}),
@@ -197,6 +199,7 @@ describe("OAuth refresh rotation security", () => {
 		state.rpcCalls.length = 0;
 		state.refreshLookupHashes.length = 0;
 		state.authorizationRow = { id: "auth_1", scopes: ["openid"], revoked_at: null };
+		state.clientRowOverrides = {};
 		state.authorizationUpdateError = null;
 		state.delegatedKeyRow = null;
 		state.revokedDelegatedKeyIds.length = 0;
@@ -221,6 +224,29 @@ describe("OAuth refresh rotation security", () => {
 		expect(state.insertedRefreshTokens).toEqual([]);
 		expect(state.rpcCalls).toHaveLength(1);
 		expect(state.rpcCalls[0]?.name).toBe("rotate_oauth_refresh_token");
+	});
+
+	it("never refreshes a dynamic client into MCP management scopes added by a later consent", async () => {
+		state.rotationStatus = "rotated";
+		// A dynamically registered client whose read-only refresh token predates an MCP management consent.
+		state.clientRowOverrides = { is_first_party: false };
+		state.refreshRow = { ...state.refreshRow!, scopes: ["openid", "models:read"] };
+		state.authorizationRow = { id: "auth_1", scopes: ["openid", "models:read", "keys:write"], revoked_at: null };
+		const { rotateRefreshToken } = await import("./service");
+
+		await expect(rotateRefreshToken("refresh-token")).resolves.toEqual({ ok: false, reason: "invalid_grant" });
+		expect(state.rpcCalls).toEqual([]);
+	});
+
+	it("refuses a refresh whose narrowed scopes are empty instead of storing an empty list", async () => {
+		state.rotationStatus = "rotated";
+		// A CLI session with models:read; a later login replaced the authorization with keys:delete only.
+		state.refreshRow = { ...state.refreshRow!, scopes: ["models:read"] };
+		state.authorizationRow = { id: "auth_1", scopes: ["keys:delete"], revoked_at: null };
+		const { rotateRefreshToken } = await import("./service");
+
+		await expect(rotateRefreshToken("refresh-token")).resolves.toEqual({ ok: false, reason: "invalid_grant" });
+		expect(state.rpcCalls).toEqual([]);
 	});
 
 	it("returns the new pair only after atomic rotation succeeds", async () => {

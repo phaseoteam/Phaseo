@@ -18,7 +18,7 @@ Start with `balanced` unless one production requirement clearly matters more tha
 | `latency` | Fast response start is the primary requirement. |
 | `throughput` | Sustained token generation speed matters most. |
 
-Configure the workspace default in **Dashboard -> Settings -> Routing**. Use presets when one workflow needs a narrower provider or model policy than the workspace default.
+Configure the workspace default in **Dashboard -> Settings -> Routing**, with `phaseo settings update --routing-mode <mode>`, or by sending `routing_mode` to `PATCH /v1/settings`. Use presets when one workflow needs a narrower provider or model policy than the workspace default.
 
 ### Model routing suffixes
 
@@ -58,6 +58,8 @@ and builds a workload-specific shortlist:
 5. Choose whether Phaseo may try the remaining ranked models after a retryable
    failure.
 6. Save the configuration.
+
+To set the same options without the dashboard, run `phaseo routing auto update` with `--objective`, `--spend-profile`, `--allowed-patterns` and `--allow-fallbacks`, or call `PATCH /v1/routing/auto`. `phaseo routing auto get` shows the current configuration.
 
 Applications then opt in without copying workspace routing policy into every
 request:
@@ -119,6 +121,19 @@ workspace model, provider, privacy, guardrail, and circuit-breaker checks. The
 router then combines relevant non-self-reported Phaseo catalogue benchmarks
 with current Phaseo provider health, latency, and pricing. Missing benchmark or
 operational data is neutral; it does not widen the allow-list.
+
+The request's limits on where its data may go apply to Auto too. When a
+request sets `provider.require_zero_data_retention: true`, or the workspace or the
+key's guardrail allows only providers with zero data retention, the router
+shortlists only models with a provider that offers it. Required regions are
+checked against each candidate's providers in the same way. The classifier
+request carries the same limits, along with the `only` and `ignore` providers;
+if the classifier model can't meet them, Phaseo uses the local classifier
+instead. When the request's residency requirements are what leaves Auto no
+model (every model it considered failed them), the request fails with
+`403 model_region_unavailable` and `unmet_requirements`, the same error a fixed
+model gets; if models were also ruled out for other reasons, it fails with
+`400 unsupported_model_or_endpoint`.
 
 The response `model` field identifies the selected model. Request details show
 the workload, objective, selected model, fallback order, candidate scores,
@@ -221,16 +236,20 @@ In **Dashboard -> Settings -> Routing**, workspaces can tune how the Gateway ran
 - `latency`
 - `throughput`
 
+From the CLI, run `phaseo settings update --routing-mode <mode>`.
+
 The same page also exposes beta and alpha channel toggles so preview traffic can be introduced intentionally instead of appearing as an untracked routing side effect.
 
 ### BYOK fallback is explicit
 
-In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed <Tooltip tip="Bring your own key: Phaseo routes the request with your own provider API key, and your provider bills the model usage directly.">BYOK</Tooltip> request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
+In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed <Tooltip tip="Bring your own key: Phaseo routes the request with your own provider API key, and your provider bills the model usage directly.">BYOK</Tooltip> request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision. Agents can set it with `byok_fallback_enabled` on `PATCH /v1/settings`, for example `phaseo settings update --body-json '{"byok_fallback_enabled":true}'`, and add provider keys with `phaseo byok create --provider <id> --name <name> --key-stdin`.
 
 ### Dynamic routes attach policy to API keys
 
 In **Dashboard -> Settings -> Routing**, create a dynamic route when different
-API keys or request classes need different provider behavior. A route can:
+API keys or request classes need different provider behavior. From the CLI, use
+`phaseo routing dynamic-routes create`, `set-keys` and `deploy`, or the
+`/v1/routing/dynamic-routes` API. A route can:
 
 - branch on nested request-body fields, request headers, custom metadata,
   endpoint, model, or session ID

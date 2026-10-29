@@ -21,6 +21,9 @@
 		"guzzlehttp/guzzle": "^7.15.2",
 		"psr/http-message": "^1.0"
 	},
+	"suggest": {
+		"phrity/websocket": "Needed for realtime voice sessions ($client->realtime())"
+	},
 	"autoload": {
 		"psr-4": {
 			"Phaseo\\Sdk\\": "src/"

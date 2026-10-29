@@ -236,6 +236,54 @@ Phaseo checks the template when it is saved. A template with a syntax error, an 
 
 Saved changes reach requests within about two minutes.
 
+## Versions and labels
+
+Each time you publish a preset, Phaseo saves an immutable version (see [Presets](/v1/guides/presets#versions-and-marketplace-forks)). Requests run the latest published version unless they pin one. A pinned request uses that version's models, parameters and template together.
+
+Pin a version with `prompt.version`:
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` takes a version label such as `v3`, `1.2.0` or `2026.10.27`, or a label such as `production`. You can also put the version in the model ID, with or without a template:
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+Public presets use `@publisher/support-triage@production`. If `model` and `prompt.version` both pin a version, they must name the same one.
+
+### Labels
+
+A label is a name, such as `production` or `staging`, that points at one published version. Labels are 1 to 32 lowercase letters, numbers, hyphens or underscores, start with a letter, and cannot look like a version label (`v1`, `v2`).
+
+In **Settings -> Presets**, open the preset. **Publish**, next to **Save Draft**, saves your changes and publishes them as the next version. Open **Versions and labels** to manage labels: each label has a version picker, so choosing another version moves the label and choosing an earlier one rolls back. Use **Add label** for a new one. Open a version to see its models and template messages and how they differ from the default version (the one requests run when they don't pin a version), and use **Run** to try that version with the test values from **Prompt template**. The preset's creator can change its labels, and so can workspace owners and admins when the preset is shared. With a [management API key](/v1/developers/management-api-keys) that has `presets:write`:
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+The body takes `version` (a version label, or another label to copy where it points) or `version_id`. `GET /v1/presets/{id}/labels` lists labels, and `DELETE /v1/presets/{id}/labels/{label}` removes one. Requests that pin a removed label fail until it is added again.
+
+### Roll back
+
+To roll back, move the label to the earlier version: choose **Move production here** on that version, or send the same request with `"version": "v2"`. Requests that pin `production` run v2 again without any change to your application.
+
+Label moves reach requests within about two minutes, the same as other preset changes.
+
 ## Errors
 
 Template problems in a request return `400` with the code `validation_error`. `reason` holds the first problem's code and `details` lists all of them with their path:
@@ -269,11 +317,13 @@ Template problems in a request return `400` with the code `validation_error`. `r
 | `template_limit_exceeded` | The variables or the rendered text are larger than the limits below. |
 | `template_rendered_empty` | The template rendered no user or assistant message and the request sent none. |
 | `template_endpoint_unsupported` | The preset has a template and was called from an endpoint other than the three above. |
-| `prompt_model_conflict` | `model` names a different preset or model than `prompt.id`. |
-| `prompt_version_unsupported` | The request set `prompt.version`. |
+| `prompt_model_conflict` | `model` names a different preset or model than `prompt.id`, or pins a different version than `prompt.version`. |
+| `prompt_version_invalid` | `prompt.version` is empty, longer than 64 characters, or has characters other than letters, numbers, `.`, `_`, `+` and `-`. |
 | `prompt_model_fallbacks_unsupported` | The request set `models` fallbacks. List fallback models in the preset instead. |
 
 A `prompt.id` that names no preset in your workspace returns `404`.
+
+A pinned version or label that does not exist, or that the key cannot use, returns `404` with the reason `preset_version_not_found`.
 
 ## Limits
 
@@ -296,7 +346,6 @@ Request metadata records the preset, the variable names and the number of render
 
 ## Current limitations
 
-- Requests use the template as last saved. `prompt.version` cannot pin an earlier version yet.
 - `models` fallbacks cannot be combined with a template. Add fallback models to the preset instead.
 - Templates apply to chat completions, Responses and Messages requests only.
 

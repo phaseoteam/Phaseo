@@ -31,7 +31,7 @@ export const ModelRow = memo(function ModelRow({ model, selected, comparing, onP
       <View>
         <Logo id={model.organisation_id} label={organisationName(model)} colour={model.organisation_colour} size={34} />
         {comparing ? (
-          <View className="absolute -right-1 -top-1 h-4 w-4 items-center justify-center rounded-full bg-primary">
+          <View className="absolute -right-1 -top-1 h-4 w-4 items-center justify-center rounded-[4px] bg-primary">
             <Icon icon={Check} tone="primary-foreground" size={11} strokeWidth={3} />
           </View>
         ) : null}

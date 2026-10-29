@@ -136,6 +136,24 @@ describe("realtime voice billing simulation", () => {
 		})).toBe(0);
 	});
 
+	it("lets a provider-reported cost raise but never lower the priced cost", () => {
+		expect(resolveRealtimeFinalCostNanos({
+			auth: { internal: true },
+			providerCostNanos: 10_000_000,
+			pricedCostNanos: 80_000_000,
+		})).toBe(80_000_000);
+		expect(resolveRealtimeFinalCostNanos({
+			auth: { internal: true },
+			providerCostNanos: 95_000_000,
+			pricedCostNanos: 80_000_000,
+		})).toBe(95_000_000);
+		expect(resolveRealtimeFinalCostNanos({
+			auth: { internal: false },
+			providerCostNanos: 1,
+			pricedCostNanos: 80_000_000,
+		})).toBe(80_000_000);
+	});
+
 	it("only allows internal workers to settle realtime sessions", () => {
 		expect(() => assertRealtimeSettlementAuthority({ internal: false }))
 			.toThrow("realtime_settlement_internal_only");
@@ -145,11 +163,18 @@ describe("realtime voice billing simulation", () => {
 		expect(() => assertRealtimeSettlementAuthority({ internal: true })).not.toThrow();
 	});
 
-	it("caps Google sessions until upstream resumption is supported", () => {
-		expect(realtimeMaxDurationSeconds("google-ai-studio")).toBe(15 * 60);
-		expect(realtimeMaxDurationSeconds("openai")).toBe(25 * 60);
-		expect(realtimeMaxDurationSeconds("x-ai")).toBe(25 * 60);
-		expect(realtimeMaxDurationSeconds("spacex-ai")).toBe(25 * 60);
+	it("allows OpenAI Realtime the provider's full 60 minutes", () => {
+		expect(realtimeMaxDurationSeconds("openai")).toBe(60 * 60);
+		expect(realtimeMaxDurationSeconds("openai", "openai/gpt-realtime-2")).toBe(60 * 60);
+		expect(realtimeMaxDurationSeconds("openai", "openai/gpt-live-1")).toBe(25 * 60);
+	});
+
+	it("caps each provider at its own session limit", () => {
+		// Google: one hour across resumed connections; xAI per its docs.
+		expect(realtimeMaxDurationSeconds("google-ai-studio")).toBe(60 * 60);
+		expect(realtimeMaxDurationSeconds("x-ai")).toBe(120 * 60);
+		expect(realtimeMaxDurationSeconds("spacex-ai")).toBe(120 * 60);
+		expect(realtimeMaxDurationSeconds("openai", "openai/gpt-live-1")).toBe(25 * 60);
 	});
 
 	it("calculates PCM16 audio duration from payload bytes, not client metadata", () => {
@@ -394,6 +419,31 @@ describe("realtime voice billing simulation", () => {
 				costNanos: 1_000_000_000,
 			}),
 		).toThrow("openai_realtime_authoritative_usage_pending");
+	});
+
+	it("accepts relay-estimated settlements but never an in-flight response", () => {
+		const usage = { input_audio_seconds: 2, input_audio_tokens: 0, billing_estimated: true };
+		expect(() => assertRealtimeBillingMetersPresent({ provider: "google-ai-studio", usage, costNanos: 0 }))
+			.toThrow("usage_missing_token_meters");
+		expect(() => assertRealtimeBillingMetersPresent({ provider: "google-ai-studio", usage, costNanos: 0, estimated: true }))
+			.not.toThrow();
+		expect(() => assertRealtimeBillingMetersPresent({
+			provider: "openai",
+			usage: { assistant_response_in_flight: true },
+			costNanos: 0,
+			estimated: true,
+		})).toThrow("authoritative_usage_pending");
+	});
+
+	it("prices an xAI server VAD session by connected duration, not audio sent plus received", () => {
+		const card = makeCard({
+			provider: "spacex-ai",
+			model: "spacex-ai/grok-voice-think-fast-2.0",
+			rules: [{ meter: "audio_minutes", unit: "minute", unit_size: 1, price_per_unit: "0.08" }],
+		});
+		// 90 s connected; the client streamed 90 s of microphone audio while 30 s of reply played.
+		const usage = normalizeRealtimeUsage({ input_audio_ms: 90_000, output_audio_ms: 30_000, session_audio_ms: 90_000, audio_ms: 90_000 });
+		expect(totalNanos(computeBill(usage, card, { endpoint: "audio.realtime" }))).toBe(120_000_000);
 	});
 
 	it("prices OpenAI realtime from authoritative usage events with cached input separated", () => {

@@ -6,11 +6,15 @@ import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountCo
 import { slackAgentSettingsEnabled } from "@/lib/flags";
 import {
 	deleteSlackAgentNote,
+	deleteSlackAgentSchedule,
 	deleteSlackAgentSkill,
 	loadSlackAgentMemory,
+	loadSlackAgentSchedules,
 	removeSlackCustomApp,
 	saveSlackCustomApp,
+	setSlackAgentScheduleStatus,
 	startSlackInstall,
+	startSlackPermissionsUpdate,
 	uninstallSlackAgent,
 	updateSlackAgent,
 	updateSlackAgentSkill,
@@ -34,7 +38,7 @@ beforeEach(() => {
 describe("Slack settings actions", () => {
 	it("do nothing while the Slack agent flag is off", async () => {
 		mockEnabled.mockResolvedValue(false);
-		for (const result of [await startSlackInstall({}), await updateSlackAgent({ model: "phaseo/auto" }), await uninstallSlackAgent(), await saveSlackCustomApp({}), await removeSlackCustomApp()]) {
+		for (const result of [await startSlackInstall({}), await startSlackPermissionsUpdate(), await updateSlackAgent({ model: "phaseo/auto" }), await uninstallSlackAgent(), await saveSlackCustomApp({}), await removeSlackCustomApp()]) {
 			expect(result).toMatchObject({ ok: false, status: 404 });
 		}
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -72,6 +76,19 @@ describe("Slack settings actions", () => {
 		expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ plan_people: 3, workspaceId: "workspace-a" });
 		fetchMock.mockResolvedValue(respond(200, { url: "https://example.com/oauth" }));
 		expect(await startSlackInstall({})).toMatchObject({ ok: false, status: 502 });
+	});
+
+	it("starts a permissions update for the active workspace, and only to Slack's consent page", async () => {
+		fetchMock.mockResolvedValue(respond(200, { url: "https://slack.com/oauth/v2/authorize?client_id=1.2&state=u" }));
+		expect(await startSlackPermissionsUpdate()).toEqual({ ok: true, url: "https://slack.com/oauth/v2/authorize?client_id=1.2&state=u" });
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(String(url)).toMatch(/\/api\/account\/settings\/slack\/permissions$/);
+		expect(init.method).toBe("POST");
+		expect(JSON.parse(init.body)).toEqual({ workspaceId: "workspace-a" });
+		fetchMock.mockResolvedValue(respond(200, { url: "https://example.com/oauth" }));
+		expect(await startSlackPermissionsUpdate()).toMatchObject({ ok: false, status: 502 });
+		fetchMock.mockResolvedValue(respond(404, { error: "not_installed" }));
+		expect(await startSlackPermissionsUpdate()).toMatchObject({ ok: false, status: 404, code: "not_installed" });
 	});
 
 	it("saves and removes the company's Slack app for the active workspace", async () => {
@@ -114,6 +131,29 @@ describe("Slack settings actions", () => {
 		fetchMock.mockClear();
 		expect(await deleteSlackAgentNote("../../custom-app")).toMatchObject({ ok: false, status: 400, code: "bad_request" });
 		expect(await deleteSlackAgentSkill(`${id}/x`)).toMatchObject({ ok: false, status: 400 });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("lists the recurring tasks, and pauses, resumes or deletes one by id only", async () => {
+		const id = "00000000-0000-4000-8000-0000000000e1";
+		const schedules = { schedules: [], total: 0, limit: 20, enabled: true, creators: "everyone" };
+		fetchMock.mockImplementation(async () => respond(200, schedules));
+		expect(await loadSlackAgentSchedules()).toEqual({ ok: true, schedules });
+		expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/api\/account\/settings\/slack\/schedules\?workspaceId=workspace-a$/);
+		fetchMock.mockImplementation(async () => respond(200, { schedule: { id, status: "paused" } }));
+		expect(await setSlackAgentScheduleStatus(id, "paused")).toMatchObject({ ok: true, schedule: { status: "paused" } });
+		fetchMock.mockImplementation(async () => respond(200, { id, deleted: true }));
+		expect(await deleteSlackAgentSchedule(id)).toEqual({ ok: true });
+		expect(fetchMock.mock.calls.slice(1).map(([url, init]) => [String(url).replace(/^.*\/api/, "/api"), init.method, JSON.parse(init.body)])).toEqual([
+			[`/api/account/settings/slack/schedules/${id}`, "PATCH", { status: "paused", workspaceId: "workspace-a" }],
+			[`/api/account/settings/slack/schedules/${id}`, "DELETE", { workspaceId: "workspace-a" }],
+		]);
+		fetchMock.mockResolvedValue(respond(404, { error: "schedule_not_found", message: "It was deleted meanwhile" }));
+		expect(await deleteSlackAgentSchedule(id)).toMatchObject({ ok: false, status: 404, code: "schedule_not_found" });
+
+		fetchMock.mockClear();
+		expect(await setSlackAgentScheduleStatus("../../custom-app", "active")).toMatchObject({ ok: false, status: 400, code: "bad_request" });
+		expect(await deleteSlackAgentSchedule(`${id}/x`)).toMatchObject({ ok: false, status: 400 });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });

@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "यह ऐप किसने साइन इन किया है, इसकी पुष्टि कर सकता है।",
 			"gatewayPermissionLabel": "अपने क्रेडिट से AI Gateway इस्तेमाल करें",
 			"gatewayPermissionDescription": "ऐप चुनी गई टीम के क्रेडिट से मॉडल अनुरोध भेज सकता है।",
+			"billingPermissionLabel": "क्रेडिट टॉप-अप शुरू करें",
+			"billingPermissionDescription": "ऐप चुनी गई टीम के लिए क्रेडिट खरीद का अनुरोध कर सकता है। हर शुल्क की पुष्टि टीम के owner या admin को ईमेल से करनी होगी।",
 			"readPermissionLabel": "{resource} पढ़ें",
 			"readPermissionDescription": "यह ऐप {resource} पढ़ सकता है।",
 			"managePermissionLabel": "{resource} प्रबंधित करें",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth ऐप",
 					"description": "OAuth क्लाइंट और इंटीग्रेशन का कॉन्फ़िगरेशन।"
+				},
+				"billing": {
+					"title": "बिलिंग",
+					"description": "क्रेडिट खरीद, जिनकी पुष्टि टीम का owner या admin ईमेल से करता है।"
 				}
 			},
 			"resources": {
@@ -634,6 +640,7 @@
 				"providerCredentials": "प्रदाता क्रेडेंशियल",
 				"guardrails": "गार्डरेल और नीतियाँ",
 				"budgets": "टीम के खर्च बजट और उपयोग",
+				"spendRules": "खर्च अलर्ट और ब्लॉक करने के नियम",
 				"managementKeys": "मशीन-स्तर की प्रबंधन कुंजी की जानकारी",
 				"oauthApps": "OAuth ऐप और इंटीग्रेशन की सेटिंग",
 				"privateModels": "वर्कस्पेस के निजी मॉडल"
@@ -2422,6 +2429,8 @@
 			"selectModelsToCompare": "तुलना के लिए मॉडल चुनें।",
 			"viewFullLeaderboard": "पूरी रैंकिंग देखें",
 			"sourceArtificialAnalysis": "स्रोत: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "वर्षों और इंडेक्स संस्करणों के बीच तुलनीय",
 			"fullLeaderboard": "पूरी रैंकिंग",
 			"noModelsMatchThisSearch": "इस खोज से मेल खाता कोई मॉडल नहीं है।",
 			"noResultsAvailableForThisMetric": "इस मेट्रिक के लिए परिणाम उपलब्ध नहीं हैं।",

@@ -16,6 +16,8 @@ Use notification destinations to send enabled workspace alerts to the tools your
 5. Select **Send test** for each configured channel.
 6. Create the destinations after every test succeeds.
 
+From the CLI, run `phaseo notifications destinations create`, check it with `phaseo notifications destinations test <id>`, then choose which alerts it receives with `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+
 Custom webhooks get a signing secret when you create them. Copy it from the dialog that opens; it is shown only once.
 
 Phaseo supports:

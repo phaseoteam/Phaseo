@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "يتيح هذا للتطبيق التحقق من هوية من يسجل الدخول.",
 			"gatewayPermissionLabel": "استخدام AI Gateway برصيدك",
 			"gatewayPermissionDescription": "يتيح للتطبيق إرسال طلبات النماذج التي تخصم من رصيد الفريق المحدد.",
+			"billingPermissionLabel": "بدء شحن الرصيد",
+			"billingPermissionDescription": "يتيح للتطبيق طلب شراء رصيد للفريق المحدد. يجب أن يؤكد مالك الفريق أو مسؤوله كل عملية خصم عبر البريد الإلكتروني.",
 			"readPermissionLabel": "قراءة {resource}",
 			"readPermissionDescription": "يتيح هذا للتطبيق قراءة: {resource}.",
 			"managePermissionLabel": "إدارة {resource}",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "تطبيقات OAuth",
 					"description": "تهيئة عملاء OAuth وعمليات التكامل."
+				},
+				"billing": {
+					"title": "الفوترة",
+					"description": "عمليات شراء الرصيد التي يؤكدها مالك الفريق أو مسؤوله عبر البريد الإلكتروني."
 				}
 			},
 			"resources": {
@@ -634,6 +640,7 @@
 				"providerCredentials": "بيانات اعتماد المزوّدين",
 				"guardrails": "ضوابط الحماية وسياساتها",
 				"budgets": "ميزانيات إنفاق الفريق واستخدامه",
+				"spendRules": "قواعد تنبيهات الإنفاق وحظره",
 				"managementKeys": "تفاصيل مفاتيح الإدارة على مستوى الجهاز",
 				"oauthApps": "إعدادات تطبيقات OAuth وعمليات التكامل",
 				"privateModels": "نماذج مساحة العمل الخاصة"
@@ -2422,6 +2429,8 @@
 			"selectModelsToCompare": "اختر نماذج للمقارنة.",
 			"viewFullLeaderboard": "عرض لوحة الترتيب الكاملة",
 			"sourceArtificialAnalysis": "المصدر: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "قابل للمقارنة عبر السنوات وإصدارات المؤشر",
 			"fullLeaderboard": "لوحة الترتيب الكاملة",
 			"noModelsMatchThisSearch": "لا توجد نماذج تطابق هذا البحث.",
 			"noResultsAvailableForThisMetric": "لا توجد نتائج متاحة لهذا المقياس.",

@@ -20,9 +20,11 @@ export type ErrorCode =
     | "key_limit_exceeded"
     | "phaseo_free_model_limit_exceeded"
     | "rate_limit_exceeded"
+    | "spend_rule_blocked"
     | "insufficient_funds"
     | "guardrail_blocked"
     | "unsupported_model_or_endpoint"
+    | "model_region_unavailable"
     | "model_retired";
 
 export function json(data: unknown, status = 200) {
@@ -114,9 +116,11 @@ const STATUS: Record<ErrorCode, number> = {
     key_limit_exceeded: 429,
     phaseo_free_model_limit_exceeded: 429,
     rate_limit_exceeded: 429,
+    spend_rule_blocked: 429,
     insufficient_funds: 402,
     guardrail_blocked: 403,
     unsupported_model_or_endpoint: 400,
+    model_region_unavailable: 403,
     model_retired: 410,
 };
 

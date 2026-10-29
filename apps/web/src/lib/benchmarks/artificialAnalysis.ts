@@ -25,6 +25,13 @@ export function isArtificialAnalysisBenchmark(id: string) {
   return artificialAnalysisBenchmarkPattern.test(id);
 }
 
+/** AA's version-independent capability scale, shown beside (not among) the index metrics. */
+export const artificialAnalysisProgressIndexId = "aa-progress-index-v1";
+
+export function isArtificialAnalysisProgressIndex(id: string) {
+  return id === artificialAnalysisProgressIndexId;
+}
+
 export function isArtificialAnalysisCostBenchmark(id: string) {
   return /^aa-intelligence-index-cost-v\d+$/.test(id);
 }

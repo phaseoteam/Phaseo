@@ -13,10 +13,11 @@ import { fetchChatWebApi } from "@/lib/web-api/client";
 /**
  * A chat completions body that runs the template. `model` and an empty
  * `messages` list are included because the SDK chat methods require them; the
- * gateway fills the messages from the template.
+ * gateway fills the messages from the template. A `version` (v3, 1.2.0 or a
+ * label such as production) pins that published version instead of the current one.
  */
-export function templateRunBody(reference: string, variables: Record<string, unknown>) {
-	return { model: reference, messages: [], prompt: { id: reference, variables } };
+export function templateRunBody(reference: string, variables: Record<string, unknown>, version?: string | null) {
+	return { model: reference, messages: [], prompt: { id: reference, variables, ...(version ? { version } : {}) } };
 }
 
 export type TemplateRunReply = { text: string; model: string | null; inputTokens: number | null; outputTokens: number | null };
@@ -63,11 +64,12 @@ const CODE_SAMPLES = [
 ] as const;
 
 /** The request body and ready-to-run code for the current test values. */
-export function PresetTemplateCode({ reference, variables }: { reference: string; variables: Record<string, unknown> }) {
+export function PresetTemplateCode({ reference, variables, version = null }: { reference: string; variables: Record<string, unknown>; version?: string | null }) {
 	const t = useTranslations("SettingsUI");
-	const sdkRequest = { endpoint: "/chat/completions", body: templateRunBody(reference, variables) };
+	const body = templateRunBody(reference, variables, version);
+	const sdkRequest = { endpoint: "/chat/completions", body };
 	const samples: Array<[string, string, string]> = [
-		["body", t("presetTemplate.requestTitle"), JSON.stringify({ prompt: { id: reference, variables } }, null, 2)],
+		["body", t("presetTemplate.requestTitle"), JSON.stringify({ prompt: body.prompt }, null, 2)],
 		...CODE_SAMPLES.map(([sample, label]): [string, string, string] => [sample, label, sdkCode(sdkRequest, sample)]),
 	];
 	return (
@@ -85,7 +87,7 @@ export function PresetTemplateCode({ reference, variables }: { reference: string
 	);
 }
 
-type RunState =
+export type TemplateRunState =
 	| { status: "idle" }
 	| { status: "running" }
 	| { status: "done"; reply: TemplateRunReply }
@@ -93,31 +95,20 @@ type RunState =
 	| { status: "no_credits" };
 
 /**
- * Runs the saved preset through the gateway with the test values, billed to the
- * workspace like the chat playground. Unsaved edits are not sent, so running is
- * blocked until they are saved.
+ * Runs a saved preset (or one published version of it) through the gateway with
+ * the given test values, billed to the workspace like the chat playground.
  */
-export function PresetTemplateRun({
-	savedReference,
-	hasUnsavedChanges,
-	variables,
-}: {
-	savedReference: string | null;
-	hasUnsavedChanges: boolean;
-	variables: Record<string, unknown> | null;
-}) {
+export function useTemplateRun() {
 	const t = useTranslations("SettingsUI");
-	const [state, setState] = useState<RunState>({ status: "idle" });
-	const blocked = !savedReference ? t("presetTemplate.runNeedsSave") : hasUnsavedChanges ? t("presetTemplate.runUnsaved") : null;
+	const [state, setState] = useState<TemplateRunState>({ status: "idle" });
 
-	async function run() {
-		if (!savedReference || !variables) return;
+	async function run(reference: string, variables: Record<string, unknown>, version: string | null = null) {
 		setState({ status: "running" });
 		try {
 			const response = await fetchChatWebApi("/api/chat/chat-completions", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ requestBody: templateRunBody(savedReference, variables) }),
+				body: JSON.stringify({ requestBody: templateRunBody(reference, variables, version) }),
 			});
 			const json = await response.json().catch(() => null);
 			if (!response.ok) {
@@ -134,36 +125,67 @@ export function PresetTemplateRun({
 		}
 	}
 
+	return { state, run };
+}
+
+/** The reply, or why the run failed, shown under the Run button. */
+export function TemplateRunResult({ state }: { state: TemplateRunState }) {
+	const t = useTranslations("SettingsUI");
+	if (state.status === "done") {
+		return (
+			<div className="space-y-1 rounded-md border border-border/70 p-3" aria-live="polite">
+				<div className="font-mono text-xs text-muted-foreground">
+					{t("presetTemplate.replyMeta", {
+						model: state.reply.model ?? "",
+						input: state.reply.inputTokens ?? 0,
+						output: state.reply.outputTokens ?? 0,
+					})}
+				</div>
+				<p className="whitespace-pre-wrap text-sm">{state.reply.text || t("presetTemplate.replyEmpty")}</p>
+			</div>
+		);
+	}
+	if (state.status === "no_credits") {
+		return (
+			<p className="rounded-md border border-destructive/40 p-3 text-sm text-destructive" role="alert">
+				{t("presetTemplate.runNoCredits")}{" "}
+				<Link href="/settings/credits" className="font-medium underline underline-offset-4">{t("presetTemplate.runAddCredits")}</Link>
+			</p>
+		);
+	}
+	if (state.status === "failed") {
+		return <p className="whitespace-pre-wrap rounded-md border border-destructive/40 p-3 text-sm text-destructive" role="alert">{state.message}</p>;
+	}
+	return null;
+}
+
+/**
+ * Runs the saved preset through the gateway with the test values. Unsaved edits
+ * are not sent, so running is blocked until they are saved.
+ */
+export function PresetTemplateRun({
+	savedReference,
+	hasUnsavedChanges,
+	variables,
+}: {
+	savedReference: string | null;
+	hasUnsavedChanges: boolean;
+	variables: Record<string, unknown> | null;
+}) {
+	const t = useTranslations("SettingsUI");
+	const { state, run } = useTemplateRun();
+	const blocked = !savedReference ? t("presetTemplate.runNeedsSave") : hasUnsavedChanges ? t("presetTemplate.runUnsaved") : null;
+
 	return (
 		<div className="space-y-2">
 			<div className="flex flex-wrap items-center gap-3">
-				<Button type="button" size="sm" className="rounded-md" onClick={run} disabled={Boolean(blocked) || !variables || state.status === "running"}>
+				<Button type="button" size="sm" className="rounded-md" onClick={() => { if (savedReference && variables) void run(savedReference, variables); }} disabled={Boolean(blocked) || !variables || state.status === "running"}>
 					{state.status === "running" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
 					{state.status === "running" ? t("presetTemplate.running") : t("presetTemplate.runButton")}
 				</Button>
 				<p className="text-xs text-muted-foreground">{blocked ?? t("presetTemplate.runHelp", { reference: savedReference ?? "" })}</p>
 			</div>
-			{state.status === "done" ? (
-				<div className="space-y-1 rounded-md border border-border/70 p-3" aria-live="polite">
-					<div className="font-mono text-xs text-muted-foreground">
-						{t("presetTemplate.replyMeta", {
-							model: state.reply.model ?? "",
-							input: state.reply.inputTokens ?? 0,
-							output: state.reply.outputTokens ?? 0,
-						})}
-					</div>
-					<p className="whitespace-pre-wrap text-sm">{state.reply.text || t("presetTemplate.replyEmpty")}</p>
-				</div>
-			) : null}
-			{state.status === "no_credits" ? (
-				<p className="rounded-md border border-destructive/40 p-3 text-sm text-destructive" role="alert">
-					{t("presetTemplate.runNoCredits")}{" "}
-					<Link href="/settings/credits" className="font-medium underline underline-offset-4">{t("presetTemplate.runAddCredits")}</Link>
-				</p>
-			) : null}
-			{state.status === "failed" ? (
-				<p className="whitespace-pre-wrap rounded-md border border-destructive/40 p-3 text-sm text-destructive" role="alert">{state.message}</p>
-			) : null}
+			<TemplateRunResult state={state} />
 		</div>
 	);
 }

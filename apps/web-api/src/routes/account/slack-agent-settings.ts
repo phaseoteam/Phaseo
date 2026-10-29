@@ -14,6 +14,8 @@ export const MAX_USAGE_DATA_CHANNELS = 100;
 /** The most models people may choose per message (the slack_installations check). */
 export const MAX_ALLOWED_MODELS = 10;
 export const MAX_ANSWERS_PER_PERSON_HOUR = 10_000;
+/** The most recurring tasks an installation may keep (the slack_installations check). */
+export const MAX_SCHEDULES = 100;
 /** The slack_installations column defaults. */
 export const DEFAULT_ANSWERS_PER_PERSON_HOUR = 60;
 export const DEFAULT_ALLOW_GUESTS = true;
@@ -25,6 +27,8 @@ export const DEFAULT_ALLOW_EXTERNAL_USERS = false;
 export const DEFAULT_SLACK_AGENT_MODEL = "openai/gpt-6-luna";
 
 export const AUTO_MODEL_ID = "phaseo/auto";
+/** How long a new shared page is kept (the slack_installations check). */
+export const PAGE_EXPIRY_DAYS: readonly number[] = [7, 30, 90];
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,199}$/;
 /** Public (C) and private (G) Slack channel ids. */
@@ -33,7 +37,11 @@ const CHANNEL_PATTERN = /^[CG][A-Z0-9]{2,31}$/;
 export type OverPlan = "refuse" | "move_up";
 export type AccessMode = "everyone" | "linked";
 export type UsageDataMode = "off" | "dm" | "dm_and_channels";
+/** Where the agent may search Slack for the person asking. */
+export type SearchMode = "off" | "dm" | "dm_and_channels";
+export type ScheduleCreators = "everyone" | "linked";
 export type SlackAgentStatusChange = "active" | "paused";
+export type PageAccess = "link" | "workspace";
 
 /** code: the 400's error code, when it isn't bad_request. */
 type Result<T> = { ok: true; value: T } | { ok: false; message: string; code?: string };
@@ -66,12 +74,20 @@ export type SlackAgentRowUpdate = Partial<{
 	model_choice_enabled: boolean;
 	allowed_models: string[];
 	memory_enabled: boolean;
+	search_mode: SearchMode;
+	schedules_enabled: boolean;
+	schedules_max: number;
+	schedule_creators: ScheduleCreators;
 	instructions: string | null;
 	access_mode: AccessMode;
 	usage_data_mode: UsageDataMode;
 	usage_data_channel_ids: string[];
 	allow_guests: boolean;
 	allow_external_users: boolean;
+	pages_enabled: boolean;
+	page_expiry_days: number;
+	page_default_access: PageAccess;
+	page_link_access: boolean;
 }>;
 
 export type SlackAgentPatch = {
@@ -171,6 +187,10 @@ function channelIds(value: unknown): Result<string[]> {
 	return ok(ids);
 }
 
+function expiryDays(value: unknown): Result<number> {
+	return typeof value === "number" && PAGE_EXPIRY_DAYS.includes(value) ? ok(value) : fail(`page_expiry_days must be one of: ${PAGE_EXPIRY_DAYS.join(", ")}`);
+}
+
 function bool(value: unknown, field: string): Result<boolean> {
 	return typeof value === "boolean" ? ok(value) : fail(`${field} must be true or false`);
 }
@@ -190,6 +210,20 @@ export function planProblem(values: { plan_people: number; max_people: number | 
 		return `monthly_cap_usd must be at least the plan's price ($${(planNanos / NANOS_PER_USD).toFixed(2)})`;
 	}
 	return null;
+}
+
+/**
+ * Who may view new shared pages, with the saved values: turning link sharing off
+ * moves a link default to the workspace, unless the change asks for link itself.
+ */
+export function pageAccessUpdate(update: SlackAgentRowUpdate, current: { page_default_access: string; page_link_access: boolean }): { ok: true; value: SlackAgentRowUpdate } | { ok: false; message: string; code: string } {
+	const linkAccess = update.page_link_access ?? current.page_link_access;
+	if (linkAccess) return { ok: true, value: update };
+	if (update.page_default_access === "link") {
+		return { ok: false, message: "Pages can only default to anyone with the link while link sharing is allowed", code: "page_link_access_off" };
+	}
+	if ((update.page_default_access ?? current.page_default_access) === "link") return { ok: true, value: { ...update, page_default_access: "workspace" } };
+	return { ok: true, value: update };
 }
 
 const INSTALL_FIELDS = new Set([
@@ -248,8 +282,9 @@ export function parseInstallSettings(body: Body): Result<SlackAgentInstallSettin
 
 const PATCH_FIELDS = new Set([
 	"workspaceId", "plan_people", "over_plan", "max_people", "monthly_cap_usd", "answers_per_person_hour",
-	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
-	"allow_guests", "allow_external_users", "token_monthly_limit_usd", "status",
+	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "search_mode", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
+	"schedules_enabled", "schedules_max", "schedule_creators", "allow_guests", "allow_external_users", "token_monthly_limit_usd", "status",
+	"pages_enabled", "page_expiry_days", "page_default_access", "page_link_access",
 ]);
 
 /** Validates a settings change. Unknown fields are rejected; cross-field rules need the current row (planProblem). */
@@ -277,12 +312,23 @@ export function parseSettingsPatch(body: Body): Result<SlackAgentPatch> {
 		take("allowed_models", allowedModelIds, (value) => { update.allowed_models = value; }),
 		// Off: the agent gets no note tools and no pins; saved notes are kept.
 		take("memory_enabled", (value) => bool(value, "memory_enabled"), (value) => { update.memory_enabled = value; }),
+		// Where search_slack is offered; it also needs the search scopes (Update Slack permissions).
+		take("search_mode", (value) => oneOf<SearchMode>(value, "search_mode", ["off", "dm", "dm_and_channels"]), (value) => { update.search_mode = value; }),
+		// Recurring tasks. Off: none are saved and due runs are skipped; a lower maximum keeps the ones saved.
+		take("schedules_enabled", (value) => bool(value, "schedules_enabled"), (value) => { update.schedules_enabled = value; }),
+		take("schedules_max", (value) => integer(value, "schedules_max", 1, MAX_SCHEDULES), (value) => { update.schedules_max = value; }),
+		take("schedule_creators", (value) => oneOf<ScheduleCreators>(value, "schedule_creators", ["everyone", "linked"]), (value) => { update.schedule_creators = value; }),
 		take("instructions", instructions, (value) => { update.instructions = value; }),
 		take("access_mode", (value) => oneOf<AccessMode>(value, "access_mode", ["everyone", "linked"]), (value) => { update.access_mode = value; }),
 		take("usage_data_mode", (value) => oneOf<UsageDataMode>(value, "usage_data_mode", ["off", "dm", "dm_and_channels"]), (value) => { update.usage_data_mode = value; }),
 		take("usage_data_channel_ids", channelIds, (value) => { update.usage_data_channel_ids = value; }),
 		take("allow_guests", (value) => bool(value, "allow_guests"), (value) => { update.allow_guests = value; }),
 		take("allow_external_users", (value) => bool(value, "allow_external_users"), (value) => { update.allow_external_users = value; }),
+		// Shared pages: on or off, how long new ones are kept, and who may view them.
+		take("pages_enabled", (value) => bool(value, "pages_enabled"), (value) => { update.pages_enabled = value; }),
+		take("page_expiry_days", expiryDays, (value) => { update.page_expiry_days = value; }),
+		take("page_default_access", (value) => oneOf<PageAccess>(value, "page_default_access", ["link", "workspace"]), (value) => { update.page_default_access = value; }),
+		take("page_link_access", (value) => bool(value, "page_link_access"), (value) => { update.page_link_access = value; }),
 		take("token_monthly_limit_usd", (value) => usd(value, "token_monthly_limit_usd", true), (value) => { patch.keyMonthlyLimitNanos = usdToNanos(value); }),
 		// payment_due and uninstalled are never set here: paying clears payment_due, DELETE uninstalls.
 		take("status", (value) => oneOf<SlackAgentStatusChange>(value, "status", ["active", "paused"]), (value) => { patch.status = value; }),

@@ -141,6 +141,7 @@ pub struct ApiKey {
 	pub hash: String,
 	pub id: String,
 	pub include_byok_in_limit: bool,
+	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
 	pub label: Option<String>,
 	pub last_used_at: Option<String>,
 	pub limit: Option<f64>,
@@ -176,6 +177,8 @@ pub struct ApiKeyCreateRequest {
 	pub storage_locations: Option<Vec<String>>,
 	pub workspace_id: Option<String>,
 }
+
+pub type ApiKeyIpAllowlist = JsonValue;
 
 pub struct ApiKeyLimitBucket {
 	pub cost: Option<f64>,
@@ -227,6 +230,7 @@ pub struct ApiKeyUpdateRequest {
 	pub disabled: Option<bool>,
 	pub expires_at: Option<Option<String>>,
 	pub include_byok_in_limit: Option<bool>,
+	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
 	pub limit: Option<Option<f64>>,
 	pub limit_reset: Option<String>,
 	pub limits: Option<HashMap<String, String>>,
@@ -258,6 +262,7 @@ pub struct ApiKeyWithValue {
 	pub hash: String,
 	pub id: String,
 	pub include_byok_in_limit: bool,
+	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
 	pub key: String,
 	pub label: Option<String>,
 	pub last_used_at: Option<String>,
@@ -380,6 +385,59 @@ pub struct AudioTranslationRequest {
 
 pub struct AudioTranslationResponse {
 	pub text: Option<String>,
+}
+
+pub struct AuthorizedApp {
+	pub app_name: Option<String>,
+	pub authorized_at: Option<String>,
+	pub client_id: Option<String>,
+	pub current: Option<bool>,
+	pub id: Option<String>,
+	pub last_used_at: Option<Option<String>>,
+	pub scopes: Option<Vec<String>>,
+	pub workspace_id: Option<String>,
+	pub workspace_name: Option<Option<String>>,
+}
+
+pub struct AuthorizedAppListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct AuthorizedAppRevokedResponse {
+	pub id: Option<String>,
+	pub revoked: Option<bool>,
+}
+
+pub struct AuthorizedAppScopesRequest {
+	pub scopes: Vec<String>,
+}
+
+pub struct AuthorizedAppScopesResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct AutoRoutingSettings {
+	pub allow_fallbacks: Option<bool>,
+	pub allowed_patterns: Option<Vec<String>>,
+	pub max_input_price_per_million: Option<Option<f64>>,
+	pub max_output_price_per_million: Option<Option<f64>>,
+	pub objective: Option<String>,
+	pub revision: Option<Option<String>>,
+	pub spend_profile: Option<String>,
+	pub updated_at: Option<Option<String>>,
+}
+
+pub struct AutoRoutingSettingsResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct AutoRoutingSettingsUpdateRequest {
+	pub allow_fallbacks: Option<bool>,
+	pub allowed_patterns: Option<Vec<String>>,
+	pub max_input_price_per_million: Option<Option<f64>>,
+	pub max_output_price_per_million: Option<Option<f64>>,
+	pub objective: Option<String>,
+	pub spend_profile: Option<String>,
 }
 
 pub struct BatchBillingSummary {
@@ -745,6 +803,16 @@ pub struct ClassifierScope {
 	pub models: Option<Vec<String>>,
 }
 
+pub struct ClassifierTestRequest {
+	pub classifier: Option<HashMap<String, String>>,
+	pub classifier_id: Option<String>,
+	pub sample: HashMap<String, String>,
+}
+
+pub struct ClassifierTestResponse {
+	pub data: HashMap<String, String>,
+}
+
 pub struct ClassifierUpdateInput {
 	pub description: Option<Option<String>>,
 	pub dimensions: Option<Vec<HashMap<String, String>>>,
@@ -767,6 +835,38 @@ pub struct ClassifierValue {
 pub struct CreditsResponse {
 	pub credits: HashMap<String, String>,
 	pub ok: bool,
+}
+
+pub struct CreditTopup {
+	pub amount_cents: i64,
+	pub amount_usd: f64,
+	pub checkout_url: Option<String>,
+	pub confirmation_recipients: Option<i64>,
+	pub created_at: String,
+	pub currency: String,
+	pub decided_at: Option<String>,
+	pub expires_at: String,
+	pub r#final: bool,
+	pub flow: String,
+	pub id: String,
+	pub message: String,
+	pub next_action: Option<String>,
+	pub paid_at: Option<String>,
+	pub payment_method: Option<HashMap<String, String>>,
+	pub reason: Option<String>,
+	pub status: String,
+	pub workspace_id: String,
+}
+
+pub struct CreditTopupCreateRequest {
+	pub amount_usd: f64,
+	pub idempotency_key: Option<String>,
+	pub workspace_id: Option<String>,
+}
+
+pub struct CreditTopupResponse {
+	pub ok: bool,
+	pub topup: HashMap<String, String>,
 }
 
 pub struct DataContributionCategories {
@@ -1969,6 +2069,18 @@ pub struct KeyInvalidateResponse {
 
 pub type KnownModelId = JsonValue;
 
+pub struct LeakedKeyReportRequest {
+	pub comment: Option<String>,
+	pub evidence_url: Option<String>,
+	pub reporter_email: Option<String>,
+	pub source: Option<String>,
+	pub token: String,
+}
+
+pub struct LeakedKeyReportResponse {
+	pub status: Option<String>,
+}
+
 pub struct LegacyDecisionBoxQuestion {
 	pub instructions: String,
 	pub r#type: String,
@@ -2125,6 +2237,10 @@ pub struct ManagementKeyUpdateRequest {
 pub struct ManagementKeyUpdateResponse {
 	pub message: String,
 	pub ok: bool,
+}
+
+pub struct MeResponse {
+	pub data: HashMap<String, String>,
 }
 
 pub type MessageContentPart = JsonValue;
@@ -2295,6 +2411,23 @@ pub struct MusicGenerateResponse {
 	pub usage: Option<HashMap<String, String>>,
 }
 
+pub struct MyJoinRequest {
+	pub created_at: Option<String>,
+	pub decided_at: Option<Option<String>>,
+	pub id: Option<String>,
+	pub status: Option<String>,
+	pub workspace_id: Option<String>,
+	pub workspace_name: Option<Option<String>>,
+}
+
+pub struct MyJoinRequestCreatedResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct MyJoinRequestListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
 pub struct NotImplementedResponse {
 	pub description: String,
 	pub error: String,
@@ -2450,6 +2583,15 @@ pub struct ObservabilityDestinationPolicyInput {
 }
 
 pub struct ObservabilityDestinationResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct ObservabilityDestinationTestRequest {
+	pub config: HashMap<String, String>,
+	pub r#type: String,
+}
+
+pub struct ObservabilityDestinationTestResponse {
 	pub data: HashMap<String, String>,
 }
 
@@ -2668,6 +2810,34 @@ pub struct PresetForkRequest {
 	pub source_version_id: Option<String>,
 }
 
+pub struct PresetLabel {
+	pub created_at: Option<Option<String>>,
+	pub label: String,
+	pub updated_at: Option<Option<String>>,
+	pub updated_by: Option<Option<String>>,
+	pub version_id: String,
+	pub version_label: Option<String>,
+	pub version_number: Option<i64>,
+}
+
+pub struct PresetLabelDeleteResponse {
+	pub deleted: bool,
+	pub label: String,
+}
+
+pub struct PresetLabelListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct PresetLabelResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct PresetLabelSetRequest {
+	pub version: Option<String>,
+	pub version_id: Option<String>,
+}
+
 pub struct PresetListResponse {
 	pub data: Vec<HashMap<String, String>>,
 	pub total_count: i64,
@@ -2790,6 +2960,7 @@ pub struct PresetVersion {
 	pub created_by: String,
 	pub description: Option<Option<String>>,
 	pub id: String,
+	pub labels: Option<Vec<String>>,
 	pub name: String,
 	pub preset_id: String,
 	pub release_notes: Option<Option<String>>,
@@ -2903,6 +3074,7 @@ pub struct PromptCacheOptions {
 pub struct PromptTemplateReference {
 	pub id: String,
 	pub variables: Option<HashMap<String, String>>,
+	pub version: Option<String>,
 }
 
 pub struct Provider {
@@ -3117,6 +3289,10 @@ pub struct RateLimitPolicyUpdateInput {
 
 pub type RateLimitTargetType = JsonValue;
 
+pub struct RateLimitTierResponse {
+	pub data: HashMap<String, String>,
+}
+
 pub struct ReasoningConfig {
 	pub effort: Option<Option<String>>,
 	pub enabled: Option<bool>,
@@ -3302,6 +3478,38 @@ pub struct ServerToolUsage {
 	pub web_search_requests: Option<i64>,
 }
 
+pub struct SpendBlock {
+	pub active: bool,
+	pub block_free_models: bool,
+	pub id: String,
+	pub lift_reason: Option<String>,
+	pub lifted_at: Option<String>,
+	pub lifted_by: Option<String>,
+	pub limit_nanos: i64,
+	pub limit_usd: f64,
+	pub period_start: String,
+	pub resets_at: Option<String>,
+	pub rule_id: Option<String>,
+	pub rule_name: Option<String>,
+	pub scope_id: Option<String>,
+	pub scope_label: String,
+	pub scope_type: String,
+	pub spend_nanos: i64,
+	pub spend_usd: f64,
+	pub started_at: String,
+	pub workspace_id: String,
+}
+
+pub type SpendBlockLiftReason = JsonValue;
+
+pub struct SpendBlockListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct SpendBlockResponse {
+	pub data: HashMap<String, String>,
+}
+
 pub struct SpendRule {
 	pub action: String,
 	pub base_amount_nanos: Option<i64>,
@@ -3476,6 +3684,30 @@ pub struct SubagentToolDefinition {
 	pub r#type: String,
 }
 
+pub struct SuccessorReplacement {
+	pub model: String,
+	pub successor: Option<String>,
+}
+
+pub struct SuccessorReplacementListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct SuccessorReplacementRemovedResponse {
+	pub deleted: Option<bool>,
+	pub model: Option<String>,
+}
+
+pub struct SuccessorReplacementResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct SuccessorReplacementRow {
+	pub model: Option<String>,
+	pub successor: Option<Option<String>>,
+	pub updated_at: Option<Option<String>>,
+}
+
 pub struct SupportedParameterDetails {
 }
 
@@ -3572,6 +3804,23 @@ pub struct Usage {
 
 pub struct UsageCostDetails {
 	pub upstream_inference_cost: Option<Option<f64>>,
+}
+
+pub struct UserProfile {
+	pub default_workspace_id: Option<Option<String>>,
+	pub display_name: Option<Option<String>>,
+	pub obfuscate_info: Option<bool>,
+	pub user_id: Option<String>,
+}
+
+pub struct UserProfileResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct UserProfileUpdateRequest {
+	pub default_workspace_id: Option<Option<String>>,
+	pub display_name: Option<String>,
+	pub obfuscate_info: Option<bool>,
 }
 
 pub struct VideoBillingSummary {
@@ -3808,6 +4057,54 @@ pub struct WebSearchPlugin {
 	pub max_uses: Option<i64>,
 	pub search_context_size: Option<String>,
 }
+
+pub struct WorkloadIdentityPolicy {
+	pub audience: String,
+	pub claim_conditions: HashMap<String, String>,
+	pub created_at: String,
+	pub created_by: Option<String>,
+	pub id: String,
+	pub issuer: String,
+	pub key_id: String,
+	pub last_used_at: Option<String>,
+	pub max_token_lifetime_seconds: i64,
+	pub name: String,
+	pub owner_id: String,
+	pub provider: String,
+	pub status: String,
+	pub updated_at: String,
+}
+
+pub struct WorkloadIdentityPolicyDeleteResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct WorkloadIdentityPolicyInput {
+	pub claim_conditions: Option<HashMap<String, String>>,
+	pub issuer: Option<String>,
+	pub max_token_lifetime_seconds: Option<i64>,
+	pub name: String,
+	pub owner_id: String,
+	pub provider: String,
+}
+
+pub struct WorkloadIdentityPolicyListResponse {
+	pub audience: String,
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct WorkloadIdentityPolicyResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct WorkloadIdentityPolicyUpdateInput {
+	pub claim_conditions: Option<HashMap<String, String>>,
+	pub max_token_lifetime_seconds: Option<i64>,
+	pub name: Option<String>,
+	pub status: Option<String>,
+}
+
+pub type WorkloadIdentityProvider = JsonValue;
 
 pub struct Workspace {
 	pub created_at: Option<String>,
@@ -4124,6 +4421,10 @@ pub struct WorkspaceInvite {
 	pub token_preview: Option<Option<String>>,
 	pub uses_count: Option<i64>,
 	pub workspace_id: String,
+}
+
+pub struct WorkspaceInviteAcceptRequest {
+	pub token: String,
 }
 
 pub struct WorkspaceInviteCreateRequest {

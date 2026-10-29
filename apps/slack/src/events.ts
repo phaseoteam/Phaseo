@@ -12,9 +12,12 @@ import {
 	type SlackAppContext,
 } from "./installations";
 import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
-import { allowedModels, chooseModel, modelChoiceOn, modelNames, namesCatalogueModel, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
+import { pageStoreFor } from "./pages";
+import { allowedModels, chooseModel, decideComparison, modelChoiceOn, modelNames, namesCatalogueModel, namesComparison, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
 import { updateQuestionMessage } from "./questions";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
+import { sharedFileRefs } from "./slack-files";
+import { searchTokenFor } from "./slack-search";
 import { createDb, type Db } from "./supabase";
 
 // What the Worker does with a verified Slack event, after it has acknowledged it:
@@ -26,6 +29,10 @@ import { createDb, type Db } from "./supabase";
 //
 // A message from the person whose question the running turn waits on
 // (questions.ts) is their answer, not a new turn: it isn't metered again.
+//
+// The action token Slack sends with a message (its permission to search as the
+// person) is kept with the turn only where the turn may search Slack
+// (slack-search.ts), and is never logged.
 //
 // Opening the app's Home tab (app_home_opened) publishes it for that person
 // (home.ts). Slack only sends it once the app's manifest subscribes.
@@ -71,6 +78,11 @@ export type SlackEvent = {
 	tab?: string;
 	/** tokens_revoked: the user ids whose user (oauth) and bot tokens were revoked. */
 	tokens?: { oauth?: unknown; bot?: unknown };
+	/** Files shared with the message. Only their ids and names are kept (slack-files.ts). */
+	files?: unknown[];
+	/** Slack's permission to search as the person who wrote the message (slack-search.ts); older payloads nest it under assistant_thread. */
+	action_token?: unknown;
+	assistant_thread?: unknown;
 };
 
 export type SlackEnvelope = {
@@ -277,9 +289,13 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		return "link_required";
 	}
 
-	// Their reply to the question the running turn asked them: the turn goes on with it.
+	// Slack's permission to search as them, kept with the turn only where it may search for them.
+	const actionToken = searchTokenFor(installation, { channel, kind }, facts, event);
+
+	// Their reply to the question the running turn asked them: the turn goes on with it, and with its files.
 	let text = typeof event.text === "string" ? event.text : "";
-	const answered = await coordinator.answerWithMessage({ slackUserId: user, text: withoutMention(text, installation.bot_user_id), now });
+	const files = sharedFileRefs(event.files);
+	const answered = await coordinator.answerWithMessage({ slackUserId: user, text: withoutMention(text, installation.bot_user_id), ...(files.length ? { files } : {}), ...(actionToken ? { actionToken } : {}), now });
 	if (answered) {
 		console.log("[slack-agent] question answered", { installationId: installation.id, turnId: answered.turnId, question: answered.question.n, by: "message" });
 		await updateQuestionMessage(slack, { channel, threadTs, turnId: answered.turnId, askerId: answered.askerId }, answered.question);
@@ -289,8 +305,21 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 	// A model chosen for this message. One that can't be used is refused here, before
 	// the meter counts the person or holds an answer for them.
 	let model: string | null = null;
+	let compare: string[] | null = null;
 	const message = withoutMention(text, installation.bot_user_id);
-	if (modelChoiceOn(installation) && namesModel(message)) {
+	if (modelChoiceOn(installation) && namesComparison(message)) {
+		// `compare <model>, <model>: …`, checked and refused like `with <model>:`.
+		const decided = await decideComparison(deps.db, installation, message);
+		if (decided.kind === "refused") {
+			console.log("[slack-agent] comparison refused", { installationId: installation.id, eventId, reason: decided.reason });
+			await replyPrivately(slack, target, decided.text);
+			return "model_refused";
+		}
+		if (decided.kind === "chosen") {
+			compare = decided.models;
+			text = decided.prompt;
+		}
+	} else if (modelChoiceOn(installation) && namesModel(message)) {
 		const names = await modelNames(deps.db, [...installation.allowed_models, installation.model]);
 		const allowed = allowedModels(installation, names);
 		let choice = chooseModel(message, allowed);
@@ -333,7 +362,10 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		kind,
 		...(model ? { model } : {}),
 		...(facts.isExternal ? { external: true } : {}),
+		...(compare ? { compare } : {}),
 		text,
+		...(files.length ? { files } : {}),
+		...(actionToken ? { actionToken } : {}),
 	}, now);
 	if (queued.status === "queue_full") {
 		await meter.release({ eventId });
@@ -399,8 +431,8 @@ async function handleStop(deps: Deps, app: SlackAppContext, envelope: SlackEnvel
  * Slack sends both, in either order. One database call deletes the installation's
  * gateway key, marks it uninstalled and removes its guardrail (web-api's uninstall
  * order) and records slack_agent.uninstalled_in_slack. It is safe to repeat, and an
- * event older than a reinstall does nothing. Then the meter closes for good and
- * the Phaseo team gets an internal alert. Each queued turn re-reads the
+ * event older than a reinstall does nothing. Then the meter closes for good, the
+ * shared pages are deleted and the Phaseo team gets an internal alert. Each queued turn re-reads the
  * installation before it runs, so none answers.
  */
 async function handleRemoval(deps: Deps, app: SlackAppContext, envelope: SlackEnvelope, event: SlackEvent): Promise<EventOutcome> {
@@ -423,6 +455,12 @@ async function handleRemoval(deps: Deps, app: SlackAppContext, envelope: SlackEn
 	} catch {
 		// The installation is already gone, so no event reaches the meter again.
 		console.error("[slack-agent] meter not closed after uninstall", { installationId: installation.id });
+	}
+	try {
+		await pageStoreFor(deps.env, installation.id).removeAll();
+	} catch {
+		// Its next view or daily check finds the installation gone and deletes them.
+		console.error("[slack-agent] shared pages not deleted after uninstall", { installationId: installation.id });
 	}
 	console.log("[slack-agent] uninstalled in Slack", { installationId: installation.id, event: event.type });
 	// Slack waits for this event's answer (up to three seconds), so the alert runs after it.

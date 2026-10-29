@@ -30,9 +30,19 @@ CREATE TABLE "public"."slack_installations" (
   "model_choice_enabled"    boolean                  NOT NULL DEFAULT false,
   "allowed_models"          text[]                   NOT NULL DEFAULT '{}'::text[],
   "memory_enabled"          boolean                  NOT NULL DEFAULT true,
+  "schedules_enabled"       boolean                  NOT NULL DEFAULT true,
+  "schedules_max"           integer                  NOT NULL DEFAULT 20,
+  "schedule_creators"       text                     NOT NULL DEFAULT 'everyone'::text,
+  "bot_scopes"              text[],
+  "search_mode"             text                     NOT NULL DEFAULT 'dm'::text,
+  "pages_enabled"           boolean                  NOT NULL DEFAULT true,
+  "page_expiry_days"        integer                  NOT NULL DEFAULT 30,
+  "page_default_access"     text                     NOT NULL DEFAULT 'link'::text,
+  "page_link_access"        boolean                  NOT NULL DEFAULT true,
   CONSTRAINT "slack_installations_access_mode_check" CHECK ((access_mode = ANY (ARRAY['everyone'::text, 'linked'::text]))),
   CONSTRAINT "slack_installations_allowed_models_check" CHECK ((cardinality(allowed_models) <= 10)),
   CONSTRAINT "slack_installations_answers_per_person_hour_check" CHECK (((answers_per_person_hour >= 1) AND (answers_per_person_hour <= 10000))),
+  CONSTRAINT "slack_installations_bot_scopes_check" CHECK (((bot_scopes IS NULL) OR (cardinality(bot_scopes) <= 50))),
   CONSTRAINT "slack_installations_bot_user_id_check" CHECK ((bot_user_id ~ '^[UWB][A-Z0-9]{2,31}$'::text)),
   CONSTRAINT "slack_installations_enterprise_id_check" CHECK (((enterprise_id IS NULL) OR (enterprise_id ~ '^E[A-Z0-9]{2,31}$'::text))),
   CONSTRAINT "slack_installations_guardrail_id_fkey" FOREIGN KEY (guardrail_id) REFERENCES public.workspace_guardrails(id) ON DELETE SET NULL,
@@ -43,8 +53,14 @@ CREATE TABLE "public"."slack_installations" (
   CONSTRAINT "slack_installations_model_check" CHECK (((length(model) >= 1) AND (length(model) <= 200))),
   CONSTRAINT "slack_installations_monthly_cap_check" CHECK ((monthly_cap_nanos > 0)),
   CONSTRAINT "slack_installations_over_plan_check" CHECK ((over_plan = ANY (ARRAY['refuse'::text, 'move_up'::text]))),
+  CONSTRAINT "slack_installations_page_access_check" CHECK ((page_link_access OR (page_default_access = 'workspace'::text))),
+  CONSTRAINT "slack_installations_page_default_access_check" CHECK ((page_default_access = ANY (ARRAY['link'::text, 'workspace'::text]))),
+  CONSTRAINT "slack_installations_page_expiry_days_check" CHECK ((page_expiry_days = ANY (ARRAY[7, 30, 90]))),
   CONSTRAINT "slack_installations_pkey" PRIMARY KEY (id),
   CONSTRAINT "slack_installations_plan_people_check" CHECK (((plan_people >= 1) AND (plan_people <= 10000000))),
+  CONSTRAINT "slack_installations_schedule_creators_check" CHECK ((schedule_creators = ANY (ARRAY['everyone'::text, 'linked'::text]))),
+  CONSTRAINT "slack_installations_schedules_max_check" CHECK (((schedules_max >= 1) AND (schedules_max <= 100))),
+  CONSTRAINT "slack_installations_search_mode_check" CHECK ((search_mode = ANY (ARRAY['off'::text, 'dm'::text, 'dm_and_channels'::text]))),
   CONSTRAINT "slack_installations_secrets_check" CHECK ((length(secrets_ciphertext) > 0)),
   CONSTRAINT "slack_installations_slack_app_id_fkey" FOREIGN KEY (slack_app_id) REFERENCES public.slack_apps(id) ON DELETE RESTRICT,
   CONSTRAINT "slack_installations_status_check" CHECK ((status = ANY (ARRAY['active'::text, 'paused'::text, 'payment_due'::text, 'uninstalled'::text]))),
@@ -78,6 +94,12 @@ CREATE TRIGGER slack_installations_delete_agent_memory
   WHEN (((new.status = 'uninstalled'::text) AND (old.status IS DISTINCT FROM 'uninstalled'::text)))
   EXECUTE FUNCTION public.delete_slack_agent_memory();
 
+CREATE TRIGGER slack_installations_delete_agent_schedules
+  AFTER UPDATE OF status ON public.slack_installations
+  FOR EACH ROW
+  WHEN (((new.status = 'uninstalled'::text) AND (old.status IS DISTINCT FROM 'uninstalled'::text)))
+  EXECUTE FUNCTION public.delete_slack_agent_schedules();
+
 CREATE POLICY "deny_direct_client_access" ON "public"."slack_installations"
   AS RESTRICTIVE
   FOR ALL
@@ -98,6 +120,24 @@ COMMENT ON COLUMN "public"."slack_installations"."model_choice_enabled" IS 'Whet
 COMMENT ON COLUMN "public"."slack_installations"."allowed_models" IS 'The models people may choose per message (up to 10 v2_models.model_slug values, or phaseo/auto where the workspace has Auto Routing). web-api checks each one; model stays the default.';
 
 COMMENT ON COLUMN "public"."slack_installations"."memory_enabled" IS 'Whether the agent may save and read its notes, pins and to-dos (on by default). While off, turns get no note tools and no pins, and saved notes are kept for admins to see or delete. Saved skills work either way.';
+
+COMMENT ON COLUMN "public"."slack_installations"."schedules_enabled" IS 'Whether people may set up recurring tasks (schedules) with the agent, and whether they run (on by default). While off, no schedule is saved and due runs are skipped; saved schedules are kept.';
+
+COMMENT ON COLUMN "public"."slack_installations"."schedules_max" IS 'The most schedules the installation keeps, 1 to 100 (20 by default). save_slack_agent_schedule refuses one more; lowering it keeps the ones saved.';
+
+COMMENT ON COLUMN "public"."slack_installations"."schedule_creators" IS 'Who may set up schedules: everyone (default), anyone the agent answers; or linked, only people who linked their Phaseo account.';
+
+COMMENT ON COLUMN "public"."slack_installations"."bot_scopes" IS 'The bot scopes Slack granted at the last install or permissions update (oauth.v2.access scope). Null for installations from before it was recorded, which have the original seven scopes. New features check it before using a scope, and Settings asks admins to update the Slack permissions when scopes are missing.';
+
+COMMENT ON COLUMN "public"."slack_installations"."search_mode" IS 'Where the agent may search Slack as the person asking (Slack''s real-time search, with the search:read.public scope): off, dm (direct messages with the agent, the default, so only the person asking reads what it finds) or dm_and_channels. Search results are never stored.';
+
+COMMENT ON COLUMN "public"."slack_installations"."pages_enabled" IS 'Whether the agent may publish shared pages (on by default). Off, it publishes none; pages already published stay until they expire or an admin deletes them.';
+
+COMMENT ON COLUMN "public"."slack_installations"."page_expiry_days" IS 'How many days a new shared page is kept before the Slack Worker deletes it: 7, 30 (default) or 90.';
+
+COMMENT ON COLUMN "public"."slack_installations"."page_default_access" IS 'Who can view a new shared page unless the agent picks otherwise: link (anyone with the link) or workspace (people in the Slack workspace, after signing in with Slack).';
+
+COMMENT ON COLUMN "public"."slack_installations"."page_link_access" IS 'Whether pages may be shared with anyone who has the link. Off, page_default_access must be workspace, and link pages already published need a Slack sign-in too.';
 
 COMMENT ON COLUMN "public"."slack_installations"."plan_people" IS 'The people limit of the chosen plan. With over_plan = refuse, a new person beyond it is refused and admins are notified. The monthly charge follows the people who actually used the agent.';
 

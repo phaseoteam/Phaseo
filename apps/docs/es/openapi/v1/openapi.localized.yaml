@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -1150,6 +1156,243 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
+  /live/sessions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createLiveSession
+      summary: Crear una sesión de GPT Live
+      description: 'Crea una sesión de voz de GPT Live con medición de uso, que delega el razonamiento en un modelo de backend de Responses, y devuelve los datos de conexión del relé. Las herramientas de función se ejecutan en tu cliente: el relé reenvía cada `function_call` y acepta su `function_call_output` seguido de `response.create`.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - model
+                - provider
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - live
+                model:
+                  type: string
+                  enum:
+                    - openai/gpt-live-1
+                provider:
+                  type: string
+                  enum:
+                    - openai
+                voice:
+                  type: string
+                  default: marin
+                  enum:
+                    - alloy
+                    - ash
+                    - ballad
+                    - beacon
+                    - bossa
+                    - cedar
+                    - cinder
+                    - coral
+                    - delta
+                    - echo
+                    - gleam
+                    - marin
+                    - meridian
+                    - quartz
+                    - ripple
+                    - sage
+                    - shimmer
+                    - stone
+                    - tempo
+                    - verse
+                    - vesper
+                    - willow
+                instructions:
+                  type: string
+                  maxLength: 4000
+                source:
+                  type: string
+                  default: api
+                  enum:
+                    - api
+                    - chat
+                metadata:
+                  type: object
+                  additionalProperties: true
+                backend_model:
+                  type: string
+                  default: openai/gpt-5.6-luna
+                  enum:
+                    - openai/gpt-5.6-luna
+                    - openai/gpt-5.6-terra
+                backend_settings:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    instructions:
+                      type: string
+                      maxLength: 16000
+                    max_output_tokens:
+                      type: integer
+                      minimum: 16
+                      maximum: 32768
+                      default: 4096
+                    reasoning_effort:
+                      type: string
+                      enum:
+                        - none
+                        - low
+                        - medium
+                        - high
+                        - xhigh
+                    reasoning_summary:
+                      type: string
+                      enum:
+                        - auto
+                        - concise
+                        - detailed
+                    verbosity:
+                      type: string
+                      enum:
+                        - low
+                        - medium
+                        - high
+                    service_tier:
+                      type: string
+                      default: default
+                      enum:
+                        - default
+                        - flex
+                        - priority
+                    web_search:
+                      type: boolean
+                      default: false
+                    tools:
+                      type: array
+                      maxItems: 32
+                      description: Herramientas de función que ejecuta el cliente, con nombres únicos.
+                      items:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - type
+                          - name
+                        properties:
+                          type:
+                            type: string
+                            enum:
+                              - function
+                          name:
+                            type: string
+                            pattern: ^[a-zA-Z0-9_-]{1,64}$
+                          description:
+                            type: string
+                            maxLength: 1024
+                          parameters:
+                            type: object
+                            additionalProperties: true
+                          strict:
+                            type: boolean
+                    tool_choice:
+                      type: string
+                      default: auto
+                      enum:
+                        - auto
+                        - none
+                        - required
+                    parallel_tool_calls:
+                      type: boolean
+                      default: true
+      responses:
+        '201':
+          description: Sesión de GPT Live creada
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -2570,6 +2813,136 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: Prohibido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: Iniciar una recarga de créditos
+      description: Solicita añadir créditos al espacio de trabajo autenticado. Requiere el alcance opcional billing:write y ser miembro del espacio de trabajo. Aquí no se cobra nada. Si hay una tarjeta guardada, cada propietario y administrador del espacio de trabajo recibe por correo un enlace de un solo uso y uno de ellos confirma o rechaza el cargo. Si no la hay, la respuesta incluye un checkout_url donde un propietario o administrador paga con una tarjeta nueva, que se guarda para recargas posteriores. Los importes van de $5 a $500. Un espacio de trabajo puede tener 5 recargas pendientes y cada una caduca a los 30 minutos.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Clave de idempotencia opcional. Si se repite, devuelve la misma recarga en lugar de crear otra. Equivale al campo idempotency_key.
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: Recarga existente para esta clave de idempotencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: Recarga creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: Importe no válido (invalid_amount, amount_below_minimum o amount_above_maximum)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Prohibido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: La clave de idempotencia ya se usó para otra recarga, o ningún propietario ni administrador puede confirmarla
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: El espacio de trabajo ya tiene 5 recargas pendientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Los pagos con tarjeta no están disponibles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: Obtener una recarga de créditos
+      description: Devuelve el estado de una recarga de créditos del espacio de trabajo autenticado. Requiere credits:read o billing:write. Consulta hasta que final sea true. Las recargas rechazadas, caducadas o fallidas incluyen un código de motivo; no las reintentes automáticamente.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la recarga.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estado de la recarga
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: ID de recarga no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Prohibido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recarga no encontrada
           content:
             application/json:
               schema:
@@ -4590,6 +4963,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listWorkloadIdentityPolicies
+      summary: List trusted workload policies
+      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      responses:
+        '200':
+          description: Trusted workload policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyListResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createWorkloadIdentityPolicy
+      summary: Create a trusted workload policy
+      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
+      responses:
+        '201':
+          description: Trusted workload policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Trusted workload policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getWorkloadIdentityPolicy
+      summary: Get a trusted workload policy
+      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateWorkloadIdentityPolicy
+      summary: Update a trusted workload policy
+      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
+      responses:
+        '200':
+          description: Trusted workload policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteWorkloadIdentityPolicy
+      summary: Delete a trusted workload policy
+      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyDeleteResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -5111,6 +5606,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: Devuelve también los bloqueos retirados, del más reciente al más antiguo.
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: Número máximo de bloqueos que se devuelven.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: Listar bloqueos de gasto
+      description: 'Lista los bloqueos de gasto del espacio de trabajo, del más reciente al más antiguo: los bloqueos que han iniciado las reglas de gasto con acción block al llegar el gasto a su punto de bloqueo. Solo los activos, salvo que include_lifted sea true. Solo propietarios y administradores.'
+      responses:
+        '200':
+          description: Bloqueos de gasto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID del bloqueo de gasto.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: Retirar un bloqueo de gasto
+      description: Retira un bloqueo de gasto activo para que las solicitudes de su ámbito se acepten de nuevo en un minuto aproximadamente. La regla no vuelve a bloquear hasta que se restablece su periodo, pero sigue enviando alertas. Solo propietarios y administradores; la retirada queda en el registro de auditoría y encola un evento spend_blocked con estado lifted. Devuelve 404 si el bloqueo no existe y 409 spend_block_not_active si ya se había retirado.
+      responses:
+        '200':
+          description: El bloqueo de gasto retirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -5154,6 +5716,57 @@ paths:
                 $ref: '#/components/schemas/ClassifierResponse'
         default:
           description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: Probar un clasificador con un ejemplo
+      description: Ejecuta una vez un clasificador guardado o un borrador sobre una solicitud y una respuesta de ejemplo, con la misma solicitud que envía el gateway. Es una solicitud real y facturada a un modelo, hecha con tu propia credencial y etiquetada como phaseo.classifier_test. Propietarios y administradores; la credencial necesita classifiers:write y gateway:access. Las claves de gestión no pueden hacer solicitudes a modelos y se rechazan.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: Las etiquetas que eligió el modelo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: Clasificador o ejemplo no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: No es propietario ni administrador, falta classifiers:write o la credencial no tiene gateway:access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró el clasificador guardado en este espacio de trabajo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: La solicitud al modelo falló (por ejemplo, por créditos insuficientes)
           content:
             application/json:
               schema:
@@ -8676,6 +9289,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: Listar etiquetas del preajuste
+      description: Lista las etiquetas con nombre, como production o staging, y la versión publicada a la que apunta cada una.
+      responses:
+        '200':
+          description: Lista de etiquetas del preajuste
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: No se encontró el ajuste preestablecido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: Definir una etiqueta del preajuste
+      description: Apunta una etiqueta a una versión publicada, creándola o moviéndola. Las solicitudes que fijan la etiqueta, como @support-triage@production, usan la nueva versión en unos 2 minutos. Devolver una etiqueta a una versión anterior es una reversión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: Etiqueta guardada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: Etiqueta no válida, o no se envió ninguno o se enviaron ambos de version_id y version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Solo quien creó el preajuste o un propietario o administrador del espacio de trabajo puede cambiar sus etiquetas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró el preajuste o la versión
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: Quitar una etiqueta del preajuste
+      description: Quita una etiqueta. Las solicitudes que aún la fijan fallan con preset_version_not_found.
+      responses:
+        '200':
+          description: Etiqueta quitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: Etiqueta no válida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Solo quien creó el preajuste o un propietario o administrador del espacio de trabajo puede cambiar sus etiquetas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró el preajuste o la etiqueta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9047,6 +9757,596 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EndpointCatalogueResponse'
+  /me:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMe
+      summary: Obtener el usuario con sesión iniciada
+      description: Devuelve el usuario del token OAuth, el cliente y los alcances del token, y los espacios de trabajo a los que pertenece el usuario. Requiere un token OAuth con me:read; las claves de gestión se rechazan.
+      responses:
+        '200':
+          description: El usuario con sesión iniciada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: No es un token OAuth, o el token no es válido o caducó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: El token no tiene me:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/profile:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMyProfile
+      summary: Obtener tu perfil
+      description: Devuelve los campos del perfil que se muestran en la página Perfil del panel. Requiere un token OAuth con me:read.
+      responses:
+        '200':
+          description: Perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: No es un token OAuth, o el token no es válido o caducó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: El token no tiene me:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateMyProfile
+      summary: Actualizar tu perfil
+      description: Cambia tu nombre visible, tu espacio de trabajo predeterminado (uno al que pertenezcas) o si tus datos se ocultan en pantalla. La contraseña, la MFA y las llaves de acceso solo se gestionan en el navegador. Requiere un token OAuth con settings:write.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: Campo no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No es un token OAuth, o el token no es válido o caducó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: El token no tiene settings:write, o el espacio de trabajo predeterminado no es uno de los tuyos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listAuthorizedApps
+      summary: Listar las aplicaciones que autorizaste
+      description: Muestra las aplicaciones que autorizaste con OAuth en todos los espacios de trabajo. Requiere un token OAuth con oauth_clients:read.
+      responses:
+        '200':
+          description: Aplicaciones autorizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppListResponse'
+        '401':
+          description: No es un token OAuth, o el token no es válido o caducó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: El token no tiene oauth_clients:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps/{id}:
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reduceAuthorizedAppScopes
+      summary: Quitar alcances de una aplicación autorizada
+      description: Limita el acceso de una aplicación a los alcances indicados. Solo se pueden quitar alcances; añadir uno requiere tu consentimiento en el navegador. Requiere un token OAuth con oauth_clients:write.
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizedAppScopesRequest'
+      responses:
+        '200':
+          description: Alcances reducidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppScopesResponse'
+        '400':
+          description: Lista vacía, o un alcance que la aplicación no tiene
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No es un token OAuth, o el token no es válido o caducó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró la aplicación autorizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: revokeAuthorizedApp
+      summary: Revocar una aplicación autorizada
+      description: Revoca el acceso de una aplicación para que sus tokens dejen de funcionar. Revocar la autorización de la propia aplicación que llama cierra su sesión. Requiere un token OAuth con oauth_clients:delete.
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      responses:
+        '200':
+          description: Autorización revocada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
+        '401':
+          description: No es un token OAuth, o el token no es válido o caducó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró la aplicación autorizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/accept:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: acceptWorkspaceInvite
+      summary: Aceptar una invitación a un espacio de trabajo
+      description: Solicita unirte al espacio de trabajo al que pertenece un código de invitación. Después, un propietario o administrador aprueba o rechaza la solicitud. Requiere un token OAuth con workspaces:write; las claves de gestión se rechazan porque pertenecen a un espacio de trabajo, no a una persona.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
+      responses:
+        '201':
+          description: Solicitud para unirse creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
+        '400':
+          description: Falta el código de invitación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: No es un token OAuth de usuario, o el token no tiene workspaces:write
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Invitación no válida o caducada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Ya eres miembro, o ya hay una solicitud pendiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listMyJoinRequests
+      summary: Listar tus solicitudes para unirte a espacios de trabajo
+      description: Muestra tus propias solicitudes para unirte a espacios de trabajo, de la más reciente a la más antigua (100 como máximo). Requiere un token OAuth con workspaces:read.
+      parameters:
+        - name: status
+          in: query
+          description: Pendientes de forma predeterminada; all devuelve todos los estados.
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - denied
+              - cancelled
+              - all
+      responses:
+        '200':
+          description: Tus solicitudes para unirte
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestListResponse'
+        '400':
+          description: Estado no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: No es un token OAuth de usuario, o el token no tiene workspaces:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getRateLimitTier
+      summary: Obtener el nivel de límite de solicitudes del espacio de trabajo
+      description: Devuelve el nivel de confianza del espacio de trabajo, sus solicitudes por minuto y si ahora puede subir un nivel. Propietarios y administradores (OAuth) o claves de gestión con rate_limits:read. canRaise solo es verdadero para el propietario del espacio de trabajo.
+      responses:
+        '200':
+          description: Nivel y estado de la subida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: No es propietario ni administrador, o el token no tiene rate_limits:read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier/raise:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: raiseRateLimitTier
+      summary: Subir el nivel de límite de solicitudes del espacio de trabajo
+      description: Sube un nivel a un espacio de trabajo apto durante un tiempo limitado. Solo el propietario del espacio de trabajo puede subirlo, con un token OAuth que tenga rate_limits:write; las claves de gestión se rechazan para que una clave filtrada no pueda levantar los límites de su propio espacio de trabajo.
+      responses:
+        '201':
+          description: Subido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: No es el propietario del espacio de trabajo, es una clave de gestión o el token no tiene rate_limits:write
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: El espacio de trabajo no puede subir su límite ahora (consulta reason)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/auto:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getAutoRoutingSettings
+      summary: Obtener la configuración del enrutamiento automático
+      description: Devuelve los límites dentro de los que trabaja el enrutador automático en este espacio de trabajo. Cualquier miembro; requiere settings:read.
+      responses:
+        '200':
+          description: Configuración del enrutamiento automático
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateAutoRoutingSettings
+      summary: Actualizar la configuración del enrutamiento automático
+      description: Cambia los campos enviados; el resultado se valida en conjunto, como lo guarda el panel. Un spend_profile personalizado necesita ambos límites de precio. Propietarios y administradores; requiere settings:write.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
+      responses:
+        '200':
+          description: Configuración del enrutamiento automático actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '400':
+          description: Configuración no válida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/successor/replacements:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSuccessorReplacements
+      summary: Listar reemplazos de modelos sucesores
+      description: Muestra los reemplazos que el espacio de trabajo eligió para modelos que ningún proveedor sirve ya. El interruptor y la política de precios del enrutamiento sucesor están en /settings. Cualquier miembro; requiere settings:read.
+      responses:
+        '200':
+          description: Reemplazos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementListResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: saveSuccessorReplacement
+      summary: Guardar un reemplazo de modelo sucesor
+      description: Define el modelo al que se envían las solicitudes de model y reemplaza cualquier elección anterior. Un successor nulo significa que las solicitudes de model nunca se redirigen. Ambos modelos deben estar en el catálogo y el sucesor debe estar disponible. Máximo 500 por espacio de trabajo. Propietarios y administradores; requiere settings:write.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuccessorReplacement'
+      responses:
+        '200':
+          description: Reemplazo guardado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementResponse'
+        '400':
+          description: Modelo no válido o desconocido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: removeSuccessorReplacement
+      summary: Quitar un reemplazo de modelo sucesor
+      description: Quita la elección del espacio de trabajo para un modelo, de modo que vuelve a aplicarse el sucesor del catálogo. Propietarios y administradores; requiere settings:write.
+      parameters:
+        - name: model
+          in: query
+          required: true
+          description: El ID del modelo cuyo reemplazo quieres quitar.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+      responses:
+        '200':
+          description: Reemplazo quitado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
+        '400':
+          description: Modelo ausente o no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No hay ningún reemplazo guardado para este modelo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestinationConfig
+      summary: Probar la configuración de un destino antes de guardarla
+      description: Envía una traza de ejemplo sin mensajes a la configuración indicada, del mismo modo que el gateway entrega las trazas. No se guarda nada. Propietarios y administradores; requiere settings:write.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
+      responses:
+        '200':
+          description: Resultado de la prueba; ok es falso cuando el destino rechazó el envío o no se pudo alcanzar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '400':
+          description: Tipo o configuración no válidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestination
+      summary: Comprobar la conexión de un destino
+      description: Envía una traza de ejemplo sin mensajes a un destino guardado, como hace la comprobación de estado del panel. El estado de salud del destino no cambia. Propietarios y administradores; requiere settings:write.
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: Resultado de la prueba
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró el destino
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/sample:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendObservabilityDestinationSample
+      summary: Enviar una traza de ejemplo
+      description: Envía una traza de ejemplo a un destino guardado, con sus mensajes salvo que el destino excluya las solicitudes y las respuestas. Propietarios y administradores; requiere settings:write.
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: Resultado del envío
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No se encontró el destino
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /security/report-leaked-key:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reportLeakedKey
+      summary: Informar de una clave de API filtrada
+      description: Informa de una clave de Phaseo encontrada publicada. Sin autenticación. Siempre responde 202 con el mismo cuerpo, coincida o no la clave, así que la ruta no sirve para comprobar claves. Con límite de solicitudes por dirección.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeakedKeyReportRequest'
+      responses:
+        '202':
+          description: Informe recibido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeakedKeyReportResponse'
 tags:
   - name: Gateway
     description: Core Phaseo Gateway operations.
@@ -9104,6 +10404,10 @@ components:
         type: string
     DroppedParams:
       description: Parámetros que envió el cliente y que el proveedor que atiende la solicitud no admite, y que el gateway eliminó en lugar de enviarlos al proveedor o rechazar la solicitud, por ejemplo `top_k, min_p`. Solo se envía en respuestas satisfactorias y solo cuando se descartó al menos un parámetro del cuerpo de la solicitud. Los parámetros que proceden de un preset o de un valor predeterminado no se incluyen.
+      schema:
+        type: string
+    SpendWarning:
+      description: Se envía mientras una regla de gasto que bloquea cubre la solicitud y el gasto ha superado su último umbral de alerta, pero aún no su punto de bloqueo. Indica hasta tres reglas con rule_id, scope y resets_at, por ejemplo `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Cuando el gasto llega al punto de bloqueo, las solicitudes del ámbito reciben un 429 con el código spend_rule_blocked.
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -9166,6 +10470,21 @@ components:
       description: UUID, slug o nombre canónico del ajuste preestablecido.
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: Nombre de la etiqueta, como production. De 1 a 32 letras minúsculas, números, guiones o guiones bajos, empezando por una letra; no puede parecer una etiqueta de versión (v1, v2).
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
+    AuthorizedAppId:
+      name: id
+      in: path
+      required: true
+      description: Identificador de la autorización de la lista de aplicaciones autorizadas.
+      schema:
+        type: string
     ObservabilityDestinationId:
       name: id
       in: path
@@ -9209,6 +10528,476 @@ components:
         type: string
         format: uuid
   schemas:
+    MeResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                  nullable: true
+                name:
+                  type: string
+                  nullable: true
+            oauth:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                resource:
+                  type: string
+                  nullable: true
+            current_workspace_id:
+              type: string
+            workspaces:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                    nullable: true
+                  slug:
+                    type: string
+                    nullable: true
+                  role:
+                    type: string
+                    nullable: true
+                  current:
+                    type: boolean
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+          nullable: true
+        default_workspace_id:
+          type: string
+          nullable: true
+        obfuscate_info:
+          type: boolean
+          description: Si tu correo y tu nombre se ocultan en pantalla en el panel.
+    UserProfileResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/UserProfile'
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        default_workspace_id:
+          type: string
+          nullable: true
+          description: Un espacio de trabajo al que pertenezcas, o null para borrarlo.
+        obfuscate_info:
+          type: boolean
+      additionalProperties: false
+    AuthorizedApp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID de la autorización.
+        client_id:
+          type: string
+        app_name:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        scopes:
+          type: array
+          items:
+            type: string
+        current:
+          type: boolean
+          description: Verdadero para la autorización a la que pertenece el token que hace la llamada.
+        authorized_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+    AuthorizedAppListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizedApp'
+    AuthorizedAppScopesRequest:
+      type: object
+      required:
+        - scopes
+      properties:
+        scopes:
+          type: array
+          minItems: 1
+          description: Los alcances que se conservan; cada uno ya debe estar concedido.
+          items:
+            type: string
+      additionalProperties: false
+    AuthorizedAppScopesResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            scopes:
+              type: array
+              items:
+                type: string
+    AuthorizedAppRevokedResponse:
+      type: object
+      properties:
+        revoked:
+          type: boolean
+        id:
+          type: string
+    WorkspaceInviteAcceptRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          minLength: 6
+          maxLength: 256
+          description: El código de invitación.
+      additionalProperties: false
+    MyJoinRequestCreatedResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            workspace_id:
+              type: string
+            status:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+    MyJoinRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - denied
+            - cancelled
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+    MyJoinRequestListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyJoinRequest'
+    RateLimitTierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            tier:
+              type: string
+            requestsPerMinute:
+              type: number
+            target:
+              type: string
+              nullable: true
+              description: El nivel al que pasaría una subida.
+            targetRequestsPerMinute:
+              type: number
+              nullable: true
+            eligible:
+              type: boolean
+            refusal:
+              type: string
+              nullable: true
+              description: Por qué no se puede subir ahora; null cuando es apto.
+            activeUntil:
+              type: number
+              nullable: true
+              description: Cuándo termina una subida activa (milisegundos Unix).
+            availableAt:
+              type: number
+              nullable: true
+              description: Cuándo se puede solicitar la siguiente subida (milisegundos Unix).
+            durationDays:
+              type: number
+            thresholds:
+              type: object
+              properties:
+                minAgeDays:
+                  type: number
+                minLifetimePaidSpendUsd:
+                  type: number
+            canRaise:
+              type: boolean
+              description: Verdadero cuando quien llama es el propietario del espacio de trabajo y este es apto.
+    AutoRoutingSettings:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          description: Patrones proveedor/modelo entre los que puede elegir el enrutador automático, como openai/*. Si está vacío, se permiten todos los modelos.
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          nullable: true
+          description: USD por millón de tokens de entrada; solo se define para el perfil de gasto personalizado.
+        max_output_price_per_million:
+          type: number
+          nullable: true
+          description: USD por millón de tokens de salida; solo se define para el perfil de gasto personalizado.
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+        revision:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    AutoRoutingSettingsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AutoRoutingSettings'
+    AutoRoutingSettingsUpdateRequest:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        max_output_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+    SuccessorReplacement:
+      type: object
+      required:
+        - model
+        - successor
+      properties:
+        model:
+          type: string
+          description: El modelo cuyas solicitudes se redirigen.
+        successor:
+          type: string
+          nullable: true
+          description: El modelo al que se envían, o null para no redirigirlas nunca.
+    SuccessorReplacementRow:
+      type: object
+      properties:
+        model:
+          type: string
+        successor:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    SuccessorReplacementListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementRemovedResponse:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+        model:
+          type: string
+    ObservabilityDestinationTestRequest:
+      type: object
+      required:
+        - type
+        - config
+      properties:
+        type:
+          $ref: '#/components/schemas/ObservabilityDestinationType'
+        config:
+          type: object
+          description: La configuración del destino, igual que al crearlo.
+          additionalProperties:
+            type: string
+    ObservabilityDestinationTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            ok:
+              type: boolean
+            status:
+              type: string
+            http_status:
+              type: integer
+              nullable: true
+            error:
+              type: string
+              nullable: true
+    ApiKeyIpAllowlist:
+      type: array
+      maxItems: 100
+      description: Direcciones que pueden usar la clave. Cada entrada es una dirección IPv4 o IPv6, o un rango CIDR, con una etiqueta. Si está vacía, se permite cualquier dirección.
+      items:
+        type: object
+        required:
+          - label
+          - address
+        properties:
+          label:
+            type: string
+            minLength: 1
+            maxLength: 100
+          address:
+            type: string
+            description: Una dirección IPv4 o IPv6, o un rango CIDR.
+    LeakedKeyReportRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          maxLength: 4096
+          description: La clave filtrada tal como se encontró.
+        source:
+          type: string
+          maxLength: 64
+          description: Dónde se encontró, por ejemplo github.
+        reporter_email:
+          type: string
+          maxLength: 320
+        evidence_url:
+          type: string
+          format: uri
+          maxLength: 2048
+        comment:
+          type: string
+          maxLength: 2000
+    LeakedKeyReportResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - received
     ProviderRoutingOptions:
       type: object
       description: Preferencias de enrutamiento de proveedores para la selección de la pasarela.
@@ -16477,6 +18266,8 @@ components:
           description: Departamento al que pertenece esta clave para los límites de frecuencia y los presupuestos del departamento. Null significa que la clave solo cuenta para los límites de todo el espacio de trabajo.
         storage_locations:
           $ref: '#/components/schemas/ApiKeyStorageLocations'
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
         include_byok_in_limit:
           type: boolean
           description: Indica si las credenciales del proveedor cuentan para el límite de gasto de la clave. Actualmente siempre es false.
@@ -16731,6 +18522,8 @@ components:
           allOf:
             - $ref: '#/components/schemas/ApiKeyStorageLocations'
           nullable: true
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array
@@ -17232,6 +19025,10 @@ components:
           type: object
           additionalProperties: true
           description: Valores para las variables de la plantilla. Las variables de imagen aceptan una URL https, una URL de datos o una parte de imagen.
+        version:
+          type: string
+          maxLength: 64
+          description: 'Ejecuta esta versión publicada del preajuste en lugar de la actual: sus modelos, parámetros y plantilla. Usa una etiqueta de versión como v3, 1.2.0 o 2026.10.27, o una etiqueta como production. Equivale a establecer model en @support-triage@production.'
     Preset:
       type: object
       required:
@@ -17424,6 +19221,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: Etiquetas con nombre, como production, que apuntan a esta versión. Se devuelven al listar versiones.
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17452,6 +19254,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: Envía solo uno de version_id y version.
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: La versión publicada a la que apuntará la etiqueta.
+        version:
+          type: string
+          maxLength: 64
+          description: Una etiqueta de versión como v3, 1.2.0 o 2026.10.27, u otra etiqueta como staging para copiar a dónde apunta.
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
@@ -18425,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: Importe en dólares estadounidenses, con dos decimales como máximo.
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: Opcional. Debe coincidir con el espacio de trabajo autenticado.
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: Clave de idempotencia opcional. Si se repite, devuelve la misma recarga en lugar de crear otra.
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: true cuando el estado ya no cambiará (paid, declined, expired o failed). Deja de consultar entonces.
+        reason:
+          type: string
+          nullable: true
+          description: Código de motivo de las recargas rechazadas, caducadas o fallidas, por ejemplo declined, expired, card_declined o authentication_failed.
+          example: declined
+        message:
+          type: string
+          description: Una frase que explica qué ocurre a continuación.
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout cuando un propietario o administrador paga con una tarjeta nueva en checkout_url; saved_card cuando un propietario o administrador confirma por correo un cargo a la tarjeta guardada.
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Página de Phaseo donde un propietario o administrador paga con una tarjeta nueva. Solo aparece en la respuesta que creó una recarga checkout pendiente.
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: Número de propietarios y administradores a los que se envió un correo para confirmar una recarga saved_card.
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:
@@ -21259,11 +23271,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: Indica al modelo cuándo elegir este valor.
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: Una pregunta que el clasificador responde sobre cada solicitud. La respuesta se escribe como una etiqueta de la solicitud cuya clave es la clave de esta dimensión. Si quien llama ya envió una etiqueta con esa clave, la dimensión se omite.
       required:
         - key
         - values
@@ -21283,14 +23295,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: Permite más de un valor por solicitud.
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: Permite que el modelo responda "other" cuando ningún valor de la lista encaja.
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: Entre 2 y 50 valores. Solo se permite un único valor cuando allow_other es verdadero.
           minItems: 1
           maxItems: 50
           items:
@@ -21521,7 +23533,269 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: Un borrador para probar. Los campos que no se envían se toman de classifier_id cuando se indica.
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: Un clasificador guardado en este espacio de trabajo para probarlo o para etiquetar la prueba.
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: Falso cuando no se pudo leer la respuesta del modelo.
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    WorkloadIdentityProvider:
+      type: string
+      enum:
+        - vercel
+        - github_actions
+      description: The platform that issues the OIDC tokens.
+    WorkloadIdentityPolicy:
+      type: object
+      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      required:
+        - id
+        - name
+        - provider
+        - issuer
+        - owner_id
+        - claim_conditions
+        - max_token_lifetime_seconds
+        - status
+        - audience
+        - key_id
+        - last_used_at
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+        owner_id:
+          type: string
+          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+        key_id:
+          type: string
+          format: uuid
+          description: The policy's key. Requests, usage and limits are recorded against it.
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    WorkloadIdentityPolicyInput:
+      type: object
+      required:
+        - name
+        - provider
+        - owner_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+        owner_id:
+          type: string
+          minLength: 1
+          description: The Vercel team ID or GitHub organisation or user ID to pin.
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          default: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkloadIdentityPolicy'
+      additionalProperties: false
+    WorkloadIdentityPolicyListResponse:
+      type: object
+      required:
+        - data
+        - audience
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadIdentityPolicy'
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+      additionalProperties: false
+    WorkloadIdentityPolicyDeleteResponse:
       type: object
       required:
         - data
@@ -21837,7 +24111,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: 'notify, o avisar y después bloquear cuando el gasto alcance block_at_percent de la base o block_at_amount. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral. El bloqueo aún no está disponible: una regla con action block se rechaza con un 400 hasta que lo esté.'
+      description: notify, o avisar y después bloquear cuando el gasto alcance block_at_percent de la base o block_at_amount. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral. Mientras el bloqueo esté desactivado en el gateway, una regla que empezaría a bloquear se rechaza con un 400, y una regla que ya bloquea solo avisa.
       enum:
         - notify
         - block
@@ -22559,6 +24833,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 'Por qué se retiró un bloqueo de gasto: manual (un propietario o administrador), period_reset, below_limit (el gasto vuelve a estar por debajo del punto de bloqueo, por ejemplo tras subir un presupuesto), rule_changed, rule_disabled o rule_deleted.'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: Un bloqueo que inició una regla de gasto cuando el gasto llegó a su punto de bloqueo. Mientras está activo, las solicitudes de su ámbito reciben un 429 con el código spend_rule_blocked y Retry-After igual a resets_at. Los modelos gratuitos quedan exentos salvo que block_free_models sea true.
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: La regla que inició el bloqueo; null cuando la regla se ha eliminado definitivamente.
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: Nombre visible del ámbito (nombre de la clave, del departamento o del modelo, correo del miembro o el ID).
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Cuándo se retira el bloqueo por sí solo (el final del periodo de la regla).
+        spend_nanos:
+          type: integer
+          description: Gasto en el ámbito de la regla cuando empezó el bloqueo, en nanodólares.
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: El punto de bloqueo, en nanodólares.
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: El propietario o administrador que retiró el bloqueo, en las retiradas manuales.
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: No retirado y sin haber llegado a su restablecimiento.
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

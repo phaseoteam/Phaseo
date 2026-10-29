@@ -1,48 +1,47 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
-import { Uniwind, useUniwind } from "uniwind";
-import { kv } from "@/lib/storage";
+import { createContext, useContext, useMemo, useState, useSyncExternalStore, type PropsWithChildren } from "react";
+import { useUniwind } from "uniwind";
+import { DEFAULT_THEME, type ThemeFields, type ThemeMode } from "@/lib/theme/model";
+import { appearanceStore } from "@/lib/theme/store";
 
-export type ThemePreference = "system" | "light" | "dark";
-
-const STORAGE_KEY = "phaseo.theme";
+export type ThemePreference = ThemeMode;
 
 type AppearanceValue = {
+  /** System, light or dark, kept on this device. */
   preference: ThemePreference;
   resolved: "light" | "dark";
+  /** Palettes and accents, as the website saves them. */
+  theme: ThemeFields;
+  /** The stored appearance is read before the first render, so this is always true; kept for callers. */
   ready: boolean;
   setPreference(preference: ThemePreference): void;
+  setTheme(theme: ThemeFields): void;
 };
 
-const AppearanceContext = createContext<AppearanceValue>({ preference: "system", resolved: "light", ready: false, setPreference: () => undefined });
+const AppearanceContext = createContext<AppearanceValue>({
+  preference: "system",
+  resolved: "light",
+  theme: DEFAULT_THEME,
+  ready: false,
+  setPreference: () => undefined,
+  setTheme: () => undefined,
+});
 
 export const useAppearance = () => useContext(AppearanceContext);
 
 export function AppearanceProvider({ children }: PropsWithChildren) {
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
-  const [ready, setReady] = useState(false);
-  const { theme } = useUniwind();
-
-  useEffect(() => {
-    void kv.getItem(STORAGE_KEY).then((stored) => {
-      const next: ThemePreference = stored === "light" || stored === "dark" ? stored : "system";
-      setPreferenceState(next);
-      Uniwind.setTheme(next);
-      setReady(true);
-    });
-  }, []);
-
-  const setPreference = useCallback((next: ThemePreference) => {
-    setPreferenceState(next);
-    Uniwind.setTheme(next);
-    void kv.setItem(STORAGE_KEY, next);
-  }, []);
+  // Once, before anything themed renders (see appearanceStore.reapply).
+  useState(() => appearanceStore.reapply());
+  const stored = useSyncExternalStore(appearanceStore.subscribe, appearanceStore.get);
+  const { theme: uniwindTheme } = useUniwind();
 
   const value = useMemo<AppearanceValue>(() => ({
-    preference,
-    resolved: theme === "dark" ? "dark" : "light",
-    ready,
-    setPreference,
-  }), [preference, theme, ready, setPreference]);
+    preference: stored.mode,
+    resolved: uniwindTheme === "dark" ? "dark" : "light",
+    theme: stored.theme,
+    ready: true,
+    setPreference: appearanceStore.setMode,
+    setTheme: appearanceStore.setTheme,
+  }), [stored.mode, stored.theme, uniwindTheme]);
 
   return <AppearanceContext.Provider value={value}>{children}</AppearanceContext.Provider>;
 }

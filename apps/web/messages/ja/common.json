@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "サインインしたユーザーをこのアプリが確認できるようにします。",
 			"gatewayPermissionLabel": "クレジットで AI Gateway を使用",
 			"gatewayPermissionDescription": "選択したチームのクレジットでモデルリクエストを実行できるようにします。",
+			"billingPermissionLabel": "クレジットのチャージを開始",
+			"billingPermissionDescription": "選択したチームのクレジット購入をアプリケーションがリクエストできるようにします。各請求はチームのオーナーまたは管理者がメールで確認する必要があります。",
 			"readPermissionLabel": "{resource}を読み取る",
 			"readPermissionDescription": "このアプリが{resource}を読み取れるようにします。",
 			"managePermissionLabel": "{resource}を管理",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth アプリ",
 					"description": "OAuth クライアントと連携の設定。"
+				},
+				"billing": {
+					"title": "請求",
+					"description": "チームのオーナーまたは管理者がメールで確認するクレジット購入。"
 				}
 			},
 			"resources": {
@@ -634,6 +640,7 @@
 				"providerCredentials": "プロバイダーの認証情報",
 				"guardrails": "ガードレールとポリシー設定",
 				"budgets": "チームの支出予算と利用状況",
+				"spendRules": "支出アラートとブロックのルール",
 				"managementKeys": "マシンレベルの管理キーの詳細",
 				"oauthApps": "OAuth アプリと連携の設定",
 				"privateModels": "ワークスペースのプライベートモデル"
@@ -2422,6 +2429,8 @@
 			"selectModelsToCompare": "比較するモデルを選択してください。",
 			"viewFullLeaderboard": "すべてのランキングを見る",
 			"sourceArtificialAnalysis": "出典：Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "年やインデックスのバージョンをまたいで比較可能",
 			"fullLeaderboard": "すべてのランキング",
 			"noModelsMatchThisSearch": "この検索に一致するモデルはありません。",
 			"noResultsAvailableForThisMetric": "この指標の結果はありません。",

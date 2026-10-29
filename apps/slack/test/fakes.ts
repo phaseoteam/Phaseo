@@ -7,6 +7,7 @@ import type { SlackClient, SlackResult, SlackUser } from "../src/slack-api";
 import { DbError, type Db } from "../src/supabase";
 import { ThreadCoordinator } from "../src/coordinator";
 import { WorkspaceMeter } from "../src/meter";
+import { PageStore } from "../src/pages";
 
 // Fakes for tests on Node: Durable Object state backed by a real SQLite database
 // (node:sqlite), Durable Object namespaces that build the real classes, an
@@ -16,8 +17,9 @@ import { WorkspaceMeter } from "../src/meter";
 type SqliteStatement = { all(...params: unknown[]): Record<string, unknown>[] };
 type SqliteDatabase = { prepare(sql: string): SqliteStatement; exec(sql: string): void };
 
-const { DatabaseSync } = (globalThis as unknown as { process: { getBuiltinModule(id: string): unknown } })
-	.process.getBuiltinModule("node:sqlite") as { DatabaseSync: new (path: string) => SqliteDatabase };
+const builtin = (globalThis as unknown as { process: { getBuiltinModule(id: string): unknown } }).process.getBuiltinModule;
+const { DatabaseSync } = builtin("node:sqlite") as { DatabaseSync: new (path: string) => SqliteDatabase };
+const { createHash } = builtin("node:crypto") as { createHash(algorithm: string): { update(text: string): { digest(encoding: "hex"): string } } };
 
 export class FakeStorage {
 	readonly db = new DatabaseSync(":memory:");
@@ -84,9 +86,19 @@ export function fakeState(storage = new FakeStorage()): DurableObjectState {
 
 export class FakeNamespace<T> {
 	readonly instances = new Map<string, T>();
+	private readonly names = new Map<string, string>();
 	constructor(private readonly create: (name: string) => T) {}
+	/** Like Cloudflare's: a 64-character hex id for each name. */
 	idFromName(name: string) {
-		return { name, toString: () => name };
+		const hex = createHash("sha256").update(name).digest("hex");
+		this.names.set(hex, name);
+		return { name, toString: () => hex };
+	}
+	/** Only ids this namespace made, as Cloudflare refuses any other. */
+	idFromString(hex: string) {
+		const name = this.names.get(hex);
+		if (name === undefined) throw new TypeError("Invalid Durable Object ID");
+		return { name, toString: () => hex };
 	}
 	get(id: { name: string }): T {
 		let instance = this.instances.get(id.name);
@@ -98,7 +110,7 @@ export class FakeNamespace<T> {
 	}
 }
 
-export function storageOf(object: WorkspaceMeter | ThreadCoordinator): FakeStorage {
+export function storageOf(object: WorkspaceMeter | ThreadCoordinator | PageStore): FakeStorage {
 	return (object as unknown as { ctx: { storage: FakeStorage } }).ctx.storage;
 }
 
@@ -115,10 +127,57 @@ export const TEAM_ID = "T0TEST0001";
 export const BOT_USER_ID = "U0BOT00001";
 export const BOT_TOKEN = "xoxb-1-test-token";
 
+/**
+ * The 403 body the gateway sends when no route of the model meets the request's
+ * require_zero_data_retention: its residency gate (apps/api pipeline/execute/guards.ts),
+ * as the error handler (core/error-handler.ts) rebuilds it, which keeps the routing
+ * diagnostics but not unmet_requirements.
+ */
+export function noZeroDataRetentionRoute(model = "openai/gpt-test"): Record<string, unknown> {
+	const description = "This model has no provider that offers zero data retention.";
+	return {
+		generation_id: "gen_test_zdr", status_code: 403,
+		error: { code: "model_region_unavailable", message: description, type: "permission_error", param: null },
+		code: "model_region_unavailable", error_type: "user", error_origin: "user", description, message: description,
+		routing_diagnostics: {
+			model, endpoint: "responses",
+			requestedRouting: { requiredExecutionRegion: null, requiredDataRegion: null, requireZeroDataRetention: true },
+			filterStages: [
+				{ stage: "geographic_availability_gate", beforeCount: 2, afterCount: 2, droppedProviders: [] },
+				{
+					stage: "residency_gate", beforeCount: 2, afterCount: 0, droppedProviders: [
+						{ providerId: "logs-cloud", apiModelId: model, providerModelSlug: null, reason: "zero_data_retention_unsupported" },
+						{ providerId: "logs-two", apiModelId: model, providerModelSlug: null, reason: "zero_data_retention_unsupported" },
+					],
+				},
+			],
+		},
+	};
+}
+
+/** The 403 with the same code for a request from a country none of the model's routes serves (the geographic gate in guards.ts). */
+export function noRouteInCountry(model = "openai/gpt-test"): Record<string, unknown> {
+	const description = "This model is not available from the request's geographic location.";
+	return {
+		generation_id: "gen_test_geo", status_code: 403,
+		error: { code: "model_region_unavailable", message: description, type: "permission_error", param: null },
+		code: "model_region_unavailable", error_type: "user", error_origin: "user", description, message: description,
+		routing_diagnostics: {
+			model, endpoint: "responses",
+			requestedRouting: { requiredExecutionRegion: null, requiredDataRegion: null, requireZeroDataRetention: true },
+			filterStages: [
+				{ stage: "geographic_availability_gate", beforeCount: 1, afterCount: 0, droppedProviders: [{ providerId: "zdr-cloud", apiModelId: model, providerModelSlug: null, reason: "request_country_not_allowed" }] },
+				{ stage: "residency_gate", beforeCount: 0, afterCount: 0, droppedProviders: [] },
+			],
+		},
+	};
+}
+
 export type TestWorld = {
 	env: Env;
 	meters: FakeNamespace<WorkspaceMeter>;
 	threads: FakeNamespace<ThreadCoordinator>;
+	pages: FakeNamespace<PageStore>;
 	db: FakeDb;
 	slack: FakeSlack;
 	clock: { now: number };
@@ -159,13 +218,23 @@ export function testWorld(options: { now?: number; envOverrides?: Partial<Env> }
 		};
 		return meter;
 	});
-	const threads = new FakeNamespace<ThreadCoordinator>(() => new ThreadCoordinator(fakeState(), env));
+	const deps: Deps = { env, db, slack: (token) => slack.client(token), now: () => clock.now };
+	const threads = new FakeNamespace<ThreadCoordinator>(() => {
+		const thread = new ThreadCoordinator(fakeState(), env);
+		thread.deps = deps;
+		return thread;
+	});
+	const pages = new FakeNamespace<PageStore>(() => {
+		const store = new PageStore(fakeState(), env);
+		store.db = db;
+		return store;
+	});
 	env.METERS = meters as unknown as Env["METERS"];
 	env.THREADS = threads as unknown as Env["THREADS"];
+	env.PAGES = pages as unknown as Env["PAGES"];
 	const turns = new FakeWorkflow();
 	env.AGENT_TURNS = turns as unknown as Env["AGENT_TURNS"];
-	const deps: Deps = { env, db, slack: (token) => slack.client(token), now: () => clock.now };
-	return { env, meters, threads, db, slack, clock, deps, turns };
+	return { env, meters, threads, pages, db, slack, clock, deps, turns };
 }
 
 export async function installationRow(overrides: Partial<Installation> = {}, secrets: Record<string, string> = {}): Promise<Installation> {
@@ -189,6 +258,8 @@ export async function installationRow(overrides: Partial<Installation> = {}, sec
 		access_mode: "everyone",
 		usage_data_mode: "dm",
 		usage_data_channel_ids: [],
+		schedules_enabled: true,
+		schedule_creators: "everyone",
 		plan_people: 3,
 		over_plan: "refuse",
 		max_people: null,
@@ -197,6 +268,12 @@ export async function installationRow(overrides: Partial<Installation> = {}, sec
 		allow_guests: true,
 		allow_external_users: false,
 		status: "active",
+		bot_scopes: null,
+		search_mode: "dm",
+		pages_enabled: true,
+		page_expiry_days: 30,
+		page_default_access: "link",
+		page_link_access: true,
 		...overrides,
 	};
 }
@@ -286,9 +363,24 @@ export class FakeDb implements Db {
 
 export type SlackCall = { token: string; method: string; args: Record<string, unknown> };
 
-/** Records Web API calls. users.info answers from `users`; everything else is ok. */
+/** A file shared in Slack: what files.info returns for it, and what its url_private_download serves. */
+export type FakeSlackFile = { info: Record<string, unknown>; bytes?: Uint8Array; contentType?: string; error?: "no_access" | "download_failed" };
+
+/**
+ * Records Web API calls. users.info answers from `users`, files.info from
+ * `files`, assistant.search.context from `searchResponse`, and
+ * files.getUploadURLExternal hands out upload URLs whose bytes land in
+ * `uploads`; everything else is ok.
+ */
 export class FakeSlack {
 	calls: SlackCall[] = [];
+	/** Files shared in Slack, by id. */
+	files = new Map<string, FakeSlackFile>();
+	/** Bytes sent to upload URLs, by the file id the URL was issued for. */
+	uploads = new Map<string, Uint8Array>();
+	/** URLs downloaded, in order. */
+	downloads: string[] = [];
+	private uploadUrls = 0;
 	users = new Map<string, SlackUser>();
 	failUsersInfo = false;
 	/** Errors the next calls of a method return, in order. "ratelimited" is a 429 with Retry-After 60; "ratelimited:30" sets it. */
@@ -299,6 +391,8 @@ export class FakeSlack {
 	repliesCap = 15;
 	/** The ts of the next posted or streamed message; by default 1792600100.000001, .000002 and so on. */
 	nextTs: (() => string) | null = null;
+	/** What assistant.search.context returns (besides ok): its results and response_metadata. */
+	searchResponse: Record<string, unknown> = { results: { messages: [] }, response_metadata: { next_cursor: "" } };
 	private streams = 0;
 
 	/**
@@ -335,12 +429,36 @@ export class FakeSlack {
 					return { ok: true, data: { ok: true, channel: args.channel, ts: this.nextTs?.() ?? `1792600100.${String(this.streams).padStart(6, "0")}` } as T };
 				}
 				if (method === "conversations.replies") return { ok: true, data: { ok: true, ...this.repliesPage(args) } as T };
+				if (method === "assistant.search.context") return { ok: true, data: { ok: true, ...this.searchResponse } as T };
+				if (method === "files.info") {
+					const file = this.files.get(String(args.file));
+					return file ? { ok: true, data: { ok: true, file: file.info } as T } : { ok: false, error: "file_not_found" };
+				}
+				if (method === "files.getUploadURLExternal") {
+					this.uploadUrls += 1;
+					const fileId = `F0UPLOAD${String(this.uploadUrls).padStart(3, "0")}`;
+					return { ok: true, data: { ok: true, upload_url: `https://files.slack.com/upload/v1/${fileId}`, file_id: fileId } as T };
+				}
 				if (method === "users.info") {
 					if (this.failUsersInfo) return { ok: false, error: "ratelimited", retryAfterSeconds: 30 };
 					const user = this.users.get(String(args.user)) ?? { id: String(args.user), team_id: TEAM_ID };
 					return { ok: true, data: { ok: true, user } as T };
 				}
 				return { ok: true, data: { ok: true } as T };
+			},
+			upload: async (url: string, bytes: Uint8Array) => {
+				this.calls.push({ token, method: "upload", args: { url, bytes: bytes.byteLength } });
+				if (this.failures.get("upload")?.shift()) return false;
+				this.uploads.set(url.split("/").pop() ?? url, bytes);
+				return true;
+			},
+			download: async (url: string, maxBytes: number) => {
+				this.downloads.push(url);
+				const file = [...this.files.values()].find((entry) => entry.info.url_private_download === url);
+				if (!file || file.error) return { ok: false, error: file?.error ?? "no_access" } as const;
+				const bytes = file.bytes ?? new Uint8Array();
+				if (bytes.byteLength > maxBytes) return { ok: false, error: "too_large" } as const;
+				return { ok: true, bytes, contentType: file.contentType ?? String(file.info.mimetype ?? "") } as const;
 			},
 		};
 	}

@@ -6,6 +6,8 @@ import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { slackAgentSettingsEnabled } from "@/lib/flags";
 import type { SlackAgentInstallation, SlackCustomApp } from "@/components/(gateway)/settings/slack/slackAgentForm";
 import type { SlackAgentMemory, SlackAgentSkill } from "@/components/(gateway)/settings/slack/slackAgentMemory";
+import type { SlackAgentPages } from "@/components/(gateway)/settings/slack/slackAgentPages";
+import type { SlackAgentSchedule, SlackAgentSchedules } from "@/components/(gateway)/settings/slack/slackAgentSchedules";
 
 const PATH = "/api/account/settings/slack";
 const SLACK_AUTHORIZE_ORIGIN = "https://slack.com";
@@ -45,6 +47,25 @@ export async function startSlackInstall(settings: Record<string, unknown>) {
 		// Only ever send the browser to Slack's own consent page.
 		const url = new URL(result.url);
 		if (url.origin !== SLACK_AUTHORIZE_ORIGIN) throw new WebApiError(`${PATH}/install`, 502);
+		return { ok: true as const, url: url.toString() };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+/**
+ * Update Slack permissions: Slack's consent page for the live installation, which
+ * asks for the scopes it lacks and keeps its settings, key and data.
+ */
+export async function startSlackPermissionsUpdate() {
+	try {
+		const context = await account();
+		const result = await fetchAccountWebApi<{ url: string }>(`${PATH}/permissions`, context.accessToken, {
+			method: "POST",
+			body: JSON.stringify({ workspaceId: context.workspaceId }),
+		});
+		const url = new URL(result.url);
+		if (url.origin !== SLACK_AUTHORIZE_ORIGIN) throw new WebApiError(`${PATH}/permissions`, 502);
 		return { ok: true as const, url: url.toString() };
 	} catch (error) {
 		return failure(error);
@@ -159,6 +180,77 @@ export async function deleteSlackAgentSkill(id: string) {
 	try {
 		const context = await account();
 		await fetchAccountWebApi(memoryPath("skills", id), context.accessToken, {
+			method: "DELETE",
+			body: JSON.stringify({ workspaceId: context.workspaceId }),
+		});
+		return { ok: true as const };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+const PAGE_ID_PATTERN = /^[A-Za-z0-9_-]{22}$/;
+
+/** The agent's shared pages, and whether people can sign in with Slack to view them. */
+export async function loadSlackAgentPages() {
+	try {
+		const context = await account();
+		const pages = await fetchAccountWebApi<SlackAgentPages>(`${PATH}/pages?${new URLSearchParams({ workspaceId: context.workspaceId })}`, context.accessToken);
+		return { ok: true as const, pages };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+export async function deleteSlackAgentPage(id: string) {
+	try {
+		const context = await account();
+		// Only a page id goes into the path.
+		if (!PAGE_ID_PATTERN.test(id)) throw new WebApiError(`${PATH}/pages`, 400, "Not a valid id", undefined, "bad_request");
+		await fetchAccountWebApi(`${PATH}/pages/${id}`, context.accessToken, {
+			method: "DELETE",
+			body: JSON.stringify({ workspaceId: context.workspaceId }),
+		});
+		return { ok: true as const };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+/** A schedule's path; only an id goes into it. */
+function schedulePath(id: string): `/api/account/${string}` {
+	if (!MEMORY_ID_PATTERN.test(id)) throw new WebApiError(`${PATH}/schedules`, 400, "Not a valid id", undefined, "bad_request");
+	return `${PATH}/schedules/${id}`;
+}
+
+/** The workspace's recurring tasks, with the admins' settings. */
+export async function loadSlackAgentSchedules() {
+	try {
+		const context = await account();
+		const schedules = await fetchAccountWebApi<SlackAgentSchedules>(`${PATH}/schedules?${new URLSearchParams({ workspaceId: context.workspaceId })}`, context.accessToken);
+		return { ok: true as const, schedules };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+export async function setSlackAgentScheduleStatus(id: string, status: "active" | "paused") {
+	try {
+		const context = await account();
+		const result = await fetchAccountWebApi<{ schedule: SlackAgentSchedule }>(schedulePath(id), context.accessToken, {
+			method: "PATCH",
+			body: JSON.stringify({ status, workspaceId: context.workspaceId }),
+		});
+		return { ok: true as const, schedule: result.schedule };
+	} catch (error) {
+		return failure(error);
+	}
+}
+
+export async function deleteSlackAgentSchedule(id: string) {
+	try {
+		const context = await account();
+		await fetchAccountWebApi(schedulePath(id), context.accessToken, {
 			method: "DELETE",
 			body: JSON.stringify({ workspaceId: context.workspaceId }),
 		});

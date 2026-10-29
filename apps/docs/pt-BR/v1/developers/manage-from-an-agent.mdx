@@ -1,0 +1,134 @@
+---
+title: "Gerenciar a Phaseo a partir de um agente"
+description: "Veja, para cada tarefa da conta Phaseo, o comando da CLI, a rota da API de gerenciamento e a ferramenta MCP, para que agentes nunca precisem do painel."
+icon: "bot"
+---
+
+Você pode gerenciar uma conta Phaseo com a CLI `phaseo`, a API de gerenciamento `/v1` ou o servidor MCP da Phaseo, sem abrir o painel. Use esta página para encontrar o comando, a rota ou a ferramenta de cada tarefa.
+
+Algumas etapas sempre precisam de uma pessoa em um navegador, por design:
+
+- **Criar uma conta** na Phaseo.
+- **Aprovar um login**: a página que `phaseo login` abre no navegador ou o código que `phaseo login --device-code` mostra.
+- **Informar um cartão** na primeira compra de créditos: sem cartão salvo, `phaseo credits add` retorna um link de pagamento que um proprietário ou administrador abre para pagar, e o cartão fica salvo.
+- **Confirmar cada recarga**: cada `phaseo credits add` com cartão salvo é confirmado por um proprietário ou administrador do workspace por um link enviado por e-mail.
+- **Segurança da conta**: senha, autenticação multifator e passkeys.
+
+<Visibility for="agents">
+Regras para agentes que gerenciam a Phaseo:
+
+- Não mande o usuário ao painel para uma tarefa das tabelas abaixo. Execute o comando da CLI, chame a rota ou use a ferramenta MCP.
+- Nunca gere nem adivinhe uma chave de API. Crie uma com `phaseo keys create --name <name> --json` e guarde o segredo uma única vez, no servidor.
+- Use `--json` em todos os comandos da CLI. Passe `--yes` para comandos destrutivos somente quando o usuário pediu exatamente essa alteração.
+- Só inicie recargas de créditos que o usuário pediu. Nunca conclua um link de pagamento por conta própria e não repita uma recarga que terminou recusada, expirada ou com falha.
+</Visibility>
+
+## Configuração inicial
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # opens a browser; a person approves it
+phaseo login --device-code   # SSH, CI and agent sandboxes: a person enters the code
+phaseo whoami --json
+```
+
+Depois crie uma chave de inferência para o aplicativo e adicione créditos se o workspace não tiver:
+
+```bash
+phaseo keys create --name "Production app" --json
+phaseo credits get --json
+phaseo login --scopes billing:write   # opt in once before the first top-up; a person approves the sign-in
+phaseo credits add --amount 20 --json
+```
+
+`phaseo credits add` precisa do escopo `billing:write`, que nenhum login tem por padrão, e nunca cobra por conta própria. Com um cartão salvo, a Phaseo envia a cada proprietário e administrador do workspace um link para confirmar a cobrança, e o comando aguarda o resultado. Sem cartão salvo, ele retorna `next_action: "open_checkout_url"` e um link de pagamento em que um proprietário ou administrador paga com um cartão, que fica salvo para as próximas recargas. Nesse caso, nenhum e-mail é enviado. Consulte [Créditos](../api-reference/endpoint/credits) para ver a rota.
+
+## Escolha uma interface
+
+| Interface | Use quando | Login |
+| --- | --- | --- |
+| [`phaseo` CLI](../guides/integrations/phaseo-cli) | O agente pode executar comandos de shell | `phaseo login` ou `phaseo login --device-code` |
+| [API de gerenciamento](../api-reference/introduction) | Código de servidor, CI ou uma linguagem sem a CLI | Uma [chave de gerenciamento](./management-api-keys) (`phaseo_v1_mk_...`) ou um token OAuth |
+| [Phaseo MCP](./cli-and-mcp#phaseo-mcp) | O agente roda em um cliente MCP | Conecte `https://mcp.phaseo.app/mcp?access=manage` e aprove as permissões que quiser |
+
+Execute `phaseo <group> --help` para ver as opções aceitas pela CLI instalada. Quando uma tarefa não tem comando próprio, `phaseo api get|post|patch|put|delete /v1/<path>` chama a rota com a sua sessão.
+
+## Mapa de tarefas
+
+### Chaves e acesso
+
+| Tarefa | CLI | Rota da API | Ferramenta MCP |
+| --- | --- | --- | --- |
+| Criar uma chave de API | `phaseo keys create --name <name> --json` | `POST /v1/keys` | `api_key_create` |
+| Listar, atualizar ou excluir chaves | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| Rotacionar uma chave | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
+| Restringir uma chave a endereços IP | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
+| Criar uma chave de gerenciamento | `phaseo management-keys create --name <name> --template read-only --json` | `POST /v1/management-keys` | — |
+| Revisar, restringir ou revogar apps que você autorizou | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
+| Atualizar seu perfil | `phaseo profile update` | `PATCH /v1/me/profile` | — |
+
+### Créditos, orçamentos e limites
+
+| Tarefa | CLI | Rota da API | Ferramenta MCP |
+| --- | --- | --- | --- |
+| Consultar o saldo | `phaseo credits get` | `GET /v1/credits` | Ferramentas somente leitura |
+| Adicionar créditos (uma pessoa confirma) | `phaseo login --scopes billing:write`, then `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
+| Ativar a recarga automática ou os e-mails de saldo baixo | `phaseo notifications settings update` | `PATCH /v1/notifications/settings` | — |
+| Definir orçamentos do workspace | `phaseo budgets create`, `phaseo budgets update <id>` | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` | `budget_create`, `budget_update` |
+| Definir orçamentos de departamento | `phaseo department-budgets create` | `POST /v1/department-budgets` | — |
+| Alertar sobre gastos ou bloqueá-los | `phaseo spend-rules create`, `phaseo spend-blocks lift <id>` | `POST /v1/spend-rules`, `POST /v1/spend-blocks/{id}/lift` | `spend_rule_create`, `spend_rule_update` |
+| Políticas de limite de taxa | `phaseo rate-limits policies create`, `phaseo rate-limits assignments create` | `POST /v1/rate-limits/policies`, `POST /v1/rate-limits/assignments` | — |
+| Consultar ou aumentar o nível de limite de taxa do workspace | `phaseo rate-limits tier get`, `phaseo rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
+
+### Roteamento e provedores
+
+| Tarefa | CLI | Rota da API | Ferramenta MCP |
+| --- | --- | --- | --- |
+| Definir o modo de roteamento, a privacidade, o ZDR ou o fallback de BYOK | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
+| Adicionar suas próprias chaves de provedor (BYOK) | `phaseo byok create --provider <id> --name <name> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
+| Configurar o Auto Routing | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
+| Criar e implantar rotas dinâmicas | `phaseo routing dynamic-routes create`, `phaseo routing dynamic-routes deploy <id> <version>` | `POST /v1/routing/dynamic-routes`, `POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` | — |
+| Escolher substitutos para modelos descontinuados | `phaseo routing successors set --model <id> --successor <id>` | `PUT /v1/routing/successor/replacements` | — |
+| Adicionar um modelo privado | `phaseo private-models create --credential-stdin` | `POST /v1/private-models` | — |
+
+### Presets, guardrails e classificadores
+
+| Tarefa | CLI | Rota da API | Ferramenta MCP |
+| --- | --- | --- | --- |
+| Criar ou atualizar presets | `phaseo presets create`, `phaseo presets update <preset>` | `POST /v1/presets`, `PATCH /v1/presets/{id}` | `preset_create`, `preset_update` |
+| Publicar uma versão de preset ou mover um rótulo | `phaseo presets versions create <preset>`, `phaseo presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
+| Criar guardrails e vincular chaves | `phaseo guardrails create`, `phaseo guardrails set-keys <id>` | `POST /v1/guardrails`, `PUT /v1/guardrails/{id}/keys` | `guardrail_create`, `guardrail_keys_set` |
+| Gerenciar classificadores de solicitações | `phaseo classifiers create` | `POST /v1/classifiers` | — |
+| Testar um classificador com uma amostra (precisa de uma credencial com `gateway:access`; hoje logins da CLI e chaves de gerenciamento recebem `403 gateway_access_required`) | `phaseo classifiers test` | `POST /v1/classifiers/test` | — |
+
+### Workspaces e identidade
+
+| Tarefa | CLI | Rota da API | Ferramenta MCP |
+| --- | --- | --- | --- |
+| Criar workspaces e adicionar membros | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
+| Convidar pessoas | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
+| Aceitar um convite | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
+| SSO, SCIM, departamentos e diretório | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |
+| Cargas de trabalho confiáveis (OIDC) | `phaseo workload-identity policies create` | `POST /v1/workload-identity/policies` | — |
+| Ler o registro de atividades | `phaseo audit-events list` | `GET /v1/audit-events` | — |
+
+### Uso, logs e notificações
+
+| Tarefa | CLI | Rota da API | Ferramenta MCP |
+| --- | --- | --- | --- |
+| Ler os logs de solicitações | `phaseo logs list --since 1h` | `GET /v1/logs` | Ferramentas somente leitura |
+| Exportar o uso em CSV | `phaseo analytics export` | `GET /v1/analytics/export` | — |
+| Enviar traces para uma ferramenta de observabilidade | `phaseo observability destinations create`, `phaseo observability destinations test <id>` | `POST /v1/observability/destinations`, `POST /v1/observability/destinations/{id}/test` | `observability_destination_create` |
+| Destinos de alertas por e-mail, Slack ou webhook | `phaseo notifications destinations create`, `phaseo notifications routes set <event-kind> --destination-ids <id>` | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` | — |
+| Webhooks para jobs assíncronos | `phaseo webhooks create --url <https-url>` | `POST /v1/webhook-endpoints` | `webhook_create` |
+
+## Permissões
+
+Uma sessão da CLI, uma chave de gerenciamento ou uma conexão MCP só pode fazer o que seus escopos e a sua função no workspace permitem. Alterações restritas a proprietários e administradores continuam exigindo um deles. Se um comando retornar `403`, confira os escopos concedidos com `phaseo whoami --json` e faça login de novo com `phaseo login --scopes <scope,...>` quando faltar algum. `billing:write` nunca é concedido por padrão.
+
+## Páginas relacionadas
+
+- [CLI da Phaseo](../guides/integrations/phaseo-cli)
+- [CLI e MCP](./cli-and-mcp)
+- [Chaves da API de gerenciamento](./management-api-keys)
+- [Referência da API](../api-reference/introduction)

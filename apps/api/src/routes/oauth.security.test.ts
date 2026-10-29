@@ -578,6 +578,30 @@ describe("OAuth route security", () => {
 		});
 	});
 
+	it("blocks OAuth consent approval from an MFA account with an aal1 session", async () => {
+		const service = await import("@/lib/oauth/service");
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce({ userId: "user_1", mfaRequired: true, assuranceLevel: "aal1" } as never);
+		state.client = { id: "dynamic_mcp", name: "Claude", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read"] };
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/authorize/approve", {
+			method: "POST",
+			headers: { authorization: "Bearer user-session", "content-type": "application/json" },
+			body: JSON.stringify({
+				client_id: "dynamic_mcp",
+				redirect_uri: "https://example.com/callback",
+				primary_workspace_id: "ws_1",
+				scopes: ["models:read", "keys:write"],
+				code_challenge: "a".repeat(43),
+				code_challenge_method: "S256",
+				resource: "https://mcp.phaseo.app/mcp",
+			}),
+		});
+
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({ error: "access_denied" });
+		expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
+	});
+
 	it("rejects Gateway API resource approval without gateway access consent", async () => {
 		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
 		const { oauthRouter } = await import("./oauth");
@@ -862,8 +886,112 @@ describe("OAuth route security", () => {
 		for (const registration_source of ["developer", "cimd", "first_party"] as const) {
 			expect(filterMcpAuthorizationScopes({ ...client, registration_source }, requested, params.get("resource")!)).not.toContain("gateway:access");
 		}
-		expect(filterMcpAuthorizationScopes(client, [...requested, "keys:write"], params.get("resource")!)).not.toContain("gateway:access");
+		expect(filterMcpAuthorizationScopes(client, [...requested, "workspaces:write"], params.get("resource")!)).not.toContain("gateway:access");
 		expect(filterMcpAuthorizationScopes(client, ["models:read"], params.get("resource")!)).toEqual(["models:read"]);
+	});
+
+	it("lets existing dynamic Phaseo MCP clients explicitly step up to account-management consent", async () => {
+		state.client = { id: "existing_mcp", name: "Claude", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "pricing:read"] };
+		const { oauthRouter, filterMcpAuthorizationScopes } = await import("./oauth");
+		const requested = ["models:read", "pricing:read", "keys:read", "keys:write", "keys:delete", "budgets:write", "settings:write"];
+		const challenge = "a".repeat(43);
+		const params = new URLSearchParams({ client_id: "existing_mcp", redirect_uri: "https://claude.ai/api/mcp/auth_callback", response_type: "code", scope: requested.join(" "), code_challenge: challenge, code_challenge_method: "S256", resource: "https://mcp.phaseo.app/mcp" });
+		const response = await oauthRouter.request(`https://example.com/authorize?${params}`);
+		expect(response.status).toBe(302);
+		expect(new URLSearchParams(state.consentParams ?? "").get("scope")).toBe(requested.join(" "));
+		expect(state.client.allowed_scopes).toEqual(["models:read", "pricing:read"]);
+
+		const client = state.client as Parameters<typeof filterMcpAuthorizationScopes>[0];
+		const resource = params.get("resource")!;
+		// Management scopes are only granted when the client names them for the Phaseo MCP.
+		for (const otherResource of ["https://other.example/mcp", "https://api.example.com/v1", ""]) {
+			expect(filterMcpAuthorizationScopes(client, requested, otherResource)).toEqual(["models:read", "pricing:read"]);
+		}
+		for (const registration_source of ["developer", "cimd", "first_party"] as const) {
+			expect(filterMcpAuthorizationScopes({ ...client, registration_source }, requested, resource)).toEqual(["models:read", "pricing:read"]);
+		}
+		// A request that also names a scope outside the MCP list gets no step-up at all.
+		for (const outside of ["openid", "workspaces:write", "management_keys:write", "oauth_clients:delete", "presets:delete"]) {
+			expect(filterMcpAuthorizationScopes(client, [...requested, outside], resource)).toEqual(["models:read", "pricing:read"]);
+		}
+		// Asking for read-only scopes never adds management scopes.
+		expect(filterMcpAuthorizationScopes(client, ["models:read", "pricing:read"], resource)).toEqual(["models:read", "pricing:read"]);
+	});
+
+	it("never stores management write scopes at dynamic registration, which has no resource", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ client_name: "Unbound", redirect_uris: ["https://client.example/callback"], scope: "models:read openid gateway:access keys:write", token_endpoint_auth_method: "none" }),
+		});
+		expect(response.status).toBe(201);
+		expect(state.registeredClients[0]?.allowed_scopes).toEqual(["models:read"]);
+		expect(await response.json()).toMatchObject({ scope: "models:read" });
+	});
+
+	it("strips stored management write scopes unless the authorization is for the Phaseo MCP resource", async () => {
+		const { filterMcpAuthorizationScopes } = await import("./oauth");
+		// A client whose stored allowlist already holds a write scope (for example from an older registration).
+		const client = { id: "dynamic_mcp", name: "Unbound", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "gateway:access", "keys:write", "workspaces:read"] } as Parameters<typeof filterMcpAuthorizationScopes>[0];
+		for (const resource of ["", "https://other.example/mcp", "https://api.phaseo.app/v1"]) {
+			expect(filterMcpAuthorizationScopes(client, ["models:read", "gateway:access", "keys:write"], resource)).toEqual(["models:read", "gateway:access"]);
+		}
+		// Bound to the MCP but mixed with a scope the MCP does not use.
+		expect(filterMcpAuthorizationScopes(client, ["models:read", "keys:write", "workspaces:read"], "https://mcp.phaseo.app/mcp")).toEqual(["models:read", "workspaces:read"]);
+		expect(filterMcpAuthorizationScopes(client, ["models:read", "keys:write"], "https://mcp.phaseo.app/mcp")).toEqual(["models:read", "keys:write"]);
+	});
+
+	it("rejects an unbound or unrelated authorization request for management write scopes", async () => {
+		state.client = { id: "dynamic_mcp", name: "Unbound", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "gateway:access", "keys:write"] };
+		const { oauthRouter } = await import("./oauth");
+		for (const resource of [undefined, "https://other.example/mcp"]) {
+			const params = new URLSearchParams({ client_id: "dynamic_mcp", redirect_uri: "https://client.example/callback", response_type: "code", scope: "models:read gateway:access keys:write", code_challenge: "a".repeat(43), code_challenge_method: "S256", ...(resource ? { resource } : {}) });
+			const response = await oauthRouter.request(`https://example.com/authorize?${params}`);
+			expect(response.status).toBe(400);
+			expect(await response.json()).toMatchObject({ error: "invalid_scope" });
+		}
+	});
+
+	it("does not exchange a management grant that is not bound to the Phaseo MCP resource", async () => {
+		state.client = { id: "dynamic_mcp", name: "Unbound", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "gateway:access", "keys:write"] };
+		for (const resource of [undefined, "https://other.example/mcp"]) {
+			state.issuedManagedKeys.length = 0;
+			state.authorizationCodeRow = {
+				id: "authorization_code_management",
+				client_id: "dynamic_mcp",
+				user_id: "user_1",
+				workspace_id: "ws_1",
+				redirect_uri: "https://client.example/callback",
+				scopes: ["models:read", "gateway:access", "keys:write"],
+				...(resource ? { resource } : {}),
+				code_challenge: "challenge",
+				code_challenge_method: "S256",
+				expires_at: FUTURE_EXPIRES_AT,
+				used_at: null,
+			};
+			state.authorizationRow = { id: "auth_1", revoked_at: null };
+			const { oauthRouter } = await import("./oauth");
+			const response = await oauthRouter.request("https://example.com/token", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ grant_type: "authorization_code", client_id: "dynamic_mcp", code: "authorization-code", redirect_uri: "https://client.example/callback", code_verifier: "verifier", ...(resource ? { resource } : {}) }),
+			});
+			expect(response.status).toBe(400);
+			expect(await response.json()).toMatchObject({ error: "invalid_scope", error_description: "Management scopes are only available on tokens bound to the Phaseo MCP" });
+			expect(state.issuedManagedKeys).toEqual([]);
+		}
+	});
+
+	it("narrows registration to read-only scopes when management scopes come with administrative ones", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ client_name: "Catalogue", redirect_uris: ["https://client.example/callback"], scope: "models:read pricing:read keys:write workspaces:delete", token_endpoint_auth_method: "none" }),
+		});
+		expect(response.status).toBe(201);
+		expect(state.registeredClients[0]?.allowed_scopes).toEqual(["models:read", "pricing:read"]);
 	});
 
 	it("classifies legacy loopback registrations as native clients", async () => {

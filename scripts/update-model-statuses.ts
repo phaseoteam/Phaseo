@@ -39,8 +39,6 @@ function resolveModelsRoot(): string {
     );
 }
 
-const MODELS_ROOT = resolveModelsRoot();
-
 function parseDate(value: unknown): Date | null {
     if (value === null || value === undefined) return null;
     if (typeof value !== "string") return null;
@@ -138,7 +136,7 @@ function listModelFiles(root: string): string[] {
 function main() {
     const now = new Date();
     const dryRun = process.argv.includes("--dry-run");
-    const modelFiles = listModelFiles(MODELS_ROOT);
+    const modelFiles = listModelFiles(resolveModelsRoot());
     const activeGatewayModelIds = collectActiveGatewayModelIds(API_PROVIDERS_ROOT);
     const changes: Array<{ file: string; from: ModelStatus; to: ModelStatus; reason: string }> = [];
 

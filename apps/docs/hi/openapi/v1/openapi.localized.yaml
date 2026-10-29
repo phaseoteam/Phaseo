@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -1150,6 +1156,243 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
+  /live/sessions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createLiveSession
+      summary: GPT Live सत्र बनाएँ
+      description: 'उपयोग मापन के साथ GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है, और रिले कनेक्शन विवरण लौटाता है। फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और उसके बाद `response.create` स्वीकार करता है।'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - model
+                - provider
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - live
+                model:
+                  type: string
+                  enum:
+                    - openai/gpt-live-1
+                provider:
+                  type: string
+                  enum:
+                    - openai
+                voice:
+                  type: string
+                  default: marin
+                  enum:
+                    - alloy
+                    - ash
+                    - ballad
+                    - beacon
+                    - bossa
+                    - cedar
+                    - cinder
+                    - coral
+                    - delta
+                    - echo
+                    - gleam
+                    - marin
+                    - meridian
+                    - quartz
+                    - ripple
+                    - sage
+                    - shimmer
+                    - stone
+                    - tempo
+                    - verse
+                    - vesper
+                    - willow
+                instructions:
+                  type: string
+                  maxLength: 4000
+                source:
+                  type: string
+                  default: api
+                  enum:
+                    - api
+                    - chat
+                metadata:
+                  type: object
+                  additionalProperties: true
+                backend_model:
+                  type: string
+                  default: openai/gpt-5.6-luna
+                  enum:
+                    - openai/gpt-5.6-luna
+                    - openai/gpt-5.6-terra
+                backend_settings:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    instructions:
+                      type: string
+                      maxLength: 16000
+                    max_output_tokens:
+                      type: integer
+                      minimum: 16
+                      maximum: 32768
+                      default: 4096
+                    reasoning_effort:
+                      type: string
+                      enum:
+                        - none
+                        - low
+                        - medium
+                        - high
+                        - xhigh
+                    reasoning_summary:
+                      type: string
+                      enum:
+                        - auto
+                        - concise
+                        - detailed
+                    verbosity:
+                      type: string
+                      enum:
+                        - low
+                        - medium
+                        - high
+                    service_tier:
+                      type: string
+                      default: default
+                      enum:
+                        - default
+                        - flex
+                        - priority
+                    web_search:
+                      type: boolean
+                      default: false
+                    tools:
+                      type: array
+                      maxItems: 32
+                      description: क्लाइंट द्वारा चलाए जाने वाले फ़ंक्शन टूल, अद्वितीय नामों के साथ।
+                      items:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - type
+                          - name
+                        properties:
+                          type:
+                            type: string
+                            enum:
+                              - function
+                          name:
+                            type: string
+                            pattern: ^[a-zA-Z0-9_-]{1,64}$
+                          description:
+                            type: string
+                            maxLength: 1024
+                          parameters:
+                            type: object
+                            additionalProperties: true
+                          strict:
+                            type: boolean
+                    tool_choice:
+                      type: string
+                      default: auto
+                      enum:
+                        - auto
+                        - none
+                        - required
+                    parallel_tool_calls:
+                      type: boolean
+                      default: true
+      responses:
+        '201':
+          description: GPT Live सत्र बनाया गया
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -2570,6 +2813,136 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: निषिद्ध
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: सर्वर त्रुटि
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: क्रेडिट टॉप-अप शुरू करें
+      description: प्रमाणित वर्कस्पेस में क्रेडिट जोड़ने का अनुरोध करता है। वैकल्पिक billing:write स्कोप और वर्कस्पेस सदस्यता आवश्यक है। यहाँ कोई शुल्क नहीं लिया जाता। सहेजा गया कार्ड होने पर वर्कस्पेस के हर owner और admin को एक बार इस्तेमाल होने वाला लिंक ईमेल किया जाता है और उनमें से कोई एक शुल्क की पुष्टि करता है या उसे अस्वीकार करता है। कार्ड न होने पर जवाब में checkout_url होता है, जहाँ कोई owner या admin नए कार्ड से भुगतान करता है; वह कार्ड अगले टॉप-अप के लिए सहेज लिया जाता है। राशि $5 से $500 तक। एक वर्कस्पेस में 5 लंबित टॉप-अप हो सकते हैं, और हर एक 30 मिनट बाद समाप्त हो जाता है।
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: वैकल्पिक idempotency key। इसे दोहराने पर नया टॉप-अप बनाने के बजाय वही टॉप-अप लौटता है। idempotency_key फ़ील्ड के समान।
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: इस idempotency key का मौजूदा टॉप-अप
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: टॉप-अप बनाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: अमान्य राशि (invalid_amount, amount_below_minimum या amount_above_maximum)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: निषिद्ध
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Idempotency key किसी दूसरे टॉप-अप के लिए इस्तेमाल हो चुकी है, या कोई owner या admin इसकी पुष्टि नहीं कर सकता
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: वर्कस्पेस में पहले से 5 लंबित टॉप-अप हैं
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: सर्वर त्रुटि
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: कार्ड भुगतान उपलब्ध नहीं हैं
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: क्रेडिट टॉप-अप प्राप्त करें
+      description: प्रमाणित वर्कस्पेस के किसी क्रेडिट टॉप-अप की स्थिति लौटाता है। credits:read या billing:write आवश्यक है। final true होने तक पोल करें। अस्वीकार, समाप्त और विफल टॉप-अप में कारण कोड होता है; उन्हें अपने आप दोबारा न आज़माएँ।
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: टॉप-अप ID।
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: टॉप-अप की स्थिति
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: अमान्य टॉप-अप ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: निषिद्ध
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: टॉप-अप नहीं मिला
           content:
             application/json:
               schema:
@@ -4590,6 +4963,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listWorkloadIdentityPolicies
+      summary: List trusted workload policies
+      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      responses:
+        '200':
+          description: Trusted workload policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createWorkloadIdentityPolicy
+      summary: Create a trusted workload policy
+      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
+      responses:
+        '201':
+          description: Trusted workload policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /workload-identity/policies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Trusted workload policy id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getWorkloadIdentityPolicy
+      summary: Get a trusted workload policy
+      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateWorkloadIdentityPolicy
+      summary: Update a trusted workload policy
+      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
+      responses:
+        '200':
+          description: Trusted workload policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteWorkloadIdentityPolicy
+      summary: Delete a trusted workload policy
+      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      responses:
+        '200':
+          description: Trusted workload policy deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkloadIdentityPolicyDeleteResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
       x-beta: true
@@ -5111,6 +5606,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: हटाए गए ब्लॉक भी लौटाएँ, नए पहले।
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: लौटाए जाने वाले ब्लॉक की अधिकतम संख्या।
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: खर्च ब्लॉक की सूची
+      description: 'वर्कस्पेस के खर्च ब्लॉक की सूची देता है, नए पहले: वे ब्लॉक जो block ऐक्शन वाले खर्च नियमों ने खर्च के ब्लॉक बिंदु तक पहुँचने पर शुरू किए। केवल सक्रिय ब्लॉक, जब तक include_lifted true न हो। केवल ओनर और एडमिन।'
+      responses:
+        '200':
+          description: खर्च ब्लॉक
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: खर्च ब्लॉक की ID।
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: खर्च ब्लॉक हटाएँ
+      description: सक्रिय खर्च ब्लॉक हटाता है, ताकि उसके दायरे के अनुरोध लगभग एक मिनट में फिर से स्वीकार हों। अवधि रीसेट होने तक नियम फिर से ब्लॉक नहीं करता, लेकिन अलर्ट भेजता रहता है। केवल ओनर और एडमिन; हटाना ऑडिट लॉग में दर्ज होता है और lifted स्थिति वाला spend_blocked इवेंट कतार में डालता है। अज्ञात ब्लॉक के लिए 404 और पहले से हटाए गए ब्लॉक के लिए 409 spend_block_not_active लौटाता है।
+      responses:
+        '200':
+          description: हटाया गया खर्च ब्लॉक
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -5154,6 +5716,57 @@ paths:
                 $ref: '#/components/schemas/ClassifierResponse'
         default:
           description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: किसी नमूने पर क्लासिफ़ायर का परीक्षण करें
+      description: किसी सहेजे गए या ड्राफ़्ट क्लासिफ़ायर को नमूना प्रॉम्प्ट और उत्तर पर एक बार चलाता है, उसी अनुरोध के साथ जो गेटवे भेजता है। यह आपके अपने क्रेडेंशियल से किया गया वास्तविक, बिल योग्य मॉडल अनुरोध है और इसे phaseo.classifier_test लेबल किया जाता है। स्वामी और एडमिन; क्रेडेंशियल में classifiers:write और gateway:access होना चाहिए। मैनेजमेंट कुंजियाँ मॉडल अनुरोध नहीं कर सकतीं और अस्वीकार कर दी जाती हैं।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: मॉडल द्वारा चुने गए लेबल
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: अमान्य क्लासिफ़ायर या नमूना
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: स्वामी या एडमिन नहीं, classifiers:write नहीं है, या क्रेडेंशियल में gateway:access नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: इस वर्कस्पेस में सहेजा गया क्लासिफ़ायर नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: मॉडल अनुरोध विफल रहा (उदाहरण के लिए, अपर्याप्त क्रेडिट)
           content:
             application/json:
               schema:
@@ -8676,6 +9289,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listPresetLabels
+      summary: प्रीसेट लेबल सूचीबद्ध करें
+      description: production या staging जैसे नाम वाले लेबल और हर लेबल जिस प्रकाशित संस्करण पर है, उसे सूचीबद्ध करता है।
+      responses:
+        '200':
+          description: प्रीसेट लेबल की सूची
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelListResponse'
+        '404':
+          description: प्रीसेट नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /presets/{id}/labels/{label}:
+    parameters:
+      - $ref: '#/components/parameters/PresetId'
+      - $ref: '#/components/parameters/PresetLabel'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: setPresetLabel
+      summary: प्रीसेट लेबल सेट करें
+      description: किसी लेबल को प्रकाशित संस्करण पर लगाता है, लेबल बनाकर या उसे वहाँ ले जाकर। लेबल को pin करने वाले अनुरोध, जैसे @support-triage@production, लगभग 2 मिनट में नए संस्करण का उपयोग करते हैं। लेबल को पुराने संस्करण पर वापस ले जाना रोलबैक है।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresetLabelSetRequest'
+      responses:
+        '200':
+          description: लेबल सहेजा गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelResponse'
+        '400':
+          description: अमान्य लेबल, या version_id और version में से कोई नहीं या दोनों
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: केवल प्रीसेट बनाने वाला या वर्कस्पेस का मालिक या एडमिन उसके लेबल बदल सकता है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: प्रीसेट या संस्करण नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deletePresetLabel
+      summary: प्रीसेट लेबल हटाएँ
+      description: एक लेबल हटाता है। जो अनुरोध अब भी उसे pin करते हैं, वे preset_version_not_found के साथ विफल होते हैं।
+      responses:
+        '200':
+          description: लेबल हटाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresetLabelDeleteResponse'
+        '400':
+          description: अमान्य लेबल
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: केवल प्रीसेट बनाने वाला या वर्कस्पेस का मालिक या एडमिन उसके लेबल बदल सकता है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: प्रीसेट या लेबल नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
       x-beta: true
@@ -9047,6 +9757,596 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EndpointCatalogueResponse'
+  /me:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMe
+      summary: साइन-इन उपयोगकर्ता प्राप्त करें
+      description: OAuth टोकन का उपयोगकर्ता, टोकन का क्लाइंट और स्कोप, और वे वर्कस्पेस लौटाता है जिनका उपयोगकर्ता सदस्य है। me:read वाला OAuth टोकन आवश्यक है; मैनेजमेंट कुंजियाँ अस्वीकार की जाती हैं।
+      responses:
+        '200':
+          description: साइन-इन उपयोगकर्ता
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: टोकन में me:read नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/profile:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getMyProfile
+      summary: अपनी प्रोफ़ाइल प्राप्त करें
+      description: डैशबोर्ड के प्रोफ़ाइल पेज पर दिखाए जाने वाले प्रोफ़ाइल फ़ील्ड लौटाता है। me:read वाला OAuth टोकन आवश्यक है।
+      responses:
+        '200':
+          description: प्रोफ़ाइल
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: टोकन में me:read नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateMyProfile
+      summary: अपनी प्रोफ़ाइल अपडेट करें
+      description: आपका डिस्प्ले नाम, डिफ़ॉल्ट वर्कस्पेस (जिसके आप सदस्य हैं) या स्क्रीन पर आपकी जानकारी छिपी रहे या नहीं, यह बदलता है। पासवर्ड, MFA और पासकी केवल ब्राउज़र में प्रबंधित होते हैं। settings:write वाला OAuth टोकन आवश्यक है।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: अपडेट की गई प्रोफ़ाइल
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: अमान्य फ़ील्ड
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: टोकन में settings:write नहीं है, या डिफ़ॉल्ट वर्कस्पेस आपका नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listAuthorizedApps
+      summary: आपके द्वारा अधिकृत ऐप्स सूचीबद्ध करें
+      description: हर वर्कस्पेस में आपके द्वारा OAuth से अधिकृत ऐप्स सूचीबद्ध करता है। oauth_clients:read वाला OAuth टोकन आवश्यक है।
+      responses:
+        '200':
+          description: अधिकृत ऐप्स
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppListResponse'
+        '401':
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: टोकन में oauth_clients:read नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/authorized-apps/{id}:
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reduceAuthorizedAppScopes
+      summary: अधिकृत ऐप से स्कोप हटाएँ
+      description: किसी ऐप की पहुँच को दिए गए स्कोप तक सीमित करता है। स्कोप केवल हटाए जा सकते हैं; कोई स्कोप जोड़ने के लिए ब्राउज़र में आपकी सहमति आवश्यक है। oauth_clients:write वाला OAuth टोकन आवश्यक है।
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizedAppScopesRequest'
+      responses:
+        '200':
+          description: स्कोप घटाए गए
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppScopesResponse'
+        '400':
+          description: खाली सूची, या ऐसा स्कोप जो ऐप के पास नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: अधिकृत ऐप नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: revokeAuthorizedApp
+      summary: अधिकृत ऐप रद्द करें
+      description: किसी ऐप की पहुँच रद्द करता है ताकि उसके टोकन काम करना बंद कर दें। कॉल करने वाले ऐप का अपना प्राधिकरण रद्द करने पर वह साइन आउट हो जाता है। oauth_clients:delete वाला OAuth टोकन आवश्यक है।
+      parameters:
+        - $ref: '#/components/parameters/AuthorizedAppId'
+      responses:
+        '200':
+          description: प्राधिकरण रद्द किया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
+        '401':
+          description: OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: अधिकृत ऐप नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/accept:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: acceptWorkspaceInvite
+      summary: वर्कस्पेस आमंत्रण स्वीकार करें
+      description: उस वर्कस्पेस में शामिल होने का अनुरोध करता है जिसका आमंत्रण कोड है। इसके बाद वर्कस्पेस का स्वामी या एडमिन अनुरोध स्वीकृत या अस्वीकार करता है। workspaces:write वाला OAuth टोकन आवश्यक है; मैनेजमेंट कुंजियाँ अस्वीकार की जाती हैं क्योंकि वे किसी व्यक्ति की नहीं, वर्कस्पेस की होती हैं।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
+      responses:
+        '201':
+          description: शामिल होने का अनुरोध बनाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
+        '400':
+          description: आमंत्रण कोड नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: OAuth उपयोगकर्ता टोकन नहीं है, या टोकन में workspaces:write नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: अमान्य या समाप्त आमंत्रण
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: पहले से सदस्य हैं, या कोई अनुरोध पहले से लंबित है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /invites/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listMyJoinRequests
+      summary: वर्कस्पेस में शामिल होने के अपने अनुरोध सूचीबद्ध करें
+      description: वर्कस्पेस में शामिल होने के आपके अपने अनुरोध, सबसे नए पहले (अधिकतम 100), सूचीबद्ध करता है। workspaces:read वाला OAuth टोकन आवश्यक है।
+      parameters:
+        - name: status
+          in: query
+          description: डिफ़ॉल्ट रूप से लंबित; all हर स्थिति लौटाता है।
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - denied
+              - cancelled
+              - all
+      responses:
+        '200':
+          description: आपके शामिल होने के अनुरोध
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyJoinRequestListResponse'
+        '400':
+          description: अमान्य स्थिति
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: OAuth उपयोगकर्ता टोकन नहीं है, या टोकन में workspaces:read नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getRateLimitTier
+      summary: वर्कस्पेस का रेट लिमिट टियर प्राप्त करें
+      description: वर्कस्पेस का ट्रस्ट टियर, प्रति मिनट अनुरोध, और यह कि क्या वह अभी एक टियर ऊपर जा सकता है, लौटाता है। वर्कस्पेस के स्वामी और एडमिन (OAuth) या rate_limits:read वाली मैनेजमेंट कुंजियाँ। canRaise केवल वर्कस्पेस स्वामी के लिए true होता है।
+      responses:
+        '200':
+          description: टियर और बढ़ाने की स्थिति
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: स्वामी या एडमिन नहीं, या टोकन में rate_limits:read नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /rate-limits/tier/raise:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: raiseRateLimitTier
+      summary: वर्कस्पेस का रेट लिमिट टियर बढ़ाएँ
+      description: किसी योग्य वर्कस्पेस को सीमित समय के लिए एक टियर ऊपर करता है। केवल वर्कस्पेस स्वामी rate_limits:write वाले OAuth टोकन से टियर बढ़ा सकता है; मैनेजमेंट कुंजियाँ अस्वीकार की जाती हैं ताकि लीक हुई कुंजी अपने ही वर्कस्पेस की सीमाएँ न हटा सके।
+      responses:
+        '201':
+          description: बढ़ाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitTierResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: वर्कस्पेस स्वामी नहीं, मैनेजमेंट कुंजी है, या टोकन में rate_limits:write नहीं है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: वर्कस्पेस अभी अपनी सीमा नहीं बढ़ा सकता (reason देखें)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/auto:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getAutoRoutingSettings
+      summary: ऑटो-रूटिंग सेटिंग प्राप्त करें
+      description: इस वर्कस्पेस के लिए वे सीमाएँ लौटाता है जिनके भीतर ऑटो-राउटर काम करता है। कोई भी सदस्य; settings:read आवश्यक है।
+      responses:
+        '200':
+          description: ऑटो-रूटिंग सेटिंग
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateAutoRoutingSettings
+      summary: ऑटो-रूटिंग सेटिंग अपडेट करें
+      description: भेजे गए फ़ील्ड बदलता है; परिणाम को पूरे रूप में उसी तरह जाँचा जाता है जैसे डैशबोर्ड उसे सहेजता है। कस्टम spend_profile के लिए दोनों मूल्य सीमाएँ आवश्यक हैं। स्वामी और एडमिन; settings:write आवश्यक है।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
+      responses:
+        '200':
+          description: अपडेट की गई ऑटो-रूटिंग सेटिंग
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoRoutingSettingsResponse'
+        '400':
+          description: अमान्य सेटिंग
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /routing/successor/replacements:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSuccessorReplacements
+      summary: उत्तराधिकारी मॉडल प्रतिस्थापन सूचीबद्ध करें
+      description: उन मॉडलों के लिए वर्कस्पेस द्वारा चुने गए प्रतिस्थापन सूचीबद्ध करता है जिन्हें अब कोई प्रदाता सर्व नहीं करता। उत्तराधिकारी रूटिंग का स्विच और मूल्य नीति /settings में हैं। कोई भी सदस्य; settings:read आवश्यक है।
+      responses:
+        '200':
+          description: प्रतिस्थापन
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementListResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: saveSuccessorReplacement
+      summary: उत्तराधिकारी मॉडल प्रतिस्थापन सहेजें
+      description: वह मॉडल सेट करता है जिसे model के अनुरोध भेजे जाते हैं, और किसी भी पिछले चुनाव को बदल देता है। null successor का अर्थ है कि model के अनुरोध कभी रीडायरेक्ट नहीं होते। दोनों मॉडल कैटलॉग में होने चाहिए और उत्तराधिकारी सर्व किया जाना चाहिए। प्रति वर्कस्पेस अधिकतम 500। स्वामी और एडमिन; settings:write आवश्यक है।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuccessorReplacement'
+      responses:
+        '200':
+          description: सहेजा गया प्रतिस्थापन
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementResponse'
+        '400':
+          description: अमान्य या अज्ञात मॉडल
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: removeSuccessorReplacement
+      summary: उत्तराधिकारी मॉडल प्रतिस्थापन हटाएँ
+      description: किसी मॉडल के लिए वर्कस्पेस का चुनाव हटाता है, ताकि कैटलॉग का उत्तराधिकारी फिर से लागू हो। स्वामी और एडमिन; settings:write आवश्यक है।
+      parameters:
+        - name: model
+          in: query
+          required: true
+          description: उस मॉडल की ID जिसका प्रतिस्थापन हटाना है।
+          schema:
+            $ref: '#/components/schemas/ModelId'
+      responses:
+        '200':
+          description: प्रतिस्थापन हटाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
+        '400':
+          description: मॉडल नहीं है या अमान्य है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: इस मॉडल के लिए कोई प्रतिस्थापन सहेजा नहीं गया है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestinationConfig
+      summary: सहेजने से पहले डेस्टिनेशन सेटिंग का परीक्षण करें
+      description: दी गई सेटिंग पर बिना संदेशों वाला नमूना ट्रेस उसी तरह भेजता है जैसे गेटवे ट्रेस डिलीवर करता है। कुछ भी सहेजा नहीं जाता। स्वामी और एडमिन; settings:write आवश्यक है।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
+      responses:
+        '200':
+          description: परीक्षण परिणाम; जब डेस्टिनेशन ने अस्वीकार किया या उस तक पहुँचा नहीं जा सका, तो ok false होता है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '400':
+          description: अमान्य प्रकार या सेटिंग
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testObservabilityDestination
+      summary: डेस्टिनेशन का कनेक्शन जाँचें
+      description: सहेजे गए डेस्टिनेशन को बिना संदेशों वाला नमूना ट्रेस भेजता है, जैसा डैशबोर्ड की स्थिति जाँच करती है। डेस्टिनेशन की स्वास्थ्य स्थिति नहीं बदलती। स्वामी और एडमिन; settings:write आवश्यक है।
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: परीक्षण परिणाम
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: गंतव्य नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /observability/destinations/{id}/sample:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendObservabilityDestinationSample
+      summary: नमूना ट्रेस भेजें
+      description: सहेजे गए डेस्टिनेशन को नमूना ट्रेस भेजता है, संदेशों के साथ, जब तक डेस्टिनेशन प्रॉम्प्ट और आउटपुट को बाहर न रखे। स्वामी और एडमिन; settings:write आवश्यक है।
+      parameters:
+        - $ref: '#/components/parameters/ObservabilityDestinationId'
+      responses:
+        '200':
+          description: भेजने का परिणाम
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
+        '401':
+          description: अनधिकृत
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: गंतव्य नहीं मिला
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /security/report-leaked-key:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: reportLeakedKey
+      summary: लीक हुई API कुंजी की रिपोर्ट करें
+      description: सार्वजनिक रूप से मिली Phaseo कुंजी की रिपोर्ट करता है। प्रमाणीकरण आवश्यक नहीं। कुंजी मेल खाए या नहीं, हमेशा एक ही बॉडी के साथ 202 लौटाता है, इसलिए इस रूट से कुंजियाँ जाँची नहीं जा सकतीं। प्रति पते पर दर सीमित।
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeakedKeyReportRequest'
+      responses:
+        '202':
+          description: रिपोर्ट प्राप्त हुई
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeakedKeyReportResponse'
 tags:
   - name: Gateway
     description: Core Phaseo Gateway operations.
@@ -9104,6 +10404,10 @@ components:
         type: string
     DroppedParams:
       description: क्लाइंट के भेजे वे पैरामीटर जिनका सर्व करने वाला प्रदाता समर्थन नहीं करता और जिन्हें गेटवे ने प्रदाता को भेजने या अनुरोध अस्वीकार करने के बजाय हटा दिया, उदाहरण के लिए `top_k, min_p`। यह केवल सफल रिस्पॉन्स में भेजा जाता है, और तभी जब अनुरोध बॉडी का कम से कम एक पैरामीटर हटाया गया हो। किसी प्रीसेट या डिफ़ॉल्ट मान से आने वाले पैरामीटर सूची में नहीं होते।
+      schema:
+        type: string
+    SpendWarning:
+      description: तब भेजा जाता है जब कोई ब्लॉक करने वाला खर्च नियम अनुरोध को कवर करता है और खर्च उसकी आख़िरी अलर्ट सीमा पार कर चुका है, लेकिन अभी ब्लॉक बिंदु तक नहीं पहुँचा। अधिकतम तीन नियम rule_id, scope और resets_at के रूप में बताता है, जैसे `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`। खर्च के ब्लॉक बिंदु तक पहुँचने पर दायरे के अनुरोधों को spend_rule_blocked कोड के साथ 429 मिलता है।
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -9166,6 +10470,21 @@ components:
       description: प्रीसेट का UUID, slug या canonical नाम।
       schema:
         type: string
+    PresetLabel:
+      name: label
+      in: path
+      required: true
+      description: लेबल का नाम, जैसे production। 1 से 32 छोटे अंग्रेज़ी अक्षर, अंक, हाइफ़न या अंडरस्कोर, अक्षर से शुरू; यह संस्करण लेबल (v1, v2) जैसा नहीं दिख सकता।
+      schema:
+        type: string
+        pattern: ^[a-z][a-z0-9_-]{0,31}$
+    AuthorizedAppId:
+      name: id
+      in: path
+      required: true
+      description: अधिकृत ऐप्स सूची से प्राधिकरण पहचानकर्ता।
+      schema:
+        type: string
     ObservabilityDestinationId:
       name: id
       in: path
@@ -9209,6 +10528,476 @@ components:
         type: string
         format: uuid
   schemas:
+    MeResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                  nullable: true
+                name:
+                  type: string
+                  nullable: true
+            oauth:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                resource:
+                  type: string
+                  nullable: true
+            current_workspace_id:
+              type: string
+            workspaces:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                    nullable: true
+                  slug:
+                    type: string
+                    nullable: true
+                  role:
+                    type: string
+                    nullable: true
+                  current:
+                    type: boolean
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+          nullable: true
+        default_workspace_id:
+          type: string
+          nullable: true
+        obfuscate_info:
+          type: boolean
+          description: क्या डैशबोर्ड में स्क्रीन पर आपका ईमेल और नाम छिपे रहते हैं।
+    UserProfileResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/UserProfile'
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        default_workspace_id:
+          type: string
+          nullable: true
+          description: ऐसा वर्कस्पेस जिसके आप सदस्य हैं, या साफ़ करने के लिए null।
+        obfuscate_info:
+          type: boolean
+      additionalProperties: false
+    AuthorizedApp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: प्राधिकरण ID।
+        client_id:
+          type: string
+        app_name:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        scopes:
+          type: array
+          items:
+            type: string
+        current:
+          type: boolean
+          description: उस प्राधिकरण के लिए true जिससे कॉल करने वाला टोकन संबंधित है।
+        authorized_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+    AuthorizedAppListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizedApp'
+    AuthorizedAppScopesRequest:
+      type: object
+      required:
+        - scopes
+      properties:
+        scopes:
+          type: array
+          minItems: 1
+          description: रखे जाने वाले स्कोप; हर स्कोप पहले से दिया गया होना चाहिए।
+          items:
+            type: string
+      additionalProperties: false
+    AuthorizedAppScopesResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            scopes:
+              type: array
+              items:
+                type: string
+    AuthorizedAppRevokedResponse:
+      type: object
+      properties:
+        revoked:
+          type: boolean
+        id:
+          type: string
+    WorkspaceInviteAcceptRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          minLength: 6
+          maxLength: 256
+          description: आमंत्रण कोड।
+      additionalProperties: false
+    MyJoinRequestCreatedResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            workspace_id:
+              type: string
+            status:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+    MyJoinRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        workspace_name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - denied
+            - cancelled
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+    MyJoinRequestListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyJoinRequest'
+    RateLimitTierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            tier:
+              type: string
+            requestsPerMinute:
+              type: number
+            target:
+              type: string
+              nullable: true
+              description: वह टियर जिस पर बढ़ाने से जाया जाएगा।
+            targetRequestsPerMinute:
+              type: number
+              nullable: true
+            eligible:
+              type: boolean
+            refusal:
+              type: string
+              nullable: true
+              description: अभी बढ़ाना क्यों उपलब्ध नहीं है; योग्य होने पर null।
+            activeUntil:
+              type: number
+              nullable: true
+              description: सक्रिय बढ़ोतरी कब समाप्त होती है (Unix मिलीसेकंड)।
+            availableAt:
+              type: number
+              nullable: true
+              description: अगली बढ़ोतरी का अनुरोध कब किया जा सकता है (Unix मिलीसेकंड)।
+            durationDays:
+              type: number
+            thresholds:
+              type: object
+              properties:
+                minAgeDays:
+                  type: number
+                minLifetimePaidSpendUsd:
+                  type: number
+            canRaise:
+              type: boolean
+              description: जब कॉल करने वाला वर्कस्पेस स्वामी हो और वर्कस्पेस योग्य हो, तब true।
+    AutoRoutingSettings:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          description: प्रदाता/मॉडल पैटर्न जिनमें से ऑटो-राउटर चुन सकता है, जैसे openai/*। खाली होने पर हर मॉडल की अनुमति है।
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          nullable: true
+          description: प्रति मिलियन इनपुट टोकन USD; केवल कस्टम खर्च प्रोफ़ाइल के लिए सेट।
+        max_output_price_per_million:
+          type: number
+          nullable: true
+          description: प्रति मिलियन आउटपुट टोकन USD; केवल कस्टम खर्च प्रोफ़ाइल के लिए सेट।
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+        revision:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    AutoRoutingSettingsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AutoRoutingSettings'
+    AutoRoutingSettingsUpdateRequest:
+      type: object
+      properties:
+        allowed_patterns:
+          type: array
+          maxItems: 16
+          items:
+            type: string
+        spend_profile:
+          type: string
+          enum:
+            - economy
+            - standard
+            - premium
+            - unrestricted
+            - custom
+        max_input_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        max_output_price_per_million:
+          type: number
+          minimum: 0
+          nullable: true
+        objective:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - cost
+            - latency
+        allow_fallbacks:
+          type: boolean
+    SuccessorReplacement:
+      type: object
+      required:
+        - model
+        - successor
+      properties:
+        model:
+          type: string
+          description: वह मॉडल जिसके अनुरोध रीडायरेक्ट किए जाते हैं।
+        successor:
+          type: string
+          nullable: true
+          description: वह मॉडल जिसे उन्हें भेजना है, या उन्हें कभी रीडायरेक्ट न करने के लिए null।
+    SuccessorReplacementRow:
+      type: object
+      properties:
+        model:
+          type: string
+        successor:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    SuccessorReplacementListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SuccessorReplacementRow'
+    SuccessorReplacementRemovedResponse:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+        model:
+          type: string
+    ObservabilityDestinationTestRequest:
+      type: object
+      required:
+        - type
+        - config
+      properties:
+        type:
+          $ref: '#/components/schemas/ObservabilityDestinationType'
+        config:
+          type: object
+          description: डेस्टिनेशन की सेटिंग, जैसे नया डेस्टिनेशन बनाते समय।
+          additionalProperties:
+            type: string
+    ObservabilityDestinationTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            ok:
+              type: boolean
+            status:
+              type: string
+            http_status:
+              type: integer
+              nullable: true
+            error:
+              type: string
+              nullable: true
+    ApiKeyIpAllowlist:
+      type: array
+      maxItems: 100
+      description: वे पते जो कुंजी का उपयोग कर सकते हैं। हर प्रविष्टि एक लेबल वाला IPv4 या IPv6 पता या CIDR रेंज है। खाली होने पर कोई भी पता अनुमत है।
+      items:
+        type: object
+        required:
+          - label
+          - address
+        properties:
+          label:
+            type: string
+            minLength: 1
+            maxLength: 100
+          address:
+            type: string
+            description: एक IPv4 या IPv6 पता, या एक CIDR रेंज।
+    LeakedKeyReportRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          maxLength: 4096
+          description: लीक हुई कुंजी, जैसी मिली।
+        source:
+          type: string
+          maxLength: 64
+          description: यह कहाँ मिली, जैसे github।
+        reporter_email:
+          type: string
+          maxLength: 320
+        evidence_url:
+          type: string
+          format: uri
+          maxLength: 2048
+        comment:
+          type: string
+          maxLength: 2000
+    LeakedKeyReportResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - received
     ProviderRoutingOptions:
       type: object
       description: गेटवे चयन के लिए प्रदाता रूटिंग प्राथमिकताएँ।
@@ -16477,6 +18266,8 @@ components:
           description: विभाग की दर सीमाओं और बजट के लिए यह कुंजी जिस विभाग से संबंधित है। Null का अर्थ है कि कुंजी केवल पूरे वर्कस्पेस की सीमाओं में गिनी जाती है।
         storage_locations:
           $ref: '#/components/schemas/ApiKeyStorageLocations'
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
         include_byok_in_limit:
           type: boolean
           description: बताता है कि प्रदाता क्रेडेंशियल कुंजी की खर्च सीमा में गिने जाते हैं या नहीं। वर्तमान में यह हमेशा false होता है।
@@ -16731,6 +18522,8 @@ components:
           allOf:
             - $ref: '#/components/schemas/ApiKeyStorageLocations'
           nullable: true
+        ip_allowlist:
+          $ref: '#/components/schemas/ApiKeyIpAllowlist'
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array
@@ -17232,6 +19025,10 @@ components:
           type: object
           additionalProperties: true
           description: टेम्पलेट वेरिएबल के मान। इमेज वेरिएबल https URL, data URL या इमेज पार्ट लेते हैं।
+        version:
+          type: string
+          maxLength: 64
+          description: 'मौजूदा संस्करण की जगह प्रीसेट का यह प्रकाशित संस्करण चलाता है: उसके मॉडल, पैरामीटर और टेम्पलेट। v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या production जैसा लेबल दें। यह model को @support-triage@production पर सेट करने जैसा है।'
     Preset:
       type: object
       required:
@@ -17424,6 +19221,11 @@ components:
         created_at:
           type: string
           format: date-time
+        labels:
+          type: array
+          description: production जैसे नाम वाले लेबल जो इस संस्करण पर हैं। संस्करण सूचीबद्ध करते समय लौटाए जाते हैं।
+          items:
+            type: string
       additionalProperties: false
     PresetVersionListResponse:
       type: object
@@ -17452,6 +19254,80 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PresetVersion'
+      additionalProperties: false
+    PresetLabel:
+      type: object
+      required:
+        - label
+        - version_id
+        - version_number
+        - version_label
+      properties:
+        label:
+          type: string
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          nullable: true
+        version_label:
+          type: string
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+    PresetLabelListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/PresetLabel'
+      additionalProperties: false
+    PresetLabelSetRequest:
+      type: object
+      description: version_id और version में से ठीक एक भेजें।
+      properties:
+        version_id:
+          type: string
+          format: uuid
+          description: वह प्रकाशित संस्करण जिस पर लेबल लगाना है।
+        version:
+          type: string
+          maxLength: 64
+          description: v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या staging जैसा कोई दूसरा लेबल जिसकी जगह कॉपी करनी है।
+      additionalProperties: false
+    PresetLabelDeleteResponse:
+      type: object
+      required:
+        - deleted
+        - label
+      properties:
+        deleted:
+          type: boolean
+        label:
+          type: string
       additionalProperties: false
     PresetForkRequest:
       type: object
@@ -18425,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: अमेरिकी डॉलर में राशि, अधिकतम दो दशमलव स्थानों तक।
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: वैकल्पिक। प्रमाणित वर्कस्पेस से मेल खाना चाहिए।
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: वैकल्पिक idempotency key। इसे दोहराने पर नया टॉप-अप बनाने के बजाय वही टॉप-अप लौटता है।
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: स्थिति आगे न बदलने पर true (paid, declined, expired या failed)। तब पोल करना बंद करें।
+        reason:
+          type: string
+          nullable: true
+          description: अस्वीकार, समाप्त और विफल टॉप-अप का कारण कोड, जैसे declined, expired, card_declined या authentication_failed।
+          example: declined
+        message:
+          type: string
+          description: एक वाक्य जो बताता है कि आगे क्या होगा।
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout जब कोई owner या admin checkout_url पर नए कार्ड से भुगतान करता है; saved_card जब कोई owner या admin ईमेल से सहेजे गए कार्ड पर शुल्क की पुष्टि करता है।
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Phaseo पेज जहाँ कोई owner या admin नए कार्ड से भुगतान करता है। केवल उस जवाब में जिसने लंबित checkout टॉप-अप बनाया।
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: saved_card टॉप-अप की पुष्टि के लिए ईमेल किए गए owners और admins की संख्या।
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:
@@ -21259,11 +23271,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: मॉडल को बताता है कि यह मान कब चुनना है।
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: एक प्रश्न जिसका उत्तर क्लासिफ़ायर हर अनुरोध के बारे में देता है। उत्तर अनुरोध लेबल के रूप में लिखा जाता है जिसकी कुंजी इस डाइमेंशन की कुंजी होती है। यदि कॉल करने वाले ने उस कुंजी वाला लेबल पहले ही भेजा है, तो डाइमेंशन छोड़ दिया जाता है।
       required:
         - key
         - values
@@ -21283,14 +23295,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: प्रति अनुरोध एक से अधिक मान की अनुमति दें।
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: जब कोई सूचीबद्ध मान उपयुक्त न हो, तो मॉडल को "other" उत्तर देने दें।
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: 2 से 50 मान। एकल मान की अनुमति केवल तब है जब allow_other true हो।
           minItems: 1
           maxItems: 50
           items:
@@ -21521,7 +23533,269 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: परीक्षण के लिए ड्राफ़्ट। classifier_id दिए जाने पर न भेजे गए फ़ील्ड उसी से लिए जाते हैं।
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: इस वर्कस्पेस में सहेजा गया क्लासिफ़ायर जिसका परीक्षण करना है, या जिससे परीक्षण को लेबल करना है।
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: जब मॉडल का उत्तर पढ़ा नहीं जा सका, तब false।
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    WorkloadIdentityProvider:
+      type: string
+      enum:
+        - vercel
+        - github_actions
+      description: The platform that issues the OIDC tokens.
+    WorkloadIdentityPolicy:
+      type: object
+      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      required:
+        - id
+        - name
+        - provider
+        - issuer
+        - owner_id
+        - claim_conditions
+        - max_token_lifetime_seconds
+        - status
+        - audience
+        - key_id
+        - last_used_at
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+        owner_id:
+          type: string
+          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+        key_id:
+          type: string
+          format: uuid
+          description: The policy's key. Requests, usage and limits are recorded against it.
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    WorkloadIdentityPolicyInput:
+      type: object
+      required:
+        - name
+        - provider
+        - owner_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/WorkloadIdentityProvider'
+        issuer:
+          type: string
+          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+        owner_id:
+          type: string
+          minLength: 1
+          description: The Vercel team ID or GitHub organisation or user ID to pin.
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          default: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        claim_conditions:
+          type: object
+          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          maxProperties: 15
+          additionalProperties:
+            type: array
+            minItems: 1
+            maxItems: 20
+            items:
+              type: string
+              minLength: 1
+              maxLength: 256
+        max_token_lifetime_seconds:
+          type: integer
+          minimum: 60
+          maximum: 43200
+          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+      additionalProperties: false
+    WorkloadIdentityPolicyResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/WorkloadIdentityPolicy'
+      additionalProperties: false
+    WorkloadIdentityPolicyListResponse:
+      type: object
+      required:
+        - data
+        - audience
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkloadIdentityPolicy'
+        audience:
+          type: string
+          description: The audience tokens must be issued for.
+      additionalProperties: false
+    WorkloadIdentityPolicyDeleteResponse:
       type: object
       required:
         - data
@@ -21837,7 +24111,7 @@ components:
         - rolling
     SpendRuleAction:
       type: string
-      description: 'notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। ब्लॉक करना अभी उपलब्ध नहीं है: action block वाला नियम तब तक 400 के साथ अस्वीकार किया जाता है जब तक यह उपलब्ध न हो।'
+      description: notify, या सूचना देकर फिर ब्लॉक करें जब खर्च आधार के block_at_percent या block_at_amount तक पहुँचे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है। जब तक गेटवे पर ब्लॉक करना बंद है, ब्लॉक करना शुरू करने वाला नियम 400 के साथ अस्वीकार किया जाता है, और पहले से ब्लॉक करने वाला नियम केवल सूचना देता है।
       enum:
         - notify
         - block
@@ -22559,6 +24833,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 'खर्च ब्लॉक क्यों हटाया गया: manual (कोई ओनर या एडमिन), period_reset, below_limit (खर्च फिर से ब्लॉक बिंदु से नीचे है, जैसे बजट बढ़ाने के बाद), rule_changed, rule_disabled या rule_deleted।'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: वह ब्लॉक जो किसी खर्च नियम ने खर्च के ब्लॉक बिंदु तक पहुँचने पर शुरू किया। सक्रिय रहने तक उसके दायरे के अनुरोधों को spend_rule_blocked कोड के साथ 429 मिलता है और Retry-After resets_at पर सेट होता है। मुफ़्त मॉडल छूट में रहते हैं, जब तक block_free_models true न हो।
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: वह नियम जिसने ब्लॉक शुरू किया; नियम पूरी तरह हटाए जाने पर null।
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: दायरे का दिखने वाला नाम (कुंजी, विभाग या मॉडल का नाम, सदस्य का ईमेल, या ID)।
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: ब्लॉक अपने आप कब हटता है (नियम की अवधि का अंत)।
+        spend_nanos:
+          type: integer
+          description: ब्लॉक शुरू होते समय नियम के दायरे में खर्च, नैनोडॉलर में।
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: ब्लॉक बिंदु, नैनोडॉलर में।
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: मैन्युअल रूप से हटाने पर, ब्लॉक हटाने वाला ओनर या एडमिन।
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: हटाया नहीं गया, और इसका रीसेट समय अभी नहीं बीता।
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

@@ -1,0 +1,77 @@
+import { describe, expect, it, vi } from "vitest";
+import { apiModels, readCodexModels } from "./modelCatalog";
+import { apiModelCatalog } from "./apiModelCatalog";
+import type { Account } from "../shared/workspace";
+
+const account: Account = { id: "account", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.example.test/v1/" };
+describe("API model catalog", () => {
+	const gatewayAccount = { ...account, endpoint: "https://api.phaseo.app/v1" };
+	const nativeModel = (id: string, overrides = {}) => ({ id, name: id, capabilities: { endpoints: ["text.generate"] }, offers: [{ routable: true }], lifecycle: { status: "active" }, ...overrides });
+	it("preserves catalog organization branding", async () => {
+		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("openai/example", { organization: { id: "openai", name: "OpenAI" }, lifecycle: { status: "active", released_at: "2026-10-04" } })] })));
+		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "openai/example", name: "openai/example", organisationId: "openai", organisationName: "OpenAI", releaseDate: "2026-10-04" }]);
+	});
+	it("keeps context, input types, the cheapest routable offer's prices and provider names for the model card", async () => {
+		const meter = (price: string | null) => ({ unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD" });
+		const offer = (name: string, input: string, output: string, routable = true) => ({ routable, provider: { id: name.toLowerCase(), name }, pricing: { meters: { input_tokens: null, input_text_tokens: meter(input), output_text_tokens: meter(output) } } });
+		const model = nativeModel("owned/carded", { limits: { input_tokens: 400_000, output_tokens: null }, modalities: { input: ["text", "image"], output: ["text"] }, offers: [offer("Azure", "4.4", "22"), offer("Owned", "4", "20"), offer("Owned", "4", "20"), offer("Closed", "1", "2", false)] });
+		const [result] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] }))));
+		expect(result.facts).toEqual({ contextTokens: 400_000, input: ["text", "image"], inputPrice: 4, outputPrice: 20, providers: ["Azure", "Owned"] });
+		const free = nativeModel("owned/free", { pricing: { meters: { input_text_tokens: meter("0"), output_text_tokens: meter("0") } } });
+		const [summary] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [free] }))));
+		expect(summary.facts).toEqual({ inputPrice: 0, outputPrice: 0 });
+	});
+	it("attaches effort and speed settings from routable offer parameter details", async () => {
+		const model = nativeModel("openai/reasoner", { offers: [{ routable: true, capabilities: { parameter_details: { reasoning: { supported: true, supported_values: ["low", "medium", "high"] }, service_tier: { supported: true, supported_values: ["standard", "priority"] } } } }] });
+		const [result] = await apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [model] }))));
+		expect(result.options).toEqual([{ id: "effort", label: "Reasoning", type: "select", options: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium", isDefault: true }, { id: "high", label: "High" }] }, { id: "speed", label: "Speed", type: "select", options: [{ id: "standard", label: "Standard", isDefault: true }, { id: "priority", label: "Fast" }] }]);
+	});
+	it("reads the Phaseo catalog across pages with real gateway IDs and readable names", async () => {
+		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, limit: 250, total: 3, models: [nativeModel("owned/first", { name: "First Model", description: "Owned model" }), nativeModel("owned/second")] }))).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 2, limit: 250, total: 3, models: [nativeModel("owned/last")] })));
+		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "owned/first", name: "First Model", description: "Owned model" }, { id: "owned/second", name: "owned/second" }, { id: "owned/last", name: "owned/last" }]);
+		const first = new URL(fetcher.mock.calls[0][0]); const last = new URL(fetcher.mock.calls[1][0]);
+		expect(first.searchParams.get("limit")).toBe("250"); expect(first.searchParams.get("endpoints")).toBe("text.generate"); expect(first.searchParams.get("gateway_available_only")).toBe("true"); expect(last.searchParams.get("offset")).toBe("2");
+		expect(fetcher.mock.calls.every(([, options]) => options.headers.Authorization === "Bearer owned-key" && options.redirect === "error")).toBe(true);
+	});
+	it("records page ETags and re-checks them with If-None-Match, downloading again only when a page changed", async () => {
+		const page = (offset: number, ids: string[], etag: string) => new Response(JSON.stringify({ ok: true, offset, total: 3, models: ids.map(id => nativeModel(id)) }), { headers: { etag } });
+		const fetcher = vi.fn().mockResolvedValueOnce(page(0, ["owned/a", "owned/b"], "\"p0\"")).mockResolvedValueOnce(page(2, ["owned/c"], "\"p1\""));
+		const first = await apiModelCatalog(gatewayAccount, "owned-key", undefined, fetcher);
+		expect(first).toMatchObject({ validators: [{ offset: 0, etag: "\"p0\"" }, { offset: 2, etag: "\"p1\"" }] });
+		const validators = first.notModified ? [] : first.validators;
+		const unchanged = vi.fn().mockResolvedValue(new Response(null, { status: 304 }));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", validators, unchanged)).toEqual({ notModified: true });
+		expect(unchanged.mock.calls.map(([url, options]) => [new URL(url).searchParams.get("offset"), options.headers["If-None-Match"]])).toEqual([[null, "\"p0\""], ["2", "\"p1\""]]);
+		const changed = vi.fn().mockResolvedValueOnce(new Response(null, { status: 304 })).mockResolvedValueOnce(new Response("{}", { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("owned/new")] }), { headers: { etag: "\"p2\"" } }));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", validators, changed)).toEqual({ models: [{ id: "owned/new", name: "owned/new" }], validators: [{ offset: 0, etag: "\"p2\"" }] });
+		expect(changed.mock.calls[2][1].headers["If-None-Match"]).toBeUndefined();
+	});
+	it("skips conditional re-checks when a page arrived without an ETag", async () => {
+		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 2, models: [nativeModel("owned/a")] }), { headers: { etag: "\"p0\"" } })).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 1, total: 2, models: [nativeModel("owned/b")] })));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", undefined, fetcher)).toMatchObject({ validators: [] });
+	});
+	it("skips unavailable and non-chat models without dropping later valid pages", async () => {
+		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 4, models: [nativeModel("owned/image", { capabilities: { endpoints: ["images/generations"] } }), nativeModel("owned/offline", { offers: [{ routable: false }] })] }))).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 2, total: 4, models: [nativeModel("owned/retired", { lifecycle: { status: "retired" } }), nativeModel("owned/chat")] })));
+		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "owned/chat", name: "owned/chat" }]);
+	});
+	it("rejects malformed, empty and repeated native pagination", async () => {
+		for (const page of [{ ok: true, offset: 0, total: 2, models: [] }, { ok: true, offset: 1, total: 1, models: [nativeModel("one")] }, { ok: false, offset: 0, total: 1, models: [nativeModel("one")] }]) await expect(apiModels(gatewayAccount, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify(page))))).rejects.toThrow(/pagination|page/);
+		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 2, models: [nativeModel("one")] }))).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 1, total: 2, models: [nativeModel("one")] })));
+		await expect(apiModels(gatewayAccount, "owned-key", fetcher)).rejects.toThrow("repeated");
+	});
+	it.each([null, [], { data: null }, { unexpected: [] }])("rejects malformed catalog envelopes without crashing: %j", async payload => {
+		await expect(apiModels(account, "owned-key", vi.fn().mockResolvedValue(new Response(JSON.stringify(payload))))).rejects.toThrow("invalid model catalog");
+	});
+	it("preserves native model-specific reasoning options through pagination", async () => {
+		const request = vi.fn().mockResolvedValueOnce({ data: [{ model: "first", displayName: "First", description: "", isDefault: true, supportedReasoningEfforts: [{ reasoningEffort: "medium", description: "Balanced" }, { reasoningEffort: 42 }], defaultReasoningEffort: "medium", serviceTiers: [{ id: "fast", name: "Fast", description: "Priority" }], defaultServiceTier: "default" }], nextCursor: "page-2" }).mockResolvedValueOnce({ data: [{ model: "hidden", hidden: true }, { model: "second", displayName: "Second", supportedReasoningEfforts: [{ reasoningEffort: "custom-native-level", description: "Native option" }] }], nextCursor: null });
+		const models = await readCodexModels({ request }); expect(models).toHaveLength(2); expect(models[0].serviceTiers).toEqual([{ id: "fast", name: "Fast", description: "Priority" }]); expect(models[0]).toMatchObject({ defaultReasoningEffort: "medium", reasoningEfforts: [{ id: "medium", description: "Balanced" }] }); expect(models[1].reasoningEfforts?.[0].id).toBe("custom-native-level"); expect(request.mock.calls[1]).toEqual(["model/list", { cursor: "page-2", limit: 100 }]);
+	});
+	it("uses the selected account and filters malformed catalog entries", async () => {
+		const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [{ id: "model-one", name: "Model One" }, { id: 42 }, { id: "model-two" }] })));
+		expect(await apiModels(account, "secret", fetcher)).toEqual([{ id: "model-one", name: "Model One" }, { id: "model-two", name: "model-two" }]);
+		expect(fetcher).toHaveBeenCalledWith("https://api.example.test/v1/models", expect.objectContaining({ headers: { Authorization: "Bearer secret" }, redirect: "error" }));
+	});
+	it("surfaces authentication errors", async () => {
+		await expect(apiModels(account, "secret", vi.fn().mockResolvedValue(new Response("", { status: 401 })))).rejects.toThrow("HTTP 401");
+	});
+});
