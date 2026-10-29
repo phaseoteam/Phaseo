@@ -4969,11 +4969,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkloadIdentityPolicies
-      summary: List trusted workload policies
-      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      summary: Listar políticas de workloads confiáveis
+      description: 'Lista as políticas de workloads confiáveis do espaço de trabalho: quais implantações da Vercel e workflows do GitHub Actions podem chamar o gateway com o token OIDC em vez de uma chave de API. Requer keys:read em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.'
       responses:
         '200':
-          description: Trusted workload policies
+          description: Políticas de workloads confiáveis
           content:
             application/json:
               schema:
@@ -4989,8 +4989,8 @@ paths:
       tags:
         - Gateway
       operationId: createWorkloadIdentityPolicy
-      summary: Create a trusted workload policy
-      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Criar política de workload confiável
+      description: Cria uma política e sua chave sem segredo. Os tokens devem ser emitidos para a audiência https://api.phaseo.app e corresponder ao proprietário fixado e a todas as condições de claims. Um espaço de trabalho pode ter até 50 políticas; acima disso, retorna 409 limit_reached. Requer keys:write em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.
       requestBody:
         required: true
         content:
@@ -4999,7 +4999,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
       responses:
         '201':
-          description: Trusted workload policy created
+          description: Política de workload confiável criada
           content:
             application/json:
               schema:
@@ -5015,7 +5015,7 @@ paths:
       - name: id
         in: path
         required: true
-        description: Trusted workload policy id.
+        description: ID da política de workload confiável.
         schema:
           type: string
           format: uuid
@@ -5024,11 +5024,11 @@ paths:
       tags:
         - Gateway
       operationId: getWorkloadIdentityPolicy
-      summary: Get a trusted workload policy
-      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Obter política de workload confiável
+      description: Retorna uma política de workload confiável. Requer keys:read em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.
       responses:
         '200':
-          description: Trusted workload policy
+          description: Política de workload confiável
           content:
             application/json:
               schema:
@@ -5044,8 +5044,8 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
-      summary: Update a trusted workload policy
-      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Atualizar política de workload confiável
+      description: Altera o nome, o status, as condições de claims ou a duração máxima do token de uma política. O provedor, o emissor e o proprietário não podem mudar; crie uma nova política em vez disso. As alterações chegam ao gateway em até um minuto. Requer keys:write em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.
       requestBody:
         required: true
         content:
@@ -5054,7 +5054,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
       responses:
         '200':
-          description: Trusted workload policy updated
+          description: Política de workload confiável atualizada
           content:
             application/json:
               schema:
@@ -5070,11 +5070,11 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkloadIdentityPolicy
-      summary: Delete a trusted workload policy
-      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Excluir política de workload confiável
+      description: Revoga a chave da política e depois exclui a política. Tokens correspondentes passam a ser recusados em até um minuto. Solicitações anteriores mantêm sua chave nos logs e no uso. Requer keys:delete em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.
       responses:
         '200':
-          description: Trusted workload policy deleted
+          description: Política de workload confiável excluída
           content:
             application/json:
               schema:
@@ -23624,10 +23624,10 @@ components:
       enum:
         - vercel
         - github_actions
-      description: The platform that issues the OIDC tokens.
+      description: A plataforma que emite os tokens OIDC.
     WorkloadIdentityPolicy:
       type: object
-      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      description: 'Um workload confiável: tokens deste emissor, para o proprietário fixado e que atendem a todas as condições de claims, autenticam como a chave da política.'
       required:
         - id
         - name
@@ -23655,13 +23655,13 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+          description: Emissor do token, por exemplo https://oidc.vercel.com/acme ou https://token.actions.githubusercontent.com.
         owner_id:
           type: string
-          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+          description: O ID da equipe da Vercel fixado (claim owner_id) ou o ID da organização ou do usuário do GitHub (claim repository_owner_id).
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: Claims adicionais que o token deve atender, como nome do claim e valores permitidos, por exemplo project_id e environment para a Vercel, ou repository_id e ref para o GitHub Actions. Cada claim deve corresponder a um de seus valores. No máximo 15 claims e 20 valores por claim; iss, aud, exp, iat, nbf e jti não podem ser usados, e o claim do proprietário fixado é definido com owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23675,7 +23675,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: Duração máxima do token (exp menos iat ou nbf) aceita pela política.
         status:
           type: string
           enum:
@@ -23683,11 +23683,11 @@ components:
             - disabled
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: A audiência para a qual os tokens devem ser emitidos.
         key_id:
           type: string
           format: uuid
-          description: The policy's key. Requests, usage and limits are recorded against it.
+          description: A chave da política. Solicitações, uso e limites são registrados nela.
         last_used_at:
           type: string
           format: date-time
@@ -23718,14 +23718,14 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+          description: 'Obrigatório para a Vercel: https://oidc.vercel.com/ seguido do slug da equipe, ou https://oidc.vercel.com para o emissor global. Para o GitHub Actions, o padrão é https://token.actions.githubusercontent.com.'
         owner_id:
           type: string
           minLength: 1
-          description: The Vercel team ID or GitHub organisation or user ID to pin.
+          description: O ID da equipe da Vercel ou da organização ou do usuário do GitHub a fixar.
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: Claims adicionais que o token deve atender, como nome do claim e valores permitidos, por exemplo project_id e environment para a Vercel, ou repository_id e ref para o GitHub Actions. Cada claim deve corresponder a um de seus valores. No máximo 15 claims e 20 valores por claim; iss, aud, exp, iat, nbf e jti não podem ser usados, e o claim do proprietário fixado é definido com owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23740,7 +23740,7 @@ components:
           minimum: 60
           maximum: 43200
           default: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: Duração máxima do token (exp menos iat ou nbf) aceita pela política.
       additionalProperties: false
     WorkloadIdentityPolicyUpdateInput:
       type: object
@@ -23757,7 +23757,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: Claims adicionais que o token deve atender, como nome do claim e valores permitidos, por exemplo project_id e environment para a Vercel, ou repository_id e ref para o GitHub Actions. Cada claim deve corresponder a um de seus valores. No máximo 15 claims e 20 valores por claim; iss, aud, exp, iat, nbf e jti não podem ser usados, e o claim do proprietário fixado é definido com owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23771,7 +23771,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: Duração máxima do token (exp menos iat ou nbf) aceita pela política.
       additionalProperties: false
     WorkloadIdentityPolicyResponse:
       type: object
@@ -23793,7 +23793,7 @@ components:
             $ref: '#/components/schemas/WorkloadIdentityPolicy'
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: A audiência para a qual os tokens devem ser emitidos.
       additionalProperties: false
     WorkloadIdentityPolicyDeleteResponse:
       type: object

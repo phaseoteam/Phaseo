@@ -4969,11 +4969,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkloadIdentityPolicies
-      summary: List trusted workload policies
-      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      summary: عرض سياسات أحمال العمل الموثوقة
+      description: 'يعرض سياسات أحمال العمل الموثوقة في مساحة العمل: أي عمليات النشر على Vercel وسير عمل GitHub Actions يمكنها استدعاء البوابة برمز OIDC الخاص بها بدلًا من مفتاح API. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404.'
       responses:
         '200':
-          description: Trusted workload policies
+          description: سياسات أحمال العمل الموثوقة
           content:
             application/json:
               schema:
@@ -4989,8 +4989,8 @@ paths:
       tags:
         - Gateway
       operationId: createWorkloadIdentityPolicy
-      summary: Create a trusted workload policy
-      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: إنشاء سياسة حمل عمل موثوق
+      description: ينشئ سياسة ومفتاحها الخالي من الأسرار. يجب إصدار الرموز للجمهور https://api.phaseo.app وأن تطابق المالك المثبَّت وكل شروط المطالبات. يمكن أن تضم مساحة العمل ما يصل إلى 50 سياسة؛ وما يزيد على ذلك يُرجع 409 limit_reached. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404.
       requestBody:
         required: true
         content:
@@ -4999,7 +4999,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
       responses:
         '201':
-          description: Trusted workload policy created
+          description: تم إنشاء سياسة حمل العمل الموثوق
           content:
             application/json:
               schema:
@@ -5015,7 +5015,7 @@ paths:
       - name: id
         in: path
         required: true
-        description: Trusted workload policy id.
+        description: معرّف سياسة حمل العمل الموثوق.
         schema:
           type: string
           format: uuid
@@ -5024,11 +5024,11 @@ paths:
       tags:
         - Gateway
       operationId: getWorkloadIdentityPolicy
-      summary: Get a trusted workload policy
-      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: الحصول على سياسة حمل عمل موثوق
+      description: يُرجع سياسة واحدة لحمل عمل موثوق. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404.
       responses:
         '200':
-          description: Trusted workload policy
+          description: سياسة حمل عمل موثوق
           content:
             application/json:
               schema:
@@ -5044,8 +5044,8 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
-      summary: Update a trusted workload policy
-      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: تحديث سياسة حمل عمل موثوق
+      description: يغيّر اسم السياسة أو حالتها أو شروط المطالبات أو أقصى مدة لصلاحية الرمز. لا يمكن تغيير المزوّد أو المُصدِر أو المالك؛ أنشئ سياسة جديدة بدلًا من ذلك. تصل التغييرات إلى البوابة خلال دقيقة. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404.
       requestBody:
         required: true
         content:
@@ -5054,7 +5054,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
       responses:
         '200':
-          description: Trusted workload policy updated
+          description: تم تحديث سياسة حمل العمل الموثوق
           content:
             application/json:
               schema:
@@ -5070,11 +5070,11 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkloadIdentityPolicy
-      summary: Delete a trusted workload policy
-      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: حذف سياسة حمل عمل موثوق
+      description: يلغي مفتاح السياسة ثم يحذف السياسة. تُرفض الرموز المطابقة خلال دقيقة. تحتفظ الطلبات السابقة بمفتاحها في السجلات والاستخدام. يتطلب keys:delete على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404.
       responses:
         '200':
-          description: Trusted workload policy deleted
+          description: تم حذف سياسة حمل العمل الموثوق
           content:
             application/json:
               schema:
@@ -23624,10 +23624,10 @@ components:
       enum:
         - vercel
         - github_actions
-      description: The platform that issues the OIDC tokens.
+      description: المنصة التي تُصدر رموز OIDC.
     WorkloadIdentityPolicy:
       type: object
-      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      description: 'حمل عمل موثوق: الرموز الصادرة عن هذا المُصدِر، للمالك المثبَّت والمطابقة لكل شروط المطالبات، تُصادَق بصفتها مفتاح السياسة.'
       required:
         - id
         - name
@@ -23655,13 +23655,13 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+          description: مُصدِر الرمز، مثل https://oidc.vercel.com/acme أو https://token.actions.githubusercontent.com.
         owner_id:
           type: string
-          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+          description: معرّف فريق Vercel المثبَّت (مطالبة owner_id) أو معرّف المؤسسة أو المستخدم على GitHub (مطالبة repository_owner_id).
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل project_id وenvironment لـ Vercel، أو repository_id وref لـ GitHub Actions. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك المثبَّت عبر owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23675,7 +23675,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: أطول مدة صلاحية للرمز (exp ناقص iat أو nbf) تقبلها السياسة.
         status:
           type: string
           enum:
@@ -23683,11 +23683,11 @@ components:
             - disabled
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: الجمهور الذي يجب إصدار الرموز له.
         key_id:
           type: string
           format: uuid
-          description: The policy's key. Requests, usage and limits are recorded against it.
+          description: مفتاح السياسة. تُسجَّل الطلبات والاستخدام والحدود عليه.
         last_used_at:
           type: string
           format: date-time
@@ -23718,14 +23718,14 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+          description: 'مطلوب لـ Vercel: ‏https://oidc.vercel.com/ متبوعًا بالمعرّف المختصر للفريق، أو https://oidc.vercel.com للمُصدِر العام. القيمة الافتراضية لـ GitHub Actions هي https://token.actions.githubusercontent.com.'
         owner_id:
           type: string
           minLength: 1
-          description: The Vercel team ID or GitHub organisation or user ID to pin.
+          description: معرّف فريق Vercel أو معرّف المؤسسة أو المستخدم على GitHub المراد تثبيته.
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل project_id وenvironment لـ Vercel، أو repository_id وref لـ GitHub Actions. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك المثبَّت عبر owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23740,7 +23740,7 @@ components:
           minimum: 60
           maximum: 43200
           default: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: أطول مدة صلاحية للرمز (exp ناقص iat أو nbf) تقبلها السياسة.
       additionalProperties: false
     WorkloadIdentityPolicyUpdateInput:
       type: object
@@ -23757,7 +23757,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل project_id وenvironment لـ Vercel، أو repository_id وref لـ GitHub Actions. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك المثبَّت عبر owner_id.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23771,7 +23771,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: أطول مدة صلاحية للرمز (exp ناقص iat أو nbf) تقبلها السياسة.
       additionalProperties: false
     WorkloadIdentityPolicyResponse:
       type: object
@@ -23793,7 +23793,7 @@ components:
             $ref: '#/components/schemas/WorkloadIdentityPolicy'
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: الجمهور الذي يجب إصدار الرموز له.
       additionalProperties: false
     WorkloadIdentityPolicyDeleteResponse:
       type: object

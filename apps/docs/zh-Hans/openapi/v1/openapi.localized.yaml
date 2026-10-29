@@ -4969,11 +4969,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkloadIdentityPolicies
-      summary: List trusted workload policies
-      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      summary: 列出受信任的工作负载策略
+      description: 列出工作区的受信任的工作负载策略：哪些 Vercel 部署和 GitHub Actions 工作流可以使用其 OIDC 令牌而不是 API 密钥调用网关。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
       responses:
         '200':
-          description: Trusted workload policies
+          description: 受信任的工作负载策略
           content:
             application/json:
               schema:
@@ -4989,8 +4989,8 @@ paths:
       tags:
         - Gateway
       operationId: createWorkloadIdentityPolicy
-      summary: Create a trusted workload policy
-      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: 创建受信任的工作负载策略
+      description: 创建一条策略及其无密钥机密的密钥。令牌必须面向受众 https://api.phaseo.app 签发，并匹配固定的所有者和所有声明条件。每个工作区最多可有 50 条策略；超出时返回 409 limit_reached。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
       requestBody:
         required: true
         content:
@@ -4999,7 +4999,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
       responses:
         '201':
-          description: Trusted workload policy created
+          description: 已创建受信任的工作负载策略
           content:
             application/json:
               schema:
@@ -5015,7 +5015,7 @@ paths:
       - name: id
         in: path
         required: true
-        description: Trusted workload policy id.
+        description: 受信任的工作负载策略 ID。
         schema:
           type: string
           format: uuid
@@ -5024,11 +5024,11 @@ paths:
       tags:
         - Gateway
       operationId: getWorkloadIdentityPolicy
-      summary: Get a trusted workload policy
-      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: 获取受信任的工作负载策略
+      description: 返回一条受信任的工作负载策略。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
       responses:
         '200':
-          description: Trusted workload policy
+          description: 受信任的工作负载策略
           content:
             application/json:
               schema:
@@ -5044,8 +5044,8 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
-      summary: Update a trusted workload policy
-      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: 更新受信任的工作负载策略
+      description: 更改策略的名称、状态、声明条件或令牌最长有效期。提供方、签发方和所有者无法更改；请改为创建新策略。更改会在一分钟内同步到网关。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
       requestBody:
         required: true
         content:
@@ -5054,7 +5054,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
       responses:
         '200':
-          description: Trusted workload policy updated
+          description: 已更新受信任的工作负载策略
           content:
             application/json:
               schema:
@@ -5070,11 +5070,11 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkloadIdentityPolicy
-      summary: Delete a trusted workload policy
-      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: 删除受信任的工作负载策略
+      description: 吊销策略的密钥，然后删除该策略。匹配的令牌会在一分钟内被拒绝。过去的请求在日志和用量中仍保留其密钥。管理密钥和 OAuth 令牌需要 keys:delete，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。
       responses:
         '200':
-          description: Trusted workload policy deleted
+          description: 已删除受信任的工作负载策略
           content:
             application/json:
               schema:
@@ -23624,10 +23624,10 @@ components:
       enum:
         - vercel
         - github_actions
-      description: The platform that issues the OIDC tokens.
+      description: 签发 OIDC 令牌的平台。
     WorkloadIdentityPolicy:
       type: object
-      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      description: 受信任的工作负载：来自此签发方、面向固定所有者并满足所有声明条件的令牌，将以策略的密钥进行身份验证。
       required:
         - id
         - name
@@ -23655,13 +23655,13 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+          description: 令牌签发方，例如 https://oidc.vercel.com/acme 或 https://token.actions.githubusercontent.com。
         owner_id:
           type: string
-          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+          description: 固定的 Vercel 团队 ID（owner_id 声明），或 GitHub 组织或用户 ID（repository_owner_id 声明）。
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: 令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23675,7 +23675,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: 策略接受的令牌最长有效期（exp 减去 iat 或 nbf）。
         status:
           type: string
           enum:
@@ -23683,11 +23683,11 @@ components:
             - disabled
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: 令牌必须面向的受众。
         key_id:
           type: string
           format: uuid
-          description: The policy's key. Requests, usage and limits are recorded against it.
+          description: 策略的密钥。请求、用量和限制都记录在该密钥下。
         last_used_at:
           type: string
           format: date-time
@@ -23718,14 +23718,14 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+          description: Vercel 必填：https://oidc.vercel.com/ 后接团队标识，或使用 https://oidc.vercel.com 作为全局签发方。GitHub Actions 默认为 https://token.actions.githubusercontent.com。
         owner_id:
           type: string
           minLength: 1
-          description: The Vercel team ID or GitHub organisation or user ID to pin.
+          description: 要固定的 Vercel 团队 ID，或 GitHub 组织或用户 ID。
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: 令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23740,7 +23740,7 @@ components:
           minimum: 60
           maximum: 43200
           default: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: 策略接受的令牌最长有效期（exp 减去 iat 或 nbf）。
       additionalProperties: false
     WorkloadIdentityPolicyUpdateInput:
       type: object
@@ -23757,7 +23757,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: 令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23771,7 +23771,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: 策略接受的令牌最长有效期（exp 减去 iat 或 nbf）。
       additionalProperties: false
     WorkloadIdentityPolicyResponse:
       type: object
@@ -23793,7 +23793,7 @@ components:
             $ref: '#/components/schemas/WorkloadIdentityPolicy'
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: 令牌必须面向的受众。
       additionalProperties: false
     WorkloadIdentityPolicyDeleteResponse:
       type: object

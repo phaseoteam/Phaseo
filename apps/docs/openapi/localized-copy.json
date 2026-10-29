@@ -11413,6 +11413,266 @@
 			"ja": "saved_card チャージの確認メールを送ったオーナーと管理者の数。",
 			"zh-Hans": "收到邮件以确认 saved_card 充值的所有者和管理员人数。",
 			"ar": "عدد المالكين والمسؤولين الذين أُرسل إليهم بريد إلكتروني لتأكيد عملية شحن saved_card."
+		},
+		"List trusted workload policies": {
+			"es": "Listar políticas de cargas de trabajo de confianza",
+			"fr": "Lister les règles de workloads de confiance",
+			"de": "Richtlinien für vertrauenswürdige Workloads auflisten",
+			"pt-BR": "Listar políticas de workloads confiáveis",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी की सूची देखें",
+			"ja": "信頼済みワークロードのポリシー一覧を取得",
+			"zh-Hans": "列出受信任的工作负载策略",
+			"ar": "عرض سياسات أحمال العمل الموثوقة"
+		},
+		"Lists the workspace's trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Lista las políticas de cargas de trabajo de confianza del espacio de trabajo: qué despliegues de Vercel y flujos de trabajo de GitHub Actions pueden llamar al gateway con su token OIDC en lugar de una clave de API. Requiere keys:read en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Liste les règles de workloads de confiance de l’espace de travail : les déploiements Vercel et les workflows GitHub Actions autorisés à appeler la passerelle avec leur jeton OIDC au lieu d’une clé API. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Listet die Richtlinien für vertrauenswürdige Workloads des Workspace auf: welche Vercel-Deployments und GitHub-Actions-Workflows das Gateway mit ihrem OIDC-Token statt mit einem API-Schlüssel aufrufen dürfen. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Lista as políticas de workloads confiáveis do espaço de trabalho: quais implantações da Vercel e workflows do GitHub Actions podem chamar o gateway com o token OIDC em vez de uma chave de API. Requer keys:read em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "वर्कस्पेस की भरोसेमंद वर्कलोड पॉलिसी की सूची देता है: कौन-से Vercel डिप्लॉयमेंट और GitHub Actions वर्कफ़्लो API कुंजी के बजाय अपने OIDC टोकन से गेटवे को कॉल कर सकते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ワークスペースの信頼済みワークロードのポリシーを一覧表示します。API キーの代わりに OIDC トークンでゲートウェイを呼び出せる Vercel のデプロイと GitHub Actions のワークフローが分かります。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "列出工作区的受信任的工作负载策略：哪些 Vercel 部署和 GitHub Actions 工作流可以使用其 OIDC 令牌而不是 API 密钥调用网关。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يعرض سياسات أحمال العمل الموثوقة في مساحة العمل: أي عمليات النشر على Vercel وسير عمل GitHub Actions يمكنها استدعاء البوابة برمز OIDC الخاص بها بدلًا من مفتاح API. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Trusted workload policies": {
+			"es": "Políticas de cargas de trabajo de confianza",
+			"fr": "Règles de workloads de confiance",
+			"de": "Richtlinien für vertrauenswürdige Workloads",
+			"pt-BR": "Políticas de workloads confiáveis",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी",
+			"ja": "信頼済みワークロードのポリシー",
+			"zh-Hans": "受信任的工作负载策略",
+			"ar": "سياسات أحمال العمل الموثوقة"
+		},
+		"A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy's key.": {
+			"es": "Una carga de trabajo de confianza: los tokens de este emisor, para el propietario fijado y que cumplen todas las condiciones de claims, se autentican como la clave de la política.",
+			"fr": "Un workload de confiance : les jetons de cet émetteur, pour le propriétaire épinglé et satisfaisant toutes les conditions sur les claims, s’authentifient avec la clé de la règle.",
+			"de": "Ein vertrauenswürdiger Workload: Tokens dieses Ausstellers für den festgelegten Inhaber, die alle Claim-Bedingungen erfüllen, authentifizieren sich mit dem Schlüssel der Richtlinie.",
+			"pt-BR": "Um workload confiável: tokens deste emissor, para o proprietário fixado e que atendem a todas as condições de claims, autenticam como a chave da política.",
+			"hi": "एक भरोसेमंद वर्कलोड: इस जारीकर्ता के टोकन, जो तय मालिक के लिए हों और हर क्लेम शर्त से मेल खाते हों, पॉलिसी की कुंजी के रूप में प्रमाणित होते हैं।",
+			"ja": "信頼済みワークロード: この発行者のトークンのうち、固定したオーナー向けで、すべてのクレーム条件に一致するものが、ポリシーのキーとして認証されます。",
+			"zh-Hans": "受信任的工作负载：来自此签发方、面向固定所有者并满足所有声明条件的令牌，将以策略的密钥进行身份验证。",
+			"ar": "حمل عمل موثوق: الرموز الصادرة عن هذا المُصدِر، للمالك المثبَّت والمطابقة لكل شروط المطالبات، تُصادَق بصفتها مفتاح السياسة."
+		},
+		"The platform that issues the OIDC tokens.": {
+			"es": "La plataforma que emite los tokens OIDC.",
+			"fr": "La plateforme qui émet les jetons OIDC.",
+			"de": "Die Plattform, die die OIDC-Tokens ausstellt.",
+			"pt-BR": "A plataforma que emite os tokens OIDC.",
+			"hi": "वह प्लेटफ़ॉर्म जो OIDC टोकन जारी करता है।",
+			"ja": "OIDC トークンを発行するプラットフォーム。",
+			"zh-Hans": "签发 OIDC 令牌的平台。",
+			"ar": "المنصة التي تُصدر رموز OIDC."
+		},
+		"Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.": {
+			"es": "Emisor del token, por ejemplo https://oidc.vercel.com/acme o https://token.actions.githubusercontent.com.",
+			"fr": "Émetteur du jeton, par exemple https://oidc.vercel.com/acme ou https://token.actions.githubusercontent.com.",
+			"de": "Token-Aussteller, zum Beispiel https://oidc.vercel.com/acme oder https://token.actions.githubusercontent.com.",
+			"pt-BR": "Emissor do token, por exemplo https://oidc.vercel.com/acme ou https://token.actions.githubusercontent.com.",
+			"hi": "टोकन जारीकर्ता, जैसे https://oidc.vercel.com/acme या https://token.actions.githubusercontent.com।",
+			"ja": "トークンの発行者。例: https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com。",
+			"zh-Hans": "令牌签发方，例如 https://oidc.vercel.com/acme 或 https://token.actions.githubusercontent.com。",
+			"ar": "مُصدِر الرمز، مثل https://oidc.vercel.com/acme أو https://token.actions.githubusercontent.com."
+		},
+		"The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).": {
+			"es": "El ID del equipo de Vercel fijado (claim owner_id) o el ID de la organización o el usuario de GitHub (claim repository_owner_id).",
+			"fr": "L’ID de l’équipe Vercel épinglée (claim owner_id) ou l’ID de l’organisation ou de l’utilisateur GitHub (claim repository_owner_id).",
+			"de": "Die festgelegte Vercel-Team-ID (Claim owner_id) oder GitHub-Organisations- bzw. Benutzer-ID (Claim repository_owner_id).",
+			"pt-BR": "O ID da equipe da Vercel fixado (claim owner_id) ou o ID da organização ou do usuário do GitHub (claim repository_owner_id).",
+			"hi": "तय किया गया Vercel टीम ID (owner_id क्लेम) या GitHub संगठन या उपयोगकर्ता ID (repository_owner_id क्लेम)।",
+			"ja": "固定した Vercel のチーム ID（owner_id クレーム）、または GitHub の組織 ID かユーザー ID（repository_owner_id クレーム）。",
+			"zh-Hans": "固定的 Vercel 团队 ID（owner_id 声明），或 GitHub 组织或用户 ID（repository_owner_id 声明）。",
+			"ar": "معرّف فريق Vercel المثبَّت (مطالبة owner_id) أو معرّف المؤسسة أو المستخدم على GitHub (مطالبة repository_owner_id)."
+		},
+		"Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.": {
+			"es": "Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, project_id y environment para Vercel, o repository_id y ref para GitHub Actions. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario fijado se establece con owner_id.",
+			"fr": "Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple project_id et environment pour Vercel, ou repository_id et ref pour GitHub Actions. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire épinglé est défini avec owner_id.",
+			"de": "Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel project_id und environment für Vercel oder repository_id und ref für GitHub Actions. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Claim des festgelegten Inhabers wird über owner_id gesetzt.",
+			"pt-BR": "Claims adicionais que o token deve atender, como nome do claim e valores permitidos, por exemplo project_id e environment para a Vercel, ou repository_id e ref para o GitHub Actions. Cada claim deve corresponder a um de seus valores. No máximo 15 claims e 20 valores por claim; iss, aud, exp, iat, nbf e jti não podem ser usados, e o claim do proprietário fixado é definido com owner_id.",
+			"hi": "अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे Vercel के लिए project_id और environment, या GitHub Actions के लिए repository_id और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और तय मालिक का क्लेम owner_id से सेट होता है।",
+			"ja": "トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。",
+			"zh-Hans": "令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。",
+			"ar": "مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل project_id وenvironment لـ Vercel، أو repository_id وref لـ GitHub Actions. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك المثبَّت عبر owner_id."
+		},
+		"Longest token lifetime (exp minus iat or nbf) the policy accepts.": {
+			"es": "Duración máxima del token (exp menos iat o nbf) que acepta la política.",
+			"fr": "Durée de vie maximale du jeton (exp moins iat ou nbf) acceptée par la règle.",
+			"de": "Längste Token-Lebensdauer (exp minus iat oder nbf), die die Richtlinie akzeptiert.",
+			"pt-BR": "Duração máxima do token (exp menos iat ou nbf) aceita pela política.",
+			"hi": "टोकन की सबसे लंबी अवधि (exp में से iat या nbf घटाकर) जिसे पॉलिसी स्वीकार करती है।",
+			"ja": "ポリシーが受け入れるトークンの最大有効期間（exp から iat または nbf を引いた値）。",
+			"zh-Hans": "策略接受的令牌最长有效期（exp 减去 iat 或 nbf）。",
+			"ar": "أطول مدة صلاحية للرمز (exp ناقص iat أو nbf) تقبلها السياسة."
+		},
+		"The audience tokens must be issued for.": {
+			"es": "La audiencia para la que deben emitirse los tokens.",
+			"fr": "L’audience pour laquelle les jetons doivent être émis.",
+			"de": "Die Zielgruppe (Audience), für die Tokens ausgestellt sein müssen.",
+			"pt-BR": "A audiência para a qual os tokens devem ser emitidos.",
+			"hi": "वह ऑडियंस जिसके लिए टोकन जारी होने चाहिए।",
+			"ja": "トークンの発行先として必要なオーディエンス。",
+			"zh-Hans": "令牌必须面向的受众。",
+			"ar": "الجمهور الذي يجب إصدار الرموز له."
+		},
+		"The policy's key. Requests, usage and limits are recorded against it.": {
+			"es": "La clave de la política. Las solicitudes, el uso y los límites se registran con ella.",
+			"fr": "La clé de la règle. Les requêtes, l’utilisation et les limites lui sont rattachées.",
+			"de": "Der Schlüssel der Richtlinie. Anfragen, Nutzung und Limits werden ihm zugeordnet.",
+			"pt-BR": "A chave da política. Solicitações, uso e limites são registrados nela.",
+			"hi": "पॉलिसी की कुंजी। अनुरोध, उपयोग और सीमाएँ इसी पर दर्ज होती हैं।",
+			"ja": "ポリシーのキー。リクエスト、使用量、上限はこのキーに記録されます。",
+			"zh-Hans": "策略的密钥。请求、用量和限制都记录在该密钥下。",
+			"ar": "مفتاح السياسة. تُسجَّل الطلبات والاستخدام والحدود عليه."
+		},
+		"Create a trusted workload policy": {
+			"es": "Crear una política de carga de trabajo de confianza",
+			"fr": "Créer une règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads erstellen",
+			"pt-BR": "Criar política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी बनाएँ",
+			"ja": "信頼済みワークロードのポリシーを作成",
+			"zh-Hans": "创建受信任的工作负载策略",
+			"ar": "إنشاء سياسة حمل عمل موثوق"
+		},
+		"Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Crea una política y su clave sin secreto. Los tokens deben emitirse para la audiencia https://api.phaseo.app y coincidir con el propietario fijado y con todas las condiciones de claims. Un espacio de trabajo puede tener hasta 50 políticas; si se supera, devuelve 409 limit_reached. Requiere keys:write en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Crée une règle et sa clé sans secret. Les jetons doivent être émis pour l’audience https://api.phaseo.app et correspondre au propriétaire épinglé et à toutes les conditions sur les claims. Un espace de travail peut avoir jusqu’à 50 règles ; au-delà, la réponse est 409 limit_reached. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Erstellt eine Richtlinie und ihren Schlüssel ohne Geheimnis. Tokens müssen für die Audience https://api.phaseo.app ausgestellt sein und zum festgelegten Inhaber sowie zu allen Claim-Bedingungen passen. Ein Workspace kann bis zu 50 Richtlinien haben; darüber hinaus wird 409 limit_reached zurückgegeben. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Cria uma política e sua chave sem segredo. Os tokens devem ser emitidos para a audiência https://api.phaseo.app e corresponder ao proprietário fixado e a todas as condições de claims. Um espaço de trabalho pode ter até 50 políticas; acima disso, retorna 409 limit_reached. Requer keys:write em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "एक पॉलिसी और उसकी बिना सीक्रेट वाली कुंजी बनाता है। टोकन ऑडियंस https://api.phaseo.app के लिए जारी होने चाहिए और तय मालिक तथा हर क्लेम शर्त से मेल खाने चाहिए। एक वर्कस्पेस में अधिकतम 50 पॉलिसी हो सकती हैं; इससे ज़्यादा पर 409 limit_reached मिलता है। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ポリシーと、シークレットを持たないキーを作成します。トークンはオーディエンス https://api.phaseo.app 向けに発行され、固定したオーナーとすべてのクレーム条件に一致する必要があります。1 つのワークスペースで作成できるポリシーは最大 50 件で、超えると 409 limit_reached が返ります。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "创建一条策略及其无密钥机密的密钥。令牌必须面向受众 https://api.phaseo.app 签发，并匹配固定的所有者和所有声明条件。每个工作区最多可有 50 条策略；超出时返回 409 limit_reached。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "ينشئ سياسة ومفتاحها الخالي من الأسرار. يجب إصدار الرموز للجمهور https://api.phaseo.app وأن تطابق المالك المثبَّت وكل شروط المطالبات. يمكن أن تضم مساحة العمل ما يصل إلى 50 سياسة؛ وما يزيد على ذلك يُرجع 409 limit_reached. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.": {
+			"es": "Obligatorio para Vercel: https://oidc.vercel.com/ seguido del slug del equipo, o https://oidc.vercel.com para el emisor global. Para GitHub Actions, el valor predeterminado es https://token.actions.githubusercontent.com.",
+			"fr": "Obligatoire pour Vercel : https://oidc.vercel.com/ suivi du slug de l’équipe, ou https://oidc.vercel.com pour l’émetteur global. Pour GitHub Actions, la valeur par défaut est https://token.actions.githubusercontent.com.",
+			"de": "Für Vercel erforderlich: https://oidc.vercel.com/ gefolgt vom Team-Slug oder https://oidc.vercel.com für den globalen Aussteller. Für GitHub Actions ist der Standardwert https://token.actions.githubusercontent.com.",
+			"pt-BR": "Obrigatório para a Vercel: https://oidc.vercel.com/ seguido do slug da equipe, ou https://oidc.vercel.com para o emissor global. Para o GitHub Actions, o padrão é https://token.actions.githubusercontent.com.",
+			"hi": "Vercel के लिए आवश्यक: https://oidc.vercel.com/ के बाद टीम स्लग, या ग्लोबल जारीकर्ता के लिए https://oidc.vercel.com। GitHub Actions के लिए डिफ़ॉल्ट https://token.actions.githubusercontent.com है।",
+			"ja": "Vercel では必須: https://oidc.vercel.com/ の後にチームのスラッグを付けるか、グローバル発行者の場合は https://oidc.vercel.com を指定します。GitHub Actions の既定値は https://token.actions.githubusercontent.com です。",
+			"zh-Hans": "Vercel 必填：https://oidc.vercel.com/ 后接团队标识，或使用 https://oidc.vercel.com 作为全局签发方。GitHub Actions 默认为 https://token.actions.githubusercontent.com。",
+			"ar": "مطلوب لـ Vercel: ‏https://oidc.vercel.com/ متبوعًا بالمعرّف المختصر للفريق، أو https://oidc.vercel.com للمُصدِر العام. القيمة الافتراضية لـ GitHub Actions هي https://token.actions.githubusercontent.com."
+		},
+		"The Vercel team ID or GitHub organisation or user ID to pin.": {
+			"es": "El ID del equipo de Vercel o de la organización o el usuario de GitHub que se fija.",
+			"fr": "L’ID de l’équipe Vercel ou de l’organisation ou de l’utilisateur GitHub à épingler.",
+			"de": "Die festzulegende Vercel-Team-ID oder GitHub-Organisations- bzw. Benutzer-ID.",
+			"pt-BR": "O ID da equipe da Vercel ou da organização ou do usuário do GitHub a fixar.",
+			"hi": "तय करने के लिए Vercel टीम ID या GitHub संगठन या उपयोगकर्ता ID।",
+			"ja": "固定する Vercel のチーム ID、または GitHub の組織 ID かユーザー ID。",
+			"zh-Hans": "要固定的 Vercel 团队 ID，或 GitHub 组织或用户 ID。",
+			"ar": "معرّف فريق Vercel أو معرّف المؤسسة أو المستخدم على GitHub المراد تثبيته."
+		},
+		"Trusted workload policy created": {
+			"es": "Política de carga de trabajo de confianza creada",
+			"fr": "Règle de workload de confiance créée",
+			"de": "Richtlinie für vertrauenswürdige Workloads erstellt",
+			"pt-BR": "Política de workload confiável criada",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी बनाई गई",
+			"ja": "信頼済みワークロードのポリシーを作成しました",
+			"zh-Hans": "已创建受信任的工作负载策略",
+			"ar": "تم إنشاء سياسة حمل العمل الموثوق"
+		},
+		"Trusted workload policy id.": {
+			"es": "ID de la política de carga de trabajo de confianza.",
+			"fr": "ID de la règle de workload de confiance.",
+			"de": "ID der Richtlinie für vertrauenswürdige Workloads.",
+			"pt-BR": "ID da política de workload confiável.",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी का ID।",
+			"ja": "信頼済みワークロードのポリシー ID。",
+			"zh-Hans": "受信任的工作负载策略 ID。",
+			"ar": "معرّف سياسة حمل العمل الموثوق."
+		},
+		"Get a trusted workload policy": {
+			"es": "Obtener una política de carga de trabajo de confianza",
+			"fr": "Obtenir une règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads abrufen",
+			"pt-BR": "Obter política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी प्राप्त करें",
+			"ja": "信頼済みワークロードのポリシーを取得",
+			"zh-Hans": "获取受信任的工作负载策略",
+			"ar": "الحصول على سياسة حمل عمل موثوق"
+		},
+		"Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Devuelve una política de carga de trabajo de confianza. Requiere keys:read en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Renvoie une règle de workload de confiance. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Gibt eine Richtlinie für vertrauenswürdige Workloads zurück. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Retorna uma política de workload confiável. Requer keys:read em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "एक भरोसेमंद वर्कलोड पॉलिसी लौटाता है। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "信頼済みワークロードのポリシーを 1 件返します。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "返回一条受信任的工作负载策略。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يُرجع سياسة واحدة لحمل عمل موثوق. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Trusted workload policy": {
+			"es": "Política de carga de trabajo de confianza",
+			"fr": "Règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads",
+			"pt-BR": "Política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी",
+			"ja": "信頼済みワークロードのポリシー",
+			"zh-Hans": "受信任的工作负载策略",
+			"ar": "سياسة حمل عمل موثوق"
+		},
+		"Update a trusted workload policy": {
+			"es": "Actualizar una política de carga de trabajo de confianza",
+			"fr": "Modifier une règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads aktualisieren",
+			"pt-BR": "Atualizar política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी अपडेट करें",
+			"ja": "信頼済みワークロードのポリシーを更新",
+			"zh-Hans": "更新受信任的工作负载策略",
+			"ar": "تحديث سياسة حمل عمل موثوق"
+		},
+		"Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Cambia el nombre, el estado, las condiciones de claims o la duración máxima del token de una política. El proveedor, el emisor y el propietario no se pueden cambiar; en su lugar, crea una política nueva. Los cambios llegan al gateway en menos de un minuto. Requiere keys:write en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Modifie le nom, l’état, les conditions sur les claims ou la durée de vie maximale du jeton d’une règle. Le fournisseur, l’émetteur et le propriétaire ne peuvent pas changer ; créez plutôt une nouvelle règle. Les modifications atteignent la passerelle en moins d’une minute. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Ändert Name, Status, Claim-Bedingungen oder maximale Token-Lebensdauer einer Richtlinie. Anbieter, Aussteller und Inhaber lassen sich nicht ändern; erstelle stattdessen eine neue Richtlinie. Änderungen erreichen das Gateway innerhalb einer Minute. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Altera o nome, o status, as condições de claims ou a duração máxima do token de uma política. O provedor, o emissor e o proprietário não podem mudar; crie uma nova política em vez disso. As alterações chegam ao gateway em até um minuto. Requer keys:write em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "पॉलिसी का नाम, स्थिति, क्लेम शर्तें या टोकन की अधिकतम अवधि बदलता है। प्रदाता, जारीकर्ता और मालिक नहीं बदले जा सकते; इसके बजाय नई पॉलिसी बनाएँ। बदलाव एक मिनट के भीतर गेटवे तक पहुँच जाते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。プロバイダー、発行者、オーナーは変更できないため、代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "更改策略的名称、状态、声明条件或令牌最长有效期。提供方、签发方和所有者无法更改；请改为创建新策略。更改会在一分钟内同步到网关。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يغيّر اسم السياسة أو حالتها أو شروط المطالبات أو أقصى مدة لصلاحية الرمز. لا يمكن تغيير المزوّد أو المُصدِر أو المالك؛ أنشئ سياسة جديدة بدلًا من ذلك. تصل التغييرات إلى البوابة خلال دقيقة. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Trusted workload policy updated": {
+			"es": "Política de carga de trabajo de confianza actualizada",
+			"fr": "Règle de workload de confiance modifiée",
+			"de": "Richtlinie für vertrauenswürdige Workloads aktualisiert",
+			"pt-BR": "Política de workload confiável atualizada",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी अपडेट की गई",
+			"ja": "信頼済みワークロードのポリシーを更新しました",
+			"zh-Hans": "已更新受信任的工作负载策略",
+			"ar": "تم تحديث سياسة حمل العمل الموثوق"
+		},
+		"Delete a trusted workload policy": {
+			"es": "Eliminar una política de carga de trabajo de confianza",
+			"fr": "Supprimer une règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads löschen",
+			"pt-BR": "Excluir política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी हटाएँ",
+			"ja": "信頼済みワークロードのポリシーを削除",
+			"zh-Hans": "删除受信任的工作负载策略",
+			"ar": "حذف سياسة حمل عمل موثوق"
+		},
+		"Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Revoca la clave de la política y después elimina la política. Los tokens que coinciden se rechazan en menos de un minuto. Las solicitudes anteriores conservan su clave en los registros y el uso. Requiere keys:delete en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Révoque la clé de la règle, puis supprime la règle. Les jetons correspondants sont refusés en moins d’une minute. Les requêtes passées conservent leur clé dans les journaux et l’utilisation. Nécessite keys:delete sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Widerruft den Schlüssel der Richtlinie und löscht dann die Richtlinie. Passende Tokens werden innerhalb einer Minute abgelehnt. Frühere Anfragen behalten ihren Schlüssel in Logs und Nutzung. Erfordert keys:delete für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Revoga a chave da política e depois exclui a política. Tokens correspondentes passam a ser recusados em até um minuto. Solicitações anteriores mantêm sua chave nos logs e no uso. Requer keys:delete em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "पॉलिसी की कुंजी रद्द करता है, फिर पॉलिसी हटाता है। मेल खाने वाले टोकन एक मिनट के भीतर अस्वीकार होने लगते हैं। पिछले अनुरोधों की कुंजी लॉग और उपयोग में बनी रहती है। प्रबंधन कुंजियों और OAuth टोकन पर keys:delete, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ポリシーのキーを失効させてから、ポリシーを削除します。一致するトークンは 1 分以内に拒否されるようになります。過去のリクエストは、ログと使用状況でそのキーを保持します。管理キーと OAuth トークンでは keys:delete、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "吊销策略的密钥，然后删除该策略。匹配的令牌会在一分钟内被拒绝。过去的请求在日志和用量中仍保留其密钥。管理密钥和 OAuth 令牌需要 keys:delete，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يلغي مفتاح السياسة ثم يحذف السياسة. تُرفض الرموز المطابقة خلال دقيقة. تحتفظ الطلبات السابقة بمفتاحها في السجلات والاستخدام. يتطلب keys:delete على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Trusted workload policy deleted": {
+			"es": "Política de carga de trabajo de confianza eliminada",
+			"fr": "Règle de workload de confiance supprimée",
+			"de": "Richtlinie für vertrauenswürdige Workloads gelöscht",
+			"pt-BR": "Política de workload confiável excluída",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी हटा दी गई",
+			"ja": "信頼済みワークロードのポリシーを削除しました",
+			"zh-Hans": "已删除受信任的工作负载策略",
+			"ar": "تم حذف سياسة حمل العمل الموثوق"
 		}
 	},
 	"GET /apps": {
