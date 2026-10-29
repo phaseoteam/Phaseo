@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { delimiter, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { PassThrough } from "node:stream";
 import test from "node:test";
 import { parse as parseJsonc } from "jsonc-parser";
@@ -20,7 +20,7 @@ import { zedAdapter } from "../src/integrations/adapters/zed.js";
 import { applyChanges } from "../src/integrations/files.js";
 import { isIntegrationSetupName, isPrimarySetupName, runIntegrationCommand } from "../src/integrations/index.js";
 import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
-import { HERMES_BLOCK_END, HERMES_BLOCK_START, HermesEnvQuotingError, assertHermesEnvEditable, firstUnsupportedHermesEnvLine, hermesEnvDefinesOpenAIKey, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
+import { HERMES_BLOCK_END, HERMES_BLOCK_START, HermesEnvQuotingError, hermesAdapter, assertHermesEnvEditable, firstUnsupportedHermesEnvLine, hermesEnvDefinesOpenAIKey, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
 import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, harnessInstallPlan, installInvocationFor, isVercelFxHelp, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation, windowsCommandInterpreter } from "../src/integrations/installer.js";
@@ -1094,8 +1094,13 @@ test("Hermes .env files outside the allowlist are refused and left unchanged", a
 test("Hermes home is resolved like Hermes does, expanding ~ and environment variables", () => {
 	const homeDir = resolve("home-user");
 	const options = { homeDir } as Parameters<typeof hermesEnvPath>[0];
-	assert.equal(hermesEnvPath(options, {}), join(homeDir, ".hermes", ".env"));
-	assert.equal(hermesEnvPath(options, { HERMES_HOME: "  " }), join(homeDir, ".hermes", ".env"));
+	assert.equal(hermesEnvPath(options, {}, "linux"), join(homeDir, ".hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "  " }, "darwin"), join(homeDir, ".hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_DATA_DIR_SUFFIX: "-dev" }, "linux"), join(homeDir, ".hermes-dev", ".env"));
+	// Native Windows Hermes lives in %LOCALAPPDATA%\hermes, not ~/.hermes.
+	const localAppData = resolve("local-app-data");
+	assert.equal(hermesEnvPath(options, { LOCALAPPDATA: localAppData }, "win32"), join(localAppData, "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, {}, "win32"), join(homeDir, "AppData", "Local", "hermes", ".env"));
 	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~/agents/hermes" }), join(homeDir, "agents", "hermes", ".env"));
 	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~" }), join(homeDir, ".env"));
 	const base = resolve("data-root");
@@ -1106,6 +1111,129 @@ test("Hermes home is resolved like Hermes does, expanding ~ and environment vari
 	assert.equal(resolveHermesHome(options, { HERMES_HOME: "relative-hermes" }), resolve("relative-hermes"));
 	// On other platforms, as in Python's expanduser, "~\\" is not a home prefix.
 	assert.equal(resolveHermesHome(options, { HERMES_HOME: "~\\agents" }, "linux"), resolve("~\\agents"));
+});
+
+/** A stand-in `hermes` on PATH that keeps its config in a JSON file and reports envPath as its .env. */
+async function withFakeHermes(envPath: string, run: (configFile: string) => Promise<void>, options: { refuseKeyEnv?: boolean } = {}): Promise<void> {
+	const root = await mkdtemp(join(tmpdir(), "phaseo-fake-hermes-"));
+	const configFile = join(root, "config.json");
+	await writeFile(configFile, "{}");
+	await writeFile(join(root, "hermes"), `#!/usr/bin/env node
+const fs = require("node:fs");
+const [, , group, action, key, value] = process.argv;
+const config = JSON.parse(fs.readFileSync(${JSON.stringify(configFile)}, "utf8"));
+const save = () => fs.writeFileSync(${JSON.stringify(configFile)}, JSON.stringify(config));
+if (group !== "config") process.exit(2);
+if (action === "env-path") { console.log(${JSON.stringify(envPath)}); process.exit(0); }
+if (action === "get") {
+	if (!(key in config)) { console.error("Config key not set: " + key); process.exit(1); }
+	console.log(JSON.stringify(config[key])); process.exit(0);
+}
+if (action === "set") {
+	if (key === "model.key_env" && ${JSON.stringify(Boolean(options.refuseKeyEnv))}) { console.error("Unknown config key: model.key_env"); process.exit(1); }
+	config[key] = value; save(); process.exit(0);
+}
+if (action === "unset") { delete config[key]; save(); process.exit(0); }
+process.exit(2);
+`, { mode: 0o755 });
+	const previous = { PATH: process.env.PATH, PHASEO_API_KEY: process.env.PHASEO_API_KEY };
+	process.env.PATH = `${root}${delimiter}${process.env.PATH ?? ""}`;
+	process.env.PHASEO_API_KEY = "phaseo_v1_sk_fake";
+	try {
+		await run(configFile);
+	} finally {
+		process.env.PATH = previous.PATH;
+		if (previous.PHASEO_API_KEY === undefined) delete process.env.PHASEO_API_KEY;
+		else process.env.PHASEO_API_KEY = previous.PHASEO_API_KEY;
+		await rm(root, { recursive: true, force: true });
+	}
+}
+
+const readJson = async (path: string) => JSON.parse(await readFile(path, "utf8"));
+
+test("Hermes setup points model.key_env at the key, writes where Hermes reads, and remove restores", { skip: process.platform === "win32" }, async () => {
+	const root = await mkdtemp(join(tmpdir(), "phaseo-hermes-adapter-"));
+	try {
+		const homeDir = join(root, "home");
+		const envPath = join(root, "hermes-home", ".env");
+		await mkdir(dirname(envPath), { recursive: true });
+		await writeFile(envPath, "OTHER=1\n");
+		await withFakeHermes(envPath, async (configFile) => {
+			await writeFile(configFile, JSON.stringify({ "model.provider": "openrouter" }));
+			await hermesAdapter.applySetup!({ homeDir, model: "openai/gpt-5" });
+			assert.deepEqual(await readJson(configFile), {
+				"model.provider": "custom",
+				"model.base_url": "https://api.phaseo.app/v1",
+				"model.default": "openai/gpt-5",
+				"model.key_env": "OPENAI_API_KEY",
+			});
+			assert.equal(await readFile(envPath, "utf8"), `OTHER=1\n${block("phaseo_v1_sk_fake")}`);
+			const state = await readJson(join(homeDir, ".config", "phaseo", "integrations", "hermes.json"));
+			assert.equal(state.envPath, envPath);
+			assert.deepEqual(state.values["model.key_env"], { present: false });
+
+			await hermesAdapter.applyRemove!({ homeDir });
+			assert.deepEqual(await readJson(configFile), { "model.provider": "openrouter" });
+			assert.equal(await readFile(envPath, "utf8"), "OTHER=1\n");
+		});
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
+});
+
+test("Hermes re-setup moves the key from a path Hermes does not read and records model.key_env", { skip: process.platform === "win32" }, async () => {
+	const root = await mkdtemp(join(tmpdir(), "phaseo-hermes-move-"));
+	try {
+		const homeDir = join(root, "home");
+		const oldEnv = join(homeDir, ".hermes", ".env");
+		const envPath = join(root, "local-app-data", "hermes", ".env");
+		await mkdir(dirname(oldEnv), { recursive: true });
+		await mkdir(dirname(envPath), { recursive: true });
+		await writeFile(oldEnv, `A=1\n${block("phaseo_v1_sk_old")}`);
+		await writeFile(envPath, "B=2\n");
+		const statePath = join(homeDir, ".config", "phaseo", "integrations", "hermes.json");
+		await mkdir(dirname(statePath), { recursive: true });
+		// State written by the previous version: no model.key_env, and the wrong .env on Windows.
+		await writeFile(statePath, JSON.stringify({
+			version: 1,
+			values: { "model.provider": { present: false }, "model.base_url": { present: false }, "model.default": { present: false } },
+			envPath: oldEnv,
+			keyFormat: "managed-block",
+		}));
+		await withFakeHermes(envPath, async (configFile) => {
+			await writeFile(configFile, JSON.stringify({ "model.provider": "custom", "model.base_url": "https://api.phaseo.app/v1", "model.default": "m" }));
+			await hermesAdapter.applySetup!({ homeDir });
+			assert.equal(await readFile(oldEnv, "utf8"), "A=1\n");
+			assert.equal(await readFile(envPath, "utf8"), `B=2\n${block("phaseo_v1_sk_fake")}`);
+			const state = await readJson(statePath);
+			assert.equal(state.envPath, envPath);
+			assert.deepEqual(state.values["model.key_env"], { present: false });
+			assert.equal((await readJson(configFile))["model.key_env"], "OPENAI_API_KEY");
+
+			await hermesAdapter.applyRemove!({ homeDir });
+			assert.deepEqual(await readJson(configFile), {});
+			assert.equal(await readFile(envPath, "utf8"), "B=2\n");
+		});
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
+});
+
+test("Hermes setup fails cleanly when Hermes cannot set model.key_env", { skip: process.platform === "win32" }, async () => {
+	const root = await mkdtemp(join(tmpdir(), "phaseo-hermes-old-"));
+	try {
+		const homeDir = join(root, "home");
+		const envPath = join(root, "hermes-home", ".env");
+		await withFakeHermes(envPath, async (configFile) => {
+			await writeFile(configFile, JSON.stringify({ "model.default": "previous/model" }));
+			await assert.rejects(hermesAdapter.applySetup!({ homeDir }), /could not set model\.key_env.*hermes update/);
+			assert.deepEqual(await readJson(configFile), { "model.default": "previous/model" });
+			assert.equal(await readFile(envPath, "utf8"), "");
+			await assert.rejects(stat(join(homeDir, ".config", "phaseo", "integrations", "hermes.json")), { code: "ENOENT" });
+		}, { refuseKeyEnv: true });
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
 });
 
 test("Hermes home accepts ~\\ on Windows", { skip: process.platform !== "win32" }, () => {
