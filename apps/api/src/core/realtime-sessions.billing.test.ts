@@ -514,18 +514,26 @@ describe("realtime price cards", () => {
 	});
 
 	it("quotes a review from recorded usage and marks it complete only when nothing is outstanding", async () => {
-		const session = { model_id: "openai/gpt-realtime-2.1", provider: "openai", metadata: { price_card: openaiCard } };
+		const session = { model_id: "openai/gpt-realtime-2.1", provider: "openai", metadata: { price_card: openaiCard },
+			disconnect_reason: "realtime_settlement_retry_exhausted" };
 		const done = await quoteRealtimeSessionRecovery({ ...session, usage: { input_audio_tokens: 100_000, output_audio_tokens: 200_000 } });
 		expect(done).toMatchObject({ costNanos: 3_000_000_000, complete: true });
 		const inFlight = await quoteRealtimeSessionRecovery({ ...session,
 			usage: { input_audio_tokens: 100_000, output_audio_tokens: 200_000, assistant_response_in_flight: true } });
 		expect(inFlight.complete).toBe(false);
+		// A lost relay leaves only the last checkpoint, which can look clean
+		// between turns; it is priced for an admin but never settled on its own.
+		const lostRelay = await quoteRealtimeSessionRecovery({ ...session,
+			disconnect_reason: "realtime_relay_state_missing_during_reconciliation",
+			usage: { input_audio_tokens: 100_000, output_audio_tokens: 200_000 } });
+		expect(lostRelay).toMatchObject({ costNanos: 3_000_000_000, complete: false });
 
 		const elevenCard = makeCard({ provider: "elevenlabs", model: "eleven-labs/eleven-realtime-v1-mini", rules: [
 			{ meter: "audio_minutes", unit: "minute", unit_size: 1, price_per_unit: "0.08" },
 			{ meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: "0.2" },
 			{ meter: "output_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: "6" }] });
-		const eleven = { model_id: "eleven-labs/eleven-realtime-v1-mini", provider: "elevenlabs", metadata: { price_card: elevenCard } };
+		const eleven = { model_id: "eleven-labs/eleven-realtime-v1-mini", provider: "elevenlabs", metadata: { price_card: elevenCard },
+			disconnect_reason: "realtime_settlement_retry_exhausted" };
 		// Until ElevenLabs reports the conversation, an admin decides.
 		expect((await quoteRealtimeSessionRecovery({ ...eleven, usage: { session_audio_ms: 60_000, audio_ms: 60_000 } })).complete).toBe(false);
 		// Its reported charge is a floor, as in normal settlement.

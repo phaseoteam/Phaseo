@@ -41,7 +41,7 @@ export function quoteRealtimeRecovery(model: string, usage: LiveUsage, metadata:
 
 type RecoveryQuote = { costNanos: number; lines: Record<string, unknown>[] | unknown[]; complete: boolean; billableUsage: Record<string, unknown> };
 type RecoverySession = { session_id: string; workspace_id: string; model_id: string; provider: string | null;
-	status: string; usage: Record<string, unknown>; metadata: Record<string, unknown> };
+	status: string; disconnect_reason: string | null; usage: Record<string, unknown>; metadata: Record<string, unknown> };
 
 // Runs independently of the browser/relay. Complete evidence settles the review
 // (which also restores the key); anything else remains in the admin queue.
@@ -60,7 +60,7 @@ export async function refreshRealtimeBillingReviews(
 	for (const review of data ?? []) {
 		try {
 			const { data: session, error: readError } = await db.from("gateway_realtime_sessions")
-				.select("session_id,workspace_id,model_id,provider,status,usage,metadata").eq("session_id", review.session_id).single();
+				.select("session_id,workspace_id,model_id,provider,status,disconnect_reason,usage,metadata").eq("session_id", review.session_id).single();
 			if (readError) throw readError;
 			if (!session || session.status !== "billing_unresolved") continue;
 			let quote: RecoveryQuote | null = null;

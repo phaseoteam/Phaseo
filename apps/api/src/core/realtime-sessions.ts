@@ -1479,15 +1479,18 @@ export async function realtimeConfirmedCostNanos(args: {
 /**
  * A billing review's quote for a non-GPT-Live session: its recorded usage
  * priced exactly as settlement would have priced it, including the relay's
- * metered-audio estimates. Complete means nothing is still in flight and an
- * ElevenLabs bill (when there is one) has arrived, so the review can settle
- * without an admin.
+ * metered-audio estimates. Complete means the review can settle without an
+ * admin: the relay had its final usage and only settlement kept failing,
+ * nothing is still in flight, and an ElevenLabs bill (when there is one) has
+ * arrived. Other reviews (relay state lost, usage still pending) may hold a
+ * stale checkpoint, so they stay with an admin.
  */
 export async function quoteRealtimeSessionRecovery(session: {
 	model_id: string;
 	provider: string | null;
 	usage: Record<string, unknown> | null;
 	metadata: Record<string, unknown> | null;
+	disconnect_reason?: string | null;
 }) {
 	const provider = providerFromModel(session.model_id, session.provider);
 	if (!provider) throw new Error("recovery_provider_not_supported");
@@ -1495,7 +1498,8 @@ export async function quoteRealtimeSessionRecovery(session: {
 	const priced = priceRealtimeUsage(usage, await realtimeSessionPriceCard(provider, session), provider);
 	const costNanos = Math.max(pricedTotalNanos(priced), Math.round(toFiniteNumber(usage.provider_cost_nanos) ?? 0));
 	if (!Number.isSafeInteger(costNanos) || costNanos < 0) throw new Error("recovery_cost_invalid");
-	let complete = !(provider === ELEVENLABS_PROVIDER && usage.provider_cost_status !== "reconciled");
+	let complete = session.disconnect_reason === "realtime_settlement_retry_exhausted"
+		&& !(provider === ELEVENLABS_PROVIDER && usage.provider_cost_status !== "reconciled");
 	try {
 		assertRealtimeBillingMetersPresent({ provider, usage, costNanos, estimated: usage.billing_estimated === true });
 	} catch {
