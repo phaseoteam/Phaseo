@@ -206,7 +206,7 @@ function useScrolledPast(viewport: RefObject<HTMLElement | null>, target: RefObj
 export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem; snapshot: FactorySnapshot; route: Route; narrow?: boolean }) {
 	const [error, setError] = useState<string | null>(null);
 	const viewport = useRef<HTMLDivElement>(null);
-	const titleRef = useRef<HTMLHeadingElement>(null);
+	const titleRef = useRef<HTMLDivElement>(null);
 	const scrolled = useScrolledPast(viewport, titleRef, item.id);
 	const detailsRef = useRef<HTMLDListElement>(null);
 	const detailsFit = useFitsBelow(viewport, detailsRef, DETAILS_TOP, `${item.id}:${route.tab ?? "overview"}`);
@@ -333,11 +333,14 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 				</div>
 			</div>
 
+			{/* Watched for the bar: a wrapper that stays, since editing the title swaps the heading out. */}
+			<div ref={titleRef}>
 			<TitleEditor item={item}>
-				<h1 ref={titleRef} data-selectable className="min-w-0 text-[26px] leading-tight font-bold tracking-tight">
+				<h1 data-selectable className="min-w-0 text-[26px] leading-tight font-bold tracking-tight">
 					<span className="mr-2.5 font-medium text-muted-foreground/70 tabular-nums">{item.number}</span>{item.title}
 				</h1>
 			</TitleEditor>
+			</div>
 
 			<div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
 				<span className={cn("flex items-center gap-1.5 font-medium", item.state === "open" ? "text-success" : item.state === "merged" || (item.kind === "issue" && item.state === "closed") ? MERGED : "text-muted-foreground")}>
