@@ -1,11 +1,11 @@
 /* Phaseo Factory design system. Tokens mirror apps/web/src/app/globals.css and the
-   desktop app, so Factory, the desktop app and the website share one visual language.
-   Their values come from packages/shared/app-kit/src/theme/tokens.ts; its
-   test/theme.test.mjs checks the :root and .dark blocks below against it. */
+   desktop app, so Factory, the desktop app and the website share one visual language. */
 @layer theme, base, components, utilities;
 
 @import "tailwindcss";
 @import "tw-animate-css";
+/* The theme's colours and radius, generated from packages/shared/app-kit/src/theme/tokens.ts. */
+@import "./theme-tokens.generated.css";
 
 @font-face { font-family: Montserrat; font-style: normal; font-weight: 400; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-Regular.ttf") format("truetype"); }
 @font-face { font-family: Montserrat; font-style: normal; font-weight: 600; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-SemiBold.ttf") format("truetype"); }
@@ -44,71 +44,13 @@
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
 	--radius-xl: calc(var(--radius) + 4px);
+	--radius-2xl: calc(var(--radius) * 1.8);
 	--font-sans: Montserrat, ui-sans-serif, system-ui, sans-serif;
 	--font-mono: "Cascadia Code", "SF Mono", Consolas, ui-monospace, monospace;
 	--text-2xs: 0.6875rem;
 	--text-2xs--line-height: calc(1 / 0.6875);
 	--text-3xs: 0.625rem;
 	--text-3xs--line-height: calc(0.875 / 0.625);
-}
-
-:root {
-	--radius: 0.625rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.145 0 0);
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.145 0 0);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.145 0 0);
-	--primary: #0069a8;
-	--primary-foreground: #ffffff;
-	--secondary: oklch(0.967 0.001 286.375);
-	--secondary-foreground: oklch(0.21 0.006 285.885);
-	--muted: oklch(0.97 0 0);
-	--muted-foreground: oklch(0.556 0 0);
-	--accent: oklch(0.97 0 0);
-	--accent-foreground: oklch(0.205 0 0);
-	--destructive: oklch(0.577 0.245 27.325);
-	--success: oklch(0.6 0.15 150);
-	--warning: oklch(0.7 0.15 70);
-	--info: oklch(0.546 0.245 262.881);
-	--border: oklch(0.922 0 0);
-	--input: oklch(0.922 0 0);
-	--ring: #0069a8;
-	--sidebar: oklch(0.985 0 0);
-	--sidebar-foreground: oklch(0.145 0 0);
-	--sidebar-accent: oklch(0.95 0 0);
-	--sidebar-accent-foreground: oklch(0.205 0 0);
-	--sidebar-border: oklch(0.922 0 0);
-}
-
-.dark {
-	--background: oklch(0.145 0 0);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.205 0 0);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.205 0 0);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: #0078b8;
-	--primary-foreground: #ffffff;
-	--secondary: oklch(0.274 0.006 286.033);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.269 0 0);
-	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
-	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--success: oklch(0.72 0.17 150);
-	--warning: oklch(0.8 0.15 80);
-	--info: oklch(0.707 0.165 254.624);
-	--border: oklch(1 0 0 / 10%);
-	--input: oklch(1 0 0 / 15%);
-	--ring: #0078b8;
-	--sidebar: oklch(0.17 0 0);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.25 0 0);
-	--sidebar-accent-foreground: oklch(0.985 0 0);
-	--sidebar-border: oklch(1 0 0 / 8%);
 }
 
 @layer base {
@@ -217,14 +159,18 @@
 		list-style: none;
 		margin-left: -1.25em;
 	}
+	/* The website's markdown links (modelMarkdown.tsx): body colour with a faint underline, the accent on hover. */
 	.item-markdown a {
-		color: var(--info);
+		color: var(--foreground);
+		font-weight: 500;
 		text-decoration: underline;
-		text-decoration-color: color-mix(in oklch, var(--info) 40%, transparent);
-		text-underline-offset: 2px;
+		text-decoration-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+		text-underline-offset: 4px;
+		transition: color 150ms, text-decoration-color 150ms;
 	}
 	.item-markdown a:hover {
-		text-decoration-color: currentColor;
+		color: var(--primary);
+		text-decoration-color: var(--primary);
 	}
 	.item-markdown blockquote {
 		border-left: 3px solid var(--border);

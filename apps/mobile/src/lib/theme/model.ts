@@ -1,10 +1,11 @@
 import {
-  ACCENT_CHART_MIXES,
+  accentFor,
   DARK_PALETTES,
   DEFAULT_THEME,
   LIGHT_PALETTES,
+  linkColour,
   PALETTE_TOKENS,
-  SURFACE_TOKENS,
+  paletteFor,
   THEME_PRESETS,
   type DarkPalette,
   type LightPalette,
@@ -12,7 +13,7 @@ import {
   type ThemeFields,
   type ThemePreset,
 } from "@phaseo/app-kit/theme";
-import { alphaOf, composite, contrastRatio, isHexColour, mixOklch, readableForegroundForAccent, readableOn, toHex } from "./colour";
+import { alphaOf, composite, contrastRatio, isHexColour, readableForegroundForAccent, toHex } from "./colour";
 
 /**
  * The website's theme model (apps/web/src/lib/displayPreferences.ts and the Appearance settings): a
@@ -30,6 +31,9 @@ export {
   THEME_PRESETS,
 } from "@phaseo/app-kit/theme";
 export type { DarkPalette, LightPalette, Scheme, ThemeFields, ThemePreset } from "@phaseo/app-kit/theme";
+// The Phaseo theme's CSS variables are worked out in app-kit too, so scripts/sync-theme-tokens.mjs can
+// write them into global.css.
+export { accentFor, linkColour, paletteFor, surfacesFor, themeVariables } from "@phaseo/app-kit/theme";
 
 export const THEME_MODES = ["system", "light", "dark"] as const;
 export type ThemeMode = (typeof THEME_MODES)[number];
@@ -75,32 +79,8 @@ export const activePreset = (theme: ThemeFields) => THEME_PRESETS.find((preset) 
 export const presetFields = ({ lightPalette, darkPalette, lightAccent, darkAccent }: ThemePreset): ThemeFields =>
   ({ lightPalette, darkPalette, lightAccent, darkAccent });
 
-export function paletteFor(theme: ThemeFields, scheme: Scheme) {
-  return scheme === "light" ? PALETTE_TOKENS.light[theme.lightPalette] : PALETTE_TOKENS.dark[theme.darkPalette];
-}
-
-export const accentFor = (theme: ThemeFields, scheme: Scheme) => scheme === "light" ? theme.lightAccent : theme.darkAccent;
-
-/**
- * Contrast for text in the accent colour (links, selected checks) on the palette's surfaces. Light
- * surfaces use WCAG AA (4.5:1). Dark ones use 7:1, so links stay lighter than buttons filled with the
- * same accent, as the app's hand-tuned dark link was before themes.
- */
-const LINK_CONTRAST: Record<Scheme, number> = { light: 4.5, dark: 7 };
-
 /** Below this an accent fill is hard to make out against the background (WCAG's 3:1 for UI parts). */
 export const ACCENT_CONTRAST_MINIMUM = 3;
-
-/** The surfaces text sits on: the background, cards and popovers, as opaque `#rrggbb`. */
-export function surfacesFor(theme: ThemeFields, scheme: Scheme): string[] {
-  const palette = paletteFor(theme, scheme);
-  return [palette.background, palette.card, palette.popover].map(toHex);
-}
-
-/** The accent as readable text on the palette: the accent itself when it passes, else lightened or darkened. */
-export function linkColour(theme: ThemeFields, scheme: Scheme): string {
-  return readableOn(accentFor(theme, scheme), surfacesFor(theme, scheme), LINK_CONTRAST[scheme], scheme === "dark" ? "lighter" : "darker");
-}
 
 export type AccentCheck = { ratio: number; low: boolean; foreground: "#ffffff" | "#0b0b0b" };
 
@@ -111,26 +91,6 @@ export function checkAccent(accent: string, palette: LightPalette | DarkPalette,
     : PALETTE_TOKENS.dark[isOneOf(palette, DARK_PALETTES) ? palette : "phaseo"];
   const ratio = contrastRatio(accent, toHex(tokens.background));
   return { ratio, low: ratio < ACCENT_CONTRAST_MINIMUM, foreground: readableForegroundForAccent(accent) };
-}
-
-/**
- * Every colour token the theme sets for one scheme, as `--color-*` CSS variables. Surfaces come from the
- * palette; primary, ring and the charts from the accent, derived as the website's globals.css does
- * (`:root:not(.dark)` and `:root.dark`); link is the accent made readable as text.
- */
-export function themeVariables(theme: ThemeFields, scheme: Scheme): Record<`--color-${string}`, string> {
-  const palette = paletteFor(theme, scheme);
-  const accent = accentFor(theme, scheme);
-  const variables: Record<`--color-${string}`, string> = {};
-  for (const token of SURFACE_TOKENS) variables[`--color-${token}`] = palette[token];
-  variables["--color-primary"] = accent;
-  variables["--color-primary-foreground"] = readableForegroundForAccent(accent);
-  variables["--color-ring"] = accent;
-  variables["--color-link"] = linkColour(theme, scheme);
-  for (const [token, { mixWith, accentWeight }] of Object.entries(ACCENT_CHART_MIXES)) {
-    variables[`--color-${token}`] = accentWeight === 1 ? accent : mixOklch(accent, toHex(palette[mixWith]), accentWeight);
-  }
-  return variables;
 }
 
 export type PreviewColours = {
