@@ -30,6 +30,9 @@ export type GateCheck = {
     limitMetric?: "requests" | "cost" | "soft_blocked" | null;
     currentValue?: number | null;
     limitValue?: number | null;
+    /** The department whose budget was reached (`department_*` reasons only). */
+    departmentId?: string | null;
+    departmentName?: string | null;
     buckets?: {
         daily?: {
             windowStart: string | null;
@@ -696,6 +699,11 @@ export type PipelineContext = {
 	 * model fallbacks of one HTTP request reuse the primary attempt's admission.
 	 */
 	rateLimitAdmissionId?: string;
+	/**
+	 * Spend-limit coordinator admission (GATEWAY_SPEND_LIMIT_DO_MODE = "enforce" only). Recorded on
+	 * success, released on failure; one never settled stops holding allowance on its own.
+	 */
+	spendAdmission?: import("@core/spend-limits").SpendAdmission | null;
 	/** Concurrency slots this HTTP request holds; shared by its fallback attempts and released by the entrypoint. */
 	rateLimitConcurrency?: import("@core/customer-rate-limits").ConcurrencyLeases;
     /** Request-owned diagnostics; never cache or serialize. Not enabled by public headers. */
