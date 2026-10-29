@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowUpRight, ChevronDown, FastForward, FolderGit2, GitBranch, MessageSquare } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ChevronDown, FastForward, FolderGit2, GitBranch, MessageSquare, Square } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { autopilot, autopilotFits, lastRun, linkedItem, nextActions, stageAgent } from "../../../shared/actions";
 import { matchingRule } from "../../../shared/intake";
@@ -234,6 +234,48 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 		{ id: "chat", label: "Chat", count: snapshot.chats.find((chat) => chat.itemId === item.id)?.messages.filter((message) => message.role === "you").length },
 	];
 
+	/** Who works on it, GitHub, and the next stage with every other stage under it: in the header, and in the bar once it's scrolled away. */
+	const controls = (size: "sm" | "default") => <>
+		{/* In the bar, the agent goes first when there isn't room for it and the title. */}
+		<span className={size === "sm" ? "hidden @2xl:contents" : "contents"}><AgentPicker snapshot={snapshot} value={item.assigneeId} allowNone onChange={(agentId) => void factory().assign(item.id, agentId)} /></span>
+		<GithubMenu item={item} />
+		<div className="flex">
+			{lead && !liveRun
+				? <ActionButton item={item} action={lead} size={size} onError={setError} />
+				: <Button variant="outline" size={size} disabled>{liveRun ? `${item.autopilot ? "Autopilot: " : ""}${stageLabel(liveRun.stage)} is running` : next ? "Waiting" : "Nothing to run"}</Button>}
+			<DropdownMenu>
+				<DropdownMenuTrigger render={<Button variant="outline" size={size} aria-label="Run a stage" className="ml-1 px-2"><ChevronDown className="size-3.5" /></Button>} />
+				<DropdownMenuContent align="end" className="w-64">
+					{liveRun && <>
+						<DropdownMenuItem onClick={() => void factory().cancelRun(liveRun.id)}>
+							<Square className="size-3.5" />
+							<span className="flex-1">Stop {stageLabel(liveRun.stage)}</span>
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+					</>}
+					<DropdownMenuGroup>
+						<DropdownMenuLabel>Run a stage{assignee ? ` with ${assignee.label}` : ""}</DropdownMenuLabel>
+						{stagesFor(item).map((stage) => <DropdownMenuItem key={stage.id} onClick={() => void run(stage.id)}>
+							<StatusMark status={item.stages[stage.id].status} className="size-3.5" />
+							<span className="flex-1">{stage.label}</span>
+							<span className="text-2xs text-muted-foreground">{stage.output}</span>
+						</DropdownMenuItem>)}
+					</DropdownMenuGroup>
+					{autopilotFits(item) && <>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem onClick={() => void runAction(item, autopilot(item)).catch((cause: unknown) => setError(errorText(cause)))}>
+							<FastForward className="size-3.5" />
+							<span className="min-w-0 flex-1">
+								<span className="block">Autopilot to a pull request</span>
+								<span className="block text-2xs text-muted-foreground">Every stage in turn, then a draft pull request</span>
+							</span>
+						</DropdownMenuItem>
+					</>}
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</div>
+	</>;
+
 	return <ScrollArea className="min-h-0 min-w-0 flex-1" viewportRef={viewport}>
 		<div className="@container px-4 pt-6 pb-16 @xl:px-6 @3xl:px-8">
 			{/* Takes no room: the bar floats over the top of the view once the title has scrolled away. */}
@@ -244,12 +286,9 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 						<span className="shrink-0 text-sm font-medium text-muted-foreground tabular-nums">#{item.number}</span>
 						<span className="min-w-0 truncate text-sm font-semibold">{item.title}</span>
 					</button>
-					<div className="flex shrink-0 items-center gap-2">
-						{lead && !liveRun
-							? <ActionButton item={item} action={lead} onError={setError} />
-							: liveRun && <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><StatusMark status="running" className="size-3.5" />{stageLabel(liveRun.stage)} is running</span>}
-						<GithubMenu item={item} />
-					</div>
+					<div className="flex shrink-0 items-center gap-2">{controls("sm")}</div>
+					{/* The page's own error line is scrolled away, so the bar says what went wrong. */}
+					{error && <p className="absolute inset-x-0 top-full truncate border-b bg-background/95 px-4 py-1.5 text-xs text-destructive backdrop-blur @xl:px-6 @3xl:px-8">{error}</p>}
 				</div>
 			</div>
 			{narrow && <a href={href({ page: "work" })} className="-mt-2 mb-3 -ml-1.5 inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground"><ArrowLeft className="size-4" />All work</a>}
@@ -267,36 +306,7 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 				<span>{item.kind === "pull" ? "Pull request" : "Issue"} #{item.number}</span>
 				</div>
 				<div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-				<AgentPicker snapshot={snapshot} value={item.assigneeId} allowNone onChange={(agentId) => void factory().assign(item.id, agentId)} />
-				<GithubMenu item={item} />
-				<div className="flex">
-					{lead && !liveRun
-						? <ActionButton item={item} action={lead} size="default" onError={setError} />
-						: <Button variant="outline" disabled>{liveRun ? `${item.autopilot ? "Autopilot: " : ""}${stageLabel(liveRun.stage)} is running` : next ? "Waiting" : "Nothing to run"}</Button>}
-					<DropdownMenu>
-						<DropdownMenuTrigger render={<Button variant="outline" aria-label="Run a stage" className="ml-1 px-2"><ChevronDown className="size-3.5" /></Button>} />
-						<DropdownMenuContent align="end" className="w-64">
-							<DropdownMenuGroup>
-								<DropdownMenuLabel>Run a stage{assignee ? ` with ${assignee.label}` : ""}</DropdownMenuLabel>
-								{stagesFor(item).map((stage) => <DropdownMenuItem key={stage.id} onClick={() => void run(stage.id)}>
-									<StatusMark status={item.stages[stage.id].status} className="size-3.5" />
-									<span className="flex-1">{stage.label}</span>
-									<span className="text-2xs text-muted-foreground">{stage.output}</span>
-								</DropdownMenuItem>)}
-							</DropdownMenuGroup>
-							{autopilotFits(item) && <>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem onClick={() => void runAction(item, autopilot(item)).catch((cause: unknown) => setError(errorText(cause)))}>
-									<FastForward className="size-3.5" />
-									<span className="min-w-0 flex-1">
-										<span className="block">Autopilot to a pull request</span>
-										<span className="block text-2xs text-muted-foreground">Every stage in turn, then a draft pull request</span>
-									</span>
-								</DropdownMenuItem>
-							</>}
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
+					{controls("default")}
 				</div>
 			</div>
 
