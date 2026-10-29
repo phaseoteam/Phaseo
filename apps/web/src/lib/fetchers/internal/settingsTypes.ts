@@ -715,7 +715,7 @@ export type SettingsWorkspaceBudget = {
 	created_at: string;
 	updated_at: string;
 };
-/** A department budget: alerts at about 80% and 100%, never blocks (web-api settings-budgets). */
+/** A department budget: alerts at about 80% and 100%, and at 100% blocks the department's API-key requests (web-api settings-budgets). */
 export type SettingsDepartmentBudget = Omit<SettingsWorkspaceBudget, "interval"> & {
 	interval: Exclude<WorkspaceBudgetInterval, "lifetime">;
 	department_id: string;

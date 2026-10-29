@@ -1,9 +1,12 @@
-// Department spend budgets. They alert only: the 15-minute sweep
-// (sweep_department_budget_alerts) pushes owners and admins at about 80% and
-// 100%, and nothing here touches the gateway, so changes need no cache
-// invalidation. Spend comes from workspace_department_budget_status, which
-// counts a department's linked keys plus its members' unlinked keys and OAuth
-// requests, from the hourly usage rollup.
+// Department spend budgets. The gateway's spend-limit coordinator refuses
+// API-key requests that count toward a department once its budget is used
+// (batch, realtime and OAuth requests excepted). It reseeds budgets from
+// gateway_spend_limit_seed about every minute, so changes here need no cache
+// invalidation. The 15-minute sweep (sweep_department_budget_alerts) pushes
+// owners and admins at about 80% and 100%. Spend shown here comes from
+// workspace_department_budget_status, which counts a department's linked keys
+// plus its members' unlinked keys and OAuth requests, from the hourly usage
+// rollup.
 import { Hono } from "hono";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";

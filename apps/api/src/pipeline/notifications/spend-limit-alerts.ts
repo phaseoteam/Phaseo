@@ -96,8 +96,8 @@ export async function runSpendLimitWarningSweep(): Promise<SpendLimitSweepSummar
 export type DepartmentBudgetSweepSummary = { budgets: number; alerted: number };
 
 /**
- * Department budgets alert only: sweep_department_budget_alerts sends the 80% warning and the
- * 100% alert from the same hourly rollup, since no rejection ever records the second.
+ * sweep_department_budget_alerts sends the department budget 80% warning and the 100% alert from
+ * the same hourly rollup: the gateway's department-budget rejections send no push themselves.
  */
 export async function runDepartmentBudgetAlertSweep(): Promise<DepartmentBudgetSweepSummary> {
 	const { data, error } = await getSupabaseAdmin().rpc("sweep_department_budget_alerts", {});

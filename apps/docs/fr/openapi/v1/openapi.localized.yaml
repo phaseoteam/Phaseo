@@ -4869,7 +4869,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: Creates a daily, weekly, or monthly spend budget for one department. Owners and admins get a mobile push at about 80% and at 100%. Department budgets do not block requests.
+      description: Crée un budget de dépenses quotidien, hebdomadaire ou mensuel pour un service. Une fois le budget épuisé, les requêtes par clé API imputées au service renvoient 429 key_limit_exceeded jusqu’à la réinitialisation du budget. Les tâches par lots, les sessions en temps réel et les requêtes OAuth ne sont pas bloquées. Si la vérification du budget est brièvement indisponible, les requêtes sont acceptées plutôt que refusées. Les propriétaires et les administrateurs reçoivent une notification push sur mobile à environ 80 % et à 100 %.
       requestBody:
         required: true
         content:
@@ -4949,7 +4949,7 @@ paths:
         - Gateway
       operationId: deleteDepartmentBudget
       summary: Delete a department budget
-      description: Removes a department budget and its alerts.
+      description: Supprime un budget de service. D’ici une minute environ, les requêtes ne sont plus refusées à cause de lui et ses alertes s’arrêtent.
       responses:
         '200':
           description: Department budget deleted

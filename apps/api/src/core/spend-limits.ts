@@ -25,6 +25,7 @@ import type { GateCheck } from "@pipeline/before/types";
 import { LeasePool, type LeaseTransport } from "@core/lease-pool";
 import type { LeaseAcquireResult, LeaseReturn, LeaseVector } from "@core/lease-pool";
 import { dispatchBackground, getBindingsIfConfigured } from "@/runtime/env";
+import { awaitShared } from "@core/shared-wait";
 import type { GatewayBindings } from "@/runtime/env.types";
 import type { SpendDenial, SpendLeaseMeta, SpendRecordEntry, SpendRecordResult } from "@core/spend-limits.shared";
 
@@ -391,12 +392,30 @@ export function enforcedSpendLimit(args: {
 		if (!args.slot || args.internal || !args.keyId || !KEY_ID.test(args.keyId)) return null;
 		if (args.slot.decision) return args.slot.decision;
 		if (currentMode() !== "enforce") return null;
-		args.slot.decision = checkSpendLimit({ workspaceId: args.workspaceId, keyId: args.keyId, admissionId: `${args.requestId}:${args.slot.attempt}` });
+		args.slot.decision = boundedDecision(checkSpendLimit({ workspaceId: args.workspaceId, keyId: args.keyId, admissionId: `${args.requestId}:${args.slot.attempt}` }));
 		return args.slot.decision;
 	} catch (error) {
 		console.warn("spend_limit_enforce_failed", { error: error instanceof Error ? error.message : String(error) });
 		return null;
 	}
+}
+
+/** Longest a request waits for the coordinator (a cold seed reads Postgres) before the legacy check decides. */
+export const ENFORCE_WAIT_MS = 2_000;
+
+/**
+ * The coordinator's decision, or "unavailable" once ENFORCE_WAIT_MS passes so a stalled object or
+ * seed falls back to the legacy check instead of stalling the request. A late admission is
+ * released when it arrives.
+ */
+async function boundedDecision(decision: Promise<SpendLimitDecision>): Promise<SpendLimitDecision> {
+	const result = await awaitShared(decision, ENFORCE_WAIT_MS);
+	if (result.settled) return result.value;
+	background(decision.then((late) => {
+		if (late.outcome === "allowed") releaseSpend(late.admission);
+	}));
+	console.warn("spend_limit_enforce_timeout", { waitedMs: ENFORCE_WAIT_MS });
+	return { outcome: "unavailable", keyLimit: null, admission: null, error: "spend_limit_timeout" };
 }
 
 /** The admission a slot's decision allowed, if any (for recordSpend / releaseSpend). */
