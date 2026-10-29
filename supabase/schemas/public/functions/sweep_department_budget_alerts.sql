@@ -8,11 +8,13 @@ CREATE OR REPLACE FUNCTION public.sweep_department_budget_alerts (
   AS $function$
 -- Sends a money push to owners and admins once per department budget, period and limit value
 -- when the department reaches about 80% of the budget (department_budget_warning), and again
--- when it reaches 100% (department_budget_reached). Department budgets do not block requests, so
--- unlike workspace budgets the 100% alert comes from this sweep rather than a rejection, and
--- says requests keep running. Spend is workspace_department_budget_status's, which lags by up
--- to an hour, so the pushes say "about". No warning is sent once the budget is reached. A limit
--- changed mid-period can alert again. Only workspaces with a department budget are read.
+-- when it reaches 100% (department_budget_reached). The gateway refuses the department's API-key
+-- requests at 100% (batch, realtime and OAuth requests excepted) without sending a push, so the
+-- 100% alert comes from this sweep and says those requests are refused until the budget resets.
+-- Spend is workspace_department_budget_status's, which lags by up to an hour, so the pushes say
+-- "about" and can arrive after blocking has started. No warning is sent once the budget is
+-- reached. A limit changed mid-period can alert again. Only workspaces with a department budget
+-- are read.
 declare
   v_budgets integer;
   v_alerted integer := 0;
@@ -65,7 +67,7 @@ begin
               else d.name || ' is at about 80% of its ' || d.time_window || ' budget' end,
             'body', private.spend_limit_amount('cost', d.used) || ' of ' || private.spend_limit_amount('cost', d.limit_value)
               || d.so_far
-              || case when d.kind = 'department_budget_reached' then ' Requests keep running: department budgets send alerts but don''t block.' else '' end,
+              || case when d.kind = 'department_budget_reached' then ' Requests from the department''s API keys are now refused until the budget resets.' else '' end,
             'href', '/settings/usage/overview'
           ),
           'departmentBudgetId', d.budget_id, 'window', d.time_window, 'metric', 'cost',

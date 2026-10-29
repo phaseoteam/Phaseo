@@ -4869,7 +4869,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: Creates a daily, weekly, or monthly spend budget for one department. Owners and admins get a mobile push at about 80% and at 100%. Department budgets do not block requests.
+      description: ينشئ ميزانية إنفاق يومية أو أسبوعية أو شهرية لقسم واحد. بعد أن يستنفدها القسم، تُرجع طلبات مفاتيح API التي تُحتسب ضمنه 429 key_limit_exceeded حتى إعادة ضبط الميزانية. لا تُحظر مهام الدُفعات وجلسات الوقت الفعلي وطلبات OAuth. يتلقى المالكون والمسؤولون إشعارًا فوريًا على الهاتف عند نحو 80% وعند 100%.
       requestBody:
         required: true
         content:
@@ -4949,7 +4949,7 @@ paths:
         - Gateway
       operationId: deleteDepartmentBudget
       summary: Delete a department budget
-      description: Removes a department budget and its alerts.
+      description: يحذف ميزانية قسم. لن تُرفض الطلبات بسببها بعد ذلك، وتتوقف تنبيهاتها.
       responses:
         '200':
           description: Department budget deleted

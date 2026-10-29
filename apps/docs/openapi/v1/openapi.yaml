@@ -5118,8 +5118,10 @@ paths:
       summary: Create a department budget
       description: >-
         Creates a daily, weekly, or monthly spend budget for one department.
-        Owners and admins get a mobile push at about 80% and at 100%. Department
-        budgets do not block requests.
+        Once the department has used it, API-key requests that count toward the
+        department return 429 key_limit_exceeded until the budget resets. Batch
+        jobs, realtime sessions and OAuth requests are not blocked. Owners and
+        admins get a mobile push at about 80% and at 100%.
       requestBody:
         required: true
         content:
@@ -5199,7 +5201,9 @@ paths:
         - Gateway
       operationId: deleteDepartmentBudget
       summary: Delete a department budget
-      description: Removes a department budget and its alerts.
+      description: >-
+        Removes a department budget. Requests are no longer refused because of
+        it, and its alerts stop.
       responses:
         '200':
           description: Department budget deleted

@@ -33,7 +33,7 @@ API キーの日次・週次・月次のリクエスト数や支出の上限、�
 
 ワークスペースのオーナーと管理者は、ダッシュボードの[設定 → 予算](https://phaseo.app/settings/budgets)でも予算を設定、変更、削除できます。このページには、各予算のこれまでの支出、使用率、期間の予測、リセット日時が表示されます。日次・週次・月次の予算は UTC の区切り（深夜 0 時、月曜 00:00、毎月 1 日）でリセットされます。CLI からは `phaseo budgets create|update|delete` を使います。
 
-`/v1/department-budgets` API で管理する部門予算は、リクエストを拒否しません。部門の支出には、後述の部門レート制限と同じキーと OAuth リクエストが計上されます。日次、週次、または月次の予算の約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。支出は最大 1 時間遅れることがある使用量データに基づきます。
+部門予算は `/v1/department-budgets` API で管理します。部門の支出には、後述の部門レート制限と同じキーと OAuth リクエストが計上されます。部門が日次、週次、または月次の予算を使い切ると、その部門に計上される API キーのリクエストは、エラーコード `key_limit_exceeded` と理由 `department_daily_cost_budget_reached`、`department_weekly_cost_budget_reached`、または `department_monthly_cost_budget_reached` を含む `429` を返します。レスポンス本文の `department_id` と `department_name` フィールドで部門がわかり、`reset_at` と `Retry-After` で予算がいつリセットされるかがわかります。バッチジョブ、リアルタイムセッション、OAuth リクエストは部門予算でブロックされません。予算の約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。これらのアラートは最大 1 時間遅れることがある使用量データに基づくため、100% のアラートが届く前にリクエストが拒否されることがあります。
 
 オーナーと管理者は、部門予算を[設定 → 予算](https://phaseo.app/settings/budgets)で管理することも、Terraform プロバイダーの `phaseo_department_budget` リソースで管理することもできます。CLI からは `phaseo department-budgets` を使います。
 
@@ -86,7 +86,7 @@ BYOK リクエストには、ご自身のプロバイダーアカウントの制
 
 - Gateway のクォータは理由 `customer_requests_per_minute` または `free_requests_per_day` とともに `429` を返します。`Retry-After` の秒数だけ待ちます。クォータの適用が利用できない場合、Gateway は再試行の案内とともに `503` を返します。
 - キーの制限と予算は `key_limit_exceeded` と `reset_at` を含む `429` を返します。`Retry-After` がない場合、制限は自動ではリセットされません。再試行せず、制限を引き上げるか別のキーを使います。
-- 部門予算が `429` を返すことはありません。アラートを送るだけです。
+- 使い切った部門予算は `key_limit_exceeded`、理由 `department_<interval>_cost_budget_reached`、`department_id`、`department_name`、`reset_at` を含む `429` を返します。`Retry-After` の秒数だけ待つか、予算を引き上げます。バッチ、リアルタイム、OAuth のリクエストは部門予算でブロックされません。
 - ワークスペースのレート制限ポリシーは `rate_limit_exceeded`、`policy_id`、`limit_scope` を含む `429` を返します。`x-ratelimit-remaining-requests` は概算値です。
 - `Retry-After` は秒数または HTTP 日付です。再試行を予定する前に値を検証します。結果が不明な動画ジョブやバッチジョブは再送信せず、ステータスを確認します。
 </Visibility>
