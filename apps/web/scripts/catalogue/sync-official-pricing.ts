@@ -30,13 +30,6 @@ export function extractHtmlTableRows(html: string): string[][][] {
 	).filter((table) => table.length > 0);
 }
 
-function modelKey(value: unknown): string {
-	return normalized(value)
-		.replace(/\([^)]*\)/g, "")
-		.replace(/^models\//, "")
-		.replace(/[^a-z0-9]+/g, "");
-}
-
 function usd(value: string): number | null {
 	const match = value.match(/\$\s*(\d+(?:\.\d+)?)/);
 	if (!match) return null;
