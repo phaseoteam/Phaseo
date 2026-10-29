@@ -102,8 +102,9 @@ last two sections:
    `pnpm --filter @phaseo/docs validate:locales`,
    `pnpm --filter @phaseo/docs translation:freshness:check`,
    `pnpm --filter @phaseo/docs skills:check`, and `pnpm docs:public-safety`. Run `pnpm --filter @phaseo/web docs:search:index`
-   after title, description or heading changes.
-2. Run `pnpm docs:links`, or `mint broken-links` with the current CLI on Windows.
+   after title, description or heading changes, and `pnpm skills:validate` when a skill changes.
+2. For pages under `apps/docs`, run `pnpm docs:links`, or `mint broken-links` with the current CLI
+   on Windows. It does not check Markdown outside `apps/docs`, such as `docs/`; check those links by hand.
 3. Preview the page locally (see Development) and screenshot it in English and
    in one translated locale it affects. Add Arabic when layout changes, to check
    right-to-left.
