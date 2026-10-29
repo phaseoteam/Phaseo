@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({
 	fromCalls: [] as string[],
 	insertedRefreshTokens: [] as Array<Record<string, unknown>>,
 	refreshInsertError: null as { message?: string } | null,
-	rotationStatus: "invalid" as string,
+	rotationStatus: "invalid" as unknown,
 	rpcError: null as { message?: string } | null,
 	rpcCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
 	refreshLookupHashes: [] as string[],
@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
 	authorizationUpdateError: null as { message?: string } | null,
 	delegatedKeyRow: null as Record<string, unknown> | null,
 	revokedDelegatedKeyIds: [] as string[],
+	revokedRefreshKeyRows: [] as Array<{ key_id: string | null }>,
 	auditEvents: [] as Array<Record<string, unknown>>,
 	keyUpdates: [] as Array<{ payload: Record<string, unknown>; filters: unknown[][] }>,
 	renewedKeyRow: null as Record<string, unknown> | null,
@@ -59,7 +60,7 @@ vi.mock("@/runtime/env", () => ({
 					update: () => ({
 						in: () => ({
 							is: () => ({
-								select: () => ({
+								select: () => Object.assign(Promise.resolve({ data: state.revokedRefreshKeyRows, error: null }), {
 									maybeSingle: async () => ({
 										data: state.rotationRow,
 										error: null,
@@ -154,6 +155,11 @@ vi.mock("@/runtime/env", () => ({
 								filters.push([column, "eq", value]);
 								return chain;
 							},
+							in(column: string, values: unknown[]) {
+								if (column === "id") state.revokedDelegatedKeyIds.push(...values.map(String));
+								filters.push([column, "in", values]);
+								return chain;
+							},
 							gt(column: string, value: unknown) { filters.push([column, "gt", value]); return chain; },
 							select: () => chain,
 							maybeSingle: async () => {
@@ -203,6 +209,7 @@ describe("OAuth refresh rotation security", () => {
 		state.authorizationUpdateError = null;
 		state.delegatedKeyRow = null;
 		state.revokedDelegatedKeyIds.length = 0;
+		state.revokedRefreshKeyRows = [];
 		state.auditEvents.length = 0;
 		vi.resetModules();
 	});
@@ -328,7 +335,7 @@ describe("OAuth refresh rotation security", () => {
 		expect(result?.expires_in).toBe(7 * 24 * 60 * 60);
 		const rpcCall = state.rpcCalls.at(-1);
 		expect(rpcCall).toMatchObject({
-			name: "consume_oauth_code_and_issue_managed_key",
+			name: "consume_oauth_code_and_issue_delegated_grant",
 			args: {
 				p_code_id: "00000000-0000-0000-0000-000000000002",
 				p_user_id: "user_1",
@@ -344,6 +351,84 @@ describe("OAuth refresh rotation security", () => {
 			p_key_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
 		});
 		expect(rpcCall?.args.p_key_hash).not.toBe(result?.access_token);
+	});
+
+	it("returns a refresh token with the delegated key, stored hashed in the same transaction", async () => {
+		state.rotationStatus = "issued";
+		const { issueOAuthManagedKeyForAuthorizationCode, hashOAuthSecret } = await import("./service");
+
+		const before = Date.now();
+		const result = await issueOAuthManagedKeyForAuthorizationCode(
+			"00000000-0000-0000-0000-000000000005",
+			{ userId: "user_1", workspaceId: "ws_1", clientId: "partner_app", scopes: ["gateway:access"] },
+		);
+
+		expect(result?.refresh_token).toMatch(/^[A-Za-z0-9_-]{64}$/);
+		const args = state.rpcCalls.at(-1)?.args ?? {};
+		expect(args.p_refresh_token_hash).toBe(await hashOAuthSecret(String(result?.refresh_token)));
+		const refreshExpiresAt = Date.parse(String(args.p_refresh_expires_at));
+		expect(refreshExpiresAt - before).toBeGreaterThanOrEqual(90 * 24 * 60 * 60 * 1000 - 1000);
+		expect(refreshExpiresAt - before).toBeLessThanOrEqual(90 * 24 * 60 * 60 * 1000 + 1000);
+		// Seven-day access tokens, as before.
+		expect(result?.expires_in).toBe(7 * 24 * 60 * 60);
+	});
+
+	it("refreshes a delegated key in place: same key ID, new secret, new refresh token, no new key event", async () => {
+		const kid = "AbCdEf123456";
+		state.refreshRow = { ...state.refreshRow!, scopes: ["gateway:access"], key_id: "delegated_key_1" };
+		state.rotationStatus = { status: "rotated", kid, scopes: ["gateway:access"], resource: null };
+		const { rotateRefreshToken } = await import("./service");
+		const { hmacSecret } = await import("@/routes/auth.helpers");
+
+		const result = await rotateRefreshToken("refresh-token");
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) throw new Error("refresh failed");
+		const secret = result.tokens.access_token.match(new RegExp(`^phaseo_v1_sk_${kid}_([A-Za-z0-9]{40})$`))?.[1];
+		expect(secret).toBeTruthy();
+		expect(result.tokens).toMatchObject({ token_type: "Bearer", expires_in: 7 * 24 * 60 * 60, scope: "gateway:access" });
+		expect(result.tokens.refresh_token).not.toBe("refresh-token");
+		expect(state.rpcCalls).toHaveLength(1);
+		expect(state.rpcCalls[0]).toMatchObject({
+			name: "rotate_oauth_delegated_refresh_token",
+			args: { p_current_token_hash: "stored-refresh-hash", p_key_hash: await hmacSecret(secret!, "test-pepper") },
+		});
+		expect(state.insertedRefreshTokens).toEqual([]);
+		expect(state.auditEvents).toEqual([]);
+	});
+
+	it("leaves a reused delegated refresh token to the database, which ends its chain and key", async () => {
+		state.refreshRow = { ...state.refreshRow!, revoked_at: new Date().toISOString(), key_id: "delegated_key_1" };
+		state.rotationStatus = { status: "reused" };
+		const { rotateRefreshToken } = await import("./service");
+
+		await expect(rotateRefreshToken("refresh-token")).resolves.toEqual({ ok: false, reason: "invalid_grant" });
+		expect(state.rpcCalls.map((call) => call.name)).toEqual(["rotate_oauth_delegated_refresh_token"]);
+	});
+
+	it("refuses a delegated refresh the database rejects, such as for a revoked key", async () => {
+		state.refreshRow = { ...state.refreshRow!, key_id: "delegated_key_1" };
+		state.rotationStatus = { status: "invalid" };
+		const { rotateRefreshToken } = await import("./service");
+
+		await expect(rotateRefreshToken("refresh-token")).resolves.toEqual({ ok: false, reason: "invalid_grant" });
+	});
+
+	it("fails closed when the delegated rotation errors", async () => {
+		state.refreshRow = { ...state.refreshRow!, key_id: "delegated_key_1" };
+		state.rpcError = { message: "rotation failed" };
+		const { rotateRefreshToken } = await import("./service");
+
+		await expect(rotateRefreshToken("refresh-token")).rejects.toThrow("rotation failed");
+	});
+
+	it("revokes the delegated key when its refresh token is revoked", async () => {
+		state.revokedRefreshKeyRows = [{ key_id: "delegated_key_1" }];
+		const { revokeToken } = await import("./service");
+
+		await revokeToken("some-refresh-token");
+
+		expect(state.revokedDelegatedKeyIds).toEqual(["delegated_key_1"]);
 	});
 
 	it("records an OAuth-managed key as a new API key, so owners and admins are alerted", async () => {
@@ -419,7 +504,7 @@ describe("OAuth refresh rotation security", () => {
 
 		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
 		expect(state.rpcCalls.at(-1)).toMatchObject({
-			name: "consume_oauth_code_and_issue_managed_key",
+			name: "consume_oauth_code_and_issue_delegated_grant",
 			args: {
 				p_scopes: ["models:read", "pricing:read"],
 				p_resource: "https://mcp.phaseo.app/mcp",

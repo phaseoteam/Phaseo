@@ -10,7 +10,7 @@ import {
 	parseStoredScopeList,
 } from "@/lib/authz/capabilities";
 import { resolveActiveKeyPepper, resolveKeyPepperCandidates } from "@/lib/security/keyPepper";
-import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.helpers";
+import { generateGatewayKey, hmacSecret, INFERENCE_KEY_PREFIX, randomBase62, timingSafeEqual } from "@/routes/auth.helpers";
 import { validateWebhookEndpointUrlForDelivery } from "@/core/webhook-endpoints";
 import { decodeJWT, validateOAuthToken, type JWTClaims } from "./jwt";
 
@@ -24,6 +24,9 @@ const DEFAULT_WEB_BASE_URL = "https://phaseo.app";
 const DEFAULT_API_BASE_URL = "https://api.phaseo.app";
 const ACCESS_TOKEN_AUDIENCE = "phaseo-api";
 const MCP_UPSTREAM_TOKEN_TTL_SECONDS = 5 * 60;
+// A third-party app's access token is a delegated gateway key. It lasts 7 days (the database sets the
+// key's expiry to match) and the app renews it with its refresh token, which lasts REFRESH_TOKEN_TTL_SECONDS
+// from its last use.
 const DELEGATED_ACCESS_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
@@ -964,8 +967,10 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
 
 	const generated = generateGatewayKey();
+	const refreshToken = randomBase64Url(48);
 	const supabase = getSupabaseAdmin();
-	const rpcInput = {
+	// The key and the refresh token that renews it are issued in one transaction with the code's consumption.
+	const { data, error } = await supabase.rpc("consume_oauth_code_and_issue_delegated_grant", {
 		p_code_id: grantId,
 		p_key_hash: await hmacSecret(generated.secret, pepper),
 		p_key_kid: generated.kid,
@@ -976,17 +981,9 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 		p_client_id: input.clientId,
 		p_scopes: input.scopes,
 		p_resource: input.resource ?? null,
-	};
-	let { data, error } = await supabase.rpc("consume_oauth_code_and_issue_managed_key", rpcInput);
-	if (error && !input.resource && /p_resource|schema cache|function.*not found/i.test(error.message)) {
-		const { p_resource: _resource, ...legacyRpcInput } = rpcInput;
-		const legacyResult = await supabase.rpc(
-			"consume_oauth_code_and_issue_managed_key",
-			legacyRpcInput,
-		);
-		data = legacyResult.data;
-		error = legacyResult.error;
-	}
+		p_refresh_token_hash: await hashOAuthSecret(refreshToken),
+		p_refresh_expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000).toISOString(),
+	});
 	if (error) throw new Error(error.message || "Failed to consume OAuth code and issue key");
 	if (data !== "issued") return null;
 	await recordOAuthKeyIssued({
@@ -1000,8 +997,51 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 		access_token: generated.plaintext,
 		token_type: "Bearer",
 		expires_in: DELEGATED_ACCESS_TOKEN_TTL_SECONDS,
+		refresh_token: refreshToken,
 		scope: input.scopes.join(" "),
 		...(input.resource ? { resource: input.resource } : {}),
+	};
+}
+
+type RefreshedTokens = Awaited<ReturnType<typeof issueTokenPair>> & { resource?: string };
+type RefreshResult =
+	| { ok: true; tokens: RefreshedTokens }
+	| { ok: false; reason: "invalid_client" | "invalid_grant" };
+
+/**
+ * Refreshes a third-party app's delegated key. The database checks membership, consent, the key and
+ * scopes (see rotate_oauth_delegated_refresh_token), then gives the same key a new secret, so the
+ * previous access token stops working at once, with no grace period. Its limits, attribution, history
+ * and the person's Settings → Keys entry carry over, and no new api_key.created event is recorded.
+ */
+async function rotateDelegatedRefreshToken(tokenHash: string): Promise<RefreshResult> {
+	const pepper = resolveActiveKeyPepper(getBindings());
+	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
+	const secret = randomBase62(40);
+	const refreshToken = randomBase64Url(48);
+	const { data, error } = await getSupabaseAdmin().rpc("rotate_oauth_delegated_refresh_token", {
+		p_current_token_hash: tokenHash,
+		p_next_token_hash: await hashOAuthSecret(refreshToken),
+		p_next_expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000).toISOString(),
+		p_key_hash: await hmacSecret(secret, pepper),
+	});
+	// Fail closed: a reused token's chain must be revoked before anyone is told the refresh failed.
+	if (error) throw new Error(error.message || "Failed to rotate the delegated OAuth refresh token");
+	const result = data && typeof data === "object" ? data as Record<string, unknown> : null;
+	const kid = typeof result?.kid === "string" ? result.kid : "";
+	if (result?.status !== "rotated" || !kid) return { ok: false, reason: "invalid_grant" };
+	const scopes = Array.isArray(result.scopes) ? result.scopes.map(String) : [];
+	const resource = typeof result.resource === "string" && result.resource ? result.resource : null;
+	return {
+		ok: true,
+		tokens: {
+			access_token: `${INFERENCE_KEY_PREFIX}${kid}_${secret}`,
+			token_type: "Bearer",
+			expires_in: DELEGATED_ACCESS_TOKEN_TTL_SECONDS,
+			refresh_token: refreshToken,
+			scope: scopes.join(" "),
+			...(resource ? { resource } : {}),
+		},
 	};
 }
 
@@ -1024,15 +1064,12 @@ export function refreshedScopes(authorizationScopes: unknown, tokenScopes: unkno
 export async function rotateRefreshToken(
 	refreshToken: string,
 	clientAuth?: { clientId?: string; clientSecret?: string | null },
-): Promise<
-	| { ok: true; tokens: Awaited<ReturnType<typeof issueTokenPair>> }
-	| { ok: false; reason: "invalid_client" | "invalid_grant" }
-> {
+): Promise<RefreshResult> {
 	const tokenHashes = await hashOAuthSecretCandidates(refreshToken);
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
 		.from("oauth_refresh_tokens")
-		.select("id, token_hash, user_id, workspace_id, client_id, scopes, expires_at, revoked_at")
+		.select("id, token_hash, user_id, workspace_id, client_id, scopes, expires_at, revoked_at, key_id")
 		.in("token_hash", tokenHashes)
 		.maybeSingle();
 	if (error || !data) return { ok: false, reason: "invalid_grant" };
@@ -1055,6 +1092,8 @@ export async function rotateRefreshToken(
 			return { ok: false, reason: "invalid_client" };
 		}
 	}
+	// A third-party app's token renews its delegated key; the database also handles its reuse.
+	if (data.key_id) return rotateDelegatedRefreshToken(tokenHash);
 	if (data.revoked_at) {
 		const replay = await supabase.rpc("rotate_oauth_refresh_token", {
 			p_current_token_hash: tokenHash,
@@ -1143,11 +1182,27 @@ export async function ensureGrants(args: {
 export async function revokeToken(token: string) {
 	const tokenHashes = await hashOAuthSecretCandidates(token);
 	const supabase = getSupabaseAdmin();
-	await supabase
+	const { data: revokedRefreshTokens } = await supabase
 		.from("oauth_refresh_tokens")
 		.update({ revoked_at: new Date().toISOString() })
 		.in("token_hash", tokenHashes)
-		.is("revoked_at", null);
+		.is("revoked_at", null)
+		.select("key_id");
+
+	// Revoking a third-party app's refresh token also ends the access token issued with it: its
+	// delegated key. Revoking the key ends the rest of the token's chain (database trigger).
+	const delegatedKeyIds = (Array.isArray(revokedRefreshTokens) ? revokedRefreshTokens : [])
+		.map((row) => String((row as { key_id?: unknown })?.key_id ?? "").trim())
+		.filter(Boolean);
+	if (delegatedKeyIds.length > 0) {
+		await supabase
+			.from("keys")
+			.update({ status: "revoked" })
+			.in("id", delegatedKeyIds)
+			.eq("key_kind", "oauth_delegated")
+			.eq("status", "active");
+		return;
+	}
 
 	// Third-party authorization-code grants return an opaque delegated Gateway
 	// key as their OAuth access token. RFC 7009 revocation must invalidate that

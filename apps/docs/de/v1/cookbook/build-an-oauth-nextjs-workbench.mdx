@@ -119,11 +119,26 @@ Die Workbench-Seite bietet mehr als Chat:
 
 So eignet sie sich für Onboarding, Qualitätssicherung und interne Fehlerbehebung, bevor du eine ausgefeiltere Nutzeroberfläche entwickelst.
 
+## Token-Laufzeiten
+
+Wenn sich jemand anmeldet, gibt der Token-Endpunkt (`https://api.phaseo.app/oauth/token`) zwei Tokens zurück:
+
+| Token | Gültig | Verwendung |
+| --- | --- | --- |
+| `access_token` | 7 Tage (`expires_in`) | Sende es als `Authorization: Bearer` bei Gateway-Anfragen. Es verbraucht Guthaben im Workspace, den die Person gewählt hat. |
+| `refresh_token` | 90 Tage ab der letzten Verwendung | Sende es mit `grant_type=refresh_token`, um ein neues Paar zu erhalten. |
+
+- Jede Aktualisierung liefert ein neues Zugriffstoken und ein neues Refresh-Token. Speichere beide und verwirf die alten: Das alte Zugriffstoken funktioniert sofort nicht mehr, und das alte Refresh-Token lässt sich nicht erneut verwenden.
+- Du kannst auch nach Ablauf des Zugriffstokens aktualisieren, solange das Refresh-Token noch gültig ist.
+- Wird ein Refresh-Token ein zweites Mal verwendet, endet die Anmeldung. Phaseo behandelt es als geleaktes Token und widerruft das Zugriffstoken und alle Refresh-Tokens dieser Anmeldung, sodass sich die Person erneut anmelden muss.
+- Eine Aktualisierung fügt nie Scopes hinzu. Sie behält die Scopes, die die Person genehmigt hat, abzüglich derer, die sie inzwischen entfernt hat.
+- Die Aktualisierung schlägt fehl, sobald die Person deine App widerruft, ihren Schlüssel widerruft oder deaktiviert oder den Workspace verlässt. Lass sie sich dann erneut anmelden.
+
 ## Voraussetzungen
 
-- - Node.js und ein unterstützter Paketmanager
-- - ein OAuth-Client mit konfigurierter lokaler Callback-URL
-- - ein starkes Sitzungsgeheimnis
+- Node.js und ein unterstützter Paketmanager
+- ein OAuth-Client mit konfigurierter lokaler Callback-URL
+- ein starkes Sitzungsgeheimnis
 
 ## Beispiel ausführen
 
@@ -193,9 +208,9 @@ bun run dev
 
 ## Das Beispiel anpassen
 
-- - kürze die Proxy-Allowlist auf die Endpoints, die dein Produkt wirklich benötigt
-- - behalte die Workbench intern und entwickle darauf eine übersichtlichere Nutzeroberfläche
-- - ersetze den allgemeinen Tester durch produktspezifische Abläufe, sobald die Integration stabil ist
+- kürze die Proxy-Allowlist auf die Endpoints, die dein Produkt wirklich benötigt
+- behalte die Workbench intern und entwickle darauf eine übersichtlichere Nutzeroberfläche
+- ersetze den allgemeinen Tester durch produktspezifische Abläufe, sobald die Integration stabil ist
 
 ## Verwandte Anleitungen
 

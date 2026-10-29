@@ -119,11 +119,26 @@ A página da bancada não serve apenas para chat:
 
 Isso a torna útil para integração, QA e depuração interna antes de criar uma interface mais refinada para os usuários.
 
+## Duração dos tokens
+
+Quando alguém entra, o endpoint de tokens (`https://api.phaseo.app/oauth/token`) retorna dois tokens:
+
+| Token | Duração | Uso |
+| --- | --- | --- |
+| `access_token` | 7 dias (`expires_in`) | Envie como `Authorization: Bearer` nas solicitações ao gateway. Ele gasta créditos no espaço de trabalho que a pessoa escolheu. |
+| `refresh_token` | 90 dias a partir do último uso | Envie com `grant_type=refresh_token` para obter um novo par. |
+
+- Cada atualização retorna um novo token de acesso e um novo token de atualização. Guarde os dois e descarte os antigos: o token de acesso antigo para de funcionar na hora, e o token de atualização antigo não pode ser usado de novo.
+- Você pode atualizar depois que o token de acesso expirar, desde que o token de atualização não tenha expirado.
+- Usar um token de atualização pela segunda vez encerra o login. O Phaseo trata isso como um token vazado e revoga o token de acesso e todos os tokens de atualização desse login, então a pessoa precisa entrar de novo.
+- Uma atualização nunca adiciona escopos. Ela mantém os escopos que a pessoa aprovou, menos os que ela removeu desde então.
+- A atualização falha assim que a pessoa revoga seu aplicativo, revoga ou desativa a chave dele ou sai do espaço de trabalho. Peça para ela entrar de novo.
+
 ## Pré-requisitos
 
-- - Node.js e um gerenciador de pacotes compatível
-- - um cliente OAuth configurado com a URL de callback local
-- - um segredo de sessão forte
+- Node.js e um gerenciador de pacotes compatível
+- um cliente OAuth configurado com a URL de callback local
+- um segredo de sessão forte
 
 ## Execute o exemplo
 
@@ -193,9 +208,9 @@ Abra `http://localhost:3000`.
 
 ## Como adaptar o exemplo
 
-- - reduza a lista de permissões do proxy aos endpoints de que seu produto realmente precisa
-- - mantenha a bancada para uso interno enquanto cria uma interface mais simples para os usuários
-- - substitua o testador genérico por fluxos específicos do produto quando a integração estiver estável
+- reduza a lista de permissões do proxy aos endpoints de que seu produto realmente precisa
+- mantenha a bancada para uso interno enquanto cria uma interface mais simples para os usuários
+- substitua o testador genérico por fluxos específicos do produto quando a integração estiver estável
 
 ## Guias relacionados
 

@@ -119,11 +119,26 @@ La page de l’environnement de travail ne sert pas uniquement au chat :
 
 C’est utile pour l’intégration, l’assurance qualité et le débogage interne avant de créer une interface plus aboutie pour les utilisateurs.
 
+## Durée de vie des jetons
+
+Quand une personne se connecte, le point de terminaison des jetons (`https://api.phaseo.app/oauth/token`) renvoie deux jetons :
+
+| Jeton | Durée | Utilisation |
+| --- | --- | --- |
+| `access_token` | 7 jours (`expires_in`) | Envoyez-le comme `Authorization: Bearer` dans les requêtes au gateway. Il consomme des crédits dans l’espace de travail choisi par la personne. |
+| `refresh_token` | 90 jours après sa dernière utilisation | Envoyez-le avec `grant_type=refresh_token` pour obtenir une nouvelle paire. |
+
+- Chaque actualisation renvoie un nouveau jeton d’accès et un nouveau jeton d’actualisation. Conservez les deux et supprimez les anciens : l’ancien jeton d’accès cesse immédiatement de fonctionner et l’ancien jeton d’actualisation ne peut plus être utilisé.
+- Vous pouvez actualiser après l’expiration du jeton d’accès, tant que le jeton d’actualisation n’a pas expiré.
+- Utiliser un jeton d’actualisation une deuxième fois met fin à la connexion. Phaseo le traite comme un jeton divulgué et révoque le jeton d’accès ainsi que tous les jetons d’actualisation de cette connexion ; la personne doit alors se reconnecter.
+- Une actualisation n’ajoute jamais de portées. Elle conserve les portées que la personne a approuvées, moins celles qu’elle a retirées depuis.
+- L’actualisation échoue dès que la personne révoque votre application, révoque ou désactive sa clé, ou quitte l’espace de travail. Demandez-lui alors de se reconnecter.
+
 ## Prérequis
 
-- - Node.js et un gestionnaire de paquets compatible
-- - un client OAuth configuré avec l’URL de callback locale
-- - un secret de session robuste
+- Node.js et un gestionnaire de paquets compatible
+- un client OAuth configuré avec l’URL de callback locale
+- un secret de session robuste
 
 ## Exécuter l’exemple
 
@@ -193,9 +208,9 @@ Ouvrez `http://localhost:3000`.
 
 ## Personnaliser l’exemple
 
-- - limitez la liste d’autorisation du proxy aux endpoints réellement nécessaires à votre produit
-- - conservez l’environnement de travail en interne pendant que vous créez une interface plus claire pour les utilisateurs
-- - remplacez le testeur générique par des parcours dédiés une fois l’intégration stabilisée
+- limitez la liste d’autorisation du proxy aux endpoints réellement nécessaires à votre produit
+- conservez l’environnement de travail en interne pendant que vous créez une interface plus claire pour les utilisateurs
+- remplacez le testeur générique par des parcours dédiés une fois l’intégration stabilisée
 
 ## Guides associés
 

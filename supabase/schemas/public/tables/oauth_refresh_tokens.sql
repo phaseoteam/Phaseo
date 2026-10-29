@@ -15,13 +15,18 @@ CREATE TABLE "public"."oauth_refresh_tokens" (
   CONSTRAINT "oauth_refresh_tokens_rotated_from_fkey" FOREIGN KEY (rotated_from) REFERENCES public.oauth_refresh_tokens(id),
   CONSTRAINT "oauth_refresh_tokens_token_hash_key" UNIQUE (token_hash),
   CONSTRAINT "oauth_refresh_tokens_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
-  CONSTRAINT "oauth_refresh_tokens_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "oauth_refresh_tokens_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  "key_id"       uuid,
+  CONSTRAINT "oauth_refresh_tokens_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE CASCADE
 );
 
 ALTER TABLE "public"."oauth_refresh_tokens"
   ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX oauth_refresh_tokens_family_idx ON public.oauth_refresh_tokens USING btree (family_id);
+
+CREATE INDEX oauth_refresh_tokens_key_idx ON public.oauth_refresh_tokens USING btree (key_id)
+  WHERE (key_id IS NOT NULL);
 
 CREATE INDEX oauth_refresh_tokens_rotated_from_idx ON public.oauth_refresh_tokens USING btree (rotated_from)
   WHERE (rotated_from IS NOT NULL);
@@ -41,3 +46,5 @@ CREATE POLICY "service_role_full_access" ON "public"."oauth_refresh_tokens"
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."oauth_refresh_tokens" TO "service_role";
 
 REVOKE ALL ON TABLE "public"."oauth_refresh_tokens" FROM "anon", "authenticated";
+
+COMMENT ON COLUMN "public"."oauth_refresh_tokens"."key_id" IS 'The delegated gateway key a third-party app''s refresh token renews. Refreshing rotates that key''s secret; revoking, disabling or deleting the key ends its refresh tokens. NULL for tokens that renew a session JWT (the Phaseo CLI).';
