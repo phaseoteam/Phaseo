@@ -1192,9 +1192,12 @@ async function attemptProviderWithIR(
 			// later provider succeeds. Retry waiting is not Phaseo routing time.
 			const firstDispatch = upstreamTracker.snapshot().upstreamFetchStartMs;
 			const receivedAt = ctx.meta.startedAtMs;
-			if (typeof firstDispatch === "number" && Number.isFinite(firstDispatch) &&
-				typeof receivedAt === "number" && Number.isFinite(receivedAt)) {
-				ctx.meta.timeToUpstreamRequestMs ??= Math.max(0, firstDispatch - receivedAt);
+			if (typeof firstDispatch === "number" && Number.isFinite(firstDispatch)) {
+				// Failover time is measured from here, including attempts that threw.
+				ctx.meta.upstreamFetchStartMs ??= firstDispatch;
+				if (typeof receivedAt === "number" && Number.isFinite(receivedAt)) {
+					ctx.meta.timeToUpstreamRequestMs ??= Math.max(0, firstDispatch - receivedAt);
+				}
 			}
 		});
 		const upstreamTiming = upstreamTracker.snapshot();
@@ -1331,6 +1334,12 @@ async function attemptProviderWithIR(
 			}
 			const completedLatencyMs = ctx.meta.latency_ms ?? selectedProviderDurationMs;
 			const completedGenerationMs = ctx.meta.generation_ms ?? 0;
+			// A buffered text response ends when the selected provider's body has been read,
+			// so its provider duration is the generation time. Set after the health inputs
+			// above: routing throughput stays based on streamed generation only.
+			if (isTextGenerate && executorResult.upstream.ok && selectedUpstreamTiming) {
+				ctx.meta.generation_ms ??= selectedProviderDurationMs;
+			}
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: executorResult.upstream.status,
 				credentialSource: executorResult.keySource ?? credentialLog.key_source,

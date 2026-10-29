@@ -16,6 +16,7 @@ import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
 import { SseParser } from "@core/sse-parser";
 import { accumulateStreamUsage } from "@core/usage-normalization";
 import { stripGatewayStop } from "@core/finish-reason";
+import { resolveFailoverMs } from "./timing";
 import { createChatStreamTerminal } from "./chat-stream-terminal";
 import { createStreamReencoder, encodeStreamInterruption, type StreamReencoder } from "./stream-reencode";
 import { createResponsesStreamNormaliser } from "./responses-stream-normaliser";
@@ -158,9 +159,12 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             : firstOutputAt !== null
                 ? Math.max(0, Math.round(nowPerf - tStart))
                 : 0;
+        // Failed provider attempts before the selected one are provider time, not ours.
+        const failoverMs = resolveFailoverMs(ctx);
+        if (failoverMs !== null) ctx.meta.failover_ms = failoverMs;
         ctx.meta.phaseo_overhead_ms = Math.max(
             0,
-            ctx.meta.end_to_end_ms - ctx.meta.generation_ms,
+            ctx.meta.end_to_end_ms - ctx.meta.generation_ms - (failoverMs ?? 0),
         );
     };
 

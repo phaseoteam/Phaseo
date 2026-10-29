@@ -4,6 +4,7 @@ import {
 	buildResponseTimeline,
 	resolveBeforeLatencyMs,
 	resolveExecuteTotalLatencyMs,
+	resolveFailoverMs,
 	resolveNonStreamLatencyMs,
 } from "./timing";
 
@@ -39,14 +40,14 @@ describe("after timing helpers", () => {
 		const ctx = buildContext();
 		ctx.meta.startedAtMs = 1000;
 		ctx.meta.timeToUpstreamRequestMs = 20;
-		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: 20, first_dispatch_at_ms: 1020 });
+		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: 20, failover_ms: null, first_dispatch_at_ms: 1020 });
 	});
 
 	it.each([0, 12.6])("records first-dispatch routing time (%s)", (value) => {
 		const ctx = buildContext();
 		ctx.meta.timeToUpstreamRequestMs = value;
 		ctx.meta.timeToLatestUpstreamRequestMs = 5000;
-		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: Math.round(value) });
+		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: Math.round(value), failover_ms: null });
 	});
 
 	it.each([undefined, -1, NaN, Infinity])("does not fabricate missing or invalid routing time (%s)", (value) => {
@@ -54,8 +55,24 @@ describe("after timing helpers", () => {
 		ctx.meta.timeToUpstreamRequestMs = value;
 		ctx.meta.before_ms = 12;
 		ctx.meta.generation_ms = 400;
-		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: null });
-		expect(buildResponseTimeline(null)).toEqual({ version: 1, routing_ms: null });
+		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: null, failover_ms: null });
+		expect(buildResponseTimeline(null)).toEqual({ version: 1, routing_ms: null, failover_ms: null });
+	});
+
+	it("measures failover from the first dispatch to the selected one", () => {
+		const ctx = buildContext();
+		ctx.meta.startedAtMs = 1000;
+		ctx.meta.timeToUpstreamRequestMs = 40;
+		ctx.meta.upstreamFetchStartMs = 1040;
+		ctx.meta.selectedUpstreamFetchStartMs = 1495.6;
+		expect(resolveFailoverMs(ctx)).toBe(456);
+		expect(buildResponseTimeline(ctx)).toEqual({ version: 1, routing_ms: 40, failover_ms: 456, first_dispatch_at_ms: 1040 });
+
+		ctx.meta.selectedUpstreamFetchStartMs = 1040;
+		expect(resolveFailoverMs(ctx)).toBe(0);
+		delete ctx.meta.selectedUpstreamFetchStartMs;
+		expect(resolveFailoverMs(ctx)).toBeNull();
+		expect(resolveFailoverMs(null)).toBeNull();
 	});
 
 	it("prefers explicit latency from request meta", () => {

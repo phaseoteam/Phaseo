@@ -379,6 +379,27 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
         else expect((result as any).result.healthContext.provider).toBe(scopedProvider);
     });
 
+	it.each([200, 503])("records buffered text generation from the selected dispatch only on success (%s)", async (status) => {
+		const candidate = { providerId: "openai", pricingCard: { currency: "USD", rules: [] }, byokMeta: [], providerModelSlug: "gpt-test", capabilityParams: {} };
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		resolveProviderExecutorMock.mockReturnValue(vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status }));
+			const response = await args.upstreamTiming.fetch("https://provider.test/chat", { method: "POST" }).finally(() => fetchSpy.mockRestore());
+			return { kind: "completed", ir: {}, upstream: response, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		}));
+		const ctx = createCtx({ endpoint: "chat.completions", capability: "text.generate", model: "openai/gpt-test", testingMode: true });
+		await doRequestWithIR(ctx, { model: "openai/gpt-test", messages: [] } as any, createTiming());
+		if (status === 200) {
+			expect(ctx.meta.generation_ms).toEqual(expect.any(Number));
+			expect(ctx.meta.generation_ms).toBe(ctx.meta.provider_duration_ms);
+			// Routing throughput keeps using streamed generation only.
+			expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ ok: true, generation_ms: 0 }));
+		} else {
+			expect(ctx.meta.generation_ms).toBeUndefined();
+		}
+	});
+
 	it.each([false, true])("loads lazy pricing using the selected route scope (%s)", async (pricingInternalOnly) => {
 		const candidate = {
 			accessScope: pricingInternalOnly ? "internal" : "public",
@@ -598,6 +619,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		try {
 			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
 			expect(ctx.meta.timeToUpstreamRequestMs).toBe(15);
+			expect(ctx.meta.upstreamFetchStartMs).toBe(1015);
 			expect(fetchSpy).toHaveBeenCalledTimes(recover ? 2 : 1);
 			if (recover) {
 				expect(result.ok).toBe(true);

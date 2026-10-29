@@ -25,6 +25,7 @@ import { mergeWebFetchObservability } from "./fetch-observability";
 import {
 	buildResponseTimeline,
 	resolveBeforeLatencyMs,
+	resolveFailoverMs,
 	resolveExecuteTotalLatencyMs,
 	resolveNonStreamLatencyMs,
 } from "./timing";
@@ -495,6 +496,7 @@ export async function handleSuccessAudit(
         providerDurationMs: generationMs,
         providerTtftMs,
         gatewayE2eMs: endToEndMs,
+        failoverMs: resolveFailoverMs(ctx),
     });
     // Throughput is API-owned: output tokens divided by the full provider duration in seconds.
     ctx.meta.throughput_tps = outputPerformance.effectiveThroughputTps ?? undefined;
