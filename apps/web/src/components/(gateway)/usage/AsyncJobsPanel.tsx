@@ -85,6 +85,7 @@ import {
         DetailMetricTile,
         DetailSection,
 } from "./DetailDialogPrimitives";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
@@ -229,10 +230,10 @@ function formatMoneyFromNanos(value: number | null | undefined, locale: string):
 	return formatMoneyFromUsd(value / 1e9, locale);
 }
 
-function formatMoneyFromUsd(value: number | null | undefined, locale: string): string {
+function formatMoneyFromUsd(value: number | null | undefined, _locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
 	const digits = value !== 0 && Math.abs(value) < 0.00001 ? 9 : 5;
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
 function formatMilliseconds(value: number | null | undefined, locale: string): string {

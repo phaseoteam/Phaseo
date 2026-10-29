@@ -72,6 +72,7 @@ import type {
 	ProviderModalityKey,
 } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { formatLocation } from "@/lib/locations";
+import { useStickyToolbarOffsets } from "@/components/layout/useStickyToolbarOffsets";
 
 interface APIProvidersDisplayProps {
 	providers: APIProviderCardType[];
@@ -454,31 +455,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 	const toolbarRef = useRef<HTMLDivElement | null>(null);
 	const tableContainerRef = useRef<HTMLDivElement | null>(null);
 	const tableHeaderTrackRef = useRef<HTMLDivElement | null>(null);
-	const [stickyOffsets, setStickyOffsets] = useState({ toolbarTop: 60, tableHeaderTop: 60 });
-
-	useEffect(() => {
-		const toolbar = toolbarRef.current;
-		if (!toolbar || typeof window === "undefined") return;
-		const siteHeader = document.querySelector<HTMLElement>("#dashboard-shell > header");
-		const mediumViewport = window.matchMedia("(min-width: 768px)");
-		const updateOffsets = () => {
-			const toolbarTop = Math.ceil(siteHeader?.getBoundingClientRect().height ?? 60);
-			const toolbarHeight = mediumViewport.matches ? Math.ceil(toolbar.getBoundingClientRect().height) : 0;
-			const tableHeaderTop = toolbarTop + toolbarHeight;
-			setStickyOffsets((current) => current.toolbarTop === toolbarTop && current.tableHeaderTop === tableHeaderTop ? current : { toolbarTop, tableHeaderTop });
-		};
-		updateOffsets();
-		const resizeObserver = new ResizeObserver(updateOffsets);
-		resizeObserver.observe(toolbar);
-		if (siteHeader) resizeObserver.observe(siteHeader);
-		mediumViewport.addEventListener("change", updateOffsets);
-		window.addEventListener("resize", updateOffsets);
-		return () => {
-			resizeObserver.disconnect();
-			mediumViewport.removeEventListener("change", updateOffsets);
-			window.removeEventListener("resize", updateOffsets);
-		};
-	}, []);
+	const stickyOffsets = useStickyToolbarOffsets(toolbarRef);
 
 	useEffect(() => {
 		const tableContainer = tableContainerRef.current;

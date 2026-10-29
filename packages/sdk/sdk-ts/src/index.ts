@@ -51,6 +51,7 @@ import { createTransport, type RequestControls } from "./runtime/transport.js";
 import { withApiKeyProvider, type ApiKeyProvider } from "./runtime/auth.js";
 import { JobHandle } from "./jobHandle.js";
 import { SDK_VERSION } from "./version.js";
+import { openRealtimeSession, type RealtimeConnectOptions, type RealtimeSession, type RealtimeSessionInfo } from "./realtime.js";
 import { paginateItems, paginatePages, type PageOptions } from "./pagination.js";
 import {
   parseOutput,
@@ -65,6 +66,22 @@ import {
 } from "./helpers.js";
 export { JobHandle } from "./jobHandle.js";
 export { SDK_VERSION } from "./version.js";
+export {
+  RealtimeSession,
+  RealtimeSessionClosedError,
+  connectRealtimeSession,
+  realtimeFinalBill,
+  type RealtimeConnectOptions,
+  type RealtimeEndOptions,
+  type RealtimeEvent,
+  type RealtimeFinalBill,
+  type RealtimeSessionConnectOptions,
+  type RealtimeSessionEndedEvent,
+  type RealtimeSessionInfo,
+  type RealtimeSessionWarningEvent,
+  type RealtimeWebSocket,
+  type RealtimeWebSocketConstructor,
+} from "./realtime.js";
 export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
 export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
 export type { ApiKeyProvider } from "./runtime/auth.js";
@@ -636,6 +653,22 @@ export class Phaseo {
       providerId: string,
       params: Record<string, string | number | boolean> = {},
     ): Promise<unknown> => this.getProviderDerankStatus(providerId, params),
+  };
+
+  /** Realtime voice sessions (beta): create a session and talk to it over the relay WebSocket. */
+  readonly realtime = {
+    /**
+     * Server only: creates a session and returns it with its single-session `client_secret`, without opening the socket.
+     * Hand the result to a browser, which joins with `connectRealtimeSession(info)` and never sees your API key.
+     */
+    createSession: (options: Omit<RealtimeConnectOptions, "webSocket" | "connectTimeoutMs">): Promise<RealtimeSessionInfo> =>
+      ops.createRealtimeSession(this.client, { body: options }),
+    /** Server only (it sends your API key): creates the session and opens the relay socket; resolves once the relay sends `relay.connected`. */
+    connect: async (options: RealtimeConnectOptions): Promise<RealtimeSession> => {
+      const { webSocket, connectTimeoutMs, ...body } = options;
+      const info: RealtimeSessionInfo = await ops.createRealtimeSession(this.client, { body });
+      return openRealtimeSession(this.basePath, info, { webSocket, connectTimeoutMs });
+    },
   };
 
   readonly asyncJobs = {

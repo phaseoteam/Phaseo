@@ -3067,6 +3067,99 @@ export async function createClassifier(
   });
 }
 
+export type CreateCreditTopupParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: {
+    "Idempotency-Key"?: string;
+  };
+  body?: {
+    amount_usd: number;
+    idempotency_key?: string;
+    workspace_id?: string;
+  };
+};
+
+/**
+ * Asks to add credits to the authenticated workspace. Needs the opt-in billing:write scope and workspace membership. Nothing is charged here. With a saved card, every workspace owner and admin is emailed a single-use link and one of them confirms or declines the charge. Without one, the response has a checkout_url where an owner or admin pays with a new card, which is saved for later top-ups. Amounts are $5 to $500. A workspace can have 5 pending top-ups, and each expires after 30 minutes.
+ */
+export async function createCreditTopup(
+  client: Client,
+  args: CreateCreditTopupParams = {},
+): Promise<{
+  ok: true;
+  topup: {
+    amount_cents: number;
+    amount_usd: number;
+    checkout_url: string | null;
+    confirmation_recipients?: number;
+    created_at: string;
+    currency: string;
+    decided_at: string | null;
+    expires_at: string;
+    final: boolean;
+    flow: "checkout" | "saved_card";
+    id: string;
+    message: string;
+    next_action:
+      | "open_checkout_url"
+      | "await_email_confirmation"
+      | "await_payment"
+      | null
+      | null;
+    paid_at: string | null;
+    payment_method: {
+      brand?: string | null;
+      last4?: string | null;
+    } | null;
+    reason: string | null;
+    status:
+      "pending" | "confirmed" | "declined" | "expired" | "paid" | "failed";
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/credits/topups";
+  return client.request<{
+    ok: true;
+    topup: {
+      amount_cents: number;
+      amount_usd: number;
+      checkout_url: string | null;
+      confirmation_recipients?: number;
+      created_at: string;
+      currency: string;
+      decided_at: string | null;
+      expires_at: string;
+      final: boolean;
+      flow: "checkout" | "saved_card";
+      id: string;
+      message: string;
+      next_action:
+        | "open_checkout_url"
+        | "await_email_confirmation"
+        | "await_payment"
+        | null
+        | null;
+      paid_at: string | null;
+      payment_method: {
+        brand?: string | null;
+        last4?: string | null;
+      } | null;
+      reason: string | null;
+      status:
+        "pending" | "confirmed" | "declined" | "expired" | "paid" | "failed";
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateDataContributionClassifierParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -3154,7 +3247,7 @@ export type CreateDepartmentBudgetParams = {
 };
 
 /**
- * Creates a daily, weekly, or monthly spend budget for one department. Owners and admins get a mobile push at about 80% and at 100%. Department budgets do not block requests.
+ * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. Batch jobs, realtime sessions and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
  */
 export async function createDepartmentBudget(
   client: Client,
@@ -4349,6 +4442,126 @@ export async function createImageEdit(
       revised_prompt?: string;
       url?: string;
     }[];
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateLiveSessionParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    backend_model?: "openai/gpt-5.6-luna" | "openai/gpt-5.6-terra";
+    backend_settings?: {
+      instructions?: string;
+      max_output_tokens?: number;
+      parallel_tool_calls?: boolean;
+      reasoning_effort?: "none" | "low" | "medium" | "high" | "xhigh";
+      reasoning_summary?: "auto" | "concise" | "detailed";
+      service_tier?: "default" | "flex" | "priority";
+      tool_choice?: "auto" | "none" | "required";
+      tools?: {
+        description?: string;
+        name: string;
+        parameters?: {
+          [key: string]: unknown;
+        };
+        strict?: boolean;
+        type: "function";
+      }[];
+      verbosity?: "low" | "medium" | "high";
+      web_search?: boolean;
+    };
+    instructions?: string;
+    metadata?: {
+      [key: string]: unknown;
+    };
+    model: "openai/gpt-live-1";
+    provider: "openai";
+    source?: "api" | "chat";
+    type?: "live";
+    voice?:
+      | "alloy"
+      | "ash"
+      | "ballad"
+      | "beacon"
+      | "bossa"
+      | "cedar"
+      | "cinder"
+      | "coral"
+      | "delta"
+      | "echo"
+      | "gleam"
+      | "marin"
+      | "meridian"
+      | "quartz"
+      | "ripple"
+      | "sage"
+      | "shimmer"
+      | "stone"
+      | "tempo"
+      | "verse"
+      | "vesper"
+      | "willow";
+  };
+};
+
+/**
+ * Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model, and returns relay connection details. Function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`.
+ */
+export async function createLiveSession(
+  client: Client,
+  args: CreateLiveSessionParams = {},
+): Promise<{
+  billing?: {
+    [key: string]: unknown;
+  };
+  client_secret?: string;
+  connect?: {
+    transport?: string;
+    url?: string;
+    [key: string]: unknown;
+  };
+  expires_at?: string | null;
+  id?: string;
+  idle_timeout_seconds?: number | null;
+  max_duration_seconds?: number;
+  model?: string;
+  model_id?: string;
+  provider?: string;
+  session_id?: string;
+  status?: string;
+  voice?: string | null;
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/live/sessions";
+  return client.request<{
+    billing?: {
+      [key: string]: unknown;
+    };
+    client_secret?: string;
+    connect?: {
+      transport?: string;
+      url?: string;
+      [key: string]: unknown;
+    };
+    expires_at?: string | null;
+    id?: string;
+    idle_timeout_seconds?: number | null;
+    max_duration_seconds?: number;
+    model?: string;
+    model_id?: string;
+    provider?: string;
+    session_id?: string;
+    status?: string;
+    voice?: string | null;
+    [key: string]: unknown;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -5879,11 +6092,49 @@ export async function createRealtimeSession(
   client: Client,
   args: CreateRealtimeSessionParams = {},
 ): Promise<{
+  billing?: {
+    [key: string]: unknown;
+  };
+  client_secret?: string;
+  connect?: {
+    transport?: string;
+    url?: string;
+    [key: string]: unknown;
+  };
+  expires_at?: string | null;
+  id?: string;
+  idle_timeout_seconds?: number | null;
+  max_duration_seconds?: number;
+  model?: string;
+  model_id?: string;
+  provider?: string;
+  session_id?: string;
+  status?: string;
+  voice?: string | null;
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/audio/realtime/sessions";
   return client.request<{
+    billing?: {
+      [key: string]: unknown;
+    };
+    client_secret?: string;
+    connect?: {
+      transport?: string;
+      url?: string;
+      [key: string]: unknown;
+    };
+    expires_at?: string | null;
+    id?: string;
+    idle_timeout_seconds?: number | null;
+    max_duration_seconds?: number;
+    model?: string;
+    model_id?: string;
+    provider?: string;
+    session_id?: string;
+    status?: string;
+    voice?: string | null;
     [key: string]: unknown;
   }>({
     method: "POST",
@@ -8558,7 +8809,7 @@ export type DeleteDepartmentBudgetParams = {
 };
 
 /**
- * Removes a department budget and its alerts.
+ * Removes a department budget. Within about a minute, requests are no longer refused because of it, and its alerts stop.
  */
 export async function deleteDepartmentBudget(
   client: Client,
@@ -10466,6 +10717,97 @@ export async function getCredits(
       thirty_day_usage: number | null;
     };
     ok: true;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetCreditTopupParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns the status of a credit top-up in the authenticated workspace. Needs credits:read or billing:write. Poll until final is true. Declined, expired and failed top-ups carry a reason code; do not retry them automatically.
+ */
+export async function getCreditTopup(
+  client: Client,
+  args: GetCreditTopupParams,
+): Promise<{
+  ok: true;
+  topup: {
+    amount_cents: number;
+    amount_usd: number;
+    checkout_url: string | null;
+    confirmation_recipients?: number;
+    created_at: string;
+    currency: string;
+    decided_at: string | null;
+    expires_at: string;
+    final: boolean;
+    flow: "checkout" | "saved_card";
+    id: string;
+    message: string;
+    next_action:
+      | "open_checkout_url"
+      | "await_email_confirmation"
+      | "await_payment"
+      | null
+      | null;
+    paid_at: string | null;
+    payment_method: {
+      brand?: string | null;
+      last4?: string | null;
+    } | null;
+    reason: string | null;
+    status:
+      "pending" | "confirmed" | "declined" | "expired" | "paid" | "failed";
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/credits/topups/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    ok: true;
+    topup: {
+      amount_cents: number;
+      amount_usd: number;
+      checkout_url: string | null;
+      confirmation_recipients?: number;
+      created_at: string;
+      currency: string;
+      decided_at: string | null;
+      expires_at: string;
+      final: boolean;
+      flow: "checkout" | "saved_card";
+      id: string;
+      message: string;
+      next_action:
+        | "open_checkout_url"
+        | "await_email_confirmation"
+        | "await_payment"
+        | null
+        | null;
+      paid_at: string | null;
+      payment_method: {
+        brand?: string | null;
+        last4?: string | null;
+      } | null;
+      reason: string | null;
+      status:
+        "pending" | "confirmed" | "declined" | "expired" | "paid" | "failed";
+      workspace_id: string;
+    };
   }>({
     method: "GET",
     path: resolvedPath,
@@ -21814,6 +22156,20 @@ export async function previewSpendRule(
       scope_label: string;
       title: string;
     } | null;
+    balance: {
+      armed: boolean;
+      auto_top_up_covers: boolean;
+      available_nanos: number;
+      available_usd: number;
+      balance_usd: number;
+      burn_per_day_usd: number;
+      burn_usd: number;
+      low_balance: boolean;
+      low_runway: boolean;
+      reserved_usd: number;
+      runway_days_left: number | null;
+      window_hours: number;
+    } | null;
     base_kind:
       "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
     base_nanos: number | null;
@@ -21839,6 +22195,7 @@ export async function previewSpendRule(
     rule_id: string;
     state: {
       amount_fired_at: string | null;
+      armed?: boolean;
       fire_count: number;
       highest_percent_fired: number | null;
       last_fired_at: string | null;
@@ -21861,6 +22218,20 @@ export async function previewSpendRule(
         message: string;
         scope_label: string;
         title: string;
+      } | null;
+      balance: {
+        armed: boolean;
+        auto_top_up_covers: boolean;
+        available_nanos: number;
+        available_usd: number;
+        balance_usd: number;
+        burn_per_day_usd: number;
+        burn_usd: number;
+        low_balance: boolean;
+        low_runway: boolean;
+        reserved_usd: number;
+        runway_days_left: number | null;
+        window_hours: number;
       } | null;
       base_kind:
         "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
@@ -21887,6 +22258,7 @@ export async function previewSpendRule(
       rule_id: string;
       state: {
         amount_fired_at: string | null;
+        armed?: boolean;
         fire_count: number;
         highest_percent_fired: number | null;
         last_fired_at: string | null;
@@ -23687,7 +24059,7 @@ export type SaveSuccessorReplacementParams = {
 };
 
 /**
- * Sets the model requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
+ * Sets the model that requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
  */
 export async function saveSuccessorReplacement(
   client: Client,
@@ -23922,6 +24294,78 @@ export async function summarizeGatewayFeedback(
     group_by: "preset_id" | "test_run_id" | "metadata";
   }>({
     method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type TestClassifierParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    classifier?: {
+      dimensions?: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      instructions?: string;
+      model?: string;
+    };
+    classifier_id?: string;
+    sample: {
+      prompt: string;
+      response?: string;
+    };
+  };
+};
+
+/**
+ * Runs a draft or saved classifier once on a sample prompt and response, with the same request the gateway sends for it. The request is a real, billed model request made with your own credential and labelled phaseo.classifier_test. Owners and admins; the credential needs classifiers:write and gateway:access. Management keys cannot make model requests and are refused.
+ */
+export async function testClassifier(
+  client: Client,
+  args: TestClassifierParams = {},
+): Promise<{
+  data: {
+    answered?: boolean;
+    cost_usd?: number;
+    format?: "json_schema" | "decisions" | "json";
+    labels?: {
+      confidence?: number | null;
+      key?: string;
+      value?: string;
+    }[];
+    model?: string;
+    request_id?: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/classifiers/test";
+  return client.request<{
+    data: {
+      answered?: boolean;
+      cost_usd?: number;
+      format?: "json_schema" | "decisions" | "json";
+      labels?: {
+        confidence?: number | null;
+        key?: string;
+        value?: string;
+      }[];
+      model?: string;
+      request_id?: string | null;
+    };
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,

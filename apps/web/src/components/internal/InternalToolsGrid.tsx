@@ -17,7 +17,6 @@ import {
 	Settings,
 	FileCheck,
 	Users,
-	GitCompare,
 	RefreshCcw,
 	Gift,
 	Bell,
@@ -70,14 +69,6 @@ const internalTools = [
 		descriptionKey: "dataAuditDescription",
 		icon: BarChart3,
 		href: "/internal/audit",
-		comingSoon: false,
-	},
-	{
-		id: "api-model-conflicts",
-		titleKey: "apiModelConflictsTitle",
-		descriptionKey: "apiModelConflictsDescription",
-		icon: GitCompare,
-		href: "/internal/api-model-conflicts",
 		comingSoon: false,
 	},
 	{

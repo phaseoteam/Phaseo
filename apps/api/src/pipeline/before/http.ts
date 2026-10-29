@@ -24,6 +24,7 @@ export type ErrorCode =
     | "insufficient_funds"
     | "guardrail_blocked"
     | "unsupported_model_or_endpoint"
+    | "model_region_unavailable"
     | "model_retired";
 
 export function json(data: unknown, status = 200) {
@@ -119,6 +120,7 @@ const STATUS: Record<ErrorCode, number> = {
     insufficient_funds: 402,
     guardrail_blocked: 403,
     unsupported_model_or_endpoint: 400,
+    model_region_unavailable: 403,
     model_retired: 410,
 };
 

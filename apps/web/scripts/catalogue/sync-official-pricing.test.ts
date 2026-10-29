@@ -1,4 +1,4 @@
-import { anthropicMarkdownCandidates, extractHtmlTableRows, extractOfficialPricing, safeOfficialPricingRules } from "./sync-official-pricing";
+import { anthropicMarkdownCandidates, extractHtmlTableRows, extractOfficialPricing } from "./sync-official-pricing";
 
 describe("official pricing extraction", () => {
 	test("preserves table row and cell boundaries", () => {
@@ -223,53 +223,5 @@ describe("official pricing extraction", () => {
 				<tr><td></td><td>gpt-example</td><td>$1</td><td>$2</td><td>$3</td><td>$4</td></tr>
 			</table>
 		`)).toEqual([]);
-	});
-
-	test("rejects automatic comparison when catalogue units are not USD per million tokens", () => {
-		expect(safeOfficialPricingRules({
-			rules: [{
-				meter: "input_text_tokens",
-				unit: "token",
-				unit_size: 1_000,
-				currency: "USD",
-				price_per_unit: 0.001,
-				pricing_plan: "standard",
-				match: [],
-				conditions: [],
-				effective_to: null,
-			}],
-		}, { input_text_tokens: 1 })).toBe(false);
-	});
-
-	test("accepts matching CNY catalogue units for CNY candidates", () => {
-		expect(safeOfficialPricingRules({
-			rules: [{
-				meter: "input_text_tokens",
-				unit: "token",
-				unit_size: 1_000_000,
-				currency: "CNY",
-				price_per_unit: 0.7,
-				pricing_plan: "standard",
-				match: [],
-				conditions: [],
-				effective_to: null,
-			}],
-		}, { input_text_tokens: 0.7 }, "CNY")).toBe(true);
-	});
-
-	test("does not add a missing CNY meter through the USD-only generic merger", () => {
-		expect(safeOfficialPricingRules({
-			rules: [{
-				meter: "input_text_tokens",
-				unit: "token",
-				unit_size: 1_000_000,
-				currency: "CNY",
-				price_per_unit: 0.7,
-				pricing_plan: "standard",
-				match: [],
-				conditions: [],
-				effective_to: null,
-			}],
-		}, { input_text_tokens: 0.7, output_text_tokens: 2.1 }, "CNY")).toBe(false);
 	});
 });

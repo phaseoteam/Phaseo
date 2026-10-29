@@ -5,6 +5,20 @@ export interface SpendRulePreviewResponse {
       scope_label: string;
       title: string;
     } | null;
+    balance: {
+      armed: boolean;
+      auto_top_up_covers: boolean;
+      available_nanos: number;
+      available_usd: number;
+      balance_usd: number;
+      burn_per_day_usd: number;
+      burn_usd: number;
+      low_balance: boolean;
+      low_runway: boolean;
+      reserved_usd: number;
+      runway_days_left: number | null;
+      window_hours: number;
+    } | null;
     base_kind:
       "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
     base_nanos: number | null;
@@ -30,6 +44,7 @@ export interface SpendRulePreviewResponse {
     rule_id: string;
     state: {
       amount_fired_at: string | null;
+      armed?: boolean;
       fire_count: number;
       highest_percent_fired: number | null;
       last_fired_at: string | null;

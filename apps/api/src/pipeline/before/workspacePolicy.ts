@@ -384,6 +384,22 @@ function extractProviderHints(body: any): ProviderHintSet {
 	};
 }
 
+/**
+ * Whether a provider may serve the request under its `provider.only` and
+ * `provider.ignore` and the workspace policy's provider allow and block lists,
+ * as applyWorkspacePolicy filters them; for narrowing Auto's shortlist before
+ * each candidate is checked.
+ */
+export function providerPermittedByPolicy(body: any, workspacePolicy: WorkspacePolicy | null): (providerId: string) => boolean {
+	const hints = extractProviderHints(body);
+	const only = hints.only.length ? new Set(hints.only) : null;
+	const ignore = new Set(hints.ignore);
+	const allow = workspacePolicy?.providerAllowlist ? new Set(workspacePolicy.providerAllowlist) : null;
+	const block = new Set(workspacePolicy?.providerBlocklist ?? []);
+	return (providerId) => (!allow || allow.has(providerId)) && !block.has(providerId)
+		&& (!only || only.has(providerId)) && !ignore.has(providerId);
+}
+
 export function buildWorkspacePolicy(args: {
 	globalSettings?: WorkspaceSettingsRow | null;
 	guardrails?: GuardrailRow[];

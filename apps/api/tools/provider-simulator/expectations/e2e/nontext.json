@@ -753,7 +753,7 @@
 					"value": 800000000,
 					"source": {
 						"kind": "assumed",
-						"reason": "8 s at the catalogue's $0.10 per second for 1280x720 (packages/data/catalog/src/data/pricing/openai/openai-sora-2/video.generate) is held before submission."
+						"reason": "8 s at the catalogue's $0.10 per second for 1280x720 (route openai:openai/sora-2, SKU offer-e48eb6ccb12e03192f71@v1, output_video_seconds) is held before submission."
 					}
 				},
 				{

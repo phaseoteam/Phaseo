@@ -17,7 +17,7 @@ Phaseo Gateway 会将每个请求路由到能够提供所选模型的提供商�
 | `latency` | 尽快开始响应是首要需求。 |
 | `throughput` | 持续提高 Token 生成速度最重要。 |
 
-请在**控制台 -> 设置 -> 路由**中配置工作区默认值。如果某个工作流需要比工作区默认值更严格的提供商或模型策略，请使用预设。
+请在**控制台 -> 设置 -> 路由**中配置工作区默认值。如果某个工作流需要比工作区默认值更严格的提供商或模型策略，请使用预设。也可以运行 `phaseo settings update --routing-mode <mode>`，或向 `PATCH /v1/settings` 发送 `routing_mode` 进行设置。
 
 ### 模型路由后缀
 
@@ -51,6 +51,8 @@ Phaseo Gateway 会将每个请求路由到能够提供所选模型的提供商�
 4. 可选：使用 `anthropic/*`、`openai/gpt-5.*` 等模式或精确模型 ID 缩小候选范围。
 5. 选择在可重试错误发生后，Phaseo 是否可以尝试排名靠后的模型。
 6. 保存配置。
+
+如需不通过控制台设置相同选项，请运行带 `--objective`、`--spend-profile`、`--allowed-patterns` 和 `--allow-fallbacks` 的 `phaseo routing auto update`，或调用 `PATCH /v1/routing/auto`。`phaseo routing auto get` 会显示当前配置。
 
 这样，应用就可以选择使用自动路由器，而无需在每个请求中复制工作区路由策略：
 
@@ -90,6 +92,8 @@ Phaseo Gateway 会将每个请求路由到能够提供所选模型的提供商�
 分类器复杂度代表可能足以生成可靠且可接受答案的最低模型能力。Phaseo 会增加能力余量，然后结合基准适配度、工作区目标、价格、延迟、提供商健康状况和可靠性进行评分。分类器请求与选定的生成请求会通过常规 Gateway 流程分别计量。
 
 评分前，每个允许的模型都必须通过常规的端点、工作区模型、提供商、隐私、护栏和熔断器检查。随后，路由器会将 Phaseo 目录中相关且非提供商自报的基准数据与 Phaseo 当前的提供商健康状况、延迟和价格结合起来。缺少基准或运行数据时按中性处理；这不会扩大允许列表。
+
+请求对其数据去向的限制同样适用于 Auto。当请求设置了 `provider.require_zero_data_retention: true`，或者工作区或密钥的护栏只允许零数据保留的提供商时，路由器只会把拥有此类提供商的模型列入候选。所需区域也会以同样的方式在每个候选模型的提供商上检查。分类请求会带上相同的限制，以及 `only`、`ignore` 中的提供商；如果分类模型无法满足这些限制，Phaseo 会改用本地分类器。当请求的驻留要求导致 Auto 没有可选模型时（它考虑的每个模型都不满足这些要求），请求会以 `403 model_region_unavailable` 和 `unmet_requirements` 失败，与固定模型收到的错误相同；如果还有模型因其他原因被排除，请求会以 `400 unsupported_model_or_endpoint` 失败。
 
 响应中的 `model` 字段标识所选模型。请求详情会显示工作负载、目标、选定模型、回退顺序、候选和因素评分、基准 ID、排除项以及算法版本。路由跟踪不包含请求或响应内容。
 
@@ -184,15 +188,17 @@ Phaseo Gateway 会将每个请求路由到能够提供所选模型的提供商�
 - `latency`
 - `throughput`
 
+在 CLI 中运行 `phaseo settings update --routing-mode <mode>`。
+
 同一页面还提供 Beta 和 Alpha 通道切换，以便有意引入预览流量，而不是让它作为未跟踪的路由副作用出现。
 
 ### BYOK 回退由你明确控制
 
-在**控制台 -> 设置 -> BYOK**中，团队可以选择 <Tooltip tip="自带密钥：Phaseo 使用你自己的提供商 API 密钥路由请求，模型用量由提供商直接向你计费。">BYOK</Tooltip> 请求失败后是否允许改用 Phaseo 积分。这是当前面向常见问题“我自己的密钥失败了，请求是否仍应完成？”的公开控制项。
+在**控制台 -> 设置 -> BYOK**中，团队可以选择 <Tooltip tip="自带密钥：Phaseo 使用你自己的提供商 API 密钥路由请求，模型用量由提供商直接向你计费。">BYOK</Tooltip> 请求失败后是否允许改用 Phaseo 积分。这是当前面向常见问题“我自己的密钥失败了，请求是否仍应完成？”的公开控制项。代理可以通过 `PATCH /v1/settings` 的 `byok_fallback_enabled` 设置此项，例如 `phaseo settings update --body-json '{"byok_fallback_enabled":true}'`，并使用 `phaseo byok create --provider <id> --name <name> --key-stdin` 添加提供商密钥。
 
 ### 动态路由将策略绑定到 API 密钥
 
-如果不同 API 密钥或请求类别需要不同的提供商行为，请在**控制台 -> 设置 -> 路由**中创建动态路由。路由可以：
+如果不同 API 密钥或请求类别需要不同的提供商行为，请在**控制台 -> 设置 -> 路由**中创建动态路由。在 CLI 中使用 `phaseo routing dynamic-routes create`、`set-keys` 和 `deploy`，或使用 `/v1/routing/dynamic-routes` API。路由可以：
 
 - 根据嵌套请求正文字段、请求标头、自定义元数据、端点、模型或会话 ID 进行分支
 - 按百分比分配流量，用于 A/B 测试和逐步发布

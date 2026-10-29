@@ -115,6 +115,12 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createCreditTopup(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/credits/topups"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createDataContributionClassifier(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/data-contribution/classifiers"
@@ -172,6 +178,12 @@ module Phaseo
       def self.createImageEdit(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/images/edits"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createLiveSession(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/live/sessions"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -637,6 +649,13 @@ module Phaseo
       def self.getCredits(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/credits"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getCreditTopup(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/credits/topups/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -1555,6 +1574,12 @@ module Phaseo
         path ||= {}
         resolved_path = "/feedback/summary"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.testClassifier(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/classifiers/test"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.testObservabilityDestination(client, path: nil, query: nil, headers: nil, body: nil)

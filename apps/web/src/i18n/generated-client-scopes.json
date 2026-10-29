@@ -93,6 +93,8 @@
     "Common.authFlows.oauthConsent.authorizePermissions",
     "Common.authFlows.oauthConsent.authorizing",
     "Common.authFlows.oauthConsent.authorizingAs",
+    "Common.authFlows.oauthConsent.billingPermissionDescription",
+    "Common.authFlows.oauthConsent.billingPermissionLabel",
     "Common.authFlows.oauthConsent.choosePrimaryTeam",
     "Common.authFlows.oauthConsent.choosePrimaryTeamLabel",
     "Common.authFlows.oauthConsent.clear",

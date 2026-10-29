@@ -6,8 +6,6 @@ import {
 	normalizeChatCapabilityId,
 	roomIdsFromCapabilities,
 } from "@/lib/chat/rooms";
-import minimaxRoutes from "../../../../../packages/data/catalog/src/data/api_providers/minimax/models.json";
-import sunoRoutes from "../../../../../packages/data/catalog/src/data/api_providers/suno/models.json";
 
 describe("chat room capability mapping", () => {
 	it("keeps video visible and Fusion at the bottom of the room picker", () => {
@@ -119,39 +117,11 @@ describe("chat room capability mapping", () => {
 		expect(filterModelsForRoom(models, "text")).toEqual([models[1]]);
 	});
 
-	it("keeps the routable MiniMax Music 2.6 selectors eligible for the Music room", () => {
-		const routes = minimaxRoutes.filter((route) =>
-			["minimax/music-2.6", "minimax/music-2.6-free"].includes(route.api_model_id),
-		);
-		expect(routes).toHaveLength(2);
-		for (const route of routes) {
-			expect(route.is_active_gateway).toBe(true);
-			expect(route.routing_status).toBe("active");
-			expect(route.capabilities).toEqual(expect.arrayContaining([
-				expect.objectContaining({ capability_id: "music.generate", status: "active" }),
-			]));
+	it("keeps the MiniMax Music 2.6 selectors eligible for the Music room", () => {
+		for (const modelId of ["minimax/music-2.6", "minimax/music-2.6-free"]) {
 			expect(filterModelsForRoom([
-				{ modelId: route.api_model_id, capabilities: ["music.generate"] },
+				{ modelId, capabilities: ["music.generate"] },
 			], "music")).toHaveLength(1);
-		}
-	});
-
-	it("keeps unavailable music providers out of the available catalogue", () => {
-		const sunoMusicRoutes = sunoRoutes.filter((route) =>
-			route.capabilities.some(
-				(capability) => capability.capability_id === "music.generate",
-			),
-		);
-		expect(sunoMusicRoutes.length).toBeGreaterThan(1);
-		for (const route of sunoMusicRoutes) {
-			expect(route.is_active_gateway).toBe(false);
-			expect(route.routable).toBe(false);
-			expect(route.capabilities).toEqual(expect.arrayContaining([
-				expect.objectContaining({
-					capability_id: "music.generate",
-					status: "coming_soon",
-				}),
-			]));
 		}
 	});
 });

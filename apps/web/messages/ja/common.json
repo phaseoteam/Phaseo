@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "サインインしたユーザーをこのアプリが確認できるようにします。",
 			"gatewayPermissionLabel": "クレジットで AI Gateway を使用",
 			"gatewayPermissionDescription": "選択したチームのクレジットでモデルリクエストを実行できるようにします。",
+			"billingPermissionLabel": "クレジットのチャージを開始",
+			"billingPermissionDescription": "選択したチームのクレジット購入をアプリケーションがリクエストできるようにします。各請求はチームのオーナーまたは管理者がメールで確認する必要があります。",
 			"readPermissionLabel": "{resource}を読み取る",
 			"readPermissionDescription": "このアプリが{resource}を読み取れるようにします。",
 			"managePermissionLabel": "{resource}を管理",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth アプリ",
 					"description": "OAuth クライアントと連携の設定。"
+				},
+				"billing": {
+					"title": "請求",
+					"description": "チームのオーナーまたは管理者がメールで確認するクレジット購入。"
 				}
 			},
 			"resources": {
@@ -634,6 +640,7 @@
 				"providerCredentials": "プロバイダーの認証情報",
 				"guardrails": "ガードレールとポリシー設定",
 				"budgets": "チームの支出予算と利用状況",
+				"spendRules": "支出アラートとブロックのルール",
 				"managementKeys": "マシンレベルの管理キーの詳細",
 				"oauthApps": "OAuth アプリと連携の設定",
 				"privateModels": "ワークスペースのプライベートモデル"
@@ -1973,59 +1980,7 @@
 			"fullRanking": "全ランキング"
 		},
 		"apiModelConflicts": {
-			"title": "APIモデル競合インスペクター",
-			"description": "プロバイダーのAPIモデルIDを比較し、別名の候補やモデルと料金の不一致を確認します。",
-			"generatedAt": "生成日時: {date}",
-			"providerModels": "プロバイダーモデル",
-			"potentialAliasConflicts": "別名の競合候補",
-			"missingPricingRows": "料金データがない行",
-			"likelyModelPricingMismatches": "モデルと料金の不一致候補",
-			"filtersTitle": "フィルター",
-			"filtersDescription": "プロバイダーで絞り込むか、モデルと料金の問題だけを表示します。",
-			"search": "検索",
-			"searchPlaceholder": "プロバイダー、モデルID、内部ID、正規キー…",
-			"provider": "プロバイダー",
-			"conflictsOnly": "競合のみ",
-			"missingPricingOnly": "料金なしのみ",
-			"likelyMismatchOnly": "不一致候補のみ",
-			"clearFilters": "フィルターをクリア",
-			"likelyMismatches": "不一致候補",
-			"likelyMismatchesDescription": "料金がなく、同じプロバイダーの未割り当て料金ディレクトリが同じモデルファミリーに属するように見える行です。",
-			"apiModel": "APIモデル",
-			"missingPricing": "料金なし",
-			"candidatePricingSlugs": "料金ディレクトリ候補",
-			"noLikelyMismatches": "現在のフィルターに一致する不一致候補はありません。",
-			"potentialAliasConflictGroups": "別名の競合候補グループ",
-			"potentialAliasConflictGroupsDescription": "複数の生のAPIモデルIDが同じファミリーに属しているように見える、正規化済みモデルIDです。",
-			"canonicalKey": "正規キー",
-			"variants": "バリエーション",
-			"providers": "プロバイダー",
-			"issues": "問題",
-			"noConflictGroups": "現在のフィルターに一致する競合グループはありません。",
-			"providerApiModelRows": "プロバイダーAPIモデル行",
-			"apiModelId": "APIモデルID",
-			"internalModel": "内部モデル",
-			"status": "状態",
-			"pricingCoverage": "料金の網羅状況",
-			"conflict": "競合",
-			"noRows": "現在のフィルターに一致する行はありません。",
-			"complete": "完了",
-			"candidateSlugs": "候補スラグ:",
-			"noConflict": "競合なし",
-			"orphanPricingDirectories": "未割り当ての料金ディレクトリ",
-			"orphanPricingDirectoriesDescription": "packages/data/catalog/src/data/pricing 内にあり、どのプロバイダーAPIモデルIDにも対応しない料金モデルフォルダーです。",
-			"noOrphanPricingDirectories": "未割り当ての料金ディレクトリはありません。",
-			"rowLimit": "最初の500行のみ表示しています。フィルターを絞り込むと他の行を確認できます。",
-			"showingRows": "{total}行中{visible}行を表示しています。",
-			"counts": {
-				"rows": "{count}行",
-				"missingPricing": "料金なし {count}件",
-				"likelyMismatches": "不一致候補 {count}件",
-				"capabilities": "機能 {count}件",
-				"params": "パラメーター {count}件",
-				"variants": "バリエーション {count}件",
-				"orphanSlugs": "未割り当てスラグ {count}件"
-			}
+			"apiModelId": "APIモデルID"
 		},
 		"versionedPricing": {
 			"loading": "データベースの料金を読み込み中…",

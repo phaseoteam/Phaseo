@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "允许此应用验证登录用户的身份。",
 			"gatewayPermissionLabel": "使用你的额度调用 AI Gateway",
 			"gatewayPermissionDescription": "允许应用使用所选团队的额度发送模型请求。",
+			"billingPermissionLabel": "发起额度充值",
+			"billingPermissionDescription": "允许应用为所选团队请求购买额度。每笔扣款都必须由团队所有者或管理员通过邮件确认。",
 			"readPermissionLabel": "读取{resource}",
 			"readPermissionDescription": "允许此应用读取：{resource}。",
 			"managePermissionLabel": "管理{resource}",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth 应用",
 					"description": "OAuth 客户端和集成配置。"
+				},
+				"billing": {
+					"title": "账单",
+					"description": "由团队所有者或管理员通过邮件确认的额度购买。"
 				}
 			},
 			"resources": {
@@ -634,6 +640,7 @@
 				"providerCredentials": "提供商凭据",
 				"guardrails": "防护规则和策略设置",
 				"budgets": "团队支出预算和用量",
+				"spendRules": "支出提醒与拦截规则",
 				"managementKeys": "机器级管理密钥详情",
 				"oauthApps": "OAuth 应用和集成设置",
 				"privateModels": "工作空间私有模型"
@@ -1973,59 +1980,7 @@
 			"fullRanking": "完整排名"
 		},
 		"apiModelConflicts": {
-			"title": "API 模型冲突检查器",
-			"description": "比较提供商的 API 模型 ID，查找可能的别名以及模型与定价之间的不匹配。",
-			"generatedAt": "生成时间：{date}",
-			"providerModels": "提供商模型",
-			"potentialAliasConflicts": "可能的别名冲突",
-			"missingPricingRows": "缺少定价的行",
-			"likelyModelPricingMismatches": "可能的模型与定价不匹配",
-			"filtersTitle": "筛选条件",
-			"filtersDescription": "按提供商筛选，或仅显示模型和定价问题。",
-			"search": "搜索",
-			"searchPlaceholder": "提供商、模型 ID、内部 ID、规范键…",
-			"provider": "提供商",
-			"conflictsOnly": "仅冲突",
-			"missingPricingOnly": "仅缺少定价",
-			"likelyMismatchOnly": "仅可能的不匹配",
-			"clearFilters": "清除筛选",
-			"likelyMismatches": "可能的不匹配",
-			"likelyMismatchesDescription": "这些行缺少定价，同一提供商下未关联的定价目录可能属于同一模型系列。",
-			"apiModel": "API 模型",
-			"missingPricing": "缺少定价",
-			"candidatePricingSlugs": "候选定价目录标识",
-			"noLikelyMismatches": "当前筛选条件下没有可能的不匹配。",
-			"potentialAliasConflictGroups": "可能的别名冲突组",
-			"potentialAliasConflictGroupsDescription": "规范化后的模型 ID 中，多个原始 API 模型 ID 似乎属于同一系列。",
-			"canonicalKey": "规范键",
-			"variants": "变体",
-			"providers": "提供商",
-			"issues": "问题",
-			"noConflictGroups": "当前筛选条件下没有冲突组。",
-			"providerApiModelRows": "提供商 API 模型行",
-			"apiModelId": "API 模型 ID",
-			"internalModel": "内部模型",
-			"status": "状态",
-			"pricingCoverage": "定价覆盖情况",
-			"conflict": "冲突",
-			"noRows": "没有行符合当前筛选条件。",
-			"complete": "完整",
-			"candidateSlugs": "候选目录标识：",
-			"noConflict": "无冲突",
-			"orphanPricingDirectories": "未关联的定价目录",
-			"orphanPricingDirectoriesDescription": "packages/data/catalog/src/data/pricing 中存在但未对应任何提供商 API 模型 ID 的定价模型目录。",
-			"noOrphanPricingDirectories": "没有未关联的定价目录。",
-			"rowLimit": "仅显示前 500 行。请缩小筛选范围以查看其他行。",
-			"showingRows": "显示 {total} 行中的 {visible} 行。",
-			"counts": {
-				"rows": "{count} 行",
-				"missingPricing": "缺少定价：{count}",
-				"likelyMismatches": "可能不匹配：{count}",
-				"capabilities": "能力：{count}",
-				"params": "参数：{count}",
-				"variants": "变体：{count}",
-				"orphanSlugs": "未关联目录标识：{count}"
-			}
+			"apiModelId": "API 模型 ID"
 		},
 		"versionedPricing": {
 			"loading": "正在加载数据库定价…",

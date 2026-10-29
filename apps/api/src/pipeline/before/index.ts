@@ -6,10 +6,12 @@
 import { z } from "zod";
 import { getBindings } from "@/runtime/env";
 import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSuccessorRedirectAccessEnabled } from "@core/feature-flags";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
+import { createSpendLimitSlot, releaseSpend, slotAdmission, type SpendLimitSlot } from "@core/spend-limits";
 import { err } from "./http";
 import {
     MAX_REQUEST_MODEL_FALLBACKS,
@@ -47,9 +49,10 @@ import {
 	collectUnsupportedRoutingFields,
 	getEffectiveRoutingHints,
 	normalizeRequestRoutingBody,
+	requestDataLimits,
 	validateProviderQualifiedModelProvider,
 } from "../requestRouting";
-import { fetchWorkspacePolicy, applyWorkspacePolicy } from "./workspacePolicy";
+import { fetchWorkspacePolicy, applyWorkspacePolicy, providerPermittedByPolicy } from "./workspacePolicy";
 import {
     findModelSuccessor,
     findWorkspaceModelSuccessor,
@@ -72,6 +75,10 @@ import {
     type DynamicRouteEvaluation,
 } from "./dynamic-routes";
 import {
+	AUTO_ROUTER_RESIDENCY_REJECTION,
+	autoRouterNeedsZeroDataRetention,
+	autoRouterResidencyRequirement,
+	autoRouterUnmetResidency,
 	buildAutoRouterCandidateEvidence,
 	applyAutoRouterHardRequirements,
 	deterministicAutoRouterClassification,
@@ -79,7 +86,10 @@ import {
 	loadAutoRouterBenchmarks,
 	loadManagedAutoRouterCandidates,
 	loadWorkspaceAutoRouterConfig,
+	providersMeetingResidency,
 	selectAutoRouterModel,
+	unmetResidencyKeys,
+	type AutoRouterResidencyKey,
 	type AutoRouterClassification,
 	type AutoRouterEvaluation,
 } from "./auto-router";
@@ -262,31 +272,61 @@ export type BeforeRequestObservabilitySnapshot = {
     zeroDataRetention?: boolean;
 };
 
+type BeforeRequestOptions = {
+    dynamicRouteModelOverride?: string | null;
+	/** Replaces the request `model` for a request-level `models` fallback attempt. */
+	requestModelOverride?: string | null;
+	/**
+	 * Whether an unserved model may be redirected to its approved successor.
+	 * Defaults to true unless the request lists fallback models: the
+	 * customer's own list is tried first, and the successor only applies to
+	 * the last model in it.
+	 */
+	allowModelSuccessor?: boolean;
+	autoRouterModelOverride?: string | null;
+	autoRouterClassificationOverride?: AutoRouterClassification | null;
+	classifyAutoRouterRequest?: (args: {
+		endpoint: Endpoint;
+		body: unknown;
+	}) => Promise<AutoRouterClassification | null>;
+    onObservabilitySnapshot?: (snapshot: BeforeRequestObservabilitySnapshot) => void;
+};
+type BeforeRequestResult =
+    | { ok: true; ctx: PipelineContext }
+    | { ok: false; response: Response; unservedModelFallback?: UnservedModelFallback };
+
 export async function beforeRequest(
     req: Request,
     endpoint: Endpoint,
     timer: Timer,
     zodSchema: z.ZodTypeAny | null = schemaFor(endpoint),
-    options?: {
-        dynamicRouteModelOverride?: string | null;
-		/** Replaces the request `model` for a request-level `models` fallback attempt. */
-		requestModelOverride?: string | null;
-		/**
-		 * Whether an unserved model may be redirected to its approved successor.
-		 * Defaults to true unless the request lists fallback models: the
-		 * customer's own list is tried first, and the successor only applies to
-		 * the last model in it.
-		 */
-		allowModelSuccessor?: boolean;
-		autoRouterModelOverride?: string | null;
-		autoRouterClassificationOverride?: AutoRouterClassification | null;
-		classifyAutoRouterRequest?: (args: {
-			endpoint: Endpoint;
-			body: unknown;
-		}) => Promise<AutoRouterClassification | null>;
-        onObservabilitySnapshot?: (snapshot: BeforeRequestObservabilitySnapshot) => void;
-    },
-): Promise<{ ok: true; ctx: PipelineContext } | { ok: false; response: Response; unservedModelFallback?: UnservedModelFallback }> {
+    options?: BeforeRequestOptions,
+): Promise<BeforeRequestResult> {
+    // Enforce mode: the request's spend-limit admission, decided at most once by guardContext.
+    // It rides on the context when the request proceeds and is released when it stops here.
+    const spendLimit = createSpendLimitSlot();
+    let result: BeforeRequestResult;
+    try {
+        result = await runBeforeRequest(req, endpoint, timer, zodSchema, options, spendLimit);
+    } catch (error) {
+        releaseSpend(await slotAdmission(spendLimit));
+        throw error;
+    }
+    if (!spendLimit.decision) return result;
+    const admission = await slotAdmission(spendLimit);
+    if (result.ok) result.ctx.spendAdmission = admission;
+    else releaseSpend(admission);
+    return result;
+}
+
+async function runBeforeRequest(
+    req: Request,
+    endpoint: Endpoint,
+    timer: Timer,
+    zodSchema: z.ZodTypeAny | null,
+    options: BeforeRequestOptions | undefined,
+    spendLimit: SpendLimitSlot,
+): Promise<BeforeRequestResult> {
     const requestStartedAtMs = timer.startedAtMs();
 
     // 1) Auth
@@ -576,7 +616,8 @@ export async function beforeRequest(
 		model: candidateModel,
 		requestId,
 		internal,
-		shadowSpendLimit: a.value.authMethod !== "oauth",
+		shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+		spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
 		testingMode: flags.testingMode,
 		internalOnly: flags.internalOnly,
 		disableCache: debugEnabled,
@@ -634,9 +675,10 @@ export async function beforeRequest(
 			body,
 			bindings.GATEWAY_ROUTING_REGION,
 		);
-		const autoRouterBody = regionalAutoRouterBody.ok
+		// Routing limits under `routing` count as under `provider`, as they do once a model is chosen.
+		const autoRouterBody = normalizeRequestRoutingBody(regionalAutoRouterBody.ok
 			? regionalAutoRouterBody.body
-			: body;
+			: body);
 		if (body?.routing?.auto != null || body?.provider?.auto != null) {
 			return {
 				ok: false,
@@ -654,9 +696,11 @@ export async function beforeRequest(
 			};
 		}
 		const deterministicClassification = deterministicAutoRouterClassification(autoRouterBody);
+		// A request with routing limits the gateway can't honour is refused below
+		// (collectUnsupportedRoutingFields), so its text never goes to the classifier.
 		const classifierPromise = options?.autoRouterClassificationOverride
 			? Promise.resolve(options.autoRouterClassificationOverride)
-			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride
+			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride && !collectUnsupportedRoutingFields(autoRouterBody).length
 				? timer.span("classifyAutoRouterRequest", () => options.classifyAutoRouterRequest!({ endpoint, body: autoRouterBody }))
 					.catch((error) => {
 						console.warn("[beforeRequest] auto_router_classifier_failed", {
@@ -679,9 +723,31 @@ export async function beforeRequest(
 			return { ok: false, response: err("gateway_error", { reason: "auto_router_config_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
 		}
 		const classification = applyAutoRouterHardRequirements(autoRouterBody, await classifierPromise ?? deterministicClassification);
+		const policyLoad = await loadWorkspacePolicy();
+		if ("error" in policyLoad) {
+			console.error("[beforeRequest] workspace_policy_fetch_failed", {
+				workspaceId,
+				requestId,
+				error: policyLoad.error instanceof Error ? policyLoad.error.message : String(policyLoad.error),
+			});
+			return { ok: false, response: err("gateway_error", { reason: "workspace_policy_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
+		}
+		// A request that needs zero data retention (or a workspace or key that only
+		// allows it) picks only among models with a route that offers it.
+		const needsZeroDataRetention = autoRouterNeedsZeroDataRetention(autoRouterBody, policyLoad.value);
+		const residencyRequirement = autoRouterResidencyRequirement(autoRouterBody);
+		// The request's residency requirements, with zero data retention when the workspace or key needs it too.
+		const shortlistResidency = { ...residencyRequirement, requireZeroDataRetention: needsZeroDataRetention };
+		// Which requirements each candidate's providers left unmet, for the error when none qualifies.
+		const unmetByModel = new Map<string, AutoRouterResidencyKey[]>();
 		let candidateUniverse: Awaited<ReturnType<typeof loadManagedAutoRouterCandidates>>;
 		try {
-			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(config, autoRouterBody, classification));
+			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(
+				config,
+				autoRouterBody,
+				classification,
+				{ endpoint, residency: shortlistResidency, providerAllowed: providerPermittedByPolicy(autoRouterBody, policyLoad.value) },
+			));
 		} catch (error) {
 			console.error("[beforeRequest] auto_router_candidates_fetch_failed", {
 				workspaceId,
@@ -695,15 +761,6 @@ export async function beforeRequest(
 			allowedModels: candidateUniverse.models,
 			candidateUniverseSize: candidateUniverse.totalEligible,
 		};
-		const policyLoad = await loadWorkspacePolicy();
-		if ("error" in policyLoad) {
-			console.error("[beforeRequest] workspace_policy_fetch_failed", {
-				workspaceId,
-				requestId,
-				error: policyLoad.error instanceof Error ? policyLoad.error.message : String(policyLoad.error),
-			});
-			return { ok: false, response: err("gateway_error", { reason: "workspace_policy_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
-		}
 		const selection = await timer.span("selectAutoRouterModel", () => selectAutoRouterModel({
 			endpoint,
 			body: autoRouterBody,
@@ -732,13 +789,20 @@ export async function beforeRequest(
 				if (!executableProviders.length) {
 					return { ok: false as const, reason: "no_executable_providers" };
 				}
+				// The request's own zero data retention and regions, which the routing
+				// gate would otherwise only apply after this model was chosen.
+				const residentProviders = providersMeetingResidency(executableProviders, residencyRequirement);
+				if (!residentProviders.length) {
+					unmetByModel.set(candidateModel, unmetResidencyKeys(executableProviders, residencyRequirement));
+					return { ok: false as const, reason: AUTO_ROUTER_RESIDENCY_REJECTION };
+				}
 				const capabilityResult = await validateCapabilities({
 					endpoint,
 					rawBody,
 					body: autoRouterBody,
 					requestId,
 					workspaceId,
-					providers: executableProviders,
+					providers: residentProviders,
 					model: candidateResolvedModel,
 					requiredParams: requiredExecutionParams(endpoint),
 				});
@@ -767,6 +831,31 @@ export async function beforeRequest(
 			},
 		}));
 		if (selection.ok === false) {
+			const unmetRequirements = selection.reason === "no_eligible_models"
+				? autoRouterUnmetResidency({
+					requirement: shortlistResidency,
+					rejected: selection.candidates.map((candidate) => ({ reason: candidate.reason, unmet: unmetByModel.get(candidate.model) })),
+					droppedForResidency: candidateUniverse.droppedForResidency,
+					unmetByDropped: candidateUniverse.unmetByDropped,
+				})
+				: null;
+			if (unmetRequirements) {
+				// The same error a chosen model gets from the routing gate, so callers
+				// can tell a residency requirement apart from no model at all.
+				return {
+					ok: false,
+					response: err("model_region_unavailable", {
+						model,
+						reason: "no_provider_meets_residency_requirements",
+						description: unmetRequirements.description,
+						action: "Relax the residency requirements, or choose a model that meets them.",
+						unmet_requirements: unmetRequirements.unmet,
+						routing_diagnostics: { autoRouter: { candidates: selection.candidates } },
+						request_id: requestId,
+						workspace_id: workspaceId,
+					}),
+				};
+			}
 			return {
 				ok: false,
 				response: err("unsupported_model_or_endpoint", {
@@ -923,7 +1012,8 @@ export async function beforeRequest(
                     onCreditCacheWrite,
                     requestId,
                     internal,
-                    shadowSpendLimit: a.value.authMethod !== "oauth",
+                    shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+                    spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
                     testingMode: testingModeEnabled,
                     disableCache: debugEnabled,
                 })
@@ -1213,6 +1303,9 @@ export async function beforeRequest(
 		};
 	}
 	mergedBody = deploymentRegionResult.body;
+
+    // Read before the pin below, which is a routing choice rather than a limit on where the content may go.
+    const contentDataLimits = requestDataLimits(mergedBody);
 
     // Keep this as the final request-level provider constraint before workspace
     // policy enforcement. A provider-qualified model is an exact pair, not a
@@ -1674,9 +1767,11 @@ export async function beforeRequest(
         stream,
         req,
         rawBody: rawBody && typeof rawBody === "object" ? (rawBody as Record<string, unknown>) : null,
-        authMethod: apiKeyRef?.startsWith("oauth_") ? "oauth" : "api_key",
-        oauthClientId: apiKeyRef?.startsWith("oauth_") ? (apiKeyKid ?? null) : null,
-        oauthUserId: apiKeyRef?.startsWith("oauth_") ? (userId ?? null) : null,
+        // Delegated OAuth keys authenticate as `kid_…` but belong to an OAuth app, so their
+        // requests are attributed to the app and its user like OAuth access tokens are.
+        authMethod: a.value.authMethod === "oauth" ? "oauth" : "api_key",
+        oauthClientId: a.value.authMethod === "oauth" ? (a.value.oauthClientId ?? null) : null,
+        oauthUserId: a.value.authMethod === "oauth" ? (userId ?? null) : null,
         returnMeta,
         returnRoutingDiagnostics,
         debug,
@@ -1705,6 +1800,7 @@ export async function beforeRequest(
 		zeroDataRetention:
 			workspacePolicyResult.diagnostics.privacyZdrOnly === true ||
 			getEffectiveRoutingHints(mergedBody).requireZeroDataRetention === true,
+		contentDataLimits,
         endpoint,
         capability,
         requestId,

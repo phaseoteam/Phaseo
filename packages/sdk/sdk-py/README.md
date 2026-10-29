@@ -147,7 +147,7 @@ App attribution is optional and is never inferred from the SDK itself.
 
 ## Trusted workloads (OIDC tokens instead of an API key)
 
-Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → Trusted workloads, then pass a function as `api_key`. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
+Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then pass a function as `api_key`. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
 
 ```python
 import os
@@ -312,6 +312,19 @@ video_socket_url = client.videos.websocket_url(
 
 generic_socket_url = client.get_async_job_websocket_url("video", "video_123")
 ```
+
+## Realtime voice (beta)
+
+`AsyncPhaseo.realtime.connect()` creates a realtime session and opens the relay WebSocket. It needs the optional `websockets` package: `pip install "phaseo[realtime]"`. Provider events pass through unchanged.
+
+```python
+session = await client.realtime.connect("openai/gpt-realtime-2", voice="marin")
+session.on_warning(lambda warning: print(warning["code"]))
+await session.send_audio(pcm16_chunk)  # PCM16 bytes; base64 is handled for you
+ended = await session.end(reason="caller hung up")  # session.ended: reason, usage, cost, billing_status
+```
+
+If the socket closes without `session.ended`, `end()` raises `RealtimeSessionClosedError`, whose `final_bill` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
 
 ## Free and paid models
 

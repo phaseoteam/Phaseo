@@ -30,7 +30,8 @@ Du wirst:
 <Visibility for="agents">
 Schnellstart-Checkliste für Agenten:
 
-- Schlüssel werden im Dashboard unter https://phaseo.app/settings/keys erstellt. Erzeuge oder rate nie einen Schlüssel. Sende ihn als `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` und nur aus serverseitigem Code.
+- Erstelle den Schlüssel mit der CLI: `npm install -g @phaseo/cli`, dann `phaseo login` (oder `phaseo login --device-code` in einer Shell ohne Browser; ein Mensch bestätigt die Anmeldung), dann `phaseo keys create --name <name> --json`. Erzeuge oder rate nie einen Schlüssel. Sende ihn als `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` und nur aus serverseitigem Code.
+- Für kostenpflichtige Modelle führe einmal `phaseo login --scopes billing:write` aus; danach startet `phaseo credits add --amount <usd> --json` eine Aufladung. Mit gespeicherter Karte bestätigt ein Inhaber oder Admin des Workspace sie über einen Link per E-Mail. Ohne gespeicherte Karte enthält die Antwort `next_action: "open_checkout_url"` und einen Zahlungslink, den ein Inhaber oder Admin zum Bezahlen öffnet; die Karte wird dann für spätere Aufladungen gespeichert. Schicke Nutzer für Schlüssel, Guthaben oder Einstellungen nicht ins Dashboard; siehe https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - Sende die erste Anfrage mit `POST https://api.phaseo.app/v1/responses` und den Feldern `model` und `input`. `phaseo/free` funktioniert ohne Wallet-Guthaben.
 - Lies die Antwort aus `output[].content[]`, wo `type` den Wert `output_text` hat.
 - Wenn die Anfrage fehlschlägt, entscheide anhand des JSON-Codes `error`, wie in https://phaseo.app/docs/v1/api-reference/errors.md beschrieben.
@@ -40,9 +41,15 @@ Schnellstart-Checkliste für Agenten:
 
 ## 1. API-Schlüssel erstellen
 
-1. Öffne das [Phaseo-Dashboard](https://phaseo.app/settings/keys).
-2. Erstelle einen Schlüssel unter **Gateway -> Schlüssel**.
-3. Kopiere ihn einmal und bewahre ihn sicher auf.
+Installiere die [Phaseo CLI](./guides/integrations/phaseo-cli), melde dich an und erstelle einen Schlüssel:
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # use --device-code over SSH or in an agent sandbox
+phaseo keys create --name "Quickstart" --json
+```
+
+Der Schlüssel wird nur einmal angezeigt. Bewahre ihn sicher auf, zum Beispiel als `PHASEO_API_KEY`. Für kostenpflichtige Modelle führe einmal `phaseo login --scopes billing:write` aus und lade dann mit `phaseo credits add --amount 20` Guthaben auf. Mit gespeicherter Karte bestätigt ein Inhaber oder Admin des Workspace die Zahlung über einen Link per E-Mail. Ohne gespeicherte Karte gibt der Befehl einen Zahlungslink zurück, den ein Inhaber oder Admin zum Bezahlen öffnet; die Karte wird dann für spätere Aufladungen gespeichert. Du kannst den Schlüssel auch im [Phaseo-Dashboard](https://phaseo.app/settings/keys) unter **Gateway -> Schlüssel** erstellen.
 
 Verwende dieses Format:
 

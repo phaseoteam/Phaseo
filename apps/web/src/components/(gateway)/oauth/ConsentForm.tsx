@@ -6,6 +6,7 @@ import Image from "next/image";
 import {
 	AlertCircle,
 	CheckCircle2,
+	CreditCard,
 	ExternalLink,
 	KeyRound,
 	Lock,
@@ -58,6 +59,7 @@ function scopeToneBadge(tone: ScopeTone) {
 function scopeGroupIcon(key: ConsentScopeGroupKey) {
 	if (key === "identity" || key === "guardrails") return Shield;
 	if (key === "gateway" || key === "keys") return KeyRound;
+	if (key === "billing") return CreditCard;
 	if (key === "catalog" || key === "data") return Search;
 	if (key === "workspaces") return Users;
 	if (key === "management-keys") return Wrench;
@@ -132,6 +134,9 @@ export default function ConsentForm({
 		}
 		if (permission.action === "gateway") {
 			return { label: t("gatewayPermissionLabel"), description: t("gatewayPermissionDescription") };
+		}
+		if (permission.action === "billing") {
+			return { label: t("billingPermissionLabel"), description: t("billingPermissionDescription") };
 		}
 		if (permission.action === "unknown" || !permission.resourceKey) {
 			return {

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import ExpiryDateTimeField from "./ExpiryDateTimeField";
 import CreditGrantEditDialog from "./CreditGrantEditDialog";
 import { DisplayDateTime } from "@/components/display/DisplayValue";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 export async function generateMetadata() {
 	const t = await getTranslations("Product.internalTools.promoCredits");
@@ -17,9 +18,9 @@ export async function generateMetadata() {
 const BIGINT_ZERO = BigInt(0);
 const NANOS_PER_USD = BigInt(1_000_000_000);
 
-function formatUsdFromNanos(nanos: number | null | undefined, locale: string): string {
+function formatUsdFromNanos(nanos: number | null | undefined, _locale: string): string {
 	const value = Number(nanos ?? 0);
-	const formatter = new Intl.NumberFormat(locale, {
+	const formatter = new Intl.NumberFormat(MONEY_LOCALE, {
 		style: "currency",
 		currency: "USD",
 		minimumFractionDigits: 2,
@@ -39,8 +40,8 @@ function parseNanos(value: unknown): bigint {
 	return BIGINT_ZERO;
 }
 
-function formatUsdFromNanosBigInt(nanos: bigint, locale: string): string {
-	return new Intl.NumberFormat(locale, {
+function formatUsdFromNanosBigInt(nanos: bigint, _locale: string): string {
+	return new Intl.NumberFormat(MONEY_LOCALE, {
 		style: "currency",
 		currency: "USD",
 		minimumFractionDigits: 2,

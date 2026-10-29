@@ -1,0 +1,8 @@
+---
+title: "Quitar alcances de una aplicación autorizada"
+sidebarTitle: "Reducir alcances"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /me/authorized-apps/{id}"
+description: "Limita el acceso de una aplicación autorizada a menos alcances."
+---
+<Note>Este endpoint requiere un token de acceso OAuth con `oauth_clients:write`. Solo se pueden quitar alcances; para añadirlos, vuelve a autorizar la aplicación en el navegador.</Note>

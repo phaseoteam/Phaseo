@@ -9,7 +9,31 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Product","api":"API & SDKs","models":"Models"}} clearLabel="Clear" />
 
+<Update label="October 29, 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+- [Mistral: Mistral Large 4](https://phaseo.app/models/mistral/mistral-large-4.0)
+
+</div>
+
+</Update>
+
 <Update label="October 28, 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+![The changelog with the Product filter on and the date list beside it](../images/changelog/2026-10-28--changelog-filters.png)
+
+- The changelog now lists product and API changes alongside model releases, with **Product**, **API & SDKs** and **Models** filters that keep the date list ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261)).
+- The preset editor adds **Publish** next to **Save Draft**, and **Versions and labels** gives each label a version picker, so choosing an earlier version rolls back; see [Prompt Templates](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+- Opening a published preset version shows its models and template messages, the lines that differ from the default version, and a **Run** button to try it ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+
+</div>
 
 <div data-changelog-category="api">
 
@@ -30,6 +54,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Product</p>
 
 - The preset editor's **Versions and labels** section points named labels at published versions, so moving a label rolls requests back in one click; see [Prompt Templates](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- The preset model picker offers only models the gateway still serves; before, it also listed retired models that requests could not reach ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260)).
+- Running a preset in a workspace with no credits says so and links to **Add credits**; before, it showed a generic error ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276)).
+- Pages that load the full model catalogue, such as the preset editor, get it from cache; before, each load took about 3 seconds and some failed ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278)).
 
 </div>
 
@@ -56,6 +83,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+![GPT-6.1 Terra model release artwork](../images/model-releases/2026-10-26--openai--gpt-6.1-terra.png)
+
+- [OpenAI: GPT-6.1 Terra](https://phaseo.app/models/openai/gpt-6.1-terra)
+
+</div>
+
 </Update>
 
 <Update label="October 24, 2026">
@@ -66,6 +103,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - Every workspace can use retired model routing: owners and admins turn it on in **Settings -> Routing -> Retired model routing**, and requests go to the approved replacement; see [Model Deprecation and Retirement](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
 - Retired model routing uses an approved replacement only when it costs no more than the retired model, unless owners and admins allow a higher price; a replacement they choose themselves is used whatever it costs ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- The presets list and editor open even when the full model catalogue fails to load; before, the page showed an error ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
 
@@ -105,6 +143,18 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Rate limit policies enforce `concurrent_requests`, returning `429` with reason `policy_concurrent_requests` and `Retry-After: 1` when every slot is taken; see [Rate Limits](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Strict rate limit policies (`fail_closed`) check their per-minute limits before the request is sent to a provider ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Requests sent through the EU and US regional gateways now reach Broadcast destinations ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+- Requests to most models succeed again; on October 23, after a provider data policy update, they returned `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+![Kimi K3.1 Pro model release artwork](../images/model-releases/2026-10-23--moonshotai--kimi-k3.1-pro.png)
+
+- [Moonshot: Kimi K3.1 Pro](https://phaseo.app/models/moonshotai/kimi-k3.1-pro)
+- [Abliteration AI: Abliterated Large Flash](https://phaseo.app/models/abliteration-ai/abliterated-model-large-flash)
 
 </div>
 
@@ -177,6 +227,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+- [Base Labs: Elephant-1](https://phaseo.app/models/baselabs/elephant-1)
+- [Base Labs: Mammoth-1](https://phaseo.app/models/baselabs/mammoth-1)
+
+</div>
+
+</Update>
+
+<Update label="October 20, 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+- [Mistral: Voxtral Mini Transcribe 3](https://phaseo.app/models/mistral/voxtral-mini-transcribe-3)
+- [Mistral: Voxtral Small Transcribe 3](https://phaseo.app/models/mistral/voxtral-small-transcribe-3)
+- [Mistral: Voxtral TTS 3](https://phaseo.app/models/mistral/voxtral-tts-3)
+
+</div>
+
 </Update>
 
 <Update label="October 19, 2026">
@@ -192,9 +265,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+![MiniMax M3.1 Flash model release artwork](../images/model-releases/2026-10-19--minimax--minimax-m3.1-flash.png)
+
+- [MiniMax: MiniMax M3.1 Flash](https://phaseo.app/models/minimax/minimax-m3.1-flash)
+- [Cloudflare: Clairic](https://phaseo.app/models/cloudflare/clairic)
+- [Inception: Mercury 3](https://phaseo.app/models/inception/mercury-3)
+
+</div>
+
 </Update>
 
 <Update label="October 18, 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- English docs pages shared on social media or in chat show a preview image with the page's title and description ([#3003](https://github.com/phaseoteam/Phaseo/pull/3003)).
+
+</div>
 
 <div data-changelog-category="api">
 
@@ -216,6 +309,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Product</p>
 
 - **Settings -> Notifications** adds **Rate Limit Alerts**, sent at most hourly by email, Slack, Discord, Teams or webhook; see [Workspace Notifications](./guides/workspace-notifications.mdx) ([#2946](https://github.com/phaseoteam/Phaseo/pull/2946)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+![DeepSeek V4.1 Flash 1017 model release artwork](../images/model-releases/2026-10-17--deepseek--deepseek-v4.1-flash-1017.png)
+
+- [DeepSeek: DeepSeek V4.1 Flash 1017](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-1017)
 
 </div>
 
@@ -268,6 +371,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+- [Nvidia: Nemotron 3.5 Super VL 120B A12B](https://phaseo.app/models/nvidia/nemotron-3.5-super-vl-120b-a12b)
+
+</div>
+
 </Update>
 
 <Update label="October 14, 2026">
@@ -291,6 +402,17 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+![Jev 1.14 model release artwork](../images/model-releases/2026-10-14--typesafe--jev-1.14.0.png)
+
+- [TypeSafe: Jev 1.14](https://phaseo.app/models/typesafe/jev-1.14.0)
+- [SpaceXAI: Grok Voice 3.0](https://phaseo.app/models/spacex-ai/grok-voice-3.0)
+
+</div>
+
 </Update>
 
 <Update label="October 13, 2026">
@@ -300,6 +422,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Product</p>
 
 - Each usage overview card shows a month-end forecast for spend, requests and tokens, or the month so far for rates such as cache hit rate ([#2900](https://github.com/phaseoteam/Phaseo/pull/2900)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+![Gemini 4 Argon model release artwork](../images/model-releases/2026-10-13--google--gemini-4-argon.png)
+
+- [Google: Gemini 4 Argon](https://phaseo.app/models/google/gemini-4-argon)
 
 </div>
 
@@ -322,6 +454,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - The top-level `models` fallback list works on every inference endpoint, including `/v1/messages` and the media endpoints; see [Routing and Fallbacks](./guides/routing-and-fallbacks.mdx) ([#2858](https://github.com/phaseoteam/Phaseo/pull/2858)).
 - `429` responses for API key request and spend limits include `Retry-After` with the seconds until the limit resets ([#2864](https://github.com/phaseoteam/Phaseo/pull/2864)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+![Muse Wonder 1.0 model release artwork](../images/model-releases/2026-10-12--meta--muse-wonder-1.0.png)
+
+- [Meta: Muse Wonder 1.0](https://phaseo.app/models/meta/muse-wonder-1.0)
 
 </div>
 
@@ -365,6 +507,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Each workspace member has a requests-per-minute allowance shared across their API keys, rising from 10 to 120 as the workspace becomes established; see [Rate Limits](./api-reference/limits.mdx) ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2800](https://github.com/phaseoteam/Phaseo/pull/2800)).
 - Each user can make 1,500 free-model requests per UTC day, and requests over either limit return `429` with `Retry-After` ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2787](https://github.com/phaseoteam/Phaseo/pull/2787)).
 - The EU and US regional gateways return `403 model_region_unavailable` when no provider serves the model in that region; see [Route text requests by region](./guides/regional-routing.mdx) ([#2811](https://github.com/phaseoteam/Phaseo/pull/2811), [#2813](https://github.com/phaseoteam/Phaseo/pull/2813)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+![Clef Omni model release artwork](../images/model-releases/2026-10-09--cloudflare--clef-omni.png)
+
+- [Cloudflare: Clef Omni](https://phaseo.app/models/cloudflare/clef-omni)
 
 </div>
 

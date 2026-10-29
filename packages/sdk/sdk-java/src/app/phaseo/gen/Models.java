@@ -805,6 +805,16 @@ public final class Models {
 		public java.util.List<String> models;
 	}
 
+	public static class ClassifierTestRequest {
+		public Object classifier;
+		public String classifier_id;
+		public Object sample;
+	}
+
+	public static class ClassifierTestResponse {
+		public Object data;
+	}
+
 	public static class ClassifierUpdateInput {
 		public String description;
 		public java.util.List<Object> dimensions;
@@ -827,6 +837,38 @@ public final class Models {
 	public static class CreditsResponse {
 		public Object credits;
 		public Object ok;
+	}
+
+	public static class CreditTopup {
+		public Integer amount_cents;
+		public Double amount_usd;
+		public String checkout_url;
+		public Integer confirmation_recipients;
+		public String created_at;
+		public String currency;
+		public String decided_at;
+		public String expires_at;
+		public Boolean final_;
+		public Object flow;
+		public String id;
+		public String message;
+		public Object next_action;
+		public String paid_at;
+		public Object payment_method;
+		public String reason;
+		public Object status;
+		public String workspace_id;
+	}
+
+	public static class CreditTopupCreateRequest {
+		public Double amount_usd;
+		public String idempotency_key;
+		public String workspace_id;
+	}
+
+	public static class CreditTopupResponse {
+		public Object ok;
+		public Object topup;
 	}
 
 	public static class DataContributionCategories {
@@ -3593,6 +3635,7 @@ public final class Models {
 
 	public static class SpendRulePreview {
 		public Object alert;
+		public Object balance;
 		public Object base_kind;
 		public Integer base_nanos;
 		public Object base_ref;

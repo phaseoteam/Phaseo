@@ -65,6 +65,7 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 		const permission: ScopePermission = scopePermissionFor(scope);
 		if (permission.action === "identity") return { label: consentT("identityPermissionLabel"), description: consentT("identityPermissionDescription") };
 		if (permission.action === "gateway") return { label: consentT("gatewayPermissionLabel"), description: consentT("gatewayPermissionDescription") };
+		if (permission.action === "billing") return { label: consentT("billingPermissionLabel"), description: consentT("billingPermissionDescription") };
 		if (permission.action === "unknown" || !permission.resourceKey) {
 			return { label: consentT("unknownPermissionLabel", { scope }), description: consentT("unknownPermissionDescription", { scope }) };
 		}

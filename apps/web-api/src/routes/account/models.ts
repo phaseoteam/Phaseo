@@ -346,6 +346,8 @@ accountModelsRouter.get("/audit/source", async (c) => {
 
 // Hidden (staged and internal) models only. Page loads use this instead of the
 // full audit source, which also serialises every route, benchmark, and price.
+// `staged=true` limits the list to unreleased drafts; most hidden rows are
+// retired, deprecated or delisted models, which are not coming soon.
 const HIDDEN_MODEL_ROUTE_CHUNK_SIZE = 25;
 
 accountModelsRouter.get("/hidden", async (c) => {
@@ -353,12 +355,15 @@ accountModelsRouter.get("/hidden", async (c) => {
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const client = await requireAdmin(c.req.raw, c.env);
 	if (!client) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const stagedOnly = c.req.query("staged") === "true";
 	try {
-		const models = await fetchAllRows<any>((from, to) => client.from("v2_models")
-			.select("model_id:model_slug,name,release_date:released_at,announced_at,retirement_date:retired_at,status,catalogue_status,hidden,lab_slug,input_types:input_modalities,output_types:output_modalities,organisation:v2_labs(lab_slug,name)")
-			.eq("hidden", true)
-			.order("released_at", { ascending: false })
-			.range(from, to));
+		const models = await fetchAllRows<any>((from, to) => {
+			let query = client.from("v2_models")
+				.select("model_id:model_slug,name,release_date:released_at,announced_at,retirement_date:retired_at,status,catalogue_status,hidden,lab_slug,input_types:input_modalities,output_types:output_modalities,organisation:v2_labs(lab_slug,name)")
+				.eq("hidden", true);
+			if (stagedOnly) query = query.eq("status", "draft");
+			return query.order("released_at", { ascending: false }).range(from, to);
+		});
 		if (c.req.query("includeRoutes") !== "true") return c.json({ models }, 200, PRIVATE_NO_STORE_HEADERS);
 		const modelIds = models.map((model) => String(model.model_id ?? "")).filter(Boolean);
 		const chunks: string[][] = [];

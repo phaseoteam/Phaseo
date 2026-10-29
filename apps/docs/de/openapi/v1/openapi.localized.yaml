@@ -1156,6 +1156,243 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
+  /live/sessions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createLiveSession
+      summary: GPT-Live-Sitzung erstellen
+      description: 'Erstellt eine GPT-Live-Sprachsitzung mit Nutzungsabrechnung, die das Schlussfolgern an ein Responses-Backend-Modell delegiert, und gibt die Verbindungsdaten des Relays zurück. Funktionstools laufen auf Ihrem Client: Das Relay leitet jeden `function_call` weiter und nimmt dessen `function_call_output` gefolgt von `response.create` an.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - model
+                - provider
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - live
+                model:
+                  type: string
+                  enum:
+                    - openai/gpt-live-1
+                provider:
+                  type: string
+                  enum:
+                    - openai
+                voice:
+                  type: string
+                  default: marin
+                  enum:
+                    - alloy
+                    - ash
+                    - ballad
+                    - beacon
+                    - bossa
+                    - cedar
+                    - cinder
+                    - coral
+                    - delta
+                    - echo
+                    - gleam
+                    - marin
+                    - meridian
+                    - quartz
+                    - ripple
+                    - sage
+                    - shimmer
+                    - stone
+                    - tempo
+                    - verse
+                    - vesper
+                    - willow
+                instructions:
+                  type: string
+                  maxLength: 4000
+                source:
+                  type: string
+                  default: api
+                  enum:
+                    - api
+                    - chat
+                metadata:
+                  type: object
+                  additionalProperties: true
+                backend_model:
+                  type: string
+                  default: openai/gpt-5.6-luna
+                  enum:
+                    - openai/gpt-5.6-luna
+                    - openai/gpt-5.6-terra
+                backend_settings:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    instructions:
+                      type: string
+                      maxLength: 16000
+                    max_output_tokens:
+                      type: integer
+                      minimum: 16
+                      maximum: 32768
+                      default: 4096
+                    reasoning_effort:
+                      type: string
+                      enum:
+                        - none
+                        - low
+                        - medium
+                        - high
+                        - xhigh
+                    reasoning_summary:
+                      type: string
+                      enum:
+                        - auto
+                        - concise
+                        - detailed
+                    verbosity:
+                      type: string
+                      enum:
+                        - low
+                        - medium
+                        - high
+                    service_tier:
+                      type: string
+                      default: default
+                      enum:
+                        - default
+                        - flex
+                        - priority
+                    web_search:
+                      type: boolean
+                      default: false
+                    tools:
+                      type: array
+                      maxItems: 32
+                      description: Funktionstools, die der Client ausführt, mit eindeutigen Namen.
+                      items:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - type
+                          - name
+                        properties:
+                          type:
+                            type: string
+                            enum:
+                              - function
+                          name:
+                            type: string
+                            pattern: ^[a-zA-Z0-9_-]{1,64}$
+                          description:
+                            type: string
+                            maxLength: 1024
+                          parameters:
+                            type: object
+                            additionalProperties: true
+                          strict:
+                            type: boolean
+                    tool_choice:
+                      type: string
+                      default: auto
+                      enum:
+                        - auto
+                        - none
+                        - required
+                    parallel_tool_calls:
+                      type: boolean
+                      default: true
+      responses:
+        '201':
+          description: GPT-Live-Sitzung erstellt
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -2576,6 +2813,136 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: Verboten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Serverfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: Guthabenaufladung starten
+      description: Fordert Guthaben für den authentifizierten Arbeitsbereich an. Erfordert den optionalen Scope billing:write und die Mitgliedschaft im Arbeitsbereich. Hier wird nichts belastet. Mit gespeicherter Karte erhält jeder Owner und Admin des Arbeitsbereichs per E-Mail einen einmalig nutzbaren Link, und einer von ihnen bestätigt oder lehnt die Belastung ab. Ohne gespeicherte Karte enthält die Antwort eine checkout_url, unter der ein Owner oder Admin mit einer neuen Karte bezahlt, die für spätere Aufladungen gespeichert wird. Beträge von $5 bis $500. Ein Arbeitsbereich kann 5 offene Aufladungen haben, und jede läuft nach 30 Minuten ab.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optionaler Idempotenzschlüssel. Bei Wiederholung wird dieselbe Aufladung zurückgegeben, statt eine neue anzulegen. Entspricht dem Feld idempotency_key.
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: Vorhandene Aufladung für diesen Idempotenzschlüssel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: Aufladung erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: Ungültiger Betrag (invalid_amount, amount_below_minimum oder amount_above_maximum)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Nicht autorisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Verboten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Idempotenzschlüssel wurde für eine andere Aufladung verwendet, oder kein Owner oder Admin kann sie bestätigen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Der Arbeitsbereich hat bereits 5 offene Aufladungen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Serverfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Kartenzahlungen sind nicht verfügbar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: Guthabenaufladung abrufen
+      description: Gibt den Status einer Guthabenaufladung im authentifizierten Arbeitsbereich zurück. Erfordert credits:read oder billing:write. Abfragen, bis final true ist. Abgelehnte, abgelaufene und fehlgeschlagene Aufladungen enthalten einen Grundcode; nicht automatisch wiederholen.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Aufladung.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status der Aufladung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: Ungültige Aufladungs-ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Nicht autorisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Verboten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Aufladung nicht gefunden
           content:
             application/json:
               schema:
@@ -4502,7 +4869,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: Creates a daily, weekly, or monthly spend budget for one department. Owners and admins get a mobile push at about 80% and at 100%. Department budgets do not block requests.
+      description: Erstellt ein tägliches, wöchentliches oder monatliches Ausgabenbudget für eine Abteilung. Ist es aufgebraucht, liefern API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, 429 key_limit_exceeded, bis das Budget zurückgesetzt wird. Batch-Jobs, Echtzeitsitzungen und OAuth-Anfragen werden nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Administratoren erhalten bei etwa 80 % und bei 100 % eine mobile Push-Benachrichtigung.
       requestBody:
         required: true
         content:
@@ -4582,7 +4949,7 @@ paths:
         - Gateway
       operationId: deleteDepartmentBudget
       summary: Delete a department budget
-      description: Removes a department budget and its alerts.
+      description: Entfernt ein Abteilungsbudget. Innerhalb von etwa einer Minute werden Anfragen seinetwegen nicht mehr abgelehnt, und seine Benachrichtigungen enden.
       responses:
         '200':
           description: Department budget deleted
@@ -4602,11 +4969,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkloadIdentityPolicies
-      summary: List trusted workload policies
-      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      summary: Richtlinien für vertrauenswürdige Workloads auflisten
+      description: 'Listet die Richtlinien für vertrauenswürdige Workloads des Workspace auf: welche Vercel-Deployments und GitHub-Actions-Workflows das Gateway mit ihrem OIDC-Token statt mit einem API-Schlüssel aufrufen dürfen. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.'
       responses:
         '200':
-          description: Trusted workload policies
+          description: Richtlinien für vertrauenswürdige Workloads
           content:
             application/json:
               schema:
@@ -4622,8 +4989,8 @@ paths:
       tags:
         - Gateway
       operationId: createWorkloadIdentityPolicy
-      summary: Create a trusted workload policy
-      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Richtlinie für vertrauenswürdige Workloads erstellen
+      description: Erstellt eine Richtlinie und ihren Schlüssel ohne Geheimnis. Tokens müssen für die Audience https://api.phaseo.app ausgestellt sein und zum festgelegten Inhaber sowie zu allen Claim-Bedingungen passen. Ein Workspace kann bis zu 50 Richtlinien haben; darüber hinaus wird 409 limit_reached zurückgegeben. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.
       requestBody:
         required: true
         content:
@@ -4632,7 +4999,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
       responses:
         '201':
-          description: Trusted workload policy created
+          description: Richtlinie für vertrauenswürdige Workloads erstellt
           content:
             application/json:
               schema:
@@ -4648,7 +5015,7 @@ paths:
       - name: id
         in: path
         required: true
-        description: Trusted workload policy id.
+        description: ID der Richtlinie für vertrauenswürdige Workloads.
         schema:
           type: string
           format: uuid
@@ -4657,11 +5024,11 @@ paths:
       tags:
         - Gateway
       operationId: getWorkloadIdentityPolicy
-      summary: Get a trusted workload policy
-      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Richtlinie für vertrauenswürdige Workloads abrufen
+      description: Gibt eine Richtlinie für vertrauenswürdige Workloads zurück. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.
       responses:
         '200':
-          description: Trusted workload policy
+          description: Richtlinie für vertrauenswürdige Workloads
           content:
             application/json:
               schema:
@@ -4677,8 +5044,8 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
-      summary: Update a trusted workload policy
-      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Richtlinie für vertrauenswürdige Workloads aktualisieren
+      description: Ändert Name, Status, Claim-Bedingungen oder maximale Token-Lebensdauer einer Richtlinie. Anbieter, Aussteller und Inhaber lassen sich nicht ändern; erstelle stattdessen eine neue Richtlinie. Änderungen erreichen das Gateway innerhalb einer Minute. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.
       requestBody:
         required: true
         content:
@@ -4687,7 +5054,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
       responses:
         '200':
-          description: Trusted workload policy updated
+          description: Richtlinie für vertrauenswürdige Workloads aktualisiert
           content:
             application/json:
               schema:
@@ -4703,11 +5070,11 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkloadIdentityPolicy
-      summary: Delete a trusted workload policy
-      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: Richtlinie für vertrauenswürdige Workloads löschen
+      description: Widerruft den Schlüssel der Richtlinie und löscht dann die Richtlinie. Passende Tokens werden innerhalb einer Minute abgelehnt. Frühere Anfragen behalten ihren Schlüssel in Logs und Nutzung. Erfordert keys:delete für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.
       responses:
         '200':
-          description: Trusted workload policy deleted
+          description: Richtlinie für vertrauenswürdige Workloads gelöscht
           content:
             application/json:
               schema:
@@ -5349,6 +5716,57 @@ paths:
                 $ref: '#/components/schemas/ClassifierResponse'
         default:
           description: Anfrage fehlgeschlagen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: Klassifikator an einem Beispiel testen
+      description: Führt einen gespeicherten Klassifikator oder einen Entwurf einmal auf einem Beispiel-Prompt und einer Beispielantwort aus, mit derselben Anfrage, die das Gateway dafür sendet. Es ist eine echte, kostenpflichtige Modellanfrage mit deinen eigenen Anmeldedaten, gekennzeichnet als phaseo.classifier_test. Inhaber und Administratoren; die Anmeldedaten benötigen classifiers:write und gateway:access. Management-Schlüssel können keine Modellanfragen stellen und werden abgelehnt.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: Die vom Modell gewählten Labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: Ungültiger Klassifikator oder ungültiges Beispiel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Nicht autorisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Kein Inhaber oder Administrator, classifiers:write fehlt oder die Anmeldedaten haben kein gateway:access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Gespeicherter Klassifikator in diesem Arbeitsbereich nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Die Modellanfrage ist fehlgeschlagen (zum Beispiel wegen unzureichender Credits)
           content:
             application/json:
               schema:
@@ -9345,23 +9763,23 @@ paths:
       tags:
         - Gateway
       operationId: getMe
-      summary: Get the signed-in user
-      description: Returns the OAuth token's user, the token's client and scopes, and the workspaces the user belongs to. OAuth token with me:read required; management keys are refused.
+      summary: Angemeldeten Benutzer abrufen
+      description: Gibt den Benutzer des OAuth-Tokens, den Client und die Berechtigungsbereiche des Tokens sowie die Arbeitsbereiche des Benutzers zurück. Erfordert ein OAuth-Token mit me:read; Management-Schlüssel werden abgelehnt.
       responses:
         '200':
-          description: The signed-in user
+          description: Der angemeldete Benutzer
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MeResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Kein OAuth-Token, oder das Token ist ungültig oder abgelaufen
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: Dem Token fehlt me:read
           content:
             application/json:
               schema:
@@ -9372,23 +9790,23 @@ paths:
       tags:
         - Gateway
       operationId: getMyProfile
-      summary: Get your profile
-      description: Returns the profile fields shown on the dashboard's Profile page. OAuth token with me:read required.
+      summary: Dein Profil abrufen
+      description: Gibt die Profilfelder zurück, die auf der Profilseite im Dashboard angezeigt werden. Erfordert ein OAuth-Token mit me:read.
       responses:
         '200':
-          description: Profile
+          description: Profil
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Kein OAuth-Token, oder das Token ist ungültig oder abgelaufen
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks me:read
+          description: Dem Token fehlt me:read
           content:
             application/json:
               schema:
@@ -9398,8 +9816,8 @@ paths:
       tags:
         - Gateway
       operationId: updateMyProfile
-      summary: Update your profile
-      description: Changes your display name, default workspace (one you belong to) or whether your details are hidden on screen. Password, MFA and passkeys are managed in the browser only. OAuth token with settings:write required.
+      summary: Dein Profil aktualisieren
+      description: Ändert deinen Anzeigenamen, deinen Standardarbeitsbereich (einen, dem du angehörst) oder ob deine Angaben auf dem Bildschirm ausgeblendet werden. Passwort, MFA und Passkeys verwaltest du nur im Browser. Erfordert ein OAuth-Token mit settings:write.
       requestBody:
         required: true
         content:
@@ -9408,25 +9826,25 @@ paths:
               $ref: '#/components/schemas/UserProfileUpdateRequest'
       responses:
         '200':
-          description: Updated profile
+          description: Aktualisiertes Profil
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileResponse'
         '400':
-          description: Invalid field
+          description: Ungültiges Feld
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Kein OAuth-Token, oder das Token ist ungültig oder abgelaufen
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks settings:write, or the default workspace is not one of yours
+          description: Dem Token fehlt settings:write, oder der Standardarbeitsbereich gehört nicht zu deinen
           content:
             application/json:
               schema:
@@ -9437,23 +9855,23 @@ paths:
       tags:
         - Gateway
       operationId: listAuthorizedApps
-      summary: List apps you have authorized
-      description: Lists the apps you have authorized with OAuth, in every workspace. OAuth token with oauth_clients:read required.
+      summary: Von dir autorisierte Apps auflisten
+      description: Listet die Apps auf, die du mit OAuth autorisiert hast, in allen Arbeitsbereichen. Erfordert ein OAuth-Token mit oauth_clients:read.
       responses:
         '200':
-          description: Authorized apps
+          description: Autorisierte Apps
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppListResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Kein OAuth-Token, oder das Token ist ungültig oder abgelaufen
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Token lacks oauth_clients:read
+          description: Dem Token fehlt oauth_clients:read
           content:
             application/json:
               schema:
@@ -9464,8 +9882,8 @@ paths:
       tags:
         - Gateway
       operationId: reduceAuthorizedAppScopes
-      summary: Remove scopes from an authorized app
-      description: Narrows an app's access to the scopes given. Scopes can only be removed; adding one needs your consent in the browser. OAuth token with oauth_clients:write required.
+      summary: Berechtigungsbereiche einer autorisierten App entfernen
+      description: Beschränkt den Zugriff einer App auf die angegebenen Berechtigungsbereiche. Bereiche können nur entfernt werden; zum Hinzufügen ist deine Zustimmung im Browser nötig. Erfordert ein OAuth-Token mit oauth_clients:write.
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       requestBody:
@@ -9476,25 +9894,25 @@ paths:
               $ref: '#/components/schemas/AuthorizedAppScopesRequest'
       responses:
         '200':
-          description: Scopes reduced
+          description: Berechtigungsbereiche reduziert
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppScopesResponse'
         '400':
-          description: Empty list, or a scope the app does not have
+          description: Leere Liste oder ein Bereich, den die App nicht hat
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Kein OAuth-Token, oder das Token ist ungültig oder abgelaufen
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: Autorisierte App nicht gefunden
           content:
             application/json:
               schema:
@@ -9504,25 +9922,25 @@ paths:
       tags:
         - Gateway
       operationId: revokeAuthorizedApp
-      summary: Revoke an authorized app
-      description: Revokes an app's access so its tokens stop working. Revoking the calling app's own authorization signs it out. OAuth token with oauth_clients:delete required.
+      summary: Autorisierte App widerrufen
+      description: Widerruft den Zugriff einer App, sodass ihre Tokens nicht mehr funktionieren. Widerrufst du die Autorisierung der aufrufenden App selbst, wird sie abgemeldet. Erfordert ein OAuth-Token mit oauth_clients:delete.
       parameters:
         - $ref: '#/components/parameters/AuthorizedAppId'
       responses:
         '200':
-          description: Authorization revoked
+          description: Autorisierung widerrufen
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthorizedAppRevokedResponse'
         '401':
-          description: Not an OAuth token, or the token is invalid or expired
+          description: Kein OAuth-Token, oder das Token ist ungültig oder abgelaufen
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Authorized app not found
+          description: Autorisierte App nicht gefunden
           content:
             application/json:
               schema:
@@ -9533,8 +9951,8 @@ paths:
       tags:
         - Gateway
       operationId: acceptWorkspaceInvite
-      summary: Accept a workspace invite
-      description: Asks to join the workspace an invite code belongs to. A workspace owner or admin then approves or rejects the request. OAuth token with workspaces:write required; management keys are refused because they belong to a workspace, not a person.
+      summary: Arbeitsbereichseinladung annehmen
+      description: Fragt den Beitritt zu dem Arbeitsbereich an, zu dem ein Einladungscode gehört. Anschließend genehmigt oder lehnt ein Inhaber oder Administrator die Anfrage ab. Erfordert ein OAuth-Token mit workspaces:write; Management-Schlüssel werden abgelehnt, weil sie zu einem Arbeitsbereich gehören, nicht zu einer Person.
       requestBody:
         required: true
         content:
@@ -9543,31 +9961,31 @@ paths:
               $ref: '#/components/schemas/WorkspaceInviteAcceptRequest'
       responses:
         '201':
-          description: Join request created
+          description: Beitrittsanfrage erstellt
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyJoinRequestCreatedResponse'
         '400':
-          description: Missing invite code
+          description: Einladungscode fehlt
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:write
+          description: Kein OAuth-Benutzertoken, oder dem Token fehlt workspaces:write
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Invalid or expired invite
+          description: Ungültige oder abgelaufene Einladung
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Already a member, or a request is already pending
+          description: Bereits Mitglied, oder eine Anfrage ist bereits offen
           content:
             application/json:
               schema:
@@ -9578,12 +9996,12 @@ paths:
       tags:
         - Gateway
       operationId: listMyJoinRequests
-      summary: List your requests to join workspaces
-      description: Lists your own requests to join workspaces, newest first (at most 100). OAuth token with workspaces:read required.
+      summary: Deine Anfragen zum Beitritt zu Arbeitsbereichen auflisten
+      description: Listet deine eigenen Anfragen zum Beitritt zu Arbeitsbereichen auf, neueste zuerst (höchstens 100). Erfordert ein OAuth-Token mit workspaces:read.
       parameters:
         - name: status
           in: query
-          description: Pending by default; all returns every status.
+          description: Standardmäßig offene Anfragen; all gibt alle Status zurück.
           schema:
             type: string
             enum:
@@ -9594,7 +10012,7 @@ paths:
               - all
       responses:
         '200':
-          description: Your join requests
+          description: Deine Beitrittsanfragen
           content:
             application/json:
               schema:
@@ -9606,7 +10024,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an OAuth user token, or token lacks workspaces:read
+          description: Kein OAuth-Benutzertoken, oder dem Token fehlt workspaces:read
           content:
             application/json:
               schema:
@@ -9617,11 +10035,11 @@ paths:
       tags:
         - Gateway
       operationId: getRateLimitTier
-      summary: Get the workspace's rate limit tier
-      description: Returns the workspace's trust tier, its requests per minute, and whether it can raise itself one tier now. Workspace owners and admins (OAuth) or management keys with rate_limits:read. canRaise is true only for the workspace owner.
+      summary: Rate-Limit-Stufe des Arbeitsbereichs abrufen
+      description: Gibt die Vertrauensstufe des Arbeitsbereichs, seine Anfragen pro Minute und die Information zurück, ob er sich jetzt um eine Stufe anheben kann. Inhaber und Administratoren (OAuth) oder Management-Schlüssel mit rate_limits:read. canRaise ist nur für den Inhaber des Arbeitsbereichs true.
       responses:
         '200':
-          description: Tier and raise status
+          description: Stufe und Anhebungsstatus
           content:
             application/json:
               schema:
@@ -9633,7 +10051,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not an owner or admin, or token lacks rate_limits:read
+          description: Kein Inhaber oder Administrator, oder dem Token fehlt rate_limits:read
           content:
             application/json:
               schema:
@@ -9644,11 +10062,11 @@ paths:
       tags:
         - Gateway
       operationId: raiseRateLimitTier
-      summary: Raise the workspace's rate limit tier
-      description: Raises an eligible workspace one tier for a limited time. Only the workspace owner can raise, with an OAuth token holding rate_limits:write; management keys are refused so a leaked key cannot lift its own workspace's limits.
+      summary: Rate-Limit-Stufe des Arbeitsbereichs anheben
+      description: Hebt einen berechtigten Arbeitsbereich für begrenzte Zeit um eine Stufe an. Nur der Inhaber des Arbeitsbereichs kann anheben, mit einem OAuth-Token mit rate_limits:write; Management-Schlüssel werden abgelehnt, damit ein geleakter Schlüssel die Limits seines eigenen Arbeitsbereichs nicht aufheben kann.
       responses:
         '201':
-          description: Raised
+          description: Angehoben
           content:
             application/json:
               schema:
@@ -9660,13 +10078,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Not the workspace owner, a management key, or token lacks rate_limits:write
+          description: Nicht der Inhaber des Arbeitsbereichs, ein Management-Schlüssel, oder dem Token fehlt rate_limits:write
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: The workspace cannot raise its limit now (see reason)
+          description: Der Arbeitsbereich kann sein Limit jetzt nicht anheben (siehe reason)
           content:
             application/json:
               schema:
@@ -9677,11 +10095,11 @@ paths:
       tags:
         - Gateway
       operationId: getAutoRoutingSettings
-      summary: Get auto-routing settings
-      description: Returns the limits the auto-router works within for this workspace. Any workspace member; settings:read required.
+      summary: Einstellungen für automatisches Routing abrufen
+      description: Gibt die Grenzen zurück, innerhalb derer der automatische Router für diesen Arbeitsbereich arbeitet. Jedes Mitglied; erfordert settings:read.
       responses:
         '200':
-          description: Auto-routing settings
+          description: Einstellungen für automatisches Routing
           content:
             application/json:
               schema:
@@ -9697,8 +10115,8 @@ paths:
       tags:
         - Gateway
       operationId: updateAutoRoutingSettings
-      summary: Update auto-routing settings
-      description: Changes the fields sent; the result is validated as a whole, as the dashboard saves it. A custom spend_profile needs both price limits. Owners and admins; settings:write required.
+      summary: Einstellungen für automatisches Routing aktualisieren
+      description: Ändert die gesendeten Felder; das Ergebnis wird als Ganzes geprüft, so wie das Dashboard es speichert. Ein benutzerdefiniertes spend_profile benötigt beide Preisgrenzen. Inhaber und Administratoren; erfordert settings:write.
       requestBody:
         required: true
         content:
@@ -9707,13 +10125,13 @@ paths:
               $ref: '#/components/schemas/AutoRoutingSettingsUpdateRequest'
       responses:
         '200':
-          description: Updated auto-routing settings
+          description: Aktualisierte Einstellungen für automatisches Routing
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AutoRoutingSettingsResponse'
         '400':
-          description: Invalid settings
+          description: Ungültige Einstellungen
           content:
             application/json:
               schema:
@@ -9730,11 +10148,11 @@ paths:
       tags:
         - Gateway
       operationId: listSuccessorReplacements
-      summary: List successor model replacements
-      description: Lists the workspace's own choices of replacement for models no provider serves any more. Successor routing's switch and price policy are in /settings. Any workspace member; settings:read required.
+      summary: Ersetzungen für Nachfolgemodelle auflisten
+      description: Listet die vom Arbeitsbereich gewählten Ersetzungen für Modelle auf, die kein Anbieter mehr bereitstellt. Schalter und Preisrichtlinie des Nachfolger-Routings findest du unter /settings. Jedes Mitglied; erfordert settings:read.
       responses:
         '200':
-          description: Replacements
+          description: Ersetzungen
           content:
             application/json:
               schema:
@@ -9750,8 +10168,8 @@ paths:
       tags:
         - Gateway
       operationId: saveSuccessorReplacement
-      summary: Save a successor model replacement
-      description: Sets the model requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.
+      summary: Ersetzung für ein Nachfolgemodell speichern
+      description: Legt das Modell fest, an das Anfragen für model gesendet werden, und ersetzt jede frühere Auswahl. Ein successor mit null bedeutet, dass Anfragen für model nie umgeleitet werden. Beide Modelle müssen im Katalog sein und der Nachfolger muss bereitgestellt werden. Höchstens 500 pro Arbeitsbereich. Inhaber und Administratoren; erfordert settings:write.
       requestBody:
         required: true
         content:
@@ -9760,13 +10178,13 @@ paths:
               $ref: '#/components/schemas/SuccessorReplacement'
       responses:
         '200':
-          description: Saved replacement
+          description: Gespeicherte Ersetzung
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementResponse'
         '400':
-          description: Invalid or unknown model
+          description: Ungültiges oder unbekanntes Modell
           content:
             application/json:
               schema:
@@ -9782,24 +10200,24 @@ paths:
       tags:
         - Gateway
       operationId: removeSuccessorReplacement
-      summary: Remove a successor model replacement
-      description: Removes the workspace's choice for a model, so the catalogue's successor applies again. Owners and admins; settings:write required.
+      summary: Ersetzung für ein Nachfolgemodell entfernen
+      description: Entfernt die Auswahl des Arbeitsbereichs für ein Modell, sodass wieder der Nachfolger aus dem Katalog gilt. Inhaber und Administratoren; erfordert settings:write.
       parameters:
         - name: model
           in: query
           required: true
-          description: The model id whose replacement to remove.
+          description: Die Modell-ID, deren Ersetzung entfernt werden soll.
           schema:
             $ref: '#/components/schemas/ModelId'
       responses:
         '200':
-          description: Replacement removed
+          description: Ersetzung entfernt
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessorReplacementRemovedResponse'
         '400':
-          description: Missing or invalid model
+          description: Modell fehlt oder ist ungültig
           content:
             application/json:
               schema:
@@ -9811,7 +10229,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No replacement is saved for this model
+          description: Für dieses Modell ist keine Ersetzung gespeichert
           content:
             application/json:
               schema:
@@ -9822,8 +10240,8 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestinationConfig
-      summary: Test destination settings before saving
-      description: Sends a sample trace without its messages to the settings given, the way the gateway delivers traces. Nothing is saved. Owners and admins; settings:write required.
+      summary: Zieleinstellungen vor dem Speichern testen
+      description: Sendet einen Beispiel-Trace ohne Nachrichten an die angegebenen Einstellungen, so wie das Gateway Traces zustellt. Es wird nichts gespeichert. Inhaber und Administratoren; erfordert settings:write.
       requestBody:
         required: true
         content:
@@ -9832,13 +10250,13 @@ paths:
               $ref: '#/components/schemas/ObservabilityDestinationTestRequest'
       responses:
         '200':
-          description: Test result; ok is false when the destination refused or could not be reached
+          description: Testergebnis; ok ist false, wenn das Ziel abgelehnt hat oder nicht erreichbar war
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ObservabilityDestinationTestResponse'
         '400':
-          description: Invalid type or settings
+          description: Ungültiger Typ oder ungültige Einstellungen
           content:
             application/json:
               schema:
@@ -9855,13 +10273,13 @@ paths:
       tags:
         - Gateway
       operationId: testObservabilityDestination
-      summary: Check a destination's connection
-      description: Sends a sample trace without its messages to a saved destination, as the dashboard's status check does. The destination's health is not changed. Owners and admins; settings:write required.
+      summary: Verbindung eines Ziels prüfen
+      description: Sendet einen Beispiel-Trace ohne Nachrichten an ein gespeichertes Ziel, wie es die Statusprüfung im Dashboard tut. Der Integritätsstatus des Ziels ändert sich nicht. Inhaber und Administratoren; erfordert settings:write.
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Test result
+          description: Testergebnis
           content:
             application/json:
               schema:
@@ -9884,13 +10302,13 @@ paths:
       tags:
         - Gateway
       operationId: sendObservabilityDestinationSample
-      summary: Send a sample trace
-      description: Sends a sample trace to a saved destination, with its messages unless the destination leaves prompts and outputs out. Owners and admins; settings:write required.
+      summary: Beispiel-Trace senden
+      description: Sendet einen Beispiel-Trace an ein gespeichertes Ziel, mit Nachrichten, sofern das Ziel Prompts und Ausgaben nicht ausschließt. Inhaber und Administratoren; erfordert settings:write.
       parameters:
         - $ref: '#/components/parameters/ObservabilityDestinationId'
       responses:
         '200':
-          description: Send result
+          description: Ergebnis des Versands
           content:
             application/json:
               schema:
@@ -9913,8 +10331,8 @@ paths:
       tags:
         - Gateway
       operationId: reportLeakedKey
-      summary: Report a leaked API key
-      description: Reports a Phaseo key found in public. No authentication. Always answers 202 with the same body, whether or not the key matched, so the route cannot be used to check keys. Rate limited per address.
+      summary: Geleakten API-Schlüssel melden
+      description: Meldet einen öffentlich gefundenen Phaseo-Schlüssel. Ohne Authentifizierung. Antwortet immer mit 202 und demselben Inhalt, ob der Schlüssel passt oder nicht, sodass sich die Route nicht zum Prüfen von Schlüsseln eignet. Pro Adresse begrenzt.
       security: []
       requestBody:
         required: true
@@ -9924,7 +10342,7 @@ paths:
               $ref: '#/components/schemas/LeakedKeyReportRequest'
       responses:
         '202':
-          description: Report received
+          description: Meldung erhalten
           content:
             application/json:
               schema:
@@ -10064,7 +10482,7 @@ components:
       name: id
       in: path
       required: true
-      description: Authorization identifier from the authorized apps list.
+      description: Kennung der Autorisierung aus der Liste der autorisierten Apps.
       schema:
         type: string
     ObservabilityDestinationId:
@@ -10174,7 +10592,7 @@ components:
           nullable: true
         obfuscate_info:
           type: boolean
-          description: Whether your email and name are hidden on screen in the dashboard.
+          description: Ob deine E-Mail-Adresse und dein Name im Dashboard auf dem Bildschirm ausgeblendet werden.
     UserProfileResponse:
       type: object
       required:
@@ -10192,7 +10610,7 @@ components:
         default_workspace_id:
           type: string
           nullable: true
-          description: A workspace you belong to, or null to clear.
+          description: Ein Arbeitsbereich, dem du angehörst, oder null zum Zurücksetzen.
         obfuscate_info:
           type: boolean
       additionalProperties: false
@@ -10201,7 +10619,7 @@ components:
       properties:
         id:
           type: string
-          description: Authorization id.
+          description: ID der Autorisierung.
         client_id:
           type: string
         app_name:
@@ -10217,7 +10635,7 @@ components:
             type: string
         current:
           type: boolean
-          description: True for the authorization the calling token belongs to.
+          description: True für die Autorisierung, zu der das aufrufende Token gehört.
         authorized_at:
           type: string
           format: date-time
@@ -10242,7 +10660,7 @@ components:
         scopes:
           type: array
           minItems: 1
-          description: The scopes to keep; each must already be granted.
+          description: Die zu behaltenden Bereiche; jeder muss bereits gewährt sein.
           items:
             type: string
       additionalProperties: false
@@ -10276,7 +10694,7 @@ components:
           type: string
           minLength: 6
           maxLength: 256
-          description: The invite code.
+          description: Der Einladungscode.
       additionalProperties: false
     MyJoinRequestCreatedResponse:
       type: object
@@ -10343,7 +10761,7 @@ components:
             target:
               type: string
               nullable: true
-              description: The tier a raise would move to.
+              description: Die Stufe, auf die eine Anhebung führen würde.
             targetRequestsPerMinute:
               type: number
               nullable: true
@@ -10352,15 +10770,15 @@ components:
             refusal:
               type: string
               nullable: true
-              description: Why a raise is not available now; null when eligible.
+              description: Warum gerade keine Anhebung möglich ist; null, wenn berechtigt.
             activeUntil:
               type: number
               nullable: true
-              description: When an active raise ends (Unix milliseconds).
+              description: Wann eine aktive Anhebung endet (Unix-Millisekunden).
             availableAt:
               type: number
               nullable: true
-              description: When the next raise may be requested (Unix milliseconds).
+              description: Wann die nächste Anhebung angefragt werden kann (Unix-Millisekunden).
             durationDays:
               type: number
             thresholds:
@@ -10372,14 +10790,14 @@ components:
                   type: number
             canRaise:
               type: boolean
-              description: True when the caller is the workspace owner and the workspace is eligible.
+              description: True, wenn der Aufrufer der Inhaber des Arbeitsbereichs ist und der Arbeitsbereich berechtigt ist.
     AutoRoutingSettings:
       type: object
       properties:
         allowed_patterns:
           type: array
           maxItems: 16
-          description: Provider/model patterns the auto-router may choose from, such as openai/*. Empty allows every model.
+          description: Anbieter/Modell-Muster, aus denen der automatische Router wählen darf, etwa openai/*. Leer erlaubt jedes Modell.
           items:
             type: string
         spend_profile:
@@ -10393,11 +10811,11 @@ components:
         max_input_price_per_million:
           type: number
           nullable: true
-          description: USD per million input tokens; set only for the custom spend profile.
+          description: USD pro Million Eingabe-Token; nur beim benutzerdefinierten Ausgabenprofil gesetzt.
         max_output_price_per_million:
           type: number
           nullable: true
-          description: USD per million output tokens; set only for the custom spend profile.
+          description: USD pro Million Ausgabe-Token; nur beim benutzerdefinierten Ausgabenprofil gesetzt.
         objective:
           type: string
           enum:
@@ -10462,11 +10880,11 @@ components:
       properties:
         model:
           type: string
-          description: The model whose requests are redirected.
+          description: Das Modell, dessen Anfragen umgeleitet werden.
         successor:
           type: string
           nullable: true
-          description: The model to send them to, or null to never redirect them.
+          description: Das Modell, an das sie gesendet werden, oder null, um sie nie umzuleiten.
     SuccessorReplacementRow:
       type: object
       properties:
@@ -10512,7 +10930,7 @@ components:
           $ref: '#/components/schemas/ObservabilityDestinationType'
         config:
           type: object
-          description: The destination's settings, as for creating one.
+          description: Die Einstellungen des Ziels, wie beim Erstellen.
           additionalProperties:
             type: string
     ObservabilityDestinationTestResponse:
@@ -10558,11 +10976,11 @@ components:
         token:
           type: string
           maxLength: 4096
-          description: The leaked key as found.
+          description: Der geleakte Schlüssel, so wie er gefunden wurde.
         source:
           type: string
           maxLength: 64
-          description: Where it was found, such as github.
+          description: Wo er gefunden wurde, zum Beispiel github.
         reporter_email:
           type: string
           maxLength: 320
@@ -19883,6 +20301,142 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: Betrag in US-Dollar mit höchstens zwei Nachkommastellen.
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: Optional. Muss dem authentifizierten Arbeitsbereich entsprechen.
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: Optionaler Idempotenzschlüssel. Bei Wiederholung wird dieselbe Aufladung zurückgegeben, statt eine neue anzulegen.
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: true, sobald sich der Status nicht mehr ändert (paid, declined, expired oder failed). Dann das Abfragen beenden.
+        reason:
+          type: string
+          nullable: true
+          description: Grundcode für abgelehnte, abgelaufene und fehlgeschlagene Aufladungen, zum Beispiel declined, expired, card_declined oder authentication_failed.
+          example: declined
+        message:
+          type: string
+          description: Ein Satz, der erklärt, was als Nächstes passiert.
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: checkout, wenn ein Owner oder Admin unter checkout_url mit einer neuen Karte bezahlt; saved_card, wenn ein Owner oder Admin eine Belastung der gespeicherten Karte per E-Mail bestätigt.
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Phaseo-Seite, auf der ein Owner oder Admin mit einer neuen Karte bezahlt. Nur in der Antwort, die eine offene checkout-Aufladung erstellt hat.
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: Anzahl der Owner und Admins, die per E-Mail gebeten wurden, eine saved_card-Aufladung zu bestätigen.
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:
@@ -22717,11 +23271,11 @@ components:
           type: string
           maxLength: 300
           nullable: true
-          description: Tells the model when to pick this value.
+          description: Sagt dem Modell, wann es diesen Wert wählen soll.
       additionalProperties: false
     ClassifierDimension:
       type: object
-      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      description: Eine Frage, die der Klassifikator zu jeder Anfrage beantwortet. Die Antwort wird als Anfrage-Label geschrieben, dessen Schlüssel der Schlüssel dieser Dimension ist. Hat der Aufrufer bereits ein Label mit diesem Schlüssel gesendet, wird die Dimension übersprungen.
       required:
         - key
         - values
@@ -22741,14 +23295,14 @@ components:
         multiple:
           type: boolean
           default: false
-          description: Allow more than one value per request.
+          description: Mehr als einen Wert pro Anfrage zulassen.
         allow_other:
           type: boolean
           default: false
-          description: Let the model answer "other" when no listed value fits.
+          description: Lässt das Modell "other" antworten, wenn kein aufgeführter Wert passt.
         values:
           type: array
-          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          description: Zwischen 2 und 50 Werte. Ein einzelner Wert ist nur erlaubt, wenn allow_other true ist.
           minItems: 1
           maxItems: 50
           items:
@@ -22979,6 +23533,74 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: Ein zu testender Entwurf. Nicht gesendete Felder stammen aus classifier_id, wenn angegeben.
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: Ein gespeicherter Klassifikator in diesem Arbeitsbereich, der getestet oder mit dem der Test gekennzeichnet wird.
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: False, wenn die Antwort des Modells nicht gelesen werden konnte.
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
       type: object
       required:
@@ -23002,10 +23624,10 @@ components:
       enum:
         - vercel
         - github_actions
-      description: The platform that issues the OIDC tokens.
+      description: Die Plattform, die die OIDC-Tokens ausstellt.
     WorkloadIdentityPolicy:
       type: object
-      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      description: 'Ein vertrauenswürdiger Workload: Tokens dieses Ausstellers für den festgelegten Inhaber, die alle Claim-Bedingungen erfüllen, authentifizieren sich mit dem Schlüssel der Richtlinie.'
       required:
         - id
         - name
@@ -23033,13 +23655,13 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+          description: Token-Aussteller, zum Beispiel https://oidc.vercel.com/acme oder https://token.actions.githubusercontent.com.
         owner_id:
           type: string
-          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+          description: Die festgelegte Vercel-Team-ID (Claim owner_id) oder GitHub-Organisations- bzw. Benutzer-ID (Claim repository_owner_id).
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel project_id und environment für Vercel oder repository_id und ref für GitHub Actions. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Claim des festgelegten Inhabers wird über owner_id gesetzt.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23053,7 +23675,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: Längste Token-Lebensdauer (exp minus iat oder nbf), die die Richtlinie akzeptiert.
         status:
           type: string
           enum:
@@ -23061,11 +23683,11 @@ components:
             - disabled
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: Die Zielgruppe (Audience), für die Tokens ausgestellt sein müssen.
         key_id:
           type: string
           format: uuid
-          description: The policy's key. Requests, usage and limits are recorded against it.
+          description: Der Schlüssel der Richtlinie. Anfragen, Nutzung und Limits werden ihm zugeordnet.
         last_used_at:
           type: string
           format: date-time
@@ -23096,14 +23718,14 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+          description: 'Für Vercel erforderlich: https://oidc.vercel.com/ gefolgt vom Team-Slug oder https://oidc.vercel.com für den globalen Aussteller. Für GitHub Actions ist der Standardwert https://token.actions.githubusercontent.com.'
         owner_id:
           type: string
           minLength: 1
-          description: The Vercel team ID or GitHub organisation or user ID to pin.
+          description: Die festzulegende Vercel-Team-ID oder GitHub-Organisations- bzw. Benutzer-ID.
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel project_id und environment für Vercel oder repository_id und ref für GitHub Actions. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Claim des festgelegten Inhabers wird über owner_id gesetzt.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23118,7 +23740,7 @@ components:
           minimum: 60
           maximum: 43200
           default: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: Längste Token-Lebensdauer (exp minus iat oder nbf), die die Richtlinie akzeptiert.
       additionalProperties: false
     WorkloadIdentityPolicyUpdateInput:
       type: object
@@ -23135,7 +23757,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel project_id und environment für Vercel oder repository_id und ref für GitHub Actions. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Claim des festgelegten Inhabers wird über owner_id gesetzt.
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23149,7 +23771,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: Längste Token-Lebensdauer (exp minus iat oder nbf), die die Richtlinie akzeptiert.
       additionalProperties: false
     WorkloadIdentityPolicyResponse:
       type: object
@@ -23171,7 +23793,7 @@ components:
             $ref: '#/components/schemas/WorkloadIdentityPolicy'
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: Die Zielgruppe (Audience), für die Tokens ausgestellt sein müssen.
       additionalProperties: false
     WorkloadIdentityPolicyDeleteResponse:
       type: object
@@ -23546,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast, spike und balance, Zeiträume rolling und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus.
+          description: False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast und spike, rolling-Ausgabenzeiträume und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus. Regeln vom Typ balance werden ausgewertet.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -23825,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: Der aktuelle Stand einer Ausgabenregel. Bei Regeln ohne Kalenderzeitraum sind period, value und alert null.
+      description: Wo eine Ausgabenregel gerade steht. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Andere Regeln ohne Kalenderzeitraum haben period, value und alert null.
       required:
         - rule_id
         - metric
@@ -23847,6 +24469,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -23857,7 +24480,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast, spike und balance, Zeiträume rolling und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus.
+          description: False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast und spike, rolling-Ausgabenzeiträume und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus. Regeln vom Typ balance werden ausgewertet.
         computed_at:
           type: string
           format: date-time
@@ -23972,6 +24595,56 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: 'Regeln vom Typ balance: false nach einer Warnung, bis das Guthaben wieder über dem Schwellenwert liegt.'
+        balance:
+          type: object
+          nullable: true
+          description: 'Nur Regeln vom Typ balance: wo das Guthaben steht, so wie die Auswertung es sieht. Null für andere Regeln.'
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: 'Guthaben abzüglich reserviertem Guthaben: der Betrag, gegen den Anfragen zugelassen werden.'
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: Tage, die das verfügbare Guthaben beim aktuellen Verbrauch reicht. Null ohne Ausgaben im Fenster.
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: Die automatische Aufladung ist aktiv und funktioniert, daher wird ein Rückgang ohne Warnung erfasst.
         alert:
           type: object
           nullable: true

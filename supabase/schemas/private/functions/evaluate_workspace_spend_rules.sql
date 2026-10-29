@@ -11,8 +11,8 @@ CREATE OR REPLACE FUNCTION private.evaluate_workspace_spend_rules (
 -- Evaluates a workspace's enabled spend rules at p_now, queues an alert for each rule that
 -- crossed a threshold, and starts or lifts the blocks of rules with action = 'block'.
 --   * Rules: private.spend_rule_evaluable (spend and budget_percent over a calendar day, Monday
---     week or month); other metrics are left for later. Each rule's period is in its own time
---     zone, or the workspace's billing_time_zone (private.spend_rule_period).
+--     week or month, and balance rules); other metrics are left for later. Each calendar rule's
+--     period is in its own time zone, or the workspace's billing_time_zone (private.spend_rule_period).
 --   * Spend: v2_private_usage_15m from the period start up to p_now, plus successful async jobs
 --     and realtime sessions from gateway_requests (as sweep_spend_limit_warnings adds them).
 --     The rollup is read as it stands: hours the outbox has yet to rebuild count once it marks
@@ -47,6 +47,18 @@ CREATE OR REPLACE FUNCTION private.evaluate_workspace_spend_rules (
 --     rule_disabled, rule_changed; the rule-change trigger usually lifts these first). An active
 --     block whose rule stopped or started covering free models takes the rule's setting.
 --     Each start and lift queues a spend_blocked event (private.queue_spend_block_event).
+--   * Balance rules (workspace scope, rolling): values from private.spend_balance_rule_values
+--     (available balance = balance - reserved, as the gateway admits requests; burn over
+--     window_hours from the rollup plus async jobs; runway = available / burn per day). A rule is
+--     low when the balance is at or below threshold_amount_nanos or the runway at or below
+--     runway_days. Armed/unarmed, as the low-balance push and email: one state row
+--     (period_start '-infinity'), armed until a drop. Found armed and low, that is a drop: one
+--     alert, unless the last one was within cooldown_minutes (then it stays armed and fires once
+--     the cooldown ends, if still low) or auto top-up is working
+--     (private.workspace_auto_top_up_covers; the drop is recorded unarmed without an alert). It
+--     re-arms once neither threshold holds. Dedupe:
+--     spend_alert:<rule id>:cooldown:<epoch / cooldown>:<balance|runway>. The state row is written
+--     only when armed changes or the rule fires.
 -- Returns {rules, fired, state_rows, events: [{event_id, rule_id, dedupe_key, threshold}],
 -- blocks: [{block_id, rule_id, state: started|lifted, reason, event_id}], block_scope}, where
 -- block_scope says the workspace has block rules or blocks, so its gateway entry is republished.
@@ -58,6 +70,7 @@ declare
   v_blocks jsonb := '[]'::jsonb;
   v_changed integer := 0;
   v_fresh boolean;
+  v_balance jsonb;
 begin
   if p_workspace_id is null or p_now is null then
     raise exception 'invalid_spend_rule_evaluation';
@@ -233,6 +246,140 @@ begin
     ), '[]'::jsonb)
   ) into v_result;
 
+  -- Balance rules: armed until the balance (or runway) drops to the threshold, then one alert.
+  with balance as materialized (
+    select * from private.spend_balance_rule_values(p_workspace_id, p_now)
+  ),
+  decided as (
+    select balance.*, coalesce(state.armed, true) as armed,
+      balance.low_balance or balance.low_runway as low,
+      state.last_fired_at is not null and state.last_fired_at > p_now - make_interval(mins => balance.cooldown_minutes) as cooling,
+      case when balance.low_balance then 'balance' else 'runway' end as trigger
+    from balance
+    left join public.workspace_spend_rule_state state
+      on state.rule_id = balance.id and state.period_start = '-infinity'::timestamptz
+  ),
+  acted as materialized (
+    select decided.*,
+      case
+        when decided.armed and decided.low and decided.cooling then 'waiting'
+        when decided.armed and decided.low and private.workspace_auto_top_up_covers(p_workspace_id) then 'covered'
+        when decided.armed and decided.low then 'fire'
+        when not decided.armed and not decided.low then 'rearm'
+        else 'idle'
+      end as outcome
+    from decided
+  ),
+  rendered as (
+    select acted.*, alert.title, alert.message,
+      'spend_alert:' || acted.id || ':cooldown:' || floor(extract(epoch from p_now) / (acted.cooldown_minutes * 60))::bigint
+        || ':' || acted.trigger as dedupe_key
+    from acted
+    cross join lateral private.spend_balance_alert_text(
+      acted.name, acted.available_nanos, acted.threshold_amount_nanos, acted.runway_days, acted.burn_per_day_nanos,
+      acted.runway_days_left, acted.window_hours, acted.trigger
+    ) alert
+    where acted.outcome = 'fire'
+  ),
+  queued as (
+    insert into public.email_outbox (kind, template, to_email, subject, workspace_id, user_id, payload, dedupe_key)
+    select
+      'spend_alert',
+      'spend_alert',
+      coalesce(v_workspace.owner_email, ''),
+      rendered.title,
+      p_workspace_id,
+      v_workspace.owner_user_id,
+      jsonb_build_object(
+        'title', rendered.title,
+        'message', rendered.message,
+        'workspace_name', v_workspace.name,
+        'rule_id', rendered.id,
+        'rule_name', rendered.name,
+        'metric', 'balance',
+        'action', rendered.action,
+        'scope', jsonb_build_object('type', 'workspace', 'label', coalesce(nullif(btrim(v_workspace.name), ''), 'Workspace')),
+        'period', jsonb_build_object(
+          'kind', 'rolling',
+          'start', p_now - make_interval(hours => rendered.window_hours),
+          'end', p_now,
+          'time_zone', v_workspace.time_zone,
+          'window_hours', rendered.window_hours
+        ),
+        'trigger', rendered.trigger,
+        'value_nanos', rendered.available_nanos,
+        'balance_nanos', rendered.balance_nanos,
+        'reserved_nanos', rendered.reserved_nanos,
+        'available_nanos', rendered.available_nanos,
+        'burn_nanos', round(rendered.burn_nanos),
+        'burn_per_day_nanos', round(rendered.burn_per_day_nanos),
+        'runway_days_left', rendered.runway_days_left,
+        'runway_days', rendered.runway_days,
+        'threshold_amount_nanos', rendered.threshold_amount_nanos,
+        'evaluated_at', p_now,
+        'url', 'https://phaseo.app/settings/credits',
+        'push', jsonb_build_object(
+          'title', left(rendered.title, 120),
+          'body', left(rendered.message, 240),
+          'href', '/settings/credits',
+          'lowerLead', false
+        )
+      ),
+      rendered.dedupe_key
+    from rendered
+    on conflict (dedupe_key) do nothing
+    returning id, dedupe_key, payload
+  ),
+  saved as (
+    -- A drop (fired or covered by auto top-up) clears armed, a recovery sets it. A waiting or
+    -- unchanged rule is not written.
+    insert into public.workspace_spend_rule_state as state (
+      rule_id, workspace_id, period_start, period_end, armed, amount_fired_at, last_fired_at, fire_count, last_value_nanos, last_dedupe_key
+    )
+    select acted.id, p_workspace_id, '-infinity'::timestamptz, null, acted.outcome = 'rearm',
+      case when rendered.id is not null and acted.trigger = 'balance' then p_now end,
+      case when rendered.id is not null then p_now end,
+      case when rendered.id is not null then 1 else 0 end,
+      case when rendered.id is not null then acted.available_nanos end,
+      rendered.dedupe_key
+    from acted
+    left join rendered on rendered.id = acted.id
+    where acted.outcome in ('fire', 'covered', 'rearm')
+    on conflict (rule_id, period_start) do update set
+      armed = excluded.armed,
+      amount_fired_at = coalesce(excluded.amount_fired_at, state.amount_fired_at),
+      last_fired_at = coalesce(excluded.last_fired_at, state.last_fired_at),
+      fire_count = state.fire_count + excluded.fire_count,
+      last_value_nanos = coalesce(excluded.last_value_nanos, state.last_value_nanos),
+      last_dedupe_key = coalesce(excluded.last_dedupe_key, state.last_dedupe_key)
+    returning 1
+  )
+  select jsonb_build_object(
+    'rules', (select count(*) from balance),
+    'fired', (select count(*) from queued),
+    'state_rows', (select count(*) from saved),
+    'events', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'event_id', queued.id,
+        'rule_id', queued.payload ->> 'rule_id',
+        'dedupe_key', queued.dedupe_key,
+        'threshold', case queued.payload ->> 'trigger'
+          when 'balance' then queued.payload -> 'threshold_amount_nanos'
+          else queued.payload -> 'runway_days'
+        end,
+        'trigger', queued.payload ->> 'trigger'
+      ) order by queued.dedupe_key)
+      from queued
+    ), '[]'::jsonb)
+  ) into v_balance;
+
+  v_result := v_result || jsonb_build_object(
+    'rules', (v_result ->> 'rules')::integer + (v_balance ->> 'rules')::integer,
+    'fired', (v_result ->> 'fired')::integer + (v_balance ->> 'fired')::integer,
+    'state_rows', (v_result ->> 'state_rows')::integer + (v_balance ->> 'state_rows')::integer,
+    'events', (v_result -> 'events') || (v_balance -> 'events')
+  );
+
   v_block_rules := v_result -> 'block_rules';
   v_result := v_result - 'block_rules';
 
@@ -328,7 +475,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "private"."evaluate_workspace_spend_rules"(uuid, timestamp with time zone, boolean) IS 'Evaluates a workspace''s enabled spend and budget_percent rules over their calendar period at p_now: queues one spend_alert event per rule that crossed a new threshold (the highest one), lifts blocks that no longer apply and, when p_blocks is true and p_now is current, starts blocks for block rules past their block point. Writes rule state only on fire or period rollover. Called by public.sweep_spend_rules.';
+COMMENT ON FUNCTION "private"."evaluate_workspace_spend_rules"(uuid, timestamp with time zone, boolean) IS 'Evaluates a workspace''s enabled spend and budget_percent rules over their calendar period at p_now: queues one spend_alert event per rule that crossed a new threshold (the highest one) and per balance rule whose balance or runway dropped to its threshold (armed/unarmed with a cooldown, never while auto top-up is working), lifts blocks that no longer apply and, when p_blocks is true and p_now is current, starts blocks for block rules past their block point. Writes rule state only on fire or period rollover. Called by public.sweep_spend_rules.';
 
 REVOKE ALL ON FUNCTION "private"."evaluate_workspace_spend_rules"(uuid, timestamp with time zone, boolean) FROM PUBLIC;
 

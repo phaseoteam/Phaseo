@@ -15,6 +15,8 @@ icon: "bell-ring"
 5. 为每个已配置的频道选择**发送测试**。
 6. 所有测试均成功后，再创建通知目标。
 
+在 CLI 中运行 `phaseo notifications destinations create`，用 `phaseo notifications destinations test <id>` 测试，然后用 `phaseo notifications routes set <event-kind> --destination-ids <id>` 选择它接收哪些告警。
+
 自定义 Webhook 在创建时会获得签名密钥。请从弹出的对话框中复制；它只显示一次。
 
 Phaseo 支持：

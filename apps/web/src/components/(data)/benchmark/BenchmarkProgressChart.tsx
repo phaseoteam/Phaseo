@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { formatArtificialAnalysisScore, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import {
 	ResponsiveContainer,
 	ScatterChart,
@@ -244,7 +244,7 @@ const chartConfig: ChartConfig = {
 	const tooltipValueFormatter = React.useCallback(
 		(value: number | string | Array<number | string> | undefined) => {
 			if (typeof value !== "number") return value;
-			if (isArtificialAnalysisBenchmark(benchmark.id)) return new Intl.NumberFormat(locale, isArtificialAnalysisCostBenchmark(benchmark.id) ? { style: "currency", currency: "USD", maximumFractionDigits: 2 } : { maximumFractionDigits: 2 }).format(value);
+			if (isArtificialAnalysisBenchmark(benchmark.id)) return formatArtificialAnalysisScore(benchmark.id, value, locale);
 			const formatted =
 				Math.abs(value) >= 100 || Number.isInteger(value)
 					? new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)

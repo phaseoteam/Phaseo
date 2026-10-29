@@ -100,6 +100,11 @@ pub fn createClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String,
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createCreditTopup<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/credits/topups");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createDataContributionClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/data-contribution/classifiers");
 	client.request("POST", &resolved_path, body)
@@ -147,6 +152,11 @@ pub fn createImage<T: Transport>(client: &Client<T>, path: &HashMap<String, Stri
 
 pub fn createImageEdit<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/images/edits");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createLiveSession<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/live/sessions");
 	client.request("POST", &resolved_path, body)
 }
 
@@ -502,6 +512,11 @@ pub fn getClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, St
 
 pub fn getCredits<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/credits");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getCreditTopup<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/credits/topups/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("GET", &resolved_path, body)
 }
 
@@ -1208,6 +1223,11 @@ pub fn setWorkspaceDepartmentMember<T: Transport>(client: &Client<T>, path: &Has
 pub fn summarizeGatewayFeedback<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/feedback/summary");
 	client.request("GET", &resolved_path, body)
+}
+
+pub fn testClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/classifiers/test");
+	client.request("POST", &resolved_path, body)
 }
 
 pub fn testObservabilityDestination<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {

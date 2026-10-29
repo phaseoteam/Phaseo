@@ -85,11 +85,22 @@ Wenn es aktiviert ist, wird eine Anfrage nur dann an ein Ersatzmodell gesendet, 
 - Das Ersatzmodell besteht dieselben Prüfungen wie jede Anfrage: Workspace-Modellbeschränkungen, Schlüsselbeschränkungen, Guardrails und Endpunktunterstützung. Ein Ersatzmodell wird nie automatisch für dich zu einer Allowlist hinzugefügt.
 - Die Anfrage nennt ein Modell direkt. Anfragen für `phaseo/auto` oder eine anbieterqualifizierte Modell-ID werden nicht umgeleitet.
 
+<span id="see-which-of-your-models-are-affected"></span>
+
+### Sehen, welche deiner Modelle betroffen sind
+
+Unter **Deine betroffenen Modelle** im selben Einstellungsbereich listet Phaseo die Modelle auf, die dein Workspace in den letzten 90 Tagen genutzt hat und die eingestellt werden oder nicht mehr bereitgestellt werden. Für jedes Modell siehst du das Ersatzmodell, wie sich der Preis unterscheidet und ob seine Anfragen mit deinen aktuellen Einstellungen weitergeleitet würden, und wenn nicht, warum. Außerdem siehst du, wie viele Anfragen für das Modell in den letzten 30 Tagen ein anderes Modell beantwortet hat. Wähle bei einem Modell **Ersatzmodell wählen**, um ein eigenes Ersatzmodell festzulegen.
+
 <span id="choose-a-price-policy"></span>
 
 ### Eine Preisrichtlinie wählen
 
-Die Preisrichtlinie des Workspace entscheidet, ob ein teureres Ersatzmodell die Anfrage bedienen darf. Verglichen werden die Preise, die beide Modelle berechnen.
+Die Preisrichtlinie des Workspace entscheidet, ob ein teureres Ersatzmodell die Anfrage bedienen darf. Verglichen werden die Preise pro Token, die beide Modelle berechnen. Hat das alte Modell keine aktuellen Preise mehr, verwendet Phaseo seine zuletzt veröffentlichten Preise. Berechnet nur das Ersatzmodell etwas, gilt Folgendes:
+
+- Gecachte Eingaben werden nicht verglichen. Sie kosten weniger als der Eingabepreis, der verglichen wird.
+- Cache-Schreibvorgänge sowie Bild-, Audio- oder Videoeingaben, die das alte Modell als normale Eingabe berechnet hat, werden mit dem Eingabepreis des alten Modells verglichen.
+- Websuche sowie Ein- oder Ausgaben in einer Modalität, die das alte Modell nicht hatte, werden nicht verglichen. Eine Anfrage, die sie nutzt, wird nicht weitergeleitet, es sei denn, die Richtlinie ist `any` oder du hast das Ersatzmodell selbst gewählt.
+- Jede andere Gebühr bedeutet, dass die Preise nicht verglichen werden können.
 
 | `model_successor_price_policy` | Verhalten |
 | --- | --- |
@@ -117,7 +128,7 @@ curl https://api.phaseo.app/v1/settings \
 
 ### Eigene Ersatzmodelle festlegen
 
-Unter **Eigene Ersatzmodelle** im selben Einstellungsbereich können Inhaber und Admins das Ersatzmodell für ein bestimmtes Modell auswählen oder **Nie weiterleiten** wählen, damit Anfragen für dieses Modell weiterhin fehlschlagen. Dein eigenes Ersatzmodell wird unabhängig vom Preis verwendet, ein kostenloses Modell wird aber trotzdem nie durch ein kostenpflichtiges ersetzt. Eigene Ersatzmodelle lassen sich nur im Dashboard festlegen.
+Unter **Eigene Ersatzmodelle** im selben Einstellungsbereich können Inhaber und Admins das Ersatzmodell für ein bestimmtes Modell auswählen oder **Nie weiterleiten** wählen, damit Anfragen für dieses Modell weiterhin fehlschlagen. Dein eigenes Ersatzmodell wird unabhängig vom Preis verwendet, ein kostenloses Modell wird aber trotzdem nie durch ein kostenpflichtiges ersetzt. Eigene Ersatzmodelle lassen sich auch über die CLI mit `phaseo routing successors set --model <id> --successor <id>` (oder `--never`) oder mit `PUT /v1/routing/successor/replacements` festlegen.
 
 Änderungen an diesen Einstellungen werden in etwa einer Minute wirksam.
 
@@ -150,8 +161,11 @@ Prüfe Folgendes:
 - Das Modell wird seit mindestens 72 Stunden nicht mehr bereitgestellt.
 - Das Modell hat ein freigegebenes Ersatzmodell, oder du hast ein eigenes festgelegt.
 - Das Ersatzmodell kostet nicht mehr, als deine Preisrichtlinie erlaubt.
+- Die Anfrage nutzt keine Websuche und keinen Ein- oder Ausgabetyp, den nur das Ersatzmodell berechnet.
 - Das Modell ist nicht kostenlos mit einem kostenpflichtigen Ersatzmodell.
 - Das Ersatzmodell ist durch die Modellbeschränkungen deines Workspace und deines Schlüssels erlaubt.
 - Die Anfrage verwendet keine anbieterqualifizierte Modell-ID und nicht `phaseo/auto`.
+
+**Deine betroffenen Modelle** im selben Einstellungsbereich zeigt, welcher dieser Punkte für jedes deiner Modelle zutrifft.
 
 **Ein anderes Modell hat geantwortet als das angeforderte.** Achte auf den Header `X-Phaseo-Model-Substitution`. Damit ein Modell nicht ersetzt wird, füge es unter **Eigene Ersatzmodelle** mit **Nie weiterleiten** hinzu oder deaktiviere die automatische Weiterleitung.

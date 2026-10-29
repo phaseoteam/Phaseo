@@ -236,10 +236,7 @@ jobs:
                   node supabase/tests/benchmark-direction-default.test.mjs
                   node scripts/tests/workspace-provisioning.mjs
                   pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts
-                  pnpm exec tsx --test scripts/update-model-statuses.test.ts
-
-            - name: Enforce EUR routing restriction
-              run: pnpm --filter @phaseo/web test --runTestsByPath scripts/eur-routing.test.ts
+                  pnpm exec tsx --test scripts/model-status-rules.test.ts
 
             # The desktop app imports the agent SDK's built types; desktop.yml runs the app's full checks on Windows.
             - name: Build the agent SDK for the desktop typecheck
@@ -259,7 +256,6 @@ jobs:
             contents: read
             pull-requests: read
         outputs:
-            data-changed: ${{ steps.filter.outputs.data }}
             migrations-changed: ${{ steps.filter.outputs.migrations }}
             factory-changed: ${{ steps.filter.outputs.factory }}
         steps:
@@ -269,7 +265,6 @@ jobs:
               id: filter
               with:
                   filters: |
-                      data: 'packages/data/catalog/src/data/**'
                       factory:
                           - 'apps/factory/**'
                           - 'packages/shared/app-kit/**'
@@ -478,20 +473,8 @@ jobs:
             - name: Validate SDK version literals
               run: pnpm run sdk:check-version-literals
 
-            - name: Sync OpenAPI enums from database snapshot
-              run: pnpm run openapi:sync-enums
-
             - name: Lint OpenAPI spec
               run: pnpm run openapi:lint
-
-            - name: Ensure OpenAPI enum sync is committed
-              run: |
-                  if ! git diff --ignore-cr-at-eol --ignore-space-at-eol --quiet apps/docs/openapi/v1/openapi.yaml; then
-                    echo "::error::OpenAPI enums are out of sync with the database snapshot."
-                    echo "::error::Run 'pnpm run openapi:sync-enums' and commit apps/docs/openapi/v1/openapi.yaml."
-                    git diff apps/docs/openapi/v1/openapi.yaml
-                    exit 1
-                  fi
 
     apps:
         name: Apps ${{ matrix.app }}
@@ -942,7 +925,6 @@ jobs:
                           "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" \
                           | jq -r '.targets.production | select(.readyState == "READY" and (.aliasAssigned == true or ((.aliasAssigned | type) == "number" and .aliasAssigned > 0))) | .meta.githubCommitSha // empty') || production_sha=""
                       # Everything outside apps/web that the web build reads:
-                      # - packages/data/catalog/src, compiled through a tsconfig path;
                       # - apps/docs, read by the prebuild for the docs search index;
                       # - packages/shared/app-kit and packages/shared/ui, workspace packages
                       #   the website compiles from source (transpilePackages);
@@ -952,7 +934,7 @@ jobs:
                       if [ -n "$production_sha" ] \
                           && git fetch --quiet --depth=1 origin "$production_sha" \
                           && git diff --quiet "$production_sha" "$GITHUB_SHA" -- \
-                              apps/web apps/docs packages/data/catalog packages/shared/app-kit packages/shared/ui \
+                              apps/web apps/docs packages/shared/app-kit packages/shared/ui \
                               apps/api/src/pipeline/model-discovery/public-model-announcement-discord.ts \
                               apps/api/src/pipeline/model-discovery/discord-webhook.ts \
                               package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json; then
@@ -1250,7 +1232,6 @@ jobs:
         name: Agent SDK tests (${{ matrix.sdk }})
         runs-on: ubuntu-latest
         needs: sdk-gen
-        if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         strategy:
             fail-fast: false
             matrix:

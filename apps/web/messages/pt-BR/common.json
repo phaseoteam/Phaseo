@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "Permite que este aplicativo verifique quem está entrando.",
 			"gatewayPermissionLabel": "Usar AI Gateway com seus créditos",
 			"gatewayPermissionDescription": "Permite que o aplicativo envie solicitações de modelos cobradas nos créditos da equipe escolhida.",
+			"billingPermissionLabel": "Iniciar recargas de créditos",
+			"billingPermissionDescription": "Permite que o aplicativo solicite compras de créditos para a equipe escolhida. Um proprietário ou administrador da equipe precisa confirmar cada cobrança por e-mail.",
 			"readPermissionLabel": "Ler: {resource}",
 			"readPermissionDescription": "Permite que este aplicativo leia: {resource}.",
 			"managePermissionLabel": "Gerenciar: {resource}",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "Aplicativos OAuth",
 					"description": "Configuração de clientes OAuth e integrações."
+				},
+				"billing": {
+					"title": "Cobrança",
+					"description": "Compras de créditos que um proprietário ou administrador da equipe confirma por e-mail."
 				}
 			},
 			"resources": {
@@ -634,6 +640,7 @@
 				"providerCredentials": "as credenciais dos provedores",
 				"guardrails": "as proteções e políticas",
 				"budgets": "os orçamentos de gastos e o uso da equipe",
+				"spendRules": "regras de alerta e bloqueio de gastos",
 				"managementKeys": "os dados de chaves de gerenciamento da máquina",
 				"oauthApps": "as configurações de aplicativos OAuth e integrações",
 				"privateModels": "modelos privados do espaço de trabalho"
@@ -1973,59 +1980,7 @@
 			"fullRanking": "Classificação completa"
 		},
 		"apiModelConflicts": {
-			"title": "Analisador de conflitos de modelos de API",
-			"description": "Compare os IDs de modelos de API dos provedores, encontre possíveis aliases e identifique divergências entre modelos e preços.",
-			"generatedAt": "Gerado em: {date}",
-			"providerModels": "Modelos de provedores",
-			"potentialAliasConflicts": "Possíveis conflitos de alias",
-			"missingPricingRows": "Linhas sem preço",
-			"likelyModelPricingMismatches": "Possíveis divergências entre modelo e preço",
-			"filtersTitle": "Filtros",
-			"filtersDescription": "Filtre por provedor ou exiba somente problemas de modelo e preço.",
-			"search": "Buscar",
-			"searchPlaceholder": "Provedor, ID do modelo, ID interno ou chave canônica…",
-			"provider": "Provedor",
-			"conflictsOnly": "Somente conflitos",
-			"missingPricingOnly": "Somente preços ausentes",
-			"likelyMismatchOnly": "Somente possíveis divergências",
-			"clearFilters": "Limpar filtros",
-			"likelyMismatches": "Possíveis divergências",
-			"likelyMismatchesDescription": "Linhas sem preço em que um diretório de preços não associado do mesmo provedor parece pertencer à mesma família de modelos.",
-			"apiModel": "Modelo de API",
-			"missingPricing": "Preço ausente",
-			"candidatePricingSlugs": "Slugs de preços candidatos",
-			"noLikelyMismatches": "Nenhuma possível divergência corresponde aos filtros atuais.",
-			"potentialAliasConflictGroups": "Grupos de possíveis conflitos de alias",
-			"potentialAliasConflictGroupsDescription": "IDs de modelo normalizados nos quais vários IDs de API originais parecem pertencer à mesma família.",
-			"canonicalKey": "Chave canônica",
-			"variants": "Variações",
-			"providers": "Provedores",
-			"issues": "Problemas",
-			"noConflictGroups": "Nenhum grupo de conflitos corresponde aos filtros atuais.",
-			"providerApiModelRows": "Linhas de modelos de API por provedor",
-			"apiModelId": "ID do modelo de API",
-			"internalModel": "Modelo interno",
-			"status": "Status",
-			"pricingCoverage": "Cobertura de preços",
-			"conflict": "Conflito",
-			"noRows": "Nenhuma linha corresponde aos filtros atuais.",
-			"complete": "Completa",
-			"candidateSlugs": "Slugs candidatos:",
-			"noConflict": "Sem conflito",
-			"orphanPricingDirectories": "Diretórios de preços órfãos",
-			"orphanPricingDirectoriesDescription": "Pastas de modelos de preço em packages/data/catalog/src/data/pricing sem correspondência com um ID de modelo de API de provedor.",
-			"noOrphanPricingDirectories": "Nenhum diretório de preços órfão.",
-			"rowLimit": "Somente as primeiras 500 linhas são exibidas. Refine os filtros para consultar mais linhas.",
-			"showingRows": "Exibindo {visible} de {total} linhas correspondentes.",
-			"counts": {
-				"rows": "{count, plural, one {# linha} other {# linhas}}",
-				"missingPricing": "{count, plural, one {# preço ausente} other {# preços ausentes}}",
-				"likelyMismatches": "{count, plural, one {# possível divergência} other {# possíveis divergências}}",
-				"capabilities": "{count} capacidades",
-				"params": "{count} parâmetros",
-				"variants": "{count} variações",
-				"orphanSlugs": "{count, plural, one {# slug órfão} other {# slugs órfãos}}"
-			}
+			"apiModelId": "ID do modelo de API"
 		},
 		"versionedPricing": {
 			"loading": "Carregando preços do banco de dados…",

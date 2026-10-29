@@ -1187,6 +1187,247 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
+  /live/sessions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createLiveSession
+      summary: Create GPT Live session
+      description: >-
+        Creates a metered GPT Live voice session, which delegates reasoning to a
+        Responses backend model, and returns relay connection details. Function
+        tools run on your client: the relay forwards each `function_call` and
+        accepts its `function_call_output` followed by `response.create`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - model
+                - provider
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - live
+                model:
+                  type: string
+                  enum:
+                    - openai/gpt-live-1
+                provider:
+                  type: string
+                  enum:
+                    - openai
+                voice:
+                  type: string
+                  default: marin
+                  enum:
+                    - alloy
+                    - ash
+                    - ballad
+                    - beacon
+                    - bossa
+                    - cedar
+                    - cinder
+                    - coral
+                    - delta
+                    - echo
+                    - gleam
+                    - marin
+                    - meridian
+                    - quartz
+                    - ripple
+                    - sage
+                    - shimmer
+                    - stone
+                    - tempo
+                    - verse
+                    - vesper
+                    - willow
+                instructions:
+                  type: string
+                  maxLength: 4000
+                source:
+                  type: string
+                  default: api
+                  enum:
+                    - api
+                    - chat
+                metadata:
+                  type: object
+                  additionalProperties: true
+                backend_model:
+                  type: string
+                  default: openai/gpt-5.6-luna
+                  enum:
+                    - openai/gpt-5.6-luna
+                    - openai/gpt-5.6-terra
+                backend_settings:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    instructions:
+                      type: string
+                      maxLength: 16000
+                    max_output_tokens:
+                      type: integer
+                      minimum: 16
+                      maximum: 32768
+                      default: 4096
+                    reasoning_effort:
+                      type: string
+                      enum:
+                        - none
+                        - low
+                        - medium
+                        - high
+                        - xhigh
+                    reasoning_summary:
+                      type: string
+                      enum:
+                        - auto
+                        - concise
+                        - detailed
+                    verbosity:
+                      type: string
+                      enum:
+                        - low
+                        - medium
+                        - high
+                    service_tier:
+                      type: string
+                      default: default
+                      enum:
+                        - default
+                        - flex
+                        - priority
+                    web_search:
+                      type: boolean
+                      default: false
+                    tools:
+                      type: array
+                      maxItems: 32
+                      description: Client-executed function tools, with unique names.
+                      items:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - type
+                          - name
+                        properties:
+                          type:
+                            type: string
+                            enum:
+                              - function
+                          name:
+                            type: string
+                            pattern: ^[a-zA-Z0-9_-]{1,64}$
+                          description:
+                            type: string
+                            maxLength: 1024
+                          parameters:
+                            type: object
+                            additionalProperties: true
+                          strict:
+                            type: boolean
+                    tool_choice:
+                      type: string
+                      default: auto
+                      enum:
+                        - auto
+                        - none
+                        - required
+                    parallel_tool_calls:
+                      type: boolean
+                      default: true
+      responses:
+        '201':
+          description: GPT Live session created
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  session_id:
+                    type: string
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  model_id:
+                    type: string
+                  voice:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  max_duration_seconds:
+                    type: integer
+                  idle_timeout_seconds:
+                    type: integer
+                    nullable: true
+                  client_secret:
+                    type: string
+                  connect:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      transport:
+                        type: string
+                      url:
+                        type: string
+                  billing:
+                    type: object
+                    additionalProperties: true
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -2702,6 +2943,153 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createCreditTopup
+      summary: Start a credit top-up
+      description: >-
+        Asks to add credits to the authenticated workspace. Needs the opt-in
+        billing:write scope and workspace membership. Nothing is charged here.
+        With a saved card, every workspace owner and admin is emailed a
+        single-use link and one of them confirms or declines the charge. Without
+        one, the response has a checkout_url where an owner or admin pays with a
+        new card, which is saved for later top-ups. Amounts are $5 to $500. A
+        workspace can have 5 pending top-ups, and each expires after 30 minutes.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: >-
+            Optional idempotency key. Repeating it returns the same top-up
+            instead of creating another. Same as the idempotency_key field.
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditTopupCreateRequest'
+      responses:
+        '200':
+          description: Existing top-up for this idempotency key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '201':
+          description: Top-up created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: >-
+            Invalid amount (invalid_amount, amount_below_minimum or
+            amount_above_maximum)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: >-
+            Idempotency key reused for a different top-up, or no owner or admin
+            can confirm it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: The workspace already has 5 pending top-ups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Card payments are not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /credits/topups/{id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getCreditTopup
+      summary: Get a credit top-up
+      description: >-
+        Returns the status of a credit top-up in the authenticated workspace.
+        Needs credits:read or billing:write. Poll until final is true. Declined,
+        expired and failed top-ups carry a reason code; do not retry them
+        automatically.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Top-up ID.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Top-up status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTopupResponse'
+        '400':
+          description: Invalid top-up ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Top-up not found
           content:
             application/json:
               schema:
@@ -4730,8 +5118,11 @@ paths:
       summary: Create a department budget
       description: >-
         Creates a daily, weekly, or monthly spend budget for one department.
-        Owners and admins get a mobile push at about 80% and at 100%. Department
-        budgets do not block requests.
+        Once the department has used it, API-key requests that count toward the
+        department return 429 key_limit_exceeded until the budget resets. Batch
+        jobs, realtime sessions and OAuth requests are not blocked. If the budget
+        check is briefly unavailable, requests are allowed rather than refused.
+        Owners and admins get a mobile push at about 80% and at 100%.
       requestBody:
         required: true
         content:
@@ -4811,7 +5202,9 @@ paths:
         - Gateway
       operationId: deleteDepartmentBudget
       summary: Delete a department budget
-      description: Removes a department budget and its alerts.
+      description: >-
+        Removes a department budget. Within about a minute, requests are no
+        longer refused because of it, and its alerts stop.
       responses:
         '200':
           description: Department budget deleted
@@ -5678,6 +6071,65 @@ paths:
                 $ref: '#/components/schemas/ClassifierResponse'
         default:
           description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/test:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testClassifier
+      summary: Test a classifier on a sample
+      description: >-
+        Runs a draft or saved classifier once on a sample prompt and response,
+        with the same request the gateway sends for it. The request is a real,
+        billed model request made with your own credential and labelled
+        phaseo.classifier_test. Owners and admins; the credential needs
+        classifiers:write and gateway:access. Management keys cannot make model
+        requests and are refused.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierTestRequest'
+      responses:
+        '200':
+          description: The labels the model chose
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierTestResponse'
+        '400':
+          description: Invalid classifier or sample
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Not an owner or admin, missing classifiers:write, or the credential
+            has no gateway:access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Saved classifier not found in this workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: The model request failed (for example, insufficient credits)
           content:
             application/json:
               schema:
@@ -10268,10 +10720,11 @@ paths:
       operationId: saveSuccessorReplacement
       summary: Save a successor model replacement
       description: >-
-        Sets the model requests for model are sent to, replacing any earlier
-        choice. A null successor means requests for model are never redirected.
-        Both models must be in the catalogue and the successor must be served.
-        At most 500 per workspace. Owners and admins; settings:write required.
+        Sets the model that requests for model are sent to, replacing any
+        earlier choice. A null successor means requests for model are never
+        redirected. Both models must be in the catalogue and the successor must
+        be served. At most 500 per workspace. Owners and admins; settings:write
+        required.
       requestBody:
         required: true
         content:
@@ -20921,6 +21374,153 @@ components:
           enum:
             - true
       additionalProperties: false
+    CreditTopupCreateRequest:
+      type: object
+      required:
+        - amount_usd
+      properties:
+        amount_usd:
+          type: number
+          minimum: 5
+          maximum: 500
+          description: Amount in US dollars, with at most two decimal places.
+          example: 20
+        workspace_id:
+          type: string
+          format: uuid
+          description: Optional. Must match the authenticated workspace.
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: >-
+            Optional idempotency key. Repeating it returns the same top-up
+            instead of creating another.
+      additionalProperties: false
+    CreditTopup:
+      type: object
+      required:
+        - id
+        - workspace_id
+        - status
+        - final
+        - reason
+        - message
+        - flow
+        - amount_cents
+        - amount_usd
+        - currency
+        - payment_method
+        - checkout_url
+        - next_action
+        - expires_at
+        - created_at
+        - decided_at
+        - paid_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - declined
+            - expired
+            - paid
+            - failed
+        final:
+          type: boolean
+          description: >-
+            True once the status will not change (paid, declined, expired or
+            failed). Stop polling then.
+        reason:
+          type: string
+          nullable: true
+          description: >-
+            Reason code for declined, expired and failed top-ups, for example
+            declined, expired, card_declined or authentication_failed.
+          example: declined
+        message:
+          type: string
+          description: A sentence that explains what happens next.
+        flow:
+          type: string
+          enum:
+            - checkout
+            - saved_card
+          description: >-
+            checkout when an owner or admin pays with a new card at
+            checkout_url; saved_card when an owner or admin confirms a charge to
+            the saved card by email.
+        amount_cents:
+          type: integer
+          example: 2000
+        amount_usd:
+          type: number
+          example: 20
+        currency:
+          type: string
+          example: usd
+        payment_method:
+          type: object
+          nullable: true
+          properties:
+            brand:
+              type: string
+              nullable: true
+              example: visa
+            last4:
+              type: string
+              nullable: true
+              example: '4242'
+        checkout_url:
+          type: string
+          format: uri
+          nullable: true
+          description: >-
+            Phaseo page where an owner or admin pays with a new card. Only in
+            the response that created a pending checkout top-up.
+        next_action:
+          type: string
+          nullable: true
+          enum:
+            - open_checkout_url
+            - await_email_confirmation
+            - await_payment
+            - null
+        confirmation_recipients:
+          type: integer
+          description: Number of owners and admins emailed to confirm a saved_card top-up.
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreditTopupResponse:
+      type: object
+      required:
+        - ok
+        - topup
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        topup:
+          $ref: '#/components/schemas/CreditTopup'
     CreditsResponse:
       type: object
       required:
@@ -24051,6 +24651,78 @@ components:
           items:
             $ref: '#/components/schemas/Classifier'
       additionalProperties: false
+    ClassifierTestRequest:
+      type: object
+      required:
+        - sample
+      properties:
+        classifier:
+          type: object
+          description: >-
+            A draft to test. Fields not sent come from classifier_id when it is
+            given.
+          properties:
+            model:
+              type: string
+            instructions:
+              type: string
+            dimensions:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassifierDimension'
+        classifier_id:
+          type: string
+          format: uuid
+          description: >-
+            A saved classifier in this workspace to test, or to label the test
+            with.
+        sample:
+          type: object
+          required:
+            - prompt
+          properties:
+            prompt:
+              type: string
+              maxLength: 8000
+            response:
+              type: string
+              maxLength: 8000
+    ClassifierTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          properties:
+            labels:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+                  confidence:
+                    type: number
+                    nullable: true
+            answered:
+              type: boolean
+              description: False when the model's answer could not be read.
+            cost_usd:
+              type: number
+            model:
+              type: string
+            format:
+              type: string
+              enum:
+                - json_schema
+                - decisions
+                - json
+            request_id:
+              type: string
+              nullable: true
     ClassifierDeleteResponse:
       type: object
       required:
@@ -24691,9 +25363,10 @@ components:
         evaluated:
           type: boolean
           description: >-
-            False for rules the evaluator does not handle yet (forecast, spike
-            and balance metrics, rolling periods and previous_period bases).
-            They are saved and fire from a later release.
+            False for rules the evaluator does not handle yet (forecast and
+            spike metrics, rolling spend periods and previous_period bases).
+            They are saved and fire from a later release. Balance rules are
+            evaluated.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -25005,8 +25678,9 @@ components:
     SpendRulePreview:
       type: object
       description: >-
-        Where a spend rule stands now. Rules without a calendar period have
-        period, value and alert null.
+        Where a spend rule stands now. Balance rules have the burn-rate window
+        as period, the available balance as value and a balance object. Other
+        rules without a calendar period have period, value and alert null.
       required:
         - rule_id
         - metric
@@ -25028,6 +25702,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -25039,9 +25714,10 @@ components:
         evaluated:
           type: boolean
           description: >-
-            False for rules the evaluator does not handle yet (forecast, spike
-            and balance metrics, rolling periods and previous_period bases).
-            They are saved and fire from a later release.
+            False for rules the evaluator does not handle yet (forecast and
+            spike metrics, rolling spend periods and previous_period bases).
+            They are saved and fire from a later release. Balance rules are
+            evaluated.
         computed_at:
           type: string
           format: date-time
@@ -25158,6 +25834,66 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: >-
+                Balance rules: false after an alert until the balance is back
+                above the threshold.
+        balance:
+          type: object
+          nullable: true
+          description: >-
+            Balance rules only: where the balance stands, as the evaluator sees
+            it. Null for other rules.
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: >-
+                Balance minus reserved credit: what requests are admitted
+                against.
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: >-
+                Days the available balance lasts at the burn rate. Null without
+                spend in the window.
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: >-
+                Auto Top-Up is on and working, so a drop is recorded without an
+                alert.
         alert:
           type: object
           nullable: true

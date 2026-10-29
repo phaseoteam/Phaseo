@@ -105,6 +105,9 @@ ALTER TABLE "public"."workspace_settings"
 CREATE INDEX workspace_settings_data_contribution_actor_idx ON public.workspace_settings USING btree (data_contribution_consented_by)
   WHERE (data_contribution_consented_by IS NOT NULL);
 
+CREATE INDEX workspace_settings_low_balance_email_idx ON public.workspace_settings USING btree (workspace_id)
+  WHERE low_balance_email_enabled;
+
 CREATE TRIGGER gateway_workspace_publication
   AFTER INSERT OR DELETE OR UPDATE ON public.workspace_settings
   FOR EACH ROW

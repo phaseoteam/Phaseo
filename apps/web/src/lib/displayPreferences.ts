@@ -137,6 +137,13 @@ function localeFor(preferences: DisplayFormattingPreferences): string | undefine
 	return preferences.locale === "system" ? undefined : preferences.locale;
 }
 
+/**
+ * Money always reads in US format ("$12.50", "-$3.00"), whatever the UI locale;
+ * en-GB would otherwise show "US$12.50". Dates, percentages and plain numbers
+ * keep the user's locale.
+ */
+export const MONEY_LOCALE = "en-US";
+
 function timeZoneFor(preferences: DisplayFormattingPreferences): string | undefined {
 	return preferences.timeZone === "system" ? undefined : preferences.timeZone;
 }
@@ -312,7 +319,7 @@ export function formatDisplayNumber(
 	options?: Intl.NumberFormatOptions,
 ): string {
 	const notation = options?.notation ?? preferences.numberNotation;
-	const locale = localeFor(preferences);
+	const locale = options?.style === "currency" ? MONEY_LOCALE : localeFor(preferences);
 	const numberOptions: Intl.NumberFormatOptions = {
 		...options,
 		notation,

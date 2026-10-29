@@ -4,7 +4,7 @@ description: "Utilisez des clés API pour authentifier chaque requête envoyée 
 icon: "key-round"
 ---
 
-Créez une clé dans le [tableau de bord](https://phaseo.app/settings/keys), stockez-la sur votre serveur et envoyez-la comme jeton Bearer dans les requêtes Gateway.
+Créez une clé avec `phaseo keys create --name <name> --json` dans la [CLI Phaseo](../guides/integrations/phaseo-cli) ou dans le [tableau de bord](https://phaseo.app/settings/keys), stockez-la sur votre serveur et envoyez-la comme jeton Bearer dans les requêtes Gateway. Les agents doivent utiliser la CLI ; consultez [Gérer Phaseo depuis un agent](./manage-from-an-agent).
 
 ---
 
@@ -12,6 +12,7 @@ Créez une clé dans le [tableau de bord](https://phaseo.app/settings/keys), sto
 
 - **Clés API Gateway** : appellent les endpoints de modèles, de fournisseurs et de génération accessibles dans votre espace de travail.
 - **Clés API de gestion** : appellent les API d’administration. Consultez [Clés API de gestion](./management-api-keys.mdx).
+- **Workloads de confiance** (bêta) : permettent aux déploiements Vercel et aux jobs GitHub Actions d’appeler le Gateway avec un jeton OIDC de courte durée au lieu d’une clé stockée. Consultez [Workloads de confiance](./trusted-workloads.mdx).
 
 Faites tourner une clé en mettant votre application à jour pour utiliser sa remplaçante avant d’invalider l’ancien identifiant. Consultez le [point d’accès de rotation des clés](../api-reference/endpoint/keys-rotate.mdx).
 

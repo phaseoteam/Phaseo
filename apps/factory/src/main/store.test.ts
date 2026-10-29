@@ -25,6 +25,15 @@ describe("FactoryStore", () => {
 		expect(store.get().runs.filter((candidate) => candidate.itemId === item(3117).id && candidate.status === "running")).toHaveLength(0);
 	});
 
+	it("keeps an item's effort, clears it, and takes only plain level names", async () => {
+		const { store, item } = await demoStore();
+		store.setEffort(item(3117).id, "max");
+		expect(item(3117).effort).toBe("max");
+		store.setEffort(item(3117).id, null);
+		expect(item(3117).effort).toBeUndefined();
+		expect(() => store.setEffort(item(3117).id, "high; rm -rf /")).toThrow("Unsupported effort");
+	});
+
 	it("takes an issue to a pull request on Autopilot, one stage after another", async () => {
 		const { store, finish, item } = await demoStore();
 		const settle = () => new Promise((resolve) => setTimeout(resolve, 0));

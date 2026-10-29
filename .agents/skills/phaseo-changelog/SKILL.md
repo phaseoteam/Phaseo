@@ -40,7 +40,7 @@ Within a date, sections go in this order: Product, API & SDKs, Models. Leave out
 
 - **Product**: anything people use in phaseo.app or the apps, including Chat, dashboard, settings, billing and credits, workspaces and teams, the models/providers/compare pages, docs-site features, and the desktop and mobile apps.
 - **API & SDKs**: gateway and management API behaviour such as new endpoints, parameters, headers, routing and limits, plus SDK, CLI, MCP server and integration releases.
-- **Models**: new models, model state changes, provider coverage for a specific model, model pricing changes, retirements, and release artwork.
+- **Models**: new models, model state changes, provider coverage for a specific model, model pricing changes, retirements, and release artwork. List a new model only once people can call it through Phaseo (it has a live route); a catalogue-only model gets its entry when it becomes routable, dated by when that happened.
 
 When an item could fit two categories, choose the one where a reader would look for it. A new model in Chat is Models. A new Chat feature built for one model is Product.
 

@@ -105,6 +105,7 @@ import {
 
 import RequestLabelBadges from "./RequestLabelBadges";
 import type { RequestClassifierSummary } from "./requestClassifierLabels";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
@@ -233,9 +234,9 @@ function isInteractiveRowTarget(target: EventTarget | null): boolean {
 	);
 }
 
-function formatCost(nanos: number | null | undefined, locale: string): string {
+function formatCost(nanos: number | null | undefined, _locale: string): string {
 	const dollars = Number(nanos ?? 0) / 1e9;
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5 }).format(dollars);
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5 }).format(dollars);
 }
 
 function getModelDetailsHref(modelId: string | null): string | null {

@@ -8,7 +8,31 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
 
+<Update label="2026年10月29日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+- [Mistral: Mistral Large 4](https://phaseo.app/models/mistral/mistral-large-4.0)
+
+</div>
+
+</Update>
+
 <Update label="2026年10月28日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+![开启产品筛选的更新日志，旁边是日期列表](/images/changelog/2026-10-28--changelog-filters.png)
+
+- 更新日志现在除了模型发布，还列出产品和 API 的变更，并提供**产品**、**API 与 SDK**和**模型**筛选，同时保留日期列表 ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261))。
+- 预设编辑器在**保存草稿**旁边新增**发布**，**版本和标签**为每个标签提供版本选择器，选择较早的版本即可回滚；参见 [提示词模板](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301))。
+- 打开已发布的预设版本可查看其模型和模板消息、与默认版本不同的行，以及用于试用的**运行**按钮 ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301))。
+
+</div>
 
 <div data-changelog-category="api">
 
@@ -29,6 +53,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">产品</p>
 
 - 预设编辑器的 **Versions and labels** 部分可将命名标签指向已发布的版本，移动标签即可一键回滚请求；请参阅[提示词模板](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))。
+- 预设的模型选择器只提供网关仍在提供的模型；此前它还会列出请求无法访问的已停用模型 ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260))。
+- 在没有额度的工作区中运行预设时会说明原因，并链接到**添加额度**；此前只显示通用错误 ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276))。
+- 加载完整模型目录的页面（例如预设编辑器）改为从缓存获取；此前每次加载约需 3 秒，且部分加载失败 ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278))。
 
 </div>
 
@@ -55,6 +82,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![GPT-6.1 Terra](/images/model-releases/2026-10-26--openai--gpt-6.1-terra.png)
+
+- [OpenAI: GPT-6.1 Terra](https://phaseo.app/models/openai/gpt-6.1-terra)
+
+</div>
+
 </Update>
 
 <Update label="2026年10月24日">
@@ -65,6 +102,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - 所有工作区都可以使用已停用模型的路由：所有者和管理员在 **设置 -> 路由 -> 已停用模型的路由** 中开启后，请求会转到已批准的替代模型；请参阅[模型弃用与停用](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))。
 - 已停用模型的路由只使用价格不高于已停用模型的已批准替代模型，除非所有者和管理员允许更高的价格；他们自己选择的替代模型无论价格高低都会使用 ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
+- 即使完整模型目录加载失败，预设列表和编辑器也能打开；此前页面会显示错误 ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221))。
 
 </div>
 
@@ -104,6 +142,18 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - 速率限制策略会执行 `concurrent_requests`，所有名额都被占用时返回 `429`，原因为 `policy_concurrent_requests`，并带有 `Retry-After: 1`；请参阅[速率限制](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
 - 严格策略（`fail_closed`）会在请求发送给提供商之前检查每分钟限制 ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
 - 通过欧盟和美国区域网关发送的请求现在也会到达 Broadcast 目标 ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187))。
+- 发往大多数模型的请求已恢复成功；10 月 23 日，在提供商数据政策更新后，这些请求返回 `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Kimi K3.1 Pro](/images/model-releases/2026-10-23--moonshotai--kimi-k3.1-pro.png)
+
+- [Moonshot: Kimi K3.1 Pro](https://phaseo.app/models/moonshotai/kimi-k3.1-pro)
+- [Abliteration AI: Abliterated Large Flash](https://phaseo.app/models/abliteration-ai/abliterated-model-large-flash)
 
 </div>
 
@@ -176,6 +226,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+- [Base Labs: Elephant-1](https://phaseo.app/models/baselabs/elephant-1)
+- [Base Labs: Mammoth-1](https://phaseo.app/models/baselabs/mammoth-1)
+
+</div>
+
+</Update>
+
+<Update label="2026年10月20日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+- [Mistral: Voxtral Mini Transcribe 3](https://phaseo.app/models/mistral/voxtral-mini-transcribe-3)
+- [Mistral: Voxtral Small Transcribe 3](https://phaseo.app/models/mistral/voxtral-small-transcribe-3)
+- [Mistral: Voxtral TTS 3](https://phaseo.app/models/mistral/voxtral-tts-3)
+
+</div>
+
 </Update>
 
 <Update label="2026年10月19日">
@@ -191,9 +264,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![MiniMax M3.1 Flash](/images/model-releases/2026-10-19--minimax--minimax-m3.1-flash.png)
+
+- [MiniMax: MiniMax M3.1 Flash](https://phaseo.app/models/minimax/minimax-m3.1-flash)
+- [Cloudflare: Clairic](https://phaseo.app/models/cloudflare/clairic)
+- [Inception: Mercury 3](https://phaseo.app/models/inception/mercury-3)
+
+</div>
+
 </Update>
 
 <Update label="2026年10月18日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 英文文档页面在社交媒体或聊天中分享时，会显示包含页面标题和描述的预览图 ([#3003](https://github.com/phaseoteam/Phaseo/pull/3003))。
+
+</div>
 
 <div data-changelog-category="api">
 
@@ -215,6 +308,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">产品</p>
 
 - **设置 -> 通知** 新增 **速率限制警报**，每小时最多发送一次，可发往电子邮件、Slack、Discord、Teams 或 Webhook；请参阅[工作区通知](./guides/workspace-notifications.mdx) ([#2946](https://github.com/phaseoteam/Phaseo/pull/2946))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![DeepSeek V4.1 Flash 1017](/images/model-releases/2026-10-17--deepseek--deepseek-v4.1-flash-1017.png)
+
+- [DeepSeek: DeepSeek V4.1 Flash 1017](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-1017)
 
 </div>
 
@@ -267,6 +370,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+- [Nvidia: Nemotron 3.5 Super VL 120B A12B](https://phaseo.app/models/nvidia/nemotron-3.5-super-vl-120b-a12b)
+
+</div>
+
 </Update>
 
 <Update label="2026年10月14日">
@@ -290,6 +401,17 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Jev 1.14](/images/model-releases/2026-10-14--typesafe--jev-1.14.0.png)
+
+- [TypeSafe: Jev 1.14](https://phaseo.app/models/typesafe/jev-1.14.0)
+- [SpaceXAI: Grok Voice 3.0](https://phaseo.app/models/spacex-ai/grok-voice-3.0)
+
+</div>
+
 </Update>
 
 <Update label="2026年10月13日">
@@ -299,6 +421,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">产品</p>
 
 - 用量概览的每张卡片显示支出、请求数和令牌数的月末预测，缓存命中率等比率则显示本月至今的数值 ([#2900](https://github.com/phaseoteam/Phaseo/pull/2900))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Gemini 4 Argon](/images/model-releases/2026-10-13--google--gemini-4-argon.png)
+
+- [Google: Gemini 4 Argon](https://phaseo.app/models/google/gemini-4-argon)
 
 </div>
 
@@ -321,6 +453,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - 顶层 `models` 回退列表适用于所有推理端点，包括 `/v1/messages` 和媒体端点；请参阅[路由与回退](./guides/routing-and-fallbacks.mdx) ([#2858](https://github.com/phaseoteam/Phaseo/pull/2858))。
 - API 密钥请求数和支出上限触发的 `429` 响应包含 `Retry-After`，给出距离限制重置的秒数 ([#2864](https://github.com/phaseoteam/Phaseo/pull/2864))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Muse Wonder 1.0](/images/model-releases/2026-10-12--meta--muse-wonder-1.0.png)
+
+- [Meta: Muse Wonder 1.0](https://phaseo.app/models/meta/muse-wonder-1.0)
 
 </div>
 
@@ -364,6 +506,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - 工作区每个成员都有每分钟请求额度，在其 API 密钥之间共享，随工作区逐渐稳定从 10 提高到 120；请参阅[速率限制](./api-reference/limits.mdx) ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2800](https://github.com/phaseoteam/Phaseo/pull/2800))。
 - 每个用户每个 UTC 日可向免费模型发送 1,500 个请求，超过任一限制的请求返回 `429` 并带 `Retry-After` ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2787](https://github.com/phaseoteam/Phaseo/pull/2787))。
 - 当某区域没有提供商提供该模型时，欧盟和美国区域网关返回 `403 model_region_unavailable`；请参阅[按区域路由文本请求](./guides/regional-routing.mdx) ([#2811](https://github.com/phaseoteam/Phaseo/pull/2811), [#2813](https://github.com/phaseoteam/Phaseo/pull/2813))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Clef Omni](/images/model-releases/2026-10-09--cloudflare--clef-omni.png)
+
+- [Cloudflare: Clef Omni](https://phaseo.app/models/cloudflare/clef-omni)
 
 </div>
 

@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IRVideoGenerationRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
@@ -448,13 +446,51 @@ import { runVideoReconciliationJob } from "../../../pipeline/video-reconciliatio
 import { getVideoByIdHandler } from "./videos.get-by-id";
 import { getVideoContentHandler } from "./videos.get-content";
 
+// Copied from the google-vertex google/veo-3.1-lite-preview video.generate catalogue price card.
+const VEO_LITE_PRICING_CARD = {
+	key: "google-vertex:google/veo-3.1-lite-preview:video.generate",
+	api_provider_id: "google-vertex",
+	provider_slug: "google-vertex",
+	api_model_id: "google/veo-3.1-lite-preview",
+	capability_id: "video.generate",
+	rules: [
+		{
+			meter: "output_video_seconds", unit: "second", unit_size: 1, price_per_unit: 0.05, currency: "USD", pricing_plan: "standard",
+			match: [
+				{ path: "video_params.resolution", op: "eq", or_group: 1, and_index: 1, value: "720p" },
+				{ path: "video_params.audio", op: "eq", or_group: 1, and_index: 2, value: true },
+			],
+			priority: 100, effective_from: "2026-03-31T00:00:00Z",
+		},
+		{
+			meter: "output_video_seconds", unit: "second", unit_size: 1, price_per_unit: 0.08, currency: "USD", pricing_plan: "standard",
+			match: [
+				{ path: "video_params.resolution", op: "eq", or_group: 1, and_index: 1, value: "1080p" },
+				{ path: "video_params.audio", op: "eq", or_group: 1, and_index: 2, value: true },
+			],
+			priority: 100, effective_from: "2026-03-31T00:00:00Z",
+		},
+		{
+			meter: "output_video_seconds", unit: "second", unit_size: 1, price_per_unit: 0.03, currency: "USD", pricing_plan: "standard",
+			match: [
+				{ path: "video_params.resolution", op: "eq", or_group: 1, and_index: 1, value: "720p" },
+				{ path: "video_params.audio", op: "eq", or_group: 1, and_index: 2, value: false },
+			],
+			priority: 100, effective_from: "2026-03-31T00:00:00Z",
+		},
+		{
+			meter: "output_video_seconds", unit: "second", unit_size: 1, price_per_unit: 0.05, currency: "USD", pricing_plan: "standard",
+			match: [
+				{ path: "video_params.resolution", op: "eq", or_group: 1, and_index: 1, value: "1080p" },
+				{ path: "video_params.audio", op: "eq", or_group: 1, and_index: 2, value: false },
+			],
+			priority: 100, effective_from: "2026-03-31T00:00:00Z",
+		},
+	],
+};
+
 function loadVeoLitePricingCard() {
-	const filePath = path.resolve(
-		process.cwd(),
-		"../..",
-		"packages/data/catalog/src/data/pricing/google-vertex/google-veo-3.1-lite-generate-preview/video.generate/pricing.json",
-	);
-	return JSON.parse(fs.readFileSync(filePath, "utf8"));
+	return structuredClone(VEO_LITE_PRICING_CARD);
 }
 
 function buildExecutorArgs(

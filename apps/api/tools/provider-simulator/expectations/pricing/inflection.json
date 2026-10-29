@@ -1,31 +1,33 @@
 {
 	"provider": "inflection",
-	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
-	"clock": "2026-10-18T12:00:00.000Z",
-	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
 	"cards": [
 		{
 			"key": "inflection:inflection/inflection-3-pi:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/inflection/inflection-3-pi/text.generate/pricing.json",
+			"routes": ["inflection:inflection_3_pi"],
+			"skus": ["offer-dd10e288c27389c4fa69@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","2.5/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","10/1000000 token",100,null,null,null]
+				["offer-dd10e288c27389c4fa69@v1#input_text_tokens","standard","input_text_tokens","2.5/1000000 token",100,null,null,null],
+				["offer-dd10e288c27389c4fa69@v1#output_text_tokens","standard","output_text_tokens","10/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":10980000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",6500000],["output_text_tokens",448,"#1","output_text_tokens",4480000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":65437500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",30867500],["output_text_tokens",3457,"#1","output_text_tokens",34570000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":10980000,"lines":[["input_text_tokens",2600,"offer-dd10e288c27389c4fa69@v1#input_text_tokens","input_text_tokens",6500000],["output_text_tokens",448,"offer-dd10e288c27389c4fa69@v1#output_text_tokens","output_text_tokens",4480000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-dd10e288c27389c4fa69@v1#input_text_tokens","offer-dd10e288c27389c4fa69@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":65437500,"lines":[["input_text_tokens",12347,"offer-dd10e288c27389c4fa69@v1#input_text_tokens","input_text_tokens",30867500],["output_text_tokens",3457,"offer-dd10e288c27389c4fa69@v1#output_text_tokens","output_text_tokens",34570000]]}}
 			]
 		},
 		{
 			"key": "inflection:inflection/inflection-3-productivity:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/inflection/inflection-3-productivity/text.generate/pricing.json",
+			"routes": ["inflection:inflection_3_productivity"],
+			"skus": ["offer-a2e156e0f606a37d6652@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","2.5/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","10/1000000 token",100,null,null,null]
+				["offer-a2e156e0f606a37d6652@v1#input_text_tokens","standard","input_text_tokens","2.5/1000000 token",100,null,null,null],
+				["offer-a2e156e0f606a37d6652@v1#output_text_tokens","standard","output_text_tokens","10/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":10980000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",6500000],["output_text_tokens",448,"#1","output_text_tokens",4480000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":65437500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",30867500],["output_text_tokens",3457,"#1","output_text_tokens",34570000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":10980000,"lines":[["input_text_tokens",2600,"offer-a2e156e0f606a37d6652@v1#input_text_tokens","input_text_tokens",6500000],["output_text_tokens",448,"offer-a2e156e0f606a37d6652@v1#output_text_tokens","output_text_tokens",4480000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-a2e156e0f606a37d6652@v1#input_text_tokens","offer-a2e156e0f606a37d6652@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":65437500,"lines":[["input_text_tokens",12347,"offer-a2e156e0f606a37d6652@v1#input_text_tokens","input_text_tokens",30867500],["output_text_tokens",3457,"offer-a2e156e0f606a37d6652@v1#output_text_tokens","output_text_tokens",34570000]]}}
 			]
 		}
 	]

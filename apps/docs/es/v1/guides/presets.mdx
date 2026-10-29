@@ -4,14 +4,14 @@ description: "Guarda configuraciones reutilizables de Gateway para tu equipo."
 icon: "sliders-horizontal"
 ---
 
-Los preajustes son configuraciones reutilizables que ayudan a los equipos a estandarizar prompts, preferencias de modelo y valores predeterminados de enrutamiento. Se administran en el panel de Phaseo y se pueden compartir con todo el equipo.
+Los preajustes son configuraciones reutilizables que ayudan a los equipos a estandarizar prompts, preferencias de modelo y valores predeterminados de enrutamiento. Se administran en el panel de Phaseo y se pueden compartir con todo el equipo. También puedes gestionarlos con los comandos `phaseo presets` de la CLI o con la API `/v1/presets`.
 
 ## Inicio rápido
 
 <Steps>
 <Step title="Crea un preajuste">
 
-Abre **Panel -> Ajustes -> Preajustes** y crea uno con un slug claro, como `release-summary`. Añade solo los valores predeterminados que deban compartirse entre quienes realizan solicitudes.
+Abre **Panel -> Ajustes -> Preajustes** y crea uno con un slug claro, como `release-summary`. Añade solo los valores predeterminados que deban compartirse entre quienes realizan solicitudes. Desde la CLI, ejecuta `phaseo presets create --name @release-summary --model <model-id>`.
 
 </Step>
 
@@ -126,7 +126,7 @@ Si necesitas transformaciones más complejas específicas para quien realiza la 
 
 ## Administrar preajustes
 
-Crea y administra preajustes en **Panel -> Ajustes -> Preajustes**. Usa slugs distintos cuando los flujos de trabajo necesiten diferencias importantes en los prompts, el enrutamiento o el almacenamiento en caché.
+Crea y administra preajustes en **Panel -> Ajustes -> Preajustes**. Usa slugs distintos cuando los flujos de trabajo necesiten diferencias importantes en los prompts, el enrutamiento o el almacenamiento en caché. Desde la CLI, usa `phaseo presets create|update`, `phaseo presets versions create` y `phaseo presets labels set` (la API `/v1/presets`).
 
 ## Cuándo usar preajustes
 

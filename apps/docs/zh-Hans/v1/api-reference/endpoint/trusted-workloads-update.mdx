@@ -1,0 +1,12 @@
+---
+title: "更新受信任的工作负载策略"
+sidebarTitle: "更新受信任的工作负载策略"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /workload-identity/policies/{id}"
+description: "更改受信任的工作负载策略的名称、状态、声明条件或令牌最长有效期。"
+---
+<Note>需要管理密钥或 OAuth 令牌具有 `keys:write` 权限，或由工作区所有者或管理员操作。受信任的工作负载目前处于 Beta 阶段，未开通的工作区会收到 `404`。</Note>
+
+平台、签发方和所有者无法更改，请改为创建新策略。更改会在一分钟内同步到网关。
+
+请参阅[受信任的工作负载](../../developers/trusted-workloads.mdx)，了解策略的工作方式以及如何使用 Terraform 管理策略。

@@ -25,6 +25,7 @@ const api: FactoryApi = {
 	startRun: (input) => ipcRenderer.invoke("factory:start-run", input),
 	cancelRun: (runId) => ipcRenderer.invoke("factory:cancel-run", runId),
 	assign: (itemId, agentId) => ipcRenderer.invoke("factory:assign", itemId, agentId),
+	setEffort: (itemId, effort) => ipcRenderer.invoke("factory:set-effort", itemId, effort),
 	sendMessage: (itemId, text) => ipcRenderer.invoke("factory:send-message", itemId, text),
 	createIssue: (input) => ipcRenderer.invoke("factory:create-issue", input),
 	addRepo: (repo, checkout) => ipcRenderer.invoke("factory:add-repo", repo, checkout),

@@ -1194,6 +1194,16 @@ module Phaseo
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
     ClassifierScope = Struct.new(:app_ids, :key_ids, :models, keyword_init: true)
+    # @!attribute [rw] classifier
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] classifier_id
+    #   @return [String, nil]
+    # @!attribute [rw] sample
+    #   @return [Hash{String => Object}]
+    ClassifierTestRequest = Struct.new(:classifier, :classifier_id, :sample, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    ClassifierTestResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] description
     #   @return [String, nil]
     # @!attribute [rw] dimensions
@@ -1227,6 +1237,55 @@ module Phaseo
     # @!attribute [rw] ok
     #   @return [String]
     CreditsResponse = Struct.new(:credits, :ok, keyword_init: true)
+    # @!attribute [rw] amount_cents
+    #   @return [Integer]
+    # @!attribute [rw] amount_usd
+    #   @return [Float]
+    # @!attribute [rw] checkout_url
+    #   @return [String, nil]
+    # @!attribute [rw] confirmation_recipients
+    #   @return [Integer, nil]
+    # @!attribute [rw] created_at
+    #   @return [String]
+    # @!attribute [rw] currency
+    #   @return [String]
+    # @!attribute [rw] decided_at
+    #   @return [String, nil]
+    # @!attribute [rw] expires_at
+    #   @return [String]
+    # @!attribute [rw] final
+    #   @return [Boolean]
+    # @!attribute [rw] flow
+    #   @return [String]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] message
+    #   @return [String]
+    # @!attribute [rw] next_action
+    #   @return [String, nil]
+    # @!attribute [rw] paid_at
+    #   @return [String, nil]
+    # @!attribute [rw] payment_method
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] reason
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    CreditTopup = Struct.new(:amount_cents, :amount_usd, :checkout_url, :confirmation_recipients, :created_at, :currency, :decided_at, :expires_at, :final, :flow, :id, :message, :next_action, :paid_at, :payment_method, :reason, :status, :workspace_id, keyword_init: true)
+    # @!attribute [rw] amount_usd
+    #   @return [Float]
+    # @!attribute [rw] idempotency_key
+    #   @return [String, nil]
+    # @!attribute [rw] workspace_id
+    #   @return [String, nil]
+    CreditTopupCreateRequest = Struct.new(:amount_usd, :idempotency_key, :workspace_id, keyword_init: true)
+    # @!attribute [rw] ok
+    #   @return [String]
+    # @!attribute [rw] topup
+    #   @return [Hash{String => Object}]
+    CreditTopupResponse = Struct.new(:ok, :topup, keyword_init: true)
     DataContributionCategories = Struct.new(:_unused, keyword_init: true)
     # @!attribute [rw] categories
     #   @return [Hash{String => Object}]
@@ -5043,6 +5102,8 @@ module Phaseo
     SpendRulePeriod = Object
     # @!attribute [rw] alert
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] balance
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] base_kind
     #   @return [String, nil]
     # @!attribute [rw] base_nanos
@@ -5085,7 +5146,7 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] value_usd
     #   @return [Float, nil]
-    SpendRulePreview = Struct.new(:alert, :base_kind, :base_nanos, :base_ref, :base_usd, :block_at_nanos, :block_at_usd, :computed_at, :evaluated, :metric, :next_threshold, :percent, :period, :reached_threshold_percent, :rule_id, :state, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :value_nanos, :value_usd, keyword_init: true)
+    SpendRulePreview = Struct.new(:alert, :balance, :base_kind, :base_nanos, :base_ref, :base_usd, :block_at_nanos, :block_at_usd, :computed_at, :evaluated, :metric, :next_threshold, :percent, :period, :reached_threshold_percent, :rule_id, :state, :threshold_amount_nanos, :threshold_amount_usd, :threshold_percents, :time_zone, :value_nanos, :value_usd, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     SpendRulePreviewResponse = Struct.new(:data, keyword_init: true)

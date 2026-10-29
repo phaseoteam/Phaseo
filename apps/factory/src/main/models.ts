@@ -15,6 +15,8 @@ export interface CatalogModel {
 	id: string;
 	/** The name people know, for example "Opus 5.5" or "GPT-6.1-Sol". */
 	label: string;
+	/** The model an alias runs, for example "claude-opus-5-5", so a hub can be checked for it. */
+	resolved?: string;
 	description?: string;
 	/** Reasoning effort levels, lowest first. */
 	efforts: string[];
@@ -94,6 +96,8 @@ export function claudeModels(models: ClaudeModelInfo[]): CatalogModel[] {
 		return {
 			id: model.value,
 			label: named ? first! : model.displayName ?? model.value,
+			// "claude-opus-5-5[1m]" is the same model with a longer context.
+			resolved: model.resolvedModel?.replace(/\[.*\]$/, ""),
 			description: (named ? rest.join(" · ") : model.description) || undefined,
 			efforts: model.supportedEffortLevels ?? [],
 			isDefault: Boolean(fallback && model.resolvedModel === fallback) || undefined,

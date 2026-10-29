@@ -1431,6 +1431,22 @@ class ClassifierScope
 	public $models;
 }
 
+class ClassifierTestRequest
+{
+	/** @var array<string, mixed>|null */
+	public $classifier;
+	/** @var string|null */
+	public $classifier_id;
+	/** @var array<string, mixed> */
+	public $sample;
+}
+
+class ClassifierTestResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
 class ClassifierUpdateInput
 {
 	/** @var string|null */
@@ -1471,6 +1487,64 @@ class CreditsResponse
 	public $credits;
 	/** @var string */
 	public $ok;
+}
+
+class CreditTopup
+{
+	/** @var int */
+	public $amount_cents;
+	/** @var float */
+	public $amount_usd;
+	/** @var string|null */
+	public $checkout_url;
+	/** @var int|null */
+	public $confirmation_recipients;
+	/** @var string */
+	public $created_at;
+	/** @var string */
+	public $currency;
+	/** @var string|null */
+	public $decided_at;
+	/** @var string */
+	public $expires_at;
+	/** @var bool */
+	public $final;
+	/** @var string */
+	public $flow;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $message;
+	/** @var string|null */
+	public $next_action;
+	/** @var string|null */
+	public $paid_at;
+	/** @var array<string, mixed>|null */
+	public $payment_method;
+	/** @var string|null */
+	public $reason;
+	/** @var string */
+	public $status;
+	/** @var string */
+	public $workspace_id;
+}
+
+class CreditTopupCreateRequest
+{
+	/** @var float */
+	public $amount_usd;
+	/** @var string|null */
+	public $idempotency_key;
+	/** @var string|null */
+	public $workspace_id;
+}
+
+class CreditTopupResponse
+{
+	/** @var string */
+	public $ok;
+	/** @var array<string, mixed> */
+	public $topup;
 }
 
 class DataContributionCategories
@@ -6253,6 +6327,8 @@ class SpendRulePreview
 {
 	/** @var array<string, mixed>|null */
 	public $alert;
+	/** @var array<string, mixed>|null */
+	public $balance;
 	/** @var string|null */
 	public $base_kind;
 	/** @var int|null */

@@ -7,7 +7,8 @@
 		"dev": "npx wrangler dev",
 		"build": "npx wrangler deploy --dry-run",
 		"build:jobs": "pnpm exec wrangler deploy --dry-run --config wrangler.jobs.toml",
-		"build:regional": "pnpm exec wrangler deploy --dry-run --config wrangler.eu.toml && pnpm exec wrangler deploy --dry-run --config wrangler.us.toml",
+		"build:realtime": "pnpm exec wrangler deploy --dry-run --config wrangler.realtime.toml",
+		"build:regional":"pnpm exec wrangler deploy --dry-run --config wrangler.eu.toml && pnpm exec wrangler deploy --dry-run --config wrangler.us.toml",
 		"deploy:eu": "pnpm exec wrangler deploy --config wrangler.eu.toml",
 		"deploy:us": "pnpm exec wrangler deploy --config wrangler.us.toml",
 		"start": "npx wrangler dev",
@@ -51,7 +52,6 @@
 		"test:live:provider:alpha-beta": "tsx scripts/run-live-provider-tests-alpha-beta.ts",
 		"test:live:nano-banana": "pnpm exec vitest run tests/integration/nano-banana-image.live.spec.ts",
 		"test:live:video:sora": "tsx scripts/sora-video-live.ts",
-		"report:missing-discovered-models": "tsx scripts/report-missing-discovered-models.ts",
 		"simulate:providers:expectations": "tsx tools/provider-simulator/scripts/build-expectations.ts",
 		"simulate:providers:executor": "vitest run --config tools/provider-simulator/vitest.config.ts tools/provider-simulator/simulate.sim.ts"
 	},

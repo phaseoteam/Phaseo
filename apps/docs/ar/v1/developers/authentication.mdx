@@ -4,7 +4,7 @@ description: "استخدم مفاتيح API لمصادقة كل طلب إلى Ph
 icon: "key-round"
 ---
 
-أنشئ مفتاحًا في [لوحة التحكم](https://phaseo.app/settings/keys)، واحفظه على خادمك وأرسله كرمز Bearer مع طلبات Gateway.
+أنشئ مفتاحًا باستخدام `phaseo keys create --name <name> --json` في [Phaseo CLI](../guides/integrations/phaseo-cli) أو في [لوحة التحكم](https://phaseo.app/settings/keys)، واحفظه على خادمك وأرسله كرمز Bearer مع طلبات Gateway. على الوكلاء استخدام CLI؛ راجع [إدارة Phaseo من وكيل](./manage-from-an-agent).
 
 ---
 
@@ -12,6 +12,7 @@ icon: "key-round"
 
 - **مفاتيح API الخاصة بـ Gateway** تستدعي نقاط نهاية النماذج والمزوّدين والتوليد المتاحة لمساحة العمل.
 - **مفاتيح API للإدارة** تستدعي واجهات الإدارة. راجع [مفاتيح API للإدارة](./management-api-keys.mdx).
+- **أحمال العمل الموثوقة** (تجريبية) تتيح لعمليات النشر على Vercel ومهام GitHub Actions استدعاء البوابة برمز OIDC قصير الأجل بدلًا من مفتاح مخزَّن. راجع [أحمال العمل الموثوقة](./trusted-workloads.mdx).
 
 دوّر المفتاح بتحديث تطبيقك لاستخدام البديل قبل إبطال بيانات الاعتماد القديمة. راجع [نقطة نهاية تدوير المفاتيح](../api-reference/endpoint/keys-rotate.mdx).
 

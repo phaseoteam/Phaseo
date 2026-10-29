@@ -147,6 +147,7 @@ export async function requestPhaseo<T>(
 		body: options.body === undefined ? undefined : JSON.stringify(options.body),
 	});
 	const response = env.PHASEO_API ? await env.PHASEO_API.fetch(request) : await fetch(request);
+	if (response.status === 204) return {} as T;
 	const payload = (await response.json().catch(() => null)) as T | null;
 	if (!response.ok || !payload) {
 		const details = payload && typeof payload === "object"

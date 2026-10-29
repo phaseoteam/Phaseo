@@ -567,6 +567,34 @@ export function getEffectiveRoutingHints(body: any): EffectiveRoutingHints {
 	};
 }
 
+/**
+ * A request's limits on where its content may go, as `provider` fields for
+ * another gateway request that sends the same content (the auto-router's
+ * classifier, request classifiers): zero data retention, required regions, and
+ * the providers it allows or excludes. Null when it sets none.
+ */
+export function requestDataLimits(body: any): PlainObject | null {
+	const hints = getEffectiveRoutingHints(body);
+	const providerList = (value: unknown) => Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : null;
+	const only = providerList(hints.merged.only);
+	const ignore = providerList(hints.merged.ignore);
+	const limits: PlainObject = {
+		...(hints.requireZeroDataRetention === true ? { require_zero_data_retention: true } : {}),
+		...(hints.requiredExecutionRegion ? { required_execution_region: hints.requiredExecutionRegion } : {}),
+		...(hints.requiredDataRegion ? { required_data_region: hints.requiredDataRegion } : {}),
+		...(only ? { only } : {}),
+		...(ignore?.length ? { ignore } : {}),
+	};
+	return Object.keys(limits).length ? limits : null;
+}
+
+/** `body` with `limits` added to its `provider` fields; the limits win over the body's own. */
+export function withRequestDataLimits<T extends Record<string, unknown>>(body: T, limits: PlainObject | null): T {
+	if (!limits) return body;
+	const provider = body.provider && typeof body.provider === "object" && !Array.isArray(body.provider) ? body.provider as PlainObject : {};
+	return { ...body, provider: { ...provider, ...limits } };
+}
+
 export function normalizeRequestRoutingBody(body: any): any {
 	if (!body || typeof body !== "object" || Array.isArray(body)) return body;
 	const routingHints = getEffectiveRoutingHints(body);

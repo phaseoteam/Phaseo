@@ -915,6 +915,44 @@ describe("passthroughWithPricing", () => {
 		expect(ctx.meta.itl_ms).toBeUndefined();
 	});
 
+	it("reports time on failed provider attempts as failover, not Phaseo overhead", async () => {
+		const now = Date.now();
+		const ctx = baseCtx({
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+			meta: {
+				startedAtMs: now - 1_000,
+				// First provider dispatched 950 ms ago and failed; the selected one 50 ms ago.
+				upstreamFetchStartMs: now - 950,
+				selectedUpstreamFetchStartMs: now - 50,
+				upstreamStartMs: now - 50,
+			},
+		});
+		const upstream = makeDelayedSseResponse([
+			{
+				data: {
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: { content: "hello" }, finish_reason: "stop" }],
+					usage: { prompt_tokens: 4, completion_tokens: 1, total_tokens: 5 },
+				},
+			},
+		], 5);
+
+		await drain(await passthroughWithPricing({
+			upstream: upstream.response,
+			ctx,
+			provider: "openai",
+			priceCard: null,
+		}));
+
+		expect(ctx.meta.failover_ms).toBe(900);
+		const endToEnd = ctx.meta.end_to_end_ms as number;
+		const generation = ctx.meta.generation_ms as number;
+		expect(ctx.meta.phaseo_overhead_ms).toBe(Math.max(0, endToEnd - generation - 900));
+		// Before the split, the failed attempt's 900 ms was all reported as overhead.
+		expect(ctx.meta.phaseo_overhead_ms).toBeLessThan(100);
+	});
+
 	it("records ITL from successive content-bearing stream frames", async () => {
 		const ctx = baseCtx({
 			endpoint: "chat.completions",

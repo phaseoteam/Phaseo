@@ -95,6 +95,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createCreditTopup(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/credits/topups";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createDataContributionClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution/classifiers";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -142,6 +147,11 @@ public final class Operations {
 
 	public static Object createImageEdit(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/images/edits";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object createLiveSession(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/live/sessions";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
@@ -497,6 +507,11 @@ public final class Operations {
 
 	public static Object getCredits(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/credits";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getCreditTopup(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/credits/topups/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -1203,6 +1218,11 @@ public final class Operations {
 	public static Object summarizeGatewayFeedback(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/feedback/summary";
 		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object testClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers/test";
+		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Object testObservabilityDestination(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {

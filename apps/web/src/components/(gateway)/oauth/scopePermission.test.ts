@@ -25,6 +25,20 @@ describe("scopePermissionFor", () => {
 			resourceKey: "oauthApps",
 			tone: "delete",
 		});
+		expect(scopePermissionFor("spend_rules:delete")).toEqual({
+			scope: "spend_rules:delete",
+			action: "delete",
+			resourceKey: "spendRules",
+			tone: "delete",
+		});
+	});
+
+	it("gives billing:write its own copy instead of a generic manage label", () => {
+		expect(scopePermissionFor("billing:write")).toEqual({
+			scope: "billing:write",
+			action: "billing",
+			tone: "write",
+		});
 	});
 
 	it("keeps unknown scope identifiers intact for translated fallback copy", () => {

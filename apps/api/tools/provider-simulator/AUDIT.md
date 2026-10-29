@@ -221,7 +221,7 @@ Section 4 still applies. Add:
 - The OpenAI schema is used as a labelled baseline for the rest.
 - `specs/manifest.json` records which is which.
 
-**Catalogue.** Data comes from the archived fixtures in `packages/data/catalog/src/data`. The database owns live rows, so a price or route changed since that snapshot can still show here.
+**Catalogue.** This audit used the catalogue's archived JSON rows, which have since been removed. The simulator now reads routes and prices from the database (`src/catalogue.ts`), so a price or route changed since the audit can read differently in a new run.
 
 **Not covered by the simulator.** These were traced instead (section 5, and `AUDIT-traced-nontext.md`):
 - presets, guardrails, the auto-router, candidate ranking, sticky reads, BYOK, rate limits;

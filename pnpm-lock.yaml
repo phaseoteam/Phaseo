@@ -347,8 +347,8 @@ importers:
         specifier: ^0.7.1
         version: 0.7.1
       electron:
-        specifier: 42.10.0
-        version: 42.10.0
+        specifier: 42.11.18
+        version: 42.11.18
       eslint:
         specifier: ^10.13.0
         version: 10.13.0(jiti@2.7.0)
@@ -466,8 +466,8 @@ importers:
         specifier: 6.1.1
         version: 6.1.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.7(@babel/core@7.29.7))(@babel/runtime@7.29.10)(rolldown@1.1.5)(vite@8.1.4(@types/node@26.6.5)(esbuild@0.25.12)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1)))(babel-plugin-react-compiler@1.0.0)(vite@8.1.4(@types/node@26.6.5)(esbuild@0.25.12)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1))
       electron:
-        specifier: 42.10.0
-        version: 42.10.0
+        specifier: 42.11.18
+        version: 42.11.18
       eslint:
         specifier: ^10.8.1
         version: 10.13.0(jiti@2.7.0)
@@ -1261,8 +1261,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
-
-  packages/data/catalog: {}
 
   packages/devtools/devtools:
     dependencies:
@@ -10222,8 +10220,8 @@ packages:
   electron-windows-msix@2.0.4:
     resolution: {integrity: sha512-rYRrCWT7Hey52995JNgtmXKwG0saTTVPRd4KymeejOdIgNrSP5hHC5nSmVyClOICGbc5/vL4U5A2Am6L/5t0lw==}
 
-  electron@42.10.0:
-    resolution: {integrity: sha512-yBWnZO8tKId0ADvGa4+imPmm3+8Kfs8MtkUPhQQJz1AjTnUUDwCTWkQEU0CrArVVL97Jo4Q/0mVcLHciicBDGQ==}
+  electron@42.11.18:
+    resolution: {integrity: sha512-hbzodG06x/l7uq+oeyob5ugv6qZBmJRWC7Uto5QEE99xSHUARz6d+++Rz+79T/ssTYTQkONW4ciTTcJuAbXKIQ==}
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
@@ -27632,7 +27630,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@42.10.0:
+  electron@42.11.18:
     dependencies:
       '@electron-internal/extract-zip': 1.0.5
       '@electron/get': 5.1.0

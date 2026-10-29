@@ -18,11 +18,18 @@ const KEY = { linked: id('3', 1), u2: id('3', 2), u3: id('3', 3), u4: id('3', 4)
 const DOLLAR = 1_000_000_000;
 const NOW = '2026-10-21T12:00:00Z';
 const migrationFile = '../migrations/20261021194940_department_spend_budgets.sql';
+// Moves the department attribution into a helper shared with gateway_spend_limit_seed.
+const attributionMigrationFile = '../migrations/20261029095151_department_budgets_in_spend_limit_seed.sql';
 const schemaFiles = [
     '../schemas/public/tables/workspace_department_budgets.sql',
     '../schemas/public/functions/workspace_department_budget_status.sql',
     '../schemas/public/functions/sweep_department_budget_alerts.sql',
+    '../schemas/private/functions/department_budget_key_departments.sql',
 ];
+// Department budgets block requests: the sweep's 100% push and the table comment say so.
+const blockMigrationFile = '../migrations/20261029134622_department_budgets_block_requests.sql';
+const redefinedLater = /workspace_department_budget_status|department_budget_key_departments/;
+const COMMENT_LINE = /^COMMENT ON TABLE .*$/m;
 const sweep = at => asService(async () => (await one('select public.sweep_department_budget_alerts($1) r', [at])).r);
 const status = (workspace, at = NOW) => asService(async () => (await one('select public.workspace_department_budget_status($1, $2) r', [workspace, at])).r);
 const usage = (workspace, key, bucket, cost) => db.query(
@@ -34,7 +41,19 @@ const events = () => rows(`select kind, dedupe_key, payload -> 'push' ->> 'title
 try {
     // The migration carries every schema file it adds, and the manifest lists them.
     const migration = await read(migrationFile);
-    for (const file of schemaFiles) assert.ok(migration.includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
+    const attributionMigration = await read(attributionMigrationFile);
+    const blockMigration = await read(blockMigrationFile);
+    const sweepFile = '../schemas/public/functions/sweep_department_budget_alerts.sql';
+    const tableFile = '../schemas/public/tables/workspace_department_budgets.sql';
+    const sweepDefinition = (await read(sweepFile)).replace(/\r\n/g, '\n');
+    const tableDefinition = (await read(tableFile)).replace(/\r\n/g, '\n');
+    for (const file of schemaFiles.filter(file => file !== sweepFile && file !== tableFile)) {
+        assert.ok((redefinedLater.test(file) ? attributionMigration : migration).includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
+    }
+    // The table is created by the first migration; the later one only replaces its comment.
+    assert.ok(migration.includes(tableDefinition.replace(COMMENT_LINE, migration.match(COMMENT_LINE)[0]).trim()), 'the table is in the migration');
+    assert.equal(blockMigration.replace(/^SET local check_function_bodies = off;\n\n/, ''), `${sweepDefinition}\n${tableDefinition.match(COMMENT_LINE)[0]}\n`,
+        'the blocking migration matches the declarative sweep and table comment');
     const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
     for (const file of schemaFiles) {
         const path = file.replace('../schemas/', '');
@@ -90,6 +109,9 @@ try {
         '../schemas/public/functions/lock_workspace_budget_change.sql',
     ]) await db.exec(await read(file));
     await db.exec(migration);
+    await db.exec(attributionMigration);
+    await db.exec(blockMigration);
+    assert.match((await one(`select obj_description('public.workspace_department_budgets'::regclass, 'pg_class') c`)).c, /Budgets block the department's API-key requests/);
 
     // Acme: Engineering and Sales. u2 is in both; u3 is granted Sales but a directory override
     // moves them to Engineering only; u4's override takes them out of every department; u5 is in
@@ -159,7 +181,7 @@ try {
     assert.deepEqual(await sweep(NOW), { budgets: 4, alerted: 2 });
     let sent = await events();
     assert.deepEqual(sent.map(e => [e.kind, e.title, e.body, e.href]).sort(), [
-        ['department_budget_reached', 'Sales has used its daily budget', "$11.00 of $10.00 so far today. Requests keep running: department budgets send alerts but don't block.", '/settings/usage/overview'],
+        ['department_budget_reached', 'Sales has used its daily budget', "$11.00 of $10.00 so far today. Requests from the department's API keys are now refused until the budget resets (batch jobs, realtime sessions and OAuth requests excepted).", '/settings/usage/overview'],
         ['department_budget_warning', 'Engineering is at about 80% of its monthly budget', '$84.00 of $100.00 so far this month.', '/settings/usage/overview'],
     ]);
     assert.ok(sent.every(e => e.dedupe_key.includes(':department_budget:')));
@@ -177,7 +199,7 @@ try {
     assert.deepEqual(await sweep(NOW), { budgets: 4, alerted: 1 });
     sent = await events();
     assert.equal(sent.at(-1).title, 'Engineering has used its monthly budget');
-    assert.equal(sent.at(-1).body, "$104.00 of $100.00 so far this month. Requests keep running: department budgets send alerts but don't block.");
+    assert.equal(sent.at(-1).body, "$104.00 of $100.00 so far this month. Requests from the department's API keys are now refused until the budget resets (batch jobs, realtime sessions and OAuth requests excepted).");
 
     // Raising the limit mid-period can warn again at the new limit.
     await db.exec(`update public.workspace_department_budgets set limit_nanos = ${125 * DOLLAR} where department_id = '${ENG}'`);

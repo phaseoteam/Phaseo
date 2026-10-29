@@ -803,6 +803,16 @@ pub struct ClassifierScope {
 	pub models: Option<Vec<String>>,
 }
 
+pub struct ClassifierTestRequest {
+	pub classifier: Option<HashMap<String, String>>,
+	pub classifier_id: Option<String>,
+	pub sample: HashMap<String, String>,
+}
+
+pub struct ClassifierTestResponse {
+	pub data: HashMap<String, String>,
+}
+
 pub struct ClassifierUpdateInput {
 	pub description: Option<Option<String>>,
 	pub dimensions: Option<Vec<HashMap<String, String>>>,
@@ -825,6 +835,38 @@ pub struct ClassifierValue {
 pub struct CreditsResponse {
 	pub credits: HashMap<String, String>,
 	pub ok: bool,
+}
+
+pub struct CreditTopup {
+	pub amount_cents: i64,
+	pub amount_usd: f64,
+	pub checkout_url: Option<String>,
+	pub confirmation_recipients: Option<i64>,
+	pub created_at: String,
+	pub currency: String,
+	pub decided_at: Option<String>,
+	pub expires_at: String,
+	pub r#final: bool,
+	pub flow: String,
+	pub id: String,
+	pub message: String,
+	pub next_action: Option<String>,
+	pub paid_at: Option<String>,
+	pub payment_method: Option<HashMap<String, String>>,
+	pub reason: Option<String>,
+	pub status: String,
+	pub workspace_id: String,
+}
+
+pub struct CreditTopupCreateRequest {
+	pub amount_usd: f64,
+	pub idempotency_key: Option<String>,
+	pub workspace_id: Option<String>,
+}
+
+pub struct CreditTopupResponse {
+	pub ok: bool,
+	pub topup: HashMap<String, String>,
 }
 
 pub struct DataContributionCategories {
@@ -3559,6 +3601,7 @@ pub type SpendRulePeriod = JsonValue;
 
 pub struct SpendRulePreview {
 	pub alert: Option<HashMap<String, String>>,
+	pub balance: Option<HashMap<String, String>>,
 	pub base_kind: Option<String>,
 	pub base_nanos: Option<i64>,
 	pub base_ref: Option<String>,

@@ -1,95 +1,157 @@
 {
 	"provider": "elevenlabs",
-	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
-	"clock": "2026-10-18T12:00:00.000Z",
-	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
 	"cards": [
 		{
 			"key": "elevenlabs:eleven-labs/eleven-flash-v2:audio.speech",
-			"file": "packages/data/catalog/src/data/pricing/elevenlabs/eleven-labs-eleven-flash-v2/audio.speech/pricing.json",
+			"routes": ["elevenlabs:eleven-labs/eleven-flash-v2"],
+			"skus": ["offer-37bf4db986e2ba9afddd@v2"],
 			"rules": [
-				["#0","standard","input_characters","0.05/1000 character",100,null,null,null]
+				["offer-37bf4db986e2ba9afddd@v2#input_characters","standard","input_characters","0.04/1000 character",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":50000000,"lines":[["input_characters",1000,"#0","input_characters",50000000]]}},
-				{"id":"rule.standard.input_characters","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":61700000,"lines":[["input_characters",1234,"#0","input_characters",61700000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":40000000,"lines":[["input_characters",1000,"offer-37bf4db986e2ba9afddd@v2#input_characters","input_characters",40000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["offer-37bf4db986e2ba9afddd@v2#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":49360000,"lines":[["input_characters",1234,"offer-37bf4db986e2ba9afddd@v2#input_characters","input_characters",49360000]]}}
 			]
 		},
 		{
 			"key": "elevenlabs:eleven-labs/eleven-flash-v2.5:audio.speech",
-			"file": "packages/data/catalog/src/data/pricing/elevenlabs/eleven-labs-eleven-flash-v2.5/audio.speech/pricing.json",
+			"routes": ["elevenlabs:eleven-labs/eleven-flash-v2.5"],
+			"skus": ["offer-2e8dcd8b44b310b76b99@v2"],
 			"rules": [
-				["#0","standard","input_characters","0.05/1000 character",100,null,null,null]
+				["offer-2e8dcd8b44b310b76b99@v2#input_characters","standard","input_characters","0.04/1000 character",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":50000000,"lines":[["input_characters",1000,"#0","input_characters",50000000]]}},
-				{"id":"rule.standard.input_characters","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":61700000,"lines":[["input_characters",1234,"#0","input_characters",61700000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":40000000,"lines":[["input_characters",1000,"offer-2e8dcd8b44b310b76b99@v2#input_characters","input_characters",40000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["offer-2e8dcd8b44b310b76b99@v2#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":49360000,"lines":[["input_characters",1234,"offer-2e8dcd8b44b310b76b99@v2#input_characters","input_characters",49360000]]}}
 			]
 		},
 		{
 			"key": "elevenlabs:eleven-labs/eleven-multilingual-v2:audio.speech",
-			"file": "packages/data/catalog/src/data/pricing/elevenlabs/eleven-labs-eleven-multilingual-v2/audio.speech/pricing.json",
+			"routes": ["elevenlabs:eleven-labs/eleven-multilingual-v2"],
+			"skus": ["offer-6528dc19deb281ed6e23@v2"],
 			"rules": [
-				["#0","standard","input_characters","0.1/1000 character",100,null,null,null]
+				["offer-6528dc19deb281ed6e23@v2#input_characters","standard","input_characters","0.08/1000 character",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":100000000,"lines":[["input_characters",1000,"#0","input_characters",100000000]]}},
-				{"id":"rule.standard.input_characters","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":123400000,"lines":[["input_characters",1234,"#0","input_characters",123400000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":80000000,"lines":[["input_characters",1000,"offer-6528dc19deb281ed6e23@v2#input_characters","input_characters",80000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["offer-6528dc19deb281ed6e23@v2#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":98720000,"lines":[["input_characters",1234,"offer-6528dc19deb281ed6e23@v2#input_characters","input_characters",98720000]]}}
+			]
+		},
+		{
+			"key": "elevenlabs:eleven-labs/eleven-realtime-v1-max:audio.realtime",
+			"routes": ["elevenlabs:eleven-labs/eleven-realtime-v1-max"],
+			"skus": ["eleven-realtime-v1-max-audio-realtime-standard@v1"],
+			"rules": [
+				["eleven-realtime-v1-max-audio-realtime-standard@v1#output_text_tokens","standard","output_text_tokens","9/1000000 token",102,null,null,null],
+				["eleven-realtime-v1-max-audio-realtime-standard@v1#input_text_tokens","standard","input_text_tokens","1.8/1000000 token",101,null,null,null],
+				["eleven-realtime-v1-max-audio-realtime-standard@v1#audio_minutes","standard","audio_minutes","0.08/1 minute",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"output_text_tokens":1000,"input_text_tokens":1000,"audio_minutes":1,"input_tokens":1000,"output_tokens":1000,"total_tokens":2000},"expected":{"nanos":90800000,"lines":[["audio_minutes",1,"eleven-realtime-v1-max-audio-realtime-standard@v1#audio_minutes","audio_minutes",80000000],["input_text_tokens",1000,"eleven-realtime-v1-max-audio-realtime-standard@v1#input_text_tokens","input_text_tokens",1800000],["output_text_tokens",1000,"eleven-realtime-v1-max-audio-realtime-standard@v1#output_text_tokens","output_text_tokens",9000000]]}},
+				{"id":"rule.standard.audio_minutes","kind":"rule","targets":["eleven-realtime-v1-max-audio-realtime-standard@v1#audio_minutes"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"audio_minutes":3,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":293337600,"lines":[["audio_minutes",3,"eleven-realtime-v1-max-audio-realtime-standard@v1#audio_minutes","audio_minutes",240000000],["input_text_tokens",12347,"eleven-realtime-v1-max-audio-realtime-standard@v1#input_text_tokens","input_text_tokens",22224600],["output_text_tokens",3457,"eleven-realtime-v1-max-audio-realtime-standard@v1#output_text_tokens","output_text_tokens",31113000]]}},
+				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["eleven-realtime-v1-max-audio-realtime-standard@v1#output_text_tokens","eleven-realtime-v1-max-audio-realtime-standard@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":53337600,"lines":[["input_text_tokens",12347,"eleven-realtime-v1-max-audio-realtime-standard@v1#input_text_tokens","input_text_tokens",22224600],["output_text_tokens",3457,"eleven-realtime-v1-max-audio-realtime-standard@v1#output_text_tokens","output_text_tokens",31113000]]}}
+			]
+		},
+		{
+			"key": "elevenlabs:eleven-labs/eleven-realtime-v1-mini:audio.realtime",
+			"routes": ["elevenlabs:eleven-labs/eleven-realtime-v1-mini"],
+			"skus": ["eleven-realtime-v1-mini-audio-realtime-standard@v1"],
+			"rules": [
+				["eleven-realtime-v1-mini-audio-realtime-standard@v1#output_text_tokens","standard","output_text_tokens","6/1000000 token",102,null,null,null],
+				["eleven-realtime-v1-mini-audio-realtime-standard@v1#input_text_tokens","standard","input_text_tokens","0.2/1000000 token",101,null,null,null],
+				["eleven-realtime-v1-mini-audio-realtime-standard@v1#audio_minutes","standard","audio_minutes","0.08/1 minute",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"output_text_tokens":1000,"input_text_tokens":1000,"audio_minutes":1,"input_tokens":1000,"output_tokens":1000,"total_tokens":2000},"expected":{"nanos":86200000,"lines":[["audio_minutes",1,"eleven-realtime-v1-mini-audio-realtime-standard@v1#audio_minutes","audio_minutes",80000000],["input_text_tokens",1000,"eleven-realtime-v1-mini-audio-realtime-standard@v1#input_text_tokens","input_text_tokens",200000],["output_text_tokens",1000,"eleven-realtime-v1-mini-audio-realtime-standard@v1#output_text_tokens","output_text_tokens",6000000]]}},
+				{"id":"rule.standard.audio_minutes","kind":"rule","targets":["eleven-realtime-v1-mini-audio-realtime-standard@v1#audio_minutes"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"audio_minutes":3,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":263211400,"lines":[["audio_minutes",3,"eleven-realtime-v1-mini-audio-realtime-standard@v1#audio_minutes","audio_minutes",240000000],["input_text_tokens",12347,"eleven-realtime-v1-mini-audio-realtime-standard@v1#input_text_tokens","input_text_tokens",2469400],["output_text_tokens",3457,"eleven-realtime-v1-mini-audio-realtime-standard@v1#output_text_tokens","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["eleven-realtime-v1-mini-audio-realtime-standard@v1#output_text_tokens","eleven-realtime-v1-mini-audio-realtime-standard@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":23211400,"lines":[["input_text_tokens",12347,"eleven-realtime-v1-mini-audio-realtime-standard@v1#input_text_tokens","input_text_tokens",2469400],["output_text_tokens",3457,"eleven-realtime-v1-mini-audio-realtime-standard@v1#output_text_tokens","output_text_tokens",20742000]]}}
 			]
 		},
 		{
 			"key": "elevenlabs:eleven-labs/eleven-turbo-v2:audio.speech",
-			"file": "packages/data/catalog/src/data/pricing/elevenlabs/eleven-labs-eleven-turbo-v2/audio.speech/pricing.json",
+			"routes": ["elevenlabs:eleven-labs/eleven-turbo-v2"],
+			"skus": ["offer-9cfc883384e53a6889d8@v2"],
 			"rules": [
-				["#0","standard","input_characters","0.05/1000 character",100,null,null,null]
+				["offer-9cfc883384e53a6889d8@v2#input_characters","standard","input_characters","0.04/1000 character",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":50000000,"lines":[["input_characters",1000,"#0","input_characters",50000000]]}},
-				{"id":"rule.standard.input_characters","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":61700000,"lines":[["input_characters",1234,"#0","input_characters",61700000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":40000000,"lines":[["input_characters",1000,"offer-9cfc883384e53a6889d8@v2#input_characters","input_characters",40000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["offer-9cfc883384e53a6889d8@v2#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":49360000,"lines":[["input_characters",1234,"offer-9cfc883384e53a6889d8@v2#input_characters","input_characters",49360000]]}}
 			]
 		},
 		{
 			"key": "elevenlabs:eleven-labs/eleven-turbo-v2.5:audio.speech",
-			"file": "packages/data/catalog/src/data/pricing/elevenlabs/eleven-labs-eleven-turbo-v2.5/audio.speech/pricing.json",
+			"routes": ["elevenlabs:eleven-labs/eleven-turbo-v2.5"],
+			"skus": ["offer-a1942b5c0ea49c26dc77@v2"],
 			"rules": [
-				["#0","standard","input_characters","0.05/1000 character",100,null,null,null]
+				["offer-a1942b5c0ea49c26dc77@v2#input_characters","standard","input_characters","0.04/1000 character",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":50000000,"lines":[["input_characters",1000,"#0","input_characters",50000000]]}},
-				{"id":"rule.standard.input_characters","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":61700000,"lines":[["input_characters",1234,"#0","input_characters",61700000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":40000000,"lines":[["input_characters",1000,"offer-a1942b5c0ea49c26dc77@v2#input_characters","input_characters",40000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["offer-a1942b5c0ea49c26dc77@v2#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":49360000,"lines":[["input_characters",1234,"offer-a1942b5c0ea49c26dc77@v2#input_characters","input_characters",49360000]]}}
 			]
 		},
 		{
 			"key": "elevenlabs:eleven-labs/eleven-v3:audio.speech",
-			"file": "packages/data/catalog/src/data/pricing/elevenlabs/eleven-labs-eleven-v3/audio.speech/pricing.json",
+			"routes": ["elevenlabs:eleven-labs/eleven-v3"],
+			"skus": ["offer-7c8a20f0421435599e4c@v2"],
 			"rules": [
-				["#0","standard","input_characters","0.1/1000 character",100,null,null,null]
+				["offer-7c8a20f0421435599e4c@v2#input_characters","standard","input_characters","0.08/1000 character",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":100000000,"lines":[["input_characters",1000,"#0","input_characters",100000000]]}},
-				{"id":"rule.standard.input_characters","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":123400000,"lines":[["input_characters",1234,"#0","input_characters",123400000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":80000000,"lines":[["input_characters",1000,"offer-7c8a20f0421435599e4c@v2#input_characters","input_characters",80000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["offer-7c8a20f0421435599e4c@v2#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":98720000,"lines":[["input_characters",1234,"offer-7c8a20f0421435599e4c@v2#input_characters","input_characters",98720000]]}}
+			]
+		},
+		{
+			"key": "elevenlabs:eleven-labs/eleven-v4-turbo:audio.speech",
+			"routes": ["elevenlabs:eleven-labs/eleven-v4-turbo"],
+			"skus": ["post-launch-20261012-standard@v1"],
+			"rules": [
+				["post-launch-20261012-standard@v1#input_characters","standard","input_characters","0.04/1000 character",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":40000000,"lines":[["input_characters",1000,"post-launch-20261012-standard@v1#input_characters","input_characters",40000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["post-launch-20261012-standard@v1#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":49360000,"lines":[["input_characters",1234,"post-launch-20261012-standard@v1#input_characters","input_characters",49360000]]}}
+			]
+		},
+		{
+			"key": "elevenlabs:eleven-labs/eleven-v4:audio.speech",
+			"routes": ["elevenlabs:eleven-labs/eleven-v4"],
+			"skus": ["post-launch-20261012-standard@v1"],
+			"rules": [
+				["post-launch-20261012-standard@v1#input_characters","standard","input_characters","0.08/1000 character",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":80000000,"lines":[["input_characters",1000,"post-launch-20261012-standard@v1#input_characters","input_characters",80000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["post-launch-20261012-standard@v1#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":98720000,"lines":[["input_characters",1234,"post-launch-20261012-standard@v1#input_characters","input_characters",98720000]]}}
 			]
 		},
 		{
 			"key": "elevenlabs:eleven-labs/music:music.generate",
-			"file": "packages/data/catalog/src/data/pricing/elevenlabs/eleven-labs-music/music.generate/pricing.json",
+			"routes": ["elevenlabs:eleven-labs/music"],
+			"skus": ["offer-71142ae455ebb9ee59d4@v1"],
 			"rules": [
-				["#0","standard","output_audio_seconds","0.15/60 second",100,null,null,null]
+				["offer-71142ae455ebb9ee59d4@v1#output_audio_seconds","standard","output_audio_seconds","0.15/60 second",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"output_audio_seconds":60},"expected":{"nanos":150000000,"lines":[["output_audio_seconds",60,"#0","output_audio_seconds",150000000]]}},
-				{"id":"rule.standard.output_audio_seconds","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"output_audio_seconds":13},"expected":{"nanos":32500000,"lines":[["output_audio_seconds",13,"#0","output_audio_seconds",32500000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"output_audio_seconds":60},"expected":{"nanos":150000000,"lines":[["output_audio_seconds",60,"offer-71142ae455ebb9ee59d4@v1#output_audio_seconds","output_audio_seconds",150000000]]}},
+				{"id":"rule.standard.output_audio_seconds","kind":"rule","targets":["offer-71142ae455ebb9ee59d4@v1#output_audio_seconds"],"plan":"standard","usage":{"requests":1,"output_audio_seconds":13},"expected":{"nanos":32500000,"lines":[["output_audio_seconds",13,"offer-71142ae455ebb9ee59d4@v1#output_audio_seconds","output_audio_seconds",32500000]]}}
 			]
 		},
 		{
 			"key": "elevenlabs:eleven-labs/scribe-v2:audio.transcription",
-			"file": "packages/data/catalog/src/data/pricing/elevenlabs/eleven-labs-scribe-v2/audio.transcription/pricing.json",
+			"routes": ["elevenlabs:eleven-labs/scribe-v2"],
+			"skus": ["offer-0dcb3734840db4d31b9c@v1"],
 			"rules": [
-				["#0","standard","input_audio_seconds","0.22/3600 second",100,null,null,null]
+				["offer-0dcb3734840db4d31b9c@v1#input_audio_seconds","standard","input_audio_seconds","0.22/3600 second",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_audio_seconds":60},"expected":{"nanos":3666667,"lines":[["input_audio_seconds",60,"#0","input_audio_seconds",3666667]]}},
-				{"id":"rule.standard.input_audio_seconds","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":3727778,"lines":[["input_audio_seconds",61,"#0","input_audio_seconds",3727778]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_audio_seconds":60},"expected":{"nanos":3666667,"lines":[["input_audio_seconds",60,"offer-0dcb3734840db4d31b9c@v1#input_audio_seconds","input_audio_seconds",3666667]]}},
+				{"id":"rule.standard.input_audio_seconds","kind":"rule","targets":["offer-0dcb3734840db4d31b9c@v1#input_audio_seconds"],"plan":"standard","usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":3727778,"lines":[["input_audio_seconds",61,"offer-0dcb3734840db4d31b9c@v1#input_audio_seconds","input_audio_seconds",3727778]]}}
 			]
 		}
 	]

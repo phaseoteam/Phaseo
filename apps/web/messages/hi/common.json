@@ -558,6 +558,8 @@
 			"identityPermissionDescription": "यह ऐप किसने साइन इन किया है, इसकी पुष्टि कर सकता है।",
 			"gatewayPermissionLabel": "अपने क्रेडिट से AI Gateway इस्तेमाल करें",
 			"gatewayPermissionDescription": "ऐप चुनी गई टीम के क्रेडिट से मॉडल अनुरोध भेज सकता है।",
+			"billingPermissionLabel": "क्रेडिट टॉप-अप शुरू करें",
+			"billingPermissionDescription": "ऐप चुनी गई टीम के लिए क्रेडिट खरीद का अनुरोध कर सकता है। हर शुल्क की पुष्टि टीम के owner या admin को ईमेल से करनी होगी।",
 			"readPermissionLabel": "{resource} पढ़ें",
 			"readPermissionDescription": "यह ऐप {resource} पढ़ सकता है।",
 			"managePermissionLabel": "{resource} प्रबंधित करें",
@@ -612,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth ऐप",
 					"description": "OAuth क्लाइंट और इंटीग्रेशन का कॉन्फ़िगरेशन।"
+				},
+				"billing": {
+					"title": "बिलिंग",
+					"description": "क्रेडिट खरीद, जिनकी पुष्टि टीम का owner या admin ईमेल से करता है।"
 				}
 			},
 			"resources": {
@@ -634,6 +640,7 @@
 				"providerCredentials": "प्रदाता क्रेडेंशियल",
 				"guardrails": "गार्डरेल और नीतियाँ",
 				"budgets": "टीम के खर्च बजट और उपयोग",
+				"spendRules": "खर्च अलर्ट और ब्लॉक करने के नियम",
 				"managementKeys": "मशीन-स्तर की प्रबंधन कुंजी की जानकारी",
 				"oauthApps": "OAuth ऐप और इंटीग्रेशन की सेटिंग",
 				"privateModels": "वर्कस्पेस के निजी मॉडल"
@@ -1973,59 +1980,7 @@
 			"fullRanking": "पूरी रैंकिंग"
 		},
 		"apiModelConflicts": {
-			"title": "API मॉडल टकराव निरीक्षक",
-			"description": "प्रदाता API मॉडल ID की तुलना करें, संभावित उपनाम पहचानें और मॉडल तथा मूल्य निर्धारण के बीच विसंगतियाँ देखें।",
-			"generatedAt": "बनाया गया: {date}",
-			"providerModels": "प्रदाता मॉडल",
-			"potentialAliasConflicts": "संभावित उपनाम टकराव",
-			"missingPricingRows": "गायब मूल्य पंक्तियाँ",
-			"likelyModelPricingMismatches": "संभावित मॉडल-मूल्य विसंगतियाँ",
-			"filtersTitle": "फ़िल्टर",
-			"filtersDescription": "प्रदाता के अनुसार फ़िल्टर करें या केवल मॉडल और मूल्य संबंधी समस्याएँ दिखाएँ।",
-			"search": "खोजें",
-			"searchPlaceholder": "प्रदाता, मॉडल ID, आंतरिक ID या मानक कुंजी…",
-			"provider": "प्रदाता",
-			"conflictsOnly": "केवल टकराव",
-			"missingPricingOnly": "केवल गायब मूल्य",
-			"likelyMismatchOnly": "केवल संभावित विसंगतियाँ",
-			"clearFilters": "फ़िल्टर हटाएँ",
-			"likelyMismatches": "संभावित विसंगतियाँ",
-			"likelyMismatchesDescription": "बिना मूल्य वाली पंक्तियाँ जिनमें उसी प्रदाता की असंबद्ध मूल्य निर्देशिका इसी मॉडल परिवार की लगती है।",
-			"apiModel": "API मॉडल",
-			"missingPricing": "गायब मूल्य",
-			"candidatePricingSlugs": "संभावित मूल्य निर्देशिका स्लग",
-			"noLikelyMismatches": "मौजूदा फ़िल्टर से कोई संभावित विसंगति नहीं मिली।",
-			"potentialAliasConflictGroups": "संभावित उपनाम टकराव समूह",
-			"potentialAliasConflictGroupsDescription": "सामान्यीकृत मॉडल ID जिनमें कई मूल API मॉडल ID एक ही परिवार के लगते हैं।",
-			"canonicalKey": "मानक कुंजी",
-			"variants": "रूपांतर",
-			"providers": "प्रदाता",
-			"issues": "समस्याएँ",
-			"noConflictGroups": "मौजूदा फ़िल्टर से कोई टकराव समूह नहीं मिला।",
-			"providerApiModelRows": "प्रदाता API मॉडल पंक्तियाँ",
-			"apiModelId": "API मॉडल ID",
-			"internalModel": "आंतरिक मॉडल",
-			"status": "स्थिति",
-			"pricingCoverage": "मूल्य कवरेज",
-			"conflict": "टकराव",
-			"noRows": "मौजूदा फ़िल्टर से कोई पंक्ति मेल नहीं खाती।",
-			"complete": "पूरा",
-			"candidateSlugs": "संभावित स्लग:",
-			"noConflict": "कोई टकराव नहीं",
-			"orphanPricingDirectories": "असंबद्ध मूल्य निर्देशिकाएँ",
-			"orphanPricingDirectoriesDescription": "packages/data/catalog/src/data/pricing में मौजूद वे मूल्य मॉडल फ़ोल्डर जिनका किसी प्रदाता API मॉडल ID से मेल नहीं है।",
-			"noOrphanPricingDirectories": "कोई असंबद्ध मूल्य निर्देशिका नहीं मिली।",
-			"rowLimit": "केवल पहली 500 पंक्तियाँ दिखाई गई हैं। अन्य पंक्तियाँ देखने के लिए फ़िल्टर सीमित करें।",
-			"showingRows": "{total} में से {visible} मेल खाती पंक्तियाँ दिखाई जा रही हैं।",
-			"counts": {
-				"rows": "{count} पंक्तियाँ",
-				"missingPricing": "{count} गायब मूल्य",
-				"likelyMismatches": "{count} संभावित विसंगतियाँ",
-				"capabilities": "{count} क्षमताएँ",
-				"params": "{count} पैरामीटर",
-				"variants": "{count} रूपांतर",
-				"orphanSlugs": "{count} असंबद्ध स्लग"
-			}
+			"apiModelId": "API मॉडल ID"
 		},
 		"versionedPricing": {
 			"loading": "डेटाबेस मूल्य लोड हो रहे हैं…",

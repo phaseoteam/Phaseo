@@ -8,7 +8,31 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"المنتج","api":"API وحزم SDK","models":"النماذج"}} clearLabel="مسح" />
 
+<Update label="29 أكتوبر 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+- [Mistral: Mistral Large 4](https://phaseo.app/models/mistral/mistral-large-4.0)
+
+</div>
+
+</Update>
+
 <Update label="28 أكتوبر 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+![سجل التغييرات مع تفعيل عامل تصفية المنتج وقائمة التواريخ بجانبه](/images/changelog/2026-10-28--changelog-filters.png)
+
+- يعرض سجل التغييرات الآن تغييرات المنتج وواجهة API إلى جانب إصدارات النماذج، مع عوامل تصفية **المنتج** و**API وحزم SDK** و**النماذج** تُبقي قائمة التواريخ ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261)).
+- يضيف محرر الإعدادات المسبقة زر **نشر** بجانب **حفظ المسودة**، ويمنح قسم **الإصدارات والتسميات** كل تسمية منتقي إصدار، فاختيار إصدار سابق هو تراجع؛ راجع [قوالب المطالبات](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+- يعرض فتح إصدار منشور من إعداد مسبق نماذجه ورسائل قالبه، والأسطر التي تختلف عن الإصدار الافتراضي، وزر **تشغيل** لتجربته ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+
+</div>
 
 <div data-changelog-category="api">
 
@@ -29,6 +53,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">المنتج</p>
 
 - يربط قسم **Versions and labels** في محرر الإعدادات المسبقة تسميات مسمّاة بإصدارات منشورة، فيكفي نقل التسمية لإرجاع الطلبات إلى إصدار سابق بنقرة واحدة؛ راجع [قوالب المطالبات](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- لا يعرض منتقي النماذج في الإعدادات المسبقة إلا النماذج التي ما زالت البوابة تقدّمها؛ وكان يعرض قبل ذلك نماذج متقاعدة لا تصل إليها الطلبات ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260)).
+- يوضّح تشغيل إعداد مسبق في مساحة عمل بلا رصيد ذلك ويقدّم رابطًا إلى **إضافة رصيد**؛ وكان يعرض قبل ذلك خطأً عامًا ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276)).
+- تحصل الصفحات التي تحمّل فهرس النماذج الكامل، مثل محرر الإعدادات المسبقة، عليه من ذاكرة التخزين المؤقت؛ وكان كل تحميل يستغرق نحو 3 ثوانٍ ويفشل بعضه ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278)).
 
 </div>
 
@@ -55,6 +82,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+![GPT-6.1 Terra](/images/model-releases/2026-10-26--openai--gpt-6.1-terra.png)
+
+- [OpenAI: GPT-6.1 Terra](https://phaseo.app/models/openai/gpt-6.1-terra)
+
+</div>
+
 </Update>
 
 <Update label="24 أكتوبر 2026">
@@ -65,6 +102,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - يمكن لكل مساحات العمل استخدام توجيه النماذج المتوقفة: يفعّله المالكون والمسؤولون من **الإعدادات -> التوجيه -> توجيه النماذج المتوقفة**، فتذهب الطلبات إلى البديل المعتمد؛ راجع [إهمال النماذج وإيقافها](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
 - لا يستخدم توجيه النماذج المتوقفة إلا بديلًا معتمدًا لا تزيد تكلفته على النموذج المتوقف، ما لم يسمح المالكون والمسؤولون بسعر أعلى؛ أما البديل الذي يختارونه بأنفسهم فيُستخدم أيًا كان سعره ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- تُفتح قائمة الإعدادات المسبقة ومحررها حتى عندما يتعذّر تحميل فهرس النماذج الكامل؛ وكانت الصفحة تعرض خطأً قبل ذلك ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
 
@@ -104,6 +142,18 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - تطبّق سياسات حدود المعدل `concurrent_requests`، وتُرجع `429` مع السبب `policy_concurrent_requests` و`Retry-After: 1` عندما تكون كل الخانات مشغولة؛ راجع [حدود الطلبات](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - تتحقق السياسات الصارمة (`fail_closed`) من حدودها في الدقيقة قبل إرسال الطلب إلى المزوّد ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - تصل الطلبات المرسلة عبر البوابتين الإقليميتين في الاتحاد الأوروبي والولايات المتحدة الآن إلى وجهات Broadcast ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+- تنجح الطلبات إلى معظم النماذج من جديد؛ ففي 23 أكتوبر، بعد تحديث سياسة البيانات لدى المزوّدين، كانت تُرجع `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+![Kimi K3.1 Pro](/images/model-releases/2026-10-23--moonshotai--kimi-k3.1-pro.png)
+
+- [Moonshot: Kimi K3.1 Pro](https://phaseo.app/models/moonshotai/kimi-k3.1-pro)
+- [Abliteration AI: Abliterated Large Flash](https://phaseo.app/models/abliteration-ai/abliterated-model-large-flash)
 
 </div>
 
@@ -176,6 +226,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+- [Base Labs: Elephant-1](https://phaseo.app/models/baselabs/elephant-1)
+- [Base Labs: Mammoth-1](https://phaseo.app/models/baselabs/mammoth-1)
+
+</div>
+
+</Update>
+
+<Update label="20 أكتوبر 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+- [Mistral: Voxtral Mini Transcribe 3](https://phaseo.app/models/mistral/voxtral-mini-transcribe-3)
+- [Mistral: Voxtral Small Transcribe 3](https://phaseo.app/models/mistral/voxtral-small-transcribe-3)
+- [Mistral: Voxtral TTS 3](https://phaseo.app/models/mistral/voxtral-tts-3)
+
+</div>
+
 </Update>
 
 <Update label="19 أكتوبر 2026">
@@ -191,9 +264,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+![MiniMax M3.1 Flash](/images/model-releases/2026-10-19--minimax--minimax-m3.1-flash.png)
+
+- [MiniMax: MiniMax M3.1 Flash](https://phaseo.app/models/minimax/minimax-m3.1-flash)
+- [Cloudflare: Clairic](https://phaseo.app/models/cloudflare/clairic)
+- [Inception: Mercury 3](https://phaseo.app/models/inception/mercury-3)
+
+</div>
+
 </Update>
 
 <Update label="18 أكتوبر 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض صفحات الوثائق الإنجليزية صورة معاينة بعنوان الصفحة ووصفها عند مشاركتها على وسائل التواصل الاجتماعي أو في المحادثات ([#3003](https://github.com/phaseoteam/Phaseo/pull/3003)).
+
+</div>
 
 <div data-changelog-category="api">
 
@@ -215,6 +308,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">المنتج</p>
 
 - تضيف **الإعدادات -> الإشعارات** **تنبيهات حدود المعدل**، تُرسل مرة واحدة في الساعة على الأكثر عبر البريد الإلكتروني أو Slack أو Discord أو Teams أو webhook؛ راجع [إشعارات مساحة العمل](./guides/workspace-notifications.mdx) ([#2946](https://github.com/phaseoteam/Phaseo/pull/2946)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+![DeepSeek V4.1 Flash 1017](/images/model-releases/2026-10-17--deepseek--deepseek-v4.1-flash-1017.png)
+
+- [DeepSeek: DeepSeek V4.1 Flash 1017](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-1017)
 
 </div>
 
@@ -267,6 +370,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+- [Nvidia: Nemotron 3.5 Super VL 120B A12B](https://phaseo.app/models/nvidia/nemotron-3.5-super-vl-120b-a12b)
+
+</div>
+
 </Update>
 
 <Update label="14 أكتوبر 2026">
@@ -290,6 +401,17 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+![Jev 1.14](/images/model-releases/2026-10-14--typesafe--jev-1.14.0.png)
+
+- [TypeSafe: Jev 1.14](https://phaseo.app/models/typesafe/jev-1.14.0)
+- [SpaceXAI: Grok Voice 3.0](https://phaseo.app/models/spacex-ai/grok-voice-3.0)
+
+</div>
+
 </Update>
 
 <Update label="13 أكتوبر 2026">
@@ -299,6 +421,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">المنتج</p>
 
 - تعرض كل بطاقة في نظرة عامة على الاستخدام توقعًا لنهاية الشهر للإنفاق والطلبات والرموز، أو الشهر حتى الآن للمعدلات مثل معدل إصابة الذاكرة المؤقتة ([#2900](https://github.com/phaseoteam/Phaseo/pull/2900)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+![Gemini 4 Argon](/images/model-releases/2026-10-13--google--gemini-4-argon.png)
+
+- [Google: Gemini 4 Argon](https://phaseo.app/models/google/gemini-4-argon)
 
 </div>
 
@@ -321,6 +453,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - تعمل قائمة البدائل `models` في المستوى الأعلى على كل نقاط نهاية الاستدلال، بما فيها `/v1/messages` ونقاط نهاية الوسائط؛ راجع [التوجيه والبدائل الاحتياطية](./guides/routing-and-fallbacks.mdx) ([#2858](https://github.com/phaseoteam/Phaseo/pull/2858)).
 - تتضمن استجابات `429` لحدود الطلبات والإنفاق في مفاتيح API الترويسة `Retry-After` بعدد الثواني حتى إعادة ضبط الحد ([#2864](https://github.com/phaseoteam/Phaseo/pull/2864)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+![Muse Wonder 1.0](/images/model-releases/2026-10-12--meta--muse-wonder-1.0.png)
+
+- [Meta: Muse Wonder 1.0](https://phaseo.app/models/meta/muse-wonder-1.0)
 
 </div>
 
@@ -364,6 +506,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - لكل عضو في مساحة العمل حصة من الطلبات في الدقيقة مشتركة بين مفاتيح API الخاصة به، ترتفع من 10 إلى 120 مع ترسّخ مساحة العمل؛ راجع [حدود الطلبات](./api-reference/limits.mdx) ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2800](https://github.com/phaseoteam/Phaseo/pull/2800)).
 - يمكن لكل مستخدم إرسال 1,500 طلب إلى النماذج المجانية في كل يوم UTC، والطلبات التي تتجاوز أيًّا من الحدّين تُرجع `429` مع `Retry-After` ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2787](https://github.com/phaseoteam/Phaseo/pull/2787)).
 - تُرجع البوابتان الإقليميتان في الاتحاد الأوروبي والولايات المتحدة `403 model_region_unavailable` عندما لا يقدّم أي مزوّد النموذج في تلك المنطقة؛ راجع [توجيه طلبات النص حسب المنطقة](./guides/regional-routing.mdx) ([#2811](https://github.com/phaseoteam/Phaseo/pull/2811), [#2813](https://github.com/phaseoteam/Phaseo/pull/2813)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
+![Clef Omni](/images/model-releases/2026-10-09--cloudflare--clef-omni.png)
+
+- [Cloudflare: Clef Omni](https://phaseo.app/models/cloudflare/clef-omni)
 
 </div>
 

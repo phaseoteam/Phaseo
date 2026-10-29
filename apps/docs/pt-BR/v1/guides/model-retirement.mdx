@@ -85,11 +85,22 @@ Quando a opção está ativada, uma solicitação só é enviada a um substituto
 - O substituto passa pelas mesmas verificações de qualquer solicitação: restrições de modelos do espaço de trabalho, restrições de chaves, guardrails e suporte ao endpoint. A Phaseo nunca adiciona um substituto a uma lista de permissões por você.
 - A solicitação indica um modelo diretamente. Solicitações para `phaseo/auto` ou para um ID de modelo qualificado por provedor não são redirecionadas.
 
+<span id="see-which-of-your-models-are-affected"></span>
+
+### Veja quais dos seus modelos são afetados
+
+Em **Seus modelos afetados**, na mesma seção de configurações, o Phaseo lista os modelos que seu espaço de trabalho usou nos últimos 90 dias e que estão sendo aposentados ou não são mais atendidos. Para cada um, você vê o substituto, como o preço se compara e se as solicitações seriam redirecionadas com suas configurações atuais e, se não, por quê. Também vê quantas solicitações desse modelo outro modelo respondeu nos últimos 30 dias. Escolha **Escolher substituto** em um modelo para definir seu próprio substituto.
+
 <span id="choose-a-price-policy"></span>
 
 ### Escolha uma política de preços
 
-A política de preços do espaço de trabalho decide se um substituto mais caro pode atender à solicitação. A comparação usa os preços cobrados pelos dois modelos.
+A política de preços do espaço de trabalho decide se um substituto mais caro pode atender a solicitação. A comparação usa os preços por token cobrados pelos dois modelos. Se o modelo antigo não tiver mais preços vigentes, o Phaseo usa os últimos preços publicados dele. Quando só o substituto cobra por algo:
+
+- leituras de cache não são comparadas, porque custam menos que o preço de entrada, que é comparado;
+- gravações de cache, e entradas de imagem, áudio ou vídeo que o modelo antigo cobrava como entrada comum, são comparadas com o preço de entrada do modelo antigo;
+- pesquisa na web, e entradas ou saídas em uma modalidade que o modelo antigo não tinha, não são comparadas. Uma solicitação que as use não é redirecionada, a menos que a política seja `any` ou você mesmo tenha escolhido o substituto;
+- qualquer outra cobrança faz com que os preços não possam ser comparados.
 
 | `model_successor_price_policy` | Comportamento |
 | --- | --- |
@@ -117,7 +128,7 @@ curl https://api.phaseo.app/v1/settings \
 
 ### Defina seus próprios substitutos
 
-Em **Seus próprios substitutos**, na mesma seção de configurações, proprietários e administradores podem escolher o substituto de um modelo específico ou escolher **Nunca redirecionar** para que as solicitações desse modelo continuem falhando. O seu próprio substituto é usado qualquer que seja o preço, mas um modelo gratuito continua nunca sendo substituído por um pago. Seus próprios substitutos só podem ser definidos no painel.
+Em **Seus próprios substitutos**, na mesma seção de configurações, proprietários e administradores podem escolher o substituto de um modelo específico ou escolher **Nunca redirecionar** para que as solicitações desse modelo continuem falhando. O seu próprio substituto é usado qualquer que seja o preço, mas um modelo gratuito continua nunca sendo substituído por um pago. Seus próprios substitutos também podem ser definidos pela CLI com `phaseo routing successors set --model <id> --successor <id>` (ou `--never`), ou com `PUT /v1/routing/successor/replacements`.
 
 As alterações nessas configurações entram em vigor em cerca de um minuto.
 
@@ -150,8 +161,11 @@ Verifique se:
 - o modelo está sem ser atendido há pelo menos 72 horas;
 - o modelo tem um substituto aprovado, ou você definiu um próprio;
 - o substituto não custa mais do que a sua política de preços permite;
+- a solicitação não usa pesquisa na web nem um tipo de entrada ou saída que só o substituto cobra;
 - o modelo não é gratuito com um substituto pago;
 - o substituto é permitido pelas restrições de modelos do seu espaço de trabalho e da sua chave;
 - a solicitação não usa um ID de modelo qualificado por provedor nem `phaseo/auto`.
+
+**Seus modelos afetados**, na mesma seção de configurações, mostra qual desses itens se aplica a cada modelo que você usa.
 
 **Um modelo diferente do solicitado respondeu.** Procure o cabeçalho `X-Phaseo-Model-Substitution`. Para impedir que um modelo seja substituído, adicione-o com **Nunca redirecionar** em **Seus próprios substitutos** ou desative a substituição automática.

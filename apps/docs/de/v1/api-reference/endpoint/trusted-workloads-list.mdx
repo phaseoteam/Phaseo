@@ -1,0 +1,10 @@
+---
+title: "Richtlinien für vertrauenswürdige Workloads auflisten"
+sidebarTitle: "Richtlinien für vertrauenswürdige Workloads auflisten"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /workload-identity/policies"
+description: "Listet die Vercel-Deployments und GitHub-Actions-Workflows auf, die Phaseo mit einem OIDC-Token aufrufen dürfen."
+---
+<Note>Erfordert `keys:read` für einen Management-Schlüssel oder ein OAuth-Token oder einen Workspace-Inhaber oder -Admin. Vertrauenswürdige Workloads sind in der Beta; Workspaces ohne die Funktion erhalten `404`.</Note>
+
+Unter [Vertrauenswürdige Workloads](../../developers/trusted-workloads.mdx) erfährst du, wie Richtlinien funktionieren und wie du sie mit Terraform verwaltest.

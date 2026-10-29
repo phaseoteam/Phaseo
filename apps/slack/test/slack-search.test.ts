@@ -217,12 +217,12 @@ describe("Slack search: models that keep no data", () => {
 		warn.mockRestore();
 	});
 
-	it("never include Auto, and are none when the routes or providers can't be read", async () => {
+	it("always include Auto, whose router picks only models that keep no data, and no other model when the routes or providers can't be read", async () => {
 		const db = catalogue([{ model: "openai/gpt-zdr", provider: "zdr-cloud" }]);
-		await expect(zeroRetentionModels(db, ["phaseo/auto"], NOW, WORKSPACE)).resolves.toEqual(new Set());
+		await expect(zeroRetentionModels(db, ["phaseo/auto"], NOW, WORKSPACE)).resolves.toEqual(new Set(["phaseo/auto"]));
 		expect(db.queries).toEqual([]);
 		vi.spyOn(console, "warn").mockImplementation(() => undefined);
-		await expect(zeroRetentionModels(failing(catalogue([{ model: "openai/gpt-zdr", provider: "zdr-cloud" }]), "v2_providers"), ["openai/gpt-zdr"], NOW, WORKSPACE)).resolves.toEqual(new Set());
+		await expect(zeroRetentionModels(failing(catalogue([{ model: "openai/gpt-zdr", provider: "zdr-cloud" }]), "v2_providers"), ["openai/gpt-zdr", "phaseo/auto"], NOW, WORKSPACE)).resolves.toEqual(new Set(["phaseo/auto"]));
 		db.select = async () => { throw new DbError(503, null); };
 		await expect(zeroRetentionModels(db, ["openai/gpt-zdr"], NOW, WORKSPACE)).resolves.toEqual(new Set());
 		vi.restoreAllMocks();
@@ -230,13 +230,12 @@ describe("Slack search: models that keep no data", () => {
 
 	it("are explained to the model when its own can't search, with the models that could", () => {
 		expect(searchInstructions("on", "U0PERSON01", false)).toContain("after a search every model request of the answer goes only to AI providers that keep no data (zero data retention)");
-		expect(searchInstructions("needs_zdr", "U0PERSON01", false, { name: "Claude Test", auto: false, choices: [] })).toBe(
+		expect(searchInstructions("needs_zdr", "U0PERSON01", false, { name: "Claude Test", choices: [] })).toBe(
 			"You can't search Slack messages with Claude Test: Slack's terms don't allow keeping what its search finds, so an answer that searches Slack may only use AI providers that keep no data (zero data retention), and Claude Test has no provider that does. If asked to search Slack, say so, and that an admin can choose a model that keeps no data for the agent in Phaseo (Settings → Slack).",
 		);
-		const auto = searchInstructions("needs_zdr", "U0PERSON01", false, { name: "Auto", auto: true, choices: ["GPT Test"] });
-		expect(auto).toContain("You can't search Slack messages with Auto:");
-		expect(auto).toContain("Auto picks a model for each request and can't promise one.");
-		expect(auto).toContain("they can ask again with a model that keeps no data by starting the message with `with <model>:` (GPT Test), or an admin can choose one for the agent in Phaseo (Settings → Slack).");
+		const choices = searchInstructions("needs_zdr", "U0PERSON01", false, { name: "GPT Logged", choices: ["GPT Test", "Auto"] });
+		expect(choices).toContain("You can't search Slack messages with GPT Logged:");
+		expect(choices).toContain("they can ask again with a model that keeps no data by starting the message with `with <model>:` (GPT Test, Auto), or an admin can choose one for the agent in Phaseo (Settings → Slack).");
 	});
 });
 

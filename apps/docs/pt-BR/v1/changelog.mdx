@@ -8,7 +8,31 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Produto","api":"API e SDKs","models":"Modelos"}} clearLabel="Limpar" />
 
+<Update label="29 de outubro de 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+- [Mistral: Mistral Large 4](https://phaseo.app/models/mistral/mistral-large-4.0)
+
+</div>
+
+</Update>
+
 <Update label="28 de outubro de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+![O changelog com o filtro Produto ativado e a lista de datas ao lado](/images/changelog/2026-10-28--changelog-filters.png)
+
+- O changelog agora inclui mudanças no produto e na API além dos lançamentos de modelos, com filtros **Produto**, **API e SDKs** e **Modelos** que mantêm a lista de datas ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261)).
+- O editor de predefinições ganha **Publicar** ao lado de **Salvar rascunho**, e **Versões e rótulos** dá a cada rótulo um seletor de versão, então escolher uma versão anterior é uma reversão; veja [Templates de prompt](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+- Abrir uma versão publicada de uma predefinição mostra seus modelos e mensagens de modelo, as linhas que diferem da versão padrão e um botão **Executar** para testá-la ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+
+</div>
 
 <div data-changelog-category="api">
 
@@ -29,6 +53,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produto</p>
 
 - A seção **Versions and labels** do editor de presets aponta rótulos nomeados para versões publicadas, então mover um rótulo reverte as solicitações com um clique; veja [Templates de prompt](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- O seletor de modelos das predefinições oferece só modelos que o gateway ainda atende; antes, também listava modelos aposentados que as solicitações não conseguiam alcançar ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260)).
+- Executar uma predefinição em um workspace sem créditos avisa isso e leva a **Adicionar créditos**; antes, aparecia um erro genérico ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276)).
+- Páginas que carregam o catálogo completo de modelos, como o editor de predefinições, o recebem do cache; antes, cada carregamento levava cerca de 3 segundos e alguns falhavam ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278)).
 
 </div>
 
@@ -55,6 +82,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+![GPT-6.1 Terra](/images/model-releases/2026-10-26--openai--gpt-6.1-terra.png)
+
+- [OpenAI: GPT-6.1 Terra](https://phaseo.app/models/openai/gpt-6.1-terra)
+
+</div>
+
 </Update>
 
 <Update label="24 de outubro de 2026">
@@ -65,6 +102,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - Todos os espaços de trabalho podem usar o roteamento de modelos aposentados: proprietários e administradores o ativam em **Configurações -> Roteamento -> Roteamento de modelos aposentados**, e as solicitações vão para o substituto aprovado; veja [Descontinuação e aposentadoria de modelos](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
 - O roteamento de modelos aposentados só usa um substituto aprovado que não custe mais que o modelo aposentado, a menos que proprietários e administradores permitam um preço maior; um substituto escolhido por eles mesmos é usado qualquer que seja o preço ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- A lista e o editor de predefinições abrem mesmo quando o catálogo completo de modelos não carrega; antes, a página mostrava um erro ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
 
@@ -104,6 +142,18 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Políticas de limites de taxa aplicam `concurrent_requests` e retornam `429` com o motivo `policy_concurrent_requests` e `Retry-After: 1` quando todas as vagas estão ocupadas; veja [Limites de requisições](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Políticas estritas (`fail_closed`) verificam seus limites por minuto antes de enviar a solicitação a um provedor ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Solicitações enviadas pelos gateways regionais da UE e dos EUA agora chegam aos destinos do Broadcast ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+- Solicitações para a maioria dos modelos voltam a funcionar; em 23 de outubro, após uma atualização da política de dados dos provedores, elas retornavam `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+![Kimi K3.1 Pro](/images/model-releases/2026-10-23--moonshotai--kimi-k3.1-pro.png)
+
+- [Moonshot: Kimi K3.1 Pro](https://phaseo.app/models/moonshotai/kimi-k3.1-pro)
+- [Abliteration AI: Abliterated Large Flash](https://phaseo.app/models/abliteration-ai/abliterated-model-large-flash)
 
 </div>
 
@@ -176,6 +226,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+- [Base Labs: Elephant-1](https://phaseo.app/models/baselabs/elephant-1)
+- [Base Labs: Mammoth-1](https://phaseo.app/models/baselabs/mammoth-1)
+
+</div>
+
+</Update>
+
+<Update label="20 de outubro de 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+- [Mistral: Voxtral Mini Transcribe 3](https://phaseo.app/models/mistral/voxtral-mini-transcribe-3)
+- [Mistral: Voxtral Small Transcribe 3](https://phaseo.app/models/mistral/voxtral-small-transcribe-3)
+- [Mistral: Voxtral TTS 3](https://phaseo.app/models/mistral/voxtral-tts-3)
+
+</div>
+
 </Update>
 
 <Update label="19 de outubro de 2026">
@@ -191,9 +264,29 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+![MiniMax M3.1 Flash](/images/model-releases/2026-10-19--minimax--minimax-m3.1-flash.png)
+
+- [MiniMax: MiniMax M3.1 Flash](https://phaseo.app/models/minimax/minimax-m3.1-flash)
+- [Cloudflare: Clairic](https://phaseo.app/models/cloudflare/clairic)
+- [Inception: Mercury 3](https://phaseo.app/models/inception/mercury-3)
+
+</div>
+
 </Update>
 
 <Update label="18 de outubro de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- As páginas da documentação em inglês mostram uma imagem de prévia com o título e a descrição da página quando compartilhadas em redes sociais ou chats ([#3003](https://github.com/phaseoteam/Phaseo/pull/3003)).
+
+</div>
 
 <div data-changelog-category="api">
 
@@ -215,6 +308,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produto</p>
 
 - **Configurações -> Notificações** adiciona **Alertas de limites de taxa**, enviados no máximo uma vez por hora por e-mail, Slack, Discord, Teams ou webhook; veja [Notificações do espaço de trabalho](./guides/workspace-notifications.mdx) ([#2946](https://github.com/phaseoteam/Phaseo/pull/2946)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+![DeepSeek V4.1 Flash 1017](/images/model-releases/2026-10-17--deepseek--deepseek-v4.1-flash-1017.png)
+
+- [DeepSeek: DeepSeek V4.1 Flash 1017](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-1017)
 
 </div>
 
@@ -267,6 +370,14 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+- [Nvidia: Nemotron 3.5 Super VL 120B A12B](https://phaseo.app/models/nvidia/nemotron-3.5-super-vl-120b-a12b)
+
+</div>
+
 </Update>
 
 <Update label="14 de outubro de 2026">
@@ -290,6 +401,17 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 </div>
 
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+![Jev 1.14](/images/model-releases/2026-10-14--typesafe--jev-1.14.0.png)
+
+- [TypeSafe: Jev 1.14](https://phaseo.app/models/typesafe/jev-1.14.0)
+- [SpaceXAI: Grok Voice 3.0](https://phaseo.app/models/spacex-ai/grok-voice-3.0)
+
+</div>
+
 </Update>
 
 <Update label="13 de outubro de 2026">
@@ -299,6 +421,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produto</p>
 
 - Cada cartão da visão geral de uso mostra uma previsão de fim de mês para gastos, solicitações e tokens, ou o mês até agora para taxas como a de acertos de cache ([#2900](https://github.com/phaseoteam/Phaseo/pull/2900)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+![Gemini 4 Argon](/images/model-releases/2026-10-13--google--gemini-4-argon.png)
+
+- [Google: Gemini 4 Argon](https://phaseo.app/models/google/gemini-4-argon)
 
 </div>
 
@@ -321,6 +453,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - A lista de alternativas `models` de nível superior funciona em todos os endpoints de inferência, incluindo `/v1/messages` e os endpoints de mídia; veja [Roteamento e alternativas](./guides/routing-and-fallbacks.mdx) ([#2858](https://github.com/phaseoteam/Phaseo/pull/2858)).
 - Respostas `429` dos limites de solicitações e de gastos de uma chave de API incluem `Retry-After` com os segundos até o limite reiniciar ([#2864](https://github.com/phaseoteam/Phaseo/pull/2864)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+![Muse Wonder 1.0](/images/model-releases/2026-10-12--meta--muse-wonder-1.0.png)
+
+- [Meta: Muse Wonder 1.0](https://phaseo.app/models/meta/muse-wonder-1.0)
 
 </div>
 
@@ -364,6 +506,16 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Cada membro de um espaço de trabalho tem uma cota de solicitações por minuto compartilhada entre as chaves de API dele, que sobe de 10 para 120 conforme o espaço se estabelece; veja [Limites de requisições](./api-reference/limits.mdx) ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2800](https://github.com/phaseoteam/Phaseo/pull/2800)).
 - Cada usuário pode fazer 1.500 solicitações a modelos gratuitos por dia UTC, e solicitações acima de qualquer um dos limites retornam `429` com `Retry-After` ([#2690](https://github.com/phaseoteam/Phaseo/pull/2690), [#2787](https://github.com/phaseoteam/Phaseo/pull/2787)).
 - Os gateways regionais da UE e dos EUA retornam `403 model_region_unavailable` quando nenhum provedor atende o modelo naquela região; veja [Rotear solicitações de texto por região](./guides/regional-routing.mdx) ([#2811](https://github.com/phaseoteam/Phaseo/pull/2811), [#2813](https://github.com/phaseoteam/Phaseo/pull/2813)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+![Clef Omni](/images/model-releases/2026-10-09--cloudflare--clef-omni.png)
+
+- [Cloudflare: Clef Omni](https://phaseo.app/models/cloudflare/clef-omni)
 
 </div>
 

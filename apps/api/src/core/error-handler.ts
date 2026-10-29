@@ -23,6 +23,7 @@ import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
 import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { readDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
+import { releaseSpend } from "./spend-limits";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -700,6 +701,8 @@ export async function handleError({
     }
 
     console.log(`Handling ${stage} error for endpoint ${endpoint}: status ${res.status}`);
+    // Enforce mode: a request failing after admission frees its spend-limit slot (no-op without one).
+    releaseSpend(ctx?.spendAdmission);
 
     const body = await safeJson(res);
     const debugHeader = req?.headers.get("x-gateway-debug");
@@ -882,6 +885,13 @@ export async function handleError({
         }
         if (typeof body?.limit_value === "number") errorPayload.limit_value = body.limit_value;
     }
+    if (errCode === "key_limit_exceeded") {
+        // Tells the caller which key limit or budget refused the request and when it resets, and for
+        // a department budget which department.
+        for (const field of ["reason", "reset_at", "department_id", "department_name"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+    }
     if (
         stage === "execute" &&
         (errCode === "upstream_error" || errCode === "provider_payment_required")
@@ -943,6 +953,20 @@ export async function handleError({
         if (typeof body?.model === "string") errorPayload.model = body.model;
         errorPayload.retired_at = typeof body?.retired_at === "string" ? body.retired_at : null;
         errorPayload.replacement_model = typeof body?.replacement_model === "string" ? body.replacement_model : null;
+    }
+    if (errCode === "model_region_unavailable") {
+        // Which residency requirements no provider met, so callers can act on them.
+        for (const field of ["reason", "action"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+        const unmet = body?.unmet_requirements;
+        if (unmet && typeof unmet === "object" && !Array.isArray(unmet)) {
+            errorPayload.unmet_requirements = {
+                ...(typeof unmet.execution_region === "string" ? { execution_region: unmet.execution_region } : {}),
+                ...(typeof unmet.data_region === "string" ? { data_region: unmet.data_region } : {}),
+                ...(unmet.zero_data_retention === true ? { zero_data_retention: true } : {}),
+            };
+        }
     }
     if (body?.routing_diagnostics && typeof body.routing_diagnostics === "object") {
         errorPayload.routing_diagnostics = body.routing_diagnostics;

@@ -13,11 +13,10 @@ Use this skill when a change makes a model or provider discoverable,
 described, priced, callable, or routable in Phaseo. **The Supabase `v2_*`
 catalogue is the source of truth. Use the connected Supabase plugin for
 catalogue reads and writes.** Discover its tools if they are not already
-loaded. Do not add or edit `packages/data/catalog/src/data` JSON to publish a
-model, route, alias, or price. That directory contains archived compatibility
-fixtures and has no importer. Do not open a PR for catalogue content alone.
+loaded. The repository holds no catalogue JSON; do not add any to publish a
+model, route, alias, or price. Do not open a PR for catalogue content alone.
 
-The current main branch's `README.md` and `packages/data/catalog/AGENTS.md`
+The current main branch's `README.md` and `AGENTS.md`
 describe this ownership. If instructions in an older checkout disagree, verify
 the current architecture before editing. If the Supabase plugin is unavailable,
 ask the user to connect it; never use the old JSON path as a fallback.
@@ -153,14 +152,15 @@ gap, not a choice, unless you can say why.
 9. Visibility check: confirm the model in the gateway model list (for
    example `phaseo api get models --json` shows the expected capabilities and
    endpoints) and that it is selectable in Chat, not only listed on /models.
+10. Changelog: once the model has a live route, add it to the Models section
+    for its release date in the docs changelog, in all 9 languages, following
+    `phaseo-changelog`. Catalogue-only models wait until they are routable.
 
 ## Validation
 
 For data-only work, Supabase readback is the primary validation. Query the
 exact affected rows and assert provider count, active capabilities, aliases,
-pricing meters and units, effective dates, and absence of stale notices. The
-archived JSON validators (`pnpm validate:data`, `pnpm validate:pricing`,
-`pnpm validate:gateway`, manifest checks) do not prove a live Supabase change.
+pricing meters and units, effective dates, and absence of stale notices.
 
 For code, schema, web, or docs changes, run focused tests and the relevant
 repository quality gates. Run OpenAPI generation and SDK tests only when their

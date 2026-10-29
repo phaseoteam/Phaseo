@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, safeStorage, shell } from "electron";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -130,6 +130,7 @@ function registerIpc() {
 	ipcMain.handle("factory:start-run", (_event, input: StartRunInput) => store.startRun(input));
 	ipcMain.handle("factory:cancel-run", (_event, runId: string) => store.cancelRun(runId));
 	ipcMain.handle("factory:assign", (_event, itemId: string, agentId: string | null) => store.assign(itemId, agentId));
+	ipcMain.handle("factory:set-effort", (_event, itemId: string, effort: string | null) => store.setEffort(itemId, effort));
 	ipcMain.handle("factory:send-message", (_event, itemId: string, text: string) => store.sendMessage(itemId, text));
 	ipcMain.handle("factory:create-issue", (_event, input: NewIssueInput) => store.createIssue(input));
 	ipcMain.handle("factory:add-repo", (_event, repo: string, checkout: string) => store.addRepo(repo, checkout));
@@ -169,7 +170,9 @@ function registerIpc() {
 
 export async function startFactory(options: { createMainWindow?: boolean } = {}) {
 	await app.whenReady();
-	store = new FactoryStore(app.getPath("userData"), demo, broadcastSoon);
+	// Without system encryption (some Linux desktops), the hub's key is saved as typed.
+	const sealer = safeStorage.isEncryptionAvailable() ? { seal: (text: string) => safeStorage.encryptString(text).toString("base64"), open: (sealed: string) => safeStorage.decryptString(Buffer.from(sealed, "base64")) } : undefined;
+	store = new FactoryStore(app.getPath("userData"), demo, broadcastSoon, sealer);
 	registerIpc();
 	protocol.handle("factory-image", async (request) => {
 		const target = new URL(request.url).searchParams.get("url") ?? "";

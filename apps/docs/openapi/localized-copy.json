@@ -254,6 +254,26 @@
 		}
 	},
 	"_strings": {
+		"Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. Batch jobs, realtime sessions and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.": {
+			"es": "Crea un presupuesto de gasto diario, semanal o mensual para un departamento. Cuando el departamento lo agota, las solicitudes con clave API que cuentan para él devuelven 429 key_limit_exceeded hasta que el presupuesto se restablece. Los trabajos por lotes, las sesiones en tiempo real y las solicitudes OAuth no se bloquean. Si la comprobación del presupuesto no está disponible durante un momento, las solicitudes se permiten en lugar de rechazarse. Los propietarios y administradores reciben una notificación push en el móvil hacia el 80 % y al 100 %.",
+			"fr": "Crée un budget de dépenses quotidien, hebdomadaire ou mensuel pour un service. Une fois le budget épuisé, les requêtes par clé API imputées au service renvoient 429 key_limit_exceeded jusqu’à la réinitialisation du budget. Les tâches par lots, les sessions en temps réel et les requêtes OAuth ne sont pas bloquées. Si la vérification du budget est brièvement indisponible, les requêtes sont acceptées plutôt que refusées. Les propriétaires et les administrateurs reçoivent une notification push sur mobile à environ 80 % et à 100 %.",
+			"de": "Erstellt ein tägliches, wöchentliches oder monatliches Ausgabenbudget für eine Abteilung. Ist es aufgebraucht, liefern API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, 429 key_limit_exceeded, bis das Budget zurückgesetzt wird. Batch-Jobs, Echtzeitsitzungen und OAuth-Anfragen werden nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Administratoren erhalten bei etwa 80 % und bei 100 % eine mobile Push-Benachrichtigung.",
+			"pt-BR": "Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Tarefas em lote, sessões em tempo real e solicitações OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.",
+			"hi": "किसी एक विभाग के लिए दैनिक, साप्ताहिक या मासिक खर्च बजट बनाता है। विभाग के बजट पूरा कर लेने पर उसमें गिने जाने वाले API कुंजी अनुरोध बजट रीसेट होने तक 429 key_limit_exceeded लौटाते हैं। बैच जॉब, रियलटाइम सत्र और OAuth अनुरोध नहीं रोके जाते। अगर बजट जाँच थोड़ी देर के लिए उपलब्ध न हो, तो अनुरोध अस्वीकार करने के बजाय स्वीकार किए जाते हैं। लगभग 80% और 100% पर मालिकों और एडमिन को मोबाइल पुश सूचना मिलती है।",
+			"ja": "1 つの部門に日次、週次、または月次の支出予算を作成します。部門が予算を使い切ると、その部門に計上される API キーのリクエストは、予算がリセットされるまで 429 key_limit_exceeded を返します。バッチジョブ、リアルタイムセッション、OAuth リクエストはブロックされません。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。",
+			"zh-Hans": "为一个部门创建每日、每周或每月支出预算。部门用完预算后，计入该部门的 API 密钥请求会返回 429 key_limit_exceeded，直到预算重置。批处理作业、实时会话和 OAuth 请求不会被阻止。如果预算检查短暂不可用，请求会被放行而不是被拒绝。预算用到约 80% 和 100% 时，所有者和管理员会收到移动推送通知。",
+			"ar": "ينشئ ميزانية إنفاق يومية أو أسبوعية أو شهرية لقسم واحد. بعد أن يستنفدها القسم، تُرجع طلبات مفاتيح API التي تُحتسب ضمنه 429 key_limit_exceeded حتى إعادة ضبط الميزانية. لا تُحظر مهام الدُفعات وجلسات الوقت الفعلي وطلبات OAuth. إذا تعذّر التحقق من الميزانية لفترة وجيزة، يُسمح بالطلبات بدلًا من رفضها. يتلقى المالكون والمسؤولون إشعارًا فوريًا على الهاتف عند نحو 80% وعند 100%."
+		},
+		"Removes a department budget. Within about a minute, requests are no longer refused because of it, and its alerts stop.": {
+			"es": "Elimina un presupuesto de departamento. En aproximadamente un minuto, las solicitudes dejan de rechazarse por él y sus alertas se detienen.",
+			"fr": "Supprime un budget de service. D’ici une minute environ, les requêtes ne sont plus refusées à cause de lui et ses alertes s’arrêtent.",
+			"de": "Entfernt ein Abteilungsbudget. Innerhalb von etwa einer Minute werden Anfragen seinetwegen nicht mehr abgelehnt, und seine Benachrichtigungen enden.",
+			"pt-BR": "Remove um orçamento de departamento. Em cerca de um minuto, as solicitações deixam de ser recusadas por causa dele e seus alertas param.",
+			"hi": "विभाग बजट हटाता है। लगभग एक मिनट में इसकी वजह से अनुरोध अब अस्वीकार नहीं होते और इसके अलर्ट बंद हो जाते हैं।",
+			"ja": "部門予算を削除します。約 1 分以内に、この予算によってリクエストが拒否されることはなくなり、アラートも停止します。",
+			"zh-Hans": "删除部门预算。大约一分钟内，请求不再因该预算被拒绝，其提醒也会停止。",
+			"ar": "يحذف ميزانية قسم. في غضون دقيقة تقريبًا، لن تُرفض الطلبات بسببها بعد ذلك، وتتوقف تنبيهاتها."
+		},
 		"Returns shared non-hidden gateway models. Defaults to currently publicly routable models; use availability=all to include non-routable availability records. Use format=openai for an OpenAI-compatible model list. OpenAI format returns all filtered models by default; an explicit limit and offset can still select a page.": {
 			"es": "Devuelve modelos compartidos no ocultos del gateway. Por defecto incluye los modelos públicamente enrutables; usa availability=all para incluir registros no enrutables. Usa format=openai para una lista compatible con OpenAI. Este formato devuelve todos los modelos filtrados por defecto; limit y offset permiten seleccionar una página.",
 			"fr": "Renvoie les modèles partagés non masqués de la passerelle. Par défaut, seuls les modèles publiquement routables sont inclus ; utilisez availability=all pour inclure les modèles non routables. Utilisez format=openai pour une liste compatible avec OpenAI. Ce format renvoie tous les modèles filtrés par défaut ; limit et offset permettent de sélectionner une page.",
@@ -9394,16 +9414,6 @@
 			"zh-Hans": "支出规则：针对某个范围和周期、以美元或百分比表示的阈值，用于通知，或先通知再拦截。金额以纳美元和美元两种形式返回。",
 			"ar": "قاعدة إنفاق: حدود بالدولار أو بالنسبة المئوية لنطاق وفترة تُرسل تنبيهًا، أو تنبه ثم تحظر. تُعاد المبالغ بالنانودولار وبالدولار الأمريكي."
 		},
-		"False for rules the evaluator does not handle yet (forecast, spike and balance metrics, rolling periods and previous_period bases). They are saved and fire from a later release.": {
-			"es": "Es false para las reglas que la evaluación aún no admite (métricas forecast, spike y balance, periodos rolling y bases previous_period). Se guardan y empezarán a activarse en una versión posterior.",
-			"fr": "Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast, spike et balance, périodes rolling et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure.",
-			"de": "False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast, spike und balance, Zeiträume rolling und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus.",
-			"pt-BR": "É false para regras que a avaliação ainda não suporta (métricas forecast, spike e balance, períodos rolling e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura.",
-			"hi": "उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast, spike और balance मीट्रिक, rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।",
-			"ja": "評価がまだ対応していないルール（forecast・spike・balance の指標、rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。",
-			"zh-Hans": "对于评估尚未支持的规则（forecast、spike 和 balance 指标、rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。",
-			"ar": "تكون false للقواعد التي لا يدعمها التقييم بعد (مقاييس forecast وspike وbalance، والفترات rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق."
-		},
 		"Null for the workspace scope; otherwise a key id, a member's user id, a department id, a model id or a provider id.": {
 			"es": "Null para el ámbito del espacio de trabajo; en otro caso, el ID de una clave, el ID de usuario de un miembro, el ID de un departamento, el ID de un modelo o el ID de un proveedor.",
 			"fr": "Null pour le périmètre de l’espace de travail ; sinon l’ID d’une clé, l’ID utilisateur d’un membre, l’ID d’un département, l’ID d’un modèle ou l’ID d’un fournisseur.",
@@ -9503,16 +9513,6 @@
 			"ja": "作成する支出ルール。name、metric、period は必須です。spike ルールの既定値は倍率 3x、下限 $5 です。",
 			"zh-Hans": "要创建的支出规则。name、metric 和 period 为必填项。spike 规则默认倍数为 3x，下限为 5 美元。",
 			"ar": "قاعدة إنفاق مراد إنشاؤها. الحقول name وmetric وperiod مطلوبة. تستخدم قواعد spike افتراضيًا مضاعفًا قدره 3x وحدًا أدنى قدره 5 دولارات."
-		},
-		"Where a spend rule stands now. Rules without a calendar period have period, value and alert null.": {
-			"es": "La situación actual de una regla de gasto. Las reglas sin periodo natural tienen period, value y alert en null.",
-			"fr": "L’état actuel d’une règle de dépenses. Les règles sans période calendaire ont period, value et alert à null.",
-			"de": "Der aktuelle Stand einer Ausgabenregel. Bei Regeln ohne Kalenderzeitraum sind period, value und alert null.",
-			"pt-BR": "A situação atual de uma regra de gastos. Regras sem período de calendário têm period, value e alert como null.",
-			"hi": "खर्च नियम की मौजूदा स्थिति। बिना कैलेंडर अवधि वाले नियमों में period, value और alert null होते हैं।",
-			"ja": "支出ルールの現在の状況。暦期間のないルールでは period、value、alert が null になります。",
-			"zh-Hans": "支出规则的当前状态。没有日历周期的规则，其 period、value 和 alert 为 null。",
-			"ar": "الوضع الحالي لقاعدة الإنفاق. القواعد التي ليس لها فترة تقويمية تكون فيها period وvalue وalert بقيمة null."
 		},
 		"The next threshold the value has not reached: a percent of the base (null for amount thresholds) and its amount.": {
 			"es": "El siguiente umbral que el valor aún no ha alcanzado: un porcentaje de la base (null para umbrales de importe) y su importe.",
@@ -9993,6 +9993,1756 @@
 			"ja": "IPv4 または IPv6 アドレス、もしくは CIDR 範囲。",
 			"zh-Hans": "IPv4 或 IPv6 地址，或 CIDR 范围。",
 			"ar": "عنوان IPv4 أو IPv6، أو نطاق CIDR."
+		},
+		"Create GPT Live session": {
+			"es": "Crear una sesión de GPT Live",
+			"fr": "Créer une session GPT Live",
+			"de": "GPT-Live-Sitzung erstellen",
+			"pt-BR": "Criar uma sessão do GPT Live",
+			"hi": "GPT Live सत्र बनाएँ",
+			"ja": "GPT Live セッションを作成",
+			"zh-Hans": "创建 GPT Live 会话",
+			"ar": "إنشاء جلسة GPT Live"
+		},
+		"Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model, and returns relay connection details. Function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`.": {
+			"es": "Crea una sesión de voz de GPT Live con medición de uso, que delega el razonamiento en un modelo de backend de Responses, y devuelve los datos de conexión del relé. Las herramientas de función se ejecutan en tu cliente: el relé reenvía cada `function_call` y acepta su `function_call_output` seguido de `response.create`.",
+			"fr": "Crée une session vocale GPT Live avec comptabilisation de l’usage, qui délègue le raisonnement à un modèle backend Responses, et renvoie les informations de connexion du relais. Les outils de fonction s’exécutent sur votre client : le relais transmet chaque `function_call` et accepte son `function_call_output` suivi de `response.create`.",
+			"de": "Erstellt eine GPT-Live-Sprachsitzung mit Nutzungsabrechnung, die das Schlussfolgern an ein Responses-Backend-Modell delegiert, und gibt die Verbindungsdaten des Relays zurück. Funktionstools laufen auf Ihrem Client: Das Relay leitet jeden `function_call` weiter und nimmt dessen `function_call_output` gefolgt von `response.create` an.",
+			"pt-BR": "Cria uma sessão de voz do GPT Live com medição de uso, que delega o raciocínio a um modelo de backend do Responses, e retorna os dados de conexão do relay. As ferramentas de função são executadas no seu cliente: o relay encaminha cada `function_call` e aceita o `function_call_output` correspondente seguido de `response.create`.",
+			"hi": "उपयोग मापन के साथ GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है, और रिले कनेक्शन विवरण लौटाता है। फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और उसके बाद `response.create` स्वीकार करता है।",
+			"ja": "使用量を計測する GPT Live 音声セッションを作成し、中継接続の詳細を返します。推論は Responses のバックエンドモデルに委任されます。関数ツールはクライアント側で実行されます。中継は各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。",
+			"zh-Hans": "创建计量的 GPT Live 语音会话，将推理委托给 Responses 后端模型，并返回中继连接信息。函数工具在你的客户端运行：中继转发每个 `function_call`，并接受其 `function_call_output`，随后接受 `response.create`。",
+			"ar": "ينشئ جلسة صوتية من GPT Live مع احتساب الاستخدام، تفوّض الاستدلال إلى نموذج خلفي من Responses، ويعرض تفاصيل اتصال الترحيل. تعمل أدوات الدوال على عميلك: يمرّر الترحيل كل `function_call` ويقبل `function_call_output` الخاص به متبوعًا بـ `response.create`."
+		},
+		"Client-executed function tools, with unique names.": {
+			"es": "Herramientas de función que ejecuta el cliente, con nombres únicos.",
+			"fr": "Outils de fonction exécutés par le client, avec des noms uniques.",
+			"de": "Funktionstools, die der Client ausführt, mit eindeutigen Namen.",
+			"pt-BR": "Ferramentas de função executadas pelo cliente, com nomes únicos.",
+			"hi": "क्लाइंट द्वारा चलाए जाने वाले फ़ंक्शन टूल, अद्वितीय नामों के साथ।",
+			"ja": "クライアントが実行する関数ツール（名前は一意）。",
+			"zh-Hans": "由客户端执行的函数工具，名称须唯一。",
+			"ar": "أدوات دوال يشغّلها العميل، بأسماء فريدة."
+		},
+		"GPT Live session created": {
+			"es": "Sesión de GPT Live creada",
+			"fr": "Session GPT Live créée",
+			"de": "GPT-Live-Sitzung erstellt",
+			"pt-BR": "Sessão do GPT Live criada",
+			"hi": "GPT Live सत्र बनाया गया",
+			"ja": "GPT Live セッションが作成されました",
+			"zh-Hans": "已创建 GPT Live 会话",
+			"ar": "تم إنشاء جلسة GPT Live"
+		},
+		"List apps you have authorized": {
+			"es": "Listar las aplicaciones que autorizaste",
+			"fr": "Lister les applications que vous avez autorisées",
+			"de": "Von dir autorisierte Apps auflisten",
+			"pt-BR": "Listar os aplicativos que você autorizou",
+			"hi": "आपके द्वारा अधिकृत ऐप्स सूचीबद्ध करें",
+			"ja": "承認したアプリを一覧表示",
+			"zh-Hans": "列出你已授权的应用",
+			"ar": "عرض التطبيقات التي صرّحت لها"
+		},
+		"Lists the apps you have authorized with OAuth, in every workspace. OAuth token with oauth_clients:read required.": {
+			"es": "Muestra las aplicaciones que autorizaste con OAuth en todos los espacios de trabajo. Requiere un token OAuth con oauth_clients:read.",
+			"fr": "Liste les applications que vous avez autorisées avec OAuth, dans tous les espaces de travail. Nécessite un jeton OAuth avec oauth_clients:read.",
+			"de": "Listet die Apps auf, die du mit OAuth autorisiert hast, in allen Arbeitsbereichen. Erfordert ein OAuth-Token mit oauth_clients:read.",
+			"pt-BR": "Lista os aplicativos que você autorizou com OAuth em todos os espaços de trabalho. Exige um token OAuth com oauth_clients:read.",
+			"hi": "हर वर्कस्पेस में आपके द्वारा OAuth से अधिकृत ऐप्स सूचीबद्ध करता है। oauth_clients:read वाला OAuth टोकन आवश्यक है।",
+			"ja": "すべてのワークスペースで OAuth により承認したアプリを一覧表示します。oauth_clients:read を持つ OAuth トークンが必要です。",
+			"zh-Hans": "列出你在所有工作区中通过 OAuth 授权的应用。需要具有 oauth_clients:read 的 OAuth 令牌。",
+			"ar": "يعرض التطبيقات التي صرّحت لها عبر OAuth في جميع مساحات العمل. يتطلب رمز OAuth يتضمن oauth_clients:read."
+		},
+		"Revoke an authorized app": {
+			"es": "Revocar una aplicación autorizada",
+			"fr": "Révoquer une application autorisée",
+			"de": "Autorisierte App widerrufen",
+			"pt-BR": "Revogar um aplicativo autorizado",
+			"hi": "अधिकृत ऐप रद्द करें",
+			"ja": "承認済みアプリを取り消す",
+			"zh-Hans": "撤销已授权应用",
+			"ar": "إلغاء تصريح تطبيق"
+		},
+		"Revokes an app's access so its tokens stop working. Revoking the calling app's own authorization signs it out. OAuth token with oauth_clients:delete required.": {
+			"es": "Revoca el acceso de una aplicación para que sus tokens dejen de funcionar. Revocar la autorización de la propia aplicación que llama cierra su sesión. Requiere un token OAuth con oauth_clients:delete.",
+			"fr": "Révoque l’accès d’une application pour que ses jetons cessent de fonctionner. Révoquer l’autorisation de l’application appelante la déconnecte. Nécessite un jeton OAuth avec oauth_clients:delete.",
+			"de": "Widerruft den Zugriff einer App, sodass ihre Tokens nicht mehr funktionieren. Widerrufst du die Autorisierung der aufrufenden App selbst, wird sie abgemeldet. Erfordert ein OAuth-Token mit oauth_clients:delete.",
+			"pt-BR": "Revoga o acesso de um aplicativo para que seus tokens parem de funcionar. Revogar a autorização do próprio aplicativo que faz a chamada encerra a sessão dele. Exige um token OAuth com oauth_clients:delete.",
+			"hi": "किसी ऐप की पहुँच रद्द करता है ताकि उसके टोकन काम करना बंद कर दें। कॉल करने वाले ऐप का अपना प्राधिकरण रद्द करने पर वह साइन आउट हो जाता है। oauth_clients:delete वाला OAuth टोकन आवश्यक है।",
+			"ja": "アプリのアクセスを取り消し、そのトークンを使用できなくします。呼び出し元アプリ自身の承認を取り消すと、そのアプリはサインアウトされます。oauth_clients:delete を持つ OAuth トークンが必要です。",
+			"zh-Hans": "撤销应用的访问权限，使其令牌失效。撤销调用方应用自身的授权会使其退出登录。需要具有 oauth_clients:delete 的 OAuth 令牌。",
+			"ar": "يلغي وصول تطبيق حتى تتوقف رموزه عن العمل. يؤدي إلغاء تصريح التطبيق المستدعي نفسه إلى تسجيل خروجه. يتطلب رمز OAuth يتضمن oauth_clients:delete."
+		},
+		"Remove scopes from an authorized app": {
+			"es": "Quitar alcances de una aplicación autorizada",
+			"fr": "Retirer des portées d’une application autorisée",
+			"de": "Berechtigungsbereiche einer autorisierten App entfernen",
+			"pt-BR": "Remover escopos de um aplicativo autorizado",
+			"hi": "अधिकृत ऐप से स्कोप हटाएँ",
+			"ja": "承認済みアプリからスコープを削除",
+			"zh-Hans": "移除已授权应用的作用域",
+			"ar": "إزالة نطاقات من تطبيق مصرّح به"
+		},
+		"Narrows an app's access to the scopes given. Scopes can only be removed; adding one needs your consent in the browser. OAuth token with oauth_clients:write required.": {
+			"es": "Limita el acceso de una aplicación a los alcances indicados. Solo se pueden quitar alcances; añadir uno requiere tu consentimiento en el navegador. Requiere un token OAuth con oauth_clients:write.",
+			"fr": "Limite l’accès d’une application aux portées indiquées. Les portées peuvent seulement être retirées ; en ajouter une nécessite votre consentement dans le navigateur. Nécessite un jeton OAuth avec oauth_clients:write.",
+			"de": "Beschränkt den Zugriff einer App auf die angegebenen Berechtigungsbereiche. Bereiche können nur entfernt werden; zum Hinzufügen ist deine Zustimmung im Browser nötig. Erfordert ein OAuth-Token mit oauth_clients:write.",
+			"pt-BR": "Restringe o acesso de um aplicativo aos escopos informados. Escopos só podem ser removidos; adicionar um exige seu consentimento no navegador. Exige um token OAuth com oauth_clients:write.",
+			"hi": "किसी ऐप की पहुँच को दिए गए स्कोप तक सीमित करता है। स्कोप केवल हटाए जा सकते हैं; कोई स्कोप जोड़ने के लिए ब्राउज़र में आपकी सहमति आवश्यक है। oauth_clients:write वाला OAuth टोकन आवश्यक है।",
+			"ja": "アプリのアクセスを指定したスコープに絞ります。スコープは削除のみ可能で、追加するにはブラウザーでの同意が必要です。oauth_clients:write を持つ OAuth トークンが必要です。",
+			"zh-Hans": "将应用的访问权限缩减为指定的作用域。作用域只能移除；添加作用域需要你在浏览器中同意。需要具有 oauth_clients:write 的 OAuth 令牌。",
+			"ar": "يقلّص وصول التطبيق إلى النطاقات المحددة. يمكن إزالة النطاقات فقط؛ تتطلب إضافة نطاق موافقتك في المتصفح. يتطلب رمز OAuth يتضمن oauth_clients:write."
+		},
+		"Test a classifier on a sample": {
+			"es": "Probar un clasificador con un ejemplo",
+			"fr": "Tester un classificateur sur un exemple",
+			"de": "Klassifikator an einem Beispiel testen",
+			"pt-BR": "Testar um classificador com um exemplo",
+			"hi": "किसी नमूने पर क्लासिफ़ायर का परीक्षण करें",
+			"ja": "サンプルで分類器をテスト",
+			"zh-Hans": "在示例上测试分类器",
+			"ar": "اختبار مصنّف على عينة"
+		},
+		"Runs a draft or saved classifier once on a sample prompt and response, with the same request the gateway sends for it. The request is a real, billed model request made with your own credential and labelled phaseo.classifier_test. Owners and admins; the credential needs classifiers:write and gateway:access. Management keys cannot make model requests and are refused.": {
+			"es": "Ejecuta una vez un clasificador guardado o un borrador sobre una solicitud y una respuesta de ejemplo, con la misma solicitud que envía el gateway. Es una solicitud real y facturada a un modelo, hecha con tu propia credencial y etiquetada como phaseo.classifier_test. Propietarios y administradores; la credencial necesita classifiers:write y gateway:access. Las claves de gestión no pueden hacer solicitudes a modelos y se rechazan.",
+			"fr": "Exécute une fois un classificateur enregistré ou un brouillon sur un prompt et une réponse d’exemple, avec la même requête que celle envoyée par la passerelle. Il s’agit d’une vraie requête de modèle facturée, effectuée avec vos propres identifiants et étiquetée phaseo.classifier_test. Propriétaires et administrateurs ; les identifiants doivent avoir classifiers:write et gateway:access. Les clés de gestion ne peuvent pas effectuer de requêtes de modèle et sont refusées.",
+			"de": "Führt einen gespeicherten Klassifikator oder einen Entwurf einmal auf einem Beispiel-Prompt und einer Beispielantwort aus, mit derselben Anfrage, die das Gateway dafür sendet. Es ist eine echte, kostenpflichtige Modellanfrage mit deinen eigenen Anmeldedaten, gekennzeichnet als phaseo.classifier_test. Inhaber und Administratoren; die Anmeldedaten benötigen classifiers:write und gateway:access. Management-Schlüssel können keine Modellanfragen stellen und werden abgelehnt.",
+			"pt-BR": "Executa uma vez um classificador salvo ou um rascunho em um prompt e uma resposta de exemplo, com a mesma solicitação que o gateway envia. É uma solicitação real e cobrada a um modelo, feita com sua própria credencial e marcada como phaseo.classifier_test. Proprietários e administradores; a credencial precisa de classifiers:write e gateway:access. Chaves de gerenciamento não podem fazer solicitações a modelos e são recusadas.",
+			"hi": "किसी सहेजे गए या ड्राफ़्ट क्लासिफ़ायर को नमूना प्रॉम्प्ट और उत्तर पर एक बार चलाता है, उसी अनुरोध के साथ जो गेटवे भेजता है। यह आपके अपने क्रेडेंशियल से किया गया वास्तविक, बिल योग्य मॉडल अनुरोध है और इसे phaseo.classifier_test लेबल किया जाता है। स्वामी और एडमिन; क्रेडेंशियल में classifiers:write और gateway:access होना चाहिए। मैनेजमेंट कुंजियाँ मॉडल अनुरोध नहीं कर सकतीं और अस्वीकार कर दी जाती हैं।",
+			"ja": "保存済みまたは下書きの分類器を、サンプルのプロンプトと応答に対して、ゲートウェイが送信するのと同じリクエストで 1 回実行します。自分の認証情報で行われる実際の課金対象モデルリクエストで、phaseo.classifier_test というラベルが付きます。オーナーと管理者が対象で、認証情報には classifiers:write と gateway:access が必要です。管理キーはモデルリクエストを行えないため拒否されます。",
+			"zh-Hans": "在示例提示词和回复上运行一次已保存或草稿分类器，使用与网关发送的相同请求。这是一次使用你自己凭据发起的真实计费模型请求，并标记为 phaseo.classifier_test。仅限所有者和管理员；凭据需要 classifiers:write 和 gateway:access。管理密钥无法发起模型请求，因此会被拒绝。",
+			"ar": "يشغّل مصنّفًا محفوظًا أو مسودة مرة واحدة على مطالبة واستجابة تجريبيتين، بالطلب نفسه الذي ترسله البوابة. هذا طلب نموذج حقيقي ومدفوع يتم ببيانات اعتمادك ويُوسم بـ phaseo.classifier_test. للمالكين والمسؤولين؛ تحتاج بيانات الاعتماد إلى classifiers:write وgateway:access. لا يمكن لمفاتيح الإدارة إجراء طلبات النماذج لذا تُرفض."
+		},
+		"Accept a workspace invite": {
+			"es": "Aceptar una invitación a un espacio de trabajo",
+			"fr": "Accepter une invitation à un espace de travail",
+			"de": "Arbeitsbereichseinladung annehmen",
+			"pt-BR": "Aceitar um convite para um espaço de trabalho",
+			"hi": "वर्कस्पेस आमंत्रण स्वीकार करें",
+			"ja": "ワークスペースの招待を承諾",
+			"zh-Hans": "接受工作区邀请",
+			"ar": "قبول دعوة إلى مساحة عمل"
+		},
+		"Asks to join the workspace an invite code belongs to. A workspace owner or admin then approves or rejects the request. OAuth token with workspaces:write required; management keys are refused because they belong to a workspace, not a person.": {
+			"es": "Solicita unirte al espacio de trabajo al que pertenece un código de invitación. Después, un propietario o administrador aprueba o rechaza la solicitud. Requiere un token OAuth con workspaces:write; las claves de gestión se rechazan porque pertenecen a un espacio de trabajo, no a una persona.",
+			"fr": "Demande à rejoindre l’espace de travail auquel appartient un code d’invitation. Un propriétaire ou un administrateur approuve ou refuse ensuite la demande. Nécessite un jeton OAuth avec workspaces:write ; les clés de gestion sont refusées car elles appartiennent à un espace de travail, pas à une personne.",
+			"de": "Fragt den Beitritt zu dem Arbeitsbereich an, zu dem ein Einladungscode gehört. Anschließend genehmigt oder lehnt ein Inhaber oder Administrator die Anfrage ab. Erfordert ein OAuth-Token mit workspaces:write; Management-Schlüssel werden abgelehnt, weil sie zu einem Arbeitsbereich gehören, nicht zu einer Person.",
+			"pt-BR": "Pede para entrar no espaço de trabalho ao qual um código de convite pertence. Depois, um proprietário ou administrador aprova ou recusa a solicitação. Exige um token OAuth com workspaces:write; chaves de gerenciamento são recusadas porque pertencem a um espaço de trabalho, não a uma pessoa.",
+			"hi": "उस वर्कस्पेस में शामिल होने का अनुरोध करता है जिसका आमंत्रण कोड है। इसके बाद वर्कस्पेस का स्वामी या एडमिन अनुरोध स्वीकृत या अस्वीकार करता है। workspaces:write वाला OAuth टोकन आवश्यक है; मैनेजमेंट कुंजियाँ अस्वीकार की जाती हैं क्योंकि वे किसी व्यक्ति की नहीं, वर्कस्पेस की होती हैं।",
+			"ja": "招待コードが属するワークスペースへの参加をリクエストします。その後、ワークスペースのオーナーまたは管理者がリクエストを承認または却下します。workspaces:write を持つ OAuth トークンが必要です。管理キーは人ではなくワークスペースに属するため拒否されます。",
+			"zh-Hans": "申请加入邀请码所属的工作区。之后由工作区所有者或管理员批准或拒绝该申请。需要具有 workspaces:write 的 OAuth 令牌；管理密钥属于工作区而不属于个人，因此会被拒绝。",
+			"ar": "يطلب الانضمام إلى مساحة العمل التي ينتمي إليها رمز الدعوة. بعد ذلك يوافق مالك مساحة العمل أو مسؤولها على الطلب أو يرفضه. يتطلب رمز OAuth يتضمن workspaces:write؛ تُرفض مفاتيح الإدارة لأنها تنتمي إلى مساحة عمل لا إلى شخص."
+		},
+		"List your requests to join workspaces": {
+			"es": "Listar tus solicitudes para unirte a espacios de trabajo",
+			"fr": "Lister vos demandes pour rejoindre des espaces de travail",
+			"de": "Deine Anfragen zum Beitritt zu Arbeitsbereichen auflisten",
+			"pt-BR": "Listar suas solicitações para entrar em espaços de trabalho",
+			"hi": "वर्कस्पेस में शामिल होने के अपने अनुरोध सूचीबद्ध करें",
+			"ja": "ワークスペースへの参加リクエストを一覧表示",
+			"zh-Hans": "列出你加入工作区的申请",
+			"ar": "عرض طلباتك للانضمام إلى مساحات العمل"
+		},
+		"Lists your own requests to join workspaces, newest first (at most 100). OAuth token with workspaces:read required.": {
+			"es": "Muestra tus propias solicitudes para unirte a espacios de trabajo, de la más reciente a la más antigua (100 como máximo). Requiere un token OAuth con workspaces:read.",
+			"fr": "Liste vos propres demandes pour rejoindre des espaces de travail, de la plus récente à la plus ancienne (100 au maximum). Nécessite un jeton OAuth avec workspaces:read.",
+			"de": "Listet deine eigenen Anfragen zum Beitritt zu Arbeitsbereichen auf, neueste zuerst (höchstens 100). Erfordert ein OAuth-Token mit workspaces:read.",
+			"pt-BR": "Lista suas próprias solicitações para entrar em espaços de trabalho, das mais recentes para as mais antigas (no máximo 100). Exige um token OAuth com workspaces:read.",
+			"hi": "वर्कस्पेस में शामिल होने के आपके अपने अनुरोध, सबसे नए पहले (अधिकतम 100), सूचीबद्ध करता है। workspaces:read वाला OAuth टोकन आवश्यक है।",
+			"ja": "ワークスペースへの自分の参加リクエストを新しい順に一覧表示します (最大 100 件)。workspaces:read を持つ OAuth トークンが必要です。",
+			"zh-Hans": "按从新到旧的顺序列出你自己的加入工作区申请（最多 100 条）。需要具有 workspaces:read 的 OAuth 令牌。",
+			"ar": "يعرض طلباتك الخاصة للانضمام إلى مساحات العمل، الأحدث أولًا (100 طلب كحد أقصى). يتطلب رمز OAuth يتضمن workspaces:read."
+		},
+		"Get the signed-in user": {
+			"es": "Obtener el usuario con sesión iniciada",
+			"fr": "Obtenir l’utilisateur connecté",
+			"de": "Angemeldeten Benutzer abrufen",
+			"pt-BR": "Obter o usuário conectado",
+			"hi": "साइन-इन उपयोगकर्ता प्राप्त करें",
+			"ja": "サインイン中のユーザーを取得",
+			"zh-Hans": "获取已登录用户",
+			"ar": "جلب المستخدم الذي سجّل الدخول"
+		},
+		"Returns the OAuth token's user, the token's client and scopes, and the workspaces the user belongs to. OAuth token with me:read required; management keys are refused.": {
+			"es": "Devuelve el usuario del token OAuth, el cliente y los alcances del token, y los espacios de trabajo a los que pertenece el usuario. Requiere un token OAuth con me:read; las claves de gestión se rechazan.",
+			"fr": "Renvoie l’utilisateur du jeton OAuth, le client et les portées du jeton, ainsi que les espaces de travail de l’utilisateur. Nécessite un jeton OAuth avec me:read ; les clés de gestion sont refusées.",
+			"de": "Gibt den Benutzer des OAuth-Tokens, den Client und die Berechtigungsbereiche des Tokens sowie die Arbeitsbereiche des Benutzers zurück. Erfordert ein OAuth-Token mit me:read; Management-Schlüssel werden abgelehnt.",
+			"pt-BR": "Retorna o usuário do token OAuth, o cliente e os escopos do token e os espaços de trabalho do usuário. Exige um token OAuth com me:read; chaves de gerenciamento são recusadas.",
+			"hi": "OAuth टोकन का उपयोगकर्ता, टोकन का क्लाइंट और स्कोप, और वे वर्कस्पेस लौटाता है जिनका उपयोगकर्ता सदस्य है। me:read वाला OAuth टोकन आवश्यक है; मैनेजमेंट कुंजियाँ अस्वीकार की जाती हैं।",
+			"ja": "OAuth トークンのユーザー、トークンのクライアントとスコープ、ユーザーが所属するワークスペースを返します。me:read を持つ OAuth トークンが必要です。管理キーは拒否されます。",
+			"zh-Hans": "返回 OAuth 令牌对应的用户、令牌的客户端和作用域，以及该用户所属的工作区。需要具有 me:read 的 OAuth 令牌；管理密钥会被拒绝。",
+			"ar": "يعيد مستخدم رمز OAuth وعميل الرمز ونطاقاته ومساحات العمل التي ينتمي إليها المستخدم. يتطلب رمز OAuth يتضمن me:read؛ تُرفض مفاتيح الإدارة."
+		},
+		"Send a sample trace": {
+			"es": "Enviar una traza de ejemplo",
+			"fr": "Envoyer une trace d’exemple",
+			"de": "Beispiel-Trace senden",
+			"pt-BR": "Enviar um trace de exemplo",
+			"hi": "नमूना ट्रेस भेजें",
+			"ja": "サンプルトレースを送信",
+			"zh-Hans": "发送示例追踪",
+			"ar": "إرسال تتبع تجريبي"
+		},
+		"Sends a sample trace to a saved destination, with its messages unless the destination leaves prompts and outputs out. Owners and admins; settings:write required.": {
+			"es": "Envía una traza de ejemplo a un destino guardado, con sus mensajes salvo que el destino excluya las solicitudes y las respuestas. Propietarios y administradores; requiere settings:write.",
+			"fr": "Envoie une trace d’exemple à une destination enregistrée, avec ses messages sauf si la destination exclut les prompts et les sorties. Propriétaires et administrateurs ; nécessite settings:write.",
+			"de": "Sendet einen Beispiel-Trace an ein gespeichertes Ziel, mit Nachrichten, sofern das Ziel Prompts und Ausgaben nicht ausschließt. Inhaber und Administratoren; erfordert settings:write.",
+			"pt-BR": "Envia um trace de exemplo a um destino salvo, com as mensagens, a menos que o destino exclua prompts e saídas. Proprietários e administradores; exige settings:write.",
+			"hi": "सहेजे गए डेस्टिनेशन को नमूना ट्रेस भेजता है, संदेशों के साथ, जब तक डेस्टिनेशन प्रॉम्प्ट और आउटपुट को बाहर न रखे। स्वामी और एडमिन; settings:write आवश्यक है।",
+			"ja": "保存済みの送信先にサンプルトレースを送信します。送信先がプロンプトと出力を除外していない限り、メッセージも含まれます。オーナーと管理者が対象で、settings:write が必要です。",
+			"zh-Hans": "向已保存的目标发送示例追踪；除非目标排除了提示词和输出，否则包含消息。仅限所有者和管理员；需要 settings:write。",
+			"ar": "يرسل تتبعًا تجريبيًا إلى وجهة محفوظة، مع رسائله ما لم تستبعد الوجهة المطالبات والمخرجات. للمالكين والمسؤولين؛ يتطلب settings:write."
+		},
+		"Test destination settings before saving": {
+			"es": "Probar la configuración de un destino antes de guardarla",
+			"fr": "Tester les paramètres d’une destination avant de les enregistrer",
+			"de": "Zieleinstellungen vor dem Speichern testen",
+			"pt-BR": "Testar as configurações de um destino antes de salvar",
+			"hi": "सहेजने से पहले डेस्टिनेशन सेटिंग का परीक्षण करें",
+			"ja": "保存前に送信先の設定をテスト",
+			"zh-Hans": "保存前测试目标设置",
+			"ar": "اختبار إعدادات الوجهة قبل الحفظ"
+		},
+		"Sends a sample trace without its messages to the settings given, the way the gateway delivers traces. Nothing is saved. Owners and admins; settings:write required.": {
+			"es": "Envía una traza de ejemplo sin mensajes a la configuración indicada, del mismo modo que el gateway entrega las trazas. No se guarda nada. Propietarios y administradores; requiere settings:write.",
+			"fr": "Envoie une trace d’exemple sans messages aux paramètres indiqués, comme la passerelle livre les traces. Rien n’est enregistré. Propriétaires et administrateurs ; nécessite settings:write.",
+			"de": "Sendet einen Beispiel-Trace ohne Nachrichten an die angegebenen Einstellungen, so wie das Gateway Traces zustellt. Es wird nichts gespeichert. Inhaber und Administratoren; erfordert settings:write.",
+			"pt-BR": "Envia um trace de exemplo sem mensagens para as configurações informadas, da mesma forma que o gateway entrega traces. Nada é salvo. Proprietários e administradores; exige settings:write.",
+			"hi": "दी गई सेटिंग पर बिना संदेशों वाला नमूना ट्रेस उसी तरह भेजता है जैसे गेटवे ट्रेस डिलीवर करता है। कुछ भी सहेजा नहीं जाता। स्वामी और एडमिन; settings:write आवश्यक है।",
+			"ja": "ゲートウェイがトレースを配信するのと同じ方法で、指定した設定にメッセージを含まないサンプルトレースを送信します。何も保存されません。オーナーと管理者が対象で、settings:write が必要です。",
+			"zh-Hans": "按网关投递追踪的方式，向给定设置发送不含消息的示例追踪。不会保存任何内容。仅限所有者和管理员；需要 settings:write。",
+			"ar": "يرسل تتبعًا تجريبيًا بدون رسائل إلى الإعدادات المحددة، بالطريقة التي تسلّم بها البوابة التتبعات. لا يُحفظ أي شيء. للمالكين والمسؤولين؛ يتطلب settings:write."
+		},
+		"Check a destination's connection": {
+			"es": "Comprobar la conexión de un destino",
+			"fr": "Vérifier la connexion d’une destination",
+			"de": "Verbindung eines Ziels prüfen",
+			"pt-BR": "Verificar a conexão de um destino",
+			"hi": "डेस्टिनेशन का कनेक्शन जाँचें",
+			"ja": "送信先の接続を確認",
+			"zh-Hans": "检查目标的连接",
+			"ar": "التحقق من اتصال الوجهة"
+		},
+		"Sends a sample trace without its messages to a saved destination, as the dashboard's status check does. The destination's health is not changed. Owners and admins; settings:write required.": {
+			"es": "Envía una traza de ejemplo sin mensajes a un destino guardado, como hace la comprobación de estado del panel. El estado de salud del destino no cambia. Propietarios y administradores; requiere settings:write.",
+			"fr": "Envoie une trace d’exemple sans messages à une destination enregistrée, comme le fait la vérification d’état du tableau de bord. L’état de santé de la destination n’est pas modifié. Propriétaires et administrateurs ; nécessite settings:write.",
+			"de": "Sendet einen Beispiel-Trace ohne Nachrichten an ein gespeichertes Ziel, wie es die Statusprüfung im Dashboard tut. Der Integritätsstatus des Ziels ändert sich nicht. Inhaber und Administratoren; erfordert settings:write.",
+			"pt-BR": "Envia um trace de exemplo sem mensagens a um destino salvo, como faz a verificação de status do painel. O status de integridade do destino não é alterado. Proprietários e administradores; exige settings:write.",
+			"hi": "सहेजे गए डेस्टिनेशन को बिना संदेशों वाला नमूना ट्रेस भेजता है, जैसा डैशबोर्ड की स्थिति जाँच करती है। डेस्टिनेशन की स्वास्थ्य स्थिति नहीं बदलती। स्वामी और एडमिन; settings:write आवश्यक है।",
+			"ja": "ダッシュボードのステータス確認と同じように、保存済みの送信先にメッセージを含まないサンプルトレースを送信します。送信先のヘルス状態は変わりません。オーナーと管理者が対象で、settings:write が必要です。",
+			"zh-Hans": "像控制台的状态检查一样，向已保存的目标发送不含消息的示例追踪。目标的健康状态不会改变。仅限所有者和管理员；需要 settings:write。",
+			"ar": "يرسل تتبعًا تجريبيًا بدون رسائل إلى وجهة محفوظة، كما يفعل فحص الحالة في لوحة التحكم. لا تتغير حالة سلامة الوجهة. للمالكين والمسؤولين؛ يتطلب settings:write."
+		},
+		"Get your profile": {
+			"es": "Obtener tu perfil",
+			"fr": "Obtenir votre profil",
+			"de": "Dein Profil abrufen",
+			"pt-BR": "Obter seu perfil",
+			"hi": "अपनी प्रोफ़ाइल प्राप्त करें",
+			"ja": "プロフィールを取得",
+			"zh-Hans": "获取你的个人资料",
+			"ar": "جلب ملفك الشخصي"
+		},
+		"Returns the profile fields shown on the dashboard's Profile page. OAuth token with me:read required.": {
+			"es": "Devuelve los campos del perfil que se muestran en la página Perfil del panel. Requiere un token OAuth con me:read.",
+			"fr": "Renvoie les champs du profil affichés sur la page Profil du tableau de bord. Nécessite un jeton OAuth avec me:read.",
+			"de": "Gibt die Profilfelder zurück, die auf der Profilseite im Dashboard angezeigt werden. Erfordert ein OAuth-Token mit me:read.",
+			"pt-BR": "Retorna os campos de perfil exibidos na página Perfil do painel. Exige um token OAuth com me:read.",
+			"hi": "डैशबोर्ड के प्रोफ़ाइल पेज पर दिखाए जाने वाले प्रोफ़ाइल फ़ील्ड लौटाता है। me:read वाला OAuth टोकन आवश्यक है।",
+			"ja": "ダッシュボードのプロフィールページに表示されるプロフィール項目を返します。me:read を持つ OAuth トークンが必要です。",
+			"zh-Hans": "返回控制台个人资料页面上显示的个人资料字段。需要具有 me:read 的 OAuth 令牌。",
+			"ar": "يعيد حقول الملف الشخصي المعروضة في صفحة الملف الشخصي في لوحة التحكم. يتطلب رمز OAuth يتضمن me:read."
+		},
+		"Update your profile": {
+			"es": "Actualizar tu perfil",
+			"fr": "Mettre à jour votre profil",
+			"de": "Dein Profil aktualisieren",
+			"pt-BR": "Atualizar seu perfil",
+			"hi": "अपनी प्रोफ़ाइल अपडेट करें",
+			"ja": "プロフィールを更新",
+			"zh-Hans": "更新你的个人资料",
+			"ar": "تحديث ملفك الشخصي"
+		},
+		"Changes your display name, default workspace (one you belong to) or whether your details are hidden on screen. Password, MFA and passkeys are managed in the browser only. OAuth token with settings:write required.": {
+			"es": "Cambia tu nombre visible, tu espacio de trabajo predeterminado (uno al que pertenezcas) o si tus datos se ocultan en pantalla. La contraseña, la MFA y las llaves de acceso solo se gestionan en el navegador. Requiere un token OAuth con settings:write.",
+			"fr": "Modifie votre nom d’affichage, votre espace de travail par défaut (dont vous êtes membre) ou le masquage de vos informations à l’écran. Le mot de passe, la MFA et les clés d’accès se gèrent uniquement dans le navigateur. Nécessite un jeton OAuth avec settings:write.",
+			"de": "Ändert deinen Anzeigenamen, deinen Standardarbeitsbereich (einen, dem du angehörst) oder ob deine Angaben auf dem Bildschirm ausgeblendet werden. Passwort, MFA und Passkeys verwaltest du nur im Browser. Erfordert ein OAuth-Token mit settings:write.",
+			"pt-BR": "Altera seu nome de exibição, seu espaço de trabalho padrão (um do qual você participa) ou se seus dados ficam ocultos na tela. Senha, MFA e chaves de acesso são gerenciadas somente no navegador. Exige um token OAuth com settings:write.",
+			"hi": "आपका डिस्प्ले नाम, डिफ़ॉल्ट वर्कस्पेस (जिसके आप सदस्य हैं) या स्क्रीन पर आपकी जानकारी छिपी रहे या नहीं, यह बदलता है। पासवर्ड, MFA और पासकी केवल ब्राउज़र में प्रबंधित होते हैं। settings:write वाला OAuth टोकन आवश्यक है।",
+			"ja": "表示名、デフォルトのワークスペース (所属しているもの)、画面上で詳細を隠すかどうかを変更します。パスワード、MFA、パスキーはブラウザーでのみ管理します。settings:write を持つ OAuth トークンが必要です。",
+			"zh-Hans": "更改你的显示名称、默认工作区（必须是你所属的工作区）或是否在屏幕上隐藏你的信息。密码、MFA 和通行密钥只能在浏览器中管理。需要具有 settings:write 的 OAuth 令牌。",
+			"ar": "يغيّر اسم العرض أو مساحة العمل الافتراضية (مساحة تنتمي إليها) أو ما إذا كانت بياناتك مخفية على الشاشة. تُدار كلمة المرور والمصادقة متعددة العوامل ومفاتيح المرور في المتصفح فقط. يتطلب رمز OAuth يتضمن settings:write."
+		},
+		"Get the workspace's rate limit tier": {
+			"es": "Obtener el nivel de límite de solicitudes del espacio de trabajo",
+			"fr": "Obtenir le palier de limite de débit de l’espace de travail",
+			"de": "Rate-Limit-Stufe des Arbeitsbereichs abrufen",
+			"pt-BR": "Obter o nível de limite de taxa do espaço de trabalho",
+			"hi": "वर्कस्पेस का रेट लिमिट टियर प्राप्त करें",
+			"ja": "ワークスペースのレート制限ティアを取得",
+			"zh-Hans": "获取工作区的速率限制等级",
+			"ar": "جلب مستوى حد المعدل لمساحة العمل"
+		},
+		"Returns the workspace's trust tier, its requests per minute, and whether it can raise itself one tier now. Workspace owners and admins (OAuth) or management keys with rate_limits:read. canRaise is true only for the workspace owner.": {
+			"es": "Devuelve el nivel de confianza del espacio de trabajo, sus solicitudes por minuto y si ahora puede subir un nivel. Propietarios y administradores (OAuth) o claves de gestión con rate_limits:read. canRaise solo es verdadero para el propietario del espacio de trabajo.",
+			"fr": "Renvoie le palier de confiance de l’espace de travail, ses requêtes par minute et s’il peut maintenant relever son palier d’un cran. Propriétaires et administrateurs (OAuth) ou clés de gestion avec rate_limits:read. canRaise n’est vrai que pour le propriétaire de l’espace de travail.",
+			"de": "Gibt die Vertrauensstufe des Arbeitsbereichs, seine Anfragen pro Minute und die Information zurück, ob er sich jetzt um eine Stufe anheben kann. Inhaber und Administratoren (OAuth) oder Management-Schlüssel mit rate_limits:read. canRaise ist nur für den Inhaber des Arbeitsbereichs true.",
+			"pt-BR": "Retorna o nível de confiança do espaço de trabalho, suas solicitações por minuto e se ele pode subir um nível agora. Proprietários e administradores (OAuth) ou chaves de gerenciamento com rate_limits:read. canRaise só é verdadeiro para o proprietário do espaço de trabalho.",
+			"hi": "वर्कस्पेस का ट्रस्ट टियर, प्रति मिनट अनुरोध, और यह कि क्या वह अभी एक टियर ऊपर जा सकता है, लौटाता है। वर्कस्पेस के स्वामी और एडमिन (OAuth) या rate_limits:read वाली मैनेजमेंट कुंजियाँ। canRaise केवल वर्कस्पेस स्वामी के लिए true होता है।",
+			"ja": "ワークスペースの信頼ティア、1 分あたりのリクエスト数、今すぐ 1 ティア引き上げられるかどうかを返します。ワークスペースのオーナーと管理者 (OAuth)、または rate_limits:read を持つ管理キーが対象です。canRaise はワークスペースのオーナーの場合にのみ true になります。",
+			"zh-Hans": "返回工作区的信任等级、每分钟请求数，以及它现在能否提升一个等级。适用于工作区所有者和管理员（OAuth），或具有 rate_limits:read 的管理密钥。仅当调用者是工作区所有者时 canRaise 才为 true。",
+			"ar": "يعيد مستوى الثقة لمساحة العمل وعدد طلباتها في الدقيقة وما إذا كان بإمكانها الآن رفع نفسها مستوى واحدًا. لمالكي مساحة العمل ومسؤوليها (OAuth) أو مفاتيح الإدارة التي تتضمن rate_limits:read. تكون canRaise صحيحة لمالك مساحة العمل فقط."
+		},
+		"Raise the workspace's rate limit tier": {
+			"es": "Subir el nivel de límite de solicitudes del espacio de trabajo",
+			"fr": "Relever le palier de limite de débit de l’espace de travail",
+			"de": "Rate-Limit-Stufe des Arbeitsbereichs anheben",
+			"pt-BR": "Aumentar o nível de limite de taxa do espaço de trabalho",
+			"hi": "वर्कस्पेस का रेट लिमिट टियर बढ़ाएँ",
+			"ja": "ワークスペースのレート制限ティアを引き上げ",
+			"zh-Hans": "提升工作区的速率限制等级",
+			"ar": "رفع مستوى حد المعدل لمساحة العمل"
+		},
+		"Raises an eligible workspace one tier for a limited time. Only the workspace owner can raise, with an OAuth token holding rate_limits:write; management keys are refused so a leaked key cannot lift its own workspace's limits.": {
+			"es": "Sube un nivel a un espacio de trabajo apto durante un tiempo limitado. Solo el propietario del espacio de trabajo puede subirlo, con un token OAuth que tenga rate_limits:write; las claves de gestión se rechazan para que una clave filtrada no pueda levantar los límites de su propio espacio de trabajo.",
+			"fr": "Relève d’un palier un espace de travail éligible pour une durée limitée. Seul le propriétaire de l’espace de travail peut le faire, avec un jeton OAuth disposant de rate_limits:write ; les clés de gestion sont refusées pour qu’une clé divulguée ne puisse pas lever les limites de son propre espace de travail.",
+			"de": "Hebt einen berechtigten Arbeitsbereich für begrenzte Zeit um eine Stufe an. Nur der Inhaber des Arbeitsbereichs kann anheben, mit einem OAuth-Token mit rate_limits:write; Management-Schlüssel werden abgelehnt, damit ein geleakter Schlüssel die Limits seines eigenen Arbeitsbereichs nicht aufheben kann.",
+			"pt-BR": "Aumenta em um nível um espaço de trabalho qualificado por tempo limitado. Somente o proprietário do espaço de trabalho pode aumentar, com um token OAuth que tenha rate_limits:write; chaves de gerenciamento são recusadas para que uma chave vazada não possa elevar os limites do próprio espaço de trabalho.",
+			"hi": "किसी योग्य वर्कस्पेस को सीमित समय के लिए एक टियर ऊपर करता है। केवल वर्कस्पेस स्वामी rate_limits:write वाले OAuth टोकन से टियर बढ़ा सकता है; मैनेजमेंट कुंजियाँ अस्वीकार की जाती हैं ताकि लीक हुई कुंजी अपने ही वर्कस्पेस की सीमाएँ न हटा सके।",
+			"ja": "対象のワークスペースを期間限定で 1 ティア引き上げます。引き上げられるのは、rate_limits:write を持つ OAuth トークンを使うワークスペースのオーナーだけです。漏えいしたキーが自分のワークスペースの制限を解除できないよう、管理キーは拒否されます。",
+			"zh-Hans": "在限定时间内将符合条件的工作区提升一个等级。只有工作区所有者可以使用具有 rate_limits:write 的 OAuth 令牌提升；管理密钥会被拒绝，以免泄露的密钥解除其所属工作区的限制。",
+			"ar": "يرفع مساحة عمل مؤهلة مستوى واحدًا لفترة محدودة. لا يمكن الرفع إلا لمالك مساحة العمل باستخدام رمز OAuth يتضمن rate_limits:write؛ تُرفض مفاتيح الإدارة حتى لا يتمكن مفتاح مسرّب من رفع حدود مساحة العمل الخاصة به."
+		},
+		"Get auto-routing settings": {
+			"es": "Obtener la configuración del enrutamiento automático",
+			"fr": "Obtenir les paramètres du routage automatique",
+			"de": "Einstellungen für automatisches Routing abrufen",
+			"pt-BR": "Obter as configurações de roteamento automático",
+			"hi": "ऑटो-रूटिंग सेटिंग प्राप्त करें",
+			"ja": "自動ルーティング設定を取得",
+			"zh-Hans": "获取自动路由设置",
+			"ar": "جلب إعدادات التوجيه التلقائي"
+		},
+		"Returns the limits the auto-router works within for this workspace. Any workspace member; settings:read required.": {
+			"es": "Devuelve los límites dentro de los que trabaja el enrutador automático en este espacio de trabajo. Cualquier miembro; requiere settings:read.",
+			"fr": "Renvoie les limites dans lesquelles fonctionne le routeur automatique pour cet espace de travail. Tout membre ; nécessite settings:read.",
+			"de": "Gibt die Grenzen zurück, innerhalb derer der automatische Router für diesen Arbeitsbereich arbeitet. Jedes Mitglied; erfordert settings:read.",
+			"pt-BR": "Retorna os limites dentro dos quais o roteador automático funciona neste espaço de trabalho. Qualquer membro; exige settings:read.",
+			"hi": "इस वर्कस्पेस के लिए वे सीमाएँ लौटाता है जिनके भीतर ऑटो-राउटर काम करता है। कोई भी सदस्य; settings:read आवश्यक है।",
+			"ja": "このワークスペースで自動ルーターが動作する範囲の制限を返します。ワークスペースのどのメンバーでも利用でき、settings:read が必要です。",
+			"zh-Hans": "返回此工作区中自动路由器运行时遵循的限制。任何工作区成员均可调用；需要 settings:read。",
+			"ar": "يعيد الحدود التي يعمل ضمنها الموجّه التلقائي في مساحة العمل هذه. لأي عضو في مساحة العمل؛ يتطلب settings:read."
+		},
+		"Update auto-routing settings": {
+			"es": "Actualizar la configuración del enrutamiento automático",
+			"fr": "Mettre à jour les paramètres du routage automatique",
+			"de": "Einstellungen für automatisches Routing aktualisieren",
+			"pt-BR": "Atualizar as configurações de roteamento automático",
+			"hi": "ऑटो-रूटिंग सेटिंग अपडेट करें",
+			"ja": "自動ルーティング設定を更新",
+			"zh-Hans": "更新自动路由设置",
+			"ar": "تحديث إعدادات التوجيه التلقائي"
+		},
+		"Changes the fields sent; the result is validated as a whole, as the dashboard saves it. A custom spend_profile needs both price limits. Owners and admins; settings:write required.": {
+			"es": "Cambia los campos enviados; el resultado se valida en conjunto, como lo guarda el panel. Un spend_profile personalizado necesita ambos límites de precio. Propietarios y administradores; requiere settings:write.",
+			"fr": "Modifie les champs envoyés ; le résultat est validé dans son ensemble, comme l’enregistre le tableau de bord. Un spend_profile personnalisé nécessite les deux limites de prix. Propriétaires et administrateurs ; nécessite settings:write.",
+			"de": "Ändert die gesendeten Felder; das Ergebnis wird als Ganzes geprüft, so wie das Dashboard es speichert. Ein benutzerdefiniertes spend_profile benötigt beide Preisgrenzen. Inhaber und Administratoren; erfordert settings:write.",
+			"pt-BR": "Altera os campos enviados; o resultado é validado como um todo, como o painel o salva. Um spend_profile personalizado precisa dos dois limites de preço. Proprietários e administradores; exige settings:write.",
+			"hi": "भेजे गए फ़ील्ड बदलता है; परिणाम को पूरे रूप में उसी तरह जाँचा जाता है जैसे डैशबोर्ड उसे सहेजता है। कस्टम spend_profile के लिए दोनों मूल्य सीमाएँ आवश्यक हैं। स्वामी और एडमिन; settings:write आवश्यक है।",
+			"ja": "送信したフィールドを変更します。結果はダッシュボードが保存するときと同様に全体として検証されます。カスタムの spend_profile には両方の価格上限が必要です。オーナーと管理者が対象で、settings:write が必要です。",
+			"zh-Hans": "更改发送的字段；结果会像控制台保存时一样作为整体进行校验。自定义 spend_profile 需要同时设置两个价格上限。仅限所有者和管理员；需要 settings:write。",
+			"ar": "يغيّر الحقول المرسلة؛ ويُتحقق من النتيجة ككل كما تحفظها لوحة التحكم. يحتاج spend_profile المخصص إلى حدّي السعر كليهما. للمالكين والمسؤولين؛ يتطلب settings:write."
+		},
+		"Report a leaked API key": {
+			"es": "Informar de una clave de API filtrada",
+			"fr": "Signaler une clé d’API divulguée",
+			"de": "Geleakten API-Schlüssel melden",
+			"pt-BR": "Denunciar uma chave de API vazada",
+			"hi": "लीक हुई API कुंजी की रिपोर्ट करें",
+			"ja": "漏えいした API キーを報告",
+			"zh-Hans": "报告泄露的 API 密钥",
+			"ar": "الإبلاغ عن مفتاح API مسرّب"
+		},
+		"Reports a Phaseo key found in public. No authentication. Always answers 202 with the same body, whether or not the key matched, so the route cannot be used to check keys. Rate limited per address.": {
+			"es": "Informa de una clave de Phaseo encontrada publicada. Sin autenticación. Siempre responde 202 con el mismo cuerpo, coincida o no la clave, así que la ruta no sirve para comprobar claves. Con límite de solicitudes por dirección.",
+			"fr": "Signale une clé Phaseo trouvée en public. Sans authentification. Répond toujours 202 avec le même corps, que la clé corresponde ou non ; la route ne permet donc pas de vérifier des clés. Débit limité par adresse.",
+			"de": "Meldet einen öffentlich gefundenen Phaseo-Schlüssel. Ohne Authentifizierung. Antwortet immer mit 202 und demselben Inhalt, ob der Schlüssel passt oder nicht, sodass sich die Route nicht zum Prüfen von Schlüsseln eignet. Pro Adresse begrenzt.",
+			"pt-BR": "Denuncia uma chave do Phaseo encontrada publicada. Sem autenticação. Sempre responde 202 com o mesmo corpo, correspondendo ou não a uma chave, então a rota não serve para verificar chaves. Com limite de taxa por endereço.",
+			"hi": "सार्वजनिक रूप से मिली Phaseo कुंजी की रिपोर्ट करता है। प्रमाणीकरण आवश्यक नहीं। कुंजी मेल खाए या नहीं, हमेशा एक ही बॉडी के साथ 202 लौटाता है, इसलिए इस रूट से कुंजियाँ जाँची नहीं जा सकतीं। प्रति पते पर दर सीमित।",
+			"ja": "公開された場所で見つかった Phaseo キーを報告します。認証は不要です。キーが一致したかどうかに関係なく常に同じ本文で 202 を返すため、このルートでキーを確認することはできません。アドレスごとにレート制限があります。",
+			"zh-Hans": "报告在公开场合发现的 Phaseo 密钥。无需身份验证。无论密钥是否匹配，始终返回相同内容的 202，因此此路由不能用来检查密钥。按地址限速。",
+			"ar": "يبلّغ عن مفتاح Phaseo عُثر عليه منشورًا للعامة. بدون مصادقة. يعيد دائمًا الرمز 202 بالمحتوى نفسه سواء طابق المفتاح أم لا، لذا لا يمكن استخدام المسار للتحقق من المفاتيح. يخضع لحد معدل لكل عنوان."
+		},
+		"List successor model replacements": {
+			"es": "Listar reemplazos de modelos sucesores",
+			"fr": "Lister les remplacements de modèles successeurs",
+			"de": "Ersetzungen für Nachfolgemodelle auflisten",
+			"pt-BR": "Listar substituições de modelos sucessores",
+			"hi": "उत्तराधिकारी मॉडल प्रतिस्थापन सूचीबद्ध करें",
+			"ja": "後継モデルの置き換えを一覧表示",
+			"zh-Hans": "列出后继模型替换",
+			"ar": "عرض بدائل النماذج اللاحقة"
+		},
+		"Lists the workspace's own choices of replacement for models no provider serves any more. Successor routing's switch and price policy are in /settings. Any workspace member; settings:read required.": {
+			"es": "Muestra los reemplazos que el espacio de trabajo eligió para modelos que ningún proveedor sirve ya. El interruptor y la política de precios del enrutamiento sucesor están en /settings. Cualquier miembro; requiere settings:read.",
+			"fr": "Liste les remplacements choisis par l’espace de travail pour les modèles qu’aucun fournisseur ne sert plus. L’activation et la politique de prix du routage vers les successeurs se trouvent dans /settings. Tout membre ; nécessite settings:read.",
+			"de": "Listet die vom Arbeitsbereich gewählten Ersetzungen für Modelle auf, die kein Anbieter mehr bereitstellt. Schalter und Preisrichtlinie des Nachfolger-Routings findest du unter /settings. Jedes Mitglied; erfordert settings:read.",
+			"pt-BR": "Lista as substituições escolhidas pelo espaço de trabalho para modelos que nenhum provedor oferece mais. O ativador e a política de preços do roteamento para sucessores ficam em /settings. Qualquer membro; exige settings:read.",
+			"hi": "उन मॉडलों के लिए वर्कस्पेस द्वारा चुने गए प्रतिस्थापन सूचीबद्ध करता है जिन्हें अब कोई प्रदाता सर्व नहीं करता। उत्तराधिकारी रूटिंग का स्विच और मूल्य नीति /settings में हैं। कोई भी सदस्य; settings:read आवश्यक है।",
+			"ja": "どのプロバイダーも提供しなくなったモデルについて、ワークスペースが選んだ置き換えを一覧表示します。後継ルーティングのオン/オフと価格ポリシーは /settings にあります。ワークスペースのどのメンバーでも利用でき、settings:read が必要です。",
+			"zh-Hans": "列出工作区为已不再由任何提供方提供的模型选择的替换。后继路由的开关和价格策略位于 /settings。任何工作区成员均可调用；需要 settings:read。",
+			"ar": "يعرض البدائل التي اختارتها مساحة العمل للنماذج التي لم يعد أي مزوّد يقدمها. يوجد مفتاح تشغيل توجيه النماذج اللاحقة وسياسة أسعاره في /settings. لأي عضو في مساحة العمل؛ يتطلب settings:read."
+		},
+		"Remove a successor model replacement": {
+			"es": "Quitar un reemplazo de modelo sucesor",
+			"fr": "Supprimer un remplacement de modèle successeur",
+			"de": "Ersetzung für ein Nachfolgemodell entfernen",
+			"pt-BR": "Remover uma substituição de modelo sucessor",
+			"hi": "उत्तराधिकारी मॉडल प्रतिस्थापन हटाएँ",
+			"ja": "後継モデルの置き換えを削除",
+			"zh-Hans": "移除后继模型替换",
+			"ar": "إزالة بديل لنموذج لاحق"
+		},
+		"Removes the workspace's choice for a model, so the catalogue's successor applies again. Owners and admins; settings:write required.": {
+			"es": "Quita la elección del espacio de trabajo para un modelo, de modo que vuelve a aplicarse el sucesor del catálogo. Propietarios y administradores; requiere settings:write.",
+			"fr": "Supprime le choix de l’espace de travail pour un modèle, afin que le successeur du catalogue s’applique de nouveau. Propriétaires et administrateurs ; nécessite settings:write.",
+			"de": "Entfernt die Auswahl des Arbeitsbereichs für ein Modell, sodass wieder der Nachfolger aus dem Katalog gilt. Inhaber und Administratoren; erfordert settings:write.",
+			"pt-BR": "Remove a escolha do espaço de trabalho para um modelo, para que o sucessor do catálogo volte a valer. Proprietários e administradores; exige settings:write.",
+			"hi": "किसी मॉडल के लिए वर्कस्पेस का चुनाव हटाता है, ताकि कैटलॉग का उत्तराधिकारी फिर से लागू हो। स्वामी और एडमिन; settings:write आवश्यक है।",
+			"ja": "モデルに対するワークスペースの選択を削除し、カタログの後継モデルが再び適用されるようにします。オーナーと管理者が対象で、settings:write が必要です。",
+			"zh-Hans": "移除工作区为某个模型做出的选择，使目录中的后继模型重新生效。仅限所有者和管理员；需要 settings:write。",
+			"ar": "يزيل اختيار مساحة العمل لنموذج، حتى يُطبَّق النموذج اللاحق من الكتالوج مرة أخرى. للمالكين والمسؤولين؛ يتطلب settings:write."
+		},
+		"Save a successor model replacement": {
+			"es": "Guardar un reemplazo de modelo sucesor",
+			"fr": "Enregistrer un remplacement de modèle successeur",
+			"de": "Ersetzung für ein Nachfolgemodell speichern",
+			"pt-BR": "Salvar uma substituição de modelo sucessor",
+			"hi": "उत्तराधिकारी मॉडल प्रतिस्थापन सहेजें",
+			"ja": "後継モデルの置き換えを保存",
+			"zh-Hans": "保存后继模型替换",
+			"ar": "حفظ بديل لنموذج لاحق"
+		},
+		"Sets the model that requests for model are sent to, replacing any earlier choice. A null successor means requests for model are never redirected. Both models must be in the catalogue and the successor must be served. At most 500 per workspace. Owners and admins; settings:write required.": {
+			"es": "Define el modelo al que se envían las solicitudes de model y reemplaza cualquier elección anterior. Un successor nulo significa que las solicitudes de model nunca se redirigen. Ambos modelos deben estar en el catálogo y el sucesor debe estar disponible. Máximo 500 por espacio de trabajo. Propietarios y administradores; requiere settings:write.",
+			"fr": "Définit le modèle vers lequel les requêtes pour model sont envoyées, en remplaçant tout choix antérieur. Un successor nul signifie que les requêtes pour model ne sont jamais redirigées. Les deux modèles doivent figurer au catalogue et le successeur doit être servi. 500 au maximum par espace de travail. Propriétaires et administrateurs ; nécessite settings:write.",
+			"de": "Legt das Modell fest, an das Anfragen für model gesendet werden, und ersetzt jede frühere Auswahl. Ein successor mit null bedeutet, dass Anfragen für model nie umgeleitet werden. Beide Modelle müssen im Katalog sein und der Nachfolger muss bereitgestellt werden. Höchstens 500 pro Arbeitsbereich. Inhaber und Administratoren; erfordert settings:write.",
+			"pt-BR": "Define o modelo para o qual as solicitações de model são enviadas, substituindo qualquer escolha anterior. Um successor nulo significa que as solicitações de model nunca são redirecionadas. Os dois modelos precisam estar no catálogo e o sucessor precisa estar disponível. No máximo 500 por espaço de trabalho. Proprietários e administradores; exige settings:write.",
+			"hi": "वह मॉडल सेट करता है जिसे model के अनुरोध भेजे जाते हैं, और किसी भी पिछले चुनाव को बदल देता है। null successor का अर्थ है कि model के अनुरोध कभी रीडायरेक्ट नहीं होते। दोनों मॉडल कैटलॉग में होने चाहिए और उत्तराधिकारी सर्व किया जाना चाहिए। प्रति वर्कस्पेस अधिकतम 500। स्वामी और एडमिन; settings:write आवश्यक है।",
+			"ja": "model へのリクエストの送信先モデルを設定し、以前の選択を置き換えます。successor が null の場合、model へのリクエストはリダイレクトされません。両方のモデルがカタログにあり、後継モデルが提供されている必要があります。ワークスペースあたり最大 500 件です。オーナーと管理者が対象で、settings:write が必要です。",
+			"zh-Hans": "设置 model 的请求要发送到的模型，并替换之前的任何选择。successor 为 null 表示 model 的请求永不重定向。两个模型都必须在目录中，且后继模型必须可用。每个工作区最多 500 个。仅限所有者和管理员；需要 settings:write。",
+			"ar": "يحدد النموذج الذي تُرسل إليه طلبات model، ويستبدل أي اختيار سابق. تعني قيمة successor الفارغة أن طلبات model لا يُعاد توجيهها أبدًا. يجب أن يكون النموذجان في الكتالوج وأن يكون النموذج اللاحق متاحًا. 500 كحد أقصى لكل مساحة عمل. للمالكين والمسؤولين؛ يتطلب settings:write."
+		},
+		"Authorized apps": {
+			"es": "Aplicaciones autorizadas",
+			"fr": "Applications autorisées",
+			"de": "Autorisierte Apps",
+			"pt-BR": "Aplicativos autorizados",
+			"hi": "अधिकृत ऐप्स",
+			"ja": "承認済みアプリ",
+			"zh-Hans": "已授权应用",
+			"ar": "التطبيقات المصرّح بها"
+		},
+		"Not an OAuth token, or the token is invalid or expired": {
+			"es": "No es un token OAuth, o el token no es válido o caducó",
+			"fr": "Ce n’est pas un jeton OAuth, ou le jeton est invalide ou expiré",
+			"de": "Kein OAuth-Token, oder das Token ist ungültig oder abgelaufen",
+			"pt-BR": "Não é um token OAuth, ou o token é inválido ou expirou",
+			"hi": "OAuth टोकन नहीं है, या टोकन अमान्य है या समाप्त हो गया है",
+			"ja": "OAuth トークンではないか、トークンが無効または期限切れです",
+			"zh-Hans": "不是 OAuth 令牌，或令牌无效或已过期",
+			"ar": "ليس رمز OAuth، أو أن الرمز غير صالح أو منتهي الصلاحية"
+		},
+		"Token lacks oauth_clients:read": {
+			"es": "El token no tiene oauth_clients:read",
+			"fr": "Le jeton n’a pas oauth_clients:read",
+			"de": "Dem Token fehlt oauth_clients:read",
+			"pt-BR": "O token não tem oauth_clients:read",
+			"hi": "टोकन में oauth_clients:read नहीं है",
+			"ja": "トークンに oauth_clients:read がありません",
+			"zh-Hans": "令牌缺少 oauth_clients:read",
+			"ar": "الرمز لا يتضمن oauth_clients:read"
+		},
+		"Authorization revoked": {
+			"es": "Autorización revocada",
+			"fr": "Autorisation révoquée",
+			"de": "Autorisierung widerrufen",
+			"pt-BR": "Autorização revogada",
+			"hi": "प्राधिकरण रद्द किया गया",
+			"ja": "承認を取り消しました",
+			"zh-Hans": "授权已撤销",
+			"ar": "تم إلغاء التصريح"
+		},
+		"Authorized app not found": {
+			"es": "No se encontró la aplicación autorizada",
+			"fr": "Application autorisée introuvable",
+			"de": "Autorisierte App nicht gefunden",
+			"pt-BR": "Aplicativo autorizado não encontrado",
+			"hi": "अधिकृत ऐप नहीं मिला",
+			"ja": "承認済みアプリが見つかりません",
+			"zh-Hans": "未找到已授权应用",
+			"ar": "لم يُعثر على التطبيق المصرّح به"
+		},
+		"Scopes reduced": {
+			"es": "Alcances reducidos",
+			"fr": "Portées réduites",
+			"de": "Berechtigungsbereiche reduziert",
+			"pt-BR": "Escopos reduzidos",
+			"hi": "स्कोप घटाए गए",
+			"ja": "スコープを減らしました",
+			"zh-Hans": "作用域已缩减",
+			"ar": "تم تقليص النطاقات"
+		},
+		"Empty list, or a scope the app does not have": {
+			"es": "Lista vacía, o un alcance que la aplicación no tiene",
+			"fr": "Liste vide, ou portée que l’application n’a pas",
+			"de": "Leere Liste oder ein Bereich, den die App nicht hat",
+			"pt-BR": "Lista vazia, ou um escopo que o aplicativo não tem",
+			"hi": "खाली सूची, या ऐसा स्कोप जो ऐप के पास नहीं है",
+			"ja": "空のリスト、またはアプリが持たないスコープ",
+			"zh-Hans": "列表为空，或包含应用不具备的作用域",
+			"ar": "قائمة فارغة، أو نطاق لا يملكه التطبيق"
+		},
+		"The labels the model chose": {
+			"es": "Las etiquetas que eligió el modelo",
+			"fr": "Les étiquettes choisies par le modèle",
+			"de": "Die vom Modell gewählten Labels",
+			"pt-BR": "Os rótulos escolhidos pelo modelo",
+			"hi": "मॉडल द्वारा चुने गए लेबल",
+			"ja": "モデルが選んだラベル",
+			"zh-Hans": "模型选择的标签",
+			"ar": "التسميات التي اختارها النموذج"
+		},
+		"Invalid classifier or sample": {
+			"es": "Clasificador o ejemplo no válido",
+			"fr": "Classificateur ou exemple invalide",
+			"de": "Ungültiger Klassifikator oder ungültiges Beispiel",
+			"pt-BR": "Classificador ou exemplo inválido",
+			"hi": "अमान्य क्लासिफ़ायर या नमूना",
+			"ja": "分類器またはサンプルが無効です",
+			"zh-Hans": "分类器或示例无效",
+			"ar": "مصنّف أو عينة غير صالحة"
+		},
+		"Not an owner or admin, missing classifiers:write, or the credential has no gateway:access": {
+			"es": "No es propietario ni administrador, falta classifiers:write o la credencial no tiene gateway:access",
+			"fr": "Pas propriétaire ni administrateur, classifiers:write manquant, ou les identifiants n’ont pas gateway:access",
+			"de": "Kein Inhaber oder Administrator, classifiers:write fehlt oder die Anmeldedaten haben kein gateway:access",
+			"pt-BR": "Não é proprietário nem administrador, falta classifiers:write ou a credencial não tem gateway:access",
+			"hi": "स्वामी या एडमिन नहीं, classifiers:write नहीं है, या क्रेडेंशियल में gateway:access नहीं है",
+			"ja": "オーナーまたは管理者ではない、classifiers:write がない、または認証情報に gateway:access がありません",
+			"zh-Hans": "不是所有者或管理员、缺少 classifiers:write，或凭据没有 gateway:access",
+			"ar": "ليس مالكًا أو مسؤولًا، أو ينقص classifiers:write، أو أن بيانات الاعتماد لا تتضمن gateway:access"
+		},
+		"Saved classifier not found in this workspace": {
+			"es": "No se encontró el clasificador guardado en este espacio de trabajo",
+			"fr": "Classificateur enregistré introuvable dans cet espace de travail",
+			"de": "Gespeicherter Klassifikator in diesem Arbeitsbereich nicht gefunden",
+			"pt-BR": "Classificador salvo não encontrado neste espaço de trabalho",
+			"hi": "इस वर्कस्पेस में सहेजा गया क्लासिफ़ायर नहीं मिला",
+			"ja": "このワークスペースに保存済みの分類器が見つかりません",
+			"zh-Hans": "在此工作区中未找到已保存的分类器",
+			"ar": "لم يُعثر على المصنّف المحفوظ في مساحة العمل هذه"
+		},
+		"The model request failed (for example, insufficient credits)": {
+			"es": "La solicitud al modelo falló (por ejemplo, por créditos insuficientes)",
+			"fr": "La requête de modèle a échoué (par exemple, crédits insuffisants)",
+			"de": "Die Modellanfrage ist fehlgeschlagen (zum Beispiel wegen unzureichender Credits)",
+			"pt-BR": "A solicitação ao modelo falhou (por exemplo, créditos insuficientes)",
+			"hi": "मॉडल अनुरोध विफल रहा (उदाहरण के लिए, अपर्याप्त क्रेडिट)",
+			"ja": "モデルリクエストが失敗しました (クレジット不足など)",
+			"zh-Hans": "模型请求失败（例如额度不足）",
+			"ar": "فشل طلب النموذج (مثلًا بسبب عدم كفاية الرصيد)"
+		},
+		"Join request created": {
+			"es": "Solicitud para unirse creada",
+			"fr": "Demande d’adhésion créée",
+			"de": "Beitrittsanfrage erstellt",
+			"pt-BR": "Solicitação de entrada criada",
+			"hi": "शामिल होने का अनुरोध बनाया गया",
+			"ja": "参加リクエストを作成しました",
+			"zh-Hans": "加入申请已创建",
+			"ar": "تم إنشاء طلب الانضمام"
+		},
+		"Missing invite code": {
+			"es": "Falta el código de invitación",
+			"fr": "Code d’invitation manquant",
+			"de": "Einladungscode fehlt",
+			"pt-BR": "Código de convite ausente",
+			"hi": "आमंत्रण कोड नहीं है",
+			"ja": "招待コードがありません",
+			"zh-Hans": "缺少邀请码",
+			"ar": "رمز الدعوة مفقود"
+		},
+		"Not an OAuth user token, or token lacks workspaces:write": {
+			"es": "No es un token OAuth de usuario, o el token no tiene workspaces:write",
+			"fr": "Pas un jeton OAuth d’utilisateur, ou le jeton n’a pas workspaces:write",
+			"de": "Kein OAuth-Benutzertoken, oder dem Token fehlt workspaces:write",
+			"pt-BR": "Não é um token OAuth de usuário, ou o token não tem workspaces:write",
+			"hi": "OAuth उपयोगकर्ता टोकन नहीं है, या टोकन में workspaces:write नहीं है",
+			"ja": "OAuth ユーザートークンではないか、トークンに workspaces:write がありません",
+			"zh-Hans": "不是 OAuth 用户令牌，或令牌缺少 workspaces:write",
+			"ar": "ليس رمز مستخدم OAuth، أو أن الرمز لا يتضمن workspaces:write"
+		},
+		"Invalid or expired invite": {
+			"es": "Invitación no válida o caducada",
+			"fr": "Invitation invalide ou expirée",
+			"de": "Ungültige oder abgelaufene Einladung",
+			"pt-BR": "Convite inválido ou expirado",
+			"hi": "अमान्य या समाप्त आमंत्रण",
+			"ja": "招待が無効または期限切れです",
+			"zh-Hans": "邀请无效或已过期",
+			"ar": "دعوة غير صالحة أو منتهية الصلاحية"
+		},
+		"Already a member, or a request is already pending": {
+			"es": "Ya eres miembro, o ya hay una solicitud pendiente",
+			"fr": "Déjà membre, ou une demande est déjà en attente",
+			"de": "Bereits Mitglied, oder eine Anfrage ist bereits offen",
+			"pt-BR": "Já é membro, ou já há uma solicitação pendente",
+			"hi": "पहले से सदस्य हैं, या कोई अनुरोध पहले से लंबित है",
+			"ja": "すでにメンバーであるか、リクエストが保留中です",
+			"zh-Hans": "已是成员，或已有待处理的申请",
+			"ar": "أنت عضو بالفعل، أو يوجد طلب قيد الانتظار"
+		},
+		"Pending by default; all returns every status.": {
+			"es": "Pendientes de forma predeterminada; all devuelve todos los estados.",
+			"fr": "En attente par défaut ; all renvoie tous les états.",
+			"de": "Standardmäßig offene Anfragen; all gibt alle Status zurück.",
+			"pt-BR": "Pendentes por padrão; all retorna todos os status.",
+			"hi": "डिफ़ॉल्ट रूप से लंबित; all हर स्थिति लौटाता है।",
+			"ja": "既定では保留中のみ。all を指定するとすべての状態を返します。",
+			"zh-Hans": "默认返回待处理的申请；all 返回所有状态。",
+			"ar": "المعلّقة افتراضيًا؛ تعيد all جميع الحالات."
+		},
+		"Your join requests": {
+			"es": "Tus solicitudes para unirte",
+			"fr": "Vos demandes d’adhésion",
+			"de": "Deine Beitrittsanfragen",
+			"pt-BR": "Suas solicitações de entrada",
+			"hi": "आपके शामिल होने के अनुरोध",
+			"ja": "参加リクエスト",
+			"zh-Hans": "你的加入申请",
+			"ar": "طلبات الانضمام الخاصة بك"
+		},
+		"Not an OAuth user token, or token lacks workspaces:read": {
+			"es": "No es un token OAuth de usuario, o el token no tiene workspaces:read",
+			"fr": "Pas un jeton OAuth d’utilisateur, ou le jeton n’a pas workspaces:read",
+			"de": "Kein OAuth-Benutzertoken, oder dem Token fehlt workspaces:read",
+			"pt-BR": "Não é um token OAuth de usuário, ou o token não tem workspaces:read",
+			"hi": "OAuth उपयोगकर्ता टोकन नहीं है, या टोकन में workspaces:read नहीं है",
+			"ja": "OAuth ユーザートークンではないか、トークンに workspaces:read がありません",
+			"zh-Hans": "不是 OAuth 用户令牌，或令牌缺少 workspaces:read",
+			"ar": "ليس رمز مستخدم OAuth، أو أن الرمز لا يتضمن workspaces:read"
+		},
+		"The signed-in user": {
+			"es": "El usuario con sesión iniciada",
+			"fr": "L’utilisateur connecté",
+			"de": "Der angemeldete Benutzer",
+			"pt-BR": "O usuário conectado",
+			"hi": "साइन-इन उपयोगकर्ता",
+			"ja": "サインイン中のユーザー",
+			"zh-Hans": "已登录用户",
+			"ar": "المستخدم الذي سجّل الدخول"
+		},
+		"Token lacks me:read": {
+			"es": "El token no tiene me:read",
+			"fr": "Le jeton n’a pas me:read",
+			"de": "Dem Token fehlt me:read",
+			"pt-BR": "O token não tem me:read",
+			"hi": "टोकन में me:read नहीं है",
+			"ja": "トークンに me:read がありません",
+			"zh-Hans": "令牌缺少 me:read",
+			"ar": "الرمز لا يتضمن me:read"
+		},
+		"Send result": {
+			"es": "Resultado del envío",
+			"fr": "Résultat de l’envoi",
+			"de": "Ergebnis des Versands",
+			"pt-BR": "Resultado do envio",
+			"hi": "भेजने का परिणाम",
+			"ja": "送信結果",
+			"zh-Hans": "发送结果",
+			"ar": "نتيجة الإرسال"
+		},
+		"Test result; ok is false when the destination refused or could not be reached": {
+			"es": "Resultado de la prueba; ok es falso cuando el destino rechazó el envío o no se pudo alcanzar",
+			"fr": "Résultat du test ; ok vaut false lorsque la destination a refusé ou n’a pas pu être jointe",
+			"de": "Testergebnis; ok ist false, wenn das Ziel abgelehnt hat oder nicht erreichbar war",
+			"pt-BR": "Resultado do teste; ok é falso quando o destino recusou ou não pôde ser alcançado",
+			"hi": "परीक्षण परिणाम; जब डेस्टिनेशन ने अस्वीकार किया या उस तक पहुँचा नहीं जा सका, तो ok false होता है",
+			"ja": "テスト結果。送信先が拒否したか到達できなかった場合、ok は false になります",
+			"zh-Hans": "测试结果；当目标拒绝或无法访问时，ok 为 false",
+			"ar": "نتيجة الاختبار؛ تكون ok خاطئة عندما ترفض الوجهة أو يتعذّر الوصول إليها"
+		},
+		"Invalid type or settings": {
+			"es": "Tipo o configuración no válidos",
+			"fr": "Type ou paramètres invalides",
+			"de": "Ungültiger Typ oder ungültige Einstellungen",
+			"pt-BR": "Tipo ou configurações inválidos",
+			"hi": "अमान्य प्रकार या सेटिंग",
+			"ja": "種類または設定が無効です",
+			"zh-Hans": "类型或设置无效",
+			"ar": "نوع أو إعدادات غير صالحة"
+		},
+		"Test result": {
+			"es": "Resultado de la prueba",
+			"fr": "Résultat du test",
+			"de": "Testergebnis",
+			"pt-BR": "Resultado do teste",
+			"hi": "परीक्षण परिणाम",
+			"ja": "テスト結果",
+			"zh-Hans": "测试结果",
+			"ar": "نتيجة الاختبار"
+		},
+		"Profile": {
+			"es": "Perfil",
+			"fr": "Profil",
+			"de": "Profil",
+			"pt-BR": "Perfil",
+			"hi": "प्रोफ़ाइल",
+			"ja": "プロフィール",
+			"zh-Hans": "个人资料",
+			"ar": "الملف الشخصي"
+		},
+		"Updated profile": {
+			"es": "Perfil actualizado",
+			"fr": "Profil mis à jour",
+			"de": "Aktualisiertes Profil",
+			"pt-BR": "Perfil atualizado",
+			"hi": "अपडेट की गई प्रोफ़ाइल",
+			"ja": "更新後のプロフィール",
+			"zh-Hans": "更新后的个人资料",
+			"ar": "الملف الشخصي المحدّث"
+		},
+		"Invalid field": {
+			"es": "Campo no válido",
+			"fr": "Champ invalide",
+			"de": "Ungültiges Feld",
+			"pt-BR": "Campo inválido",
+			"hi": "अमान्य फ़ील्ड",
+			"ja": "フィールドが無効です",
+			"zh-Hans": "字段无效",
+			"ar": "حقل غير صالح"
+		},
+		"Token lacks settings:write, or the default workspace is not one of yours": {
+			"es": "El token no tiene settings:write, o el espacio de trabajo predeterminado no es uno de los tuyos",
+			"fr": "Le jeton n’a pas settings:write, ou l’espace de travail par défaut ne vous appartient pas",
+			"de": "Dem Token fehlt settings:write, oder der Standardarbeitsbereich gehört nicht zu deinen",
+			"pt-BR": "O token não tem settings:write, ou o espaço de trabalho padrão não é um dos seus",
+			"hi": "टोकन में settings:write नहीं है, या डिफ़ॉल्ट वर्कस्पेस आपका नहीं है",
+			"ja": "トークンに settings:write がないか、デフォルトのワークスペースが自分のものではありません",
+			"zh-Hans": "令牌缺少 settings:write，或默认工作区不属于你",
+			"ar": "الرمز لا يتضمن settings:write، أو أن مساحة العمل الافتراضية ليست من مساحاتك"
+		},
+		"Tier and raise status": {
+			"es": "Nivel y estado de la subida",
+			"fr": "Palier et état du relèvement",
+			"de": "Stufe und Anhebungsstatus",
+			"pt-BR": "Nível e status do aumento",
+			"hi": "टियर और बढ़ाने की स्थिति",
+			"ja": "ティアと引き上げの状態",
+			"zh-Hans": "等级和提升状态",
+			"ar": "المستوى وحالة الرفع"
+		},
+		"Not an owner or admin, or token lacks rate_limits:read": {
+			"es": "No es propietario ni administrador, o el token no tiene rate_limits:read",
+			"fr": "Pas propriétaire ni administrateur, ou le jeton n’a pas rate_limits:read",
+			"de": "Kein Inhaber oder Administrator, oder dem Token fehlt rate_limits:read",
+			"pt-BR": "Não é proprietário nem administrador, ou o token não tem rate_limits:read",
+			"hi": "स्वामी या एडमिन नहीं, या टोकन में rate_limits:read नहीं है",
+			"ja": "オーナーまたは管理者ではないか、トークンに rate_limits:read がありません",
+			"zh-Hans": "不是所有者或管理员，或令牌缺少 rate_limits:read",
+			"ar": "ليس مالكًا أو مسؤولًا، أو أن الرمز لا يتضمن rate_limits:read"
+		},
+		"Raised": {
+			"es": "Subido",
+			"fr": "Relevé",
+			"de": "Angehoben",
+			"pt-BR": "Aumentado",
+			"hi": "बढ़ाया गया",
+			"ja": "引き上げました",
+			"zh-Hans": "已提升",
+			"ar": "تم الرفع"
+		},
+		"Not the workspace owner, a management key, or token lacks rate_limits:write": {
+			"es": "No es el propietario del espacio de trabajo, es una clave de gestión o el token no tiene rate_limits:write",
+			"fr": "Pas le propriétaire de l’espace de travail, clé de gestion, ou le jeton n’a pas rate_limits:write",
+			"de": "Nicht der Inhaber des Arbeitsbereichs, ein Management-Schlüssel, oder dem Token fehlt rate_limits:write",
+			"pt-BR": "Não é o proprietário do espaço de trabalho, é uma chave de gerenciamento ou o token não tem rate_limits:write",
+			"hi": "वर्कस्पेस स्वामी नहीं, मैनेजमेंट कुंजी है, या टोकन में rate_limits:write नहीं है",
+			"ja": "ワークスペースのオーナーではない、管理キーである、またはトークンに rate_limits:write がありません",
+			"zh-Hans": "不是工作区所有者、使用的是管理密钥，或令牌缺少 rate_limits:write",
+			"ar": "ليس مالك مساحة العمل، أو أنه مفتاح إدارة، أو أن الرمز لا يتضمن rate_limits:write"
+		},
+		"The workspace cannot raise its limit now (see reason)": {
+			"es": "El espacio de trabajo no puede subir su límite ahora (consulta reason)",
+			"fr": "L’espace de travail ne peut pas relever sa limite maintenant (voir reason)",
+			"de": "Der Arbeitsbereich kann sein Limit jetzt nicht anheben (siehe reason)",
+			"pt-BR": "O espaço de trabalho não pode aumentar o limite agora (veja reason)",
+			"hi": "वर्कस्पेस अभी अपनी सीमा नहीं बढ़ा सकता (reason देखें)",
+			"ja": "ワークスペースは現在制限を引き上げられません (reason を参照)",
+			"zh-Hans": "工作区当前无法提升其限制（参见 reason）",
+			"ar": "لا يمكن لمساحة العمل رفع حدها الآن (راجع reason)"
+		},
+		"Auto-routing settings": {
+			"es": "Configuración del enrutamiento automático",
+			"fr": "Paramètres du routage automatique",
+			"de": "Einstellungen für automatisches Routing",
+			"pt-BR": "Configurações de roteamento automático",
+			"hi": "ऑटो-रूटिंग सेटिंग",
+			"ja": "自動ルーティング設定",
+			"zh-Hans": "自动路由设置",
+			"ar": "إعدادات التوجيه التلقائي"
+		},
+		"Updated auto-routing settings": {
+			"es": "Configuración del enrutamiento automático actualizada",
+			"fr": "Paramètres du routage automatique mis à jour",
+			"de": "Aktualisierte Einstellungen für automatisches Routing",
+			"pt-BR": "Configurações de roteamento automático atualizadas",
+			"hi": "अपडेट की गई ऑटो-रूटिंग सेटिंग",
+			"ja": "更新後の自動ルーティング設定",
+			"zh-Hans": "更新后的自动路由设置",
+			"ar": "إعدادات التوجيه التلقائي المحدّثة"
+		},
+		"Invalid settings": {
+			"es": "Configuración no válida",
+			"fr": "Paramètres invalides",
+			"de": "Ungültige Einstellungen",
+			"pt-BR": "Configurações inválidas",
+			"hi": "अमान्य सेटिंग",
+			"ja": "設定が無効です",
+			"zh-Hans": "设置无效",
+			"ar": "إعدادات غير صالحة"
+		},
+		"Report received": {
+			"es": "Informe recibido",
+			"fr": "Signalement reçu",
+			"de": "Meldung erhalten",
+			"pt-BR": "Denúncia recebida",
+			"hi": "रिपोर्ट प्राप्त हुई",
+			"ja": "報告を受け付けました",
+			"zh-Hans": "已收到报告",
+			"ar": "تم استلام البلاغ"
+		},
+		"Replacements": {
+			"es": "Reemplazos",
+			"fr": "Remplacements",
+			"de": "Ersetzungen",
+			"pt-BR": "Substituições",
+			"hi": "प्रतिस्थापन",
+			"ja": "置き換え",
+			"zh-Hans": "替换",
+			"ar": "البدائل"
+		},
+		"The model id whose replacement to remove.": {
+			"es": "El ID del modelo cuyo reemplazo quieres quitar.",
+			"fr": "L’ID du modèle dont le remplacement doit être supprimé.",
+			"de": "Die Modell-ID, deren Ersetzung entfernt werden soll.",
+			"pt-BR": "O ID do modelo cuja substituição será removida.",
+			"hi": "उस मॉडल की ID जिसका प्रतिस्थापन हटाना है।",
+			"ja": "置き換えを削除するモデルの ID。",
+			"zh-Hans": "要移除其替换的模型 ID。",
+			"ar": "معرّف النموذج المراد إزالة بديله."
+		},
+		"Replacement removed": {
+			"es": "Reemplazo quitado",
+			"fr": "Remplacement supprimé",
+			"de": "Ersetzung entfernt",
+			"pt-BR": "Substituição removida",
+			"hi": "प्रतिस्थापन हटाया गया",
+			"ja": "置き換えを削除しました",
+			"zh-Hans": "替换已移除",
+			"ar": "تمت إزالة البديل"
+		},
+		"Missing or invalid model": {
+			"es": "Modelo ausente o no válido",
+			"fr": "Modèle manquant ou invalide",
+			"de": "Modell fehlt oder ist ungültig",
+			"pt-BR": "Modelo ausente ou inválido",
+			"hi": "मॉडल नहीं है या अमान्य है",
+			"ja": "モデルがないか無効です",
+			"zh-Hans": "缺少模型或模型无效",
+			"ar": "النموذج مفقود أو غير صالح"
+		},
+		"No replacement is saved for this model": {
+			"es": "No hay ningún reemplazo guardado para este modelo",
+			"fr": "Aucun remplacement n’est enregistré pour ce modèle",
+			"de": "Für dieses Modell ist keine Ersetzung gespeichert",
+			"pt-BR": "Nenhuma substituição foi salva para este modelo",
+			"hi": "इस मॉडल के लिए कोई प्रतिस्थापन सहेजा नहीं गया है",
+			"ja": "このモデルの置き換えは保存されていません",
+			"zh-Hans": "此模型没有已保存的替换",
+			"ar": "لا يوجد بديل محفوظ لهذا النموذج"
+		},
+		"Saved replacement": {
+			"es": "Reemplazo guardado",
+			"fr": "Remplacement enregistré",
+			"de": "Gespeicherte Ersetzung",
+			"pt-BR": "Substituição salva",
+			"hi": "सहेजा गया प्रतिस्थापन",
+			"ja": "保存した置き換え",
+			"zh-Hans": "已保存的替换",
+			"ar": "البديل المحفوظ"
+		},
+		"Invalid or unknown model": {
+			"es": "Modelo no válido o desconocido",
+			"fr": "Modèle invalide ou inconnu",
+			"de": "Ungültiges oder unbekanntes Modell",
+			"pt-BR": "Modelo inválido ou desconhecido",
+			"hi": "अमान्य या अज्ञात मॉडल",
+			"ja": "モデルが無効か不明です",
+			"zh-Hans": "模型无效或未知",
+			"ar": "نموذج غير صالح أو غير معروف"
+		},
+		"Authorization id.": {
+			"es": "ID de la autorización.",
+			"fr": "ID de l’autorisation.",
+			"de": "ID der Autorisierung.",
+			"pt-BR": "ID da autorização.",
+			"hi": "प्राधिकरण ID।",
+			"ja": "承認 ID。",
+			"zh-Hans": "授权 ID。",
+			"ar": "معرّف التصريح."
+		},
+		"True for the authorization the calling token belongs to.": {
+			"es": "Verdadero para la autorización a la que pertenece el token que hace la llamada.",
+			"fr": "Vrai pour l’autorisation à laquelle appartient le jeton appelant.",
+			"de": "True für die Autorisierung, zu der das aufrufende Token gehört.",
+			"pt-BR": "Verdadeiro para a autorização à qual o token da chamada pertence.",
+			"hi": "उस प्राधिकरण के लिए true जिससे कॉल करने वाला टोकन संबंधित है।",
+			"ja": "呼び出し元のトークンが属する承認では true です。",
+			"zh-Hans": "对于调用令牌所属的授权为 true。",
+			"ar": "صحيحة للتصريح الذي ينتمي إليه الرمز المستدعي."
+		},
+		"The scopes to keep; each must already be granted.": {
+			"es": "Los alcances que se conservan; cada uno ya debe estar concedido.",
+			"fr": "Les portées à conserver ; chacune doit déjà être accordée.",
+			"de": "Die zu behaltenden Bereiche; jeder muss bereits gewährt sein.",
+			"pt-BR": "Os escopos a manter; cada um já precisa estar concedido.",
+			"hi": "रखे जाने वाले स्कोप; हर स्कोप पहले से दिया गया होना चाहिए।",
+			"ja": "保持するスコープ。いずれもすでに付与されている必要があります。",
+			"zh-Hans": "要保留的作用域；每个作用域都必须已被授予。",
+			"ar": "النطاقات التي ستُحتفظ بها؛ يجب أن يكون كل منها ممنوحًا بالفعل."
+		},
+		"A draft to test. Fields not sent come from classifier_id when it is given.": {
+			"es": "Un borrador para probar. Los campos que no se envían se toman de classifier_id cuando se indica.",
+			"fr": "Un brouillon à tester. Les champs non envoyés proviennent de classifier_id lorsqu’il est fourni.",
+			"de": "Ein zu testender Entwurf. Nicht gesendete Felder stammen aus classifier_id, wenn angegeben.",
+			"pt-BR": "Um rascunho para testar. Campos não enviados vêm de classifier_id quando informado.",
+			"hi": "परीक्षण के लिए ड्राफ़्ट। classifier_id दिए जाने पर न भेजे गए फ़ील्ड उसी से लिए जाते हैं।",
+			"ja": "テストする下書き。classifier_id を指定した場合、送信しないフィールドはそこから取得されます。",
+			"zh-Hans": "要测试的草稿。如果提供了 classifier_id，未发送的字段取自该分类器。",
+			"ar": "مسودة للاختبار. تُؤخذ الحقول غير المرسلة من classifier_id عند تحديده."
+		},
+		"A saved classifier in this workspace to test, or to label the test with.": {
+			"es": "Un clasificador guardado en este espacio de trabajo para probarlo o para etiquetar la prueba.",
+			"fr": "Un classificateur enregistré dans cet espace de travail à tester, ou avec lequel étiqueter le test.",
+			"de": "Ein gespeicherter Klassifikator in diesem Arbeitsbereich, der getestet oder mit dem der Test gekennzeichnet wird.",
+			"pt-BR": "Um classificador salvo neste espaço de trabalho para testar ou para rotular o teste.",
+			"hi": "इस वर्कस्पेस में सहेजा गया क्लासिफ़ायर जिसका परीक्षण करना है, या जिससे परीक्षण को लेबल करना है।",
+			"ja": "テストする、またはテストのラベルに使う、このワークスペースの保存済み分類器。",
+			"zh-Hans": "此工作区中要测试的已保存分类器，或用于标记该测试的分类器。",
+			"ar": "مصنّف محفوظ في مساحة العمل هذه لاختباره، أو لوسم الاختبار به."
+		},
+		"One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.": {
+			"es": "Una pregunta que el clasificador responde sobre cada solicitud. La respuesta se escribe como una etiqueta de la solicitud cuya clave es la clave de esta dimensión. Si quien llama ya envió una etiqueta con esa clave, la dimensión se omite.",
+			"fr": "Une question à laquelle le classificateur répond pour chaque requête. La réponse est enregistrée comme étiquette de la requête dont la clé est celle de cette dimension. Si l’appelant a déjà envoyé une étiquette avec cette clé, la dimension est ignorée.",
+			"de": "Eine Frage, die der Klassifikator zu jeder Anfrage beantwortet. Die Antwort wird als Anfrage-Label geschrieben, dessen Schlüssel der Schlüssel dieser Dimension ist. Hat der Aufrufer bereits ein Label mit diesem Schlüssel gesendet, wird die Dimension übersprungen.",
+			"pt-BR": "Uma pergunta que o classificador responde sobre cada solicitação. A resposta é gravada como um rótulo da solicitação cuja chave é a chave desta dimensão. Se quem chama já enviou um rótulo com essa chave, a dimensão é ignorada.",
+			"hi": "एक प्रश्न जिसका उत्तर क्लासिफ़ायर हर अनुरोध के बारे में देता है। उत्तर अनुरोध लेबल के रूप में लिखा जाता है जिसकी कुंजी इस डाइमेंशन की कुंजी होती है। यदि कॉल करने वाले ने उस कुंजी वाला लेबल पहले ही भेजा है, तो डाइमेंशन छोड़ दिया जाता है।",
+			"ja": "分類器が各リクエストについて答える 1 つの質問。回答は、このディメンションのキーをキーとするリクエストラベルとして書き込まれます。呼び出し元がすでにそのキーのラベルを送信している場合、このディメンションはスキップされます。",
+			"zh-Hans": "分类器针对每个请求回答的一个问题。答案会写入一个请求标签，其键为该维度的键。如果调用方已发送了该键的标签，则跳过此维度。",
+			"ar": "سؤال يجيب عنه المصنّف عن كل طلب. تُكتب الإجابة كتسمية للطلب مفتاحها هو مفتاح هذا البعد. إذا أرسل المستدعي بالفعل تسمية بهذا المفتاح، يُتخطى البعد."
+		},
+		"Allow more than one value per request.": {
+			"es": "Permite más de un valor por solicitud.",
+			"fr": "Autoriser plusieurs valeurs par requête.",
+			"de": "Mehr als einen Wert pro Anfrage zulassen.",
+			"pt-BR": "Permite mais de um valor por solicitação.",
+			"hi": "प्रति अनुरोध एक से अधिक मान की अनुमति दें।",
+			"ja": "1 つのリクエストに複数の値を許可します。",
+			"zh-Hans": "允许每个请求有多个值。",
+			"ar": "السماح بأكثر من قيمة واحدة لكل طلب."
+		},
+		"Let the model answer \"other\" when no listed value fits.": {
+			"es": "Permite que el modelo responda \"other\" cuando ningún valor de la lista encaja.",
+			"fr": "Permettre au modèle de répondre « other » lorsqu’aucune valeur de la liste ne convient.",
+			"de": "Lässt das Modell \"other\" antworten, wenn kein aufgeführter Wert passt.",
+			"pt-BR": "Permite que o modelo responda \"other\" quando nenhum valor da lista se encaixa.",
+			"hi": "जब कोई सूचीबद्ध मान उपयुक्त न हो, तो मॉडल को \"other\" उत्तर देने दें।",
+			"ja": "一覧の値がどれも当てはまらない場合に、モデルが \"other\" と答えられるようにします。",
+			"zh-Hans": "当没有列出的值合适时，允许模型回答 \"other\"。",
+			"ar": "السماح للنموذج بالإجابة بـ \"other\" عندما لا تناسب أي قيمة مدرجة."
+		},
+		"Between 2 and 50 values. A single value is allowed only when allow_other is true.": {
+			"es": "Entre 2 y 50 valores. Solo se permite un único valor cuando allow_other es verdadero.",
+			"fr": "Entre 2 et 50 valeurs. Une seule valeur n’est autorisée que si allow_other vaut true.",
+			"de": "Zwischen 2 und 50 Werte. Ein einzelner Wert ist nur erlaubt, wenn allow_other true ist.",
+			"pt-BR": "Entre 2 e 50 valores. Um único valor só é permitido quando allow_other é verdadeiro.",
+			"hi": "2 से 50 मान। एकल मान की अनुमति केवल तब है जब allow_other true हो।",
+			"ja": "2〜50 個の値。値を 1 つだけにできるのは allow_other が true の場合のみです。",
+			"zh-Hans": "2 到 50 个值。仅当 allow_other 为 true 时才允许只有一个值。",
+			"ar": "من 2 إلى 50 قيمة. لا يُسمح بقيمة واحدة إلا عندما تكون allow_other صحيحة."
+		},
+		"Tells the model when to pick this value.": {
+			"es": "Indica al modelo cuándo elegir este valor.",
+			"fr": "Indique au modèle quand choisir cette valeur.",
+			"de": "Sagt dem Modell, wann es diesen Wert wählen soll.",
+			"pt-BR": "Indica ao modelo quando escolher este valor.",
+			"hi": "मॉडल को बताता है कि यह मान कब चुनना है।",
+			"ja": "この値を選ぶタイミングをモデルに伝えます。",
+			"zh-Hans": "告诉模型何时选择此值。",
+			"ar": "يخبر النموذج متى يختار هذه القيمة."
+		},
+		"False when the model's answer could not be read.": {
+			"es": "Falso cuando no se pudo leer la respuesta del modelo.",
+			"fr": "False lorsque la réponse du modèle n’a pas pu être lue.",
+			"de": "False, wenn die Antwort des Modells nicht gelesen werden konnte.",
+			"pt-BR": "Falso quando não foi possível ler a resposta do modelo.",
+			"hi": "जब मॉडल का उत्तर पढ़ा नहीं जा सका, तब false।",
+			"ja": "モデルの回答を読み取れなかった場合は false です。",
+			"zh-Hans": "无法读取模型的回答时为 false。",
+			"ar": "خاطئة عندما يتعذّر قراءة إجابة النموذج."
+		},
+		"The invite code.": {
+			"es": "El código de invitación.",
+			"fr": "Le code d’invitation.",
+			"de": "Der Einladungscode.",
+			"pt-BR": "O código de convite.",
+			"hi": "आमंत्रण कोड।",
+			"ja": "招待コード。",
+			"zh-Hans": "邀请码。",
+			"ar": "رمز الدعوة."
+		},
+		"The destination's settings, as for creating one.": {
+			"es": "La configuración del destino, igual que al crearlo.",
+			"fr": "Les paramètres de la destination, comme pour en créer une.",
+			"de": "Die Einstellungen des Ziels, wie beim Erstellen.",
+			"pt-BR": "As configurações do destino, como ao criar um.",
+			"hi": "डेस्टिनेशन की सेटिंग, जैसे नया डेस्टिनेशन बनाते समय।",
+			"ja": "送信先を作成するときと同じ送信先の設定。",
+			"zh-Hans": "目标的设置，与创建目标时相同。",
+			"ar": "إعدادات الوجهة، كما عند إنشاء وجهة."
+		},
+		"Whether your email and name are hidden on screen in the dashboard.": {
+			"es": "Si tu correo y tu nombre se ocultan en pantalla en el panel.",
+			"fr": "Indique si votre e-mail et votre nom sont masqués à l’écran dans le tableau de bord.",
+			"de": "Ob deine E-Mail-Adresse und dein Name im Dashboard auf dem Bildschirm ausgeblendet werden.",
+			"pt-BR": "Se seu e-mail e seu nome ficam ocultos na tela do painel.",
+			"hi": "क्या डैशबोर्ड में स्क्रीन पर आपका ईमेल और नाम छिपे रहते हैं।",
+			"ja": "ダッシュボードの画面上でメールアドレスと名前を隠すかどうか。",
+			"zh-Hans": "是否在控制台屏幕上隐藏你的邮箱和姓名。",
+			"ar": "ما إذا كان بريدك الإلكتروني واسمك مخفيين على الشاشة في لوحة التحكم."
+		},
+		"A workspace you belong to, or null to clear.": {
+			"es": "Un espacio de trabajo al que pertenezcas, o null para borrarlo.",
+			"fr": "Un espace de travail dont vous êtes membre, ou null pour l’effacer.",
+			"de": "Ein Arbeitsbereich, dem du angehörst, oder null zum Zurücksetzen.",
+			"pt-BR": "Um espaço de trabalho do qual você participa, ou null para limpar.",
+			"hi": "ऐसा वर्कस्पेस जिसके आप सदस्य हैं, या साफ़ करने के लिए null।",
+			"ja": "所属しているワークスペース。クリアするには null を指定します。",
+			"zh-Hans": "你所属的工作区，或设为 null 以清除。",
+			"ar": "مساحة عمل تنتمي إليها، أو null للمسح."
+		},
+		"The tier a raise would move to.": {
+			"es": "El nivel al que pasaría una subida.",
+			"fr": "Le palier auquel un relèvement mènerait.",
+			"de": "Die Stufe, auf die eine Anhebung führen würde.",
+			"pt-BR": "O nível para o qual um aumento levaria.",
+			"hi": "वह टियर जिस पर बढ़ाने से जाया जाएगा।",
+			"ja": "引き上げた場合の移動先ティア。",
+			"zh-Hans": "提升后将到达的等级。",
+			"ar": "المستوى الذي سينتقل إليه الرفع."
+		},
+		"Why a raise is not available now; null when eligible.": {
+			"es": "Por qué no se puede subir ahora; null cuando es apto.",
+			"fr": "Pourquoi un relèvement n’est pas disponible maintenant ; null si l’espace est éligible.",
+			"de": "Warum gerade keine Anhebung möglich ist; null, wenn berechtigt.",
+			"pt-BR": "Por que um aumento não está disponível agora; null quando qualificado.",
+			"hi": "अभी बढ़ाना क्यों उपलब्ध नहीं है; योग्य होने पर null।",
+			"ja": "現在引き上げできない理由。対象の場合は null です。",
+			"zh-Hans": "当前无法提升的原因；符合条件时为 null。",
+			"ar": "سبب عدم توفر الرفع الآن؛ null عند الأهلية."
+		},
+		"When an active raise ends (Unix milliseconds).": {
+			"es": "Cuándo termina una subida activa (milisegundos Unix).",
+			"fr": "Quand un relèvement actif prend fin (millisecondes Unix).",
+			"de": "Wann eine aktive Anhebung endet (Unix-Millisekunden).",
+			"pt-BR": "Quando um aumento ativo termina (milissegundos Unix).",
+			"hi": "सक्रिय बढ़ोतरी कब समाप्त होती है (Unix मिलीसेकंड)।",
+			"ja": "有効な引き上げが終了する時刻 (Unix ミリ秒)。",
+			"zh-Hans": "当前提升结束的时间（Unix 毫秒）。",
+			"ar": "موعد انتهاء الرفع النشط (بالمللي ثانية وفق Unix)."
+		},
+		"When the next raise may be requested (Unix milliseconds).": {
+			"es": "Cuándo se puede solicitar la siguiente subida (milisegundos Unix).",
+			"fr": "Quand le prochain relèvement peut être demandé (millisecondes Unix).",
+			"de": "Wann die nächste Anhebung angefragt werden kann (Unix-Millisekunden).",
+			"pt-BR": "Quando o próximo aumento pode ser solicitado (milissegundos Unix).",
+			"hi": "अगली बढ़ोतरी का अनुरोध कब किया जा सकता है (Unix मिलीसेकंड)।",
+			"ja": "次の引き上げをリクエストできる時刻 (Unix ミリ秒)。",
+			"zh-Hans": "可以申请下一次提升的时间（Unix 毫秒）。",
+			"ar": "موعد إمكانية طلب الرفع التالي (بالمللي ثانية وفق Unix)."
+		},
+		"True when the caller is the workspace owner and the workspace is eligible.": {
+			"es": "Verdadero cuando quien llama es el propietario del espacio de trabajo y este es apto.",
+			"fr": "Vrai lorsque l’appelant est le propriétaire de l’espace de travail et que celui-ci est éligible.",
+			"de": "True, wenn der Aufrufer der Inhaber des Arbeitsbereichs ist und der Arbeitsbereich berechtigt ist.",
+			"pt-BR": "Verdadeiro quando quem chama é o proprietário do espaço de trabalho e ele está qualificado.",
+			"hi": "जब कॉल करने वाला वर्कस्पेस स्वामी हो और वर्कस्पेस योग्य हो, तब true।",
+			"ja": "呼び出し元がワークスペースのオーナーで、ワークスペースが対象である場合は true です。",
+			"zh-Hans": "当调用者是工作区所有者且工作区符合条件时为 true。",
+			"ar": "صحيحة عندما يكون المستدعي مالك مساحة العمل وتكون مساحة العمل مؤهلة."
+		},
+		"Provider/model patterns the auto-router may choose from, such as openai/*. Empty allows every model.": {
+			"es": "Patrones proveedor/modelo entre los que puede elegir el enrutador automático, como openai/*. Si está vacío, se permiten todos los modelos.",
+			"fr": "Motifs fournisseur/modèle parmi lesquels le routeur automatique peut choisir, comme openai/*. Vide, tous les modèles sont autorisés.",
+			"de": "Anbieter/Modell-Muster, aus denen der automatische Router wählen darf, etwa openai/*. Leer erlaubt jedes Modell.",
+			"pt-BR": "Padrões provedor/modelo entre os quais o roteador automático pode escolher, como openai/*. Vazio permite qualquer modelo.",
+			"hi": "प्रदाता/मॉडल पैटर्न जिनमें से ऑटो-राउटर चुन सकता है, जैसे openai/*। खाली होने पर हर मॉडल की अनुमति है।",
+			"ja": "自動ルーターが選択できるプロバイダー/モデルのパターン (openai/* など)。空の場合はすべてのモデルが許可されます。",
+			"zh-Hans": "自动路由器可选择的提供方/模型模式，例如 openai/*。为空时允许所有模型。",
+			"ar": "أنماط المزوّد/النموذج التي يمكن للموجّه التلقائي الاختيار منها، مثل openai/*. القائمة الفارغة تسمح بكل النماذج."
+		},
+		"USD per million input tokens; set only for the custom spend profile.": {
+			"es": "USD por millón de tokens de entrada; solo se define para el perfil de gasto personalizado.",
+			"fr": "USD par million de jetons d’entrée ; défini uniquement pour le profil de dépenses personnalisé.",
+			"de": "USD pro Million Eingabe-Token; nur beim benutzerdefinierten Ausgabenprofil gesetzt.",
+			"pt-BR": "USD por milhão de tokens de entrada; definido apenas para o perfil de gastos personalizado.",
+			"hi": "प्रति मिलियन इनपुट टोकन USD; केवल कस्टम खर्च प्रोफ़ाइल के लिए सेट।",
+			"ja": "入力トークン 100 万あたりの USD。カスタムの支出プロファイルでのみ設定されます。",
+			"zh-Hans": "每百万输入 token 的美元价格；仅在自定义支出档位中设置。",
+			"ar": "دولار أمريكي لكل مليون رمز إدخال؛ يُعيَّن لملف الإنفاق المخصص فقط."
+		},
+		"USD per million output tokens; set only for the custom spend profile.": {
+			"es": "USD por millón de tokens de salida; solo se define para el perfil de gasto personalizado.",
+			"fr": "USD par million de jetons de sortie ; défini uniquement pour le profil de dépenses personnalisé.",
+			"de": "USD pro Million Ausgabe-Token; nur beim benutzerdefinierten Ausgabenprofil gesetzt.",
+			"pt-BR": "USD por milhão de tokens de saída; definido apenas para o perfil de gastos personalizado.",
+			"hi": "प्रति मिलियन आउटपुट टोकन USD; केवल कस्टम खर्च प्रोफ़ाइल के लिए सेट।",
+			"ja": "出力トークン 100 万あたりの USD。カスタムの支出プロファイルでのみ設定されます。",
+			"zh-Hans": "每百万输出 token 的美元价格；仅在自定义支出档位中设置。",
+			"ar": "دولار أمريكي لكل مليون رمز إخراج؛ يُعيَّن لملف الإنفاق المخصص فقط."
+		},
+		"The leaked key as found.": {
+			"es": "La clave filtrada tal como se encontró.",
+			"fr": "La clé divulguée telle qu’elle a été trouvée.",
+			"de": "Der geleakte Schlüssel, so wie er gefunden wurde.",
+			"pt-BR": "A chave vazada como foi encontrada.",
+			"hi": "लीक हुई कुंजी, जैसी मिली।",
+			"ja": "見つかったとおりの漏えいキー。",
+			"zh-Hans": "按发现时原样提供的泄露密钥。",
+			"ar": "المفتاح المسرّب كما عُثر عليه."
+		},
+		"Where it was found, such as github.": {
+			"es": "Dónde se encontró, por ejemplo github.",
+			"fr": "Où elle a été trouvée, par exemple github.",
+			"de": "Wo er gefunden wurde, zum Beispiel github.",
+			"pt-BR": "Onde foi encontrada, por exemplo github.",
+			"hi": "यह कहाँ मिली, जैसे github।",
+			"ja": "見つかった場所 (github など)。",
+			"zh-Hans": "发现位置，例如 github。",
+			"ar": "مكان العثور عليه، مثل github."
+		},
+		"The model whose requests are redirected.": {
+			"es": "El modelo cuyas solicitudes se redirigen.",
+			"fr": "Le modèle dont les requêtes sont redirigées.",
+			"de": "Das Modell, dessen Anfragen umgeleitet werden.",
+			"pt-BR": "O modelo cujas solicitações são redirecionadas.",
+			"hi": "वह मॉडल जिसके अनुरोध रीडायरेक्ट किए जाते हैं।",
+			"ja": "リクエストがリダイレクトされるモデル。",
+			"zh-Hans": "其请求会被重定向的模型。",
+			"ar": "النموذج الذي يُعاد توجيه طلباته."
+		},
+		"The model to send them to, or null to never redirect them.": {
+			"es": "El modelo al que se envían, o null para no redirigirlas nunca.",
+			"fr": "Le modèle vers lequel les envoyer, ou null pour ne jamais les rediriger.",
+			"de": "Das Modell, an das sie gesendet werden, oder null, um sie nie umzuleiten.",
+			"pt-BR": "O modelo para o qual enviá-las, ou null para nunca redirecioná-las.",
+			"hi": "वह मॉडल जिसे उन्हें भेजना है, या उन्हें कभी रीडायरेक्ट न करने के लिए null।",
+			"ja": "送信先のモデル。リダイレクトしない場合は null。",
+			"zh-Hans": "要发送到的模型，或设为 null 表示永不重定向。",
+			"ar": "النموذج المراد إرسالها إليه، أو null لعدم إعادة توجيهها أبدًا."
+		},
+		"Authorization identifier from the authorized apps list.": {
+			"es": "Identificador de la autorización de la lista de aplicaciones autorizadas.",
+			"fr": "Identifiant de l’autorisation issu de la liste des applications autorisées.",
+			"de": "Kennung der Autorisierung aus der Liste der autorisierten Apps.",
+			"pt-BR": "Identificador da autorização da lista de aplicativos autorizados.",
+			"hi": "अधिकृत ऐप्स सूची से प्राधिकरण पहचानकर्ता।",
+			"ja": "承認済みアプリ一覧の承認 ID。",
+			"zh-Hans": "来自已授权应用列表的授权标识符。",
+			"ar": "معرّف التصريح من قائمة التطبيقات المصرّح بها."
+		},
+		"Start a credit top-up": {
+			"es": "Iniciar una recarga de créditos",
+			"fr": "Lancer une recharge de crédits",
+			"de": "Guthabenaufladung starten",
+			"pt-BR": "Iniciar uma recarga de créditos",
+			"hi": "क्रेडिट टॉप-अप शुरू करें",
+			"ja": "クレジットのチャージを開始",
+			"zh-Hans": "发起额度充值",
+			"ar": "بدء شحن الرصيد"
+		},
+		"Asks to add credits to the authenticated workspace. Needs the opt-in billing:write scope and workspace membership. Nothing is charged here. With a saved card, every workspace owner and admin is emailed a single-use link and one of them confirms or declines the charge. Without one, the response has a checkout_url where an owner or admin pays with a new card, which is saved for later top-ups. Amounts are $5 to $500. A workspace can have 5 pending top-ups, and each expires after 30 minutes.": {
+			"es": "Solicita añadir créditos al espacio de trabajo autenticado. Requiere el alcance opcional billing:write y ser miembro del espacio de trabajo. Aquí no se cobra nada. Si hay una tarjeta guardada, cada propietario y administrador del espacio de trabajo recibe por correo un enlace de un solo uso y uno de ellos confirma o rechaza el cargo. Si no la hay, la respuesta incluye un checkout_url donde un propietario o administrador paga con una tarjeta nueva, que se guarda para recargas posteriores. Los importes van de $5 a $500. Un espacio de trabajo puede tener 5 recargas pendientes y cada una caduca a los 30 minutos.",
+			"fr": "Demande l’ajout de crédits à l’espace de travail authentifié. Nécessite le scope facultatif billing:write et l’appartenance à l’espace de travail. Rien n’est débité ici. Avec une carte enregistrée, chaque propriétaire et administrateur de l’espace de travail reçoit par e-mail un lien à usage unique, et l’un d’eux confirme ou refuse le débit. Sinon, la réponse contient un checkout_url où un propriétaire ou un administrateur paie avec une nouvelle carte, enregistrée pour les recharges suivantes. Les montants vont de $5 à $500. Un espace de travail peut avoir 5 recharges en attente, et chacune expire au bout de 30 minutes.",
+			"de": "Fordert Guthaben für den authentifizierten Arbeitsbereich an. Erfordert den optionalen Scope billing:write und die Mitgliedschaft im Arbeitsbereich. Hier wird nichts belastet. Mit gespeicherter Karte erhält jeder Owner und Admin des Arbeitsbereichs per E-Mail einen einmalig nutzbaren Link, und einer von ihnen bestätigt oder lehnt die Belastung ab. Ohne gespeicherte Karte enthält die Antwort eine checkout_url, unter der ein Owner oder Admin mit einer neuen Karte bezahlt, die für spätere Aufladungen gespeichert wird. Beträge von $5 bis $500. Ein Arbeitsbereich kann 5 offene Aufladungen haben, und jede läuft nach 30 Minuten ab.",
+			"pt-BR": "Solicita a adição de créditos ao espaço de trabalho autenticado. Exige o escopo opcional billing:write e ser membro do espaço de trabalho. Nada é cobrado aqui. Com um cartão salvo, cada proprietário e administrador do espaço de trabalho recebe por e-mail um link de uso único, e um deles confirma ou recusa a cobrança. Sem cartão salvo, a resposta traz um checkout_url onde um proprietário ou administrador paga com um cartão novo, que fica salvo para recargas futuras. Os valores vão de $5 a $500. Um espaço de trabalho pode ter 5 recargas pendentes, e cada uma expira após 30 minutos.",
+			"hi": "प्रमाणित वर्कस्पेस में क्रेडिट जोड़ने का अनुरोध करता है। वैकल्पिक billing:write स्कोप और वर्कस्पेस सदस्यता आवश्यक है। यहाँ कोई शुल्क नहीं लिया जाता। सहेजा गया कार्ड होने पर वर्कस्पेस के हर owner और admin को एक बार इस्तेमाल होने वाला लिंक ईमेल किया जाता है और उनमें से कोई एक शुल्क की पुष्टि करता है या उसे अस्वीकार करता है। कार्ड न होने पर जवाब में checkout_url होता है, जहाँ कोई owner या admin नए कार्ड से भुगतान करता है; वह कार्ड अगले टॉप-अप के लिए सहेज लिया जाता है। राशि $5 से $500 तक। एक वर्कस्पेस में 5 लंबित टॉप-अप हो सकते हैं, और हर एक 30 मिनट बाद समाप्त हो जाता है।",
+			"ja": "認証済みワークスペースへのクレジット追加をリクエストします。オプトインの billing:write スコープとワークスペースのメンバーシップが必要です。ここでは請求されません。保存済みのカードがある場合、ワークスペースのすべてのオーナーと管理者に 1 回限りのリンクがメールで送られ、そのうち 1 人が請求を確認または拒否します。ない場合、レスポンスには checkout_url が含まれ、オーナーまたは管理者が新しいカードで支払います。そのカードは以降のチャージ用に保存されます。金額は $5〜$500 です。ワークスペースごとに保留中のチャージは 5 件まで、各チャージは 30 分で期限切れになります。",
+			"zh-Hans": "请求为已认证的工作区添加额度。需要可选的 billing:write 范围，并且必须是工作区成员。此操作本身不会扣款。如果有已保存的银行卡，工作区的每位所有者和管理员都会收到一封含一次性链接的邮件，由其中一人确认或拒绝扣款。如果没有，响应中会包含 checkout_url，由所有者或管理员使用新卡付款，该卡会保存以供之后充值。金额为 $5 至 $500。每个工作区最多有 5 个待处理的充值，每个充值 30 分钟后过期。",
+			"ar": "يطلب إضافة رصيد إلى مساحة العمل التي تمت المصادقة عليها. يتطلب النطاق الاختياري billing:write وعضوية مساحة العمل. لا يتم أي خصم هنا. عند وجود بطاقة محفوظة، يتلقى كل مالك ومسؤول في مساحة العمل رابطًا للاستخدام مرة واحدة عبر البريد الإلكتروني، ويؤكد أحدهم الخصم أو يرفضه. وإلا فتتضمن الاستجابة checkout_url يدفع فيه مالك أو مسؤول ببطاقة جديدة تُحفظ لعمليات الشحن اللاحقة. المبالغ من $5 إلى $500. يمكن أن يكون لمساحة العمل 5 عمليات شحن معلقة، وتنتهي صلاحية كل منها بعد 30 دقيقة."
+		},
+		"Optional idempotency key. Repeating it returns the same top-up instead of creating another. Same as the idempotency_key field.": {
+			"es": "Clave de idempotencia opcional. Si se repite, devuelve la misma recarga en lugar de crear otra. Equivale al campo idempotency_key.",
+			"fr": "Clé d’idempotence facultative. La répéter renvoie la même recharge au lieu d’en créer une autre. Équivaut au champ idempotency_key.",
+			"de": "Optionaler Idempotenzschlüssel. Bei Wiederholung wird dieselbe Aufladung zurückgegeben, statt eine neue anzulegen. Entspricht dem Feld idempotency_key.",
+			"pt-BR": "Chave de idempotência opcional. Repeti-la retorna a mesma recarga em vez de criar outra. Equivale ao campo idempotency_key.",
+			"hi": "वैकल्पिक idempotency key। इसे दोहराने पर नया टॉप-अप बनाने के बजाय वही टॉप-अप लौटता है। idempotency_key फ़ील्ड के समान।",
+			"ja": "任意の冪等キー。同じキーを繰り返すと、新しく作成せずに同じチャージを返します。idempotency_key フィールドと同じです。",
+			"zh-Hans": "可选的幂等键。重复使用时会返回同一个充值，而不是新建一个。与 idempotency_key 字段相同。",
+			"ar": "مفتاح عدم تكرار اختياري. تكراره يعيد عملية الشحن نفسها بدلًا من إنشاء عملية أخرى. مماثل للحقل idempotency_key."
+		},
+		"Existing top-up for this idempotency key": {
+			"es": "Recarga existente para esta clave de idempotencia",
+			"fr": "Recharge existante pour cette clé d’idempotence",
+			"de": "Vorhandene Aufladung für diesen Idempotenzschlüssel",
+			"pt-BR": "Recarga existente para esta chave de idempotência",
+			"hi": "इस idempotency key का मौजूदा टॉप-अप",
+			"ja": "この冪等キーの既存のチャージ",
+			"zh-Hans": "此幂等键对应的现有充值",
+			"ar": "عملية الشحن الحالية لمفتاح عدم التكرار هذا"
+		},
+		"Top-up created": {
+			"es": "Recarga creada",
+			"fr": "Recharge créée",
+			"de": "Aufladung erstellt",
+			"pt-BR": "Recarga criada",
+			"hi": "टॉप-अप बनाया गया",
+			"ja": "チャージを作成しました",
+			"zh-Hans": "已创建充值",
+			"ar": "تم إنشاء عملية الشحن"
+		},
+		"Invalid amount (invalid_amount, amount_below_minimum or amount_above_maximum)": {
+			"es": "Importe no válido (invalid_amount, amount_below_minimum o amount_above_maximum)",
+			"fr": "Montant non valide (invalid_amount, amount_below_minimum ou amount_above_maximum)",
+			"de": "Ungültiger Betrag (invalid_amount, amount_below_minimum oder amount_above_maximum)",
+			"pt-BR": "Valor inválido (invalid_amount, amount_below_minimum ou amount_above_maximum)",
+			"hi": "अमान्य राशि (invalid_amount, amount_below_minimum या amount_above_maximum)",
+			"ja": "無効な金額（invalid_amount、amount_below_minimum、amount_above_maximum）",
+			"zh-Hans": "金额无效（invalid_amount、amount_below_minimum 或 amount_above_maximum）",
+			"ar": "مبلغ غير صالح (invalid_amount أو amount_below_minimum أو amount_above_maximum)"
+		},
+		"Idempotency key reused for a different top-up, or no owner or admin can confirm it": {
+			"es": "La clave de idempotencia ya se usó para otra recarga, o ningún propietario ni administrador puede confirmarla",
+			"fr": "Clé d’idempotence déjà utilisée pour une autre recharge, ou aucun propriétaire ni administrateur ne peut la confirmer",
+			"de": "Idempotenzschlüssel wurde für eine andere Aufladung verwendet, oder kein Owner oder Admin kann sie bestätigen",
+			"pt-BR": "Chave de idempotência já usada para outra recarga, ou nenhum proprietário ou administrador pode confirmá-la",
+			"hi": "Idempotency key किसी दूसरे टॉप-अप के लिए इस्तेमाल हो चुकी है, या कोई owner या admin इसकी पुष्टि नहीं कर सकता",
+			"ja": "冪等キーが別のチャージで使用済みか、確認できるオーナーまたは管理者がいません",
+			"zh-Hans": "幂等键已用于其他充值，或没有可以确认的所有者或管理员",
+			"ar": "تم استخدام مفتاح عدم التكرار لعملية شحن أخرى، أو لا يوجد مالك أو مسؤول يمكنه تأكيدها"
+		},
+		"The workspace already has 5 pending top-ups": {
+			"es": "El espacio de trabajo ya tiene 5 recargas pendientes",
+			"fr": "L’espace de travail a déjà 5 recharges en attente",
+			"de": "Der Arbeitsbereich hat bereits 5 offene Aufladungen",
+			"pt-BR": "O espaço de trabalho já tem 5 recargas pendentes",
+			"hi": "वर्कस्पेस में पहले से 5 लंबित टॉप-अप हैं",
+			"ja": "ワークスペースにはすでに保留中のチャージが 5 件あります",
+			"zh-Hans": "该工作区已有 5 个待处理的充值",
+			"ar": "لدى مساحة العمل بالفعل 5 عمليات شحن معلقة"
+		},
+		"Card payments are not available": {
+			"es": "Los pagos con tarjeta no están disponibles",
+			"fr": "Les paiements par carte ne sont pas disponibles",
+			"de": "Kartenzahlungen sind nicht verfügbar",
+			"pt-BR": "Pagamentos com cartão não estão disponíveis",
+			"hi": "कार्ड भुगतान उपलब्ध नहीं हैं",
+			"ja": "カード決済は利用できません",
+			"zh-Hans": "银行卡付款不可用",
+			"ar": "الدفع بالبطاقة غير متاح"
+		},
+		"Get a credit top-up": {
+			"es": "Obtener una recarga de créditos",
+			"fr": "Obtenir une recharge de crédits",
+			"de": "Guthabenaufladung abrufen",
+			"pt-BR": "Obter uma recarga de créditos",
+			"hi": "क्रेडिट टॉप-अप प्राप्त करें",
+			"ja": "クレジットのチャージを取得",
+			"zh-Hans": "获取额度充值",
+			"ar": "الحصول على عملية شحن رصيد"
+		},
+		"Returns the status of a credit top-up in the authenticated workspace. Needs credits:read or billing:write. Poll until final is true. Declined, expired and failed top-ups carry a reason code; do not retry them automatically.": {
+			"es": "Devuelve el estado de una recarga de créditos del espacio de trabajo autenticado. Requiere credits:read o billing:write. Consulta hasta que final sea true. Las recargas rechazadas, caducadas o fallidas incluyen un código de motivo; no las reintentes automáticamente.",
+			"fr": "Renvoie l’état d’une recharge de crédits de l’espace de travail authentifié. Nécessite credits:read ou billing:write. Interrogez jusqu’à ce que final soit true. Les recharges refusées, expirées ou échouées comportent un code de motif ; ne les relancez pas automatiquement.",
+			"de": "Gibt den Status einer Guthabenaufladung im authentifizierten Arbeitsbereich zurück. Erfordert credits:read oder billing:write. Abfragen, bis final true ist. Abgelehnte, abgelaufene und fehlgeschlagene Aufladungen enthalten einen Grundcode; nicht automatisch wiederholen.",
+			"pt-BR": "Retorna o status de uma recarga de créditos no espaço de trabalho autenticado. Exige credits:read ou billing:write. Consulte até que final seja true. Recargas recusadas, expiradas ou com falha trazem um código de motivo; não as repita automaticamente.",
+			"hi": "प्रमाणित वर्कस्पेस के किसी क्रेडिट टॉप-अप की स्थिति लौटाता है। credits:read या billing:write आवश्यक है। final true होने तक पोल करें। अस्वीकार, समाप्त और विफल टॉप-अप में कारण कोड होता है; उन्हें अपने आप दोबारा न आज़माएँ।",
+			"ja": "認証済みワークスペースのクレジットチャージの状態を返します。credits:read または billing:write が必要です。final が true になるまでポーリングしてください。拒否・期限切れ・失敗したチャージには理由コードが付きます。自動で再試行しないでください。",
+			"zh-Hans": "返回已认证工作区中某个额度充值的状态。需要 credits:read 或 billing:write。轮询直到 final 为 true。被拒绝、已过期和失败的充值带有原因代码；不要自动重试。",
+			"ar": "يعرض حالة عملية شحن رصيد في مساحة العمل التي تمت المصادقة عليها. يتطلب credits:read أو billing:write. استعلم حتى تصبح قيمة final هي true. تحمل عمليات الشحن المرفوضة والمنتهية والفاشلة رمز سبب؛ لا تُعِد محاولتها تلقائيًا."
+		},
+		"Top-up ID.": {
+			"es": "ID de la recarga.",
+			"fr": "ID de la recharge.",
+			"de": "ID der Aufladung.",
+			"pt-BR": "ID da recarga.",
+			"hi": "टॉप-अप ID।",
+			"ja": "チャージ ID。",
+			"zh-Hans": "充值 ID。",
+			"ar": "معرّف عملية الشحن."
+		},
+		"Top-up status": {
+			"es": "Estado de la recarga",
+			"fr": "État de la recharge",
+			"de": "Status der Aufladung",
+			"pt-BR": "Status da recarga",
+			"hi": "टॉप-अप की स्थिति",
+			"ja": "チャージの状態",
+			"zh-Hans": "充值状态",
+			"ar": "حالة عملية الشحن"
+		},
+		"Invalid top-up ID": {
+			"es": "ID de recarga no válido",
+			"fr": "ID de recharge non valide",
+			"de": "Ungültige Aufladungs-ID",
+			"pt-BR": "ID de recarga inválido",
+			"hi": "अमान्य टॉप-अप ID",
+			"ja": "無効なチャージ ID",
+			"zh-Hans": "充值 ID 无效",
+			"ar": "معرّف عملية شحن غير صالح"
+		},
+		"Top-up not found": {
+			"es": "Recarga no encontrada",
+			"fr": "Recharge introuvable",
+			"de": "Aufladung nicht gefunden",
+			"pt-BR": "Recarga não encontrada",
+			"hi": "टॉप-अप नहीं मिला",
+			"ja": "チャージが見つかりません",
+			"zh-Hans": "未找到充值",
+			"ar": "لم يتم العثور على عملية الشحن"
+		},
+		"Amount in US dollars, with at most two decimal places.": {
+			"es": "Importe en dólares estadounidenses, con dos decimales como máximo.",
+			"fr": "Montant en dollars américains, avec au plus deux décimales.",
+			"de": "Betrag in US-Dollar mit höchstens zwei Nachkommastellen.",
+			"pt-BR": "Valor em dólares americanos, com no máximo duas casas decimais.",
+			"hi": "अमेरिकी डॉलर में राशि, अधिकतम दो दशमलव स्थानों तक।",
+			"ja": "米ドル建ての金額（小数点以下 2 桁まで）。",
+			"zh-Hans": "以美元计的金额，最多两位小数。",
+			"ar": "المبلغ بالدولار الأمريكي، بحد أقصى منزلتين عشريتين."
+		},
+		"Optional. Must match the authenticated workspace.": {
+			"es": "Opcional. Debe coincidir con el espacio de trabajo autenticado.",
+			"fr": "Facultatif. Doit correspondre à l’espace de travail authentifié.",
+			"de": "Optional. Muss dem authentifizierten Arbeitsbereich entsprechen.",
+			"pt-BR": "Opcional. Deve corresponder ao espaço de trabalho autenticado.",
+			"hi": "वैकल्पिक। प्रमाणित वर्कस्पेस से मेल खाना चाहिए।",
+			"ja": "任意。認証済みワークスペースと一致する必要があります。",
+			"zh-Hans": "可选。必须与已认证的工作区一致。",
+			"ar": "اختياري. يجب أن يطابق مساحة العمل التي تمت المصادقة عليها."
+		},
+		"Optional idempotency key. Repeating it returns the same top-up instead of creating another.": {
+			"es": "Clave de idempotencia opcional. Si se repite, devuelve la misma recarga en lugar de crear otra.",
+			"fr": "Clé d’idempotence facultative. La répéter renvoie la même recharge au lieu d’en créer une autre.",
+			"de": "Optionaler Idempotenzschlüssel. Bei Wiederholung wird dieselbe Aufladung zurückgegeben, statt eine neue anzulegen.",
+			"pt-BR": "Chave de idempotência opcional. Repeti-la retorna a mesma recarga em vez de criar outra.",
+			"hi": "वैकल्पिक idempotency key। इसे दोहराने पर नया टॉप-अप बनाने के बजाय वही टॉप-अप लौटता है।",
+			"ja": "任意の冪等キー。同じキーを繰り返すと、新しく作成せずに同じチャージを返します。",
+			"zh-Hans": "可选的幂等键。重复使用时会返回同一个充值，而不是新建一个。",
+			"ar": "مفتاح عدم تكرار اختياري. تكراره يعيد عملية الشحن نفسها بدلًا من إنشاء عملية أخرى."
+		},
+		"True once the status will not change (paid, declined, expired or failed). Stop polling then.": {
+			"es": "true cuando el estado ya no cambiará (paid, declined, expired o failed). Deja de consultar entonces.",
+			"fr": "true dès que l’état ne changera plus (paid, declined, expired ou failed). Arrêtez alors d’interroger.",
+			"de": "true, sobald sich der Status nicht mehr ändert (paid, declined, expired oder failed). Dann das Abfragen beenden.",
+			"pt-BR": "true quando o status não mudará mais (paid, declined, expired ou failed). Pare de consultar então.",
+			"hi": "स्थिति आगे न बदलने पर true (paid, declined, expired या failed)। तब पोल करना बंद करें।",
+			"ja": "状態がこれ以上変わらない場合に true（paid、declined、expired、failed）。その時点でポーリングを止めてください。",
+			"zh-Hans": "状态不会再改变时为 true（paid、declined、expired 或 failed）。此时停止轮询。",
+			"ar": "تكون true عندما لا تتغير الحالة بعد ذلك (paid أو declined أو expired أو failed). توقف عن الاستعلام حينها."
+		},
+		"Reason code for declined, expired and failed top-ups, for example declined, expired, card_declined or authentication_failed.": {
+			"es": "Código de motivo de las recargas rechazadas, caducadas o fallidas, por ejemplo declined, expired, card_declined o authentication_failed.",
+			"fr": "Code de motif des recharges refusées, expirées ou échouées, par exemple declined, expired, card_declined ou authentication_failed.",
+			"de": "Grundcode für abgelehnte, abgelaufene und fehlgeschlagene Aufladungen, zum Beispiel declined, expired, card_declined oder authentication_failed.",
+			"pt-BR": "Código de motivo para recargas recusadas, expiradas ou com falha, por exemplo declined, expired, card_declined ou authentication_failed.",
+			"hi": "अस्वीकार, समाप्त और विफल टॉप-अप का कारण कोड, जैसे declined, expired, card_declined या authentication_failed।",
+			"ja": "拒否・期限切れ・失敗したチャージの理由コード。例: declined、expired、card_declined、authentication_failed。",
+			"zh-Hans": "被拒绝、已过期和失败的充值的原因代码，例如 declined、expired、card_declined 或 authentication_failed。",
+			"ar": "رمز سبب عمليات الشحن المرفوضة والمنتهية والفاشلة، مثل declined أو expired أو card_declined أو authentication_failed."
+		},
+		"A sentence that explains what happens next.": {
+			"es": "Una frase que explica qué ocurre a continuación.",
+			"fr": "Une phrase qui explique la suite.",
+			"de": "Ein Satz, der erklärt, was als Nächstes passiert.",
+			"pt-BR": "Uma frase que explica o que acontece em seguida.",
+			"hi": "एक वाक्य जो बताता है कि आगे क्या होगा।",
+			"ja": "次に何が起こるかを説明する文。",
+			"zh-Hans": "一句说明接下来会发生什么的话。",
+			"ar": "جملة توضح ما سيحدث بعد ذلك."
+		},
+		"checkout when an owner or admin pays with a new card at checkout_url; saved_card when an owner or admin confirms a charge to the saved card by email.": {
+			"es": "checkout cuando un propietario o administrador paga con una tarjeta nueva en checkout_url; saved_card cuando un propietario o administrador confirma por correo un cargo a la tarjeta guardada.",
+			"fr": "checkout lorsqu’un propriétaire ou un administrateur paie avec une nouvelle carte sur checkout_url ; saved_card lorsqu’un propriétaire ou un administrateur confirme par e-mail un débit sur la carte enregistrée.",
+			"de": "checkout, wenn ein Owner oder Admin unter checkout_url mit einer neuen Karte bezahlt; saved_card, wenn ein Owner oder Admin eine Belastung der gespeicherten Karte per E-Mail bestätigt.",
+			"pt-BR": "checkout quando um proprietário ou administrador paga com um cartão novo em checkout_url; saved_card quando um proprietário ou administrador confirma por e-mail uma cobrança no cartão salvo.",
+			"hi": "checkout जब कोई owner या admin checkout_url पर नए कार्ड से भुगतान करता है; saved_card जब कोई owner या admin ईमेल से सहेजे गए कार्ड पर शुल्क की पुष्टि करता है।",
+			"ja": "checkout はオーナーまたは管理者が checkout_url で新しいカードで支払う場合、saved_card はオーナーまたは管理者が保存済みカードへの請求をメールで確認する場合です。",
+			"zh-Hans": "checkout 表示所有者或管理员在 checkout_url 用新卡付款；saved_card 表示所有者或管理员通过邮件确认对已保存银行卡的扣款。",
+			"ar": "checkout عندما يدفع مالك أو مسؤول ببطاقة جديدة على checkout_url؛ وsaved_card عندما يؤكد مالك أو مسؤول خصمًا من البطاقة المحفوظة عبر البريد الإلكتروني."
+		},
+		"Phaseo page where an owner or admin pays with a new card. Only in the response that created a pending checkout top-up.": {
+			"es": "Página de Phaseo donde un propietario o administrador paga con una tarjeta nueva. Solo aparece en la respuesta que creó una recarga checkout pendiente.",
+			"fr": "Page Phaseo où un propriétaire ou un administrateur paie avec une nouvelle carte. Présente uniquement dans la réponse qui a créé une recharge checkout en attente.",
+			"de": "Phaseo-Seite, auf der ein Owner oder Admin mit einer neuen Karte bezahlt. Nur in der Antwort, die eine offene checkout-Aufladung erstellt hat.",
+			"pt-BR": "Página da Phaseo onde um proprietário ou administrador paga com um cartão novo. Só aparece na resposta que criou uma recarga checkout pendente.",
+			"hi": "Phaseo पेज जहाँ कोई owner या admin नए कार्ड से भुगतान करता है। केवल उस जवाब में जिसने लंबित checkout टॉप-अप बनाया।",
+			"ja": "オーナーまたは管理者が新しいカードで支払う Phaseo のページ。保留中の checkout チャージを作成したレスポンスにのみ含まれます。",
+			"zh-Hans": "所有者或管理员用新卡付款的 Phaseo 页面。仅出现在创建待处理 checkout 充值的响应中。",
+			"ar": "صفحة Phaseo يدفع فيها مالك أو مسؤول ببطاقة جديدة. تظهر فقط في الاستجابة التي أنشأت عملية شحن checkout معلقة."
+		},
+		"Number of owners and admins emailed to confirm a saved_card top-up.": {
+			"es": "Número de propietarios y administradores a los que se envió un correo para confirmar una recarga saved_card.",
+			"fr": "Nombre de propriétaires et d’administrateurs à qui un e-mail a été envoyé pour confirmer une recharge saved_card.",
+			"de": "Anzahl der Owner und Admins, die per E-Mail gebeten wurden, eine saved_card-Aufladung zu bestätigen.",
+			"pt-BR": "Número de proprietários e administradores que receberam e-mail para confirmar uma recarga saved_card.",
+			"hi": "saved_card टॉप-अप की पुष्टि के लिए ईमेल किए गए owners और admins की संख्या।",
+			"ja": "saved_card チャージの確認メールを送ったオーナーと管理者の数。",
+			"zh-Hans": "收到邮件以确认 saved_card 充值的所有者和管理员人数。",
+			"ar": "عدد المالكين والمسؤولين الذين أُرسل إليهم بريد إلكتروني لتأكيد عملية شحن saved_card."
+		},
+		"List trusted workload policies": {
+			"es": "Listar políticas de cargas de trabajo de confianza",
+			"fr": "Lister les règles de workloads de confiance",
+			"de": "Richtlinien für vertrauenswürdige Workloads auflisten",
+			"pt-BR": "Listar políticas de workloads confiáveis",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी की सूची देखें",
+			"ja": "信頼済みワークロードのポリシー一覧を取得",
+			"zh-Hans": "列出受信任的工作负载策略",
+			"ar": "عرض سياسات أحمال العمل الموثوقة"
+		},
+		"Lists the workspace's trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Lista las políticas de cargas de trabajo de confianza del espacio de trabajo: qué despliegues de Vercel y flujos de trabajo de GitHub Actions pueden llamar al gateway con su token OIDC en lugar de una clave de API. Requiere keys:read en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Liste les règles de workloads de confiance de l’espace de travail : les déploiements Vercel et les workflows GitHub Actions autorisés à appeler la passerelle avec leur jeton OIDC au lieu d’une clé API. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Listet die Richtlinien für vertrauenswürdige Workloads des Workspace auf: welche Vercel-Deployments und GitHub-Actions-Workflows das Gateway mit ihrem OIDC-Token statt mit einem API-Schlüssel aufrufen dürfen. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Lista as políticas de workloads confiáveis do espaço de trabalho: quais implantações da Vercel e workflows do GitHub Actions podem chamar o gateway com o token OIDC em vez de uma chave de API. Requer keys:read em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "वर्कस्पेस की भरोसेमंद वर्कलोड पॉलिसी की सूची देता है: कौन-से Vercel डिप्लॉयमेंट और GitHub Actions वर्कफ़्लो API कुंजी के बजाय अपने OIDC टोकन से गेटवे को कॉल कर सकते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ワークスペースの信頼済みワークロードのポリシーを一覧表示します。API キーの代わりに OIDC トークンでゲートウェイを呼び出せる Vercel のデプロイと GitHub Actions のワークフローが分かります。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "列出工作区的受信任的工作负载策略：哪些 Vercel 部署和 GitHub Actions 工作流可以使用其 OIDC 令牌而不是 API 密钥调用网关。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يعرض سياسات أحمال العمل الموثوقة في مساحة العمل: أي عمليات النشر على Vercel وسير عمل GitHub Actions يمكنها استدعاء البوابة برمز OIDC الخاص بها بدلًا من مفتاح API. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Trusted workload policies": {
+			"es": "Políticas de cargas de trabajo de confianza",
+			"fr": "Règles de workloads de confiance",
+			"de": "Richtlinien für vertrauenswürdige Workloads",
+			"pt-BR": "Políticas de workloads confiáveis",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी",
+			"ja": "信頼済みワークロードのポリシー",
+			"zh-Hans": "受信任的工作负载策略",
+			"ar": "سياسات أحمال العمل الموثوقة"
+		},
+		"A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy's key.": {
+			"es": "Una carga de trabajo de confianza: los tokens de este emisor, para el propietario fijado y que cumplen todas las condiciones de claims, se autentican como la clave de la política.",
+			"fr": "Un workload de confiance : les jetons de cet émetteur, pour le propriétaire épinglé et satisfaisant toutes les conditions sur les claims, s’authentifient avec la clé de la règle.",
+			"de": "Ein vertrauenswürdiger Workload: Tokens dieses Ausstellers für den festgelegten Inhaber, die alle Claim-Bedingungen erfüllen, authentifizieren sich mit dem Schlüssel der Richtlinie.",
+			"pt-BR": "Um workload confiável: tokens deste emissor, para o proprietário fixado e que atendem a todas as condições de claims, autenticam como a chave da política.",
+			"hi": "एक भरोसेमंद वर्कलोड: इस जारीकर्ता के टोकन, जो तय मालिक के लिए हों और हर क्लेम शर्त से मेल खाते हों, पॉलिसी की कुंजी के रूप में प्रमाणित होते हैं।",
+			"ja": "信頼済みワークロード: この発行者のトークンのうち、固定したオーナー向けで、すべてのクレーム条件に一致するものが、ポリシーのキーとして認証されます。",
+			"zh-Hans": "受信任的工作负载：来自此签发方、面向固定所有者并满足所有声明条件的令牌，将以策略的密钥进行身份验证。",
+			"ar": "حمل عمل موثوق: الرموز الصادرة عن هذا المُصدِر، للمالك المثبَّت والمطابقة لكل شروط المطالبات، تُصادَق بصفتها مفتاح السياسة."
+		},
+		"The platform that issues the OIDC tokens.": {
+			"es": "La plataforma que emite los tokens OIDC.",
+			"fr": "La plateforme qui émet les jetons OIDC.",
+			"de": "Die Plattform, die die OIDC-Tokens ausstellt.",
+			"pt-BR": "A plataforma que emite os tokens OIDC.",
+			"hi": "वह प्लेटफ़ॉर्म जो OIDC टोकन जारी करता है।",
+			"ja": "OIDC トークンを発行するプラットフォーム。",
+			"zh-Hans": "签发 OIDC 令牌的平台。",
+			"ar": "المنصة التي تُصدر رموز OIDC."
+		},
+		"Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.": {
+			"es": "Emisor del token, por ejemplo https://oidc.vercel.com/acme o https://token.actions.githubusercontent.com.",
+			"fr": "Émetteur du jeton, par exemple https://oidc.vercel.com/acme ou https://token.actions.githubusercontent.com.",
+			"de": "Token-Aussteller, zum Beispiel https://oidc.vercel.com/acme oder https://token.actions.githubusercontent.com.",
+			"pt-BR": "Emissor do token, por exemplo https://oidc.vercel.com/acme ou https://token.actions.githubusercontent.com.",
+			"hi": "टोकन जारीकर्ता, जैसे https://oidc.vercel.com/acme या https://token.actions.githubusercontent.com।",
+			"ja": "トークンの発行者。例: https://oidc.vercel.com/acme、https://token.actions.githubusercontent.com。",
+			"zh-Hans": "令牌签发方，例如 https://oidc.vercel.com/acme 或 https://token.actions.githubusercontent.com。",
+			"ar": "مُصدِر الرمز، مثل https://oidc.vercel.com/acme أو https://token.actions.githubusercontent.com."
+		},
+		"The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).": {
+			"es": "El ID del equipo de Vercel fijado (claim owner_id) o el ID de la organización o el usuario de GitHub (claim repository_owner_id).",
+			"fr": "L’ID de l’équipe Vercel épinglée (claim owner_id) ou l’ID de l’organisation ou de l’utilisateur GitHub (claim repository_owner_id).",
+			"de": "Die festgelegte Vercel-Team-ID (Claim owner_id) oder GitHub-Organisations- bzw. Benutzer-ID (Claim repository_owner_id).",
+			"pt-BR": "O ID da equipe da Vercel fixado (claim owner_id) ou o ID da organização ou do usuário do GitHub (claim repository_owner_id).",
+			"hi": "तय किया गया Vercel टीम ID (owner_id क्लेम) या GitHub संगठन या उपयोगकर्ता ID (repository_owner_id क्लेम)।",
+			"ja": "固定した Vercel のチーム ID（owner_id クレーム）、または GitHub の組織 ID かユーザー ID（repository_owner_id クレーム）。",
+			"zh-Hans": "固定的 Vercel 团队 ID（owner_id 声明），或 GitHub 组织或用户 ID（repository_owner_id 声明）。",
+			"ar": "معرّف فريق Vercel المثبَّت (مطالبة owner_id) أو معرّف المؤسسة أو المستخدم على GitHub (مطالبة repository_owner_id)."
+		},
+		"Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.": {
+			"es": "Claims adicionales que debe cumplir el token, como nombre del claim y valores permitidos; por ejemplo, project_id y environment para Vercel, o repository_id y ref para GitHub Actions. Cada claim debe coincidir con uno de sus valores. Como máximo 15 claims y 20 valores por claim; no se pueden usar iss, aud, exp, iat, nbf ni jti, y el claim del propietario fijado se establece con owner_id.",
+			"fr": "Claims supplémentaires que le jeton doit satisfaire, sous la forme nom du claim et valeurs autorisées, par exemple project_id et environment pour Vercel, ou repository_id et ref pour GitHub Actions. Chaque claim doit correspondre à l’une de ses valeurs. 15 claims au maximum et 20 valeurs par claim ; iss, aud, exp, iat, nbf et jti ne peuvent pas être utilisés, et le claim du propriétaire épinglé est défini avec owner_id.",
+			"de": "Zusätzliche Claims, die das Token erfüllen muss, als Claim-Name und erlaubte Werte, zum Beispiel project_id und environment für Vercel oder repository_id und ref für GitHub Actions. Jeder Claim muss einem seiner Werte entsprechen. Höchstens 15 Claims und 20 Werte pro Claim; iss, aud, exp, iat, nbf und jti sind nicht erlaubt, und der Claim des festgelegten Inhabers wird über owner_id gesetzt.",
+			"pt-BR": "Claims adicionais que o token deve atender, como nome do claim e valores permitidos, por exemplo project_id e environment para a Vercel, ou repository_id e ref para o GitHub Actions. Cada claim deve corresponder a um de seus valores. No máximo 15 claims e 20 valores por claim; iss, aud, exp, iat, nbf e jti não podem ser usados, e o claim do proprietário fixado é definido com owner_id.",
+			"hi": "अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे Vercel के लिए project_id और environment, या GitHub Actions के लिए repository_id और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और तय मालिक का क्लेम owner_id से सेट होता है।",
+			"ja": "トークンが満たす必要のある追加のクレーム。クレーム名と許可する値の組で指定します。例: Vercel では project_id と environment、GitHub Actions では repository_id と ref。各クレームはいずれかの値に一致する必要があります。クレームは最大 15 個、1 クレームあたりの値は最大 20 個です。iss、aud、exp、iat、nbf、jti は使えず、固定したオーナーのクレームは owner_id で設定します。",
+			"zh-Hans": "令牌必须满足的额外声明，以声明名称和允许值的形式表示，例如 Vercel 的 project_id 和 environment，或 GitHub Actions 的 repository_id 和 ref。每个声明都必须匹配其中一个值。最多 15 个声明，每个声明最多 20 个值；不能使用 iss、aud、exp、iat、nbf 和 jti，固定所有者的声明通过 owner_id 设置。",
+			"ar": "مطالبات إضافية يجب أن يطابقها الرمز، على شكل اسم المطالبة والقيم المسموح بها، مثل project_id وenvironment لـ Vercel، أو repository_id وref لـ GitHub Actions. يجب أن تطابق كل مطالبة إحدى قيمها. بحد أقصى 15 مطالبة و20 قيمة لكل مطالبة؛ لا يمكن استخدام iss وaud وexp وiat وnbf وjti، وتُضبط مطالبة المالك المثبَّت عبر owner_id."
+		},
+		"Longest token lifetime (exp minus iat or nbf) the policy accepts.": {
+			"es": "Duración máxima del token (exp menos iat o nbf) que acepta la política.",
+			"fr": "Durée de vie maximale du jeton (exp moins iat ou nbf) acceptée par la règle.",
+			"de": "Längste Token-Lebensdauer (exp minus iat oder nbf), die die Richtlinie akzeptiert.",
+			"pt-BR": "Duração máxima do token (exp menos iat ou nbf) aceita pela política.",
+			"hi": "टोकन की सबसे लंबी अवधि (exp में से iat या nbf घटाकर) जिसे पॉलिसी स्वीकार करती है।",
+			"ja": "ポリシーが受け入れるトークンの最大有効期間（exp から iat または nbf を引いた値）。",
+			"zh-Hans": "策略接受的令牌最长有效期（exp 减去 iat 或 nbf）。",
+			"ar": "أطول مدة صلاحية للرمز (exp ناقص iat أو nbf) تقبلها السياسة."
+		},
+		"The audience tokens must be issued for.": {
+			"es": "La audiencia para la que deben emitirse los tokens.",
+			"fr": "L’audience pour laquelle les jetons doivent être émis.",
+			"de": "Die Zielgruppe (Audience), für die Tokens ausgestellt sein müssen.",
+			"pt-BR": "A audiência para a qual os tokens devem ser emitidos.",
+			"hi": "वह ऑडियंस जिसके लिए टोकन जारी होने चाहिए।",
+			"ja": "トークンの発行先として必要なオーディエンス。",
+			"zh-Hans": "令牌必须面向的受众。",
+			"ar": "الجمهور الذي يجب إصدار الرموز له."
+		},
+		"The policy's key. Requests, usage and limits are recorded against it.": {
+			"es": "La clave de la política. Las solicitudes, el uso y los límites se registran con ella.",
+			"fr": "La clé de la règle. Les requêtes, l’utilisation et les limites lui sont rattachées.",
+			"de": "Der Schlüssel der Richtlinie. Anfragen, Nutzung und Limits werden ihm zugeordnet.",
+			"pt-BR": "A chave da política. Solicitações, uso e limites são registrados nela.",
+			"hi": "पॉलिसी की कुंजी। अनुरोध, उपयोग और सीमाएँ इसी पर दर्ज होती हैं।",
+			"ja": "ポリシーのキー。リクエスト、使用量、上限はこのキーに記録されます。",
+			"zh-Hans": "策略的密钥。请求、用量和限制都记录在该密钥下。",
+			"ar": "مفتاح السياسة. تُسجَّل الطلبات والاستخدام والحدود عليه."
+		},
+		"Create a trusted workload policy": {
+			"es": "Crear una política de carga de trabajo de confianza",
+			"fr": "Créer une règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads erstellen",
+			"pt-BR": "Criar política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी बनाएँ",
+			"ja": "信頼済みワークロードのポリシーを作成",
+			"zh-Hans": "创建受信任的工作负载策略",
+			"ar": "إنشاء سياسة حمل عمل موثوق"
+		},
+		"Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Crea una política y su clave sin secreto. Los tokens deben emitirse para la audiencia https://api.phaseo.app y coincidir con el propietario fijado y con todas las condiciones de claims. Un espacio de trabajo puede tener hasta 50 políticas; si se supera, devuelve 409 limit_reached. Requiere keys:write en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Crée une règle et sa clé sans secret. Les jetons doivent être émis pour l’audience https://api.phaseo.app et correspondre au propriétaire épinglé et à toutes les conditions sur les claims. Un espace de travail peut avoir jusqu’à 50 règles ; au-delà, la réponse est 409 limit_reached. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Erstellt eine Richtlinie und ihren Schlüssel ohne Geheimnis. Tokens müssen für die Audience https://api.phaseo.app ausgestellt sein und zum festgelegten Inhaber sowie zu allen Claim-Bedingungen passen. Ein Workspace kann bis zu 50 Richtlinien haben; darüber hinaus wird 409 limit_reached zurückgegeben. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Cria uma política e sua chave sem segredo. Os tokens devem ser emitidos para a audiência https://api.phaseo.app e corresponder ao proprietário fixado e a todas as condições de claims. Um espaço de trabalho pode ter até 50 políticas; acima disso, retorna 409 limit_reached. Requer keys:write em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "एक पॉलिसी और उसकी बिना सीक्रेट वाली कुंजी बनाता है। टोकन ऑडियंस https://api.phaseo.app के लिए जारी होने चाहिए और तय मालिक तथा हर क्लेम शर्त से मेल खाने चाहिए। एक वर्कस्पेस में अधिकतम 50 पॉलिसी हो सकती हैं; इससे ज़्यादा पर 409 limit_reached मिलता है। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ポリシーと、シークレットを持たないキーを作成します。トークンはオーディエンス https://api.phaseo.app 向けに発行され、固定したオーナーとすべてのクレーム条件に一致する必要があります。1 つのワークスペースで作成できるポリシーは最大 50 件で、超えると 409 limit_reached が返ります。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "创建一条策略及其无密钥机密的密钥。令牌必须面向受众 https://api.phaseo.app 签发，并匹配固定的所有者和所有声明条件。每个工作区最多可有 50 条策略；超出时返回 409 limit_reached。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "ينشئ سياسة ومفتاحها الخالي من الأسرار. يجب إصدار الرموز للجمهور https://api.phaseo.app وأن تطابق المالك المثبَّت وكل شروط المطالبات. يمكن أن تضم مساحة العمل ما يصل إلى 50 سياسة؛ وما يزيد على ذلك يُرجع 409 limit_reached. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.": {
+			"es": "Obligatorio para Vercel: https://oidc.vercel.com/ seguido del slug del equipo, o https://oidc.vercel.com para el emisor global. Para GitHub Actions, el valor predeterminado es https://token.actions.githubusercontent.com.",
+			"fr": "Obligatoire pour Vercel : https://oidc.vercel.com/ suivi du slug de l’équipe, ou https://oidc.vercel.com pour l’émetteur global. Pour GitHub Actions, la valeur par défaut est https://token.actions.githubusercontent.com.",
+			"de": "Für Vercel erforderlich: https://oidc.vercel.com/ gefolgt vom Team-Slug oder https://oidc.vercel.com für den globalen Aussteller. Für GitHub Actions ist der Standardwert https://token.actions.githubusercontent.com.",
+			"pt-BR": "Obrigatório para a Vercel: https://oidc.vercel.com/ seguido do slug da equipe, ou https://oidc.vercel.com para o emissor global. Para o GitHub Actions, o padrão é https://token.actions.githubusercontent.com.",
+			"hi": "Vercel के लिए आवश्यक: https://oidc.vercel.com/ के बाद टीम स्लग, या ग्लोबल जारीकर्ता के लिए https://oidc.vercel.com। GitHub Actions के लिए डिफ़ॉल्ट https://token.actions.githubusercontent.com है।",
+			"ja": "Vercel では必須: https://oidc.vercel.com/ の後にチームのスラッグを付けるか、グローバル発行者の場合は https://oidc.vercel.com を指定します。GitHub Actions の既定値は https://token.actions.githubusercontent.com です。",
+			"zh-Hans": "Vercel 必填：https://oidc.vercel.com/ 后接团队标识，或使用 https://oidc.vercel.com 作为全局签发方。GitHub Actions 默认为 https://token.actions.githubusercontent.com。",
+			"ar": "مطلوب لـ Vercel: ‏https://oidc.vercel.com/ متبوعًا بالمعرّف المختصر للفريق، أو https://oidc.vercel.com للمُصدِر العام. القيمة الافتراضية لـ GitHub Actions هي https://token.actions.githubusercontent.com."
+		},
+		"The Vercel team ID or GitHub organisation or user ID to pin.": {
+			"es": "El ID del equipo de Vercel o de la organización o el usuario de GitHub que se fija.",
+			"fr": "L’ID de l’équipe Vercel ou de l’organisation ou de l’utilisateur GitHub à épingler.",
+			"de": "Die festzulegende Vercel-Team-ID oder GitHub-Organisations- bzw. Benutzer-ID.",
+			"pt-BR": "O ID da equipe da Vercel ou da organização ou do usuário do GitHub a fixar.",
+			"hi": "तय करने के लिए Vercel टीम ID या GitHub संगठन या उपयोगकर्ता ID।",
+			"ja": "固定する Vercel のチーム ID、または GitHub の組織 ID かユーザー ID。",
+			"zh-Hans": "要固定的 Vercel 团队 ID，或 GitHub 组织或用户 ID。",
+			"ar": "معرّف فريق Vercel أو معرّف المؤسسة أو المستخدم على GitHub المراد تثبيته."
+		},
+		"Trusted workload policy created": {
+			"es": "Política de carga de trabajo de confianza creada",
+			"fr": "Règle de workload de confiance créée",
+			"de": "Richtlinie für vertrauenswürdige Workloads erstellt",
+			"pt-BR": "Política de workload confiável criada",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी बनाई गई",
+			"ja": "信頼済みワークロードのポリシーを作成しました",
+			"zh-Hans": "已创建受信任的工作负载策略",
+			"ar": "تم إنشاء سياسة حمل العمل الموثوق"
+		},
+		"Trusted workload policy id.": {
+			"es": "ID de la política de carga de trabajo de confianza.",
+			"fr": "ID de la règle de workload de confiance.",
+			"de": "ID der Richtlinie für vertrauenswürdige Workloads.",
+			"pt-BR": "ID da política de workload confiável.",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी का ID।",
+			"ja": "信頼済みワークロードのポリシー ID。",
+			"zh-Hans": "受信任的工作负载策略 ID。",
+			"ar": "معرّف سياسة حمل العمل الموثوق."
+		},
+		"Get a trusted workload policy": {
+			"es": "Obtener una política de carga de trabajo de confianza",
+			"fr": "Obtenir une règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads abrufen",
+			"pt-BR": "Obter política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी प्राप्त करें",
+			"ja": "信頼済みワークロードのポリシーを取得",
+			"zh-Hans": "获取受信任的工作负载策略",
+			"ar": "الحصول على سياسة حمل عمل موثوق"
+		},
+		"Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Devuelve una política de carga de trabajo de confianza. Requiere keys:read en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Renvoie une règle de workload de confiance. Nécessite keys:read sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Gibt eine Richtlinie für vertrauenswürdige Workloads zurück. Erfordert keys:read für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Retorna uma política de workload confiável. Requer keys:read em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "एक भरोसेमंद वर्कलोड पॉलिसी लौटाता है। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "信頼済みワークロードのポリシーを 1 件返します。管理キーと OAuth トークンでは keys:read、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "返回一条受信任的工作负载策略。管理密钥和 OAuth 令牌需要 keys:read，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يُرجع سياسة واحدة لحمل عمل موثوق. يتطلب keys:read على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Trusted workload policy": {
+			"es": "Política de carga de trabajo de confianza",
+			"fr": "Règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads",
+			"pt-BR": "Política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी",
+			"ja": "信頼済みワークロードのポリシー",
+			"zh-Hans": "受信任的工作负载策略",
+			"ar": "سياسة حمل عمل موثوق"
+		},
+		"Update a trusted workload policy": {
+			"es": "Actualizar una política de carga de trabajo de confianza",
+			"fr": "Modifier une règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads aktualisieren",
+			"pt-BR": "Atualizar política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी अपडेट करें",
+			"ja": "信頼済みワークロードのポリシーを更新",
+			"zh-Hans": "更新受信任的工作负载策略",
+			"ar": "تحديث سياسة حمل عمل موثوق"
+		},
+		"Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Cambia el nombre, el estado, las condiciones de claims o la duración máxima del token de una política. El proveedor, el emisor y el propietario no se pueden cambiar; en su lugar, crea una política nueva. Los cambios llegan al gateway en menos de un minuto. Requiere keys:write en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Modifie le nom, l’état, les conditions sur les claims ou la durée de vie maximale du jeton d’une règle. Le fournisseur, l’émetteur et le propriétaire ne peuvent pas changer ; créez plutôt une nouvelle règle. Les modifications atteignent la passerelle en moins d’une minute. Nécessite keys:write sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Ändert Name, Status, Claim-Bedingungen oder maximale Token-Lebensdauer einer Richtlinie. Anbieter, Aussteller und Inhaber lassen sich nicht ändern; erstelle stattdessen eine neue Richtlinie. Änderungen erreichen das Gateway innerhalb einer Minute. Erfordert keys:write für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Altera o nome, o status, as condições de claims ou a duração máxima do token de uma política. O provedor, o emissor e o proprietário não podem mudar; crie uma nova política em vez disso. As alterações chegam ao gateway em até um minuto. Requer keys:write em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "पॉलिसी का नाम, स्थिति, क्लेम शर्तें या टोकन की अधिकतम अवधि बदलता है। प्रदाता, जारीकर्ता और मालिक नहीं बदले जा सकते; इसके बजाय नई पॉलिसी बनाएँ। बदलाव एक मिनट के भीतर गेटवे तक पहुँच जाते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。プロバイダー、発行者、オーナーは変更できないため、代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。管理キーと OAuth トークンでは keys:write、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "更改策略的名称、状态、声明条件或令牌最长有效期。提供方、签发方和所有者无法更改；请改为创建新策略。更改会在一分钟内同步到网关。管理密钥和 OAuth 令牌需要 keys:write，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يغيّر اسم السياسة أو حالتها أو شروط المطالبات أو أقصى مدة لصلاحية الرمز. لا يمكن تغيير المزوّد أو المُصدِر أو المالك؛ أنشئ سياسة جديدة بدلًا من ذلك. تصل التغييرات إلى البوابة خلال دقيقة. يتطلب keys:write على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Trusted workload policy updated": {
+			"es": "Política de carga de trabajo de confianza actualizada",
+			"fr": "Règle de workload de confiance modifiée",
+			"de": "Richtlinie für vertrauenswürdige Workloads aktualisiert",
+			"pt-BR": "Política de workload confiável atualizada",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी अपडेट की गई",
+			"ja": "信頼済みワークロードのポリシーを更新しました",
+			"zh-Hans": "已更新受信任的工作负载策略",
+			"ar": "تم تحديث سياسة حمل العمل الموثوق"
+		},
+		"Delete a trusted workload policy": {
+			"es": "Eliminar una política de carga de trabajo de confianza",
+			"fr": "Supprimer une règle de workload de confiance",
+			"de": "Richtlinie für vertrauenswürdige Workloads löschen",
+			"pt-BR": "Excluir política de workload confiável",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी हटाएँ",
+			"ja": "信頼済みワークロードのポリシーを削除",
+			"zh-Hans": "删除受信任的工作负载策略",
+			"ar": "حذف سياسة حمل عمل موثوق"
+		},
+		"Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.": {
+			"es": "Revoca la clave de la política y después elimina la política. Los tokens que coinciden se rechazan en menos de un minuto. Las solicitudes anteriores conservan su clave en los registros y el uso. Requiere keys:delete en claves de administración y tokens OAuth, o un propietario o administrador del espacio de trabajo. Solo está disponible para los espacios de trabajo de la beta de cargas de trabajo de confianza; los demás reciben 404.",
+			"fr": "Révoque la clé de la règle, puis supprime la règle. Les jetons correspondants sont refusés en moins d’une minute. Les requêtes passées conservent leur clé dans les journaux et l’utilisation. Nécessite keys:delete sur les clés de gestion et les jetons OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Disponible uniquement pour les espaces de travail de la bêta des workloads de confiance ; les autres reçoivent 404.",
+			"de": "Widerruft den Schlüssel der Richtlinie und löscht dann die Richtlinie. Passende Tokens werden innerhalb einer Minute abgelehnt. Frühere Anfragen behalten ihren Schlüssel in Logs und Nutzung. Erfordert keys:delete für Management-Schlüssel und OAuth-Tokens oder einen Workspace-Inhaber oder -Admin. Nur für Workspaces in der Beta für vertrauenswürdige Workloads verfügbar; andere Workspaces erhalten 404.",
+			"pt-BR": "Revoga a chave da política e depois exclui a política. Tokens correspondentes passam a ser recusados em até um minuto. Solicitações anteriores mantêm sua chave nos logs e no uso. Requer keys:delete em chaves de gerenciamento e tokens OAuth, ou um proprietário ou administrador do espaço de trabalho. Disponível apenas para espaços de trabalho no beta de workloads confiáveis; os demais recebem 404.",
+			"hi": "पॉलिसी की कुंजी रद्द करता है, फिर पॉलिसी हटाता है। मेल खाने वाले टोकन एक मिनट के भीतर अस्वीकार होने लगते हैं। पिछले अनुरोधों की कुंजी लॉग और उपयोग में बनी रहती है। प्रबंधन कुंजियों और OAuth टोकन पर keys:delete, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।",
+			"ja": "ポリシーのキーを失効させてから、ポリシーを削除します。一致するトークンは 1 分以内に拒否されるようになります。過去のリクエストは、ログと使用状況でそのキーを保持します。管理キーと OAuth トークンでは keys:delete、またはワークスペースのオーナーか管理者が必要です。信頼済みワークロードのベータに参加しているワークスペースのみ利用でき、それ以外のワークスペースには 404 が返ります。",
+			"zh-Hans": "吊销策略的密钥，然后删除该策略。匹配的令牌会在一分钟内被拒绝。过去的请求在日志和用量中仍保留其密钥。管理密钥和 OAuth 令牌需要 keys:delete，或由工作区所有者或管理员操作。仅适用于参与受信任的工作负载 Beta 的工作区；其他工作区会收到 404。",
+			"ar": "يلغي مفتاح السياسة ثم يحذف السياسة. تُرفض الرموز المطابقة خلال دقيقة. تحتفظ الطلبات السابقة بمفتاحها في السجلات والاستخدام. يتطلب keys:delete على مفاتيح الإدارة ورموز OAuth، أو مالك مساحة العمل أو أحد مسؤوليها. متاح فقط لمساحات العمل المشاركة في المرحلة التجريبية لأحمال العمل الموثوقة؛ وتتلقى مساحات العمل الأخرى 404."
+		},
+		"Trusted workload policy deleted": {
+			"es": "Política de carga de trabajo de confianza eliminada",
+			"fr": "Règle de workload de confiance supprimée",
+			"de": "Richtlinie für vertrauenswürdige Workloads gelöscht",
+			"pt-BR": "Política de workload confiável excluída",
+			"hi": "भरोसेमंद वर्कलोड पॉलिसी हटा दी गई",
+			"ja": "信頼済みワークロードのポリシーを削除しました",
+			"zh-Hans": "已删除受信任的工作负载策略",
+			"ar": "تم حذف سياسة حمل العمل الموثوق"
+		},
+		"False for rules the evaluator does not handle yet (forecast and spike metrics, rolling spend periods and previous_period bases). They are saved and fire from a later release. Balance rules are evaluated.": {
+			"es": "Es false para las reglas que la evaluación aún no admite (métricas forecast y spike, periodos rolling de gasto y bases previous_period). Se guardan y empezarán a activarse en una versión posterior. Las reglas balance sí se evalúan.",
+			"fr": "Vaut false pour les règles que l’évaluation ne prend pas encore en charge (métriques forecast et spike, périodes rolling de dépenses et bases previous_period). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure. Les règles balance sont évaluées.",
+			"de": "False für Regeln, die die Auswertung noch nicht unterstützt (Metriken forecast und spike, rolling-Ausgabenzeiträume und Basen previous_period). Sie werden gespeichert und lösen erst ab einer späteren Version aus. Regeln vom Typ balance werden ausgewertet.",
+			"pt-BR": "É false para regras que a avaliação ainda não suporta (métricas forecast e spike, períodos rolling de gastos e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura. Regras balance são avaliadas.",
+			"hi": "उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (forecast और spike मीट्रिक, खर्च की rolling अवधियाँ और previous_period आधार)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। balance नियमों का मूल्यांकन होता है।",
+			"ja": "評価がまだ対応していないルール（forecast・spike の指標、支出の rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。balance ルールは評価されます。",
+			"zh-Hans": "对于评估尚未支持的规则（forecast 和 spike 指标、支出的 rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。balance 规则会被评估。",
+			"ar": "تكون false للقواعد التي لا يدعمها التقييم بعد (مقياسا forecast وspike، وفترات الإنفاق rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق. تُقيَّم قواعد balance."
+		},
+		"Where a spend rule stands now. Balance rules have the burn-rate window as period, the available balance as value and a balance object. Other rules without a calendar period have period, value and alert null.": {
+			"es": "Dónde se encuentra ahora una regla de gasto. Las reglas balance tienen como period la ventana de consumo, como valor el saldo disponible y un objeto balance. Las demás reglas sin periodo de calendario tienen period, value y alert en null.",
+			"fr": "Où en est une règle de dépenses à présent. Les règles balance ont la fenêtre de consommation comme period, le solde disponible comme valeur et un objet balance. Les autres règles sans période calendaire ont period, value et alert à null.",
+			"de": "Wo eine Ausgabenregel gerade steht. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Andere Regeln ohne Kalenderzeitraum haben period, value und alert null.",
+			"pt-BR": "A situação atual de uma regra de gastos. Regras balance têm a janela de consumo como period, o saldo disponível como valor e um objeto balance. As demais regras sem período de calendário têm period, value e alert nulos.",
+			"hi": "खर्च नियम अभी कहाँ है। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। कैलेंडर अवधि के बिना अन्य नियमों में period, value और alert null होते हैं।",
+			"ja": "支出ルールの現在の状況です。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。暦の期間を持たないその他のルールでは period、value、alert は null です。",
+			"zh-Hans": "支出规则当前的状态。balance 规则以消耗速率窗口作为 period，以可用余额作为值，并包含 balance 对象。其他没有日历周期的规则，其 period、value 和 alert 为 null。",
+			"ar": "وضع قاعدة الإنفاق الآن. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. أما القواعد الأخرى التي ليس لها فترة تقويمية فتكون فيها period وvalue وalert فارغة (null)."
+		},
+		"Balance rules only: where the balance stands, as the evaluator sees it. Null for other rules.": {
+			"es": "Solo reglas balance: dónde se encuentra el saldo, tal como lo ve la evaluación. Es null para las demás reglas.",
+			"fr": "Règles balance uniquement : où en est le solde, tel que l’évaluation le voit. Vaut null pour les autres règles.",
+			"de": "Nur Regeln vom Typ balance: wo das Guthaben steht, so wie die Auswertung es sieht. Null für andere Regeln.",
+			"pt-BR": "Somente regras balance: a situação do saldo, como a avaliação o vê. Nulo para as demais regras.",
+			"hi": "केवल balance नियम: बैलेंस कहाँ है, जैसा मूल्यांकन उसे देखता है। अन्य नियमों के लिए null।",
+			"ja": "balance ルールのみ：評価から見た残高の状況です。その他のルールでは null です。",
+			"zh-Hans": "仅限 balance 规则：评估所看到的余额状态。其他规则为 null。",
+			"ar": "لقواعد balance فقط: وضع الرصيد كما يراه التقييم. تكون null للقواعد الأخرى."
+		},
+		"Balance minus reserved credit: what requests are admitted against.": {
+			"es": "Saldo menos el crédito reservado: lo que se usa para admitir las solicitudes.",
+			"fr": "Solde moins le crédit réservé : ce sur quoi les requêtes sont admises.",
+			"de": "Guthaben abzüglich reserviertem Guthaben: der Betrag, gegen den Anfragen zugelassen werden.",
+			"pt-BR": "Saldo menos o crédito reservado: o valor usado para admitir as solicitações.",
+			"hi": "बैलेंस में से आरक्षित क्रेडिट घटाकर: जिसके आधार पर अनुरोध स्वीकार किए जाते हैं।",
+			"ja": "残高から予約済みクレジットを引いた額です。リクエストはこの額に基づいて受け付けられます。",
+			"zh-Hans": "余额减去预留额度：请求按此金额准入。",
+			"ar": "الرصيد مطروحًا منه الرصيد المحجوز: وهو ما تُقبل الطلبات على أساسه."
+		},
+		"Days the available balance lasts at the burn rate. Null without spend in the window.": {
+			"es": "Días que dura el saldo disponible al ritmo de consumo. Es null si no hubo gasto en la ventana.",
+			"fr": "Nombre de jours que dure le solde disponible au rythme de consommation. Vaut null sans dépense dans la fenêtre.",
+			"de": "Tage, die das verfügbare Guthaben beim aktuellen Verbrauch reicht. Null ohne Ausgaben im Fenster.",
+			"pt-BR": "Dias que o saldo disponível dura no ritmo de consumo. Nulo sem gastos na janela.",
+			"hi": "खर्च की दर पर उपलब्ध बैलेंस कितने दिन चलेगा। विंडो में कोई खर्च न होने पर null।",
+			"ja": "現在の消費ペースで利用可能残高が持つ日数です。期間内に支出がない場合は null です。",
+			"zh-Hans": "按当前消耗速率，可用余额可维持的天数。窗口内无支出时为 null。",
+			"ar": "عدد الأيام التي يكفيها الرصيد المتاح بمعدل الاستهلاك. تكون null عند عدم وجود إنفاق في النافذة."
+		},
+		"Auto Top-Up is on and working, so a drop is recorded without an alert.": {
+			"es": "La recarga automática está activada y funciona, así que una caída se registra sin alerta.",
+			"fr": "La recharge automatique est activée et fonctionne : une baisse est enregistrée sans alerte.",
+			"de": "Die automatische Aufladung ist aktiv und funktioniert, daher wird ein Rückgang ohne Warnung erfasst.",
+			"pt-BR": "A recarga automática está ativada e funcionando, então uma queda é registrada sem alerta.",
+			"hi": "ऑटो टॉप-अप चालू है और काम कर रहा है, इसलिए गिरावट बिना अलर्ट के दर्ज की जाती है।",
+			"ja": "自動チャージが有効で正常に機能しているため、残高の低下はアラートなしで記録されます。",
+			"zh-Hans": "自动充值已开启且运行正常，因此余额下降只会被记录，不会发出警报。",
+			"ar": "الشحن التلقائي مفعّل ويعمل، لذا يُسجَّل الانخفاض دون تنبيه."
+		},
+		"Balance rules: false after an alert until the balance is back above the threshold.": {
+			"es": "Reglas balance: false después de una alerta hasta que el saldo vuelve a superar el umbral.",
+			"fr": "Règles balance : false après une alerte, jusqu’à ce que le solde repasse au-dessus du seuil.",
+			"de": "Regeln vom Typ balance: false nach einer Warnung, bis das Guthaben wieder über dem Schwellenwert liegt.",
+			"pt-BR": "Regras balance: false após um alerta até o saldo voltar a ficar acima do limite.",
+			"hi": "balance नियम: अलर्ट के बाद false, जब तक बैलेंस फिर से सीमा से ऊपर न आ जाए।",
+			"ja": "balance ルール：アラート後、残高がしきい値を再び上回るまで false です。",
+			"zh-Hans": "balance 规则：发出警报后为 false，直到余额重新高于阈值。",
+			"ar": "قواعد balance: تكون false بعد التنبيه حتى يعود الرصيد فوق الحد."
 		}
 	},
 	"GET /apps": {

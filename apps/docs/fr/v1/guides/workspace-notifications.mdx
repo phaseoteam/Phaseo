@@ -15,6 +15,8 @@ Utilisez les destinations de notification pour envoyer les alertes activées de 
 5. Sélectionnez **Envoyer un test** pour chaque canal configuré.
 6. Créez les destinations lorsque tous les tests ont réussi.
 
+Depuis la CLI, lancez `phaseo notifications destinations create`, testez la destination avec `phaseo notifications destinations test <id>`, puis choisissez les alertes qu’elle reçoit avec `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+
 Les webhooks personnalisés reçoivent un secret de signature à leur création. Copiez-le depuis la boîte de dialogue qui s’ouvre ; il n’est affiché qu’une seule fois.
 
 Phaseo prend en charge :

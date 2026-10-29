@@ -802,6 +802,16 @@ struct ClassifierScope {
 	std::vector<std::string> models;
 };
 
+struct ClassifierTestRequest {
+	std::map<std::string, std::any> classifier;
+	std::string classifier_id;
+	std::map<std::string, std::any> sample;
+};
+
+struct ClassifierTestResponse {
+	std::map<std::string, std::any> data;
+};
+
 struct ClassifierUpdateInput {
 	std::optional<std::string> description;
 	std::vector<std::map<std::string, std::any>> dimensions;
@@ -824,6 +834,38 @@ struct ClassifierValue {
 struct CreditsResponse {
 	std::map<std::string, std::any> credits;
 	std::any ok;
+};
+
+struct CreditTopup {
+	int amount_cents;
+	double amount_usd;
+	std::optional<std::string> checkout_url;
+	std::optional<int> confirmation_recipients;
+	std::string created_at;
+	std::string currency;
+	std::optional<std::string> decided_at;
+	std::string expires_at;
+	bool final;
+	std::any flow;
+	std::string id;
+	std::string message;
+	std::optional<std::any> next_action;
+	std::optional<std::string> paid_at;
+	std::optional<std::map<std::string, std::any>> payment_method;
+	std::optional<std::string> reason;
+	std::any status;
+	std::string workspace_id;
+};
+
+struct CreditTopupCreateRequest {
+	double amount_usd;
+	std::string idempotency_key;
+	std::string workspace_id;
+};
+
+struct CreditTopupResponse {
+	std::any ok;
+	std::map<std::string, std::any> topup;
 };
 
 struct DataContributionCategories {
@@ -3558,6 +3600,7 @@ using SpendRulePeriod = std::any;
 
 struct SpendRulePreview {
 	std::optional<std::map<std::string, std::any>> alert;
+	std::optional<std::map<std::string, std::any>> balance;
 	std::optional<std::any> base_kind;
 	std::optional<int> base_nanos;
 	std::optional<std::any> base_ref;

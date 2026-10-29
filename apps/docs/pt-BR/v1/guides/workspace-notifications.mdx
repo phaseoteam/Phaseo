@@ -15,6 +15,8 @@ Use destinos de notificação para enviar alertas habilitados do espaço de trab
 5. Selecione **Enviar teste** para cada canal configurado.
 6. Crie os destinos depois que todos os testes forem concluídos com sucesso.
 
+Pela CLI, execute `phaseo notifications destinations create`, teste o destino com `phaseo notifications destinations test <id>` e escolha quais alertas ele recebe com `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+
 Webhooks personalizados recebem um segredo de assinatura ao serem criados. Copie-o na caixa de diálogo que se abre; ele é exibido apenas uma vez.
 
 O Phaseo oferece suporte a:

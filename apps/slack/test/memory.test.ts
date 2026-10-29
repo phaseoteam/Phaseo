@@ -108,6 +108,24 @@ describe("memory tools", () => {
 		expect(notes).toEqual(["recall budget Q4", "recall"]);
 	});
 
+	it("recall shows the newest instead when its words match nothing, so a list asked for by name isn't read as empty", async () => {
+		// "to-do" and "tasks" are words about the list, not in any note's text.
+		db.rpcResults.search_slack_agent_notes = (args: Record<string, unknown>) => (args.p_query ? [] : [noteRow({ kind: "todo" })]);
+		await expect(tool("recall")({ query: "to-do tasks", kind: "todo" })).resolves.toEqual({
+			notes: [{ id: NOTE_ID, kind: "todo", scope: "this conversation", text: "Deploys freeze on Fridays.", done: false, saved_by: `<@${PERSON}>`, saved_on: "2026-10-20" }],
+			matched: false,
+			note: "Nothing held those words, so these are the newest instead.",
+		});
+		expect(db.rpcs.slice(-2).map((call) => [call.args.p_query, call.args.p_kind])).toEqual([["to-do tasks", "todo"], [null, "todo"]]);
+
+		// Nothing at all stays an empty list, asked once more without the words.
+		db.rpcResults.search_slack_agent_notes = [];
+		const calls = db.rpcs.length;
+		await expect(tool("recall")({ query: "budget" })).resolves.toEqual({ notes: [] });
+		expect(db.rpcs.length - calls).toBe(2);
+		expect(tools("workspace").find((entry) => entry.id === "recall")!.description).toContain("give the kind and no words");
+	});
+
 	it("update_todo and forget take a note id, and say when there was nothing to change", async () => {
 		db.rpcResults.set_slack_agent_todo_done = [noteRow({ kind: "todo", done_at: "2026-10-21T12:00:00Z" })];
 		await expect(tool("update_todo")({ id: NOTE_ID.toUpperCase(), done: true })).resolves.toMatchObject({ updated: true, done: true });

@@ -4,14 +4,14 @@ description: "Enregistrez des configurations Gateway réutilisables pour votre �
 icon: "sliders-horizontal"
 ---
 
-Les préréglages sont des configurations réutilisables qui aident les équipes à uniformiser les prompts, les préférences de modèle et les valeurs de routage par défaut. Ils se gèrent dans le tableau de bord Phaseo et peuvent être partagés avec toute l’équipe.
+Les préréglages sont des configurations réutilisables qui aident les équipes à uniformiser les prompts, les préférences de modèle et les valeurs de routage par défaut. Ils se gèrent dans le tableau de bord Phaseo et peuvent être partagés avec toute l’équipe. Vous pouvez aussi les gérer avec les commandes `phaseo presets` de la CLI ou l’API `/v1/presets`.
 
 ## Démarrage rapide
 
 <Steps>
 <Step title="Créer un préréglage">
 
-Ouvrez **Tableau de bord -> Paramètres -> Préréglages** et créez un préréglage avec un slug explicite, par exemple `release-summary`. Ajoutez uniquement les valeurs par défaut à partager entre les appelants.
+Ouvrez **Tableau de bord -> Paramètres -> Préréglages** et créez un préréglage avec un slug explicite, par exemple `release-summary`. Ajoutez uniquement les valeurs par défaut à partager entre les appelants. Depuis la CLI, lancez `phaseo presets create --name @release-summary --model <model-id>`.
 
 </Step>
 
@@ -126,7 +126,7 @@ Pour des transformations plus complexes propres à l’appelant, centralisez-les
 
 ## Gérer les préréglages
 
-Créez et gérez les préréglages dans **Tableau de bord -> Paramètres -> Préréglages**. Utilisez des slugs distincts lorsque les workflows nécessitent des prompts, un routage ou un comportement de cache sensiblement différents.
+Créez et gérez les préréglages dans **Tableau de bord -> Paramètres -> Préréglages**. Utilisez des slugs distincts lorsque les workflows nécessitent des prompts, un routage ou un comportement de cache sensiblement différents. Depuis la CLI, utilisez `phaseo presets create|update`, `phaseo presets versions create` et `phaseo presets labels set` (l’API `/v1/presets`).
 
 ## Quand utiliser des préréglages
 

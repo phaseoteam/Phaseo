@@ -30,10 +30,10 @@ import { withoutTrailingSlashes } from "./url";
 // images it makes) sends provider.require_zero_data_retention, so only
 // providers that keep no data serve it, and goes without the gateway's web search
 // and web fetch, so nothing found can leave in a query or a URL
-// (withZeroDataRetention). It never asks Auto, whose router sends the prompt to
-// a model of its own, without the flag, to choose one. When no provider can
-// serve a request, the gateway refuses it, and the turn says why
-// (search_needs_zdr).
+// (withZeroDataRetention). Auto honours the flag as well: its router picks only
+// among models with a provider that keeps no data, and its classifier request
+// carries the flag. When no provider (or, with Auto, no model) can serve a
+// request, the gateway refuses it, and the turn says why (search_needs_zdr).
 //
 // Files shared in the thread go to the model as input parts of the run's first
 // user message (withAttachments). Images the agent generates are made through
@@ -236,25 +236,13 @@ function isGatewayWebTool(tool: unknown): boolean {
 const MODEL_REQUEST_PATH = /\/(responses|images\/generations)$/;
 
 /**
- * A model request for Auto after a Slack search, which withZeroDataRetention
- * never sends: the gateway's auto router asks a model of its own which model to
- * use, with the prompt and without require_zero_data_retention. Classified as
- * search_needs_zdr.
- */
-export class AutoAfterSearchError extends Error {
-	constructor() {
-		super("auto_after_search");
-		this.name = "AutoAfterSearchError";
-	}
-}
-
-/**
  * The fetch, adding provider.require_zero_data_retention (with any provider
  * fields the request already has) to each model request sent while `required`
  * says so, and taking the gateway's web search and web fetch out of its tools. It is asked before every request, not once per run, so the request
  * that first carries a Slack search's results has it, and so does every one
- * after. A model request it can't read isn't sent without it, and one for Auto
- * isn't sent at all (AutoAfterSearchError).
+ * after. A model request it can't read isn't sent without it. Auto honours it
+ * too: the gateway's auto router then picks only among models with a provider
+ * that keeps no data, and its own classifier request carries the flag.
  */
 export function withZeroDataRetention(fetchImpl: typeof fetch, required: (() => Promise<boolean>) | undefined): typeof fetch {
 	if (!required) return fetchImpl;
@@ -263,7 +251,6 @@ export function withZeroDataRetention(fetchImpl: typeof fetch, required: (() => 
 		if (request.method !== "POST" || !MODEL_REQUEST_PATH.test(new URL(request.url).pathname) || !(await required())) return fetchImpl(request);
 		const body = await request.clone().json().catch(() => null) as Record<string, unknown> | null;
 		if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("zero_data_retention_not_applied");
-		if (typeof body.model === "string" && isAutoModel(body.model)) throw new AutoAfterSearchError();
 		const provider = body.provider && typeof body.provider === "object" && !Array.isArray(body.provider) ? body.provider : {};
 		const tools = Array.isArray(body.tools) ? { tools: body.tools.filter((tool) => !isGatewayWebTool(tool)) } : {};
 		return fetchImpl(new Request(request, { body: JSON.stringify({ ...body, ...tools, provider: { ...provider, require_zero_data_retention: true } }) }));
@@ -474,7 +461,7 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 /**
  * access_changed: after a question, the person (or the installation) could no longer use the agent.
  * files_unsupported: no route of the model takes the files sent with the request.
- * search_needs_zdr: after a Slack search, no provider that keeps no data could serve the model, or it was Auto.
+ * search_needs_zdr: after a Slack search, no provider that keeps no data could serve the model (or, with Auto, any model it may choose).
  */
 export type TurnErrorKind = "no_credits" | "cap_reached" | "model_not_allowed" | "model_unavailable" | "files_unsupported" | "search_needs_zdr" | "access_changed" | "failed";
 
@@ -507,12 +494,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * Whether a gateway refusal says zero data retention is what no route met. Its
- * residency gate (pipeline/execute/guards.ts) names it in unmet_requirements,
- * which the public error body doesn't keep today, and the body's routing
- * diagnostics list the routes the gate dropped, each that keeps data with
- * zero_data_retention_unsupported. Its code, model_region_unavailable, alone
- * isn't enough: it also refuses a request from a country no route serves, or
- * one whose region no route meets.
+ * residency gate (pipeline/execute/guards.ts), and Auto when no model it may
+ * choose has such a route, name it in unmet_requirements; for a chosen model
+ * the body's routing diagnostics also list the routes the gate dropped, each
+ * that keeps data with zero_data_retention_unsupported. Its code,
+ * model_region_unavailable, alone isn't enough: it also refuses a request from
+ * a country no route serves, or one whose region no route meets.
  */
 function zeroDataRetentionUnmet(body: Record<string, unknown>, nested: Record<string, unknown>, diagnostics: Record<string, unknown> | null): boolean {
 	if ([body.unmet_requirements, nested.unmet_requirements].some((unmet) => isRecord(unmet) && unmet.zero_data_retention === true)) return true;
@@ -538,14 +525,12 @@ function errorCodes(error: unknown): { status: number | null; codes: string[]; f
  * Which plain reply a failed turn gets. `model` is the model the agent asked for.
  * `zeroDataRetention`: the request asked for providers that keep no data (the
  * answer had searched Slack). Then a refusal is search_needs_zdr when the
- * gateway says no route kept no data (zeroDataRetentionUnmet), or when the
- * request was for Auto and never sent (AutoAfterSearchError); any other refusal
- * is what it would be without a search, a byok_credentials_required too, whose
- * body doesn't say whether zero data retention left only routes that need the
- * workspace's own provider key.
+ * gateway says no route kept no data (zeroDataRetentionUnmet); any other
+ * refusal is what it would be without a search, a byok_credentials_required
+ * too, whose body doesn't say whether zero data retention left only routes that
+ * need the workspace's own provider key.
  */
 export function classifyTurnError(error: unknown, model?: string | null, zeroDataRetention = false): TurnErrorKind {
-	if (error instanceof AutoAfterSearchError || (error as { cause?: unknown } | null)?.cause instanceof AutoAfterSearchError) return "search_needs_zdr";
 	const { status, codes, failedProviders, zeroDataRetentionUnmet } = errorCodes(error);
 	if (status === null) return "failed";
 	if (status === 402 || codes.some((code) => /insufficient_(funds|quota|credits)/.test(code))) return "no_credits";

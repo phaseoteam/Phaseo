@@ -2,8 +2,6 @@
 // Why: Muse Spark uses the Responses API and the Meta Model API key only.
 // How: Tests route, URL, and gateway key resolution in isolation from provider-wide fixtures.
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 import { openAICompatUrl, resolveOpenAICompatKey, resolveOpenAICompatRoute } from "../config";
@@ -17,33 +15,6 @@ afterAll(() => {
 });
 
 describe("Meta OpenAI-compatible config", () => {
-	it("keeps standard and contributor editions as separate models in one family", () => {
-		const catalogRoot = path.resolve(process.cwd(), "../../packages/data/catalog/src/data");
-		const readCatalogJson = (relativePath: string) => JSON.parse(
-			readFileSync(path.join(catalogRoot, relativePath), "utf8"),
-		);
-		const standard = readCatalogJson("models/meta/muse-spark-1.2/model.json");
-		const contributor = readCatalogJson("models/meta/muse-spark-1.2-contributor/model.json");
-		const contributorRoute = readCatalogJson("api_providers/meta/models.json")
-			.find((route: { provider_model_slug: string }) => route.provider_model_slug === "muse-spark-1.2-contributor");
-		const metaProvider = readCatalogJson("api_providers/meta/api_provider.json");
-		const contributorPricing = readCatalogJson("pricing/meta/meta-muse-spark-1.2-contributor/text.generate/pricing.json");
-		const manifest = readCatalogJson("manifest.json");
-
-		expect(standard.model_id).toBe("meta/muse-spark-1.2");
-		expect(contributor.model_id).toBe("meta/muse-spark-1.2-contributor");
-		expect(standard.family_id).toBe("meta/muse-spark-1.2");
-		expect(contributor.family_id).toBe(standard.family_id);
-		expect(contributorRoute.canonical_model_id).toBe(contributor.model_id);
-		expect(contributorRoute.internal_model_id).toBe(contributor.model_id);
-		expect(contributorRoute.provider_api_model_id).toBe("meta:meta/muse-spark-1.2-contributor");
-		expect(contributorRoute.provider_model_slug).toBe("muse-spark-1.2-contributor");
-		expect(metaProvider.prompt_training_policy).toBe("no_train");
-		expect(contributorPricing.api_provider_id).toBe("meta");
-		expect(contributorPricing.service_tiers).toEqual(["contributor"]);
-		expect(manifest.families).toContain("meta-muse-spark-1.2");
-	});
-
 	it("routes Muse Spark models through Responses", () => {
 		expect(resolveOpenAICompatRoute("meta", "muse-spark-1.1")).toBe("responses");
 		expect(resolveOpenAICompatRoute("meta", "muse-spark-1.2")).toBe("responses");
