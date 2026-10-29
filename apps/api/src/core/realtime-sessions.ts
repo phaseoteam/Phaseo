@@ -49,6 +49,7 @@ export const REALTIME_DURATION_WARNING_SECONDS = [120, 30] as const;
 export const REALTIME_IDLE_TIMEOUT_SECONDS = 5 * 60;
 // A session whose relay is never claimed is reaped after this long.
 export const REALTIME_UNCLAIMED_SESSION_TIMEOUT_SECONDS = 2 * 60;
+export const REALTIME_RELAY_CHECK_AFTER_SECONDS = 60;
 export const REALTIME_MAX_WORKSPACE_SESSIONS = 8;
 export const REALTIME_MAX_KEY_SESSIONS = 4;
 export const REALTIME_MAX_USER_SESSIONS = 1;
@@ -887,8 +888,13 @@ export function assertRealtimeBillingMetersPresent(args: {
  * Price a realtime session. Image and video input on a card without its own row for them is
  * billed on the matching text meter rather than dropped (or failing on an unpriced cache meter).
  */
-export function priceRealtimeUsage(usage: Record<string, unknown>, card: PriceCard): Record<string, any> {
+export function priceRealtimeUsage(usage: Record<string, unknown>, card: PriceCard, provider?: RealtimeProvider): Record<string, any> {
 	const hasRule = (meter: string) => card.rules.some((rule) => rule.meter === meter);
+	// The engine skips a meter the card has no rule for. For a provider's billed
+	// meters that would be free usage, so it fails and the session goes to review.
+	const unpriced = (provider ? realtimeBilledMeters(provider) : [])
+		.filter((meter) => (toFiniteNumber(usage[meter]) ?? 0) > 0 && !hasRule(meter));
+	if (unpriced.length > 0) throw new Error(`realtime_price_rule_missing:${unpriced.join(",")}`);
 	const folded: Record<string, unknown> = { ...usage };
 	const fold = (meter: string, into: string) => {
 		if (hasRule(meter)) return;
@@ -902,12 +908,39 @@ export function priceRealtimeUsage(usage: Record<string, unknown>, card: PriceCa
 	return computeBill(folded, card, { endpoint: "audio.realtime" });
 }
 
+/**
+ * Meters each provider charges for. Others in the usage (audio minutes on a
+ * token-billed provider, tokens on a minute-billed one) are informational.
+ */
+export function realtimeBilledMeters(provider: RealtimeProvider): string[] {
+	if (provider === ELEVENLABS_PROVIDER) return ["audio_minutes", "input_text_tokens", "output_text_tokens"];
+	if (isDurationBilledRealtimeProvider(provider)) return ["audio_minutes"];
+	return ["input_text_tokens", "input_audio_tokens", "output_text_tokens", "output_audio_tokens"];
+}
+
 async function requireRealtimePriceCard(provider: RealtimeProvider, modelId: string) {
 	const card = await loadPriceCard(provider, modelId, "audio.realtime");
 	if (!card || !Array.isArray(card.rules) || card.rules.length === 0) {
 		throw new Error("realtime_price_card_missing");
 	}
+	// A call is refused up front rather than billed $0 for a meter with no price.
+	const missing = realtimeBilledMeters(provider).filter((meter) => !card.rules.some((rule) => rule.meter === meter));
+	if (missing.length > 0) throw new Error("realtime_price_card_missing");
 	return card;
+}
+
+/**
+ * The price card saved when the session was created, so a price change during
+ * a call neither reprices it nor fails its settlement. Sessions created before
+ * cards were saved load the current card.
+ */
+export async function realtimeSessionPriceCard(
+	provider: RealtimeProvider,
+	session: { model_id: string; metadata?: Record<string, unknown> | null },
+): Promise<PriceCard> {
+	const saved = session.metadata?.price_card as PriceCard | undefined;
+	if (saved && typeof saved === "object" && Array.isArray(saved.rules) && saved.rules.length > 0) return saved;
+	return requireRealtimePriceCard(provider, session.model_id);
 }
 
 /** Reasons that end a call on every source: the caller lost access. */
@@ -1069,7 +1102,7 @@ export async function createRealtimeSession(args: {
 	}
 	if (live && !LIVE_VOICES.includes(voice as typeof LIVE_VOICES[number])) throw new Error("live_voice_not_supported");
 	const liveSettings = live ? await createLiveConfig(args.liveBackendModel!, args.liveBackendSettings) : null;
-	if (!live) await requireRealtimePriceCard(provider, modelId);
+	const priceCard = live ? null : await requireRealtimePriceCard(provider, modelId);
 
 	const supabase = getSupabaseAdmin();
 	const sessionId = `rt_${ulid().toLowerCase()}`;
@@ -1093,6 +1126,8 @@ export async function createRealtimeSession(args: {
 	const sessionMetadata = {
 		...(args.metadata ?? {}),
 		live: liveSettings,
+		// Rates are fixed for the call, like GPT Live's (see realtimeSessionPriceCard).
+		price_card: priceCard,
 		...(useRelay
 			? {
 					relay: true,
@@ -1346,7 +1381,7 @@ export async function updateRealtimeSessionUsage(args: {
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {});
 	const pricedUsage = isLiveModel(session.model_id)
 		? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
-		: priceRealtimeUsage(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id));
+		: priceRealtimeUsage(normalizedUsage, await realtimeSessionPriceCard(provider, session), provider);
 	const pricedNanos = pricedTotalNanos(pricedUsage);
 	const estimatedCostNanos = Math.max(
 		Math.max(0, Number(session.estimated_cost_nanos ?? 0) || 0),
@@ -1426,9 +1461,11 @@ export async function realtimeConfirmedCostNanos(args: {
 			const value = toFiniteNumber(confirmed[meter]);
 			if (value != null) confirmed[meter] = Math.max(0, value - (toFiniteNumber(confirmed[estimate]) ?? 0));
 		}
-		const priced = computeBill(normalizeRealtimeUsage(confirmed), await requireRealtimePriceCard(provider, args.modelId), {
-			endpoint: "audio.realtime",
-		});
+		const priced = priceRealtimeUsage(
+			normalizeRealtimeUsage(confirmed),
+			await realtimeSessionPriceCard(provider, { model_id: args.modelId, metadata: args.metadata }),
+			provider,
+		);
 		return pricedTotalNanos(priced);
 	} catch (error) {
 		console.error("realtime_confirmed_cost_failed", {
@@ -1437,6 +1474,34 @@ export async function realtimeConfirmedCostNanos(args: {
 		});
 		return 0;
 	}
+}
+
+/**
+ * A billing review's quote for a non-GPT-Live session: its recorded usage
+ * priced exactly as settlement would have priced it, including the relay's
+ * metered-audio estimates. Complete means nothing is still in flight and an
+ * ElevenLabs bill (when there is one) has arrived, so the review can settle
+ * without an admin.
+ */
+export async function quoteRealtimeSessionRecovery(session: {
+	model_id: string;
+	provider: string | null;
+	usage: Record<string, unknown> | null;
+	metadata: Record<string, unknown> | null;
+}) {
+	const provider = providerFromModel(session.model_id, session.provider);
+	if (!provider) throw new Error("recovery_provider_not_supported");
+	const usage = normalizeRealtimeUsage(session.usage ?? {});
+	const priced = priceRealtimeUsage(usage, await realtimeSessionPriceCard(provider, session), provider);
+	const costNanos = Math.max(pricedTotalNanos(priced), Math.round(toFiniteNumber(usage.provider_cost_nanos) ?? 0));
+	if (!Number.isSafeInteger(costNanos) || costNanos < 0) throw new Error("recovery_cost_invalid");
+	let complete = !(provider === ELEVENLABS_PROVIDER && usage.provider_cost_status !== "reconciled");
+	try {
+		assertRealtimeBillingMetersPresent({ provider, usage, costNanos, estimated: usage.billing_estimated === true });
+	} catch {
+		complete = false;
+	}
+	return { costNanos, lines: pricingLines(priced), complete, billableUsage: usage };
 }
 
 export async function markRealtimeSessionBillingUnresolved(args: {
@@ -1524,7 +1589,7 @@ export async function settleRealtimeSession(args: {
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {});
 	const live = isLiveModel(session.model_id);
 	const pricedUsage = live ? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
-		: priceRealtimeUsage(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id));
+		: priceRealtimeUsage(normalizedUsage, await realtimeSessionPriceCard(provider, session), provider);
 	const costNanos = live ? pricedTotalNanos(pricedUsage) : resolveRealtimeFinalCostNanos({
 		auth: args.auth,
 		finalCostNanos: args.finalCostNanos,
@@ -1676,7 +1741,11 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 	const startedAt = new Date().toISOString();
 	const supabase = getSupabaseAdmin();
 	const now = new Date().toISOString();
-	const idleCutoff = new Date(Date.now() - REALTIME_IDLE_TIMEOUT_SECONDS * 1000).toISOString();
+	// A relay knows whether its call is alive, so it is asked after a minute of
+	// quiet: a deploy drops calls without warning, and this is how they settle.
+	const idleCutoff = new Date(
+		Date.now() - (args?.relay ? REALTIME_RELAY_CHECK_AFTER_SECONDS : REALTIME_IDLE_TIMEOUT_SECONDS) * 1000,
+	).toISOString();
 	// Sessions whose relay was never claimed hold credit for nothing.
 	const unclaimedCutoff = new Date(Date.now() - REALTIME_UNCLAIMED_SESSION_TIMEOUT_SECONDS * 1000).toISOString();
 	const { data: sessions, error } = await supabase
@@ -1716,6 +1785,13 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 					// are not stuck; the relay settles them itself.
 					if (result.healthy) {
 						sessionsHealthy += 1;
+						// Moves a live call to the back of the queue so long calls can't
+						// keep a dropped one from being checked.
+						const touched = new Date().toISOString();
+						await supabase.from("gateway_realtime_sessions")
+							.update({ last_event_at: touched, updated_at: touched })
+							.eq("session_id", session.session_id)
+							.in("status", ["created", "connecting", "connected", "ending"]);
 						continue;
 					}
 					if (!result.settled) throw new Error("realtime_relay_reconciliation_pending");
@@ -1788,7 +1864,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 		}
 	}
 
-	await refreshRealtimeBillingReviews().catch((error) => {
+	await refreshRealtimeBillingReviews(25, quoteRealtimeSessionRecovery).catch((error) => {
 		console.error("realtime_billing_review_refresh_failed", { error });
 	});
 	await syncRealtimeBillingReviewSummaries().catch((error) => {

@@ -46,7 +46,7 @@ it("fails closed on conflicts, duplicates and invalid counters", () => {
 	expect(() => quote({ live_started: false, live_seconds: 1 })).toThrow("start_evidence_conflict");
 	expect(() => quoteRealtimeRecovery("openai/gpt-realtime", {}, {})).toThrow("provider_not_supported");
 });
-it("refresh stores evidence with compare-and-swap; never captures or calls a provider", async () => {
+it("refresh stores evidence with compare-and-swap; incomplete evidence is not captured and no provider is called", async () => {
 	const fetchMock = vi.spyOn(globalThis, "fetch");
 	const rpc = vi.fn(async () => ({ data: true, error: null }));
 	const query: any = { then: (resolve: any) => resolve({ data: [{ session_id: "rt_test" }], error: null }),
@@ -89,4 +89,30 @@ it("keeps refreshing later reviews when one review fails", async () => {
 		expect(rpc).toHaveBeenCalledOnce();
 		expect(rpc.mock.calls[0]).toMatchObject(["gateway_realtime_review_evidence", { p_session_id: "rt_good" }]);
 	} finally { error.mockRestore(); }
+});
+
+it("settles a review whose evidence is complete, and leaves the rest to an admin", async () => {
+	const usage = { input_audio_tokens: 400, output_audio_tokens: 900 };
+	const session = { session_id: "rt_openai", workspace_id: "workspace", model_id: "openai/gpt-realtime-2.1", provider: "openai",
+		status: "billing_unresolved", usage, metadata: {} };
+	const run = async (quoted: { complete: boolean }, evidenceStored = true) => {
+		const rpc = vi.fn(async (name: string) => ({ data: name === "gateway_realtime_review_evidence" ? evidenceStored : [{ applied: true }], error: null }));
+		const query: any = { then: (resolve: any) => resolve({ data: [{ session_id: "rt_openai" }], error: null }),
+			single: async () => ({ data: session, error: null }) };
+		for (const method of ["select", "eq", "lte", "order", "limit"]) query[method] = () => query;
+		mocks.db = { from: () => query, rpc };
+		const quoteOther = vi.fn(async () => ({ costNanos: 12_000_000, lines: [{ meter: "output_audio_tokens" }], billableUsage: usage, ...quoted }));
+		await refreshRealtimeBillingReviews(25, quoteOther);
+		expect(quoteOther).toHaveBeenCalledWith(session);
+		return rpc.mock.calls.map((call) => call as unknown[]);
+	};
+
+	const complete = await run({ complete: true });
+	expect(complete.map(([name]) => name)).toEqual(["gateway_realtime_review_evidence", "gateway_realtime_settle_once"]);
+	expect(complete[1][1]).toMatchObject({ p_session_id: "rt_openai", p_final_cost_nanos: 12_000_000, p_usage: usage,
+		p_status: "completed", p_disconnect_reason: "billing_review_auto_capture" });
+
+	expect((await run({ complete: false })).map(([name]) => name)).toEqual(["gateway_realtime_review_evidence"]);
+	// The usage changed after it was quoted: the stale quote is not charged.
+	expect((await run({ complete: true }, false)).map(([name]) => name)).toEqual(["gateway_realtime_review_evidence"]);
 });
