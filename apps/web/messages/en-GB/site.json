@@ -2358,6 +2358,11 @@
 					"basis": "Lawful basis: legitimate interests; legal obligations."
 				},
 				{
+					"label": "To detect, prevent and report child sexual abuse material",
+					"text": "for example, by automatically matching images against hashes of known child sexual abuse material and, where we find apparent abuse material, preserving related account and request information and reporting it to the relevant authorities.",
+					"basis": "Lawful basis: legal obligations; legitimate interests (protecting children and the Service)."
+				},
+				{
 					"label": "To comply with legal obligations",
 					"text": "such as keeping records for tax and accounting or responding to legitimate requests from authorities.",
 					"basis": "Lawful basis: legal obligations."
@@ -2385,6 +2390,10 @@
 				{
 					"label": "Legal and safety reasons",
 					"text": "We may disclose data if we reasonably believe this is necessary to comply with a law, court order or other legal request, or to protect our rights, property or safety, or those of our users or others."
+				},
+				{
+					"label": "Child safety reports",
+					"text": "If we find apparent child sexual abuse material, we report it, together with related account and request information, to the National Center for Missing & Exploited Children (NCMEC), the Internet Watch Foundation, the National Crime Agency or other law enforcement authorities, as the law requires."
 				},
 				{
 					"label": "Business transfers",
@@ -2415,6 +2424,7 @@
 				"Eligible cached model Outputs are kept for five minutes by default and no more than 24 hours under a configured cache policy.",
 				"Private I/O logs, when enabled, are configured for 90, 180 or 365 days.",
 				"Raw data contributions that you opt into are kept for no more than 30 days; aggregate classification statistics may be kept longer.",
+				"Information preserved because of apparent child sexual abuse material is kept securely, with access restricted, for up to one year, or longer where the law requires.",
 				"AI providers and destinations configured by customers apply their own retention terms."
 			],
 			"retentionSchedule": "We have not yet consolidated every account, request-metadata, billing, support, backup and operational-log category into one fixed retention schedule. See <security>the Security whitepaper</security> for the currently verified content-handling periods and their limitations.",
@@ -2452,7 +2462,7 @@
 			],
 			"rightsExercise": "You can exercise many of these rights by signing in to your account (settings, profile and API keys), or by contacting us at <email>privacy@phaseo.app</email>. We may ask you to verify your identity before responding.",
 			"emailOptOut": "You can opt out of non-essential emails using the unsubscribe link in the message or by contacting us. We may still send administrative messages about your account or important changes to the Service.",
-			"children": "The Service is intended for users aged 13 and over. We do not knowingly collect personal data from children under 13. If you believe a child has provided us with personal data without appropriate consent, contact us and we will take steps to delete it.",
+			"children": "The Service is intended only for adults aged 18 and over. We do not knowingly collect personal data from anyone under 18. If you believe someone under 18 has provided us with personal data, contact us and we will take steps to delete it.",
 			"securityMeasures": "We use technical, organisational and administrative security measures to protect personal data, including encryption in transit, role-based access controls and monitoring for unusual activity.",
 			"securityLimits": "However, no online service can be completely secure. You are responsible for keeping your password, API keys and other credentials confidential, and for rotating keys if you suspect they have been compromised. If you believe your account has been compromised, contact us immediately at <email>support@phaseo.app</email>.",
 			"thirdParties": "The Service may contain links to third-party websites or integrations, including AI model providers, documentation, payment, analytics and developer-tool providers. We are not responsible for their privacy practices. We recommend reviewing their privacy policies before providing personal data to them.",
@@ -2473,7 +2483,7 @@
 			],
 			"availability": "We may add, change or remove models, providers, endpoints or other features at any time. Availability of specific models or providers depends on those third parties and is not guaranteed.",
 			"changeNotice": "Where reasonably possible, we will give advance notice of material changes to the Service, including the removal of models or providers from the directory or gateway. However, we may sometimes need to make immediate changes (for example, for security, legal or provider reasons), and we cannot guarantee uninterrupted availability.",
-			"accountAge": "You must be at least 13 years old to use the Service. If you are under 18, you should use the Service only with permission from a parent or legal guardian.",
+			"accountAge": "You must be at least 18 years old to use the Service.",
 			"accountBusiness": "If you use the Service on behalf of a company or organisation, you confirm that you are authorised to bind that entity to these Terms.",
 			"accountRegistration": "We store and use this information as described in our <privacy>Privacy Policy</privacy>.",
 			"accountResponsibilitiesIntro": "You are responsible for:",
@@ -2523,9 +2533,11 @@
 				"you have all rights, permissions and consents needed to submit the Inputs and use the Outputs; and",
 				"your Inputs and use of the Service will not infringe intellectual property, privacy or other rights, or cause us to breach any law or third-party terms."
 			],
-			"contentModeration": "We are not required to monitor User Content. However, we may remove User Content or restrict access to it if we reasonably believe it breaches these Terms or applicable law.",
+			"contentModeration": "We do not generally monitor User Content. However, we may use automated tools, including matching against hashes of known child sexual abuse material, to detect content that breaches these Terms or the law, and we may remove it or restrict access to it.",
+			"childSafety": "We have zero tolerance for child sexual abuse material. If we become aware of apparent child sexual abuse material, we will remove it, suspend the accounts involved without notice or refund, preserve related information we hold as the law requires, and report it to the relevant authorities, which may include the National Center for Missing & Exploited Children (NCMEC), the Internet Watch Foundation and the National Crime Agency. These obligations apply despite any other commitment in these Terms, including our content handling, I/O logging and zero data retention settings.",
 			"prohibitedIntro": "You must not:",
 			"prohibitedActions": [
+				"upload, generate, request, store or distribute child sexual abuse material, or any content that sexualises minors, or use the Service to build or operate tools designed to produce such material;",
 				"use the Service unlawfully or in breach of applicable law, regulation or third-party provider terms;",
 				"use the Service to create or distribute harmful, abusive, discriminatory, fraudulent or otherwise inappropriate content;",
 				"interfere with or disrupt the Service, including by introducing malware, overloading our infrastructure or trying to bypass rate limits or security controls;",
