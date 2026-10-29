@@ -27,6 +27,7 @@ declare
   granted_resource text;
   approved_monthly_limit bigint;
   resource_is_gateway boolean;
+  resource_class text;
   existing_key public.keys%rowtype;
   issued_key_id uuid;
   issued_kid text;
@@ -99,6 +100,29 @@ begin
     return jsonb_build_object('status', 'invalid');
   end if;
 
+  -- A key an owner or admin paused (or a storage incident paused) is never turned back on, or
+  -- replaced, by signing in again: while any of this app's keys for the person in this workspace is
+  -- paused or disabled, whatever resource it was issued for, nothing is issued. The code is spent.
+  if exists (
+    select 1
+    from public.keys key_row
+    where key_row.key_kind = 'oauth_delegated'
+      and key_row.issued_via <> 'desktop'
+      and key_row.oauth_user_id = p_user_id
+      and key_row.workspace_id = p_workspace_id
+      and key_row.oauth_client_id = p_client_id
+      and key_row.status not in ('active', 'revoked', 'compromised', 'deleted')
+  ) then
+    return jsonb_build_object('status', 'key_inactive');
+  end if;
+
+  -- An unbound key and every spelling of the Gateway's resource are the same credential to the
+  -- gateway, so renewal finds the app's key whichever of them the app asks for.
+  resource_class := case
+    when nullif(btrim(granted_resource), '') is null or resource_is_gateway then 'https://api.phaseo.app/v1'
+    else btrim(granted_resource)
+  end;
+
   -- Approving the same app again renews its key instead of adding one, so the key keeps its id,
   -- limits, month-to-date spend and history. Revoked, compromised and deleted keys are final.
   select * into existing_key
@@ -108,15 +132,19 @@ begin
     and key_row.oauth_user_id = p_user_id
     and key_row.workspace_id = p_workspace_id
     and key_row.oauth_client_id = p_client_id
-    and key_row.oauth_resource is not distinct from granted_resource
+    and case
+      when nullif(btrim(key_row.oauth_resource), '') is null
+        or btrim(key_row.oauth_resource) ~* '^https://api\.phaseo\.app(?::443)?/v1/*$'
+        then 'https://api.phaseo.app/v1'
+      else btrim(key_row.oauth_resource)
+    end = resource_class
     and key_row.status not in ('revoked', 'compromised', 'deleted')
   order by (key_row.status = 'active') desc, key_row.created_at desc
   limit 1
   for update;
 
   if found then
-    -- A key an owner or admin paused (or a storage incident paused) is never turned back on by
-    -- signing in again. The code is spent; nothing usable is issued.
+    -- Paused after the check above, while this exchange waited for the key's lock.
     if existing_key.status <> 'active' then
       return jsonb_build_object('status', 'key_inactive');
     end if;
@@ -174,4 +202,4 @@ ALTER TABLE "public"."oauth_authorization_codes"
 COMMENT ON COLUMN "public"."oauth_authorization_codes"."key_monthly_limit_cost_nanos" IS 'Monthly spending limit the person approved for a third-party app on this consent, in nanodollars; 0 means no limit. The code exchange applies it to the app''s delegated key, whether the key is new or renewed. NULL for first-party apps and for codes issued before the consent screen asked.';
 
 COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp
-  with time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, retires the earlier families (revoked_reason superseded), and never turns a paused key back on. The monthly spending limit approved with the code becomes the key''s monthly cost limit, on a new or a renewed key. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
+  with time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, retires the earlier families (revoked_reason superseded), and issues nothing while any of the app''s keys for that person and workspace is paused or disabled, whatever resource it is bound to (an unbound key and the Gateway''s resource count as one). The monthly spending limit approved with the code becomes the key''s monthly cost limit, on a new or a renewed key. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
