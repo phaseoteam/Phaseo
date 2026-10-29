@@ -109,6 +109,8 @@ try {
     insert into public.workspace_members values ('${WS}', '${USER}');
   `);
   await db.exec(migration);
+  // The CLI's rotation, unchanged here, for logout-versus-replay ordering.
+  await db.exec(await read('../schemas/public/functions/rotate_oauth_refresh_token.sql'));
 
   // The exchange issues the key and a refresh token bound to it, once.
   await authorize('partner_app', ['gateway:access', 'models:read']);
@@ -242,11 +244,28 @@ try {
   const oldHead = await token('renew-2');
   assert.ok(oldHead.revoked_at, "the earlier sign-in's refresh token ends");
   assert.equal(oldHead.last_used_at, null);
+  assert.equal(oldHead.revoked_reason, 'superseded');
+  const oldAncestor = await token('renew-1');
+  assert.ok(oldAncestor.last_used_at, 'renew-1 was spent by a refresh before the renewal');
+  assert.equal(oldAncestor.revoked_reason, 'superseded', 'the whole earlier family is retired, spent tokens included');
   const freshToken = await token('renew-again-1');
   assert.equal(freshToken.key_id, original.id);
+  assert.equal(freshToken.revoked_reason, null);
   assert.notEqual(freshToken.family_id, oldHead.family_id, 'a new refresh-token family');
   assert.equal((await rotate('renew-2', 'renew-3', 'hash-c3')).status, 'invalid', "the earlier sign-in's refresh token can't renew the key");
   assert.equal((await key('kidCCCCCCCCC')).status, 'active', 'and presenting it is not treated as reuse');
+  // A spent ancestor from the earlier sign-in looks like a replay, but its family is retired: it is just refused,
+  // and neither the renewed key nor the new family is touched.
+  assert.equal((await rotate('renew-1', 'renew-replayed', 'hash-c-replayed')).status, 'invalid');
+  assert.equal((await key('kidCCCCCCCCC')).status, 'active', 'a superseded ancestor does not revoke the renewed key');
+  assert.equal((await key('kidCCCCCCCCC')).hash, 'hash-kidDDDDDDDDD');
+  assert.equal((await token('renew-again-1')).revoked_at, null, 'nor the family that replaced it');
+  assert.equal(await token('renew-replayed'), undefined);
+  // Logging out with a superseded token revokes nothing more either: that sign-in is already over.
+  assert.equal(await revoke('renew-1'), 'revoked');
+  assert.equal(await revoke('renew-2'), 'revoked');
+  assert.equal((await key('kidCCCCCCCCC')).status, 'active');
+  assert.equal((await token('renew-again-1')).revoked_at, null);
   const afterRenewal = await rotate('renew-again-1', 'renew-again-2', 'hash-c4');
   assert.equal(afterRenewal.status, 'rotated');
   assert.equal(afterRenewal.kid, 'kidCCCCCCCCC');
@@ -265,6 +284,19 @@ try {
   await db.exec(`update public.keys set status = 'active' where kid = 'kidCCCCCCCCC'`);
   assert.deepEqual((await exchange('renewed_app', ['gateway:access'], 'kidC3CCCCCCC', 'renew-resumed-1')).result, { status: 'renewed', kid: 'kidCCCCCCCCC' });
   assert.equal(await liveKeys('renewed_app'), 1);
+
+  // A replay inside the family a renewal issued is still reuse: it ends that family and the key.
+  await authorize('renewed_replay_app', ['gateway:access']);
+  assert.equal((await exchange('renewed_replay_app', ['gateway:access'], 'kidRRRRRRRRR', 'replay-a1')).result.status, 'issued');
+  assert.equal((await rotate('replay-a1', 'replay-a2', 'hash-ra2')).status, 'rotated');
+  assert.equal((await exchange('renewed_replay_app', ['gateway:access'], 'kidR2RRRRRRR', 'replay-b1')).result.status, 'renewed');
+  assert.equal((await rotate('replay-b1', 'replay-b2', 'hash-rb2')).status, 'rotated');
+  assert.equal((await rotate('replay-b1', 'replay-b3', 'hash-rb3')).status, 'reused');
+  assert.equal((await key('kidRRRRRRRRR')).status, 'revoked');
+  assert.equal((await key('kidRRRRRRRRR')).revoked_reason, 'oauth_refresh_token_reused');
+  assert.ok((await token('replay-b2')).revoked_at, 'the live successor in the current family is revoked');
+  assert.equal((await token('replay-a1')).revoked_reason, 'superseded', 'the retired family keeps its marker');
+  assert.equal(await token('replay-b3'), undefined);
 
   // RFC 7009: revoking a refresh token ends its key and every token bound to it, even after a refresh
   // rotated it (the logout raced the refresh).
@@ -314,24 +346,59 @@ try {
   // Leaving the workspace ends refreshes; so does an expired refresh token that was never used.
   await authorize('member_app', ['gateway:access']);
   assert.equal((await exchange('member_app', ['gateway:access'], 'kidGGGGGGGGG', 'member-1')).result.status, 'issued');
-  await db.exec(`update public.oauth_refresh_tokens set expires_at = now() - interval '1 minute' where token_hash = 'renew-again-2'`);
-  assert.equal((await rotate('renew-again-2', 'renew-again-3', 'hash-c5')).status, 'invalid');
+  assert.equal((await token('renew-resumed-1')).revoked_at, null);
+  await db.exec(`update public.oauth_refresh_tokens set expires_at = now() - interval '1 minute' where token_hash = 'renew-resumed-1'`);
+  assert.equal((await rotate('renew-resumed-1', 'renew-resumed-2', 'hash-c5')).status, 'invalid');
   assert.equal((await key('kidCCCCCCCCC')).status, 'active', 'an expired, unused token is not reuse');
   await db.exec(`delete from public.workspace_members where user_id = '${USER}'`);
   assert.equal((await rotate('member-1', 'member-2', 'hash-g2')).status, 'invalid');
   assert.equal((await key('kidGGGGGGGGG')).hash, 'hash-kidGGGGGGGGG');
 
   // The CLI's refresh tokens (no key) are not this function's to rotate; revoking one ends its whole family.
-  await db.exec(`
-    insert into public.workspace_members values ('${WS}', '${USER}');
-    insert into public.oauth_refresh_tokens (id, token_hash, user_id, workspace_id, client_id, scopes, family_id, revoked_at, last_used_at)
-    values ('${id(900)}', 'cli-1', '${USER}', '${WS}', 'phaseo_cli', array['openid'], '${id(901)}', now(), now());
-    insert into public.oauth_refresh_tokens (token_hash, user_id, workspace_id, client_id, scopes, family_id, rotated_from)
-    values ('cli-2', '${USER}', '${WS}', 'phaseo_cli', array['openid'], '${id(901)}', '${id(900)}');
-  `);
+  await db.exec(`insert into public.workspace_members values ('${WS}', '${USER}')`);
+  await authorize('phaseo_cli', ['openid']);
+  const issueCli = (hash, family) => db.query(
+    `insert into public.oauth_refresh_tokens (token_hash, user_id, workspace_id, client_id, scopes, family_id, expires_at)
+     values ($1, $2, $3, 'phaseo_cli', array['openid'], $4, now() + interval '90 days')`,
+    [hash, USER, WS, family],
+  );
+  const rotateCli = async (current, next) => (await one(
+    `select public.rotate_oauth_refresh_token($1, $2, now() + interval '90 days', array['openid']) r`, [current, next])).r;
+  await issueCli('cli-1', id(901));
+  assert.equal(await rotateCli('cli-1', 'cli-2'), 'rotated');
   assert.equal((await rotate('cli-2', 'cli-3', 'hash-cli')).status, 'invalid');
   assert.equal(await revoke('cli-1'), 'revoked');
   assert.ok((await token('cli-2')).revoked_at, 'the CLI token the rotated one led to is revoked');
+  // A logout and a replay of the same CLI family, in either order.
+  assert.equal(await rotateCli('cli-1', 'cli-x'), 'reused', 'a replay after the logout is refused');
+  assert.equal(await token('cli-x'), undefined);
+  await issueCli('cli-b1', id(902));
+  assert.equal(await rotateCli('cli-b1', 'cli-b2'), 'rotated');
+  assert.equal(await rotateCli('cli-b1', 'cli-b3'), 'reused');
+  assert.ok((await token('cli-b2')).revoked_at);
+  assert.equal(await revoke('cli-b1'), 'revoked', 'a logout after the replay still succeeds');
+
+  // Revocation locks the grant's authorization row before any key or token, like every rotation and the
+  // exchange. A replay holds the authorization and its token while it revokes the family, so a logout that
+  // locked family tokens first could deadlock with it; now the logout waits for the authorization instead.
+  // PGlite runs a single session, so this checks the lock itself: the authorization row's xmax is ours.
+  const revocationLocksAuthorization = async (clientId, tokenHash) => {
+    await db.exec('begin');
+    try {
+      await revoke(tokenHash);
+      return (await one(
+        `select xmax::text = pg_current_xact_id()::text as locked from public.oauth_authorizations where client_id = $1`,
+        [clientId],
+      )).locked;
+    } finally {
+      await db.exec('rollback');
+    }
+  };
+  await issueCli('cli-c1', id(903));
+  assert.equal(await revocationLocksAuthorization('phaseo_cli', 'cli-c1'), true, 'for a CLI token');
+  assert.equal(await revocationLocksAuthorization('renewed_app', 'renew-resumed-1'), true, 'for a delegated token');
+  assert.equal((await token('cli-c1')).revoked_at, null, 'rolled back');
+  assert.equal((await key('kidCCCCCCCCC')).status, 'active', 'rolled back');
 
   // Never two live keys for one app in a workspace.
   const duplicates = (await db.query(

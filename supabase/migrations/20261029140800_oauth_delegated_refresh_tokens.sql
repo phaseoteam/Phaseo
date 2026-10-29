@@ -31,6 +31,14 @@ CREATE INDEX oauth_refresh_tokens_key_idx ON public.oauth_refresh_tokens USING b
 
 COMMENT ON COLUMN "public"."oauth_refresh_tokens"."key_id" IS 'The delegated gateway key a third-party app''s refresh token renews. Refreshing rotates that key''s secret; revoking, disabling or deleting the key ends its refresh tokens. NULL for tokens that renew a session JWT (the Phaseo CLI).';
 
+ALTER TABLE "public"."oauth_refresh_tokens"
+  ADD COLUMN "revoked_reason" text;
+
+ALTER TABLE "public"."oauth_refresh_tokens"
+  ADD CONSTRAINT "oauth_refresh_tokens_revoked_reason_check" CHECK (((revoked_reason IS NULL) OR ((revoked_reason = 'superseded'::text) AND (revoked_at IS NOT NULL))));
+
+COMMENT ON COLUMN "public"."oauth_refresh_tokens"."revoked_reason" IS 'superseded: approving the same app again renewed this token''s key with a new refresh-token family and retired this one. Presenting a superseded token is just refused, never treated as reuse, so it can''t end the renewed key or the family that replaced it. NULL for every other token, revoked or not.';
+
 CREATE OR REPLACE FUNCTION public.consume_oauth_code_and_issue_delegated_grant (
   p_code_id              uuid,
   p_key_hash             text,
@@ -75,8 +83,8 @@ begin
     return jsonb_build_object('status', 'invalid');
   end if;
 
-  -- Lock order, as in rotate_oauth_delegated_refresh_token and the member-delete trigger:
-  -- membership -> authorization -> key -> refresh tokens.
+  -- Lock order, as in both refresh-token rotations, revoke_oauth_refresh_token_grant and the
+  -- member-delete trigger: membership -> authorization -> key -> refresh tokens.
   perform 1
   from public.workspace_members member
   where member.user_id = p_user_id
@@ -148,11 +156,13 @@ begin
       return jsonb_build_object('status', 'key_inactive');
     end if;
 
-    -- The earlier sign-in's refresh tokens end here; the new secret ends its access token.
+    -- Every earlier sign-in's refresh-token family is retired here, spent tokens included, and the
+    -- new secret ends its access token. Presenting a retired token later is just refused, never
+    -- treated as reuse, so it can't end this key or the family issued below.
     update public.oauth_refresh_tokens
-    set revoked_at = now()
+    set revoked_at = coalesce(revoked_at, now()), revoked_reason = 'superseded'
     where key_id = existing_key.id
-      and revoked_at is null;
+      and revoked_reason is null;
 
     update public.keys
     set hash = p_key_hash,
@@ -187,7 +197,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, and never turns a paused key back on. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
+COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, retires the earlier families (revoked_reason superseded), and never turns a paused key back on. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
 
 GRANT EXECUTE ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) TO "service_role";
 
@@ -222,7 +232,8 @@ begin
     return jsonb_build_object('status', 'invalid');
   end if;
 
-  -- Read identity without a row lock, then lock in the member-delete trigger's order:
+  -- Read identity without a row lock, then lock in the order every OAuth grant change uses (the
+  -- member-delete trigger, the code exchange, revoke_oauth_refresh_token_grant):
   -- membership -> authorization -> key -> token.
   select * into token_identity
   from public.oauth_refresh_tokens
@@ -279,6 +290,12 @@ begin
   end if;
 
   if current_token.revoked_at is not null then
+    -- Approving the app again retired this token's family and renewed the key with a new one. That
+    -- sign-in is over, so its token is just refused: the key and the family that replaced it stay.
+    if current_token.revoked_reason = 'superseded' then
+      return jsonb_build_object('status', 'invalid');
+    end if;
+
     update public.oauth_refresh_tokens
     set revoked_at = coalesce(revoked_at, now())
     where family_id = current_token.family_id;
@@ -370,7 +387,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) IS 'Refreshes a third-party app''s delegated gateway key: rotates the refresh token and replaces the same key''s secret, extending it 7 days. Scopes only narrow, and losing a required scope ends the chain. A reused refresh token revokes its chain and the key. Returns {status: rotated|reused|invalid, ...}.';
+COMMENT ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) IS 'Refreshes a third-party app''s delegated gateway key: rotates the refresh token and replaces the same key''s secret, extending it 7 days. Scopes only narrow, and losing a required scope ends the chain. A reused refresh token revokes its chain and the key; a token from a family that re-approving the app superseded is just invalid. Returns {status: rotated|reused|invalid, ...}.';
 
 GRANT EXECUTE ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) TO "service_role";
 
@@ -392,9 +409,10 @@ CREATE OR REPLACE FUNCTION public.revoke_oauth_refresh_token_grant (
   AS $function$
 declare
   token_identity public.oauth_refresh_tokens%rowtype;
+  current_token public.oauth_refresh_tokens%rowtype;
 begin
   -- Any token of the grant identifies it, even one already rotated, so a logout that races a
-  -- refresh still ends the token that refresh issued.
+  -- refresh still ends the token that refresh issued. Read it without a row lock.
   select * into token_identity
   from public.oauth_refresh_tokens
   where token_hash = any(coalesce(p_token_hashes, array[]::text[]))
@@ -404,13 +422,25 @@ begin
     return 'not_found';
   end if;
 
-  if token_identity.key_id is null then
-    -- Wait for a refresh in flight, so the update below also sees the token it issues.
-    perform 1
-    from public.oauth_refresh_tokens
-    where family_id = token_identity.family_id
-    for update;
+  -- Lock in the order every OAuth grant change uses (the member-delete trigger, the code exchange,
+  -- both refresh-token rotations): membership -> authorization -> key -> refresh tokens. Holding
+  -- the authorization first waits out any refresh, renewal or replay of this grant in flight, so
+  -- this never holds a token lock one of them is waiting for, and the updates below see the
+  -- tokens it committed.
+  perform 1
+  from public.workspace_members member
+  where member.user_id = token_identity.user_id
+    and member.workspace_id = token_identity.workspace_id
+  for key share;
 
+  perform 1
+  from public.oauth_authorizations authorization_row
+  where authorization_row.user_id = token_identity.user_id
+    and authorization_row.workspace_id = token_identity.workspace_id
+    and authorization_row.client_id = token_identity.client_id
+  for update;
+
+  if token_identity.key_id is null then
     update public.oauth_refresh_tokens
     set revoked_at = now()
     where family_id = token_identity.family_id
@@ -418,11 +448,20 @@ begin
     return 'revoked';
   end if;
 
-  -- Same order as rotate_oauth_delegated_refresh_token: key -> refresh tokens.
   perform 1
   from public.keys key_row
   where key_row.id = token_identity.key_id
   for update;
+
+  select * into current_token
+  from public.oauth_refresh_tokens
+  where id = token_identity.id;
+
+  -- Approving the app again retired this token's family and renewed the key with a new one. That
+  -- sign-in is already over, and its token doesn't speak for the one that replaced it.
+  if not found or current_token.revoked_reason = 'superseded' then
+    return 'revoked';
+  end if;
 
   update public.oauth_refresh_tokens
   set revoked_at = now()
@@ -440,7 +479,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."revoke_oauth_refresh_token_grant"(text[]) IS 'RFC 7009 revocation of an OAuth refresh token, in one transaction: revokes the token''s whole family and, for a third-party app''s token, its delegated gateway key and every refresh token bound to it. Matches a token even if it was already rotated. Returns revoked or not_found.';
+COMMENT ON FUNCTION "public"."revoke_oauth_refresh_token_grant"(text[]) IS 'RFC 7009 revocation of an OAuth refresh token, in one transaction: revokes the token''s whole family and, for a third-party app''s token, its delegated gateway key and every refresh token bound to it. Matches a token even if it was already rotated; a token from a family that re-approving the app superseded revokes nothing more. Locks the authorization before any key or token, like the rotations. Returns revoked or not_found.';
 
 GRANT EXECUTE ON FUNCTION "public"."revoke_oauth_refresh_token_grant"(text[]) TO "service_role";
 

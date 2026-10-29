@@ -42,8 +42,8 @@ begin
     return jsonb_build_object('status', 'invalid');
   end if;
 
-  -- Lock order, as in rotate_oauth_delegated_refresh_token and the member-delete trigger:
-  -- membership -> authorization -> key -> refresh tokens.
+  -- Lock order, as in both refresh-token rotations, revoke_oauth_refresh_token_grant and the
+  -- member-delete trigger: membership -> authorization -> key -> refresh tokens.
   perform 1
   from public.workspace_members member
   where member.user_id = p_user_id
@@ -115,11 +115,13 @@ begin
       return jsonb_build_object('status', 'key_inactive');
     end if;
 
-    -- The earlier sign-in's refresh tokens end here; the new secret ends its access token.
+    -- Every earlier sign-in's refresh-token family is retired here, spent tokens included, and the
+    -- new secret ends its access token. Presenting a retired token later is just refused, never
+    -- treated as reuse, so it can't end this key or the family issued below.
     update public.oauth_refresh_tokens
-    set revoked_at = now()
+    set revoked_at = coalesce(revoked_at, now()), revoked_reason = 'superseded'
     where key_id = existing_key.id
-      and revoked_at is null;
+      and revoked_reason is null;
 
     update public.keys
     set hash = p_key_hash,
@@ -154,7 +156,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, and never turns a paused key back on. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
+COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, retires the earlier families (revoked_reason superseded), and never turns a paused key back on. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
 
 GRANT EXECUTE ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) TO "service_role";
 
