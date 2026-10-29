@@ -34,7 +34,7 @@ import {
 	type SpendRule,
 	type SpendRuleRow,
 } from "@/core/spend-rules";
-import { internalServerError, isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
+import { internalServerError, isResponse, rejectThirdPartyOAuthSpendingChange, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const RULE_SELECT = `${SPEND_RULE_COLUMNS},workspace_spend_rule_destinations(destination_id)`;
@@ -67,6 +67,9 @@ async function authorize(req: Request, access: Access) {
 	const capability = access === "read" ? CAPABILITIES.SPEND_RULES_READ : access === "write" ? CAPABILITIES.SPEND_RULES_WRITE : CAPABILITIES.SPEND_RULES_DELETE;
 	const scopeError = requireCapability(auth.value, capability);
 	if (scopeError) return { response: scopeError } as const;
+	// Spend rules can block spending: apps can read them but not change them.
+	const appError = access === "read" ? null : rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change spend rules. The person can change them under Settings, Spend rules.");
+	if (appError) return { response: appError } as const;
 	const roles = access === "read" ? ["owner", "admin", "member"] : ["owner", "admin"];
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, roles);
 	if (roleError) return { response: roleError } as const;

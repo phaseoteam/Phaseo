@@ -13,6 +13,7 @@ import { resolveActiveKeyPepper, resolveKeyPepperCandidates } from "@/lib/securi
 import { generateGatewayKey, hmacSecret, INFERENCE_KEY_PREFIX, randomBase62, timingSafeEqual } from "@/routes/auth.helpers";
 import { validateWebhookEndpointUrlForDelivery } from "@/core/webhook-endpoints";
 import { decodeJWT, validateOAuthToken, type JWTClaims } from "./jwt";
+import { CLI_CLIENT_ID, DESKTOP_CLIENT_ID, LEGACY_CLI_CLIENT_ID, isFirstPartyCliClient } from "./clientIds";
 
 const encoder = new TextEncoder();
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
@@ -30,14 +31,7 @@ const MCP_UPSTREAM_TOKEN_TTL_SECONDS = 5 * 60;
 const DELEGATED_ACCESS_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
-export const CLI_CLIENT_ID = "phaseo_cli";
-export const DESKTOP_CLIENT_ID = "phaseo_desktop";
-export const LEGACY_CLI_CLIENT_ID = "aistats_cli";
-const CLI_CLIENT_IDS = new Set([CLI_CLIENT_ID, LEGACY_CLI_CLIENT_ID]);
-
-export function isFirstPartyCliClient(clientId: string): boolean {
-	return CLI_CLIENT_IDS.has(clientId.trim());
-}
+export { CLI_CLIENT_ID, DESKTOP_CLIENT_ID, LEGACY_CLI_CLIENT_ID, isFirstPartyCliClient };
 
 export const CLI_DEFAULT_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
 
@@ -699,7 +693,7 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 export function filterAllowedScopes(client: OAuthClient, requested: string[]): string[] {
 	const allowed = new Set(parseStoredScopeList(client.allowed_scopes));
 	// Opt-in scopes (billing:write) are for the first-party CLI only, whatever a client lists.
-	const optInAllowed = CLI_CLIENT_IDS.has(String(client.id ?? "").trim()) && client.is_first_party === true;
+	const optInAllowed = isFirstPartyCliClient(String(client.id ?? "")) && client.is_first_party === true;
 	return requested.filter((scope) => allowed.has(scope) && (optInAllowed || !isOptInCapability(scope)));
 }
 
@@ -709,7 +703,7 @@ export function thirdPartyForbiddenScopes(scopes: readonly string[]): string[] {
 }
 
 function isCliLoopbackRedirectUri(client: OAuthClient, redirectUri: string): boolean {
-	if (!CLI_CLIENT_IDS.has(client.id)) return false;
+	if (!isFirstPartyCliClient(client.id)) return false;
 	try {
 		const url = new URL(redirectUri);
 		return (
