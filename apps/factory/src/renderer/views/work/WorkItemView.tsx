@@ -15,7 +15,8 @@ import { Button } from "../../components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Tip } from "../../components/ui/tooltip";
-import { duration, since, tokens } from "../../lib/format";
+import { formatAgoShort, formatRelativeTime, formatRoundedCount } from "@phaseo/app-kit/format";
+import { duration } from "../../lib/format";
 import { factory, href, useItemBody, useMarkSeen, useNow, type Route } from "../../lib/useFactory";
 import { cn } from "../../lib/utils";
 import { ChatView } from "./ChatView";
@@ -138,8 +139,8 @@ function RunsTable({ runs, snapshot, selected, onSelect }: { runs: Run[]; snapsh
 					<span className="truncate text-xs text-muted-foreground/80" title={run.outcome?.why}>{run.outcome?.kind === "flawed" ? run.outcome.why : run.summary ? <InlineMarkdown source={run.summary} /> : (run.status === "running" ? run.log.at(-1)?.text : "")}</span>
 				</span>
 				<span className="text-right text-xs text-muted-foreground tabular-nums">{duration((run.finishedAt ?? now) - run.startedAt)}</span>
-				<span className="text-right text-xs text-muted-foreground tabular-nums">{run.usage ? tokens(run.usage.inputTokens + run.usage.outputTokens) : "—"}</span>
-				<span className="text-right text-xs text-muted-foreground tabular-nums">{since(run.startedAt, now)}</span>
+				<span className="text-right text-xs text-muted-foreground tabular-nums">{run.usage ? formatRoundedCount(run.usage.inputTokens + run.usage.outputTokens, "en-US") : "—"}</span>
+				<span className="text-right text-xs text-muted-foreground tabular-nums">{formatAgoShort(run.startedAt, now)}</span>
 			</button>;
 		})}
 	</div>;
@@ -154,7 +155,7 @@ function AutopilotBar({ item, running }: { item: WorkItem; running?: StageId }) 
 		<FastForward className="size-4 shrink-0 text-info" />
 		<span className="min-w-0 flex-1">
 			<span className="font-medium">Autopilot</span>
-			<span className="text-muted-foreground"> · {stage ? `${stageLabel(stage)} ${running ? "is running" : "is next"}` : "Opening the pull request"}, then the rest up to a draft pull request. It stops as soon as anything needs you. Started {since(item.autopilot!.startedAt, now)}.</span>
+			<span className="text-muted-foreground"> · {stage ? `${stageLabel(stage)} ${running ? "is running" : "is next"}` : "Opening the pull request"}, then the rest up to a draft pull request. It stops as soon as anything needs you. Started {formatRelativeTime(item.autopilot!.startedAt, now)}.</span>
 		</span>
 		<Button variant="outline" size="sm" onClick={() => void factory().act(item.id, { id: "stop-autopilot", label: "Stop autopilot" })}>Stop autopilot</Button>
 	</div>;
@@ -269,7 +270,7 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 				<span className={cn("flex items-center gap-1.5 font-medium", item.state === "open" ? "text-success" : item.state === "merged" || (item.kind === "issue" && item.state === "closed") ? MERGED : "text-muted-foreground")}>
 					<ItemMark item={item} className="size-3.5" />{stateLabel(item)}
 				</span>
-				<span className="flex items-center gap-1.5"><PersonMark login={item.author.login} avatar={item.author.avatar} className="size-4" />{item.author.login} opened {since(item.createdAt)}</span>
+				<span className="flex items-center gap-1.5"><PersonMark login={item.author.login} avatar={item.author.avatar} className="size-4" />{item.author.login} opened {formatRelativeTime(item.createdAt)}</span>
 				{item.comments > 0 && <span className="flex items-center gap-1"><MessageSquare className="size-3.5" />{item.comments}</span>}
 				{related && <a href={href({ page: "work", item: related.id })} className="flex min-w-0 max-w-full items-center gap-1.5 rounded-md border px-2 py-0.5 text-foreground/90 hover:bg-accent/60 hover:text-foreground">
 					<span className="shrink-0 text-muted-foreground">{item.kind === "pull" ? "Fixes" : "Fixed by"}</span>
@@ -353,8 +354,8 @@ export function WorkItemView({ item, snapshot, route, narrow }: { item: WorkItem
 					{item.diff && <Detail label="Changes"><span className="tabular-nums">{item.diff.files} files <span className="text-success">+{item.diff.additions}</span> <span className="text-destructive">−{item.diff.deletions}</span></span></Detail>}
 					{item.kind === "pull" && item.ci && <Detail label="Checks"><ChecksDetail item={item} /></Detail>}
 					{!item.ci && item.checks && <Detail label="Checks"><span className="tabular-nums">{item.checks.passed} passed{item.checks.failed ? <span className="text-destructive">, {item.checks.failed} failed</span> : null}{item.checks.pending ? <span className="text-muted-foreground">, {item.checks.pending} pending</span> : null}</span></Detail>}
-					<Detail label="Spent">{spent ? <span className="tabular-nums">{tokens(spent)} tokens over {runs.length} {runs.length === 1 ? "run" : "runs"}</span> : <span className="text-muted-foreground">Nothing yet</span>}</Detail>
-					<Detail label="Updated">{since(item.updatedAt)}</Detail>
+					<Detail label="Spent">{spent ? <span className="tabular-nums">{formatRoundedCount(spent, "en-US")} tokens over {runs.length} {runs.length === 1 ? "run" : "runs"}</span> : <span className="text-muted-foreground">Nothing yet</span>}</Detail>
+					<Detail label="Updated">{formatRelativeTime(item.updatedAt)}</Detail>
 					{similar.length > 0 && <div className="mt-5 border-t pt-5">
 						<h2 className="mb-1 text-sm font-semibold">Similar issues</h2>
 						<p className="mb-2 text-xs text-muted-foreground">They share most of their words. Triage checks whether one is the same problem.</p>

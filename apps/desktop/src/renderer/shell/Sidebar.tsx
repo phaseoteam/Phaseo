@@ -1,3 +1,4 @@
+import { formatAgoShort, formatDateParts } from "@phaseo/app-kit/format";
 import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -25,8 +26,6 @@ import { TagChip, TagDots, TagMenu } from "../components/Tags";
 import { tagsInUse } from "../../shared/tags";
 
 const dayMs = 86_400_000;
-// Formatters are costly to build, and the sidebar labels every chat it lists.
-const monthLabel = new Intl.DateTimeFormat(undefined, { month: "long" }), monthYearLabel = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
 function dateBucket(iso: string, now = new Date()) {
 	const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 	const time = Date.parse(iso);
@@ -34,16 +33,13 @@ function dateBucket(iso: string, now = new Date()) {
 	if (time >= start - dayMs) return "Yesterday";
 	if (time >= start - 7 * dayMs) return "Previous 7 days";
 	if (time >= start - 30 * dayMs) return "Previous 30 days";
-	return (now.getFullYear() === new Date(time).getFullYear() ? monthLabel : monthYearLabel).format(time);
+	return formatDateParts(time, now.getFullYear() === new Date(time).getFullYear() ? { month: "long" } : { month: "long", year: "numeric" });
 }
 
+/** "5m", "3h", "2d" (the website's relative units, abbreviated), then the date once it is a week old. */
 function relative(iso: string) {
-	const minutes = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60_000));
-	if (minutes < 1) return "now";
-	if (minutes < 60) return `${minutes}m`;
-	if (minutes < 60 * 24) return `${Math.round(minutes / 60)}h`;
-	if (minutes < 60 * 24 * 7) return `${Math.round(minutes / 60 / 24)}d`;
-	return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+	const at = Date.parse(iso);
+	return Date.now() - at < 7 * dayMs ? formatAgoShort(at) : formatDateParts(iso, { month: "short", day: "numeric" });
 }
 
 export function StatusDot({ task, className }: { task: TaskOverview; className?: string }) {

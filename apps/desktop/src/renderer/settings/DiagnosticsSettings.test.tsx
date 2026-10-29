@@ -10,13 +10,13 @@ describe("diagnostics formatting", () => {
 	it("formats durations, sizes, CPU time and run time", () => {
 		expect([formatDuration(12.4), formatDuration(1_234), formatDuration(12_345)]).toEqual(["12 ms", "1.23 s", "12.3 s"]);
 		expect([formatBytes(512), formatBytes(2048), formatBytes(150 * 1024 * 1024), formatBytes(3 * 1024 ** 3)]).toEqual(["512 B", "2.00 KB", "150.0 MB", "3.00 GB"]);
-		expect([formatCpuTime(1.5), formatCpuTime(90), formatCpuTime(7_200)]).toEqual(["1.50 s", "1.50 min", "2.00 h"]);
+		expect([formatCpuTime(1.5), formatCpuTime(90), formatCpuTime(7_200)]).toEqual(["1.5 s", "1.5 min", "120 min"]);
 		expect([formatElapsed(65_000), formatElapsed(3_725_000), formatElapsed(90_000_000)]).toEqual(["1:05", "1:02:05", "1d 1h"]);
 	});
 
-	it("says how long ago, in sentence case", () => {
+	it("says how long ago, as the website words it", () => {
 		const now = Date.parse("2026-10-16T12:00:00.000Z");
-		expect(["2026-10-16T11:59:58.000Z", "2026-10-16T11:59:30.000Z", "2026-10-16T11:55:00.000Z", "2026-10-16T09:00:00.000Z", "2026-10-15T11:00:00.000Z", undefined].map(value => formatAgo(value, now))).toEqual(["Just now", "30 s ago", "5 min ago", "3 h ago", "Yesterday", "Never"]);
+		expect(["2026-10-16T11:59:58.000Z", "2026-10-16T11:59:30.000Z", "2026-10-16T11:55:00.000Z", "2026-10-16T09:00:00.000Z", "2026-10-15T11:00:00.000Z", undefined].map(value => formatAgo(value, now))).toEqual(["2 seconds ago", "30 seconds ago", "5 minutes ago", "3 hours ago", "yesterday", "Never"]);
 	});
 
 	it("names programs from command lines and shortens trace IDs", () => {
