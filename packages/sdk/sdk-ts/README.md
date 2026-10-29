@@ -128,6 +128,20 @@ const client = new Phaseo({
 
 App attribution is optional and is never inferred from the SDK itself.
 
+### Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let Vercel deployments and GitHub Actions jobs call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → Trusted workloads, then pass a function as `apiKey`. It is called before every request, so each request uses a current token:
+
+```ts
+import { getVercelOidcToken } from "@vercel/oidc";
+
+const client = new Phaseo({
+  apiKey: () => getVercelOidcToken({ audience: "https://api.phaseo.app" }),
+});
+```
+
+Tokens must be issued for the audience `https://api.phaseo.app`. On Vercel, `getVercelOidcToken({ audience })` from the server entry of `@vercel/oidc` 4.x exchanges the deployment's token for one with that audience.
+
 ## Regional text routing
 
 Select `eu` or `us` to restrict Chat Completions, Responses, and Messages to
@@ -277,6 +291,20 @@ const video = await client.videos.create({
 const genericSocketUrl = client.getAsyncJobWebSocketUrl("video", "video_123");
 ```
 
+## Realtime voice (beta)
+
+`client.realtime.connect()` creates a realtime session and opens the relay WebSocket (global `WebSocket` in Node.js 22+, or the `ws` package). It sends your API key, so run it on your server. For browser calls, create the session on your server with `client.realtime.createSession()` and join it in the browser with `connectRealtimeSession(info)`, which needs only the session's `client_secret`. Provider events pass through unchanged.
+
+```ts
+const session = await client.realtime.connect({ model: "openai/gpt-realtime-2", voice: "marin" });
+session.onWarning((warning) => console.warn(warning.code));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+session.sendAudio(pcm16Chunk); // PCM16 bytes; base64 is handled for you
+const ended = await session.end({ reason: "caller hung up" }); // session.ended: reason, usage, cost, billing_status
+```
+
+If the socket closes without `session.ended`, `end()` rejects with `RealtimeSessionClosedError`, whose `finalBill` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Batch jobs
 
 Use batch helpers when you want deferred execution with polling and webhooks. Batch jobs support OpenAI, Anthropic, Google Gemini, Mistral, xAI, Groq, and Together AI through the requested `model`; `provider` is only needed as an advanced routing constraint.
@@ -340,6 +368,8 @@ const client = new Phaseo({
   },
 });
 ```
+
+Before a model's first request, the client looks it up once with `GET /models` and refuses models that are not active. Pass `modelLifecycleChecks: false` to skip that lookup and let the gateway answer for the model; `client.models.validate()` still checks a model on demand.
 
 ## Environment variables
 

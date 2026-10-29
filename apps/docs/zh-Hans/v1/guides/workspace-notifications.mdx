@@ -15,6 +15,10 @@ icon: "bell-ring"
 5. 为每个已配置的频道选择**发送测试**。
 6. 所有测试均成功后，再创建通知目标。
 
+在 CLI 中运行 `phaseo notifications destinations create`，用 `phaseo notifications destinations test <id>` 测试，然后用 `phaseo notifications routes set <event-kind> --destination-ids <id>` 选择它接收哪些告警。
+
+自定义 Webhook 在创建时会获得签名密钥。请从弹出的对话框中复制；它只显示一次。
+
 Phaseo 支持：
 
 - 电子邮件地址和通讯组列表
@@ -51,3 +55,72 @@ Phaseo 支持：
 轮换凭据或更改频道配置后，可在现有通知目标旁选择**发送测试**。请移除不再监控的目标，避免提醒看似发送到了已弃用的频道。
 
 自定义 webhook 必须使用 HTTPS，并在处理前验证请求。请及时返回成功响应，并将耗时任务移至后台作业。
+
+## 验证 Webhook 签名
+
+Phaseo 会为每次自定义 Webhook 投递（包括从已保存目标发送的测试）签名，方式与[视频和批处理 Webhook](./async-video-and-batch.mdx) 相同。每个请求都带有以下请求头：
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` 是以目标的签名密钥（`whsec_…`）为密钥，对 `x-phaseo-timestamp` 的值、一个英文句点（`.`）和**未经修改的请求体**计算出的十六进制 HMAC-SHA256。`x-phaseo-timestamp` 以 Unix 秒为单位。
+
+验证投递的步骤：
+
+1. 在解析 JSON 之前读取原始请求体。
+2. 重新计算签名，并以恒定时间进行比较。
+3. 拒绝与你的时钟相差超过五分钟的时间戳。
+4. 按 `x-phaseo-event-id` 去重。失败的投递会重试，每次尝试都会使用新的时间戳重新签名。
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody 是按原样接收的请求体字符串。
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body 是按原样接收的请求体字节。
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### 生成或轮换密钥
+
+密钥只在创建目标时显示一次。要替换它，请在**设置 → 通知**中选择目标旁的**轮换密钥**，或调用 [`POST /v1/notifications/destinations/{id}/rotate-secret`](/zh-Hans/v1/api-reference/endpoint/notifications-destination-rotate-secret)。下一次投递将使用新密钥签名，旧密钥随即失效，因此请立即更新接收端。
+
+在签名功能推出前创建的自定义 Webhook 没有密钥，仍以未签名方式投递。它们在设置中显示为**未签名**。选择**生成密钥**，将密钥添加到接收端，然后发送测试以检查验证。在保存目标之前，从**添加目标**面板发送的测试不会签名，因为此时还没有密钥。
+
+电子邮件、Slack、Discord 和 Microsoft Teams 目标不签名：这些服务会自行验证 Webhook URL 或机器人令牌。

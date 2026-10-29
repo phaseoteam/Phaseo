@@ -8,7 +8,7 @@ import {
 	syncProviderCatalog,
 	verifyProviderCatalogWebhookSignature,
 } from "./account/provider-catalog-sync";
-import { providerCatalogJsonSchema, providerCatalogV11JsonSchema } from "./account/provider-catalog";
+import { providerCatalogJsonSchema, providerCatalogV11JsonSchema, providerCatalogV12JsonSchema } from "./account/provider-catalog";
 
 const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
 const PROVIDER_SLUG = /^[a-z0-9][a-z0-9._-]*$/;
@@ -18,18 +18,25 @@ export const providerCatalogWebhookRouter = new Hono<{ Bindings: Env }>();
 
 providerCatalogWebhookRouter.get("/provider-catalog/schema", (c) => {
 	const version = c.req.query("version") ?? "1.0";
-	if (!["1.0", "1.1"].includes(version)) return c.json({ error: "unsupported_catalog_version" }, 400);
-	return c.json(version === "1.1" ? providerCatalogV11JsonSchema : providerCatalogJsonSchema, 200, { "cache-control": "public, max-age=3600" });
+	if (!["1.0", "1.1", "1.2"].includes(version)) return c.json({ error: "unsupported_catalog_version" }, 400);
+	return c.json(version === "1.2" ? providerCatalogV12JsonSchema : version === "1.1" ? providerCatalogV11JsonSchema : providerCatalogJsonSchema, 200, { "cache-control": "public, max-age=3600" });
 });
 
 providerCatalogWebhookRouter.get("/provider-catalog/openapi", (c) => c.json({
 	openapi: "3.1.0",
 	info: {
 		title: "Phaseo provider catalog webhook",
-		version: "1.1.0",
+		version: "1.2.0",
 		description: "Signal that your catalog changed; Phaseo then fetches the catalog document from your configured URL. The document's optional rate_limits section declares the request and token limits your platform imposes on Phaseo. Declared limits apply without review once your provider application is approved, and reaching one only ranks your offers lower in routing.",
 	},
 	paths: {
+		"/api/internal/provider-catalog/schema": {
+			get: {
+				summary: "Download a versioned provider catalog JSON schema",
+				parameters: [{ name: "version", in: "query", schema: { type: "string", enum: ["1.0", "1.1", "1.2"], default: "1.0" }, description: "V1.2 adds capability-scoped data_policy to service tiers and optional declarations." }],
+				responses: { "200": { description: "JSON Schema for the requested catalog version", content: { "application/json": { schema: { type: "object" } } } }, "400": { description: "Unsupported catalog version" } },
+			},
+		},
 		"/api/internal/provider-catalog/{providerSlug}": {
 			post: {
 				summary: "Notify Phaseo that a provider catalog changed",
@@ -42,6 +49,8 @@ providerCatalogWebhookRouter.get("/provider-catalog/openapi", (c) => c.json({
 	components: {
 		schemas: {
 			ProviderCatalog: { $ref: "/api/internal/provider-catalog/schema" },
+			ProviderCatalogV11: { $ref: "/api/internal/provider-catalog/schema?version=1.1" },
+			ProviderCatalogV12: { $ref: "/api/internal/provider-catalog/schema?version=1.2" },
 			ProviderCatalogRateLimits: { ...providerCatalogJsonSchema.properties.rate_limits, items: { $ref: "#/components/schemas/ProviderCatalogRateLimit" } },
 			ProviderCatalogRateLimit: providerCatalogJsonSchema.$defs.rateLimit,
 		},
@@ -85,7 +94,7 @@ providerCatalogWebhookRouter.post("/provider-catalog/:providerSlug", async (c) =
 	if (!EVENT_ID.test(eventId)) return c.json({ error: "event_id_required" }, 400, PRIVATE_NO_STORE_HEADERS);
 	if (c.req.header("x-phaseo-event-id") && c.req.header("x-phaseo-event-id") !== eventId) return c.json({ error: "event_id_mismatch" }, 400, PRIVATE_NO_STORE_HEADERS);
 
-	const sync = syncProviderCatalog(c.env, providerSlug, "webhook", eventId).catch((error) => {
+	const sync = syncProviderCatalog(c.env, providerSlug, "webhook", eventId, c.executionCtx).catch((error) => {
 		console.error("provider_catalog_webhook_sync_failed", { errorType: error instanceof Error ? error.name : "UnknownError" });
 	});
 	if (c.executionCtx?.waitUntil) c.executionCtx.waitUntil(sync);

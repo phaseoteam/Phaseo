@@ -46,7 +46,7 @@ function rule(overrides: Partial<SpendRule> = {}): SpendRule {
 
 const draft = (overrides: Partial<SpendRuleDraft> = {}): SpendRuleDraft => ({ ...emptyDraft(), name: "Monthly", baseAmountUsd: "100", ...overrides });
 const codes = (value: SpendRuleDraft) => draftIssues(value).map((issue) => `${issue.field}:${issue.code}`);
-const accepted = (payload: Record<string, unknown>) => parseSpendRuleInput(payload, { parseTimeZone: (zone) => (typeof zone === "string" ? zone : null) }).ok;
+const accepted = (payload: Record<string, unknown>, blocksEnabled = true) => parseSpendRuleInput(payload, { parseTimeZone: (zone) => (typeof zone === "string" ? zone : null), blocksEnabled }).ok;
 
 describe("parseUsd", () => {
 	it("takes plain dollar amounts with up to four decimals", () => {
@@ -179,6 +179,8 @@ describe("draftToPayload", () => {
 		const payload = draftToPayload(spend);
 		expect(payload).toMatchObject({ metric: "spend", threshold_amount_usd: 100, block_at_amount_usd: 110, action: "block", block_free_models: false, base_kind: null, threshold_percents: null });
 		expect(accepted(payload)).toBe(true);
+		// A new block rule is refused while the gateway does not enforce blocks.
+		expect(accepted(payload, false)).toBe(false);
 		expect(draftToPayload({ ...spend, blockFreeModels: true }).block_free_models).toBe(true);
 	});
 

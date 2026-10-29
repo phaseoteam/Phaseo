@@ -1,6 +1,6 @@
 ---
 title: "CLI और MCP"
-description: "टर्मिनल ऑटोमेशन के लिए Phaseo CLI इस्तेमाल करें या प्रमाणीकृत MCP सर्वर को AI क्लाइंट से जोड़कर Phaseo का लाइव डेटा केवल पढ़ने के लिए उपलब्ध कराएँ।"
+description: "टर्मिनल ऑटोमेशन के लिए Phaseo CLI इस्तेमाल करें या प्रमाणीकृत MCP सर्वर को AI क्लाइंट से जोड़कर Phaseo का लाइव डेटा पाएँ और, आपकी अनुमति हो तो, अपना खाता प्रबंधित करें।"
 icon: "square-terminal"
 ---
 
@@ -11,7 +11,7 @@ icon: "square-terminal"
 | इंटरफ़ेस | किसके लिए उपयुक्त | पहुँच |
 | --- | --- | --- |
 | Phaseo CLI | टर्मिनल वर्कफ़्लो, CI, प्रशासन और ऑटोमेशन | पढ़ने और लिखने की अनुमति, जो आपके स्कोप और वर्कस्पेस भूमिका से सीमित है |
-| Phaseo MCP | Codex, Claude, ChatGPT और अन्य MCP क्लाइंट में Phaseo का लाइव डेटा | प्रमाणीकृत और केवल पढ़ने के लिए |
+| Phaseo MCP | Codex, Claude, ChatGPT और अन्य MCP क्लाइंट में Phaseo का लाइव डेटा, और वैकल्पिक खाता प्रबंधन | प्रमाणीकृत; खाता प्रबंधन के साथ कनेक्ट न करने पर केवल पढ़ने के लिए |
 | Docs MCP | कोडिंग के समय Phaseo के वर्तमान दस्तावेज़ देखना | केवल दस्तावेज़, केवल पढ़ने के लिए |
 | Phaseo प्लगइन | Claude Code या Codex में Phaseo MCP, Docs MCP और Phaseo स्किल्स एक साथ इंस्टॉल करना | हर MCP सर्वर के समान |
 
@@ -75,12 +75,41 @@ codex mcp list
 
 ### MCP क्या पढ़ सकता है
 
-- मॉडल, प्रदाता, संगठन, एंडपॉइंट परिवार और मूल्य निर्धारण
+- मॉडल, प्रदाता, बेंचमार्क रैंकिंग, मूल्य निर्धारण और लागत अनुमान
 - क्रेडिट, गतिविधि, एनालिटिक्स, अनुरोध लॉग और जनरेशन मेटाडेटा
-- वर्कस्पेस, सदस्य, प्रीसेट, सेटिंग्स और गार्डरेल
-- गुप्त मानों को शामिल किए बिना API कुंजियों, प्रबंधन कुंजियों, OAuth ऐप्लिकेशन और वेबहुक का मेटाडेटा
 
-MCP बिल योग्य इन्फ़रेंस नहीं चलाता, गुप्त मान नहीं लौटाता और Phaseo संसाधनों में बदलाव नहीं करता। इन कामों के लिए डैशबोर्ड, CLI या प्रबंधन API इस्तेमाल करें।
+ये टूल केवल पढ़ने के लिए हैं। ये कभी भी प्रॉम्प्ट, जवाब या गुप्त मान नहीं लौटाते।
+
+### अपना खाता प्रबंधित करें (वैकल्पिक)
+
+किसी एजेंट को अपने Phaseo वर्कस्पेस में बदलाव करने देने के लिए, इसके बजाय प्रबंधन URL से कनेक्ट करें:
+
+`https://mcp.phaseo.app/mcp?access=manage`
+
+```bash
+codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
+codex mcp login phaseo
+```
+
+साइन इन करते समय सहमति स्क्रीन कनेक्शन द्वारा माँगी गई हर अनुमति अलग से दिखाती है, जैसे API कुंजियाँ प्रबंधित करना या बजट हटाना, और उस पर **पढ़ें**, **लिखें** या **हटाएँ** का निशान लगाती है। जो अनुमति आप नहीं देना चाहते, उसका चेकबॉक्स हटा दें। एजेंट को सिर्फ़ उन्हीं अनुमतियों के टूल मिलते हैं जिन्हें आप देते हैं, और Phaseo हर बदलाव पर आपकी वर्कस्पेस भूमिका भी जाँचता है। इसलिए जो सदस्य मालिक या एडमिन नहीं है, वह इस तरीके से केवल एडमिन के लिए बनी सेटिंग्स नहीं बदल सकता।
+
+अगर आप पहले से केवल-पढ़ने वाले URL से कनेक्ट हैं, तो क्लाइंट को प्रबंधन URL पर बदलें और फिर से साइन इन करें। केवल-पढ़ने वाली पहुँच पर लौटने के लिए सामान्य URL से दोबारा कनेक्ट करें या **सेटिंग → कनेक्टेड ऐप्स** में ऐप की पहुँच रद्द करें।
+
+| क्षेत्र | टूल | अनुमतियाँ |
+| --- | --- | --- |
+| API कुंजियाँ | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
+| बजट | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
+| खर्च नियम | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
+| प्रदाता कुंजियाँ (BYOK) | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
+| गार्डरेल | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
+| प्रीसेट | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
+| सेटिंग | `settings_get`, `settings_update` (रूटिंग मोड, गोपनीयता और ZDR, लॉगिंग, प्रदाता प्रतिबंध) | `settings:read`, `settings:write` |
+| वेबहुक | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
+| ऑब्ज़र्वेबिलिटी गंतव्य | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+
+जो टूल कुछ बदलते या हटाते हैं, उन पर ऐसा चिह्न होता है, ताकि इसे सपोर्ट करने वाले MCP क्लाइंट हर कॉल से पहले आपसे पूछें। नई API कुंजी या वेबहुक साइनिंग सीक्रेट टूल के नतीजे में सिर्फ़ एक बार दिखाया जाता है और फिर दोबारा नहीं दिखाया जा सकता। सहेजी गई प्रदाता कुंजियाँ और गंतव्यों के क्रेडेंशियल कभी नहीं लौटाए जाते।
+
+MCP में बिलिंग, भुगतान, वर्कस्पेस, सदस्य, प्रबंधन कुंजियों या OAuth ऐप के लिए कोई टूल नहीं है। इनके लिए डैशबोर्ड, CLI या मैनेजमेंट API इस्तेमाल करें।
 
 ## Docs MCP
 

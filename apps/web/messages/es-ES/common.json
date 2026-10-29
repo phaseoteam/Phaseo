@@ -254,7 +254,11 @@
 				"nav-settings-presets": "Preajustes de enrutamiento",
 				"nav-settings-privacy": "Ajustes de privacidad",
 				"nav-settings-guardrails": "Reglas de protección",
+				"nav-settings-rate-limits": "Límites de velocidad",
+				"nav-settings-trusted-workloads": "Cargas de trabajo de confianza",
 				"nav-settings-classifiers": "Clasificadores",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Seguridad de claves",
 				"nav-settings-oauth": "Aplicaciones OAuth",
 				"nav-settings-broadcast": "Difusión",
 				"nav-settings-webhooks": "Webhooks",
@@ -340,7 +344,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "Cómo se calculan los precios",
 				"nav-how-phaseo-tracks-provider-availability": "Cómo se supervisa la disponibilidad de los proveedores",
 				"nav-chat-decisions": "Decisiones",
-				"nav-settings-account-providers": "Incorporación de proveedores"
+				"nav-settings-account-providers": "Incorporación de proveedores",
+				"nav-settings-budgets": "Presupuestos"
 			}
 		},
 		"searchDataUnavailable": "No se pudieron cargar los datos de búsqueda.",
@@ -553,6 +558,8 @@
 			"identityPermissionDescription": "Permite que esta aplicación verifique quién inicia sesión.",
 			"gatewayPermissionLabel": "Usar AI Gateway con tus créditos",
 			"gatewayPermissionDescription": "Permite a la aplicación enviar solicitudes de modelos con cargo a los créditos del equipo seleccionado.",
+			"billingPermissionLabel": "Iniciar recargas de créditos",
+			"billingPermissionDescription": "Permite a la aplicación solicitar compras de créditos para el equipo seleccionado. Un propietario o administrador del equipo debe confirmar cada cargo por correo electrónico.",
 			"readPermissionLabel": "Leer: {resource}",
 			"readPermissionDescription": "Permite que esta aplicación lea: {resource}.",
 			"managePermissionLabel": "Gestionar: {resource}",
@@ -607,6 +614,10 @@
 				"oauth-apps": {
 					"title": "Aplicaciones OAuth",
 					"description": "Configuración de clientes OAuth e integraciones."
+				},
+				"billing": {
+					"title": "Facturación",
+					"description": "Compras de créditos que un propietario o administrador del equipo confirma por correo electrónico."
 				}
 			},
 			"resources": {
@@ -629,6 +640,7 @@
 				"providerCredentials": "las credenciales de los proveedores",
 				"guardrails": "las protecciones y las políticas",
 				"budgets": "los presupuestos de gasto y el uso del equipo",
+				"spendRules": "reglas de alertas y bloqueo de gasto",
 				"managementKeys": "los datos de las claves de gestión de máquina",
 				"oauthApps": "los ajustes de aplicaciones OAuth e integraciones",
 				"privateModels": "modelos privados del espacio de trabajo"
@@ -1257,6 +1269,7 @@
 			"enableConnection": "Activar conexión",
 			"deleteDestination": "Eliminar destino",
 			"openRequestDetails": "Abrir detalles de la solicitud",
+			"openInChat": "Abrir en Chat",
 			"copyRequestId": "Copiar ID de solicitud",
 			"copySessionId": "Copiar ID de sesión",
 			"copyNativeResponseId": "Copiar ID de respuesta nativa",
@@ -1382,6 +1395,11 @@
 			"retention90Days": "90 días",
 			"retention180Days": "180 días",
 			"retention365Days": "365 días",
+			"contentsAccessTitle": "Quién puede ver el contenido",
+			"contentsAccessDescription": "Elige quién puede ver los prompts y respuestas guardados en los detalles de la solicitud, en Chat y en la API.",
+			"contentsAccessMembers": "Todos los miembros",
+			"contentsAccessAdmins": "Propietarios y administradores",
+			"contentsRestricted": "En este espacio de trabajo, solo los propietarios y administradores pueden ver el contenido de las solicitudes.",
 			"allowAllExceptSelectedModels": "Permitir todos los modelos excepto los seleccionados",
 			"allowAnyProvider": "Permitir cualquier proveedor",
 			"allowOnlySelectedProviders": "Permitir solo los proveedores seleccionados",
@@ -2411,6 +2429,8 @@
 			"selectModelsToCompare": "Selecciona modelos para comparar.",
 			"viewFullLeaderboard": "Ver clasificación completa",
 			"sourceArtificialAnalysis": "Fuente: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "Comparable entre años y versiones del índice",
 			"fullLeaderboard": "Clasificación completa",
 			"noModelsMatchThisSearch": "No hay modelos que coincidan con esta búsqueda.",
 			"noResultsAvailableForThisMetric": "No hay resultados disponibles para esta métrica.",

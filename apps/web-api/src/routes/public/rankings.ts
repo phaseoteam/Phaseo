@@ -11,13 +11,15 @@ const LIVE_CACHE = { ...PUBLIC_LIVE_DATA_CACHE, cacheTags: ["web-api-rankings"] 
 const META_CACHE = { edgeTtlSeconds: 60 * 60, staleWhileRevalidateSeconds: 24 * 60 * 60, cacheTags: ["web-api-ranking-metadata"] } as const;
 
 const RANKING_BENCHMARK_FAMILIES = ["aa-intelligence-index-v", "aa-coding-index-v", "aa-agentic-index-v", "aa-intelligence-index-cost-v"] as const;
-const RANKING_BENCHMARK_IDS = RANKING_BENCHMARK_FAMILIES.flatMap((family) => [`${family}5`, `${family}4`]);
+/** AA's version-independent capability scale; listed after the four index metrics. */
+const PROGRESS_INDEX_ID = "aa-progress-index-v1";
+const RANKING_BENCHMARK_IDS = [...RANKING_BENCHMARK_FAMILIES.flatMap((family) => [`${family}5`, `${family}4`]), PROGRESS_INDEX_ID];
 
 function activeRankingBenchmarkIds(scores: Array<{ benchmark_id: string }>) {
 	const withScores = new Set(scores.map((row) => row.benchmark_id));
-	return RANKING_BENCHMARK_FAMILIES.map((family) =>
+	return [...RANKING_BENCHMARK_FAMILIES.map((family) =>
 		RANKING_BENCHMARK_IDS.find((id) => id.startsWith(family) && withScores.has(id)) ?? `${family}4`,
-	);
+	), ...(withScores.has(PROGRESS_INDEX_ID) ? [PROGRESS_INDEX_ID] : [])];
 }
 
 function bounded(value: string | undefined, fallback: number, max: number) {

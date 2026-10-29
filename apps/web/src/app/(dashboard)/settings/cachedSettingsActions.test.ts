@@ -3,8 +3,8 @@ import { WebApiError } from "@/lib/web-api/client";
 const readers: Record<string, jest.Mock> = {};
 const readerNames = [
 	"fetchSettingsAppsInitialData", "fetchSettingsAuthorizedAppsInitialData", "fetchSettingsDynamicRoutesInitialData",
-	"fetchSettingsKeysInitialData", "fetchSettingsManagementApiKeysInitialData", "fetchSettingsRoutingInitialData",
-	"fetchSettingsGuardrailsInitialData", "fetchSettingsClassifiersInitialData", "fetchSettingsSpendAlertsData", "fetchSettingsPrivacyInitialData", "fetchSettingsByokInitialData",
+	"fetchSettingsKeysInitialData", "fetchSettingsKeySecurityInitialData", "fetchSettingsManagementApiKeysInitialData", "fetchSettingsRoutingInitialData",
+	"fetchSettingsGuardrailsInitialData", "fetchSettingsClassifiersInitialData", "fetchSettingsRateLimitsInitialData", "fetchSettingsSpendAlertsData", "fetchSettingsPrivacyInitialData", "fetchSettingsByokInitialData",
 	"fetchSettingsPresetsInitialData", "fetchSettingsPrivateModels", "fetchSettingsTeamsInitialData",
 	"fetchSettingsUsageAlertsInitialData", "fetchSettingsCreditsTransactionsInitialData", "fetchSettingsAccountDetailsInitialData",
 	"fetchSettingsProfileInitialData", "fetchSettingsProfileUsageSummary", "fetchSettingsProfileGames",

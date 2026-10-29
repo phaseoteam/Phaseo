@@ -145,7 +145,7 @@ export function OnePasswordSaveButton({
 				</span>
 			) : null}
 			<div
-				className="pointer-events-none absolute -left-[10000px] top-0 h-px w-px overflow-hidden"
+				className="ph-no-capture pointer-events-none absolute -left-[10000px] top-0 h-px w-px overflow-hidden"
 				inert
 				aria-hidden="true"
 			>

@@ -361,3 +361,27 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
   expect(fetchMock.mock.calls.filter(([url])=>String(url).includes('/v2_benchmark_results'))).toHaveLength(2);
   expect(fetchMock.mock.calls.filter(([url])=>String(url).includes('/v2_models'))).toHaveLength(3);
 });
+
+it("lists the AA Progress Index after the four index metrics with every configuration", async () => {
+  const ids = ["aa-intelligence-index-v5", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v5", "aa-progress-index-v1"];
+  const rows = [
+    { benchmark_id: ids[0], model_slug: "test/a", score_numeric: 58, other_info: "Artificial Analysis ID a; Intelligence Index v5.0", variant: "max" },
+    { benchmark_id: ids[4], model_slug: "test/a", score_numeric: 350, other_info: "A (Max); Artificial Analysis ID a; Progress Index v1", variant: "max" },
+    { benchmark_id: ids[4], model_slug: "test/a", score_numeric: 325, other_info: "A (Low); Artificial Analysis ID a-low; Progress Index v1", variant: "low" },
+    { benchmark_id: ids[4], model_slug: "test/old", score_numeric: 214.5, other_info: "Old; Artificial Analysis ID old; Progress Index v1", variant: null },
+  ];
+  vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith("/v2_benchmarks")) return Response.json(ids.map((id) => ({ benchmark_id: id, name: id, ascending_order: true, benchmark_type: "numerical" })));
+    if (url.pathname.endsWith("/v2_benchmark_results")) return Response.json(Number(url.searchParams.get("offset") ?? 0) ? [] : rows);
+    if (url.pathname.endsWith("/v2_models")) return Response.json(["test/a", "test/old"].map((id) => ({ model_slug: id, name: id, lab_slug: "test", lab: { name: "Test", colour: null } })));
+    return Response.json([]);
+  }));
+  const { benchmarks } = await (await app.request("https://phaseo.app/api/_web/rankings/benchmarks", {}, env)).json() as any;
+  expect(benchmarks.map((benchmark: any) => benchmark.benchmark_id).at(-1)).toBe("aa-progress-index-v1");
+  expect(benchmarks[0].benchmark_id).toBe("aa-intelligence-index-v5");
+  expect(benchmarks.at(-1).entries).toMatchObject([
+    { model_id: "test/a", score: 350, rank: 1, configurations: [{ variant: "max", score: 350 }, { variant: "low", score: 325 }] },
+    { model_id: "test/old", score: 214.5, rank: 2 },
+  ]);
+});

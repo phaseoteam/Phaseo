@@ -7,7 +7,7 @@ import { AudioTranslationSchema, type AudioTranslationRequest } from "@core/sche
 import { buildAdapterPayload } from "../../utils";
 import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { upstreamTestHeaders } from "@providers/shared/testing";
-import { estimateOpenAiSpeechToTextUsage, mergeSpeechToTextUsage } from "./audio-transcription-usage";
+import { applyProviderSpeechToTextBilling, estimateOpenAiSpeechToTextUsage, mergeSpeechToTextUsage } from "./audio-transcription-usage";
 
 function normalizeModelName(model?: string | null): string {
     if (!model) return "";
@@ -58,9 +58,13 @@ async function parseAudioTextPayload(response: Response): Promise<Record<string,
 }
 
 function normalizeAudioTextUsage(payload: Record<string, any> | undefined): Record<string, any> | undefined {
-    const usage = payload?.usage;
-    if (!usage || typeof usage !== "object") return undefined;
-    return usage as Record<string, any>;
+    const usage = payload?.usage && typeof payload.usage === "object" ? payload.usage as Record<string, any> : undefined;
+    // verbose_json reports the audio length as a top-level `duration` in seconds.
+    const duration = typeof payload?.duration === "number" && Number.isFinite(payload.duration) && payload.duration >= 0
+        ? payload.duration
+        : undefined;
+    if (duration === undefined) return usage;
+    return { ...(usage ?? {}), input_audio_seconds: usage?.input_audio_seconds ?? duration };
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
@@ -122,7 +126,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             prompt: body.prompt,
             text: typeof normalized?.text === "string" ? normalized.text : undefined,
         });
-        usage = mergeSpeechToTextUsage(usage, estimated);
+        usage = applyProviderSpeechToTextBilling(args.providerId, mergeSpeechToTextUsage(usage, estimated));
         if (normalized && typeof normalized === "object") {
             normalized.usage = usage;
         }

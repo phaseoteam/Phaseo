@@ -284,10 +284,13 @@ describe("beforeRequest pricing loss-prevention", () => {
 		});
 
 		expect(result.ok).toBe(false);
+		// The authenticated key comes too, so the failure still applies its data policy.
 		expect(snapshots.at(-1)).toEqual({
 			requestPayload: { model: "openai/gpt-5-nano", input: "private prompt" },
 			requestedModel: "openai/gpt-5-nano",
 			model: "openai/gpt-5-nano",
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
 		});
 	});
 

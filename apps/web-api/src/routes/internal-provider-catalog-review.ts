@@ -1,3 +1,6 @@
+import { purgeWorkerCacheTags } from "@/http/invalidation";
+import { PUBLIC_MODEL_CATALOGUE_CACHE_TAGS } from "@/cache/catalogue";
+import { catalogPolicyEvidenceUrlSchema } from "./account/provider-catalog-data-policy";
 import { Hono } from "hono";
 import { z } from "zod";
 import { requireUser } from "@/auth/requireUser";
@@ -97,6 +100,38 @@ async function reviewPayload(client: any, runs: any[]) {
 }
 
 export const internalProviderCatalogReviewRouter = new Hono<{ Bindings: Env }>();
+
+internalProviderCatalogReviewRouter.get("/provider-catalog/providers/:providerSlug/data-policy-approval", async (c) => {
+	if (!await adminUser(c)) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const result = await getDataClient(c.env).from("provider_catalog_policy_approvals")
+		.select("provider_slug,enabled,catalog_url,management_mode,privacy_policy_url,approved_by,approved_at,updated_at")
+		.eq("provider_slug", c.req.param("providerSlug")).maybeSingle();
+	if (result.error) return c.json({ error: "policy_approval_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ approval: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+// Provider onboarding approval never implicitly approves privacy declarations.
+internalProviderCatalogReviewRouter.put("/provider-catalog/providers/:providerSlug/data-policy-approval", async (c) => {
+	const actor = await adminUser(c);
+	if (!actor) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const parsed = z.strictObject({ enabled: z.boolean(), privacy_policy_url: catalogPolicyEvidenceUrlSchema })
+		.safeParse(await c.req.json().catch(() => null));
+	if (!parsed.success) return c.json({ error: "invalid_policy_approval" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const client = getDataClient(c.env);
+	const providerSlug = c.req.param("providerSlug");
+	const source = await client.from("provider_catalog_sources").select("catalog_url,management_mode").eq("provider_slug", providerSlug).maybeSingle();
+	if (source.error) return c.json({ error: "policy_approval_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!source.data) return c.json({ error: "catalog_source_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	const result = await client.from("provider_catalog_policy_approvals").upsert({
+		provider_slug: providerSlug, ...source.data, enabled: parsed.data.enabled,
+		privacy_policy_url: parsed.data.privacy_policy_url, approved_by: actor.id,
+		approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+	}, { onConflict: "provider_slug" });
+	if (result.error) return c.json({ error: "policy_approval_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const tags = [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-model-pricing", "web-api-model-details", "web-api-compare"];
+	const cache = await purgeWorkerCacheTags(c.executionCtx, tags).catch(() => ({ success: false, unavailable: false, tags }));
+	return c.json({ success: true, enabled: parsed.data.enabled, cache }, 200, PRIVATE_NO_STORE_HEADERS);
+});
 
 internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c) => {
 	const user = await adminUser(c);
@@ -222,7 +257,7 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/providers/:provider
 		return c.json({ error: "provider_review_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	if (parsed.data.decision === "approved") {
-		c.executionCtx.waitUntil(syncProviderCatalog(c.env, providerSlug, "manual").catch((error) => {
+		c.executionCtx.waitUntil(syncProviderCatalog(c.env, providerSlug, "manual", undefined, c.executionCtx).catch((error) => {
 			console.error("provider_claim_catalog_initial_sync_failed", { providerSlug, errorType: error instanceof Error ? error.name : "UnknownError" });
 		}));
 	}
@@ -261,7 +296,7 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/model-requests/:req
 	if (parsed.data.decision !== "approved" && !parsed.data.reason?.trim()) return c.json({ error: "review_reason_required" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await getDataClient(c.env).rpc("review_provider_catalog_model_request", { p_request_id: requestId.data, p_decision: parsed.data.decision, p_reason: parsed.data.reason ?? null, p_reviewed_by: user.id, p_expected_updated_at:expected.data });
 	if (result.error) return c.json({ error: "model_review_conflict" }, 409, PRIVATE_NO_STORE_HEADERS);
-	if (parsed.data.decision === "approved") c.executionCtx.waitUntil(syncProviderCatalog(c.env, String(result.data), "manual").catch(() => { console.error("provider_model_approval_sync_failed"); }));
+	if (parsed.data.decision === "approved") c.executionCtx.waitUntil(syncProviderCatalog(c.env, String(result.data), "manual", undefined, c.executionCtx).catch(() => { console.error("provider_model_approval_sync_failed"); }));
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

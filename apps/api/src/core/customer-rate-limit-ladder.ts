@@ -13,6 +13,15 @@
 //        enterprise  120  billing_mode = 'invoice'
 //        override    any  unexpired row in public.workspace_rate_limit_overrides
 //
+// Self-serve raises (public.workspace_rate_limit_raises): a workspace owner
+// can move a standard workspace to trusted for a limited time, if it meets the
+// selfServeRaise thresholds (a paid top-up, some paid spend, a minimum age, and
+// no raise in the cooldown). The publisher writes an active raise next to the
+// tier; the request path applies it only while
+// CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED is "true", so turning that off
+// stops every raise at once. Operators revoke one raise by setting revoked_at,
+// and a succeeded refund after the raise revokes it. Overrides still win.
+//
 // Overrides are managed by inserting/updating rows in
 // public.workspace_rate_limit_overrides as service_role, e.g.
 //   insert into public.workspace_rate_limit_overrides
@@ -26,7 +35,7 @@
 //
 // Tuning: CUSTOMER_RATE_LIMIT_LADDER is optional partial JSON, e.g.
 //   {"freeRequestsPerDay":1500,"tiers":{"new":{"requestsPerMinute":15},
-//    "trusted":{"minLifetimePaidSpendUsd":100}}}
+//    "trusted":{"minLifetimePaidSpendUsd":100}},"selfServeRaise":{"durationDays":14}}
 // Set the same value on every worker that serves requests or runs the publisher.
 import type { CustomerLimits } from "@core/customer-rate-limits";
 
@@ -42,6 +51,13 @@ export type CustomerRateLimitLadder = {
 		trusted: TierLimits & { minAgeDays: number; minLifetimePaidSpendUsd: number };
 		enterprise: TierLimits & { billingModes: string[] };
 	};
+	/** Who may raise a standard workspace to trusted themselves, and for how long. */
+	selfServeRaise: {
+		durationDays: number;
+		cooldownDays: number;
+		minAgeDays: number;
+		minLifetimePaidSpendUsd: number;
+	};
 };
 
 export const DEFAULT_CUSTOMER_RATE_LIMIT_LADDER: CustomerRateLimitLadder = Object.freeze({
@@ -52,6 +68,7 @@ export const DEFAULT_CUSTOMER_RATE_LIMIT_LADDER: CustomerRateLimitLadder = Objec
 		trusted: { requestsPerMinute: 60, minAgeDays: 30, minLifetimePaidSpendUsd: 50 },
 		enterprise: { requestsPerMinute: 120, billingModes: ["invoice"] },
 	},
+	selfServeRaise: { durationDays: 30, cooldownDays: 60, minAgeDays: 7, minLifetimePaidSpendUsd: 10 },
 }) as CustomerRateLimitLadder;
 
 /** Row shape returned by public.gateway_customer_rate_limit_inputs. */
@@ -64,12 +81,17 @@ export type CustomerRateLimitInputs = {
 	override_requests_per_minute: number | null;
 	override_free_requests_per_day: number | null;
 	override_expires_at: string | null;
+	/** Absent from rows returned before self-serve raises existed. */
+	raise_tier?: string | null;
+	raise_expires_at?: string | null;
 };
 
 /** Value published to KV under `customer-quota:v2:{workspaceId}`. */
 export type PublishedCustomerTier = {
 	tier: CustomerTier;
 	override?: { requestsPerMinute?: number; freeRequestsPerDay?: number; expiresAt?: number };
+	/** An active self-serve raise to a higher tier; applied only while raises are enabled. */
+	raise?: { tier: CustomerTier; expiresAt: number };
 };
 
 export type ResolvedCustomerLimits = CustomerLimits & { tier: CustomerTier | "override" };
@@ -120,6 +142,17 @@ export function parseCustomerRateLimitLadder(raw: string | undefined | null): Cu
 					} else invalid(path);
 					target[field] = fieldValue;
 				}
+			}
+		} else if (key === "selfServeRaise") {
+			if (!isRecord(value)) invalid(key);
+			for (const [field, fieldValue] of Object.entries(value)) {
+				const path = `selfServeRaise.${field}`;
+				if (field === "durationDays" || field === "cooldownDays") {
+					if (!isLimit(fieldValue)) invalid(path);
+				} else if (field === "minAgeDays" || field === "minLifetimePaidSpendUsd") {
+					if (!isThreshold(fieldValue)) invalid(path);
+				} else invalid(path);
+				(ladder.selfServeRaise as Record<string, unknown>)[field] = fieldValue;
 			}
 		} else invalid(key);
 	}
@@ -172,26 +205,48 @@ export function publishedCustomerTier(inputs: CustomerRateLimitInputs, ladder: C
 		if (freeRequestsPerDay !== undefined) published.override.freeRequestsPerDay = freeRequestsPerDay;
 		if (expiresAt !== undefined) published.override.expiresAt = expiresAt;
 	}
+	const raiseExpiresAt = inputs.raise_expires_at ? Date.parse(inputs.raise_expires_at) : Number.NaN;
+	const raiseTier = inputs.raise_tier as CustomerTier | null | undefined;
+	if (raiseTier && (CUSTOMER_TIERS as readonly string[]).includes(raiseTier) && tierRank(raiseTier) > tierRank(published.tier)
+		&& Number.isFinite(raiseExpiresAt) && raiseExpiresAt > now) {
+		published.raise = { tier: raiseTier, expiresAt: raiseExpiresAt };
+	}
 	return published;
+}
+
+function tierRank(tier: CustomerTier): number {
+	return CUSTOMER_TIERS.indexOf(tier);
 }
 
 export function isPublishedCustomerTier(value: unknown): value is PublishedCustomerTier {
 	if (!isRecord(value) || !(CUSTOMER_TIERS as readonly unknown[]).includes(value.tier)) return false;
-	if (value.override === undefined) return true;
+	if (value.override === undefined) return isPublishedRaise(value.raise);
 	const override = value.override;
 	return isRecord(override) &&
 		(override.requestsPerMinute === undefined || isLimit(override.requestsPerMinute)) &&
 		(override.freeRequestsPerDay === undefined || isLimit(override.freeRequestsPerDay)) &&
-		(override.expiresAt === undefined || (typeof override.expiresAt === "number" && Number.isFinite(override.expiresAt)));
+		(override.expiresAt === undefined || (typeof override.expiresAt === "number" && Number.isFinite(override.expiresAt))) &&
+		isPublishedRaise(value.raise);
 }
 
-/** Limits for a workspace; a missing publication means the `new` tier. */
+function isPublishedRaise(raise: unknown): boolean {
+	return raise === undefined || (isRecord(raise) && (CUSTOMER_TIERS as readonly unknown[]).includes(raise.tier)
+		&& typeof raise.expiresAt === "number" && Number.isFinite(raise.expiresAt));
+}
+
+/**
+ * Limits for a workspace; a missing publication means the `new` tier. An
+ * active self-serve raise lifts the tier only when `raisesEnabled`.
+ */
 export function resolveCustomerLimits(
 	published: PublishedCustomerTier | null | undefined,
 	ladder: CustomerRateLimitLadder,
 	now: number,
+	options: { raisesEnabled?: boolean } = {},
 ): ResolvedCustomerLimits {
-	const tier = published?.tier ?? "new";
+	const raise = published?.raise;
+	const raised = options.raisesEnabled && raise && raise.expiresAt > now && tierRank(raise.tier) > tierRank(published.tier);
+	const tier = raised ? raise.tier : published?.tier ?? "new";
 	const base = ladder.tiers[tier];
 	const resolved: ResolvedCustomerLimits = {
 		tier,
@@ -207,4 +262,70 @@ export function resolveCustomerLimits(
 		if (override.freeRequestsPerDay !== undefined) resolved.freeRequestsPerDay = override.freeRequestsPerDay;
 	}
 	return resolved;
+}
+
+export type SelfServeRaiseRefusal =
+	| "disabled" | "override" | "raised" | "top_tier" | "no_paid_top_up" | "too_new" | "not_enough_spend" | "cooldown";
+
+export type SelfServeRaiseStatus = {
+	tier: CustomerTier;
+	requestsPerMinute: number;
+	/** The tier a raise would move to, when there is one above. */
+	target: CustomerTier | null;
+	targetRequestsPerMinute: number | null;
+	eligible: boolean;
+	/** Why a raise is not available now; null when eligible. */
+	refusal: SelfServeRaiseRefusal | null;
+	/** When an active raise ends, or when the next one may be requested. */
+	activeUntil: number | null;
+	availableAt: number | null;
+	durationDays: number;
+	thresholds: { minAgeDays: number; minLifetimePaidSpendUsd: number };
+};
+
+/**
+ * Whether the workspace may raise itself one tier now. Only a standard
+ * workspace can, to trusted, and only with a paid top-up, at least
+ * minLifetimePaidSpendUsd paid, an age of minAgeDays, and no raise requested
+ * in the last cooldownDays. `lastRequestedAt` is the newest raise of any state.
+ */
+export function selfServeRaiseStatus(args: {
+	inputs: CustomerRateLimitInputs;
+	ladder: CustomerRateLimitLadder;
+	now: number;
+	enabled: boolean;
+	lastRequestedAt: number | null;
+}): SelfServeRaiseStatus {
+	const { inputs, ladder, now } = args;
+	const rules = ladder.selfServeRaise;
+	const published = publishedCustomerTier(inputs, ladder, now);
+	const resolved = resolveCustomerLimits(published, ladder, now, { raisesEnabled: args.enabled });
+	const tier = resolved.tier === "override" ? published.tier : resolved.tier;
+	const target: CustomerTier | null = published.tier === "standard" || published.tier === "new" ? "trusted" : null;
+	const createdAt = Date.parse(inputs.created_at);
+	const ageDays = Number.isFinite(createdAt) ? (now - createdAt) / DAY_MS : 0;
+	const paidUsd = Number(inputs.lifetime_paid_spend_nanos ?? 0) / 1e9;
+	const availableAt = args.lastRequestedAt === null ? null : args.lastRequestedAt + rules.cooldownDays * DAY_MS;
+	const refusal: SelfServeRaiseRefusal | null =
+		!args.enabled ? "disabled"
+		: published.override ? "override"
+		: published.raise ? "raised"
+		: target === null ? "top_tier"
+		: inputs.has_paid_top_up !== true ? "no_paid_top_up"
+		: ageDays < rules.minAgeDays ? "too_new"
+		: !(paidUsd >= rules.minLifetimePaidSpendUsd) ? "not_enough_spend"
+		: availableAt !== null && availableAt > now ? "cooldown"
+		: null;
+	return {
+		tier,
+		requestsPerMinute: resolved.requestsPerMinute,
+		target,
+		targetRequestsPerMinute: target ? ladder.tiers[target].requestsPerMinute : null,
+		eligible: refusal === null,
+		refusal,
+		activeUntil: published.raise?.expiresAt ?? null,
+		availableAt: refusal === "cooldown" ? availableAt : null,
+		durationDays: rules.durationDays,
+		thresholds: { minAgeDays: rules.minAgeDays, minLifetimePaidSpendUsd: rules.minLifetimePaidSpendUsd },
+	};
 }

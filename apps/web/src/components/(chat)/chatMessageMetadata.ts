@@ -58,3 +58,24 @@ export function getChatMessageRequestId(meta: unknown): string | null {
 export function buildChatRequestLogHref(requestId: string): string {
 	return `/settings/usage/logs/requests/${encodeURIComponent(requestId)}`;
 }
+
+/** Endpoints whose logged requests can be continued in Chat. */
+const CHAT_OPENABLE_ENDPOINTS = new Set(["chat.completions", "responses", "messages"]);
+
+export function canOpenRequestInChat(input: {
+	endpoint?: string | null;
+	ioLogStatus?: string | null;
+}): boolean {
+	const endpoint = String(input.endpoint ?? "").trim().toLowerCase();
+	return input.ioLogStatus === "stored" && CHAT_OPENABLE_ENDPOINTS.has(endpoint);
+}
+
+/**
+ * Chat re-reads the log through the workspace's own access checks, so the link
+ * carries only IDs and works for any member who can view the request.
+ */
+export function buildOpenRequestInChatHref(requestId: string, workspaceId?: string | null): string {
+	const params = new URLSearchParams({ fromRequest: requestId });
+	if (workspaceId?.trim()) params.set("workspaceId", workspaceId.trim());
+	return `/chat?${params.toString()}`;
+}

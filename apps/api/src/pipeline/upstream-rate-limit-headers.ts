@@ -2,6 +2,9 @@
 // Why: Retry guidance is useful downstream, but provider headers may contain
 // shared-account capacity or unrelated sensitive metadata.
 
+// Ceiling for Retry-After values copied from a provider response (added with
+// the safe upstream rate-limit headers): a provider value beyond a day is
+// treated as untrusted and dropped rather than passed on to the client.
 const MAX_RETRY_AFTER_SECONDS = 24 * 60 * 60;
 const MAX_QUOTA_VALUE_LENGTH = 128;
 
@@ -25,19 +28,23 @@ export const EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS = [
 	...Array.from(new Set(QUOTA_HEADER_MAP.map(([, downstream]) => downstream))),
 ];
 
-function normalizeRetryAfter(value: string | null, nowMs = Date.now()): string | null {
+function normalizeRetryAfter(
+	value: string | null,
+	nowMs = Date.now(),
+	maxSeconds = MAX_RETRY_AFTER_SECONDS,
+): string | null {
 	if (!value) return null;
 	const trimmed = value.trim();
 	if (/^\d+$/.test(trimmed)) {
 		const seconds = Number(trimmed);
-		if (!Number.isSafeInteger(seconds) || seconds < 0 || seconds > MAX_RETRY_AFTER_SECONDS) return null;
+		if (!Number.isSafeInteger(seconds) || seconds < 0 || seconds > maxSeconds) return null;
 		return String(seconds);
 	}
 
 	const retryAtMs = Date.parse(trimmed);
 	if (!Number.isFinite(retryAtMs)) return null;
 	const seconds = Math.ceil((retryAtMs - nowMs) / 1000);
-	if (seconds < 0 || seconds > MAX_RETRY_AFTER_SECONDS) return null;
+	if (seconds < 0 || seconds > maxSeconds) return null;
 	return String(seconds);
 }
 
@@ -78,9 +85,19 @@ export function extractDownstreamRateLimitHeaders(
  * header names are not read, so a raw upstream response cannot leak a shared
  * account's quota through this path.
  */
-export function readDownstreamRateLimitHeaders(responseHeaders: Headers): Record<string, string> {
+export function readDownstreamRateLimitHeaders(
+	responseHeaders: Headers,
+	options: { gatewayOriginated?: boolean } = {},
+): Record<string, string> {
 	const downstream: Record<string, string> = {};
-	const retryAfter = normalizeRetryAfter(responseHeaders.get("retry-after"));
+	// A gateway-originated limit (an API key's monthly spend cap, a spend rule
+	// block) knows its own reset time, which can be weeks away. The 24-hour
+	// ceiling is only for provider values, so these keep the full delay.
+	const retryAfter = normalizeRetryAfter(
+		responseHeaders.get("retry-after"),
+		Date.now(),
+		options.gatewayOriginated ? Number.MAX_SAFE_INTEGER : MAX_RETRY_AFTER_SECONDS,
+	);
 	if (retryAfter != null) downstream["Retry-After"] = retryAfter;
 	for (const name of EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS) {
 		if (name === "Retry-After") continue;

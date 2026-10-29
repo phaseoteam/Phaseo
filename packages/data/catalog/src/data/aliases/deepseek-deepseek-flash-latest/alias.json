@@ -1,7 +1,0 @@
-{
-  "alias_slug": "deepseek/deepseek-flash-latest",
-  "resolved_api_model_id": "deepseek/deepseek-v4-flash-0731",
-  "channel": "stable",
-  "is_enabled": true,
-  "notes": null
-}

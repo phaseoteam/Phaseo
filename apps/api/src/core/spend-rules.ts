@@ -254,6 +254,12 @@ export type SpendRuleInputOptions = {
 	existing?: SpendRuleFields | null;
 	/** IANA zone validation (each app's parseIanaTimeZone). */
 	parseTimeZone: (value: unknown) => string | null;
+	/**
+	 * Whether the gateway enforces blocks (SPEND_RULE_BLOCKS_ENABLED). While it does not, a write
+	 * that would start blocking is refused rather than saved to only notify; a rule that already
+	 * blocks can still be edited.
+	 */
+	blocksEnabled: boolean;
 };
 
 export type SpendRuleInput = {
@@ -406,6 +412,7 @@ export function parseSpendRuleInput(body: Record<string, unknown>, options: Spen
 
 	const problem = spendRuleProblem(rule);
 	if (problem) return { ok: false, message: problem };
+	if (rule.action === "block" && !options.blocksEnabled && existing?.action !== "block") return { ok: false, message: "action block is not available yet; use notify" };
 	if (rule.scope_id && ["key", "member", "department"].includes(rule.scope_type)) rule.scope_id = rule.scope_id.toLowerCase();
 	return { ok: true, value: { fields: rule, destinationIds } };
 }

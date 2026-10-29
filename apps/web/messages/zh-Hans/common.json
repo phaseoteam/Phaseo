@@ -254,7 +254,11 @@
 				"nav-settings-presets": "路由预设",
 				"nav-settings-privacy": "隐私设置",
 				"nav-settings-guardrails": "防护规则",
+				"nav-settings-rate-limits": "速率限制",
+				"nav-settings-trusted-workloads": "受信任的工作负载",
 				"nav-settings-classifiers": "分类器",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "密钥安全",
 				"nav-settings-oauth": "OAuth 应用",
 				"nav-settings-broadcast": "事件转发",
 				"nav-settings-webhooks": "Webhooks",
@@ -340,7 +344,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "价格如何计算",
 				"nav-how-phaseo-tracks-provider-availability": "提供商可用性如何跟踪",
 				"nav-chat-decisions": "决策",
-				"nav-settings-account-providers": "提供商入驻"
+				"nav-settings-account-providers": "提供商入驻",
+				"nav-settings-budgets": "预算"
 			}
 		},
 		"searchDataUnavailable": "无法加载搜索数据。",
@@ -553,6 +558,8 @@
 			"identityPermissionDescription": "允许此应用验证登录用户的身份。",
 			"gatewayPermissionLabel": "使用你的额度调用 AI Gateway",
 			"gatewayPermissionDescription": "允许应用使用所选团队的额度发送模型请求。",
+			"billingPermissionLabel": "发起额度充值",
+			"billingPermissionDescription": "允许应用为所选团队请求购买额度。每笔扣款都必须由团队所有者或管理员通过邮件确认。",
 			"readPermissionLabel": "读取{resource}",
 			"readPermissionDescription": "允许此应用读取：{resource}。",
 			"managePermissionLabel": "管理{resource}",
@@ -607,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth 应用",
 					"description": "OAuth 客户端和集成配置。"
+				},
+				"billing": {
+					"title": "账单",
+					"description": "由团队所有者或管理员通过邮件确认的额度购买。"
 				}
 			},
 			"resources": {
@@ -629,6 +640,7 @@
 				"providerCredentials": "提供商凭据",
 				"guardrails": "防护规则和策略设置",
 				"budgets": "团队支出预算和用量",
+				"spendRules": "支出提醒与拦截规则",
 				"managementKeys": "机器级管理密钥详情",
 				"oauthApps": "OAuth 应用和集成设置",
 				"privateModels": "工作空间私有模型"
@@ -1257,6 +1269,7 @@
 			"enableConnection": "启用连接",
 			"deleteDestination": "删除目标",
 			"openRequestDetails": "打开请求详情",
+			"openInChat": "在聊天中打开",
 			"copyRequestId": "复制请求 ID",
 			"copySessionId": "复制会话 ID",
 			"copyNativeResponseId": "复制原生响应 ID",
@@ -1382,6 +1395,11 @@
 			"retention90Days": "90 天",
 			"retention180Days": "180 天",
 			"retention365Days": "365 天",
+			"contentsAccessTitle": "谁可以查看内容",
+			"contentsAccessDescription": "选择谁可以在请求详情、Chat 和 API 中查看已存储的提示和回复。",
+			"contentsAccessMembers": "所有成员",
+			"contentsAccessAdmins": "所有者和管理员",
+			"contentsRestricted": "在此工作区中，只有所有者和管理员可以查看请求内容。",
 			"allowAllExceptSelectedModels": "允许除所选模型外的所有模型",
 			"allowAnyProvider": "允许任意提供商",
 			"allowOnlySelectedProviders": "仅允许所选提供商",
@@ -2411,6 +2429,8 @@
 			"selectModelsToCompare": "请选择要比较的模型。",
 			"viewFullLeaderboard": "查看完整排行榜",
 			"sourceArtificialAnalysis": "来源：Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "可跨年份和指数版本进行比较",
 			"fullLeaderboard": "完整排行榜",
 			"noModelsMatchThisSearch": "没有与此搜索匹配的模型。",
 			"noResultsAvailableForThisMetric": "此指标暂无结果。",

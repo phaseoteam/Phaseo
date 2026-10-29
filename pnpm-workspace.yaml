@@ -27,12 +27,16 @@ publicHoistPattern:
 virtualStoreDirMaxLength: 32
 
 allowBuilds:
+  # Its postinstall downloads a native binary. The web build's source-map
+  # upload fetches it on first use, so installs that never upload skip it.
+  '@posthog/cli': false
   '@scarf/scarf': false
   core-js: set this to true or false
   electron: true
   es5-ext: set this to true or false
   esbuild: true
   keytar: set this to true or false
+  node-pty: true
   protobufjs: set this to true or false
   puppeteer: set this to true or false
   sharp: set this to true or false

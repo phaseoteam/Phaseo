@@ -53,6 +53,10 @@ function parseCapabilityOverride(params: Record<string, any> | null | undefined)
     const value = params?.data_policy;
     if (!value || typeof value !== "object" || Array.isArray(value)) return null;
     const raw = value as Record<string, unknown>;
+    // Cached snapshots cannot extend a catalog guarantee beyond its deadline.
+    if (raw.catalogManaged === true && (typeof raw.validUntil !== "string" || !Number.isFinite(Date.parse(raw.validUntil)) || Date.parse(raw.validUntil) <= Date.now())) {
+        return { tier: "unknown", confidence: "unknown", zdrEligibility: "ineligible", retentionMode: "unknown", retentionDays: null, reason: "Catalog policy expired." };
+    }
     const tier = ["unknown", "private", "logs", "trains"].includes(String(raw.tier))
         ? raw.tier as EffectiveDataPolicy["tier"]
         : undefined;

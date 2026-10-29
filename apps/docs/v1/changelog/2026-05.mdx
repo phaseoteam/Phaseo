@@ -4,42 +4,88 @@ description: "Phaseo product updates, SDK changes, and model releases from May 2
 "og:image": "https://phaseo.app/og/dynamic?title=May&description=Phaseo%20product%20updates%2C%20SDK%20changes%2C%20and%20model%20releases%20from%20May%202026.&pathname=/docs/v1/changelog/2026-05"
 ---
 
-<Update label="May 31, 2026" tags={["Model Releases"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### Model Releases
+<ChangelogFilters labels={{"product":"Product","api":"API & SDKs","models":"Models"}} clearLabel="Clear" />
+
+<Update label="May 31, 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Breaking:** Text requests set the tier only with `service_tier`; replace `speed: "fast"` with `service_tier: "priority"`, and synchronous `service_tier: "batch"` requests now return a validation error; see [Service Tiers](../guides/service-tiers.mdx) ([#565](https://github.com/phaseoteam/Phaseo/pull/565)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Cosmos3 Super Reasoner model release artwork](../../images/model-releases/2026-05-31--nvidia--cosmos3-super-reasoner.png)
 
 - [Nvidia: Cosmos3 Super Reasoner](https://phaseo.app/models/nvidia/cosmos3-super-reasoner)
 
+</div>
+
 </Update>
 
-<Update label="May 30, 2026" tags={["Model Releases"]}>
+<Update label="May 30, 2026">
 
-### Model Releases
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Grok Imagine Video 1.5 Preview model release artwork](../../images/model-releases/2026-05-30--x-ai--grok-imagine-video-1-5-preview.png)
 
 - [xAI: Grok Imagine Video 1.5 Preview](https://phaseo.app/models/x-ai/grok-imagine-video-1.5-preview)
 
+</div>
+
 </Update>
 
-<Update label="May 29, 2026" tags={["Model Releases"]}>
+<Update label="May 29, 2026">
 
-### Model Releases
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- Model page quickstarts list the endpoints a model supports with their HTTP methods, and choosing one updates the example code ([#521](https://github.com/phaseoteam/Phaseo/pull/521)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Requests with `service_tier: "priority"` now route only to providers that support that tier, and Venice serves Claude Opus 4.8 priority requests under the same model ID; see [Service Tiers](../guides/service-tiers.mdx) ([#524](https://github.com/phaseoteam/Phaseo/pull/524), [#530](https://github.com/phaseoteam/Phaseo/pull/530)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 - [StepFun: Step 3.7 Flash](https://phaseo.app/models/stepfun/step-3.7-flash)
 
+</div>
+
 </Update>
 
-<Update label="May 28, 2026" tags={["Features","Model Releases","Provider Coverage","Pricing"]}>
+<Update label="May 28, 2026">
 
-### Features
+<div data-changelog-category="product">
 
-- Pricing selectors now present Qwen 3.7 Max variants more clearly, reducing ambiguity between preview, dated, and current model routes ([PR #418](https://github.com/phaseoteam/Phaseo/pull/418)).
-- Anthropic-on-AWS provider branding was refreshed so Bedrock and Claude Platform routes are easier to distinguish in provider lists ([PR #415](https://github.com/phaseoteam/Phaseo/pull/415)).
+<p className="changelog-category">Product</p>
 
-### Model Releases
+- Model pricing panels keep the plan selector visible when a provider has only one active plan, such as batch-only pricing ([#515](https://github.com/phaseoteam/Phaseo/pull/515)).
+- Anthropic on AWS routes show the AWS logo and clearer provider names in model pricing and provider lists ([#519](https://github.com/phaseoteam/Phaseo/pull/519), [#525](https://github.com/phaseoteam/Phaseo/pull/525), [#526](https://github.com/phaseoteam/Phaseo/pull/526)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Claude Opus 4.8 model release artwork](../../images/model-releases/2026-05-28--anthropic--claude-opus-4-8.png)
 
@@ -48,109 +94,178 @@ description: "Phaseo product updates, SDK changes, and model releases from May 2
 - [Google: Gemini 3 Pro Image (Nano Banana Pro)](https://phaseo.app/models/google/gemini-3-pro-image)
 - [Google: Gemini 3.1 Flash Image (Nano Banana 2)](https://phaseo.app/models/google/gemini-3.1-flash-image)
 
+</div>
+
 </Update>
 
-<Update label="May 26, 2026" tags={["Model Releases"]}>
+<Update label="May 26, 2026">
 
-### Model Releases
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Qwen 3.7 Plus (2026-05-26) model release artwork](../../images/model-releases/2026-05-26--qwen--qwen3-7-plus-2026-05-26.png)
 
 - [Qwen: Qwen 3.7 Plus (2026-05-26)](https://phaseo.app/models/qwen/qwen3.7-plus-2026-05-26)
 
+</div>
+
 </Update>
 
-<Update label="May 25, 2026" tags={["Model Releases"]}>
+<Update label="May 25, 2026">
 
-### Model Releases
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Qwen 3.7 Max (2026-05-17) model release artwork](../../images/model-releases/2026-05-25--qwen--qwen3-7-max-2026-05-17.png)
 
 - [Qwen: Qwen 3.7 Max (2026-05-17)](https://phaseo.app/models/qwen/qwen3.7-max-2026-05-17)
 - [Qwen: Qwen 3.7 Max Preview](https://phaseo.app/models/qwen/qwen3.7-max-preview)
 
+</div>
+
 </Update>
 
-<Update label="May 21, 2026" tags={["Model Releases"]}>
+<Update label="May 21, 2026">
 
-### Model Releases
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Qwen 3.7 Max model release artwork](../../images/model-releases/2026-05-21--qwen--qwen3-7-max.png)
 
 - [Qwen: Qwen 3.7 Max](https://phaseo.app/models/qwen/qwen3.7-max)
 
+</div>
+
 </Update>
 
-<Update label="May 20, 2026" tags={["Model Releases"]}>
+<Update label="May 20, 2026">
 
-### Model Releases
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Command A+ model release artwork](../../images/model-releases/2026-05-20--cohere--command-a-plus.png)
 
 - [Cohere: Command A+](https://phaseo.app/models/cohere/command-a-plus)
 
+</div>
+
 </Update>
 
-<Update label="May 19, 2026" tags={["Features","Model Releases","SDK","Docs"]}>
+<Update label="May 19, 2026">
 
-### SDK Releases
+<div data-changelog-category="product">
 
-- The TypeScript Agent SDK launch added a dedicated package for building agentic applications on top of Phaseo Gateway ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)). See [`@phaseo/agent-sdk`](https://github.com/phaseoteam/Phaseo/tree/main/packages/sdk/agent-sdk-ts).
+<p className="changelog-category">Product</p>
 
-### Model Releases
+- **Models** lists the free router, and its page shows which free models it can route to and recent routed usage; see [Launch on the free router](../cookbook/free-router-first-deploy.mdx) ([#495](https://github.com/phaseoteam/Phaseo/pull/495)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Gemini 3.5 Flash model release artwork](../../images/model-releases/2026-05-19--google--gemini-3-5-flash.png)
 
 - [Google: Gemini 3.5 Flash](https://phaseo.app/models/google/gemini-3.5-flash)
 - [Qwen: Qwen 3.5 LiveTranslate Flash Realtime (2026-05-19)](https://phaseo.app/models/qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19)
 
+</div>
+
 </Update>
 
-<Update label="May 18, 2026" tags={["Model Releases"]}>
+<Update label="May 18, 2026">
 
-### Model Releases
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Composer 2.5 model release artwork](../../images/model-releases/2026-05-18--cursor--composer-2-5.png)
 
 - [Cursor: Composer 2.5](https://phaseo.app/models/cursor/composer-2.5)
 
+</div>
+
 </Update>
 
-<Update label="May 16, 2026" tags={["Features","Model Releases","Provider Coverage","SDK","Pricing","Docs"]}>
+<Update label="May 16, 2026">
 
-### Features
+<div data-changelog-category="models">
 
-- Provider activation states and region filters were tightened so unavailable routes are easier to identify before a request is made ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-- Free-router behaviour was made more predictable across pricing, provider selection, and gateway routing surfaces ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-### SDK Releases
-
-- Agent SDK documentation and examples shipped with the first public workflow guidance for durable loops, parallel tools, and agent orchestration ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-### Model Releases
+<p className="changelog-category">Models</p>
 
 - [xAI: Grok TTS](https://phaseo.app/models/x-ai/grok-tts)
 
+</div>
+
 </Update>
 
-<Update label="May 15, 2026" tags={["Model Releases"]}>
+<Update label="May 15, 2026">
 
-### Model Releases
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Grok Build 0.1 model release artwork](../../images/model-releases/2026-05-15--x-ai--grok-build-0-1.png)
 
 - [xAI: Grok Build 0.1](https://phaseo.app/models/x-ai/grok-build-0.1)
 
+</div>
+
 </Update>
 
-<Update label="May 7, 2026" tags={["Features","Model Releases","Provider Coverage","Pricing"]}>
+<Update label="May 9, 2026">
 
-### Features
+<div data-changelog-category="product">
 
-- Provider availability and pricing summaries were expanded so model pages show clearer route, tier, and cost differences ([PR #474](https://github.com/phaseoteam/Phaseo/pull/474)).
-- Realtime minute pricing became visible in the product, making audio and live-session models easier to compare against token-priced models ([PR #477](https://github.com/phaseoteam/Phaseo/pull/477)).
+<p className="changelog-category">Product</p>
 
-### Model Releases
+- Chat can retry a failed image or video generation with the same prompt, model and temporary chat setting ([#479](https://github.com/phaseoteam/Phaseo/pull/479)).
+
+</div>
+
+</Update>
+
+<Update label="May 8, 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- The TypeScript, Python, Go, C#, Java, PHP and Ruby SDKs `2.0.4` add `session_id`, structured error diagnostics and model availability fields to their types; see [release notes](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4) ([#476](https://github.com/phaseoteam/Phaseo/pull/476)).
+
+</div>
+
+</Update>
+
+<Update label="May 7, 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- Pricing hover cards on **Models** show image, video and tiered text prices, grouped by quality, resolution, duration, audio and context size ([#474](https://github.com/phaseoteam/Phaseo/pull/474)).
+- **Models** shows minute-billed audio models such as `whisper-1` at their per-minute price, for example $0.006 per minute, instead of a rounded token price ([#477](https://github.com/phaseoteam/Phaseo/pull/477)).
+- Model page headers add a model ID control that switches between the model's aliases and copies the selected ID ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+- Filter counts in the **Models** sidebar now update to match the other filters you select ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- **Breaking:** `/v1/videos`, `/v1/batches`, `/v1/files` and `/v1/music/generations` are temporarily disabled and return `501 not_implemented`; pause calls to them until they are re-enabled ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Gemini 3.1 Flash-Lite model release artwork](../../images/model-releases/2026-05-07--google--gemini-3-1-flash-lite.png)
 
@@ -159,43 +274,98 @@ description: "Phaseo product updates, SDK changes, and model releases from May 2
 - [OpenAI: GPT Realtime Translate](https://phaseo.app/models/openai/gpt-realtime-translate)
 - [OpenAI: GPT Realtime Whisper](https://phaseo.app/models/openai/gpt-realtime-whisper)
 
+</div>
+
 </Update>
 
-<Update label="May 6, 2026" tags={["Features","Model Releases"]}>
+<Update label="May 6, 2026">
 
-### Features
+<div data-changelog-category="api">
 
-- Video generation and async job lifecycle coverage expanded, including clearer status handling for long-running provider work ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
-- Gateway surfaces now expose more of the reservation, completion, and failure states needed to debug async media requests ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
+<p className="changelog-category">API & SDKs</p>
 
-### Model Releases
+- The List models endpoint accepts `availability=all` to include coming-soon and inactive models, and each provider entry returns `availability_status` and `availability_reason`; see [List models](../api-reference/endpoint/models.mdx) ([#466](https://github.com/phaseoteam/Phaseo/pull/466)).
+- Error responses include `failed_providers`, `routing_diagnostics` and `provider_failure_diagnostics`, which point to causes such as missing credentials or region limits; see [Errors and Debugging](../api-reference/errors.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+- The Get a generation endpoint returns `replay_request` and `replay_supported`, so a logged request can be sent again to its original endpoint; see [Get a generation](../api-reference/endpoint/generation.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![Grok Imagine Image Quality model release artwork](../../images/model-releases/2026-05-06--x-ai--grok-imagine-image-quality.png)
 
 - [xAI: Grok Imagine Image Quality](https://phaseo.app/models/x-ai/grok-imagine-image-quality)
 
+</div>
+
 </Update>
 
-<Update label="May 5, 2026" tags={["Model Releases"]}>
+<Update label="May 5, 2026">
 
-### Model Releases
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
 
 ![chat-latest model release artwork](../../images/model-releases/2026-05-05--openai--chat-latest.png)
 
 - [OpenAI: chat-latest](https://phaseo.app/models/openai/chat-latest)
 
+</div>
+
 </Update>
 
-<Update label="May 1, 2026" tags={["Features","SDK"]}>
+<Update label="May 4, 2026">
 
-### SDK Releases
+<div data-changelog-category="product">
 
-- [TypeScript SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4): generated OpenAPI and model-surface updates for the latest gateway schema.
-- [Python SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fpy-sdk%402.0.4): generated OpenAPI and model-surface updates for the latest gateway schema.
-- [Go SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fgo-sdk%402.0.4): generated OpenAPI and model-surface updates for the latest gateway schema.
-- [C# SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fcsharp-sdk%402.0.4): generated OpenAPI and model-surface updates for the latest gateway schema.
-- [Java SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fjava-sdk%402.0.4): generated OpenAPI and model-surface updates for the latest gateway schema.
-- [PHP SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fphp-sdk%402.0.4): generated OpenAPI and model-surface updates for the latest gateway schema.
-- [Ruby SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fruby-sdk%402.0.4): generated OpenAPI and model-surface updates for the latest gateway schema.
+<p className="changelog-category">Product</p>
+
+- **Settings -> Usage** splits activity into **Logs**, **Jobs** and **Sessions** views, with live refresh and filters and time ranges kept in the URL ([#463](https://github.com/phaseoteam/Phaseo/pull/463), [#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+- The model playground shows **Retry** and **Delete** on failed image and video generations, and **Retry** reuses the same prompt and model ([#465](https://github.com/phaseoteam/Phaseo/pull/465)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Chat Completions and Responses requests accept `session_id`, which groups related requests into one session in usage logs ([#463](https://github.com/phaseoteam/Phaseo/pull/463)).
+
+</div>
+
+</Update>
+
+<Update label="May 2, 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Workspace policies that block models or providers are enforced again, so blocked requests are rejected before routing ([#444](https://github.com/phaseoteam/Phaseo/pull/444)).
+
+</div>
+
+</Update>
+
+<Update label="May 1, 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- The model playground adds **TTS** and **Music** modes for text-to-speech and music generation models ([#441](https://github.com/phaseoteam/Phaseo/pull/441)).
+- Model cards on **Models** no longer show **Free** for paid models, and the coming-soon filter count matches the models listed ([#441](https://github.com/phaseoteam/Phaseo/pull/441)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- The TypeScript, Python, Go, C#, Java, PHP and Ruby SDKs `2.0.3` add the latest model and benchmark IDs to their typed lists; see [release notes](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.3) ([#439](https://github.com/phaseoteam/Phaseo/pull/439)).
+
+</div>
 
 </Update>

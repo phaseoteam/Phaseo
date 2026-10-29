@@ -1,3 +1,9 @@
+// Generated from packages/shared/key-ip-allowlist/index.ts by scripts/sync-key-ip-allowlist.mjs. Do not edit.
+// Which addresses may use an API key: a labelled list of IPv4 or IPv6 addresses
+// and CIDR ranges. The settings API and the gateway's /v1 control plane each use
+// a generated copy (scripts/sync-key-ip-allowlist.mjs), so the dashboard and the
+// API accept the same lists. The gateway's matcher is lib/security/keyIpAllowlist.ts.
+
 import { z } from "zod";
 
 const ipv6 = z.string().refine((value) => {

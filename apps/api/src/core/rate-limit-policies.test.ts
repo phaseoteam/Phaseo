@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
 	admit: vi.fn(),
 	chargeTokens: vi.fn(),
 	peekTokens: vi.fn(),
+	acquireConcurrency: vi.fn(),
+	releaseConcurrency: vi.fn(),
 	getByName: vi.fn(),
 	background: [] as Promise<unknown>[],
 }));
@@ -27,6 +29,12 @@ function query(table: string) {
 	const builder: any = {
 		select: () => builder,
 		eq: (column: string, value: unknown) => { filters.push((row) => row[column] === value); return builder; },
+		in: (column: string, values: unknown[]) => { filters.push((row) => values.includes(row[column])); return builder; },
+		not: (column: string, operator: string, value: unknown) => {
+			if (operator !== "is" || value !== null) throw new Error(`unsupported not filter ${operator}`);
+			filters.push((row) => row[column] != null);
+			return builder;
+		},
 		order: () => builder,
 		range: (from: number, to: number) => { range = [from, to]; return builder; },
 		maybeSingle: async () => { const result = run(); return { data: result.data?.[0] ?? null, error: result.error }; },
@@ -65,12 +73,13 @@ vi.mock("@/runtime/env", () => ({
 	}),
 	getBindingsIfConfigured: () => mocks.bindings,
 	dispatchBackground: (promise: Promise<unknown>) => { mocks.background.push(promise); },
+	captureBackgroundDispatcher: () => (promise: Promise<unknown>) => { mocks.background.push(promise); },
 	ensureRuntimeForBackground: () => () => {},
 }));
 vi.mock("@core/customer-rate-limit-tiers", () => ({ readCustomerLimits: vi.fn() }));
 
 import { __resetTieredCacheForTests } from "./tiered-cache";
-import { __resetCustomerQuotaStateForTests } from "./customer-rate-limits";
+import { __resetCustomerQuotaStateForTests, CONCURRENCY_LEASE_TTL_MS, createConcurrencyLeases, releaseConcurrencyAfter } from "./customer-rate-limits";
 import {
 	applicableRateLimits, buildRateLimitPlan, chargeRateLimitPolicyTokens, copyKeyRateLimitAssignment, guardRateLimitPolicies, publishRateLimitPlan, reconcileRateLimitPlans,
 	rateLimitPlanKey, rateLimitPolicyHeaders, readRateLimitPlan, rejectedByRateLimitPolicy, withRateLimitPolicyHeaders,
@@ -133,21 +142,25 @@ beforeEach(() => {
 	mocks.chargeTokens.mockReset().mockImplementation(async (_scope: string, tokens: number, limit: number) =>
 		({ allowed: tokens < limit, limit, remaining: Math.max(0, limit - tokens), retryAfterSeconds: tokens < limit ? 0 : 30 }));
 	mocks.peekTokens.mockReset().mockImplementation(async (_scope: string, limit: number) => ({ allowed: true, limit, remaining: limit, retryAfterSeconds: 0 }));
-	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit, chargeTokens: mocks.chargeTokens, peekTokens: mocks.peekTokens });
+		mocks.acquireConcurrency.mockReset().mockImplementation(async (_scope: string, _lease: string, limit: number) => ({ allowed: true, limit, remaining: limit - 1, retryAfterSeconds: 0 }));
+	mocks.releaseConcurrency.mockReset().mockResolvedValue(undefined);
+	mocks.getByName.mockReset().mockReturnValue({
+		admit: mocks.admit, chargeTokens: mocks.chargeTokens, peekTokens: mocks.peekTokens,
+		acquireConcurrency: mocks.acquireConcurrency, releaseConcurrency: mocks.releaseConcurrency,
+	});
 	mocks.bindings = { RATE_LIMIT_POLICIES_ENABLED: "true", CUSTOMER_RATE_LIMITS: { getByName: mocks.getByName } };
 });
 
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("rate limit plan publication", () => {
-	it("builds a compact plan from the workspace's policies and assignments, omitting departments", async () => {
+	it("builds a compact plan from the workspace's policies and assignments", async () => {
 		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2), policy(TOKENS, "Tokens", null, WS, "50000"), policy("other", "Other", 9, "elsewhere")];
 		mocks.tables.workspace_rate_limit_policy_assignments = [
 			assignment(STRICT, "key", { key_id: "key-1" }),
 			assignment(STRICT, "member", { user_id: "user-1" }),
 			assignment(TOKENS, "guardrail", { guardrail_id: "guard-1" }),
 			assignment(STRICT, "end_user_default"),
-			assignment(STRICT, "department", { department_id: "dept-1" }),
 			assignment("other", "key", { key_id: "key-9" }, "elsewhere"),
 		];
 		expect(await buildRateLimitPlan(WS)).toEqual({
@@ -158,6 +171,49 @@ describe("rate limit plan publication", () => {
 			guardrails: { "guard-1": TOKENS },
 			endUserDefault: STRICT,
 		});
+	});
+
+	it("adds the department links a department policy needs", async () => {
+		mocks.tables = {
+			workspace_rate_limit_policies: [policy(STRICT, "Strict", 2), policy(LOOSE, "Loose", 100)],
+			workspace_rate_limit_policy_assignments: [
+				assignment(STRICT, "department", { department_id: "dept-sales" }),
+				assignment(LOOSE, "department", { department_id: "dept-legal" }),
+			],
+			keys: [
+				{ id: "key-linked", workspace_id: WS, department_id: "dept-sales" },
+				// Linked to a department without a policy: still kept, so it does not fall back to its creator's.
+				{ id: "key-unlimited-dept", workspace_id: WS, department_id: "dept-ops" },
+				{ id: "key-unlinked", workspace_id: WS, department_id: null },
+				{ id: "key-elsewhere", workspace_id: "elsewhere", department_id: "dept-x" },
+			],
+			workspace_department_grants: [
+				{ workspace_id: WS, user_id: "user-both", department_id: "dept-sales" },
+				{ workspace_id: WS, user_id: "user-both", department_id: "dept-legal" },
+				{ workspace_id: WS, user_id: "user-both", department_id: "dept-ops" },
+				{ workspace_id: WS, user_id: "user-ops", department_id: "dept-ops" },
+				{ workspace_id: WS, user_id: "user-overridden", department_id: "dept-sales" },
+				{ workspace_id: WS, user_id: "user-none", department_id: "dept-legal" },
+			],
+			workspace_member_overrides: [
+				{ workspace_id: WS, user_id: "user-overridden", department_override_enabled: true, department_id: "dept-legal" },
+				{ workspace_id: WS, user_id: "user-none", department_override_enabled: true, department_id: null },
+				{ workspace_id: WS, user_id: "user-both", department_override_enabled: false, department_id: "dept-ops" },
+			],
+		};
+		const built = await buildRateLimitPlan(WS);
+		expect(built).toMatchObject({
+			departments: { "dept-sales": STRICT, "dept-legal": LOOSE },
+			keyDepartments: { "key-linked": "dept-sales", "key-unlimited-dept": "dept-ops" },
+			// Every department with a policy; an enabled override replaces the directory's departments.
+			memberDepartments: { "user-both": ["dept-legal", "dept-sales"], "user-overridden": ["dept-legal"] },
+		});
+		expect(Object.keys(built.policies).sort()).toEqual([LOOSE, STRICT]);
+		// Without a department policy the plan carries no department links.
+		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "key", { key_id: "key-1" })];
+		const withoutDepartments = await buildRateLimitPlan(WS);
+		expect(withoutDepartments).not.toHaveProperty("departments");
+		expect(withoutDepartments).not.toHaveProperty("keyDepartments");
 	});
 
 	it("writes the plan to KV, and deletes the key once the workspace has no assignments", async () => {
@@ -184,6 +240,19 @@ describe("rate limit plan publication", () => {
 		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "end_user_default")];
 		expect(await publishRateLimitPlan(WS)).toBe(false);
 		expect(error).toHaveBeenCalledWith("rate_limit_plan_publish_failed", expect.objectContaining({ workspaceId: WS }));
+	});
+
+	it("applies a plan published elsewhere to the first request after this isolate sat idle", async () => {
+		vi.useFakeTimers({ now: 1_000_000 });
+		expect(await readRateLimitPlan(WS)).toBeNull();
+		// Another isolate publishes; this one keeps its cached "no plan" meanwhile.
+		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2)];
+		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "key", { key_id: "key-1" })];
+		const plan = await buildRateLimitPlan(WS);
+		mocks.store.set(rateLimitPlanKey(WS), JSON.stringify({ v: plan, at: 1_005_000 }));
+
+		vi.setSystemTime(1_000_000 + 121_000);
+		expect((await readRateLimitPlan(WS))?.keys).toEqual({ "key-1": STRICT });
 	});
 
 	it("treats a missing, malformed or unreadable plan as no policies", async () => {
@@ -220,6 +289,29 @@ describe("applicable rate limits", () => {
 		// TOKENS has no request limit and was published before plans carried tpm.
 		expect(applicableRateLimits(plan, { keyId: "key-tokens", userId: "user-2", endUserId: null })).toEqual([]);
 		expect(applicableRateLimits(null, { keyId: "key-1" })).toEqual([]);
+	});
+
+	it("shares one department allowance among everything that counts toward the department", () => {
+		const departmentPlan: RateLimitPlan = {
+			...plan,
+			departments: { "dept-sales": STRICT, "dept-legal": LOOSE },
+			keyDepartments: { "key-linked": "dept-sales", "key-ops": "dept-ops" },
+			memberDepartments: { "user-both": ["dept-legal", "dept-sales"] },
+		};
+		const scopes = (subject: Parameters<typeof applicableRateLimits>[1]) =>
+			applicableRateLimits(departmentPlan, subject).filter((limit) => limit.targetType === "department").map((limit) => limit.scopeKey);
+		// A linked key counts toward its own department only, whoever created it.
+		expect(scopes({ keyId: "key-linked", userId: "user-both" })).toEqual(["department:dept-sales"]);
+		expect(scopes({ keyId: "key-ops", userId: "user-both" })).toEqual([]);
+		// Other keys count toward every department of their creator; OAuth requests toward their user's.
+		expect(scopes({ keyId: "key-2", userId: "user-both" })).toEqual(["department:dept-legal", "department:dept-sales"]);
+		expect(scopes({ keyId: "key-linked", userId: "user-both", authMethodIsOAuth: true })).toEqual(["department:dept-legal", "department:dept-sales"]);
+		expect(scopes({ keyId: "key-2", userId: "user-9" })).toEqual([]);
+		expect(applicableRateLimits(departmentPlan, { keyId: "key-linked" })).toContainEqual(
+			{ policyId: STRICT, name: "Strict", targetType: "department", rpm: 2, tpm: null, scopeKey: "department:dept-sales" },
+		);
+		// Plans published before department limits carry none of the department fields.
+		expect(applicableRateLimits(plan, { keyId: "key-linked", userId: "user-both" }).some((limit) => limit.targetType === "department")).toBe(false);
 	});
 
 	it("gives each key or OAuth user its own guardrail allowance", () => {
@@ -309,6 +401,31 @@ describe("rate limit policy enforcement", () => {
 		expect(await guardRateLimitPolicies(ctx({ keyId: "key-2", activeGuardrailIds: ["guard-1"] }))).toBeNull();
 		// The first request's later attempts are already admitted.
 		expect(await guardRateLimitPolicies(first)).toBeNull();
+	});
+
+	it("counts a department as one allowance and rejects every request that counts toward it", async () => {
+		publishPlan({
+			v: 1, policies: { [STRICT]: { rpm: 2, tpm: null, name: "Sales cap" } }, keys: {}, members: {}, guardrails: {}, endUserDefault: null,
+			departments: { "dept-sales": STRICT }, keyDepartments: { "key-linked": "dept-sales" }, memberDepartments: { "user-sales": ["dept-sales"] },
+		});
+		const department = `rate-limit-policy:v1:${WS}:${STRICT}:department:dept-sales`;
+		mocks.admit.mockImplementation(async () => ({ allowed: true, limit: 2, remaining: 0, retryAfterSeconds: 20 }));
+		expect(await guardRateLimitPolicies(ctx({ keyId: "key-linked", quotaUserId: "user-other" }))).toBeNull();
+		await settle();
+		expect(mocks.admit.mock.calls.map(([scope]) => scope)).toEqual([department]);
+
+		// A different key, created by a department member, shares the exhausted allowance.
+		const rejected = await guardRateLimitPolicies(ctx({ keyId: "key-2", quotaUserId: "user-sales" }));
+		expect(rejected?.status).toBe(429);
+		expect(await rejected?.json()).toMatchObject({
+			reason: "policy_requests_per_minute",
+			policy_id: STRICT,
+			limit_scope: "department",
+			description: "This request's department reached the \"Sales cap\" rate limit policy's 2 requests per minute. Retry after 20 seconds.",
+		});
+		// So do the member's OAuth requests; requests outside the department do not.
+		expect((await guardRateLimitPolicies(ctx({ keyId: "client", quotaUserId: "user-sales", authMethod: "oauth" })))?.status).toBe(429);
+		expect(await guardRateLimitPolicies(ctx({ keyId: "key-3", quotaUserId: "user-other" }))).toBeNull();
 	});
 
 	it("reports approximate headers for the most restrictive applicable policy", async () => {
@@ -517,5 +634,163 @@ describe("plan publication under concurrent changes", () => {
 		expect(JSON.parse(mocks.store.get(rateLimitPlanKey(WS))!).v.keys).toEqual({ "key-1": STRICT });
 		expect(JSON.parse(mocks.store.get(rateLimitPlanKey("workspace-2"))!).v.endUserDefault).toBe(LOOSE);
 		expect(mocks.store.has(rateLimitPlanKey("workspace-3"))).toBe(false);
+	});
+});
+
+describe("concurrency limits and strict policies", () => {
+	const CONCURRENT = "policy-concurrent";
+	const STRICT_RPM = "policy-fail-closed";
+	const concurrencyPlan = (policy: RateLimitPlan["policies"][string], keyId = "key-1"): RateLimitPlan => ({
+		v: 1, policies: { [CONCURRENT]: policy }, keys: { [keyId]: CONCURRENT }, members: {}, guardrails: {}, endUserDefault: null,
+	});
+	const scopeKey = `rate-limit-policy:v1:${WS}:${CONCURRENT}:key:key-1`;
+
+	it("publishes the concurrency limit and strict flag only when a policy sets them", async () => {
+		mocks.tables.workspace_rate_limit_policies = [
+			{ ...policy(CONCURRENT, "Concurrent", null), concurrent_requests: 3, fail_closed: true },
+			{ ...policy(LOOSE, "Loose", 100), concurrent_requests: null, fail_closed: false },
+		];
+		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(CONCURRENT, "key", { key_id: "key-1" }), assignment(LOOSE, "member", { user_id: "user-1" })];
+		expect((await buildRateLimitPlan(WS)).policies).toEqual({
+			[CONCURRENT]: { rpm: null, tpm: null, cc: 3, strict: true, name: "Concurrent" },
+			[LOOSE]: { rpm: 100, tpm: null, name: "Loose" },
+		});
+		expect(applicableRateLimits(concurrencyPlan({ rpm: null, cc: 3, strict: true, name: "Concurrent" }), { keyId: "key-1" })).toEqual([
+			{ policyId: CONCURRENT, name: "Concurrent", targetType: "key", rpm: null, tpm: null, cc: 3, strict: true, scopeKey: "key:key-1" },
+		]);
+	});
+
+	it("takes a concurrency slot before admitting, and shares it across the request's attempts", async () => {
+		publishPlan(concurrencyPlan({ rpm: null, cc: 2, name: "Concurrent" }));
+		const leases = createConcurrencyLeases();
+		const request = ctx({ rateLimitConcurrency: leases });
+		expect(await guardRateLimitPolicies(request)).toBeNull();
+		expect(mocks.acquireConcurrency).toHaveBeenCalledWith(scopeKey, request.billingRequestId, 2, CONCURRENCY_LEASE_TTL_MS);
+		expect([...leases.held]).toEqual([[scopeKey, request.billingRequestId]]);
+		// A provider fallback attempt is already admitted.
+		expect(await guardRateLimitPolicies(request)).toBeNull();
+		expect(mocks.acquireConcurrency).toHaveBeenCalledTimes(1);
+	});
+
+	it("rejects with 429 when every slot is in use, and holds nothing", async () => {
+		publishPlan(concurrencyPlan({ rpm: 50, cc: 2, name: "Concurrent" }));
+		mocks.acquireConcurrency.mockResolvedValue({ allowed: false, limit: 2, remaining: 0, retryAfterSeconds: 1 });
+		const leases = createConcurrencyLeases();
+		const request = ctx({ rateLimitConcurrency: leases });
+		const response = await guardRateLimitPolicies(request);
+		expect(response?.status).toBe(429);
+		expect(response?.headers.get("Retry-After")).toBe("1");
+		// No per-minute allowance refused this request, so there are no request headers to report.
+		expect(response?.headers.get("x-ratelimit-limit-requests")).toBeNull();
+		expect(await response?.json()).toMatchObject({
+			error: expect.objectContaining({ code: "rate_limit_exceeded" }), reason: "policy_concurrent_requests", policy_id: CONCURRENT, limit_scope: "key",
+			description: expect.stringContaining("already has 2 requests in progress"),
+		});
+		expect(rejectedByRateLimitPolicy(request)).toBe(true);
+		await settle();
+		// Nothing was counted against the request allowance, and no slot is held.
+		expect(mocks.admit).not.toHaveBeenCalled();
+		expect(leases.held.size).toBe(0);
+	});
+
+	it("words a limit of one request and a one-second retry in the singular", async () => {
+		publishPlan(concurrencyPlan({ rpm: null, cc: 1, name: "Concurrent" }));
+		mocks.acquireConcurrency.mockResolvedValue({ allowed: false, limit: 1, remaining: 0, retryAfterSeconds: 1 });
+		const response = await guardRateLimitPolicies(ctx({ rateLimitConcurrency: createConcurrencyLeases() }));
+		expect(((await response?.json()) as { description: string }).description).toBe(
+			"This API key already has 1 request in progress, the \"Concurrent\" rate limit policy's limit on concurrent requests. Retry after 1 second.",
+		);
+	});
+
+	it("does not limit concurrency for requests that nothing would release", async () => {
+		publishPlan(concurrencyPlan({ rpm: null, cc: 1, name: "Concurrent" }));
+		expect(await guardRateLimitPolicies(ctx())).toBeNull();
+		expect(mocks.acquireConcurrency).not.toHaveBeenCalled();
+	});
+
+	it("admits when the counter does not answer, unless the policy is strict", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		mocks.acquireConcurrency.mockRejectedValue(new Error("object unavailable"));
+		publishPlan(concurrencyPlan({ rpm: null, cc: 2, name: "Concurrent" }));
+		const leases = createConcurrencyLeases();
+		expect(await guardRateLimitPolicies(ctx({ rateLimitConcurrency: leases }))).toBeNull();
+		// The slot may have been taken after all, so it is still released with the request.
+		expect(leases.held.size).toBe(1);
+
+		__resetTieredCacheForTests();
+		publishPlan(concurrencyPlan({ rpm: null, cc: 2, strict: true, name: "Concurrent" }));
+		const strictLeases = createConcurrencyLeases();
+		const response = await guardRateLimitPolicies(ctx({ rateLimitConcurrency: strictLeases }));
+		expect(response?.status).toBe(429);
+		expect(await response?.json()).toMatchObject({ reason: "policy_unavailable", description: expect.stringContaining("is strict") });
+		await settle();
+		expect(mocks.releaseConcurrency).toHaveBeenCalledWith(scopeKey, expect.any(String));
+	});
+
+	it("awaits a strict policy's request count instead of counting in the background", async () => {
+		publishPlan({ v: 1, policies: { [STRICT_RPM]: { rpm: 1, strict: true, name: "Fail closed" } }, keys: { "key-1": STRICT_RPM }, members: {}, guardrails: {}, endUserDefault: null });
+		mocks.admit.mockResolvedValueOnce({ allowed: true, limit: 1, remaining: 0, retryAfterSeconds: 40 })
+			.mockResolvedValueOnce({ allowed: false, limit: 1, remaining: 0, retryAfterSeconds: 40 });
+		const first = ctx();
+		expect(await guardRateLimitPolicies(first)).toBeNull();
+		expect(mocks.admit).toHaveBeenCalledTimes(1);
+		await settle();
+		// Not counted a second time in the background.
+		expect(mocks.admit).toHaveBeenCalledTimes(1);
+		// The exhausted allowance is now replayed locally on this isolate.
+		const second = await guardRateLimitPolicies(ctx());
+		expect(second?.status).toBe(429);
+		expect(await second?.json()).toMatchObject({ reason: "policy_requests_per_minute" });
+		expect(mocks.admit).toHaveBeenCalledTimes(1);
+	});
+
+	it("rejects a strict policy's request when its counter fails", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		publishPlan({ v: 1, policies: { [STRICT_RPM]: { rpm: 10, tpm: 1000, strict: true, name: "Fail closed" } }, keys: { "key-1": STRICT_RPM }, members: {}, guardrails: {}, endUserDefault: null });
+		mocks.peekTokens.mockRejectedValue(new Error("object unavailable"));
+		const response = await guardRateLimitPolicies(ctx());
+		expect(response?.status).toBe(429);
+		expect(await response?.json()).toMatchObject({ reason: "policy_unavailable", policy_id: STRICT_RPM });
+	});
+
+	it("still releases a slot when the body finishes after the request's runtime was cleared", async () => {
+		publishPlan(concurrencyPlan({ rpm: null, cc: 2, name: "Concurrent" }));
+		const leases = createConcurrencyLeases();
+		const request = ctx({ rateLimitConcurrency: leases });
+		expect(await guardRateLimitPolicies(request)).toBeNull();
+		const response = releaseConcurrencyAfter(new Response("done"), leases);
+		// withRuntime clears the runtime before a non-streamed body is read.
+		mocks.bindings = {};
+		await response.text();
+		await settle();
+		expect(mocks.releaseConcurrency).toHaveBeenCalledWith(scopeKey, request.billingRequestId);
+	});
+
+	it("releases the request's slots once the response body is delivered or cancelled", async () => {
+		const leases = () => {
+			const held = createConcurrencyLeases();
+			held.held.set(scopeKey, "request-1");
+			return held;
+		};
+		const streamed = leases();
+		const response = releaseConcurrencyAfter(new Response("hello", { status: 200, headers: { "x-test": "kept" } }), streamed);
+		expect(response.headers.get("x-test")).toBe("kept");
+		expect(streamed.released).toBe(false);
+		expect(await response.text()).toBe("hello");
+		expect(streamed.released).toBe(true);
+		await settle();
+		expect(mocks.releaseConcurrency).toHaveBeenCalledWith(scopeKey, "request-1");
+
+		const cancelled = leases();
+		await releaseConcurrencyAfter(new Response(new ReadableStream({ pull() {} })), cancelled).body!.cancel();
+		expect(cancelled.released).toBe(true);
+
+		const empty = leases();
+		releaseConcurrencyAfter(new Response(null, { status: 204 }), empty);
+		expect(empty.released).toBe(true);
+
+		// A request holding no slot keeps its original response.
+		const original = new Response("x");
+		expect(releaseConcurrencyAfter(original, createConcurrencyLeases())).toBe(original);
 	});
 });

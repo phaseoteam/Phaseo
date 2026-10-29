@@ -3,8 +3,41 @@ title: "Observability-Ziel erstellen"
 sidebarTitle: "Ziel erstellen"
 badge: "Beta"
 openapi: "/de/openapi/v1/openapi.localized.yaml POST /observability/destinations"
-description: "Erstellt ein Webhook- oder OpenTelemetry-Ziel."
+description: "Erstellt ein Broadcast-Ziel: ein OpenTelemetry-Tool, einen Webhook, einen Storage-Bucket oder ein Data Warehouse."
 ---
 <Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `settings:write` erforderlich.</Note>
 
-Das Objekt `config` ist schreibgeschützt und wird vor der Speicherung verschlüsselt. Endpunkte müssen öffentliche HTTPS-Adressen verwenden.
+Das Objekt `config` ist schreibgeschützt und wird vor der Speicherung verschlüsselt. Endpunkte müssen öffentliche HTTPS-Adressen verwenden. Unter [Broadcast](../../guides/broadcast.mdx) erfährst du, was jedes Ziel tut und was es erhält.
+
+## `config`-Schlüssel nach Typ
+
+Alle Werte sind Strings. Eine Anfrage, der ein Pflichtschlüssel fehlt oder die einen Wert enthält, den das Ziel nicht verwenden kann, gibt `400` mit einer Meldung zurück, die den Schlüssel nennt.
+
+| `type` | Erforderliche `config`-Schlüssel | Optionale `config`-Schlüssel |
+| --- | --- | --- |
+| `arize` | `api_key`, `space_id`, `project_name` | `base_url` |
+| `axiom` | `api_token`, `dataset` | `region` |
+| `bigquery` | `service_account_json`, `dataset`, `table` | `project_id` |
+| `braintrust` | `api_key`, `project_id` | `base_url` |
+| `clickhouse` | `endpoint`, `password`, `table` | `username`, `database` |
+| `comet_opik` | `api_key`, `workspace`, `project_name` | `base_url` |
+| `datadog` | `api_key` | `ml_app`, `site` |
+| `dynatrace` | `environment_url`, `api_token` | `token_type` |
+| `elastic` | `otlp_endpoint`, `api_key` | — |
+| `gcs` | `bucket`, `access_key_id`, `secret_access_key` | `path_template` |
+| `grafana_cloud` | `otlp_endpoint`, `instance_id`, `api_key` | — |
+| `honeycomb` | `api_key` | `region`, `dataset` |
+| `langfuse` | `secret_key`, `public_key` | `base_url` |
+| `langsmith` | `api_key` | `project`, `base_url` |
+| `new_relic` | `license_key` | `region` |
+| `otel_collector` | `otlp_endpoint` | `otlp_protocol`, `headers_json` |
+| `posthog` | `api_key` | `base_url` |
+| `r2` | `account_id`, `bucket`, `access_key_id`, `secret_access_key` | `jurisdiction`, `path_template` |
+| `respan` | `api_key` | `base_url` |
+| `s3` | `bucket`, `access_key_id`, `secret_access_key` | `region`, `endpoint`, `session_token`, `path_template` |
+| `sentry` | `otlp_endpoint`, `public_key` | — |
+| `snowflake` | `account`, `user`, `private_key`, `warehouse`, `database`, `schema`, `table` | `role` |
+| `wandb_weave` | `api_key`, `entity`, `project` | `base_url` |
+| `webhook` | `url` | `method`, `headers_json`, `signing_secret` |
+
+OpenTelemetry-Typen akzeptieren außerdem `otlp_protocol` (`http/json` oder `http/protobuf`) und `otlp_compression` (`none` oder `gzip`), außer wenn der Anbieter nur einen Wert akzeptiert. Das `headers_json` eines Webhooks ist ein JSON-Objekt, das Header-Namen auf Werte abbildet, als String.

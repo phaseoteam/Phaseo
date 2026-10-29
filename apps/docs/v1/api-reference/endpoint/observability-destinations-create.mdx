@@ -3,9 +3,42 @@ title: "Create observability destination"
 sidebarTitle: "Create destination"
 badge: "Beta"
 openapi: "/openapi/v1/openapi.yaml POST /observability/destinations"
-description: "Create a webhook or OpenTelemetry destination."
-"og:image": "https://phaseo.app/og/dynamic?title=Create%20observability%20destination&description=Create%20a%20webhook%20or%20OpenTelemetry%20destination.&pathname=/docs/v1/api-reference/endpoint/observability-destinations-create"
+description: "Create a Broadcast destination: an OpenTelemetry tool, webhook, storage bucket, or data warehouse."
+"og:image": "https://phaseo.app/og/dynamic?title=Create%20observability%20destination&description=Create%20a%20Broadcast%20destination%3A%20an%20OpenTelemetry%20tool%2C%20webhook%2C%20storage%20bucket%2C%20or%20data%20warehouse.&pathname=/docs/v1/api-reference/endpoint/observability-destinations-create"
 ---
 <Note>This endpoint requires a management API key with `settings:write`.</Note>
 
-The `config` object is write-only and encrypted before storage. Endpoints must use public HTTPS addresses.
+The `config` object is write-only and encrypted before storage. Endpoints must use public HTTPS addresses. See [Broadcast](/v1/guides/broadcast) for what each destination does and what it receives.
+
+## Config keys by type
+
+All values are strings. A request missing a required key, or with a value the destination cannot use, returns `400` with a message naming the key.
+
+| `type` | Required `config` keys | Optional `config` keys |
+| --- | --- | --- |
+| `arize` | `api_key`, `space_id`, `project_name` | `base_url` |
+| `axiom` | `api_token`, `dataset` | `region` |
+| `bigquery` | `service_account_json`, `dataset`, `table` | `project_id` |
+| `braintrust` | `api_key`, `project_id` | `base_url` |
+| `clickhouse` | `endpoint`, `password`, `table` | `username`, `database` |
+| `comet_opik` | `api_key`, `workspace`, `project_name` | `base_url` |
+| `datadog` | `api_key` | `ml_app`, `site` |
+| `dynatrace` | `environment_url`, `api_token` | `token_type` |
+| `elastic` | `otlp_endpoint`, `api_key` | — |
+| `gcs` | `bucket`, `access_key_id`, `secret_access_key` | `path_template` |
+| `grafana_cloud` | `otlp_endpoint`, `instance_id`, `api_key` | — |
+| `honeycomb` | `api_key` | `region`, `dataset` |
+| `langfuse` | `secret_key`, `public_key` | `base_url` |
+| `langsmith` | `api_key` | `project`, `base_url` |
+| `new_relic` | `license_key` | `region` |
+| `otel_collector` | `otlp_endpoint` | `otlp_protocol`, `headers_json` |
+| `posthog` | `api_key` | `base_url` |
+| `r2` | `account_id`, `bucket`, `access_key_id`, `secret_access_key` | `jurisdiction`, `path_template` |
+| `respan` | `api_key` | `base_url` |
+| `s3` | `bucket`, `access_key_id`, `secret_access_key` | `region`, `endpoint`, `session_token`, `path_template` |
+| `sentry` | `otlp_endpoint`, `public_key` | — |
+| `snowflake` | `account`, `user`, `private_key`, `warehouse`, `database`, `schema`, `table` | `role` |
+| `wandb_weave` | `api_key`, `entity`, `project` | `base_url` |
+| `webhook` | `url` | `method`, `headers_json`, `signing_secret` |
+
+OpenTelemetry types also accept `otlp_protocol` (`http/json` or `http/protobuf`) and `otlp_compression` (`none` or `gzip`), except where the vendor accepts only one value. A webhook's `headers_json` is a JSON object of header names to values, as a string.

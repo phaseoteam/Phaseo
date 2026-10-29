@@ -1,0 +1,356 @@
+---
+title: "提示词模板"
+description: "将提示词保存在预设中，每个请求只发送会变化的值。"
+icon: "braces"
+---
+
+提示词模板是一组包含 `{{variables}}` 的消息，保存在[预设](./presets.mdx)中。你的应用发送预设引用和变量值。Phaseo 会检查这些值，将其填入消息，然后把请求发送到预设的模型。
+
+这样提示词文本就不必写在应用代码中。你可以在控制台中修改提示词而无需部署，所有调用方都使用相同的措辞、工具和响应格式。
+
+模板适用于 `POST /v1/chat/completions`、`POST /v1/responses` 和 `POST /v1/messages`。
+
+## 快速入门
+
+<Steps>
+<Step title="编写模板">
+
+打开**设置 -> 预设**，创建或打开一个预设，选择其模型，然后打开**提示词模板**标签页。添加消息，并用双花括号写出变量：
+
+```text
+System: You triage support tickets for {{company}}. Reply in a {{tone}} tone.
+User:   Ticket: {{ticket}}
+```
+
+编辑器会列出它找到的每个变量。为每个变量设置类型、是否必填、默认值和说明。在**试一试**面板中填入值，即可查看 Gateway 将发送的确切消息，然后保存。
+
+预设保存后，**运行已保存的预设**会使用你的测试值发送一个真实请求，并显示回复、模型和 token 数量。这会消耗你工作区的额度。同一面板还提供填好测试值的 cURL、TypeScript 和 Python 请求代码。
+
+</Step>
+
+<Step title="发送变量">
+
+在 `prompt.id` 中引用预设，并将值放入 `prompt.variables`。省略 `model`，或将其设为相同的引用。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": {
+      "id": "@support-triage",
+      "variables": {
+        "company": "Acme",
+        "tone": "friendly",
+        "ticket": "I was charged twice this month."
+      }
+    }
+  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const completion = await client.generateText({
+	model: "@support-triage",
+	messages: [],
+	prompt: {
+		id: "@support-triage",
+		variables: {
+			company: "Acme",
+			tone: "friendly",
+			ticket: "I was charged twice this month.",
+		},
+	},
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+completion = client.generate_text({
+    "prompt": {
+        "id": "@support-triage",
+        "variables": {
+            "company": "Acme",
+            "tone": "friendly",
+            "ticket": "I was charged twice this month.",
+        },
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="检查请求">
+
+打开**Gateway -> 日志**，查看请求、处理它的模型及其费用。请求的元数据会记录预设、变量名和渲染出的消息数量，但不会记录变量值。
+
+</Step>
+</Steps>
+
+## 在各个端点中使用模板
+
+同一个 `prompt` 对象适用于全部三个端点。模板中的 system 和 developer 消息会成为该端点的系统指令，其他消息会放在你的请求所发送的对话之前。
+
+| 端点 | 模板 system 消息的去向 | 模板对话放在以下内容之前 |
+| --- | --- | --- |
+| `/v1/chat/completions` | `messages`（保留为 system 消息） | 你的 `messages` |
+| `/v1/responses` | `instructions` | 你的 `input` |
+| `/v1/messages` | `system` | 你的 `messages` |
+
+你可以随模板一起发送对话。例如，chat 请求可以在模板消息之后添加用户的后续轮次：
+
+```json
+{
+  "prompt": { "id": "@support-triage", "variables": { "company": "Acme", "ticket": "Refund request" } },
+  "messages": [
+    { "role": "assistant", "content": "Can you share the order number?" },
+    { "role": "user", "content": "It is 10482." }
+  ]
+}
+```
+
+## 模板语法
+
+模板使用 Mustache 的一个小型、无逻辑子集。模板中的任何内容都不会作为代码运行。
+
+| 语法 | 作用 |
+| --- | --- |
+| `{{name}}` | 插入一个值。文本按原样插入，数字和布尔值作为文本插入，列表和对象作为 JSON 插入。缺失的可选值不插入任何内容。 |
+| `{{customer.name}}` | 插入对象变量的一个字段。 |
+| `{{#name}}...{{/name}}` | 当值已设置且不为 `false` 时渲染一次该块；如果值是列表，则为每一项渲染一次。在块内，`{{.}}` 表示当前项，也可以直接按名称使用其字段。 |
+| `{{^name}}...{{/name}}` | 当值缺失、为 `false`、为空文本或空列表时渲染该块。 |
+| `{{! note }}` | 注释，会被移除。 |
+| `\{{` | 字面量 `{{`。 |
+
+值以纯文本形式插入，不做 HTML 转义。值可以改变消息的文本，但绝不会改变请求的结构。
+
+如果一条消息渲染后只剩空白，它会被丢弃。可以用这一点让整条消息变为可选：
+
+```text
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+要为列表中的每一项重复文本，请用该列表开启一个区块，并用 `{{.}}` 表示当前项：
+
+```text
+Examples of good replies:
+{{#examples}}- {{.}}
+{{/examples}}
+```
+
+不支持 partial（`{{> name}}`）、不转义标签（`{{{name}}}` 和 `{{& name}}`）、更改分隔符和 lambda，编辑器和 API 会拒绝使用它们的模板。
+
+## 变量
+
+每个变量都有一个类型。只有需要更改默认设置的变量才需要声明；在消息中使用但未声明的变量是必填文本。
+
+| 类型 | 接受的值 |
+| --- | --- |
+| `string` | 文本。设置 `max_length` 可限制长度。 |
+| `number` | 数字。 |
+| `boolean` | `true` 或 `false`。 |
+| `enum` | `enum` 中列出的字符串之一。 |
+| `array` | 列表。 |
+| `object` | JSON 对象。 |
+| `any` | 任意 JSON 值。 |
+| `image` | 用于 user 消息的图像。请参阅下文的“图像变量”部分。 |
+
+每个变量还可以设置：
+
+- `required`：缺少该值时请求失败。必填变量不能有默认值。
+- `default`：请求省略该值时使用。它必须与类型匹配。
+- `description`：显示在编辑器和错误信息中，最多 500 个字符。
+
+只用于开启区块的名称（例如上面的 `notes` 和 `examples`）是可选的，可以接受任何值。
+
+请求会被严格检查。缺少必填值、值的类型错误或使用了模板中不存在的名称时，会返回 `400` 并一次列出所有问题，因此拼写错误不会悄悄丢掉提示词的一部分。
+
+## 图像变量
+
+图像变量会填充 user 消息中的一个完整内容部分，因此图像的位置由模板决定。在编辑器中，在 user 消息内选择**添加图像**。在 API 中，使用 `variable` 部分：
+
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Before:" },
+    { "type": "variable", "name": "before" },
+    { "type": "text", "text": "After:" },
+    { "type": "variable", "name": "after" },
+    { "type": "text", "text": "What changed?" }
+  ]
+}
+```
+
+请求可以将每张图像作为 `https` URL、`data:image/...` URL，或 chat completions、Responses 或 Messages 格式的图像部分发送。Phaseo 会将其转换为你所调用端点的格式。所选模型必须支持图像输入。
+
+## 工具和响应格式
+
+模板可以包含 `tools`、`tool_choice` 和 `response_format`，按 chat completions 格式编写。Phaseo 会为 Responses 和 Messages 端点转换它们。
+
+当两者设置了相同的内容时，始终以请求为准：
+
+- 工具按函数名合并。如果请求定义了同名工具，则使用请求中的定义。
+- 请求的 `tool_choice` 和响应格式（`response_format`、`text.format` 或 `output_config.format`）会替换模板中的设置。
+
+`temperature` 和 `max_tokens` 等请求参数照常生效。预设自身的默认值只填充请求省略的字段。
+
+## 使用 API 创建模板
+
+模板存储在预设的 `config.prompt` 中。使用具有 `presets:write` 权限的[管理 API 密钥](../developers/management-api-keys.mdx)创建或更新预设：
+
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "@support-triage",
+    "visibility": "team",
+    "config": {
+      "models": ["anthropic/claude-haiku-5.5"],
+      "prompt": {
+        "messages": [
+          { "role": "system", "content": "You triage support tickets for {{company}}. Reply in a {{tone}} tone." },
+          { "role": "user", "content": "Ticket: {{ticket}}" }
+        ],
+        "variables": {
+          "company": { "type": "string", "required": true },
+          "tone": { "type": "enum", "enum": ["formal", "friendly"], "default": "formal" },
+          "ticket": { "type": "string", "required": true, "max_length": 4000 }
+        }
+      }
+    }
+  }'
+```
+
+Phaseo 会在保存模板时检查它。存在语法错误、未知类型或默认值与类型不匹配的模板会被拒绝，并返回 `400 invalid_prompt_template` 以及每个问题的位置，在这里和在编辑器中都是如此。
+
+保存的更改会在大约两分钟内对请求生效。
+
+## 版本和标签
+
+每次发布预设时，Phaseo 都会保存一个不可变的版本（参见[预设](./presets.mdx)）。除非请求固定了某个版本，否则请求会运行最新发布的版本。固定版本的请求会一并使用该版本的模型、参数和模板。
+
+使用 `prompt.version` 固定版本：
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` 接受 `v3`、`1.2.0` 或 `2026.10.27` 这样的版本标签，或 `production` 这样的标签。无论是否使用模板，你也可以把版本写进模型 ID：
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+公开预设使用 `@publisher/support-triage@production`。如果 `model` 和 `prompt.version` 都固定了版本，二者必须指向同一个版本。
+
+### 标签
+
+标签是 `production` 或 `staging` 这样的名称，指向一个已发布的版本。标签由 1 到 32 个小写字母、数字、连字符或下划线组成，以字母开头，且不能看起来像版本标签（`v1`、`v2`）。
+
+在**设置 -> 预设**中打开预设。**保存草稿**旁边的**发布**会保存你的更改，并将其发布为下一个版本。在**版本和标签**中管理标签：每个标签都有一个版本选择器，选择另一个版本即可移动标签，选择较早的版本就是回滚。使用**添加标签**创建新标签。展开某个版本可查看它的模型和模板消息，以及与默认版本（未固定版本的请求所运行的版本）的差异；使用**运行**可以用**提示词模板**中的测试值试用该版本。预设的创建者可以更改其标签；预设共享时，工作区所有者和管理员也可以。使用具有 `presets:write` 的[管理 API 密钥](../developers/management-api-keys.mdx)：
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+请求体接受 `version`（版本标签，或另一个标签以复制其指向）或 `version_id`。`GET /v1/presets/{id}/labels` 列出标签，`DELETE /v1/presets/{id}/labels/{label}` 移除标签。固定到已移除标签的请求会失败，直到重新添加该标签。
+
+### 回滚
+
+要回滚，请把标签移到较早的版本：在该版本上选择**将 production 移到这里**，或发送同样的请求并使用 `"version": "v2"`。固定到 `production` 的请求会重新运行 v2，你的应用无需任何更改。
+
+与其他预设更改一样，标签移动会在约两分钟内生效。
+
+## 错误
+
+请求中的模板问题会返回 `400`，代码为 `validation_error`。`reason` 包含第一个问题的代码，`details` 列出所有问题及其路径：
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+    "type": "invalid_request_error"
+  },
+  "code": "validation_error",
+  "reason": "template_variable_required",
+  "description": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+  "details": [
+    {
+      "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+      "path": ["prompt", "variables", "ticket"],
+      "keyword": "template_variable_required"
+    }
+  ]
+}
+```
+
+| 原因 | 说明 |
+| --- | --- |
+| `template_variable_required` | 缺少必填变量。 |
+| `template_variable_type` | 值与其类型、enum 列表或 `max_length` 不匹配。 |
+| `template_variable_unknown` | 请求发送了模板中不存在的变量，或者预设没有模板。 |
+| `template_variables_invalid` | `prompt.variables` 不是对象。 |
+| `template_limit_exceeded` | 变量或渲染后的文本超过了下面的限制。 |
+| `template_rendered_empty` | 模板没有渲染出任何 user 或 assistant 消息，且请求也没有发送消息。 |
+| `template_endpoint_unsupported` | 预设带有模板，但从上述三个端点以外的端点调用。 |
+| `prompt_model_conflict` | `model` 指定的预设或模型与 `prompt.id` 不同，或固定的版本与 `prompt.version` 不同。 |
+| `prompt_version_invalid` | `prompt.version` 为空、超过 64 个字符，或包含字母、数字、`.`、`_`、`+` 和 `-` 以外的字符。 |
+| `prompt_model_fallbacks_unsupported` | 请求设置了 `models` 回退。请改为在预设中列出回退模型。 |
+
+如果 `prompt.id` 指向的预设不在你的工作区中，会返回 `404`。
+
+固定的版本或标签不存在，或密钥无法使用时，会返回 `404`，原因为 `preset_version_not_found`。
+
+## 限制
+
+| 限制 | 值 |
+| --- | --- |
+| 每个模板的消息数 | 64 |
+| 每个模板的变量数 | 64 |
+| 所有消息的模板文本 | 48,000 个字符 |
+| 区块嵌套深度 | 8 |
+| 每个请求的区块重复次数 | 1,000 |
+| 每个请求渲染后的文本 | 1,000,000 个字符 |
+| `prompt.variables` 的大小 | 256 KB |
+| 每个 `enum` 的值数 | 100 |
+
+## 护栏和日志
+
+[护栏](../cookbook/guardrails-for-api-keys.mdx)会将变量值作为用户内容进行检查，即使模板把它们放进了 system 消息。对某个值进行脱敏的护栏，会在模板插入该值的所有位置进行脱敏；拦截某个值的护栏会拦截整个请求。
+
+请求元数据会记录预设、变量名和渲染出的消息数量。值本身只保存在请求正文被保存的地方，并遵循你工作区的常规日志设置。
+
+## 当前限制
+
+- `models` 回退不能与模板一起使用。请改为将回退模型添加到预设中。
+- 模板仅适用于 chat completions、Responses 和 Messages 请求。
+
+## 相关指南
+
+- [预设](./presets.mdx)
+- [结构化输出](./structured-outputs.mdx)
+- [工具调用](./tool-calling.mdx)
+- [多模态](./multimodality.mdx)

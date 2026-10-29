@@ -21,6 +21,16 @@ const pickNumber = (obj: any, path: string): number | undefined => {
 };
 
 /**
+ * OpenAI Chat usage reports audio tokens as `prompt_tokens_details.audio_tokens` and
+ * `completion_tokens_details.audio_tokens` (https://platform.openai.com/docs/api-reference/chat/object).
+ * Every Chat response carries them, usually as 0, so only a positive count is taken.
+ */
+const openAIChatAudioTokens = (obj: any, detailsKey: "prompt_tokens_details" | "completion_tokens_details"): number | undefined => {
+    const value = pickNumber(obj, `${detailsKey}.audio_tokens`);
+    return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
+};
+
+/**
  * Remove billing outputs from a usage payload so downstream pricing
  * always derives from raw usage meters.
  */
@@ -238,7 +248,8 @@ export function shapeUsageForClient(
     const inputAudioTokens =
         pickNumber(base, "input_audio_tokens") ??
         pickNumber(base, "input_tokens_details.input_audio") ??
-        pickNumber(base, "input_details.input_audio");
+        pickNumber(base, "input_details.input_audio") ??
+        openAIChatAudioTokens(base, "prompt_tokens_details");
     const inputVideoTokens =
         pickNumber(base, "input_video_tokens") ??
         pickNumber(base, "input_tokens_details.input_videos") ??
@@ -250,7 +261,8 @@ export function shapeUsageForClient(
     const outputAudioTokens =
         pickNumber(base, "output_audio_tokens") ??
         pickNumber(base, "output_tokens_details.output_audio") ??
-        pickNumber(base, "completion_tokens_details.output_audio");
+        pickNumber(base, "completion_tokens_details.output_audio") ??
+        openAIChatAudioTokens(base, "completion_tokens_details");
     const outputVideoTokens =
         pickNumber(base, "output_video_tokens") ??
         pickNumber(base, "output_tokens_details.output_videos") ??

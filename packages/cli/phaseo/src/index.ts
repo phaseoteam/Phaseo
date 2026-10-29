@@ -22,6 +22,9 @@ import { CLI_VERSION } from "./generated/meta.js";
 import { createDoctorReport, detectInstalledPackageManager, type DoctorReport } from "./installation.js";
 import { getVersionInfo, removeCommandFor, updateCommandFor, updateInvocationFor } from "./release.js";
 import { runCurie } from "./curie.js";
+import { appendQuery, compact, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag } from "./flags.js";
+import { managementHelpEntries, runManagementCommand } from "./management.js";
+import { parityHelpEntries, parseIpAllowlist, runParityCommand } from "./parity.js";
 import { isIntegrationSetupName, runIntegrationCommand } from "./integrations/index.js";
 import { isRunnerName, runRunnerCommand } from "./integrations/runners.js";
 import { revokeIntegrationGatewayCredential } from "./integrations/credential.js";
@@ -104,23 +107,6 @@ export function parseArgs(argv: string[]): ParsedArgs {
 	return passthrough ? { command, flags, passthrough } : { command, flags };
 }
 
-function flagString(flags: Record<string, string | boolean>, key: string): string | undefined {
-	const value = flags[key];
-	return typeof value === "string" ? value : undefined;
-}
-
-function flagBool(flags: Record<string, string | boolean>, key: string): boolean {
-	return flags[key] === true || flags[key] === "true" || flags[key] === "1";
-}
-
-function flagNumber(flags: Record<string, string | boolean>, key: string): number | undefined {
-	const value = flagString(flags, key);
-	if (value === undefined) return undefined;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed)) throw new Error(`--${key} must be a number`);
-	return parsed;
-}
-
 function sleep(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -135,38 +121,6 @@ function randomBase64Url(byteLength: number): string {
 
 function sha256Base64Url(value: string): string {
 	return base64Url(createHash("sha256").update(value).digest());
-}
-
-function appendQuery(path: string, params: Record<string, string | number | boolean | undefined>): string {
-	const [base, existingQuery] = path.split("?", 2);
-	const query = new URLSearchParams(existingQuery ?? "");
-	for (const [key, value] of Object.entries(params)) {
-		if (value === undefined || value === "") continue;
-		query.set(key, String(value));
-	}
-	const text = query.toString();
-	return text ? `${base}?${text}` : base;
-}
-
-function parseJsonFlag(flags: Record<string, string | boolean>, key: string, fallback: Record<string, unknown> = {}): Record<string, unknown> {
-	const raw = flagString(flags, key);
-	if (!raw) return fallback;
-	const parsed = JSON.parse(raw);
-	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-		throw new Error(`--${key} must be a JSON object`);
-	}
-	return parsed as Record<string, unknown>;
-}
-
-function compact(value: Record<string, unknown>): Record<string, unknown> {
-	return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
-}
-
-function parseCsvFlag(flags: Record<string, string | boolean>, key: string): string[] {
-	return (flagString(flags, key) ?? "")
-		.split(",")
-		.map((value) => value.trim())
-		.filter(Boolean);
 }
 
 function formatMoneyFromNanos(nanos: unknown): string {
@@ -208,11 +162,39 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo curie --help",
 			"phaseo integrations --help",
 			"phaseo webhooks --help",
+			"phaseo byok --help",
+			"phaseo budgets --help",
+			"phaseo department-budgets --help",
+			"phaseo spend-rules --help",
+			"phaseo spend-blocks --help",
+			"phaseo rate-limits --help",
+			"phaseo observability --help",
+			"phaseo notifications --help",
+			"phaseo routing --help",
+			"phaseo private-models --help",
+			"phaseo classifiers --help",
+			"phaseo data-contribution --help",
+			"phaseo identity --help",
+			"phaseo workload-identity --help",
+			"phaseo audit-events --help",
+			"phaseo apps --help",
+			"phaseo feedback --help",
+			"phaseo preset-test-runs --help",
+			"phaseo events --help",
+			"phaseo invites --help",
+			"phaseo authorized-apps --help",
+			"phaseo profile --help",
 			"phaseo api --help",
 			"",
 			"Login scopes:",
 			"  Default login requests full first-party CLI access across the control plane.",
 			"  Use --scopes workspaces:read,keys:write,... when a narrower token is preferred.",
+			"  Use --scopes billing:write to also allow credit top-ups (phaseo credits add).",
+			"  feedback, events and preset-test-runs need feedback:read,feedback:write, which are not requested by default.",
+			"  byok and private-models work with the default scopes; sessions from before they were allowed need phaseo login again.",
+			"",
+			"Confirmation:",
+			"  Commands that show [--yes] ask before they delete, revoke, lift, rotate, or merge. Agents and scripts pass --yes.",
 			"",
 			"Environment:",
 			"  PHASEO_API_URL  Override API root, defaults to https://api.phaseo.app",
@@ -271,7 +253,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
 			"phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
 			"phaseo keys get <id-or-hash> [--json]",
-			"phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]",
+			"phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]",
 			"phaseo keys delete <id-or-hash> [--json]",
 		],
 	},
@@ -279,7 +261,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"keys list": { usage: ["phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
 	"keys create": { usage: ["phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
 	"keys get": { usage: ["phaseo keys get <id-or-hash> [--json]"] },
-	"keys update": { usage: ["phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]"] },
+	"keys update": { usage: ["phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]"] },
 	"keys delete": { usage: ["phaseo keys delete <id-or-hash> [--json]"] },
 	workspaces: {
 		usage: [
@@ -401,8 +383,25 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"pricing models": { usage: ["phaseo pricing models [--json]"] },
 	"pricing calculate": { usage: ["phaseo pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>"] },
-	credits: { usage: ["phaseo credits get [--json]"] },
+	credits: {
+		usage: [
+			"phaseo credits get [--json]",
+			"phaseo credits add --amount <usd> [--workspace <id>] [--idempotency-key <key>] [--open] [--no-wait] [--json]",
+			"phaseo credits topups get <id> [--json]",
+			"",
+			"Top-ups:",
+			"  Needs the opt-in billing:write scope: phaseo login --scopes billing:write",
+			"  $5 to $500 per top-up. With a saved card, workspace owners and admins get an email and one of them",
+			"  confirms the charge; otherwise the command prints a checkout link for a person to pay with a new card.",
+			"  Declined, expired and failed top-ups end with a reason code; do not retry them automatically.",
+		],
+	},
 	"credits get": { usage: ["phaseo credits get [--json]"] },
+	"credits add": {
+		description: "Add credits. Nothing is charged until a workspace owner or admin confirms by email, or pays at the printed checkout link.",
+		usage: ["phaseo credits add --amount <usd> [--workspace <id>] [--idempotency-key <key>] [--open] [--no-wait] [--json]"],
+	},
+	"credits topups": { usage: ["phaseo credits topups get <id> [--json]"] },
 	activity: { usage: ["phaseo activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
 	"activity list": { usage: ["phaseo activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
 	logs: {
@@ -450,13 +449,41 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"api delete": { usage: ["phaseo api delete <v1-path> [--json]"] },
 };
 
+const DATA_CONTRIBUTION_USAGE: Record<string, string> = {
+	"data-contribution get": "phaseo data-contribution get [--json]",
+	"data-contribution enable": "phaseo data-contribution enable [--reason <text>] [--json]",
+	"data-contribution disable": "phaseo data-contribution disable [--reason <text>] [--json]",
+	"data-contribution classifiers create": "phaseo data-contribution classifiers create --name <name> [--body-json <json>] [--json]",
+	"data-contribution classifiers update": "phaseo data-contribution classifiers update <id> --body-json <json> [--json]",
+	"data-contribution classifiers delete": "phaseo data-contribution classifiers delete <id> [--json]",
+};
+
+for (const [key, usage] of Object.entries(DATA_CONTRIBUTION_USAGE)) {
+	HELP_ENTRIES[key] = { usage: [usage] };
+	const words = key.split(" ");
+	for (let length = 1; length < words.length; length++) {
+		const prefix = words.slice(0, length).join(" ");
+		HELP_ENTRIES[prefix] ??= { usage: [] };
+		HELP_ENTRIES[prefix].usage.push(usage);
+	}
+}
+
+for (const [key, entry] of [...Object.entries(managementHelpEntries()), ...Object.entries(parityHelpEntries())]) {
+	const existing = HELP_ENTRIES[key];
+	if (!existing) {
+		HELP_ENTRIES[key] = entry;
+		continue;
+	}
+	for (const line of entry.usage) if (!existing.usage.includes(line)) existing.usage.push(line);
+	if (!existing.description && entry.description) existing.description = entry.description;
+}
+
 export function helpKeyForCommand(command: string[]): string {
 	if (command[0]?.toLowerCase() === "v") return "version";
-	if (command.length >= 2) {
-		const twoPart = `${command[0]} ${command[1]}`;
-		if (twoPart in HELP_ENTRIES) return twoPart;
+	for (let length = Math.min(command.length, 4); length >= 1; length--) {
+		const key = command.slice(0, length).join(" ");
+		if (key in HELP_ENTRIES) return key;
 	}
-	if (command.length >= 1 && command[0] in HELP_ENTRIES) return command[0];
 	return "root";
 }
 
@@ -599,7 +626,9 @@ async function maybePrintUpdateNotice(json: boolean) {
 }
 
 export function shouldPrintUpdateNoticeForCommand(command: string[]): boolean {
-	return !(command[0] === "integrations" && command[1] === "credential");
+	// Commands whose stdout is data (a credential, a CSV export) must not get a trailing notice.
+	if (command[0] === "integrations" && command[1] === "credential") return false;
+	return !(command[0] === "analytics" && command[1] === "export");
 }
 
 async function request(path: string, options: { method?: HttpMethod; body?: Record<string, unknown> } = {}) {
@@ -609,6 +638,35 @@ async function request(path: string, options: { method?: HttpMethod; body?: Reco
 		accessToken: session.accessToken,
 		...(options.body ? { body: JSON.stringify(options.body) } : {}),
 	});
+}
+
+async function readAllStdin(): Promise<string> {
+	if (input.isTTY) process.stderr.write("Reading from stdin. Paste the value, then press Ctrl+D (Ctrl+Z then Enter on Windows).\n");
+	const chunks: Buffer[] = [];
+	for await (const chunk of input) chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+	return Buffer.concat(chunks).toString("utf8");
+}
+
+async function askYesNo(question: string): Promise<boolean> {
+	const prompt = createInterface({ input, output });
+	try {
+		return /^y(es)?$/i.test((await prompt.question(question)).trim());
+	} finally {
+		prompt.close();
+	}
+}
+
+function managementDeps() {
+	return {
+		request: (path: string, options: { method: HttpMethod; body?: Record<string, unknown> }) => request(path, options),
+		readStdin: readAllStdin,
+		env: process.env,
+		confirm: askYesNo,
+		interactive: isInteractiveTerminal(),
+		write: (text: string) => {
+			process.stdout.write(text);
+		},
+	};
 }
 
 function printList(items: any[], render: (item: any) => string): void {
@@ -1216,10 +1274,11 @@ async function updateKey(id: string | undefined, flags: Record<string, string | 
 			limit: flagNumber(flags, "limit"),
 			limit_reset: flagString(flags, "limit-reset"),
 			expires_at: flagString(flags, "expires-at"),
+			ip_allowlist: flagString(flags, "ip-allowlist") === undefined ? undefined : parseIpAllowlist(flagString(flags, "ip-allowlist")!),
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated API key: ${body.data.name ?? body.data.id}\n`);
+	process.stdout.write(`Updated API key:${body.data.name ?? body.data.id}\n`);
 }
 
 async function deleteKey(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1807,6 +1866,127 @@ async function creditsGet(flags: Record<string, string | boolean>) {
 	process.stdout.write(`Available: ${formatMoneyFromNanos(body.credits?.available_nanos)}\nReserved: ${formatMoneyFromNanos(body.credits?.reserved_nanos)}\n30d requests: ${body.credits?.thirty_day_requests ?? 0}\n`);
 }
 
+const TOPUP_POLL_INTERVAL_MS = 5_000;
+// Requests expire after 30 minutes; a confirmed card payment can take a little longer.
+const TOPUP_WAIT_GRACE_MS = 5 * 60_000;
+
+export function parseTopupAmountFlag(raw: string | undefined): number {
+	if (!raw) throw new Error("--amount <usd> is required, for example --amount 20");
+	const amount = Number(raw.replace(/^\$/, ""));
+	if (!Number.isFinite(amount) || amount <= 0) throw new Error("--amount must be a positive number of US dollars, for example 20 or 12.50");
+	return amount;
+}
+
+function formatUsd(value: unknown): string {
+	const amount = Number(value);
+	return (Number.isFinite(amount) ? amount : 0).toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function renderTopup(topup: any): string {
+	const lines = [
+		`Top-up ${terminalValue(topup?.id)}: ${formatUsd(topup?.amount_usd)} (${terminalValue(topup?.status)}${topup?.reason ? `, ${terminalValue(topup.reason)}` : ""})`,
+	];
+	if (topup?.payment_method?.last4) lines.push(`Card: ${terminalValue(topup.payment_method.brand, "card")} ending ${terminalValue(topup.payment_method.last4)}`);
+	if (topup?.checkout_url) lines.push(`Checkout: ${terminalValue(topup.checkout_url)}`);
+	if (topup?.message) lines.push(terminalValue(topup.message, ""));
+	if (topup?.status === "pending" && topup?.expires_at) lines.push(`Expires: ${terminalValue(topup.expires_at)}`);
+	return `${lines.join("\n")}\n`;
+}
+
+async function shouldOpenCheckout(flags: Record<string, string | boolean>, json: boolean): Promise<boolean> {
+	if (flagBool(flags, "open")) return true;
+	if (json || !input.isTTY || !output.isTTY) return false;
+	const prompt = createInterface({ input, output });
+	try {
+		const answer = (await prompt.question("Open the checkout link in your browser? [Y/n] ")).trim().toLowerCase();
+		return answer === "" || answer === "y" || answer === "yes";
+	} finally {
+		prompt.close();
+	}
+}
+
+/** Polls a top-up until it is final (paid, declined, expired or failed) or the wait runs out. */
+export async function waitForTopup(
+	id: string,
+	initial: any,
+	options: { fetchTopup: (id: string) => Promise<any>; intervalMs?: number; now?: () => number; sleepFn?: (ms: number) => Promise<unknown>; onUpdate?: (topup: any) => void },
+): Promise<{ topup: any; timedOut: boolean }> {
+	const now = options.now ?? Date.now;
+	const pause = options.sleepFn ?? sleep;
+	const expiresAt = Date.parse(String(initial?.expires_at ?? ""));
+	const deadline = (Number.isFinite(expiresAt) ? Math.max(expiresAt, now()) : now() + 30 * 60_000) + TOPUP_WAIT_GRACE_MS;
+	let topup = initial;
+	while (!topup?.final) {
+		if (now() >= deadline) return { topup, timedOut: true };
+		await pause(options.intervalMs ?? TOPUP_POLL_INTERVAL_MS);
+		const next = await options.fetchTopup(id);
+		if (next?.status !== topup?.status) options.onUpdate?.(next);
+		topup = next;
+	}
+	return { topup, timedOut: false };
+}
+
+/**
+ * Whether credits add should poll. Not when asked not to, when the top-up is already final, or
+ * under --json when a person must open checkout_url first: an agent then gets the pending
+ * top-up (with the link) at once instead of a silent wait.
+ */
+export function shouldWaitForTopup(created: any, options: { json: boolean; noWait: boolean }): boolean {
+	if (options.noWait || created?.final) return false;
+	if (options.json && created?.next_action === "open_checkout_url") return false;
+	return true;
+}
+
+async function creditsAdd(flags: Record<string, string | boolean>) {
+	const json = flagBool(flags, "json");
+	const amount = parseTopupAmountFlag(flagString(flags, "amount"));
+	const body = await request("/credits/topups", {
+		method: "POST",
+		body: compact({
+			amount_usd: amount,
+			workspace_id: flagString(flags, "workspace"),
+			idempotency_key: flagString(flags, "idempotency-key"),
+		}),
+	});
+	const created = body.topup;
+	const ui = terminalUi();
+	if (!json) {
+		process.stdout.write(renderTopup(created));
+		if (created?.next_action === "await_email_confirmation") {
+			process.stderr.write(`${ui.info(`Awaiting confirmation: emailed ${created.confirmation_recipients ?? "the"} workspace owner(s) and admin(s).`)}\n`);
+		}
+	}
+	if (created?.checkout_url && await shouldOpenCheckout(flags, json) && !openUrl(created.checkout_url) && !json) {
+		process.stderr.write(`${ui.warning("Could not open a browser. Open the checkout link above.")}\n`);
+	}
+	if (!shouldWaitForTopup(created, { json, noWait: flagBool(flags, "no-wait") })) {
+		if (json) printJson(body);
+		if (created?.final && created?.status !== "paid") process.exitCode = 1;
+		return;
+	}
+
+	if (!json) process.stderr.write(`${ui.progress("Waiting for the top-up (Ctrl+C stops waiting; the request stays open).")}\n`);
+	const { topup, timedOut } = await waitForTopup(String(created.id), created, {
+		fetchTopup: async (id) => (await request(`/credits/topups/${encodeURIComponent(id)}`)).topup,
+		onUpdate: json ? undefined : (next) => process.stderr.write(`${ui.info(`Status: ${terminalValue(next?.status)}`)}\n`),
+	});
+	if (json) {
+		printJson({ ok: topup?.status === "paid", timed_out: timedOut, topup });
+	} else if (timedOut) {
+		process.stdout.write(`Still ${terminalValue(topup?.status)}. Check later with: phaseo credits topups get ${terminalValue(topup?.id)}\n`);
+	} else {
+		process.stdout.write(renderTopup(topup));
+	}
+	if (timedOut || topup?.status !== "paid") process.exitCode = 1;
+}
+
+async function creditsTopupGet(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Usage: phaseo credits topups get <id> [--json]");
+	const body = await request(`/credits/topups/${encodeURIComponent(id)}`);
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(renderTopup(body.topup));
+}
+
 async function activityList(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/activity", {
 		workspace_id: flagString(flags, "workspace"),
@@ -2050,6 +2230,8 @@ async function main() {
 		else if (first === "pricing" && second === "models") action = pricingModels(parsed.flags);
 		else if (first === "pricing" && second === "calculate") action = pricingCalculate(parsed.flags);
 		else if (first === "credits" && second === "get") action = creditsGet(parsed.flags);
+		else if (first === "credits" && second === "add") action = creditsAdd(parsed.flags);
+		else if (first === "credits" && second === "topups" && third === "get") action = creditsTopupGet(fourth, parsed.flags);
 		else if (first === "activity" && second === "list") action = activityList(parsed.flags);
 		else if (first === "logs" && second === "list") action = logsList(parsed.flags);
 		else if (first === "logs" && second === "get") action = logsGet(third, parsed.flags);
@@ -2078,6 +2260,16 @@ async function main() {
 		else if (first === "api" && second === "put") action = rawApi("PUT", third, parsed.flags);
 		else if (first === "api" && second === "patch") action = rawApi("PATCH", third, parsed.flags);
 		else if (first === "api" && second === "delete") action = rawApi("DELETE", third, parsed.flags);
+		if (!action && isCommandGroup(parsed.command.join(" "))) {
+			printHelp(parsed.command);
+			return;
+		}
+		if (!action && await runManagementCommand(parsed.command, parsed.flags, managementDeps())) {
+			action = Promise.resolve();
+		}
+		if (!action && await runParityCommand(parsed.command, parsed.flags, managementDeps())) {
+			action = Promise.resolve();
+		}
 		if (action) {
 			await action;
 			if (shouldPrintUpdateNoticeForCommand(parsed.command)) {

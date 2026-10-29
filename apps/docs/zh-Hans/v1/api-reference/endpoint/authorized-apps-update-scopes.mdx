@@ -1,0 +1,8 @@
+---
+title: "移除已授权应用的作用域"
+sidebarTitle: "缩减应用作用域"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /me/authorized-apps/{id}"
+description: "将已授权应用的访问权限缩减为更少的作用域。"
+---
+<Note>此端点需要具有 `oauth_clients:write` 的 OAuth 访问令牌。作用域只能移除；如需添加，请在浏览器中重新授权该应用。</Note>

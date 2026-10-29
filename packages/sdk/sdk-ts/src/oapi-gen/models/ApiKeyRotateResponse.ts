@@ -9,6 +9,10 @@ export interface ApiKeyRotateResponse {
     hash: string;
     id: string;
     include_byok_in_limit: boolean;
+    ip_allowlist?: {
+      address: string;
+      label: string;
+    }[];
     key: string;
     label: string | null;
     last_used_at: string | null;
@@ -34,6 +38,7 @@ export interface ApiKeyRotateResponse {
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;

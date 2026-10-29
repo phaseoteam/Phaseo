@@ -254,7 +254,11 @@
 				"nav-settings-presets": "Predefinições de roteamento",
 				"nav-settings-privacy": "Configurações de privacidade",
 				"nav-settings-guardrails": "Proteções",
+				"nav-settings-rate-limits": "Limites de taxa",
+				"nav-settings-trusted-workloads": "Workloads confiáveis",
 				"nav-settings-classifiers": "Classificadores",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Segurança das chaves",
 				"nav-settings-oauth": "Aplicativos OAuth",
 				"nav-settings-broadcast": "Transmissão",
 				"nav-settings-webhooks": "Webhooks",
@@ -340,7 +344,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "Como os preços são calculados",
 				"nav-how-phaseo-tracks-provider-availability": "Como a disponibilidade dos provedores é acompanhada",
 				"nav-chat-decisions": "Decisões",
-				"nav-settings-account-providers": "Integração de novos provedores"
+				"nav-settings-account-providers": "Integração de novos provedores",
+				"nav-settings-budgets": "Orçamentos"
 			}
 		},
 		"searchDataUnavailable": "Não foi possível carregar os dados de pesquisa.",
@@ -553,6 +558,8 @@
 			"identityPermissionDescription": "Permite que este aplicativo verifique quem está entrando.",
 			"gatewayPermissionLabel": "Usar AI Gateway com seus créditos",
 			"gatewayPermissionDescription": "Permite que o aplicativo envie solicitações de modelos cobradas nos créditos da equipe escolhida.",
+			"billingPermissionLabel": "Iniciar recargas de créditos",
+			"billingPermissionDescription": "Permite que o aplicativo solicite compras de créditos para a equipe escolhida. Um proprietário ou administrador da equipe precisa confirmar cada cobrança por e-mail.",
 			"readPermissionLabel": "Ler: {resource}",
 			"readPermissionDescription": "Permite que este aplicativo leia: {resource}.",
 			"managePermissionLabel": "Gerenciar: {resource}",
@@ -607,6 +614,10 @@
 				"oauth-apps": {
 					"title": "Aplicativos OAuth",
 					"description": "Configuração de clientes OAuth e integrações."
+				},
+				"billing": {
+					"title": "Cobrança",
+					"description": "Compras de créditos que um proprietário ou administrador da equipe confirma por e-mail."
 				}
 			},
 			"resources": {
@@ -629,6 +640,7 @@
 				"providerCredentials": "as credenciais dos provedores",
 				"guardrails": "as proteções e políticas",
 				"budgets": "os orçamentos de gastos e o uso da equipe",
+				"spendRules": "regras de alerta e bloqueio de gastos",
 				"managementKeys": "os dados de chaves de gerenciamento da máquina",
 				"oauthApps": "as configurações de aplicativos OAuth e integrações",
 				"privateModels": "modelos privados do espaço de trabalho"
@@ -1257,6 +1269,7 @@
 			"enableConnection": "Ativar conexão",
 			"deleteDestination": "Excluir destino",
 			"openRequestDetails": "Abrir detalhes da solicitação",
+			"openInChat": "Abrir no Chat",
 			"copyRequestId": "Copiar ID da solicitação",
 			"copySessionId": "Copiar ID da sessão",
 			"copyNativeResponseId": "Copiar ID da resposta nativa",
@@ -1382,6 +1395,11 @@
 			"retention90Days": "90 dias",
 			"retention180Days": "180 dias",
 			"retention365Days": "365 dias",
+			"contentsAccessTitle": "Quem pode ver o conteúdo",
+			"contentsAccessDescription": "Escolha quem pode ver prompts e respostas armazenados nos detalhes da solicitação, no Chat e pela API.",
+			"contentsAccessMembers": "Todos os membros",
+			"contentsAccessAdmins": "Proprietários e administradores",
+			"contentsRestricted": "Neste workspace, apenas proprietários e administradores podem ver o conteúdo das solicitações.",
 			"allowAllExceptSelectedModels": "Permitir todos os modelos, exceto os selecionados",
 			"allowAnyProvider": "Permitir qualquer provedor",
 			"allowOnlySelectedProviders": "Permitir somente provedores selecionados",
@@ -2411,6 +2429,8 @@
 			"selectModelsToCompare": "Selecione modelos para comparar.",
 			"viewFullLeaderboard": "Ver classificação completa",
 			"sourceArtificialAnalysis": "Fonte: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "Comparável entre anos e versões do índice",
 			"fullLeaderboard": "Classificação completa",
 			"noModelsMatchThisSearch": "Nenhum modelo corresponde a esta busca.",
 			"noResultsAvailableForThisMetric": "Nenhum resultado disponível para esta métrica.",

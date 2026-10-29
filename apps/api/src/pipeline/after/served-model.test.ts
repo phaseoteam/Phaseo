@@ -22,9 +22,23 @@ describe("withServedModel", () => {
 		expect(withServedModel({ type: "message_start", message: { model: "echo" } }, fallbackCtx).message.model).toBe("openai/gpt-oss-120b");
 	});
 
-	it("leaves responses alone when no model fallback served the request", () => {
-		const payload = { model: "provider-echo" };
-		expect(withServedModel(payload, { model: "openai/gpt-oss-120b", routingDiagnostics: {} })).toEqual({ model: "provider-echo" });
+	it.each([
+		["openai/gpt-6-luna", "gpt-6-luna"],
+		["anthropic/claude-sonnet-5.5", "claude-sonnet-5-5"],
+		["deepseek/deepseek-v4.1-flash-1017", "deepseek-ai/DeepSeek-V4.1-Flash-1017"],
+	])("names %s instead of the provider's %s without a fallback", (model, echo) => {
+		const ctx = { model, routingDiagnostics: {} };
+		expect(withServedModel({ object: "chat.completion.chunk", model: echo }, ctx).model).toBe(model);
+		expect(withServedModel({ type: "response.completed", response: { model: echo } }, ctx).response.model).toBe(model);
+		expect(withServedModel({ type: "message_start", message: { model: echo } }, ctx).message.model).toBe(model);
+	});
+
+	it("names the request's model even when it has no organisation prefix", () => {
+		expect(withServedModel({ model: "provider-echo" }, { model: "phaseo-internal-model", routingDiagnostics: {} })).toEqual({ model: "phaseo-internal-model" });
+	});
+
+	it("keeps the payload's model only when the context has none", () => {
+		expect(withServedModel({ model: "provider-echo" }, { model: "", routingDiagnostics: {} })).toEqual({ model: "provider-echo" });
 	});
 
 	it("does not add a model field to frames that have none", () => {

@@ -69,7 +69,7 @@ response = completion(
 | Response cache (`litellm_settings.cache`) | Preset-level response caching | Keep request shapes stable so the cache key matches |
 | Virtual keys, `max_budget`, `rpm` | Phaseo API keys with limits, budgets and rate limit policies | `tokens_per_minute` and concurrency limits are not enforced yet |
 | Callbacks (`success_callback`, Langfuse, OpenTelemetry) | Observability destinations (webhook or OpenTelemetry) or client-side tracing | Decide which system is the record for cost |
-| Provider API keys in config | BYOK in the dashboard, or managed Phaseo credits | BYOK can optionally fall back to Phaseo credits |
+| Provider API keys in config | BYOK (`phaseo byok create --provider <id> --name <name> --key-stdin` or `POST /v1/byok`), or managed Phaseo credits | BYOK can fall back to Phaseo credits: set `byok_fallback_enabled` with `phaseo settings update` or `PATCH /v1/settings` |
 
 ## Gotchas
 

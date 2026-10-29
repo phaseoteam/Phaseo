@@ -9,3 +9,18 @@ description: "How the Gateway tracks and bills for requests."
 <Note>
 This endpoint requires a management API key. Standard Gateway API keys are not accepted.
 </Note>
+
+## Add credits from the CLI or API
+
+Agents and scripts can start a top-up with `POST /v1/credits/topups` or the CLI. A person always approves the charge.
+
+```bash
+phaseo login --scopes billing:write
+phaseo credits add --amount 20
+```
+
+- The token needs the `billing:write` scope. It is never granted by default: add it with `phaseo login --scopes billing:write`, or list it on a management key.
+- Top-ups are $5 to $500. A workspace can have 5 waiting at once, and each expires after 30 minutes.
+- **No saved card yet:** the response includes a `checkout_url`. A workspace owner or admin opens it and pays with a new card, which is saved for later top-ups.
+- **Saved card:** every owner and admin gets an email with a single-use link. One of them opens it, signs in and chooses **Confirm** or **Decline**. Confirming charges the card, with bank verification if the bank asks for it.
+- Poll `GET /v1/credits/topups/{id}` (or `phaseo credits topups get <id>`) until `final` is `true`. Credits are added when the status is `paid`. `declined`, `expired` and `failed` come with a `reason` code: do not retry them automatically; ask a person instead.

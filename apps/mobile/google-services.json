@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "62390962185",
+    "project_id": "phaseo-d826b",
+    "storage_bucket": "phaseo-d826b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:62390962185:android:a6028e49a297b4987990d8",
+        "android_client_info": {
+          "package_name": "app.phaseo.client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1WL9lOI-42LOQHui7AdhDg6ps9boAmEE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

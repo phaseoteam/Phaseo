@@ -37,6 +37,19 @@ describe("Agent SDK parity contract", () => {
 		expect(client.generate.mock.calls[1]?.[0].messages).toEqual(expect.arrayContaining([expect.objectContaining({ role: "tool", toolCallId: "two", isError: true })]));
 	});
 
+	it("reads each step's cost from the gateway's pricing in usage", async () => {
+		const client = {
+			generate: vi.fn()
+				// Responses streams price in pricing_breakdown, Chat Completions in pricing.
+				.mockResolvedValueOnce({ message: { role: "assistant", content: "", toolCalls: [{ id: "one", name: "noop", input: {} }] }, usage: { input_tokens: 10, output_tokens: 2, pricing_breakdown: { total_nanos: 1_250_000, currency: "USD" } } })
+				.mockResolvedValueOnce({ message: { role: "assistant", content: "done" }, usage: { prompt_tokens: 12, completion_tokens: 3, pricing: { total_nanos: 500_000, currency: "USD" } } }),
+		};
+		const agent = createAgent({ id: "priced", tools: [tool({ id: "noop", execute: () => "ok" })] });
+		const result = await agent.run({ input: "run", client });
+		expect(result.stepResults.map((step) => step.usage.cost)).toEqual([0.00125, 0.0005]);
+		expect(result.usage.cost).toBeCloseTo(0.00175, 10);
+	});
+
 	it("pauses only gated calls and resumes exact approval, rejection, HITL, and manual outputs", async () => {
 		const executed: string[] = [];
 		const client = { generate: vi.fn()

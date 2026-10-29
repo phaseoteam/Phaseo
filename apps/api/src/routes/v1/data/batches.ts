@@ -17,7 +17,7 @@ import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFall
 import { generatePublicId } from "@pipeline/before/genId";
 import { guardContext } from "@pipeline/before/guards";
 import { readProviderCatalogTier } from "@core/serviceTiers";
-import { parseW3cTraceContext } from "@observability/trace-context";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { applyPromptInjectionGuardrails } from "@pipeline/before/promptInjection";
 import { applySensitiveInfoGuardrails } from "@pipeline/before/sensitiveInfo";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
@@ -1734,7 +1734,7 @@ async function handleCreate(req: Request) {
 		const reason = (auth as AuthFailure).reason;
 		return err("unauthorised", { reason, request_id: requestId });
 	}
-	const otelParentContext = parseW3cTraceContext(
+	let otelParentContext = parseW3cTraceContext(
 		req.headers.get("traceparent"),
 		req.headers.get("tracestate"),
 	);
@@ -1769,6 +1769,12 @@ async function handleCreate(req: Request) {
 	}
 	if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
 		return err("validation_error", { reason: "batch_body_must_be_object", request_id: requestId });
+	}
+	// Same rules as synchronous requests: traceparent wins, then metadata trace_id.
+	const otelMetadata = readRequestMetadata(payload.metadata);
+	if (!otelParentContext) {
+		otelParentContext = metadataTraceContext(otelMetadata);
+		if (otelParentContext) otelSubmissionContext.traceId = otelParentContext.traceId;
 	}
 	if (hasRequestModelFallbacksField(payload)) {
 		// Batch rows run asynchronously inside the provider batch; there is no
@@ -2386,6 +2392,7 @@ async function handleCreate(req: Request) {
 		submissionOutcome: null,
 		otelParentContext,
 		otelSubmissionContext,
+		otelMetadata,
 	});
 	try {
 		await saveBatchJobMeta(auth.workspaceId, batchId, submissionMeta);
@@ -2563,6 +2570,7 @@ async function handleCreate(req: Request) {
 				submissionOutcome: "accepted",
 				otelParentContext,
 				otelSubmissionContext,
+				otelMetadata,
 			});
 			try {
 				await saveBatchJobMeta(auth.workspaceId, batchId, persistedMeta);
@@ -2682,6 +2690,7 @@ async function handleCreate(req: Request) {
 				spanId: otelSubmissionContext.parentSpanId,
 				requestPayload: payload,
 				responsePayload: upstreamJson,
+				metadata: otelMetadata,
 			}).catch((otelError) => console.error("batch_otel_submit_failed", {
 				batchId,
 				error: otelError instanceof Error ? otelError.message : String(otelError),

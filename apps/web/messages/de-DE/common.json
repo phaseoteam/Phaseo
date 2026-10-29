@@ -254,7 +254,11 @@
 				"nav-settings-presets": "Routing-Voreinstellungen",
 				"nav-settings-privacy": "Datenschutzeinstellungen",
 				"nav-settings-guardrails": "Schutzregeln",
+				"nav-settings-rate-limits": "Ratenlimits",
+				"nav-settings-trusted-workloads": "Vertrauenswürdige Workloads",
 				"nav-settings-classifiers": "Klassifikatoren",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Schlüsselsicherheit",
 				"nav-settings-oauth": "OAuth-Apps",
 				"nav-settings-broadcast": "Weiterleitung",
 				"nav-settings-webhooks": "Webhooks",
@@ -340,7 +344,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "Wie Preise berechnet werden",
 				"nav-how-phaseo-tracks-provider-availability": "Wie Anbieterverfügbarkeit erfasst wird",
 				"nav-chat-decisions": "Entscheidungen",
-				"nav-settings-account-providers": "Anbieter-Onboarding"
+				"nav-settings-account-providers": "Anbieter-Onboarding",
+				"nav-settings-budgets": "Budgets"
 			}
 		},
 		"searchDataUnavailable": "Suchdaten konnten nicht geladen werden.",
@@ -553,6 +558,8 @@
 			"identityPermissionDescription": "Ermöglicht dieser Anwendung zu prüfen, wer sich anmeldet.",
 			"gatewayPermissionLabel": "AI Gateway mit deinen Credits verwenden",
 			"gatewayPermissionDescription": "Ermöglicht der Anwendung, Modellanfragen über das Guthaben des ausgewählten Teams abzurechnen.",
+			"billingPermissionLabel": "Guthabenaufladungen starten",
+			"billingPermissionDescription": "Ermöglicht der Anwendung, Guthabenkäufe für das ausgewählte Team anzufordern. Jede Belastung muss ein Owner oder Admin des Teams per E-Mail bestätigen.",
 			"readPermissionLabel": "{resource} lesen",
 			"readPermissionDescription": "Ermöglicht dieser Anwendung, {resource} zu lesen.",
 			"managePermissionLabel": "{resource} verwalten",
@@ -607,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth-Apps",
 					"description": "Konfiguration von OAuth-Clients und Integrationen."
+				},
+				"billing": {
+					"title": "Abrechnung",
+					"description": "Guthabenkäufe, die ein Owner oder Admin des Teams per E-Mail bestätigt."
 				}
 			},
 			"resources": {
@@ -629,6 +640,7 @@
 				"providerCredentials": "Anbieter-Zugangsdaten",
 				"guardrails": "Leitplanken und Richtlinieneinstellungen",
 				"budgets": "Team-Ausgabenbudgets und Nutzung",
+				"spendRules": "Ausgabenregeln für Warnungen und Sperren",
 				"managementKeys": "Metadaten der Verwaltungsschlüssel auf Maschinenebene",
 				"oauthApps": "OAuth-App- und Integrationseinstellungen",
 				"privateModels": "private Modelle des Arbeitsbereichs"
@@ -1257,6 +1269,7 @@
 			"enableConnection": "Verbindung aktivieren",
 			"deleteDestination": "Ziel löschen",
 			"openRequestDetails": "Anfragedetails öffnen",
+			"openInChat": "Im Chat öffnen",
 			"copyRequestId": "Anfrage-ID kopieren",
 			"copySessionId": "Sitzungs-ID kopieren",
 			"copyNativeResponseId": "Native Antwort-ID kopieren",
@@ -1382,6 +1395,11 @@
 			"retention90Days": "90 Tage",
 			"retention180Days": "180 Tage",
 			"retention365Days": "365 Tage",
+			"contentsAccessTitle": "Wer Inhalte sehen darf",
+			"contentsAccessDescription": "Lege fest, wer gespeicherte Prompts und Antworten in den Anfragedetails, im Chat und über die API sehen darf.",
+			"contentsAccessMembers": "Alle Mitglieder",
+			"contentsAccessAdmins": "Inhaber und Admins",
+			"contentsRestricted": "In diesem Workspace können nur Inhaber und Admins Anfrageinhalte sehen.",
 			"allowAllExceptSelectedModels": "Alle Modelle außer den ausgewählten zulassen",
 			"allowAnyProvider": "Beliebige Anbieter zulassen",
 			"allowOnlySelectedProviders": "Nur ausgewählte Anbieter zulassen",
@@ -2411,6 +2429,8 @@
 			"selectModelsToCompare": "Wähle Modelle zum Vergleichen aus.",
 			"viewFullLeaderboard": "Vollständige Rangliste ansehen",
 			"sourceArtificialAnalysis": "Quelle: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "Über Jahre und Indexversionen hinweg vergleichbar",
 			"fullLeaderboard": "Vollständige Rangliste",
 			"noModelsMatchThisSearch": "Keine Modelle entsprechen dieser Suche.",
 			"noResultsAvailableForThisMetric": "Für diese Kennzahl sind keine Ergebnisse verfügbar.",

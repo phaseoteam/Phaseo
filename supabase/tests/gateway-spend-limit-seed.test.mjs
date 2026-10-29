@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { installCatalogPolicyContext } from './fixtures/catalog-policy-context.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 // The spend-limit seed must count exactly what the request-context key-limit check counts.
@@ -15,6 +16,7 @@ const one = async (sql, params = []) => (await db.query(sql, params)).rows[0].va
 
 try {
   await db.exec(await readFile(new URL('./fixtures/context-bundle-before.sql', import.meta.url), 'utf8'));
+  await installCatalogPolicyContext(db);
   await db.exec(`
     alter table public.gateway_requests
       add column if not exists key_id uuid, add column if not exists success boolean,

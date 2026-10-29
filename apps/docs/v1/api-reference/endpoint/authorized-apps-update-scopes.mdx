@@ -1,0 +1,9 @@
+---
+title: "Remove scopes from an authorized app"
+sidebarTitle: "Reduce app scopes"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml PATCH /me/authorized-apps/{id}"
+description: "Narrow an authorized app's access to fewer scopes."
+"og:image": "https://phaseo.app/og/dynamic?title=Remove%20scopes%20from%20an%20authorized%20app&description=Narrow%20an%20authorized%20app%27s%20access%20to%20fewer%20scopes.&pathname=/docs/v1/api-reference/endpoint/authorized-apps-update-scopes"
+---
+<Note>This endpoint requires an OAuth access token with `oauth_clients:write`. Scopes can only be removed; add them by authorizing the app again in the browser.</Note>

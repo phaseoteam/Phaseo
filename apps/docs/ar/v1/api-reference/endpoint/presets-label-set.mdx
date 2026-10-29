@@ -1,0 +1,10 @@
+---
+title: "تعيين تسمية للإعداد المسبق"
+sidebarTitle: "تعيين تسمية"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml PUT /presets/{id}/labels/{label}"
+description: "توجيه تسمية إلى إصدار منشور من الإعداد المسبق، أو إعادتها للتراجع."
+---
+<Note>يتطلب هذا المسار مفتاح API للإدارة يتضمن `presets:write` وهوية مستخدم مرتبطة. يمكن لمنشئ الإعداد المسبق تغيير تسمياته، وكذلك مالكو مساحة العمل ومسؤولوها عندما يكون الإعداد المسبق مشتركًا.</Note>
+
+تستخدم الطلبات التي تثبّت التسمية، مثل `@support-triage@production` أو `prompt.version: "production"`، الإصدار الجديد خلال دقيقتين تقريبًا. راجع [قوالب المطالبات](../../guides/prompt-templates.mdx).

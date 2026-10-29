@@ -254,7 +254,11 @@
 				"nav-settings-presets": "إعدادات التوجيه المسبقة",
 				"nav-settings-privacy": "إعدادات الخصوصية",
 				"nav-settings-guardrails": "ضوابط الحماية",
+				"nav-settings-rate-limits": "حدود المعدل",
+				"nav-settings-trusted-workloads": "أحمال العمل الموثوقة",
 				"nav-settings-classifiers": "المصنِّفات",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "أمان المفاتيح",
 				"nav-settings-oauth": "تطبيقات OAuth",
 				"nav-settings-broadcast": "البث",
 				"nav-settings-webhooks": "Webhooks",
@@ -340,7 +344,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "كيفية حساب الأسعار",
 				"nav-how-phaseo-tracks-provider-availability": "كيفية تتبع توفر المزودين",
 				"nav-chat-decisions": "القرارات",
-				"nav-settings-account-providers": "تهيئة المزوّدين"
+				"nav-settings-account-providers": "تهيئة المزوّدين",
+				"nav-settings-budgets": "الميزانيات"
 			}
 		},
 		"searchDataUnavailable": "تعذّر تحميل بيانات البحث.",
@@ -553,6 +558,8 @@
 			"identityPermissionDescription": "يتيح هذا للتطبيق التحقق من هوية من يسجل الدخول.",
 			"gatewayPermissionLabel": "استخدام AI Gateway برصيدك",
 			"gatewayPermissionDescription": "يتيح للتطبيق إرسال طلبات النماذج التي تخصم من رصيد الفريق المحدد.",
+			"billingPermissionLabel": "بدء شحن الرصيد",
+			"billingPermissionDescription": "يتيح للتطبيق طلب شراء رصيد للفريق المحدد. يجب أن يؤكد مالك الفريق أو مسؤوله كل عملية خصم عبر البريد الإلكتروني.",
 			"readPermissionLabel": "قراءة {resource}",
 			"readPermissionDescription": "يتيح هذا للتطبيق قراءة: {resource}.",
 			"managePermissionLabel": "إدارة {resource}",
@@ -607,6 +614,10 @@
 				"oauth-apps": {
 					"title": "تطبيقات OAuth",
 					"description": "تهيئة عملاء OAuth وعمليات التكامل."
+				},
+				"billing": {
+					"title": "الفوترة",
+					"description": "عمليات شراء الرصيد التي يؤكدها مالك الفريق أو مسؤوله عبر البريد الإلكتروني."
 				}
 			},
 			"resources": {
@@ -629,6 +640,7 @@
 				"providerCredentials": "بيانات اعتماد المزوّدين",
 				"guardrails": "ضوابط الحماية وسياساتها",
 				"budgets": "ميزانيات إنفاق الفريق واستخدامه",
+				"spendRules": "قواعد تنبيهات الإنفاق وحظره",
 				"managementKeys": "تفاصيل مفاتيح الإدارة على مستوى الجهاز",
 				"oauthApps": "إعدادات تطبيقات OAuth وعمليات التكامل",
 				"privateModels": "نماذج مساحة العمل الخاصة"
@@ -1257,6 +1269,7 @@
 			"enableConnection": "تفعيل الاتصال",
 			"deleteDestination": "حذف الوجهة",
 			"openRequestDetails": "فتح تفاصيل الطلب",
+			"openInChat": "فتح في الدردشة",
 			"copyRequestId": "نسخ معرّف الطلب",
 			"copySessionId": "نسخ معرّف الجلسة",
 			"copyNativeResponseId": "نسخ معرّف الاستجابة الأصلية",
@@ -1382,6 +1395,11 @@
 			"retention90Days": "90 يومًا",
 			"retention180Days": "180 يومًا",
 			"retention365Days": "365 يومًا",
+			"contentsAccessTitle": "مَن يمكنه عرض المحتوى",
+			"contentsAccessDescription": "اختر مَن يمكنه رؤية المطالبات والردود المخزّنة في تفاصيل الطلب وفي Chat وعبر واجهة API.",
+			"contentsAccessMembers": "جميع الأعضاء",
+			"contentsAccessAdmins": "المالكون والمسؤولون",
+			"contentsRestricted": "في مساحة العمل هذه، يمكن للمالكين والمسؤولين فقط عرض محتوى الطلبات.",
 			"allowAllExceptSelectedModels": "السماح بكل النماذج باستثناء المحددة",
 			"allowAnyProvider": "السماح بأي مزود",
 			"allowOnlySelectedProviders": "السماح بالمزودين المحددين فقط",
@@ -2411,6 +2429,8 @@
 			"selectModelsToCompare": "اختر نماذج للمقارنة.",
 			"viewFullLeaderboard": "عرض لوحة الترتيب الكاملة",
 			"sourceArtificialAnalysis": "المصدر: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "قابل للمقارنة عبر السنوات وإصدارات المؤشر",
 			"fullLeaderboard": "لوحة الترتيب الكاملة",
 			"noModelsMatchThisSearch": "لا توجد نماذج تطابق هذا البحث.",
 			"noResultsAvailableForThisMetric": "لا توجد نتائج متاحة لهذا المقياس.",

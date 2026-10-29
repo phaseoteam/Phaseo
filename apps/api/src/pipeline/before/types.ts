@@ -134,6 +134,8 @@ export type PresetConfig = {
         enabled?: boolean | null;
         ttlSeconds?: number | null;
     } | null;
+    /** Prompt template (messages with {{variables}}); see core/prompt-templates. */
+    prompt?: unknown;
 };
 
 /**
@@ -146,6 +148,11 @@ export type PresetData = {
     description: string | null;
     config: PresetConfig;
     visibility: "private" | "team" | "public";
+    /** The published version that served the request (null for presets saved before versions). */
+    versionId?: string | null;
+    versionLabel?: string | null;
+    /** The ref the request pinned ("v3", "production"), or null for the published version. */
+    ref?: string | null;
 };
 
 export type ProviderRolloutStatus =
@@ -538,6 +545,8 @@ export type WorkspacePolicy = {
 	privacyEnableFreeMayTrain?: boolean;
 	privacyEnableInputOutputLogging?: boolean;
 	privacyZdrOnly?: boolean;
+	/** The key's `never_store_content`: no request or response content is kept or forwarded. */
+	neverStoreContent?: boolean;
 	accountPolicyApplied?: boolean;
     enforceAllowed: boolean;
     activeGuardrailIds: string[];
@@ -687,6 +696,8 @@ export type PipelineContext = {
 	 * model fallbacks of one HTTP request reuse the primary attempt's admission.
 	 */
 	rateLimitAdmissionId?: string;
+	/** Concurrency slots this HTTP request holds; shared by its fallback attempts and released by the entrypoint. */
+	rateLimitConcurrency?: import("@core/customer-rate-limits").ConcurrencyLeases;
     /** Request-owned diagnostics; never cache or serialize. Not enabled by public headers. */
     gatewayTimingTrace?: import("../telemetry/gateway-trace").GatewayTimingTrace;
     /** Request-owned persistence barrier; never cache or serialize this field. */
@@ -730,8 +741,27 @@ export type PipelineContext = {
         name: string;
         slug?: string | null;
         config: PresetConfig;
+        versionId?: string | null;
+        versionLabel?: string | null;
+        ref?: string | null;
     } | null;
+    /** Set when the preset rendered a prompt template; variable values are not kept. */
+    promptTemplate?: ({ presetId: string; presetSlug: string | null; versionLabel: string | null; ref: string | null } & import("./promptTemplate").PromptTemplateApplication) | null;
     internal?: boolean;
+    /** The calling key never has its content stored: no I/O log, cached response, detailed telemetry or broadcast content. */
+    neverStoreContent?: boolean;
+    /**
+     * Zero data retention applies (the workspace setting, one of the key's guardrails, or the
+     * request's own `require_zero_data_retention`): no I/O log, cached response, data
+     * contribution sample or detailed telemetry content.
+     */
+    zeroDataRetention?: boolean;
+    /**
+     * The request's own limits on where its content may go (requestDataLimits),
+     * read before a provider-qualified model pins its provider, for other gateway
+     * requests that send the same content (request classifiers).
+     */
+    contentDataLimits?: Record<string, unknown> | null;
     /** Classifies this request with the caller's credentials during the success audit. */
     requestClassifierCall?: ClassifierCall;
     /** Set on the in-process classifier call itself: never classified, not rate limited. */

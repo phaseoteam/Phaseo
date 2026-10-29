@@ -217,7 +217,7 @@ export default function RotateKeyItem({
 					</form>
 				) : (
 					<div className="space-y-4">
-						<div className="font-mono break-all select-all rounded-lg p-4 bg-gray-100 dark:bg-gray-800">
+						<div className="ph-no-capture font-mono break-all select-all rounded-lg p-4 bg-gray-100 dark:bg-gray-800">
 							{newPlaintext}
 						</div>
 						<div className="text-sm text-muted-foreground">

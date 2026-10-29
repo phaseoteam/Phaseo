@@ -467,6 +467,37 @@
 		},
 		"defaultTitle": "新しいチャット",
 		"branchTitle": "分岐：{title}",
+		"logImport": {
+			"title": "記録されたリクエストを続ける",
+			"description": "リクエストを独自のセッションを持つ新しいチャットとして開き、このブラウザに保存します。引き継ぐ内容を選んでください。",
+			"loading": "リクエストを読み込んでいます…",
+			"failed": "このリクエストを読み込めませんでした。リクエストが属するワークスペースにサインインしているか確認してください。",
+			"unavailable": { "not_stored": "このリクエストのプロンプトと応答は保存されていません。新しいリクエストを保存するには、プライバシー設定でゲートウェイ I/O ログをオンにしてください。", "too_large": "このリクエストは保存するには大きすぎたため、開けません。", "deleted": "このリクエストの保存済みプロンプトと応答は期限切れか、削除されています。", "unsupported": "チャットで開けるのは Chat Completions、Responses、Messages のリクエストだけです。" },
+			"summary": "{count, plural, other {# 件のメッセージ}} · {model}",
+			"modelUnavailable": "{model} はチャットで利用できないため、{fallback} を使用します。開いた後でモデルを切り替えられます。",
+			"carryOver": "引き継ぐ内容",
+			"options": {
+				"pinProvider": "プロバイダーを固定 ({provider})",
+				"keepParams": "パラメーター (温度、最大トークン数、推論)",
+				"keepSystemPrompt": "システムプロンプト",
+				"keepServerTools": "サーバーツール",
+				"keepFunctionTools": "{count, plural, other {# 個の関数ツール}}",
+				"keepFunctionToolsHint": "チャットでは実行できません。宣言すると以前のツール呼び出しは呼び出しとして、宣言しないとテキストとして送信されます。",
+				"includeResponse": "記録された応答"
+			},
+			"workspaceMismatch": "チャットはアクティブなワークスペースから送信されますが、このリクエストのワークスペースとは異なります。",
+			"warnings": {
+				"earlier_history_missing": "このリクエストは以前の応答を ID で続けていたため、それより前のターンは含まれていません。",
+				"unsupported_content": "一部のコンテンツは表示できなかったため除外されました。",
+				"attachment_reference": "一部の添付ファイルは ID で参照されており、リクエストと一緒に保存されていません。",
+				"no_response": "記録された応答がないか失敗しているため、チャットはリクエストで終わります。",
+				"response_truncated": "記録された応答は途中で切れています。",
+				"extra_choices": "応答の候補のうち最初のものだけが含まれます。",
+				"unanswered_tool_calls": "一部のツール呼び出しには結果がありません。続けるとテキストとして送信されます。"
+			},
+			"cancel": "キャンセル",
+			"continue": "チャットで開く"
+		},
 		"errors": {
 			"signInToChat": "チャットを始めるにはサインインしてください。",
 			"selectModelToChat": "チャットを始めるにはモデルを選択してください。",
@@ -1122,6 +1153,7 @@
 		"realtimeBillingOpenAI": "OpenAIの使用イベント",
 		"realtimeBillingXai": "xAIの時間計測",
 		"realtimeBillingGoogle": "Googleの使用メタデータ",
+		"realtimeBillingProvider": "{provider}の使用量",
 		"selectRealtimeModel": "リアルタイムモデルを選択",
 		"searchRealtimeModels": "リアルタイムモデルを検索…",
 		"noRealtimeModels": "リアルタイムモデルが見つかりません。",
@@ -2000,7 +2032,7 @@
 			"cacheFailure": "モデルのキャッシュを再検証できませんでした。",
 			"successorRouting": {
 				"title": "後継モデルへのルーティング",
-				"description": "どのプロバイダーもこのモデルを 72 時間提供していない場合に、リクエストを後継モデルへ送ることを承認します。ワークスペース側でも有効化が必要です。",
+				"description": "どのプロバイダーもこのモデルを 72 時間提供していない場合に、リクエストを後継モデルへ送ることを承認します。後継モデルは自動で承認されます。ただし、プロバイダーがない場合や、このモデルの出力形式に対応していない場合を除きます。ワークスペース側でも有効化が必要です。",
 				"replacement": "後継モデル",
 				"noReplacement": "未設定",
 				"serving": "提供状況",
@@ -2009,6 +2041,8 @@
 				"approval": "承認",
 				"notApproved": "未承認",
 				"approved": "{date} に {model} で承認済み",
+				"approvedAutomatically": "{date} に {model} で自動承認済み",
+				"autoBlocked": "承認が取り消されたため、このモデルの自動承認はオフになっています。承認すると自動承認が再びオンになります。",
 				"approvalStale": "{model} で承認済みですが、後継モデルが変更されています。再確認してください。",
 				"blocking": "承認できません: {issues}",
 				"warnings": "確認が必要: {issues}",
@@ -2019,6 +2053,7 @@
 				"updateApproval": "承認を更新",
 				"reapprove": "新しい後継モデルを承認",
 				"revoke": "取り消す",
+				"blockAuto": "自動で承認しない",
 				"loadFailed": "後継モデルへのルーティングを読み込めませんでした。",
 				"saveFailed": "後継モデルへのルーティングを保存できませんでした。",
 				"rejected": "後継モデルを承認できませんでした。上記の問題を確認して、もう一度お試しください。",
@@ -2394,7 +2429,11 @@
 			"rule": "ルール: {keyword}"
 		},
 		"realtimeBillingTitle": "リアルタイム請求",
-		"realtimeBillingDescription": "不足した使用量、保留中の資金、監査記録のある請求判断を確認します。"
+		"realtimeBillingDescription": "不足した使用量、保留中の資金、監査記録のある請求判断を確認します。",
+		"keyIncidentsTitle": "キー保管場所のインシデント",
+		"keyIncidentsDescription": "情報漏えいが起きたプラットフォームに保管されたすべての API キーを無効化または一時停止します。",
+		"slackAgentTitle": "Slack エージェント",
+		"slackAgentDescription": "すべての Slack エージェントのインストールと、今月の人数、回答数、料金、モデルの支出。"
 	},
 	"webhookPage": {
 		"description": "非同期の動画ジョブやバッチジョブから、署名付きで再試行可能な更新をアプリケーションに送信します。",

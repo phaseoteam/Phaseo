@@ -6,7 +6,6 @@ on:
             - main
         paths:
             - "apps/web/**"
-            - "packages/data/catalog/**"
             - ".github/workflows/indexnow.yml"
     pull_request:
         branches:
@@ -17,7 +16,6 @@ on:
             - reopened
         paths:
             - "apps/web/**"
-            - "packages/data/catalog/**"
             - ".github/workflows/indexnow.yml"
     workflow_dispatch:
 
@@ -75,15 +73,8 @@ jobs:
                   import subprocess
 
                   base_url = os.environ["INDEXNOW_BASE_URL"].rstrip("/")
-                  base_sha = os.environ.get("BASE_SHA", "").strip()
-                  head_sha = os.environ.get("HEAD_SHA", "").strip()
                   urls: set[str] = set()
 
-                  model_suffixes = ["", "/quickstart", "/benchmarks", "/pricing", "/family", "/timeline", "/performance"]
-                  provider_suffixes = ["", "/text-models", "/image-models", "/video-models", "/audio-models", "/embeddings-models", "/moderations-models"]
-                  organisation_suffixes = ["", "/models"]
-                  plan_suffixes = ["", "/features", "/models"]
-                  benchmark_suffixes = [""]
 
                   def build_route(path: str) -> str | None:
                       if not path.startswith("apps/web/src/app/") or not path.endswith("/page.tsx"):
@@ -112,72 +103,6 @@ jobs:
                           route = build_route(path)
                           if route:
                               urls.add(base_url + route)
-
-                  def ensure_list(value):
-                      if isinstance(value, list):
-                          return [str(item).strip() for item in value if str(item).strip()]
-                      return []
-
-                  def load_manifest(rev: str):
-                      if not rev:
-                          return {}
-                      try:
-                          output = subprocess.check_output(
-                              ["git", "show", f"{rev}:packages/data/catalog/generated/database-v2/enum-catalog.json"],
-                              text=True,
-                          )
-                      except Exception:
-                          return {}
-                      try:
-                          data = json.loads(output)
-                      except Exception:
-                          return {}
-                      return data if isinstance(data, dict) else {}
-
-                  def model_ids(manifest: dict) -> set[str]:
-                      result: set[str] = set()
-                      models = manifest.get("models")
-                      if isinstance(models, list):
-                          return set(ensure_list(models))
-                      if not isinstance(models, dict):
-                          return result
-                      for org_key, entries in models.items():
-                          org = str(org_key).strip().strip("/")
-                          for value in ensure_list(entries):
-                              cleaned = value.strip().strip("/")
-                              if not cleaned:
-                                  continue
-                              if "/" in cleaned:
-                                  result.add(cleaned)
-                              elif org:
-                                  result.add(f"{org}/{cleaned}")
-                      return result
-
-                  def add_with_suffixes(prefix: str, slug: str, suffixes: list[str]) -> None:
-                      clean_slug = str(slug).strip().strip("/")
-                      if not clean_slug:
-                          return
-                      for suffix in suffixes:
-                          urls.add(f"{base_url}{prefix}/{clean_slug}{suffix}")
-
-                  base_manifest = load_manifest(base_sha)
-                  head_manifest = load_manifest(head_sha)
-
-                  added_models = sorted(model_ids(head_manifest) - model_ids(base_manifest))
-                  for slug in added_models:
-                      add_with_suffixes("/models", slug, model_suffixes)
-
-                  for slug in sorted(set(ensure_list(head_manifest.get("api_providers"))) - set(ensure_list(base_manifest.get("api_providers")))):
-                      add_with_suffixes("/api-providers", slug, provider_suffixes)
-
-                  for slug in sorted(set(ensure_list(head_manifest.get("organisations"))) - set(ensure_list(base_manifest.get("organisations")))):
-                      add_with_suffixes("/organisations", slug, organisation_suffixes)
-
-                  for slug in sorted(set(ensure_list(head_manifest.get("benchmarks"))) - set(ensure_list(base_manifest.get("benchmarks")))):
-                      add_with_suffixes("/benchmarks", slug, benchmark_suffixes)
-
-                  for slug in sorted(set(ensure_list(head_manifest.get("subscription_plans"))) - set(ensure_list(base_manifest.get("subscription_plans")))):
-                      add_with_suffixes("/subscription-plans", slug, plan_suffixes)
 
                   all_urls = sorted(urls)
 

@@ -117,7 +117,7 @@ curl https://api.phaseo.app/v1/settings \
 
 ### Defina seus próprios substitutos
 
-Em **Seus próprios substitutos**, na mesma seção de configurações, proprietários e administradores podem escolher o substituto de um modelo específico ou escolher **Nunca redirecionar** para que as solicitações desse modelo continuem falhando. O seu próprio substituto é usado qualquer que seja o preço, mas um modelo gratuito continua nunca sendo substituído por um pago. Seus próprios substitutos só podem ser definidos no painel.
+Em **Seus próprios substitutos**, na mesma seção de configurações, proprietários e administradores podem escolher o substituto de um modelo específico ou escolher **Nunca redirecionar** para que as solicitações desse modelo continuem falhando. O seu próprio substituto é usado qualquer que seja o preço, mas um modelo gratuito continua nunca sendo substituído por um pago. Seus próprios substitutos também podem ser definidos pela CLI com `phaseo routing successors set --model <id> --successor <id>` (ou `--never`), ou com `PUT /v1/routing/successor/replacements`.
 
 As alterações nessas configurações entram em vigor em cerca de um minuto.
 

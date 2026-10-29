@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createSchemaDocument, validateAgainstSchema } from "../src/schema";
 import { comparePrefix, inventedFields, traceSentinels } from "../src/trace";
 import { setupSimulatorRuntime, simulatorBindings, teardownSimulatorRuntime } from "../src/env";
@@ -10,6 +10,18 @@ import { deliverToClient } from "../src/response-pipeline";
 import { detectDialect } from "../src/dialects";
 import { maxVariant } from "../src/response-variants";
 import { resolveSpec } from "../src/spec-registry";
+
+// Serve the sampled routes and price cards from a small fixture instead of the catalogue files.
+vi.mock("../src/catalogue", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("../src/catalogue")>();
+	const { SIM_CATALOGUE_PRICE_CARDS, SIM_CATALOGUE_ROUTES } = await import("./catalogue-fixture");
+	return {
+		...actual,
+		loadCatalogueRoutes: () => new Map(Object.entries(SIM_CATALOGUE_ROUTES)),
+		loadCataloguePriceCard: (providerId: string, apiModelId: string) =>
+			SIM_CATALOGUE_PRICE_CARDS[`${providerId}:${apiModelId}`] ?? null,
+	};
+});
 
 describe("schema validator", () => {
 	const doc = createSchemaDocument({

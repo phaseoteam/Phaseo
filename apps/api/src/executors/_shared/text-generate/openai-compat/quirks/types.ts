@@ -29,6 +29,8 @@ export interface ProviderQuirks {
 	extractReasoning?(args: {
 		choice: any; // Response choice object
 		rawContent: string; // Extracted text content
+		providerId?: string; // Gateway provider that returned the response
+		model?: string; // Gateway model id of the request
 	}): { main: string; reasoning: string[] };
 
 	/**
@@ -47,6 +49,15 @@ export interface ProviderQuirks {
 	normalizeResponse?(args: {
 		response: any; // Complete response
 		ir: IRChatRequest; // Original IR request for context
+	}): void;
+
+	/**
+	 * Normalize the complete response carried by a streamed Responses API terminal event
+	 * (`response.completed` / `response.incomplete`) before it is forwarded, so streamed
+	 * clients and billing see the same usage as a buffered response.
+	 */
+	normalizeStreamedResponse?(args: {
+		response: any; // Complete response from the terminal event
 	}): void;
 }
 

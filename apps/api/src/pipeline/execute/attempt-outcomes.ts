@@ -41,3 +41,14 @@ export function everyAttemptRateLimited(attemptErrors: readonly AttemptError[] |
 export function everyAttemptRejectedRequest(attemptErrors: readonly AttemptError[] | null | undefined): boolean {
 	return everyDispatchedAttemptHasStatus(attemptErrors, REQUEST_REJECTED_STATUSES);
 }
+
+/**
+ * The status every provider that was called rejected the request with, when
+ * they all agree on one of 400, 413 or 422. The client gets that status rather
+ * than a 502: the request itself is at fault and retrying it will not help.
+ */
+export function sharedRequestRejectionStatus(attemptErrors: readonly AttemptError[] | null | undefined): number | null {
+	if (!everyAttemptRejectedRequest(attemptErrors)) return null;
+	const statuses = new Set(dispatchedAttempts(attemptErrors).map((entry) => Number(entry?.status)));
+	return statuses.size === 1 ? [...statuses][0]! : null;
+}

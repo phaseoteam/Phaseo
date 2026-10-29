@@ -18,6 +18,7 @@ import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from 
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
+import { parsePresetReference } from "./presetReference";
 import { loadPriceCard } from "@pipeline/pricing";
 import { isFreePriceCard } from "@pipeline/pricing/free";
 import { getContextCapabilityCandidates } from "./context.capability-aliases";
@@ -74,11 +75,11 @@ const CONTEXT_CACHE_PREFIX = "gateway:context";
 // Multi-tier caching constants (respecting Cloudflare KV 60s minimum)
 // Bump when the static context payload changes or a catalogue/pricing repair
 // must invalidate previously cached provider cards across Worker isolates.
-const STATIC_CACHE_PREFIX = "gateway:static:v5";
+const STATIC_CACHE_PREFIX = "gateway:static:v6";
 const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
 // Preset payloads include provider/pricing snapshots too, so invalidate them
 // with the static context when catalogue or pricing data changes.
-const PRESET_CACHE_PREFIX = "gateway:preset:v4";
+const PRESET_CACHE_PREFIX = "gateway:preset:v5";
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
@@ -123,8 +124,15 @@ export async function assertPresetAccess(args: {
 	apiKeyId: string;
 	model: string;
 }): Promise<void> {
-	if (!args.model.startsWith("@")) return;
-	const slug = args.model.slice(1);
+	const reference = parsePresetReference(args.model);
+	if (!reference) return;
+	// "@handle/slug" names another workspace's public preset. The context RPC
+	// resolves those globally and only when public, so this workspace-local
+	// check does not apply (it would never find the preset here).
+	if (reference.publisher !== null) return;
+	// A pinned "@slug@ref" needs the same access as "@slug"; the RPC checks the
+	// pinned version itself.
+	const slug = reference.slug;
 	// Isolate-only and short-lived: an access decision, so visibility or key
 	// changes apply within 30 s and stale answers are never used past 60 s.
 	const access = await tieredRead<PresetAccess>({
@@ -712,7 +720,7 @@ async function resolveProviderScopedModelToApiModel(args: {
         args.model,
     );
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_api_model_id:provider_model_id")
         .in("capability_id", capabilityCandidates)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
@@ -803,7 +811,7 @@ async function fetchTestingProviderSnapshots(args: {
     if (!providerModelIds.length) return [];
 
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select(
             "provider_api_model_id:provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at"
         )
@@ -886,10 +894,12 @@ async function fetchTestingProviderSnapshots(args: {
         const providerId = row?.provider_id;
         if (typeof providerApiModelId !== "string" || typeof providerId !== "string") continue;
         const cap = latestCapabilityByProviderModel.get(providerApiModelId);
+        const inputModalities = parseModalities(row?.input_modalities);
+        const outputModalities = parseModalities(row?.output_modalities);
         const inferredSupport = supportsEndpointViaModalities({
             endpoint: args.endpoint,
-            inputModalities: parseModalities(row?.input_modalities),
-            outputModalities: parseModalities(row?.output_modalities),
+            inputModalities,
+            outputModalities,
         });
         if (!cap && !inferredSupport) continue;
         const providerModelSlug =
@@ -921,6 +931,8 @@ async function fetchTestingProviderSnapshots(args: {
             baseWeight: 1,
             byokMeta: byokByProvider.get(providerId) ?? [],
             providerModelSlug,
+            inputModalities: setToArrayOrNull(inputModalities),
+            outputModalities: setToArrayOrNull(outputModalities),
             quantizationScheme:
 				typeof row?.metadata?.quantization_scheme === "string"
 					? row.metadata.quantization_scheme
@@ -995,7 +1007,7 @@ async function fetchFreeRouterProviderPool(args: {
     );
     const capabilityId = getContextCapabilityCandidates(args.endpoint, FREE_ROUTER_MODEL_ID)[0] ?? args.endpoint;
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_api_model_id:provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at")
         .eq("capability_id", capabilityId)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])

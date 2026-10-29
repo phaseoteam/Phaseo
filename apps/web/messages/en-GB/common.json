@@ -254,7 +254,11 @@
 				"nav-settings-presets": "Routing Presets",
 				"nav-settings-privacy": "Privacy Settings",
 				"nav-settings-guardrails": "Guardrails",
+				"nav-settings-rate-limits": "Rate limits",
+				"nav-settings-trusted-workloads": "Trusted workloads",
 				"nav-settings-classifiers": "Classifiers",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Key Security",
 				"nav-settings-oauth": "OAuth Apps",
 				"nav-settings-broadcast": "Broadcast",
 				"nav-settings-webhooks": "Webhooks",
@@ -340,7 +344,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "How Pricing Is Calculated",
 				"nav-how-phaseo-tracks-provider-availability": "How Provider Availability Is Tracked",
 				"nav-chat-decisions": "Decisions",
-				"nav-settings-account-providers": "Provider onboarding"
+				"nav-settings-account-providers": "Provider onboarding",
+				"nav-settings-budgets": "Budgets"
 			}
 		},
 		"searchDataUnavailable": "Unable to load search data.",
@@ -553,6 +558,8 @@
 			"identityPermissionDescription": "Lets this application verify who is signing in.",
 			"gatewayPermissionLabel": "Use AI Gateway with your credits",
 			"gatewayPermissionDescription": "Lets the application run model requests charged to the selected team’s credits.",
+			"billingPermissionLabel": "Start credit top-ups",
+			"billingPermissionDescription": "Lets the application request credit purchases for the selected team. A team owner or admin must confirm each charge by email.",
 			"readPermissionLabel": "Read {resource}",
 			"readPermissionDescription": "Allows this application to read {resource}.",
 			"managePermissionLabel": "Manage {resource}",
@@ -607,6 +614,10 @@
 				"oauth-apps": {
 					"title": "OAuth apps",
 					"description": "OAuth client and integration configuration."
+				},
+				"billing": {
+					"title": "Billing",
+					"description": "Credit purchases that a team owner or admin confirms by email."
 				}
 			},
 			"resources": {
@@ -629,6 +640,7 @@
 				"providerCredentials": "provider credentials",
 				"guardrails": "guardrails and policy settings",
 				"budgets": "team spending budgets and usage",
+				"spendRules": "spend alert and blocking rules",
 				"managementKeys": "machine-level management key details",
 				"oauthApps": "OAuth app and integration settings",
 				"privateModels": "workspace private models"
@@ -1257,6 +1269,7 @@
 			"enableConnection": "Enable connection",
 			"deleteDestination": "Delete destination",
 			"openRequestDetails": "Open request details",
+			"openInChat": "Open in Chat",
 			"copyRequestId": "Copy request ID",
 			"copySessionId": "Copy session ID",
 			"copyNativeResponseId": "Copy native response ID",
@@ -1382,6 +1395,11 @@
 			"retention90Days": "90 days",
 			"retention180Days": "180 days",
 			"retention365Days": "365 days",
+			"contentsAccessTitle": "Who can view contents",
+			"contentsAccessDescription": "Choose who can see stored prompts and responses in request details, Chat and the API.",
+			"contentsAccessMembers": "All members",
+			"contentsAccessAdmins": "Owners and admins",
+			"contentsRestricted": "Only owners and admins can view request contents in this workspace.",
 			"allowAllExceptSelectedModels": "Allow all except selected models",
 			"allowAnyProvider": "Allow any provider",
 			"allowOnlySelectedProviders": "Allow only selected providers",
@@ -2411,6 +2429,8 @@
 			"selectModelsToCompare": "Select models to compare.",
 			"viewFullLeaderboard": "View full leaderboard",
 			"sourceArtificialAnalysis": "Source: Artificial Analysis",
+			"progressIndex": "Progress Index",
+			"progressIndexHelp": "Comparable across years and index versions",
 			"fullLeaderboard": "Full leaderboard",
 			"noModelsMatchThisSearch": "No models match this search.",
 			"noResultsAvailableForThisMetric": "No results available for this metric.",

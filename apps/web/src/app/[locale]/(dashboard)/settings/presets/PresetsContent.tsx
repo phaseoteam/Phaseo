@@ -1,11 +1,10 @@
 "use client";
 import { SettingsResourceQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import PresetsPanel from "@/components/(gateway)/settings/presets/PresetsPanel";
-import type { fetchFrontendModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
-export default function PresetsContent({ models }: { models: Awaited<ReturnType<typeof fetchFrontendModels>> }) {
+export default function PresetsContent() {
 	return <SettingsResourceQuery resource="presets">{(data) => <PresetsPanel
-		teamsWithPresets={data.teamsWithPresets.map((team) => ({ ...team, presets: team.presets.map((preset) => ({ ...preset, all_models: models })) }))}
+		teamsWithPresets={data.teamsWithPresets}
 		currentUserId={data.currentUserId} workspacePublisherHandle={data.workspacePublisher.handle}
 	/>}</SettingsResourceQuery>;
 }

@@ -1,19 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
-
-type GatewayResult = { status: number; payload: any };
-
-function gatewayOrigin(env: Env): string {
-	return (
-		env.GATEWAY_API_ORIGIN ??
-		env.PHASEO_GATEWAY_URL ??
-		env.AI_STATS_GATEWAY_URL ??
-		env.NEXT_PUBLIC_GATEWAY_API_URL ??
-		env.NEXT_PUBLIC_API_URL ??
-		"https://api.phaseo.app"
-	).replace(/\/$/, "");
-}
+import { callGatewayControl, type GatewayResult } from "./gateway-control";
 
 export async function callDataContributionGateway(args: {
 	env: Env;
@@ -23,33 +11,11 @@ export async function callDataContributionGateway(args: {
 	path?: string;
 	body?: unknown;
 }): Promise<GatewayResult> {
-	const authorization = args.request.headers.get("authorization");
-	if (!authorization) return { status: 401, payload: { error: "unauthorized" } };
-	if (!args.workspaceId.trim()) return { status: 400, payload: { error: "bad_request", message: "workspaceId is required" } };
-	try {
-		const response = await fetch(
-			`${gatewayOrigin(args.env)}/v1/data-contribution${args.path ?? ""}`,
-			{
-				method: args.method ?? "GET",
-				headers: {
-					authorization,
-					"x-phaseo-workspace-id": args.workspaceId,
-					...(args.body === undefined ? {} : { "Content-Type": "application/json" }),
-				},
-				body: args.body === undefined ? undefined : JSON.stringify(args.body),
-				signal: AbortSignal.timeout(10_000),
-			},
-		);
-		return {
-			status: response.status,
-			payload: await response.json().catch(() => ({ error: "gateway_unavailable" })),
-		};
-	} catch (error) {
-		console.error("data_contribution_gateway_proxy_failed", {
-			error: error instanceof Error ? error.message : String(error),
-		});
-		return { status: 503, payload: { error: "gateway_unavailable" } };
-	}
+	return callGatewayControl({
+		...args,
+		path: `/v1/data-contribution${args.path ?? ""}`,
+		failureEvent: "data_contribution_gateway_proxy_failed",
+	});
 }
 
 function proxyError(c: any, result: GatewayResult) {
