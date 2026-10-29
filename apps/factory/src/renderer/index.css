@@ -218,14 +218,18 @@
 		list-style: none;
 		margin-left: -1.25em;
 	}
+	/* The website's markdown links (modelMarkdown.tsx): body colour with a faint underline, the accent on hover. */
 	.item-markdown a {
-		color: var(--info);
+		color: var(--foreground);
+		font-weight: 500;
 		text-decoration: underline;
-		text-decoration-color: color-mix(in oklch, var(--info) 40%, transparent);
-		text-underline-offset: 2px;
+		text-decoration-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+		text-underline-offset: 4px;
+		transition: color 150ms, text-decoration-color 150ms;
 	}
 	.item-markdown a:hover {
-		text-decoration-color: currentColor;
+		color: var(--primary);
+		text-decoration-color: var(--primary);
 	}
 	.item-markdown blockquote {
 		border-left: 3px solid var(--border);
