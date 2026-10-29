@@ -1,13 +1,11 @@
-import { formatRelativeTime } from "@phaseo/app-kit/format";
+import { formatDuration, formatRelativeTime } from "@phaseo/app-kit/format";
 import type { DiagnosticsProcess, DiagnosticsProcessKind } from "../../shared/diagnostics";
 
 const numbers = new Intl.NumberFormat("en-GB");
 export const formatCount = (value: number) => numbers.format(value);
 
-export function formatDuration(ms: number) {
-	if (ms < 1_000) return `${Math.round(ms)} ms`;
-	return `${(ms / 1_000).toFixed(ms >= 10_000 ? 1 : 2)} s`;
-}
+/** How long something took, as the website's chat shows it: "850 ms", "1.5 s", "2.08 min". */
+export { formatDuration };
 
 export function formatBytes(value: number) {
 	if (value < 1024) return `${Math.round(value)} B`;
@@ -17,12 +15,7 @@ export function formatBytes(value: number) {
 	return `${next.toFixed(next >= 10 ? 1 : 2)} ${units[unit]}`;
 }
 
-export function formatCpuTime(seconds: number) {
-	if (seconds < 60) return `${seconds.toFixed(seconds >= 10 ? 1 : 2)} s`;
-	const minutes = seconds / 60;
-	if (minutes < 60) return `${minutes.toFixed(minutes >= 10 ? 1 : 2)} min`;
-	return `${(minutes / 60).toFixed(2)} h`;
-}
+export const formatCpuTime = (seconds: number) => formatDuration(seconds * 1000);
 
 /** Elapsed run time as `m:ss`, or `h:mm:ss` from an hour, or days and hours from a day. */
 export function formatElapsed(ms: number) {

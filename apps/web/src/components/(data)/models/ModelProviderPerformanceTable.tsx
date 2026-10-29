@@ -195,7 +195,7 @@ export default function ModelProviderPerformanceTable({
 				),
 				cell: ({ row }) => (
 					<span className="ml-3">
-						{formatProviderDuration(row.original.avgGenerationMs, format.number)}
+						{formatProviderDuration(row.original.avgGenerationMs)}
 					</span>
 				),
 			},

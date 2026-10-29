@@ -1,4 +1,4 @@
-import { formatBytes, formatUsd, formatUsdAxis, modalityLabel } from "./format";
+import { formatBytes, formatSeconds, formatSpeed, formatTokenCount, formatTokens, formatUsd, modalityLabel } from "./format";
 
 describe("formatUsd", () => {
   it("uses US money formatting, never US$", () => {
@@ -19,15 +19,18 @@ describe("modalityLabel", () => {
   });
 });
 
-describe("formatUsdAxis", () => {
-  it("keeps axis money short and US-styled", () => {
-    expect([0, 0.0025, 0.5, 2.5, 40, 1200, 15000].map(formatUsdAxis)).toEqual(["$0", "$0.0025", "$0.5", "$2.5", "$40", "$1.2K", "$15K"]);
-  });
-});
-
 describe("formatBytes", () => {
   it("uses binary units with a few significant digits", () => {
     expect([0, 512, 4300, 12.3 * 1024 * 1024, 1.05 * 1024 ** 3].map(formatBytes)).toEqual(["0 B", "512 B", "4.2 KB", "12.3 MB", "1.05 GB"]);
     expect(formatBytes(null)).toBe("—");
+  });
+});
+
+describe("speed, latency and token limits", () => {
+  it("reads as the website: tps, seconds, and token limits in full or short", () => {
+    expect([45.25, 123.4, null].map(formatSpeed)).toEqual(["45.3 tps", "123 tps", "—"]);
+    expect([850, 13_785, undefined].map(formatSeconds)).toEqual(["0.85 s", "13.8 s", "—"]);
+    expect(formatTokenCount(131_072)).toBe("131,072 tokens");
+    expect([8_192, 131_072, 1_048_576, 0].map(formatTokens)).toEqual(["8K", "131K", "1M", "—"]);
   });
 });

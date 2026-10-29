@@ -9,7 +9,7 @@ import { Button } from "../components/ui/button";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { cn } from "../lib/utils";
-import { formatRelativeTime, formatAgoShort } from "@phaseo/app-kit/format";
+import { formatAgoShort, formatDateTime, formatRelativeTime } from "@phaseo/app-kit/format";
 
 /** Autopilot's latest decisions across chats, read again whenever it makes one. */
 export function useAutopilotLog() {
@@ -129,7 +129,7 @@ export function Inbox() {
 							const task = byId.get(entry.taskId), decision = decisionGlyph(entry.title);
 							return <Row key={entry.id} label={`${entry.title} in ${task?.title ?? "a deleted chat"}`} onOpen={task ? () => select(task.id) : undefined}
 								glyph={decision} title={<>{decision.label}<span className="text-muted-foreground"> in {task?.title ?? "a deleted chat"}</span></>}
-								aside={<span title={new Date(entry.at).toLocaleString()}>{formatAgoShort(entry.at, now)}</span>} detail={entry.text} />;
+								aside={<span title={formatDateTime(entry.at)}>{formatAgoShort(entry.at, now)}</span>} detail={entry.text} />;
 						})}
 						{log.length > shown && <Button size="xs" variant="ghost" className="mt-1 self-start text-muted-foreground" onClick={() => setShown(value => value + logPage)}>Show older decisions</Button>}
 					</> : <p className="px-3 py-2 text-xs text-muted-foreground">Autopilot hasn't decided anything yet.</p>}

@@ -6,7 +6,7 @@ import { Button, confirm, EmptyState, ErrorState, Header, LoadingState, Readable
 import { useLayout } from "@/hooks/useLayout";
 import { getKeys, revokeKey, type GatewayKey } from "@/lib/api/account";
 import { WEB_ORIGIN } from "@/lib/config";
-import { formatRelativeDay } from "@/lib/format";
+import { formatCalendarDate } from "@/lib/format";
 
 export function KeysScreen({ workspaceId }: { workspaceId: string }) {
   const { split } = useLayout();
@@ -41,7 +41,7 @@ export function KeysScreen({ workspaceId }: { workspaceId: string }) {
                   key={key.id}
                   icon={KeyRound}
                   title={key.name ?? "Unnamed key"}
-                  subtitle={[key.prefix ? `${key.prefix}…` : null, key.last_used_at ? `Used ${formatRelativeDay(key.last_used_at).toLowerCase()}` : "Never used", key.status && key.status !== "active" ? key.status : null].filter(Boolean).join(" · ")}
+                  subtitle={[key.prefix ? `${key.prefix}…` : null, key.last_used_at ? `Used ${formatCalendarDate(key.last_used_at)}` : "Never used", key.status && key.status !== "active" ? key.status : null].filter(Boolean).join(" · ")}
                   onPress={() => void askToRevoke(key)}
                   chevron={false}
                   last={index === keys.data.length - 1}
