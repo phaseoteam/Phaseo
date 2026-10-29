@@ -12,6 +12,7 @@ Crie uma chave com `phaseo keys create --name <name> --json` na [CLI da Phaseo](
 
 - **Chaves de API do Gateway** chamam endpoints de modelos, provedores e geração disponíveis no seu espaço de trabalho.
 - **Chaves de API de gerenciamento** chamam APIs administrativas. Veja [Chaves de API de gerenciamento](./management-api-keys.mdx).
+- **Workloads confiáveis** (beta) permitem que implantações da Vercel e jobs do GitHub Actions chamem o Gateway com um token OIDC de curta duração em vez de uma chave armazenada. Veja [Workloads confiáveis](./trusted-workloads.mdx).
 
 Rotacione uma chave atualizando o aplicativo para usar a substituta antes de invalidar a credencial antiga. Veja o [endpoint de rotação de chaves](../api-reference/endpoint/keys-rotate.mdx).
 

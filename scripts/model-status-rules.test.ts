@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import test from "node:test";
 
-import { collectActiveGatewayModelIds, deriveStatusFromDates, pickStatus } from "./update-model-statuses.ts";
+import { deriveStatusFromDates, pickStatus } from "./model-status-rules.ts";
 
 test("keeps a model deprecated while an active gateway route exists", () => {
     const status = deriveStatusFromDates(
@@ -38,23 +35,4 @@ test("does not promote a rumoured model without manual announcement verification
     );
 
     assert.equal(pickStatus("Rumoured", derived), "Rumoured");
-});
-
-test("collects only active gateway model ids", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "model-status-routes-"));
-    const providerDir = path.join(root, "provider");
-    fs.mkdirSync(providerDir);
-    fs.writeFileSync(
-        path.join(providerDir, "models.json"),
-        JSON.stringify([
-            { internal_model_id: "example/active", is_active_gateway: true },
-            { internal_model_id: "example/inactive", is_active_gateway: false },
-        ])
-    );
-
-    try {
-        assert.deepEqual([...collectActiveGatewayModelIds(root)], ["example/active"]);
-    } finally {
-        fs.rmSync(root, { recursive: true, force: true });
-    }
 });

@@ -69,14 +69,16 @@ function useUsdFormatter() {
 		if (value == null || !Number.isFinite(value)) return "—";
 		if (value === 0) return "$0";
 		if (value < 0.01) {
-			return `$${format.number(value, { maximumSignificantDigits: 3, notation: "standard" })}`;
+			return format.number(value, { style: "currency", currency: "USD", maximumSignificantDigits: 3, notation: "standard" });
 		}
 		const integer = Math.abs(value - Math.round(value)) < 1e-9;
-		return `$${format.number(value, {
+		return format.number(value, {
+			style: "currency",
+			currency: "USD",
 			minimumFractionDigits: integer ? 0 : 2,
 			maximumFractionDigits: integer ? 0 : 3,
 			notation: "standard",
-		})}`;
+		});
 	};
 }
 

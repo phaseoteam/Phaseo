@@ -4969,11 +4969,11 @@ paths:
       tags:
         - Gateway
       operationId: listWorkloadIdentityPolicies
-      summary: List trusted workload policies
-      description: 'Lists the workspace''s trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.'
+      summary: भरोसेमंद वर्कलोड पॉलिसी की सूची देखें
+      description: 'वर्कस्पेस की भरोसेमंद वर्कलोड पॉलिसी की सूची देता है: कौन-से Vercel डिप्लॉयमेंट और GitHub Actions वर्कफ़्लो API कुंजी के बजाय अपने OIDC टोकन से गेटवे को कॉल कर सकते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।'
       responses:
         '200':
-          description: Trusted workload policies
+          description: भरोसेमंद वर्कलोड पॉलिसी
           content:
             application/json:
               schema:
@@ -4989,8 +4989,8 @@ paths:
       tags:
         - Gateway
       operationId: createWorkloadIdentityPolicy
-      summary: Create a trusted workload policy
-      description: Creates a policy and its secretless key. Tokens must be issued for the audience https://api.phaseo.app and match the pinned owner and every claim condition. A workspace can have up to 50 policies; more returns 409 limit_reached. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: भरोसेमंद वर्कलोड पॉलिसी बनाएँ
+      description: एक पॉलिसी और उसकी बिना सीक्रेट वाली कुंजी बनाता है। टोकन ऑडियंस https://api.phaseo.app के लिए जारी होने चाहिए और तय मालिक तथा हर क्लेम शर्त से मेल खाने चाहिए। एक वर्कस्पेस में अधिकतम 50 पॉलिसी हो सकती हैं; इससे ज़्यादा पर 409 limit_reached मिलता है। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।
       requestBody:
         required: true
         content:
@@ -4999,7 +4999,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyInput'
       responses:
         '201':
-          description: Trusted workload policy created
+          description: भरोसेमंद वर्कलोड पॉलिसी बनाई गई
           content:
             application/json:
               schema:
@@ -5015,7 +5015,7 @@ paths:
       - name: id
         in: path
         required: true
-        description: Trusted workload policy id.
+        description: भरोसेमंद वर्कलोड पॉलिसी का ID।
         schema:
           type: string
           format: uuid
@@ -5024,11 +5024,11 @@ paths:
       tags:
         - Gateway
       operationId: getWorkloadIdentityPolicy
-      summary: Get a trusted workload policy
-      description: Returns one trusted workload policy. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: भरोसेमंद वर्कलोड पॉलिसी प्राप्त करें
+      description: एक भरोसेमंद वर्कलोड पॉलिसी लौटाता है। प्रबंधन कुंजियों और OAuth टोकन पर keys:read, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।
       responses:
         '200':
-          description: Trusted workload policy
+          description: भरोसेमंद वर्कलोड पॉलिसी
           content:
             application/json:
               schema:
@@ -5044,8 +5044,8 @@ paths:
       tags:
         - Gateway
       operationId: updateWorkloadIdentityPolicy
-      summary: Update a trusted workload policy
-      description: Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: भरोसेमंद वर्कलोड पॉलिसी अपडेट करें
+      description: पॉलिसी का नाम, स्थिति, क्लेम शर्तें या टोकन की अधिकतम अवधि बदलता है। प्रदाता, जारीकर्ता और मालिक नहीं बदले जा सकते; इसके बजाय नई पॉलिसी बनाएँ। बदलाव एक मिनट के भीतर गेटवे तक पहुँच जाते हैं। प्रबंधन कुंजियों और OAuth टोकन पर keys:write, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।
       requestBody:
         required: true
         content:
@@ -5054,7 +5054,7 @@ paths:
               $ref: '#/components/schemas/WorkloadIdentityPolicyUpdateInput'
       responses:
         '200':
-          description: Trusted workload policy updated
+          description: भरोसेमंद वर्कलोड पॉलिसी अपडेट की गई
           content:
             application/json:
               schema:
@@ -5070,11 +5070,11 @@ paths:
       tags:
         - Gateway
       operationId: deleteWorkloadIdentityPolicy
-      summary: Delete a trusted workload policy
-      description: Revokes the policy's key, then deletes the policy. Matching tokens are refused within a minute. Past requests keep their key in logs and usage. Requires keys:delete on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+      summary: भरोसेमंद वर्कलोड पॉलिसी हटाएँ
+      description: पॉलिसी की कुंजी रद्द करता है, फिर पॉलिसी हटाता है। मेल खाने वाले टोकन एक मिनट के भीतर अस्वीकार होने लगते हैं। पिछले अनुरोधों की कुंजी लॉग और उपयोग में बनी रहती है। प्रबंधन कुंजियों और OAuth टोकन पर keys:delete, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। यह केवल भरोसेमंद वर्कलोड बीटा वाले वर्कस्पेस के लिए उपलब्ध है; दूसरे वर्कस्पेस को 404 मिलता है।
       responses:
         '200':
-          description: Trusted workload policy deleted
+          description: भरोसेमंद वर्कलोड पॉलिसी हटा दी गई
           content:
             application/json:
               schema:
@@ -23624,10 +23624,10 @@ components:
       enum:
         - vercel
         - github_actions
-      description: The platform that issues the OIDC tokens.
+      description: वह प्लेटफ़ॉर्म जो OIDC टोकन जारी करता है।
     WorkloadIdentityPolicy:
       type: object
-      description: 'A trusted workload: tokens from this issuer, for the pinned owner and matching every claim condition, authenticate as the policy''s key.'
+      description: 'एक भरोसेमंद वर्कलोड: इस जारीकर्ता के टोकन, जो तय मालिक के लिए हों और हर क्लेम शर्त से मेल खाते हों, पॉलिसी की कुंजी के रूप में प्रमाणित होते हैं।'
       required:
         - id
         - name
@@ -23655,13 +23655,13 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: Token issuer, for example https://oidc.vercel.com/acme or https://token.actions.githubusercontent.com.
+          description: टोकन जारीकर्ता, जैसे https://oidc.vercel.com/acme या https://token.actions.githubusercontent.com।
         owner_id:
           type: string
-          description: The pinned Vercel team ID (owner_id claim) or GitHub organisation or user ID (repository_owner_id claim).
+          description: तय किया गया Vercel टीम ID (owner_id क्लेम) या GitHub संगठन या उपयोगकर्ता ID (repository_owner_id क्लेम)।
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे Vercel के लिए project_id और environment, या GitHub Actions के लिए repository_id और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और तय मालिक का क्लेम owner_id से सेट होता है।
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23675,7 +23675,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: टोकन की सबसे लंबी अवधि (exp में से iat या nbf घटाकर) जिसे पॉलिसी स्वीकार करती है।
         status:
           type: string
           enum:
@@ -23683,11 +23683,11 @@ components:
             - disabled
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: वह ऑडियंस जिसके लिए टोकन जारी होने चाहिए।
         key_id:
           type: string
           format: uuid
-          description: The policy's key. Requests, usage and limits are recorded against it.
+          description: पॉलिसी की कुंजी। अनुरोध, उपयोग और सीमाएँ इसी पर दर्ज होती हैं।
         last_used_at:
           type: string
           format: date-time
@@ -23718,14 +23718,14 @@ components:
           $ref: '#/components/schemas/WorkloadIdentityProvider'
         issuer:
           type: string
-          description: 'Required for Vercel: https://oidc.vercel.com/ followed by the team slug, or https://oidc.vercel.com for the global issuer. Defaults to https://token.actions.githubusercontent.com for GitHub Actions.'
+          description: 'Vercel के लिए आवश्यक: https://oidc.vercel.com/ के बाद टीम स्लग, या ग्लोबल जारीकर्ता के लिए https://oidc.vercel.com। GitHub Actions के लिए डिफ़ॉल्ट https://token.actions.githubusercontent.com है।'
         owner_id:
           type: string
           minLength: 1
-          description: The Vercel team ID or GitHub organisation or user ID to pin.
+          description: तय करने के लिए Vercel टीम ID या GitHub संगठन या उपयोगकर्ता ID।
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे Vercel के लिए project_id और environment, या GitHub Actions के लिए repository_id और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और तय मालिक का क्लेम owner_id से सेट होता है।
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23740,7 +23740,7 @@ components:
           minimum: 60
           maximum: 43200
           default: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: टोकन की सबसे लंबी अवधि (exp में से iat या nbf घटाकर) जिसे पॉलिसी स्वीकार करती है।
       additionalProperties: false
     WorkloadIdentityPolicyUpdateInput:
       type: object
@@ -23757,7 +23757,7 @@ components:
             - disabled
         claim_conditions:
           type: object
-          description: Extra claims the token must match, as claim name to allowed values, for example project_id and environment for Vercel, or repository_id and ref for GitHub Actions. Every claim must match one of its values. At most 15 claims and 20 values per claim; iss, aud, exp, iat, nbf and jti cannot be used, and the pinned owner claim is set with owner_id.
+          description: अतिरिक्त क्लेम जिनसे टोकन का मेल खाना ज़रूरी है, क्लेम के नाम और अनुमत मानों के रूप में, जैसे Vercel के लिए project_id और environment, या GitHub Actions के लिए repository_id और ref। हर क्लेम को अपने किसी एक मान से मेल खाना चाहिए। अधिकतम 15 क्लेम और प्रति क्लेम 20 मान; iss, aud, exp, iat, nbf और jti इस्तेमाल नहीं किए जा सकते, और तय मालिक का क्लेम owner_id से सेट होता है।
           maxProperties: 15
           additionalProperties:
             type: array
@@ -23771,7 +23771,7 @@ components:
           type: integer
           minimum: 60
           maximum: 43200
-          description: Longest token lifetime (exp minus iat or nbf) the policy accepts.
+          description: टोकन की सबसे लंबी अवधि (exp में से iat या nbf घटाकर) जिसे पॉलिसी स्वीकार करती है।
       additionalProperties: false
     WorkloadIdentityPolicyResponse:
       type: object
@@ -23793,7 +23793,7 @@ components:
             $ref: '#/components/schemas/WorkloadIdentityPolicy'
         audience:
           type: string
-          description: The audience tokens must be issued for.
+          description: वह ऑडियंस जिसके लिए टोकन जारी होने चाहिए।
       additionalProperties: false
     WorkloadIdentityPolicyDeleteResponse:
       type: object

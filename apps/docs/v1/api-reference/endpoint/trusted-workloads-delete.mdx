@@ -1,0 +1,13 @@
+---
+title: "Delete trusted workload policy"
+sidebarTitle: "Delete trusted workload policy"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml DELETE /workload-identity/policies/{id}"
+description: "Delete a trusted workload policy and revoke its key."
+"og:image": "https://phaseo.app/og/dynamic?title=Delete%20trusted%20workload%20policy&description=Delete%20a%20trusted%20workload%20policy%20and%20revoke%20its%20key.&pathname=/docs/v1/api-reference/endpoint/trusted-workloads-delete"
+---
+<Note>Requires `keys:delete` on a management key or OAuth token, or a workspace owner or admin. Trusted workloads is in beta; workspaces without it get `404`.</Note>
+
+Matching tokens are refused within a minute. Past requests keep their key in logs and usage.
+
+See [Trusted Workloads](../../developers/trusted-workloads.mdx) for how policies work and how to manage them with Terraform.

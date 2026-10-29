@@ -43,8 +43,10 @@ describe("key usage display preferences", () => {
 		expect(html).toContain("1,234,567");
 	});
 
-	it("uses the saved UK locale for USD amounts", () => {
-		expect(renderSummary("en-GB")).toContain("US$1.25");
+	it("shows USD amounts in US format under the saved UK locale", () => {
+		const html = renderSummary("en-GB");
+		expect(html).toContain("$1.25");
+		expect(html).not.toContain("US$");
 	});
 
 	it("honors compact request counts while retaining precise currency", () => {

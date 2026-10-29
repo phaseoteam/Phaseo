@@ -1,0 +1,10 @@
+---
+title: "Listar políticas de cargas de trabajo de confianza"
+sidebarTitle: "Listar políticas de cargas de trabajo de confianza"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml GET /workload-identity/policies"
+description: "Lista los despliegues de Vercel y los flujos de trabajo de GitHub Actions que pueden llamar a Phaseo con un token OIDC."
+---
+<Note>Requiere `keys:read` en una clave de administración o un token OAuth, o un propietario o administrador del espacio de trabajo. Las cargas de trabajo de confianza están en beta; los espacios de trabajo que no las tienen reciben `404`.</Note>
+
+Consulta [Cargas de trabajo de confianza](../../developers/trusted-workloads.mdx) para saber cómo funcionan las políticas y cómo gestionarlas con Terraform.

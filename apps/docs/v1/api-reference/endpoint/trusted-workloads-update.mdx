@@ -1,0 +1,13 @@
+---
+title: "Update trusted workload policy"
+sidebarTitle: "Update trusted workload policy"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml PATCH /workload-identity/policies/{id}"
+description: "Change a trusted workload policy's name, status, claim conditions or maximum token lifetime."
+"og:image": "https://phaseo.app/og/dynamic?title=Update%20trusted%20workload%20policy&description=Change%20a%20trusted%20workload%20policy%27s%20name%2C%20status%2C%20claim%20conditions%20or%20maximum%20token%20lifetime.&pathname=/docs/v1/api-reference/endpoint/trusted-workloads-update"
+---
+<Note>Requires `keys:write` on a management key or OAuth token, or a workspace owner or admin. Trusted workloads is in beta; workspaces without it get `404`.</Note>
+
+The platform, issuer and owner can't change. Create a new policy instead. Changes reach the gateway within a minute.
+
+See [Trusted Workloads](../../developers/trusted-workloads.mdx) for how policies work and how to manage them with Terraform.

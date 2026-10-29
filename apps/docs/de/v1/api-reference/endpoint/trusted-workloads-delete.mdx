@@ -1,0 +1,12 @@
+---
+title: "Richtlinie für vertrauenswürdige Workloads löschen"
+sidebarTitle: "Richtlinie für vertrauenswürdige Workloads löschen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml DELETE /workload-identity/policies/{id}"
+description: "Löscht eine Richtlinie für vertrauenswürdige Workloads und widerruft ihren Schlüssel."
+---
+<Note>Erfordert `keys:delete` für einen Management-Schlüssel oder ein OAuth-Token oder einen Workspace-Inhaber oder -Admin. Vertrauenswürdige Workloads sind in der Beta; Workspaces ohne die Funktion erhalten `404`.</Note>
+
+Passende Tokens werden innerhalb einer Minute abgelehnt. Frühere Anfragen behalten ihren Schlüssel in Logs und Nutzung.
+
+Unter [Vertrauenswürdige Workloads](../../developers/trusted-workloads.mdx) erfährst du, wie Richtlinien funktionieren und wie du sie mit Terraform verwaltest.

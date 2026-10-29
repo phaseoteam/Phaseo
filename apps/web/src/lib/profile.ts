@@ -1,3 +1,4 @@
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 export type DailyActivityPoint = {
 	date: string
 	requests: number
@@ -112,8 +113,8 @@ export function formatCompactNumber(value: number, locale = "en"): string {
 	}).format(value)
 }
 
-export function formatUsdFromNanos(nanos: number, locale = "en"): string {
-	return new Intl.NumberFormat(locale, {
+export function formatUsdFromNanos(nanos: number, _locale = "en"): string {
+	return new Intl.NumberFormat(MONEY_LOCALE, {
 		style: "currency",
 		currency: "USD",
 		minimumFractionDigits: 4,
