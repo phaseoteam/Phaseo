@@ -103,12 +103,15 @@ function selectedCatalog(model: string, models?: IntegrationModel[]): Integratio
 	return [selected, ...catalog].slice(0, MAX_MODELS);
 }
 
-export function renderFxConnection(model = DEFAULT_MODEL, models?: IntegrationModel[]): JsonObject {
+/** `known` is the selected model's metadata from an earlier setup, kept when the catalog does not describe that model. */
+export function renderFxConnection(model = DEFAULT_MODEL, models?: IntegrationModel[], known?: JsonObject): JsonObject {
+	const metadata: JsonObject = Object.fromEntries(selectedCatalog(model, models).map((entry) => [entry.id, modelMetadata(entry)]));
+	if (known && !models?.some((entry) => entry.id === model)) metadata[model] = known;
 	return {
 		protocol: PROTOCOL,
 		base_url: BASE_URL,
 		auth: { type: "bearer", env: KEY_ENV },
-		model_metadata: Object.fromEntries(selectedCatalog(model, models).map((entry) => [entry.id, modelMetadata(entry)])),
+		model_metadata: metadata,
 	};
 }
 
@@ -140,7 +143,9 @@ export function renderFxSettings(path: string, before: string | null, model = DE
 	}
 	if (settings.models !== undefined && !isObject(settings.models)) throw new Error("fx models configuration must be an object");
 	let output = before?.trim() ? before : "{}\n";
-	output = setJsonValue(output, ["providers", PROVIDER_ID], renderFxConnection(model, models));
+	// Without a catalog (`--catalog default` or a failed sync), keep the selected model's context and vision metadata.
+	const known = current && isObject(current.model_metadata) && isObject(current.model_metadata[model]) ? current.model_metadata[model] : undefined;
+	output = setJsonValue(output, ["providers", PROVIDER_ID], renderFxConnection(model, models, known));
 	output = setJsonValue(output, ["models", PROVIDER_ID], model);
 	output = setJsonValue(output, ["provider"], PROVIDER_ID);
 	return withTrailingNewline(output);

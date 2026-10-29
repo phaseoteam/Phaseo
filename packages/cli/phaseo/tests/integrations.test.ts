@@ -1237,6 +1237,17 @@ test("fx install check refuses a different fx command on PATH", async () => {
 	}
 });
 
+test("fx setup without a catalog keeps the selected model's earlier metadata", () => {
+	const catalog = [{ id: "openai/gpt-5.6-terra", name: "GPT-5.6 Terra", contextWindow: 400_000, maxOutputTokens: 128_000, input: ["text", "image"] as Array<"text" | "image"> }];
+	const synced = renderFxSettings("/tmp/settings.json", null, "openai/gpt-5.6-terra", catalog);
+	const metadata = { context_window: 400_000, max_output_tokens: 128_000, supports_vision: true };
+	assert.deepEqual(JSON.parse(synced).providers.phaseo.model_metadata["openai/gpt-5.6-terra"], metadata);
+	const defaultOnly = JSON.parse(renderFxSettings("/tmp/settings.json", synced, "openai/gpt-5.6-terra", undefined, true));
+	assert.deepEqual(defaultOnly.providers.phaseo.model_metadata, { "openai/gpt-5.6-terra": metadata });
+	const unknown = JSON.parse(renderFxSettings("/tmp/settings.json", synced, "openai/new-model", undefined, true));
+	assert.deepEqual(unknown.providers.phaseo.model_metadata, { "openai/new-model": {} });
+});
+
 test("fx credential file is shell-safe and owner-marked", () => {
 	assert.equal(renderFxEnv("phaseo_v1_sk_abc"), "# Managed by Phaseo CLI. Run `phaseo integrations remove fx` to remove.\nexport PHASEO_FX_API_KEY='phaseo_v1_sk_abc'\n");
 	assert.throws(() => renderFxEnv("bad'key"), /cannot be written to a shell file safely/);
