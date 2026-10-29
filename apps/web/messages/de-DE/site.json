@@ -2358,6 +2358,11 @@
 					"basis": "Rechtsgrundlage: berechtigte Interessen und rechtliche Pflichten."
 				},
 				{
+					"label": "Darstellungen sexuellen Missbrauchs von Kindern erkennen, verhindern und melden",
+					"text": "etwa durch den automatischen Abgleich von Bildern mit Hashwerten bekannter Darstellungen sexuellen Missbrauchs von Kindern und, wenn wir mutmaßliches Missbrauchsmaterial finden, durch die Sicherung der zugehörigen Konto- und Anfrageinformationen und die Meldung an die zuständigen Stellen.",
+					"basis": "Rechtsgrundlage: rechtliche Pflichten; berechtigte Interessen (Schutz von Kindern und des Service)."
+				},
+				{
 					"label": "Rechtliche Pflichten erfüllen",
 					"text": "etwa durch die Aufbewahrung von Steuer- und Buchhaltungsunterlagen oder die Beantwortung berechtigter Behördenanfragen.",
 					"basis": "Rechtsgrundlage: rechtliche Pflichten."
@@ -2385,6 +2390,10 @@
 				{
 					"label": "Rechtliche und sicherheitsbezogene Gründe",
 					"text": "Wir können Daten offenlegen, wenn wir vernünftigerweise davon ausgehen, dass dies zur Einhaltung eines Gesetzes, einer gerichtlichen Anordnung oder einer anderen rechtlichen Anfrage oder zum Schutz unserer Rechte, unseres Eigentums oder unserer Sicherheit sowie der Sicherheit unserer Nutzer oder anderer erforderlich ist."
+				},
+				{
+					"label": "Meldungen zum Kinderschutz",
+					"text": "Wenn wir mutmaßliche Darstellungen sexuellen Missbrauchs von Kindern finden, melden wir sie zusammen mit den zugehörigen Konto- und Anfrageinformationen an das National Center for Missing & Exploited Children (NCMEC), die Internet Watch Foundation, die National Crime Agency oder andere Strafverfolgungsbehörden, wie gesetzlich vorgeschrieben."
 				},
 				{
 					"label": "Unternehmensübertragungen",
@@ -2415,6 +2424,7 @@
 				"Geeignete zwischengespeicherte Modell-Outputs werden standardmäßig fünf Minuten und gemäß einer konfigurierten Cache-Richtlinie höchstens 24 Stunden gespeichert.",
 				"Private I/O-Protokolle werden, sofern aktiviert, auf 90, 180 oder 365 Tage eingestellt.",
 				"Rohdatenbeiträge, denen du zugestimmt hast, werden höchstens 30 Tage aufbewahrt; aggregierte Klassifizierungsstatistiken können länger gespeichert werden.",
+				"Informationen, die wegen mutmaßlicher Darstellungen sexuellen Missbrauchs von Kindern gesichert werden, bewahren wir sicher und mit eingeschränktem Zugriff bis zu einem Jahr auf, oder länger, wenn das Gesetz es verlangt.",
 				"KI-Anbieter und von Kunden konfigurierte Ziele wenden ihre eigenen Aufbewahrungsbedingungen an."
 			],
 			"retentionSchedule": "Wir haben noch nicht alle Kategorien für Konten, Anfragemetadaten, Abrechnung, Support, Backups und Betriebsprotokolle in einem einheitlichen, festen Aufbewahrungsplan zusammengeführt. Im <security>Sicherheit-Whitepaper</security> findest du die derzeit bestätigten Fristen für die Inhaltsverarbeitung und ihre Einschränkungen.",
@@ -2452,7 +2462,7 @@
 			],
 			"rightsExercise": "Viele dieser Rechte kannst du ausüben, indem du dich in deinem Konto anmeldest (Einstellungen, Profil und API-Schlüssel), oder indem du uns unter <email>privacy@phaseo.app</email> kontaktierst. Vor einer Antwort bitten wir dich möglicherweise, deine Identität zu bestätigen.",
 			"emailOptOut": "Von nicht erforderlichen E-Mails kannst du dich über den Abmeldelink in der Nachricht oder durch Kontaktaufnahme mit uns abmelden. Zu deinem Konto oder wichtigen Änderungen am Service können wir dir weiterhin administrative Nachrichten senden.",
-			"children": "Der Service richtet sich an Personen ab 13 Jahren. Wir erheben wissentlich keine personenbezogenen Daten von Kindern unter 13 Jahren. Wenn du glaubst, dass ein Kind uns ohne angemessene Einwilligung personenbezogene Daten mitgeteilt hat, kontaktiere uns. Wir werden dann Maßnahmen zu deren Löschung ergreifen.",
+			"children": "Der Service richtet sich ausschließlich an Erwachsene ab 18 Jahren. Wir erheben wissentlich keine personenbezogenen Daten von Personen unter 18 Jahren. Wenn du glaubst, dass uns eine Person unter 18 Jahren personenbezogene Daten mitgeteilt hat, kontaktiere uns. Wir werden dann Maßnahmen zu deren Löschung ergreifen.",
 			"securityMeasures": "Zum Schutz personenbezogener Daten setzen wir technische, organisatorische und administrative Sicherheitsmaßnahmen ein, darunter Verschlüsselung während der Übertragung, rollenbasierte Zugriffskontrollen und die Überwachung ungewöhnlicher Aktivitäten.",
 			"securityLimits": "Kein Online-Service kann jedoch vollständig sicher sein. Du bist dafür verantwortlich, dein Passwort, deine API-Schlüssel und andere Zugangsdaten vertraulich zu behandeln und Schlüssel zu erneuern, wenn du eine Kompromittierung vermutest. Wenn du glaubst, dass dein Konto kompromittiert wurde, kontaktiere uns umgehend unter <email>support@phaseo.app</email>.",
 			"thirdParties": "Der Service kann Links zu Websites oder Integrationen Dritter enthalten, darunter Anbieter von KI-Modellen, Dokumentation, Zahlungsdiensten, Analysen und Entwicklertools. Für deren Datenschutzpraktiken sind wir nicht verantwortlich. Wir empfehlen dir, ihre Datenschutzerklärungen zu lesen, bevor du ihnen personenbezogene Daten mitteilst.",
@@ -2473,7 +2483,7 @@
 			],
 			"availability": "Wir können Modelle, Anbieter, Endpoints oder andere Funktionen jederzeit hinzufügen, ändern oder entfernen. Die Verfügbarkeit bestimmter Modelle oder Anbieter hängt von den jeweiligen Drittanbietern ab und ist nicht garantiert.",
 			"changeNotice": "Soweit dies zumutbar ist, informieren wir dich im Voraus über wesentliche Änderungen am Service, darunter die Entfernung von Modellen oder Anbietern aus dem Verzeichnis oder Gateway. Manchmal müssen wir Änderungen jedoch sofort vornehmen, etwa aus Sicherheits-, Rechts- oder Anbietergründen. Eine unterbrechungsfreie Verfügbarkeit können wir nicht garantieren.",
-			"accountAge": "Du musst mindestens 13 Jahre alt sein, um den Service zu nutzen. Wenn du unter 18 bist, solltest du den Service nur mit Erlaubnis eines Elternteils oder einer erziehungsberechtigten Person nutzen.",
+			"accountAge": "Du musst mindestens 18 Jahre alt sein, um den Service zu nutzen.",
 			"accountBusiness": "Wenn du den Service für ein Unternehmen oder eine Organisation nutzt, bestätigst du, dass du befugt bist, diese Einheit an diese Bedingungen zu binden.",
 			"accountRegistration": "Wir speichern und verwenden diese Informationen wie in unserer <privacy>Datenschutzerklärung</privacy> beschrieben.",
 			"accountResponsibilitiesIntro": "Du bist dafür verantwortlich:",
@@ -2523,9 +2533,11 @@
 				"du alle erforderlichen Rechte, Genehmigungen und Einwilligungen zur Übermittlung der Inputs und Nutzung der Outputs hast; und",
 				"deine Inputs und deine Nutzung des Service keine Rechte an geistigem Eigentum, Datenschutz- oder sonstige Rechte verletzen und uns nicht dazu bringen, gegen Gesetze oder Bedingungen Dritter zu verstoßen."
 			],
-			"contentModeration": "Wir sind nicht verpflichtet, User Content zu überwachen. Wenn wir jedoch vernünftigerweise annehmen, dass Inhalte gegen diese Bedingungen oder geltendes Recht verstoßen, können wir sie entfernen oder den Zugriff darauf einschränken.",
+			"contentModeration": "Wir überwachen User Content grundsätzlich nicht. Wir können jedoch automatisierte Werkzeuge einsetzen, einschließlich eines Abgleichs mit Hashwerten bekannter Darstellungen sexuellen Missbrauchs von Kindern, um Inhalte zu erkennen, die gegen diese Bedingungen oder geltendes Recht verstoßen, und sie entfernen oder den Zugriff darauf einschränken.",
+			"childSafety": "Bei Darstellungen sexuellen Missbrauchs von Kindern gilt für uns null Toleranz. Wenn wir von mutmaßlichen Darstellungen sexuellen Missbrauchs von Kindern erfahren, entfernen wir sie, sperren die beteiligten Konten ohne Vorankündigung und ohne Erstattung, sichern die zugehörigen Informationen, die uns vorliegen, wie gesetzlich vorgeschrieben, und melden sie den zuständigen Stellen. Dazu können das National Center for Missing & Exploited Children (NCMEC), die Internet Watch Foundation und die National Crime Agency gehören. Diese Pflichten gelten ungeachtet anderer Zusagen in diesen Bedingungen, einschließlich unseres Umgangs mit Inhalten, der I/O-Protokolle und der Einstellungen zur Null-Datenspeicherung (Zero Data Retention).",
 			"prohibitedIntro": "Du darfst nicht:",
 			"prohibitedActions": [
+				"Darstellungen sexuellen Missbrauchs von Kindern oder Inhalte, die Minderjährige sexualisieren, hochladen, erzeugen, anfordern, speichern oder verbreiten oder den Service nutzen, um Werkzeuge zu entwickeln oder zu betreiben, die solche Inhalte erzeugen sollen;",
 				"den Service rechtswidrig oder entgegen geltenden Gesetzen, Vorschriften oder Bedingungen von Drittanbietern nutzen;",
 				"mit dem Service schädliche, missbräuchliche, diskriminierende, betrügerische oder anderweitig unangemessene Inhalte erstellen oder verbreiten;",
 				"den Service stören, etwa durch Einschleusen von Schadsoftware, Überlasten unserer Infrastruktur oder Umgehen von Ratenbegrenzungen oder Sicherheitskontrollen;",

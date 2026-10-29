@@ -13,6 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Mismatch } from "../src/expect/types";
 import { setupSimulatorRuntime, teardownSimulatorRuntime } from "../src/env";
+import { catalogueData, loadCatalogue } from "../src/catalogue";
 import { expectedBill, type ExpectedBill } from "./calculator";
 import { buildCases, calcRules, type PricingCase } from "./cases";
 import { loadActiveRoutes, loadSweepCard, SWEEP_NOW_ISO, SWEEP_NOW_MS, type SweepCard } from "./catalogue-cards";
@@ -118,14 +119,15 @@ type ProviderExpectations = Array<{ card: SweepCard; unreachable: CardCoverage["
 function writeExpectations(dir: string, provider: string, cards: ProviderExpectations) {
 	const out: string[] = ["{"];
 	out.push(`\t"provider": ${JSON.stringify(provider)},`);
-	out.push(`\t"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",`);
+	out.push(`\t"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",`);
 	out.push(`\t"clock": ${JSON.stringify(SWEEP_NOW_ISO)},`);
-	out.push(`\t"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },`);
+	out.push(`\t"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },`);
 	out.push(`\t"cards": [`);
 	cards.sort((a, b) => a.card.key.localeCompare(b.card.key)).forEach(({ card, unreachable, cases }, cardIndex) => {
 		out.push("\t\t{");
 		out.push(`\t\t\t"key": ${JSON.stringify(card.key)},`);
-		out.push(`\t\t\t"file": ${JSON.stringify(card.file)},`);
+		out.push(`\t\t\t"routes": ${JSON.stringify(card.routeIds)},`);
+		out.push(`\t\t\t"skus": ${JSON.stringify(card.skus)},`);
 		out.push(`\t\t\t"rules": [`);
 		card.rules.forEach((rule, i) => out.push(`\t\t\t\t${ruleLine(rule)}${i < card.rules.length - 1 ? "," : ""}`));
 		out.push("\t\t\t],");
@@ -142,6 +144,7 @@ function writeExpectations(dir: string, provider: string, cards: ProviderExpecta
 // ---------------------------------------------------------------------------
 
 it("prices every active route against an independent oracle", async () => {
+	await loadCatalogue();
 	const started = Date.now();
 	setupSimulatorRuntime();
 	const engine = await loadEngine();
@@ -152,7 +155,7 @@ it("prices every active route against an independent oracle", async () => {
 
 	const only = process.env.SIM_PROVIDERS?.split(",").map((id) => id.trim()).filter(Boolean);
 	const routes = loadActiveRoutes().filter((route) => !only?.length || only.includes(route.providerId));
-	expect(routes.length, "no active catalogue routes found: the fixture layout has changed").toBeGreaterThan(0);
+	expect(routes.length, "no active catalogue routes found in the database").toBeGreaterThan(0);
 
 	const mismatches: Mismatch[] = [];
 	const totals: SweepTotals = {
@@ -166,6 +169,7 @@ it("prices every active route against an independent oracle", async () => {
 		engineErrors: {},
 		durationMs: 0,
 		now: SWEEP_NOW_ISO,
+		source: `read as ${catalogueData().role}`,
 	};
 	const byProvider = new Map<string, ProviderExpectations>();
 	const gaps = new Set<string>();

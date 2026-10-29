@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { chmod, lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { getIntegrationGatewayCredential } from "../credential.js";
 import { readSession } from "../../session.js";
 import { isCommandAvailable } from "../files.js";
@@ -9,7 +9,11 @@ import type { IntegrationAdapter, IntegrationOptions } from "../types.js";
 
 const BASE_URL = "https://api.phaseo.app/v1";
 const DEFAULT_MODEL = "anthropic/claude-sonnet-4.6";
-const KEYS = ["model.provider", "model.base_url", "model.default"] as const;
+/**
+ * model.key_env names the variable Hermes sends to a custom endpoint. Without it Hermes only sends
+ * OPENAI_API_KEY to OpenAI's own hosts, so requests to Phaseo would go out without a key.
+ */
+const KEYS = ["model.provider", "model.base_url", "model.default", "model.key_env"] as const;
 
 type PreviousValue = { present: boolean; value?: unknown };
 /** envPath records the resolved .env file so removal cleans the file setup wrote, even if HERMES_HOME changes. */
@@ -65,10 +69,18 @@ function expandVariables(value: string, env: NodeJS.ProcessEnv, platform: NodeJS
 	return expanded;
 }
 
-/** Resolves Hermes' home the way Hermes does: HERMES_HOME with variables and `~` expanded, else ~/.hermes. */
+/**
+ * Resolves Hermes' home the way Hermes does: HERMES_HOME with variables and `~` expanded, else the
+ * platform default (%LOCALAPPDATA%\hermes on Windows, ~/.hermes elsewhere). Setup asks Hermes first
+ * (see hermesReportedEnvPath); this is the fallback and the path shown before setup.
+ */
 export function resolveHermesHome(options: IntegrationOptions, env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform): string {
 	const configured = env.HERMES_HOME?.trim();
-	if (!configured) return join(options.homeDir, ".hermes");
+	if (!configured) {
+		const suffix = env.HERMES_DATA_DIR_SUFFIX ?? "";
+		if (platform !== "win32") return join(options.homeDir, `.hermes${suffix}`);
+		return join(env.LOCALAPPDATA?.trim() || join(options.homeDir, "AppData", "Local"), `hermes${suffix}`);
+	}
 	const expanded = expandVariables(configured, env, platform);
 	const separator = platform === "win32" ? /^~[\\/]/ : /^~\//;
 	const home = expanded === "~" ? options.homeDir : separator.test(expanded) ? join(options.homeDir, expanded.slice(2)) : expanded;
@@ -77,6 +89,20 @@ export function resolveHermesHome(options: IntegrationOptions, env: NodeJS.Proce
 
 export function hermesEnvPath(options: IntegrationOptions, env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform): string {
 	return join(resolveHermesHome(options, env, platform), ".env");
+}
+
+/** The .env path Hermes itself reports (covers profiles and other overrides), or null if it cannot say. */
+async function hermesReportedEnvPath(): Promise<string | null> {
+	try {
+		const reported = (await run(["config", "env-path"])).trim().split(/\r?\n/).pop()?.trim() ?? "";
+		return isAbsolute(reported) && basename(reported) === ".env" ? resolve(reported) : null;
+	} catch {
+		return null;
+	}
+}
+
+function samePath(a: string, b: string): boolean {
+	return process.platform === "win32" ? resolve(a).toLowerCase() === resolve(b).toLowerCase() : resolve(a) === resolve(b);
 }
 
 export const HERMES_BLOCK_START = "# >>> phaseo managed (do not edit)";
@@ -133,11 +159,11 @@ export function firstUnsupportedHermesEnvLine(text: string): number | null {
 export class HermesEnvQuotingError extends Error {}
 
 function unsupportedReason(line: number): string {
-	return `line ${line} is not a blank line, a comment or a single-line NAME=VALUE assignment in plain ASCII, so Phaseo cannot edit the file safely`;
+	return `line ${line} is not a blank line, a comment or a single-line NAME=VALUE assignment in plain ASCII without backslashes, so Phaseo cannot edit the file safely`;
 }
 
 function setupQuotingMessage(path: string, line: number): string {
-	return `Phaseo will not edit ${path}: ${unsupportedReason(line)}. Add this line to it by hand: ${OPENAI_API_KEY}=<key>. Print the key with \`phaseo integrations credential hermes\`, then run phaseo setup hermes again after simplifying the file, or set Hermes' model settings yourself.`;
+	return `Phaseo will not edit ${path}: ${unsupportedReason(line)}. Simplify that line and run phaseo setup hermes again, or set up Hermes by hand: put ${OPENAI_API_KEY}=<key> in the file (replacing the key inside the Phaseo block if there is one; print the key with \`phaseo integrations credential hermes\`), then run hermes config set for model.provider custom, model.base_url ${BASE_URL}, model.default <model> and model.key_env ${OPENAI_API_KEY}.`;
 }
 
 function removeQuotingMessage(path: string, line: number): string {
@@ -281,15 +307,41 @@ async function legacyKeyFor(state: HermesState): Promise<{ key?: string } | unde
 }
 
 async function restore(state: HermesState, options: IntegrationOptions): Promise<void> {
+	// Keep going when one setting fails so the key is still removed; report the first failure.
+	let failure: unknown;
 	for (const key of [...KEYS].reverse()) {
+		// States from earlier versions did not record model.key_env; leave it alone for them.
+		if (!(key in state.values)) continue;
 		const previous = state.values[key];
-		if (previous?.present) await set(key, previous.value);
-		else await run(["config", "unset", key]);
+		try {
+			if (previous?.present) await set(key, previous.value);
+			else await run(["config", "unset", key]);
+		} catch (error) {
+			failure ??= error;
+		}
 	}
 	const envPath = state.envPath ?? hermesEnvPath(options);
 	if (!await removeHermesKey(envPath, await legacyKeyFor(state))) {
 		process.stderr.write(`Phaseo could not identify the OPENAI_API_KEY line an earlier Phaseo version wrote to ${envPath}. Remove it by hand if it is no longer needed.\n`);
 	}
+	if (failure) throw failure;
+}
+
+async function setModelSettings(options: IntegrationOptions): Promise<void> {
+	await set("model.provider", "custom");
+	await set("model.base_url", BASE_URL);
+	await set("model.default", options.model ?? DEFAULT_MODEL);
+	try {
+		await set("model.key_env", OPENAI_API_KEY);
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : String(error);
+		throw new Error(`Hermes could not set model.key_env, which tells it to send the key to Phaseo. Update Hermes with hermes update, then run phaseo setup hermes again. (${reason})`);
+	}
+}
+
+async function writeState(options: IntegrationOptions, state: HermesState): Promise<void> {
+	await mkdir(join(options.homeDir, ".config", "phaseo", "integrations"), { recursive: true });
+	await writeFile(statePath(options), `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
 }
 
 export const hermesAdapter: IntegrationAdapter = {
@@ -298,61 +350,72 @@ export const hermesAdapter: IntegrationAdapter = {
 	setupIsAutomatic: true,
 	async inspect(options) {
 		const installed = await isCommandAvailable(["hermes", "hermes.exe"]);
-		let configured = false;
-		try { configured = JSON.parse(await readFile(statePath(options), "utf8")).version === 1; } catch {}
+		let state: HermesState | null = null;
+		try { state = await readState(options); } catch {}
+		const configured = state?.version === 1;
+		const envPath = state?.envPath ?? hermesEnvPath(options);
 		return {
 			id: "hermes",
 			name: "Hermes Agent",
 			status: configured ? "configured" : installed ? "available" : "not-installed",
-			configPath: "~/.hermes/config.yaml and ~/.hermes/.env",
-			details: configured ? ["Phaseo custom endpoint configured", "Credential stored by Hermes in ~/.hermes/.env"] : [],
+			configPath: `${join(dirname(envPath), "config.yaml")} and ${envPath}`,
+			details: configured ? ["Phaseo custom endpoint configured", `Credential stored by Hermes in ${envPath}`] : [],
 		};
 	},
 	async planSetup() { return []; },
 	async planRemove() { return []; },
-	setupInstructions(options) {
-		return [`Configure Hermes' custom endpoint with ${options.model ?? DEFAULT_MODEL}.`, "Store the dedicated key in Hermes' supported plaintext ~/.hermes/.env credential file."];
+	setupInstructions() {
+		return ["Restart active Hermes sessions so they use the Phaseo endpoint and key."];
 	},
 	async applySetup(options) {
 		if (!await isCommandAvailable(["hermes", "hermes.exe"])) throw new Error("Hermes Agent is not installed or is not on PATH");
 		const managed = await readState(options);
-		await assertHermesEnvEditable(managed?.envPath ?? hermesEnvPath(options), "setup");
+		// Hermes knows its own home (profiles, platform defaults); the local resolution is the fallback.
+		const reported = await hermesReportedEnvPath();
 		if (managed) {
 			// Already managed (for example after the key expired): write the current key and model
 			// settings again, keeping the original restore state.
-			const envPath = managed.envPath ?? hermesEnvPath(options);
+			const recorded = managed.envPath ?? hermesEnvPath(options);
+			const envPath = reported ?? recorded;
+			// Earlier versions could write the key where Hermes does not read it (~/.hermes on
+			// Windows); move the block to the file Hermes uses.
+			const moving = !samePath(envPath, recorded);
+			await assertHermesEnvEditable(envPath, "setup");
+			if (moving) await assertHermesEnvEditable(recorded, "remove");
 			// Read the stored key before getIntegrationGatewayCredential can replace an expired one.
 			const legacy = await legacyKeyFor(managed);
 			try {
-				await writeHermesKey(envPath, await getIntegrationGatewayCredential("hermes"), legacy?.key);
+				await writeHermesKey(envPath, await getIntegrationGatewayCredential("hermes"), moving ? undefined : legacy?.key);
 			} catch (error) {
-				if (legacy && error instanceof Error && /outside the Phaseo-managed block/.test(error.message)) {
+				if (legacy && !moving && error instanceof Error && /outside the Phaseo-managed block/.test(error.message)) {
 					throw new Error(`${envPath} has an OPENAI_API_KEY line from an earlier Phaseo version that could not be matched to the stored key. Remove that line, then run phaseo setup hermes again.`);
 				}
 				throw error;
 			}
-			if (legacy) await writeFile(statePath(options), `${JSON.stringify({ ...managed, envPath, keyFormat: "managed-block" }, null, 2)}\n`, { mode: 0o600 });
-			await set("model.provider", "custom");
-			await set("model.base_url", BASE_URL);
-			await set("model.default", options.model ?? DEFAULT_MODEL);
+			if (moving && !await removeHermesKey(recorded, legacy)) {
+				process.stderr.write(`Phaseo could not identify the OPENAI_API_KEY line an earlier Phaseo version wrote to ${recorded}. Remove it by hand if it is no longer needed.\n`);
+			}
+			const values = "model.key_env" in managed.values ? managed.values : { ...managed.values, "model.key_env": await get("model.key_env") };
+			if (legacy || moving || values !== managed.values) {
+				await writeState(options, { ...managed, values, envPath, keyFormat: "managed-block" });
+			}
+			await setModelSettings(options);
 			return;
 		}
+		const envPath = reported ?? hermesEnvPath(options);
+		await assertHermesEnvEditable(envPath, "setup");
 		const existingKey = await get("OPENAI_API_KEY");
 		if (existingKey.present && existingKey.value) throw new Error("Hermes already defines OPENAI_API_KEY; remove it before Phaseo setup so it is not overwritten");
 		const values: Record<string, PreviousValue> = {};
 		for (const key of KEYS) values[key] = await get(key);
-		const state: HermesState = { version: 1, values, envPath: hermesEnvPath(options), keyFormat: "managed-block" };
-		const path = statePath(options);
-		await mkdir(join(options.homeDir, ".config", "phaseo", "integrations"), { recursive: true });
-		await writeFile(path, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
+		const state: HermesState = { version: 1, values, envPath, keyFormat: "managed-block" };
+		await writeState(options, state);
 		try {
-			await writeHermesKey(state.envPath!, await getIntegrationGatewayCredential("hermes"));
-			await set("model.provider", "custom");
-			await set("model.base_url", BASE_URL);
-			await set("model.default", options.model ?? DEFAULT_MODEL);
+			await writeHermesKey(envPath, await getIntegrationGatewayCredential("hermes"));
+			await setModelSettings(options);
 		} catch (error) {
 			await restore(state, options).catch(() => undefined);
-			await rm(path, { force: true });
+			await rm(statePath(options), { force: true });
 			throw error;
 		}
 	},

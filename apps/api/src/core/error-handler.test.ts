@@ -273,6 +273,32 @@ describe("handleError", () => {
 		expect(capturedAuditArgs).toMatchObject({ errorCode: "user:rate_limit_exceeded", provider: null });
 	});
 
+	it("keeps which key limit or department budget refused the request, and when it resets", async () => {
+		const response = await handleError({
+			stage: "before",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "key_limit_exceeded",
+				reason: "department_daily_cost_budget_reached",
+				reset_at: "2026-10-30T00:00:00.000Z",
+				department_id: "dept-1",
+				department_name: "Engineering",
+				current_value: 173000,
+				description: "The Engineering department has reached its daily budget ($0.000173 of $0.00002).",
+			}), { status: 429, headers: { "Retry-After": "27703" } }),
+			ctx: { requestId: "G-KEY-LIMIT", workspaceId: "workspace", model: "openai/gpt-5", meta: {} } as any,
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(429);
+		const body = await response.json();
+		expect(body).toMatchObject({
+			code: "key_limit_exceeded", reason: "department_daily_cost_budget_reached", reset_at: "2026-10-30T00:00:00.000Z",
+			department_id: "dept-1", department_name: "Engineering",
+			error: { metadata: { reason: "department_daily_cost_budget_reached", reset_at: "2026-10-30T00:00:00.000Z", retry_after_seconds: 27703 } },
+		});
+		expect(body.current_value).toBeUndefined();
+	});
+
 	it("preserves guardrail enforcement metadata on blocked before-stage requests", async () => {
 		let capturedAuditArgs: any = null;
 		const blocked = new Response(

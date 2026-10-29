@@ -1,97 +1,3963 @@
 [
   {
     "layer": "e2e",
-    "provider": "google-vertex",
+    "provider": "groq",
     "family": "text",
-    "model": "google/gemini-2.5-flash",
-    "surface": "messages",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
     "mode": "buffered",
-    "caseId": "billing.google-vertex.messages.buffered",
-    "kind": "billing_over",
-    "path": "billing.meter.input_text_tokens",
-    "expected": 79875,
-    "actual": 80393,
-    "delta": {
-      "tokens": 518,
-      "nanos": 155400,
-      "meter": "input_text_tokens"
-    },
-    "note": "expectation billing-google-vertex",
+    "caseId": "failover.all-503",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"All 3 provider attempts failed for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Provider/status summary: deepinfra:503, together:503, groq:503. Upstream code: server_overloaded. Upstream message: SIM-ERROR-OVERLOADED: Overloaded. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":3,\"failed_providers\":[\"deepinfra\",\"together\",\"groq\"],\"failed_statuses\":[503],\"upstream_error\":{\"code…",
     "source": {
-      "kind": "docs",
-      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
-      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
-    }
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response for a provider failure."
+    },
+    "note": "expectation failover-all-candidates-fail"
   },
   {
     "layer": "e2e",
-    "provider": "google-vertex",
+    "provider": "groq",
     "family": "text",
-    "model": "google/gemini-2.5-flash",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "failover.all-fail-last-429",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"All 3 provider attempts failed for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Provider/status summary: deepinfra:503, together:500, groq:429. Upstream code: server_overloaded. Upstream message: SIM-ERROR-OVERLOADED: Overloaded. Hint: The provider is rate limiting requests; retry with backoff. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":3,\"failed_providers\":[\"deepinfra\",\"together\",\"groq\"],\"failed_statuses\":[503,500,429],\"upstream_error…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response for a provider failure."
+    },
+    "note": "expectation failover-all-candidates-fail"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.400",
+    "kind": "wrong_value",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "actual": "upstream_rejected_request",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.400",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 400,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.400",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 400,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.400",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"The provider rejected the request (HTTP 400): SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Provider \\\"deepinfra\\\" failed with HTTP 400 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Upstream detail: sim_param. Hint: The upstream provider rejected request parameters. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"invalid_request_error\",\"param\":\"sim_param\",\"metadata\":{\"…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.401",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"deepinfra\\\" failed with HTTP 401 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: invalid_api_key. Upstream message: SIM-ERROR-AUTH: Invalid API key. Hint: Verify provider credentials/BYOK keys and account permissions. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"deepinfra\"],\"failed_statuses\":[401],\"upstream_error\":{\"code\":\"invalid_api_key\",\"message\":\"SIM-ERROR-AUTH: Invalid API key\",\"desc…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.403",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"deepinfra\\\" failed with HTTP 403 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: invalid_api_key. Upstream message: SIM-ERROR-AUTH: Invalid API key. Hint: Verify provider credentials/BYOK keys and account permissions. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"deepinfra\"],\"failed_statuses\":[403],\"upstream_error\":{\"code\":\"invalid_api_key\",\"message\":\"SIM-ERROR-AUTH: Invalid API key\",\"desc…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.404",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"deepinfra\\\" failed with HTTP 404 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Upstream detail: sim_param. Hint: The provider may not expose this model on this endpoint yet. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":\"sim_param\",\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"deepinfra\"],\"failed_statuses\":[404],\"upstream_er…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.408",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"deepinfra\\\" failed with HTTP 408 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: server_error. Upstream message: SIM-ERROR-SERVER: Internal error. Hint: The provider timed out; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"deepinfra\"],\"failed_statuses\":[408],\"upstream_error\":{\"code\":\"server_error\",\"message\":\"SIM-ERROR-SERVER: Internal error\",\"description\":null,\"param\"…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.413",
+    "kind": "wrong_value",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "actual": "upstream_rejected_request",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.413",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 413,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.413",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 413,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.413",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"The provider rejected the request (HTTP 413): SIM-ERROR-CONTEXT: This model's maximum context length is 8192 tokens. Provider \\\"deepinfra\\\" failed with HTTP 413 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: context_length_exceeded. Upstream message: SIM-ERROR-CONTEXT: This model's maximum context length is 8192 tokens.. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"invalid_request_error\",\"param\":null,\"metadata\":{\"reason\":\"upstream_rejected_request\",\"attempt_count\":1,\"failed_providers\":[\"deepinfra\"],\"failed_…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.422",
+    "kind": "wrong_value",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "actual": "upstream_rejected_request",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.422",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 422,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.422",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 422,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.422",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"The provider rejected the request (HTTP 422): SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Provider \\\"deepinfra\\\" failed with HTTP 422 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Upstream detail: sim_param. Hint: The upstream provider rejected request parameters. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"invalid_request_error\",\"param\":\"sim_param\",\"metadata\":{\"…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.500",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"deepinfra\\\" failed with HTTP 500 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: server_error. Upstream message: SIM-ERROR-SERVER: Internal error. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"deepinfra\"],\"failed_statuses\":[500],\"upstream_error\":{\"code\":\"server_error\",\"message\":\"SIM-ERROR-SERVER: Internal error\",\"description…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.503",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"deepinfra\\\" failed with HTTP 503 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: server_overloaded. Upstream message: SIM-ERROR-OVERLOADED: Overloaded. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"deepinfra\"],\"failed_statuses\":[503],\"upstream_error\":{\"code\":\"server_overloaded\",\"message\":\"SIM-ERROR-OVERLOADED: Overloaded\",\"d…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "deepinfra",
+    "family": "text",
+    "model": "openai/gpt-oss-120b",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.deepinfra.529",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"deepinfra\\\" failed with HTTP 529 for endpoint \\\"chat.completions\\\" on model \\\"openai/gpt-oss-120b\\\". Upstream code: server_overloaded. Upstream message: SIM-ERROR-OVERLOADED: Overloaded. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"deepinfra\"],\"failed_statuses\":[529],\"upstream_error\":{\"code\":\"server_overloaded\",\"message\":\"SIM-ERROR-OVERLOADED: Overloaded\",\"d…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.400",
+    "kind": "wrong_value",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "actual": "upstream_rejected_request",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.400",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 400,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.400",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 400,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.400",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"The provider rejected the request (HTTP 400): SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Provider \\\"openai\\\" failed with HTTP 400 for endpoint \\\"responses\\\" on model \\\"openai/gpt-5-mini\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Upstream detail: sim_param. Hint: The upstream provider rejected request parameters. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"invalid_request_error\",\"param\":\"sim_param\",\"metadata\":{\"reason\":\"ups…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.401",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"openai\\\" failed with HTTP 401 for endpoint \\\"responses\\\" on model \\\"openai/gpt-5-mini\\\". Upstream code: invalid_api_key. Upstream message: SIM-ERROR-AUTH: Invalid API key. Hint: Verify provider credentials/BYOK keys and account permissions. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"openai\"],\"failed_statuses\":[401],\"upstream_error\":{\"code\":\"invalid_api_key\",\"message\":\"SIM-ERROR-AUTH: Invalid API key\",\"description\":null,\"…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.403",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"openai\\\" failed with HTTP 403 for endpoint \\\"responses\\\" on model \\\"openai/gpt-5-mini\\\". Upstream code: invalid_api_key. Upstream message: SIM-ERROR-AUTH: Invalid API key. Hint: Verify provider credentials/BYOK keys and account permissions. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"openai\"],\"failed_statuses\":[403],\"upstream_error\":{\"code\":\"invalid_api_key\",\"message\":\"SIM-ERROR-AUTH: Invalid API key\",\"description\":null,\"…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.404",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"openai\\\" failed with HTTP 404 for endpoint \\\"responses\\\" on model \\\"openai/gpt-5-mini\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Upstream detail: sim_param. Hint: The provider may not expose this model on this endpoint yet. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":\"sim_param\",\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"openai\"],\"failed_statuses\":[404],\"upstream_error\":{\"code\":\"i…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.408",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "upstream_error",
+      "message": "Provider \"openai\" failed with HTTP 408 for endpoint \"responses\" on model \"openai/gpt-5-mini\". Upstream code: server_error. Upstream message: SIM-ERROR-SERVER: Internal error. Hint: The provider timed out; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.",
+      "type": "server_error",
+      "param": null,
+      "metadata": {
+        "reason": "all_candidates_failed",
+        "attempt_count": 1,
+        "failed_providers": [
+          "openai"
+        ],
+        "failed_statuses": [
+          408
+        ],
+        "upstream_error": {
+          "code": "server_error",
+          "message": "SIM-ERROR-SERVER: Internal error",
+          "description": null,
+          "param": null
+        }
+      }
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.413",
+    "kind": "wrong_value",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "actual": "upstream_rejected_request",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.413",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 413,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.413",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 413,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.413",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"The provider rejected the request (HTTP 413): SIM-ERROR-CONTEXT: This model's maximum context length is 8192 tokens. Provider \\\"openai\\\" failed with HTTP 413 for endpoint \\\"responses\\\" on model \\\"openai/gpt-5-mini\\\". Upstream code: context_length_exceeded. Upstream message: SIM-ERROR-CONTEXT: This model's maximum context length is 8192 tokens.. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"invalid_request_error\",\"param\":null,\"metadata\":{\"reason\":\"upstream_rejected_request\",\"attempt_count\":1,\"failed_providers\":[\"openai\"],\"failed_statuses\":[413]…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.422",
+    "kind": "wrong_value",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "actual": "upstream_rejected_request",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.422",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 422,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.422",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 422,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.422",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"The provider rejected the request (HTTP 422): SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Provider \\\"openai\\\" failed with HTTP 422 for endpoint \\\"responses\\\" on model \\\"openai/gpt-5-mini\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Upstream detail: sim_param. Hint: The upstream provider rejected request parameters. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"invalid_request_error\",\"param\":\"sim_param\",\"metadata\":{\"reason\":\"ups…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.500",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"openai\\\" failed with HTTP 500 for endpoint \\\"responses\\\" on model \\\"openai/gpt-5-mini\\\". Upstream code: server_error. Upstream message: SIM-ERROR-SERVER: Internal error. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"openai\"],\"failed_statuses\":[500],\"upstream_error\":{\"code\":\"server_error\",\"message\":\"SIM-ERROR-SERVER: Internal error\",\"description\":null,\"param\":…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.503",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"openai\\\" failed with HTTP 503 for endpoint \\\"responses\\\" on model \\\"openai/gpt-5-mini\\\". Upstream code: server_overloaded. Upstream message: SIM-ERROR-OVERLOADED: Overloaded. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"openai\"],\"failed_statuses\":[503],\"upstream_error\":{\"code\":\"server_overloaded\",\"message\":\"SIM-ERROR-OVERLOADED: Overloaded\",\"description\":nul…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai",
+    "family": "text",
+    "model": "openai/gpt-5-mini",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "errors.openai.529",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"openai\\\" failed with HTTP 529 for endpoint \\\"responses\\\" on model \\\"openai/gpt-5-mini\\\". Upstream code: server_overloaded. Upstream message: SIM-ERROR-OVERLOADED: Overloaded. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"openai\"],\"failed_statuses\":[529],\"upstream_error\":{\"code\":\"server_overloaded\",\"message\":\"SIM-ERROR-OVERLOADED: Overloaded\",\"description\":nul…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
     "surface": "messages",
     "mode": "buffered",
-    "caseId": "billing.google-vertex.messages.buffered",
+    "caseId": "errors.anthropic.400",
+    "kind": "wrong_value",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "actual": "upstream_rejected_request",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.400",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 400,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.400",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 400,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.400",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"The provider rejected the request (HTTP 400): SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Provider \\\"anthropic\\\" failed with HTTP 400 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Hint: The upstream provider rejected request parameters. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"invalid_request_error\",\"param\":null,\"metadata\":{\"reason\":\"upstream_rejected_request\"…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.401",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"anthropic\\\" failed with HTTP 401 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: authentication_error. Upstream message: SIM-ERROR-AUTH: Invalid API key. Hint: Verify provider credentials/BYOK keys and account permissions. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"anthropic\"],\"failed_statuses\":[401],\"upstream_error\":{\"code\":\"authentication_error\",\"message\":\"SIM-ERROR-AUTH: Invalid API …",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.403",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"anthropic\\\" failed with HTTP 403 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: authentication_error. Upstream message: SIM-ERROR-AUTH: Invalid API key. Hint: Verify provider credentials/BYOK keys and account permissions. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"anthropic\"],\"failed_statuses\":[403],\"upstream_error\":{\"code\":\"authentication_error\",\"message\":\"SIM-ERROR-AUTH: Invalid API …",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.404",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"anthropic\\\" failed with HTTP 404 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Hint: The provider may not expose this model on this endpoint yet. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"anthropic\"],\"failed_statuses\":[404],\"upstream_error\":{\"code\":\"invalid_request_error…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.408",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"anthropic\\\" failed with HTTP 408 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: api_error. Upstream message: SIM-ERROR-SERVER: Internal error. Hint: The provider timed out; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"anthropic\"],\"failed_statuses\":[408],\"upstream_error\":{\"code\":\"api_error\",\"message\":\"SIM-ERROR-SERVER: Internal error\",\"description\":null,\"param\":null}…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.413",
+    "kind": "wrong_value",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "actual": "upstream_rejected_request",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.413",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 413,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.413",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 413,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.413",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"The provider rejected the request (HTTP 413): SIM-ERROR-CONTEXT: This model's maximum context length is 8192 tokens. Provider \\\"anthropic\\\" failed with HTTP 413 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-CONTEXT: This model's maximum context length is 8192 tokens.. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"invalid_request_error\",\"param\":null,\"metadata\":{\"reason\":\"upstream_rejected_request\",\"attempt_count\":1,\"failed_providers\":[\"anthropic\"],\"failed_st…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.422",
+    "kind": "wrong_value",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "actual": "upstream_rejected_request",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.422",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 422,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.422",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 422,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.422",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"The provider rejected the request (HTTP 422): SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Provider \\\"anthropic\\\" failed with HTTP 422 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: invalid_request_error. Upstream message: SIM-ERROR-BAD-REQUEST: Unrecognized request argument supplied: sim_param. Hint: The upstream provider rejected request parameters. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"invalid_request_error\",\"param\":null,\"metadata\":{\"reason\":\"upstream_rejected_request\"…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.500",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"anthropic\\\" failed with HTTP 500 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: api_error. Upstream message: SIM-ERROR-SERVER: Internal error. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"anthropic\"],\"failed_statuses\":[500],\"upstream_error\":{\"code\":\"api_error\",\"message\":\"SIM-ERROR-SERVER: Internal error\",\"description\":null…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.503",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"anthropic\\\" failed with HTTP 503 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: overloaded_error. Upstream message: SIM-ERROR-OVERLOADED: Overloaded. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"anthropic\"],\"failed_statuses\":[503],\"upstream_error\":{\"code\":\"overloaded_error\",\"message\":\"SIM-ERROR-OVERLOADED: Overloaded\",\"des…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "anthropic",
+    "family": "text",
+    "model": "anthropic/claude-sonnet-4.5",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "errors.anthropic.529",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": "{\"code\":\"upstream_error\",\"message\":\"Provider \\\"anthropic\\\" failed with HTTP 529 for endpoint \\\"messages\\\" on model \\\"anthropic/claude-sonnet-4.5\\\". Upstream code: overloaded_error. Upstream message: SIM-ERROR-OVERLOADED: Overloaded. Hint: The provider returned a server error; retrying may succeed. Inspect failure_sample for per-attempt diagnostics.\",\"type\":\"server_error\",\"param\":null,\"metadata\":{\"reason\":\"all_candidates_failed\",\"attempt_count\":1,\"failed_providers\":[\"anthropic\"],\"failed_statuses\":[529],\"upstream_error\":{\"code\":\"overloaded_error\",\"message\":\"SIM-ERROR-OVERLOADED: Overloaded\",\"des…",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.400",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      400
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-400"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      401
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-401"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.401",
+    "kind": "dropped",
+    "path": "client.body.provider_failure_diagnostics.category",
+    "expected": "credentials_invalid_or_forbidden",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+    },
+    "note": "expectation errors-status-401"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.403",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      403
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-403"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      404
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-404"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.404",
+    "kind": "dropped",
+    "path": "client.body.provider_failure_diagnostics.category",
+    "expected": "model_unavailable_for_endpoint",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+    },
+    "note": "expectation errors-status-404"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.408",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      408
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-408"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.413",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      413
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-413"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.422",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      422
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-422"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 429,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/limits.mdx",
+      "note": "A request can be throttled by the selected provider ... Routing and fallbacks can reduce provider failures, but a request can still return 429. errors.mdx status table: 429 = provider or route-level throttling; respect Retry-After."
+    },
+    "note": "expectation errors-throttling-keeps-429"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "error_mapping",
+    "path": "client.body.status_code",
+    "expected": 429,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-throttling-keeps-429"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "dropped",
+    "path": "client.headers.retry-after",
+    "expected": "7",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/limits.mdx",
+      "note": "Phaseo forwards a validated Retry-After value when the routed provider supplies one."
+    },
+    "note": "expectation errors-throttling-keeps-429"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      429
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-429"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.429",
+    "kind": "dropped",
+    "path": "client.body.provider_failure_diagnostics.category",
+    "expected": "rate_limited",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+    },
+    "note": "expectation errors-status-429"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      500
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-500"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.500",
+    "kind": "dropped",
+    "path": "client.body.provider_failure_diagnostics.category",
+    "expected": "server_error",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+    },
+    "note": "expectation errors-status-500"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      503
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-503"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.503",
+    "kind": "dropped",
+    "path": "client.body.provider_failure_diagnostics.category",
+    "expected": "server_error",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+    },
+    "note": "expectation errors-status-503"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "wrong_value",
+    "path": "client.body.error_origin",
+    "expected": "upstream",
+    "actual": "gateway",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "error_origin: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "dropped",
+    "path": "client.body.reason",
+    "expected": "all_candidates_failed",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response: reason all_candidates_failed when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "dropped",
+    "path": "client.body.attempt_count",
+    "expected": 1,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_providers, failed_statuses, and attempt_count: extra retry and failover context."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.code",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error and failure_sample: best-effort summaries of the first provider failure when the request reached a provider."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "dropped",
+    "path": "client.body.upstream_error.message",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "upstream_error.message in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "dropped",
+    "path": "client.body.failure_sample",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failure_sample in the example response."
+    },
+    "note": "expectation errors-always-present-fields"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example: provider HTTP 403 surfaces as status_code 502, error upstream_error, error_origin upstream."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "wrong_value",
+    "path": "client.body.status_code",
+    "expected": 502,
+    "actual": 500,
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "status_code mirrors the HTTP status code."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "error_mapping",
+    "path": "client.body.error",
+    "expected": "upstream_error",
+    "actual": {
+      "code": "gateway_error",
+      "message": "gateway_context_failed",
+      "type": "server_error",
+      "param": null
+    },
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "Example error response."
+    },
+    "note": "expectation errors-non-throttling-map-to-502"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "dropped",
+    "path": "client.body.failed_statuses",
+    "expected": [
+      529
+    ],
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "failed_statuses in the example response lists the provider HTTP statuses."
+    },
+    "note": "expectation errors-status-529"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "errors.google-vertex.529",
+    "kind": "dropped",
+    "path": "client.body.provider_failure_diagnostics.category",
+    "expected": "server_error",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/v1/api-reference/errors.mdx",
+      "note": "When a provider fails: current categories include credentials_invalid_or_forbidden, model_unavailable_for_endpoint, rate_limited, server_error."
+    },
+    "note": "expectation errors-status-529"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "stream",
+    "caseId": "billing.google-vertex.chat.stream",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 200,
+    "actual": 500,
+    "source": {
+      "kind": "assumed",
+      "reason": "The provider returned a complete, successful response; the client must receive it."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "stream",
+    "caseId": "billing.google-vertex.chat.stream",
     "kind": "billing_under",
-    "path": "billing.meter.input_image_tokens",
-    "expected": 307,
+    "path": "billing.chargeCount",
+    "expected": 1,
     "actual": 0,
-    "delta": {
-      "tokens": -307,
-      "nanos": -92100,
-      "meter": "input_image_tokens"
-    },
-    "note": "expectation billing-google-vertex",
     "source": {
-      "kind": "docs",
-      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
-      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
-    }
+      "kind": "assumed",
+      "reason": "Every successful managed request is charged exactly once."
+    },
+    "note": "expectation billing-google-vertex"
   },
   {
     "layer": "e2e",
-    "provider": "google-vertex",
+    "provider": "google-vertex:google/gemini-2.5-flash",
     "family": "text",
     "model": "google/gemini-2.5-flash",
-    "surface": "messages",
-    "mode": "buffered",
-    "caseId": "billing.google-vertex.messages.buffered",
-    "kind": "billing_under",
-    "path": "billing.meter.input_audio_tokens",
-    "expected": 211,
-    "actual": 0,
-    "delta": {
-      "tokens": -211,
-      "nanos": -211000,
-      "meter": "input_audio_tokens"
-    },
-    "note": "expectation billing-google-vertex",
-    "source": {
-      "kind": "docs",
-      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
-      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
-    }
-  },
-  {
-    "layer": "e2e",
-    "provider": "google-vertex",
-    "family": "text",
-    "model": "google/gemini-2.5-flash",
-    "surface": "messages",
-    "mode": "buffered",
-    "caseId": "billing.google-vertex.messages.buffered",
-    "kind": "billing_under",
+    "surface": "chat",
+    "mode": "stream",
+    "caseId": "billing.google-vertex.chat.stream",
+    "kind": "wrong_value",
     "path": "billing",
-    "expected": 37373430,
-    "actual": 37225730,
-    "delta": {
-      "nanos": -147700
-    },
+    "expected": "a catalogue price card for the served route",
+    "actual": 0,
     "source": {
       "kind": "docs",
       "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
       "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
     },
     "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.chat.buffered",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 200,
+    "actual": 500,
+    "source": {
+      "kind": "assumed",
+      "reason": "The provider returned a complete, successful response; the client must receive it."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.chat.buffered",
+    "kind": "billing_under",
+    "path": "billing.chargeCount",
+    "expected": 1,
+    "actual": 0,
+    "source": {
+      "kind": "assumed",
+      "reason": "Every successful managed request is charged exactly once."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.chat.buffered",
+    "kind": "wrong_value",
+    "path": "billing",
+    "expected": "a catalogue price card for the served route",
+    "actual": 0,
+    "source": {
+      "kind": "docs",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.chat.buffered",
+    "kind": "dropped",
+    "path": "client.body.usage.prompt_tokens_details.cached_tokens",
+    "expected": 20011,
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/chat/object",
+      "note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+    },
+    "note": "expectation billing-client-cached-google-vertex-chat"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "chat",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.chat.buffered",
+    "kind": "dropped",
+    "path": "client.body.usage.completion_tokens",
+    "expected": 5003,
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/chat/object",
+      "note": "completion_tokens includes reasoning tokens (completion_tokens_details.reasoning_tokens is a subset)."
+    },
+    "note": "expectation billing-client-output-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "responses",
+    "mode": "stream",
+    "caseId": "billing.google-vertex.responses.stream",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 200,
+    "actual": 500,
+    "source": {
+      "kind": "assumed",
+      "reason": "The provider returned a complete, successful response; the client must receive it."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "responses",
+    "mode": "stream",
+    "caseId": "billing.google-vertex.responses.stream",
+    "kind": "billing_under",
+    "path": "billing.chargeCount",
+    "expected": 1,
+    "actual": 0,
+    "source": {
+      "kind": "assumed",
+      "reason": "Every successful managed request is charged exactly once."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "responses",
+    "mode": "stream",
+    "caseId": "billing.google-vertex.responses.stream",
+    "kind": "wrong_value",
+    "path": "billing",
+    "expected": "a catalogue price card for the served route",
+    "actual": 0,
+    "source": {
+      "kind": "docs",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.responses.buffered",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 200,
+    "actual": 500,
+    "source": {
+      "kind": "assumed",
+      "reason": "The provider returned a complete, successful response; the client must receive it."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.responses.buffered",
+    "kind": "billing_under",
+    "path": "billing.chargeCount",
+    "expected": 1,
+    "actual": 0,
+    "source": {
+      "kind": "assumed",
+      "reason": "Every successful managed request is charged exactly once."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.responses.buffered",
+    "kind": "wrong_value",
+    "path": "billing",
+    "expected": "a catalogue price card for the served route",
+    "actual": 0,
+    "source": {
+      "kind": "docs",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "responses",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.responses.buffered",
+    "kind": "dropped",
+    "path": "client.body.usage.input_tokens_details.cached_tokens",
+    "expected": 20011,
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/responses/object",
+      "note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+    },
+    "note": "expectation billing-client-cached-google-vertex-responses"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "stream",
+    "caseId": "billing.google-vertex.messages.stream",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 200,
+    "actual": 500,
+    "source": {
+      "kind": "assumed",
+      "reason": "The provider returned a complete, successful response; the client must receive it."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "stream",
+    "caseId": "billing.google-vertex.messages.stream",
+    "kind": "billing_under",
+    "path": "billing.chargeCount",
+    "expected": 1,
+    "actual": 0,
+    "source": {
+      "kind": "assumed",
+      "reason": "Every successful managed request is charged exactly once."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "stream",
+    "caseId": "billing.google-vertex.messages.stream",
+    "kind": "wrong_value",
+    "path": "billing",
+    "expected": "a catalogue price card for the served route",
+    "actual": 0,
+    "source": {
+      "kind": "docs",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.messages.buffered",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 200,
+    "actual": 500,
+    "source": {
+      "kind": "assumed",
+      "reason": "The provider returned a complete, successful response; the client must receive it."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.messages.buffered",
+    "kind": "billing_under",
+    "path": "billing.chargeCount",
+    "expected": 1,
+    "actual": 0,
+    "source": {
+      "kind": "assumed",
+      "reason": "Every successful managed request is charged exactly once."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.messages.buffered",
+    "kind": "wrong_value",
+    "path": "billing",
+    "expected": "a catalogue price card for the served route",
+    "actual": 0,
+    "source": {
+      "kind": "docs",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+    },
+    "note": "expectation billing-google-vertex"
+  },
+  {
+    "layer": "e2e",
+    "provider": "google-vertex:google/gemini-2.5-flash",
+    "family": "text",
+    "model": "google/gemini-2.5-flash",
+    "surface": "messages",
+    "mode": "buffered",
+    "caseId": "billing.google-vertex.messages.buffered",
+    "kind": "dropped",
+    "path": "client.body.usage.cache_read_input_tokens",
+    "expected": 20011,
+    "source": {
+      "kind": "docs",
+      "url": "https://docs.anthropic.com/en/api/messages",
+      "note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+    },
+    "note": "expectation billing-client-cached-google-vertex-messages"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.generations",
+    "model": "openai/gpt-image-1",
+    "surface": "images.generations",
+    "mode": "buffered",
+    "caseId": "nontext.images.generations.openai",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 200,
+    "actual": 500,
+    "source": {
+      "kind": "assumed",
+      "reason": "The provider returned a documented 2xx response; the client must receive a success."
+    },
+    "note": "expectation images-generations-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.generations",
+    "model": "openai/gpt-image-1",
+    "surface": "images.generations",
+    "mode": "buffered",
+    "caseId": "nontext.images.generations.openai",
+    "kind": "dropped",
+    "path": "upstream.calls[0].url",
+    "expected": "https://api.openai.com/v1/images/generations",
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/images/create"
+    },
+    "note": "expectation images-generations-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.generations",
+    "model": "openai/gpt-image-1",
+    "surface": "images.generations",
+    "mode": "buffered",
+    "caseId": "nontext.images.generations.openai",
+    "kind": "dropped",
+    "path": "upstream.calls[0].body.quality",
+    "expected": "low",
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/images/create"
+    },
+    "note": "expectation images-generations-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.generations",
+    "model": "openai/gpt-image-1",
+    "surface": "images.generations",
+    "mode": "buffered",
+    "caseId": "nontext.images.generations.openai",
+    "kind": "dropped",
+    "path": "upstream.calls[0].body.size",
+    "expected": "1024x1024",
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/images/create"
+    },
+    "note": "expectation images-generations-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.generations",
+    "model": "openai/gpt-image-1",
+    "surface": "images.generations",
+    "mode": "buffered",
+    "caseId": "nontext.images.generations.openai",
+    "kind": "dropped",
+    "path": "client.body.data[0].b64_json",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/openapi/v1/openapi.yaml",
+      "note": "components.schemas.Image.b64_json"
+    },
+    "note": "expectation images-generations-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.generations",
+    "model": "openai/gpt-image-1",
+    "surface": "images.generations",
+    "mode": "buffered",
+    "caseId": "nontext.images.generations.openai",
+    "kind": "dropped",
+    "path": "client.body.created",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/openapi/v1/openapi.yaml",
+      "note": "components.schemas.ImagesGenerationResponse.created"
+    },
+    "note": "expectation images-generations-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.generations",
+    "model": "openai/gpt-image-1",
+    "surface": "images.generations",
+    "mode": "buffered",
+    "caseId": "nontext.images.generations.openai",
+    "kind": "dropped",
+    "path": "billing.successAudits",
+    "expected": 1,
+    "actual": 0,
+    "source": {
+      "kind": "assumed",
+      "reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+    },
+    "note": "expectation images-generations-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.generations",
+    "model": "openai/gpt-image-1",
+    "surface": "images.generations",
+    "mode": "buffered",
+    "caseId": "nontext.images.generations.openai",
+    "kind": "wrong_value",
+    "path": "billing",
+    "expected": "a catalogue price card for the served route",
+    "actual": 0,
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/images/object",
+      "note": "GPT image usage: input_tokens_details.text_tokens / image_tokens and output_tokens (image tokens) are what OpenAI bills; the per-image catalogue rows are the token prices expressed per image and must not be billed in addition."
+    },
+    "note": "expectation images-generations-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.edits",
+    "model": "openai/gpt-image-1",
+    "surface": "images.edits",
+    "mode": "buffered",
+    "caseId": "nontext.images.edits.openai",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 200,
+    "actual": 500,
+    "source": {
+      "kind": "assumed",
+      "reason": "The provider returned a documented 2xx response; the client must receive a success."
+    },
+    "note": "expectation images-edits-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.edits",
+    "model": "openai/gpt-image-1",
+    "surface": "images.edits",
+    "mode": "buffered",
+    "caseId": "nontext.images.edits.openai",
+    "kind": "dropped",
+    "path": "upstream.calls[0].url",
+    "expected": "https://api.openai.com/v1/images/edits",
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/images/createEdit"
+    },
+    "note": "expectation images-edits-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.edits",
+    "model": "openai/gpt-image-1",
+    "surface": "images.edits",
+    "mode": "buffered",
+    "caseId": "nontext.images.edits.openai",
+    "kind": "dropped",
+    "path": "upstream.calls[0].method",
+    "expected": "POST",
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/images/createEdit"
+    },
+    "note": "expectation images-edits-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.edits",
+    "model": "openai/gpt-image-1",
+    "surface": "images.edits",
+    "mode": "buffered",
+    "caseId": "nontext.images.edits.openai",
+    "kind": "dropped",
+    "path": "client.body.data[0].b64_json",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/openapi/v1/openapi.yaml",
+      "note": "components.schemas.ImagesEditResponse"
+    },
+    "note": "expectation images-edits-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.edits",
+    "model": "openai/gpt-image-1",
+    "surface": "images.edits",
+    "mode": "buffered",
+    "caseId": "nontext.images.edits.openai",
+    "kind": "dropped",
+    "path": "billing.successAudits",
+    "expected": 1,
+    "actual": 0,
+    "source": {
+      "kind": "assumed",
+      "reason": "Every successful request writes one request-log row (success audit) so it appears in usage logs and analytics."
+    },
+    "note": "expectation images-edits-openai"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/gpt-image-1",
+    "family": "images.edits",
+    "model": "openai/gpt-image-1",
+    "surface": "images.edits",
+    "mode": "buffered",
+    "caseId": "nontext.images.edits.openai",
+    "kind": "wrong_value",
+    "path": "billing",
+    "expected": "a catalogue price card for the served route",
+    "actual": 0,
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/images/object",
+      "note": "usage.input_tokens_details.text_tokens / image_tokens and output_tokens."
+    },
+    "note": "expectation images-edits-openai"
   },
   {
     "layer": "e2e",
@@ -114,53 +3980,77 @@
   },
   {
     "layer": "e2e",
-    "provider": "cohere",
-    "family": "rerank",
-    "model": "cohere/rerank-v3.5",
-    "surface": "rerank",
+    "provider": "openai:openai/sora-2",
+    "family": "video.generate",
+    "model": "openai/sora-2",
+    "surface": "video.generation",
     "mode": "buffered",
-    "caseId": "nontext.rerank.cohere",
-    "kind": "billing_under",
-    "path": "billing.meter.requests",
-    "expected": 2,
-    "actual": 1,
-    "delta": {
-      "tokens": -1,
-      "nanos": -2000000,
-      "meter": "requests"
-    },
-    "note": "expectation rerank-cohere",
+    "caseId": "nontext.video.openai-sora-2-submit",
+    "kind": "error_mapping",
+    "path": "client.status",
+    "expected": 200,
+    "actual": 400,
     "source": {
-      "kind": "docs",
-      "url": "https://docs.cohere.com/reference/rerank",
-      "note": "meta.billed_units.search_units is what Cohere bills (one search unit = one query over up to 100 documents); 150 documents = 2 search units. The catalogue meter for a search is requests at $0.002."
-    }
+      "kind": "assumed",
+      "reason": "The provider returned a documented 2xx response; the client must receive a success."
+    },
+    "note": "expectation video-openai-submit"
   },
   {
     "layer": "e2e",
-    "provider": "cohere",
-    "family": "rerank",
-    "model": "cohere/rerank-v3.5",
-    "surface": "rerank",
+    "provider": "openai:openai/sora-2",
+    "family": "video.generate",
+    "model": "openai/sora-2",
+    "surface": "video.generation",
     "mode": "buffered",
-    "caseId": "nontext.rerank.cohere",
-    "kind": "billing_under",
-    "path": "billing",
-    "expected": 4000000,
-    "actual": 2000000,
-    "delta": {
-      "nanos": -2000000
-    },
+    "caseId": "nontext.video.openai-sora-2-submit",
+    "kind": "dropped",
+    "path": "upstream.calls[0].url",
+    "expected": "https://api.openai.com/v1/videos",
     "source": {
       "kind": "docs",
-      "url": "https://docs.cohere.com/reference/rerank",
-      "note": "meta.billed_units.search_units is what Cohere bills (one search unit = one query over up to 100 documents); 150 documents = 2 search units. The catalogue meter for a search is requests at $0.002."
+      "url": "https://platform.openai.com/docs/api-reference/videos/create"
     },
-    "note": "expectation rerank-cohere"
+    "note": "expectation video-openai-submit"
   },
   {
     "layer": "e2e",
-    "provider": "openai",
+    "provider": "openai:openai/sora-2",
+    "family": "video.generate",
+    "model": "openai/sora-2",
+    "surface": "video.generation",
+    "mode": "buffered",
+    "caseId": "nontext.video.openai-sora-2-submit",
+    "kind": "dropped",
+    "path": "upstream.calls[0].method",
+    "expected": "POST",
+    "source": {
+      "kind": "docs",
+      "url": "https://platform.openai.com/docs/api-reference/videos/create"
+    },
+    "note": "expectation video-openai-submit"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/sora-2",
+    "family": "video.generate",
+    "model": "openai/sora-2",
+    "surface": "video.generation",
+    "mode": "buffered",
+    "caseId": "nontext.video.openai-sora-2-submit",
+    "kind": "dropped",
+    "path": "client.body.status",
+    "expected": "queued",
+    "source": {
+      "kind": "gateway-docs",
+      "page": "apps/docs/openapi/v1/openapi.yaml",
+      "note": "components.schemas.VideoGenerationResponse.status"
+    },
+    "note": "expectation video-openai-submit"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/sora-2",
     "family": "video.generate",
     "model": "openai/sora-2",
     "surface": "video.generation",
@@ -177,7 +4067,7 @@
   },
   {
     "layer": "e2e",
-    "provider": "openai",
+    "provider": "openai:openai/sora-2",
     "family": "video.generate",
     "model": "openai/sora-2",
     "surface": "video.generation",
@@ -194,19 +4084,35 @@
   },
   {
     "layer": "e2e",
-    "provider": "openai",
+    "provider": "openai:openai/sora-2",
     "family": "video.generate",
     "model": "openai/sora-2",
     "surface": "video.generation",
     "mode": "buffered",
     "caseId": "nontext.video.openai-sora-2-submit",
-    "kind": "wrong_value",
+    "kind": "dropped",
     "path": "client.body.model",
     "expected": "openai/sora-2",
-    "actual": "sora-2-2025-12-08",
     "source": {
       "kind": "assumed",
       "reason": "Every other Phaseo surface echoes the requested Phaseo model id; the provider snapshot slug (sora-2-2025-12-08) is not a Phaseo model id."
+    },
+    "note": "expectation video-openai-submit"
+  },
+  {
+    "layer": "e2e",
+    "provider": "openai:openai/sora-2",
+    "family": "video.generate",
+    "model": "openai/sora-2",
+    "surface": "video.generation",
+    "mode": "buffered",
+    "caseId": "nontext.video.openai-sora-2-submit",
+    "kind": "dropped",
+    "path": "billing.reservations[0].amountNanos",
+    "expected": 800000000,
+    "source": {
+      "kind": "assumed",
+      "reason": "8 s at the catalogue's $0.10 per second for 1280x720 (route openai:openai/sora-2, SKU offer-e48eb6ccb12e03192f71@v1, output_video_seconds) is held before submission."
     },
     "note": "expectation video-openai-submit"
   }

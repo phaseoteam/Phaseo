@@ -2358,6 +2358,11 @@
 					"basis": "Base juridique : intérêts légitimes et obligations légales."
 				},
 				{
+					"label": "Détecter, prévenir et signaler les contenus d’abus sexuels sur mineurs",
+					"text": "notamment en comparant automatiquement les images aux empreintes de contenus d’abus sexuels sur mineurs déjà identifiés et, lorsque nous trouvons un contenu d’abus apparent, en conservant les informations de compte et de requête associées et en le signalant aux autorités compétentes.",
+					"basis": "Base juridique : obligations légales ; intérêts légitimes (protection des enfants et du Service)."
+				},
+				{
 					"label": "Respecter nos obligations légales",
 					"text": "notamment en conservant des documents fiscaux et comptables ou en répondant aux demandes légitimes des autorités.",
 					"basis": "Base juridique : obligations légales."
@@ -2385,6 +2390,10 @@
 				{
 					"label": "Motifs juridiques et de sécurité",
 					"text": "Nous pouvons divulguer des données si nous estimons raisonnablement que cela est nécessaire pour respecter une loi, une décision de justice ou une autre demande légale, ou pour protéger nos droits, nos biens ou notre sécurité, ainsi que ceux de nos utilisateurs ou d’autres personnes."
+				},
+				{
+					"label": "Signalements relatifs à la protection de l’enfance",
+					"text": "Si nous trouvons un contenu d’abus sexuels sur mineurs apparent, nous le signalons, avec les informations de compte et de requête associées, au National Center for Missing & Exploited Children (NCMEC), à l’Internet Watch Foundation, à la National Crime Agency ou à d’autres autorités répressives, conformément à la loi."
 				},
 				{
 					"label": "Transferts d’entreprise",
@@ -2415,6 +2424,7 @@
 				"Les Outputs de modèles pouvant être mis en cache sont conservés cinq minutes par défaut et au maximum 24 heures selon la politique de cache configurée.",
 				"Lorsque les journaux privés d’I/O sont activés, leur durée de conservation est configurée sur 90, 180 ou 365 jours.",
 				"Les contributions de données brutes auxquelles vous avez consenti sont conservées au maximum 30 jours ; les statistiques de classification agrégées peuvent l’être plus longtemps.",
+				"Les informations conservées en raison d’un contenu d’abus sexuels sur mineurs apparent sont stockées de manière sécurisée, avec un accès restreint, pendant une durée maximale d’un an, ou plus longtemps si la loi l’exige.",
 				"Les fournisseurs d’IA et les destinations configurées par les clients appliquent leurs propres durées de conservation."
 			],
 			"retentionSchedule": "Nous n’avons pas encore regroupé toutes les catégories de comptes, métadonnées de requête, facturation, support, sauvegardes et journaux opérationnels dans un calendrier de conservation unique et fixe. Consultez <security>le livre blanc sur la sécurité</security> pour connaître les périodes de traitement de contenu actuellement vérifiées et leurs limites.",
@@ -2452,7 +2462,7 @@
 			],
 			"rightsExercise": "Vous pouvez exercer bon nombre de ces droits en vous connectant à votre compte (paramètres, profil et clés API) ou en nous écrivant à <email>privacy@phaseo.app</email>. Nous pouvons vous demander de confirmer votre identité avant de répondre.",
 			"emailOptOut": "Vous pouvez vous désabonner des e-mails non essentiels à l’aide du lien présent dans le message ou en nous contactant. Nous pouvons toujours vous envoyer des messages administratifs au sujet de votre compte ou de changements importants du Service.",
-			"children": "Le Service est destiné aux personnes âgées de 13 ans et plus. Nous ne collectons pas sciemment les données personnelles d’enfants de moins de 13 ans. Si vous pensez qu’un enfant nous a communiqué des données personnelles sans consentement approprié, contactez-nous et nous prendrons les mesures nécessaires pour les supprimer.",
+			"children": "Le Service est destiné exclusivement aux adultes âgés de 18 ans et plus. Nous ne collectons pas sciemment les données personnelles de personnes de moins de 18 ans. Si vous pensez qu’une personne de moins de 18 ans nous a communiqué des données personnelles, contactez-nous et nous prendrons les mesures nécessaires pour les supprimer.",
 			"securityMeasures": "Nous appliquons des mesures techniques, organisationnelles et administratives pour protéger les données personnelles, notamment le chiffrement en transit, des contrôles d’accès fondés sur les rôles et la surveillance des activités inhabituelles.",
 			"securityLimits": "Cependant, aucun service en ligne ne peut être totalement sécurisé. Il vous incombe de garder confidentiels votre mot de passe, vos clés API et autres identifiants, ainsi que de renouveler vos clés si vous pensez qu’elles ont été compromises. Si vous pensez que votre compte a été compromis, contactez-nous immédiatement à l’adresse <email>support@phaseo.app</email>.",
 			"thirdParties": "Le Service peut contenir des liens vers des sites ou intégrations tiers, notamment des fournisseurs de modèles d’IA, de documentation, de paiement, d’analyse et d’outils pour développeurs. Nous ne sommes pas responsables de leurs pratiques en matière de confidentialité. Nous vous recommandons de consulter leurs politiques de confidentialité avant de leur communiquer des données personnelles.",
@@ -2473,7 +2483,7 @@
 			],
 			"availability": "Nous pouvons ajouter, modifier ou retirer des modèles, fournisseurs, endpoints ou autres fonctionnalités à tout moment. La disponibilité de modèles ou fournisseurs précis dépend de ces tiers et n’est pas garantie.",
 			"changeNotice": "Dans la mesure du raisonnable, nous vous informerons à l’avance des changements importants apportés au Service, notamment du retrait de modèles ou de fournisseurs du répertoire ou de la passerelle. Nous pouvons toutefois devoir agir immédiatement, par exemple pour des raisons de sécurité, juridiques ou liées à un fournisseur, et nous ne pouvons garantir une disponibilité ininterrompue.",
-			"accountAge": "Vous devez avoir au moins 13 ans pour utiliser le Service. Si vous avez moins de 18 ans, vous ne devez utiliser le Service qu’avec l’autorisation d’un parent ou d’un tuteur légal.",
+			"accountAge": "Vous devez avoir au moins 18 ans pour utiliser le Service.",
 			"accountBusiness": "Si vous utilisez le Service pour le compte d’une entreprise ou organisation, vous confirmez être autorisé à engager cette entité au titre des présentes Conditions.",
 			"accountRegistration": "Nous stockons et utilisons ces informations comme indiqué dans notre <privacy>Politique de confidentialité</privacy>.",
 			"accountResponsibilitiesIntro": "Vous êtes responsable :",
@@ -2523,9 +2533,11 @@
 				"vous disposez de tous les droits, autorisations et consentements nécessaires pour envoyer les Inputs et utiliser les Outputs ; et",
 				"vos Inputs et votre utilisation du Service ne porteront pas atteinte à des droits de propriété intellectuelle, de confidentialité ou autres, et ne nous amèneront pas à enfreindre une loi ou des conditions tierces."
 			],
-			"contentModeration": "Nous ne sommes pas tenus de surveiller le User Content. Toutefois, nous pouvons le supprimer ou en restreindre l’accès si nous estimons raisonnablement qu’il enfreint les présentes Conditions ou la loi applicable.",
+			"contentModeration": "Nous ne surveillons pas, de manière générale, le User Content. Toutefois, nous pouvons utiliser des outils automatisés, notamment la comparaison avec les empreintes (hashes) de contenus d’abus sexuels sur mineurs déjà identifiés, afin de détecter les contenus qui enfreignent les présentes Conditions ou la loi, et nous pouvons les supprimer ou en restreindre l’accès.",
+			"childSafety": "Nous appliquons une tolérance zéro envers les contenus d’abus sexuels sur mineurs. Si nous avons connaissance d’un contenu d’abus sexuels sur mineurs apparent, nous le supprimons, suspendons les comptes concernés sans préavis ni remboursement, conservons les informations associées dont nous disposons conformément à la loi et le signalons aux autorités compétentes, qui peuvent inclure le National Center for Missing & Exploited Children (NCMEC), l’Internet Watch Foundation et la National Crime Agency. Ces obligations s’appliquent nonobstant tout autre engagement des présentes Conditions, y compris notre traitement des contenus, les journaux d’I/O et les paramètres de conservation zéro des données (zero data retention).",
 			"prohibitedIntro": "Il vous est interdit de :",
 			"prohibitedActions": [
+				"téléverser, générer, demander, stocker ou diffuser des contenus d’abus sexuels sur mineurs, ou tout contenu sexualisant des mineurs, ou utiliser le Service pour créer ou exploiter des outils conçus pour produire de tels contenus ;",
 				"utiliser le Service de manière illégale ou contraire à une loi, réglementation ou condition applicable d’un fournisseur tiers ;",
 				"utiliser le Service pour générer ou diffuser du contenu nuisible, abusif, discriminatoire, frauduleux ou autrement inapproprié ;",
 				"perturber le Service, notamment en introduisant un logiciel malveillant, en surchargeant notre infrastructure ou en tentant de contourner les limites de débit ou les contrôles de sécurité ;",
