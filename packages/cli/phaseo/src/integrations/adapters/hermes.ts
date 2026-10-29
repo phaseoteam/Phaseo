@@ -151,18 +151,56 @@ export function hermesEnvDefinesOpenAIKey(text: string): boolean {
 }
 
 /**
- * Writes Phaseo's key as a delimited managed block, replacing only an earlier Phaseo block (or the
- * exact line an earlier version wrote). Other lines are never edited.
+ * Writes Phaseo's key as a delimited managed block. An existing block keeps its position and only
+ * its key line changes; the exact line an earlier version wrote becomes the block in place; with
+ * neither, the block is appended. Position matters because later lines can reference
+ * ${OPENAI_API_KEY}. Other lines are never edited.
  */
 export function renderHermesEnv(before: string | null, key: string, legacyKey?: string): string {
 	if (!/^[A-Za-z0-9_.-]+$/.test(key)) throw new Error("Phaseo returned an invalid gateway credential");
 	assertSupported(before, (line) => setupQuotingMessage("Hermes' .env", line));
-	const outside = withoutLegacyLine(withoutManagedBlock(before ?? ""), legacyKey);
+	const text = before ?? "";
+	const outside = withoutLegacyLine(withoutManagedBlock(text), legacyKey);
 	if (hermesEnvDefinesOpenAIKey(outside)) {
 		throw new Error("Hermes' .env already defines OPENAI_API_KEY outside the Phaseo-managed block; remove it before Phaseo setup so it is not overwritten");
 	}
-	const separator = outside === "" || outside.endsWith("\n") ? "" : "\n";
-	return `${outside}${separator}${HERMES_BLOCK_START}\n${OPENAI_API_KEY}=${key}\n${HERMES_BLOCK_END}\n`;
+	const lines = text.split("\n");
+	const blockStart = lines.findIndex((line) => bareLine(line) === HERMES_BLOCK_START);
+	const legacyLine = `${OPENAI_API_KEY}=${legacyKey}`;
+	const legacyIndex = legacyKey ? lines.findIndex((line) => bareLine(line) === legacyLine) : -1;
+	if (blockStart === -1 && legacyIndex === -1) {
+		const separator = text === "" || text.endsWith("\n") ? "" : "\n";
+		return `${text}${separator}${HERMES_BLOCK_START}\n${OPENAI_API_KEY}=${key}\n${HERMES_BLOCK_END}\n`;
+	}
+	const eol = (line: string) => line.endsWith("\r") ? "\r" : "";
+	const output: string[] = [];
+	let inBlock = false;
+	let blockIndex = 0;
+	for (const [index, line] of lines.entries()) {
+		const bare = bareLine(line);
+		if (inBlock) {
+			if (bare === HERMES_BLOCK_END) {
+				inBlock = false;
+				if (blockIndex === 1) output.push(line);
+			}
+			continue;
+		}
+		if (bare === HERMES_BLOCK_START) {
+			inBlock = true;
+			blockIndex += 1;
+			// Only the first block is kept, with its markers and line endings unchanged.
+			if (blockIndex === 1) output.push(line, `${OPENAI_API_KEY}=${key}${eol(line)}`);
+			continue;
+		}
+		if (legacyKey && bare === legacyLine) {
+			if (blockStart === -1 && index === legacyIndex) {
+				output.push(`${HERMES_BLOCK_START}${eol(line)}`, `${OPENAI_API_KEY}=${key}${eol(line)}`, `${HERMES_BLOCK_END}${eol(line)}`);
+			}
+			continue;
+		}
+		output.push(line);
+	}
+	return output.join("\n");
 }
 
 /** Removes only Phaseo's managed block (and the exact line an earlier version wrote, if known). */

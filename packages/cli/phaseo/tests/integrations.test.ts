@@ -936,9 +936,9 @@ const block = (key: string) => `${HERMES_BLOCK_START}\nOPENAI_API_KEY=${key}\n${
 test("Hermes key is written to its env file as a delimited Phaseo block", () => {
 	assert.equal(renderHermesEnv(null, "phaseo_v1_sk_x"), block("phaseo_v1_sk_x"));
 	assert.equal(renderHermesEnv("A=1", "phaseo_v1_sk_x"), `A=1\n${block("phaseo_v1_sk_x")}`);
-	// Re-setup replaces only the block; CRLF lines elsewhere stay byte-for-byte.
+	// Re-setup changes only the key line, in place; CRLF lines elsewhere stay byte-for-byte.
 	const withBlock = `A=1\r\n${block("phaseo_v1_sk_old")}B=2\r\n`;
-	assert.equal(renderHermesEnv(withBlock, "phaseo_v1_sk_new"), `A=1\r\nB=2\r\n${block("phaseo_v1_sk_new")}`);
+	assert.equal(renderHermesEnv(withBlock, "phaseo_v1_sk_new"), `A=1\r\n${block("phaseo_v1_sk_new")}B=2\r\n`);
 	assert.equal(renderHermesEnvWithoutKey(withBlock), "A=1\r\nB=2\r\n");
 	assert.throws(() => renderHermesEnv(`${HERMES_BLOCK_START}\nOPENAI_API_KEY=x\n`, "phaseo_v1_sk_x"), /unterminated Phaseo-managed block/);
 	assert.throws(() => renderHermesEnv(null, "bad\nINJECTED=1"), /invalid gateway credential/);
@@ -973,6 +973,30 @@ test("Hermes .env edits never touch user lines and refuse user-defined OPENAI_AP
 	assert.equal(renderHermesEnv("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\n", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), `A=1\n${block("phaseo_v1_sk_new")}`);
 	assert.throws(() => renderHermesEnv("OPENAI_API_KEY=phaseo_v1_sk_other\n", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), /outside the Phaseo-managed block/);
 	assert.equal(renderHermesEnvWithoutKey("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\n", "phaseo_v1_sk_old"), "A=1\n");
+});
+
+test("Hermes re-setup updates the managed block in place so later references still resolve", () => {
+	// S12: a later line that references the key must stay after the block.
+	const existing = `A=1\n${block("phaseo_v1_sk_old")}KEY_COPY="\${OPENAI_API_KEY:-fallback}"\nB=2\n`;
+	assert.equal(renderHermesEnv(existing, "phaseo_v1_sk_old"), existing, "unchanged key leaves the file identical");
+	const updated = renderHermesEnv(existing, "phaseo_v1_sk_new");
+	assert.equal(updated, `A=1\n${block("phaseo_v1_sk_new")}KEY_COPY="\${OPENAI_API_KEY:-fallback}"\nB=2\n`);
+	const changed = existing.split("\n").map((line, index) => [line, updated.split("\n")[index]]).filter(([a, b]) => a !== b);
+	assert.deepEqual(changed, [["OPENAI_API_KEY=phaseo_v1_sk_old", "OPENAI_API_KEY=phaseo_v1_sk_new"]], "only the key line changes");
+	assert.ok(updated.indexOf(HERMES_BLOCK_END) < updated.indexOf("KEY_COPY"));
+
+	// CRLF block lines keep their line endings.
+	const crlf = existing.replaceAll("\n", "\r\n");
+	assert.equal(renderHermesEnv(crlf, "phaseo_v1_sk_old"), crlf);
+	assert.equal(renderHermesEnv(crlf, "phaseo_v1_sk_new"), crlf.replace("OPENAI_API_KEY=phaseo_v1_sk_old", "OPENAI_API_KEY=phaseo_v1_sk_new"));
+
+	// A legacy line becomes the block where it was, ahead of later references.
+	const legacy = "A=1\nOPENAI_API_KEY=phaseo_v1_sk_old\nKEY_COPY=\"${OPENAI_API_KEY:-fallback}\"\n";
+	assert.equal(renderHermesEnv(legacy, "phaseo_v1_sk_new", "phaseo_v1_sk_old"), `A=1\n${block("phaseo_v1_sk_new")}KEY_COPY="\${OPENAI_API_KEY:-fallback}"\n`);
+	assert.equal(renderHermesEnv("A=1\nOPENAI_API_KEY=phaseo_v1_sk_old", "phaseo_v1_sk_new", "phaseo_v1_sk_old"), `A=1\n${block("phaseo_v1_sk_new").replace(/\n$/, "")}`);
+
+	// A duplicate block is dropped and the first one is kept in place.
+	assert.equal(renderHermesEnv(`${block("phaseo_v1_sk_a")}X=1\n${block("phaseo_v1_sk_b")}`, "phaseo_v1_sk_c"), `${block("phaseo_v1_sk_c")}X=1\n`);
 });
 
 test("typical Hermes .env files are supported, including CRLF", () => {
