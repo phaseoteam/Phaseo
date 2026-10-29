@@ -61,7 +61,7 @@ order by status, failing_since nulls last;
 
 Public Phaseo catalog additions are checked by the same Cloudflare Worker schedule as provider discovery. The Worker reads `v2_models`, keeps a database-backed cursor in `model_discovery_public_announcements`, silently baselines the existing catalog on first run, and leaves later public additions pending until the public Discord webhook accepts the embed. Failed deliveries remain pending for a later retry. These checks may send Discord notifications or write reports, but they do not create, update, comment on, close, label, or otherwise mutate GitHub issues.
 
-The legacy file-based internal helper (`run-internal.ts`) read committed catalog JSON, which has been removed, so it no longer works. It was not the production source for public model announcements, and the old push-triggered `check-new-models.yml` workflow has been retired because the catalog is database-backed.
+There is no file-based catalogue check: the repository holds no catalogue JSON, and the Worker above is the only source of public model announcements.
 
 Providers marked inactive in `discovery-policy.ts` are skipped explicitly with an `Inactive by policy` reason. Use this for providers without a stable/public models endpoint.
 Providers not present in `discovery-policy.ts` are also treated as inactive by default.
@@ -71,9 +71,7 @@ Providers not present in `discovery-policy.ts` are also treated as inactive by d
 - `scripts/model-discovery/run.ts`
   - Local/manual external upstream provider `/models` API discovery. The production scheduled equivalent lives in the Cloudflare Worker.
 - `scripts/model-discovery/run-hf-private.ts`
-  - Local/manual external upstream Hugging Face discovery. The production scheduled equivalent lives in `.github/workflows/huggingface-model-discovery.yml`.
-- `scripts/model-discovery/run-internal-public.ts`
-  - Local/manual file-based internal catalog discovery helper. Production public model announcements run from the Cloudflare Worker instead.
+  - External upstream Hugging Face discovery (logic in `hf-discovery.ts`). Scheduled by `.github/workflows/huggingface-model-discovery.yml`; also runnable locally.
 - `scripts/model-discovery/send-public-announcement-test.ts`
   - Local one-shot Discord smoke test for the public announcement formatter and webhook transport. It does not read `DISCORD_ROLE_ID`, does not access Supabase, and does not change announcement state.
 
@@ -138,7 +136,7 @@ pnpm run data:check-new-models:test
 - `MODEL_DISCOVERY_CONCURRENCY` (bounded provider-request concurrency; production defaults to `8`)
 - `DISCORD_PUBLIC_MODEL_DISCOVERY_AVATAR_URL` (optional public bot avatar override; defaults to `https://phaseo.app/png_logo_light.png`)
 - `DISCORD_PRIVATE_MODEL_DISCOVERY_AVATAR_URL` (optional private bot avatar override; defaults to `https://phaseo.app/png_logo_dark.png`)
-- `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (legacy fallback avatar override when calling internal runner scripts with `--discord-avatar-url`)
+- `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (fallback avatar override for the Hugging Face runner)
 - Watched Hugging Face orgs for the GitHub Actions scheduled runner are currently passed in `.github/workflows/huggingface-model-discovery.yml`
 - `HF_TOKEN` (optional Hugging Face token for orgs/models that require authenticated API access)
 - `NEXT_PUBLIC_SUPABASE_URL` (required for known provider model DB allowlist)
