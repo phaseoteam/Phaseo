@@ -90,7 +90,6 @@ const ALL_PUBLIC_TAGS = [
 	"web-api-rankings",
 	"web-api-ranking-metadata",
 	"web-api-pricing-models",
-	"web-api-monitor-history",
 	"web-api-og",
 ] as const;
 
