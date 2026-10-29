@@ -4,7 +4,7 @@ import { Markdown } from "../components/Markdown";
 import { Choice, Group, Row, SettingsPage } from "../components/Settings";
 import { Button } from "../components/ui/button";
 import { Kbd } from "../components/ui/kbd";
-import { since } from "../lib/format";
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { factory, useNow } from "../lib/useFactory";
 
 const THEMES: { value: FactorySettings["theme"]; label: string }[] = [
@@ -28,10 +28,10 @@ export function GeneralSettings({ snapshot }: { snapshot: FactorySnapshot }) {
 function Updates({ update }: { update: FactorySnapshot["update"] }) {
 	const now = useNow(30_000);
 	const latest = update?.latest;
-	const checked = update?.checkedAt ? `Checked ${since(update.checkedAt, now)}.` : "";
+	const checked = update?.checkedAt ? `Checked ${formatRelativeTime(update.checkedAt, now)}.` : "";
 	const status = update?.checking ? "Checking GitHub for a newer version…"
 		: update?.error ? `Couldn't check for updates: ${update.error}. ${checked}`
-		: latest ? `Version ${latest.version}${latest.prerelease ? " (a pre-release)" : ""} is out${latest.publishedAt ? `, published ${since(latest.publishedAt, now)}` : ""}.`
+		: latest ? `Version ${latest.version}${latest.prerelease ? " (a pre-release)" : ""} is out${latest.publishedAt ? `, published ${formatRelativeTime(latest.publishedAt, now)}` : ""}.`
 		: update?.checkedAt ? `This is the newest version. ${checked}` : "Not checked yet.";
 	return <Group title="Updates" description="New versions come out as releases of the Phaseo repository on GitHub.">
 		<Row title={`Phaseo Factory ${update?.current ?? ""}`.trim()} description={status}>

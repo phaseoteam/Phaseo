@@ -1,3 +1,4 @@
+import { formatUsd, MONEY_LOCALE } from "@phaseo/app-kit/format";
 import type { AccountStatus, UsageWindow } from "../../shared/workspace";
 import { cn } from "../lib/utils";
 import { RedactedText } from "../components/RedactedText";
@@ -38,7 +39,8 @@ export function UsageMeter({ label, window, compact }: { label: string; window: 
 	</div>;
 }
 
-const money = (value: number | null, currency = "USD") => value === null ? "unknown" : new Intl.NumberFormat(undefined, { style: "currency", currency }).format(value);
+/** Dollars as the website's budgets show them; another currency in the same US style ("€12.50"). */
+const money = (value: number | null, currency = "USD") => value === null ? "unknown" : currency === "USD" ? formatUsd(value) : new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency }).format(value);
 
 /** A native login's plan and limit windows, as the agent reported them. */
 export function UsageMeters({ status }: { status: AccountStatus }) {

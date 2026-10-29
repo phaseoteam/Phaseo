@@ -67,7 +67,7 @@ const numeric = "text-right font-mono tabular-nums";
 
 function Checked({ at, busy }: { at?: string; busy?: boolean }) {
 	const now = useNow();
-	return <span className="text-xs text-muted-foreground/70">{busy && !at ? "Checking…" : at ? `Checked ${formatAgo(at, now).replace(/^Just now$/, "just now")}` : "Not checked"}</span>;
+	return <span className="text-xs text-muted-foreground/70">{busy && !at ? "Checking…" : at ? `Checked ${formatAgo(at, now)}` : "Not checked"}</span>;
 }
 
 function RefreshButton({ busy, label, onClick }: { busy: boolean; label: string; onClick: () => void }) {

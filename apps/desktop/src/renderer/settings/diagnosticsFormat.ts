@@ -1,3 +1,4 @@
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import type { DiagnosticsProcess, DiagnosticsProcessKind } from "../../shared/diagnostics";
 
 const numbers = new Intl.NumberFormat("en-GB");
@@ -30,19 +31,10 @@ export function formatElapsed(ms: number) {
 	return hours ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}` : `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-/** "Just now", "12 s ago", "4 min ago": how long since something happened. */
+/** "30 seconds ago", "5 minutes ago", "yesterday": how long since something happened, as the website words it. */
 export function formatAgo(iso: string | undefined, now = Date.now()) {
 	const at = iso ? Date.parse(iso) : Number.NaN;
-	if (!Number.isFinite(at)) return "Never";
-	const seconds = Math.max(0, Math.round((now - at) / 1000));
-	if (seconds < 5) return "Just now";
-	if (seconds < 60) return `${seconds} s ago`;
-	const minutes = Math.round(seconds / 60);
-	if (minutes < 60) return `${minutes} min ago`;
-	const hours = Math.round(minutes / 60);
-	if (hours < 24) return `${hours} h ago`;
-	const days = Math.round(hours / 24);
-	return days === 1 ? "Yesterday" : `${days} days ago`;
+	return Number.isFinite(at) ? formatRelativeTime(Math.min(at, now), now) : "Never";
 }
 
 /** The program's file name from a command line, without its folder or quotes. */

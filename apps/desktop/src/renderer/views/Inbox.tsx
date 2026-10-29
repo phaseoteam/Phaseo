@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from
 import { CircleCheck, CirclePause, CircleQuestionMark, CircleX, ClipboardCheck, Gauge, Hand, History, Hourglass, Inbox as InboxIcon, ListChecks, ListTodo, MessageSquareText, Plane, Repeat, Reply, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
 import { inboxLists, type AutopilotDecision } from "../../shared/inbox";
 import { chatSpend } from "../../shared/chatSpend";
-import { formatCost } from "../../shared/usageAmounts";
+import { formatSpend } from "../../shared/usageAmounts";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { errorText, useWorkspace } from "../app/workspace";
 import { Button } from "../components/ui/button";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { cn } from "../lib/utils";
-import { relativeTime } from "./pullRequests/pullRequestLogic";
+import { formatRelativeTime, formatAgoShort } from "@phaseo/app-kit/format";
 
 /** Autopilot's latest decisions across chats, read again whenever it makes one. */
 export function useAutopilotLog() {
@@ -109,7 +109,7 @@ export function Inbox() {
 					{needsYou.length ? needsYou.map(task => {
 						const handback = task.autopilot?.handback;
 						return <Row key={task.id} label={`${task.title}: ${task.attentionReason}`} onOpen={() => select(task.id)}
-							glyph={reasonGlyphs[task.attentionReason!] ?? { Icon: Hourglass, tone: attention }} title={task.title} aside={relativeTime(task.updatedAt, now)}
+							glyph={reasonGlyphs[task.attentionReason!] ?? { Icon: Hourglass, tone: attention }} title={task.title} aside={formatAgoShort(task.updatedAt, now)}
 							meta={<><span className="shrink-0 text-foreground/80">{task.attentionReason}</span><Dot /><span className="truncate">{where(task)}</span></>}
 							detail={handback && handback.reason !== "done" ? handback.summary : undefined} />;
 					}) : <p className="px-3 py-2 text-xs text-muted-foreground">Nothing needs you right now.</p>}
@@ -119,8 +119,8 @@ export function Inbox() {
 						const { own, agents } = chatSpend(overview.tasks, task.id), spent = (own?.costNanos ?? 0) + agents.costNanos, cap = task.autopilot!.capNanos;
 						return <Row key={task.id} label={`${task.title}, in Autopilot`} onOpen={() => select(task.id)}
 							glyph={{ Icon: Plane, tone: task.status === "running" ? "text-primary" : undefined }} title={task.title}
-							aside={cap === null ? `${formatCost(spent)} · no cap` : `${formatCost(spent)} of ${formatCost(cap)}`}
-							meta={<><span className="shrink-0 text-foreground/80">{statusText[task.status] ?? "Running"}</span><Dot /><span className="truncate">{where(task)}</span><Dot /><span className="shrink-0">started {relativeTime(task.autopilot!.since, now)}</span></>} />;
+							aside={cap === null ? `${formatSpend(spent)} · no cap` : `${formatSpend(spent)} of ${formatSpend(cap)}`}
+							meta={<><span className="shrink-0 text-foreground/80">{statusText[task.status] ?? "Running"}</span><Dot /><span className="truncate">{where(task)}</span><Dot /><span className="shrink-0">started {formatRelativeTime(task.autopilot!.since, now)}</span></>} />;
 					})}
 				</Group>}
 				{autopilot && <Group Icon={History} label="Autopilot log">
@@ -129,7 +129,7 @@ export function Inbox() {
 							const task = byId.get(entry.taskId), decision = decisionGlyph(entry.title);
 							return <Row key={entry.id} label={`${entry.title} in ${task?.title ?? "a deleted chat"}`} onOpen={task ? () => select(task.id) : undefined}
 								glyph={decision} title={<>{decision.label}<span className="text-muted-foreground"> in {task?.title ?? "a deleted chat"}</span></>}
-								aside={<span title={new Date(entry.at).toLocaleString()}>{relativeTime(entry.at, now)}</span>} detail={entry.text} />;
+								aside={<span title={new Date(entry.at).toLocaleString()}>{formatAgoShort(entry.at, now)}</span>} detail={entry.text} />;
 						})}
 						{log.length > shown && <Button size="xs" variant="ghost" className="mt-1 self-start text-muted-foreground" onClick={() => setShown(value => value + logPage)}>Show older decisions</Button>}
 					</> : <p className="px-3 py-2 text-xs text-muted-foreground">Autopilot hasn't decided anything yet.</p>}

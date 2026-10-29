@@ -1,3 +1,4 @@
+import { formatAgoShort } from "@phaseo/app-kit/format";
 import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -37,13 +38,10 @@ function dateBucket(iso: string, now = new Date()) {
 	return (now.getFullYear() === new Date(time).getFullYear() ? monthLabel : monthYearLabel).format(time);
 }
 
+/** "5m", "3h", "2d" (the website's relative units, abbreviated), then the date once it is a week old. */
 function relative(iso: string) {
-	const minutes = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60_000));
-	if (minutes < 1) return "now";
-	if (minutes < 60) return `${minutes}m`;
-	if (minutes < 60 * 24) return `${Math.round(minutes / 60)}h`;
-	if (minutes < 60 * 24 * 7) return `${Math.round(minutes / 60 / 24)}d`;
-	return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+	const at = Date.parse(iso);
+	return Date.now() - at < 7 * dayMs ? formatAgoShort(at) : new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export function StatusDot({ task, className }: { task: TaskOverview; className?: string }) {

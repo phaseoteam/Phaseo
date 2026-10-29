@@ -4,7 +4,7 @@ import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
-import { addUsage, formatCost, isPhaseoUsageId } from "../shared/usageAmounts";
+import { addUsage, formatSpend, isPhaseoUsageId } from "../shared/usageAmounts";
 import { usageKind } from "../shared/usageLedger";
 import { autopilotOwner, chatSpend } from "../shared/chatSpend";
 import { answerForm, answerQuestions, autopilotBrief, autopilotModel, judgeTurn, reviewAction, reviewPlan, type AutopilotCall, type TurnVerdict } from "./autopilot";
@@ -322,7 +322,7 @@ export class WorkspaceRuntime {
 		const { own, agents } = chatSpend(tasks, owner.id);
 		if ((own?.costNanos ?? 0) + agents.costNanos < cap) return;
 		const task = this.store.getTask(owner.id);
-		task.autopilot = { ...task.autopilot!, stalls: undefined, handback: { reason: "cap", summary: `Autopilot paused at its ${formatCost(cap)} spend cap. Raise the cap or turn Autopilot off to carry on.`, at: new Date().toISOString() } };
+		task.autopilot = { ...task.autopilot!, stalls: undefined, handback: { reason: "cap", summary: `Autopilot paused at its ${formatSpend(cap)} spend cap. Raise the cap or turn Autopilot off to carry on.`, at: new Date().toISOString() } };
 		this.store.saveTask(task, true); this.broadcastSoon();
 		this.logAutopilot(owner.id, "Autopilot reached its spend cap", task.autopilot.handback!.summary);
 		// Stopping a chat flushes and saves it, so it happens after the flush that noticed the cap.

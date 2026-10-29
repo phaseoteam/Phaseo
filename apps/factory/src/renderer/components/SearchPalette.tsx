@@ -2,7 +2,7 @@ import { Inbox, Plus, Search, Settings } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { stageLabel } from "../../shared/stages";
 import type { FactorySnapshot } from "../../shared/types";
-import { since } from "../lib/format";
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { href } from "../lib/useFactory";
 import { cn } from "../lib/utils";
 import { AgentMark, ItemMark, StatusMark } from "./Marks";
@@ -52,7 +52,7 @@ function results(snapshot: FactorySnapshot, query: string): Result[] {
 			group: "Runs",
 			mark: <StatusMark status={run.status === "running" ? "running" : run.status === "succeeded" ? "done" : run.status === "cancelled" ? "skipped" : "failed"} className="size-4" />,
 			title: `${stageLabel(run.stage)} on #${item!.number} ${item!.title}`,
-			meta: `${agent?.label ?? run.agentId} · ${since(run.startedAt)}`,
+			meta: `${agent?.label ?? run.agentId} · ${formatRelativeTime(run.startedAt)}`,
 			to: href({ page: "work", item: item!.id, tab: "runs" }),
 		})) : [];
 	const agents = snapshot.agents

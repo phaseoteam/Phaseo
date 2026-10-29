@@ -1,3 +1,4 @@
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { ArrowDownUp, ChevronDown, ChevronRight, Hammer, ListFilter, SmilePlus, Tag, UserPlus, Users } from "lucide-react";
 import { pullRequestReactionContents, type PullRequestAction, type PullRequestComment, type PullRequestReaction, type PullRequestReactionContent, type PullRequestView } from "../../../shared/pullRequestView";
@@ -11,7 +12,7 @@ import { cn } from "../../lib/utils";
 import { ActorAvatar, ActorLabel, CheckStatusIcon, checkStatusLabel, REVIEW_OUTCOME_PRESENTATION, ReviewOutcomeLabel, reviewOutcomeStaleLabel, Tip } from "./presentation";
 import { CandidatePicker } from "./CandidatePicker";
 import { EditButton, MarkdownEditor, PullRequestCommentBody, PullRequestMarkdown } from "./PullRequestMarkdown";
-import { applyPendingReactions, canEditComment, canEditDescription, findingKey, isBot, isFinished, reactionEmoji, reactionName, reactionTooltip, relativeTime, reviewerEntries, reviewOutcome, sectionCollapseAnchorScrollTop, visibleBody, type PullRequestFinding } from "./pullRequestLogic";
+import { applyPendingReactions, canEditComment, canEditDescription, findingKey, isBot, isFinished, reactionEmoji, reactionName, reactionTooltip, reviewerEntries, reviewOutcome, sectionCollapseAnchorScrollTop, visibleBody, type PullRequestFinding } from "./pullRequestLogic";
 import type { PullRequestHandoff } from "./usePullRequestHandoff";
 import { removeAll } from "../../../shared/removeAll";
 
@@ -79,7 +80,7 @@ function CommentIdentity({ comment, onOpen }: { comment: PullRequestComment; onO
 	return <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
 		<ActorLabel actor={comment.author} className="max-w-full" />
 		<Tip label={`${new Date(comment.createdAt).toLocaleString()}${comment.url ? " · Open comment on GitHub" : ""}`}>
-			{comment.url ? <button type="button" onClick={() => onOpen(comment.url!)} className="text-muted-foreground hover:text-foreground hover:underline"><time dateTime={comment.createdAt}>{relativeTime(comment.createdAt)}</time></button> : <span className="text-muted-foreground"><time dateTime={comment.createdAt}>{relativeTime(comment.createdAt)}</time></span>}
+			{comment.url ? <button type="button" onClick={() => onOpen(comment.url!)} className="text-muted-foreground hover:text-foreground hover:underline"><time dateTime={comment.createdAt}>{formatRelativeTime(comment.createdAt)}</time></button> : <span className="text-muted-foreground"><time dateTime={comment.createdAt}>{formatRelativeTime(comment.createdAt)}</time></span>}
 		</Tip>
 		{comment.editedAt && <Tip label={`Edited ${new Date(comment.editedAt).toLocaleString()}`}><span className="text-muted-foreground">edited</span></Tip>}
 	</div>;
