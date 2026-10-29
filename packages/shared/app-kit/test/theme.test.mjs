@@ -8,7 +8,7 @@
 // fails here until the list is updated too.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -194,4 +194,19 @@ test("the mobile app's tokens are the shared ones", () => {
 		compare(`${MOBILE} @variant ${scheme}`, declared, { ...palette[scheme], ...STATUS_COLOURS[scheme], ...accentTokens(scheme) });
 	}
 	compareRadii(`${MOBILE} @theme`, declarations(MOBILE, "@theme"), RADIUS_BASE_PX);
+});
+
+test("each app scans the class recipes it uses", () => {
+	// Tailwind and Uniwind only generate classes from the files they scan, and src/ui-recipes is outside
+	// the apps, so without these @source lines the recipes' classes silently disappear.
+	for (const [file, source, recipes] of [
+		[WEB, "../../../../packages/shared/app-kit/src/ui-recipes/callout.ts", ["callout"]],
+		[MOBILE, "../../packages/shared/app-kit/src/ui-recipes", ["badge", "callout", "text"]],
+	]) {
+		assert.ok(css(file).includes(`@source "${source}";`), `${file} needs @source "${source}";`);
+		for (const recipe of recipes) {
+			const target = path.join(root, path.dirname(file), source, source.endsWith(".ts") ? "" : `${recipe}.ts`);
+			assert.ok(existsSync(target), `${file}'s @source "${source}" doesn't reach ui-recipes/${recipe}.ts`);
+		}
+	}
 });

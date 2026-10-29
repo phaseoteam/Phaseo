@@ -1,4 +1,5 @@
 export { Button, IconButton } from "./button";
+export { Callout, CALLOUT_TONES, type CalloutTone } from "./callout";
 export { Badge, Chip, ChipRow } from "./chip";
 export { Icon, useToneColor } from "./icon";
 export { SearchField, TextField } from "./input";

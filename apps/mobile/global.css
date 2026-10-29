@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "uniwind";
+/* Class recipes shared with the website (callout and badge tones, the type scale). Uniwind only
+   generates classes it finds, and the package is outside this app. */
+@source "../../packages/shared/app-kit/src/ui-recipes";
 
 /* The app's fonts and radii. The radii match the website's scale (packages/shared/app-kit/src/theme/tokens.ts,
    checked by its test/theme.test.mjs). */
