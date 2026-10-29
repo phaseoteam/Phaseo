@@ -200,6 +200,7 @@ phaseo codex
 phaseo claude-code
 phaseo hermes
 phaseo opencode
+phaseo fx
 phaseo pi
 phaseo prime-agent
 phaseo deepseek-harness
@@ -216,7 +217,7 @@ phaseo zed
 
 `phaseo claude` is an alias for `phaseo claude-code`, and `phaseo dsh` is an alias for `phaseo deepseek-harness`.
 
-OpenCode, DeepSeek Harness, Pi, and Prime Agent receive every active Phaseo text model compatible with the OpenAI Chat Completions protocol. Select the initial model with `--model`, or use `--catalog default` when only that model should be configured:
+OpenCode, fx, DeepSeek Harness, Pi, and Prime Agent receive every active Phaseo text model compatible with the OpenAI Chat Completions protocol. Select the initial model with `--model`, or use `--catalog default` when only that model should be configured:
 
 ```bash
 phaseo opencode --model openai/gpt-5.6-terra
@@ -269,6 +270,8 @@ claude
 
 OpenCode receives a `phaseo` provider in `~/.config/opencode/opencode.json` or an existing `opencode.jsonc`. Its dedicated key is stored in OpenCode's owner-only `auth.json` credential store, preserving credentials for other providers.
 
+fx receives a `phaseo` custom connection in `~/.fx/settings.json` with up to 256 compatible models, the most fx accepts, and Phaseo becomes the active fx provider. The previous provider is recorded so removal can restore it. fx reads connection keys only from environment variables, so the dedicated key is written to the owner-only `~/.config/phaseo/integrations/fx.env`; add `[ -f "$HOME/.config/phaseo/integrations/fx.env" ] && . "$HOME/.config/phaseo/integrations/fx.env"` to your shell profile once. fx runs on macOS and Linux.
+
 DeepSeek Harness receives a Phaseo provider and model catalog in `$DSH_HOME/cordis.patch.yml` (or `~/.dsh/cordis.patch.yml`). The managed block includes the Phaseo base URL and OpenAI Completions protocol while preserving unrelated Harness patches. Its dedicated key is written to Harness's `$DSH_HOME/.credentials.yaml` store with an ownership marker.
 
 Pi receives a managed provider extension in `~/.pi/agent/extensions/phaseo.ts`. Prime Agent receives a managed provider in `~/.prime/agent/models.json`. Both load their dedicated keys from the Phaseo CLI at request time, so their configuration files contain no plaintext secrets.
@@ -279,6 +282,7 @@ Every setup operation supports `--dry-run`. Writes are transactional and roll ba
 phaseo integrations remove codex
 phaseo integrations remove claude-code
 phaseo integrations remove opencode
+phaseo integrations remove fx
 phaseo integrations remove deepseek-harness
 phaseo integrations remove pi
 phaseo integrations remove prime-agent

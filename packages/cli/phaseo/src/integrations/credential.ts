@@ -6,6 +6,7 @@ const KEY_NAMES: Record<string, string> = {
 	codex: "Phaseo CLI: Codex API Key",
 	"claude-code": "Phaseo CLI: Claude Code API Key",
 	opencode: "Phaseo CLI: OpenCode API Key",
+	fx: "Phaseo CLI: fx API Key",
 	"deepseek-harness": "Phaseo CLI: DeepSeek Harness API Key",
 	pi: "Phaseo CLI: Pi API Key",
 	"prime-agent": "Phaseo CLI: Prime Agent API Key",

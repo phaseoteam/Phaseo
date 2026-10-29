@@ -10,6 +10,7 @@ import { codexAdapter, renderCodexProfile } from "../src/integrations/adapters/c
 import { claudeCodeAdapter, renderClaudeSettings } from "../src/integrations/adapters/claude-code.js";
 import { deepSeekHarnessAdapter, renderDeepSeekHarnessCredential, renderDeepSeekHarnessPatch } from "../src/integrations/adapters/deepseek-harness.js";
 import { openCodeAdapter, renderOpenCodeAuth, renderOpenCodeConfig } from "../src/integrations/adapters/opencode.js";
+import { fxAdapter, fxEnvPath, renderFxConnection, renderFxEnv, renderFxSettings } from "../src/integrations/adapters/fx.js";
 import { piAdapter, renderPiExtension } from "../src/integrations/adapters/pi.js";
 import { primeAgentAdapter, renderPrimeAgentModels } from "../src/integrations/adapters/prime-agent.js";
 import { openClawModels, renderOpenClawProvider } from "../src/integrations/adapters/openclaw.js";
@@ -22,7 +23,7 @@ import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getInte
 import { HERMES_BLOCK_END, HERMES_BLOCK_START, HermesEnvQuotingError, assertHermesEnvEditable, firstUnsupportedHermesEnvLine, hermesEnvDefinesOpenAIKey, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
-import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, installInvocationFor, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation, windowsCommandInterpreter } from "../src/integrations/installer.js";
+import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, harnessInstallPlan, installInvocationFor, isVercelFxHelp, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation, windowsCommandInterpreter } from "../src/integrations/installer.js";
 import { updateChildInvocation } from "../src/index.js";
 
 test("Codex profile uses the Responses API without embedding a credential", () => {
@@ -299,15 +300,21 @@ test("catalog filtering keeps only active text chat-completions models", () => {
 		lifecycle: { status: "active" },
 		modalities: { input: ["text", "image"], output: ["text"] },
 		limits: { input_tokens: 128_000, output_tokens: 16_000 },
-		capabilities: { endpoints: ["chat.completions", "responses"] },
+		capabilities: { endpoints: ["text.generate", "responses"] },
 		availability: { status: "active", active_provider_count: 2 },
 	}), { id: "openai/gpt-test", name: "GPT Test", contextWindow: 128_000, maxOutputTokens: 16_000, reasoning: false, input: ["text", "image"] });
 	assert.equal(toIntegrationModel({
 		id: "openai/inactive",
 		modalities: { input: ["text"], output: ["text"] },
-		capabilities: { endpoints: ["chat.completions"] },
+		capabilities: { endpoints: ["chat/completions"] },
 		availability: { status: "inactive", active_provider_count: 0 },
 	}), null);
+	assert.equal(toIntegrationModel({
+		id: "openai/legacy-endpoint-name",
+		modalities: { input: ["text"], output: ["text"] },
+		capabilities: { endpoints: ["chat.completions"] },
+		availability: { status: "active", active_provider_count: 1 },
+	})?.id, "openai/legacy-endpoint-name");
 });
 
 test("catalog sync paginates through every compatible model", async () => {
@@ -323,7 +330,7 @@ test("catalog sync paginates through every compatible model", async () => {
 		lifecycle: { status: "active" },
 		modalities: { input: ["text"], output: ["text"] },
 		limits: { input_tokens: 128_000, output_tokens: 16_000 },
-		capabilities: { endpoints: ["chat.completions"] },
+		capabilities: { endpoints: ["text.generate"] },
 		availability: { status: "active", active_provider_count: 1 },
 	});
 	const requests: string[] = [];
@@ -331,7 +338,7 @@ test("catalog sync paginates through every compatible model", async () => {
 		const url = new URL(String(input));
 		requests.push(url.toString());
 		assert.equal(url.searchParams.get("availability"), "active");
-		assert.equal(url.searchParams.get("endpoints"), "chat.completions");
+		assert.equal(url.searchParams.get("endpoints"), "text.generate");
 		assert.equal(url.searchParams.get("input_types"), "text");
 		assert.equal(url.searchParams.get("output_types"), "text");
 		const offset = Number(url.searchParams.get("offset"));
@@ -387,6 +394,7 @@ test("primary harness installers use supported package commands and verified ins
 		args: ["add", "-g", "--allow-build=openclaw", "openclaw@latest"],
 	});
 	assert.match(installInvocationFor("prime-agent", "npm").args.join(" "), /app\.primeintellect\.ai\/prime-agent\/install\.sh/);
+	assert.deepEqual(installInvocationFor("fx", "npm"), { command: "sh", args: ["-c", "curl -fsSL https://fx.sh/setup.sh | bash"] });
 	const hermes = installInvocationFor("hermes", "npm");
 	assert.match(hermes.args.join(" "), /hermes-agent\.nousresearch\.com\/install\.(?:ps1|sh)/);
 	if (process.platform === "win32") assert.match(renderInstallInvocation(hermes), /-Command "& \(\[scriptblock\]::Create/);
@@ -657,6 +665,7 @@ test("one-command setup accepts every persistent integration and keeps runner na
 	assert.equal(isPrimarySetupName("claude"), true);
 	assert.equal(isPrimarySetupName("dsh"), true);
 	assert.equal(isPrimarySetupName("openclaw"), true);
+	assert.equal(isPrimarySetupName("fx"), true);
 	assert.equal(isPrimarySetupName("aider"), false);
 	assert.equal(isIntegrationSetupName("aider"), true);
 	assert.equal(isIntegrationSetupName("continue"), true);
@@ -664,14 +673,14 @@ test("one-command setup accepts every persistent integration and keeps runner na
 	assert.equal(isIntegrationSetupName("not-an-integration"), false);
 	await assert.rejects(
 		runIntegrationCommand(["setup", "aider"], { "dry-run": true }, { primaryOnly: true }),
-		/Phaseo direct setup currently supports codex, claude-code, hermes, opencode, pi, prime-agent, deepseek-harness, and openclaw/,
+		/Phaseo direct setup currently supports codex, claude-code, hermes, opencode, fx, pi, prime-agent, deepseek-harness, and openclaw/,
 	);
 });
 
 test("model catalog flags are limited to catalog-backed harnesses", async () => {
 	await assert.rejects(
 		runIntegrationCommand(["setup", "codex"], { catalog: "all", "dry-run": true }),
-		/only supported for OpenCode, DeepSeek Harness, Pi, Prime Agent, and OpenClaw/,
+		/only supported for OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, and OpenClaw/,
 	);
 });
 
@@ -1160,4 +1169,128 @@ test("cmd.exe is always an absolute path, even without ComSpec", () => {
 	assert.equal(windowsCommandInterpreter({}), String.raw`C:\Windows\System32\cmd.exe`);
 	const invocation = packageManagerChildInvocation({ command: "npm", executable: String.raw`C:\nodejs\npm.cmd`, args: ["--version"] }, "win32", windowsCommandInterpreter({}));
 	assert.equal(invocation.command, String.raw`C:\Windows\System32\cmd.exe`);
+});
+
+test("fx connection reads its key from the environment and stays within fx limits", () => {
+	const connection = renderFxConnection("openai/gpt-5.6-terra", [
+		{ id: "anthropic/claude-sonnet-4.6", name: "Claude Sonnet 4.6", contextWindow: 200_000, maxOutputTokens: 64_000, input: ["text", "image"] },
+		{ id: "openai/gpt-5.6-terra", name: "GPT-5.6 Terra", contextWindow: 400_000, maxOutputTokens: 400_000, input: ["text"] },
+		{ id: " padded", name: "Invalid" },
+		...Array.from({ length: 300 }, (_, index) => ({ id: `model/${index}`, name: `Model ${index}` })),
+	]) as { auth: unknown; protocol: string; base_url: string; model_metadata: Record<string, Record<string, unknown>> };
+	assert.equal(connection.protocol, "openai-chat-completions");
+	assert.equal(connection.base_url, "https://api.phaseo.app/v1");
+	assert.deepEqual(connection.auth, { type: "bearer", env: "PHASEO_FX_API_KEY" });
+	const ids = Object.keys(connection.model_metadata);
+	assert.equal(ids.length, 256);
+	assert.equal(ids[0], "openai/gpt-5.6-terra");
+	assert.equal(ids.includes(" padded"), false);
+	assert.deepEqual(connection.model_metadata["openai/gpt-5.6-terra"], { context_window: 400_000, supports_vision: false });
+	assert.deepEqual(connection.model_metadata["anthropic/claude-sonnet-4.6"], { context_window: 200_000, max_output_tokens: 64_000, supports_vision: true });
+});
+
+test("fx settings preserve unrelated values and refuse unmanaged connections", () => {
+	const before = JSON.stringify({ provider: "codex", models: { codex: "gpt-5.4-mini" }, providers: { local: { protocol: "openai-chat-completions", base_url: "http://localhost:11434/v1", auth: { type: "none" } } }, session_titles: false }, null, 2);
+	const settings = JSON.parse(renderFxSettings("/tmp/settings.json", before, "openai/gpt-5.6-terra"));
+	assert.equal(settings.provider, "phaseo");
+	assert.deepEqual(settings.models, { codex: "gpt-5.4-mini", phaseo: "openai/gpt-5.6-terra" });
+	assert.equal(settings.providers.local.base_url, "http://localhost:11434/v1");
+	assert.equal(settings.session_titles, false);
+	assert.doesNotMatch(JSON.stringify(settings), /phaseo_v1_sk_/);
+	const existing = renderFxSettings("/tmp/settings.json", null);
+	assert.throws(() => renderFxSettings("/tmp/settings.json", existing), /not managed by Phaseo CLI/);
+	assert.doesNotThrow(() => renderFxSettings("/tmp/settings.json", existing, undefined, undefined, true));
+	assert.throws(() => renderFxSettings("/tmp/settings.json", "{ // comment\n}"), /malformed fx settings/);
+	const full = JSON.stringify({ providers: Object.fromEntries(Array.from({ length: 32 }, (_, index) => [`p${index}`, {}])) });
+	assert.throws(() => renderFxSettings("/tmp/settings.json", full), /at most 32 custom connections/);
+});
+
+test("fx removal deletes the settings file setup created once nothing else is in it", async () => {
+	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-fx-integration-"));
+	const settingsPath = join(homeDir, ".fx", "settings.json");
+	try {
+		const options = { homeDir };
+		await applyChanges(await fxAdapter.planSetup(options));
+		assert.equal(JSON.parse(await readFile(settingsPath, "utf8")).provider, "phaseo");
+		await applyChanges(await fxAdapter.planRemove(options));
+		assert.equal(await readFile(settingsPath, "utf8").catch(() => null), null);
+	} finally {
+		await rm(homeDir, { recursive: true, force: true });
+	}
+});
+
+test("fx install check refuses a different fx command on PATH", async () => {
+	const vercelHelp = "𝒇x v0.0.15\nFast, native coding agent for the terminal.\n";
+	const viewerHelp = "Usage: fx [flags] [--] [file] [code ...]\n";
+	assert.equal(isVercelFxHelp(vercelHelp), true);
+	assert.equal(isVercelFxHelp(viewerHelp), false);
+	const binDir = await mkdtemp(join(tmpdir(), "phaseo-fx-bin-"));
+	const path = process.env.PATH;
+	try {
+		await writeFile(join(binDir, "fx"), "");
+		process.env.PATH = binDir;
+		await assert.rejects(harnessInstallPlan("fx", async () => viewerHelp), /not Vercel Labs' fx coding agent/);
+		assert.equal(await harnessInstallPlan("fx", async () => vercelHelp), null);
+	} finally {
+		process.env.PATH = path;
+		await rm(binDir, { recursive: true, force: true });
+	}
+});
+
+test("fx setup without a catalog keeps the selected model's earlier metadata", () => {
+	const catalog = [{ id: "openai/gpt-5.6-terra", name: "GPT-5.6 Terra", contextWindow: 400_000, maxOutputTokens: 128_000, input: ["text", "image"] as Array<"text" | "image"> }];
+	const synced = renderFxSettings("/tmp/settings.json", null, "openai/gpt-5.6-terra", catalog);
+	const metadata = { context_window: 400_000, max_output_tokens: 128_000, supports_vision: true };
+	assert.deepEqual(JSON.parse(synced).providers.phaseo.model_metadata["openai/gpt-5.6-terra"], metadata);
+	const defaultOnly = JSON.parse(renderFxSettings("/tmp/settings.json", synced, "openai/gpt-5.6-terra", undefined, true));
+	assert.deepEqual(defaultOnly.providers.phaseo.model_metadata, { "openai/gpt-5.6-terra": metadata });
+	const unknown = JSON.parse(renderFxSettings("/tmp/settings.json", synced, "openai/new-model", undefined, true));
+	assert.deepEqual(unknown.providers.phaseo.model_metadata, { "openai/new-model": {} });
+});
+
+test("fx credential file is shell-safe and owner-marked", () => {
+	assert.equal(renderFxEnv("phaseo_v1_sk_abc"), "# Managed by Phaseo CLI. Run `phaseo integrations remove fx` to remove.\nexport PHASEO_FX_API_KEY='phaseo_v1_sk_abc'\n");
+	assert.throws(() => renderFxEnv("bad'key"), /cannot be written to a shell file safely/);
+});
+
+test("fx setup switches the active provider and removal restores it", async () => {
+	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-fx-integration-"));
+	const settingsPath = join(homeDir, ".fx", "settings.json");
+	const original = `${JSON.stringify({ provider: "gateway", models: { gateway: "anthropic/claude-sonnet-4.6" }, permission_mode: "ask" }, null, 2)}\n`;
+	try {
+		await applyChanges([{ path: settingsPath, before: null, after: original, description: "fixture" }]);
+		const options = { homeDir, model: "openai/gpt-5.6-terra" };
+		await applyChanges([...await fxAdapter.planSetup(options), ...await fxAdapter.planCredential?.(options, "phaseo-secret") ?? []]);
+		assert.equal((await fxAdapter.inspect(options)).status, "configured");
+		const configured = JSON.parse(await readFile(settingsPath, "utf8"));
+		assert.equal(configured.provider, "phaseo");
+		assert.equal(configured.models.phaseo, "openai/gpt-5.6-terra");
+		assert.match(await readFile(fxEnvPath(options), "utf8"), /export PHASEO_FX_API_KEY='phaseo-secret'/);
+
+		// Re-running setup keeps the originally recorded provider.
+		await applyChanges(await fxAdapter.planSetup({ ...options, model: "anthropic/claude-sonnet-4.6" }));
+		await applyChanges(await fxAdapter.planRemove(options));
+		const removed = JSON.parse(await readFile(settingsPath, "utf8"));
+		assert.deepEqual(removed, JSON.parse(original));
+		assert.equal(await readFile(fxEnvPath(options), "utf8").catch(() => null), null);
+		assert.notEqual((await fxAdapter.inspect(options)).status, "configured");
+		assert.deepEqual(await fxAdapter.planRemove(options), []);
+	} finally {
+		await rm(homeDir, { recursive: true, force: true });
+	}
+});
+
+test("fx removal leaves a provider the user selected after setup", async () => {
+	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-fx-integration-"));
+	const settingsPath = join(homeDir, ".fx", "settings.json");
+	try {
+		const options = { homeDir };
+		await applyChanges(await fxAdapter.planSetup(options));
+		const configured = JSON.parse(await readFile(settingsPath, "utf8"));
+		await writeFile(settingsPath, `${JSON.stringify({ ...configured, provider: "codex" }, null, 2)}\n`);
+		await applyChanges(await fxAdapter.planRemove(options));
+		assert.deepEqual(JSON.parse(await readFile(settingsPath, "utf8")), { provider: "codex" });
+	} finally {
+		await rm(homeDir, { recursive: true, force: true });
+	}
 });

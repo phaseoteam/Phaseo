@@ -23,7 +23,7 @@ phaseo login
 phaseo codex
 ```
 
-此命令会检查编程环境是否已安装。如果在交互式终端中未安装，Phaseo 会显示受支持的安装命令，并在运行前征求确认。随后，Phaseo 会为该环境创建专用密钥并写入配置。非交互式运行会提供可执行的安装指导，但不会擅自更改系统。OpenCode、DeepSeek Harness、Pi、Prime Agent 和 OpenClaw 也会获得所有兼容 Chat Completions 的活跃文本模型。需要缩小操作范围时，请使用 `--skip-install`、`--catalog default` 或 `--dry-run`。
+此命令会检查编程环境是否已安装。如果在交互式终端中未安装，Phaseo 会显示受支持的安装命令，并在运行前征求确认。随后，Phaseo 会为该环境创建专用密钥并写入配置。非交互式运行会提供可执行的安装指导，但不会擅自更改系统。OpenCode、fx、DeepSeek Harness、Pi、Prime Agent 和 OpenClaw 也会获得所有兼容 Chat Completions 的活跃文本模型。需要缩小操作范围时，请使用 `--skip-install`、`--catalog default` 或 `--dry-run`。
 
 所有持久集成都使用以产品命名的命令：
 
@@ -31,7 +31,7 @@ phaseo codex
 phaseo codex
 ```
 
-支持的集成名称为 `codex`、`claude-code`、`opencode`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor` 和 `zed`。隔离的 CLI 启动器为 `cline`、`kilo`、`omp`、`muse` 和 `minimax`。
+支持的集成名称为 `codex`、`claude-code`、`opencode`、`fx`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor` 和 `zed`。隔离的 CLI 启动器为 `cline`、`kilo`、`omp`、`muse` 和 `minimax`。
 
 CLI 会为该助手创建一个以其命名的独立 API 密钥，该密钥 90 天后过期，每月支出上限为 $100。在全新安装中，它会自动配置 Aider 和 Continue，并自动写入 Zed 的提供商/模型设置。对于只能在编辑器 UI 中保存密钥的助手，它会显示需要填写的字段、链接到专用指南，并允许你仅复制该助手的密钥：
 
@@ -176,6 +176,10 @@ Codex 自定义提供商使用 Responses 线路协议。
 ## OpenCode
 
 如果你希望 OpenCode 通过自定义 OpenAI 兼容提供商调用 Phaseo，请参阅专用的 [OpenCode 指南](./opencode.mdx)。
+
+## fx
+
+如果你希望在 Vercel Labs 的 fx 编程智能体中将 Phaseo 添加为自定义模型连接，请参阅专用的 [fx 指南](./fx.mdx)。
 
 ## Claude Code
 

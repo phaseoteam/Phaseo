@@ -23,7 +23,7 @@ phaseo login
 phaseo codex
 ```
 
-Este comando verifica se o ambiente está instalado. Se estiver ausente em um terminal interativo, o Phaseo mostra o comando de instalação compatível e pede confirmação antes de executá-lo. Em seguida, cria uma chave exclusiva para o ambiente e grava a configuração. Execuções não interativas mostram instruções de instalação úteis sem fazer alterações no sistema sem supervisão. OpenCode, DeepSeek Harness, Pi, Prime Agent e OpenClaw também recebem todos os modelos de texto ativos compatíveis com Chat Completions. Use `--skip-install`, `--catalog default` ou `--dry-run` para limitar o comportamento.
+Este comando verifica se o ambiente está instalado. Se estiver ausente em um terminal interativo, o Phaseo mostra o comando de instalação compatível e pede confirmação antes de executá-lo. Em seguida, cria uma chave exclusiva para o ambiente e grava a configuração. Execuções não interativas mostram instruções de instalação úteis sem fazer alterações no sistema sem supervisão. OpenCode, fx, DeepSeek Harness, Pi, Prime Agent e OpenClaw também recebem todos os modelos de texto ativos compatíveis com Chat Completions. Use `--skip-install`, `--catalog default` ou `--dry-run` para limitar o comportamento.
 
 Use o comando com o nome do produto para qualquer integração persistente:
 
@@ -31,7 +31,7 @@ Use o comando com o nome do produto para qualquer integração persistente:
 phaseo codex
 ```
 
-Os nomes de integração compatíveis são `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` e `zed`. Os executores isolados da CLI são `cline`, `kilo`, `omp`, `muse` e `minimax`.
+Os nomes de integração compatíveis são `codex`, `claude-code`, `opencode`, `fx`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` e `zed`. Os executores isolados da CLI são `cline`, `kilo`, `omp`, `muse` e `minimax`.
 
 A CLI cria uma chave de API separada, com o nome daquele assistente, que expira após 90 dias e tem um limite de gastos mensal de $100. Ela configura o Aider e o Continue automaticamente em instalações limpas e também grava automaticamente as configurações de provedor/modelo do Zed. Para assistentes que mantêm segredos exclusivamente na interface do editor, ela mostra exatamente os campos restantes, inclui um link para o guia específico e permite copiar somente a chave daquele assistente:
 
@@ -176,6 +176,10 @@ Provedores personalizados do Codex usam o protocolo Responses.
 ## OpenCode
 
 Use o [guia específico do OpenCode](./opencode.mdx) se quiser que ele chame o Phaseo por meio de um provedor personalizado compatível com OpenAI.
+
+## fx
+
+Use o [guia específico do fx](./fx.mdx) para adicionar o Phaseo como uma conexão de modelo personalizada no agente de programação fx, da Vercel Labs.
 
 ## Claude Code
 

@@ -1,0 +1,81 @@
+---
+title: "fx"
+icon: "/icons/brands/vercel.svg"
+description: "Conecte o agente de programação fx, da Vercel Labs, ao Phaseo Gateway com uma conexão de modelo personalizada."
+---
+
+O [fx](https://fx.sh) é um agente de programação de código aberto da Vercel Labs. Ele pode chamar qualquer endpoint de Chat Completions compatível com OpenAI por meio de uma conexão personalizada nomeada, então o Phaseo funciona como seu gateway de modelos. O fx roda no macOS e no Linux.
+
+## 1) Configurar o fx
+
+Use a CLI do Phaseo para adicionar a conexão, sincronizar os modelos compatíveis do Phaseo e tornar o Phaseo o provedor ativo do fx:
+
+```bash
+phaseo login
+phaseo fx --model openai/gpt-5.6-terra
+```
+
+Se o fx estiver ausente em um terminal interativo, o Phaseo mostra o comando de instalação oficial e pede confirmação antes de executá-lo. Em seguida, o comando:
+
+- adiciona uma conexão `phaseo` a `~/.fx/settings.json`, preservando suas outras configurações e conexões;
+- sincroniza até 256 modelos compatíveis do Phaseo, o máximo que o fx aceita, com seus limites de contexto e de saída;
+- define `phaseo` como o provedor ativo do fx e registra o provedor anterior para que a remoção possa restaurá-lo;
+- cria uma `Phaseo CLI: fx API Key`, que expira após 90 dias e tem um limite de gastos mensal de US$ 100, e a armazena no arquivo `~/.config/phaseo/integrations/fx.env`, acessível somente pelo proprietário. Execute `phaseo fx` novamente para substituir uma chave expirada.
+
+Use `--catalog default` para configurar somente o modelo selecionado ou `--dry-run` para visualizar as alterações nos arquivos.
+
+## 2) Carregar a chave no shell
+
+O fx lê as chaves de conexões personalizadas somente de variáveis de ambiente, nunca do arquivo de configurações. Adicione esta linha a `~/.zshrc` ou `~/.bashrc` uma única vez e abra um novo terminal:
+
+```bash
+[ -f "$HOME/.config/phaseo/integrations/fx.env" ] && . "$HOME/.config/phaseo/integrations/fx.env"
+```
+
+A linha define `PHASEO_FX_API_KEY` quando o arquivo existe e não faz nada depois que você remove a integração.
+
+## 3) Iniciar o fx
+
+```bash
+fx
+```
+
+Troque de modelo com `/model` ou escolha qualquer ID de modelo do Phaseo para uma única execução com `FX_MODEL=<id> fx`. Volte para outro provedor com `fx provider <name>`.
+
+## Configuração manual
+
+Adicione a conexão a `~/.fx/settings.json`. O fx não aceita conexões personalizadas em um `.fx.json` de projeto.
+
+```json
+{
+  "provider": "phaseo",
+  "providers": {
+    "phaseo": {
+      "protocol": "openai-chat-completions",
+      "base_url": "https://api.phaseo.app/v1",
+      "auth": { "type": "bearer", "env": "PHASEO_API_KEY" },
+      "model_metadata": {
+        "openai/gpt-5.6-terra": { "context_window": 400000, "max_output_tokens": 128000 }
+      }
+    }
+  },
+  "models": { "phaseo": "openai/gpt-5.6-terra" }
+}
+```
+
+Em seguida, exporte `PHASEO_API_KEY` e execute `fx`. Sem um `context_window`, o fx não consegue determinar quando compactar a conversa, então declare limites para os modelos que você usa. Os limites acima são exemplos; obtenha os valores reais no [endpoint Models](../../api-reference/endpoint/models.mdx).
+
+## Remover
+
+```bash
+phaseo integrations remove fx
+```
+
+Isso remove a conexão `phaseo` e o modelo, restaura o provedor anterior do fx se o Phaseo ainda estiver ativo, exclui o arquivo da chave e revoga a chave.
+
+## Verificação
+
+- Execute `fx status --json` para confirmar o provedor ativo, o endpoint e o modelo.
+- Faça uma solicitação pequena, como `fx ask "Summarize README.md"`, antes de trabalhar com edição de arquivos.
+- Se o fx informar que falta uma credencial, abra um novo terminal ou verifique se a linha do perfil do shell está presente.
+- Recursos do fx exclusivos do AI Gateway, como a pesquisa na web do gateway e as verificações de créditos, não estão disponíveis por meio de conexões personalizadas.

@@ -3,6 +3,7 @@ import { codexAdapter } from "./adapters/codex.js";
 import { claudeCodeAdapter } from "./adapters/claude-code.js";
 import { deepSeekHarnessAdapter } from "./adapters/deepseek-harness.js";
 import { openCodeAdapter } from "./adapters/opencode.js";
+import { fxAdapter } from "./adapters/fx.js";
 import { guidedAdapters } from "./adapters/guided.js";
 import { piAdapter } from "./adapters/pi.js";
 import { primeAgentAdapter } from "./adapters/prime-agent.js";
@@ -18,7 +19,7 @@ import { confirmHarnessInstall, harnessInstallPlan, installHarness, isPrimaryHar
 import { createSpinner, terminalUi } from "../output.js";
 import type { IntegrationAdapter, IntegrationId, IntegrationOptions } from "./types.js";
 
-const adapters: IntegrationAdapter[] = [codexAdapter, claudeCodeAdapter, openCodeAdapter, deepSeekHarnessAdapter, piAdapter, primeAgentAdapter, openClawAdapter, hermesAdapter, aiderAdapter, continueAdapter, zedAdapter, ...guidedAdapters];
+const adapters: IntegrationAdapter[] = [codexAdapter, claudeCodeAdapter, openCodeAdapter, fxAdapter, deepSeekHarnessAdapter, piAdapter, primeAgentAdapter, openClawAdapter, hermesAdapter, aiderAdapter, continueAdapter, zedAdapter, ...guidedAdapters];
 
 function adapterFor(value: string | undefined): IntegrationAdapter {
 	const aliases: Record<string, IntegrationId> = {
@@ -129,7 +130,7 @@ export async function runIntegrationCommand(
 
 	const adapter = adapterFor(integration);
 	if (commandOptions.primaryOnly && !isPrimaryHarness(adapter.id)) {
-		throw new Error("Phaseo direct setup currently supports codex, claude-code, hermes, opencode, pi, prime-agent, deepseek-harness, and openclaw");
+		throw new Error("Phaseo direct setup currently supports codex, claude-code, hermes, opencode, fx, pi, prime-agent, deepseek-harness, and openclaw");
 	}
 	if (adapter.id === "claude-code" && stringFlag(flags, "model")) {
 		throw new Error("--model is not supported for the Claude Code integration");
@@ -139,7 +140,7 @@ export async function runIntegrationCommand(
 		throw new Error("--catalog must be all or default");
 	}
 	if (catalog !== undefined && !supportsModelCatalog(adapter.id)) {
-		throw new Error("--catalog is only supported for OpenCode, DeepSeek Harness, Pi, Prime Agent, and OpenClaw");
+		throw new Error("--catalog is only supported for OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, and OpenClaw");
 	}
 	const json = isTrue(flags.json);
 	const dryRun = isTrue(flags["dry-run"]);

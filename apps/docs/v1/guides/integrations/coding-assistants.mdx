@@ -24,7 +24,7 @@ phaseo login
 phaseo codex
 ```
 
-This command checks whether the harness is installed. When it is missing in an interactive terminal, Phaseo shows the supported install command and asks before running it. Phaseo then creates the harness's dedicated key and writes its configuration. Non-interactive runs print actionable installation guidance without making an unattended system change. OpenCode, DeepSeek Harness, Pi, Prime Agent, and OpenClaw also receive every active text model compatible with Chat Completions. Use `--skip-install`, `--catalog default`, or `--dry-run` when you need narrower behavior.
+This command checks whether the harness is installed. When it is missing in an interactive terminal, Phaseo shows the supported install command and asks before running it. Phaseo then creates the harness's dedicated key and writes its configuration. Non-interactive runs print actionable installation guidance without making an unattended system change. OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, and OpenClaw also receive every active text model compatible with Chat Completions. Use `--skip-install`, `--catalog default`, or `--dry-run` when you need narrower behavior.
 
 Use the product-named command for any persistent integration:
 
@@ -32,7 +32,7 @@ Use the product-named command for any persistent integration:
 phaseo codex
 ```
 
-Supported integration names are `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. The isolated CLI runners are `cline`, `kilo`, `omp`, `muse`, and `minimax`.
+Supported integration names are `codex`, `claude-code`, `opencode`, `fx`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor`, and `zed`. The isolated CLI runners are `cline`, `kilo`, `omp`, `muse`, and `minimax`.
 
 The CLI creates a separate API key named for that assistant, which expires after 90 days and has a $100 monthly spend limit. It configures Aider and Continue automatically on clean installations, and writes Zed's provider/model settings automatically. For assistants that keep secrets exclusively in an editor UI, it prints the exact remaining fields, links the dedicated guide, and lets you copy only that assistant's key:
 
@@ -177,6 +177,10 @@ Codex custom providers use the Responses wire protocol.
 ## OpenCode
 
 Use the dedicated [OpenCode guide](./opencode.mdx) when you want OpenCode to call Phaseo through an OpenAI-compatible custom provider.
+
+## fx
+
+Use the dedicated [fx guide](./fx.mdx) to add Phaseo as a custom model connection in Vercel Labs' fx coding agent.
 
 ## Claude Code
 

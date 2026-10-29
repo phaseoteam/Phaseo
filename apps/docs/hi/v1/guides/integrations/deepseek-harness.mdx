@@ -29,7 +29,7 @@ CLI `$DSH_HOME/cordis.patch.yml` में असंबंधित प्रव
 phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
-सेटअप `Phaseo CLI: DeepSeek Harness API Key` नाम की, बिना समाप्ति तिथि वाली एक गेटवे कुंजी भी बनाता है और उसे सीधे Harness के सुरक्षित `$DSH_HOME/.credentials.yaml` स्टोर में लिखता है। केवल चुने गए मॉडल को कॉन्फ़िगर करने के लिए `--catalog default` का उपयोग करें।
+सेटअप `Phaseo CLI: DeepSeek Harness API Key` नाम की एक गेटवे कुंजी भी बनाता है, जो 90 दिनों बाद समाप्त हो जाती है और जिसकी मासिक खर्च सीमा $100 है, और उसे सीधे Harness के सुरक्षित `$DSH_HOME/.credentials.yaml` स्टोर में लिखता है। समाप्त कुंजी बदलने के लिए `phaseo deepseek-harness` फिर से चलाएँ। केवल चुने गए मॉडल को कॉन्फ़िगर करने के लिए `--catalog default` का उपयोग करें।
 
 `phaseo integrations remove deepseek-harness` से इंटीग्रेशन हटाने पर केवल Phaseo के स्वामित्व वाला कॉन्फ़िगरेशन हटता है और CLI द्वारा बनाई गई कुंजी निरस्त हो जाती है।
 

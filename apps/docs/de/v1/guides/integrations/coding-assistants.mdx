@@ -23,7 +23,7 @@ phaseo login
 phaseo codex
 ```
 
-Dieser Befehl prüft, ob das Harness installiert ist. Fehlt es in einem interaktiven Terminal, zeigt Phaseo den unterstützten Installationsbefehl an und fragt vor der Ausführung nach. Anschließend erstellt Phaseo einen eigenen Schlüssel für das Harness und schreibt dessen Konfiguration. Nichtinteraktive Aufrufe geben konkrete Installationshinweise aus, ohne unbeaufsichtigt Änderungen am System vorzunehmen. OpenCode, DeepSeek Harness, Pi, Prime Agent und OpenClaw erhalten außerdem alle aktiven Textmodelle, die mit Chat Completions kompatibel sind. Verwende `--skip-install`, `--catalog default` oder `--dry-run`, um den Umfang einzuschränken.
+Dieser Befehl prüft, ob das Harness installiert ist. Fehlt es in einem interaktiven Terminal, zeigt Phaseo den unterstützten Installationsbefehl an und fragt vor der Ausführung nach. Anschließend erstellt Phaseo einen eigenen Schlüssel für das Harness und schreibt dessen Konfiguration. Nichtinteraktive Aufrufe geben konkrete Installationshinweise aus, ohne unbeaufsichtigt Änderungen am System vorzunehmen. OpenCode, fx, DeepSeek Harness, Pi, Prime Agent und OpenClaw erhalten außerdem alle aktiven Textmodelle, die mit Chat Completions kompatibel sind. Verwende `--skip-install`, `--catalog default` oder `--dry-run`, um den Umfang einzuschränken.
 
 Verwende für dauerhafte Integrationen den Befehl mit dem Produktnamen:
 
@@ -31,7 +31,7 @@ Verwende für dauerhafte Integrationen den Befehl mit dem Produktnamen:
 phaseo codex
 ```
 
-Unterstützte Integrationsnamen sind `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` und `zed`. Die isolierten CLI-Runner sind `cline`, `kilo`, `omp`, `muse` und `minimax`.
+Unterstützte Integrationsnamen sind `codex`, `claude-code`, `opencode`, `fx`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` und `zed`. Die isolierten CLI-Runner sind `cline`, `kilo`, `omp`, `muse` und `minimax`.
 
 Die CLI erstellt einen eigenen API-Schlüssel für den jeweiligen Assistenten, der nach 90 Tagen abläuft und ein monatliches Ausgabenlimit von $100 hat. Bei Neuinstallationen konfiguriert sie Aider und Continue automatisch und schreibt auch Zeds Anbieter-/Modelleinstellungen. Bei Assistenten, die Geheimnisse ausschließlich in einer Editor-Oberfläche speichern, zeigt sie die noch fehlenden Felder an, verlinkt den passenden Leitfaden und ermöglicht das Kopieren nur dieses Assistentenschlüssels:
 
@@ -176,6 +176,10 @@ Benutzerdefinierte Codex-Anbieter verwenden das Responses-Wire-Protokoll.
 ## OpenCode
 
 Wenn OpenCode Phaseo über einen benutzerdefinierten OpenAI-kompatiblen Anbieter aufrufen soll, nutze den [eigenen OpenCode-Leitfaden](./opencode.mdx).
+
+## fx
+
+Nutze den [eigenen fx-Leitfaden](./fx.mdx), um Phaseo als benutzerdefinierte Modellverbindung im fx-Programmieragenten von Vercel Labs hinzuzufügen.
 
 ## Claude Code
 

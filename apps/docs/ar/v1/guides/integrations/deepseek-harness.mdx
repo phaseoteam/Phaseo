@@ -29,7 +29,7 @@ phaseo deepseek-harness
 phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
-ينشئ الإعداد أيضًا مفتاح Gateway غير منتهي الصلاحية باسم `Phaseo CLI: DeepSeek Harness API Key` ويكتبه مباشرةً في مخزن Harness المحمي `$DSH_HOME/.credentials.yaml`. استخدم `--catalog default` لتهيئة النموذج المحدد فقط.
+ينشئ الإعداد أيضًا مفتاح Gateway باسم `Phaseo CLI: DeepSeek Harness API Key` تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره 100 دولار، ويكتبه مباشرةً في مخزن Harness المحمي `$DSH_HOME/.credentials.yaml`. شغّل `phaseo deepseek-harness` مجددًا لاستبدال المفتاح المنتهي. استخدم `--catalog default` لتهيئة النموذج المحدد فقط.
 
 يؤدي حذف التكامل عبر `phaseo integrations remove deepseek-harness` إلى إزالة إعداد Phaseo فقط وإلغاء المفتاح الذي أنشأته CLI.
 
