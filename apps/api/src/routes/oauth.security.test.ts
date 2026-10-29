@@ -15,6 +15,9 @@ const state = vi.hoisted(() => ({
 	oauthAuth: { ok: false, reason: "invalid_token" } as Record<string, unknown>,
 	pollStatus: "ok" as string,
 	displayName: null as string | null,
+	memberships: [] as Array<{ workspace_id: string }>,
+	authorizationUpdates: [] as Array<{ payload: Record<string, unknown>; filters: Record<string, unknown> }>,
+	insertedCodes: [] as Array<Record<string, unknown>>,
 }));
 
 const FUTURE_EXPIRES_AT = "2999-01-01T00:00:00.000Z";
@@ -57,8 +60,15 @@ vi.mock("@/runtime/env", () => ({
 					},
 				};
 			}
+			if (table === "workspace_members") {
+				return { select: () => ({ eq: () => ({ in: async () => ({ data: state.memberships, error: null }) }) }) };
+			}
 			if (table === "oauth_authorization_codes") {
 				return {
+					insert: async (payload: Record<string, unknown>) => {
+						state.insertedCodes.push(payload);
+						return { error: null };
+					},
 					select: () => ({
 						in: () => ({
 							eq: () => ({
@@ -70,6 +80,17 @@ vi.mock("@/runtime/env", () => ({
 			}
 			if (table === "oauth_authorizations") {
 				return {
+					update: (payload: Record<string, unknown>) => {
+						const filters: Record<string, unknown> = {};
+						state.authorizationUpdates.push({ payload, filters });
+						const chain = {
+							eq(column: string, value: unknown) {
+								filters[column] = value;
+								return Object.keys(filters).length >= 3 ? Promise.resolve({ error: null }) : chain;
+							},
+						};
+						return chain;
+					},
 					select: () => ({
 						eq: () => ({
 							eq: () => ({
@@ -233,6 +254,9 @@ describe("OAuth route security", () => {
 		state.consentParams = null;
 		state.oauthAuth = { ok: false, reason: "invalid_token" };
 		state.pollStatus = "ok";
+		state.memberships = [];
+		state.authorizationUpdates.length = 0;
+		state.insertedCodes.length = 0;
 		vi.resetModules();
 	});
 
@@ -653,6 +677,71 @@ describe("OAuth route security", () => {
 		expect(response.status).toBe(403);
 		expect(await response.json()).toMatchObject({ error: "access_denied" });
 		expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
+	});
+
+	describe("monthly spending limit on consent", () => {
+		const approve = async (extra: Record<string, unknown>) => {
+			const { oauthRouter } = await import("./oauth");
+			return oauthRouter.request("https://example.com/authorize/approve", {
+				method: "POST",
+				headers: { authorization: "Bearer user-session", "content-type": "application/json" },
+				body: JSON.stringify({
+					client_id: state.client.id,
+					redirect_uri: "https://example.com/callback",
+					primary_workspace_id: "ws_1",
+					scopes: ["gateway:access", "models:read"],
+					code_challenge: "a".repeat(43),
+					code_challenge_method: "S256",
+					...extra,
+				}),
+			});
+		};
+
+		beforeEach(() => {
+			state.client = { id: "partner_app", name: "Partner App", client_type: "public", is_first_party: false };
+			state.memberships = [{ workspace_id: "ws_1" }];
+		});
+
+		it("stores the chosen limit on the app's authorization for the active workspace", async () => {
+			const response = await approve({ monthly_limit_cost_nanos: 35_000_000_000 });
+
+			expect(response.status).toBe(200);
+			expect(state.authorizationUpdates).toEqual([{
+				payload: { key_monthly_limit_cost_nanos: 35_000_000_000 },
+				filters: { user_id: "user_1", workspace_id: "ws_1", client_id: "partner_app" },
+			}]);
+			expect(state.insertedCodes).toHaveLength(1);
+		});
+
+		it("stores no limit as 0, and $20 a month when the consent page sent none", async () => {
+			expect((await approve({ monthly_limit_cost_nanos: 0 })).status).toBe(200);
+			expect((await approve({})).status).toBe(200);
+			expect(state.authorizationUpdates.map((update) => update.payload)).toEqual([
+				{ key_monthly_limit_cost_nanos: 0 },
+				{ key_monthly_limit_cost_nanos: 20_000_000_000 },
+			]);
+		});
+
+		it("rejects a limit that isn't a whole number of nanodollars in range, before granting anything", async () => {
+			const service = await import("@/lib/oauth/service");
+			vi.mocked(service.ensureGrants).mockClear();
+			for (const value of [-1, 1.5, "20", 1_000_000_000_000_001]) {
+				const response = await approve({ monthly_limit_cost_nanos: value });
+				expect(response.status).toBe(400);
+				expect(await response.json()).toMatchObject({ error: "invalid_request" });
+			}
+			expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
+			expect(state.authorizationUpdates).toEqual([]);
+			expect(state.insertedCodes).toEqual([]);
+		});
+
+		it("sets no limit for first-party apps", async () => {
+			state.client = { id: "phaseo_cli", name: "Phaseo CLI", client_type: "public", is_first_party: true };
+			const response = await approve({ scopes: ["openid", "models:read"] });
+
+			expect(response.status).toBe(200);
+			expect(state.authorizationUpdates).toEqual([]);
+		});
 	});
 
 	it("rejects Gateway API resource approval without gateway access consent", async () => {

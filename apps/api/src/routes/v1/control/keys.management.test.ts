@@ -456,6 +456,47 @@ describe("management key routes", () => {
 		});
 	});
 
+	it("never lets an OAuth app change its own key's spending limit", async () => {
+		const appAuth = {
+			ok: true,
+			value: {
+				workspaceId: "ws_1", apiKeyId: "key_app", internal: false, authMethod: "oauth",
+				oauthClientId: "partner_app", userId: "user_admin", scopes: ["keys:write"], oauthScopes: ["keys:write"],
+			} as any,
+		} as GuardOk;
+		const appKey = {
+			id: "key_app", hash: "hash_app", workspace_id: "ws_1", kid: "kid_app", name: "OAuth: partner_app", prefix: "phaseo_v1_sk_app",
+			status: "active", soft_blocked: false, expires_at: null, monthly_limit_cost_nanos: 20_000_000_000,
+			key_kind: "oauth_delegated", oauth_client_id: "partner_app",
+		};
+		const { keysRoutes } = await import("./keys");
+		const patch = (body: Record<string, unknown>) => keysRoutes.request("https://example.com/hash_app", {
+			method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+		});
+
+		for (const body of [{ limit: null }, { limit: 500, limit_reset: "monthly" }, { limits: { monthly: { cost: 1000 } } }, { soft_blocked: false }]) {
+			state.guardManagementAuthResult = appAuth;
+			state.membershipRows.push({ role: "admin" });
+			state.keyRows.push({ ...appKey });
+			const response = await patch(body);
+			expect(response.status).toBe(403);
+			expect(await response.json()).toMatchObject({ error: "forbidden" });
+		}
+		expect(state.updatePayloads).toEqual([]);
+
+		// It can still rename its key, and other keys follow the usual keys:write rules.
+		state.guardManagementAuthResult = appAuth;
+		state.membershipRows.push({ role: "admin" });
+		state.keyRows.push({ ...appKey }, { ...appKey, name: "Renamed" });
+		expect((await patch({ name: "Renamed" })).status).toBe(200);
+		state.guardManagementAuthResult = appAuth;
+		state.membershipRows.push({ role: "admin" });
+		const personKey = { ...appKey, id: "key_person", key_kind: "standard", oauth_client_id: null };
+		state.keyRows.push(personKey, { ...personKey, monthly_limit_cost_nanos: 0 });
+		expect((await patch({ limit: null })).status).toBe(200);
+		expect(state.updatePayloads).toEqual([{ name: "Renamed" }, { daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 }]);
+	});
+
 	it("rechecks the API key limit before reactivating a paused key", async () => {
 		state.keyRows.push({
 			id: "key_paused",
