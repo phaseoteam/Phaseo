@@ -17,7 +17,7 @@ const entry=process.argv.find(value=>value.startsWith('--app-entry='))?.slice('-
 await import(entry?pathToFileURL(path.resolve(entry)).href:'../dist/main/index.mjs');
 app.whenReady().then(async()=>{try{
  const owner=BrowserWindow.getAllWindows()[0];owner.webContents.setBackgroundThrottling(false);if(owner.webContents.isLoading())await new Promise(resolve=>owner.webContents.once('did-finish-load',resolve));await installControlActions(owner);
- const run=code=>owner.webContents.executeJavaScript(code);
+ const run=code=>owner.webContents.executeJavaScript(`(async()=>{const value=await (${code}\n);return value instanceof Node?true:value})()`);
  // A chat is reachable by its ID from the command palette; native session identifiers never leave the main process.
  await run(`window.__auditOpenChatId(${JSON.stringify(ids[1])})`);
  const overview=await run('window.phaseoDesktop.workspace.overview()');assert.ok(overview.tasks.every(task=>!('nativeSessionId' in task)));assert.ok(!JSON.stringify(overview).includes('private-native-session'));

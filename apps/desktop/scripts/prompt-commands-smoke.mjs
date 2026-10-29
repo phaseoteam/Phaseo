@@ -16,7 +16,7 @@ const entry=process.argv.find(value=>value.startsWith('--app-entry='))?.slice(12
 await import(entry?pathToFileURL(path.resolve(entry)).href:'../dist/main/index.mjs');
 app.whenReady().then(async()=>{
  const owner=BrowserWindow.getAllWindows()[0];owner.webContents.setBackgroundThrottling(false);if(owner.webContents.isLoading())await new Promise(resolve=>owner.webContents.once('did-finish-load',resolve));await installControlActions(owner);
- const run=async code=>{try{return await owner.webContents.executeJavaScript(code)}catch(error){console.error("FAILED_SCRIPT",code);throw error}};const wait=async code=>{for(let i=0;i<300;i++){if(await run(code))return;await new Promise(resolve=>setTimeout(resolve,25));}throw Error('Command UI did not settle: '+code);};
+ const run=async code=>{try{return await owner.webContents.executeJavaScript(`(async()=>{const value=await (${code}\n);return value instanceof Node?true:value})()`)}catch(error){console.error("FAILED_SCRIPT",code);throw error}};const wait=async code=>{for(let i=0;i<300;i++){if(await run(code))return;await new Promise(resolve=>setTimeout(resolve,25));}throw Error('Command UI did not settle: '+code);};
  const commands=(projectId,request)=>run(`window.phaseoDesktop.workspace.promptCommands(${JSON.stringify(projectId)},${JSON.stringify(request)})`);
  try{
   await commands(undefined,{type:'save',scope:'global',name:'review',description:'Global review',template:'Global $ARGUMENTS',expectedHash:'new'});
