@@ -4,7 +4,7 @@ How to set up a checkout, run one app, and run the checks for what you changed. 
 
 ## Prerequisites
 
-- Node.js `^22.13.0` or `>=24.0.0`, from `engines` in the root [package.json](../../package.json). CI uses Node 22, and Node 24 for the AIMock matrix and publishing.
+- Node.js `^22.19.0` or `>=24.0.0`, from `engines` in the root [package.json](../../package.json). CI uses Node 22, and Node 24 for the AIMock matrix and publishing.
 - pnpm 10.33.0, pinned by `packageManager`. Run `corepack enable` to use it.
 
 Other toolchains are only needed for the matching SDK or check. Versions are the ones CI uses:
@@ -15,7 +15,7 @@ Other toolchains are only needed for the matching SDK or check. Versions are the
 | Go SDK | Go 1.23; the Go Agent SDK needs 1.24 |
 | C# SDK | .NET 8 SDK |
 | Java SDK | JDK 17 and Maven |
-| PHP and Ruby SDKs | PHP 8.2, Ruby 3.2 |
+| PHP and Ruby SDKs | PHP 8.2, Ruby 4.0 |
 | Rust SDK | Rust with `clippy` and `rustfmt` |
 | C++ SDK | `g++` with C++17 |
 | `pnpm db:schema:*` | Docker or another local runtime for the Supabase CLI's shadow database |
@@ -39,19 +39,20 @@ Start only the app you need. `pnpm dev` starts every workspace's dev server at o
 | Web and Web API together | `pnpm dev:cloudflare-web` | 3100 and 8788 |
 | Gateway API (`apps/api`) | `pnpm --filter @phaseo/gateway-api dev` | Wrangler default, 8787 |
 | MCP server (`apps/mcp`) | `pnpm --filter @phaseo/mcp dev` | Wrangler default, 8787 |
+| Slack agent Worker (`apps/slack`) | `pnpm --filter @phaseo/slack-agent dev` | 8789 |
 | Docs (`apps/docs`) | `pnpm --filter @phaseo/docs dev` | 3101 |
 
 - Without `WEB_API_ORIGIN`, local `next dev` proxies `/api/_web` to production (`apps/web/next.config.mjs`), so the page shows live public data. To use your local Web API Worker, set `WEB_API_ORIGIN=http://127.0.0.1:8788`; `pnpm dev:cloudflare-web` does this for you.
 - The gateway and MCP Workers share a default port. To pick one, run Wrangler from `apps/api`: `pnpm exec wrangler dev --local --ip 127.0.0.1 --port 8795 --show-interactive-dev-session=false`.
 - If an embedded browser reload-loops on the web app, open `http://localhost:3100` instead of `127.0.0.1`.
-- For the desktop app, see [apps/desktop/README.md](../../apps/desktop/README.md). The mobile app runs with `pnpm --filter @phaseo/mobile dev` (Expo).
+- For the desktop app, see [apps/desktop/README.md](../../apps/desktop/README.md), and for Factory, [apps/factory/README.md](../../apps/factory/README.md). The mobile app runs with `pnpm --filter @phaseo/mobile dev` (Expo).
 
 ## Environment files
 
 Every file below is gitignored. Never commit one, and never use production credentials for local development.
 
 - `apps/web/.env.local` for the web app. Variables shared across tasks are listed in `globalEnv` in [turbo.json](../../turbo.json).
-- `.dev.vars` in `apps/api`, `apps/web-api`, `apps/mcp` and `apps/perf-upstream`, which `wrangler dev` reads. Start from the committed `.dev.vars.example` in `apps/api`, `apps/mcp` and `apps/perf-upstream`. The gateway's example lists only provider-specific values, not everything the Worker reads.
+- `.dev.vars` in `apps/api`, `apps/web-api`, `apps/mcp`, `apps/slack` and `apps/perf-upstream`, which `wrangler dev` reads. Start from the committed `.dev.vars.example` in `apps/api`, `apps/mcp`, `apps/slack` and `apps/perf-upstream`. The gateway's example lists only provider-specific values, not everything the Worker reads.
 - Before sending requests to a local Worker, check which database and providers its `.dev.vars` points at. A local gateway with real credentials reads and writes that database and spends provider credit.
 
 ## Set up a fresh worktree
@@ -61,16 +62,16 @@ Use one git worktree per task. A new worktree has no `node_modules`, build outpu
 1. Run `pnpm install --frozen-lockfile`.
 2. Copy only the env files you need from your main checkout. Delete temporary copies when you finish.
 3. Build the TypeScript SDK before running Web API tests, its dev server, or `tsc` directly: `pnpm --filter @phaseo/sdk build`. `pnpm --filter @phaseo/web-api typecheck` does this itself.
-4. Generate Next's route types before type-checking the web app: `pnpm --filter @phaseo/web exec next typegen`. Without them, `tsc` reports missing `PageProps` and `LayoutProps`.
+4. Generate Next's route types before running `tsc` on the web app directly: `pnpm --filter @phaseo/web exec next typegen`. Without them, `tsc` reports missing `PageProps` and `LayoutProps`. The `typecheck` script runs `next typegen` itself.
 5. Type-check the web app with `pnpm --filter @phaseo/web typecheck`. `npx tsc` resolves an unrelated npm package.
 
 Worktrees share the main clone's object store. Never run `git fetch --depth=<n>` in one: it writes `.git/shallow` and makes the main clone shallow too.
 
 ## What CI covers
 
-[CI](../../.github/workflows/ci.yml) runs OpenAPI lint, SDK generation for all nine languages, SDK package builds, lifecycle and Agent SDK tests, the CLI package, lint and a dry-run build for the gateway, lint, tests and builds for the Web API and MCP Workers, docs validation, web localisation checks with a compile-only Next build, and the gateway AIMock matrix. Migrations get policy checks and the declarative schema workflow.
+[CI](../../.github/workflows/ci.yml) runs repository checks (shared registry copies, skills, a few catalogue and SQL tests, and type-checks for desktop, mobile and perf-upstream), OpenAPI lint, SDK generation for all nine languages, SDK package builds, lifecycle and Agent SDK tests, the CLI package and the Devtools build. The Apps jobs cover the gateway (`validate:api`, which is ESLint, `tsc` and a Wrangler dry run, plus one Vitest file, the provider simulator tests and the pricing simulator), docs validation, the web app (localisation checks, three Jest files, `pnpm --filter @phaseo/web typecheck` and a compile-only Next build), and the Web API, MCP and Slack agent Workers (lint or type-check, tests and a dry-run build). The gateway AIMock matrix is its own job, and a Factory job runs when `apps/factory` changes. Migrations get policy checks and the declarative schema workflow, and desktop changes get the "Desktop workspace" workflow.
 
-CI does not run most gateway or web unit tests. It runs one gateway `src` test file and four web Jest suites, and it has no web ESLint, `tsc` or Playwright step. Run the tests for the code you touched. Do not run the repo-wide `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all` or `pnpm precommit`.
+CI does not run most gateway or web unit tests: it runs one of 816 gateway `src` test files and three of 429 web Jest files, and it has no web ESLint or Playwright step. The TypeScript and Python SDK test suites (`pnpm test:sdk-ts`, `pnpm test:sdk-py`) do not run in CI either. Run the tests for the code you touched. Do not run the repo-wide `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all` or `pnpm precommit`.
 
 ## Run scoped checks
 
@@ -123,7 +124,7 @@ pnpm test:agent-sdk-<ts|py|go|csharp|java|php|ruby|rust>
 pnpm openapi:gen:<ts|py|go|csharp|php|ruby|java|cpp|rust>
 ```
 
-- `test:sdk-py` uses `uv` when it is installed. Otherwise create a virtual environment, run `pip install pytest -e packages/sdk/sdk-py` in it, and set `PHASEO_PYTHON` to its interpreter.
+- `test:sdk-py` uses `uv` when it is installed. Otherwise create a virtual environment, run `pip install pytest -e "packages/sdk/sdk-py[realtime]"` in it, and set `PHASEO_PYTHON` to its interpreter.
 - `pnpm openapi:gen` regenerates all nine SDKs and is slow; use one language while iterating. Making an OpenAPI field optional changes typed SDKs (Go turns it into a pointer), so run that language's tests.
 - `pnpm test` in `packages/cli/phaseo` first runs `sync:capabilities`, which can rewrite `src/generated/meta.ts`. Revert it unless you meant to change it.
 - Go tests can leave an untracked `packages/sdk/go.work.sum`. Delete it.

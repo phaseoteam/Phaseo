@@ -29,13 +29,12 @@ Never fetch rows to sum, count or bucket them in a Worker or the browser. PostgR
 
 ## Catalogue data
 
-The Supabase catalogue is the source of truth for models, providers, pricing, aliases and benchmarks. JSON under `packages/data/catalog` is an archive or a generated export, never an input.
+The Supabase catalogue is the source of truth for models, providers, pricing, aliases and benchmarks. The repository holds no catalogue JSON, so no repository check validates live catalogue data.
 
 - Change catalogue data only when asked, with targeted operations on the affected rows through the Supabase tooling or the admin catalogue editor.
 - Read the rows back afterwards and include the readback in your report or pull request.
-- `pnpm validate:data`, `validate:pricing` and `validate:gateway` check archived fixtures, not live data.
 
-See [packages/data/catalog/AGENTS.md](../../packages/data/catalog/AGENTS.md) and the [model and provider onboarding skill](../../.agents/skills/phaseo-model-provider-onboarding/SKILL.md).
+See the [model and provider onboarding skill](../../.agents/skills/phaseo-model-provider-onboarding/SKILL.md).
 
 ## Schema changes and migrations
 
@@ -70,4 +69,4 @@ Do not run `supabase migration repair --status reverted` for a real schema chang
 - Prefer AIMock tests and the provider mock; see [Development](./development.md#gateway-api).
 - When a live check is needed, use the maintainer's existing `phaseo` CLI login session, for example `phaseo api get /v1/<path> --json`. Print status codes and the fields you need, never the token.
 - `*.live.spec.ts` tests, `test:live:*` scripts, SDK smoke tests and AIMock recording call real providers and spend quota. Run them only when asked.
-- Vercel pull request previews require a Vercel login. Do not create a protection-bypass secret to reach one. Client-side `/api/_web` fetches fail on previews, so check that data on production after deploy.
+- Vercel pull request previews require a Vercel login. Do not create a protection-bypass secret to reach one. Unless the preview sets `WEB_API_ORIGIN`, `apps/web/next.config.mjs` rewrites `/api/_web`, `/api/account`, `/api/chat` and `/api/internal` on a preview to production `https://phaseo.app`. A preview therefore reads the production Web API and does not run Web API changes from the same pull request; check those on production after deploy.

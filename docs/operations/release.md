@@ -1,6 +1,6 @@
 # Releases and deploys
 
-How a change gets from a branch to users. This replaces the root `CHANGESETS.md`. Per-language SDK publishing details are in [packages/sdk/RELEASING.md](../../packages/sdk/RELEASING.md).
+How a change gets from a branch to users. The root `AGENTS.md` has the short version for changesets; this page has the full mechanics. Per-language SDK publishing details are in [packages/sdk/RELEASING.md](../../packages/sdk/RELEASING.md).
 
 ## Merge a pull request
 
@@ -19,14 +19,12 @@ Every push to `main` runs [CI](../../.github/workflows/ci.yml) again. Production
 1. **Database.** "Validate database migration policy" runs, then "Apply production database migrations" in the protected `production-database` environment: a dry run, `supabase db push`, then the security smoke SQL. See [Production database migrations](../../.github/PRODUCTION_DATABASE_MIGRATIONS.md).
 2. **Deploy.** The `deploy` matrix starts only after the Apps jobs and the migration job succeed:
    - `deploy (api, Deploy API)`, `(api-eu, …)` and `(api-us, …)` deploy the gateway Workers with `apps/api/scripts/deploy-global.ps1` and `deploy-regional.ps1`.
-   - `deploy (web-api, …)` and `deploy (mcp, …)` deploy the Web API and MCP Workers.
+   - `deploy (web-api, …)`, `deploy (mcp, …)` and `deploy (slack, …)` deploy the Web API, MCP and Slack agent Workers.
    - `deploy (web, Deploy Web)` runs `vercel deploy --prod`. It skips the deploy when nothing the web build reads has changed since the commit production serves.
    - Mintlify's GitHub app deploys `apps/docs` on its own; the `deploy (docs, …)` job only logs.
 3. **Packages.** "Handle Versions" runs the changesets flow below.
 
 A failed migration job blocks every CI deploy. To recover a missed or failed release, run CI on `main` manually with `deploy_production` set. If the job fails at its dry run with unknown remote versions, see [migration history drift](./production-access.md#migration-history-drift).
-
-Separately, the daily "Catalog Database Snapshot" workflow exports the production catalogue to `packages/data/catalog/generated/database-v2` and opens a review pull request. It does not deploy anything.
 
 ## Confirm a change is live
 
@@ -74,7 +72,7 @@ Pre-release lines use `pnpm changeset pre enter <tag>` and `pnpm changeset pre e
 [apps/docs/openapi/v1/openapi.yaml](../../apps/docs/openapi/v1/openapi.yaml) is the single contract for the docs and all nine SDKs.
 
 - After editing it, run `pnpm openapi:gen` and commit the generated directories. While iterating, `pnpm openapi:gen:<language>` regenerates one SDK. The "Generate SDKs" jobs fail when committed output differs.
-- `pnpm openapi:sync-enums` refreshes the model and organisation enums from `packages/data/catalog/generated/database-v2/enum-catalog.json`. OpenAPI lint fails if the result is not committed.
+- The model, organisation and benchmark enums (`KnownModelId`, `OrganisationId`, `BenchmarkId`) are edited by hand in the spec; nothing syncs them from the database. After changing `KnownModelId`, run `node scripts/sdk/generate-model-id-constants.mjs` to refresh the SDK model-ID helpers.
 - New or changed `description`, `summary` or `title` strings need entries in `apps/docs/openapi/localized-copy.json` and regenerated locale specs (`pnpm --filter @phaseo/docs openapi:locales`). See [apps/docs/TRANSLATION_WORKFLOW.md](../../apps/docs/TRANSLATION_WORKFLOW.md).
 - Update the affected guides, examples and SDK reference pages in the same pull request. Never hand-edit generated SDK code; fix the spec or the generator and regenerate.
 - Add a changeset for the SDK packages, or let CI add the automatic patch one.

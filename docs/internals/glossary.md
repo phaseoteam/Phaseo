@@ -15,6 +15,7 @@ constraints and traps belong in the [overview](./overview.md), not in these defi
 | Management key | A control-plane key, `phaseo_v1_mk_<kid>_<secret>`, stored in `management_keys`. The gateway rejects it for inference. |
 | OAuth client | A third-party app registered in `oauth_clients` that asks users for access through Phaseo OAuth. |
 | OAuth delegated key | An opaque key issued to an OAuth client for one user in one workspace (`keys.key_kind = 'oauth_delegated'`). Every request re-checks that the authorization and membership are still active. |
+| Workload identity key | A key with no usable secret (`keys.key_kind = 'workload_identity'`) behind a trust policy (`workload_identity_policies`). A Vercel or GitHub Actions OIDC token that matches the policy authenticates as that key. |
 | BYOK key | A customer's own provider key (`byok_keys`), stored encrypted. Its `routing_mode` decides whether it is tried before or after Phaseo's managed key. Providers and routes with `credential_mode = 'byok_only'` accept only BYOK keys. |
 
 ## Catalogue
@@ -60,8 +61,8 @@ constraints and traps belong in the [overview](./overview.md), not in these defi
 | Router models | `phaseo/auto` classifies the request and picks a model; it cannot be combined with `models`. `phaseo/free` routes among free models. |
 | Successor routing | Sending requests for a model no provider has served for 72 hours to an admin-approved successor (`v2_model_successor_routing`). Off by default; each workspace opts in and sets a price policy. |
 | Guardrail | A workspace, key or member policy that restricts models and providers, sets privacy rules and request or cost limits, and can block or redact prompt injection and sensitive data. |
-| Rate limit policy | A named per-minute limit an admin assigns to keys, members, guardrails or end users (`workspace_rate_limit_policies`). |
-| Customer rate limit | A per-workspace request quota per minute, plus a daily free-model quota, counted by a Durable Object. A scheduled job sets each workspace's tier. |
+| Rate limit policy | A named limit on requests per minute, tokens per minute or concurrent requests that an admin assigns to keys, members, departments, guardrails or end users (`workspace_rate_limit_policies`). |
+| Customer rate limit | A request quota per minute for each key owner in a workspace, plus a daily free-model quota, counted by a Durable Object. A scheduled job sets each workspace's tier. |
 | Provider rate limit | An upstream quota on Phaseo's managed credentials, counted across all customers so Phaseo stays within it. |
 | ZDR | Zero data retention. Providers declare it (`zero_data_retention`); requests and guardrails can require it. |
 | I/O logs | Opt-in capture of request and response payloads to R2, tracked in `gateway_io_logs`, with a retention period. |
@@ -75,7 +76,8 @@ constraints and traps belong in the [overview](./overview.md), not in these defi
 | Charge | The debit for a synchronous request after it completes. It is idempotent per request (`gateway_request_charges`). |
 | Reservation | A hold on wallet credit taken when a batch or video job is created (`gateway_wallet_reservations`). It is later captured, released or settled; settlement charges the job's actual cost, which may exceed the hold, and frees the hold in one step. |
 | Credit ledger | Balance changes from top-ups, credit codes and captured or settled reservations (`credit_ledger`). Synchronous request charges are recorded per request in `gateway_request_charges` instead. |
-| Budget | A workspace spend cap per day, week, month or lifetime (`workspace_budgets`). Keys have their own request and cost limits. |
+| Budget | A workspace spend cap per day, week, month or lifetime (`workspace_budgets`), checked on the request path. Keys have their own request and cost limits. Department budgets (`workspace_department_budgets`) only alert. |
+| Spend rule | A threshold on spend for a workspace, key, member, department, model or provider that notifies, or notifies and then blocks (`workspace_spend_rules`). Spend is evaluated every five minutes, so a block starts minutes after the threshold. |
 | Request record | The authoritative row for one gateway request (`gateway_requests`). `v2_request_facts`, attempts, usage and pricing lines extend it. |
 
 ## Asynchronous work
@@ -87,7 +89,7 @@ constraints and traps belong in the [overview](./overview.md), not in these defi
 | Provider event | An inbound provider webhook stored once per event ID (`gateway_provider_events`), so repeated deliveries are ignored. |
 | Webhook endpoint | A customer URL that receives signed video and batch events (`gateway_webhook_endpoints`, header `x-phaseo-signature`). |
 | Notification destination | Where workspace alerts such as model deprecations go: email, Slack, Discord, Microsoft Teams or a custom webhook (`notification_destinations`). |
-| Broadcast destination | A workspace export of per-request telemetry to an OTLP or webhook endpoint (`workspace_broadcast_destinations`). |
+| Broadcast destination | A workspace export of per-request telemetry as OTLP traces, webhook events or rows in a warehouse or object store (`workspace_broadcast_destinations`). |
 | Realtime session | A voice WebSocket session relayed by a Durable Object, with an extendable credit hold (`gateway_realtime_sessions`). |
 | Workspace publication | A queued notice that a workspace's settings changed (`gateway_workspace_publications`). Draining it invalidates that workspace's cached gateway context. |
 | Catalogue revision | A value from `gateway_catalogue_revision()` published to KV each minute. Gateway isolates refresh catalogue snapshots when it changes. |
@@ -100,4 +102,4 @@ constraints and traps belong in the [overview](./overview.md), not in these defi
 | Generated SDK | The client code produced by `pnpm openapi:gen` for TypeScript, Python, Go, C#, Java, PHP, Ruby, C++ and Rust. Handwritten wrappers in the same packages sit on top of it. |
 | Agent SDK | A separate handwritten package per language (`packages/sdk/agent-sdk-*`) for agent loops on top of the gateway. It is not generated from the spec. |
 | Locale code | The web app uses `en-GB`, `en-US`, `ar-SA`, `de-DE`, `es-ES`, `fr-FR`, `hi`, `ja`, `pt-BR` and `zh-Hans`. The docs use `en`, `ar`, `de`, `es`, `fr`, `hi`, `ja`, `pt-BR` and `zh-Hans`. |
-| Skill | An agent instruction pack in [`.agents/skills`](../../.agents/skills). Public skills are copied to the docs site by `skills:sync`. |
+| Skill | An agent instruction pack in [`.agents/skills`](../../.agents/skills). `pnpm skills:sync` copies public skills to the docs site and the Phaseo plugin, and every skill, internal ones included, to `.claude/skills` for Claude Code. |

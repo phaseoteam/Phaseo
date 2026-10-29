@@ -8,9 +8,11 @@ metadata:
 # Verify a Phaseo change
 
 Prove that a change works and show what it achieved, so a reviewer can trust
-the pull request without re-running everything. Read the pull request rules in
-the root [AGENTS.md](../../../AGENTS.md) first and use its section names. The
-evidence has two parts:
+the pull request without re-running everything. Read "Pull Request Descriptions"
+in the root [AGENTS.md](../../../AGENTS.md) first: a description has five
+sections, What changed, Why, How, Before and after, and Verification, in that
+order, and ends with the model line. This skill produces the evidence for the
+last two sections:
 
 - **Before and after:** the benefit, measured the same way both times, side by side.
 - **Verification:** each command you ran with its result, the behaviour you
@@ -61,10 +63,11 @@ evidence has two parts:
 ## Web app
 
 1. Run the affected Jest suites:
-   `pnpm --filter @phaseo/web test --runTestsByPath <file>...`. CI runs only a few
-   web suites, so this run is often the only one.
-2. Type-check after `pnpm --filter @phaseo/web exec next typegen`, lint the
-   changed files with `pnpm --filter @phaseo/web exec eslint <file>...`, and run
+   `pnpm --filter @phaseo/web test --runTestsByPath <file>...`. CI runs only three
+   web Jest files, so this run is often the only one.
+2. Type-check with `pnpm --filter @phaseo/web typecheck` (it runs `next typegen`
+   first; CI runs it too). CI has no web ESLint step, so lint the changed files
+   with `pnpm --filter @phaseo/web exec eslint <file>...`, and run
    `pnpm --filter @phaseo/web validate:i18n` when copy or messages change.
 3. Run `pnpm --filter @phaseo/web dev` (port 3100). It reads public data from
    production unless `WEB_API_ORIGIN` points at a local Web API Worker. Never sign
@@ -73,7 +76,8 @@ evidence has two parts:
    desktop width (1280 or 1440 px) and a phone width (390 px). Use the browser
    tool available to you, or a Playwright run such as
    `pnpm --filter @phaseo/web exec playwright test tests/e2e/<spec> --project=chromium --project="Mobile Chrome"`.
-5. Vercel previews need a Vercel login and block sign-in. For signed-in screens,
+5. Vercel previews need a Vercel login and read the production Web API, so they
+   do not show Web API changes from the same pull request. For signed-in screens,
    render the real components with fixture data on a temporary local route, and
    delete it before committing.
 6. Attach screenshots to the pull request in two columns. Do not commit them.
@@ -126,7 +130,6 @@ evidence has two parts:
    Field | Before | After table.
 4. Check the public surface, such as the model page or `phaseo api get /v1/models --json`
    through the maintainer's CLI session. Caches can delay it.
-5. `pnpm validate:data` and its siblings check archived fixtures, not live data.
 
 ## Performance
 
@@ -165,6 +168,9 @@ Measured with `<command>` on <environment>, median of <N> runs after <W> warm-up
 - `curl -sS http://127.0.0.1:8795/v1/<path>` → 200; `<field>` now present (output below)
 - Not verified: <check>, because <reason>.
 ```
+
+Put these two sections after What changed, Why and How, and end the description
+with the model line in the exact format the root AGENTS.md gives.
 
 If there is no measurable benefit, say so and show the before and after content
 instead. For a bug fix, show the failing output before and the passing output after.

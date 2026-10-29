@@ -15,19 +15,20 @@ are in the [glossary](./glossary.md); setup and deploys are in [operations](../o
 | --- | --- | --- | --- |
 | Gateway API | [`apps/api`](../../apps/api) | Cloudflare Workers: `phaseo-gateway` at `api.phaseo.app`, plus EU and US regional Workers | The public `/v1` API, the Management API, OAuth, scheduled jobs, the Broadcast queue consumer and the gateway Durable Objects |
 | Web app | [`apps/web`](../../apps/web) | Vercel (Next.js App Router) | Public pages, dashboard, playground UI and the admin catalogue editor (`/internal/data`) |
-| Web API | [`apps/web-api`](../../apps/web-api) | A Cloudflare Worker on `phaseo.app` routes: `/api/_web/*`, `/api/account/*`, `/api/chat/*`, `/api/internal/*`, `/scim/v2/*` | Cached public data for the web app, account reads and writes, the playground proxy, SCIM, provider catalogue feeds |
-| MCP server | [`apps/mcp`](../../apps/mcp) | Cloudflare Worker at `mcp.phaseo.app` | Read-only catalogue and account tools over Phaseo OAuth, plus reviewed inference |
+| Web API | [`apps/web-api`](../../apps/web-api) | A Cloudflare Worker on `phaseo.app` routes: `/api/_web/*`, `/api/account/*`, `/api/chat/*`, `/api/internal/*`, `/scim/v2/*` | Cached public data for the web app, account reads and writes, the playground proxy, SCIM, provider catalogue feeds, Slack agent installs, settings and charges |
+| MCP server | [`apps/mcp`](../../apps/mcp) | Cloudflare Worker at `mcp.phaseo.app` | Read-only catalogue and usage tools over Phaseo OAuth, reviewed inference, and opt-in account management |
+| Slack agent | [`apps/slack`](../../apps/slack) | Cloudflare Worker at `slack.phaseo.app` | Slack events and interactions, one agent turn at a time per thread, shared pages and recurring tasks; it answers through the gateway |
 | Docs | [`apps/docs`](../../apps/docs) | Mintlify, deployed from `main` by its GitHub app | Guides and API reference in nine languages, published agent skills |
-| Desktop, mobile | [`apps/desktop`](../../apps/desktop), [`apps/mobile`](../../apps/mobile) | Electron; Expo | Client apps. CI does not deploy them |
+| Desktop, mobile, Factory | [`apps/desktop`](../../apps/desktop), [`apps/mobile`](../../apps/mobile), [`apps/factory`](../../apps/factory) | Electron; Expo; Electron | Client apps. CI does not deploy them |
 | SDKs | [`packages/sdk`](../../packages/sdk) | Package registries such as npm and PyPI | Nine generated SDKs, their handwritten wrappers, and Agent SDKs |
-| Catalogue package | [`packages/data/catalog`](../../packages/data/catalog) | Build time only | Archived fixtures, the fixture schema and the daily snapshot directory |
 | Database | [`supabase`](../../supabase) | Supabase Postgres | Schema definitions, forward migrations, `pg_cron` jobs |
 | Other packages | [`packages`](../../packages) | Build time or registries | The `phaseo` CLI, the in-house OpenAPI generator (`openapi`, `openapi-backends`), AI SDK providers, integrations, shared registries and the provider mock |
 
 The web app calls the Web API on its own origin: Cloudflare routes those paths to the Worker before
-Vercel sees them, and locally [`next.config.mjs`](../../apps/web/next.config.mjs) rewrites them to
-`WEB_API_ORIGIN`. A push to `main` applies database migrations, then [CI](../../.github/workflows/ci.yml)
-deploys every Worker and the web app. A failed migration job blocks all of those deploys.
+Vercel sees them. In local development and on Vercel previews,
+[`next.config.mjs`](../../apps/web/next.config.mjs) rewrites them to `WEB_API_ORIGIN`, or to
+production `https://phaseo.app` when it is unset. A push to `main` applies database migrations,
+then [CI](../../.github/workflows/ci.yml) deploys every Worker and the web app. A failed migration job blocks all of those deploys.
 
 ## Life of a gateway request
 
@@ -41,14 +42,17 @@ per-endpoint surface and an after stage inside a model-fallback loop. Paths are 
    [`routes/v1/data`](../../apps/api/src/routes/v1/data); control-plane routes load lazily.
 2. **Authentication.** [`before/auth.ts`](../../apps/api/src/pipeline/before/auth.ts) checks an HMAC
    of the key secret and caches key rows in KV and isolate memory. Management keys are rejected;
-   OAuth delegated keys re-check their authorization on every request.
+   OAuth delegated keys re-check their authorization on every request. A Vercel or GitHub Actions
+   OIDC token that matches a workload identity policy acts as that policy's secretless key
+   ([`before/workload-identity-auth.ts`](../../apps/api/src/pipeline/before/workload-identity-auth.ts)).
 3. **Parse and resolve.** [`before/index.ts`](../../apps/api/src/pipeline/before/index.ts) strips the
    `models` list ([`requestModelFallbacks.ts`](../../apps/api/src/pipeline/before/requestModelFallbacks.ts)),
    validates the body ([`core/schemas.ts`](../../apps/api/src/core/schemas.ts)) and resolves presets
    (`@slug`), provider-qualified models (`provider:org/model`), `phaseo/auto` and `phaseo/free`.
-4. **Context.** `guardContext` ([`before/context.ts`](../../apps/api/src/pipeline/before/context.ts))
-   loads key limits, the credit snapshot, settings, candidate routes and prices. Public catalogue
-   data comes from a cached snapshot ([`contextBundle.ts`](../../apps/api/src/pipeline/before/contextBundle.ts));
+4. **Context.** `guardContext` ([`before/guards.ts`](../../apps/api/src/pipeline/before/guards.ts),
+   through [`before/context.ts`](../../apps/api/src/pipeline/before/context.ts)) loads key limits,
+   the credit snapshot, settings, candidate routes and prices. Public catalogue data comes from a
+   cached snapshot ([`contextBundle.ts`](../../apps/api/src/pipeline/before/contextBundle.ts));
    workspace data is cached under a workspace version token and reloaded through RPCs such as
    `gateway_fetch_request_context_bundle`.
 5. **Policy and capability checks.** Dynamic routes, presets, the `routing` object
@@ -90,11 +94,8 @@ idempotent per request or reservation, so a repeated finalise path cannot charge
 The database is the only source of truth for models, organisations, providers, routes, aliases,
 families, pricing, benchmarks and subscription plans. Admins edit it in the catalogue editor
 (`apps/web/src/app/[locale]/(dashboard)/internal/data`). Provider feeds polled by the Web API queue
-changes for review; nothing imports repository JSON. [`packages/data/catalog/src/data`](../../packages/data/catalog/src/data)
-holds archived fixtures that only validators and tests read. The daily
-[snapshot workflow](../../.github/workflows/catalog-database-snapshot.yml) exports the public tables
-to `packages/data/catalog/generated/database-v2`, regenerates OpenAPI enums and SDK model-ID helpers,
-and opens a pull request.
+changes for review. The repository holds no catalogue JSON and nothing exports the database to it;
+tests use small inline fixtures.
 
 The gateway never reads catalogue tables per request. Each minute its cron publishes
 `gateway_catalogue_revision()` to KV ([`core/catalogue-revision.ts`](../../apps/api/src/core/catalogue-revision.ts)).
@@ -117,8 +118,9 @@ places: Next tags, Web API cache tags and gateway snapshots.
 contract for the docs and every SDK. Internal operations stay in it, marked `x-internal: true` and
 `x-excluded: true`; there is no filtered copy.
 
-1. `pnpm openapi:sync-enums` copies enum values from the snapshot's `enum-catalog.json` into the
-   spec. CI fails if the result is not committed.
+1. The model, organisation and benchmark enums (`KnownModelId`, `OrganisationId`, `BenchmarkId`) are
+   edited by hand in the spec. [`generate-model-id-constants.mjs`](../../scripts/sdk/generate-model-id-constants.mjs)
+   turns `KnownModelId` into the SDKs' model-ID helpers.
 2. `pnpm openapi:gen` runs the generator in `packages/openapi`, one backend per language, and
    rewrites the generated code of the TypeScript, Python, Go, C#, Java, PHP, Ruby, C++ and Rust SDKs.
    Wrapper parity is listed in [`core-contract.json`](../../packages/sdk/core-contract.json).
@@ -127,8 +129,11 @@ contract for the docs and every SDK. Internal operations stay in it, marked `x-i
    [`localized-copy.json`](../../apps/docs/openapi/localized-copy.json) to write
    `apps/docs/<locale>/openapi/v1/openapi.localized.yaml` for ar, de, es, fr, hi, ja, pt-BR and
    zh-Hans, and fails if a translation changes protocol data. These copies never feed SDKs.
-4. Skills are edited in [`.agents/skills`](../../.agents/skills) and copied to
-   `apps/docs/.mintlify/skills` by `pnpm --filter @phaseo/docs skills:sync`.
+4. Skills are edited in [`.agents/skills`](../../.agents/skills). `pnpm skills:sync`
+   ([`scripts/skills/sync.mjs`](../../scripts/skills/sync.mjs)) copies the public skills listed in
+   [`public-skills.mjs`](../../scripts/skills/public-skills.mjs) to `apps/docs/.mintlify/skills` and
+   `apps/mcp/plugin/phaseo/skills`, and every skill, internal ones included, to `.claude/skills`,
+   the only place Claude Code finds project skills. `pnpm skills:check` fails CI when a copy is stale.
 
 ## Asynchronous work
 
@@ -138,9 +143,10 @@ contract for the docs and every SDK. Internal operations stay in it, marked `x-i
   discovery on its own cadence. Regional Workers and staging run no cron. The scheduled-only
   `phaseo-jobs` Worker ([`wrangler.jobs.toml`](../../apps/api/wrangler.jobs.toml)) has an empty
   schedule and is not deployed by CI.
-- **Other schedulers.** The Web API's minute cron polls provider catalogue feeds. `pg_cron` jobs in
+- **Other schedulers.** The Web API's minute cron polls provider catalogue feeds and charges for the
+  Slack agent; the Slack agent Worker's minute cron starts due recurring tasks. `pg_cron` jobs in
   [`_cluster/misc.sql`](../../supabase/schemas/_cluster/misc.sql) refresh rollups and health and
-  create partitions. GitHub Actions run the snapshot, provider catalogue and benchmark syncs.
+  create partitions. GitHub Actions run the provider catalogue, model status and benchmark syncs.
 - **Durable Objects and queues.** `phaseo-gateway` owns five Durable Objects (realtime relay,
   provider and customer rate limits, spend limits, routing health); the regional and jobs Workers
   bind them by `script_name`. The realtime relay holds the provider WebSocket so a client disconnect cannot skip
@@ -154,10 +160,10 @@ contract for the docs and every SDK. Internal operations stay in it, marked `x-i
 
 ## Constraints and traps
 
-- **Workers runtime.** The gateway enables `nodejs_als` but not `nodejs_compat` (the Web API and
-  MCP enable it), so gateway code cannot use Node built-ins. `global_fetch_strictly_public` blocks
-  private addresses. An invocation gets six concurrent outbound connections; KV takes about one
-  write per second per key.
+- **Workers runtime.** The gateway enables `nodejs_als` but not `nodejs_compat` (the Web API, MCP
+  and Slack agent Workers enable it), so gateway code cannot use Node built-ins.
+  `global_fetch_strictly_public` blocks private addresses. An invocation gets six concurrent
+  outbound connections; KV takes about one write per second per key.
 - **Background work belongs to its request.** Use `dispatchBackground` from
   [`runtime/env.ts`](../../apps/api/src/runtime/env.ts). Workers cancel pending I/O when its request
   ends, so billing or audit work attached to another request can be dropped.
@@ -165,9 +171,10 @@ contract for the docs and every SDK. Internal operations stay in it, marked `x-i
   revision. Keep secrets, credentials and wallet balances out of shared cache layers.
 - **Changes propagate; they do not apply.** A revoked key can work for about 30 seconds. Catalogue,
   workspace and rate-limit policy changes take a minute or more. Customer rate limits admit first
-  and count in a Durable Object, so in-flight requests can pass a limit. Read the header of
-  [`core/rate-limit-policies.ts`](../../apps/api/src/core/rate-limit-policies.ts) first: some policy
-  fields are stored but not enforced.
+  and count in a Durable Object, so in-flight requests can pass a limit. Policy concurrency limits
+  and strict policies wait for the object instead, and policy tokens per minute are charged after
+  each request completes. Read the header of
+  [`core/rate-limit-policies.ts`](../../apps/api/src/core/rate-limit-policies.ts) first.
 - **Billing must survive every exit.** Charges retry idempotently. A provider rate-limit reservation
   is released only if nothing was sent upstream, because a failed dispatch can still cost tokens. A
   dispatched video create is never retried on another provider. On client disconnect the gateway
@@ -199,8 +206,8 @@ contract for the docs and every SDK. Internal operations stay in it, marked `x-i
   file; `validate:locales` enforces it.
 - **Public repository, generated output.** Follow the [public documentation policy](../../apps/api/docs/public-documentation-policy.md).
   Never hand-edit generated SDK code or snapshots; fix the source and regenerate.
-- **CI runs few unit tests.** Most gateway Vitest and web Jest suites never run in CI; run the ones
-  for code you change ([what CI covers](../operations/development.md#what-ci-covers)).
+- **CI runs few unit tests.** CI runs one of 816 gateway Vitest files and three of 429 web Jest
+  files; run the ones for code you change ([what CI covers](../operations/development.md#what-ci-covers)).
 
 ## Where to go next
 
@@ -216,5 +223,4 @@ contract for the docs and every SDK. Internal operations stay in it, marked `x-i
 - Localisation: [architecture](../architecture/localisation.md), [web](../../apps/web/LOCALISATION.md),
   [docs](../../apps/docs/TRANSLATION_WORKFLOW.md)
 - Area rules in `AGENTS.md`: [`apps/api`](../../apps/api/AGENTS.md), [`apps/web`](../../apps/web/AGENTS.md),
-  [`apps/docs`](../../apps/docs/AGENTS.md), [`packages/sdk`](../../packages/sdk/AGENTS.md),
-  [`packages/data/catalog`](../../packages/data/catalog/AGENTS.md)
+  [`apps/docs`](../../apps/docs/AGENTS.md), [`packages/sdk`](../../packages/sdk/AGENTS.md)
