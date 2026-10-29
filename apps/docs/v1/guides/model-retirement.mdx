@@ -116,10 +116,31 @@ true:
 - The request names a model directly. Requests for `phaseo/auto` or a
   provider-qualified model ID are not redirected.
 
+### See which of your models are affected
+
+Under **Your affected models** in the same settings section, Phaseo lists the
+models your workspace used in the last 90 days that are being retired or are
+no longer served. For each one you can see its replacement, how the price
+compares, and whether its requests would be redirected with your current
+settings, and if not, why. You can also see how many of the model's requests
+another model answered in the last 30 days. Select **Choose replacement** on a
+model to set your own replacement for it.
+
 ### Choose a price policy
 
 The workspace price policy decides whether a more expensive replacement may
-serve the request. Prices are compared on what both models charge.
+serve the request. Prices are compared per token on what both models charge.
+If the old model has no current prices left, Phaseo uses its last published
+prices. When only the replacement charges for something:
+
+- Cached reads are not compared. They cost less than the input price, which is
+  compared.
+- Cache writes, and image, audio or video input that the old model billed as
+  ordinary input, are compared with the old model's input price.
+- Web search, and inputs or outputs in a modality the old model never had, are
+  not compared. A request that uses them is not redirected, unless the policy
+  is `any` or you chose the replacement yourself.
+- Any other charge means the prices can't be compared.
 
 | `model_successor_price_policy` | Behaviour |
 | --- | --- |
@@ -189,9 +210,14 @@ Check that:
 - the model has been unserved for at least 72 hours;
 - the model has an approved replacement, or you set your own;
 - the replacement does not cost more than your price policy allows;
+- the request does not use web search, or an input or output type, that only
+  the replacement charges for;
 - the model is not free with a paid replacement;
 - the replacement is allowed by your workspace and key model restrictions;
 - the request does not use a provider-qualified model ID or `phaseo/auto`.
+
+**Your affected models** in the same settings section shows which of these
+applies to each model you use.
 
 **A different model answered than the one I asked for.** Look for the
 `X-Phaseo-Model-Substitution` header. To stop a model from being replaced, add
