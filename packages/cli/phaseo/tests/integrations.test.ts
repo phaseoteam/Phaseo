@@ -300,15 +300,21 @@ test("catalog filtering keeps only active text chat-completions models", () => {
 		lifecycle: { status: "active" },
 		modalities: { input: ["text", "image"], output: ["text"] },
 		limits: { input_tokens: 128_000, output_tokens: 16_000 },
-		capabilities: { endpoints: ["chat.completions", "responses"] },
+		capabilities: { endpoints: ["text.generate", "responses"] },
 		availability: { status: "active", active_provider_count: 2 },
 	}), { id: "openai/gpt-test", name: "GPT Test", contextWindow: 128_000, maxOutputTokens: 16_000, reasoning: false, input: ["text", "image"] });
 	assert.equal(toIntegrationModel({
 		id: "openai/inactive",
 		modalities: { input: ["text"], output: ["text"] },
-		capabilities: { endpoints: ["chat.completions"] },
+		capabilities: { endpoints: ["chat/completions"] },
 		availability: { status: "inactive", active_provider_count: 0 },
 	}), null);
+	assert.equal(toIntegrationModel({
+		id: "openai/legacy-endpoint-name",
+		modalities: { input: ["text"], output: ["text"] },
+		capabilities: { endpoints: ["chat.completions"] },
+		availability: { status: "active", active_provider_count: 1 },
+	})?.id, "openai/legacy-endpoint-name");
 });
 
 test("catalog sync paginates through every compatible model", async () => {
@@ -324,7 +330,7 @@ test("catalog sync paginates through every compatible model", async () => {
 		lifecycle: { status: "active" },
 		modalities: { input: ["text"], output: ["text"] },
 		limits: { input_tokens: 128_000, output_tokens: 16_000 },
-		capabilities: { endpoints: ["chat.completions"] },
+		capabilities: { endpoints: ["text.generate"] },
 		availability: { status: "active", active_provider_count: 1 },
 	});
 	const requests: string[] = [];
@@ -332,7 +338,7 @@ test("catalog sync paginates through every compatible model", async () => {
 		const url = new URL(String(input));
 		requests.push(url.toString());
 		assert.equal(url.searchParams.get("availability"), "active");
-		assert.equal(url.searchParams.get("endpoints"), "chat.completions");
+		assert.equal(url.searchParams.get("endpoints"), "text.generate");
 		assert.equal(url.searchParams.get("input_types"), "text");
 		assert.equal(url.searchParams.get("output_types"), "text");
 		const offset = Number(url.searchParams.get("offset"));
