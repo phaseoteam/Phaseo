@@ -799,7 +799,7 @@ async function handleUpdateKey(req: Request) {
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase
 			.from("keys")
-			.select(KEY_WITH_KID_COLUMNS)
+			.select(`${KEY_WITH_KID_COLUMNS}, key_kind, oauth_client_id`)
 			.eq("workspace_id", auth.value.workspaceId)
 			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
@@ -866,6 +866,20 @@ async function handleUpdateKey(req: Request) {
 		const detailedLimits = applyDetailedLimits(updatePayload, body.limits);
 		if (detailedLimits.ok === false) {
 			return json({ error: "bad_request", message: detailedLimits.message }, 400, { "Cache-Control": "no-store" });
+		}
+		// The spending limit a person sets for an OAuth app (on the consent screen or later) is theirs:
+		// the app can't change its own key's limits, even with keys:write.
+		if (
+			auth.value.authMethod === "oauth" &&
+			existing.key_kind === "oauth_delegated" &&
+			existing.oauth_client_id === auth.value.oauthClientId &&
+			Object.keys(updatePayload).some((field) => field.includes("_limit_") || field === "soft_blocked")
+		) {
+			return json(
+				{ error: "forbidden", message: "An OAuth app can't change its own key's limits. The person who authorized it can change them under Settings, API Keys." },
+				403,
+				{ "Cache-Control": "no-store" },
+			);
 		}
 		const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in updatePayload);
 		if (keyStateChanged && isUsableWorkspaceKey({ ...existing, ...updatePayload })) {
