@@ -96,7 +96,6 @@ async function sync(file, expected) {
 
 await sync("apps/web/src/app/theme-tokens.generated.css", websiteTokens());
 await sync("apps/desktop/src/renderer/theme-tokens.generated.css", electronTokens("index.css imports this file. A theme chosen in Settings (src/renderer/lib/themes.ts) overrides them."));
-await sync("apps/factory/src/renderer/theme-tokens.generated.css", electronTokens("index.css imports this file."));
 
 // Uniwind reads global.css itself, so its tokens are a generated block inside that file rather than an import.
 const MOBILE = "apps/mobile/global.css";

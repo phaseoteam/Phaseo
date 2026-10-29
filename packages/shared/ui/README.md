@@ -1,6 +1,6 @@
 # @phaseo/ui
 
-React DOM components shared by Phaseo's website (`apps/web`), desktop app (`apps/desktop`) and Phaseo Factory (`apps/factory`). They're built on [Base UI](https://base-ui.com) and styled with Tailwind.
+React DOM components shared by Phaseo's website (`apps/web`) and desktop app (`apps/desktop`, which includes Factory). They're built on [Base UI](https://base-ui.com) and styled with Tailwind.
 
 Import each component from its own path:
 
