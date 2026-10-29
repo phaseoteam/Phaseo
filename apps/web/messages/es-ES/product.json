@@ -1688,7 +1688,7 @@
 		"hideAllRuns": "Ocultar todas las ejecuciones",
 		"yourGateway": "Tu Gateway",
 		"yourGatewayTtft": "Tu Gateway (TTFT)",
-		"yourGatewayThroughput": "Tu Gateway (tokens/s)",
+		"yourGatewayThroughput": "Tu Gateway (tps)",
 		"tie": "Empate",
 		"latestProvider": "Último resultado: {provider}",
 		"requestFailed": "No se pudo completar la solicitud. Comprueba el endpoint y las credenciales e inténtalo de nuevo.",
@@ -1706,7 +1706,7 @@
 		"throughput": "Rendimiento",
 		"responsePlaceholder": "La respuesta aparecerá aquí...",
 		"gatewayLabel": "Puerta de enlace",
-		"openaiThroughput": "OpenAI API (tokens/s)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"feedback": {
 		"category": "Categoría de comentarios",

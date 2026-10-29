@@ -4,6 +4,7 @@
  */
 export { formatCompactAxisTick, formatRoundedCount } from "./counts";
 export { formatDuration } from "./duration";
+export { formatLatency, formatTokenCount, formatTokenCountShort, formatTps } from "./units";
 export { formatUsd, formatUsdCost, formatUsdHeadlinePrice, formatUsdPrice, MONEY_LOCALE } from "./money";
 export {
 	DATE_LOCALE,

@@ -1716,7 +1716,7 @@
 		"hideAllRuns": "إخفاء كل عمليات التشغيل",
 		"yourGateway": "Gateway الخاص بك",
 		"yourGatewayTtft": "Gateway الخاص بك (TTFT)",
-		"yourGatewayThroughput": "Gateway الخاص بك (رمز/ثانية)",
+		"yourGatewayThroughput": "Gateway الخاص بك (tps)",
 		"tie": "تعادل",
 		"latestProvider": "أحدث نتيجة: {provider}",
 		"requestFailed": "تعذر إكمال الطلب. تحقق من نقطة النهاية وبيانات الاعتماد ثم حاول مرة أخرى.",
@@ -1734,7 +1734,7 @@
 		"throughput": "معدل الإنجاز",
 		"responsePlaceholder": "ستظهر الاستجابة هنا...",
 		"gatewayLabel": "البوابة",
-		"openaiThroughput": "OpenAI API (رموز/ثانية)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"gatewayBenchmark": {
 		"title": "مقارنة أداء البوابات",

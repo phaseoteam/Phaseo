@@ -6,6 +6,7 @@ import { test } from "node:test";
 import { formatCompactAxisTick, formatRoundedCount } from "../src/format/counts.ts";
 import { formatDuration } from "../src/format/duration.ts";
 import { formatUsd, formatUsdCost, formatUsdHeadlinePrice, formatUsdPrice } from "../src/format/money.ts";
+import { formatLatency, formatTokenCount, formatTokenCountShort, formatTps } from "../src/format/units.ts";
 import {
 	formatAgoShort,
 	formatCalendarDate,
@@ -191,7 +192,7 @@ test("formatTimestamp is relative within a day, then the date and time", () => {
 	assert.equal(formatTimestamp(null, NOW), "-");
 });
 
-test("formatDuration: the website chat's response timings", () => {
+test("formatDuration: how long a piece of work took", () => {
 	const cases = [
 		[-5, "0 ms"],
 		[850, "850 ms"],
@@ -217,4 +218,47 @@ test("formatUsdHeadlinePrice: the website's /models card headline", () => {
 		[1234.5, "$1,234.50"],
 	];
 	for (const [value, expected] of cases) assert.equal(formatUsdHeadlinePrice(value), expected, `formatUsdHeadlinePrice(${value})`);
+});
+
+test("formatTps: speed in tps, as the model page's providers show it", () => {
+	const cases = [
+		[0, "0.0 tps"],
+		[4.5, "4.5 tps"],
+		[45.25, "45.3 tps"],
+		[99.94, "99.9 tps"],
+		[123.4, "123 tps"],
+		[1_234.5, "1,235 tps"],
+		[-3, "0.0 tps"],
+		[null, null],
+		[Number.NaN, null],
+	];
+	for (const [value, expected] of cases) assert.equal(formatTps(value), expected, `formatTps(${value})`);
+	assert.equal(formatTps(45.25, "de-DE"), "45,3 tps");
+});
+
+test("formatLatency: latency in seconds", () => {
+	const cases = [
+		[0, "0.00 s"],
+		[245, "0.25 s"],
+		[850, "0.85 s"],
+		[1_500, "1.50 s"],
+		[5_312, "5.31 s"],
+		[13_785, "13.8 s"],
+		[125_000, "125 s"],
+		[999_600, "1,000 s"],
+		[1_000_001, "16.7 min"],
+		[7_200_000, "120 min"],
+		[-500, "0.00 s"],
+		[null, null],
+		[Number.POSITIVE_INFINITY, null],
+	];
+	for (const [value, expected] of cases) assert.equal(formatLatency(value), expected, `formatLatency(${value})`);
+});
+
+test("token limits: in full, or short where space is tight", () => {
+	assert.equal(formatTokenCount(131_072), "131,072 tokens");
+	assert.equal(formatTokenCount(1), "1 token");
+	assert.equal(formatTokenCount(1_048_576, "de-DE"), "1.048.576 tokens");
+	const cases = [[512, "512"], [8_192, "8K"], [131_072, "131K"], [200_000, "200K"], [1_048_576, "1M"], [2_000_000, "2M"]];
+	for (const [value, expected] of cases) assert.equal(formatTokenCountShort(value), expected, `formatTokenCountShort(${value})`);
 });
