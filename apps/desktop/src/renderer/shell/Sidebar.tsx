@@ -18,6 +18,7 @@ import { SettingsNav } from "../settings/SettingsPage";
 import { ModelStack } from "../chat/ModelPicker";
 import { useScheduledTasks } from "../views/ScheduledTasks";
 import { CodeThreadList } from "./CodeThreadList";
+import { FactorySidebar } from "../factory/FactoryPage";
 import { UsageRings } from "./UsageRings";
 import { deleteWithUndo, dismissUndo, offerUndo, runUndo, undoLabel, usePendingDeletes, useThreadUndo } from "./threadUndo";
 import { isUnread } from "../../shared/threadLifecycle";
@@ -274,20 +275,27 @@ function SidebarFrame({ label, children }: { label: string; children: ReactNode 
 }
 
 export function Sidebar() {
-	const { mode, select, selectedId, compareId, setNewChatProjectId, settings, scheduled, pullRequestsPage, inboxPage } = useWorkspace();
+	const { mode, codeView, factoryRoute, openFactory, select, selectedId, compareId, setNewChatProjectId, settings, scheduled, pullRequestsPage, inboxPage } = useWorkspace();
+	const factory = mode === "code" && codeView === "factory";
+	const writing = factory && factoryRoute.page === "new" && !inboxPage;
 	const [chatViewport, setChatViewport] = useState<HTMLDivElement | null>(null);
-	const fresh = !selectedId && !compareId && !scheduled && !pullRequestsPage && !inboxPage;
+	const fresh = !factory && !selectedId && !compareId && !scheduled && !pullRequestsPage && !inboxPage;
 	if (settings) return <SidebarFrame label="Settings"><SettingsNav /></SidebarFrame>;
-	return <SidebarFrame label={mode === "chat" ? "Chats" : "Projects"}>
+	return <SidebarFrame label={mode === "chat" ? "Chats" : factory ? "Factory" : "Projects"}>
 		<div className="p-2.5">
-			<button type="button" onClick={() => { if (mode === "chat") setNewChatProjectId(""); select(undefined); }}
+			{factory ? <button type="button" onClick={() => openFactory({ page: "new" })}
+				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", writing ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
+				<Plus className="size-4" />New issue
+			</button> : <button type="button" onClick={() => { if (mode === "chat") setNewChatProjectId(""); select(undefined); }}
 				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", fresh ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
 				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
-			</button>
+			</button>}
 			<InboxLink />
-			{mode === "code" && <PullRequestsLink />}
+			{mode === "code" && !factory && <PullRequestsLink />}
 		</div>
-		{mode === "chat"
+		{factory
+			? <FactorySidebar />
+			: mode === "chat"
 			? <ScrollArea className="min-h-0 flex-1" viewportRef={setChatViewport}><nav className="pb-3"><ChatList viewport={chatViewport} /></nav></ScrollArea>
 			: <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList /></nav></ScrollArea>}
 		<UndoNotice />

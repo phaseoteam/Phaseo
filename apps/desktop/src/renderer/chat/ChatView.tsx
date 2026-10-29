@@ -38,6 +38,7 @@ import { optionHarnesses, selectionSettings } from "./startChat";
 import { ProjectScriptsControl } from "../components/ProjectScripts";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
 import { IssueBadge } from "../views/issues/IssueBadge";
+import { FactoryThreadChip } from "../factory/FactoryPage";
 import { RewindDialog } from "./RewindDialog";
 import { ContextMeter } from "./ContextMeter";
 import { restoreDraft, restoreDraftEvent, rewoundDraft } from "./rewind";
@@ -69,6 +70,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 				onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") setRenaming(false); }} />
 			: <button type="button" title="Rename" onClick={() => setRenaming(true)} className="min-w-0 truncate rounded-md px-1.5 py-0.5 text-sm font-semibold hover:bg-muted">{task.title}</button>}
 		{!renaming && <TagEditor task={snapshot ?? task} />}
+		<FactoryThreadChip taskId={task.id} />
 		{project && <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><ProjectIcon project={project} className="size-3.5" />{project.name}{project.worktree && <span className="font-mono">⎇ {project.worktree.branch}</span>}</span>}
 		<div className="ml-auto flex items-center gap-1.5">
 			{project && !project.worktree?.removedAt && <ProjectScriptsControl project={project} taskId={task.id} onRun={onOpenTerminal} />}

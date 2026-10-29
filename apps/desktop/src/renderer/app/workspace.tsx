@@ -8,10 +8,16 @@ export type UsageView = "cost" | "tokens" | "limits";
 import type { ThemePreference } from "../types";
 
 export type WorkspaceMode = "chat" | "code";
+/** Code's two views: its threads, or Factory's issues and pull requests. */
+export type CodeView = "threads" | "factory";
+/** Where Code ▸ Factory is: the open item (`owner/name#number`) and its tab, or the new issue form. */
+export type FactoryRoute = { item?: string; tab?: string; page?: "new" };
 export type RightPanelSurface = "changes" | "files" | "diff" | "terminal" | "browser" | "agents" | "pulls";
 /** A surface to show in the right pane, "files" for Files, or "restore" to reopen the chat's own tabs. */
 export type RightPanelTab = RightPanelSurface | "files" | "restore";
-export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "keyboard" | "diagnostics" | "experimental" | "project";
+export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "keyboard" | "diagnostics" | "experimental" | "project" | FactorySettingsPage;
+/** Factory's pages in Settings. */
+export type FactorySettingsPage = "factory-repositories" | "factory-issues" | "factory-pulls" | "factory-notes" | "factory-checking";
 export type CompareGroup = { id: string; title: string; taskIds: string[]; createdAt: string };
 
 type WorkspaceState = {
@@ -23,6 +29,15 @@ type WorkspaceState = {
 	setError: (error: string) => void;
 	mode: WorkspaceMode;
 	setMode: (mode: WorkspaceMode) => void;
+	/** Code's view, kept while in Chat. */
+	codeView: CodeView;
+	/** Opens Code on this view. */
+	setCodeView: (view: CodeView) => void;
+	factoryRoute: FactoryRoute;
+	/** Opens Code ▸ Factory, on an item, its tab or the new issue form when given. */
+	openFactory: (route?: FactoryRoute) => void;
+	/** Opens a Code thread, even one the overview hasn't listed yet (Factory has just made it). */
+	openThread: (id: string) => void;
 	selectedId?: string;
 	select: (id?: string) => void;
 	compareId?: string;
@@ -72,13 +87,15 @@ export function errorText(reason: unknown) {
 	return (reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "");
 }
 
-type Location = { mode: WorkspaceMode; selectedId?: string; compareId?: string; settings?: SettingsPage; settingsProjectId?: string; scheduled?: boolean; pullRequests?: boolean; inbox?: boolean; usage?: boolean };
+type Location = { mode: WorkspaceMode; codeView?: CodeView; factoryRoute?: FactoryRoute; selectedId?: string; compareId?: string; settings?: SettingsPage; settingsProjectId?: string; scheduled?: boolean; pullRequests?: boolean; inbox?: boolean; usage?: boolean };
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const api = window.phaseoDesktop?.workspace;
 	const [overview, setOverview] = useState<WorkspaceOverview>(emptyOverview);
 	const [error, setError] = useState("");
 	const [mode, setModeState] = usePersistedState<WorkspaceMode>("phaseo.desktop.workspaceMode", "chat");
+	const [codeView, setCodeViewState] = usePersistedState<CodeView>("phaseo.desktop.codeView", "threads");
+	const [factoryRoute, setFactoryRoute] = usePersistedState<FactoryRoute>("phaseo.desktop.factoryRoute", {});
 	const [selectedId, setSelectedId] = usePersistedState<string | undefined>("phaseo.desktop.selectedTask", undefined);
 	const [compareId, setCompareId] = usePersistedState<string | undefined>("phaseo.desktop.selectedCompare", undefined);
 	const [compareGroups, setCompareGroups] = usePersistedState<CompareGroup[]>("phaseo.desktop.compareGroups", []);
@@ -119,7 +136,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		return () => media.removeEventListener("change", apply);
 	}, [theme]);
 
-	const location = useMemo(() => ({ mode, selectedId, compareId, settings, ...(settings === "project" && settingsProjectId ? { settingsProjectId } : {}), ...(scheduled ? { scheduled } : {}), ...(pullRequestsPage ? { pullRequests: true } : {}), ...(inboxPage ? { inbox: true } : {}), ...(usagePage ? { usage: true } : {}) }), [mode, selectedId, compareId, settings, settingsProjectId, scheduled, pullRequestsPage, inboxPage, usagePage]);
+	const location = useMemo(() => ({ mode, ...(mode === "code" ? { codeView } : {}), ...(mode === "code" && codeView === "factory" ? { factoryRoute } : {}), selectedId, compareId, settings, ...(settings === "project" && settingsProjectId ? { settingsProjectId } : {}), ...(scheduled ? { scheduled } : {}), ...(pullRequestsPage ? { pullRequests: true } : {}), ...(inboxPage ? { inbox: true } : {}), ...(usagePage ? { usage: true } : {}) }), [mode, codeView, factoryRoute, selectedId, compareId, settings, settingsProjectId, scheduled, pullRequestsPage, inboxPage, usagePage]);
 	useEffect(() => {
 		setNavigation(previous => {
 			if (JSON.stringify(previous.entries[previous.index]) === JSON.stringify(location)) return previous;
@@ -131,7 +148,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		const target = navigation.entries[navigation.index + direction];
 		if (!target) return;
 		setNavigation(previous => ({ ...previous, index: previous.index + direction }));
-		setModeState(target.mode); setSelectedId(target.selectedId); setCompareId(target.compareId); setSettings(target.settings); setSettingsProjectId(target.settingsProjectId); setScheduled(Boolean(target.scheduled)); setPullRequestsPage(Boolean(target.pullRequests)); setInboxPage(Boolean(target.inbox)); setUsagePage(Boolean(target.usage));
+		setModeState(target.mode); if (target.codeView) setCodeViewState(target.codeView); if (target.factoryRoute) setFactoryRoute(target.factoryRoute); setSelectedId(target.selectedId); setCompareId(target.compareId); setSettings(target.settings); setSettingsProjectId(target.settingsProjectId); setScheduled(Boolean(target.scheduled)); setPullRequestsPage(Boolean(target.pullRequests)); setInboxPage(Boolean(target.inbox)); setUsagePage(Boolean(target.usage));
 	};
 
 	const command = useCallback(async (value: WorkspaceCommand) => {
@@ -145,17 +162,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	}, [api]);
 
 	// Notifications and scheduled tasks open a chat from anywhere, including the settings page.
-	useEffect(() => api?.onOpenTask(id => { if (id) { setSelectedId(id); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); } }), [api, setSelectedId, setCompareId, setSettings]);
+	useEffect(() => api?.onOpenTask(id => { if (id) { setCodeViewState("threads"); setSelectedId(id); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); } }), [api, setSelectedId, setCompareId, setSettings, setCodeViewState]);
 
 	const taskById = useCallback((id: string) => overview.tasks.find(task => task.id === id), [overview.tasks]);
 	const select = useCallback((id?: string) => {
 		setCompareId(undefined); setSelectedId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false);
 		const task = id ? overview.tasks.find(value => value.id === id) : undefined;
 		if (task) setModeState(task.projectId ? "code" : "chat");
-	}, [overview.tasks, setCompareId, setSelectedId, setModeState, setSettings]);
+		// A Code thread, or a new chat in Code, shows in Threads.
+		if (task ? task.projectId : mode === "code") setCodeViewState("threads");
+	}, [overview.tasks, mode, setCompareId, setSelectedId, setModeState, setSettings, setCodeViewState]);
+	const openThread = useCallback((id: string) => {
+		setCompareId(undefined); setSelectedId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false);
+		setModeState("code"); setCodeViewState("threads");
+	}, [setCompareId, setSelectedId, setModeState, setSettings, setCodeViewState]);
 	const openCompare = useCallback((id?: string) => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); if (id) setModeState("chat"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
 	const openScheduled = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); setScheduled(true); }, [setSelectedId, setCompareId, setSettings]);
-	const openPullRequests = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setInboxPage(false); setUsagePage(false); setPullRequestsPage(true); setModeState("code"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
+	const openPullRequests = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setInboxPage(false); setUsagePage(false); setPullRequestsPage(true); setModeState("code"); setCodeViewState("threads"); }, [setSelectedId, setCompareId, setModeState, setSettings, setCodeViewState]);
 	const openInbox = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setUsagePage(false); setInboxPage(true); }, [setSelectedId, setCompareId, setSettings]);
 	const openUsage = useCallback((view?: UsageView) => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); if (view) setUsageView(view); setUsagePage(true); }, [setSelectedId, setCompareId, setSettings, setUsageView]);
 	const setMode = useCallback((next: WorkspaceMode) => {
@@ -164,10 +187,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		if (task && (next === "code") !== Boolean(task.projectId)) setSelectedId(undefined);
 		if (next === "code") setCompareId(undefined);
 	}, [selectedId, overview.tasks, setModeState, setSelectedId, setCompareId, setSettings]);
+	const setCodeView = useCallback((view: CodeView) => { setMode("code"); setCodeViewState(view); }, [setMode, setCodeViewState]);
+	const openFactory = useCallback((route?: FactoryRoute) => { setMode("code"); setCodeViewState("factory"); if (route) setFactoryRoute(route); }, [setMode, setCodeViewState, setFactoryRoute]);
 
 	const value: WorkspaceState = {
 		api, overview, setOverview, command, error, setError,
-		mode, setMode, selectedId, select, compareId, openCompare,
+		mode, setMode, codeView, setCodeView, factoryRoute, openFactory, openThread, selectedId, select, compareId, openCompare,
 		compareGroups,
 		saveCompareGroup: group => setCompareGroups(current => [group, ...current.filter(value => value.id !== group.id)]),
 		removeCompareGroup: id => setCompareGroups(current => current.filter(value => value.id !== id)),

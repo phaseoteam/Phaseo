@@ -1,5 +1,6 @@
 import { prefetchTask } from "../lib/useSelectedTask";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from "react";
+import { isFactoryWorktree } from "../../shared/factory/projects";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { AlarmClock, AlarmClockOff, Check, ChevronDown, CircleAlert, CircleCheck, CircleDashed, CircleDotDashed, Clock, FolderPlus, GitBranch, MessageCircleQuestion, Pin, PinOff, Plus, Settings, ShieldQuestion, Trash2, Undo2 } from "lucide-react";
@@ -157,7 +158,8 @@ export function CodeThreadList() {
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [picked.length]);
-	const projects = overview.projects.filter(project => !project.worktree?.removedAt);
+	// Factory's per-item worktrees stay out of the picker; their threads still list.
+	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
 	const scoped = projects.find(project => project.id === scope);
 	const running = overview.tasks.some(task => task.projectId && task.status === "running");
 	const now = useNow(running ? 1_000 : 30_000);
