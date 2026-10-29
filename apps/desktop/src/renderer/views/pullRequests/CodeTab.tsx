@@ -1,3 +1,4 @@
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Circle, CircleCheck, Columns2, File, Folder, FolderTree, Hammer, Info, MessageSquare, MessageSquareOff, MessageSquareReply, Pilcrow, Rows3, Settings2, TextWrap, Trash2, TriangleAlert } from "lucide-react";
 import type { DiffLineAnnotation, SelectedLineRange } from "@pierre/diffs";
@@ -22,7 +23,7 @@ import { ActorLabel, DiffStat, errorMessage, MetaLine, Tip } from "./presentatio
 import { EditButton, MarkdownEditor, PullRequestCommentBody } from "./PullRequestMarkdown";
 import { orderDiffFiles, patchLines } from "./pullRequestFileOrder";
 import { agentSelectionPrompt, patchExcerpt, placeThreads, rangeLabel, rangeToDraft } from "./pullRequestDiff";
-import { canEditComment, fileTree, findingKey, ignoreWhitespacePatch, relativeTime, type FileTreeNode } from "./pullRequestLogic";
+import { canEditComment, fileTree, findingKey, ignoreWhitespacePatch, type FileTreeNode } from "./pullRequestLogic";
 import { nextPendingReviewCommentId, pullRequestReviewKey, reviewDrafts, usePendingReviewComments, type PendingReviewComment } from "./pullRequestReviewStore";
 import { Reactions } from "./SummaryTab";
 import type { PullRequestHandoff } from "./usePullRequestHandoff";
@@ -73,7 +74,7 @@ export function ReviewThread({ thread, view, projectId, pending, onAction, hando
 		</div>
 		{open && <div className="mt-2 space-y-3">
 			{comments.map(comment => <article key={comment.id} className="group min-w-0 border-l-2 border-border/60 pl-3">
-				<div className="flex items-center gap-2"><MetaLine className="min-w-0 flex-1 text-muted-foreground"><ActorLabel actor={comment.author} /><span>{relativeTime(comment.createdAt)}</span></MetaLine>
+				<div className="flex items-center gap-2"><MetaLine className="min-w-0 flex-1 text-muted-foreground"><ActorLabel actor={comment.author} /><span>{formatRelativeTime(comment.createdAt)}</span></MetaLine>
 					{canEditComment(comment) && editing !== comment.id && <EditButton label="Edit comment" onClick={() => setEditing(comment.id)} />}
 					<Reactions reactions={comment.reactions} subjectId={comment.id} canReact={comment.canReact} /></div>
 				{editing === comment.id ? <div className="mt-1"><MarkdownEditor value={comment.body} label="Edit comment" saving={saving} projectId={projectId} repository={view.repository} onSave={body => void save(comment.id, body)} onCancel={() => setEditing(undefined)} /></div>

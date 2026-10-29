@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import React, { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { privateUsageOptions } from "@/lib/query/privateUsage";
@@ -95,7 +96,7 @@ import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import {
 	REQUEST_COLUMNS,
 	defaultRequestColumns,
-	formatRequestMetric,
+	formatRequestMetric, requestMetricNumber,
 	orderRequestColumns,
 	type RequestTableDensity,
 	type RequestColumnId,
@@ -1504,7 +1505,7 @@ export default function UnifiedRequestsTable({
 													key="speed"
 													className="py-2 text-right font-mono text-xs tabular-nums"
 												>
-													{formatRequestMetric(row.throughput, " tok/s")}
+													{formatTps(requestMetricNumber(row.throughput), "en-US") ?? "—"}
 												</TableCell>
 											),
 											overhead: (
@@ -1525,10 +1526,10 @@ export default function UnifiedRequestsTable({
 													key="ttft"
 													className="py-2 text-right font-mono text-xs tabular-nums"
 												>
-													{formatRequestMetric(
-														row.stream === true ? row.latency_ms : null,
-														" ms",
-													)}
+													{formatLatency(
+														requestMetricNumber(row.stream === true ? row.latency_ms : null),
+														"en-US",
+													) ?? "—"}
 												</TableCell>
 											),
 											labels: (

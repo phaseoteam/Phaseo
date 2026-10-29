@@ -1,7 +1,7 @@
+import { formatTime } from "@phaseo/app-kit/format";
 import { CircleAlert, CornerDownRight, Info, MessageSquareText, UserRound, Wrench } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { LogKind, LogLine } from "../../shared/types";
-import { clock } from "../lib/format";
 import { cn } from "../lib/utils";
 import { Markdown } from "./Markdown";
 
@@ -27,7 +27,7 @@ export function RunLog({ lines, live, limit, className }: { lines: LogLine[]; li
 		{shown.map((line, index) => {
 			const { icon: Icon, className: tone } = KIND[line.kind];
 			return <div key={`${line.at}-${index}`} className={cn("flex gap-3 px-3 py-0.5 hover:bg-accent/40", line.kind === "you" && "my-1 bg-accent/70 py-1 font-sans text-sm hover:bg-accent/70")}>
-				<span className="shrink-0 text-muted-foreground/60 tabular-nums">{clock(line.at)}</span>
+				<span className="shrink-0 text-muted-foreground/60 tabular-nums">{formatTime(line.at, { includeSeconds: true })}</span>
 				<Icon className={cn("mt-0.5 size-3.5 shrink-0", tone)} />
 				{/* What the agent says is Markdown; tool calls and Factory's own lines are plain. */}
 				{line.kind === "text"

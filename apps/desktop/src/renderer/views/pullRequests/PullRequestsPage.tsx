@@ -1,3 +1,4 @@
+import { formatAgoShort } from "@phaseo/app-kit/format";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { ArrowDownUp, CalendarArrowDown, CalendarArrowUp, ChevronDown, CircleCheck, CircleDashed, CircleSlash, CircleX, Clock, EyeOff, Eye, FolderGit2, Layers, ListChecks, ListFilter, Maximize2, Minimize2, PenLine, Plus, RefreshCw, Search, Tag, UserLock, UserRound, Users, X } from "lucide-react";
 import { pullRequestPageSize, maximumPullRequestPageSize, type PullRequestDirectoryEntry, type PullRequestDirectoryQuery, type PullRequestDirectoryResult, type PullRequestInvolvement, type PullRequestListFilters, type PullRequestListState } from "../../../shared/pullRequestDirectory";
@@ -13,7 +14,7 @@ import { cn } from "../../lib/utils";
 import { ActorAvatar, ChecksGlyph, DiffStat, PullRequestGlyph, PullRequestListGhost, PullRequestRowGlyph, ReviewDecisionGlyph, Tip } from "./presentation";
 import { PullRequestNumberMenu } from "./PullRequestNumberMenu";
 import { PullRequestSurface } from "./PullRequestSurface";
-import { relativeTime, summaryChecksRollup } from "./pullRequestLogic";
+import { summaryChecksRollup } from "./pullRequestLogic";
 import { useMergeMethodResolver } from "./mergeMethod";
 import { activeFilterCount, applyPullRequestOverrides, collectPullRequestFacets, filterPullRequestsByInvolvement, groupPullRequestsByInvolvement, matchedElsewhereScore, matchesPullRequestFilters, matchesPullRequestQuery, menuFilters, narrowPullRequests, parsePullRequestQuery, pullRequestEntryKey, pullRequestLabelColor, pullRequestOverrideAfterAction, pullRequestQuickActions, rankPullRequestMatches, readPullRequestListPreferences, scorePullRequestMatch, settlePullRequestOverrides, sortPullRequestGroups, sweepKeys, writePullRequestListPreferences, type PullRequestAuthorFacet, type PullRequestGroupKey, type PullRequestLabelFacet, type PullRequestListPreferences, type PullRequestListSort, type PullRequestOverride, type PullRequestQuickAction } from "./pullRequestDirectory.logic";
 
@@ -100,7 +101,7 @@ const PageRow = memo(function PageRow({ entry, selected, matchedElsewhere, speed
 					<Tip label={entry.author?.login ?? "ghost"}><span className="inline-flex max-w-40 min-w-3.5 items-center gap-1"><ActorAvatar actor={entry.author} className="size-3.5" /><span className="sr-only @xs/pr-row-meta:not-sr-only @xs/pr-row-meta:truncate">{entry.author?.login ?? "ghost"}</span></span></Tip>
 					<span className="truncate">{entry.repository}</span>
 					{entry.labels.length > 0 && <RowLabels labels={entry.labels} />}
-					<span className="ml-auto shrink-0 whitespace-nowrap tabular-nums">{relativeTime(entry.updatedAt)}</span>
+					<span className="ml-auto shrink-0 whitespace-nowrap tabular-nums">{formatAgoShort(entry.updatedAt)}</span>
 				</span>
 			</span>
 		</button>
