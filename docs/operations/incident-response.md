@@ -25,7 +25,7 @@ If a backup is added later, they need access to every service Phaseo runs on: Gi
 
 1. **Confirm it's real.** Call `curl https://api.phaseo.app/v1/health`, load `https://phaseo.app`, and repeat the failing request yourself. A single failed request is not an incident; check its request ID first.
 2. **Set the severity** using the table above. Start a running timeline (UTC times and what you did) in a Linear issue. If the observability bridge already opened one, use that.
-3. **Post on the status page** for SEV1 and SEV2, using the "Investigating" template below. The site footer reads from it, and the docs and Trust page link to it.
+3. **Post on the status page** for SEV1 and SEV2, using the "Investigating" template below. If an Instatus alert already posted one for the same component (see [Outage alerts](#outage-alerts)), update that post instead of creating a second one. The site footer reads from it, and the docs and Trust page link to it.
 4. **Check what changed.** Look at the latest `deploy (…)` jobs of [CI](../../.github/workflows/ci.yml) on `main`, the latest production migration, and catalogue edits made today. Most incidents follow a change.
 5. **Find the cause:**
    - Gateway errors and latency: Axiom, dataset set by `AXIOM_WIDE_DATASET` (sampled; see [axiom.ts](../../apps/api/src/observability/axiom.ts) and the `AXIOM_*_SAMPLE_RATE` settings in [wrangler.toml](../../apps/api/wrangler.toml)).
@@ -134,9 +134,9 @@ When Phaseo gives money back:
 
 ## Outage alerts
 
-Instatus runs the uptime monitors. When one fails, it sends an alert to incident.io through the "Instatus monitoring" alert route. incident.io opens a Triage incident and pages the "Phaseo Primary Escalation" path. Workflows then post an "Investigating" incident on the status page for the Models, Homepage and Docs components, without emailing subscribers. When the monitor recovers, the route declines the incident and the workflows resolve the status page post. This is all configured in the Instatus and incident.io dashboards, not in the repo.
+Instatus runs the uptime monitors. When one fails, it sends an alert to incident.io through the "Instatus monitoring" alert route. incident.io opens a Triage incident and pages the "Phaseo Primary Escalation" path. Workflows then post an "Investigating" incident on the status page for the Models, Homepage and Docs components, with subscriber notifications switched off in those workflows, so these automatic posts don't email subscribers. When the monitor recovers, the route declines the incident, and the workflows are set to resolve the status page post (untested, see below). This is all configured in the Instatus and incident.io dashboards, not in the repo.
 
 - A short blip still opens an incident and a public post. Check the monitor's other regions before treating it as real.
 - If you resolve a status page post by hand, it records impact up to the moment you resolve it. Correct the start and end times afterwards.
-- Not yet tested: whether a declined incident resolves its status page post automatically. incident.io documents that declined incidents are left out of workflows, so check the post after each blip.
+- Not yet tested: whether a declined incident resolves its status page post automatically. incident.io documents that declined incidents are left out of workflows, so check the post after each blip and resolve it by hand if it is still open.
 - The Instatus page `phaseo.instatus.com` still exists, but the site reads only `status.phaseo.app`.
