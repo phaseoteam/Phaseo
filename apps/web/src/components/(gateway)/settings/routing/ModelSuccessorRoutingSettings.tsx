@@ -227,7 +227,7 @@ function ModelSuccessorRoutingSettings({ initialData }: { initialData: Successor
 				<Separator />
 				<div className="space-y-3 px-4 py-3">
 					<div className="grid gap-2 sm:grid-cols-2">
-						<Input ref={modelInput} value={model} onChange={(event) => setModel(event.target.value)} placeholder={t("modelPlaceholder")} aria-label={t("model")} disabled={disabled} />
+						<Input ref={modelInput} value={model} onChange={(event) => setModel(event.target.value)} placeholder={t("modelPlaceholder")} aria-label={t("model")} disabled={disabled} className="h-10 border-border bg-background px-3 dark:bg-transparent" />
 						{never ? (
 							<p className="flex min-h-10 items-center rounded-md border px-3 text-sm text-muted-foreground">{t("neverRedirect")}</p>
 						) : (
