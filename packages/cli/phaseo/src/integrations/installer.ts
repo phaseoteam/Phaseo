@@ -255,8 +255,33 @@ async function packageInstallInvocation(integration: (typeof PRIMARY_HARNESSES)[
 	return { ...installInvocationFor(integration, available.manager, { allowPackageScripts }), executable: available.executable };
 }
 
-export async function harnessInstallPlan(integration: IntegrationId): Promise<InstallInvocation | null> {
-	if (!isPrimaryHarness(integration) || await isCommandAvailable(COMMANDS[integration])) return null;
+/** Vercel Labs' fx opens its help with "Fast, native coding agent for the terminal." */
+export function isVercelFxHelp(output: string): boolean {
+	return /coding agent/i.test(output);
+}
+
+async function fxHelpOutput(): Promise<string> {
+	return new Promise((resolve) => {
+		const child = spawn("fx", ["--help"], { stdio: ["ignore", "pipe", "pipe"], shell: false, timeout: 5000, windowsHide: true });
+		let output = "";
+		child.stdout.setEncoding("utf8");
+		child.stderr.setEncoding("utf8");
+		child.stdout.on("data", (value) => { output = `${output}${value}`.slice(0, 4000); });
+		child.stderr.on("data", (value) => { output = `${output}${value}`.slice(0, 4000); });
+		child.once("error", () => resolve(""));
+		child.once("close", () => resolve(output));
+	});
+}
+
+export async function harnessInstallPlan(integration: IntegrationId, readFxHelp: () => Promise<string> = fxHelpOutput): Promise<InstallInvocation | null> {
+	if (!isPrimaryHarness(integration)) return null;
+	if (await isCommandAvailable(COMMANDS[integration])) {
+		// Another tool, such as the fx JSON viewer, can own the same command name.
+		if (integration === "fx" && !isVercelFxHelp(await readFxHelp())) {
+			throw new Error("The fx command on your PATH is not Vercel Labs' fx coding agent (it may be the fx JSON viewer), so Phaseo will not install over it. Install fx from https://fx.sh into a directory that comes first on PATH, or rename the other command, then rerun with --skip-install.");
+		}
+		return null;
+	}
 	if (integration === "prime-agent") {
 		if (process.platform === "win32") throw new Error("Prime Agent supports macOS and Linux. Run Phaseo setup inside WSL, or use --skip-install for a separately managed installation.");
 		if (!await isCommandAvailable(["sh"]) || !await isCommandAvailable(["curl"])) {

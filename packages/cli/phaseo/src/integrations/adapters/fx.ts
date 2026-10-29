@@ -16,7 +16,8 @@ const MAX_LIMIT = 0xffff_ffff;
 
 type JsonObject = Record<string, unknown>;
 type PreviousValue = { present: boolean; value?: unknown };
-type FxState = { version: 1; provider: PreviousValue };
+// createdSettings marks a settings file that setup created, so removal can delete it again once empty.
+type FxState = { version: 1; provider: PreviousValue; createdSettings?: boolean };
 
 function isObject(value: unknown): value is JsonObject {
 	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -209,7 +210,11 @@ export const fxAdapter: IntegrationAdapter = {
 		const changes: FileChange[] = [];
 		if (state === null) {
 			const settings = parseSettings(path, before);
-			const previous: FxState = { version: 1, provider: settings.provider === undefined ? { present: false } : { present: true, value: settings.provider } };
+			const previous: FxState = {
+				version: 1,
+				provider: settings.provider === undefined ? { present: false } : { present: true, value: settings.provider },
+				...(before === null ? { createdSettings: true } : {}),
+			};
 			changes.push({ path: stateFile, before: null, after: `${JSON.stringify(previous, null, 2)}\n`, description: "Record the previous fx provider for removal" });
 		}
 		if (before !== after) changes.push({ path, before, after, description: "Configure the Phaseo fx connection" });
@@ -231,8 +236,9 @@ export const fxAdapter: IntegrationAdapter = {
 		const path = settingsPath(options);
 		const before = await readOptionalFile(path);
 		if (before !== null) {
-			const after = renderFxRemovedSettings(path, before, state);
-			if (after !== before) changes.push({ path, before, after, description: "Remove the Phaseo fx connection" });
+			const rendered = renderFxRemovedSettings(path, before, state);
+			const after = state.createdSettings && Object.keys(parseSettings(path, rendered)).length === 0 ? null : rendered;
+			if (after !== before) changes.push({ path, before, after, description: after === null ? "Remove the fx settings file Phaseo CLI created" : "Remove the Phaseo fx connection" });
 		}
 		const envFile = fxEnvPath(options);
 		const envBefore = await readOptionalFile(envFile);

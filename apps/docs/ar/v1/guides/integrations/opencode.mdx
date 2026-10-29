@@ -14,7 +14,7 @@ description: "اربط OpenCode ببوابة Phaseo عبر مزوّد مخصص �
 phaseo opencode --model openai/gpt-5.6-terra
 ```
 
-ينشئ الأمر مفتاح `Phaseo CLI: OpenCode API Key` غير منتهي الصلاحية، ويحافظ على إعدادات OpenCode وبيانات اعتماده الأخرى، ويدعم `--dry-run`. يحدّث ملف `opencode.jsonc` العام إن كان موجودًا، وإلا يستخدم `~/.config/opencode/opencode.json`.
+ينشئ الأمر مفتاح `Phaseo CLI: OpenCode API Key` تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره 100 دولار (شغّل `phaseo opencode` مجددًا لاستبدال المفتاح المنتهي)، ويحافظ على إعدادات OpenCode وبيانات اعتماده الأخرى، ويدعم `--dry-run`. يحدّث ملف `opencode.jsonc` العام إن كان موجودًا، وإلا يستخدم `~/.config/opencode/opencode.json`.
 
 استخدم `--catalog default` لتهيئة النموذج المحدد فقط.
 

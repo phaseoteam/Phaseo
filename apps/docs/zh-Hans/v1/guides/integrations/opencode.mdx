@@ -14,7 +14,7 @@ OpenCode 可通过自定义的 OpenAI 兼容供应商调用 Phaseo。如果希�
 phaseo opencode --model openai/gpt-5.6-terra
 ```
 
-此命令会创建永不过期的 `Phaseo CLI: OpenCode API Key`，保留 OpenCode 的其他设置和凭据，并支持 `--dry-run`。如果存在全局 `opencode.jsonc`，则更新该文件；否则使用 `~/.config/opencode/opencode.json`。
+此命令会创建一个 90 天后过期、每月支出上限为 100 美元的 `Phaseo CLI: OpenCode API Key`（密钥过期后重新运行 `phaseo opencode` 即可替换），保留 OpenCode 的其他设置和凭据，并支持 `--dry-run`。如果存在全局 `opencode.jsonc`，则更新该文件；否则使用 `~/.config/opencode/opencode.json`。
 
 使用 `--catalog default` 仅配置所选模型。
 

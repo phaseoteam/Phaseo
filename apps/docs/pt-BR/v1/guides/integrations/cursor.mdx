@@ -13,7 +13,7 @@ phaseo login
 phaseo cursor --model openai/gpt-5.6-terra
 ```
 
-A configuração cria uma chave `Phaseo CLI: Cursor API Key` sem expiração e exibe as configurações abaixo. Ela não altera o armazenamento privado de credenciais do Cursor.
+A configuração cria uma chave `Phaseo CLI: Cursor API Key` que expira após 90 dias e tem um limite de gastos mensal de US$ 100, e exibe as configurações abaixo. Depois que ela expirar, execute `phaseo cursor` novamente para obter uma nova chave. Ela não altera o armazenamento privado de credenciais do Cursor.
 
 ## Configure o Cursor
 

@@ -23,7 +23,7 @@ import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getInte
 import { HERMES_BLOCK_END, HERMES_BLOCK_START, HermesEnvQuotingError, assertHermesEnvEditable, firstUnsupportedHermesEnvLine, hermesEnvDefinesOpenAIKey, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
-import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, installInvocationFor, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation, windowsCommandInterpreter } from "../src/integrations/installer.js";
+import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, harnessInstallPlan, installInvocationFor, isVercelFxHelp, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation, windowsCommandInterpreter } from "../src/integrations/installer.js";
 import { updateChildInvocation } from "../src/index.js";
 
 test("Codex profile uses the Responses API without embedding a credential", () => {
@@ -1203,6 +1203,38 @@ test("fx settings preserve unrelated values and refuse unmanaged connections", (
 	assert.throws(() => renderFxSettings("/tmp/settings.json", "{ // comment\n}"), /malformed fx settings/);
 	const full = JSON.stringify({ providers: Object.fromEntries(Array.from({ length: 32 }, (_, index) => [`p${index}`, {}])) });
 	assert.throws(() => renderFxSettings("/tmp/settings.json", full), /at most 32 custom connections/);
+});
+
+test("fx removal deletes the settings file setup created once nothing else is in it", async () => {
+	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-fx-integration-"));
+	const settingsPath = join(homeDir, ".fx", "settings.json");
+	try {
+		const options = { homeDir };
+		await applyChanges(await fxAdapter.planSetup(options));
+		assert.equal(JSON.parse(await readFile(settingsPath, "utf8")).provider, "phaseo");
+		await applyChanges(await fxAdapter.planRemove(options));
+		assert.equal(await readFile(settingsPath, "utf8").catch(() => null), null);
+	} finally {
+		await rm(homeDir, { recursive: true, force: true });
+	}
+});
+
+test("fx install check refuses a different fx command on PATH", async () => {
+	const vercelHelp = "𝒇x v0.0.15\nFast, native coding agent for the terminal.\n";
+	const viewerHelp = "Usage: fx [flags] [--] [file] [code ...]\n";
+	assert.equal(isVercelFxHelp(vercelHelp), true);
+	assert.equal(isVercelFxHelp(viewerHelp), false);
+	const binDir = await mkdtemp(join(tmpdir(), "phaseo-fx-bin-"));
+	const path = process.env.PATH;
+	try {
+		await writeFile(join(binDir, "fx"), "");
+		process.env.PATH = binDir;
+		await assert.rejects(harnessInstallPlan("fx", async () => viewerHelp), /not Vercel Labs' fx coding agent/);
+		assert.equal(await harnessInstallPlan("fx", async () => vercelHelp), null);
+	} finally {
+		process.env.PATH = path;
+		await rm(binDir, { recursive: true, force: true });
+	}
 });
 
 test("fx credential file is shell-safe and owner-marked", () => {
