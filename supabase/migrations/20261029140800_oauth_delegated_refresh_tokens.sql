@@ -1,13 +1,21 @@
 -- Refresh tokens for third-party OAuth apps' delegated gateway keys.
 -- * oauth_refresh_tokens.key_id: the delegated key a refresh token renews (deleted with the key).
--- * public.consume_oauth_code_and_issue_delegated_grant: the authorization-code exchange now issues
---   the delegated key (the 7-day access token) and a 90-day refresh token bound to it, atomically.
+-- * public.consume_oauth_code_and_issue_delegated_grant: the authorization-code exchange issues the
+--   delegated key (the 7-day access token) and a 90-day refresh token bound to it, atomically.
+--   Approving the same app again renews its existing key (same row, new secret, new refresh-token
+--   family) and never turns a paused key back on.
 --   consume_oauth_code_and_issue_managed_key stays for Workers deployed before this change.
 -- * public.rotate_oauth_delegated_refresh_token: refreshing rotates the refresh token and replaces
---   the same key's secret (the old access token stops working at once), never widens scopes, and a
---   refresh token presented again after rotation revokes its chain and the key.
+--   the same key's secret (the old access token stops working at once), never widens scopes, ends
+--   the chain when a required scope is gone, and a refresh token presented again after rotation
+--   revokes its chain and the key.
+-- * public.revoke_oauth_refresh_token_grant: RFC 7009 revocation of a refresh token in one
+--   transaction, matching it even if already rotated; for a delegated token it revokes the key and
+--   every refresh token bound to it.
 -- * Triggers: a delegated key that stops being active ends its refresh tokens; revoking or deleting
---   an app's authorization revokes that app's delegated keys and refresh tokens in the workspace.
+--   an app's authorization revokes that app's delegated keys (in any state that could be turned back
+--   on) and refresh tokens in the workspace; an authorization losing a scope a delegated key needs
+--   ends that key's refresh tokens.
 -- Hand-written: the declarative sync needs a local Postgres runtime (Docker), which is not
 -- available where this was authored. It matches the definitions in schemas/.
 SET local check_function_bodies = off;
@@ -37,7 +45,7 @@ CREATE OR REPLACE FUNCTION public.consume_oauth_code_and_issue_delegated_grant (
   p_refresh_token_hash   text,
   p_refresh_expires_at   timestamp with time zone
 )
-  RETURNS text
+  RETURNS jsonb
   LANGUAGE plpgsql
   SECURITY DEFINER
   SET search_path TO ''
@@ -46,10 +54,13 @@ declare
   granted_scopes text[];
   granted_resource text;
   resource_is_gateway boolean;
+  existing_key public.keys%rowtype;
   issued_key_id uuid;
+  issued_kid text;
+  outcome text;
 begin
   if nullif(btrim(p_refresh_token_hash), '') is null or p_refresh_expires_at is null then
-    return 'invalid';
+    return jsonb_build_object('status', 'invalid');
   end if;
 
   resource_is_gateway := coalesce(
@@ -61,9 +72,11 @@ begin
   if (nullif(btrim(p_resource), '') is null or resource_is_gateway)
     and not (coalesce(p_scopes, array[]::text[]) @> array['gateway:access']::text[])
   then
-    return 'invalid';
+    return jsonb_build_object('status', 'invalid');
   end if;
 
+  -- Lock order, as in rotate_oauth_delegated_refresh_token and the member-delete trigger:
+  -- membership -> authorization -> key -> refresh tokens.
   perform 1
   from public.workspace_members member
   where member.user_id = p_user_id
@@ -71,7 +84,7 @@ begin
   for key share;
 
   if not found then
-    return 'invalid';
+    return jsonb_build_object('status', 'invalid');
   end if;
 
   perform 1
@@ -88,7 +101,7 @@ begin
   for update;
 
   if not found then
-    return 'invalid';
+    return jsonb_build_object('status', 'invalid');
   end if;
 
   update public.oauth_authorization_codes authorization_code
@@ -110,28 +123,57 @@ begin
     into granted_scopes, granted_resource;
 
   if not found then
-    return 'invalid';
+    return jsonb_build_object('status', 'invalid');
   end if;
 
-  -- The new sign-in replaces the app's earlier key here; revoking it also ends that key's
-  -- refresh tokens (revoke_oauth_refresh_tokens_for_inactive_key).
-  update public.keys
-  set status = 'revoked'
-  where key_kind = 'oauth_delegated'
-    and oauth_user_id = p_user_id
-    and workspace_id = p_workspace_id
-    and oauth_client_id = p_client_id
-    and oauth_resource is not distinct from granted_resource
-    and status = 'active';
+  -- Approving the same app again renews its key instead of adding one, so the key keeps its id,
+  -- limits, month-to-date spend and history. Revoked, compromised and deleted keys are final.
+  select * into existing_key
+  from public.keys key_row
+  where key_row.key_kind = 'oauth_delegated'
+    and key_row.issued_via = 'oauth_pkce'
+    and key_row.oauth_user_id = p_user_id
+    and key_row.workspace_id = p_workspace_id
+    and key_row.oauth_client_id = p_client_id
+    and key_row.oauth_resource is not distinct from granted_resource
+    and key_row.status not in ('revoked', 'compromised', 'deleted')
+  order by (key_row.status = 'active') desc, key_row.created_at desc
+  limit 1
+  for update;
 
-  insert into public.keys (
-    workspace_id, name, hash, prefix, status, scopes, created_by, kid,
-    key_kind, oauth_client_id, oauth_user_id, oauth_scopes, oauth_resource, issued_via, expires_at
-  ) values (
-    p_workspace_id, p_key_name, p_key_hash, p_key_prefix, 'active', '[]', p_user_id, p_key_kid,
-    'oauth_delegated', p_client_id, p_user_id, granted_scopes, granted_resource, 'oauth_pkce', now() + interval '7 days'
-  )
-  returning id into issued_key_id;
+  if found then
+    -- A key an owner or admin paused (or a storage incident paused) is never turned back on by
+    -- signing in again. The code is spent; nothing usable is issued.
+    if existing_key.status <> 'active' then
+      return jsonb_build_object('status', 'key_inactive');
+    end if;
+
+    -- The earlier sign-in's refresh tokens end here; the new secret ends its access token.
+    update public.oauth_refresh_tokens
+    set revoked_at = now()
+    where key_id = existing_key.id
+      and revoked_at is null;
+
+    update public.keys
+    set hash = p_key_hash,
+      oauth_scopes = granted_scopes,
+      expires_at = now() + interval '7 days'
+    where id = existing_key.id;
+
+    issued_key_id := existing_key.id;
+    issued_kid := existing_key.kid;
+    outcome := 'renewed';
+  else
+    insert into public.keys (
+      workspace_id, name, hash, prefix, status, scopes, created_by, kid,
+      key_kind, oauth_client_id, oauth_user_id, oauth_scopes, oauth_resource, issued_via, expires_at
+    ) values (
+      p_workspace_id, p_key_name, p_key_hash, p_key_prefix, 'active', '[]', p_user_id, p_key_kid,
+      'oauth_delegated', p_client_id, p_user_id, granted_scopes, granted_resource, 'oauth_pkce', now() + interval '7 days'
+    )
+    returning id, kid into issued_key_id, issued_kid;
+    outcome := 'issued';
+  end if;
 
   -- The refresh token renews this key (same row, new secret) until it is revoked or unused for 90 days.
   insert into public.oauth_refresh_tokens (
@@ -141,11 +183,11 @@ begin
     gen_random_uuid(), issued_key_id
   );
 
-  return 'issued';
+  return jsonb_build_object('status', outcome, 'kid', issued_kid);
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Returns issued or invalid.';
+COMMENT ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) IS 'Exchanges a third-party OAuth authorization code for a delegated gateway key (the access token, 7 days) and a refresh token bound to that key (90 days, rotated by rotate_oauth_delegated_refresh_token), in one transaction. Approving the same app again renews its existing key (same row, new secret, new refresh-token family) instead of adding one, and never turns a paused key back on. Returns {status: issued|renewed|key_inactive|invalid, kid}.';
 
 GRANT EXECUTE ON FUNCTION "public"."consume_oauth_code_and_issue_delegated_grant"(uuid, text, text, text, text, uuid, uuid, text, text[], text, text, timestamp WITH time zone) TO "service_role";
 
@@ -242,12 +284,13 @@ begin
     where family_id = current_token.family_id;
 
     -- Presented again after it was rotated (only rotation sets last_used_at), the token may
-    -- have leaked: end the key it renews too. A token revoked any other way just fails.
+    -- have leaked: end the key it renews too, even a paused one, so turning it back on can't
+    -- revive it. A token revoked any other way just fails.
     if current_token.last_used_at is not null then
       update public.keys
       set status = 'revoked', revoked_reason = 'oauth_refresh_token_reused'
       where id = delegated_key.id
-        and status = 'active';
+        and status not in ('revoked', 'compromised', 'deleted');
       return jsonb_build_object('status', 'reused');
     end if;
     return jsonb_build_object('status', 'invalid');
@@ -283,12 +326,16 @@ begin
     false
   );
 
-  -- An unbound or Gateway-bound key spends credits, so it needs gateway:access consent.
+  -- An unbound or Gateway-bound key spends credits, so it needs gateway:access consent. Losing a
+  -- required scope ends the chain for good, so consenting to the scope again doesn't revive it.
   if coalesce(cardinality(granted_scopes), 0) = 0
     or (
       (nullif(btrim(delegated_key.oauth_resource), '') is null or resource_is_gateway)
       and not (granted_scopes @> array['gateway:access']::text[])
     ) then
+    update public.oauth_refresh_tokens
+    set revoked_at = coalesce(revoked_at, now())
+    where family_id = current_token.family_id;
     return jsonb_build_object('status', 'invalid');
   end if;
 
@@ -323,7 +370,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) IS 'Refreshes a third-party app''s delegated gateway key: rotates the refresh token and replaces the same key''s secret, extending it 7 days. Scopes only narrow. A reused refresh token revokes its chain and the key. Returns {status: rotated|reused|invalid, ...}.';
+COMMENT ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) IS 'Refreshes a third-party app''s delegated gateway key: rotates the refresh token and replaces the same key''s secret, extending it 7 days. Scopes only narrow, and losing a required scope ends the chain. A reused refresh token revokes its chain and the key. Returns {status: rotated|reused|invalid, ...}.';
 
 GRANT EXECUTE ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) TO "service_role";
 
@@ -333,6 +380,76 @@ GRANT EXECUTE ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, 
 
 REVOKE ALL
   ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text)
+  FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION public.revoke_oauth_refresh_token_grant (
+  p_token_hashes text[]
+)
+  RETURNS text
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare
+  token_identity public.oauth_refresh_tokens%rowtype;
+begin
+  -- Any token of the grant identifies it, even one already rotated, so a logout that races a
+  -- refresh still ends the token that refresh issued.
+  select * into token_identity
+  from public.oauth_refresh_tokens
+  where token_hash = any(coalesce(p_token_hashes, array[]::text[]))
+  limit 1;
+
+  if not found then
+    return 'not_found';
+  end if;
+
+  if token_identity.key_id is null then
+    -- Wait for a refresh in flight, so the update below also sees the token it issues.
+    perform 1
+    from public.oauth_refresh_tokens
+    where family_id = token_identity.family_id
+    for update;
+
+    update public.oauth_refresh_tokens
+    set revoked_at = now()
+    where family_id = token_identity.family_id
+      and revoked_at is null;
+    return 'revoked';
+  end if;
+
+  -- Same order as rotate_oauth_delegated_refresh_token: key -> refresh tokens.
+  perform 1
+  from public.keys key_row
+  where key_row.id = token_identity.key_id
+  for update;
+
+  update public.oauth_refresh_tokens
+  set revoked_at = now()
+  where (key_id = token_identity.key_id or family_id = token_identity.family_id)
+    and revoked_at is null;
+
+  -- The app gave up its access: end its delegated key too, even a paused one.
+  update public.keys
+  set status = 'revoked', revoked_reason = 'oauth_token_revoked'
+  where id = token_identity.key_id
+    and key_kind = 'oauth_delegated'
+    and status not in ('revoked', 'compromised', 'deleted');
+
+  return 'revoked';
+end;
+$function$;
+
+COMMENT ON FUNCTION "public"."revoke_oauth_refresh_token_grant"(text[]) IS 'RFC 7009 revocation of an OAuth refresh token, in one transaction: revokes the token''s whole family and, for a third-party app''s token, its delegated gateway key and every refresh token bound to it. Matches a token even if it was already rotated. Returns revoked or not_found.';
+
+GRANT EXECUTE ON FUNCTION "public"."revoke_oauth_refresh_token_grant"(text[]) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."revoke_oauth_refresh_token_grant"(text[]) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."revoke_oauth_refresh_token_grant"(text[]) TO "postgres";
+
+REVOKE ALL
+  ON FUNCTION "public"."revoke_oauth_refresh_token_grant"(text[])
   FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.revoke_oauth_refresh_tokens_for_inactive_key()
@@ -366,14 +483,15 @@ CREATE OR REPLACE FUNCTION public.revoke_oauth_grant_on_authorization_revoke()
   SET search_path TO ''
   AS $function$
 begin
-  -- Same order as the member-delete trigger: authorization -> keys -> refresh tokens.
+  -- Same order as the member-delete trigger: authorization -> keys -> refresh tokens. Paused and
+  -- disabled keys are revoked too, so turning one back on can't bring back the app's access.
   update public.keys
   set status = 'revoked'
   where key_kind = 'oauth_delegated'
     and oauth_user_id = old.user_id
     and workspace_id = old.workspace_id
     and oauth_client_id = old.client_id
-    and status = 'active';
+    and status not in ('revoked', 'compromised', 'deleted');
 
   update public.oauth_refresh_tokens
   set revoked_at = coalesce(revoked_at, now())
@@ -394,11 +512,63 @@ GRANT EXECUTE ON FUNCTION "public"."revoke_oauth_grant_on_authorization_revoke"(
 
 REVOKE ALL ON FUNCTION "public"."revoke_oauth_grant_on_authorization_revoke"() FROM PUBLIC, "anon", "authenticated", "service_role";
 
+CREATE OR REPLACE FUNCTION public.revoke_oauth_delegated_refresh_on_scope_loss()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+begin
+  -- Runs while this update holds the authorization row, which a refresh locks first, so no refresh
+  -- can slip in between. The same test as rotate_oauth_delegated_refresh_token: nothing left in
+  -- common, or a credit-spending key without gateway:access, ends the token's chain for good.
+  update public.oauth_refresh_tokens refresh_token
+  set revoked_at = now()
+  from public.keys key_row
+  where key_row.id = refresh_token.key_id
+    and refresh_token.user_id = new.user_id
+    and refresh_token.workspace_id = new.workspace_id
+    and refresh_token.client_id = new.client_id
+    and refresh_token.revoked_at is null
+    and (
+      not exists (
+        select 1
+        from unnest(coalesce(new.scopes, array[]::text[])) as scope
+        where scope = any(refresh_token.scopes)
+          and scope = any(coalesce(key_row.oauth_scopes, array[]::text[]))
+      )
+      or (
+        (
+          nullif(btrim(key_row.oauth_resource), '') is null
+          or coalesce(btrim(key_row.oauth_resource) ~* '^https://api\.phaseo\.app(?::443)?/v1/*$', false)
+        )
+        and not (coalesce(new.scopes, array[]::text[]) @> array['gateway:access']::text[])
+      )
+    );
+
+  return null;
+end;
+$function$;
+
+COMMENT ON FUNCTION "public"."revoke_oauth_delegated_refresh_on_scope_loss"() IS 'When an app''s authorization loses a scope its delegated keys need (gateway:access for a credit-spending key, or every scope a token holds), ends those keys'' refresh tokens, so granting the scope again later never revives them.';
+
+REVOKE ALL ON FUNCTION "public"."revoke_oauth_delegated_refresh_on_scope_loss"() FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."revoke_oauth_delegated_refresh_on_scope_loss"() TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."revoke_oauth_delegated_refresh_on_scope_loss"() FROM PUBLIC, "anon", "authenticated", "service_role";
+
 CREATE TRIGGER revoke_oauth_refresh_tokens_for_inactive_key
   AFTER UPDATE OF status ON public.keys
   FOR EACH ROW
   WHEN (((old.status = 'active'::text) AND (new.status IS DISTINCT FROM 'active'::text) AND (new.key_kind = 'oauth_delegated'::text)))
   EXECUTE FUNCTION public.revoke_oauth_refresh_tokens_for_inactive_key();
+
+CREATE TRIGGER revoke_oauth_delegated_refresh_on_scope_loss
+  AFTER UPDATE OF scopes ON public.oauth_authorizations
+  FOR EACH ROW
+  WHEN ((old.scopes IS DISTINCT FROM new.scopes))
+  EXECUTE FUNCTION public.revoke_oauth_delegated_refresh_on_scope_loss();
 
 CREATE TRIGGER revoke_oauth_grant_on_authorization_delete
   AFTER DELETE ON public.oauth_authorizations

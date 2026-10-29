@@ -83,12 +83,13 @@ begin
     where family_id = current_token.family_id;
 
     -- Presented again after it was rotated (only rotation sets last_used_at), the token may
-    -- have leaked: end the key it renews too. A token revoked any other way just fails.
+    -- have leaked: end the key it renews too, even a paused one, so turning it back on can't
+    -- revive it. A token revoked any other way just fails.
     if current_token.last_used_at is not null then
       update public.keys
       set status = 'revoked', revoked_reason = 'oauth_refresh_token_reused'
       where id = delegated_key.id
-        and status = 'active';
+        and status not in ('revoked', 'compromised', 'deleted');
       return jsonb_build_object('status', 'reused');
     end if;
     return jsonb_build_object('status', 'invalid');
@@ -124,12 +125,16 @@ begin
     false
   );
 
-  -- An unbound or Gateway-bound key spends credits, so it needs gateway:access consent.
+  -- An unbound or Gateway-bound key spends credits, so it needs gateway:access consent. Losing a
+  -- required scope ends the chain for good, so consenting to the scope again doesn't revive it.
   if coalesce(cardinality(granted_scopes), 0) = 0
     or (
       (nullif(btrim(delegated_key.oauth_resource), '') is null or resource_is_gateway)
       and not (granted_scopes @> array['gateway:access']::text[])
     ) then
+    update public.oauth_refresh_tokens
+    set revoked_at = coalesce(revoked_at, now())
+    where family_id = current_token.family_id;
     return jsonb_build_object('status', 'invalid');
   end if;
 
@@ -164,7 +169,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) IS 'Refreshes a third-party app''s delegated gateway key: rotates the refresh token and replaces the same key''s secret, extending it 7 days. Scopes only narrow. A reused refresh token revokes its chain and the key. Returns {status: rotated|reused|invalid, ...}.';
+COMMENT ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) IS 'Refreshes a third-party app''s delegated gateway key: rotates the refresh token and replaces the same key''s secret, extending it 7 days. Scopes only narrow, and losing a required scope ends the chain. A reused refresh token revokes its chain and the key. Returns {status: rotated|reused|invalid, ...}.';
 
 GRANT EXECUTE ON FUNCTION "public"."rotate_oauth_delegated_refresh_token"(text, text, timestamp WITH time zone, text) TO "service_role";
 

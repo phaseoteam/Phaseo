@@ -148,7 +148,7 @@ phaseo cline --model openai/gpt-5.6-terra --dry-run --json
 缺少 Cline、Kilo Code 或 oh-my-pi 时，会交互式提供安装选项。Muse Code 和 MiniMax Code 在命令缺失时使用官方安装程序。Windows 上的 MiniMax Code 使用官方 PowerShell 安装程序；如单独管理这些环境，请使用 `--skip-install`。启动器不会覆盖现有 Cline、Kilo、oh-my-pi、Muse Code 或 MiniMax Code 配置。
 ## OAuth 应用
 
-Phaseo 为官方 CLI、用户创建的应用和动态注册的 MCP 客户端使用同一个 OAuth 授权服务器。CLI 使用浏览器或设备代码登录，并轮换刷新令牌。第三方客户端使用带 PKCE 的授权码流程、显式作用域和工作区同意，并可选择绑定受保护资源。它们会获得一个有效期 7 天、可撤销的委托访问令牌，以及一个自上次使用起 90 天有效的轮换刷新令牌；刷新的工作方式请参阅[构建 OAuth Next.js 工作台](../../cookbook/build-an-oauth-nextjs-workbench)。
+Phaseo 为官方 CLI、用户创建的应用和动态注册的 MCP 客户端使用同一个 OAuth 授权服务器。CLI 使用浏览器或设备代码登录，并轮换刷新令牌。第三方客户端使用带 PKCE 的授权码流程、显式作用域和工作区同意，并可选择绑定受保护资源。它们会获得一个有效期 7 天、可撤销的委托访问令牌，以及一个自上次使用起 90 天有效的轮换刷新令牌；刷新的工作方式请参阅[构建 OAuth Next.js 工作台](../../cookbook/build-an-oauth-nextjs-workbench)。用户再次批准同一个应用时，会续期该密钥，而不是新增第二个密钥。
 
 托管的 Phaseo API 会启用第三方 OAuth。自托管或预览版 API 部署默认禁用此功能，除非将 `PHASEO_THIRD_PARTY_OAUTH_ENABLED` 设置为真值。接受 `1`、`true`、`yes` 和 `on`，会先去除空格并忽略大小写。启用后，用户创建的 OAuth 应用管理和动态客户端注册将开放，因此应配套审查重定向 URI、同意、客户端密钥、速率限制和工作区授权配置。
 
