@@ -1155,6 +1155,7 @@ declare
   v_rollover uuid[];
   v_periodic uuid[];
   v_balance_slots constant integer := 3;
+  v_balance_round bigint;
   v_balance uuid[];
   v_workspace uuid;
   v_result jsonb;
@@ -1242,22 +1243,31 @@ begin
 
   -- Balance rules: a balance moves without usage (reservations, refunds, top-ups, credits), so
   -- workspaces with balance rules are also taken in one of three slices by the same hash, that
-  -- is every 15 minutes when called every 5 minutes.
+  -- is every 15 minutes when called every 5 minutes. Like the periodic slot, a slice with more
+  -- than p_limit workspaces starts p_limit further along on each visit.
+  v_balance_round := floor(extract(epoch from p_now) / 900)::bigint;
   select coalesce(array_agg(due.workspace_id), '{}') into v_balance
   from (
-    select distinct rule.workspace_id
-    from public.workspace_spend_rules rule
-    where rule.metric = 'balance'
-      and rule.enabled
-      and rule.deleted_at is null
-      and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
-      and (pg_catalog.hashtextextended(rule.workspace_id::text, 0) % v_balance_slots + v_balance_slots) % v_balance_slots
-        = v_slot % v_balance_slots
-      and rule.workspace_id <> all (v_dirty)
-      and rule.workspace_id <> all (v_rollover)
-      and rule.workspace_id <> all (v_periodic)
-    order by rule.workspace_id
-    limit p_limit
+    select slice.workspace_id
+    from (
+      select candidate.workspace_id,
+        pg_catalog.row_number() over (order by candidate.workspace_id) - 1 as position,
+        pg_catalog.count(*) over () as total
+      from (
+        select distinct rule.workspace_id
+        from public.workspace_spend_rules rule
+        where rule.metric = 'balance'
+          and rule.enabled
+          and rule.deleted_at is null
+          and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
+          and (pg_catalog.hashtextextended(rule.workspace_id::text, 0) % v_balance_slots + v_balance_slots) % v_balance_slots
+            = v_slot % v_balance_slots
+          and rule.workspace_id <> all (v_dirty)
+          and rule.workspace_id <> all (v_rollover)
+          and rule.workspace_id <> all (v_periodic)
+      ) candidate
+    ) slice
+    where ((slice.position - v_balance_round * p_limit) % slice.total + slice.total) % slice.total < p_limit
   ) due;
 
   foreach v_workspace in array v_dirty || v_rollover || v_periodic || v_balance loop
