@@ -44,7 +44,11 @@ export function registerFactoryIpc(ipcMain: IpcMain, factory: () => FactoryServi
 		if (typeof value !== "string" || value.length > maximum) throw new Error("Invalid Factory request.");
 		return value;
 	};
-	const handle = (channel: string, run: (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown) => ipcMain.handle(`factory:${channel}`, run);
+	// Saved state loads after the window opens: anything but a snapshot waits for it, or loading would overwrite the change.
+	const handle = (channel: string, run: (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown) => ipcMain.handle(`factory:${channel}`, async (event, ...args) => {
+		if (channel !== "snapshot") await factory()?.start().catch(() => undefined);
+		return run(event, ...args);
+	});
 	const images = new Map<string, string>();
 	let imageBytes = 0;
 

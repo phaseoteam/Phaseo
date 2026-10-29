@@ -36,7 +36,7 @@ describe("issue references", () => {
 	it("send # chips as Markdown links and list them as GitHub references, keeping chat references", () => {
 		const draft = `Look at ${mentionToken({ kind: "issue", ref: "https://github.com/owned/repo/issues/12", label: "#12 Broken" })} and ${mentionToken({ kind: "pull-request", ref: "https://github.com/owned/repo/pull/3", label: "#3 Fix" })} with ${mentionToken({ kind: "chat", ref: "a".repeat(8) + "-0000-0000-0000-" + "0".repeat(12), label: "Other" })}`;
 		const message = composeMessage(draft);
-		expect(message.text).toContain("[#12 Broken](https://github.com/owned/repo/issues/12) and [#3 Fix](https://github.com/owned/repo/pull/3)");
+		expect(message.text).toContain("[#12](https://github.com/owned/repo/issues/12) and [#3](https://github.com/owned/repo/pull/3)");
 		expect(message.githubReferences).toEqual(["https://github.com/owned/repo/issues/12", "https://github.com/owned/repo/pull/3"]);
 		expect(message.threadReferences).toHaveLength(1);
 	});

@@ -883,7 +883,7 @@ export class FactoryStore {
 				return;
 			case "fix-findings":
 				assertCanPush(item);
-				return this.fixFindings(itemId, item.stages.verify.status === "failed" ? "verify" : "review");
+				return this.fixFindings(itemId, item.stages.verify.status === "failed" ? "verify" : "review", action.agentId);
 			case "fix-ci": {
 				assertCanPush(item);
 				const failed = item.ci?.failed ?? [];
@@ -1228,13 +1228,13 @@ export class FactoryStore {
 	}
 
 	/** Fixes what Review or Verify found, on the pull request's own branch, then reviews again. */
-	private async fixFindings(pullId: string, from: "review" | "verify"): Promise<void> {
+	private async fixFindings(pullId: string, from: "review" | "verify", chosen?: string): Promise<void> {
 		const pull = this.item(pullId);
 		const report = lastRun(pull, from, this.snapshot.runs)?.report;
 		const findings = report?.text ?? report?.summary ?? pull.stages[from].summary;
 		if (!findings) throw new Error(`${stageLabel(from)} has no findings to fix`);
 		// Whoever wrote the fix answers its review; on someone else's pull request, the item's agent does.
-		const agentId = pull.stages.fix.agentId ?? agentForStage(pull, "fix", this.snapshot.settings.playbooks.pull);
+		const agentId = chosen ?? pull.stages.fix.agentId ?? agentForStage(pull, "fix", this.snapshot.settings.playbooks.pull);
 		if (!agentId) throw new Error("Assign an agent first");
 		this.patchItem(pullId, (current) => ({ ...current, revisions: (current.revisions ?? 0) + 1, stages: { ...current.stages, verify: from === "verify" ? { status: "idle" } : current.stages.verify } }));
 		await this.launch({ itemId: pullId, stage: "fix", agentId }, { brief: findingsBrief(findings) });

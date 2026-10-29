@@ -90,6 +90,26 @@ describe("stage threads", () => {
 		} finally { await close(); }
 	});
 
+	it("carries a stopped run on in its thread without taking the old interruption as the new run's end", async () => {
+		let first = true;
+		const { runtime, parents, finished, handlers, start, threads, close, worktree, clone } = setup(async (_task, callbacks, { cancelled }) => {
+			if (first) { first = false; return cancelled; }
+			callbacks.onDelta?.("again", "Summary: Picked it up.\nVerdict: No findings");
+		});
+		try {
+			const process = await start("run-6");
+			const parentId = parents.get(item.id)!;
+			await vi.waitFor(() => expect(runtime.store.getOverview().tasks.find(task => task.delegation?.parentTaskId === parentId)?.status).toBe("running"));
+			process.stop();
+			await vi.waitFor(() => expect(finished).toEqual([expect.objectContaining({ status: "cancelled" })]));
+			const threadId = vi.mocked(handlers.session).mock.calls[0]![0];
+			expect(runtime.store.getTask(threadId).status).toBe("interrupted");
+			await threads.start({ item, runId: "run-7", agent, stage: "review", workspace: { dir: worktree, branch: "factory/pr-3", clone }, proof: path.join(worktree, "proof"), prompt: "Carry on.", resume: threadId, changedBefore: [], handlers });
+			await vi.waitFor(() => expect(finished).toHaveLength(2));
+			expect(finished[1]).toMatchObject({ status: "succeeded", report: { verdict: "No findings" } });
+		} finally { await close(); }
+	});
+
 	it("carries a reply on in the run's own thread, and one failure ends the run as failed to carry on", async () => {
 		let fail = true;
 		const { runtime, finished, handlers, start, threads, close, worktree, clone } = setup(async (_task, callbacks) => {

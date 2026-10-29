@@ -38,7 +38,7 @@ export function parseMentions(text: string): Segment[] {
 /**
  * What a draft sends: files become `@path` for the agent to open, chats keep their token (the agent
  * gets the id; the message shows a chip) and are listed as references, attachments become ids. A pull request or issue becomes a
- * Markdown link to it, which the message shows as a link, and is listed in `githubReferences` so the agent gets its context.
+ * Markdown link to it by number, which the message shows as a link, and is listed in `githubReferences` so the agent gets its context.
  */
 export function composeMessage(draft: string) {
 	const threadReferences: string[] = [], githubReferences: string[] = [], attachments: string[] = [], images: string[] = [];
@@ -50,7 +50,8 @@ export function composeMessage(draft: string) {
 		if (segment.kind === "pull-request" || segment.kind === "issue") {
 			if (!/^https:\/\/github\.com\//.test(segment.ref)) return segment.label;
 			if (!githubReferences.includes(segment.ref)) githubReferences.push(segment.ref);
-			return `[${segment.label.replace(/[[\]]/g, "")}](${segment.ref})`;
+			// Only the number goes in the text: the title is GitHub's, third-party text, and reaches the agent fenced with its context.
+			return `[${segment.label.match(/^#\d+/)?.[0] ?? `#${segment.ref.split("/").at(-1)}`}](${segment.ref})`;
 		}
 		(segment.kind === "attachment" ? attachments : images).push(segment.ref);
 		return "";

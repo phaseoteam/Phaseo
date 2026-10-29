@@ -117,14 +117,17 @@ export class FactoryService {
 				};
 			},
 			runStage: async (itemId: string, stage: string, agentId?: string) => {
+				await this.start();
 				const caller = this.runtime.store.getTask(threadId);
 				if (caller.permissionMode !== "full-access" || caller.mode === "plan") throw new Error("Running a Factory stage needs this chat to have full access outside Plan mode. Ask the user to change its permissions.");
 				const found = item(itemId);
-				const definition = stagesFor(found).find((candidate) => candidate.id === stage);
+				// A pull request's Fix answers its Review or Verify findings, the same as "Fix the findings" on the item.
+				const fixesPull = found.kind === "pull" && stage === "fix";
+				const definition = fixesPull ? { id: "fix" as const } : stagesFor(found).find((candidate) => candidate.id === stage);
 				if (!definition) throw new Error(`${found.kind === "pull" ? "Pull requests" : "Issues"} have no ${stage} stage here; use one of ${stagesFor(found).map((candidate) => candidate.id).join(", ")}.`);
 				if (agentId && !this.store.get().agents.some((agent) => agent.id === agentId)) throw new Error("Unknown agentId: use one of read_work_item's agents.");
 				const before = new Set(this.store.get().runs.map((run) => run.id));
-				await this.store.act(found.id, { id: "run", stage: definition.id, label: `Run ${stageLabel(definition.id)}`, ...(agentId ? { agentId } : {}) });
+				await this.store.act(found.id, fixesPull ? { id: "fix-findings", label: "Fix the findings", ...(agentId ? { agentId } : {}) } : { id: "run", stage: definition.id, label: `Run ${stageLabel(definition.id)}`, ...(agentId ? { agentId } : {}) });
 				const run = this.store.get().runs.find((candidate) => !before.has(candidate.id) && candidate.itemId === found.id);
 				if (!run) throw new Error(`${stageLabel(definition.id)} didn't start: ${found.stages[definition.id].summary ?? "no agent is available"}`);
 				return { runId: run.id, itemId: found.id, stage: definition.id, agentId: run.agentId, threadId: run.threadId ?? null };

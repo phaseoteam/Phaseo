@@ -234,9 +234,10 @@ export class StageThreads implements FactoryThreads {
 		const settled = !["running", "waiting"].includes(task.status) && !(task.queue.length && ["idle", "completed"].includes(task.status));
 		const start = task.messages.findIndex((message) => message.id === watch.startId);
 		if (start < 0) {
-			// Not started yet; or stopped, or failed, before it could. A thread carried on still shows its last run's failure until it starts.
+			// Not started yet; or stopped, or failed, before it could. A thread carried on still shows its last run's failure or
+			// interruption until it starts, so only a failure after the brief was queued, or Stop, ends a queued run.
 			const queued = task.queue.some((message) => message.id === watch.startId);
-			if (queued && task.status !== "interrupted" && !(["failed", "limited"].includes(task.status) && (task.revision ?? 0) > (watch.queuedRevision ?? 0))) return;
+			if (queued && !watch.stopping && !(["failed", "limited"].includes(task.status) && (task.revision ?? 0) > (watch.queuedRevision ?? 0))) return;
 			if (settled) void this.finish(watch, task, []);
 			return;
 		}
