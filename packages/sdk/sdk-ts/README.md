@@ -130,7 +130,21 @@ App attribution is optional and is never inferred from the SDK itself.
 
 ### Trusted workloads (OIDC tokens instead of an API key)
 
-Workspaces in the trusted workloads beta can let Vercel deployments and GitHub Actions jobs call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then pass a function as `apiKey`. It is called before every request, so each request uses a current token:
+Workspaces in the trusted workloads beta can let Vercel deployments and GitHub Actions jobs call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then pass a function as `apiKey`. It is called before every request and retry, so each request uses a current token.
+
+The SDK includes a function for each platform. Each fetches a token issued for `https://api.phaseo.app` and reuses it until a minute before it expires:
+
+```ts
+import Phaseo, { githubActionsToken, vercelToken } from "@phaseo/sdk";
+
+// GitHub Actions: the job needs `permissions: id-token: write`.
+const ci = new Phaseo({ apiKey: githubActionsToken() });
+
+// Vercel: exchanges the deployment's token (VERCEL_OIDC_TOKEN, or `token`) for one issued to Phaseo.
+const app = new Phaseo({ apiKey: vercelToken() });
+```
+
+In Vercel Functions the deployment's token arrives on each request as the `x-vercel-oidc-token` header. Pass it with `vercelToken({ token: () => request.headers.get("x-vercel-oidc-token") ?? "" })`, or use `getVercelOidcToken({ audience: "https://api.phaseo.app" })` from the server entry of `@vercel/oidc` 4.x, which reads it for you:
 
 ```ts
 import { getVercelOidcToken } from "@vercel/oidc";
@@ -139,8 +153,6 @@ const client = new Phaseo({
   apiKey: () => getVercelOidcToken({ audience: "https://api.phaseo.app" }),
 });
 ```
-
-Tokens must be issued for the audience `https://api.phaseo.app`. On Vercel, `getVercelOidcToken({ audience })` from the server entry of `@vercel/oidc` 4.x exchanges the deployment's token for one with that audience.
 
 ## Regional text routing
 

@@ -101,6 +101,22 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
 
 ## टोकन से Phaseo को कॉल करें
 
+हर Phaseo SDK API कुंजी की जगह एक फ़ंक्शन स्वीकार करता है और उसे हर अनुरोध और हर दोबारा प्रयास से पहले कॉल करता है, ताकि हर अनुरोध मौजूदा टोकन इस्तेमाल करे। C++ को छोड़कर हर SDK में हर प्लेटफ़ॉर्म के लिए एक हेल्पर है। यह `https://api.phaseo.app` के लिए जारी टोकन लाता है और उसकी अवधि खत्म होने से एक मिनट पहले तक उसे दोबारा इस्तेमाल करता है:
+
+| SDK | GitHub Actions | Vercel |
+| --- | --- | --- |
+| TypeScript | `githubActionsToken()` | `vercelToken()` |
+| Python | `github_actions_token()` | `vercel_token()` |
+| Go | `phaseo.GitHubActionsToken()` | `phaseo.VercelToken()` |
+| Java | `WorkloadTokens.gitHubActions()` | `WorkloadTokens.vercel()` |
+| C# | `WorkloadTokens.GitHubActions()` | `WorkloadTokens.Vercel()` |
+| PHP | `WorkloadTokens::githubActions()` | `WorkloadTokens::vercel()` |
+| Ruby | `PhaseoSdk::WorkloadTokens.github_actions` | `PhaseoSdk::WorkloadTokens.vercel` |
+| Rust | `phaseo::auth::github_actions_token()` | `phaseo::auth::vercel_token()` |
+| C++ | अपना फ़ंक्शन `set_api_key_provider` को दें | अपना फ़ंक्शन `set_api_key_provider` को दें |
+
+हेल्पर के लिए हर SDK का अगला रिलीज़ चाहिए। Vercel पर हेल्पर `VERCEL_OIDC_TOKEN_FILE` या `VERCEL_OIDC_TOKEN` से डिप्लॉयमेंट का टोकन बदलता है। Vercel Functions में टोकन हर अनुरोध के साथ `x-vercel-oidc-token` हेडर में आता है; इसे हेल्पर को टोकन के स्रोत के रूप में दें।
+
 <Tabs>
 <Tab title="Vercel">
 `@vercel/oidc` 4.x के सर्वर एंट्री से `getVercelOidcToken` का उपयोग करें। `audience` देने पर डिप्लॉयमेंट का टोकन Phaseo के लिए जारी किए गए टोकन से बदल दिया जाता है।

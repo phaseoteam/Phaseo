@@ -101,6 +101,22 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
 
 ## استدعاء Phaseo برمز
 
+تقبل كل حزم SDK من Phaseo دالة بدلًا من مفتاح API وتستدعيها قبل كل طلب وكل إعادة محاولة، فيستخدم كل طلب رمزًا حاليًا. تتضمن كل حزمة SDK باستثناء C++ دالة مساعدة لكل منصة، تجلب رمزًا صادرًا للجمهور `https://api.phaseo.app` وتعيد استخدامه حتى قبل دقيقة من انتهاء صلاحيته:
+
+| SDK | GitHub Actions | Vercel |
+| --- | --- | --- |
+| TypeScript | `githubActionsToken()` | `vercelToken()` |
+| Python | `github_actions_token()` | `vercel_token()` |
+| Go | `phaseo.GitHubActionsToken()` | `phaseo.VercelToken()` |
+| Java | `WorkloadTokens.gitHubActions()` | `WorkloadTokens.vercel()` |
+| C# | `WorkloadTokens.GitHubActions()` | `WorkloadTokens.Vercel()` |
+| PHP | `WorkloadTokens::githubActions()` | `WorkloadTokens::vercel()` |
+| Ruby | `PhaseoSdk::WorkloadTokens.github_actions` | `PhaseoSdk::WorkloadTokens.vercel` |
+| Rust | `phaseo::auth::github_actions_token()` | `phaseo::auth::vercel_token()` |
+| C++ | مرّر دالتك الخاصة إلى `set_api_key_provider` | مرّر دالتك الخاصة إلى `set_api_key_provider` |
+
+تتطلب الدوال المساعدة الإصدار التالي من كل حزمة SDK. على Vercel، تستبدل الدالة المساعدة رمز عملية النشر المأخوذ من `VERCEL_OIDC_TOKEN_FILE` أو `VERCEL_OIDC_TOKEN`. في Vercel Functions يصل الرمز مع كل طلب في الترويسة `x-vercel-oidc-token`؛ مرّره إلى الدالة المساعدة بوصفه مصدر الرمز.
+
 <Tabs>
 <Tab title="Vercel">
 استخدم `getVercelOidcToken` من مدخل الخادم في `@vercel/oidc` 4.x. عند تمرير `audience`، يُستبدل رمز عملية النشر برمز صادر لـ Phaseo.

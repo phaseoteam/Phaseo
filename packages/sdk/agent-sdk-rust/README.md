@@ -45,7 +45,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-Set `PHASEO_API_KEY` before running. Agent runs support model retries, local and externally fulfilled tools, approval gates, human-review pauses, resumption, lifecycle events, usage aggregation, and serializable run state.
+Set `PHASEO_API_KEY` before running. In a GitHub Actions job or Vercel deployment in the trusted workloads beta, you can use its short-lived OIDC token instead of an API key: set up a trust policy in Settings → API Keys → Trusted workloads, then build the client with a credential provider. It is called before every model request and retry.
+
+```rust
+use phaseo_agent::GatewayAgentClient;
+
+let mut client = GatewayAgentClient::from_api_key_provider(
+    phaseo::auth::github_actions_token(), // or phaseo::auth::vercel_token()
+    "openai/gpt-5.4-nano",
+);
+```
+
+`GatewayAgentClient::new` also accepts any `phaseo::Phaseo`, including one built with `Phaseo::from_api_key_provider`. See the Phaseo Rust SDK README for the helpers' options.
+
+Agent runs support model retries, local and externally fulfilled tools, approval gates, human-review pauses, resumption, lifecycle events, usage aggregation, and serializable run state.
 
 ## Development
 

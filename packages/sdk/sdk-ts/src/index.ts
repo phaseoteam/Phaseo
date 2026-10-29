@@ -85,6 +85,7 @@ export {
 export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
 export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
 export type { ApiKeyProvider } from "./runtime/auth.js";
+export { DEFAULT_WORKLOAD_AUDIENCE, githubActionsToken, vercelToken, type GitHubActionsTokenOptions, type VercelTokenOptions } from "./runtime/workloadTokens.js";
 export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
 import {
   TelemetryCapture,

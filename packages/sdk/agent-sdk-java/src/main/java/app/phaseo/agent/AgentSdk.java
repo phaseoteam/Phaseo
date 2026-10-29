@@ -1,5 +1,6 @@
 package app.phaseo.agent;
 
+import app.phaseo.sdk.ApiKeyProvider;
 import app.phaseo.sdk.Phaseo;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -112,7 +113,11 @@ public final class AgentSdk {
     public ContinueOptions(RunResult run, ModelClient client, Object context, String model, String preset, Integer maxSteps, String humanInput, ModelRetryConfig modelRetry, ToolExecutionConfig toolExecution, Consumer<AgentEvent> onEvent, DevtoolsConfig devtools) { this(run,client,context,model,preset,maxSteps,humanInput,modelRetry,toolExecution,onEvent,devtools,List.of(),List.of(),List.of(),null,null); }
     public ContinueOptions(RunResult run,ModelClient client,Object context,String model,String preset,Integer maxSteps,String humanInput,ModelRetryConfig modelRetry,ToolExecutionConfig toolExecution,Consumer<AgentEvent> onEvent,DevtoolsConfig devtools,List<ToolDecision> approvals,List<ToolDecision> rejections,List<ToolOutput> toolOutputs){this(run,client,context,model,preset,maxSteps,humanInput,modelRetry,toolExecution,onEvent,devtools,approvals,rejections,toolOutputs,null,null);}
   }
-  public record GatewayOptions(Phaseo client, String apiKey, String baseUrl, String model, String preset, Map<String, Object> requestOptions) {}
+  /** {@code apiKeyProvider}, when set, is used instead of {@code apiKey} and called before every request and retry. */
+  public record GatewayOptions(Phaseo client, String apiKey, String baseUrl, String model, String preset, Map<String, Object> requestOptions, ApiKeyProvider apiKeyProvider) {
+    public GatewayOptions(Phaseo client, String apiKey, String baseUrl, String model, String preset, Map<String, Object> requestOptions) { this(client, apiKey, baseUrl, model, preset, requestOptions, null); }
+    public GatewayOptions(ApiKeyProvider apiKeyProvider) { this(null, null, null, null, null, null, apiKeyProvider); }
+  }
 
   public static Tool defineTool(Tool tool) { return tool; }
   public static StopCondition stepCountIs(int limit){return state->state.stepCount()>=limit?"step_count:"+limit:null;}
@@ -128,9 +133,14 @@ public final class AgentSdk {
   public static StreamingModelClient createGatewayAgentClient(GatewayOptions options) {
     Phaseo client = options.client();
     if (client == null) {
-      String key = first(options.apiKey(), System.getenv("PHASEO_API_KEY"));
-      if (key == null) throw new IllegalArgumentException("PHASEO_API_KEY is required");
-      client = new Phaseo(key, options.baseUrl() == null ? "https://api.phaseo.app/v1" : options.baseUrl(), "phaseo-agent-java", "0.3.0");
+      String baseUrl = options.baseUrl() == null ? "https://api.phaseo.app/v1" : options.baseUrl();
+      if (options.apiKeyProvider() != null) {
+        client = Phaseo.withApiKeyProvider(options.apiKeyProvider(), baseUrl, "phaseo-agent-java", "0.3.0");
+      } else {
+        String key = first(options.apiKey(), System.getenv("PHASEO_API_KEY"));
+        if (key == null) throw new IllegalArgumentException("PHASEO_API_KEY is required");
+        client = new Phaseo(key, baseUrl, "phaseo-agent-java", "0.3.0");
+      }
     }
     Phaseo resolvedClient = client;
     return new StreamingModelClient() {

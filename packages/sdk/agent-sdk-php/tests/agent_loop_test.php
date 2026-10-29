@@ -170,4 +170,50 @@ $streamResult=AgentSdk::createAgent(new AgentDefinition(id:"stream"))->stream("r
 assert_true(implode("",iterator_to_array($streamResult->textStream()))==="hello","expected streamed text");assert_true(implode("",iterator_to_array($streamResult->textStream()))==="hello","expected replayed text");assert_true($streamResult->result->output==="hello"&&$memory->value!==null,"expected stream result state");
 echo "php agent sdk stream tests ok" . PHP_EOL;
 
+// A credential provider passed as api_key reaches the core client's requests.
+$authLog = tempnam(sys_get_temp_dir(), "phaseo-agent-auth-");
+$serverOut = $authLog . ".out";
+$probe = stream_socket_server("tcp://127.0.0.1:0");
+$probeName = (string) stream_socket_get_name($probe, false);
+$port = (int) substr($probeName, strrpos($probeName, ":") + 1);
+fclose($probe);
+$server = proc_open(
+    [PHP_BINARY, "-S", "127.0.0.1:{$port}", __DIR__ . "/fixtures/provider_server.php"],
+    [0 => ["pipe", "r"], 1 => ["file", $serverOut, "a"], 2 => ["file", $serverOut, "a"]],
+    $serverPipes,
+    null,
+    array_merge(getenv(), ["PHASEO_TEST_LOG" => $authLog])
+);
+try {
+    for ($i = 0; $i < 100; $i++) {
+        $socket = @fsockopen("127.0.0.1", $port, $errno, $errstr, 0.1);
+        if ($socket !== false) {
+            fclose($socket);
+            break;
+        }
+        usleep(50000);
+    }
+    $providerCalls = 0;
+    $gateway = AgentSdk::createGatewayAgentClient(new GatewayAgentClientOptions(
+        clientOptions: [
+            "api_key" => function () use (&$providerCalls): string {
+                $providerCalls++;
+                return "workload-token";
+            },
+            "base_url" => "http://127.0.0.1:{$port}/v1",
+        ],
+        model: "openai/gpt-5-nano"
+    ));
+    $providerResponse = $gateway->generate(new ModelRequest("provider", [new Message("user", "hi")], []));
+    assert_true($providerResponse->message->content === "ok", "expected the local response");
+    $responsesLines = array_values(array_filter(explode("\n", (string) file_get_contents($authLog)), fn ($line) => str_starts_with($line, "/v1/responses ")));
+    assert_true($responsesLines === ["/v1/responses Bearer workload-token"] && $providerCalls >= 1, "expected the provider's bearer token on the request");
+} finally {
+    proc_terminate($server);
+    proc_close($server);
+    @unlink($authLog);
+    @unlink($serverOut);
+}
+echo "php agent sdk credential provider tests ok" . PHP_EOL;
+
 if(getenv("PHASEO_AGENT_LIVE_SMOKE")==="true"&&getenv("PHASEO_API_KEY")){$client=AgentSdk::createGatewayAgentClient(new GatewayAgentClientOptions(model:"openai/gpt-5.6-luna",includeMeta:true));$delta=false;$completed=false;foreach($client->stream(new ModelRequest("live-smoke",[new Message("user","Reply with exactly: luna-ok")],[]))as$event){if(($event["type"]??null)==="response.output_text.delta"&&($event["delta"]??"")!=="")$delta=true;if(($event["type"]??null)==="response.completed"&&($event["response"]??null)instanceof ModelResponse)$completed=true;}assert_true($delta&&$completed,"expected live Luna stream");echo "php agent sdk live Luna smoke ok".PHP_EOL;}

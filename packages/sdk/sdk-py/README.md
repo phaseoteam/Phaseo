@@ -149,25 +149,21 @@ App attribution is optional and is never inferred from the SDK itself.
 
 Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then pass a function as `api_key`. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
 
+The SDK includes a function for each platform. Each fetches a token issued for `https://api.phaseo.app` and reuses it until a minute before it expires:
+
 ```python
-import os
-import httpx
-from phaseo import Phaseo
+from phaseo import Phaseo, github_actions_token, vercel_token
 
+# GitHub Actions: the job needs `permissions: id-token: write`.
+ci = Phaseo(api_key=github_actions_token())
 
-def github_actions_token() -> str:
-    # The job needs `permissions: id-token: write`.
-    response = httpx.get(
-        os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"],
-        params={"audience": "https://api.phaseo.app"},
-        headers={"Authorization": f"bearer {os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']}"},
-    )
-    response.raise_for_status()
-    return response.json()["value"]
-
-
-client = Phaseo(api_key=github_actions_token)
+# Vercel: exchanges the deployment's token (VERCEL_OIDC_TOKEN_FILE or VERCEL_OIDC_TOKEN) for one issued to Phaseo.
+app = Phaseo(api_key=vercel_token())
 ```
+
+In Vercel Functions the deployment's token arrives on each request as the `x-vercel-oidc-token` header. Pass it as `vercel_token(token=lambda: request.headers["x-vercel-oidc-token"])`.
+
+Any other function that returns a token works too.
 
 `AsyncPhaseo` also accepts an `async` function, which must return within the request timeout.
 

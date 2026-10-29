@@ -91,19 +91,63 @@ namespace PhaseoSdk
             DevtoolsConfig? devtools = null,
             string clientSource = "phaseo-csharp",
             string clientSourceVersion = "2.1.0")
+            : this(apiKey, null, basePath, enableDeprecationWarnings, warningsAsErrors, logger, lifecycleResolver, httpClient, devtools, clientSource, clientSourceVersion)
         {
-            apiKey ??= Environment.GetEnvironmentVariable("PHASEO_API_KEY");
-            if (string.IsNullOrWhiteSpace(apiKey))
-            {
-                throw new InvalidOperationException("Missing API key. Pass apiKey or set PHASEO_API_KEY.");
-            }
+        }
 
+        /// <summary>
+        /// Creates a client whose credential comes from <paramref name="apiKeyProvider"/>: an API key, or a short-lived
+        /// token such as a GitHub Actions or Vercel OIDC token for a trusted workload (see <see cref="WorkloadTokens"/>).
+        /// The provider is called before every request and retry and its result is never cached by the client;
+        /// cache inside the provider if fetching a token is expensive. A request that already sets an
+        /// Authorization header keeps it and the provider is not called.
+        /// </summary>
+        public static Phaseo FromApiKeyProvider(
+            Func<CancellationToken, ValueTask<string>> apiKeyProvider,
+            string basePath = "https://api.phaseo.app/v1",
+            bool enableDeprecationWarnings = true,
+            bool warningsAsErrors = false,
+            PhaseoLogger? logger = null,
+            Func<string, Task<ModelLifecycleInfo?>>? lifecycleResolver = null,
+            HttpClient? httpClient = null,
+            DevtoolsConfig? devtools = null,
+            string clientSource = "phaseo-csharp",
+            string clientSourceVersion = "2.1.0")
+            => new(null, apiKeyProvider ?? throw new ArgumentNullException(nameof(apiKeyProvider)), basePath, enableDeprecationWarnings, warningsAsErrors, logger, lifecycleResolver, httpClient, devtools, clientSource, clientSourceVersion);
+
+        private Phaseo(
+            string? apiKey,
+            Func<CancellationToken, ValueTask<string>>? apiKeyProvider,
+            string basePath,
+            bool enableDeprecationWarnings,
+            bool warningsAsErrors,
+            PhaseoLogger? logger,
+            Func<string, Task<ModelLifecycleInfo?>>? lifecycleResolver,
+            HttpClient? httpClient,
+            DevtoolsConfig? devtools,
+            string clientSource,
+            string clientSourceVersion)
+        {
             var headers = new Dictionary<string, string>
             {
-                { "Authorization", $"Bearer {apiKey}" },
                 { "X-Phaseo-Client", clientSource },
                 { "X-Phaseo-Client-Version", clientSourceVersion }
             };
+            if (apiKeyProvider is not null)
+            {
+                httpClient = CredentialProviderHandler.CreateHttpClient(apiKeyProvider, httpClient);
+            }
+            else
+            {
+                apiKey ??= Environment.GetEnvironmentVariable("PHASEO_API_KEY");
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    throw new InvalidOperationException("Missing API key. Pass apiKey or set PHASEO_API_KEY.");
+                }
+
+                headers["Authorization"] = $"Bearer {apiKey}";
+            }
+
             _basePath = string.IsNullOrWhiteSpace(basePath) ? "https://api.phaseo.app/v1" : basePath.TrimEnd('/');
             _client = new global::Phaseo.Gen.Client(_basePath, httpClient, headers: headers);
             _enableDeprecationWarnings = enableDeprecationWarnings;

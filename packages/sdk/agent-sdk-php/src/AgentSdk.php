@@ -789,10 +789,12 @@ final class AgentSdk
         $client = $options->client;
         if (!$client instanceof Phaseo) {
             $clientOptions = $options->clientOptions ?? [];
-            $apiKey = is_string($clientOptions["api_key"] ?? null)
+            // api_key may be a string or a callable credential provider, for example
+            // \Phaseo\Sdk\WorkloadTokens::githubActions(); the core client calls it before every request.
+            $apiKey = is_string($clientOptions["api_key"] ?? null) || is_callable($clientOptions["api_key"] ?? null)
                 ? $clientOptions["api_key"]
                 : (getenv("PHASEO_API_KEY"));
-            if (!is_string($apiKey) || trim($apiKey) === "") {
+            if (!is_callable($apiKey) && (!is_string($apiKey) || trim($apiKey) === "")) {
                 throw new RuntimeException("PHASEO_API_KEY is required");
             }
             $baseUrl = is_string($clientOptions["base_url"] ?? null)
