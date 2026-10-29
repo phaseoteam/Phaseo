@@ -79,12 +79,15 @@ page maintenance, so this skill uses the REST API.
 
 ## Step 2: start the window
 
-1. Turn the switch on (KV takes up to a minute to reach every location):
+1. Turn the switch on. KV takes up to a minute to reach every location, so a
+   location can still start a call just after this. `since` records when the
+   switch went on, and the deploy script refuses until it has been on for
+   5 minutes, so the final live count includes those late calls.
 
    ```bash
    cd apps/api
    pnpm exec wrangler kv key put "realtime:maintenance:v1" \
-     '{"enabled":true,"until":"<expected end ISO>","message":"Realtime voice is in a maintenance window. Calls in progress are not affected; try again after <time> UTC."}' \
+     "{\"enabled\":true,\"since\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"until\":\"<expected end ISO>\",\"message\":\"Realtime voice is in a maintenance window. Calls in progress are not affected; try again after <time> UTC.\"}" \
      --namespace-id f5e23068fcd94125ad9860c817c543d9 --remote
    pnpm exec wrangler kv key get "realtime:maintenance:v1" --namespace-id f5e23068fcd94125ad9860c817c543d9 --remote --text
    # A 404 "Not Found" means the key was never set: the switch is off.
@@ -126,8 +129,9 @@ gh run list --workflow realtime-relay-deploy.yml --limit 1
 gh run watch <run id> --exit-status
 ```
 
-The deploy script checks the switch and the live count itself and refuses if
-either is wrong. If the deploy fails, leave the switch on, keep the window
+Right before deploying, the deploy script checks three things itself and
+refuses if any fails: the switch is on, it has been on for at least 5 minutes
+(`since`), and no session is live. If the deploy fails, leave the switch on, keep the window
 open, read the run log, and fix or roll back
 (`pnpm exec wrangler rollback --config wrangler.realtime.toml`) before reopening.
 

@@ -36,6 +36,12 @@ $requiredSecretNames = @(
     "ELEVENLABS_API_KEY"
 )
 $optionalSecretNames = @("KEY_PEPPER_ACTIVE", "AXIOM_API_KEY", "AXIOM_DATASET")
+# Mistral realtime reads either name (providers/mistral/config.ts); one must be present.
+$mistralSecretNames = @("MISTRAL_API_KEY", "MISTRAL_AI_API_KEY")
+# KV takes up to a minute to reach every location, so a location can still
+# start calls just after the switch is turned on. The live-session count is
+# only final once the switch has been on for longer than that.
+$minimumSwitchAgeSeconds = 300
 
 if (-not (Test-Path -LiteralPath $config -PathType Leaf)) {
     throw "Missing realtime Wrangler config: $config"
@@ -54,9 +60,18 @@ try {
     if ($accountIdOverridden) { $env:CLOUDFLARE_ACCOUNT_ID = $deployAccountId }
 
     if (-not $Initial) {
-        $switch = & pnpm exec wrangler kv key get $maintenanceKey --namespace-id $cacheNamespaceId --remote --text 2>$null
+        # A key that was never set is a 404 (exit 1): the switch is off.
+        $switch = $null
+        try { $switch = & pnpm exec wrangler kv key get $maintenanceKey --namespace-id $cacheNamespaceId --remote --text 2>$null } catch { $switch = $null }
         if ($LASTEXITCODE -ne 0 -or -not $switch -or -not (($switch | Out-String) -match '"enabled"\s*:\s*true')) {
             throw "The realtime maintenance switch is off. Turn it on and wait for live calls to end before deploying $worker."
+        }
+        $since = $null
+        if (($switch | Out-String) -match '"since"\s*:\s*"([^"]+)"') { $since = [DateTimeOffset]::Parse($Matches[1]) }
+        if ($null -eq $since) { throw "The maintenance switch has no ""since"" time. Set it as the realtime-maintenance skill shows." }
+        $age = ([DateTimeOffset]::UtcNow - $since).TotalSeconds
+        if ($age -lt $minimumSwitchAgeSeconds) {
+            throw "The maintenance switch has been on for $([int]$age)s; wait until it has been on for $minimumSwitchAgeSeconds s so every location refuses new calls."
         }
         $supabaseUrl = "https://xansbgjaduxypzsmjwct.supabase.co"
         $serviceKey = [Environment]::GetEnvironmentVariable("SUPABASE_SERVICE_ROLE_KEY")
@@ -73,7 +88,7 @@ try {
 
     if ($SecretsFromEnvironment) {
         $secrets = @{}
-        foreach ($name in ($requiredSecretNames + $optionalSecretNames)) {
+        foreach ($name in ($requiredSecretNames + $optionalSecretNames + $mistralSecretNames)) {
             $value = [Environment]::GetEnvironmentVariable($name)
             if (-not [string]::IsNullOrWhiteSpace($value)) { $secrets[$name] = $value }
         }
@@ -81,6 +96,9 @@ try {
             if (-not $secrets.ContainsKey($requiredName)) {
                 throw "Missing required realtime Worker secret in the environment: $requiredName"
             }
+        }
+        if (-not ($mistralSecretNames | Where-Object { $secrets.ContainsKey($_) })) {
+            throw "Missing a Mistral key in the environment: set MISTRAL_API_KEY or MISTRAL_AI_API_KEY"
         }
         $temporarySecretsFile = Join-Path ([IO.Path]::GetTempPath()) ("phaseo-realtime-secrets-$([Guid]::NewGuid()).json")
         $secrets | ConvertTo-Json -Compress | Set-Content -LiteralPath $temporarySecretsFile -Encoding utf8NoBOM
