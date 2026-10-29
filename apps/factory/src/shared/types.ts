@@ -320,6 +320,8 @@ export interface Connection {
 	version?: string;
 	/** Hubs: the base URL agents are pointed at. */
 	baseUrl?: string;
+	/** Hubs: the model ids the hub says it serves. */
+	models?: string[];
 	/** How many agents may run through this connection at once. */
 	slots: number;
 	windows?: UsageWindow[];
@@ -408,6 +410,8 @@ export interface FactorySettings {
 	/** The repository the work list shows. Empty shows all of them. */
 	showRepo: string;
 	hubUrl: string;
+	/** The hub's key, sent the way its clients send one. Saved encrypted where this computer allows. */
+	hubKey: string;
 	/** Cross-model review: the review stage never uses the agent that wrote the fix. */
 	independentReview: boolean;
 	playbooks: Record<WorkKind, Playbook>;
