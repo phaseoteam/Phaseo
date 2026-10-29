@@ -1716,7 +1716,7 @@
 		"hideAllRuns": "すべての実行を非表示",
 		"yourGateway": "あなたのGateway",
 		"yourGatewayTtft": "あなたのGateway（TTFT）",
-		"yourGatewayThroughput": "あなたのGateway（トークン/秒）",
+		"yourGatewayThroughput": "あなたのGateway（tps）",
 		"tie": "引き分け",
 		"latestProvider": "最新の結果：{provider}",
 		"requestFailed": "リクエストを完了できませんでした。エンドポイントと認証情報を確認して、もう一度お試しください。",
@@ -1734,7 +1734,7 @@
 		"throughput": "スループット",
 		"responsePlaceholder": "レスポンスはここに表示されます…",
 		"gatewayLabel": "ゲートウェイ",
-		"openaiThroughput": "OpenAI API（トークン/秒）"
+		"openaiThroughput": "OpenAI API（tps）"
 	},
 	"gatewayBenchmark": {
 		"title": "ゲートウェイの性能比較",

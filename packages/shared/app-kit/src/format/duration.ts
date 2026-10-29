@@ -1,6 +1,7 @@
 /**
- * How long something took: "850 ms", "1.5 s", "12.3 s", "2.08 min", "15.5 min". The website chat's response timings
- * (moved from components/(chat)/ChatMessageFooters.tsx). An unreadable duration is "-".
+ * How long a piece of work took, such as an agent's turn or a diagnostics span: "850 ms", "1.5 s", "12.3 s",
+ * "2.08 min", "15.5 min". Moved from the website chat's timings. A latency, such as time to first token or how long a
+ * response took, uses formatLatency instead, always in seconds. An unreadable duration is "-".
  */
 export function formatDuration(value: number, locale = "en-GB") {
 	if (!Number.isFinite(value)) return "-";

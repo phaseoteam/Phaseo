@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
@@ -235,9 +236,7 @@ function formatMoneyFromUsd(value: number | null | undefined, locale: string): s
 }
 
 function formatMilliseconds(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	if (value < 1000) return new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short", maximumFractionDigits: 0 }).format(value);
-	return new Intl.NumberFormat(locale, { style: "unit", unit: "second", unitDisplay: "short", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value / 1000);
+	return formatLatency(value, locale) ?? "-";
 }
 
 function formatSettledCost(job: AsyncJobRow | AsyncJobDetailRow, locale: string): string {
