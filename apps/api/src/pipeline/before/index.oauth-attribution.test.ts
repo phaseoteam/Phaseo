@@ -195,8 +195,10 @@ describe("beforeRequest OAuth app attribution", () => {
 			oauthClientId: "client_app",
 			oauthUserId: "user_end",
 		});
-		// The key ID is the delegated key's own, so it still opts in to key spend-limit checks.
+		// The key ID is the delegated key's own, so it still opts in to key spend-limit checks,
+		// in shadow mode and in enforce mode (guardContext gets the request's admission slot).
 		expect(context).toMatchObject({ apiKeyId: "key_delegated", shadowSpendLimit: true });
+		expect(context.spendLimit).toEqual(expect.any(Object));
 	});
 
 	it("records a plain API key request without an OAuth app", async () => {
@@ -212,6 +214,6 @@ describe("beforeRequest OAuth app attribution", () => {
 			userId: "user_end", authMethod: "oauth", oauthClientId: "client_app",
 		});
 		expect(meta).toMatchObject({ authMethod: "oauth", oauthClientId: "client_app", oauthUserId: "user_end" });
-		expect(context).toMatchObject({ shadowSpendLimit: false });
+		expect(context).toMatchObject({ shadowSpendLimit: false, spendLimit: null });
 	});
 });
