@@ -624,7 +624,18 @@ export class RealtimeRelayDurableObject {
 		if (!isRealtimeRelaySecret(token)) {
 			return new Response("valid realtime relay token required", { status: 401 });
 		}
-		this.session = await claimRealtimeSessionForRelay({ sessionId, token });
+		try {
+			this.session = await claimRealtimeSessionForRelay({ sessionId, token });
+		} catch (error) {
+			// A wrong session or token is the caller's mistake, not a relay failure.
+			const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error);
+			const status = /realtime_session_not_found|realtime_relay_forbidden/.test(message) ? 401
+				: /realtime_relay_already_connected|realtime_relay_claim_empty/.test(message) ? 409
+				: /realtime_session_expired/.test(message) ? 410 : 0;
+			if (!status) throw error;
+			return new Response(status === 401 ? "realtime session not found or token invalid"
+				: status === 409 ? "realtime relay already connected" : "realtime session expired", { status });
+		}
 		this.startClock();
 		this.usage = (await this.state.storage.get<RelayUsageAggregate>(STORAGE_USAGE)) ?? {};
 		this.providerState = (await this.state.storage.get<RelayProviderState>(STORAGE_PROVIDER_STATE)) ?? this.providerState;

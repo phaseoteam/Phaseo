@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
 	settleRealtimeSession: vi.fn(async () => ({})),
 	markRealtimeSessionBillingUnresolved: vi.fn(async () => ({ session_id: "rt_test", status: "billing_unresolved" })),
 	getRealtimeSessionForInternal: vi.fn(),
+	claimRealtimeSessionForRelay: vi.fn(),
 }));
 
 vi.mock("@/runtime/env", () => ({ configureRuntime: vi.fn() }));
@@ -15,6 +16,7 @@ vi.mock("@core/realtime-sessions", async (importOriginal) => ({
 	settleRealtimeSession: mocks.settleRealtimeSession,
 	markRealtimeSessionBillingUnresolved: mocks.markRealtimeSessionBillingUnresolved,
 	getRealtimeSessionForInternal: mocks.getRealtimeSessionForInternal,
+	claimRealtimeSessionForRelay: mocks.claimRealtimeSessionForRelay,
 }));
 
 const OPEN = 1;
@@ -509,5 +511,28 @@ describe("Realtime relay lifecycle", () => {
 		await object.handleUpstreamMessage(JSON.stringify(event));
 		expect(object.providerSetupComplete).toBe(true);
 		expect(object.settle).not.toHaveBeenCalled();
+	});
+});
+
+describe("relay connection claims", () => {
+	const token = `rtsec_${"0123456789abcdefghjkmnpqrstvwxyz".repeat(2).slice(0, 52)}`;
+	const connect = () => new RealtimeRelayDurableObject({ waitUntil: vi.fn(), storage: fakeStorage() } as any, {} as any)
+		.fetch(new Request("https://relay/v1/realtime/sessions/rt_01kwykz81wpycgne47rt6bw6ka/relay", {
+			headers: { Upgrade: "websocket", "Sec-WebSocket-Protocol": `statsync-realtime, rtsec.${token}` } }));
+
+	it.each([
+		["realtime_session_not_found", 401],
+		["realtime_relay_forbidden", 401],
+		["realtime_relay_already_connected", 409],
+		["realtime_session_expired", 410],
+	])("answers a %s claim with %i instead of a server error", async (code, status) => {
+		// Supabase RPC errors are plain objects with a message, not Error instances.
+		mocks.claimRealtimeSessionForRelay.mockRejectedValueOnce({ message: code, code: "P0001" });
+		expect((await connect()).status).toBe(status);
+	});
+
+	it("still fails loudly on anything else", async () => {
+		mocks.claimRealtimeSessionForRelay.mockRejectedValueOnce(new Error("database unavailable"));
+		await expect(connect()).rejects.toThrow("database unavailable");
 	});
 });

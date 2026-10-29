@@ -1,0 +1,78 @@
+# Realtime voice relay. Deploying a Worker restarts its Durable Objects and
+# ends their WebSockets, so the relay is kept out of phaseo-gateway (deployed
+# on every merge) and deployed only in an announced maintenance window with the
+# realtime-relay-deploy workflow (see .agents/skills/realtime-maintenance).
+# phaseo-gateway and phaseo-jobs reach it with script_name = "phaseo-realtime".
+#
+# Vars and bindings mirror the subset of phaseo-gateway that relay code reads;
+# src/realtime-worker-config.test.ts checks the shared vars still match.
+name = "phaseo-realtime"
+main = "src/realtime-worker.ts"
+compatibility_date = "2025-10-01"
+compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close", "nodejs_als"]
+workers_dev = false
+preview_urls = false
+
+[vars]
+ENV = "prod"
+SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+GATEWAY_PUBLIC_BASE_URL = "https://api.phaseo.app"
+CUSTOMER_RATE_LIMITS_ENABLED = "true"
+RATE_LIMIT_POLICIES_ENABLED = "true"
+SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
+GATEWAY_CREDIT_WRITEBACK_ENABLED = "true"
+GATEWAY_SPEND_LIMIT_DO_MODE = "off"
+GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
+OTEL_EXPORT_ENABLED = "true"
+BROADCAST_QUEUE_ENABLED = "true"
+STATSIG_ENVIRONMENT_TIER = "production"
+AXIOM_SUCCESS_SAMPLE_RATE = "0.1"
+AXIOM_DETAIL_SAMPLE_RATE = "0.01"
+AXIOM_SLOW_REQUEST_MS = "8000"
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
+[[kv_namespaces]]
+binding = "GATEWAY_CACHE"
+id = "f5e23068fcd94125ad9860c817c543d9"
+preview_id = "f5e23068fcd94125ad9860c817c543d9"
+
+# Producer only: the queue is consumed by phaseo-gateway (wrangler.toml).
+[[queues.producers]]
+binding = "BROADCAST_QUEUE"
+queue = "phaseo-broadcast"
+
+[[durable_objects.bindings]]
+name = "REALTIME_RELAY"
+class_name = "RealtimeRelayDurableObject"
+
+[[durable_objects.bindings]]
+name = "PROVIDER_RATE_LIMITS"
+class_name = "ProviderRateLimitDurableObject"
+script_name = "phaseo-gateway"
+
+[[durable_objects.bindings]]
+name = "ROUTING_HEALTH"
+class_name = "RoutingHealthDurableObject"
+script_name = "phaseo-gateway"
+
+[[durable_objects.bindings]]
+name = "CUSTOMER_RATE_LIMITS"
+class_name = "CustomerRateLimitDurableObject"
+script_name = "phaseo-gateway"
+
+[[durable_objects.bindings]]
+name = "SPEND_LIMITS"
+class_name = "SpendLimitDurableObject"
+script_name = "phaseo-gateway"
+
+# A new namespace: phaseo-gateway keeps its own (unused) RealtimeRelayDurableObject
+# namespace, so nothing is deleted. No realtime calls were in progress at the move.
+[[migrations]]
+tag = "v1-realtime-relay"
+new_sqlite_classes = ["RealtimeRelayDurableObject"]

@@ -11,6 +11,7 @@ import { parseW3cTraceContext } from "@observability/trace-context";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { generatePublicId } from "@pipeline/before/genId";
 import { err, json } from "@pipeline/before/http";
+import { readRealtimeMaintenance, realtimeMaintenanceResponse } from "@core/realtime-maintenance";
 import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFallbacks";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { getRealtimeVoiceFeatureGateName, isRealtimeVoiceAccessEnabled } from "@core/feature-flags";
@@ -354,6 +355,11 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			request_id: auth.value.requestId,
 			workspace_id: auth.value.workspaceId,
 		});
+	}
+	// During a maintenance window no new call starts; calls already running carry on.
+	const maintenance = await readRealtimeMaintenance();
+	if (maintenance) {
+		return realtimeMaintenanceResponse(maintenance, { requestId: auth.value.requestId, workspaceId: auth.value.workspaceId });
 	}
 	const body = await guardJson(req, auth.value.workspaceId, auth.value.requestId);
 	if (body.ok !== true) return body.response;
