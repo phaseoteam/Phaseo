@@ -27,12 +27,10 @@ import {
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const WEB = "apps/web/src/app/globals.css";
 const DESKTOP = "apps/desktop/src/renderer/index.css";
-const FACTORY = "apps/factory/src/renderer/index.css";
 const MOBILE = "apps/mobile/global.css";
 // Each app's generated token file, then its hand-written CSS.
 const WEB_CSS = ["apps/web/src/app/theme-tokens.generated.css", WEB];
 const DESKTOP_CSS = ["apps/desktop/src/renderer/theme-tokens.generated.css", DESKTOP];
-const FACTORY_CSS = ["apps/factory/src/renderer/theme-tokens.generated.css", FACTORY];
 
 const read = (file) => readFileSync(path.join(root, file), "utf8").replace(/\r\n/g, "\n");
 const css = (file) => read(file).replace(/\/\*[\s\S]*?\*\//g, "");
@@ -172,7 +170,7 @@ test("the website's first-paint script knows the shared palettes", () => {
 	assert.deepEqual(list("dp"), [...DARK_PALETTES]);
 });
 
-for (const [app, file, files] of [["desktop app", DESKTOP, DESKTOP_CSS], ["Factory", FACTORY, FACTORY_CSS]]) {
+for (const [app, file, files] of [["desktop app", DESKTOP, DESKTOP_CSS]]) {
 	test(`the ${app}'s tokens are the shared ones`, () => {
 		const light = declarations(files, ":root");
 		const dark = declarations(files, ".dark");

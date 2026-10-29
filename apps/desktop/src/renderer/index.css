@@ -348,3 +348,160 @@ summary:has(> svg:first-child)::before { display: none; }
 	.browser-loading-progress, .browser-loading-progress[data-loading="true"] { transition: none; animation: none; }
 	.browser-loading-progress[data-loading="true"] { transform: scaleX(0.9); }
 }
+
+/* Code ▸ Factory: issue and pull request text, the way GitHub shows it. */
+@layer components {
+	.item-markdown {
+		line-height: 1.7;
+		overflow-wrap: anywhere;
+	}
+	.item-markdown :where(p, ul, ol, pre) {
+		margin-block: 0 0.85em;
+	}
+	.item-markdown > :last-child {
+		margin-bottom: 0;
+	}
+	.item-markdown h2 {
+		margin-block: 1.2em 0.5em;
+		font-size: 15px;
+		font-weight: 700;
+	}
+	.item-markdown > h2:first-child {
+		margin-top: 0;
+	}
+	.item-markdown ul {
+		list-style: disc;
+		padding-left: 1.5em;
+	}
+	.item-markdown li::marker {
+		color: var(--muted-foreground);
+	}
+	.item-markdown code {
+		border-radius: 4px;
+		background: var(--muted);
+		padding: 0.1em 0.35em;
+		font-family: var(--font-mono);
+		font-size: 0.86em;
+	}
+	.item-markdown pre {
+		overflow-x: auto;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		background: color-mix(in oklch, var(--muted) 45%, var(--background));
+		padding: 12px 14px;
+		font: 12px/1.6 var(--font-mono);
+	}
+	.item-markdown pre code {
+		background: transparent;
+		padding: 0;
+	}
+	/* Everything else GitHub Markdown can hold, so comments and reports look the way they do on GitHub. */
+	.item-markdown :where(blockquote, table, details, hr, .item-markdown-table) {
+		margin-block: 0 0.85em;
+	}
+	.item-markdown :where(h1, h2, h3, h4, h5, h6) {
+		margin-block: 1.2em 0.5em;
+		font-weight: 700;
+		line-height: 1.35;
+	}
+	.item-markdown h1 { font-size: 17px; }
+	.item-markdown :where(h2, h3) { font-size: 15px; }
+	.item-markdown :where(h4, h5, h6) { font-size: 14px; }
+	.item-markdown > :where(h1, h2, h3, h4, h5, h6):first-child {
+		margin-top: 0;
+	}
+	.item-markdown ol {
+		list-style: decimal;
+		padding-left: 1.5em;
+	}
+	.item-markdown :where(ul, ol) :where(ul, ol) {
+		margin-block: 0.2em;
+	}
+	.item-markdown li.task-list-item {
+		list-style: none;
+		margin-left: -1.25em;
+	}
+	.item-markdown a {
+		color: var(--info);
+		text-decoration: underline;
+		text-decoration-color: color-mix(in oklch, var(--info) 40%, transparent);
+		text-underline-offset: 2px;
+	}
+	.item-markdown a:hover {
+		text-decoration-color: currentColor;
+	}
+	.item-markdown blockquote {
+		border-left: 3px solid var(--border);
+		padding-left: 0.9em;
+		color: var(--muted-foreground);
+	}
+	.item-markdown hr {
+		border: 0;
+		border-top: 1px solid var(--border);
+	}
+	.item-markdown .item-markdown-table {
+		overflow-x: auto;
+	}
+	.item-markdown table {
+		border-collapse: collapse;
+		font-size: 0.93em;
+	}
+	.item-markdown :where(th, td) {
+		border: 1px solid var(--border);
+		padding: 0.35em 0.7em;
+		text-align: left;
+		vertical-align: top;
+	}
+	.item-markdown th {
+		background: color-mix(in oklch, var(--muted) 60%, transparent);
+		font-weight: 600;
+	}
+	.item-markdown details {
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		padding: 0.5em 0.8em;
+	}
+	.item-markdown details[open] > summary {
+		margin-bottom: 0.5em;
+	}
+	.item-markdown summary {
+		cursor: pointer;
+		font-weight: 500;
+	}
+	.item-markdown :where(sub, sup) {
+		font-size: 0.8em;
+		color: var(--muted-foreground);
+	}
+	.item-markdown kbd {
+		border: 1px solid var(--border);
+		border-bottom-width: 2px;
+		border-radius: 4px;
+		padding: 0 0.35em;
+		font-family: var(--font-mono);
+		font-size: 0.85em;
+	}
+	.item-markdown del {
+		color: var(--muted-foreground);
+	}
+	.item-markdown img {
+		max-width: 100%;
+	}
+	/* One-line Markdown in summaries and proof lines: code gets the same chip, nothing else changes the line. */
+	.inline-markdown code {
+		border-radius: 4px;
+		background: var(--muted);
+		padding: 0.05em 0.3em;
+		font-family: var(--font-mono);
+		font-size: 0.9em;
+	}
+	.inline-markdown a {
+		text-decoration: underline;
+		text-decoration-color: color-mix(in oklch, currentColor 40%, transparent);
+		text-underline-offset: 2px;
+	}
+}
+
+/* A running stage's progress shimmer. */
+@keyframes factory-sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.factory-sweep { animation: factory-sweep 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .factory-sweep { animation: none; } }

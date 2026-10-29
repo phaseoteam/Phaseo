@@ -9,6 +9,7 @@ import { usePendingDeletes } from "./threadUndo";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "../components/ui/command";
 import { StatusDot } from "./Sidebar";
 import { pullRequestSearchTerms } from "../../shared/pullRequestView";
+import { issueSearchTerms } from "../../shared/issueView";
 import { ModelStack, modelName } from "../chat/ModelPicker";
 import { useEffect, useState } from "react";
 import { MessageSearchResults, useMessageSearch } from "./MessageSearch";
@@ -72,7 +73,7 @@ export function CommandPalette() {
 				})}
 			</CommandGroup>}
 			{tasks.length > 0 && <CommandGroup heading="Chats">
-				{tasks.map(task => <CommandItem key={task.id} value={`${task.title} ${projectName(task.projectId) ?? modelName(task)} ${task.id} ${pullRequestSearchTerms(task.pullRequests)}`} onSelect={() => run(() => select(task.id))}>
+				{tasks.map(task => <CommandItem key={task.id} value={`${task.title} ${projectName(task.projectId) ?? modelName(task)} ${task.id} ${pullRequestSearchTerms(task.pullRequests)} ${issueSearchTerms(task.issues)}`} onSelect={() => run(() => select(task.id))}>
 					{task.projectId ? <ProjectIcon project={overview.projects.find(project => project.id === task.projectId)} /> : <ModelStack models={[task]} size="sm" ringClassName="ring-transparent" />}
 					<span className="min-w-0 flex-1 truncate">{task.title}</span>
 					<span className="text-xs text-muted-foreground">{task.projectId ? projectName(task.projectId) : modelName(task)}</span>

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Activity, ArrowLeft, Bell, Bot, FlaskConical, Keyboard, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { Activity, ArrowLeft, Bell, Bot, CircleDot, FlaskConical, FolderGit2, GitPullRequest, Keyboard, Gauge, NotebookPen, Palette, Plug, RefreshCw, Search, SlidersHorizontal, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -14,6 +14,7 @@ import { Agents } from "../views/Agents";
 import { McpConnections } from "../views/McpConnections";
 import { ProjectSettingsPage } from "./ProjectSettings";
 import { settingsProject } from "../../shared/projectSettings";
+import { FactorySettingsPage } from "../factory/settings/FactorySettingsPage";
 
 type Entry = { id: Page; label: string; icon: ReactNode; keywords: string };
 const groups: { label: string; pages: Entry[] }[] = [
@@ -30,6 +31,14 @@ const groups: { label: string; pages: Entry[] }[] = [
 	{ label: "Integrations", pages: [
 		{ id: "agents", label: "Agents", icon: <Bot />, keywords: "codex claude code opencode pi cursor grok acp install update version" },
 		{ id: "mcp", label: "MCP servers", icon: <Plug />, keywords: "tools model context protocol connections" },
+	] },
+	// Code ▸ Factory's settings. Its agents are the desktop's own accounts and models.
+	{ label: "Factory", pages: [
+		{ id: "factory-repositories", label: "Repositories", icon: <FolderGit2 />, keywords: "factory repos clone checkout folder add remove import order github" },
+		{ id: "factory-issues", label: "Issue playbook", icon: <CircleDot />, keywords: "factory issues proof pull request reporter ask agents rules models stages prompts instructions triage reproduce fix" },
+		{ id: "factory-pulls", label: "Pull request playbook", icon: <GitPullRequest />, keywords: "factory pull requests review independent findings agents rules models stages prompts instructions verify" },
+		{ id: "factory-notes", label: "Notes", icon: <NotebookPen />, keywords: "factory notes memory remember learnt agents repository tests setup" },
+		{ id: "factory-checking", label: "Checking for new work", icon: <RefreshCw />, keywords: "factory github gh cli images poll schedule check new work api requests" },
 	] },
 	// Listed after the projects, at the bottom, like T3's.
 	{ label: "Advanced", pages: [
@@ -96,5 +105,6 @@ export function SettingsPage() {
 		{settings === "mcp" && <McpConnections />}
 		{settings === "diagnostics" && <DiagnosticsSettings />}
 		{settings === "experimental" && <ExperimentalSettings />}
+		{settings?.startsWith("factory-") && <FactorySettingsPage key={settings} page={settings as Parameters<typeof FactorySettingsPage>[0]["page"]} />}
 	</ScrollArea>;
 }

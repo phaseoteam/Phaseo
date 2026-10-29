@@ -3,6 +3,7 @@ import type { KeybindingEntry } from "./keybindings";
 import type { BrowserAgentTabOpened, BrowserCapture, BrowserCommand, BrowserKey, BrowserLocalServer, BrowserOpenTab, BrowserPick, BrowserRecording, BrowserState } from "./browser";
 import type { WorkspaceApi } from "./workspace";
 import type { DiagnosticsApi } from "./diagnostics";
+import type { FactoryApi } from "./factory/types";
 
 export type DesktopRuntimeInfo = {
 	platform: NodeJS.Platform;
@@ -38,6 +39,8 @@ export type DesktopUpdateState = {
 export type PhaseoDesktopApi = {
 	readonly platform: NodeJS.Platform;
 	workspace: WorkspaceApi;
+	/** Code ▸ Factory: work items, their stages and runs (see shared/factory/types.ts). */
+	factory: FactoryApi;
 	browserDownload: (command: BrowserDownloadCommand) => Promise<BrowserDownload[]>;
 	onBrowserDownloads: (listener: (downloads: BrowserDownload[]) => void) => () => void;
 	browser: (command: BrowserCommand) => Promise<BrowserState | undefined>;

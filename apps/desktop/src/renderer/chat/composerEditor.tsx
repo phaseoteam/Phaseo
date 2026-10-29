@@ -7,7 +7,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import HardBreak from "@tiptap/extension-hard-break";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
-import { File as FileIcon, Folder, GitPullRequestArrow, ImageIcon, MessageSquare, Paperclip } from "lucide-react";
+import { CircleDot, File as FileIcon, Folder, GitPullRequestArrow, ImageIcon, MessageSquare, Paperclip } from "lucide-react";
 import { PullRequestLinkPreview } from "../views/pullRequests/PullRequestLinkPreview";
 import { chatDragType, mentionToken, parseMentions, type Mention } from "../lib/mentions";
 import { showToast } from "../components/ui/toast";
@@ -31,6 +31,7 @@ function MentionChip({ node, selected }: NodeViewProps) {
 	const title = kind === "chat" ? "The agent can read this chat" : kind === "file" || kind === "folder" ? ref : label;
 	// A pull request chip shows the same hover card as a pull request link in a message.
 	if (kind === "pull-request") return <NodeViewWrapper as="span" className="composer-chip" data-mention-kind={kind}><PullRequestLinkPreview url={ref}><InlineChip icon={<GitPullRequestArrow />} selected={selected}>{label}</InlineChip></PullRequestLinkPreview></NodeViewWrapper>;
+	if (kind === "issue") return <NodeViewWrapper as="span" className="composer-chip" data-mention-kind={kind}><InlineChip icon={<CircleDot />} title={ref} selected={selected}>{label}</InlineChip></NodeViewWrapper>;
 	return <NodeViewWrapper as="span" className="composer-chip" data-mention-kind={kind}><InlineChip icon={icon} title={title} selected={selected}>{task?.title ?? label}</InlineChip></NodeViewWrapper>;
 }
 

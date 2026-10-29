@@ -1,6 +1,6 @@
 # @phaseo/app-kit
 
-Plain TypeScript shared by Phaseo's apps: the website (`apps/web`), the desktop app (`apps/desktop`), the mobile app (`apps/mobile`) and Factory (`apps/factory`). These files used to live in the website, and the other apps reached into `apps/web` for them.
+Plain TypeScript shared by Phaseo's apps: the website (`apps/web`), the desktop app (`apps/desktop`) and the mobile app (`apps/mobile`). These files used to live in the website, and the other apps reached into `apps/web` for them.
 
 | Import | What it is |
 |---|---|
@@ -38,7 +38,6 @@ Every app picks it up from there.
 |---|---|---|
 | Website | `apps/web/src/app/theme-tokens.generated.css` (imported by `globals.css`): `:root`, `.dark` and the palette blocks | `globals.css`: the accent blocks (primary, ring and charts from the user's accent) and the radius scale. The Appearance settings read the presets and swatches from this package. |
 | Desktop app | `apps/desktop/src/renderer/theme-tokens.generated.css` (imported by `index.css`) | `index.css`: the radius scale |
-| Factory | `apps/factory/src/renderer/theme-tokens.generated.css` (imported by `index.css`) | `index.css`: the radius scale |
 | Mobile app | The `@layer theme` block of `apps/mobile/global.css`, between "Generated from" and "End of generated tokens" (Uniwind reads that file itself, so it isn't an import) | `@theme`: the radii. At runtime `src/lib/theme/model.ts` applies the chosen theme with `themeVariables`. |
 
 To change a token, edit tokens.ts and run `pnpm run theme:sync-tokens`. Don't edit the generated CSS.

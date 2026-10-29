@@ -257,7 +257,6 @@ jobs:
             pull-requests: read
         outputs:
             migrations-changed: ${{ steps.filter.outputs.migrations }}
-            factory-changed: ${{ steps.filter.outputs.factory }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
@@ -265,54 +264,12 @@ jobs:
               id: filter
               with:
                   filters: |
-                      factory:
-                          - 'apps/factory/**'
-                          - 'packages/shared/app-kit/**'
-                          - 'packages/shared/ui/**'
-                          - 'pnpm-lock.yaml'
-                          - '.github/workflows/ci.yml'
                       migrations:
                           - 'supabase/migrations/**'
                           - 'supabase/baseline/**'
                           - 'supabase/tests/**'
                           - 'supabase/config.toml'
                           - 'scripts/validate-supabase-migrations.mjs'
-
-    factory:
-        name: Factory checks and build
-        runs-on: ubuntu-latest
-        needs: check-paths
-        if: needs.check-paths.outputs.factory-changed == 'true'
-        env:
-            # Typecheck, lint, tests and the Vite build don't run Electron; only packaging needs its binary.
-            ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-            - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
-              with:
-                  version: 10.33.0
-                  run_install: false
-                  standalone: true
-            - name: Setup Node.js
-              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-              with:
-                  node-version: ${{ env.NODE_VERSION }}
-
-            - name: Restore lockfile (guard setup-node cache mutation)
-              run: git checkout -- pnpm-lock.yaml
-
-            - name: Install dependencies
-              run: corepack pnpm install --frozen-lockfile --filter @phaseo/factory...
-
-            - name: Typecheck, lint, test and build Factory
-              working-directory: apps/factory
-              run: |
-                  pnpm run typecheck
-                  pnpm run lint
-                  pnpm run test
-                  pnpm run build
 
     migration-validation:
         name: Validate database migration policy
