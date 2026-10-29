@@ -10,3 +10,9 @@ export function markRequestReceived(request: Request, at = Date.now()): void {
 export function requestReceivedAtMs(request: Request): number | undefined {
 	return receipts.get(request);
 }
+
+/** Carries the receipt time onto a rebuilt request, such as a header-sanitized copy. */
+export function inheritRequestReceipt(source: Request, target: Request): void {
+	const at = receipts.get(source);
+	if (at !== undefined) receipts.set(target, at);
+}

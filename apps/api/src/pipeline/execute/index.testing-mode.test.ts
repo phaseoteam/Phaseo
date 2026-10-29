@@ -619,6 +619,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		try {
 			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
 			expect(ctx.meta.timeToUpstreamRequestMs).toBe(15);
+			expect(ctx.meta.upstreamFetchStartMs).toBe(1015);
 			expect(fetchSpy).toHaveBeenCalledTimes(recover ? 2 : 1);
 			if (recover) {
 				expect(result.ok).toBe(true);
