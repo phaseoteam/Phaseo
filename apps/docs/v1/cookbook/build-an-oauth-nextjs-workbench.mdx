@@ -132,7 +132,9 @@ When someone signs in, the token endpoint (`https://api.phaseo.app/oauth/token`)
 - You can refresh after the access token has expired, as long as the refresh token hasn't.
 - Using a refresh token a second time ends the sign-in. Phaseo treats it as a leaked token and revokes the access token and every refresh token from that sign-in, so the person has to sign in again.
 - A refresh never adds scopes. It keeps the scopes the person approved, minus any they have since removed.
-- Refreshing fails once the person revokes your app, revokes or turns off its key, or leaves the workspace. Send them through sign-in again.
+- Refreshing fails once the person revokes your app, revokes or turns off its key, removes a scope the key needs (such as `gateway:access`), or leaves the workspace. Granting the scope again doesn't bring the refresh token back. Send them through sign-in again.
+- Signing in again renews the same key instead of adding one. You get a new access token and refresh token, the previous ones stop working, and the key keeps its limits and this month's spending. If the key is paused, the token endpoint returns `invalid_grant` instead, until someone turns the key back on in **Settings → API Keys**.
+- To sign out, send the refresh token to `https://api.phaseo.app/oauth/revoke`. That revokes the key and every refresh token from the sign-in, including one a refresh issued a moment earlier.
 
 ## Prerequisites
 

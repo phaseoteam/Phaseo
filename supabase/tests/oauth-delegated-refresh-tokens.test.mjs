@@ -1,7 +1,9 @@
 // Standalone PostgreSQL regression test: third-party OAuth apps get a refresh token with their delegated
-// gateway key. The code exchange issues both at once; refreshing rotates the refresh token and gives
-// the same key a new secret; scopes never widen; a refresh token presented again after rotation ends
-// its chain and the key; and revoking the key or the app's consent ends its refresh tokens.
+// gateway key. The code exchange issues both at once, and approving the same app again renews that key
+// instead of adding one; refreshing rotates the refresh token and gives the same key a new secret; scopes
+// never widen, and losing a required scope ends the chain for good; a refresh token presented again after
+// rotation ends its chain and the key; revoking a refresh token (RFC 7009) ends its key and every token
+// bound to it in one transaction; and revoking the key or the app's consent ends its refresh tokens.
 // Install @electric-sql/pglite@0.5.8 in a temporary directory and set PGLITE_MODULE to its
 // dist/index.js file URL. Run: node supabase/tests/oauth-delegated-refresh-tokens.test.mjs
 import assert from 'node:assert/strict';
@@ -14,15 +16,22 @@ const migration = await read(`../migrations/${migrationName}`);
 for (const name of [
   'consume_oauth_code_and_issue_delegated_grant',
   'rotate_oauth_delegated_refresh_token',
+  'revoke_oauth_refresh_token_grant',
   'revoke_oauth_refresh_tokens_for_inactive_key',
   'revoke_oauth_grant_on_authorization_revoke',
+  'revoke_oauth_delegated_refresh_on_scope_loss',
 ]) {
   const functionSql = await read(`../schemas/public/functions/${name}.sql`);
   assert(normalize(migration).includes(normalize(functionSql)), `the migration ships the schema definition of ${name}`);
 }
 const tableSql = normalize(await read('../schemas/public/tables/oauth_refresh_tokens.sql'));
 assert(tableSql.includes('"key_id"       uuid,') && tableSql.includes('REFERENCES public.keys(id) ON DELETE CASCADE'), 'the table definition has key_id');
-for (const [table, trigger] of [['keys', 'revoke_oauth_refresh_tokens_for_inactive_key'], ['oauth_authorizations', 'revoke_oauth_grant_on_authorization_revoke'], ['oauth_authorizations', 'revoke_oauth_grant_on_authorization_delete']]) {
+for (const [table, trigger] of [
+  ['keys', 'revoke_oauth_refresh_tokens_for_inactive_key'],
+  ['oauth_authorizations', 'revoke_oauth_delegated_refresh_on_scope_loss'],
+  ['oauth_authorizations', 'revoke_oauth_grant_on_authorization_revoke'],
+  ['oauth_authorizations', 'revoke_oauth_grant_on_authorization_delete'],
+]) {
   const definition = normalize(await read(`../schemas/public/tables/${table}.sql`));
   const start = definition.indexOf(`CREATE TRIGGER ${trigger}\n`);
   assert(start >= 0, `${table}.sql defines ${trigger}`);
@@ -60,8 +69,11 @@ async function exchange(clientId, scopes, kid, refreshHash, resource = null) {
 
 const rotate = async (current, next, keyHash) => (await one(
   `select public.rotate_oauth_delegated_refresh_token($1, $2, now() + interval '90 days', $3) r`, [current, next, keyHash])).r;
+const revoke = async (...hashes) => (await one('select public.revoke_oauth_refresh_token_grant($1) r', [hashes])).r;
 const token = (hash) => one('select * from public.oauth_refresh_tokens where token_hash = $1', [hash]);
 const key = (kid) => one('select * from public.keys where kid = $1', [kid]);
+const liveKeys = async (clientId) => Number((await one(
+  `select count(*) n from public.keys where oauth_client_id = $1 and status not in ('revoked', 'compromised', 'deleted')`, [clientId])).n);
 
 try {
   await db.exec(`
@@ -78,13 +90,16 @@ try {
     create table public.keys (
       id uuid primary key default gen_random_uuid(), workspace_id uuid not null, name text not null, hash text not null unique,
       prefix text not null, status text not null default 'active', scopes text not null, created_by uuid not null, kid text unique,
+      created_at timestamptz not null default clock_timestamp(),
       key_kind text not null default 'standard', oauth_client_id text, oauth_user_id uuid, oauth_scopes text[], oauth_resource text,
       issued_via text not null default 'dashboard', expires_at timestamptz, revoked_at timestamptz, revoked_reason text,
-      monthly_limit_cost_nanos bigint not null default 0,
+      daily_limit_requests bigint not null default 0, monthly_limit_cost_nanos bigint not null default 0,
       constraint keys_active_oauth_delegated_gateway_scope_check check (key_kind <> 'oauth_delegated' or status <> 'active'
         or (nullif(btrim(oauth_resource), '') is not null and not coalesce(btrim(oauth_resource) ~* '^https://api\\.phaseo\\.app(?::443)?/v1/*$', false))
         or coalesce(oauth_scopes, array[]::text[]) @> array['gateway:access'])
     );
+    create unique index keys_oauth_delegated_active_idx on public.keys (oauth_user_id, workspace_id, oauth_client_id)
+      where key_kind = 'oauth_delegated' and status = 'active' and issued_via <> 'desktop';
     create table public.oauth_refresh_tokens (
       id uuid primary key default gen_random_uuid(), token_hash text not null unique, user_id uuid not null, workspace_id uuid not null,
       client_id text not null, scopes text[] not null default '{}', expires_at timestamptz, revoked_at timestamptz,
@@ -98,7 +113,7 @@ try {
   // The exchange issues the key and a refresh token bound to it, once.
   await authorize('partner_app', ['gateway:access', 'models:read']);
   const first = await exchange('partner_app', ['gateway:access', 'models:read'], 'kidAAAAAAAAA', 'refresh-1');
-  assert.equal(first.result, 'issued');
+  assert.deepEqual(first.result, { status: 'issued', kid: 'kidAAAAAAAAA' });
   const issuedKey = await key('kidAAAAAAAAA');
   assert.equal(issuedKey.status, 'active');
   assert.equal(issuedKey.key_kind, 'oauth_delegated');
@@ -111,7 +126,7 @@ try {
     `select public.consume_oauth_code_and_issue_delegated_grant($1, 'hash-x', 'kidXXXXXXXXX', 'kidXXX', 'x', $2, $3, 'partner_app', array['gateway:access', 'models:read'], null, 'refresh-x', now() + interval '90 days') r`,
     [first.codeId, USER, WS],
   )).r;
-  assert.equal(replayedCode, 'invalid', 'a code is exchanged once');
+  assert.deepEqual(replayedCode, { status: 'invalid' }, 'a code is exchanged once');
   assert.equal(await token('refresh-x'), undefined);
 
   // Refreshing rotates the refresh token and replaces the same key's secret.
@@ -138,16 +153,36 @@ try {
   assert.deepEqual(notWidened.scopes, ['gateway:access', 'models:read'], 'a later consent never widens a refreshed token');
   assert.deepEqual((await key('kidAAAAAAAAA')).oauth_scopes, ['gateway:access', 'models:read']);
   await db.exec(`update public.oauth_authorizations set scopes = array['gateway:access'] where client_id = 'partner_app'`);
+  assert.equal((await token('refresh-3')).revoked_at, null, 'narrowing that keeps gateway:access does not end the chain');
   const narrowed = await rotate('refresh-3', 'refresh-4', 'hash-4');
   assert.deepEqual(narrowed.scopes, ['gateway:access']);
   assert.deepEqual((await key('kidAAAAAAAAA')).oauth_scopes, ['gateway:access']);
 
-  // Without gateway access consent, a credit-spending key cannot be refreshed.
+  // Losing gateway:access ends a credit-spending key's refresh tokens for good: granting it again revives nothing.
   await db.exec(`update public.oauth_authorizations set scopes = array['models:read'] where client_id = 'partner_app'`);
+  const scopeLost = await token('refresh-4');
+  assert.ok(scopeLost.revoked_at, 'the authorization change ends the live refresh token at once');
+  assert.equal(scopeLost.last_used_at, null, 'ended, not spent, so presenting it again is not reuse');
   assert.equal((await rotate('refresh-4', 'refresh-5', 'hash-5')).status, 'invalid');
-  assert.equal((await token('refresh-4')).revoked_at, null, 'a refused refresh does not spend the token');
-  assert.equal((await key('kidAAAAAAAAA')).hash, 'hash-4');
   await db.exec(`update public.oauth_authorizations set scopes = array['gateway:access'] where client_id = 'partner_app'`);
+  assert.equal((await rotate('refresh-4', 'refresh-5', 'hash-5')).status, 'invalid', 'restoring the scope does not revive the token');
+  assert.equal((await key('kidAAAAAAAAA')).hash, 'hash-4');
+  assert.equal((await key('kidAAAAAAAAA')).status, 'active', 'the key itself is left alone');
+
+  // A refresh that meets a missing required scope ends the chain too (here with the trigger off, as if it raced).
+  await authorize('narrowed_app', ['gateway:access']);
+  assert.equal((await exchange('narrowed_app', ['gateway:access'], 'kidNNNNNNNNN', 'narrow-1')).result.status, 'issued');
+  await db.exec(`
+    alter table public.oauth_authorizations disable trigger revoke_oauth_delegated_refresh_on_scope_loss;
+    update public.oauth_authorizations set scopes = array['models:read'] where client_id = 'narrowed_app';
+    alter table public.oauth_authorizations enable trigger revoke_oauth_delegated_refresh_on_scope_loss;
+  `);
+  assert.equal((await token('narrow-1')).revoked_at, null);
+  assert.equal((await rotate('narrow-1', 'narrow-2', 'hash-n2')).status, 'invalid');
+  assert.ok((await token('narrow-1')).revoked_at, 'the refused refresh ends the chain');
+  await db.exec(`update public.oauth_authorizations set scopes = array['gateway:access'] where client_id = 'narrowed_app'`);
+  assert.equal((await rotate('narrow-1', 'narrow-2', 'hash-n2')).status, 'invalid', 'and restoring the scope does not revive it');
+  assert.equal(await token('narrow-2'), undefined);
 
   // Reusing a rotated refresh token ends the chain and the key.
   assert.equal((await rotate('refresh-2', 'refresh-stolen', 'hash-stolen')).status, 'reused');
@@ -159,58 +194,150 @@ try {
   assert.equal(reusedKey.hash, 'hash-4', 'the replayed refresh issued nothing');
   assert.equal(await token('refresh-stolen'), undefined);
 
+  // Reuse revokes a paused key too, so turning it back on can't bring it back.
+  await authorize('paused_reuse_app', ['gateway:access']);
+  assert.equal((await exchange('paused_reuse_app', ['gateway:access'], 'kidPPPPPPPPP', 'paused-reuse-1')).result.status, 'issued');
+  assert.equal((await rotate('paused-reuse-1', 'paused-reuse-2', 'hash-p2')).status, 'rotated');
+  await db.exec(`update public.keys set status = 'paused' where kid = 'kidPPPPPPPPP'`);
+  assert.equal((await rotate('paused-reuse-1', 'paused-reuse-3', 'hash-p3')).status, 'reused');
+  assert.equal((await key('kidPPPPPPPPP')).status, 'revoked');
+
+  // An expired predecessor that was already rotated is still reuse; its live successor ends with it.
+  await authorize('expired_reuse_app', ['gateway:access']);
+  assert.equal((await exchange('expired_reuse_app', ['gateway:access'], 'kidXRXRXRXRX', 'expired-reuse-1')).result.status, 'issued');
+  assert.equal((await rotate('expired-reuse-1', 'expired-reuse-2', 'hash-xr2')).status, 'rotated');
+  await db.exec(`update public.oauth_refresh_tokens set expires_at = now() - interval '1 minute' where token_hash = 'expired-reuse-1'`);
+  assert.equal((await rotate('expired-reuse-1', 'expired-reuse-3', 'hash-xr3')).status, 'reused');
+  assert.ok((await token('expired-reuse-2')).revoked_at, 'the successor is revoked');
+  assert.equal((await key('kidXRXRXRXRX')).status, 'revoked');
+
   // A key that is disabled (or revoked) can't be refreshed, and its tokens stay ended if it is turned back on.
   await authorize('disabled_app', ['gateway:access']);
-  assert.equal((await exchange('disabled_app', ['gateway:access'], 'kidBBBBBBBBB', 'disabled-1')).result, 'issued');
+  assert.equal((await exchange('disabled_app', ['gateway:access'], 'kidBBBBBBBBB', 'disabled-1')).result.status, 'issued');
   await db.exec(`update public.keys set status = 'disabled' where kid = 'kidBBBBBBBBB'`);
   assert.ok((await token('disabled-1')).revoked_at, 'disabling the key ends its refresh tokens');
   await db.exec(`update public.keys set status = 'active' where kid = 'kidBBBBBBBBB'`);
   assert.equal((await rotate('disabled-1', 'disabled-2', 'hash-b2')).status, 'invalid');
   assert.equal((await key('kidBBBBBBBBB')).status, 'active', 'a refresh token revoked by turning the key off is not treated as reuse');
 
-  // A new sign-in replaces the app's key, which ends the old key's refresh tokens.
-  await authorize('replaced_app', ['gateway:access']);
-  assert.equal((await exchange('replaced_app', ['gateway:access'], 'kidCCCCCCCCC', 'replaced-1')).result, 'issued');
-  assert.equal((await exchange('replaced_app', ['gateway:access'], 'kidDDDDDDDDD', 'replacement-1')).result, 'issued');
-  assert.equal((await key('kidCCCCCCCCC')).status, 'revoked');
-  assert.ok((await token('replaced-1')).revoked_at);
-  assert.equal((await rotate('replaced-1', 'replaced-2', 'hash-c2')).status, 'invalid');
-  assert.equal((await rotate('replacement-1', 'replacement-2', 'hash-d2')).status, 'rotated');
+  // Approving the same app again renews its key: same row, limits and history; new secret and refresh-token family.
+  await authorize('renewed_app', ['gateway:access']);
+  assert.equal((await exchange('renewed_app', ['gateway:access'], 'kidCCCCCCCCC', 'renew-1')).result.status, 'issued');
+  const original = await key('kidCCCCCCCCC');
+  assert.equal((await rotate('renew-1', 'renew-2', 'hash-c2')).status, 'rotated');
+  await db.exec(`update public.keys set monthly_limit_cost_nanos = 5000000000, daily_limit_requests = 100, expires_at = now() - interval '1 hour' where kid = 'kidCCCCCCCCC'`);
+  const renewal = await exchange('renewed_app', ['gateway:access'], 'kidDDDDDDDDD', 'renew-again-1');
+  assert.deepEqual(renewal.result, { status: 'renewed', kid: 'kidCCCCCCCCC' }, 'the existing key is renewed, under its own key ID');
+  const renewedAgain = await key('kidCCCCCCCCC');
+  assert.equal(renewedAgain.id, original.id, 'the same key row');
+  assert.equal(renewedAgain.created_at.getTime(), original.created_at.getTime());
+  assert.equal(renewedAgain.name, original.name);
+  assert.equal(renewedAgain.status, 'active');
+  assert.equal(Number(renewedAgain.monthly_limit_cost_nanos), 5_000_000_000, 'its monthly limit is kept');
+  assert.equal(Number(renewedAgain.daily_limit_requests), 100);
+  assert.equal(renewedAgain.hash, 'hash-kidDDDDDDDDD', 'a new secret: the old access token stops working');
+  assert.ok(Date.parse(renewedAgain.expires_at) > Date.now() + 6 * 86400_000, 'extended for 7 days');
+  assert.equal(await key('kidDDDDDDDDD'), undefined, 'no second key');
+  assert.equal(await liveKeys('renewed_app'), 1);
+  const oldHead = await token('renew-2');
+  assert.ok(oldHead.revoked_at, "the earlier sign-in's refresh token ends");
+  assert.equal(oldHead.last_used_at, null);
+  const freshToken = await token('renew-again-1');
+  assert.equal(freshToken.key_id, original.id);
+  assert.notEqual(freshToken.family_id, oldHead.family_id, 'a new refresh-token family');
+  assert.equal((await rotate('renew-2', 'renew-3', 'hash-c3')).status, 'invalid', "the earlier sign-in's refresh token can't renew the key");
+  assert.equal((await key('kidCCCCCCCCC')).status, 'active', 'and presenting it is not treated as reuse');
+  const afterRenewal = await rotate('renew-again-1', 'renew-again-2', 'hash-c4');
+  assert.equal(afterRenewal.status, 'rotated');
+  assert.equal(afterRenewal.kid, 'kidCCCCCCCCC');
 
-  // Revoking the app's consent revokes its keys and refresh tokens; consenting again revives neither.
+  // A paused key is never turned back on by signing in again: the code is spent and nothing is issued.
+  await db.exec(`update public.keys set status = 'paused' where kid = 'kidCCCCCCCCC'`);
+  const paused = await exchange('renewed_app', ['gateway:access'], 'kidC2CCCCCCC', 'renew-paused-1');
+  assert.deepEqual(paused.result, { status: 'key_inactive' });
+  assert.equal((await key('kidCCCCCCCCC')).status, 'paused', 'the key stays paused');
+  assert.equal((await key('kidCCCCCCCCC')).hash, 'hash-c4');
+  assert.equal(await key('kidC2CCCCCCC'), undefined, 'no replacement key either');
+  assert.equal(await token('renew-paused-1'), undefined);
+  assert.ok((await one('select used_at from public.oauth_authorization_codes where id = $1', [paused.codeId])).used_at, 'the code is spent');
+  assert.equal(await liveKeys('renewed_app'), 1);
+  // Once an owner turns it back on, signing in again renews it.
+  await db.exec(`update public.keys set status = 'active' where kid = 'kidCCCCCCCCC'`);
+  assert.deepEqual((await exchange('renewed_app', ['gateway:access'], 'kidC3CCCCCCC', 'renew-resumed-1')).result, { status: 'renewed', kid: 'kidCCCCCCCCC' });
+  assert.equal(await liveKeys('renewed_app'), 1);
+
+  // RFC 7009: revoking a refresh token ends its key and every token bound to it, even after a refresh
+  // rotated it (the logout raced the refresh).
+  await authorize('logout_app', ['gateway:access']);
+  assert.equal((await exchange('logout_app', ['gateway:access'], 'kidLLLLLLLLL', 'logout-1')).result.status, 'issued');
+  assert.equal((await rotate('logout-1', 'logout-2', 'hash-l2')).status, 'rotated');
+  assert.equal(await revoke('not-a-token', 'logout-1'), 'revoked');
+  const loggedOut = await key('kidLLLLLLLLL');
+  assert.equal(loggedOut.status, 'revoked');
+  assert.equal(loggedOut.revoked_reason, 'oauth_token_revoked');
+  assert.ok((await token('logout-2')).revoked_at, 'the successor the refresh issued is revoked too');
+  assert.equal((await rotate('logout-2', 'logout-3', 'hash-l3')).status, 'invalid');
+  assert.equal(await revoke('unknown-token'), 'not_found');
+  // Signing in again after logging out issues a new key; the revoked one stays revoked.
+  const afterLogout = await exchange('logout_app', ['gateway:access'], 'kidL2LLLLLLL', 'logout-again-1');
+  assert.deepEqual(afterLogout.result, { status: 'issued', kid: 'kidL2LLLLLLL' });
+  assert.equal((await key('kidLLLLLLLLL')).status, 'revoked');
+  assert.equal(await liveKeys('logout_app'), 1);
+  // A paused key is revoked by its app's logout too.
+  await db.exec(`update public.keys set status = 'paused' where kid = 'kidL2LLLLLLL'`);
+  assert.equal(await revoke('logout-again-1'), 'revoked');
+  assert.equal((await key('kidL2LLLLLLL')).status, 'revoked');
+
+  // Revoking the app's consent revokes its keys, paused ones included, and refresh tokens; consenting again revives neither.
   await authorize('revoked_app', ['gateway:access']);
-  assert.equal((await exchange('revoked_app', ['gateway:access'], 'kidEEEEEEEEE', 'consent-1')).result, 'issued');
+  assert.equal((await exchange('revoked_app', ['gateway:access'], 'kidEEEEEEEEE', 'consent-1')).result.status, 'issued');
   await db.exec(`update public.oauth_authorizations set revoked_at = now() where client_id = 'revoked_app'`);
   assert.equal((await key('kidEEEEEEEEE')).status, 'revoked');
   assert.ok((await token('consent-1')).revoked_at);
   await db.exec(`update public.oauth_authorizations set revoked_at = null where client_id = 'revoked_app'`);
   assert.equal((await rotate('consent-1', 'consent-2', 'hash-e2')).status, 'invalid');
+  await authorize('paused_consent_app', ['gateway:access']);
+  assert.equal((await exchange('paused_consent_app', ['gateway:access'], 'kidE2EEEEEEE', 'paused-consent-1')).result.status, 'issued');
+  await db.exec(`update public.keys set status = 'paused' where kid = 'kidE2EEEEEEE'`);
+  await db.exec(`update public.oauth_authorizations set revoked_at = now() where client_id = 'paused_consent_app'`);
+  assert.equal((await key('kidE2EEEEEEE')).status, 'revoked', 'a paused key is revoked with the consent');
 
   // Deleting the authorization does the same; deleting the key deletes its refresh tokens.
   await authorize('deleted_app', ['gateway:access']);
-  assert.equal((await exchange('deleted_app', ['gateway:access'], 'kidFFFFFFFFF', 'deleted-1')).result, 'issued');
+  assert.equal((await exchange('deleted_app', ['gateway:access'], 'kidFFFFFFFFF', 'deleted-1')).result.status, 'issued');
   await db.exec(`delete from public.oauth_authorizations where client_id = 'deleted_app'`);
   assert.equal((await key('kidFFFFFFFFF')).status, 'revoked');
   assert.ok((await token('deleted-1')).revoked_at);
   await db.exec(`delete from public.keys where kid = 'kidFFFFFFFFF'`);
   assert.equal(await token('deleted-1'), undefined);
 
-  // Leaving the workspace ends refreshes; so does an expired refresh token.
+  // Leaving the workspace ends refreshes; so does an expired refresh token that was never used.
   await authorize('member_app', ['gateway:access']);
-  assert.equal((await exchange('member_app', ['gateway:access'], 'kidGGGGGGGGG', 'member-1')).result, 'issued');
-  await db.exec(`update public.oauth_refresh_tokens set expires_at = now() - interval '1 minute' where token_hash = 'replacement-2'`);
-  assert.equal((await rotate('replacement-2', 'replacement-3', 'hash-d3')).status, 'invalid');
+  assert.equal((await exchange('member_app', ['gateway:access'], 'kidGGGGGGGGG', 'member-1')).result.status, 'issued');
+  await db.exec(`update public.oauth_refresh_tokens set expires_at = now() - interval '1 minute' where token_hash = 'renew-again-2'`);
+  assert.equal((await rotate('renew-again-2', 'renew-again-3', 'hash-c5')).status, 'invalid');
+  assert.equal((await key('kidCCCCCCCCC')).status, 'active', 'an expired, unused token is not reuse');
   await db.exec(`delete from public.workspace_members where user_id = '${USER}'`);
   assert.equal((await rotate('member-1', 'member-2', 'hash-g2')).status, 'invalid');
   assert.equal((await key('kidGGGGGGGGG')).hash, 'hash-kidGGGGGGGGG');
 
-  // The CLI's refresh tokens (no key) are not this function's to rotate.
+  // The CLI's refresh tokens (no key) are not this function's to rotate; revoking one ends its whole family.
   await db.exec(`
     insert into public.workspace_members values ('${WS}', '${USER}');
-    insert into public.oauth_refresh_tokens (token_hash, user_id, workspace_id, client_id, scopes, family_id)
-    values ('cli-1', '${USER}', '${WS}', 'phaseo_cli', array['openid'], gen_random_uuid());
+    insert into public.oauth_refresh_tokens (id, token_hash, user_id, workspace_id, client_id, scopes, family_id, revoked_at, last_used_at)
+    values ('${id(900)}', 'cli-1', '${USER}', '${WS}', 'phaseo_cli', array['openid'], '${id(901)}', now(), now());
+    insert into public.oauth_refresh_tokens (token_hash, user_id, workspace_id, client_id, scopes, family_id, rotated_from)
+    values ('cli-2', '${USER}', '${WS}', 'phaseo_cli', array['openid'], '${id(901)}', '${id(900)}');
   `);
-  assert.equal((await rotate('cli-1', 'cli-2', 'hash-cli')).status, 'invalid');
+  assert.equal((await rotate('cli-2', 'cli-3', 'hash-cli')).status, 'invalid');
+  assert.equal(await revoke('cli-1'), 'revoked');
+  assert.ok((await token('cli-2')).revoked_at, 'the CLI token the rotated one led to is revoked');
+
+  // Never two live keys for one app in a workspace.
+  const duplicates = (await db.query(
+    `select oauth_client_id from public.keys where status not in ('revoked', 'compromised', 'deleted') group by 1 having count(*) > 1`,
+  )).rows;
+  assert.deepEqual(duplicates, []);
 
   console.log('oauth-delegated-refresh-tokens: all assertions passed');
 } finally {

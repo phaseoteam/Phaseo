@@ -132,7 +132,9 @@ Quando alguém entra, o endpoint de tokens (`https://api.phaseo.app/oauth/token`
 - Você pode atualizar depois que o token de acesso expirar, desde que o token de atualização não tenha expirado.
 - Usar um token de atualização pela segunda vez encerra o login. O Phaseo trata isso como um token vazado e revoga o token de acesso e todos os tokens de atualização desse login, então a pessoa precisa entrar de novo.
 - Uma atualização nunca adiciona escopos. Ela mantém os escopos que a pessoa aprovou, menos os que ela removeu desde então.
-- A atualização falha assim que a pessoa revoga seu aplicativo, revoga ou desativa a chave dele ou sai do espaço de trabalho. Peça para ela entrar de novo.
+- A atualização falha assim que a pessoa revoga seu aplicativo, revoga ou desativa a chave dele, remove um escopo de que a chave precisa (como `gateway:access`) ou sai do espaço de trabalho. Conceder o escopo de novo não recupera o token de atualização. Peça para ela entrar de novo.
+- Entrar de novo renova a mesma chave em vez de adicionar outra. Você recebe um novo token de acesso e um novo token de atualização, os anteriores param de funcionar, e a chave mantém seus limites e os gastos deste mês. Se a chave estiver pausada, o endpoint de tokens retorna `invalid_grant` até que alguém reative a chave em **Configurações → Chaves de API**.
+- Para sair, envie o token de atualização para `https://api.phaseo.app/oauth/revoke`. Isso revoga a chave e todos os tokens de atualização do login, inclusive um que uma atualização acabou de emitir.
 
 ## Pré-requisitos
 

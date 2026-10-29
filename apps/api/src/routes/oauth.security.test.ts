@@ -171,7 +171,7 @@ vi.mock("@/lib/oauth/service", () => ({
 	}),
 	issueOAuthManagedKeyForAuthorizationCode: vi.fn(async (_grantId: string, input: Record<string, unknown>) => {
 		state.issuedManagedKeys.push(input);
-		return { access_token: "phaseo_v1_sk_test", token_type: "Bearer" };
+		return { ok: true, tokens: { access_token: "phaseo_v1_sk_test", token_type: "Bearer" } };
 	}),
 	issueMcpUpstreamToken: vi.fn(async () => ({ access_token: "upstream-jwt", token_type: "Bearer", expires_in: 300 })),
 	isGatewayOAuthResource: vi.fn((resource: string | null | undefined) => {
@@ -561,6 +561,59 @@ describe("OAuth route security", () => {
 			clientId: "third_party",
 			scopes: ["gateway:access", "models:read"],
 		});
+	});
+
+	it("refuses the exchange with a clear error when the app's key in the workspace is paused", async () => {
+		const service = await import("@/lib/oauth/service");
+		vi.mocked(service.issueOAuthManagedKeyForAuthorizationCode).mockResolvedValueOnce({ ok: false, reason: "key_inactive" });
+		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
+		state.authorizationCodeRow = {
+			id: "authorization_code_paused",
+			client_id: "third_party",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			redirect_uri: "https://example.com/callback",
+			scopes: ["gateway:access"],
+			code_challenge: "challenge",
+			code_challenge_method: "S256",
+			expires_at: FUTURE_EXPIRES_AT,
+			used_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: "third_party",
+				code: "authorization-code",
+				redirect_uri: "https://example.com/callback",
+				code_verifier: "verifier",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		const body = await response.json() as { error: string; error_description: string };
+		expect(body.error).toBe("invalid_grant");
+		expect(body.error_description).toContain("paused");
+		expect(body).not.toHaveProperty("access_token");
+	});
+
+	it("reports a revocation the database could not store instead of claiming success", async () => {
+		const service = await import("@/lib/oauth/service");
+		vi.mocked(service.revokeToken).mockRejectedValueOnce(new Error("connection reset"));
+		const { oauthRouter } = await import("./oauth");
+
+		const response = await oauthRouter.request("https://example.com/revoke", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ token: "refresh-token" }),
+		});
+
+		expect(response.status).toBe(500);
+		await expect(response.json()).resolves.toMatchObject({ error: "server_error" });
 	});
 
 	it("rejects Gateway API resource authorization without gateway access consent", async () => {

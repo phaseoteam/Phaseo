@@ -132,7 +132,9 @@ Wenn sich jemand anmeldet, gibt der Token-Endpunkt (`https://api.phaseo.app/oaut
 - Du kannst auch nach Ablauf des Zugriffstokens aktualisieren, solange das Refresh-Token noch gültig ist.
 - Wird ein Refresh-Token ein zweites Mal verwendet, endet die Anmeldung. Phaseo behandelt es als geleaktes Token und widerruft das Zugriffstoken und alle Refresh-Tokens dieser Anmeldung, sodass sich die Person erneut anmelden muss.
 - Eine Aktualisierung fügt nie Scopes hinzu. Sie behält die Scopes, die die Person genehmigt hat, abzüglich derer, die sie inzwischen entfernt hat.
-- Die Aktualisierung schlägt fehl, sobald die Person deine App widerruft, ihren Schlüssel widerruft oder deaktiviert oder den Workspace verlässt. Lass sie sich dann erneut anmelden.
+- Die Aktualisierung schlägt fehl, sobald die Person deine App widerruft, ihren Schlüssel widerruft oder deaktiviert, einen Scope entfernt, den der Schlüssel braucht (etwa `gateway:access`), oder den Workspace verlässt. Wird der Scope später wieder erteilt, wird das Refresh-Token dadurch nicht wieder gültig. Lass sie sich dann erneut anmelden.
+- Eine erneute Anmeldung erneuert denselben Schlüssel, statt einen weiteren anzulegen. Du erhältst ein neues Zugriffstoken und ein neues Refresh-Token, die bisherigen funktionieren nicht mehr, und der Schlüssel behält seine Limits und die Ausgaben dieses Monats. Ist der Schlüssel pausiert, gibt der Token-Endpunkt stattdessen `invalid_grant` zurück, bis jemand den Schlüssel unter **Einstellungen → API-Schlüssel** wieder aktiviert.
+- Zum Abmelden sende das Refresh-Token an `https://api.phaseo.app/oauth/revoke`. Das widerruft den Schlüssel und alle Refresh-Tokens der Anmeldung, auch eines, das eine Aktualisierung kurz zuvor ausgestellt hat.
 
 ## Voraussetzungen
 
