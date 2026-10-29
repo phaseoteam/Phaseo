@@ -16,9 +16,15 @@ import { FactoryLink } from "./FactoryLink";
 /** Issue references link to the item in Factory. Relative, so react-markdown keeps them. */
 const ITEM_LINK = "#factory-item=";
 
+/** Applies `step` until the text stops changing, so removing one piece can't join the pieces around it into another. */
+function untilStable(text: string, step: (value: string) => string): string {
+	for (let next = step(text); next !== text; next = step(text)) text = next;
+	return text;
+}
+
 /** HTML in issue text, turned into the Markdown it stands for, or dropped. */
 export function plainHtml(source: string): string {
-	return source
+	return untilStable(source, (text) => text
 		.replace(/<!--[\s\S]*?-->/g, "")
 		.replace(/<img\b[^>]*>/gi, (tag) => {
 			const src = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1];
@@ -27,7 +33,7 @@ export function plainHtml(source: string): string {
 		})
 		.replace(/<br\s*\/?>/gi, "  \n")
 		.replace(/<summary>([\s\S]*?)<\/summary>/gi, "**$1**\n\n")
-		.replace(/<\/?(?:details|summary|sub|sup|kbd|ins|mark|picture|source|relative-time|p|div|span|b|i|em|strong|a|code|pre|table|thead|tbody|tr|td|th|ul|ol|li|h[1-6]|hr|blockquote|del|s|u|small|center|font)\b[^>]*>/gi, "");
+		.replace(/<\/?(?:details|summary|sub|sup|kbd|ins|mark|picture|source|relative-time|p|div|span|b|i|em|strong|a|code|pre|table|thead|tbody|tr|td|th|ul|ol|li|h[1-6]|hr|blockquote|del|s|u|small|center|font|script|style)\b[^>]*>/gi, ""));
 }
 
 /** Single line breaks become breaks, as GitHub shows them in issues and comments. */

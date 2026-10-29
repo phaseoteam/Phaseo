@@ -27,7 +27,10 @@ const issueBodyLimit = 8000, issueCommentLimit = 2000;
 const shorten = (value: string, limit: number) => value.length <= limit ? { text: value, truncated: false } : { text: `${value.slice(0, limit - 3)}...`, truncated: true };
 /** read_issue's answer: GitHub's text fenced as third-party, long bodies and comments shortened. */
 export function issueRead(issue: IssueDetails, linked: boolean): IssueRead {
-	const body = shorten(issue.body.replace(/<!--[\s\S]*?-->/g, "").trim(), issueBodyLimit);
+	// Template comments go; repeated until none is left, since removing one can join the text around it into another.
+	let text = issue.body;
+	for (let next = text.replace(/<!--[\s\S]*?-->/g, ""); next !== text; next = text.replace(/<!--[\s\S]*?-->/g, "")) text = next;
+	const body = shorten(text.trim(), issueBodyLimit);
 	return {
 		repository: issue.repository, number: issue.number, url: issue.url, title: issue.title, state: issue.state, stateReason: issue.stateReason ?? null, author: issue.author,
 		labels: issue.labels, assignees: issue.assignees, createdAt: issue.createdAt, updatedAt: issue.updatedAt, closedAt: issue.closedAt ?? null, linked, notice: untrustedNotice,
