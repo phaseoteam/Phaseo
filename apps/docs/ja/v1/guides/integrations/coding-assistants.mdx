@@ -146,7 +146,7 @@ Aider では、OpenAI 互換のカスタムモデルに `openai/` プレフィ�
 
 `phaseo pi` は専用のプロバイダー拡張機能を追加し、実行時に Phaseo CLI からキーを取得します。`phaseo prime-agent` はコマンド経由のプロバイダーを `~/.prime/agent/models.json` に書き込みます。どちらにも互換性のある Phaseo モデルカタログが追加されます。`phaseo openclaw` は互換モデルカタログと exec ベースの SecretRef を登録し、API キーを `openclaw.json` に保存しません。
 
-`phaseo hermes` は、Hermes が未インストールの場合に Nous Research の公式インストーラーを実行し、インストール後にエージェントを設定します。以前の Hermes モデル設定を保存し、Phaseo をカスタムエンドポイントとして設定します。また、専用キーを Hermes の `~/.hermes/.env` ファイル（または `HERMES_HOME` 内の `.env`）に、`# >>> phaseo managed (do not edit)` で始まるブロック内の `OPENAI_API_KEY` として書き込みます。そのためキーがコマンドラインに渡されることはなく、ほかの行は変更されません。Hermes はプロバイダー認証情報にこの平文ファイルを意図的に使うため、他の API キーファイルと同様に保護してください。削除時には以前のモデル設定を復元し、`OPENAI_API_KEY` と Phaseo の復旧状態を削除して、キーを失効させます。
+`phaseo hermes` は、Hermes が未インストールの場合に Nous Research の公式インストーラーを実行し、インストール後にエージェントを設定します。以前の Hermes モデル設定を保存し、Phaseo をカスタムエンドポイントとして設定します。また、専用キーを Hermes の `.env` ファイルに、`# >>> phaseo managed (do not edit)` で始まるブロック内の `OPENAI_API_KEY` として書き込みます。そのためキーがコマンドラインに渡されることはなく、ほかの行は変更されません。Phaseo はこのファイルの場所を Hermes に問い合わせます。通常は `~/.hermes/.env`、ネイティブの Windows では `%LOCALAPPDATA%\hermes\.env`、または `HERMES_HOME` 内の `.env` です。さらに、Hermes がキーを Phaseo に送るよう、Hermes の `model.key_env` を `OPENAI_API_KEY` に設定します。お使いの Hermes が `model.key_env` に対応していない場合は、先に `hermes update` を実行してください。Hermes はプロバイダー認証情報にこの平文ファイルを意図的に使うため、他の API キーファイルと同様に保護してください。削除時には以前のモデル設定を復元し、`OPENAI_API_KEY` と Phaseo の復旧状態を削除して、キーを失効させます。
 
 ## MiniMax Code
 
