@@ -17,6 +17,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![开启产品筛选的更新日志，旁边是日期列表](/images/changelog/2026-10-28--changelog-filters.png)
 
 - 更新日志现在除了模型发布，还列出产品和 API 的变更，并提供**产品**、**API 与 SDK**和**模型**筛选，同时保留日期列表 ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261))。
+- 预设编辑器在**保存草稿**旁边新增**发布**，**版本和标签**为每个标签提供版本选择器，选择较早的版本即可回滚；参见 [提示词模板](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301))。
+- 打开已发布的预设版本可查看其模型和模板消息、与默认版本不同的行，以及用于试用的**运行**按钮 ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301))。
 
 </div>
 
@@ -39,6 +41,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">产品</p>
 
 - 预设编辑器的 **Versions and labels** 部分可将命名标签指向已发布的版本，移动标签即可一键回滚请求；请参阅[提示词模板](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283))。
+- 预设的模型选择器只提供网关仍在提供的模型；此前它还会列出请求无法访问的已停用模型 ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260))。
+- 在没有额度的工作区中运行预设时会说明原因，并链接到**添加额度**；此前只显示通用错误 ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276))。
+- 加载完整模型目录的页面（例如预设编辑器）改为从缓存获取；此前每次加载约需 3 秒，且部分加载失败 ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278))。
 
 </div>
 
@@ -85,6 +90,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - 所有工作区都可以使用已停用模型的路由：所有者和管理员在 **设置 -> 路由 -> 已停用模型的路由** 中开启后，请求会转到已批准的替代模型；请参阅[模型弃用与停用](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))。
 - 已停用模型的路由只使用价格不高于已停用模型的已批准替代模型，除非所有者和管理员允许更高的价格；他们自己选择的替代模型无论价格高低都会使用 ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
+- 即使完整模型目录加载失败，预设列表和编辑器也能打开；此前页面会显示错误 ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221))。
 
 </div>
 
@@ -124,6 +130,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - 速率限制策略会执行 `concurrent_requests`，所有名额都被占用时返回 `429`，原因为 `policy_concurrent_requests`，并带有 `Retry-After: 1`；请参阅[速率限制](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
 - 严格策略（`fail_closed`）会在请求发送给提供商之前检查每分钟限制 ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212))。
 - 通过欧盟和美国区域网关发送的请求现在也会到达 Broadcast 目标 ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187))。
+- 发往大多数模型的请求已恢复成功；10 月 23 日，在提供商数据政策更新后，这些请求返回 `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206))。
 
 </div>
 

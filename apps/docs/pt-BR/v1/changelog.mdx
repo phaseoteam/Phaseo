@@ -17,6 +17,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 ![O changelog com o filtro Produto ativado e a lista de datas ao lado](/images/changelog/2026-10-28--changelog-filters.png)
 
 - O changelog agora inclui mudanças no produto e na API além dos lançamentos de modelos, com filtros **Produto**, **API e SDKs** e **Modelos** que mantêm a lista de datas ([#3261](https://github.com/phaseoteam/Phaseo/pull/3261)).
+- O editor de predefinições ganha **Publicar** ao lado de **Salvar rascunho**, e **Versões e rótulos** dá a cada rótulo um seletor de versão, então escolher uma versão anterior é uma reversão; veja [Templates de prompt](./guides/prompt-templates.mdx) ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
+- Abrir uma versão publicada de uma predefinição mostra seus modelos e mensagens de modelo, as linhas que diferem da versão padrão e um botão **Executar** para testá-la ([#3301](https://github.com/phaseoteam/Phaseo/pull/3301)).
 
 </div>
 
@@ -39,6 +41,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">Produto</p>
 
 - A seção **Versions and labels** do editor de presets aponta rótulos nomeados para versões publicadas, então mover um rótulo reverte as solicitações com um clique; veja [Templates de prompt](./guides/prompt-templates.mdx) ([#3283](https://github.com/phaseoteam/Phaseo/pull/3283)).
+- O seletor de modelos das predefinições oferece só modelos que o gateway ainda atende; antes, também listava modelos aposentados que as solicitações não conseguiam alcançar ([#3260](https://github.com/phaseoteam/Phaseo/pull/3260)).
+- Executar uma predefinição em um workspace sem créditos avisa isso e leva a **Adicionar créditos**; antes, aparecia um erro genérico ([#3276](https://github.com/phaseoteam/Phaseo/pull/3276)).
+- Páginas que carregam o catálogo completo de modelos, como o editor de predefinições, o recebem do cache; antes, cada carregamento levava cerca de 3 segundos e alguns falhavam ([#3278](https://github.com/phaseoteam/Phaseo/pull/3278)).
 
 </div>
 
@@ -85,6 +90,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - Todos os espaços de trabalho podem usar o roteamento de modelos aposentados: proprietários e administradores o ativam em **Configurações -> Roteamento -> Roteamento de modelos aposentados**, e as solicitações vão para o substituto aprovado; veja [Descontinuação e aposentadoria de modelos](./guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896)).
 - O roteamento de modelos aposentados só usa um substituto aprovado que não custe mais que o modelo aposentado, a menos que proprietários e administradores permitam um preço maior; um substituto escolhido por eles mesmos é usado qualquer que seja o preço ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211)).
+- A lista e o editor de predefinições abrem mesmo quando o catálogo completo de modelos não carrega; antes, a página mostrava um erro ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221)).
 
 </div>
 
@@ -124,6 +130,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 - Políticas de limites de taxa aplicam `concurrent_requests` e retornam `429` com o motivo `policy_concurrent_requests` e `Retry-After: 1` quando todas as vagas estão ocupadas; veja [Limites de requisições](./api-reference/limits.mdx) ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Políticas estritas (`fail_closed`) verificam seus limites por minuto antes de enviar a solicitação a um provedor ([#3212](https://github.com/phaseoteam/Phaseo/pull/3212)).
 - Solicitações enviadas pelos gateways regionais da UE e dos EUA agora chegam aos destinos do Broadcast ([#3187](https://github.com/phaseoteam/Phaseo/pull/3187)).
+- Solicitações para a maioria dos modelos voltam a funcionar; em 23 de outubro, após uma atualização da política de dados dos provedores, elas retornavam `500 gateway_context_failed` ([#3206](https://github.com/phaseoteam/Phaseo/pull/3206)).
 
 </div>
 
