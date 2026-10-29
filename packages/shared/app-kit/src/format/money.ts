@@ -56,3 +56,19 @@ export function formatUsdPrice(value: number | null | undefined, options: { allo
 	}
 	return `$${formatter.format(value)}`;
 }
+
+const headlineSmall = new Intl.NumberFormat(MONEY_LOCALE, { maximumSignificantDigits: 3 });
+const headlineWhole = new Intl.NumberFormat(MONEY_LOCALE, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const headlineCents = new Intl.NumberFormat(MONEY_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+
+/**
+ * A model's headline price per million tokens: "$15", "$0.50", "$0.035", and three significant digits below a cent
+ * ("$0.0035") so a small rate never looks free. The website's /models card headline (formatHeadlinePrice in
+ * components/(data)/models/Models/ModelCard.tsx).
+ */
+export function formatUsdHeadlinePrice(value: number): string {
+	if (value === 0) return "$0";
+	if (value < 0.01) return `$${headlineSmall.format(value)}`;
+	const integer = Math.abs(value - Math.round(value)) < 1e-9;
+	return `$${(integer ? headlineWhole : headlineCents).format(value)}`;
+}

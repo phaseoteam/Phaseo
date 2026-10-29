@@ -1,3 +1,4 @@
+import { formatDuration } from "@phaseo/app-kit/format";
 import type { AgentActivity, Message } from "../../shared/workspace";
 import { conversationTimeline } from "./conversationTimeline";
 export type TurnEntry = ReturnType<typeof conversationTimeline>[number];
@@ -13,6 +14,5 @@ export function turnDuration(user?: Message) {
 	if (!user?.startedAt || !user.completedAt) return "Worked";
 	const milliseconds = Date.parse(user.completedAt) - Date.parse(user.startedAt);
 	if (!Number.isFinite(milliseconds) || milliseconds < 0) return "Worked";
-	const seconds = Math.max(1, Math.round(milliseconds / 1000));
-	return `Worked for ${seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`}`;
+	return `Worked for ${formatDuration(milliseconds)}`;
 }

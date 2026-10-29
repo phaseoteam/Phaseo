@@ -1,4 +1,4 @@
-import { formatRelativeTime } from "@phaseo/app-kit/format";
+import { formatDateTime, formatRelativeTime } from "@phaseo/app-kit/format";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { ArrowDownUp, ChevronDown, ChevronRight, Hammer, ListFilter, SmilePlus, Tag, UserPlus, Users } from "lucide-react";
 import { pullRequestReactionContents, type PullRequestAction, type PullRequestComment, type PullRequestReaction, type PullRequestReactionContent, type PullRequestView } from "../../../shared/pullRequestView";
@@ -79,10 +79,10 @@ export function Reactions({ reactions, subjectId, canReact = false }: { reaction
 function CommentIdentity({ comment, onOpen }: { comment: PullRequestComment; onOpen: (url: string) => void }) {
 	return <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
 		<ActorLabel actor={comment.author} className="max-w-full" />
-		<Tip label={`${new Date(comment.createdAt).toLocaleString()}${comment.url ? " · Open comment on GitHub" : ""}`}>
+		<Tip label={`${formatDateTime(comment.createdAt)}${comment.url ? " · Open comment on GitHub" : ""}`}>
 			{comment.url ? <button type="button" onClick={() => onOpen(comment.url!)} className="text-muted-foreground hover:text-foreground hover:underline"><time dateTime={comment.createdAt}>{formatRelativeTime(comment.createdAt)}</time></button> : <span className="text-muted-foreground"><time dateTime={comment.createdAt}>{formatRelativeTime(comment.createdAt)}</time></span>}
 		</Tip>
-		{comment.editedAt && <Tip label={`Edited ${new Date(comment.editedAt).toLocaleString()}`}><span className="text-muted-foreground">edited</span></Tip>}
+		{comment.editedAt && <Tip label={`Edited ${formatDateTime(comment.editedAt)}`}><span className="text-muted-foreground">edited</span></Tip>}
 	</div>;
 }
 function CommentLocation({ comment, view }: { comment: PullRequestComment; view: PullRequestView }) {

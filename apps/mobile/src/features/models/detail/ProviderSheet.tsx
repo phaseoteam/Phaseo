@@ -6,7 +6,7 @@ import { ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Button, IconButton, Segmented, Sheet, Text } from "@/components/ui";
 import { getModelProviderHealth, type ProviderPricing } from "@/lib/api/models";
-import { formatMs, formatTokens } from "@/lib/format";
+import { formatSeconds, formatSpeed, formatTokenCount } from "@/lib/format";
 import { priceLines } from "../pricing";
 import { PolicyIcon, StatusIcon, STATUS_META, SubHeading } from "./parts";
 import { formatPercentile } from "./performance";
@@ -15,7 +15,6 @@ import {
   routeLimits, runtimeStatsFromHealth, statsKey, tierLabel, type RuntimeStats,
 } from "./providers";
 
-export const formatThroughput = (value: number | null | undefined) => (value == null || !Number.isFinite(value) ? "—" : `${value >= 100 ? Math.round(value) : Number(value.toFixed(1))} tok/s`);
 export const formatUptime = (value: number | null | undefined) => (value == null || !Number.isFinite(value) ? "—" : `${value.toFixed(1)}%`);
 
 /**
@@ -118,8 +117,8 @@ function SheetBody({ providers, provider, index, target, stats, percentile, onCh
           )) : <Text variant="muted">No prices are listed for this tier.</Text>}
         </SheetSection>
         <SheetSection title="Performance" note={`${formatPercentile(percentile)} · last 3 days`}>
-          <Line label="Latency" value={formatMs(runtime?.latencyMs)} />
-          <Line label="Throughput" value={formatThroughput(runtime?.throughput)} />
+          <Line label="Latency" value={formatSeconds(runtime?.latencyMs)} />
+          <Line label="Throughput" value={formatSpeed(runtime?.throughput)} />
           <Line label="Uptime" value={formatUptime(runtime?.uptimePct)} />
         </SheetSection>
         <SheetSection title="Routing">
@@ -133,8 +132,8 @@ function SheetBody({ providers, provider, index, target, stats, percentile, onCh
         </SheetSection>
         {limits.context || limits.maxOutput ? (
           <SheetSection title="Limits">
-            {limits.context ? <Line label="Context" value={`${formatTokens(limits.context)} tokens`} /> : null}
-            {limits.maxOutput ? <Line label="Max output" value={`${formatTokens(limits.maxOutput)} tokens`} /> : null}
+            {limits.context ? <Line label="Context" value={formatTokenCount(limits.context)} /> : null}
+            {limits.maxOutput ? <Line label="Max output" value={formatTokenCount(limits.maxOutput)} /> : null}
           </SheetSection>
         ) : null}
         {id ? <Button label={`View ${name}`} variant="outline" size="sm" className="mt-4" onPress={() => { onClose(); router.push(`/providers/${id}`); }} /> : null}

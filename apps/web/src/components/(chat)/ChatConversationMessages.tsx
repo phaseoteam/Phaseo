@@ -16,7 +16,7 @@ import {
 	useMessageScroller,
 } from "@shadcn/react/message-scroller";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { formatUsdCost } from "@phaseo/app-kit/format";
+import { formatLatency, formatUsdCost } from "@phaseo/app-kit/format";
 import { Streamdown } from "streamdown";
 import { ChatAnswerContent } from "./openui/ChatAnswerContent";
 import { OPENUI_FORMAT } from "./openui/openuiHelpers";
@@ -207,24 +207,8 @@ function GeneratingResponseIndicator() {
 }
 
 function formatGenerationDuration(value: unknown): string | null {
-	if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-		return null;
-	}
-	if (value < 1000) {
-		return `${Math.round(value)} ms`;
-	}
-	const seconds = value / 1000;
-	if (seconds < 10) {
-		return `${seconds.toFixed(2).replace(/\.?0+$/, "")} s`;
-	}
-	if (seconds < 60) {
-		return `${seconds.toFixed(1).replace(/\.0$/, "")} s`;
-	}
-	const minutes = seconds / 60;
-	if (minutes < 10) {
-		return `${minutes.toFixed(2).replace(/\.?0+$/, "")} min`;
-	}
-	return `${minutes.toFixed(1).replace(/\.0$/, "")} min`;
+	if (typeof value !== "number" || value < 0) return null;
+	return formatLatency(value);
 }
 
 function formatMessageSentAt(value: string): string | null {
