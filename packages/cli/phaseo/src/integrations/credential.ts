@@ -82,40 +82,26 @@ export async function getLegacyIntegrationGatewayCredential(): Promise<string> {
 	return key;
 }
 
-/** Integration keys expire after 90 days and are replaced once fewer than 7 days remain. */
+/** Integration keys are created with a 90-day expiry and a monthly spend limit. */
 export const INTEGRATION_KEY_LIFETIME_MS = 90 * 24 * 60 * 60 * 1000;
-export const INTEGRATION_KEY_ROTATION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 /** Default monthly spend limit in USD for integration keys; raise it with `phaseo keys update <id> --limit`. */
 export const INTEGRATION_KEY_MONTHLY_LIMIT_USD = 100;
 
-export type PreparedIntegrationCredential = {
-	key: string;
-	/** True when a new key was created (first setup or rotation). */
-	created: boolean;
-	/** Call once the harness configuration holds `key`: revokes the key it replaced, best effort. */
-	commit(): Promise<void>;
-	/** Call if setup fails: revokes the new key and restores the replaced one in the session. */
-	rollback(): Promise<void>;
-};
+type IntegrationCredential = NonNullable<Session["integrationGatewayCredentials"]>[string];
 
-const noop = async () => undefined;
-
-export async function getIntegrationGatewayCredential(integration: IntegrationId | string): Promise<string> {
-	const prepared = await prepareIntegrationGatewayCredential(integration);
-	await prepared.commit();
-	return prepared.key;
+/** An expired key no longer works, so its record is dropped and a new key is created. Keys without a recorded expiry are kept. */
+function isExpired(credential: IntegrationCredential | undefined): boolean {
+	return credential?.expiresAt !== undefined && credential.expiresAt <= Date.now();
 }
 
-/**
- * Returns the integration's key, creating one when none is stored or the stored one expires within
- * the rotation window. Keys created before expiry was tracked have no expiresAt and are replaced.
- */
-export async function prepareIntegrationGatewayCredential(integration: IntegrationId | string): Promise<PreparedIntegrationCredential> {
-	if (process.env.PHASEO_API_KEY) return { key: process.env.PHASEO_API_KEY, created: false, commit: noop, rollback: noop };
-	const session = await getSessionAccessToken();
+export async function getIntegrationGatewayCredential(integration: IntegrationId | string): Promise<string> {
+	if (process.env.PHASEO_API_KEY) return process.env.PHASEO_API_KEY;
+	let session = await getSessionAccessToken();
 	const existing = session.integrationGatewayCredentials?.[integration];
-	if (existing && (existing.expiresAt ?? 0) - Date.now() > INTEGRATION_KEY_ROTATION_WINDOW_MS) {
-		return { key: existing.key, created: false, commit: noop, rollback: noop };
+	if (existing && !isExpired(existing)) return existing.key;
+	if (existing) {
+		session = withoutCredential(session, integration);
+		await writeSession(session);
 	}
 	const expiresAt = Date.now() + INTEGRATION_KEY_LIFETIME_MS;
 	const body = await apiFetch(session.apiUrl, "/keys", {
@@ -141,35 +127,31 @@ export async function prepareIntegrationGatewayCredential(integration: Integrati
 		await apiFetch(session.apiUrl, `/keys/${encodeURIComponent(keyId)}`, { method: "DELETE", accessToken: session.accessToken }).catch(() => undefined);
 		throw error;
 	}
-	const revoke = async (id: string) => {
-		const current = await getSessionAccessToken().catch(() => next);
-		await apiFetch(current.apiUrl, `/keys/${encodeURIComponent(id)}`, { method: "DELETE", accessToken: current.accessToken }).catch(() => undefined);
-	};
-	return {
-		key,
-		created: true,
-		commit: async () => {
-			if (existing) await revoke(existing.keyId);
-		},
-		rollback: async () => {
-			await revoke(keyId);
-			const current = await readSession();
-			if (!current) return;
-			const restored = withoutCredential(current, integration);
-			if (existing) restored.integrationGatewayCredentials = { ...restored.integrationGatewayCredentials, [integration]: existing };
-			await writeSession(restored);
-		},
-	};
+	return key;
+}
+
+type SessionIdentity = { userId: string; workspaceId: string };
+
+async function sessionIdentity(apiUrl: string, accessToken: string): Promise<SessionIdentity | null> {
+	try {
+		const body = await apiFetch(apiUrl, "/me", { accessToken });
+		const userId = body?.data?.user?.id;
+		const workspaceId = body?.data?.current_workspace_id;
+		return typeof userId === "string" && userId && typeof workspaceId === "string" && workspaceId ? { userId, workspaceId } : null;
+	} catch {
+		return null;
+	}
 }
 
 /**
- * Integration keys to keep when `phaseo login` replaces a session. Keys from the same API root are
- * carried over so logout can still revoke them; keys from another API root are revoked with the old
- * session first. Revocation is best effort and failures are returned for reporting.
+ * Integration keys to keep when `phaseo login` replaces a session. Keys are carried over only when
+ * the new session is for the same API root, account and workspace (checked with GET /v1/me on both
+ * sessions); otherwise they are revoked with the old session's token first. Revocation is best
+ * effort and failures are returned for reporting.
  */
 export async function integrationCredentialsForNewLogin(
 	previous: Session | null,
-	apiRoot: string,
+	next: { apiUrl: string; accessToken: string },
 ): Promise<{ carried: Partial<Session>; revokeFailures: string[] }> {
 	if (!previous) return { carried: {}, revokeFailures: [] };
 	const credentials = previous.integrationGatewayCredentials ?? {};
@@ -178,24 +160,30 @@ export async function integrationCredentialsForNewLogin(
 		...(previous.integrationGatewayKeyId ? [previous.integrationGatewayKeyId] : []),
 	];
 	if (keyIds.length === 0) return { carried: {}, revokeFailures: [] };
-	if (previous.apiUrl === apiRoot) {
-		return {
-			carried: {
-				...(Object.keys(credentials).length > 0 ? { integrationGatewayCredentials: credentials } : {}),
-				...(previous.integrationGatewayKey ? {
-					integrationGatewayKey: previous.integrationGatewayKey,
-					integrationGatewayKeyId: previous.integrationGatewayKeyId,
-					integrationGatewayKeyExpiresAt: previous.integrationGatewayKeyExpiresAt,
-				} : {}),
-			},
-			revokeFailures: [],
-		};
-	}
-	const revokeFailures: string[] = [];
 	let accessToken = previous.accessToken;
 	if (previous.expiresAt - Date.now() < 60_000) {
 		accessToken = await refreshSession(previous).then((session) => session.accessToken).catch(() => accessToken);
 	}
+	if (previous.apiUrl === next.apiUrl) {
+		const [before, after] = await Promise.all([
+			sessionIdentity(previous.apiUrl, accessToken),
+			sessionIdentity(next.apiUrl, next.accessToken),
+		]);
+		if (before && after && before.userId === after.userId && before.workspaceId === after.workspaceId) {
+			return {
+				carried: {
+					...(Object.keys(credentials).length > 0 ? { integrationGatewayCredentials: credentials } : {}),
+					...(previous.integrationGatewayKey ? {
+						integrationGatewayKey: previous.integrationGatewayKey,
+						integrationGatewayKeyId: previous.integrationGatewayKeyId,
+						integrationGatewayKeyExpiresAt: previous.integrationGatewayKeyExpiresAt,
+					} : {}),
+				},
+				revokeFailures: [],
+			};
+		}
+	}
+	const revokeFailures: string[] = [];
 	for (const keyId of keyIds) {
 		try {
 			await apiFetch(previous.apiUrl, `/keys/${encodeURIComponent(keyId)}`, { method: "DELETE", accessToken });
@@ -208,7 +196,8 @@ export async function integrationCredentialsForNewLogin(
 
 export async function hasIntegrationGatewayCredential(integration: IntegrationId | string): Promise<boolean> {
 	if (process.env.PHASEO_API_KEY) return true;
-	return Boolean((await readSession())?.integrationGatewayCredentials?.[integration]);
+	const existing = (await readSession())?.integrationGatewayCredentials?.[integration];
+	return Boolean(existing && !isExpired(existing));
 }
 
 export async function revokeIntegrationGatewayCredential(integration?: IntegrationId | string): Promise<boolean> {

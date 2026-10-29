@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { delimiter, join } from "node:path";
+import { delimiter, join, resolve } from "node:path";
 import { PassThrough } from "node:stream";
 import test from "node:test";
 import { parse as parseJsonc } from "jsonc-parser";
@@ -18,8 +18,8 @@ import { continueAdapter } from "../src/integrations/adapters/continue.js";
 import { zedAdapter } from "../src/integrations/adapters/zed.js";
 import { applyChanges } from "../src/integrations/files.js";
 import { isIntegrationSetupName, isPrimarySetupName, runIntegrationCommand } from "../src/integrations/index.js";
-import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, INTEGRATION_KEY_ROTATION_WINDOW_MS, getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, integrationCredentialsForNewLogin, prepareIntegrationGatewayCredential, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
-import { hermesEnvPath, renderHermesEnv } from "../src/integrations/adapters/hermes.js";
+import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
+import { hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
 import { acceptsInstallConfirmation, confirmHarnessInstall, findPackageManagerExecutable, installInvocationFor, packageManagerCandidates, packageManagerChildEnv, packageManagerChildInvocation, renderInstallInvocation } from "../src/integrations/installer.js";
@@ -836,7 +836,7 @@ async function withFileSession<T>(fetchImpl: typeof fetch, run: () => Promise<T>
 	}
 }
 
-test("integration keys near expiry or without an expiry are rotated, revoking the old key only after commit", async () => {
+test("expired integration keys are replaced; unexpired and pre-expiry keys are kept", async () => {
 	const calls: string[] = [];
 	let keyNumber = 0;
 	await withFileSession(async (input, init) => {
@@ -848,49 +848,55 @@ test("integration keys near expiry or without an expiry are rotated, revoking th
 		}
 		return new Response(null, { status: 204 });
 	}, async () => {
-		const base = { accessToken: "t", refreshToken: "r", expiresAt: Date.now() + 3_600_000, apiUrl: "https://api.phaseo.app" };
-		const fresh = Date.now() + INTEGRATION_KEY_ROTATION_WINDOW_MS + 86_400_000;
 		await writeSession({
-			...base,
+			accessToken: "t",
+			refreshToken: "r",
+			expiresAt: Date.now() + 3_600_000,
+			apiUrl: "https://api.phaseo.app",
 			integrationGatewayCredentials: {
-				codex: { key: "fresh", keyId: "key_fresh", expiresAt: fresh },
+				codex: { key: "fresh", keyId: "key_fresh", expiresAt: Date.now() + 60_000 },
 				aider: { key: "legacy", keyId: "key_legacy" },
-				hermes: { key: "expiring", keyId: "key_expiring", expiresAt: Date.now() + 60_000 },
+				hermes: { key: "expired", keyId: "key_expired", expiresAt: Date.now() - 1_000 },
 			},
 		});
 		assert.equal(await getIntegrationGatewayCredential("codex"), "fresh");
+		assert.equal(await getIntegrationGatewayCredential("aider"), "legacy");
 		assert.deepEqual(calls, []);
 
-		// Key without an expiry (created before this change) is replaced and the old key revoked.
-		assert.equal(await getIntegrationGatewayCredential("aider"), "phaseo_v1_sk_new_1");
-		assert.deepEqual(calls, ["POST /keys", "DELETE /keys/key_legacy"]);
-
-		// Setup failure rolls back: the new key is revoked and the old one stays in the session.
-		calls.length = 0;
-		const prepared = await prepareIntegrationGatewayCredential("hermes");
-		assert.equal(prepared.created, true);
-		await prepared.rollback();
-		assert.deepEqual(calls, ["POST /keys", "DELETE /keys/key_new_2"]);
-		assert.equal((await readSession())?.integrationGatewayCredentials?.hermes?.keyId, "key_expiring");
-
-		calls.length = 0;
-		const committed = await prepareIntegrationGatewayCredential("hermes");
+		assert.equal(await hasIntegrationGatewayCredential("hermes"), false);
+		assert.equal(await getIntegrationGatewayCredential("hermes"), "phaseo_v1_sk_new_1");
+		// The expired key is only dropped from the session; it already stopped working.
 		assert.deepEqual(calls, ["POST /keys"]);
-		await committed.commit();
-		assert.deepEqual(calls, ["POST /keys", "DELETE /keys/key_expiring"]);
-		assert.equal((await readSession())?.integrationGatewayCredentials?.hermes?.keyId, "key_new_3");
+		const stored = (await readSession())?.integrationGatewayCredentials;
+		assert.equal(stored?.hermes?.keyId, "key_new_1");
+		assert.ok((stored?.hermes?.expiresAt ?? 0) > Date.now() + INTEGRATION_KEY_LIFETIME_MS - 60_000);
+		assert.equal(stored?.aider?.keyId, "key_legacy");
 	});
 });
 
-test("re-login keeps integration keys for the same API root and revokes them for another", async () => {
+test("re-login keeps integration keys only for the same API, account and workspace", async () => {
 	const deleted: string[] = [];
+	const identities: Record<string, { user: string; workspace: string }> = {
+		"old-token": { user: "user_a", workspace: "ws_1" },
+		"same-token": { user: "user_a", workspace: "ws_1" },
+		"other-user-token": { user: "user_b", workspace: "ws_1" },
+		"other-workspace-token": { user: "user_a", workspace: "ws_2" },
+	};
 	await withFileSession(async (input, init) => {
+		const url = String(input);
+		const token = new Headers(init?.headers).get("authorization")?.replace(/^Bearer /, "") ?? "";
+		if (url.endsWith("/v1/me")) {
+			const identity = identities[token];
+			return identity
+				? new Response(JSON.stringify({ data: { user: { id: identity.user }, current_workspace_id: identity.workspace } }), { status: 200 })
+				: new Response(JSON.stringify({ message: "unauthorized" }), { status: 401 });
+		}
 		if (init?.method === "DELETE") {
-			const id = String(input).split("/").at(-1)!;
-			deleted.push(`${String(input).split("/v1")[0]} ${id}`);
+			const id = url.split("/").at(-1)!;
+			deleted.push(`${token} ${id}`);
 			return id === "key_stuck" ? new Response(JSON.stringify({ message: "nope" }), { status: 500 }) : new Response(null, { status: 204 });
 		}
-		throw new Error(`Unexpected request ${String(input)}`);
+		throw new Error(`Unexpected request ${url}`);
 	}, async () => {
 		const previous = {
 			accessToken: "old-token",
@@ -902,17 +908,26 @@ test("re-login keeps integration keys for the same API root and revokes them for
 			integrationGatewayKeyId: "key_legacy",
 			integrationGatewayKeyExpiresAt: Date.now() + 1_000,
 		};
-		const same = await integrationCredentialsForNewLogin(previous, "https://api.phaseo.app");
+		const same = await integrationCredentialsForNewLogin(previous, { apiUrl: "https://api.phaseo.app", accessToken: "same-token" });
 		assert.deepEqual(same.carried.integrationGatewayCredentials, previous.integrationGatewayCredentials);
 		assert.equal(same.carried.integrationGatewayKeyId, "key_legacy");
 		assert.deepEqual(deleted, []);
 
-		const other = await integrationCredentialsForNewLogin(previous, "http://127.0.0.1:8788");
-		assert.deepEqual(other.carried, {});
-		assert.deepEqual(deleted.sort(), ["https://api.phaseo.app key_codex", "https://api.phaseo.app key_legacy", "https://api.phaseo.app key_stuck"]);
-		assert.deepEqual(other.revokeFailures, ["key_stuck"]);
+		for (const accessToken of ["other-user-token", "other-workspace-token", "unknown-token"]) {
+			deleted.length = 0;
+			const result = await integrationCredentialsForNewLogin(previous, { apiUrl: "https://api.phaseo.app", accessToken });
+			assert.deepEqual(result.carried, {}, accessToken);
+			// Revoked with the OLD session's token.
+			assert.deepEqual(deleted.sort(), ["old-token key_codex", "old-token key_legacy", "old-token key_stuck"], accessToken);
+			assert.deepEqual(result.revokeFailures, ["key_stuck"]);
+		}
 
-		assert.deepEqual(await integrationCredentialsForNewLogin(null, "https://api.phaseo.app"), { carried: {}, revokeFailures: [] });
+		deleted.length = 0;
+		const otherApi = await integrationCredentialsForNewLogin(previous, { apiUrl: "http://127.0.0.1:8788", accessToken: "same-token" });
+		assert.deepEqual(otherApi.carried, {});
+		assert.equal(deleted.length, 3);
+
+		assert.deepEqual(await integrationCredentialsForNewLogin(null, { apiUrl: "https://api.phaseo.app", accessToken: "x" }), { carried: {}, revokeFailures: [] });
 	});
 });
 
@@ -922,8 +937,60 @@ test("Hermes key is written to its env file instead of a process argument", () =
 		renderHermesEnv("ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=\n# note\n", "phaseo_v1_sk_x"),
 		"ANTHROPIC_API_KEY=a\n# note\nOPENAI_API_KEY=phaseo_v1_sk_x\n",
 	);
+	assert.equal(renderHermesEnvWithoutKey("A=1\nOPENAI_API_KEY=x\nB=2\n"), "A=1\nB=2\n");
 	assert.throws(() => renderHermesEnv(null, "bad\nINJECTED=1"), /invalid gateway credential/);
-	const options = { homeDir: join("home", "user") } as Parameters<typeof hermesEnvPath>[0];
-	assert.equal(hermesEnvPath(options, {}), join("home", "user", ".hermes", ".env"));
-	assert.equal(hermesEnvPath(options, { HERMES_HOME: join("custom", "hermes") }), join("custom", "hermes", ".env"));
+});
+
+test("Hermes home is resolved like Hermes does, expanding ~ and environment variables", () => {
+	const homeDir = resolve("home-user");
+	const options = { homeDir } as Parameters<typeof hermesEnvPath>[0];
+	assert.equal(hermesEnvPath(options, {}), join(homeDir, ".hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "  " }), join(homeDir, ".hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~/agents/hermes" }), join(homeDir, "agents", "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "~" }), join(homeDir, ".env"));
+	const base = resolve("data-root");
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "$DATA/hermes", DATA: base }, "linux"), join(base, "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "${DATA}/hermes", DATA: base }, "linux"), join(base, "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "%DATA%/hermes", DATA: base }, "win32"), join(base, "hermes", ".env"));
+	assert.equal(hermesEnvPath(options, { HERMES_HOME: "%DATA%/hermes", DATA: base }, "linux"), join(resolve("%DATA%/hermes"), ".env"));
+	assert.equal(resolveHermesHome(options, { HERMES_HOME: "relative-hermes" }), resolve("relative-hermes"));
+});
+
+test("Hermes .env writes are atomic, private, keep other lines and refuse symlinks", async () => {
+	const root = await mkdtemp(join(tmpdir(), "phaseo-hermes-env-"));
+	try {
+		const home = join(root, "hermes");
+		const envPath = join(home, ".env");
+		await writeHermesKey(envPath, "phaseo_v1_sk_first");
+		assert.equal(await readFile(envPath, "utf8"), "OPENAI_API_KEY=phaseo_v1_sk_first\n");
+		await writeFile(envPath, "ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=old\n", { mode: 0o644 });
+		await writeHermesKey(envPath, "phaseo_v1_sk_second");
+		assert.equal(await readFile(envPath, "utf8"), "ANTHROPIC_API_KEY=a\nOPENAI_API_KEY=phaseo_v1_sk_second\n");
+		if (process.platform !== "win32") {
+			assert.equal((await stat(envPath)).mode & 0o777, 0o600);
+			assert.equal((await stat(home)).mode & 0o777, 0o700);
+		}
+		assert.deepEqual((await readdir(home)).sort(), [".env"], "no temporary files left behind");
+		await removeHermesKey(envPath);
+		assert.equal(await readFile(envPath, "utf8"), "ANTHROPIC_API_KEY=a\n");
+
+		const target = join(root, "elsewhere.env");
+		await writeFile(target, "SECRET=keep\n");
+		const linkedHome = join(root, "linked-file");
+		await mkdir(linkedHome);
+		const linkedDir = join(root, "linked-dir");
+		try {
+			await symlink(target, join(linkedHome, ".env"), "file");
+			await symlink(home, linkedDir, "junction");
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "EPERM") return; // Windows without symlink rights.
+			throw error;
+		}
+		await assert.rejects(writeHermesKey(join(linkedHome, ".env"), "phaseo_v1_sk_x"), /symbolic link/);
+		await assert.rejects(writeHermesKey(join(linkedDir, ".env"), "phaseo_v1_sk_x"), /symbolic link/);
+		await assert.rejects(removeHermesKey(join(linkedHome, ".env")), /symbolic link/);
+		assert.equal(await readFile(target, "utf8"), "SECRET=keep\n");
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
 });

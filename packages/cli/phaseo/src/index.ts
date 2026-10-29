@@ -238,7 +238,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"curie run": { usage: ["phaseo curie run <config.json> [--repeats <n>] [--report <path>] [--base-url <url> --allow-custom-base-url --api-key-env PHASEO_CURIE_API_KEY] [--dry-run] [--json]"] },
 	integrations: {
-		description: "Configure coding agents to use the Phaseo gateway with a dedicated key per integration. Codex, Claude Code, Pi, Prime Agent and OpenClaw fetch it on demand through phaseo integrations credential; Aider, Continue, Hermes, OpenCode and DeepSeek Harness store it in their own config or credential files. Keys expire after 90 days with a $100 monthly spend limit, and setup replaces a key with less than 7 days left.",
+		description: "Configure coding agents to use the Phaseo gateway with a dedicated key per integration. Codex, Claude Code, Pi, Prime Agent and OpenClaw fetch it on demand through phaseo integrations credential; Aider, Continue, Hermes, OpenCode and DeepSeek Harness store it in their own config or credential files. New keys expire after 90 days with a $100 monthly spend limit; setup replaces an expired key. To rotate a key, run phaseo integrations remove <integration>, then phaseo setup <integration>.",
 		usage: [
 			"phaseo integrations list [integration] [--json]",
 			"phaseo integrations status [integration] [--json]",
@@ -1095,7 +1095,7 @@ async function completeLogin(apiRoot: string, tokens: {
 	expires_in: number;
 	scope?: string;
 }, json: boolean) {
-	const { carried, revokeFailures } = await integrationCredentialsForNewLogin(await readSession(), apiRoot);
+	const { carried, revokeFailures } = await integrationCredentialsForNewLogin(await readSession(), { apiUrl: apiRoot, accessToken: tokens.access_token });
 	await writeSession({
 		accessToken: tokens.access_token,
 		refreshToken: tokens.refresh_token,

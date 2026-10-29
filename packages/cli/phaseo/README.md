@@ -250,9 +250,9 @@ phaseo minimax --model openai/gpt-5.6-terra --
 
 The first interactive run offers to install a missing Cline, Kilo Code, or oh-my-pi CLI. Muse Code and MiniMax Code use their official installers when the command is missing. MiniMax Code uses the official PowerShell installer on Windows. All five runners use isolated temporary provider state so existing user configuration is not overwritten.
 
-Hermes setup is automatic and writes the key to Hermes' supported plaintext `~/.hermes/.env` credential store (or `$HERMES_HOME/.env`) directly, so the key never appears in a command line. Phaseo CLI records the previous non-secret model settings so removal can restore them.
+Hermes setup is automatic and writes the key to Hermes' supported plaintext `~/.hermes/.env` credential store directly, so the key never appears in a command line. `HERMES_HOME` is honoured, with `~` and environment variables expanded. The file is replaced atomically with a private (0600) file, and setup refuses a symbolic link in place of the file or its directory. Phaseo CLI records the previous non-secret model settings and the `.env` path it wrote, so removal restores the settings and removes the key from that same file. Running setup again on a Hermes install that Phaseo already manages rewrites the key and model settings.
 
-Each integration gets its own key. Keys created by setup expire after 90 days and have a $100 monthly spend limit (raise it with `phaseo keys update <id> --limit <usd>`). When a stored key has less than 7 days left, or was created before keys expired, the next setup or credential request creates a replacement, writes it through the integration's normal configuration path, and then revokes the old key.
+Each integration gets its own key. Keys created by setup expire after 90 days and have a $100 monthly spend limit (raise it with `phaseo keys update <id> --limit <usd>`). When a stored key has expired, the next setup or credential request creates a new one and writes it through the integration's normal configuration path. Keys created before keys expired are kept as they are. To rotate a key at any time, run `phaseo integrations remove <integration>` and then `phaseo setup <integration>`.
 
 Codex receives a dedicated `phaseo` profile at `~/.codex/phaseo.config.toml`, leaving the default profile unchanged:
 
@@ -371,9 +371,9 @@ argument.
 
 - CLI sessions prefer OS-backed storage where possible:
   - Windows: DPAPI-protected local blob
-  - macOS: Keychain
+  - macOS: a random 32-byte data key in the Keychain (written through `security` on stdin), with the session encrypted with AES-256-GCM in a private file in the config directory. Sessions stored whole in the Keychain by older versions move to this format on first read. If the Keychain cannot store the key, login fails rather than putting the session in a command line.
   - Linux: Secret Service via `secret-tool`
-- `phaseo logout` revokes the stored refresh token and integration keys before clearing local state. Signing in again to the same API keeps integration keys so they can still be revoked later; signing in to a different API revokes them first and reports any it could not revoke.
+- `phaseo logout` revokes the stored refresh token and integration keys before clearing local state. Signing in again keeps integration keys only when the API, account and workspace are the same, so they can still be revoked later; otherwise they are revoked with the previous session first, and any that could not be revoked are reported.
 - `phaseo login` only signs in to `https://api.phaseo.app` or a loopback development API unless you pass `--allow-custom-api-url` (or set `PHASEO_ALLOW_CUSTOM_API_URL=1`). It then prints the host, and `phaseo whoami` shows it while the session is active.
 - Links returned by the API, such as top-up checkout links, open in a browser only when they are `https://` links on `phaseo.app` or a subdomain; otherwise the CLI prints them.
 - On Windows, package managers are run from their absolute path on `PATH`, never from the current directory.
