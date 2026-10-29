@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatDuration } from "@phaseo/app-kit/format";
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -57,27 +58,6 @@ function formatThroughputLabel(value: number | null) {
 	return `${Math.round(normalized)} tps`;
 }
 
-function formatTimingLabel(value: number, locale: string) {
-	if (!Number.isFinite(value)) return "-";
-	const formatNumber = (number: number, digits: number) =>
-		new Intl.NumberFormat(locale, {
-			maximumFractionDigits: digits,
-		}).format(number);
-	if (value < 1000) return `${Math.max(0, Math.round(value))} ms`;
-	const seconds = value / 1000;
-	if (seconds < 10) {
-		return `${formatNumber(seconds, 2)} s`;
-	}
-	if (seconds < 60) {
-		return `${formatNumber(seconds, 1)} s`;
-	}
-	const minutes = seconds / 60;
-	if (minutes < 10) {
-		return `${formatNumber(minutes, 2)} min`;
-	}
-	return `${formatNumber(minutes, 1)} min`;
-}
-
 function MetadataSection({
 	title,
 	children,
@@ -115,7 +95,7 @@ function TimingMetricRow({
 	return (
 		<MetadataRow label={label}>
 			<NumericValue>
-				{formatTimingLabel(normalizedValue, locale)}
+				{formatDuration(normalizedValue, locale)}
 			</NumericValue>
 		</MetadataRow>
 	);
