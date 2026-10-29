@@ -3,6 +3,7 @@ import { memo, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { isGithubImage as isGithubImageUrl } from "../../../shared/factory/githubImages";
+import { mapHtmlTags } from "../../../shared/htmlText";
 import { factory, openExternal, useDataUrl } from "../lib/useFactory";
 import { cn } from "../../lib/utils";
 import { FactoryLink } from "./FactoryLink";
@@ -16,24 +17,21 @@ import { FactoryLink } from "./FactoryLink";
 /** Issue references link to the item in Factory. Relative, so react-markdown keeps them. */
 const ITEM_LINK = "#factory-item=";
 
-/** Applies `step` until the text stops changing, so removing one piece can't join the pieces around it into another. */
-function untilStable(text: string, step: (value: string) => string): string {
-	for (let next = step(text); next !== text; next = step(text)) text = next;
-	return text;
-}
+/** Tags dropped with their text kept. */
+const DROPPED = new Set(["details", "sub", "sup", "kbd", "ins", "mark", "picture", "source", "relative-time", "p", "div", "span", "b", "i", "em", "strong", "a", "code", "pre", "table", "thead", "tbody", "tr", "td", "th", "ul", "ol", "li", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "blockquote", "del", "s", "u", "small", "center", "font", "script", "style"]);
 
 /** HTML in issue text, turned into the Markdown it stands for, or dropped. */
 export function plainHtml(source: string): string {
-	return untilStable(source, (text) => text
-		.replace(/<!--[\s\S]*?-->/g, "")
-		.replace(/<img\b[^>]*>/gi, (tag) => {
+	return mapHtmlTags(source, (tag, name, closing) => {
+		if (name === "img") {
 			const src = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1];
 			const alt = /\balt\s*=\s*["']([^"']*)["']/i.exec(tag)?.[1] ?? "Image";
 			return src ? `![${alt.replace(/[[\]]/g, "")}](${src})` : "";
-		})
-		.replace(/<br\s*\/?>/gi, "  \n")
-		.replace(/<summary>([\s\S]*?)<\/summary>/gi, "**$1**\n\n")
-		.replace(/<\/?(?:details|summary|sub|sup|kbd|ins|mark|picture|source|relative-time|p|div|span|b|i|em|strong|a|code|pre|table|thead|tbody|tr|td|th|ul|ol|li|h[1-6]|hr|blockquote|del|s|u|small|center|font|script|style)\b[^>]*>/gi, ""));
+		}
+		if (name === "br") return "  \n";
+		if (name === "summary") return closing ? "**\n\n" : "**";
+		return DROPPED.has(name) ? "" : tag;
+	});
 }
 
 /** Single line breaks become breaks, as GitHub shows them in issues and comments. */

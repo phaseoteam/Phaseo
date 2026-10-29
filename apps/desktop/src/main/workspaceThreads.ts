@@ -14,6 +14,7 @@ import { githubRepository } from "./projectPullRequests";
 import { isPullRequestUrl, issueUrl, parseIssueReference, sameIssue, validateIssueLinks, type IssueDetails, type TaskIssueLink } from "../shared/issueView";
 import type { IssueRead, IssueToolTarget, ThreadIssueEntry } from "../shared/orchestration";
 import { untrustedBlock, untrustedNotice } from "../shared/untrustedContent";
+import { withoutHtmlComments } from "../shared/htmlText";
 
 /** An issue tool's target: a URL, or a number with an optional repository. A pull request URL points at the pull request tools. */
 function issueToolReference(target: IssueToolTarget) {
@@ -27,10 +28,7 @@ const issueBodyLimit = 8000, issueCommentLimit = 2000;
 const shorten = (value: string, limit: number) => value.length <= limit ? { text: value, truncated: false } : { text: `${value.slice(0, limit - 3)}...`, truncated: true };
 /** read_issue's answer: GitHub's text fenced as third-party, long bodies and comments shortened. */
 export function issueRead(issue: IssueDetails, linked: boolean): IssueRead {
-	// Template comments go; repeated until none is left, since removing one can join the text around it into another.
-	let text = issue.body;
-	for (let next = text.replace(/<!--[\s\S]*?-->/g, ""); next !== text; next = text.replace(/<!--[\s\S]*?-->/g, "")) text = next;
-	const body = shorten(text.trim(), issueBodyLimit);
+	const body = shorten(withoutHtmlComments(issue.body).trim(), issueBodyLimit);
 	return {
 		repository: issue.repository, number: issue.number, url: issue.url, title: issue.title, state: issue.state, stateReason: issue.stateReason ?? null, author: issue.author,
 		labels: issue.labels, assignees: issue.assignees, createdAt: issue.createdAt, updatedAt: issue.updatedAt, closedAt: issue.closedAt ?? null, linked, notice: untrustedNotice,
