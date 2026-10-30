@@ -169,8 +169,9 @@ export class BrowserAgent {
 				const image = await contents.capturePage();
 				if (image.isEmpty()) throw new Error("The page has nothing to capture yet. Show its browser tab and try again.");
 				let png = image.toPNG();
-				// From Electron 46 resize() takes DIPs, so dividing by the capture’s scale keeps the cap at 1280 pixels on HiDPI screens.
-				if (pngPixels(png).width > 1280) png = image.resize({ width: Math.floor(1280 / (image.getScaleFactors()[0] ?? 1)), quality: "good" }).toPNG();
+				// From Electron 46 resize() takes DIPs and keeps the capture’s scale, so both use it to cap the PNG at 1280 pixels on HiDPI screens.
+				const scale = image.getScaleFactors()[0] ?? 1;
+				if (pngPixels(png).width > 1280) png = image.resize({ width: Math.floor(1280 / scale), quality: "good" }).toPNG({ scaleFactor: scale });
 				const size = pngPixels(png);
 				return { ...page(tabId, contents), width: size.width, height: size.height, image: { mimeType: "image/png", data: png.toString("base64") } };
 			},

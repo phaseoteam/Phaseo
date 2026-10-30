@@ -207,13 +207,17 @@ function phaseoSignInMethod(value: unknown): PhaseoSignInMethod {
 }
 /** Runs one step of a Phaseo sign-in for a window, which a cancel, the window closing or the app quitting stops. */
 async function phaseoSignInStep<T>(event: Electron.IpcMainInvokeEvent, step: (owner: BrowserWindow, signal: AbortSignal) => Promise<T>) {
-	// Awaited first, so nothing awaits between checking for an open sign-in and claiming it.
-	const secure = await credentialVault.available(), owner = senderWindow(event);
-	if (!owner || shutdownStarted || !secure) throw new Error("Phaseo sign-in is unavailable.");
+	const owner = senderWindow(event);
+	if (!owner || shutdownStarted) throw new Error("Phaseo sign-in is unavailable.");
 	if (phaseoSignIns.has(event.sender.id)) throw new Error("Phaseo sign-in is already open.");
 	const controller = new AbortController(); phaseoSignIns.set(event.sender.id, controller);
 	const destroyed = () => controller.abort(); owner.webContents.once("destroyed", destroyed);
-	try { return await step(owner, controller.signal); }
+	try {
+		// Claimed before this await, so a cancel or a closing window during the check still stops the sign-in.
+		if (!await credentialVault.available()) throw new Error("Phaseo sign-in is unavailable.");
+		if (controller.signal.aborted || shutdownStarted) throw new Error("Sign-in canceled.");
+		return await step(owner, controller.signal);
+	}
 	catch (error) { if (controller.signal.aborted) throw new Error("Sign-in canceled.", { cause: error }); throw error; }
 	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); }
 }
