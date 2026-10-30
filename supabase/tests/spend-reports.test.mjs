@@ -526,6 +526,44 @@ try {
   assert.match(dstRows[0].payload.message, /, down 88\.9% on the week before \(\$90\.00\)\./);
   assert.deepEqual(await subscription(ownerToken, true), { workspace_name: 'Acme', subscribed: true }, 'subscribing again');
 
+  // ---- A billing time zone change neither resends the period just reported nor skips the next.
+  {
+    const west = await workspace('West');
+    const east = await workspace('East');
+    const westKey = await addKey(west, 'west', owner);
+    const eastKey = await addKey(east, 'east', owner);
+    await addUsage(west, westKey, owner, 4, '2026-10-14T10:00:00Z');
+    await addUsage(east, eastKey, owner, 4, '2026-10-14T10:00:00Z');
+    await queue('2026-10-19T09:40:00Z');
+    for (const ws of [west, east]) assert.equal((await runOf(ws)).status, 'queued');
+    const reports = async (ws) => (await outbox(ws)).filter((r) => r.kind === 'spend_report').length;
+    // The same week in New York starts 4 hours later in UTC: it is the week just reported.
+    await db.query(`update public.workspace_settings set billing_time_zone = 'America/New_York' where workspace_id = $1`, [west]);
+    await queue('2026-10-19T13:40:00Z');
+    assert.equal(await reports(west), 1, 'switching west on report day does not resend the week');
+    // The next week in Tokyo starts 9 hours before the UTC week just reported ends: it is new.
+    await db.query(`update public.workspace_settings set billing_time_zone = 'Asia/Tokyo' where workspace_id = $1`, [east]);
+    await addUsage(east, eastKey, owner, 6, '2026-10-21T10:00:00Z');
+    await queue('2026-10-26T00:30:00Z');
+    assert.equal(await reports(east), 2, 'switching east does not skip the next week');
+  }
+
+  // ---- A backlog bigger than a due window: the workspaces it missed go first next time.
+  {
+    // Daily in Kiritimati (UTC+14): due 19:00 to 07:00 UTC, when nothing else here is.
+    const backlog = [];
+    for (const name of ['Backlog A', 'Backlog B', 'Backlog C']) {
+      const ws = await workspace(name, { zone: 'Pacific/Kiritimati', cadence: 'daily' });
+      const key = await addKey(ws, name, owner);
+      for (const day of ['2026-10-20', '2026-10-21', '2026-10-22']) await addUsage(ws, key, owner, 1, `${day}T12:00:00Z`);
+      backlog.push(ws);
+    }
+    for (const day of ['2026-10-21', '2026-10-22', '2026-10-23']) assert.equal((await queue(`${day}T20:00:00Z`, 1)).queued, 1);
+    for (const ws of backlog) {
+      assert.equal((await outbox(ws)).filter((r) => r.kind === 'spend_report').length, 1, 'each workspace gets one of the three reports');
+    }
+  }
+
   // ---- Limits and errors.
   await assert.rejects(db.query('select public.queue_spend_reports(null, 10)'), /invalid_spend_report_time/);
   await assert.rejects(db.query(`select public.queue_spend_reports(now(), 0)`), /invalid_spend_report_limit/);

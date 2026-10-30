@@ -18,7 +18,9 @@ CREATE OR REPLACE FUNCTION private.spend_report_due_workspaces (
   -- billing_time_zone) and has not been handled for that period yet (workspace_spend_report_runs).
   -- A workspace without settings uses the defaults: weekly, owners only, UTC. Periods are worked
   -- out once per cadence and zone in use, not per workspace, so an idle tick is one pass over
-  -- workspaces with a hash join.
+  -- workspaces with a hash join. A period counts as handled when the last handled one covers its
+  -- middle: changing billing_time_zone moves the same local day, week or month to another UTC
+  -- instant, which is not a new period, while the next real period starts at or after its end.
   with settings as materialized (
     select
       workspace.id,
@@ -41,7 +43,9 @@ CREATE OR REPLACE FUNCTION private.spend_report_due_workspaces (
   join due on due.cadence = settings.cadence and due.time_zone = settings.time_zone
   left join public.workspace_spend_report_runs run
     on run.workspace_id = settings.id and run.cadence = settings.cadence
-  where run.period_start is null or run.period_start < due.period_start;
+  where run.period_start is null
+    or (run.period_start < due.period_start
+      and run.period_end <= due.period_start + (due.period_end - due.period_start) / 2);
 $function$;
 
 COMMENT ON FUNCTION "private"."spend_report_due_workspaces"(timestamp with time zone) IS 'Workspaces whose daily, weekly or monthly spend report is due at p_now in their billing_time_zone and not yet handled for that period.';
