@@ -98,7 +98,7 @@ export function NewChat() {
 	}, [selections.length, phaseoAccount, phaseoModels]);
 	const compare = !code && selections.length > 1;
 	const editor = useComposerEditor({ value: draft, onChange: setDraft, disabled: busy, onFiles: files => addImages(files),
-		placeholder: compare ? "Ask every model the same question…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
+		placeholder: compare ? "Ask every model the same question…" : triaging ? "Describe what went wrong (optional)…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
 	// Native commands depend on one agent, so comparing models offers saved prompts, chats and files only.
 	const plan = planMode === "plan", full = permissionMode === "full-access", edits = permissionMode === "accept-edits";
 	const settingActions = useModelSettingActions(selections.length === 1 ? selections[0] : undefined, next => setSelections([next]));

@@ -827,8 +827,9 @@ ipcMain.handle("workspace:triage-prepare", async (event): Promise<TriagePreparat
 	triagePreparing ??= span("triage.prepare", { exact: Boolean(buildStamp.commit) }, async () => {
 		const checkout = await prepareTriageCheckout(path.join(app.getPath("userData"), "triage"), buildStamp.commit);
 		const project = workspaceRuntime.store.addProject(checkout.directory);
-		project.name = `Phaseo ${app.getVersion()} source`;
-		project.triage = { version: app.getVersion(), commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
+		const { version } = triageBuild();
+		project.name = `Phaseo ${version} source`;
+		project.triage = { version, commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
 		workspaceRuntime.store.saveProject(project);
 		return { projectId: project.id };
 	}).finally(() => { triagePreparing = undefined; });
