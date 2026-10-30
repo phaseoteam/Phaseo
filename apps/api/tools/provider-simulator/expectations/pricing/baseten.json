@@ -18,6 +18,19 @@
 			]
 		},
 		{
+			"key": "baseten:baselabs/joey-1:decisions.make",
+			"routes": ["baseten:baselabs/joey-1:systemone"],
+			"skus": ["baseten-joey-1-standard@v1"],
+			"rules": [
+				["baseten-joey-1-standard@v1#output_tokens","standard","output_tokens","0/1000000 token",110,null,null,null],
+				["baseten-joey-1-standard@v1#input_tokens","standard","input_tokens","0.01/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_tokens":0,"output_tokens":0,"total_tokens":0},"expected":{"nanos":0,"lines":[]}},
+				{"id":"rule.standard.output_tokens","kind":"rule","targets":["baseten-joey-1-standard@v1#output_tokens","baseten-joey-1-standard@v1#input_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":123470,"lines":[["input_tokens",12347,"baseten-joey-1-standard@v1#input_tokens","input_tokens",123470],["output_tokens",3457,"baseten-joey-1-standard@v1#output_tokens","output_tokens",0]]}}
+			]
+		},
+		{
 			"key": "baseten:baselabs/mammoth-1:decisions.make",
 			"routes": ["baseten:baselabs/mammoth-1:systemone"],
 			"skus": ["baseten-mammoth-1-standard@v1"],

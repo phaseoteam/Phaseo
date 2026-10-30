@@ -90,6 +90,7 @@ describe("Baseten Decisions", () => {
 	it.each([
 		["baselabs/elephant-1", "decision-models/baseten-elephant-9b-latest"],
 		["baselabs/mammoth-1", "decision-models/baseten-mammoth-27b-latest"],
+		["baselabs/joey-1", "decision-models/baseten-joey-2b-latest"],
 	])("maps %s through the Decisions IR and preserves usage", async (model, providerModelSlug) => {
 		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model, input: "Duplicate charge", questions: [
 			{ type: "predicate", instructions: "Billing?" },
@@ -124,7 +125,9 @@ describe("Baseten Decisions", () => {
 		} finally { mock.restore(); }
 	});
 	it.each([
-		{ images: ["data:image/png;base64,eA=="] }, { videos: ["https://example.com/video.mp4"] },
+		{ images: ["data:image/gif;base64,eA=="] }, { images: ["https://example.com/image.png"] },
+		{ images: Array(17).fill("data:image/png;base64,eA==") },
+		{ state: ["Classify", { type: "image_url", image_url: { url: "data:image/png;base64,eA==" } }] }, { videos: ["https://example.com/video.mp4"] },
 		{ audio: [{ type: "audio", source: "url", data: "https://example.com/audio.wav" }] },
 		{ rawRequest: { stream: true } }, { rawRequest: { tools: [] } }, { rawRequest: { tool_choice: "auto" } },
 		{ rawRequest: { safety_identifier: "user" } }, { rawRequest: { temperature: 0.5 } }, { rawRequest: { service_tier: "fast" } },
@@ -140,6 +143,48 @@ describe("Baseten Decisions", () => {
 			expect(result).toMatchObject({ terminal: true, localClientError: true });
 			expect(result.upstream.status).toBe(400);
 			expect(result.bill.usage).toBeUndefined();
+			expect(mock.calls).toHaveLength(0);
+		} finally { mock.restore(); }
+	});
+	it("sends native image input as Baseten user message parts", async () => {
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "baselabs/joey-1", input: [{ role: "user", content: [
+			{ type: "input_text", text: "Evaluate this screenshot." },
+			{ type: "input_image", image_url: "data:image/png;base64,eA==", detail: "auto" },
+		] }], questions: [{ type: "predicate", instructions: "Is an error visible?" }] }));
+		const mock = installFetchMock([{ match: () => true,
+			response: jsonResponse({ answers: { question_0: { type: "noul", noul: 0.9 } }, usage: { input_tokens: 394, output_tokens: 1 } }),
+		}]);
+		try {
+			const result = await executor({ ...argsFor(), ir, providerModelSlug: "decision-models/baseten-joey-2b-latest" });
+			expect(result.upstream.status).toBe(200);
+			expect(mock.calls[0].bodyJson).toEqual({ model: "decision-models/baseten-joey-2b-latest", questions: ir.questions,
+				state: { messages: [{ role: "user", content: [
+					{ type: "text", text: "Evaluate this screenshot." },
+					{ type: "image_url", image_url: { url: "data:image/png;base64,eA==" } },
+				] }] } });
+			expect(result.bill.usage).toMatchObject({ input_tokens: 394 });
+			expect(result.bill.usage).not.toHaveProperty("input_text_tokens");
+		} finally { mock.restore(); }
+	});
+	it("appends legacy images after the state text", async () => {
+		const mock = installFetchMock([{ match: () => true,
+			response: jsonResponse({ answers: { billing: { type: "noul", noul: 0.9 } }, usage: { input_tokens: 10, output_tokens: 1 } }),
+		}]);
+		try {
+			await executor(argsFor({ images: [{ content_type: "image/webp", base64: "eA==" }] }));
+			expect(mock.calls[0].bodyJson.state).toEqual({ messages: [{ role: "user", content: [
+				{ type: "text", text: JSON.stringify({ message: "Duplicate charge" }) },
+				{ type: "image_url", image_url: { url: "data:image/webp;base64,eA==" } },
+			] }] });
+		} finally { mock.restore(); }
+	});
+	it("rejects image detail other than auto", async () => {
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "baselabs/elephant-1", input: [{ role: "user", content: [
+			{ type: "input_image", image_url: "data:image/png;base64,eA==", detail: "high" },
+		] }], questions: [{ type: "predicate", instructions: "Error?" }] }));
+		const mock = installFetchMock([]);
+		try {
+			expect((await executor({ ...argsFor(), ir })).upstream.status).toBe(400);
 			expect(mock.calls).toHaveLength(0);
 		} finally { mock.restore(); }
 	});
