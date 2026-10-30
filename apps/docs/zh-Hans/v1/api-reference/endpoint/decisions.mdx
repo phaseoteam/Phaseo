@@ -6,7 +6,7 @@ openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "使用受支持的决策模型，针对应用状态评估带类型的问题。"
 ---
 
-新调用请使用兼容 OpenAI 的格式：`input` 包含文本或带有内联 `input_image` 的用户消息，`questions` 是按顺序排列的 `predicate`、`choice` 或 `score` 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多 128 张内联图片，其他提供商有各自的限制。显式图片细节和 `safety_identifier` 需要 OpenAI 路由。原有的 `state`、命名问题映射、`noul` 和 `criteria` 格式仍受支持，并返回原来的回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。下面的原有示例仍然有效。
+新调用请使用兼容 OpenAI 的格式：`input` 包含文本或带有内联 `input_image` 的用户消息，`questions` 是按顺序排列的 `predicate`、`choice` 或 `score` 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。托管图片的 HTTPS URL 仅适用于 Base Labs 模型（Elephant-1、Mammoth-1 和 Joey-1），且必须位于 Amazon S3、Google Cloud Storage 或 Azure Blob Storage；Luna 支持最多 128 张内联图片，其他提供商有各自的限制。显式图片细节和 `safety_identifier` 需要 OpenAI 路由。原有的 `state`、命名问题映射、`noul` 和 `criteria` 格式仍受支持，并返回原来的回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。下面的原有示例仍然有效。
 
 ```json
 {

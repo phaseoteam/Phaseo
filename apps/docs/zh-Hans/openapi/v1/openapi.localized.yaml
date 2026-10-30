@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: 作出结构化决策
-      description: 新调用请使用兼容 OpenAI 的格式：input 包含文本或带有内联 input_image 的用户消息，questions 是按顺序排列的 predicate、choice 或 score 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 safety_identifier 需要 OpenAI 路由。原有的 state、命名问题映射、noul 和 criteria 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。
+      description: 新调用请使用兼容 OpenAI 的格式：input 包含文本或带有内联 input_image 的用户消息，questions 是按顺序排列的 predicate、choice 或 score 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。托管图片的 HTTPS URL 仅适用于 Base Labs 模型（Elephant-1、Mammoth-1 和 Joey-1），且必须位于 Amazon S3、Google Cloud Storage 或 Azure Blob Storage；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 safety_identifier 需要 OpenAI 路由。原有的 state、命名问题映射、noul 和 criteria 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: 内联 base64 图片。不支持托管 URL 或文件 ID。每个请求最多128张图片；提供商可能限制更低。
+      description: 内联 base64 图片，或位于 Amazon S3、Google Cloud Storage 或 Azure Blob Storage 的图片 HTTPS URL（仅限 Base Labs 模型）。不支持文件 ID。每个请求最多128张图片；提供商可能限制更低。
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true

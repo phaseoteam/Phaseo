@@ -126,6 +126,8 @@ describe("Baseten Decisions", () => {
 	});
 	it.each([
 		{ images: ["data:image/gif;base64,eA=="] }, { images: ["https://example.com/image.png"] },
+		{ images: ["http://storage.googleapis.com/bucket/a.png"] }, { images: ["https://storage.googleapis.com:8443/bucket/a.png"] },
+		{ images: ["https://evils3.amazonaws.com/a.png"] }, { images: ["https://s3.amazonaws.com.example.com/a.png"] },
 		{ images: Array(17).fill("data:image/png;base64,eA==") },
 		{ state: { messages: [{ role: "user", content: "Classify" }] }, images: ["data:image/png;base64,eA=="] },
 		{ state: ["Classify", { type: "image_url", image_url: { url: "data:image/png;base64,eA==" } }] }, { videos: ["https://example.com/video.mp4"] },
@@ -165,6 +167,25 @@ describe("Baseten Decisions", () => {
 				] }] } });
 			expect(result.bill.usage).toMatchObject({ input_tokens: 394 });
 			expect(result.bill.usage).not.toHaveProperty("input_text_tokens");
+		} finally { mock.restore(); }
+	});
+	it.each([
+		"https://bucket.s3.amazonaws.com/a.png", "https://s3.amazonaws.com/bucket/a.png",
+		"https://bucket.s3.us-east-1.amazonaws.com/a.png", "https://storage.googleapis.com/bucket/a.png",
+		"https://account.blob.core.windows.net/container/a.png",
+	])("forwards hosted image URL %s for Baseten to fetch", async url => {
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "baselabs/joey-1", input: [{ role: "user", content: [
+			{ type: "input_image", image_url: url },
+		] }], questions: [{ type: "predicate", instructions: "Is a person visible?" }] }));
+		const mock = installFetchMock([{ match: () => true,
+			response: jsonResponse({ answers: { question_0: { type: "noul", noul: 0.9 } }, usage: { input_tokens: 500, output_tokens: 1 } }),
+		}]);
+		try {
+			const result = await executor({ ...argsFor(), ir, providerModelSlug: "decision-models/baseten-joey-2b-latest" });
+			expect(result.upstream.status).toBe(200);
+			expect(mock.calls[0].bodyJson.state).toEqual({ messages: [{ role: "user", content: [
+				{ type: "image_url", image_url: { url } },
+			] }] });
 		} finally { mock.restore(); }
 	});
 	it("appends legacy images after the state text", async () => {

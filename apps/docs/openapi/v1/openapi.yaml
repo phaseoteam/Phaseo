@@ -15339,9 +15339,10 @@ components:
         - image_url
       additionalProperties: false
       description: >-
-        Inline base64 image. Hosted URLs and file IDs are unsupported. A request
-        supports at most 128 images across all messages; individual providers
-        can impose lower limits.
+        Inline base64 image, or an HTTPS image URL on Amazon S3, Google Cloud
+        Storage or Azure Blob Storage (Base Labs models only). File IDs are
+        unsupported. A request supports at most 128 images across all messages;
+        individual providers can impose lower limits.
       properties:
         type:
           type: string
@@ -15350,7 +15351,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true

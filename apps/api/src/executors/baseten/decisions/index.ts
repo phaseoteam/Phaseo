@@ -10,13 +10,26 @@ const models = new Set([
 	"decision-models/baseten-joey-2b-latest",
 ]);
 const imageUrl = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/i;
+// Baseten fetches HTTPS images itself, but only from S3, Cloud Storage, and Azure Blob Storage.
+const imageHosts = /(^|\.)(s3([.-][a-z0-9-]+)*\.amazonaws\.com|storage\.googleapis\.com|blob\.core\.windows\.net)$/;
+
+function hostedImage(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		return parsed.protocol === "https:" && parsed.port === "" && imageHosts.test(parsed.hostname);
+	} catch {
+		return false;
+	}
+}
 
 // Baseten reads images only from user message parts under state.messages
 // (https://docs.baseten.co/reference/inference-api/system-one#image-inputs).
 function imageState(ir: IRDecisionsRequest): { messages: unknown[] } | string {
 	const urls = (ir.images ?? []).map(image => typeof image === "string" ? image : `data:${image.content_type};base64,${image.base64}`);
 	if (urls.length > 16) return "Baseten Decisions accepts at most 16 images.";
-	if (urls.some(url => !imageUrl.test(url))) return "Baseten Decisions images must be PNG, JPEG, or WebP base64 data URLs.";
+	if (urls.some(url => !imageUrl.test(url) && !hostedImage(url))) {
+		return "Baseten Decisions images must be PNG, JPEG, or WebP base64 data URLs, or HTTPS URLs on Amazon S3, Google Cloud Storage, or Azure Blob Storage.";
+	}
 	const input = ir.decisionContext?.input;
 	if (input && typeof input !== "string") {
 		const parts = input.flatMap(message => typeof message.content === "string" ? [] : message.content);

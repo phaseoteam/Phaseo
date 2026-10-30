@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: 構造化された判断を行う
-      description: 新しい呼び出しには OpenAI 互換形式を使います。input はテキストまたはインラインの input_image を含むユーザーメッセージ、questions は predicate、choice、score 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像 URL は使用できません。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と safety_identifier は OpenAI ルートが必要です。従来の state、名前付き質問マップ、noul、criteria 形式も使用でき、回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。従来の例も有効です。
+      description: 新しい呼び出しには OpenAI 互換形式を使います。input はテキストまたはインラインの input_image を含むユーザーメッセージ、questions は predicate、choice、score 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像の HTTPS URL は Base Labs のモデル（Elephant-1、Mammoth-1、Joey-1）でのみ使用でき、Amazon S3、Google Cloud Storage、Azure Blob Storage 上にある必要があります。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と safety_identifier は OpenAI ルートが必要です。従来の state、名前付き質問マップ、noul、criteria 形式も使用でき、回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。従来の例も有効です。
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: インライン base64 画像。外部 URL とファイル ID は非対応。リクエスト全体で最大128枚。プロバイダーの制限が低い場合があります。
+      description: インライン base64 画像、または Amazon S3、Google Cloud Storage、Azure Blob Storage 上の画像の HTTPS URL（Base Labs のモデルのみ）。ファイル ID は非対応。リクエスト全体で最大128枚。プロバイダーの制限が低い場合があります。
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true
