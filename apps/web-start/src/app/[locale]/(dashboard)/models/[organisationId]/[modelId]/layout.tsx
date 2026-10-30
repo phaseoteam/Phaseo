@@ -1,4 +1,4 @@
-import { Suspense, type ReactNode } from "react";
+import { Suspense, type ReactNode, use } from "react";
 import type { Metadata } from "next";
 import ShowFooterStyle from "@/components/layout/ShowFooterStyle";
 import type { ModelRouteParams } from "@/components/(data)/model/model-route-helpers";
@@ -13,12 +13,12 @@ export const metadata: Metadata = {
 	},
 };
 
-async function ModelRouteEffects({
+function ModelRouteEffects({
 	params,
 }: {
 	params: Promise<ModelRouteParams>;
 }) {
-	const { organisationId, modelId } = await params;
+	const { organisationId, modelId } = use(params);
 	return (
 		<ScrollToTopOnModelChange routeKey={`${organisationId}/${modelId}`} />
 	);

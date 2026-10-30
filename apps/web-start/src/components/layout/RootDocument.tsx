@@ -1,4 +1,6 @@
 import { Suspense, type ReactNode } from "react";
+import { HeadContent, Scripts } from "@tanstack/react-router";
+import { useMessages } from "next-intl";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
 import {
 	Montserrat,
@@ -8,7 +10,8 @@ import {
 	Noto_Sans_SC,
 } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { ClientMessagesProvider } from "@/components/i18n/LocaleMessagesProvider";
+import { fullMessagesUrl, RootIntlProvider } from "@/i18n/RootIntlProvider";
+import "@/compat/fonts.css";
 import {
 	CookieConsentManager,
 	type CookieConsentCopy,
@@ -28,7 +31,6 @@ import ThemeAwareFavicon from "@/components/ThemeAwareFavicon";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { FontProfile, LocaleDirection, PublicLocale } from "@/i18n/routing";
-import { prepareClientMessages } from "@/i18n/client-messages";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
@@ -76,7 +78,6 @@ const fontVariables = cn(
 
 export type RootDocumentProps = {
 	children: ReactNode;
-	cookieConsentCopy: CookieConsentCopy;
 	direction: LocaleDirection;
 	fontProfile: FontProfile;
 	locale: PublicLocale;
@@ -88,14 +89,18 @@ export type RootDocumentProps = {
  * trees use identical providers while still emitting request-correct html
  * language, direction and script font attributes on the server.
  */
-export async function RootDocument({
+// The consent banner copy comes from the full catalogue loaded by RootIntlProvider.
+function RootCookieConsent() {
+	const messages = useMessages() as { CookieConsent: CookieConsentCopy };
+	return <CookieConsentManager copy={messages.CookieConsent} gaMeasurementId={GA_MEASUREMENT_ID} />;
+}
+
+export function RootDocument({
 	children,
-	cookieConsentCopy,
 	direction,
 	fontProfile,
 	locale,
 }: RootDocumentProps) {
-	const shellMessages = await prepareClientMessages(locale, "shell");
 	return (
 		<html
 			lang={locale}
@@ -116,14 +121,13 @@ export async function RootDocument({
 					type="image/svg+xml"
 					sizes="any"
 				/>
+				<link rel="preload" href={fullMessagesUrl(locale)} as="fetch" crossOrigin="anonymous" />
+				<HeadContent />
 			</head>
 			<body className="min-h-screen h-full bg-background antialiased">
-				<ClientMessagesProvider locale={locale} source={shellMessages} timeZone="UTC">
+				<RootIntlProvider locale={locale}>
 				<DirectionProvider direction={direction}>
-				<CookieConsentManager
-					copy={cookieConsentCopy}
-					gaMeasurementId={GA_MEASUREMENT_ID}
-				/>
+				<RootCookieConsent />
 				<ProductAnalyticsGaBridge />
 				<ConsoleEasterEgg />
 				<CatalogNavigationGuardProvider>
@@ -155,7 +159,8 @@ export async function RootDocument({
 				</CatalogNavigationGuardProvider>
 				<DeferredVercelAnalytics />
 				</DirectionProvider>
-				</ClientMessagesProvider>
+				</RootIntlProvider>
+				<Scripts />
 			</body>
 		</html>
 	);

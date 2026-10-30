@@ -1,7 +1,7 @@
+import { useTranslations } from "next-intl";
 import { ModelsPageSkeleton } from "@/components/(data)/models/Models/ModelsPageSkeleton";
-import { getTranslations } from "next-intl/server";
 
-export default async function ModelsLoading() {
-	const t = await getTranslations("Catalogue.models");
+export default function ModelsLoading() {
+	const t = useTranslations("Catalogue.models");
 	return <ModelsPageSkeleton title={t("title")} />;
 }

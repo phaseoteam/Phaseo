@@ -1,12 +1,13 @@
+import { use } from "react";
 import { permanentRedirect } from "next/navigation";
 
 type AnnouncementRedirectPageProps = {
 	params: Promise<{ slug: string }>;
 };
 
-export default async function AnnouncementRedirectPage({
+export default function AnnouncementRedirectPage({
 	params,
 }: AnnouncementRedirectPageProps) {
-	const { slug } = await params;
+	const { slug } = use(params);
 	permanentRedirect(`/blog/${slug}`);
 }

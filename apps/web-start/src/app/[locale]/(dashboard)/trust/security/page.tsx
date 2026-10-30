@@ -1,3 +1,5 @@
+import { use } from "react";
+import { useTranslations } from "next-intl";
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
@@ -26,13 +28,13 @@ export async function generateMetadata({
 	});
 }
 
-export default async function SecurityWhitepaperPage({
+export default function SecurityWhitepaperPage({
 	params,
 }: {
 	params: Promise<{ locale: PublicLocale }>;
 }) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Site.trust.securityPage" });
+	const { locale } = use(params);
+	const t = useTranslations("Site.trust.securityPage");
 	const flowRows = t.raw("flow.rows" as never) as FlowRow[];
 	const storageOptions = t.raw("storage.options" as never) as StorageOption[];
 	const controlGroups = [

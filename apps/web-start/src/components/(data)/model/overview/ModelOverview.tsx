@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import KeyDates from "./KeyDates";
 import Performance from "./Performance";
 // Pricing temporarily disabled while upgrading
@@ -6,14 +7,13 @@ import Modalities from "./Modalities";
 import OtherInfo from "./OtherInfo";
 import ModelLinks, { hasModelLinks } from "./ModelLinks";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
-import { getTranslations } from "next-intl/server";
 
 export interface ModelOverviewProps {
 	model: ModelOverviewPage;
 }
 
-export default async function ModelOverview({ model }: ModelOverviewProps) {
-	const t = await getTranslations("Catalogue.models.detail.sections");
+export default function ModelOverview({ model }: ModelOverviewProps) {
+	const t = useTranslations("Catalogue.models.detail.sections");
 	// Modalities logic: always show Text, Image, Audio, Video
 	const parseTypes = (types: any) => {
 		const normalizeType = (raw: unknown): string => {

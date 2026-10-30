@@ -1,6 +1,6 @@
+import { use } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { setRequestLocale } from "next-intl/server";
 import { AuthErrorPage } from "@/app/(auth)/error/AuthErrorPage";
 import { getPublicMessages } from "@/i18n/messages";
 import { isPublicLocale } from "@/i18n/routing";
@@ -26,13 +26,12 @@ export async function generateMetadata({
 	});
 }
 
-export default async function LocalizedAuthErrorPage({
+export default function LocalizedAuthErrorPage({
 	params,
 	searchParams,
 }: LocalizedAuthErrorPageProps) {
-	const { locale } = await params;
+	const { locale } = use(params);
 	if (!isPublicLocale(locale)) notFound();
-	setRequestLocale(locale);
 
 	return <AuthErrorPage locale={locale} searchParams={searchParams} />;
 }

@@ -7,7 +7,7 @@ import {
 
 export const instant = false;
 
-export default async function Page({
+export default function Page({
 	params,
 	searchParams,
 }: {

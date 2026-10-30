@@ -1,4 +1,5 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { useTranslations, useLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import AuthorizedAppsContent from "./AuthorizedAppsContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -9,11 +10,9 @@ export async function generateMetadata() {
 	return { title: `${t("headers.oauthIntegrations")} - ${t("headers.settings")}`, description: t("settingsRouteCopy.oauthIntegrationsDescription") };
 }
 
-export default async function AuthorizedAppsPage() {
-	const [t, locale] = await Promise.all([
-		getTranslations("SettingsUI"),
-		getLocale(),
-	]);
+export default function AuthorizedAppsPage() {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	return (
 		<div className="space-y-6">
 			<SettingsPageHeader

@@ -1,6 +1,6 @@
+import { useTranslations, useLocale } from "next-intl";
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import Link from "next/link";
-import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { Activity, ArrowUpRight, Gauge, Timer } from "lucide-react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
@@ -16,13 +16,13 @@ type Metric = {
 	value: (model: OrganisationModelCards) => number | null | undefined;
 };
 
-export default async function LabPerformance({
+export default function LabPerformance({
 	models,
 }: {
 	models: OrganisationModelCards[];
 }) {
-	const locale = await getLocale();
-	const t = await getTranslations("Catalogue.organisations");
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.organisations");
 	const compactNumber = new Intl.NumberFormat(locale, {
 		compactDisplay: "short",
 		notation: "compact",

@@ -1,6 +1,6 @@
 // src/components/gateway/Hero.tsx
+import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
 import { CheckCircle2, CircleSlash, Clock3 } from "lucide-react";
 import { DOCS_VERSION } from "./config";
 import {
@@ -18,8 +18,8 @@ interface HeroProps {
 	metadata: ModelGatewayMetadata;
 }
 
-export default async function Hero({ metadata }: HeroProps) {
-	const t = await getTranslations("Catalogue.models.detail.quickstart");
+export default function Hero({ metadata }: HeroProps) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const groupedProviders = groupProviders(metadata);
 	const activeCount = groupedProviders.filter(
 		(provider) => provider.state.availability === "active"

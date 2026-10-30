@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
 import { BookText, ExternalLink, FileText, Gamepad2, Globe2 } from "lucide-react";
@@ -5,7 +6,6 @@ import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import { Logo } from "@/components/Logo";
 import ModelLinkFavicon from "./ModelLinkFavicon";
 import { getGenericModelLinks } from "./modelOverviewMetadata";
-import { getTranslations } from "next-intl/server";
 
 interface ModelLinksProps {
 	model: ModelOverviewPage;
@@ -190,11 +190,11 @@ function getDisplayUrl(url: string) {
 	}
 }
 
-export default async function ModelLinks({
+export default function ModelLinks({
 	model,
 	showEmpty = false,
 }: ModelLinksProps) {
-	const t = await getTranslations("Catalogue.modelDetail.metadata");
+	const t = useTranslations("Catalogue.modelDetail.metadata");
 	const labels: ModelLinkLabels = {
 		apiReference: t("apiReference"),
 		paper: t("paper"),

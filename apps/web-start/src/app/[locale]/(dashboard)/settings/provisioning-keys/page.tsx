@@ -6,7 +6,7 @@ export async function generateMetadata() {
 	return { title: t("provisioningKeys") };
 }
 
-export default async function ProvisioningKeysAliasPage() {
+export default function ProvisioningKeysAliasPage() {
 	permanentRedirect("/settings/management-api-keys");
 }
 

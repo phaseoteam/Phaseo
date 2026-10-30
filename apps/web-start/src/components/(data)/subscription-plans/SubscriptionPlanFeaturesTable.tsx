@@ -1,16 +1,16 @@
+import { useTranslations } from "next-intl";
 import type { SubscriptionPlanFeature } from "@/lib/fetchers/subscription-plans/types";
 import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getTranslations } from "next-intl/server";
 
 interface SubscriptionPlanFeaturesTableProps {
 	features?: SubscriptionPlanFeature[] | null;
 	messages: Pick<SubscriptionPlansMessages["detail"], "feature" | "value" | "description">;
 }
 
-export default async function SubscriptionPlanFeaturesTable({ features, messages }: SubscriptionPlanFeaturesTableProps) {
+export default function SubscriptionPlanFeaturesTable({ features, messages }: SubscriptionPlanFeaturesTableProps) {
 	if (!features?.length) return null;
-	const t = await getTranslations();
+	const t = useTranslations();
 	const availability = (value?: string) => value === "included" ? t("Catalogue.models.included") : value === "excluded" ? t("Common.ui.providerCardCopy.excluded") : value === "limited" ? t("Common.ui.subscriptionCatalog.limited") : value === "conditional" ? t("Common.ui.subscriptionCatalog.conditional") : t("Common.status.unknown");
 
 	return (

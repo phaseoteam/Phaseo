@@ -1,3 +1,4 @@
+import { use } from "react";
 import { permanentRedirect } from "next/navigation";
 
 const COLLECTION_PRESETS: Record<string, string> = {
@@ -10,11 +11,11 @@ const COLLECTION_PRESETS: Record<string, string> = {
 	"image-understanding": "/models?inputModalities=image",
 };
 
-export default async function CollectionPresetRedirectPage({
+export default function CollectionPresetRedirectPage({
 	params,
 }: {
 	params: Promise<{ collectionId: string }>;
 }) {
-	const { collectionId } = await params;
+	const { collectionId } = use(params);
 	permanentRedirect(COLLECTION_PRESETS[collectionId] ?? "/models");
 }

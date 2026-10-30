@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
@@ -64,8 +65,8 @@ function TextLink({
 	);
 }
 
-export default async function AboutPage() {
-	const t = await getTranslations("Site.about");
+export default function AboutPage() {
+	const t = useTranslations("Site.about");
 const beliefs = [
 	{
 		title: t("current.beliefs.openSource.title"),

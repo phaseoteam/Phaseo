@@ -1,12 +1,13 @@
+import { use } from "react";
 import { redirect } from "next/navigation";
 
 export const instant = false;
 
-export default async function CountryModelsPage({
+export default function CountryModelsPage({
 	params,
 }: {
 	params: Promise<{ iso: string }>;
 }) {
-	const { iso } = await params;
+	const { iso } = use(params);
 	redirect(`/countries/${encodeURIComponent(iso.toLowerCase())}#models`);
 }

@@ -1,5 +1,6 @@
+import { useTranslations, useLocale } from "next-intl";
 import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,9 @@ export async function generateMetadata(): Promise<Metadata> {
 	};
 }
 
-export default async function LocaleNotFound() {
-	const locale = await getLocale();
-	const t = await getTranslations("Common.errors");
+export default function LocaleNotFound() {
+	const locale = useLocale();
+	const t = useTranslations("Common.errors");
 
 	return (
 		<main className="flex min-h-dvh items-center justify-center px-4 py-16 sm:px-6">

@@ -1,19 +1,17 @@
+import { useTranslations } from "next-intl";
 import { AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getTranslations } from "next-intl/server";
 
 type PendingBannerSurface = "benchmarks" | "performance" | "providers" | "pricing";
 
-export default async function ModelPendingApiReleaseBanner({
+export default function ModelPendingApiReleaseBanner({
 	modelName,
 	surface,
 }: {
 	modelName: string;
 	surface: PendingBannerSurface;
 }) {
-	const t = await getTranslations(
-		"Catalogue.modelDetail.metadata.pendingApiRelease",
-	);
+	const t = useTranslations("Catalogue.modelDetail.metadata.pendingApiRelease",);
 
 	return (
 		<Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">

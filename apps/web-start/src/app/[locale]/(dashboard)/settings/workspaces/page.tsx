@@ -1,3 +1,4 @@
+import { use } from "react";
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
@@ -8,7 +9,7 @@ export async function generateMetadata() {
 	return { title: t("workspaces") };
 }
 
-export default async function WorkspacesPage({ params }: { params: Promise<{ locale: string }> }) {
-	const { locale } = await params;
+export default function WorkspacesPage({ params }: { params: Promise<{ locale: string }> }) {
+	const { locale } = use(params);
 	redirect(localizePublicPath((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale, "/settings/workspaces/settings"));
 }

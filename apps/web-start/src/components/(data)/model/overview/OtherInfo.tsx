@@ -1,7 +1,7 @@
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
-import { getTranslations } from "next-intl/server";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 interface ModelDetail {
@@ -22,14 +22,14 @@ interface OtherInfoProps {
 	}>;
 }
 
-export default async function OtherInfo({
+export default function OtherInfo({
 	details,
 	showHeading = true,
 	showEmpty = false,
 	licenseUrl,
 	extraItems = [],
 }: OtherInfoProps) {
-	const t = await getTranslations("Catalogue.modelDetail.metadata");
+	const t = useTranslations("Catalogue.modelDetail.metadata");
 	const detailsMap: Record<string, string> = {};
 	if (Array.isArray(details)) {
 		for (const d of details) {

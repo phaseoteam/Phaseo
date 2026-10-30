@@ -1,4 +1,5 @@
-import { Suspense } from "react";
+import { useTranslations } from "next-intl";
+import { Suspense, use } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import {
@@ -34,16 +35,13 @@ export async function generateMetadata({
 	});
 }
 
-export default async function OAuthAppsPage({
+export default function OAuthAppsPage({
 	params,
 }: {
 	params: Promise<{ locale: PublicLocale }>;
 }) {
-	const { locale } = await params;
-	const t = await getTranslations({
-		locale,
-		namespace: "SettingsUI.oauthAppsPage",
-	});
+	const { locale } = use(params);
+	const t = useTranslations("SettingsUI.oauthAppsPage");
 	const thirdPartyOAuthEnabled = isThirdPartyOAuthEnabled();
 
 	if (!thirdPartyOAuthEnabled) {

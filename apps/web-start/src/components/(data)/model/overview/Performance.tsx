@@ -1,4 +1,4 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { useTranslations, useLocale } from "next-intl";
 
 interface ModelDetail {
 	// Support both new and legacy shapes
@@ -12,10 +12,10 @@ interface PerformanceProps {
 	details?: ModelDetail[] | null;
 }
 
-export default async function Performance({ details }: PerformanceProps) {
-	const locale = await getLocale();
-	const tMetadata = await getTranslations("Catalogue.modelDetail.metadata");
-	const tPerformance = await getTranslations("Catalogue.modelDetail.performance");
+export default function Performance({ details }: PerformanceProps) {
+	const locale = useLocale();
+	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const tPerformance = useTranslations("Catalogue.modelDetail.performance");
 	const detailsMap: Record<string, string> = {};
 
 	// details are passed in from model.model_details; no logging in production

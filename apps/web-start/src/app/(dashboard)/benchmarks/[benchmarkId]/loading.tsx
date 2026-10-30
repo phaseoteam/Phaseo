@@ -1,8 +1,8 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function BenchmarkLoading() {
-	const t = await getTranslations("SettingsUI.newMainSettingsCopy");
+export default function BenchmarkLoading() {
+	const t = useTranslations("SettingsUI.newMainSettingsCopy");
 	return <div className="container mx-auto space-y-6 px-4 py-8" role="status" aria-label={t("loadingBenchmarkResults")}>
 		<Skeleton className="h-14 w-full max-w-xl" />
 		<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

@@ -1,3 +1,5 @@
+import { use } from "react";
+import { useTranslations } from "next-intl";
 /* eslint-disable react/no-unescaped-entities -- Contract prose uses natural apostrophes. */
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
@@ -69,13 +71,13 @@ type DpaContent = {
 	};
 };
 
-export default async function DpaPage({
+export default function DpaPage({
 	params,
 }: {
 	params: Promise<{ locale: PublicLocale }>;
 }) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Site.trust.dpaPage" });
+	const { locale } = use(params);
+	const t = useTranslations("Site.trust.dpaPage");
 	const content = t.raw("content" as never) as DpaContent;
 	const sectionTitles = {
 		parties: t("sections.parties"),

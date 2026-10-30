@@ -1,8 +1,9 @@
+import { useTranslations, useLocale } from "next-intl";
 // app/terms/page.tsx
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
@@ -11,9 +12,9 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
 	return buildMetadata({ title: t("termsTitle"), description: t("termsIntro"), path: "/terms", keywords: ["Phaseo terms", "terms of service", "API usage terms", "gateway terms"] });
 }
 
-export default async function TermsPage() {
-	const t = await getTranslations("Site.legal");
-	const locale = await getLocale();
+export default function TermsPage() {
+	const t = useTranslations("Site.legal");
+	const locale = useLocale();
 	const lastUpdatedDate = new Intl.DateTimeFormat(locale, {
 		dateStyle: "long",
 		timeZone: "UTC",

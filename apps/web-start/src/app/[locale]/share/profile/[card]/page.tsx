@@ -1,8 +1,9 @@
+import { useTranslations } from "next-intl";
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Suspense } from "react"
+import { Suspense, use } from "react";
 import { ArrowUpRight } from "lucide-react"
-import { getTranslations } from "next-intl/server"
+import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -42,14 +43,11 @@ export default function ProfileSharePage(props: PageProps) {
 	)
 }
 
-async function ProfileSharePageContent({ params }: PageProps) {
-	const { locale, card } = await params
+function ProfileSharePageContent({ params }: PageProps) {
+	const { locale, card } = use(params)
 	const payload = parseProfileShareCardToken(card)
 	const imageUrl = buildProfileShareCardImageUrl(payload)
-	const t = await getTranslations({
-		locale: locale as PublicLocale,
-		namespace: "Site.profileShare",
-	})
+	const t = useTranslations("Site.profileShare")
 
 	return (
 		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.08),transparent_28%),linear-gradient(180deg,#fcfcfd_0%,#f7f7fb_100%)] px-4 py-8 sm:px-6 lg:px-10">

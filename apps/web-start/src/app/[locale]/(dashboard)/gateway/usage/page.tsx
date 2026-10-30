@@ -1,5 +1,7 @@
+import { use } from "react";
+import { useLocale } from "next-intl";
 import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { permanentRedirect } from "next/navigation";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -7,10 +9,10 @@ export async function generateMetadata(): Promise<Metadata> {
 	return { title: t("usageRedirectTitle"), description: t("usageRedirectDescription"), robots: { index: false, follow: false } };
 }
 
-export default async function Page(props: {
+export default function Page(props: {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	const sp = await props.searchParams;
+	const sp = use(props.searchParams);
 
 	const params = new URLSearchParams();
 	if (sp) {
@@ -35,7 +37,7 @@ export default async function Page(props: {
 			? `/settings/usage/${normalizedTab}`
 			: "/settings/usage/overview";
 	const qs = params.toString();
-	const locale = await getLocale();
+	const locale = useLocale();
 	const localizedTarget = locale === "en-GB" ? target : `/${locale}${target}`;
 	permanentRedirect(qs ? `${localizedTarget}?${qs}` : localizedTarget);
 }

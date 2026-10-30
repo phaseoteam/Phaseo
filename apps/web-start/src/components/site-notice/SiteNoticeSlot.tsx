@@ -1,26 +1,21 @@
-import { connection } from "next/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import SiteNoticeBar from "@/components/site-notice/SiteNoticeBar";
+import { shellDataQuery } from "@/components/header/shellData";
 import {
 	getActiveSiteNotice,
 	SITE_NOTICES,
 } from "@/lib/siteNotice";
-import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 
-export default async function SiteNoticeSlot() {
+export default function SiteNoticeSlot() {
 	if (!SITE_NOTICES.some((notice) => notice.enabled)) return null;
-	// Supabase Auth checks token expiry with Date.now() during client
-	// initialization. Make that indirect runtime access explicit to Cache
-	// Components before the client is constructed.
-	await connection();
-	let isAuthenticated = false;
-	try {
-		const status = await fetchInternalAuthStatus();
-		isAuthenticated = status.signedIn;
-	} catch {
-		isAuthenticated = false;
-	}
-	const notice = getActiveSiteNotice(isAuthenticated);
-	if (!notice) return null;
+	return <ActiveSiteNotice />;
+}
 
+function ActiveSiteNotice() {
+	const locale = useLocale();
+	const { data } = useSuspenseQuery(shellDataQuery(locale));
+	const notice = getActiveSiteNotice(data.account.isLoggedIn === true);
+	if (!notice) return null;
 	return <SiteNoticeBar notice={notice} />;
 }

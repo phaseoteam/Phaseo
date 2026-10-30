@@ -1,3 +1,5 @@
+import { use } from "react";
+import { useTranslations } from "next-intl";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MigrationPostView } from "@/components/(migrate)/MigrationPostView";
@@ -37,10 +39,10 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 	});
 }
 
-export default async function MigrationPostPage({ params }: PageProps) {
-	const { locale, slug } = await params;
-	const t = await getTranslations({ locale, namespace: "Content.migrate" });
-	const tNav = await getTranslations({ locale, namespace: "Common.nav" });
+export default function MigrationPostPage({ params }: PageProps) {
+	const { locale, slug } = use(params);
+	const t = useTranslations("Content.migrate");
+	const tNav = useTranslations("Common.nav");
 	const post = getMigrationPost(slug, locale);
 
 	if (!post) {

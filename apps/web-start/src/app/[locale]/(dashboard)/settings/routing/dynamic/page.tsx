@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 import DynamicRoutesContent from "./DynamicRoutesContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -10,8 +11,8 @@ export async function generateMetadata() {
 	return { title: t("dynamicRouting") };
 }
 
-export default async function DynamicRoutingSettingsPage() {
-	const t = await getTranslations("SettingsUI");
+export default function DynamicRoutingSettingsPage() {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div className="flex flex-col gap-3 lg:h-[calc(100dvh-var(--site-header-height,3.75rem)-var(--site-notice-height,0px)-2.5rem)] lg:min-h-[420px]">
 			<SettingsPageHeader

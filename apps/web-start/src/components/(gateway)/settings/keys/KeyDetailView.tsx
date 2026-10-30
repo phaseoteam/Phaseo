@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { DisplayDateTime } from "@/components/display/DisplayValue";
 import { KeyUsageSummary } from "./KeyUsageSummary";
 import { Link } from "@/i18n/navigation";
@@ -14,9 +14,9 @@ import { KeyPageActions } from "@/components/(gateway)/settings/keys/KeyPageActi
 import { type KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";
 
 
-export async function KeyDetailView({ data }: { data: KeyDetailData }) {
+export function KeyDetailView({ data }: { data: KeyDetailData }) {
 	const { key, usage } = data;
-	const t = await getTranslations("SettingsUI");
+	const t = useTranslations("SettingsUI");
 	const date = (value: string | null | undefined, empty: string) => value ? <DisplayDateTime value={value} /> : empty;
 	const expired = key.expires_at && Date.parse(key.expires_at) <= data.observedAt;
 	return <div className="mx-auto w-full max-w-6xl space-y-8 pb-10">

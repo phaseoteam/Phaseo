@@ -1,15 +1,16 @@
 "use client";
 
-import { QueryClientProvider, focusManager } from "@tanstack/react-query";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { focusManager, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useLayoutEffect } from "react";
 import { isPublicLocale } from "@/i18n/locales";
-import { createWebQueryClient } from "@/lib/query/queryClient";
 import { createClient } from "@/utils/supabase/client";
 import { listenForQueryFocus, listenForQuerySession } from "@/lib/query/browserLifecycle";
 import { hideDocumentForSessionReset, listenForQueryHistory } from "@/lib/query/historyPrivacy";
 
 export function WebQueryProvider({ children }: { children: React.ReactNode }) {
-	const [queryClient] = useState(createWebQueryClient);
+	// The router owns the query client (src/router.tsx) so server-fetched
+	// queries hydrate into it; this provider only attaches browser listeners.
+	const queryClient = useQueryClient();
 	useLayoutEffect(() => listenForQueryHistory(queryClient), [queryClient]);
 
 	useEffect(() => {
@@ -35,7 +36,5 @@ export function WebQueryProvider({ children }: { children: React.ReactNode }) {
 		return unsubscribe;
 	}, [queryClient]);
 
-	return (
-		<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-	);
+	return <>{children}</>;
 }

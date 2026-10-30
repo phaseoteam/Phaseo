@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
 	Text,
 	Image,
@@ -12,7 +13,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { getTranslations } from "next-intl/server";
 
 interface Modality {
 	key: string;
@@ -46,11 +46,11 @@ const MODALITIES: Modality[] = [
 	{ key: "decisions", translationKey: "modalityDecisions", icon: Scale },
 ];
 
-export default async function Modalities({
+export default function Modalities({
 	inputTypes,
 	outputTypes,
 }: ModalitiesProps) {
-	const t = await getTranslations("Catalogue.modelDetail.metadata");
+	const t = useTranslations("Catalogue.modelDetail.metadata");
 	const inputModalities = MODALITIES.filter((mod) => inputTypes.includes(mod.key));
 	const outputModalities = MODALITIES.filter((mod) => outputTypes.includes(mod.key));
 

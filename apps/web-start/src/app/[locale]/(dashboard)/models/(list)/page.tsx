@@ -1,6 +1,6 @@
+import { useTranslations, useLocale } from "next-intl";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { connection } from "next/server";
 import { defaultShouldDehydrateQuery, dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 import ModelsPageClient from "@/components/(data)/models/Models/ModelsPageClient";
@@ -32,8 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-async function ModelsPageContent({ title }: { title: string }) {
-	await connection();
+function ModelsPageContent({ title }: { title: string }) {
 	return loadModelsPageContent(title);
 }
 
@@ -82,8 +81,9 @@ async function loadModelsPageContent(title: string) {
 	);
 }
 
-export default async function ModelsPage() {
-	const [locale, t] = await Promise.all([getLocale(), getTranslations("Catalogue.models")]);
+export default function ModelsPage() {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.models");
 	// The list has its own message boundary. Model detail and table routes keep
 	// the broader catalogue scope, which this page would otherwise inherit. The
 	// action dock loads its provider catalogue messages separately.

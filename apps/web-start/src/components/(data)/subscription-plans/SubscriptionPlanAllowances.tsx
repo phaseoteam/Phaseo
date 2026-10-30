@@ -1,10 +1,11 @@
+import { useTranslations, useLocale } from "next-intl";
 import type { SubscriptionAllowance } from "@/lib/fetchers/subscription-plans/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getLocale, getTranslations } from "next-intl/server";
 
-export default async function SubscriptionPlanAllowances({ allowances }: { allowances: SubscriptionAllowance[] }) {
+export default function SubscriptionPlanAllowances({ allowances }: { allowances: SubscriptionAllowance[] }) {
 	if (!allowances.length) return null;
-	const [locale, t] = await Promise.all([getLocale(), getTranslations()]);
+	const locale = useLocale();
+	const t = useTranslations();
 	const quantity = (value: number) => new Intl.NumberFormat(locale).format(value);
 	const qualifier = (kind: string) => kind === "up_to" ? t("Common.ui.subscriptionCatalog.up_to") : kind === "approximate" ? t("Common.ui.subscriptionCatalog.approximate") : kind === "estimated" ? t("Common.ui.subscriptionCatalog.estimated") : null;
 	const hasWindows = allowances.some((allowance) => allowance.window_kind !== "none");

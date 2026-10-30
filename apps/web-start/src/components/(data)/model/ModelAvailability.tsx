@@ -1,7 +1,7 @@
+import { useTranslations, useLocale } from "next-intl";
 import Image from "next/image";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
-import { getLocale, getTranslations } from "next-intl/server";
 import type { ModelAvailabilityItem } from "@/lib/fetchers/models/getModelAvailability";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { Logo } from "@/components/Logo";
@@ -30,16 +30,14 @@ interface ModelAvailabilityProps {
 	model: ModelOverviewPage | null;
 }
 
-export default async function ModelAvailability({
+export default function ModelAvailability({
 	availability,
 	subscriptionPlans,
 	model,
 }: ModelAvailabilityProps) {
-	const locale = await getLocale();
-	const t = await getTranslations("Catalogue.modelDetail");
-	const tAvailability = await getTranslations(
-		"Catalogue.modelDetail.availabilityLabels",
-	);
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.modelDetail");
+	const tAvailability = useTranslations("Catalogue.modelDetail.availabilityLabels",);
 	const countryNames = new Intl.DisplayNames([locale], { type: "region" });
 	const organisationName = model?.organisation?.name;
 

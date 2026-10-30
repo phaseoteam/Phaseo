@@ -1,3 +1,5 @@
+import { use } from "react";
+import { useTranslations } from "next-intl";
 import { Metadata } from "next";
 import Image from "next/image";
 import { MigrationGuide } from "@/components/(migrate)/MigrationGuide";
@@ -11,9 +13,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: P
 	return buildMetadata({ title: t("title"), description: t("description"), path: "/migrate", keywords: ["AI gateway migration", "migrate to Phaseo"] });
 }
 
-export default async function MigratePage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Content.migrate" });
+export default function MigratePage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
+	const { locale } = use(params);
+	const t = useTranslations("Content.migrate");
 	return (
 		<div className="container mx-auto space-y-8 px-4 py-6 sm:space-y-10 sm:px-6 sm:py-10 lg:px-8">
 			<div className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-background p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">

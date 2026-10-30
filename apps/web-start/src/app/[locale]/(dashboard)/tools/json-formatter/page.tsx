@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import JsonFormatter from "@/components/(tools)/JsonFormatter";
@@ -12,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-export default async function JsonFormatterPage() {
-	await getTranslations("Product.tools.json");
+export default function JsonFormatterPage() {
+	useTranslations("Product.tools.json");
 	return <JsonFormatter />;
 }

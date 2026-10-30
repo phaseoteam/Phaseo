@@ -1,7 +1,7 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export default async function GatewayLoading() {
-	const t = await getTranslations("Product.gateway");
+export default function GatewayLoading() {
+	const t = useTranslations("Product.gateway");
 	return (
 		<div className="container mx-auto px-4 py-12">
 			<span className="sr-only">{t("loading")}</span>

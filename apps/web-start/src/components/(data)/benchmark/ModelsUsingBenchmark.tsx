@@ -1,5 +1,5 @@
+import { useTranslations } from "next-intl";
 import ModelsUsingBenchmarkClient from "./ModelsUsingBenchmarkTable";
-import { getTranslations } from "next-intl/server";
 import {
 	getLowerIsBetter,
 	normalizeBenchmarkScoreValue,
@@ -11,10 +11,10 @@ interface ModelsUsingBenchmarkProps {
 	benchmark: any; // BenchmarkPage from getBenchmark
 }
 
-export default async function ModelsUsingBenchmark({
+export default function ModelsUsingBenchmark({
 	benchmark,
 }: ModelsUsingBenchmarkProps) {
-	const t = await getTranslations("Catalogue.benchmarks");
+	const t = useTranslations("Catalogue.benchmarks");
 	const results = benchmark?.results ?? [];
 
 	// Build server-serializable modelsByProvider structure

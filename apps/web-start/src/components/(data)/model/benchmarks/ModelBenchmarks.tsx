@@ -1,5 +1,5 @@
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
-import { getTranslations } from "next-intl/server";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type {
 	ModelBenchmarkHighlight,
@@ -25,7 +25,7 @@ type Props = {
 	mode?: "summary" | "full";
 };
 
-export default async function ModelBenchmarks({
+export default function ModelBenchmarks({
 	highlightCards,
 	benchmarkTableData,
 	benchmarkResults = [],
@@ -35,7 +35,7 @@ export default async function ModelBenchmarks({
 	modelName,
 	mode = "full",
 }: Props) {
-	const t = await getTranslations("Catalogue.models.detail.benchmarkGrid");
+	const t = useTranslations("Catalogue.models.detail.benchmarkGrid");
 	const showFull = mode === "full";
 	const otherHighlights = highlightCards.filter(
 		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId) && !isArtificialAnalysisProgressIndex(item.benchmarkId) && !isEpochCapabilitiesIndex(item.benchmarkId),

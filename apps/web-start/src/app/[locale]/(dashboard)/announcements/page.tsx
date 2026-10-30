@@ -1,3 +1,4 @@
+import { use } from "react";
 import { permanentRedirect } from "next/navigation";
 
 type AnnouncementsRedirectPageProps = {
@@ -15,10 +16,10 @@ function normalizeCategory(value: string | string[] | undefined): string | null 
 	return null;
 }
 
-export default async function AnnouncementsRedirectPage({
+export default function AnnouncementsRedirectPage({
 	searchParams,
 }: AnnouncementsRedirectPageProps) {
-	const resolvedSearchParams = await searchParams;
+	const resolvedSearchParams = use(searchParams);
 	const category = normalizeCategory(resolvedSearchParams?.category);
 
 	permanentRedirect(category ? `/blog?category=${category}` : "/blog");

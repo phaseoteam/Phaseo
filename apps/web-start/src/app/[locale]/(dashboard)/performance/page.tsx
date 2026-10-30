@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Check, Clock3, Gauge, Route, ShieldCheck, Sparkles } from "lucide-react";
@@ -84,8 +85,8 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-export default async function PerformancePage() {
-	const t = await getTranslations("Catalogue.performance");
+export default function PerformancePage() {
+	const t = useTranslations("Catalogue.performance");
 	const translate = (key: string) => t(key as never);
 	return (
 		<main className="min-h-screen overflow-hidden bg-background">
