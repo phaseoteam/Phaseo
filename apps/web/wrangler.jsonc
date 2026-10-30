@@ -1,0 +1,15 @@
+{
+  // Experiment only: OpenNext build of the web app on a workers.dev URL.
+  // No routes or custom domains, so phaseo.app is untouched.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "phaseo-web-opennext-preview",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-20",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "upload_source_maps": false,
+  "observability": { "enabled": true },
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "phaseo-web-opennext-preview" }]
+}
