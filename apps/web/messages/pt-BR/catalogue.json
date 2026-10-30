@@ -307,6 +307,8 @@
 		"listProviderE2ee": "Criptografia de ponta a ponta",
 		"listInternal": "Interno",
 		"listPrivate": "Privado",
+		"listEndOfLife": "Fim de vida útil",
+		"listDeprecated": "Descontinuado",
 		"tableView": "Visualização em tabela",
 		"searchPlaceholder": "Buscar modelos...",
 		"allModels": "Todos os modelos",

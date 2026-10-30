@@ -524,7 +524,7 @@ function ModelListItemImpl({
 								)}
 							>
 								<BadgeAlert className="size-3" aria-hidden="true" />
-								{isRetired ? "End of life" : "Deprecated"}
+								{isRetired ? t("listEndOfLife") : t("listDeprecated")}
 							</span>
 						) : null}
 						<span className="hidden min-w-0 max-w-full truncate font-mono text-xs text-muted-foreground sm:inline">

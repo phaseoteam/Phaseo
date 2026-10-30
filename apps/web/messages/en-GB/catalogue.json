@@ -307,6 +307,8 @@
 		"listProviderE2ee": "End-to-end encrypted",
 		"listInternal": "Internal",
 		"listPrivate": "Private",
+		"listEndOfLife": "End of life",
+		"listDeprecated": "Deprecated",
 		"tableView": "Table view",
 		"searchPlaceholder": "Search models...",
 		"allModels": "All models",

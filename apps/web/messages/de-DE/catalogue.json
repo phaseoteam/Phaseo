@@ -307,6 +307,8 @@
 		"listProviderE2ee": "Ende-zu-Ende-verschlüsselt",
 		"listInternal": "Intern",
 		"listPrivate": "Privat",
+		"listEndOfLife": "Eingestellt",
+		"listDeprecated": "Veraltet",
 		"tableView": "Tabellenansicht",
 		"searchPlaceholder": "Modelle suchen ...",
 		"allModels": "Alle Modelle",

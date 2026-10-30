@@ -307,6 +307,8 @@
 		"listProviderE2ee": "エンドツーエンド暗号化",
 		"listInternal": "社内",
 		"listPrivate": "非公開",
+		"listEndOfLife": "提供終了",
+		"listDeprecated": "非推奨",
 		"tableView": "テーブル表示",
 		"searchPlaceholder": "モデルを検索…",
 		"allModels": "すべてのモデル",

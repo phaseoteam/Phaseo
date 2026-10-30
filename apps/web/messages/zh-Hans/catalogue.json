@@ -307,6 +307,8 @@
 		"listProviderE2ee": "端到端加密",
 		"listInternal": "内部",
 		"listPrivate": "私有",
+		"listEndOfLife": "已停止支持",
+		"listDeprecated": "已弃用",
 		"tableView": "表格视图",
 		"searchPlaceholder": "搜索模型...",
 		"allModels": "所有模型",

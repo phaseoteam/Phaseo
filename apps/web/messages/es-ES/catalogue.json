@@ -307,6 +307,8 @@
 		"listProviderE2ee": "Cifrado de extremo a extremo",
 		"listInternal": "Interno",
 		"listPrivate": "Privado",
+		"listEndOfLife": "Fin de vida útil",
+		"listDeprecated": "Obsoleto",
 		"tableView": "Vista de tabla",
 		"searchPlaceholder": "Buscar modelos...",
 		"allModels": "Todos los modelos",

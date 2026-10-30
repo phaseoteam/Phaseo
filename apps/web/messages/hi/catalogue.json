@@ -307,6 +307,8 @@
 		"listProviderE2ee": "एंड-टू-एंड एन्क्रिप्टेड",
 		"listInternal": "आंतरिक",
 		"listPrivate": "निजी",
+		"listEndOfLife": "जीवनकाल समाप्त",
+		"listDeprecated": "अप्रचलित",
 		"tableView": "तालिका दृश्य",
 		"searchPlaceholder": "मॉडल खोजें...",
 		"allModels": "सभी मॉडल",

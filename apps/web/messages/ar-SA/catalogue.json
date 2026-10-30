@@ -307,6 +307,8 @@
 		"listProviderE2ee": "مشفّر من طرف إلى طرف",
 		"listInternal": "داخلي",
 		"listPrivate": "خاص",
+		"listEndOfLife": "انتهى الدعم",
+		"listDeprecated": "مهمل",
 		"tableView": "عرض الجدول",
 		"searchPlaceholder": "ابحث عن نماذج...",
 		"allModels": "كل النماذج",

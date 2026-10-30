@@ -307,6 +307,8 @@
 		"listProviderE2ee": "Chiffré de bout en bout",
 		"listInternal": "Interne",
 		"listPrivate": "Privé",
+		"listEndOfLife": "Fin de vie",
+		"listDeprecated": "Obsolète",
 		"tableView": "Vue en tableau",
 		"searchPlaceholder": "Rechercher des modèles...",
 		"allModels": "Tous les modèles",
