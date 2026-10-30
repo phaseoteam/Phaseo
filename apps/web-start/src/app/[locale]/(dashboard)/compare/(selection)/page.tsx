@@ -49,7 +49,7 @@ function CompareDashboardFallback() {
 }
 
 function ComparePageContent({ searchParams }: PageProps) {
-	const resolvedSearchParams = searchParams && "then" in searchParams ? use(searchParams) : searchParams;
+	const resolvedSearchParams = searchParams && "then" in searchParams ? use(searchParams as Promise<Record<string, string | string[] | undefined>>) : searchParams;
 	const ids = [...new Set(normalizeSelection(resolvedSearchParams?.models).map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4);
 
 	// With nothing selected, the page lists the curated head-to-head pages instead.

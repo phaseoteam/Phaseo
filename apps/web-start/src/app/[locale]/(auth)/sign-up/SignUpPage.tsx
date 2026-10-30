@@ -28,7 +28,7 @@ export function SignUpPage({ locale, searchParams }: SignUpPageProps) {
 
 function SignUpPageContent({ locale, searchParams }: SignUpPageProps) {
 	const shared = useTranslations("Auth.shared");
-	const params = (use(searchParams)) ?? {};
+	const params = (searchParams ? use(searchParams) : undefined) ?? {};
 	const returnUrlParam = Array.isArray(params.returnUrl)
 		? params.returnUrl[0]
 		: params.returnUrl;

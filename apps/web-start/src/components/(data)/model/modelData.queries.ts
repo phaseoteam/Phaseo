@@ -116,7 +116,7 @@ export const modelPricingQuery = (modelId: string, includeHidden = false) =>
 		queryKey: [...catalogueModelRoot, "pricing", modelId, includeHidden] as const,
 		queryFn: () =>
 			includeHidden
-				? getHiddenModelPricing({ data: modelId })
+				? (getHiddenModelPricing({ data: modelId }) as ReturnType<typeof fetchFrontendModelPricing>)
 				: fetchFrontendModelPricing(modelId, undefined, false),
 	});
 

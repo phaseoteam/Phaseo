@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function Page(props: {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	const sp = use(props.searchParams);
+	const sp = props.searchParams ? use(props.searchParams) : undefined;
 
 	const params = new URLSearchParams();
 	if (sp) {

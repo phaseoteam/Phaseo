@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { CreditTopupRow, CreditTopupStatus } from "@/lib/server/creditTopups";
 
-const loadCreditsInitialData = createServerFn({ method: "GET" }).handler(async () => {
+const loadCreditsInitialData = createServerFn({ method: "GET", strict: { output: false } }).handler(async () => {
 	const { fetchSettingsCreditsInitialData } = await import("@/lib/fetchers/internal/fetchSettingsCreditsInitialData");
 	return fetchSettingsCreditsInitialData();
 });

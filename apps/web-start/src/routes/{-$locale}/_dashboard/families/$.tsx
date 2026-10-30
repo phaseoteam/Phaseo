@@ -12,7 +12,7 @@ const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)
 	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
 
-export const Route = createFileRoute("/{-$locale}/_dashboard/families/$/")({
+export const Route = createFileRoute("/{-$locale}/_dashboard/families/$")({
 	loader: async ({ params, location, context }) => {
 		const metadataPromise = routeMetadata({ data: { params, search: location.search as Record<string, unknown>, splatName: "familyId" } });
 		metadataPromise.catch(() => undefined);

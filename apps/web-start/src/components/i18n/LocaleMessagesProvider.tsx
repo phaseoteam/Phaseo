@@ -32,7 +32,7 @@ export function FeatureMessagesProvider({ children, messages }: { children: Reac
 }
 
 function MergedMessages({ children, messages }: { children: ReactNode; messages: AbstractIntlMessages }) {
-	const parent = useMessages();
+	const parent = useMessages() as unknown as AbstractIntlMessages;
 	const locale = useLocale();
 	const timeZone = useTimeZone();
 	const combined = useMemo(() => combineMessages(parent, messages), [parent, messages]);

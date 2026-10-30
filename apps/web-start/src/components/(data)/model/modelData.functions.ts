@@ -13,7 +13,7 @@ export const getHiddenModelHeader = createServerFn({ method: "GET" })
 		return fetchFrontendModelHeader(modelId, true);
 	});
 
-export const getHiddenModelPricing = createServerFn({ method: "GET" })
+export const getHiddenModelPricing = createServerFn({ method: "GET", strict: { output: false } })
 	.validator(modelIdInput)
 	.handler(async ({ data: modelId }) => {
 		const { fetchFrontendModelPricing } = await import("@/lib/fetchers/frontend/fetchPublicCatalog");

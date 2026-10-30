@@ -25,7 +25,7 @@ async function resolve(arg: LocaleArg): Promise<{ locale: PublicLocale; namespac
 
 export async function getMessages(arg?: { locale?: string }): Promise<AbstractIntlMessages> {
 	const { locale } = await resolve(arg);
-	return (await getPublicMessages(locale)) as AbstractIntlMessages;
+	return (await getPublicMessages(locale)) as unknown as AbstractIntlMessages;
 }
 
 export async function getTranslations(arg?: LocaleArg) {
@@ -33,7 +33,7 @@ export async function getTranslations(arg?: LocaleArg) {
 		throw new Error("getTranslations from next-intl/server runs on the server only. Use useTranslations in components, or call it inside createServerFn.");
 	}
 	const { locale, namespace } = await resolve(arg);
-	const messages = (await getPublicMessages(locale)) as AbstractIntlMessages;
+	const messages = (await getPublicMessages(locale)) as unknown as AbstractIntlMessages;
 	return createTranslator({ locale, messages, namespace: namespace as never, timeZone: "UTC" }) as ReturnType<typeof createTranslator> & ((key: string, values?: Record<string, unknown>) => string);
 }
 

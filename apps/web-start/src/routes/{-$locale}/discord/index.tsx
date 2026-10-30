@@ -1,11 +1,7 @@
-// Next: src/app/[locale]/discord/page.tsx
+// Next: src/app/[locale]/discord/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { metadataToHead } from "@/lib/start/metadataToHead";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/discord/page";
-
+import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
 
 export const Route = createFileRoute("/{-$locale}/discord/")({
-	head: () => metadataToHead((mod as { metadata?: Record<string, unknown> }).metadata),
-	component: nextPageComponent(Page),
+	beforeLoad: redirectBeforeLoad("temporary", () => "https://discord.gg/aQyywCvgZ5"),
 });

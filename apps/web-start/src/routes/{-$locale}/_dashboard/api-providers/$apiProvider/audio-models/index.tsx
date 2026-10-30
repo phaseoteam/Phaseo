@@ -1,11 +1,7 @@
-// Next: src/app/[locale]/(dashboard)/api-providers/[apiProvider]/audio-models/page.tsx
+// Next: src/app/[locale]/(dashboard)/api-providers/[apiProvider]/audio-models/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { metadataToHead } from "@/lib/start/metadataToHead";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/audio-models/page";
-
+import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/api-providers/$apiProvider/audio-models/")({
-	head: () => metadataToHead((mod as { metadata?: Record<string, unknown> }).metadata),
-	component: nextPageComponent(Page),
+	beforeLoad: redirectBeforeLoad("temporary", ({ params }) => `/api-providers/${params.apiProvider}/models`),
 });

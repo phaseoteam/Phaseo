@@ -2,7 +2,7 @@
 // their existing generateMetadata logic and pass the result through here.
 import { METADATA_BASE, SITE_NAME } from "@/lib/seo";
 
-type Meta = Record<string, unknown>;
+type Meta = { [key: string]: unknown };
 type HeadMeta = { title?: string; name?: string; property?: string; content?: string; charSet?: string };
 type HeadLink = { rel: string; href: string; hrefLang?: string; type?: string; sizes?: string; media?: string };
 export type HeadOutput = { meta: HeadMeta[]; links: HeadLink[] };
@@ -118,4 +118,13 @@ export function metadataToHead(metadata: Meta | undefined | null, options: { roo
 
 	if (typeof metadata.manifest === "string") links.push({ rel: "manifest", href: metadata.manifest });
 	return { meta, links };
+}
+
+/**
+ * Metadata a child loader attached with `notFound({ data: { metadata } })`.
+ * The router moves a not-found to the nearest route with a notFoundComponent
+ * and stops running head() below it, so that boundary applies the metadata.
+ */
+export function notFoundMetadata(match: { error?: unknown }): Parameters<typeof metadataToHead>[0] | undefined {
+	return (match.error as { data?: { metadata?: Parameters<typeof metadataToHead>[0] } } | undefined)?.data?.metadata;
 }

@@ -1,17 +1,18 @@
-// Next: src/app/[locale]/(dashboard)/gateway/usage/page.tsx
+// Next: src/app/[locale]/(dashboard)/gateway/usage/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
-import { metadataToHead } from "@/lib/start/metadataToHead";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/gateway/usage/page";
-
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+import { redirectBeforeLoad, searchString } from "@/lib/start/redirectRoute";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/gateway/usage/")({
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
-	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextPageComponent(Page),
+	beforeLoad: redirectBeforeLoad("permanent", ({ search }) => {
+		const query = new URLSearchParams();
+		for (const [key, value] of Object.entries(search)) {
+			if (key === "tab") continue;
+			if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
+			else if (typeof value === "string") query.append(key, value);
+		}
+		const tab = (searchString(search, "tab") ?? "").toLowerCase();
+		const target = tab === "trends" || tab === "explore" || tab === "guardrails" ? `/settings/usage/${tab}` : "/settings/usage/overview";
+		const qs = query.toString();
+		return qs ? `${target}?${qs}` : target;
+	}),
 });

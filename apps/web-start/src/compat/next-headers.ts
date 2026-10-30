@@ -1,5 +1,5 @@
 // `next/headers` on the current request (server only).
-import { getCookie, setCookie, deleteCookie } from "@tanstack/react-start/server";
+import { setCookie, deleteCookie } from "@tanstack/react-start/server";
 import { getCurrentRequest } from "./request-context";
 
 type CookieOptions = { path?: string; domain?: string; maxAge?: number; expires?: Date; httpOnly?: boolean; secure?: boolean; sameSite?: "lax" | "strict" | "none" | boolean };
@@ -34,9 +34,8 @@ export async function cookies() {
 	const request = requireRequest();
 	const all = parseCookies(request.headers.get("cookie"));
 	return {
+		// Read from the (possibly session-refreshed) current request, not the raw one.
 		get(name: string) {
-			const value = getCookie(name);
-			if (value !== undefined) return { name, value };
 			return all.find((c) => c.name === name);
 		},
 		getAll(name?: string) {

@@ -1,18 +1,7 @@
-// Next: src/app/[locale]/(dashboard)/updates/page.tsx
+// Next: src/app/[locale]/(dashboard)/updates/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
-import { metadataToHead } from "@/lib/start/metadataToHead";
-import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/updates/page";
-import Loading from "@/app/[locale]/(dashboard)/updates/loading";
-
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/updates/")({
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
-	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: withLoading(nextPageComponent(Page), Loading),
+	beforeLoad: redirectBeforeLoad("temporary", () => "/updates/models"),
 });

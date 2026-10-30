@@ -1,3 +1,4 @@
+import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { ReactNode } from "react";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import Image from "next/image";
@@ -23,6 +24,10 @@ interface APIProviderDetailShellProps {
 	prefetchedHeader?: APIProviderHeader | null;
 }
 
+// Conditional query tuples; each result is read with its own cast.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SuspenseQueryList = UseSuspenseQueryOptions<any, Error, any, any>[];
+
 export default function APIProviderDetailShell({
 	apiProviderId,
 	children,
@@ -30,7 +35,7 @@ export default function APIProviderDetailShell({
 	prefetchedHeader,
 }: APIProviderDetailShellProps) {
 	const headerQueries = useSuspenseQueries({
-		queries: prefetchedHeader !== undefined ? [] : [apiProviderHeaderQuery(apiProviderId)],
+		queries: (prefetchedHeader !== undefined ? [] : [apiProviderHeaderQuery(apiProviderId)]) as SuspenseQueryList,
 	});
 	const header = prefetchedHeader !== undefined
 		? prefetchedHeader

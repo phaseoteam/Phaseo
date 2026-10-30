@@ -5,7 +5,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 
-const loadChatPlaygroundAccountData = createServerFn({ method: "GET" })
+const loadChatPlaygroundAccountData = createServerFn({ method: "GET", strict: { output: false } })
 	.validator((input: { opensLoggedRequest?: boolean } | undefined) => ({ opensLoggedRequest: input?.opensLoggedRequest === true }))
 	.handler(async ({ data }) => {
 		const [{ fetchChatEffectivePolicy }, { fetchServerProviderCatalogPreviews }, { fetchServerAdminChatModels }, { getServerAccountContext }] = await Promise.all([

@@ -5,7 +5,10 @@ import { getCurrentRequest } from "./request-context";
 
 type Entities = unknown;
 type DecideArgs<E> = { entities?: E; headers: Headers; cookies: Map<string, string> };
-type Adapter<V, E> = { decide(args: DecideArgs<E> & { key: string }): V | Promise<V> };
+// The flags SDK adapters (@flags-sdk/statsig) type their decide() arguments
+// against the SDK's own request types; only the shape below is used here.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Adapter<V, _E> = { decide(args: any): V | Promise<V> };
 type FlagDeclaration<V, E> = {
 	key: string;
 	defaultValue?: V;

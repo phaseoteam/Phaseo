@@ -1,3 +1,4 @@
+import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useSuspenseQueries } from "@tanstack/react-query";
@@ -9,6 +10,10 @@ import { appDetailsQuery } from "./app.queries";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
 import AppLogo from "@/components/(data)/apps/AppLogo";
+
+// Conditional query tuples; each result is read with its own cast.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SuspenseQueryList = UseSuspenseQueryOptions<any, Error, any, any>[];
 
 export default function AppDetailShell({
 	appId,
@@ -24,7 +29,7 @@ export default function AppDetailShell({
 	const t = useTranslations("Product.appsDetail");
 	let appData = app;
 	const appQueries = useSuspenseQueries({
-		queries: app ? [] : [appDetailsQuery(appId)],
+		queries: (app ? [] : [appDetailsQuery(appId)]) as SuspenseQueryList,
 	});
 
 	if (!appData) {

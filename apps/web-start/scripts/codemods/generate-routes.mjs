@@ -128,7 +128,7 @@ for (const [dir, names] of byDir) {
 		const rel = `${dir}/page.tsx`.replace(/^\//, "");
 		const meta = metadataParts(rel, splat);
 		const loading = has(dir, "loading");
-		const routeFile = hasLayout || splat ? `${fileDir}/index.tsx` : `${fileDir}/index.tsx`;
+		const routeFile = splat ? `${fileDir}.tsx` : `${fileDir}/index.tsx`;
 		const routeId = splat ? id : `${id}/`;
 		write(routeFile.replace(/^\//, ""), [
 			`// Next: src/app/${rel}`,
@@ -152,7 +152,7 @@ for (const [dir, names] of byDir) {
 	for (const handlerName of ["route.ts", "route.tsx"]) {
 		if (!names.has(handlerName)) continue;
 		const rel = `${dir}/${handlerName}`.replace(/^\//, "");
-		const routeFile = `${fileDir}/index.ts`.replace(/^\//, "");
+		const routeFile = (splat ? `${fileDir}.ts` : `${fileDir}/index.ts`).replace(/^\//, "");
 		const routeId = splat ? id : `${id}/`;
 		write(routeFile, [
 			`// Next: src/app/${rel}`,

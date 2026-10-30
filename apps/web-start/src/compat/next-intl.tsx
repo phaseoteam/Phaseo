@@ -1,5 +1,5 @@
 // `next-intl` (client APIs) on use-intl, the library next-intl wraps.
-import { IntlProvider, useLocale as useIntlLocale, type AbstractIntlMessages } from "use-intl";
+import { IntlProvider, useLocale as useIntlLocale, type AbstractIntlMessages, type Locale } from "use-intl";
 import type { ComponentProps, ReactNode } from "react";
 import { defaultLocale, isPublicLocale } from "@/i18n/locales";
 
@@ -47,7 +47,7 @@ export function NextIntlClientProvider({ locale, messages, timeZone, children, .
 	const parentLocale = useOptionalParentLocale();
 	return (
 		<IntlProvider
-			locale={locale ?? parentLocale ?? localeFromLocation()}
+			locale={(locale ?? parentLocale ?? localeFromLocation()) as Locale}
 			messages={messages ?? undefined}
 			timeZone={timeZone ?? "UTC"}
 			{...rest}

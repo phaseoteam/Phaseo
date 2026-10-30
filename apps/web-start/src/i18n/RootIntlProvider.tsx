@@ -18,7 +18,7 @@ const pending = new Map<string, Promise<AbstractIntlMessages>>();
 const loadMessages = createIsomorphicFn()
 	.server(async (locale: PublicLocale): Promise<AbstractIntlMessages> => {
 		const { getPublicMessages } = await import("@/i18n/messages");
-		return (await getPublicMessages(locale)) as AbstractIntlMessages;
+		return (await getPublicMessages(locale)) as unknown as AbstractIntlMessages;
 	})
 	.client(async (locale: PublicLocale): Promise<AbstractIntlMessages> => {
 		for (let attempt = 0; ; attempt++) {

@@ -1,9 +1,9 @@
-// Next: src/app/[locale]/(dashboard)/chat/audio/page.tsx
-import { createFileRoute } from "@tanstack/react-router";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/chat/audio/page";
-
+// Next: src/app/[locale]/(dashboard)/chat/audio/page.tsx (a redirect-only page).
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/chat/audio/")({
-	component: nextPageComponent(Page),
+	// Redirect before rendering; Next streamed this redirect from the page body.
+	beforeLoad: ({ params }) => {
+		throw redirect({ href: params.locale ? `/${params.locale}/chat/speech` : "/chat/speech" });
+	},
 });

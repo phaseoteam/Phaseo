@@ -56,11 +56,17 @@ export function nextPageComponent(Page: ComponentType<any>, options: { splatName
 	return RoutePage;
 }
 
+/** Metadata after a JSON round trip: what a server function can return. */
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type SerializableMetadata = { [key: string]: JsonValue };
+
 /** Run a Next `generateMetadata` with the route's params (server side). */
 export async function runGenerateMetadata(
-	generateMetadata: ((props: NextPageProps, parent: Promise<unknown>) => unknown) | undefined,
+	// Pages annotate their props as PageProps or LayoutProps; both receive these.
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	generateMetadata: ((props: any, parent: Promise<any>) => unknown) | undefined,
 	input: { params: NextParams; search: NextSearchParams },
-): Promise<Record<string, unknown> | null> {
+): Promise<SerializableMetadata | null> {
 	if (!generateMetadata) return null;
 	const result = await generateMetadata({ params: fulfilled(input.params), searchParams: fulfilled(input.search) }, Promise.resolve({}));
 	return toSerializableMetadata(result);
@@ -125,7 +131,7 @@ export function withLoading(Component: ComponentType, Loading: ComponentType) {
 }
 
 /** Metadata holds URL objects (metadataBase, images); send plain JSON across the server-function boundary. */
-export function toSerializableMetadata(metadata: unknown): Record<string, unknown> | null {
+export function toSerializableMetadata(metadata: unknown): SerializableMetadata | null {
 	if (!metadata) return null;
-	return JSON.parse(JSON.stringify(metadata)) as Record<string, unknown>;
+	return JSON.parse(JSON.stringify(metadata)) as SerializableMetadata;
 }

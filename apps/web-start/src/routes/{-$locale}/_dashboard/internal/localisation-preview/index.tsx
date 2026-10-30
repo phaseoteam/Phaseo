@@ -1,9 +1,8 @@
-// Next: src/app/[locale]/(dashboard)/internal/localisation-preview/page.tsx
+// Next: src/app/[locale]/(dashboard)/internal/localisation-preview/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/internal/localisation-preview/page";
-
+import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
+import { defaultLocale } from "@/i18n/locales";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/internal/localisation-preview/")({
-	component: nextPageComponent(Page),
+	beforeLoad: redirectBeforeLoad("temporary", () => `/internal/localisation-preview/${defaultLocale}`),
 });

@@ -4,6 +4,9 @@ import { promises as fs } from "node:fs";
 import type { Dirent } from "node:fs";
 import path from "node:path";
 import { load as yamlLoad } from "js-yaml";
+import { dateToSortValue, formatAnnouncementDate, isAnnouncementPublished } from "./announcementDates";
+
+export { formatAnnouncementDate, isAnnouncementPublished };
 
 const ANNOUNCEMENTS_CONTENT_ROOT = path.join(
 	process.cwd(),
@@ -226,18 +229,7 @@ function estimateReadingTimeMinutes(content: string): number {
 	return Math.max(1, Math.ceil(wordCount / 225));
 }
 
-function dateToSortValue(value: string): number {
-	const parsed = new Date(value);
-	return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
-}
-
-function isPublishedDate(value: string, now = new Date()): boolean {
-	return dateToSortValue(value) <= now.getTime();
-}
-
-export function isAnnouncementPublished(value: string, now = new Date()): boolean {
-	return isPublishedDate(value, now);
-}
+const isPublishedDate = isAnnouncementPublished;
 
 async function loadAnnouncements(locale?: string): Promise<AnnouncementPost[]> {
 	let entries: Dirent[];
@@ -371,16 +363,3 @@ export async function getAnnouncementParams(): Promise<Array<{ slug: string }>> 
 		.map((post) => ({ slug: post.slug }));
 }
 
-export function formatAnnouncementDate(value: string, locale: string): string {
-	const parsed = new Date(value);
-	if (Number.isNaN(parsed.getTime())) {
-		return value;
-	}
-
-	return parsed.toLocaleDateString(locale, {
-		timeZone: "UTC",
-		year: "numeric",
-		month: "long",
-		day: "2-digit",
-	});
-}

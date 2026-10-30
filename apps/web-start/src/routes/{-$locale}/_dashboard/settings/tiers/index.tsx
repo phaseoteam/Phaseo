@@ -1,17 +1,7 @@
-// Next: src/app/[locale]/(dashboard)/settings/tiers/page.tsx
+// Next: src/app/[locale]/(dashboard)/settings/tiers/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
-import { metadataToHead } from "@/lib/start/metadataToHead";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/settings/tiers/page";
-
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/settings/tiers/")({
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
-	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextPageComponent(Page),
+	beforeLoad: redirectBeforeLoad("temporary", () => "/settings/credits"),
 });

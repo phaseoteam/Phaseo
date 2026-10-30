@@ -1,9 +1,7 @@
-// Next: src/app/[locale]/(dashboard)/announcements/[slug]/page.tsx
+// Next: src/app/[locale]/(dashboard)/announcements/[slug]/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/announcements/[slug]/page";
-
+import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/announcements/$slug/")({
-	component: nextPageComponent(Page),
+	beforeLoad: redirectBeforeLoad("permanent", ({ params }) => `/blog/${params.slug}`),
 });

@@ -1,9 +1,10 @@
-// Next: src/app/[locale]/(dashboard)/announcements/page.tsx
+// Next: src/app/[locale]/(dashboard)/announcements/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/announcements/page";
-
+import { redirectBeforeLoad, searchString } from "@/lib/start/redirectRoute";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/announcements/")({
-	component: nextPageComponent(Page),
+	beforeLoad: redirectBeforeLoad("permanent", ({ search }) => {
+		const category = searchString(search, "category");
+		return category === "announcements" || category === "guides" || category === "data" ? `/blog?category=${category}` : "/blog";
+	}),
 });

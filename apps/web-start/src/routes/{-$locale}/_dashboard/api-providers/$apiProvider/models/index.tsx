@@ -1,9 +1,7 @@
-// Next: src/app/[locale]/(dashboard)/api-providers/[apiProvider]/models/page.tsx
+// Next: src/app/[locale]/(dashboard)/api-providers/[apiProvider]/models/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/models/page";
-
+import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/api-providers/$apiProvider/models/")({
-	component: nextPageComponent(Page),
+	beforeLoad: redirectBeforeLoad("temporary", ({ params }) => `/api-providers/${encodeURIComponent(params.apiProvider ?? "")}#models`),
 });

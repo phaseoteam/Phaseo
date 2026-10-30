@@ -141,8 +141,8 @@ export default function ModelDetailShell({
 	const isFreeRouter = isFreeRouterModelId(modelId);
 	// One hook call for every shell query so they load in parallel. Free
 	// Router and prefetched props skip the matching fetch.
-	const shellQueries: UseSuspenseQueryOptions<unknown, Error, unknown, readonly unknown[]>[] = [];
-	const queryIndex = (options: UseSuspenseQueryOptions<any, Error, any, readonly unknown[]>) => shellQueries.push(options) - 1;
+	const shellQueries: UseSuspenseQueryOptions<any, Error, any, any>[] = [];
+	const queryIndex = (options: UseSuspenseQueryOptions<any, Error, any, any>) => shellQueries.push(options) - 1;
 	const gatewayMetadataIndex = isFreeRouter ? -1 : queryIndex(modelQuickstartGatewayMetadataQuery(modelId));
 	const subscriptionPlansIndex = isFreeRouter ? -1 : queryIndex(modelSubscriptionPlansQuery(modelId));
 	const headerIndex = isFreeRouter || prefetchedHeader ? -1 : queryIndex(modelHeaderQuery(modelId, includeHidden));

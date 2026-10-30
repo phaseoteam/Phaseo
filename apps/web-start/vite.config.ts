@@ -4,7 +4,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import tailwindcss from "@tailwindcss/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
-import { aliasFallbacks, announcementMdx, contentFilesystem, inlineVercelOgFont, serverActions, serverOnlyInClient, stripUseCache } from "./build/phaseo-plugins";
+import { aliasFallbacks, announcementMdx, contentFilesystem, inlineVercelOgFont, latin1ServerChunks, serverActions, serverOnlyInClient, stripUseCache, workersMemoryTrim } from "./build/phaseo-plugins";
 import { createBlogHeadingsPlugin } from "./src/lib/content/blogToc";
 
 const root = import.meta.dirname;
@@ -54,6 +54,8 @@ export default defineConfig(({ mode }) => {
 			stripUseCache(),
 			inlineVercelOgFont(),
 			contentFilesystem(path.join(src, "content")),
+			workersMemoryTrim(path.join(root, "messages")),
+			latin1ServerChunks(),
 			announcementMdx(path.join(src, "content/announcements"), (toc) => createBlogHeadingsPlugin(toc as never)),
 			cloudflare({ viteEnvironment: { name: "ssr" } }),
 			tanstackStart({ srcDirectory: "src", router: { routesDirectory: "routes" } }),

@@ -1,3 +1,4 @@
+import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { BarChart3 } from "lucide-react";
 import {
 	Empty,
@@ -18,6 +19,10 @@ import type {
 } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { useTranslations } from "next-intl";
 
+// Conditional query tuples; each result is read with its own cast.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SuspenseQueryList = UseSuspenseQueryOptions<any, Error, any, any>[];
+
 export default function ProvidersTokenUsageChart() {
 	const t = useTranslations("Catalogue.providers");
 	const { data: { data } } = useSuspenseQuery(providerMarketShareTimeseriesQuery());
@@ -35,7 +40,7 @@ export default function ProvidersTokenUsageChart() {
 	const providerIds = Array.from(totalsByProvider.keys());
 	// Names are only fetched when there is usage to chart.
 	const providerNamesQueries = useSuspenseQueries({
-		queries: filtered.length ? [providerNamesByIdsQuery(providerIds)] : [],
+		queries: (filtered.length ? [providerNamesByIdsQuery(providerIds)] : []) as SuspenseQueryList,
 	});
 
 	if (!filtered.length) {

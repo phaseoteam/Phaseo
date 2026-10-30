@@ -1,11 +1,7 @@
-// Next: src/app/[locale]/reddit/page.tsx
+// Next: src/app/[locale]/reddit/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
-import { metadataToHead } from "@/lib/start/metadataToHead";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/reddit/page";
-
+import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
 
 export const Route = createFileRoute("/{-$locale}/reddit/")({
-	head: () => metadataToHead((mod as { metadata?: Record<string, unknown> }).metadata),
-	component: nextPageComponent(Page),
+	beforeLoad: redirectBeforeLoad("temporary", () => "https://www.reddit.com/r/Phaseo/"),
 });

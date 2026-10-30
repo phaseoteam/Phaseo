@@ -1,3 +1,4 @@
+import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
@@ -111,6 +112,10 @@ type ModelPerformancePromiseProps = {
 	 */
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 };
+
+// Conditional query tuples; each result is read with its own cast.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SuspenseQueryList = UseSuspenseQueryOptions<any, Error, any, any>[];
 
 function Section({
 	id,
@@ -498,13 +503,13 @@ export function ModelQuickstartSection({
 	// the server, which includes internal providers for admins.
 	const metadataQueries = useSuspenseQueries({
 		queries:
-			showsMetadataOnly || prefetchedGatewayMetadata !== undefined
+			(showsMetadataOnly || prefetchedGatewayMetadata !== undefined
 				? []
 				: [
 						includeHidden
 							? modelHiddenQuickstartMetadataSectionQuery(modelId)
 							: modelQuickstartGatewayMetadataQuery(modelId),
-					],
+					]) as SuspenseQueryList,
 	});
 
 	if (showsMetadataOnly) {
@@ -655,11 +660,11 @@ export function ModelLineageSection({
 	const t = useTranslations("Catalogue.models.detail.lineage");
 	const queryClient = useQueryClient();
 	const overviewQueries = useSuspenseQueries({
-		queries: model ? [] : [modelOverviewQuery(modelId)],
+		queries: (model ? [] : [modelOverviewQuery(modelId)]) as SuspenseQueryList,
 	});
 	const overview = model ?? (overviewQueries[0]?.data as ModelOverviewPage | null | undefined) ?? null;
 	const lineageQueries = useSuspenseQueries({
-		queries: overview
+		queries: (overview
 			? [
 					modelLineageSectionQuery(queryClient, {
 						modelId,
@@ -667,7 +672,7 @@ export function ModelLineageSection({
 						includeTimeline: Boolean(overview.previous_model_id),
 					}),
 				]
-			: [],
+			: []) as SuspenseQueryList,
 	});
 	const previousLineage = overview
 		? lineageQueries[0]?.data.previous ?? null

@@ -8,12 +8,8 @@ import { BlogTableOfContents } from "@/components/announcements/BlogTableOfConte
 import { announcementMdxComponents } from "@/components/announcements/announcementMdxComponents";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import {
-	formatAnnouncementDate,
-	getAnnouncementParams,
-	getAnnouncementPost,
-	isAnnouncementPublished,
-} from "@/lib/content/announcements";
+// announcements.ts reads the content folder, so the server-only paths load it lazily.
+import { isAnnouncementPublished } from "@/lib/content/announcementDates";
 import { loadCompiledAnnouncement } from "@/components/announcements/compiledAnnouncements";
 import { blogPostQuery } from "./post.functions";
 import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
@@ -28,6 +24,7 @@ type AnnouncementPageProps = {
 };
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+	const { getAnnouncementParams } = await import("@/lib/content/announcements");
 	return getAnnouncementParams();
 }
 
@@ -36,6 +33,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
 	const { locale, slug } = await props.params;
 	const canPreviewFuturePosts = await canPreviewFutureBlogPosts();
+	const { getAnnouncementPost } = await import("@/lib/content/announcements");
 	const post = await getAnnouncementPost(slug, {
 		includeFuture: canPreviewFuturePosts,
 		locale,

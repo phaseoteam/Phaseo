@@ -121,7 +121,7 @@ export default function Page({
 }: {
 	params: Promise<{ familyId: string[]; locale: PublicLocale }>;
 }) {
-	const { familyId: rawFamilyId } = use(params);
+	const { familyId: rawFamilyId, locale } = use(params);
 	const t = useTranslations("Catalogue.families");
 	const familyId = parseFamilyId(rawFamilyId);
 	// Unknown families 404 in the route loader before rendering.

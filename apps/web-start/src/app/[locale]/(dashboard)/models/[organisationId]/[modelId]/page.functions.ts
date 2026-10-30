@@ -88,7 +88,7 @@ export const getPrivateModelPerformance = createServerFn({ method: "GET" })
 	});
 
 /** includeHidden variants read admin model sources, so they run on the server. */
-export const getHiddenModelSections = createServerFn({ method: "GET" })
+export const getHiddenModelSections = createServerFn({ method: "GET", strict: { output: false } })
 	.validator((input: { modelId: string; section: "benchmarks" | "subscriptions" | "availability" | "pricing" | "gateway-metadata" }) => input)
 	.handler(async ({ data: { modelId, section } }) => {
 		const catalog = await import("@/lib/fetchers/frontend/fetchPublicCatalog");

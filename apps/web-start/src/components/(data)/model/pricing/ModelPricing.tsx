@@ -35,6 +35,10 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 
+// Conditional query tuples; each result is read with its own cast.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SuspenseQueryList = UseSuspenseQueryOptions<any, Error, any, any>[];
+
 function mergePreviewOffers(
 	providers: ProviderPricing[],
 	previews: AuthenticatedProviderCatalogPreview[],
@@ -115,7 +119,7 @@ function mergePreviewOffers(
 	return [...byProvider.values()];
 }
 
-type AnySuspenseQuery = UseSuspenseQueryOptions<any, Error, any, readonly unknown[]>;
+type AnySuspenseQuery = UseSuspenseQueryOptions<any, Error, any, any>;
 
 export default function ModelPricing({
 	modelId,
@@ -227,7 +231,7 @@ export default function ModelPricing({
 		identity.status === "Available" && !hasActiveApiProviders;
 
 	const telemetry = useSuspenseQueries({
-		queries: providersOverride ? [] : [
+		queries: (providersOverride ? [] : [
 			modelPricingRuntimeStatsQuery({
 				modelId,
 				providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
@@ -243,7 +247,7 @@ export default function ModelPricing({
 				providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
 				windowHours: 24,
 			}),
-		],
+		]) as SuspenseQueryList,
 	});
 	const [runtimeStats, routingHealth]: [ProviderRuntimeStatsMap, ProviderRoutingStatusMap] = providersOverride
 		? [{}, {}]

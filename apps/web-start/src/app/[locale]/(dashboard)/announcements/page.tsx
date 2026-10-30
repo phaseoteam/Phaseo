@@ -19,7 +19,7 @@ function normalizeCategory(value: string | string[] | undefined): string | null 
 export default function AnnouncementsRedirectPage({
 	searchParams,
 }: AnnouncementsRedirectPageProps) {
-	const resolvedSearchParams = use(searchParams);
+	const resolvedSearchParams = searchParams ? use(searchParams) : undefined;
 	const category = normalizeCategory(resolvedSearchParams?.category);
 
 	permanentRedirect(category ? `/blog?category=${category}` : "/blog");
