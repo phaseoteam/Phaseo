@@ -5,6 +5,8 @@ describe("isAnalyticsBlockedPath", () => {
 		const token = "0f8fad5b-d9cb-469f-a165-70867728950e";
 		expect(isAnalyticsBlockedPath(`/feedback/${token}`)).toBe(true);
 		expect(isAnalyticsBlockedPath(`/de-DE/feedback/${token}/unsubscribe`)).toBe(true);
+		expect(isAnalyticsBlockedPath(`/spend-reports/${token}/unsubscribe`)).toBe(true);
+		expect(isAnalyticsBlockedPath(`/ja/spend-reports/${token}/unsubscribe`)).toBe(true);
 	});
 
 	it("blocks the Slack agent's account links, whose token is in the query", () => {

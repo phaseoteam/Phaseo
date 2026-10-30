@@ -7704,7 +7704,21 @@
 			"attributionNote": "Mit allen Abteilungen können die Abteilungssummen zusammen mehr ergeben als die Ausgaben des Arbeitsbereichs. Die Mitgliedschaft wird bei der Prüfung der Warnungen gelesen, sodass ein Wechsel die Ausgaben des laufenden Zeitraums mitnimmt.",
 			"saving": "Wird gespeichert…",
 			"saved": "Gespeichert",
-			"saveFailed": "Die Einstellung konnte nicht gespeichert werden"
+			"saveFailed": "Die Einstellung konnte nicht gespeichert werden",
+			"report": "E-Mail mit Ausgabenbericht",
+			"reportHelp": "Eine Zusammenfassung der Ausgaben und der Veränderung zum vorherigen Zeitraum, der wichtigsten Schlüssel, Modelle, Mitglieder und Abteilungen, der Prognose für diesen Monat, der Reichweite und der Warnungen. Inhaber erhalten sie standardmäßig. Sie wird um 09:00 Uhr in der Abrechnungszeitzone verschickt und entfällt, wenn nichts ausgegeben wurde.",
+			"reportOff": "Aus",
+			"reportOffHelp": "Keine Berichts-E-Mails.",
+			"reportDaily": "Täglich",
+			"reportDailyHelp": "Jeden Morgen, für den Vortag.",
+			"reportWeekly": "Wöchentlich",
+			"reportWeeklyHelp": "Montagmorgens, für die Vorwoche.",
+			"reportMonthly": "Monatlich",
+			"reportMonthlyHelp": "Am 1., für den Vormonat.",
+			"reportIncludeAdmins": "Auch an Admins senden",
+			"reportIncludeAdminsHelp": "Inhaber erhalten ihn immer. Admins nur, wenn diese Option aktiv ist.",
+			"reportNote": "Jeder kann sich über den Link in der E-Mail abmelden. Benachrichtigungsrouten für Ausgabenberichte erhalten pro Bericht eine Zusammenfassung.",
+			"reportsOff": "Berichts-E-Mails werden noch nicht verschickt. Deine Auswahl ist gespeichert und gilt, sobald sie starten."
 		},
 		"shortcuts": {
 			"keyLimit": "Bei {percent} % des Limits dieses Schlüssels warnen",

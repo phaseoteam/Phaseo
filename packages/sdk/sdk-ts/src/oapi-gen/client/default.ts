@@ -13975,6 +13975,8 @@ export async function getWorkspaceNotificationSettings(
     spend: {
       billing_time_zone: string;
       department_attribution: "all" | "primary";
+      report_cadence: "off" | "daily" | "weekly" | "monthly";
+      report_include_admins: boolean;
     };
   };
 }> {
@@ -14000,6 +14002,8 @@ export async function getWorkspaceNotificationSettings(
       spend: {
         billing_time_zone: string;
         department_attribution: "all" | "primary";
+        report_cadence: "off" | "daily" | "weekly" | "monthly";
+        report_include_admins: boolean;
       };
     };
   }>({
@@ -27630,6 +27634,8 @@ export type UpdateWorkspaceNotificationSettingsParams = {
     spend?: {
       billing_time_zone?: string;
       department_attribution?: "all" | "primary";
+      report_cadence?: "off" | "daily" | "weekly" | "monthly";
+      report_include_admins?: boolean;
     };
   };
 };
@@ -27660,6 +27666,8 @@ export async function updateWorkspaceNotificationSettings(
     spend: {
       billing_time_zone: string;
       department_attribution: "all" | "primary";
+      report_cadence: "off" | "daily" | "weekly" | "monthly";
+      report_include_admins: boolean;
     };
   };
 }> {
@@ -27685,6 +27693,8 @@ export async function updateWorkspaceNotificationSettings(
       spend: {
         billing_time_zone: string;
         department_attribution: "all" | "primary";
+        report_cadence: "off" | "daily" | "weekly" | "monthly";
+        report_include_admins: boolean;
       };
     };
   }>({

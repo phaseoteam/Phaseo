@@ -8291,12 +8291,20 @@ class WorkspaceSettingsUpdateRequest
 
 class WorkspaceSpendAttribution { }
 
+class WorkspaceSpendReportCadence { }
+
+class WorkspaceSpendReportIncludeAdmins { }
+
 class WorkspaceSpendSettings
 {
 	/** @var string */
 	public $billing_time_zone;
 	/** @var string */
 	public $department_attribution;
+	/** @var string */
+	public $report_cadence;
+	/** @var bool */
+	public $report_include_admins;
 }
 
 class WorkspaceSpendSettingsUpdate
@@ -8305,6 +8313,10 @@ class WorkspaceSpendSettingsUpdate
 	public $billing_time_zone;
 	/** @var string|null */
 	public $department_attribution;
+	/** @var string|null */
+	public $report_cadence;
+	/** @var bool|null */
+	public $report_include_admins;
 }
 
 class WorkspaceSsoResponse

@@ -25332,16 +25332,33 @@ components:
       maxLength: 64
       description: उन खर्च नियमों की कैलेंडर अवधियों के लिए IANA समय क्षेत्र जिनका अपना कोई समय क्षेत्र नहीं है, और खर्च रिपोर्ट के लिए। डिफ़ॉल्ट UTC है। लागू की गई कुंजी सीमाएँ और वर्कस्पेस बजट हमेशा UTC का उपयोग करते हैं।
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: 'वर्कस्पेस मालिकों को खर्च रिपोर्ट ईमेल कितनी बार मिलता है, और report_include_admins चालू होने पर एडमिन को भी: off, daily (पिछले दिन के लिए 09:00 बजे), weekly (पिछले सोमवार से रविवार के सप्ताह के लिए सोमवार 09:00 बजे) या monthly (पिछले महीने के लिए 1 तारीख को 09:00 बजे), बिलिंग समय क्षेत्र में। बिना खर्च वाली अवधियाँ छोड़ दी जाती हैं। वर्कस्पेस के spend_report रूट को हर रिपोर्ट का एक सारांश मिलता है। डिफ़ॉल्ट weekly है।'
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: खर्च रिपोर्ट केवल मालिकों को नहीं, वर्कस्पेस एडमिन को भी ईमेल करें। डिफ़ॉल्ट false है। कोई भी ईमेल में दिए लिंक से सदस्यता छोड़ सकता है।
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -25433,6 +25450,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string

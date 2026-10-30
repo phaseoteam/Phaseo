@@ -7704,7 +7704,21 @@
 			"attributionNote": "Com todos os departamentos, a soma dos departamentos pode passar dos gastos do espaço de trabalho. A participação é lida quando os alertas são verificados, então mudar alguém de departamento leva junto os gastos do período atual.",
 			"saving": "Salvando…",
 			"saved": "Salvo",
-			"saveFailed": "Não foi possível salvar a configuração"
+			"saveFailed": "Não foi possível salvar a configuração",
+			"report": "E-mail com relatório de gastos",
+			"reportHelp": "Um resumo dos gastos e da variação em relação ao período anterior, das principais chaves, modelos, membros e departamentos, da previsão do mês, da autonomia e dos alertas. Os proprietários o recebem por padrão. É enviado às 09:00 no fuso horário de cobrança e não é enviado quando não houve gastos.",
+			"reportOff": "Desativado",
+			"reportOffHelp": "Nenhum e-mail de relatório.",
+			"reportDaily": "Diário",
+			"reportDailyHelp": "Toda manhã, do dia anterior.",
+			"reportWeekly": "Semanal",
+			"reportWeeklyHelp": "Às segundas de manhã, da semana anterior.",
+			"reportMonthly": "Mensal",
+			"reportMonthlyHelp": "No dia 1º, do mês anterior.",
+			"reportIncludeAdmins": "Enviar também aos administradores",
+			"reportIncludeAdminsHelp": "Os proprietários sempre o recebem. Os administradores, só quando esta opção está ativada.",
+			"reportNote": "Qualquer pessoa pode cancelar a inscrição pelo link no e-mail. As rotas de notificação dos relatórios de gastos recebem um resumo por relatório.",
+			"reportsOff": "Os e-mails de relatório ainda não estão sendo enviados. Sua escolha foi salva e vale quando começarem."
 		},
 		"shortcuts": {
 			"keyLimit": "Me alertar em {percent}% do limite desta chave",

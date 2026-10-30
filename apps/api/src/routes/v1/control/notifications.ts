@@ -29,12 +29,18 @@ function parseNotificationTestKind(value: unknown): NotificationTestKind | null 
 export function usdToNanos(value: unknown): number | null { const usd = Number(value); const nanos = Math.round(usd * 1_000_000_000); const cents = Math.abs(usd * 100 - Math.round(usd * 100)) < 1e-8; return Number.isFinite(usd) && usd >= 0 && cents && Number.isSafeInteger(nanos) ? nanos : null; }
 /** How spend rules attribute a person's spend to departments; null when the value is neither. */
 export function parseDepartmentSpendAttribution(value: unknown): "all" | "primary" | null { return value === "all" || value === "primary" ? value : null; }
-/** The spend settings update: department attribution and/or billing time zone, each validated. */
-export function parseSpendSettingsUpdate(spend: Record<string, unknown>): { update: Record<string, string> } | { error: string } {
-	const update: Record<string, string> = {};
+export const SPEND_REPORT_CADENCES = ["off", "daily", "weekly", "monthly"] as const;
+export type SpendReportCadence = typeof SPEND_REPORT_CADENCES[number];
+/** How often owners (and opted-in admins) get the spend report email; null when the value is none of them. */
+export function parseSpendReportCadence(value: unknown): SpendReportCadence | null { return typeof value === "string" && (SPEND_REPORT_CADENCES as readonly string[]).includes(value) ? value as SpendReportCadence : null; }
+/** The spend settings update: department attribution, billing time zone and the spend report settings, each validated. */
+export function parseSpendSettingsUpdate(spend: Record<string, unknown>): { update: Record<string, string | boolean> } | { error: string } {
+	const update: Record<string, string | boolean> = {};
 	if (spend.department_attribution !== undefined) { const attribution = parseDepartmentSpendAttribution(spend.department_attribution); if (!attribution) return { error: "spend.department_attribution must be all or primary" }; update.department_spend_attribution = attribution; }
 	if (spend.billing_time_zone !== undefined) { const zone = parseIanaTimeZone(spend.billing_time_zone); if (!zone) return { error: "spend.billing_time_zone must be an IANA time zone such as Europe/London" }; update.billing_time_zone = zone; }
-	if (!Object.keys(update).length) return { error: "spend needs department_attribution or billing_time_zone" };
+	if (spend.report_cadence !== undefined) { const cadence = parseSpendReportCadence(spend.report_cadence); if (!cadence) return { error: "spend.report_cadence must be off, daily, weekly or monthly" }; update.spend_report_cadence = cadence; }
+	if (spend.report_include_admins !== undefined) { if (typeof spend.report_include_admins !== "boolean") return { error: "spend.report_include_admins must be a boolean" }; update.spend_report_include_admins = spend.report_include_admins; }
+	if (!Object.keys(update).length) return { error: "spend needs department_attribution, billing_time_zone, report_cadence or report_include_admins" };
 	return { update };
 }
 export function hasVerifiedTotpFactor(factors: unknown): boolean {
@@ -57,10 +63,10 @@ async function getSettings(req: Request) {
 	const access = await authorize(req, false); if ("response" in access) return access.response; const client = getSupabaseAdmin();
 	const [wallet, settings] = await Promise.all([
 		client.from("wallets").select("auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id").eq("workspace_id", access.auth.workspaceId).maybeSingle(),
-		client.from("workspace_settings").select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled,department_spend_attribution,billing_time_zone").eq("workspace_id", access.auth.workspaceId).maybeSingle(),
+		client.from("workspace_settings").select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled,department_spend_attribution,billing_time_zone,spend_report_cadence,spend_report_include_admins").eq("workspace_id", access.auth.workspaceId).maybeSingle(),
 	]);
 	if (wallet.error || settings.error) return json({ error: "notification_settings_unavailable" }, 503, NO_STORE);
-	return json({ data: { auto_top_up: { enabled: Boolean(wallet.data?.auto_top_up_enabled), balance_threshold_nanos: Number(wallet.data?.low_balance_threshold ?? 0), amount_nanos: Number(wallet.data?.auto_top_up_amount ?? 0), payment_method_id: wallet.data?.auto_top_up_account_id ?? null }, low_balance_email: { enabled: Boolean(settings.data?.low_balance_email_enabled), threshold_usd: nanosToUsd(settings.data?.low_balance_email_threshold_nanos) }, email_preferences: { auto_top_up_failure: settings.data?.auto_top_up_failure_email_enabled !== false, payment_method_expiring: settings.data?.payment_method_expiring_email_enabled !== false, model_deprecation: Boolean(settings.data?.model_deprecation_alerts_enabled) }, spend: { department_attribution: parseDepartmentSpendAttribution(settings.data?.department_spend_attribution) ?? "all", billing_time_zone: parseIanaTimeZone(settings.data?.billing_time_zone) ?? "UTC" } } }, 200, NO_STORE);
+	return json({ data: { auto_top_up: { enabled: Boolean(wallet.data?.auto_top_up_enabled), balance_threshold_nanos: Number(wallet.data?.low_balance_threshold ?? 0), amount_nanos: Number(wallet.data?.auto_top_up_amount ?? 0), payment_method_id: wallet.data?.auto_top_up_account_id ?? null }, low_balance_email: { enabled: Boolean(settings.data?.low_balance_email_enabled), threshold_usd: nanosToUsd(settings.data?.low_balance_email_threshold_nanos) }, email_preferences: { auto_top_up_failure: settings.data?.auto_top_up_failure_email_enabled !== false, payment_method_expiring: settings.data?.payment_method_expiring_email_enabled !== false, model_deprecation: Boolean(settings.data?.model_deprecation_alerts_enabled) }, spend: { department_attribution: parseDepartmentSpendAttribution(settings.data?.department_spend_attribution) ?? "all", billing_time_zone: parseIanaTimeZone(settings.data?.billing_time_zone) ?? "UTC", report_cadence: parseSpendReportCadence(settings.data?.spend_report_cadence) ?? "weekly", report_include_admins: settings.data?.spend_report_include_admins === true } } }, 200, NO_STORE);
 }
 
 async function updateSettings(req: Request) {

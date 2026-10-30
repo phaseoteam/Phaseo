@@ -11304,6 +11304,10 @@ public sealed class WorkspaceSettingsUpdateRequest
 
 public sealed class WorkspaceSpendAttribution { }
 
+public sealed class WorkspaceSpendReportCadence { }
+
+public sealed class WorkspaceSpendReportIncludeAdmins { }
+
 public sealed class WorkspaceSpendSettings
 {
 	[JsonPropertyName("billing_time_zone")]
@@ -11311,6 +11315,12 @@ public sealed class WorkspaceSpendSettings
 
 	[JsonPropertyName("department_attribution")]
 	public string DepartmentAttribution { get; set; }
+
+	[JsonPropertyName("report_cadence")]
+	public string ReportCadence { get; set; }
+
+	[JsonPropertyName("report_include_admins")]
+	public bool ReportIncludeAdmins { get; set; }
 
 }
 
@@ -11321,6 +11331,12 @@ public sealed class WorkspaceSpendSettingsUpdate
 
 	[JsonPropertyName("department_attribution")]
 	public string? DepartmentAttribution { get; set; }
+
+	[JsonPropertyName("report_cadence")]
+	public string? ReportCadence { get; set; }
+
+	[JsonPropertyName("report_include_admins")]
+	public bool? ReportIncludeAdmins { get; set; }
 
 }
 

@@ -6501,14 +6501,30 @@ const (
 )
 
 
+type WorkspaceSpendReportCadence string
+
+const (
+	WorkspaceSpendReportCadenceOff WorkspaceSpendReportCadence = "off"
+	WorkspaceSpendReportCadenceDaily WorkspaceSpendReportCadence = "daily"
+	WorkspaceSpendReportCadenceWeekly WorkspaceSpendReportCadence = "weekly"
+	WorkspaceSpendReportCadenceMonthly WorkspaceSpendReportCadence = "monthly"
+)
+
+
+type WorkspaceSpendReportIncludeAdmins = bool
+
 type WorkspaceSpendSettings struct {
 	BillingTimeZone string `json:"billing_time_zone"`
 	DepartmentAttribution string `json:"department_attribution"`
+	ReportCadence string `json:"report_cadence"`
+	ReportIncludeAdmins bool `json:"report_include_admins"`
 }
 
 type WorkspaceSpendSettingsUpdate struct {
 	BillingTimeZone *string `json:"billing_time_zone,omitempty"`
 	DepartmentAttribution *string `json:"department_attribution,omitempty"`
+	ReportCadence *string `json:"report_cadence,omitempty"`
+	ReportIncludeAdmins *bool `json:"report_include_admins,omitempty"`
 }
 
 type WorkspaceSsoResponse struct {

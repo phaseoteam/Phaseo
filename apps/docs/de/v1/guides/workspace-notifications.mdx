@@ -40,6 +40,16 @@ Auf der Benachrichtigungsseite werden die für deinen Workspace verfügbaren Ala
 
 Zusätzlich zu den im Dashboard angezeigten integrierten Empfängern werden Alarme auch an die eingerichteten Ziele gesendet.
 
+## Ausgabenberichte
+
+Workspace-Inhaber erhalten jeden Montag um 09:00 Uhr in der Abrechnungszeitzone des Workspace eine E-Mail mit dem Ausgabenbericht für die Vorwoche von Montag bis Sonntag. Du änderst das auf der Benachrichtigungsseite unter **Ausgabenwarnungen → Ausgabeneinstellungen des Arbeitsbereichs**: täglich (um 09:00 Uhr für den Vortag), wöchentlich, monatlich (am 1. für den Vormonat) oder aus, und ob auch Admins ihn erhalten. Zeiträume ohne Ausgaben werden übersprungen.
+
+Jeder Bericht zeigt die Ausgaben und die Veränderung zum vorherigen Zeitraum, die wichtigsten Schlüssel, Modelle, Mitglieder und Abteilungen, die Prognose für diesen Monat, die Reichweite des Guthabens sowie die Ausgabenwarnungen und Sperren des Zeitraums. Wer ihn erhält, kann sich über den Link in der E-Mail abmelden; das stoppt nur die eigene Kopie des Berichts dieses Workspace. Ziele, die an **Spend Reports** weitergeleitet werden, erhalten pro Bericht eine Zusammenfassung.
+
+Dieselben Einstellungen heißen in der [API für Benachrichtigungseinstellungen](../api-reference/endpoint/notifications-settings-update.mdx) `spend.report_cadence` und `spend.report_include_admins`.
+
+<Note>Ausgabenberichte per E-Mail werden schrittweise eingeführt. Bis sie aktiviert sind, wird deine Auswahl gespeichert, aber kein Bericht verschickt.</Note>
+
 ## Erwähnungen
 
 Mit optionalen Erwähnungsfeldern kann ein Alarm bestimmte Empfänger benachrichtigen:

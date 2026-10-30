@@ -255,6 +255,16 @@ describe("spend blocks", () => {
 		expect(((await enabled.json()) as any).blocksEnabled).toBe(true);
 	});
 
+	it("returns the spend report settings and says whether reports go out yet", async () => {
+		database({ role: "member" });
+		const body = (await (await call(`/spend-rules?workspaceId=${WORKSPACE}`)).json()) as any;
+		expect(body).toMatchObject({ reportsEnabled: false, spendReportCadence: "weekly", spendReportIncludeAdmins: false });
+		const enabled = await app.request(`https://phaseo.app/api/account/settings/spend-rules?workspaceId=${WORKSPACE}`, {
+			headers: { authorization: "Bearer fixture-token" },
+		}, { ...env, SPEND_REPORTS_ENABLED: "true" }, executionCtx);
+		expect(((await enabled.json()) as any).reportsEnabled).toBe(true);
+	});
+
 	it("only lets owners and admins lift a block", async () => {
 		const requests = database({ role: "member" });
 		expect((await send(`/spend-rules/blocks/${BLOCK}/lift`, "POST", {})).status).toBe(403);

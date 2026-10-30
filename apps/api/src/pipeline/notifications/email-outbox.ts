@@ -8,6 +8,7 @@ import { renderSlackAgentRefusedEmail } from "@/pipeline/notifications/slack-age
 import { renderFeedbackRequestEmail } from "@/pipeline/notifications/feedback-request";
 import { renderStorageIncidentEmail } from "@/pipeline/notifications/storage-incident";
 import { renderCreditTopupConfirmationEmail } from "@/pipeline/notifications/credit-topup-confirmation";
+import { renderSpendReportEmail } from "@/pipeline/notifications/spend-report-email";
 
 type OutboxRow = {
 	id: string;
@@ -249,6 +250,11 @@ function renderEmailForRow(row: OutboxRow): {
 	if (row.template === "feedback_request" || row.kind === "feedback_request") {
 		return renderFeedbackRequestEmail(row.payload ?? {});
 	}
+	// Per-recipient spend reports. The routed spend_report row (same template) never reaches here.
+	if (row.kind === "spend_report_email") {
+		const rendered = renderSpendReportEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text, headers: rendered.headers };
+	}
 	if (row.template === "low_balance" || row.kind === "low_balance") {
 		const templateId = bindings.RESEND_TEMPLATE_LOW_BALANCE_ID?.trim() || "";
 		if (!templateId) throw new Error("missing_resend_template_low_balance_id");
@@ -354,7 +360,8 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 	// Keep them out of the legacy owner-email drain so a routed model_deprecation
 	// event is not also emailed here. Spend rule events (spend_alert, spend_blocked,
 	// spend_report) are routed-only too. The owner and admin copies of a deprecation
-	// notice are separate model_deprecation_email rows, which this drain sends.
+	// notice are separate model_deprecation_email rows, which this drain sends, and so are
+	// the owner and admin copies of a spend report (spend_report_email).
 	// Feedback requests are drained separately below so a daily batch never delays
 	// transactional email.
 	const { data, error } = await supabase
@@ -415,7 +422,11 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 			// its link points to), and they honour Resend's own unsubscribe state.
 			// Transactional mail (billing, alerts) does neither.
 			const isFeedbackRequest = row.template === "feedback_request" || row.kind === "feedback_request";
-			const feedbackSkipReason = !isFeedbackRequest
+			// A spend report for a deleted account (user_id cleared) is dropped too. Unsubscribing
+			// cancels unsent reports in the database (set_spend_report_subscription).
+			const feedbackSkipReason = row.kind === "spend_report_email" && !row.user_id
+				? "user_deleted"
+				: !isFeedbackRequest
 				? null
 				: !row.user_id
 					? "user_deleted"

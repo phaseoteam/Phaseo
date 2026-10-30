@@ -7704,7 +7704,21 @@
 			"attributionNote": "Avec tous les départements, la somme des départements peut dépasser les dépenses de l'espace de travail. L'appartenance est lue lors de la vérification des alertes : déplacer quelqu'un déplace ses dépenses de la période en cours.",
 			"saving": "Enregistrement…",
 			"saved": "Enregistré",
-			"saveFailed": "Impossible d'enregistrer le réglage"
+			"saveFailed": "Impossible d'enregistrer le réglage",
+			"report": "E-mail de rapport de dépenses",
+			"reportHelp": "Un résumé des dépenses et de l’évolution par rapport à la période précédente, des principales clés, modèles, membres et départements, de la prévision du mois, de l’autonomie et des alertes. Les propriétaires le reçoivent par défaut. Il part à 09:00 dans le fuseau horaire de facturation et n’est pas envoyé s’il n’y a eu aucune dépense.",
+			"reportOff": "Désactivé",
+			"reportOffHelp": "Aucun e-mail de rapport.",
+			"reportDaily": "Quotidien",
+			"reportDailyHelp": "Chaque matin, pour la veille.",
+			"reportWeekly": "Hebdomadaire",
+			"reportWeeklyHelp": "Le lundi matin, pour la semaine précédente.",
+			"reportMonthly": "Mensuel",
+			"reportMonthlyHelp": "Le 1er, pour le mois précédent.",
+			"reportIncludeAdmins": "L’envoyer aussi aux administrateurs",
+			"reportIncludeAdminsHelp": "Les propriétaires le reçoivent toujours. Les administrateurs seulement si cette option est activée.",
+			"reportNote": "Chacun peut se désabonner depuis le lien de l’e-mail. Les routes de notification des rapports de dépenses reçoivent un résumé par rapport.",
+			"reportsOff": "Les e-mails de rapport ne sont pas encore envoyés. Votre choix est enregistré et s’appliquera dès leur lancement."
 		},
 		"shortcuts": {
 			"keyLimit": "M'alerter à {percent} % de la limite de cette clé",

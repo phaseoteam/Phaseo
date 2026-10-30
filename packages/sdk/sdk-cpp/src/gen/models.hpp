@@ -4744,14 +4744,22 @@ struct WorkspaceSettingsUpdateRequest {
 
 using WorkspaceSpendAttribution = std::any;
 
+using WorkspaceSpendReportCadence = std::any;
+
+using WorkspaceSpendReportIncludeAdmins = std::any;
+
 struct WorkspaceSpendSettings {
 	std::string billing_time_zone;
 	std::any department_attribution;
+	std::any report_cadence;
+	bool report_include_admins;
 };
 
 struct WorkspaceSpendSettingsUpdate {
 	std::string billing_time_zone;
 	std::any department_attribution;
+	std::any report_cadence;
+	std::optional<bool> report_include_admins;
 };
 
 struct WorkspaceSsoResponse {

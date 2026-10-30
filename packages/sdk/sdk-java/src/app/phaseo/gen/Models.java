@@ -4797,14 +4797,24 @@ public final class Models {
 	public static class WorkspaceSpendAttribution {
 	}
 
+	public static class WorkspaceSpendReportCadence {
+	}
+
+	public static class WorkspaceSpendReportIncludeAdmins {
+	}
+
 	public static class WorkspaceSpendSettings {
 		public String billing_time_zone;
 		public Object department_attribution;
+		public Object report_cadence;
+		public Boolean report_include_admins;
 	}
 
 	public static class WorkspaceSpendSettingsUpdate {
 		public String billing_time_zone;
 		public Object department_attribution;
+		public Object report_cadence;
+		public Boolean report_include_admins;
 	}
 
 	public static class WorkspaceSsoResponse {

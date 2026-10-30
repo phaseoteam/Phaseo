@@ -7704,7 +7704,21 @@
 			"attributionNote": "With all departments, department totals can add up to more than the workspace's spend. Membership is read when alerts are checked, so moving someone moves their spend for the current period.",
 			"saving": "Saving…",
 			"saved": "Saved",
-			"saveFailed": "Could not save the setting"
+			"saveFailed": "Could not save the setting",
+			"report": "Spend report email",
+			"reportHelp": "A summary of spend and the change from the period before, the top keys, models, members and departments, this month's forecast, runway, and alerts. Owners get it by default. It goes out at 09:00 in the billing time zone and is skipped when nothing was spent.",
+			"reportOff": "Off",
+			"reportOffHelp": "No report emails.",
+			"reportDaily": "Daily",
+			"reportDailyHelp": "Each morning, for the day before.",
+			"reportWeekly": "Weekly",
+			"reportWeeklyHelp": "Monday mornings, for the week before.",
+			"reportMonthly": "Monthly",
+			"reportMonthlyHelp": "On the 1st, for the month before.",
+			"reportIncludeAdmins": "Send it to admins too",
+			"reportIncludeAdminsHelp": "Owners always get it. Admins get it only when this is on.",
+			"reportNote": "Anyone can unsubscribe from the link in the email. Notification routes for spend reports get one summary per report.",
+			"reportsOff": "Report emails aren't being sent yet. Your choice is saved and applies once they start."
 		},
 		"shortcuts": {
 			"keyLimit": "Alert me at {percent}% of this key's limit",
