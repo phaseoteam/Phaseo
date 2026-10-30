@@ -1,5 +1,0 @@
----
-"@phaseo/gateway-api": minor
----
-
-Add grace-margin blocking for spend rules with `action: "block"`, off by default behind `SPEND_RULE_BLOCKS_ENABLED`. A block starts minutes after spend reaches the rule's block point (`block_at_amount_nanos`, or `block_at_percent` of the base). Requests in its scope (workspace, key, member, department, model or provider) then get a 429 with code `spend_rule_blocked` and `Retry-After` set to the period reset, in the same shape as budget and key-limit 429s. Free models are exempt unless `block_free_models` is set. While spend is past a block rule's last alert threshold but not yet at its block point, responses carry `X-Phaseo-Spend-Warning`. Blocks lift on their own when the period resets, or when the rule is disabled, deleted or changed so spend is under its new limit. A block an owner or admin lifts stays lifted for the rest of the period. New beta endpoints `GET /v1/control/spend-blocks` and `POST /v1/control/spend-blocks/{id}/lift` (owners and admins, audit-logged). Each start and lift sends a `spend_blocked` notification and a mobile push.

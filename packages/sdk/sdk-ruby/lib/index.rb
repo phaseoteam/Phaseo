@@ -89,7 +89,7 @@ module PhaseoSdk
       @lifecycle_resolver = lifecycle_resolver
       @warned_models = {}
       @model_lifecycle_cache = {}
-      @telemetry_recorder = TelemetryRecorder.new(devtools, "3.0.0")
+      @telemetry_recorder = TelemetryRecorder.new(devtools, "3.1.0")
       @async_jobs = AsyncJobsResource.new(self)
       @realtime = Realtime.new(self, @base_path)
     end
@@ -900,7 +900,7 @@ module PhaseoSdk
   end
 
   class TelemetryRecorder
-    def initialize(config = nil, sdk_version = "3.0.0")
+    def initialize(config = nil, sdk_version = "3.1.0")
       config ||= {}
       enabled = config.fetch(:enabled, false)
       directory = config.fetch(:directory, ".phaseo-devtools")
