@@ -119,7 +119,7 @@ Im Anfrageprotokoll siehst du:
 
 Bewertungsfaktoren werden vom protokollierten Kontext getrennt. Ein Bewertungsfaktor ändert die endgültige Punktzahl des aktiven Routing-Modus. Der protokollierte Kontext hilft bei der Erklärung, wirkt sich aber nicht unbedingt auf die Punktzahl aus.
 
-Beim `balanced`-Routing bewertet Phaseo geeignete Anbieter nach Zuverlässigkeit, Latenz, Tail-Latenz, Durchsatz, Preis und Token-Eignung. Die angezeigte Berechnung zeigt, wie jeder Faktor zur Endpunktzahl beigetragen hat, statt alle protokollierten Messwerte als gleich wichtig darzustellen.
+Bei `balanced`-Textanfragen (Chat Completions, Responses und Messages) ordnet Phaseo geeignete Anbieter nach ihren erwarteten Kosten pro erfolgreicher Antwort. Diese Kosten addieren, was eine typische Anfrage für das Modell beim Anbieter kostet – auf Basis der gemessenen Prompt- und Ausgabegrößen des Modells und der gemessenen Cache-Trefferquote des Anbieters –, und die Wartezeit auf das erste Token und die vollständige Antwort. Das Ergebnis wird durch die aktuelle Erfolgsquote des Anbieters geteilt. Anbieterfehler erhöhen die Kosten zusätzlich, Ratenlimits etwas weniger. Anbieter nahe den niedrigsten Kosten teilen sich den Großteil des Traffics, und jeder Anbieter behält einen kleinen Anteil, damit eine Erholung bemerkt wird. Um nur nach Preis zu ordnen, sende `provider.sort: "price"`. Andere Endpunkte werden nach Zuverlässigkeit, Latenz, Tail-Latenz, Durchsatz, Preis und Token-Eignung bewertet. Die angezeigte Berechnung zeigt, wie jeder Faktor zur Endpunktzahl beigetragen hat, statt alle protokollierten Messwerte als gleich wichtig darzustellen.
 
 ### Zuverlässigkeit und Verfügbarkeit von Anbietern
 

@@ -57,6 +57,7 @@ import {
 	maybeOpenOnRecentErrors,
 	reportProbeResult,
 } from "./health";
+import { promptTokensFromUsage } from "./routing-cost";
 import { logDebugEvent, previewValue, parseJsonLoose } from "../debug";
 
 export type Bill = {
@@ -1357,6 +1358,7 @@ async function attemptProviderWithIR(
 					generation_ms: completedGenerationMs,
 					tokens_in: tokensIn,
 					tokens_out: tokensOut,
+					...promptTokensFromUsage(usageForMetrics),
 				});
 				if (isProbe && healthImpact !== "neutral" && !healthUpdate?.rateLimited) {
 					await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");

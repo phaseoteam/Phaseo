@@ -6,6 +6,7 @@ import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { HEALTH_CONSTANTS, HEALTH_KEYS, isRecoveryProbeRequest } from "./health.config";
 import type { Endpoint } from "@core/types";
 import { awaitShared } from "@core/shared-wait";
+import { TOKEN_MIX_TAU_MS } from "./health-evidence";
 import { coordinatedHealthEnabled, coordinatedHealthMany, coordinatedHealthRead, reportCoordinatedHealth, resetCoordinatedHealthForTests } from "./health-coordinator";
 
 export type BreakerState = "closed" | "open" | "half_open";
@@ -33,6 +34,13 @@ export type ProviderHealth = {
     rec_ok_ew_10s?: number;
     rec_tot_ew_10s?: number;
     rec_rate_limited_ew_10s?: number;
+    // Typical request size on this route, for routing cost: prompt tokens (cache reads
+    // included), the cache-read part of them, and output tokens, blended by tok_weight.
+    prompt_tok_ewma?: number;
+    cached_tok_ewma?: number;
+    out_tok_ewma?: number;
+    tok_weight?: number;
+    last_tok_ms?: number;
     last_success_ms?: number;
     consecutive_failures?: number;
 
@@ -121,6 +129,11 @@ const NUMERIC_DEFAULTS: Record<keyof Omit<ProviderHealth, "endpoint" | "provider
     rec_ok_ew_10s: 0,
     rec_tot_ew_10s: 0,
     rec_rate_limited_ew_10s: 0,
+    prompt_tok_ewma: 0,
+    cached_tok_ewma: 0,
+    out_tok_ewma: 0,
+    tok_weight: 0,
+    last_tok_ms: 0,
     last_success_ms: 0,
     consecutive_failures: 0,
     inflight: 0,
@@ -543,6 +556,11 @@ function snapshotFromMap(
         rec_ok_ew_10s: readNumber(map, provider, "rec_ok_ew_10s"),
         rec_tot_ew_10s: readNumber(map, provider, "rec_tot_ew_10s"),
         rec_rate_limited_ew_10s: readNumber(map, provider, "rec_rate_limited_ew_10s"),
+        prompt_tok_ewma: readNumber(map, provider, "prompt_tok_ewma"),
+        cached_tok_ewma: readNumber(map, provider, "cached_tok_ewma"),
+        out_tok_ewma: readNumber(map, provider, "out_tok_ewma"),
+        tok_weight: readNumber(map, provider, "tok_weight"),
+        last_tok_ms: readNumber(map, provider, "last_tok_ms"),
         last_success_ms: readNumber(map, provider, "last_success_ms"),
         consecutive_failures: readNumber(map, provider, "consecutive_failures"),
         inflight: readNumber(map, provider, "inflight"),
@@ -904,6 +922,18 @@ export async function onCallStart(endpoint: Endpoint, provider: string, model: s
     }, HEALTH_STATE_TTL_SECONDS, "background");
 }
 
+function observedTokenMix(params: { prompt_tokens?: number; cached_prompt_tokens?: number; tokens_out?: number }) {
+    const prompt = Number(params.prompt_tokens);
+    if (!Number.isFinite(prompt) || prompt <= 0) return null;
+    const cached = Number(params.cached_prompt_tokens);
+    const output = Number(params.tokens_out);
+    return {
+        prompt,
+        cached: Number.isFinite(cached) ? Math.max(0, Math.min(prompt, cached)) : 0,
+        output: Number.isFinite(output) ? Math.max(0, output) : 0,
+    };
+}
+
 export async function onCallEnd(
     endpoint: Endpoint,
     params: {
@@ -918,6 +948,9 @@ export async function onCallEnd(
         generation_ms?: number;
         tokens_in?: number;
         tokens_out?: number;
+        /** Text prompt size for routing cost: cache reads included, and the cache-read part. */
+        prompt_tokens?: number;
+        cached_prompt_tokens?: number;
         observationId?: string;
         startedAt?: number;
         probe?: boolean;
@@ -930,6 +963,7 @@ export async function onCallEnd(
     // Generated text speed excludes the prompt. Other endpoints retain their
     // existing token-volume metric (e.g. input tokens processed by embeddings).
     const tokens = Math.max(0, params.tokens_out ?? 0) + (textGeneration ? 0 : Math.max(0, params.tokens_in ?? 0));
+    const tokenMix = impact === "success" && textGeneration ? observedTokenMix(params) : null;
     if (coordinatedHealthEnabled()) {
         if (impact !== "neutral") {
             const now = Date.now();
@@ -942,6 +976,7 @@ export async function onCallEnd(
                 ok: impact === "success", limited: rateLimited, probe: params.probe ?? false,
                 latencyMs: latency,
                 tps: tps !== null && Number.isFinite(tps) ? tps : null,
+                ...(tokenMix ? { tokens: tokenMix } : {}),
             });
         }
         return { rateLimited };
@@ -1007,6 +1042,18 @@ export async function onCallEnd(
         if (healthOk && tokens > 0 && params.generation_ms && params.generation_ms > 0) {
             const tps = tokens / Math.max(params.generation_ms / 1000, 0.001);
             tp60 = decay(tp60, tps, performanceDecay(tau60));
+        }
+        if (tokenMix) {
+            const lastTok = readNumber(map, provider, "last_tok_ms");
+            const tokDecay = lastTok > 0 ? Math.exp(-Math.max(0, now - lastTok) / TOKEN_MIX_TAU_MS) : 0;
+            const oldWeight = readNumber(map, provider, "tok_weight") * tokDecay;
+            const blend = (metric: "prompt_tok_ewma" | "cached_tok_ewma" | "out_tok_ewma", sample: number) =>
+                String((readNumber(map, provider, metric) * oldWeight + sample) / (oldWeight + 1));
+            map[field(provider, "prompt_tok_ewma")] = blend("prompt_tok_ewma", tokenMix.prompt);
+            map[field(provider, "cached_tok_ewma")] = blend("cached_tok_ewma", tokenMix.cached);
+            map[field(provider, "out_tok_ewma")] = blend("out_tok_ewma", tokenMix.output);
+            map[field(provider, "tok_weight")] = String(oldWeight + 1);
+            map[field(provider, "last_tok_ms")] = String(now);
         }
         if (healthOk) map[field(provider, "last_success_ms")] = String(now);
         map[field(provider, "rec_ok_ew_10s")] = String(recOk10);

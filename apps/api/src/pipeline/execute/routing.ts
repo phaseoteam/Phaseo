@@ -24,6 +24,13 @@ import { readHealthManyOptimistic, ProviderHealth } from "./health";
 import { providerLimitModel, providerQuotaHeadroom, providerQuotaPressure } from "@core/provider-rate-limits";
 import { isRecoveryProbeRequest } from "./health.config";
 import { ageHealth } from "./health-evidence";
+import {
+    computeRoutingCosts,
+    resolveRoutingAlgorithm,
+    type RoutingAlgorithm,
+    type RoutingCostBreakdown,
+} from "./routing-cost";
+import { getBindings } from "@/runtime/env";
 import { stripPrioritySuffix } from "./utils";
 import { jsonOutputEvidenceRank, requestedJsonOutputType } from "../before/paramCapabilities";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
@@ -45,7 +52,13 @@ type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 type ProviderStatus = ProviderRolloutStatus;
 type CapabilityStatus = CapabilityRoutingStatus;
 
-const ROUTING_ALGORITHM_VERSION = "provider-score-v8";
+function routingAlgorithmSetting(): string | undefined {
+    try {
+        return getBindings().GATEWAY_ROUTING_ALGORITHM;
+    } catch {
+        return undefined;
+    }
+}
 // External providers are available only as explicit provider-model route overrides;
 // keep them behind non-external providers and retain the score penalty within
 // the fallback pool.
@@ -280,6 +293,17 @@ function sampleProviderReliability(health: ProviderHealth, rng: (() => number) |
         sample: rng ? sampleBeta(8 + successes, 2 + failures, rng) : (8 + successes) / (10 + samplingObservations),
         effectiveObservations,
     };
+}
+
+function errorEvidenceConfidence(health: ProviderHealth): number {
+    const observations = sampleProviderReliability(health, null).effectiveObservations;
+    return observations / (8 + observations);
+}
+
+function roundRoutingCost(cost: RoutingCostBreakdown): RoutingCostBreakdown {
+    return Object.fromEntries(
+        Object.entries(cost).map(([key, value]) => [key, typeof value === "number" && Number.isFinite(value) ? Number(value.toPrecision(6)) : value]),
+    ) as RoutingCostBreakdown;
 }
 
 function extractMeterPrices(card: PriceCard | null): Map<string, number> {
@@ -639,7 +663,7 @@ export type RoutingScoreTrace = {
         noise: number;
     };
     calculation: {
-        formula: "price_weighted_performance" | "weighted_additive";
+        formula: "price_weighted_performance" | "weighted_additive" | "routing_cost";
         baseScore: number;
         baseWeight: number;
         rolloutMultiplier: number;
@@ -652,6 +676,8 @@ export type RoutingScoreTrace = {
         reliabilityMultiplier: number;
         finalScore: number;
     };
+    /** Present when the routing cost (v9) ranked the pool. */
+    routingCost?: RoutingCostBreakdown;
 };
 
 export type RoutingFilterStageDiagnostics = {
@@ -1054,6 +1080,11 @@ export async function routeProviders(
         recoveryProbeSkipped: stickyRecoveryProbeSkipped,
     });
 
+    // Only default text routing has a token mix to price; explicit sorts and orders keep v8.
+    const routingAlgorithm: RoutingAlgorithm = mode === "balanced" && TEXT_ENDPOINTS.has(ctx.endpoint) && !orderedHints.length
+        ? resolveRoutingAlgorithm(routingAlgorithmSetting())
+        : "provider-score-v8";
+    const useRoutingCost = routingAlgorithm === "routing-cost-v9";
     const routingSeed = hashSeed(`${ctx.requestId ?? ""}:${ctx.workspaceId}:${ctx.model}`);
     let poolBounds: RoutingDiagnostics["algorithm"]["poolBounds"] = null;
     const buildDiagnostics = (
@@ -1063,7 +1094,7 @@ export async function routeProviders(
         selectionMethod: RoutingDiagnostics["algorithm"]["selectionMethod"] = "score_sort",
     ): RoutingDiagnostics => ({
         algorithm: {
-            version: ROUTING_ALGORITHM_VERSION,
+            version: routingAlgorithm,
             seed: routingSeed,
             selectionMethod,
             poolBounds,
@@ -1518,9 +1549,31 @@ export async function routeProviders(
 
     const rng = seededRandom(routingSeed);
     const priceScores = mode !== "balanced" && preset.wPrice > 0 ? computePriceScores(ctx.endpoint, pool.map((p) => p.candidate)) : new Map();
-    const defaultPriceWeights = mode === "balanced"
+    const defaultPriceWeights = mode === "balanced" && !useRoutingCost
         ? computeInverseSquarePriceWeights(candidatePriceCosts, pool.map((p) => p.candidate))
         : new Map<string, number>();
+    const routingCosts = useRoutingCost
+        ? computeRoutingCosts(pool.map((entry) => {
+            const meters = extractMeterPrices(entry.candidate.pricingCard ?? null);
+            const errorRate = Math.max(entry.h.err_ewma_10s, entry.h.err_ewma_60s) * errorEvidenceConfidence(entry.h);
+            // Rate limits are only counted over 10s; split the error rate by their share of recent failures.
+            const recentFailures = (entry.h.rec_tot_ew_10s ?? 0) - (entry.h.rec_ok_ew_10s ?? 0);
+            const limitedFraction = recentFailures > 0.01
+                ? Math.min(1, (entry.h.rec_rate_limited_ew_10s ?? 0) / recentFailures)
+                : 0;
+            return {
+                key: getRoutingCandidateKey(entry.candidate),
+                prices: {
+                    input: meters.get("input_text_tokens") ?? null,
+                    cachedRead: meters.get("cached_read_text_tokens") ?? meters.get("implicit_cached_input_text_tokens") ?? null,
+                    output: meters.get("output_text_tokens") ?? null,
+                },
+                health: entry.h,
+                errorRate,
+                rateLimitedShare: errorRate * limitedFraction,
+            };
+        }))
+        : null;
     const stickyExactRouteAvailable = Boolean(
         stickyHint?.providerModelSlug &&
         pool.some((entry) =>
@@ -1578,7 +1631,10 @@ export async function routeProviders(
         const latencyScore = mode === "balanced" ? p50Curve : 0.5 * p50Curve + 0.5 * p50Norm;
         const throughputScore = mode === "balanced" ? Math.max(0, h.tp_ewma_60s) / (100 + Math.max(0, h.tp_ewma_60s)) : tpsNorm;
         const candidateKey = getRoutingCandidateKey(v.candidate);
-        const priceScore = mode === "balanced"
+        const routingCost = routingCosts?.get(candidateKey);
+        const priceScore = routingCost
+            ? routingCost.shareWeight
+            : mode === "balanced"
             ? (defaultPriceWeights.get(candidateKey) ?? 0.5)
             : preset.wPrice > 0
                 ? (priceScores.get(v.candidate.providerId) ?? 0.5)
@@ -1597,7 +1653,15 @@ export async function routeProviders(
         const tokenWeight = 0.10; // 10% weight for token affinity
 
         const noiseDraw = mode === "balanced" ? 0 : preset.noise * rng();
-        const contributions: RoutingScoreTrace["contributions"] = mode === "balanced" ? {
+        const contributions: RoutingScoreTrace["contributions"] = routingCost ? {
+            // Price, waiting, failures and rate limits are already one cost per answer.
+            price: priceScore,
+            latency: 0,
+            throughput: 0,
+            tailLatency: 0,
+            tokenAffinity: 0,
+            noise: 0,
+        } : mode === "balanced" ? {
             // Absolute curves keep small differences small, even in a two-provider pool.
             price: priceScore,
             latency: priceScore * 0.1 * latencyScore,
@@ -1628,7 +1692,7 @@ export async function routeProviders(
                 cacheRoutingMultiplier *
                 latencyPreferenceMultiplier *
                 throughputPreferenceMultiplier *
-                reliabilityMultiplier *
+                (routingCost ? 1 : reliabilityMultiplier) *
                 recentOutageMultiplier *
                 providerQuotaMultiplier
         );
@@ -1648,8 +1712,9 @@ export async function routeProviders(
             latencyPreferenceMultiplier,
             throughputPreferenceMultiplier,
         ];
-        const formula: RoutingScoreTrace["calculation"]["formula"] =
-            mode === "balanced" ? "price_weighted_performance" : "weighted_additive";
+        const formula: RoutingScoreTrace["calculation"]["formula"] = routingCost
+            ? "routing_cost"
+            : mode === "balanced" ? "price_weighted_performance" : "weighted_additive";
         let cachedTrace: RoutingScoreTrace | undefined;
         return {
             candidate: v.candidate,
@@ -1702,9 +1767,10 @@ export async function routeProviders(
                     throughputPreferenceMultiplier: roundDiagnosticNumber(throughputPreferenceMultiplier),
                     recentOutageMultiplier: roundDiagnosticNumber(recentOutageMultiplier),
                     providerQuotaMultiplier: roundDiagnosticNumber(providerQuotaMultiplier),
-                    reliabilityMultiplier: roundDiagnosticNumber(reliabilityMultiplier),
+                    reliabilityMultiplier: roundDiagnosticNumber(routingCost ? 1 : reliabilityMultiplier),
                     finalScore: roundDiagnosticNumber(score),
                 },
+                ...(routingCost ? { routingCost: roundRoutingCost(routingCost) } : {}),
             }; },
 			diagnostics: collectDetailedDiagnostics ? {
                 providerId: v.candidate.providerId,

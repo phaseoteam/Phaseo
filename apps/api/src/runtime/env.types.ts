@@ -23,6 +23,8 @@ export type GatewayBindings = {
 	GATEWAY_ROUTING_ARCHIVES_BUCKET?: R2Bucket;
 	GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF?: string;
 	GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED?: string;
+	/** Default text routing: "v9" (default), "v8", or "switchback" to alternate them in 3-hour blocks. */
+	GATEWAY_ROUTING_ALGORITHM?: string;
 	GATEWAY_IO_LOGS_BUCKET_NAME?: string;
 	GATEWAY_IO_LOGGING_MAX_BYTES?: string;
 	DATA_CONTRIBUTIONS_BUCKET?: R2Bucket;

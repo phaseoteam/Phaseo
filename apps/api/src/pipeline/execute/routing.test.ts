@@ -6,6 +6,12 @@ const readStickyRoutingMock = vi.fn();
 const resolveStickyRoutingContextMock = vi.fn();
 const providerQuotaPressureMock = vi.fn((_providerId: string, _model: string | null) => 0);
 const providerQuotaHeadroomMock = vi.fn((_providerId: string, _model: string | null) => 1);
+let routingAlgorithmSetting: string | undefined;
+
+vi.mock("@/runtime/env", async (importOriginal) => ({
+	...(await importOriginal<Record<string, unknown>>()),
+	getBindings: () => ({ GATEWAY_ROUTING_ALGORITHM: routingAlgorithmSetting }),
+}));
 
 vi.mock("@core/provider-rate-limits", () => ({
 	providerLimitModel: (c: { providerModelSlug?: string | null; apiModelId?: string | null }) => c.providerModelSlug || c.apiModelId || null,
@@ -810,7 +816,8 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.routingMode).toBe("price");
 	});
 
-	it("keeps price dominant over latency and throughput in default routing", async () => {
+	it("keeps price dominant over latency and throughput in default routing on v8", async () => {
+		routingAlgorithmSetting = "v8";
 		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 250,
@@ -844,6 +851,7 @@ describe("routeProviders testing mode", () => {
 			},
 		);
 
+		routingAlgorithmSetting = undefined;
 		const cheap = result.ranked.find(entry => entry.candidate.providerId === "anthropic")!;
 		const expensive = result.ranked.find(entry => entry.candidate.providerId === "openai")!;
 		expect(cheap.score / expensive.score).toBeGreaterThan(13);
@@ -876,6 +884,74 @@ describe("routeProviders testing mode", () => {
 		}));
 	});
 
+	it("prices waiting in default routing, so a much faster provider can outrank a cheaper one", async () => {
+		readHealthManyMock.mockImplementation(() => ({
+			fast: health("fast", { lat_ewma_60s: 250, lat_ewma_300s: 250, tp_ewma_60s: 20 }),
+			slow: health("slow", { lat_ewma_60s: 900, lat_ewma_300s: 900, tp_ewma_60s: 3 }),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "fast", pricingCard: textPricingCard(0.00004, 0.00002) }),
+				candidate({ providerId: "slow", pricingCard: textPricingCard(0.00001, 0.000005) }),
+			],
+			{ endpoint: "responses", model: "openai/gpt-4o-mini", workspaceId: "team_123", body: {}, testingMode: false },
+		);
+
+		const fast = result.ranked.find(entry => entry.candidate.providerId === "fast")!;
+		const slow = result.ranked.find(entry => entry.candidate.providerId === "slow")!;
+		expect(fast.score).toBeGreaterThan(slow.score);
+		expect(result.diagnostics.algorithm.version).toBe("routing-cost-v9");
+		expect(fast.scoreTrace.calculation.formula).toBe("routing_cost");
+		expect(fast.scoreTrace.routingCost).toEqual(expect.objectContaining({
+			promptTokens: 4000,
+			outputTokens: 500,
+			effectivePrice: expect.any(Number),
+			waitSeconds: expect.any(Number),
+			successProbability: 1,
+			shareWeight: 1,
+		}));
+	});
+
+	it("penalises provider errors more than rate limits at the same failure rate", async () => {
+		const evidence = { err_ewma_10s: 0.05, err_ewma_60s: 0.05, rec_tot_ew_10s: 20, rec_ok_ew_10s: 19, rec_tot_ew_60s: 60, rate_60s: 1 };
+		readHealthManyMock.mockImplementation(() => ({
+			limited: { ...health("limited"), ...evidence, rec_rate_limited_ew_10s: 1 },
+			erroring: { ...health("erroring"), ...evidence, rec_rate_limited_ew_10s: 0 },
+		}));
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "limited", pricingCard: textPricingCard(0.00001, 0.000005) }),
+				candidate({ providerId: "erroring", pricingCard: textPricingCard(0.00001, 0.000005) }),
+			],
+			{ endpoint: "responses", model: "m", workspaceId: "t", body: {} },
+		);
+		const limited = result.ranked.find(entry => entry.candidate.providerId === "limited")!;
+		const erroring = result.ranked.find(entry => entry.candidate.providerId === "erroring")!;
+		expect(limited.scoreTrace.routingCost!.rateLimitedShare).toBeGreaterThan(0);
+		expect(erroring.scoreTrace.routingCost!.providerErrorRate).toBeGreaterThan(0);
+		expect(limited.score).toBeGreaterThan(erroring.score);
+	});
+
+	it("keeps explicit sorts and non-text endpoints off the routing cost", async () => {
+		const pool = [
+			candidate({ providerId: "a", pricingCard: textPricingCard(0.00001, 0.000005) }),
+			candidate({ providerId: "b", pricingCard: textPricingCard(0.00002, 0.00001) }),
+		];
+		const sorted = await routeProviders(pool, {
+			endpoint: "responses", model: "m", workspaceId: "t", body: { provider: { sort: "latency" } },
+		});
+		const embeddings = await routeProviders(pool, { endpoint: "embeddings", model: "m", workspaceId: "t", body: {} });
+		const ordered = await routeProviders(pool, {
+			endpoint: "responses", model: "m", workspaceId: "t", body: { provider: { order: ["b"] } },
+		});
+		expect(sorted.diagnostics.algorithm.version).toBe("provider-score-v8");
+		expect(ordered.diagnostics.algorithm.version).toBe("provider-score-v8");
+		expect(ordered.ranked[1].scoreTrace.routingCost).toBeUndefined();
+		expect(embeddings.diagnostics.algorithm.version).toBe("provider-score-v8");
+		expect(embeddings.ranked[0].scoreTrace.routingCost).toBeUndefined();
+	});
+
 	it("shares equal-price traffic across twenty providers with only a small performance preference", async () => {
         const pool = Array.from({ length: 20 }, (_, i) => candidate({ providerId: `provider-${i}`, pricingCard: textPricingCard(0.00001, 0.000005) }));
         readHealthManyMock.mockImplementation(() => Object.fromEntries(pool.map((p, i) => [p.providerId, health(p.providerId, { tp_ewma_60s: i === 0 ? 110 : 100, lat_ewma_60s: 200 })])));
@@ -887,7 +963,7 @@ describe("routeProviders testing mode", () => {
                 const fast = result.ranked.find(p => p.candidate.providerId === "provider-0")!;
                 const normal = result.ranked.find(p => p.candidate.providerId === "provider-1")!;
                 expect(fast.score).toBeGreaterThan(normal.score);
-                expect(fast.score / normal.score).toBeLessThan(1.01);
+                expect(fast.score / normal.score).toBeLessThan(1.05);
             }
         }
         for (const count of counts) { expect(count).toBeGreaterThan(400); expect(count).toBeLessThan(600); }

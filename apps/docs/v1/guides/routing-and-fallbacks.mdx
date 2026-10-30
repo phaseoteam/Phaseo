@@ -167,7 +167,7 @@ The request log shows:
 
 Score factors are separated from recorded context. A score factor changes the final score for the active routing mode. Recorded context helps explain the decision but does not necessarily affect the score.
 
-For `balanced` routing, Phaseo scores the eligible providers using reliability, latency, tail latency, throughput, price, and token fit. The displayed calculation shows how each factor contributed to the final score instead of presenting every recorded metric as equally important.
+For `balanced` text requests (Chat Completions, Responses and Messages), Phaseo ranks eligible providers by their expected cost per successful answer. That cost adds what a typical request for the model costs on the provider, using the model's measured prompt and output sizes and the provider's measured cache-hit rate, to the time spent waiting for the first token and the full response. It is then divided by the provider's recent success rate. Provider errors add a further penalty, and rate limits a smaller one. Providers close to the lowest cost share most of the traffic, and every provider keeps a small share so a recovery is noticed. To rank by price alone, send `provider.sort: "price"`. Other endpoints are scored on reliability, latency, tail latency, throughput, price, and token fit. The displayed calculation shows how each factor contributed to the final score instead of presenting every recorded metric as equally important.
 
 ### Reliability and provider uptime
 
