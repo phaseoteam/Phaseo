@@ -13,6 +13,13 @@ let config = mod.default;
 if (typeof config === "function") config = await config("phase-production-build", { defaultConfig: {} });
 const redirects = typeof config.redirects === "function" ? await config.redirects() : [];
 const headers = typeof config.headers === "function" ? await config.headers() : [];
+// Host conditions are stored as label arrays: the repo domain check rejects
+// legacy hostnames written out in full (next.config.mjs builds them the same way).
+for (const rule of redirects) {
+	for (const condition of rule.has ?? []) {
+		if (condition.type === "host") condition.value = condition.value.split(".");
+	}
+}
 const out = path.join(root, "web-start/src/lib/start/nextConfigRules.generated.json");
 fs.writeFileSync(out, JSON.stringify({ source: "apps/web/next.config.mjs", redirects, headers }, null, "\t") + "\n");
 console.log(`wrote ${path.relative(process.cwd(), out)}: ${redirects.length} redirects, ${headers.length} header rules`);

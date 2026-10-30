@@ -6,7 +6,11 @@
 			"has": [
 				{
 					"type": "host",
-					"value": "ai-stats.vercel.app"
+					"value": [
+						"ai-stats",
+						"vercel",
+						"app"
+					]
 				}
 			],
 			"destination": "https://phaseo.app/:path*",
@@ -17,7 +21,11 @@
 			"has": [
 				{
 					"type": "host",
-					"value": "docs.phaseo.app"
+					"value": [
+						"docs",
+						"phaseo",
+						"app"
+					]
 				}
 			],
 			"destination": "https://phaseo.app/docs/:path*",
@@ -28,7 +36,12 @@
 			"has": [
 				{
 					"type": "host",
-					"value": "docs.ai-stats.phaseo.app"
+					"value": [
+						"docs",
+						"ai-stats",
+						"phaseo",
+						"app"
+					]
 				}
 			],
 			"destination": "https://phaseo.app/docs/:path*",

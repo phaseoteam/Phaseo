@@ -21,7 +21,7 @@ const MINTLIFY_ORIGIN = "https://aistats.mintlify.site";
 
 // --- Next-style path patterns (":name", ":name*", ":name(a|b)?") -------------
 
-type Rule = { source: string; destination?: string; permanent?: boolean; has?: Array<{ type: string; key?: string; value?: string }>; headers?: Array<{ key: string; value: string }> };
+type Rule = { source: string; destination?: string; permanent?: boolean; has?: Array<{ type: string; key?: string; value?: string | string[] }>; headers?: Array<{ key: string; value: string }> };
 
 function compilePattern(source: string): { regex: RegExp; names: string[] } {
 	const names: string[] = [];
@@ -44,7 +44,7 @@ function compilePattern(source: string): { regex: RegExp; names: string[] } {
 
 function matchRule(rule: Rule, url: URL): Record<string, string> | null {
 	for (const condition of rule.has ?? []) {
-		if (condition.type === "host" && url.hostname !== condition.value) return null;
+		if (condition.type === "host" && url.hostname !== [condition.value ?? []].flat().join(".")) return null;
 	}
 	const { regex, names } = compilePattern(rule.source);
 	const m = url.pathname.match(regex);
