@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { capturePixels } from "./capturePixels";
+import { pngPixels } from "./capturePixels";
 
-const image = (width: number, height: number, scales: number[]) => ({ getSize: () => ({ width, height }), getScaleFactors: () => scales });
+const png = (width: number, height: number) => {
+	const header = Buffer.alloc(24);
+	Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(header);
+	header.writeUInt32BE(13, 8); header.write("IHDR", 12, "latin1"); header.writeUInt32BE(width, 16); header.writeUInt32BE(height, 20);
+	return header;
+};
 
-describe("capturePixels", () => {
-	it("keeps a 1x capture's size, as Electron 45 reports it", () => {
-		expect(capturePixels(image(1440, 900, [1]))).toEqual({ width: 1440, height: 900, scale: 1 });
+describe("pngPixels", () => {
+	it("reads the pixel size a capture's PNG has, even where whole DIPs at a fractional scale would lose a pixel", () => {
+		expect(pngPixels(png(1252, 835))).toEqual({ width: 1252, height: 835 });
 	});
-	it("turns a HiDPI capture's DIPs into pixels, as Electron 46 reports it", () => {
-		expect(capturePixels(image(720, 450, [2]))).toEqual({ width: 1440, height: 900, scale: 2 });
-		expect(capturePixels(image(1001, 667, [1.5]))).toEqual({ width: 1502, height: 1001, scale: 1.5 });
-	});
-	it("treats an image without representations as 1x", () => {
-		expect(capturePixels(image(0, 0, []))).toEqual({ width: 0, height: 0, scale: 1 });
+	it("reports nothing for bytes that aren't a PNG", () => {
+		expect(pngPixels(Buffer.alloc(0))).toEqual({ width: 0, height: 0 });
+		expect(pngPixels(Buffer.alloc(24))).toEqual({ width: 0, height: 0 });
 	});
 });

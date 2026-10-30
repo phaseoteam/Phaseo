@@ -30,11 +30,14 @@ describe("credential boundaries", () => {
 	it("waits for an asynchronous availability check, as safeStorage's is from Electron 46", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-vault-"));
 		try {
-			let available = false;
-			const vault = new SecretVault(directory, { available: async () => { await new Promise(resolve => setTimeout(resolve, 5)); return available; }, encrypt: value => Buffer.from(value), decrypt: value => value.toString() });
-			expect(await vault.available()).toBe(false); await expect(vault.set("account", "secret")).rejects.toThrow("unavailable"); await expect(vault.get("account")).rejects.toThrow("unavailable");
-			available = true; expect(await vault.available()).toBe(true);
-			await vault.set("account", "secret"); expect(await vault.get("account")).toBe("secret");
+			let resolve!: (value: boolean) => void;
+			const next = () => new Promise<boolean>(settle => { resolve = settle; });
+			let check = next();
+			const vault = new SecretVault(directory, { available: () => check, encrypt: value => Buffer.from(value), decrypt: value => value.toString() });
+			const refused = expect(vault.set("account", "secret")).rejects.toThrow("unavailable");
+			resolve(false); await refused; await expect(vault.get("account")).rejects.toThrow("unavailable");
+			check = next(); const saved = vault.set("account", "secret");
+			resolve(true); await saved; expect(await vault.available()).toBe(true); expect(await vault.get("account")).toBe("secret");
 		} finally { rmSync(directory, { recursive: true, force: true }); }
 	});
 	it("persists encrypted bytes and rejects path traversal", async () => {
