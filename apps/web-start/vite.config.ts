@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
 				{ find: /^next-intl\/server$/, replacement: path.join(compat, "next-intl-server.ts") },
 				{ find: /^next-intl$/, replacement: path.join(compat, "next-intl.tsx") },
 				{ find: /^@vercel\/analytics\/react$/, replacement: path.join(compat, "noop-modules.tsx") },
-				{ find: /^next-navigation-guard$/, replacement: path.join(compat, "noop-modules.tsx") },
+				{ find: /^next-navigation-guard$/, replacement: path.join(compat, "next-navigation-guard.tsx") },
 				{ find: /^nuqs\/adapters\/next\/app$/, replacement: "nuqs/adapters/tanstack-router" },
 				{ find: /^next-mdx-remote\/rsc$/, replacement: path.join(compat, "next-mdx-remote-rsc.ts") },
 				{ find: /^next\/web-vitals$/, replacement: path.join(compat, "next-web-vitals.ts") },

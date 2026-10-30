@@ -40,14 +40,24 @@ export function formatHref(href: string | UrlObject): string {
 	return `${pathname}${search}${hash}`;
 }
 
+// Paths the request middleware proxies (docs, analytics, the web API) have no
+// client route, so links to them load a new document.
+const SERVER_ONLY_PATH = /^\/(?:docs|ingest|api)(?:[/?#]|$)/;
+
 function isInternal(href: string): boolean {
-	if (href.startsWith("/") && !href.startsWith("//")) return true;
-	if (typeof window === "undefined") return false;
-	try {
-		return new URL(href, window.location.href).origin === window.location.origin;
-	} catch {
-		return false;
+	let pathname: string;
+	if (href.startsWith("/") && !href.startsWith("//")) pathname = href;
+	else {
+		if (typeof window === "undefined") return false;
+		try {
+			const url = new URL(href, window.location.href);
+			if (url.origin !== window.location.origin) return false;
+			pathname = url.pathname;
+		} catch {
+			return false;
+		}
 	}
+	return !SERVER_ONLY_PATH.test(pathname);
 }
 
 const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(

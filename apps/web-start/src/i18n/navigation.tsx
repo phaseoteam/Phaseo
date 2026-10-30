@@ -36,12 +36,33 @@ export function getPathname({ href, locale }: { href: Href; locale: string }): s
 	return localizeHref(formatHref(href), locale);
 }
 
+/**
+ * Remember an explicit locale switch (next-intl syncs its cookie the same
+ * way). The request middleware negotiates unprefixed paths from this cookie,
+ * so without it switching to the default locale would bounce back on reload.
+ */
+function rememberLocale(locale: string | undefined, current: string) {
+	if (!locale || locale === current || !isPublicLocale(locale) || typeof document === "undefined") return;
+	document.cookie = `PHASEO_LOCALE=${locale}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+}
+
 export type LinkProps = Omit<NextLinkProps, "locale"> & { locale?: string };
 
-export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function LocaleLink({ href, locale, ...rest }, ref) {
+export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function LocaleLink({ href, locale, onClick, ...rest }, ref) {
 	const current = useLocale();
 	const target = localizeHref(formatHref(href), locale ?? current);
-	return <NextLink ref={ref} href={target} hrefLang={locale && locale !== current ? locale : undefined} {...rest} />;
+	return (
+		<NextLink
+			ref={ref}
+			href={target}
+			hrefLang={locale && locale !== current ? locale : undefined}
+			onClick={(event) => {
+				rememberLocale(locale, current);
+				onClick?.(event);
+			}}
+			{...rest}
+		/>
+	);
 });
 
 export function usePathname(): string {
@@ -57,8 +78,14 @@ export function useRouter() {
 	return useMemo(() => {
 		const to = (href: Href, options?: NavigateOptions) => localizeHref(formatHref(href), options?.locale ?? current);
 		return {
-			push: (href: Href, options?: NavigateOptions) => void router.navigate({ href: to(href, options), resetScroll: options?.scroll !== false }),
-			replace: (href: Href, options?: NavigateOptions) => void router.navigate({ href: to(href, options), replace: true, resetScroll: options?.scroll !== false }),
+			push: (href: Href, options?: NavigateOptions) => {
+				rememberLocale(options?.locale, current);
+				void router.navigate({ href: to(href, options), resetScroll: options?.scroll !== false });
+			},
+			replace: (href: Href, options?: NavigateOptions) => {
+				rememberLocale(options?.locale, current);
+				void router.navigate({ href: to(href, options), replace: true, resetScroll: options?.scroll !== false });
+			},
 			prefetch: (href: Href, options?: NavigateOptions) => {
 				try {
 					void router.preloadRoute({ href: to(href, options) } as never).catch(() => undefined);

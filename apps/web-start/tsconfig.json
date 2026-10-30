@@ -34,7 +34,7 @@
       "next": ["./src/compat/next-types.ts"],
       "next-intl/server": ["./src/compat/next-intl-server.ts"],
       "next-intl": ["./src/compat/next-intl.tsx"],
-      "next-navigation-guard": ["./src/compat/noop-modules.tsx"],
+      "next-navigation-guard": ["./src/compat/next-navigation-guard.tsx"],
       "next-mdx-remote/rsc": ["./src/compat/next-mdx-remote-rsc.ts"],
       "@vercel/analytics/react": ["./src/compat/noop-modules.tsx"],
       "nuqs/adapters/next/app": ["./node_modules/nuqs/adapters/tanstack-router.d.ts"],
