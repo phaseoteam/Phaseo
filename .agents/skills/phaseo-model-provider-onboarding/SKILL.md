@@ -154,7 +154,9 @@ gap, not a choice, unless you can say why.
    endpoints) and that it is selectable in Chat, not only listed on /models.
 10. Changelog: once the model has a live route, add it to the Models section
     for its release date in the docs changelog, in all 9 languages, following
-    `phaseo-changelog`. Catalogue-only models wait until they are routable.
+    `phaseo-changelog`. The entry is the model link only, with no price,
+    limits or lineage. Catalogue-only models wait until they are routable.
+    Deprecations and retirements never get a changelog entry.
 
 ## Validation
 
