@@ -48,6 +48,7 @@ describe("diagnostics for triage", () => {
 	it("hides the home folder in any case or slash style, and email addresses", () => {
 		expect(redactLogText("ENOENT c:/users/dana/AppData/x and C:\\Users\\Dana\\y, mail dana@example.com", "C:\\Users\\Dana")).toBe("ENOENT ~/AppData/x and ~\\y, mail [email]");
 		expect(redactLogText("open /home/dana/.config failed", "/home/dana")).toBe("open ~/.config failed");
+		expect(redactLogText(`GET /x?token=plain-secret&page=2 {"api_key": "abc123"} password: hunter2`, "/home/dana")).toBe(`GET /x?token=[hidden]&page=2 {"api_key": [hidden]} password: [hidden]`);
 	});
 	it("lists the latest failures, warnings and slow operations", () => {
 		const text = diagnosticsSection(diagnostics({

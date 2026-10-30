@@ -7,8 +7,8 @@ import { prepareTriageCheckout, writeTriagePlaybook, type TriageGit } from "./tr
 const commit = "821b26a8e7c9d1f2a3b4c5d6e7f8091a2b3c4d5e", main = "0123456789abcdef0123456789abcdef01234567";
 
 /** A stand-in for git: records each call, makes `.git` on init, and answers fetches from what GitHub "has". */
-function fakeGit(options: { has?: string[]; offline?: boolean } = {}) {
-	const calls: string[] = [], fetched = new Set<string>();
+function fakeGit(options: { has?: string[]; offline?: boolean; dirty?: boolean } = {}) {
+	const calls: string[] = [], fetched = new Set<string>(), state = { head: "" };
 	const git: TriageGit = async (cwd, args) => {
 		// Like execFile, git can't start in a folder that doesn't exist.
 		if (!existsSync(cwd)) throw Object.assign(new Error("spawn git ENOENT"), { code: "ENOENT" });
@@ -22,10 +22,12 @@ function fakeGit(options: { has?: string[]; offline?: boolean } = {}) {
 			if (!(options.has ?? [commit, main]).includes(wanted)) fail(`error: Server does not allow request for unadvertised object ${wanted}`);
 			fetched.add(wanted); return "";
 		}
+		if (args.includes("checkout")) { if (args.includes("--detach") && options.dirty) fail("error: Your local changes to the following files would be overwritten by checkout:"); state.head = args.at(-1)!; return ""; }
+		if (args[0] === "rev-parse") { if (!state.head) fail("fatal: Needed a single revision"); return `${state.head}\n`; }
 		if (args[0] === "cat-file") { if (!fetched.has(args[2].replace("^{commit}", ""))) fail("fatal: Not a valid object name"); return ""; }
 		return "";
 	};
-	return { git, calls };
+	return { git, calls, state, options };
 }
 async function withRoot(test: (root: string) => Promise<void>) {
 	const root = mkdtempSync(path.join(tmpdir(), "phaseo-triage-"));
@@ -45,6 +47,17 @@ describe("triage checkout", () => {
 		calls.length = 0;
 		expect(await prepareTriageCheckout(root, commit, git)).toEqual(first);
 		expect(calls).toEqual([`cat-file -e ${commit}^{commit}`, "rev-parse --verify HEAD"]);
+	}));
+	it("puts a checkout an earlier triage moved back on the build's commit, or says why it can't", () => withRoot(async root => {
+		const fake = fakeGit();
+		const { directory } = await prepareTriageCheckout(root, commit, fake.git);
+		fake.state.head = main; fake.calls.length = 0;
+		expect(await prepareTriageCheckout(root, commit, fake.git)).toMatchObject({ commit, exact: true });
+		expect(fake.calls.at(-1)).toBe(`-c advice.detachedHead=false checkout -q --detach ${commit}`);
+		expect(fake.state.head).toBe(commit);
+		fake.state.head = main; fake.options.dirty = true;
+		await expect(prepareTriageCheckout(root, commit, fake.git)).rejects.toThrow(`The source folder for this version (${directory}) is on another commit`);
+		expect(fake.state.head).toBe(main);
 	}));
 	it("falls back to main, marked not exact, when GitHub does not have the build's commit or the build has none", () => withRoot(async root => {
 		const { git, calls } = fakeGit({ has: [main] });

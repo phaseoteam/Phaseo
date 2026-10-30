@@ -80,7 +80,7 @@ export function triageTitle(message: string) {
 	return `Triage: ${description.length > 70 ? `${description.slice(0, 69).trimEnd()}…` : description}`;
 }
 
-/** Log text that may end up in an issue: the home folder becomes ~ and email addresses are hidden. Tokens are already hidden by the tracer. */
+/** Log text that may end up in an issue: the home folder becomes ~, and email addresses and `token=…`-style values are hidden. The tracer already hides known token formats. */
 export function redactLogText(text: string, home: string) {
 	let value = text;
 	if (home.length > 3) {
@@ -88,7 +88,9 @@ export function redactLogText(text: string, home: string) {
 		const pattern = home.replace(/[.*+?^${}()|[\]\\/]/g, character => character === "\\" || character === "/" ? "[\\\\/]" : `\\${character}`);
 		value = value.replace(new RegExp(pattern, /^[A-Za-z]:/.test(home) ? "gi" : "g"), "~");
 	}
-	return value.replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[email]");
+	return value
+		.replace(/\b(token|access[_-]?token|api[_-]?key|secret|password|passwd)(["']?\s*[=:]\s*)["']?[^\s"',;&]+["']?/gi, "$1$2[hidden]")
+		.replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[email]");
 }
 
 const line = (value: string) => value.replace(/\s+/g, " ").trim().slice(0, 400);

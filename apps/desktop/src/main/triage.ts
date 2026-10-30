@@ -6,9 +6,17 @@ import { triagePlaybookPattern, triageSourceRepository } from "../shared/triage"
 
 export type TriageGit = (cwd: string, args: string[]) => Promise<string>;
 
+/** Inherited variables that would point Git at another repository than `cwd`, or run a password prompt the fetch never needs. */
+const inheritedGit = ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE", "GIT_ASKPASS", "SSH_ASKPASS"];
+const gitEnvironment = () => {
+	const env: NodeJS.ProcessEnv = { ...process.env, GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "never" };
+	for (const name of inheritedGit) delete env[name];
+	return env;
+};
+
 /** Git for a fetch that can take minutes on a slow connection; it never asks for credentials (the source is public). */
 const runGit: TriageGit = (cwd, args) => new Promise((resolve, reject) => {
-	execFile("git", ["-c", "protocol.ext.allow=never", "-c", "protocol.file.allow=never", ...args], { cwd, windowsHide: true, timeout: 15 * 60_000, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "never" } }, (error, stdout, stderr) => {
+	execFile("git", ["-c", "protocol.ext.allow=never", "-c", "protocol.file.allow=never", "-c", "core.askPass=", ...args], { cwd, windowsHide: true, timeout: 15 * 60_000, maxBuffer: 16 * 1024 * 1024, env: gitEnvironment() }, (error, stdout, stderr) => {
 		if (error) reject(Object.assign(error, { stderr: String(stderr ?? "") })); else resolve(String(stdout));
 	});
 });
@@ -42,7 +50,14 @@ async function checkout(root: string, url: string, commit: string, git: TriageGi
 	await mkdir(directory, { recursive: true });
 	// A checkout from an earlier triage is reused as it is, including the agent's changes; an interrupted fetch is finished.
 	if (existsSync(path.join(directory, ".git"))) {
-		try { await git(directory, ["cat-file", "-e", `${commit}^{commit}`]); await git(directory, ["rev-parse", "--verify", "HEAD"]); return directory; } catch { /* Fetched only partly; fetch again. */ }
+		let head: string | undefined;
+		try { await git(directory, ["cat-file", "-e", `${commit}^{commit}`]); head = (await git(directory, ["rev-parse", "--verify", "HEAD"])).trim(); } catch { /* Fetched only partly; fetch again. */ }
+		if (head === commit) return directory;
+		if (head) {
+			// An earlier triage moved HEAD (a pull request branch). Its commits stay on their branch; Git refuses rather than lose uncommitted work.
+			try { await git(directory, ["-c", "advice.detachedHead=false", "checkout", "-q", "--detach", commit]); return directory; }
+			catch (error) { throw new Error(`The source folder for this version (${directory}) is on another commit with changes that would be lost by switching back. Commit or discard them there, then try again${gitDetail(error) ? `: ${gitDetail(error)}` : "."}`, { cause: error }); }
+		}
 	}
 	await git(directory, ["init", "-q"]);
 	try { await git(directory, ["remote", "add", "origin", url]); } catch { await git(directory, ["remote", "set-url", "origin", url]); }
