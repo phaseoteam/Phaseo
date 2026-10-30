@@ -127,6 +127,7 @@ describe("Baseten Decisions", () => {
 	it.each([
 		{ images: ["data:image/gif;base64,eA=="] }, { images: ["https://example.com/image.png"] },
 		{ images: Array(17).fill("data:image/png;base64,eA==") },
+		{ state: { messages: [{ role: "user", content: "Classify" }] }, images: ["data:image/png;base64,eA=="] },
 		{ state: ["Classify", { type: "image_url", image_url: { url: "data:image/png;base64,eA==" } }] }, { videos: ["https://example.com/video.mp4"] },
 		{ audio: [{ type: "audio", source: "url", data: "https://example.com/audio.wav" }] },
 		{ rawRequest: { stream: true } }, { rawRequest: { tools: [] } }, { rawRequest: { tool_choice: "auto" } },

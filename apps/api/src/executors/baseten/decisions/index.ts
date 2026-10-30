@@ -28,6 +28,9 @@ function imageState(ir: IRDecisionsRequest): { messages: unknown[] } | string {
 				? { type: "text", text: part.text }
 				: { type: "image_url", image_url: { url: (part as { image_url: string }).image_url } }) })) };
 	}
+	if (ir.state && typeof ir.state === "object" && "messages" in ir.state) {
+		return "Baseten Decisions cannot combine images with a state.messages conversation; put the images in the messages.";
+	}
 	return { messages: [{ role: "user", content: [
 		{ type: "text", text: typeof ir.state === "string" ? ir.state : JSON.stringify(ir.state) },
 		...urls.map(url => ({ type: "image_url", image_url: { url } })),
