@@ -67,7 +67,9 @@ try {
         $switchOutput = @(& pnpm exec wrangler kv key get $maintenanceKey --namespace-id $cacheNamespaceId --remote --text 2>&1 | ForEach-Object { "$_" })
         $switchExit = $LASTEXITCODE
         $ErrorActionPreference = "Stop"
-        $switch = ($switchOutput | Where-Object { $_ -match '^\s*\{' }) -join "`n"
+        # The whole value, even if it was written across several lines; the checks
+        # below only look for "enabled" and "since" in it.
+        $switch = $switchOutput -join "`n"
         if ($switchExit -ne 0) {
             $detail = (($switchOutput | Select-Object -Last 15) -join "`n") -replace "\x1b\[[0-9;]*m", ""
             # Wrangler: "Failed to fetch .../values/<key> - 404: Not Found". A 401 or 403
