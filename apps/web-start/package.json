@@ -13,6 +13,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"deploy": "wrangler deploy --config dist/server/wrangler.json",
+		"pretypecheck": "node scripts/link-shared.mjs",
 		"typecheck": "tsc --noEmit",
 		"parity:check": "node scripts/parity-check.mjs",
 		"predev": "node scripts/link-shared.mjs"
