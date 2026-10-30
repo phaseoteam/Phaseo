@@ -187,7 +187,7 @@ Package and version in code, then the main change. One bullet when several SDKs 
 
 New models, routes and prices. Every bullet starts with the model link: `[Provider: Model Name](https://phaseo.app/models/<org>/<id>)`.
 
-Model deprecations and retirements are never changelog entries, including a preview replaced by its release. Deprecation notices and the model page cover them.
+Model deprecations and retirements are never changelog entries, including a preview retired because its release has a different Phaseo ID. Deprecation notices and the model page cover them.
 
 ### New model
 
