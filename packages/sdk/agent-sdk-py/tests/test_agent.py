@@ -201,3 +201,24 @@ def test_agent_retries_emits_events_pauses_and_resumes(tmp_path):
         "run.started", "run.waiting_for_human", "run.resumed", "run.completed"
     }
     assert len((tmp_path / "generations.jsonl").read_text().splitlines()) == 2
+
+
+def test_gateway_client_passes_an_api_key_function_to_the_core_client(monkeypatch):
+    import httpx
+
+    from phaseo_agent import create_gateway_agent_client
+
+    seen: list[str | None] = []
+
+    def handle(self, request: httpx.Request) -> httpx.Response:
+        seen.append(request.headers.get("authorization"))
+        return httpx.Response(200, json={"data": {"id": "key_123"}}, request=request)
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", handle)
+    issued = iter(["workload-token-1", "workload-token-2"])
+    client = create_gateway_agent_client(client_options={"api_key": lambda: next(issued), "base_url": "https://example.test/v1"}, model="openai/gpt-5-mini")
+
+    client._client.get_current_api_key()
+    client._client.get_current_api_key()
+
+    assert seen == ["Bearer workload-token-1", "Bearer workload-token-2"]

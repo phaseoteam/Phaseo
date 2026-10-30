@@ -22,6 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Auth.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Devtools.cs" />
     <Compile Include="ParameterSupport.cs" />

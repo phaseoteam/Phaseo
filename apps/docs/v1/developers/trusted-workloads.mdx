@@ -102,6 +102,22 @@ The [API reference](../api-reference/endpoint/trusted-workloads-create.mdx) list
 
 ## Call Phaseo with a token
 
+Every Phaseo SDK accepts a function in place of the API key and calls it before each request and retry, so each request uses a current token. Each SDK except C++ includes a helper for each platform. It fetches a token issued for `https://api.phaseo.app` and reuses it until a minute before it expires:
+
+| SDK | GitHub Actions | Vercel |
+| --- | --- | --- |
+| TypeScript | `githubActionsToken()` | `vercelToken()` |
+| Python | `github_actions_token()` | `vercel_token()` |
+| Go | `phaseo.GitHubActionsToken()` | `phaseo.VercelToken()` |
+| Java | `WorkloadTokens.gitHubActions()` | `WorkloadTokens.vercel()` |
+| C# | `WorkloadTokens.GitHubActions()` | `WorkloadTokens.Vercel()` |
+| PHP | `WorkloadTokens::githubActions()` | `WorkloadTokens::vercel()` |
+| Ruby | `PhaseoSdk::WorkloadTokens.github_actions` | `PhaseoSdk::WorkloadTokens.vercel` |
+| Rust | `phaseo::auth::github_actions_token()` | `phaseo::auth::vercel_token()` |
+| C++ | Pass your own function to `set_api_key_provider` | Pass your own function to `set_api_key_provider` |
+
+The helpers need the next release of each SDK. On Vercel, the helper exchanges the deployment's token from `VERCEL_OIDC_TOKEN_FILE` or `VERCEL_OIDC_TOKEN`. In Vercel Functions the token arrives on each request as the `x-vercel-oidc-token` header; pass it to the helper as its token source.
+
 <Tabs>
 <Tab title="Vercel">
 Use `getVercelOidcToken` from the server entry of `@vercel/oidc` 4.x. Passing `audience` exchanges the deployment's token for one issued to Phaseo.

@@ -101,6 +101,22 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
 
 ## 使用令牌调用 Phaseo
 
+每个 Phaseo SDK 都接受用函数代替 API 密钥，并在每次请求和每次重试之前调用它，因此每个请求都使用当前令牌。除 C++ 外，每个 SDK 都为每个平台提供一个辅助函数。它会获取为 `https://api.phaseo.app` 签发的令牌，并在到期前一分钟之内重复使用：
+
+| SDK | GitHub Actions | Vercel |
+| --- | --- | --- |
+| TypeScript | `githubActionsToken()` | `vercelToken()` |
+| Python | `github_actions_token()` | `vercel_token()` |
+| Go | `phaseo.GitHubActionsToken()` | `phaseo.VercelToken()` |
+| Java | `WorkloadTokens.gitHubActions()` | `WorkloadTokens.vercel()` |
+| C# | `WorkloadTokens.GitHubActions()` | `WorkloadTokens.Vercel()` |
+| PHP | `WorkloadTokens::githubActions()` | `WorkloadTokens::vercel()` |
+| Ruby | `PhaseoSdk::WorkloadTokens.github_actions` | `PhaseoSdk::WorkloadTokens.vercel` |
+| Rust | `phaseo::auth::github_actions_token()` | `phaseo::auth::vercel_token()` |
+| C++ | 将你自己的函数传给 `set_api_key_provider` | 将你自己的函数传给 `set_api_key_provider` |
+
+辅助函数需要各 SDK 的下一个版本。在 Vercel 上，辅助函数会交换来自 `VERCEL_OIDC_TOKEN_FILE` 或 `VERCEL_OIDC_TOKEN` 的部署令牌。在 Vercel Functions 中，令牌随每个请求通过 `x-vercel-oidc-token` 请求头传入；请将其作为令牌来源传给辅助函数。
+
 <Tabs>
 <Tab title="Vercel">
 从 `@vercel/oidc` 4.x 的服务器端入口使用 `getVercelOidcToken`。传入 `audience` 后，部署的令牌会被换成为 Phaseo 签发的令牌。

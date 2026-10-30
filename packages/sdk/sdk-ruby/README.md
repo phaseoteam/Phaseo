@@ -105,6 +105,28 @@ ended = session.end(reason: "caller hung up") # session.ended: reason, usage, co
 
 `session.each_event { |event| ... }` yields every event until the socket closes. If the socket closes without `session.ended`, `end` raises `PhaseoSdk::RealtimeSessionClosedError`, whose `final_bill_path` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
 
+## Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then pass anything that responds to `call` as `api_key`. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
+
+The built-in helpers fetch the token and reuse it until a minute before it expires:
+
+```ruby
+# GitHub Actions: the job needs `permissions: id-token: write`.
+client = PhaseoSdk::Phaseo.new(api_key: PhaseoSdk::WorkloadTokens.github_actions)
+
+# Vercel: exchanges the deployment's OIDC token (VERCEL_OIDC_TOKEN, or the file named by
+# VERCEL_OIDC_TOKEN_FILE) for one issued to Phaseo.
+client = PhaseoSdk::Phaseo.new(api_key: PhaseoSdk::WorkloadTokens.vercel)
+
+# In a request handler, pass the request's x-vercel-oidc-token header instead.
+client = PhaseoSdk::Phaseo.new(
+  api_key: PhaseoSdk::WorkloadTokens.vercel(token: -> { request.headers["x-vercel-oidc-token"] })
+)
+```
+
+Both helpers take an optional `audience:`. Any other callable that returns a credential string works too. A blank result raises and the request is not sent. An `Authorization` header you pass to `request_with_response` is used as-is, without calling the provider.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.

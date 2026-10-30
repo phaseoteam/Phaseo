@@ -974,11 +974,18 @@ public static class AgentSdk
         var client = options.Client;
         if (client is null)
         {
-            var apiKey = options.ClientOptions is not null &&
-                         options.ClientOptions.TryGetValue("apiKey", out var apiKeyValue)
-                ? apiKeyValue?.ToString()
-                : Environment.GetEnvironmentVariable("PHASEO_API_KEY");
-            if (string.IsNullOrWhiteSpace(apiKey))
+            // "apiKey" is a string, or a Func<CancellationToken, ValueTask<string>> called before every request
+            // and retry (for example PhaseoSdk.WorkloadTokens.GitHubActions() for a trusted workload).
+            object? apiKeyValue = null;
+            var hasApiKey = options.ClientOptions is not null &&
+                            options.ClientOptions.TryGetValue("apiKey", out apiKeyValue);
+            var apiKeyProvider = apiKeyValue as Func<CancellationToken, ValueTask<string>>;
+            var apiKey = apiKeyProvider is not null
+                ? null
+                : hasApiKey
+                    ? apiKeyValue?.ToString()
+                    : Environment.GetEnvironmentVariable("PHASEO_API_KEY");
+            if (apiKeyProvider is null && string.IsNullOrWhiteSpace(apiKey))
             {
                 throw new InvalidOperationException("PHASEO_API_KEY is required.");
             }
@@ -990,7 +997,9 @@ public static class AgentSdk
             var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("X-Phaseo-Client", "phaseo-agent-csharp");
             httpClient.DefaultRequestHeaders.Add("X-Phaseo-Client-Version", "0.3.0");
-            client = new PhaseoSdk.Phaseo(apiKey: apiKey, basePath: baseUrl ?? "https://api.phaseo.app/v1", httpClient: httpClient);
+            client = apiKeyProvider is not null
+                ? PhaseoSdk.Phaseo.FromApiKeyProvider(apiKeyProvider, basePath: baseUrl ?? "https://api.phaseo.app/v1", httpClient: httpClient)
+                : new PhaseoSdk.Phaseo(apiKey: apiKey, basePath: baseUrl ?? "https://api.phaseo.app/v1", httpClient: httpClient);
         }
 
         return new GatewayAgentClient(client, options);

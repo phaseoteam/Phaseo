@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use phaseo::Phaseo;
+use phaseo::{ApiKeyProvider, Phaseo};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -850,13 +850,20 @@ impl GatewayAgentClient {
     }
 
     pub fn from_env(model: impl Into<String>) -> Result<Self, AgentError> {
-        Ok(Self::new(
-            Phaseo::from_env()?
-                .with_header("X-Phaseo-Client", "phaseo-agent-rust")
-                .with_header("X-Phaseo-Client-Version", env!("CARGO_PKG_VERSION")),
-            model,
-        ))
+        Ok(Self::new(agent_client(Phaseo::from_env()?), model))
     }
+
+    /// Uses `provider` for the credential before every model request and retry, for example
+    /// `phaseo::auth::github_actions_token()` in a trusted workload.
+    pub fn from_api_key_provider(provider: ApiKeyProvider, model: impl Into<String>) -> Self {
+        Self::new(agent_client(Phaseo::from_api_key_provider(provider)), model)
+    }
+}
+
+fn agent_client(client: Phaseo) -> Phaseo {
+    client
+        .with_header("X-Phaseo-Client", "phaseo-agent-rust")
+        .with_header("X-Phaseo-Client-Version", env!("CARGO_PKG_VERSION"))
 }
 
 pub fn create_gateway_agent_client(
@@ -1094,6 +1101,75 @@ mod tests {
 
         assert_eq!(client.gateway_tools.len(), 1);
         assert_eq!(client.gateway_tools[0]["type"], "gateway:datetime");
+    }
+
+    #[test]
+    fn api_key_provider_reaches_the_gateway_request() {
+        use std::io::{Read, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").expect("listener");
+        let base = format!("http://{}", listener.local_addr().expect("address"));
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("connection");
+            let mut request = Vec::new();
+            loop {
+                let mut chunk = [0_u8; 4096];
+                let size = stream.read(&mut chunk).expect("read");
+                request.extend_from_slice(&chunk[..size]);
+                let text = String::from_utf8_lossy(&request);
+                if let Some(end) = text.find("\r\n\r\n") {
+                    let length = text[..end]
+                        .lines()
+                        .find_map(|line| {
+                            line.to_ascii_lowercase()
+                                .strip_prefix("content-length:")
+                                .and_then(|value| value.trim().parse::<usize>().ok())
+                        })
+                        .unwrap_or(0);
+                    if size == 0 || request.len() >= end + 4 + length {
+                        break;
+                    }
+                } else if size == 0 {
+                    break;
+                }
+            }
+            let body = r#"{"id":"resp_1","output_text":"done","output":[]}"#;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream.write_all(response.as_bytes()).expect("write");
+            String::from_utf8_lossy(&request).to_string()
+        });
+
+        let mut client = GatewayAgentClient::from_api_key_provider(
+            Arc::new(|| Ok("workload-token".to_string())),
+            "phaseo/free",
+        );
+        client.client = client
+            .client
+            .clone()
+            .with_base_url(base)
+            .expect("test base URL");
+        let response = client
+            .generate(&ModelRequest {
+                model: "phaseo/free".to_string(),
+                messages: vec![Message::user("hi")],
+                ..ModelRequest::default()
+            })
+            .expect("model response");
+        assert_eq!(response.message.content, "done");
+
+        let request = server.join().expect("server");
+        assert!(
+            request.contains("Authorization: Bearer workload-token"),
+            "{request}"
+        );
+        assert!(
+            request.contains("X-Phaseo-Client: phaseo-agent-rust"),
+            "{request}"
+        );
     }
 
     struct ToolLoopClient {
