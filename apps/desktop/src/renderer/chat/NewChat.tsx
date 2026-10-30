@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Box, Check, ChevronDown, Code2, FilePen, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -16,7 +16,11 @@ import { Composer, ComposerChip, ToolButton } from "./Composer";
 import { useComposerMenu } from "./ComposerMenu";
 import { openModelPickerEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { useComposerEditor } from "./composerEditor";
-import { composeMessage } from "../lib/mentions";
+import { composeMessage, mentionToken } from "../lib/mentions";
+import { endTriage, startTriage, useTriage } from "../shell/Triage";
+import type { TriagePreparation } from "../../shared/triage";
+import { Switch } from "../components/ui/switch";
+import { Button } from "../components/ui/button";
 import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
 import { ModelSettings } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
@@ -81,6 +85,11 @@ export function NewChat() {
 	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
 	const project = projects.find(value => value.id === newChatProjectId);
 	const worktree = useWorktreeTarget(api, code ? project?.id : undefined, setOverview);
+	// Triage (from the command palette) runs in the build's own source, which the main process fetches first.
+	const triage = useTriage(), triaging = code && triage.status !== "idle";
+	const preparation = triage.status === "ready" ? triage.preparation : undefined;
+	const [offerPullRequest, setOfferPullRequest] = useState(false);
+	const prefilled = useRef<TriagePreparation>(undefined);
 
 	useEffect(() => {
 		if (selections.length || !phaseoAccount || !phaseoModels.length) return;
@@ -116,6 +125,15 @@ export function NewChat() {
 		const receive = (event: Event) => { const text = (event as CustomEvent<{ text?: unknown }>).detail?.text; if (typeof text !== "string") return; setDraft(text); setPlanMode("code"); requestAnimationFrame(() => editor.focus("end")); };
 		window.addEventListener(newChatDraftEvent, receive); return () => window.removeEventListener(newChatDraftEvent, receive);
 	}, [editor, setDraft, setPlanMode]);
+	// Once the source is ready, the message box points the agent at the playbook and the person adds what went wrong.
+	useEffect(() => {
+		if (!preparation || prefilled.current === preparation) return;
+		prefilled.current = preparation;
+		setOverview(preparation.workspace); setNewChatProjectId(preparation.projectId); setOfferPullRequest(false);
+		setDraft(`Read ${mentionToken({ kind: "file", ref: preparation.playbook, label: "triage-playbook.md" })} and follow it.\n\n`);
+		requestAnimationFrame(() => editor.focus("end"));
+	}, [preparation, editor, setDraft, setOverview, setNewChatProjectId]);
+	const leaveTriage = () => { endTriage(); if (draft.includes("file:.phaseo-triage")) setDraft(""); };
 	const attached = message.images.flatMap(id => images[id] ? [images[id]] : []);
 	useEffect(() => { if (code) setSelections(current => current.length > 1 ? current.slice(0, 1) : current); }, [code]);
 
@@ -126,7 +144,7 @@ export function NewChat() {
 	}, [preferences]);
 
 	const needsSignIn = !phaseoAccount && ![...connected].some(harness => harness !== "phaseo");
-	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && (!code || !!project);
+	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && (!code || !!project) && (!triaging || (!!preparation && project?.id === preparation.projectId));
 
 	async function submit() {
 		if (!api || !canSend) return;
@@ -142,8 +160,10 @@ export function NewChat() {
 					saveCompareGroup(group); setDraft(""); setImages({}); openCompare(group.id);
 				}
 			} else {
-				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, create: code ? worktree.create : undefined, ...code && autopilot && workspacePreferences.autopilot ? { autopilot } : {}, ...shared });
-				if (id) { setDraft(""); setImages({}); setAutopilot(undefined); select(id); }
+				// The playbook is written now, so its diagnostics are as fresh as the message; triage works in the checkout itself, never a new worktree.
+				if (triaging && preparation) await api.writeTriagePlaybook(preparation.projectId, preparation.playbook, { offerPullRequest });
+				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, create: code && !triaging ? worktree.create : undefined, ...code && autopilot && workspacePreferences.autopilot ? { autopilot } : {}, ...shared });
+				if (id) { setDraft(""); setImages({}); setAutopilot(undefined); select(id); if (triaging) endTriage(); }
 			}
 		} catch (reason) { setError(errorText(reason)); }
 		finally { setBusy(false); }
@@ -177,8 +197,8 @@ export function NewChat() {
 	return <ScrollArea className="h-full" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><div className="flex flex-1 flex-col items-center px-8">
 		<div className="flex w-full max-w-[720px] flex-1 flex-col justify-center gap-6 py-12">
 			<div className="text-center">
-				<h1 className="text-[28px] font-bold tracking-tight">{code ? "What should we build?" : greeting()}</h1>
-				{code && <div className="mt-4 flex justify-center">{projectMenu}</div>}
+				<h1 className="text-[28px] font-bold tracking-tight">{triaging ? "What went wrong?" : code ? "What should we build?" : greeting()}</h1>
+				{triaging ? <TriageStatus onRetry={() => { if (api) { endTriage(); startTriage(api); } }} /> : code && <div className="mt-4 flex justify-center">{projectMenu}</div>}
 			</div>
 			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend}
 				menu={menu}
@@ -192,7 +212,7 @@ export function NewChat() {
 					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
 					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
 					{code && workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
-					{code && project && <WorktreeTargetControls target={worktree} disabled={busy} />}
+					{code && project && !triaging && <WorktreeTargetControls target={worktree} disabled={busy} />}
 					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
 				</>}
 				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />
@@ -212,8 +232,26 @@ export function NewChat() {
 					</button>;
 				})}
 			</div>}
-			{code && !projects.length && <p className="text-center text-sm text-muted-foreground"><button type="button" onClick={addProject} className="font-semibold text-primary hover:underline">Open a folder</button> to give the agent a project to work in.</p>}
-			{code && <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground"><Code2 className="size-3.5" />Code chats can read and edit files, run commands and use your MCP tools.</p>}
+			{code && !triaging && !projects.length && <p className="text-center text-sm text-muted-foreground"><button type="button" onClick={addProject} className="font-semibold text-primary hover:underline">Open a folder</button> to give the agent a project to work in.</p>}
+			{triaging && <div className="flex flex-col items-center gap-3">
+				<label className="flex items-center gap-2.5 text-[13px]"><Switch checked={offerPullRequest} disabled={busy} onCheckedChange={setOfferPullRequest} aria-label="Offer a pull request with the fix" /><span>Offer a pull request with the fix<span className="block text-xs text-muted-foreground">{offerPullRequest ? "The agent asks before opening one." : "The fix stays in the checkout."}</span></span></label>
+				<p className="flex max-w-[560px] items-start gap-1.5 text-center text-xs text-muted-foreground"><Bug className="mt-px size-3.5 shrink-0" />The agent works in a copy of this version's source in Phaseo's data folder and can draft an issue{preparation ? ` for ${preparation.triage.repository}` : ""}. Nothing is filed unless you choose to file it.</p>
+				<Button variant="ghost" size="sm" disabled={busy} onClick={leaveTriage}>Cancel triage</Button>
+			</div>}
+			{code && !triaging && <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground"><Code2 className="size-3.5" />Code chats can read and edit files, run commands and use your MCP tools.</p>}
 		</div>
 	</div></ScrollArea>;
+}
+
+/** Under "What went wrong?": fetching the source, the build it is for, or why it failed. */
+function TriageStatus({ onRetry }: { onRetry: () => void }) {
+	const triage = useTriage();
+	if (triage.status === "preparing") return <p role="status" className="mt-3 flex items-center justify-center gap-1.5 text-sm text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Getting the Phaseo source for this version…</p>;
+	if (triage.status === "failed") return <div className="mt-3 flex flex-col items-center gap-2"><p role="alert" className="max-w-[560px] text-sm text-destructive">{triage.error}</p><Button variant="outline" size="sm" onClick={onRetry}>Try again</Button></div>;
+	if (triage.status !== "ready") return null;
+	const { build, triage: source } = triage.preparation;
+	return <div className="mt-3 text-sm text-muted-foreground">
+		<p><span className="font-semibold text-foreground">Phaseo</span> {build.version} · <span className="font-mono text-[12.5px]">{source.commit.slice(0, 7)}</span>{build.dirty ? " · built with local changes" : ""}</p>
+		{!source.exact && <p className="mt-1 text-xs text-warning">{build.commit ? "This build's commit is not on GitHub" : "This build does not record its commit"}, so the agent works from main at {source.commit.slice(0, 7)}.</p>}
+	</div>;
 }

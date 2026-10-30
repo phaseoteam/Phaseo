@@ -27,6 +27,8 @@ import { issueLinkSnapshot, parseIssueReference, validateIssueLinks, type IssueD
 import type { IssueWatchMessage, IssueWatchState } from "../shared/issueWatch";
 import type { IssueWatchTarget } from "./issueWatcher";
 import { githubReferenceContext, readIssue } from "./projectIssues";
+import { runGh } from "./projectPullRequestView";
+import { validateIssueDraft, type IssueDraft } from "../shared/triage";
 import { OrchestratorMcp } from "./orchestratorMcp";
 import { QuestionDeferredError } from "./phaseoQuestionTools";
 import { CodexAdapter } from "./codexAdapter";
@@ -153,6 +155,9 @@ export class WorkspaceRuntime {
 	pullRequestGuideTools?: { write: (root: string, repository: string, number: number) => Promise<"started" | "running">; read: (root: string, repository: string, number: number) => Promise<PullRequestGuideResult> };
 	/** GitHub issue reads through gh: linking and read_issue, and the context `#` references add to a prompt. Tests replace it. */
 	github: { readIssue: (root: string, repository: string, number: number) => Promise<IssueDetails>; referenceContext: (root: string, urls: string[]) => Promise<string> } = { readIssue: (root, repository, number) => readIssue(root, repository, number), referenceContext: (root, urls) => githubReferenceContext(root, urls) };
+	/** Files an issue through gh and returns what gh prints, ending with the issue's URL; the body goes in on stdin, so no file holds it. Tests replace it. */
+	createIssue = (root: string, repository: string, title: string, body: string) => runGh(root, ["issue", "create", "--repo", repository, "--title", title, "--body-file", "-"], body);
+	private readonly filingIssues = new Set<string>();
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(path.join(directory, "instructions"), { recursive: true });
 		mkdirSync(directory, { recursive: true });
@@ -597,8 +602,45 @@ export class WorkspaceRuntime {
 	threadTools(parentId: string): ThreadTools {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
-		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {} };
+		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
 		return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
+	/** The triage project of a top-level chat working in one; delegated agents report to their parent instead of drafting. */
+	private triageProject(id: string) {
+		const task = this.store.getTask(id);
+		if (task.delegation?.parentTaskId) return undefined;
+		return this.store.getProjects().find(project => project.id === task.projectId && !project.worktree)?.triage;
+	}
+	/** draft_issue: keeps the agent's draft on the chat for the person to read, edit and file, or discard. A newer draft replaces an unfiled one. */
+	draftIssue(id: string, value: unknown) {
+		const triage = this.triageProject(id);
+		if (!triage) throw new Error("Only a triage chat can draft issues.");
+		const { title, body } = validateIssueDraft(value), task = this.store.getTask(id);
+		task.issueDraft = { repository: triage.repository, title, body, draftedAt: new Date().toISOString(), status: "draft" };
+		this.store.saveTask(task); this.broadcast();
+		return { saved: true as const, repository: triage.repository, message: "The draft is shown beside this chat. The person reads it and decides whether to file it; do not file it yourself. If they file it, it is linked to this chat." };
+	}
+	/** The person's choice on a drafted issue: file it (with their edits) through gh and link it to the chat, or discard it. */
+	async issueDraftAction(id: string, action: "file" | "discard", edit?: unknown): Promise<IssueDraft> {
+		const task = this.store.getTask(id), draft = task.issueDraft;
+		if (!draft || draft.status !== "draft") throw new Error("This chat has no issue draft waiting.");
+		if (this.filingIssues.has(id)) throw new Error("This issue is already being filed.");
+		if (action === "discard") { task.issueDraft = { ...draft, status: "discarded" }; this.store.saveTask(task); this.broadcast(); return task.issueDraft; }
+		const { title, body } = validateIssueDraft(edit ?? draft);
+		this.filingIssues.add(id);
+		let url: string;
+		try {
+			const project = this.store.getProjects().find(value => value.id === task.projectId && !value.worktree?.removedAt);
+			url = (await this.createIssue(project?.directory ?? this.directory, draft.repository, title, body)).trim().split("\n").at(-1)?.trim() ?? "";
+		} finally { this.filingIssues.delete(id); }
+		const number = Number(url.match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/(\d+)$/)?.[1]);
+		if (!number) throw new Error(`GitHub did not return an issue: ${url.slice(0, 200)}`);
+		const filed = this.store.getTask(id);
+		filed.issueDraft = { ...draft, title, body, status: "filed", number, url, filedAt: new Date().toISOString() };
+		this.store.saveTask(filed); this.broadcast();
+		// The issue exists either way; a failed link only leaves it off the chat's issue list, and the draft still shows its link.
+		await this.command({ type: "link-issue", id, reference: `${draft.repository}#${number}` }).catch(() => undefined);
+		return filed.issueDraft;
+	}
 	async createWorktree(projectId: string, branch: string, base: string, runScripts = true) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
