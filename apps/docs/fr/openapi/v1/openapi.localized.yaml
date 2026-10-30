@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: Prendre des décisions structurées
-      description: 'Pour les nouveaux appels, utilisez le format compatible OpenAI : input contient du texte ou des messages utilisateur avec des éléments input_image intégrés, et questions est une liste ordonnée de questions predicate, choice ou score. Les réponses conservent cet ordre et les noms facultatifs. Les valeurs booléennes restent booléennes. Les URL d’images hébergées ne sont pas prises en charge ; Luna accepte jusqu’à 128 images intégrées, les autres fournisseurs ayant leurs propres limites. Le détail explicite des images et safety_identifier nécessitent une route OpenAI. Le format historique avec state, des questions nommées, noul et criteria reste disponible et renvoie un objet de réponses. Together Tev nécessite ce format car il renvoie des étiquettes sans probabilités. Les exemples historiques restent valides.'
+      description: 'Pour les nouveaux appels, utilisez le format compatible OpenAI : input contient du texte ou des messages utilisateur avec des éléments input_image intégrés, et questions est une liste ordonnée de questions predicate, choice ou score. Les réponses conservent cet ordre et les noms facultatifs. Les valeurs booléennes restent booléennes. Les URL HTTPS d’images hébergées ne fonctionnent qu’avec les modèles Base Labs (Elephant-1, Mammoth-1 et Joey-1) et doivent pointer vers Amazon S3, Google Cloud Storage ou Azure Blob Storage ; Luna accepte jusqu’à 128 images intégrées, les autres fournisseurs ayant leurs propres limites. Le détail explicite des images et safety_identifier nécessitent une route OpenAI. Le format historique avec state, des questions nommées, noul et criteria reste disponible et renvoie un objet de réponses. Together Tev nécessite ce format car il renvoie des étiquettes sans probabilités. Les exemples historiques restent valides.'
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: Image base64 intégrée. Sans URL hébergées ni identifiants de fichiers. Maximum 128 images par requête ; les fournisseurs peuvent imposer des limites inférieures.
+      description: Image base64 intégrée, ou URL HTTPS d’image sur Amazon S3, Google Cloud Storage ou Azure Blob Storage (modèles Base Labs uniquement). Sans identifiants de fichiers. Maximum 128 images par requête ; les fournisseurs peuvent imposer des limites inférieures.
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true

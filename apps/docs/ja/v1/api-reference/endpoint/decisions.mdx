@@ -6,7 +6,7 @@ openapi: "/ja/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "対応する判断モデルを使い、アプリケーションの状態に対して型付きの質問を評価します。"
 ---
 
-新しい呼び出しには OpenAI 互換形式を使います。`input` はテキストまたはインラインの `input_image` を含むユーザーメッセージ、`questions` は `predicate`、`choice`、`score` 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像 URL は使用できません。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と `safety_identifier` は OpenAI ルートが必要です。従来の `state`、名前付き質問マップ、`noul`、`criteria` 形式も引き続き使用でき、従来の回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。以下の従来の例も引き続き有効です。
+新しい呼び出しには OpenAI 互換形式を使います。`input` はテキストまたはインラインの `input_image` を含むユーザーメッセージ、`questions` は `predicate`、`choice`、`score` 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像の HTTPS URL は Base Labs のモデル（Elephant-1、Mammoth-1、Joey-1）でのみ使用でき、Amazon S3、Google Cloud Storage、Azure Blob Storage 上にある必要があります。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と `safety_identifier` は OpenAI ルートが必要です。従来の `state`、名前付き質問マップ、`noul`、`criteria` 形式も引き続き使用でき、従来の回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。以下の従来の例も引き続き有効です。
 
 ```json
 {

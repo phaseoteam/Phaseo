@@ -29,7 +29,7 @@ export const DecisionProviderOptionsSchema = lazySchema(() => z.object({
 const instructions = lazySchema(() => z.string().max(1048576));
 const commonQuestion = { name: instructions.optional(), instructions };
 const value = lazySchema(() => z.union([z.string(), z.boolean()]));
-const mediaUrl = (kind: "audio" | "video") => z.string().max(24 * 1024 * 1024).refine(value => {
+const mediaUrl = (kind: "audio" | "video" | "image", maxLength = 24 * 1024 * 1024) => z.string().max(maxLength).refine(value => {
 	if (new RegExp(`^data:${kind}/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$`, "i").test(value)) return true;
 	try { return new URL(value).protocol === "https:"; } catch { return false; }
 }, "Use an inline base64 data URL or a public HTTPS URL.");
@@ -62,7 +62,8 @@ const inputPart = lazySchema(() => z.discriminatedUnion("type", [
 	z.object({ type: z.literal("input_text"), text: z.string().max(10485760) }).strict(),
 	z.object({
 		type: z.literal("input_image"),
-		image_url: z.string().max(1073741824).regex(/^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$/i),
+		// Hosted URLs route only to providers that fetch them (capability param image_urls).
+		image_url: mediaUrl("image", 1073741824),
 		detail: z.enum(["low", "high", "auto", "original"]).nullable().optional(),
 	}).strict(),
 ]));

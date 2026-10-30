@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: संरचित निर्णय लें
-      description: 'नई कॉल के लिए OpenAI-संगत प्रारूप इस्तेमाल करें: input में टेक्स्ट या इनलाइन input_image वाले उपयोगकर्ता संदेश होते हैं और questions में predicate, choice या score प्रश्नों की क्रमबद्ध सूची होती है। उत्तर वही क्रम और वैकल्पिक नाम रखते हैं। बूलियन विकल्प बूलियन ही रहते हैं। होस्ट किए गए चित्र URL समर्थित नहीं हैं; Luna अधिकतम 128 इनलाइन चित्र स्वीकार करता है और अन्य प्रदाताओं की अपनी सीमाएँ हैं। स्पष्ट चित्र विवरण और safety_identifier के लिए OpenAI रूट आवश्यक है। पुराना state, नामित प्रश्न मैप, noul और criteria प्रारूप समर्थित है और उत्तर मैप लौटाता है। Together Tev को वही प्रारूप चाहिए क्योंकि वह संभावनाओं के बिना लेबल लौटाता है। पुराने उदाहरण मान्य हैं।'
+      description: 'नई कॉल के लिए OpenAI-संगत प्रारूप इस्तेमाल करें: input में टेक्स्ट या इनलाइन input_image वाले उपयोगकर्ता संदेश होते हैं और questions में predicate, choice या score प्रश्नों की क्रमबद्ध सूची होती है। उत्तर वही क्रम और वैकल्पिक नाम रखते हैं। बूलियन विकल्प बूलियन ही रहते हैं। होस्ट किए गए चित्रों के HTTPS URL केवल Base Labs मॉडल (Elephant-1, Mammoth-1 और Joey-1) पर काम करते हैं और Amazon S3, Google Cloud Storage या Azure Blob Storage पर होने चाहिए; Luna अधिकतम 128 इनलाइन चित्र स्वीकार करता है और अन्य प्रदाताओं की अपनी सीमाएँ हैं। स्पष्ट चित्र विवरण और safety_identifier के लिए OpenAI रूट आवश्यक है। पुराना state, नामित प्रश्न मैप, noul और criteria प्रारूप समर्थित है और उत्तर मैप लौटाता है। Together Tev को वही प्रारूप चाहिए क्योंकि वह संभावनाओं के बिना लेबल लौटाता है। पुराने उदाहरण मान्य हैं।'
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: इनलाइन base64 चित्र। होस्ट किए URL और फ़ाइल ID समर्थित नहीं। प्रति अनुरोध अधिकतम 128 चित्र; प्रदाता कम सीमा लगा सकते हैं।
+      description: इनलाइन base64 चित्र, या Amazon S3, Google Cloud Storage या Azure Blob Storage पर चित्र का HTTPS URL (केवल Base Labs मॉडल)। फ़ाइल ID समर्थित नहीं। प्रति अनुरोध अधिकतम 128 चित्र; प्रदाता कम सीमा लगा सकते हैं।
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true

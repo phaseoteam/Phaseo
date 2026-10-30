@@ -30,9 +30,13 @@ describe("DecisionsSchema", () => {
 		expect(DecisionsSchema.safeParse({ ...base, input: [{ role: "user", content: Array(128).fill(part) }] }).success).toBe(true);
 		expect(DecisionsSchema.safeParse({ ...base, input: [{ role: "user", content: Array(129).fill(part) }] }).success).toBe(false);
 	});
+	it("accepts hosted HTTPS image URLs in native input", () => {
+		expect(DecisionsSchema.safeParse({ model: "baselabs/joey-1", questions: [{ type: "predicate", instructions: "Visible?" }],
+			input: [{ role: "user", content: [{ type: "input_image", image_url: "https://bucket.s3.amazonaws.com/a.png" }] }] }).success).toBe(true);
+	});
 	it.each([
 		{ input: [{ role: "assistant", content: "Wrong role" }] },
-		{ input: [{ role: "user", content: [{ type: "input_image", image_url: "https://example.com/a.png" }] }] },
+		{ input: [{ role: "user", content: [{ type: "input_image", image_url: "http://example.com/a.png" }] }] },
 		{ input: [{ role: "user", content: [{ type: "input_file", file_id: "file_1" }] }] },
 		{ state: "Mixed formats" },
 		{ questions: [{ type: "choice", instructions: "Choose", choices: [{ value: true }, { value: true }] }] },
