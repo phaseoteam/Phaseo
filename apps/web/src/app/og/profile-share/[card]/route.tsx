@@ -1,7 +1,12 @@
-import { readFile } from "node:fs/promises"
 import { ImageResponse } from "next/og"
 import { NextRequest } from "next/server"
 
+import {
+	montserratBoldPromise,
+	montserratRegularPromise,
+	montserratSemiboldPromise,
+	wordmarkDataUrlPromise,
+} from "@/lib/og/ogAssets"
 import { PUBLIC_LONG_CDN_CACHE_CONTROL } from "@/lib/cache/publicCacheHeaders"
 import {
 	parseProfileShareCardToken,
@@ -11,21 +16,6 @@ type RouteProps = {
 	params: Promise<{ card: string }>
 }
 
-const montserratRegularPromise = readFile(
-	new URL("../assets/Montserrat-Regular.ttf", import.meta.url),
-)
-const montserratSemiboldPromise = readFile(
-	new URL("../assets/Montserrat-SemiBold.ttf", import.meta.url),
-)
-const montserratBoldPromise = readFile(
-	new URL("../assets/Montserrat-Bold.ttf", import.meta.url),
-)
-const wordmarkDataUrlPromise = readFile(
-	new URL("../../../../../public/wordmark_light.svg", import.meta.url),
-	"utf8",
-).then(
-	(svg) => `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`,
-)
 
 export async function GET(_request: NextRequest, { params }: RouteProps) {
 	const { card } = await params
