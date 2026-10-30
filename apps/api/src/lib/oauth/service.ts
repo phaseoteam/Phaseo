@@ -10,7 +10,7 @@ import {
 	parseStoredScopeList,
 } from "@/lib/authz/capabilities";
 import { resolveActiveKeyPepper, resolveKeyPepperCandidates } from "@/lib/security/keyPepper";
-import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.helpers";
+import { generateGatewayKey, hmacSecret, INFERENCE_KEY_PREFIX, randomBase62, timingSafeEqual } from "@/routes/auth.helpers";
 import { validateWebhookEndpointUrlForDelivery } from "@/core/webhook-endpoints";
 import { decodeJWT, validateOAuthToken, type JWTClaims } from "./jwt";
 
@@ -24,6 +24,9 @@ const DEFAULT_WEB_BASE_URL = "https://phaseo.app";
 const DEFAULT_API_BASE_URL = "https://api.phaseo.app";
 const ACCESS_TOKEN_AUDIENCE = "phaseo-api";
 const MCP_UPSTREAM_TOKEN_TTL_SECONDS = 5 * 60;
+// A third-party app's access token is a delegated gateway key. It lasts 7 days (the database sets the
+// key's expiry to match) and the app renews it with its refresh token, which lasts REFRESH_TOKEN_TTL_SECONDS
+// from its last use.
 const DELEGATED_ACCESS_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
@@ -948,24 +951,46 @@ async function recordOAuthKeyIssued(args: { kid: string; workspaceId: string; us
 	}
 }
 
+type DelegatedGrantResult =
+	| { ok: true; tokens: DelegatedTokens }
+	| { ok: false; reason: "invalid_grant" | "key_inactive" };
+
+type DelegatedTokens = {
+	access_token: string;
+	token_type: "Bearer";
+	expires_in: number;
+	refresh_token: string;
+	scope: string;
+	resource?: string;
+};
+
+/**
+ * Exchanges a third-party app's authorization code for its delegated key and a refresh token. When the
+ * person has approved the same app for the same workspace before and that key is still active, the
+ * database renews it (same row, new secret, new refresh-token family), so its id, limits, month-to-date
+ * spend and history carry over and no new api_key.created event is recorded. A paused or disabled key is
+ * never turned back on this way: the code is spent and the result is key_inactive.
+ */
 export async function issueOAuthManagedKeyForAuthorizationCode(
 	grantId: string,
 	input: TokenIssueInput,
 	options: { clientName?: string | null } = {},
-) {
+): Promise<DelegatedGrantResult> {
 	// Unbound delegated keys can spend workspace credits and require Gateway
 	// consent. A key bound to the Gateway API is still a Gateway credential and
 	// must carry the same explicit credit-spending permission.
 	if ((!input.resource || isGatewayOAuthResource(input.resource)) && !input.scopes.includes(GATEWAY_ACCESS_SCOPE)) {
-		return null;
+		return { ok: false, reason: "invalid_grant" };
 	}
 
 	const pepper = resolveActiveKeyPepper(getBindings());
 	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
 
 	const generated = generateGatewayKey();
+	const refreshToken = randomBase64Url(48);
 	const supabase = getSupabaseAdmin();
-	const rpcInput = {
+	// The key and the refresh token that renews it are issued in one transaction with the code's consumption.
+	const { data, error } = await supabase.rpc("consume_oauth_code_and_issue_delegated_grant", {
 		p_code_id: grantId,
 		p_key_hash: await hmacSecret(generated.secret, pepper),
 		p_key_kid: generated.kid,
@@ -976,32 +1001,77 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 		p_client_id: input.clientId,
 		p_scopes: input.scopes,
 		p_resource: input.resource ?? null,
-	};
-	let { data, error } = await supabase.rpc("consume_oauth_code_and_issue_managed_key", rpcInput);
-	if (error && !input.resource && /p_resource|schema cache|function.*not found/i.test(error.message)) {
-		const { p_resource: _resource, ...legacyRpcInput } = rpcInput;
-		const legacyResult = await supabase.rpc(
-			"consume_oauth_code_and_issue_managed_key",
-			legacyRpcInput,
-		);
-		data = legacyResult.data;
-		error = legacyResult.error;
-	}
-	if (error) throw new Error(error.message || "Failed to consume OAuth code and issue key");
-	if (data !== "issued") return null;
-	await recordOAuthKeyIssued({
-		kid: generated.kid,
-		workspaceId: input.workspaceId,
-		userId: input.userId,
-		clientId: input.clientId,
-		clientName: options.clientName,
+		p_refresh_token_hash: await hashOAuthSecret(refreshToken),
+		p_refresh_expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000).toISOString(),
 	});
+	if (error) throw new Error(error.message || "Failed to consume OAuth code and issue key");
+	const result = data && typeof data === "object" ? data as Record<string, unknown> : null;
+	if (result?.status === "key_inactive") return { ok: false, reason: "key_inactive" };
+	const kid = typeof result?.kid === "string" ? result.kid : "";
+	if ((result?.status !== "issued" && result?.status !== "renewed") || !kid) return { ok: false, reason: "invalid_grant" };
+	// A renewal keeps the existing key, so it isn't announced as a new one.
+	if (result.status === "issued") {
+		await recordOAuthKeyIssued({
+			kid,
+			workspaceId: input.workspaceId,
+			userId: input.userId,
+			clientId: input.clientId,
+			clientName: options.clientName,
+		});
+	}
 	return {
-		access_token: generated.plaintext,
-		token_type: "Bearer",
-		expires_in: DELEGATED_ACCESS_TOKEN_TTL_SECONDS,
-		scope: input.scopes.join(" "),
-		...(input.resource ? { resource: input.resource } : {}),
+		ok: true,
+		tokens: {
+			// A renewed key keeps its key ID; only the secret is new.
+			access_token: `${INFERENCE_KEY_PREFIX}${kid}_${generated.secret}`,
+			token_type: "Bearer",
+			expires_in: DELEGATED_ACCESS_TOKEN_TTL_SECONDS,
+			refresh_token: refreshToken,
+			scope: input.scopes.join(" "),
+			...(input.resource ? { resource: input.resource } : {}),
+		},
+	};
+}
+
+type RefreshedTokens = Awaited<ReturnType<typeof issueTokenPair>> & { resource?: string };
+type RefreshResult =
+	| { ok: true; tokens: RefreshedTokens }
+	| { ok: false; reason: "invalid_client" | "invalid_grant" };
+
+/**
+ * Refreshes a third-party app's delegated key. The database checks membership, consent, the key and
+ * scopes (see rotate_oauth_delegated_refresh_token), then gives the same key a new secret, so the
+ * previous access token stops working at once, with no grace period. Its limits, attribution, history
+ * and the person's Settings → Keys entry carry over, and no new api_key.created event is recorded.
+ */
+async function rotateDelegatedRefreshToken(tokenHash: string): Promise<RefreshResult> {
+	const pepper = resolveActiveKeyPepper(getBindings());
+	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
+	const secret = randomBase62(40);
+	const refreshToken = randomBase64Url(48);
+	const { data, error } = await getSupabaseAdmin().rpc("rotate_oauth_delegated_refresh_token", {
+		p_current_token_hash: tokenHash,
+		p_next_token_hash: await hashOAuthSecret(refreshToken),
+		p_next_expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000).toISOString(),
+		p_key_hash: await hmacSecret(secret, pepper),
+	});
+	// Fail closed: a reused token's chain must be revoked before anyone is told the refresh failed.
+	if (error) throw new Error(error.message || "Failed to rotate the delegated OAuth refresh token");
+	const result = data && typeof data === "object" ? data as Record<string, unknown> : null;
+	const kid = typeof result?.kid === "string" ? result.kid : "";
+	if (result?.status !== "rotated" || !kid) return { ok: false, reason: "invalid_grant" };
+	const scopes = Array.isArray(result.scopes) ? result.scopes.map(String) : [];
+	const resource = typeof result.resource === "string" && result.resource ? result.resource : null;
+	return {
+		ok: true,
+		tokens: {
+			access_token: `${INFERENCE_KEY_PREFIX}${kid}_${secret}`,
+			token_type: "Bearer",
+			expires_in: DELEGATED_ACCESS_TOKEN_TTL_SECONDS,
+			refresh_token: refreshToken,
+			scope: scopes.join(" "),
+			...(resource ? { resource } : {}),
+		},
 	};
 }
 
@@ -1024,23 +1094,17 @@ export function refreshedScopes(authorizationScopes: unknown, tokenScopes: unkno
 export async function rotateRefreshToken(
 	refreshToken: string,
 	clientAuth?: { clientId?: string; clientSecret?: string | null },
-): Promise<
-	| { ok: true; tokens: Awaited<ReturnType<typeof issueTokenPair>> }
-	| { ok: false; reason: "invalid_client" | "invalid_grant" }
-> {
+): Promise<RefreshResult> {
 	const tokenHashes = await hashOAuthSecretCandidates(refreshToken);
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
 		.from("oauth_refresh_tokens")
-		.select("id, token_hash, user_id, workspace_id, client_id, scopes, expires_at, revoked_at")
+		.select("id, token_hash, user_id, workspace_id, client_id, scopes, expires_at, revoked_at, key_id")
 		.in("token_hash", tokenHashes)
 		.maybeSingle();
 	if (error || !data) return { ok: false, reason: "invalid_grant" };
 	const tokenHash = String(data.token_hash ?? "");
 	if (!tokenHash) return { ok: false, reason: "invalid_grant" };
-	if (data.expires_at && Date.parse(String(data.expires_at)) <= Date.now()) {
-		return { ok: false, reason: "invalid_grant" };
-	}
 	const clientId = String(data.client_id ?? "").trim();
 	const client = await loadOAuthClient(clientId);
 	if (!client) return { ok: false, reason: "invalid_grant" };
@@ -1054,6 +1118,12 @@ export async function rotateRefreshToken(
 		if (!(await verifyClientSecret(client, clientAuth.clientSecret))) {
 			return { ok: false, reason: "invalid_client" };
 		}
+	}
+	// A third-party app's token renews its delegated key. The database checks expiry too, after reuse:
+	// an expired token that was already rotated is still a replay, and must end its live successor.
+	if (data.key_id) return rotateDelegatedRefreshToken(tokenHash);
+	if (data.expires_at && Date.parse(String(data.expires_at)) <= Date.now()) {
+		return { ok: false, reason: "invalid_grant" };
 	}
 	if (data.revoked_at) {
 		const replay = await supabase.rpc("rotate_oauth_refresh_token", {
@@ -1140,14 +1210,23 @@ export async function ensureGrants(args: {
 	}
 }
 
+// Revoked, compromised and deleted keys can't be turned back on; any other state can.
+const FINAL_KEY_STATUSES = ["revoked", "compromised", "deleted"];
+
+/**
+ * RFC 7009 revocation. Throws when storage fails, so the caller can report it instead of claiming success.
+ */
 export async function revokeToken(token: string) {
 	const tokenHashes = await hashOAuthSecretCandidates(token);
 	const supabase = getSupabaseAdmin();
-	await supabase
-		.from("oauth_refresh_tokens")
-		.update({ revoked_at: new Date().toISOString() })
-		.in("token_hash", tokenHashes)
-		.is("revoked_at", null);
+	// One transaction: the token's family and, for a third-party app's token, its delegated key and every
+	// refresh token bound to it. It matches a token already rotated, so a logout that races a refresh
+	// still ends the token that refresh issued.
+	const { data: revoked, error: revokeError } = await supabase.rpc("revoke_oauth_refresh_token_grant", {
+		p_token_hashes: tokenHashes,
+	});
+	if (revokeError) throw new Error(revokeError.message || "Failed to revoke the OAuth refresh token");
+	if (revoked === "revoked") return;
 
 	// Third-party authorization-code grants return an opaque delegated Gateway
 	// key as their OAuth access token. RFC 7009 revocation must invalidate that
@@ -1160,18 +1239,22 @@ export async function revokeToken(token: string) {
 		.select("id, hash, key_kind, status")
 		.eq("kid", kid)
 		.maybeSingle();
-	if (error || !keyRow || keyRow.key_kind !== "oauth_delegated" || keyRow.status !== "active") return;
+	if (error) throw new Error(error.message || "Failed to load the delegated key to revoke");
+	if (!keyRow || keyRow.key_kind !== "oauth_delegated" || FINAL_KEY_STATUSES.includes(String(keyRow.status))) return;
 
 	const candidates = resolveKeyPepperCandidates(getBindings());
 	const hashes = await Promise.all(candidates.map((candidate) => hmacSecret(secret, candidate.value)));
 	if (!hashes.some((candidate) => timingSafeEqual(candidate, String(keyRow.hash ?? "")))) return;
 
-	await supabase
+	// A paused key is revoked too, so turning it back on can't bring back the app's access.
+	const { error: updateError } = await supabase
 		.from("keys")
-		.update({ status: "revoked" })
+		.update({ status: "revoked", revoked_reason: "oauth_token_revoked" })
 		.eq("id", keyRow.id)
-		.eq("status", "active")
-		.eq("key_kind", "oauth_delegated");
+		.eq("hash", String(keyRow.hash))
+		.eq("key_kind", "oauth_delegated")
+		.not("status", "in", `(${FINAL_KEY_STATUSES.join(",")})`);
+	if (updateError) throw new Error(updateError.message || "Failed to revoke the delegated key");
 }
 
 export const DESKTOP_KEY_TTL_SECONDS = 30 * 24 * 60 * 60;
