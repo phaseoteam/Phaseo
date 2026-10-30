@@ -11,7 +11,7 @@ const models = new Set([
 ]);
 const imageUrl = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/i;
 // Baseten fetches HTTPS images itself, but only from S3, Cloud Storage, and Azure Blob Storage.
-const imageHosts = /(^|\.)(s3([.-][a-z0-9-]+)*\.amazonaws\.com|storage\.googleapis\.com|blob\.core\.windows\.net)$/;
+const imageHosts = /(^|\.)(s3([.-][a-z0-9]+)*\.amazonaws\.com|storage\.googleapis\.com|blob\.core\.windows\.net)$/;
 
 function hostedImage(url: string): boolean {
 	try {
