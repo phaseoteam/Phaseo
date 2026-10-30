@@ -116,6 +116,30 @@ describe("execute health state", () => {
 		expect(health.classifyProviderHealthImpact({ upstreamStatus: 200, midStreamError: true })).toBe("failure");
     });
 
+	it("records the text token mix on successes only", async () => {
+		const health = await import("./health");
+		const base = { provider: "openai", model: "gpt-5.4-nano", latency_ms: 250, generation_ms: 1000, tokens_out: 300 };
+		await health.onCallEnd("responses", { ...base, ok: true, prompt_tokens: 8_000, cached_prompt_tokens: 5_000 });
+		await health.onCallEnd("responses", { ...base, ok: false, prompt_tokens: 1, cached_prompt_tokens: 0 });
+		await flushBackground();
+		const snapshot = await health.readHealth("responses", "openai", "gpt-5.4-nano");
+		expect(snapshot.tok_weight).toBe(1);
+		expect(snapshot.prompt_tok_ewma).toBe(8_000);
+		expect(snapshot.cached_tok_ewma).toBe(5_000);
+		expect(snapshot.out_tok_ewma).toBe(300);
+	});
+
+	it("reads prompt size from both usage shapes, with cache reads counted once", async () => {
+		const health = await import("./routing-cost");
+		// OpenAI-style: cached tokens sit inside input tokens.
+		expect(health.promptTokensFromUsage({ input_tokens: 10_000, input_tokens_details: { cached_tokens: 6_000 } }))
+			.toEqual({ prompt_tokens: 10_000, cached_prompt_tokens: 6_000 });
+		// Anthropic-style: cache reads are reported on top of input.
+		expect(health.promptTokensFromUsage({ inputTokens: 4_000, cachedInputTokens: 6_000, cachedReadTokensAreSubsetOfInput: false }))
+			.toEqual({ prompt_tokens: 10_000, cached_prompt_tokens: 6_000 });
+		expect(health.promptTokensFromUsage(null)).toEqual({});
+	});
+
 	it("uses classified health impact instead of HTTP success for reliability", async () => {
 		const health = await import("./health");
 		await health.onCallEnd("responses", {
