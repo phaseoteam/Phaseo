@@ -15,7 +15,7 @@ const plaintext = (connection: McpConnection | undefined) => connection?.transpo
 export class McpHeaderSecrets {
 	constructor(private readonly vault?: Vault) {}
 	private async read(connectionId: string): Promise<Record<string, string>> {
-		if (!this.vault?.available()) throw unavailable();
+		if (!this.vault || !await this.vault.available()) throw unavailable();
 		try { return JSON.parse(await this.vault.get(secretId(connectionId))) as Record<string, string>; }
 		catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return {}; throw error; }
 	}
@@ -32,7 +32,7 @@ export class McpHeaderSecrets {
 		const unchanged = !Object.keys(values).length && !Object.keys(legacy).length && names.length === before.length && names.every(name => before.includes(name));
 		if (unchanged) return stored;
 		if (!names.length) { this.vault?.remove(secretId(connection.id)); return stored; }
-		if (!this.vault?.available()) throw unavailable();
+		if (!this.vault || !await this.vault.available()) throw unavailable();
 		const current = before.length ? await this.read(connection.id) : {};
 		await this.vault.set(secretId(connection.id), JSON.stringify(Object.fromEntries(names.map(name => [name, values[name] ?? current[name] ?? legacy[name]]))));
 		return stored;
@@ -55,7 +55,7 @@ export class McpHeaderSecrets {
 		for (const connection of store.getMcpConnections()) {
 			const legacy = plaintext(connection);
 			if (!Object.keys(legacy).length) continue;
-			if (!this.vault?.available()) return;
+			if (!this.vault || !await this.vault.available()) return;
 			const names = [...new Set([...headerNames(connection), ...Object.keys(legacy)])];
 			store.saveMcp(await this.save({ ...connection, secretHeaders: names } as McpConnection, {}, connection));
 		}

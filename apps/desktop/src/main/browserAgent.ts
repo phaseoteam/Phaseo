@@ -4,6 +4,7 @@ import { browserTabLimit } from "../shared/browser";
 import { browserAgentDefaults, type BrowserAgentElement, type BrowserAgentPage, type BrowserAgentTab, type BrowserAgentTools } from "../shared/browserAgent";
 import { overlayCursorScript } from "./browserOverlay";
 import { overlayWorld, type BrowserHost } from "./browserHost";
+import { capturePixels } from "./capturePixels";
 import { javascriptLiteral } from "./javascriptLiteral";
 
 /** Page scripts run in the overlay's isolated world: the page's own scripts can neither see nor replace them. */
@@ -167,8 +168,10 @@ export class BrowserAgent {
 				const { tabId, contents } = this.target(chatId, request.tabId);
 				let image = await contents.capturePage();
 				if (image.isEmpty()) throw new Error("The page has nothing to capture yet. Show its browser tab and try again.");
-				if (image.getSize().width > 1280) image = image.resize({ width: 1280, quality: "good" });
-				const size = image.getSize();
+				const captured = capturePixels(image);
+				// resize() takes DIPs, so the scale keeps the cap at 1280 pixels on HiDPI captures too.
+				if (captured.width > 1280) image = image.resize({ width: Math.floor(1280 / captured.scale), quality: "good" });
+				const size = capturePixels(image);
 				return { ...page(tabId, contents), width: size.width, height: size.height, image: { mimeType: "image/png", data: image.toPNG().toString("base64") } };
 			},
 		};

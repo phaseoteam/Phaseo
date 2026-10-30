@@ -704,7 +704,7 @@ export class WorkspaceRuntime {
 	 * (delivery "file") also in an owner-only file for another harness's shell. The chat records only the outcome.
 	 */
 	async requestSecret(taskId: string, input: SecretRequestInput, signal?: AbortSignal): Promise<SecretRequestResult> {
-		if (!this.vault?.available()) throw new Error("Secure credential storage is unavailable on this device, so secrets cannot be requested. Ask the user to set the secret up themselves.");
+		if (!this.vault || !await this.vault.available()) throw new Error("Secure credential storage is unavailable on this device, so secrets cannot be requested. Ask the user to set the secret up themselves.");
 		const task = this.store.getTask(taskId);
 		if (task.archived) throw new Error("This chat is archived.");
 		const delivery = input.delivery ?? (task.harness === "phaseo" ? "secretRef" : "file");

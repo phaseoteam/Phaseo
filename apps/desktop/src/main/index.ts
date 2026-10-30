@@ -207,8 +207,9 @@ function phaseoSignInMethod(value: unknown): PhaseoSignInMethod {
 }
 /** Runs one step of a Phaseo sign-in for a window, which a cancel, the window closing or the app quitting stops. */
 async function phaseoSignInStep<T>(event: Electron.IpcMainInvokeEvent, step: (owner: BrowserWindow, signal: AbortSignal) => Promise<T>) {
-	const owner = senderWindow(event);
-	if (!owner || shutdownStarted || !credentialVault.available()) throw new Error("Phaseo sign-in is unavailable.");
+	// Awaited first, so nothing awaits between checking for an open sign-in and claiming it.
+	const secure = await credentialVault.available(), owner = senderWindow(event);
+	if (!owner || shutdownStarted || !secure) throw new Error("Phaseo sign-in is unavailable.");
 	if (phaseoSignIns.has(event.sender.id)) throw new Error("Phaseo sign-in is already open.");
 	const controller = new AbortController(); phaseoSignIns.set(event.sender.id, controller);
 	const destroyed = () => controller.abort(); owner.webContents.once("destroyed", destroyed);
@@ -471,7 +472,7 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 	const controller = new AbortController(); signIns.set(id, controller);
 	try {
 		if (account.harness === "cursor") {
-			if (!credentialVault.available()) throw new Error("Secure credential storage is unavailable on this device.");
+			if (!await credentialVault.available()) throw new Error("Secure credential storage is unavailable on this device.");
 			const result = await cursorSignIn(url => shell.openExternal(url), controller.signal);
 			if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled."); const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id && !value.archived); if (!current) throw new Error("Account is unavailable.");
 			const oldSecret = current.secretId ?? current.id; const newSecret = randomUUID(); await credentialVault.set(newSecret, result.apiKey);
@@ -1098,7 +1099,7 @@ app.whenReady().then(() => {
 	if (process.platform === "darwin") app.dock?.setIcon(applicationIcon);
 	const workspaceDirectory = path.join(app.getPath("userData"), "workspace");
 	const vault = new SecretVault(path.join(workspaceDirectory, "credentials"), windowsCredentialEncryption({
-		available: () => safeStorage.isEncryptionAvailable() && (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),
+		available: async () => await safeStorage.isAsyncEncryptionAvailable() && (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),
 		encrypt: value => safeStorage.encryptStringAsync(value), decrypt: async value => (await safeStorage.decryptStringAsync(value)).result,
 	}));
 	credentialVault = vault;
