@@ -153,8 +153,11 @@ gap, not a choice, unless you can say why.
    example `phaseo api get models --json` shows the expected capabilities and
    endpoints) and that it is selectable in Chat, not only listed on /models.
 10. Changelog: once the model has a live route, add it to the Models section
-    for its release date in the docs changelog, in all 9 languages, following
-    `phaseo-changelog`. Catalogue-only models wait until they are routable.
+    of the docs changelog, in all 9 languages, following `phaseo-changelog`.
+    Date it by the release date, or for a catalogue-only model, by the date
+    its route went live. The entry is the model link only, with no price,
+    limits or lineage.
+    Deprecations and retirements never get a changelog entry.
 
 ## Validation
 
