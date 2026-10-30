@@ -4,14 +4,14 @@ description: "Salve configurações reutilizáveis do Gateway para sua equipe."
 icon: "sliders-horizontal"
 ---
 
-Predefinições são configurações reutilizáveis que ajudam as equipes a padronizar prompts, preferências de modelo e padrões de roteamento. Elas são gerenciadas no painel da Phaseo e podem ser compartilhadas com a equipe.
+Predefinições são configurações reutilizáveis que ajudam as equipes a padronizar prompts, preferências de modelo e padrões de roteamento. Elas são gerenciadas no painel da Phaseo e podem ser compartilhadas com a equipe. Você também pode gerenciá-los com os comandos `phaseo presets` da CLI ou com a API `/v1/presets`.
 
 ## Início rápido
 
 <Steps>
 <Step title="Crie uma predefinição">
 
-Abra **Painel -> Configurações -> Predefinições** e crie uma predefinição com um slug claro, como `release-summary`. Adicione somente os padrões que devem ser compartilhados entre os solicitantes.
+Abra **Painel -> Configurações -> Predefinições** e crie uma predefinição com um slug claro, como `release-summary`. Adicione somente os padrões que devem ser compartilhados entre os solicitantes. Pela CLI, execute `phaseo presets create --name @release-summary --model <model-id>`.
 
 </Step>
 
@@ -67,6 +67,7 @@ Abra a solicitação em **Gateway -> Uso** para confirmar quais padrões foram a
 ## O que uma predefinição pode incluir
 
 - Um prompt de sistema anexado ao início de cada solicitação.
+- Um [template de prompt](./prompt-templates.mdx): mensagens com `{{variables}}` que cada solicitação preenche.
 - Modelos ou famílias de modelos permitidos.
 - Listas de provedores permitidos ou ignorados para preferências de roteamento.
 - Parâmetros padrão, como temperature, top_p, max_tokens e configurações semelhantes.
@@ -74,7 +75,7 @@ Abra a solicitação em **Gateway -> Uso** para confirmar quais padrões foram a
 
 Os nomes das predefinições começam com `@` para facilitar a identificação.
 
-Invoque uma predefinição somente pelo campo `model` da solicitação. A Phaseo não oferece um campo `preset` separado.
+Invoque uma predefinição pelo campo `model` da solicitação ou, quando a predefinição tiver um [template de prompt](./prompt-templates.mdx), por `prompt.id`. A Phaseo não oferece um campo `preset` separado.
 
 - Predefinições privadas e do espaço de trabalho usam `@{slug}` e são resolvidas no espaço de trabalho da chave de API.
 - Predefinições públicas usam `@{username}/{slug}` e podem ser resolvidas em qualquer espaço de trabalho. Por exemplo, `@octavia/release-summary`.
@@ -97,6 +98,8 @@ Cópias do marketplace permanecem vinculadas à versão exata da origem copiada.
 
 A Phaseo mantém a origem imediata e toda a ancestralidade de cada fork. Assim, as páginas do marketplace distinguem forks diretos de todos os descendentes, mesmo que uma predefinição tenha sido copiada e republicada várias vezes.
 
+As solicitações podem fixar uma versão publicada pelo rótulo dela, como `@support-triage@v3`, ou por um rótulo com nome, como `production`, que você aponta para uma versão. Voltar um rótulo para uma versão anterior é uma reversão. Veja [Templates de prompt](./prompt-templates.mdx).
+
 ## Como as predefinições são mescladas
 
 Quando uma solicitação é resolvida com uma predefinição no contexto do Gateway, a predefinição é aplicada antes do roteamento do provedor:
@@ -113,6 +116,7 @@ Assim, as predefinições são a principal interface pública para padrões de s
 O fluxo de predefinições do painel é intencionalmente limitado a um subconjunto estável e explícito de ajustes de solicitação:
 
 - injeção de prompt de sistema
+- templates de prompt com variáveis tipadas
 - listas de modelos permitidos
 - restrições de roteamento com listas de provedores permitidos ou ignorados
 - padrões de decodificação e geração
@@ -122,7 +126,7 @@ Se precisar de transformações mais complexas específicas do solicitante, mant
 
 ## Gerencie predefinições
 
-Crie e gerencie predefinições em **Painel -> Configurações -> Predefinições**. Use slugs separados quando os fluxos de trabalho exigirem diferenças significativas de prompt, roteamento ou cache.
+Crie e gerencie predefinições em **Painel -> Configurações -> Predefinições**. Use slugs separados quando os fluxos de trabalho exigirem diferenças significativas de prompt, roteamento ou cache. Pela CLI, use `phaseo presets create|update`, `phaseo presets versions create` e `phaseo presets labels set` (a API `/v1/presets`).
 
 ## Quando usar predefinições
 
@@ -133,6 +137,7 @@ Crie e gerencie predefinições em **Painel -> Configurações -> Predefiniçõe
 
 ## Guias relacionados
 
+- [Templates de prompt](./prompt-templates.mdx)
 - [Colete feedback sobre predefinições](./preset-feedback.mdx)
 - [Roteamento e alternativas](./routing-and-fallbacks.mdx)
 - [Parâmetros de inferência](./inference-parameters.mdx)

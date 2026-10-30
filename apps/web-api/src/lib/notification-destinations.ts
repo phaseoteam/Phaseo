@@ -3,7 +3,7 @@ import type { Env } from "@/env";
 export const NOTIFICATION_DESTINATION_TYPES = ["email", "discord", "discord_webhook", "slack", "microsoft_teams", "custom_webhook"] as const;
 export type NotificationDestinationType = typeof NOTIFICATION_DESTINATION_TYPES[number];
 /** Routable notification kinds; matches notification_event_destinations_event_kind_check. */
-export const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "spend_alert", "spend_blocked", "spend_report"] as const;
+export const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"] as const;
 export function isNotificationEventKind(value: unknown): value is typeof NOTIFICATION_EVENT_KINDS[number] { return typeof value === "string" && (NOTIFICATION_EVENT_KINDS as readonly string[]).includes(value); }
 
 const IANA_TIME_ZONE = /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+){0,2}$/;
@@ -102,6 +102,37 @@ export function targetPreview(type: NotificationDestinationType, target: string)
 	if (type === "discord") { const row = JSON.parse(target) as { channelId: string }; return `Channel ••••${row.channelId.slice(-4)}`; }
 	const url = new URL((type === "discord_webhook" || type === "slack" || type === "microsoft_teams") && target.startsWith("{") ? String((JSON.parse(target) as { url: string }).url) : target);
 	return `${url.hostname}/••••${url.pathname.slice(-4)}`;
+}
+
+/** Destination types whose deliveries are signed with a per-destination secret. */
+export function isSignedNotificationDestinationType(type: string): boolean { return type === "custom_webhook"; }
+
+async function encryptValue(env: Env, value: string) {
+	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(material(env)));
+	const key = await crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt"]);
+	const iv = crypto.getRandomValues(new Uint8Array(12));
+	const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: bytes(iv) }, key, new TextEncoder().encode(value));
+	return { ciphertext: base64(new Uint8Array(ciphertext)), iv: base64(iv), keyVersion: env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION?.trim() || "v1" };
+}
+
+/**
+ * A new webhook signing secret (`whsec_…`, the format the gateway uses for batch and
+ * video webhooks) and its encrypted columns. The gateway decrypts it with the same key
+ * material and signs each delivery with x-phaseo-timestamp and x-phaseo-signature.
+ */
+export async function issueNotificationSigningSecret(env: Env, now: Date = new Date()) {
+	const random = crypto.getRandomValues(new Uint8Array(32));
+	const secret = `whsec_${base64(random).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")}`;
+	const encrypted = await encryptValue(env, secret);
+	return {
+		secret,
+		columns: {
+			signing_secret_ciphertext: encrypted.ciphertext,
+			signing_secret_iv: encrypted.iv,
+			signing_secret_key_version: encrypted.keyVersion,
+			signing_secret_rotated_at: now.toISOString(),
+		},
+	};
 }
 
 export async function encryptNotificationTarget(env: Env, target: string) {

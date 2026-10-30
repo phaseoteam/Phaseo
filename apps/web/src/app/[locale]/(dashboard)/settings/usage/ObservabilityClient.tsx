@@ -1,9 +1,11 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { usageDeltaPercent as deltaPercent } from "@phaseo/app-kit/format";
 import { Link } from "@/i18n/navigation";
 import { UserUsageChip } from "@/components/(gateway)/settings/keys/UserUsageChip";
-import { memo } from "react";
+import { memo, useEffect } from "react";
+import { captureProductEventOnce } from "@/lib/productAnalytics";
 import { useSearchParams } from "next/navigation";
 import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/usage/PrivateUsageQuery";
 import { fetchPrivateUsage } from "@/lib/query/fetchPrivateUsage";
@@ -47,11 +49,6 @@ const spendOf = (cell: UsageCell) => cell.costNanos / 1e9;
 
 function sumCells(cells: UsageCell[], getValue: (cell: UsageCell) => number): number {
 	return cells.reduce((sum, cell) => sum + getValue(cell), 0);
-}
-
-function deltaPercent(current: number, previous: number): number | null {
-	if (previous === 0) return current > 0 ? 100 : null;
-	return ((current - previous) / previous) * 100;
 }
 
 function floorToBucket(date: Date, range: ObservabilityRange): Date {
@@ -483,6 +480,12 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 	const { keys } = initial;
 	const cells = initial.current.cells;
 	const previousCells = initial.previous.cells;
+	const hasUsage = cells.some((cell) => cell.requests > 0) || previousCells.some((cell) => cell.requests > 0);
+
+	useEffect(() => {
+		if (!hasUsage || !initial.workspaceId) return;
+		captureProductEventOnce("gateway_first_usage_seen", { surface: "usage_overview" }, initial.workspaceId);
+	}, [hasUsage, initial.workspaceId]);
 
 	const keyMap = new Map(keys.map((key) => [key.id, key]));
 	const modelMetadata = new Map(initial.modelMetadataEntries);

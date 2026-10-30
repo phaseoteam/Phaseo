@@ -1,0 +1,10 @@
+---
+title: "Lister les règles de workloads de confiance"
+sidebarTitle: "Lister les règles de workloads de confiance"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /workload-identity/policies"
+description: "Liste les déploiements Vercel et les workflows GitHub Actions autorisés à appeler Phaseo avec un jeton OIDC."
+---
+<Note>Nécessite `keys:read` sur une clé de gestion ou un jeton OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Les workloads de confiance sont en bêta ; les espaces de travail qui n’y ont pas accès reçoivent `404`.</Note>
+
+Consultez [Workloads de confiance](../../developers/trusted-workloads.mdx) pour comprendre le fonctionnement des règles et les gérer avec Terraform.

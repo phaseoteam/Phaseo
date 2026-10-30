@@ -1,27 +1,27 @@
 # Expected-outcome gate
 
-Mismatches: 9033. Allowed by the allow-list: 9033. **Failing: 0.**
+Mismatches: 8548. Allowed by the allow-list: 7887. **Failing: 661.**
 
 | Kind | Total | Failing |
 |---|---|---|
-| dropped | 2462 | 0 |
-| invented | 3655 | 0 |
-| renamed | 120 | 0 |
-| wrong_value | 969 | 0 |
-| wrong_type | 27 | 0 |
-| billing_over | 1 | 0 |
-| billing_under | 21 | 0 |
-| stream_order | 4 | 0 |
-| error_mapping | 1758 | 0 |
+| dropped | 2965 | 129 |
+| invented | 2548 | 60 |
+| renamed | 125 | 0 |
+| wrong_value | 633 | 43 |
+| wrong_type | 28 | 0 |
+| billing_over | 20 | 20 |
+| billing_under | 190 | 116 |
+| stream_order | 42 | 0 |
+| error_mapping | 1981 | 293 |
 | nondeterminism | 16 | 0 |
 
 | Layer | Total | Failing |
 |---|---|---|
-| executor | 8734 | 0 |
-| e2e | 10 | 0 |
-| pricing | 289 | 0 |
+| executor | 7932 | 290 |
+| e2e | 220 | 206 |
+| pricing | 396 | 165 |
 
-Billing deltas over all simulated responses: over 0.0002 USD, under -0.2403 USD (sentinel usage of about 128k tokens per response; see AUDIT.md for per-request impact).
+Billing deltas over all simulated responses: over 0.4730 USD, under -15.2013 USD (sentinel usage of about 128k tokens per response; see AUDIT.md for per-request impact).
 
 ## Compared with baseline 2026-10-17.json
 
@@ -29,10 +29,10 @@ Expected-outcome gate on origin/main 6551de1fa3 (17 October, before the cache fi
 
 | | Baseline | Now |
 |---|---|---|
-| Mismatches (layers in the baseline) | 27217 | 8734 |
-| Groups | 913 | 696 |
-| Groups fixed since the baseline | | 284 |
-| Groups new since the baseline | | 67 |
+| Mismatches (layers in the baseline) | 27217 | 7932 |
+| Groups | 913 | 835 |
+| Groups fixed since the baseline | | 278 |
+| Groups new since the baseline | | 200 |
 
 Fixed groups (largest first):
 
@@ -40,7 +40,6 @@ Fixed groups (largest first):
 - 104 providers: `executor|error_mapping|text|responses||responses.param.cache_control|client.status`
 - 104 providers: `executor|error_mapping|text|messages||messages.param.service_tier|client.status`
 - 104 providers: `executor|error_mapping|text|messages||messages.param.session_id|client.status`
-- 104 providers: `executor|error_mapping|text|messages||messages.param.reasoning|client.status`
 - 104 providers: `executor|error_mapping|text|messages||messages.param.provider_options|client.status`
 - 104 providers: `executor|error_mapping|text|messages||messages.param.cache_control|client.status`
 - 104 providers: `executor|error_mapping|text|chat||chat.content.part.file_data|client.status`
@@ -59,33 +58,27 @@ Fixed groups (largest first):
 - 98 providers: `executor|wrong_type|text|responses||responses.agent.step3|upstream.body(client $.input[].output[].text)`
 - 98 providers: `executor|wrong_type|text|chat||chat.agentN.step9|upstream.body(client $.messages[].content[].text)`
 - 98 providers: `executor|wrong_type|text|responses||responses.agentN.step9|upstream.body(client $.input[].output[].text)`
-- 97 providers: `executor|wrong_value|text|messages|buffered|resp:finish:length|client.finish`
-- 95 providers: `executor|stream_order|text|chat|stream|resp:text|client.stream`
-- 95 providers: `executor|stream_order|text|chat|stream|resp:max|client.stream`
-- 95 providers: `executor|stream_order|text|chat|stream|resp:finish:length|client.stream`
-- 95 providers: `executor|stream_order|text|chat|stream|resp:finish:content_filter|client.stream`
-- 95 providers: `executor|stream_order|text|chat|stream|resp:finish:stop_sequence|client.stream`
-- 95 providers: `executor|stream_order|text|chat|stream|resp:finish:pause_turn|client.stream`
 - 91 providers: `executor|invented|text|chat||chat.base|upstream.body.$.temperature`
 - 88 providers: `executor|dropped|text|chat|buffered|resp:max|client.usage.prompt_tokens_details.cached_tokens`
-- 88 providers: `executor|dropped|text|messages|stream|resp:max|client.usage.cache_read_input_tokens`
-- 88 providers: `executor|dropped|text|messages|buffered|resp:max|client.usage.cache_read_input_tokens`
 - 85 providers: `executor|invented|text|chat||chat.base|upstream.body.$.parallel_tool_calls`
 - 85 providers: `executor|invented|text|responses||responses.base|upstream.body.$.prompt_cache_key`
-- 74 providers: `executor|stream_order|text|responses|stream|resp:text|client.stream`
-- 74 providers: `executor|stream_order|text|responses|stream|resp:max|client.stream`
-- 74 providers: `executor|stream_order|text|responses|stream|resp:finish:length|client.stream`
-- 74 providers: `executor|stream_order|text|responses|stream|resp:finish:content_filter|client.stream`
-- 74 providers: `executor|stream_order|text|responses|stream|resp:finish:stop_sequence|client.stream`
-- 74 providers: `executor|stream_order|text|responses|stream|resp:finish:pause_turn|client.stream`
 - 73 providers: `executor|invented|text|chat||chat.base|upstream.body.$.logprobs`
 - 64 providers: `executor|dropped|text|chat|buffered|resp:max|client.usage.completion_tokens_details.reasoning_tokens`
 - 54 providers: `executor|billing_over|text|messages|stream|resp:max|billing.uncachedInput`
 - 54 providers: `executor|billing_over|text|messages|buffered|resp:max|billing.uncachedInput`
 - 50 providers: `executor|dropped|text|chat|stream|resp:max|client.usage.completion_tokens_details.reasoning_tokens`
-- 46 providers: `executor|dropped|text|responses|buffered|resp:max|client.reasoning.text`
+- 41 providers: `executor|wrong_value|text|responses||responses.param.service_tier=batch|upstream.body.$.service_tier`
+- 40 providers: `executor|wrong_value|text|chat||chat.param.service_tier=batch|upstream.body.$.service_tier`
+- 40 providers: `executor|wrong_value|text|responses||responses.param.service_tier=default|upstream.body.$.service_tier`
+- 39 providers: `executor|wrong_value|text|chat||chat.param.service_tier=default|upstream.body.$.service_tier`
 - 39 providers: `executor|wrong_value|text|messages||messages.param.service_tier=batch|upstream.body.$.service_tier`
 - 38 providers: `executor|wrong_value|text|messages||messages.param.service_tier=default|upstream.body.$.service_tier`
+- 36 providers: `executor|invented|text|chat||chat.param.service_tier=standard|upstream.body.$.service_tier`
+- 36 providers: `executor|invented|text|chat||chat.param.service_tier=default|upstream.body.$.service_tier`
+- 36 providers: `executor|invented|text|chat||chat.param.service_tier=fast|upstream.body.$.service_tier`
+- 36 providers: `executor|invented|text|chat||chat.param.service_tier=ultrafast|upstream.body.$.service_tier`
+- 36 providers: `executor|invented|text|chat||chat.param.service_tier=priority|upstream.body.$.service_tier`
+- 36 providers: `executor|invented|text|chat||chat.param.service_tier=batch|upstream.body.$.service_tier`
 - 36 providers: `executor|invented|text|messages||messages.param.service_tier=standard|upstream.body.$.service_tier`
 - 36 providers: `executor|invented|text|messages||messages.param.service_tier=default|upstream.body.$.service_tier`
 - 36 providers: `executor|invented|text|messages||messages.param.service_tier=fast|upstream.body.$.service_tier`
@@ -93,44 +86,61 @@ Fixed groups (largest first):
 - 36 providers: `executor|invented|text|messages||messages.param.service_tier=priority|upstream.body.$.service_tier`
 - 36 providers: `executor|invented|text|messages||messages.param.service_tier=flex|upstream.body.$.service_tier`
 - 36 providers: `executor|invented|text|messages||messages.param.service_tier=batch|upstream.body.$.service_tier`
+- 36 providers: `executor|wrong_value|text|responses||responses.param.service_tier=standard|upstream.body.$.service_tier`
+- 35 providers: `executor|invented|text|responses||responses.param.service_tier=standard|upstream.body.$.service_tier`
+- 35 providers: `executor|invented|text|responses||responses.param.service_tier=default|upstream.body.$.service_tier`
+- 35 providers: `executor|invented|text|responses||responses.param.service_tier=fast|upstream.body.$.service_tier`
+- 35 providers: `executor|invented|text|responses||responses.param.service_tier=ultrafast|upstream.body.$.service_tier`
+- 35 providers: `executor|invented|text|responses||responses.param.service_tier=priority|upstream.body.$.service_tier`
+- 35 providers: `executor|invented|text|responses||responses.param.service_tier=batch|upstream.body.$.service_tier`
+- 35 providers: `executor|wrong_value|text|chat||chat.param.service_tier=standard|upstream.body.$.service_tier`
+- 34 providers: `executor|wrong_value|text|chat||chat.param.service_tier=ultrafast|upstream.body.$.service_tier`
 - 34 providers: `executor|wrong_value|text|messages||messages.param.service_tier=standard|upstream.body.$.service_tier`
 - 31 providers: `executor|wrong_value|text|messages||messages.param.service_tier=ultrafast|upstream.body.$.service_tier`
+- 30 providers: `executor|wrong_value|text|responses||responses.param.service_tier=ultrafast|upstream.body.$.service_tier`
 - 23 providers: `executor|dropped|text|chat|stream|resp:max|client.usage.prompt_tokens_details.cached_tokens`
-- 22 providers: `executor|billing_under|text|chat|buffered|resp:max|billing.output`
-- 22 providers: `executor|billing_under|text|responses|stream|resp:max|billing.output`
-- 22 providers: `executor|billing_under|text|responses|buffered|resp:max|billing.output`
-- 20 providers: `executor|billing_under|text|chat|stream|resp:max|billing.output`
-- 17 providers: `executor|dropped|text|chat|stream|resp:finish:length|client.finish`
-- 17 providers: `executor|wrong_value|text|chat|buffered|resp:finish:length|client.finish`
-- 17 providers: `executor|dropped|text|chat|stream|resp:finish:content_filter|client.finish`
 - 15 providers: `executor|billing_over|text|chat|stream|resp:max|billing.uncachedInput`
 - 13 providers: `executor|billing_over|text|chat|buffered|resp:max|billing.uncachedInput`
-- 12 providers: `executor|billing_under|text|chat|stream|resp:finish:length|billing.uncachedInput`
-- 12 providers: `executor|billing_under|text|chat|stream|resp:finish:length|billing.output`
-- 12 providers: `executor|billing_under|text|chat|buffered|resp:finish:length|billing.uncachedInput`
-- 12 providers: `executor|billing_under|text|chat|buffered|resp:finish:length|billing.output`
-- 12 providers: `executor|billing_under|text|chat|stream|resp:finish:content_filter|billing.uncachedInput`
-- 12 providers: `executor|billing_under|text|chat|stream|resp:finish:content_filter|billing.output`
-- 12 providers: `executor|billing_under|text|chat|buffered|resp:finish:content_filter|billing.uncachedInput`
-- 12 providers: `executor|billing_under|text|chat|buffered|resp:finish:content_filter|billing.output`
-- 12 providers: `executor|billing_under|text|messages|stream|resp:finish:length|billing.uncachedInput`
-- 12 providers: `executor|billing_under|text|messages|stream|resp:finish:length|billing.output`
-- 12 providers: `executor|billing_under|text|messages|buffered|resp:finish:length|billing.uncachedInput`
+- 12 providers: `executor|dropped|text|messages|stream|resp:max|client.usage.cache_creation_input_tokens`
+- 12 providers: `executor|dropped|text|messages|buffered|resp:max|client.usage.cache_creation_input_tokens`
+- 11 providers: `executor|dropped|text|messages|stream|resp:max|client.reasoning.state`
+- 11 providers: `executor|dropped|text|messages|buffered|resp:max|client.reasoning.state`
+- 11 providers: `executor|dropped|text|chat|stream|resp:max|client.usage.prompt_tokens_details.cache_write_tokens`
+- 11 providers: `executor|dropped|text|chat|buffered|resp:max|client.usage.prompt_tokens_details.cache_write_tokens`
+- 11 providers: `executor|dropped|text|responses|stream|resp:max|client.usage.input_tokens_details.cache_write_tokens`
+- 11 providers: `executor|dropped|text|responses|buffered|resp:max|client.usage.input_tokens_details.cache_write_tokens`
+- 8 providers: `executor|invented|text|responses||responses.param.conversation|upstream.body.$.conversation`
+- 8 providers: `executor|dropped|text|chat|stream|resp:max|client.reasoning.state`
+- 8 providers: `executor|dropped|text|chat|buffered|resp:max|client.reasoning.state`
+- 7 providers: `executor|dropped|text|messages|stream|resp:max|client.reasoning.redacted_thinking`
+- 7 providers: `executor|dropped|text|messages|stream|resp:max|client.usage.cache_creation.ephemeral_5m_input_tokens`
+- 7 providers: `executor|dropped|text|messages|stream|resp:max|client.usage.cache_creation.ephemeral_1h_input_tokens`
+- 7 providers: `executor|dropped|text|messages|buffered|resp:max|client.reasoning.redacted_thinking`
 
 New groups:
 
+- 105 providers: `executor|error_mapping|text|chat||chat.param.prompt|client.status`
+- 105 providers: `executor|error_mapping|text|messages||messages.param.prompt|client.status`
+- 49 providers: `executor|wrong_value|text|messages||messages.param.prompt_cache_key|upstream.body.$.prompt_cache_key`
 - 35 providers: `executor|invented|text|messages||messages.param.service_tier|upstream.body.$.service_tier`
-- 21 providers: `executor|dropped|text|messages||messages.param.reasoning|upstream.body.$.reasoning_effort`
-- 14 providers: `executor|dropped|text|chat||chat.param.logprobs|upstream.body.$.logprobs`
-- 9 providers: `executor|dropped|text|messages||messages.param.reasoning|upstream.body.$.reasoning.effort`
-- 9 providers: `executor|dropped|text|chat||chat.param.logit_bias|upstream.body.$.logit_bias`
+- 35 providers: `executor|invented|text|messages||messages.param.prompt_cache_key|upstream.body.$.prompt_cache_key`
+- 34 providers: `executor|invented|text|messages||messages.param.user|upstream.body.$.user`
+- 24 providers: `executor|dropped|text|messages||messages.param.reasoning|upstream.body.$.reasoning_effort`
+- 17 providers: `executor|dropped|text|chat||chat.param.logprobs|upstream.body.$.logprobs`
+- 13 providers: `executor|dropped|text|chat||chat.param.logit_bias|upstream.body.$.logit_bias`
+- 13 providers: `executor|error_mapping|text|chat||chat.content.part.file_id|upstream.call`
+- 9 providers: `executor|dropped|text|chat||chat.param.seed|upstream.body.$.seed`
+- 9 providers: `executor|dropped|text|responses||responses.param.seed|upstream.body.$.seed`
+- 8 providers: `executor|dropped|text|messages||messages.param.reasoning|upstream.body.$.reasoning.effort`
+- 8 providers: `executor|error_mapping|text|messages||messages.param.provider_options|upstream.call`
+- 7 providers: `executor|dropped|text|chat||chat.param.stop|upstream.body.$.stop`
+- 7 providers: `executor|dropped|text|messages||messages.param.stop_sequences|upstream.body.$.stop`
 - 7 providers: `executor|error_mapping|text|chat||chat.content.part.file_data|upstream.call`
-- 7 providers: `executor|error_mapping|text|chat||chat.content.part.file_id|upstream.call`
-- 6 providers: `executor|dropped|text|chat||chat.param.seed|upstream.body.$.seed`
-- 6 providers: `executor|dropped|text|responses||responses.param.seed|upstream.body.$.seed`
 - 6 providers: `executor|error_mapping|text|messages||messages.param.reasoning|upstream.call`
-- 6 providers: `executor|error_mapping|text|messages||messages.param.provider_options|upstream.call`
 - 6 providers: `executor|error_mapping|text|chat||chat.content.assistant-null-content|upstream.call`
+- 5 providers: `executor|dropped|text|chat||chat.param.repetition_penalty|upstream.body.$.repetition_penalty`
+- 5 providers: `executor|error_mapping|text|chat||chat.param.include_reasoning|upstream.call`
+- 5 providers: `executor|error_mapping|text|chat||chat.param.prediction|upstream.call`
 - 5 providers: `executor|error_mapping|text|chat||chat.param.prompt_cache_retention=in_memory|upstream.call`
 - 5 providers: `executor|error_mapping|text|chat||chat.param.prompt_cache_options|upstream.call`
 - 5 providers: `executor|error_mapping|text|chat||chat.param.cache_control|upstream.call`
@@ -139,227 +149,385 @@ New groups:
 - 5 providers: `executor|error_mapping|text|responses||responses.param.cache_control|upstream.call`
 - 5 providers: `executor|error_mapping|text|messages||messages.param.service_tier|upstream.call`
 - 5 providers: `executor|error_mapping|text|messages||messages.param.session_id|upstream.call`
+- 5 providers: `executor|error_mapping|text|messages||messages.param.context_management|upstream.call`
+- 5 providers: `executor|error_mapping|text|messages||messages.param.user|upstream.call`
+- 5 providers: `executor|error_mapping|text|messages||messages.param.prompt_cache_key|upstream.call`
 - 5 providers: `executor|error_mapping|text|messages||messages.param.cache_control|upstream.call`
+- 5 providers: `executor|error_mapping|text|messages||messages.param.output_config|upstream.call`
 - 5 providers: `executor|error_mapping|text|messages||messages.cache.anthropic-agent-scope|upstream.call`
-- 5 providers: `executor|dropped|text|chat||chat.param.stop|upstream.body.$.stop`
-- 5 providers: `executor|dropped|text|messages||messages.param.stop_sequences|upstream.body.$.stop`
+- 4 providers: `executor|dropped|text|messages||messages.param.service_tier|upstream.body.$.service_tier`
 - 3 providers: `executor|dropped|text|chat||chat.content.assistant-null-content|upstream.body(client $.tools[].function.description)`
-- 3 providers: `executor|dropped|text|messages||messages.param.service_tier|upstream.body.$.service_tier`
 - 3 providers: `executor|dropped|text|chat||chat.content.assistant-null-content|upstream.body(client $.tools[].function.parameters.properties.sim_arg_city.description)`
-- 3 providers: `executor|dropped|text|chat||chat.param.stream_options|upstream.body.$.stream_options.include_usage`
+- 3 providers: `executor|renamed|text|chat|stream|resp:max|billing.write.meter`
+- 3 providers: `executor|renamed|text|chat|buffered|resp:max|billing.write.meter`
+- 3 providers: `executor|renamed|text|responses|stream|resp:max|billing.write.meter`
+- 3 providers: `executor|renamed|text|responses|buffered|resp:max|billing.write.meter`
+- 3 providers: `executor|renamed|text|messages|stream|resp:max|billing.write.meter`
+- 3 providers: `executor|renamed|text|messages|buffered|resp:max|billing.write.meter`
 - 3 providers: `executor|dropped|text|chat||chat.content.part.file_data|upstream.body(client $.messages[].content[].file.filename)`
-- 2 providers: `executor|dropped|text|chat||chat.param.repetition_penalty|upstream.body.$.repetition_penalty`
 - 2 providers: `executor|renamed|text|messages||messages.param.reasoning|upstream.body.$.reasoning_effort`
 - 2 providers: `executor|wrong_value|text|messages||messages.param.service_tier|upstream.body.$.service_tier`
-- 2 providers: `executor|dropped|text|chat||chat.param.top_k|upstream.body.$.generationConfig.topK`
-- 2 providers: `executor|dropped|text|responses||responses.param.top_k|upstream.body.$.generationConfig.topK`
-- 2 providers: `executor|dropped|text|messages||messages.param.top_k|upstream.body.$.generationConfig.topK`
-- 2 providers: `executor|dropped|text|chat|buffered|resp:finish:refusal|client.finish`
-- 2 providers: `executor|billing_under|text|chat|buffered|resp:finish:refusal|billing.uncachedInput`
-- 2 providers: `executor|billing_under|text|chat|buffered|resp:finish:refusal|billing.output`
-- 2 providers: `executor|renamed|text|chat|stream|resp:max|billing.write.meter`
-- 2 providers: `executor|renamed|text|chat|buffered|resp:max|billing.write.meter`
-- 2 providers: `executor|renamed|text|responses|stream|resp:max|billing.write.meter`
-- 2 providers: `executor|renamed|text|responses|buffered|resp:max|billing.write.meter`
-- 2 providers: `executor|renamed|text|messages|stream|resp:max|billing.write.meter`
-- 2 providers: `executor|renamed|text|messages|buffered|resp:max|billing.write.meter`
+- 2 providers: `executor|dropped|text|chat||chat.param.stream_options|upstream.body.$.stream_options.include_usage`
+- 2 providers: `executor|error_mapping|text|chat||chat.param.reasoning|client.status`
+- 2 providers: `executor|error_mapping|text|chat||chat.param.reasoning_effort=none|client.status`
+- 2 providers: `executor|error_mapping|text|chat||chat.param.temperature|client.status`
+- 2 providers: `executor|error_mapping|text|chat||chat.param.tool_choice|client.status`
+- 2 providers: `executor|error_mapping|text|chat||chat.param.top_p|client.status`
+- 2 providers: `executor|error_mapping|text|responses||responses.param.reasoning|client.status`
+- 2 providers: `executor|error_mapping|text|responses||responses.param.temperature|client.status`
+- 2 providers: `executor|error_mapping|text|responses||responses.param.tool_choice|client.status`
+- 2 providers: `executor|error_mapping|text|responses||responses.param.top_p|client.status`
+- 2 providers: `executor|error_mapping|text|chat||chat.tools.tool_choice.function|client.status`
+- 2 providers: `executor|error_mapping|text|chat||chat.reasoning.effort-none|client.status`
+- 2 providers: `executor|error_mapping|text|responses||responses.tools.tool_choice.function|client.status`
+- 2 providers: `executor|error_mapping|text|responses||responses.reasoning.effort-none|client.status`
 - 2 providers: `executor|invented|text|responses||responses.base|upstream.body.$.include`
 - 2 providers: `executor|invented|text|messages||messages.base|upstream.body.$.include`
-- 1 providers: `executor|invented|text|chat||chat.param.store|upstream.body.$.store`
+- 1 providers: `executor|dropped|text|chat|stream|resp:max|client.tool_call.arguments`
+- 1 providers: `executor|dropped|text|chat|buffered|resp:max|client.tool_call.arguments`
+- 1 providers: `executor|dropped|text|responses|stream|resp:max|client.tool_call.arguments`
+- 1 providers: `executor|dropped|text|messages|stream|resp:max|client.tool_call.arguments`
+- 1 providers: `executor|stream_order|text|messages|stream|resp:finish:refusal|client.stream`
 - 1 providers: `executor|wrong_type|text|chat||chat.param.reasoning|upstream.body.$.reasoning_effort`
 - 1 providers: `executor|wrong_type|text|responses||responses.param.reasoning|upstream.body.$.reasoning_effort`
 - 1 providers: `executor|wrong_type|text|messages||messages.param.reasoning|upstream.body.$.reasoning_effort`
-- 1 providers: `executor|renamed|text|chat||chat.base|upstream.header.authorization`
-- 1 providers: `executor|renamed|text|responses||responses.base|upstream.header.authorization`
-- 1 providers: `executor|invented|text|messages||messages.param.reasoning|upstream.body.$.chat_template_kwargs.thinking_budget`
-- 1 providers: `executor|dropped|text|chat||chat.param.seed|upstream.body.$.generation_config.seed`
-- 1 providers: `executor|dropped|text|responses||responses.param.seed|upstream.body.$.generation_config.seed`
-- 1 providers: `executor|dropped|text|chat||chat.param.temperature|upstream.body.$.generationConfig.temperature`
-- 1 providers: `executor|dropped|text|chat||chat.param.top_p|upstream.body.$.generationConfig.topP`
-- 1 providers: `executor|dropped|text|responses||responses.param.temperature|upstream.body.$.generationConfig.temperature`
-- 1 providers: `executor|dropped|text|responses||responses.param.top_p|upstream.body.$.generationConfig.topP`
-- 1 providers: `executor|dropped|text|messages||messages.param.temperature|upstream.body.$.generationConfig.temperature`
-- 1 providers: `executor|dropped|text|messages||messages.param.top_p|upstream.body.$.generationConfig.topP`
-- 1 providers: `executor|invented|text|messages||messages.param.reasoning|upstream.body.$.reasoning_effort`
-- 1 providers: `executor|renamed|text|messages|stream|resp:max|billing.output.meter`
-- 1 providers: `executor|renamed|text|messages|buffered|resp:max|billing.output.meter`
-- 1 providers: `executor|dropped|text|chat||chat.param.user_id|upstream.body.$.user`
-- 1 providers: `executor|dropped|text|chat||chat.param.user|upstream.body.$.user`
-- 1 providers: `executor|dropped|text|responses||responses.param.user|upstream.body.$.user`
+- 1 providers: `executor|invented|text|chat||chat.base|upstream.body.$.venice_parameters`
+- 1 providers: `executor|invented|text|responses||responses.base|upstream.body.$.venice_parameters`
+- 1 providers: `executor|invented|text|messages||messages.base|upstream.body.$.venice_parameters`
+- 1 providers: `executor|invented|text|chat||chat.base|upstream.body.$.anthropic_version`
+- 1 providers: `executor|invented|text|chat||chat.base|upstream.body.$.max_tokens`
+- 1 providers: `executor|invented|text|chat||chat.base|upstream.body.$.system`
+- 1 providers: `executor|invented|text|responses||responses.base|upstream.body.$.anthropic_version`
+- 1 providers: `executor|invented|text|responses||responses.base|upstream.body.$.max_tokens`
 
-## Failing (0 groups)
+## Failing (156 groups)
 
 | Kind | Layer | Surface/mode | Case | Path | Providers | Expected | Actual | Δ nanos | Source | Allow-list |
 |---|---|---|---|---|---|---|---|---|---|---|
+| error_mapping | executor | responses | responses.content.part.input_image_file_ | upstream.call | 69: aion-labs, akashml, alibaba-cloud, alibaba, arcee-ai, atlascloud, … | an upstream request | unsupported_parameter: This provider's Chat Comple |  | assumed: A valid request routed to an active provider must reach that  | **none** |
+| error_mapping | executor | messages | messages.content.part.document_url | upstream.call | 67: aion-labs, akashml, alibaba-cloud, alibaba, arcee-ai, atlascloud, … | an upstream request | unsupported_parameter: This provider's Chat Comple |  | assumed: A valid request routed to an active provider must reach that  | **none** |
+| error_mapping | executor | chat | chat.content.part.input_audio | upstream.call | 5: anthropic-aws-us, anthropic-aws, anthropic-us, anthropic, azure | an upstream request |  |  | assumed: A valid request routed to an active provider must reach that  | **none** |
+| error_mapping | executor | responses | responses.content.part.input_audio | upstream.call | 5: anthropic-aws-us, anthropic-aws, anthropic-us, anthropic, azure | an upstream request |  |  | assumed: A valid request routed to an active provider must reach that  | **none** |
+| error_mapping | executor | chat | chat.content.part.file_id | upstream.call | 3: google-ai-studio, mistral-eu, mistral | an upstream request |  |  | assumed: A valid request routed to an active provider must reach that  | **none** |
+| error_mapping | executor | responses | responses.content.part.input_file_id | upstream.call | 3: google-ai-studio, mistral-eu, mistral | an upstream request |  |  | assumed: A valid request routed to an active provider must reach that  | **none** |
+| invented | pricing | text.generate | text.generate:documented | billing.meter.input_text_tokens | 2: anthropic, venice | null | {"quantity":1064,"nanos":106400} | 142446600 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| invented | pricing | text.generate | text.generate:documented | billing.meter.output_text_tokens | 2: anthropic, venice | null | {"quantity":448,"nanos":224000} | 166539520 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_over | pricing | text.generate | text.generate:documented | billing.total_nanos | 2: anthropic, venice | {"nanos":0,"lines":[]} | {"nanos":404640,"lines":[["input_text_tokens",1064 | 314336520 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| invented | pricing | text.generate | text.generate:documented | billing.meter.cached_read_text_tokens | 2: anthropic, venice | null | {"quantity":1024,"nanos":10240} | 5286400 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.cached_read_ | billing.total_nanos | 2: anthropic, venice | {"nanos":15044350,"lines":[["cached_read_text_toke | {"nanos":3008870,"lines":[["input_text_tokens",123 | -947254345 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| error_mapping | executor | chat | chat.tools.tool_choice.function | client.status | 2: anthropic-us, azure | 200 | 400 |  | assumed: The request shape is documented by the API the surface mirror | **none** |
+| error_mapping | executor | chat | chat.reasoning.effort-none | client.status | 2: anthropic-us, azure | 200 | 400 |  | assumed: The request shape is documented by the API the surface mirror | **none** |
+| error_mapping | executor | responses | responses.tools.tool_choice.function | client.status | 2: anthropic-us, azure | 200 | 400 |  | assumed: The request shape is documented by the API the surface mirror | **none** |
+| error_mapping | executor | responses | responses.reasoning.effort-none | client.status | 2: anthropic-us, azure | 200 | 400 |  | assumed: The request shape is documented by the API the surface mirror | **none** |
+| error_mapping | executor | messages | messages.tools.tool_choice.tool | client.status | 2: anthropic-us, azure | 200 | 400 |  | assumed: The request shape is documented by the API the surface mirror | **none** |
+| error_mapping | executor | messages | messages.reasoning.disabled | client.status | 2: anthropic-us, azure | 200 | 400 |  | assumed: The request shape is documented by the API the surface mirror | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.native_web_s | billing.total_nanos | 1: venice | {"nanos":159517500,"lines":[["input_text_tokens"," | {"nanos":102722500,"lines":[["input_text_tokens",1 | -1595750665 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.output_text_ | billing.total_nanos | 1: venice | {"nanos":139517500,"lines":[["input_text_tokens"," | {"nanos":82722500,"lines":[["input_text_tokens",12 | -1595750665 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| wrong_value | e2e | chat/buffered | errors.google-vertex.400 | client.body.error_origin | 1: google-vertex:google/gemini-2.5-flash | upstream | gateway |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| dropped | e2e | chat/buffered | errors.google-vertex.400 | client.body.reason | 1: google-vertex:google/gemini-2.5-flash | all_candidates_failed |  |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| dropped | e2e | chat/buffered | errors.google-vertex.400 | client.body.attempt_count | 1: google-vertex:google/gemini-2.5-flash | 1 |  |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| dropped | e2e | chat/buffered | errors.google-vertex.400 | client.body.upstream_error.code | 1: google-vertex:google/gemini-2.5-flash |  |  |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| dropped | e2e | chat/buffered | errors.google-vertex.400 | client.body.upstream_error.message | 1: google-vertex:google/gemini-2.5-flash |  |  |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| dropped | e2e | chat/buffered | errors.google-vertex.400 | client.body.failure_sample | 1: google-vertex:google/gemini-2.5-flash |  |  |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | chat/buffered | errors.google-vertex.400 | client.status | 1: google-vertex:google/gemini-2.5-flash | 502 | 500 |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| dropped | e2e | chat/buffered | errors.google-vertex.400 | client.body.failed_statuses | 1: google-vertex:google/gemini-2.5-flash | [400] |  |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | chat/buffered | errors.deepinfra.400 | client.body.error | 1: deepinfra | upstream_error | {"code":"upstream_error","message":"The provider r |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | responses/buffered | errors.openai.400 | client.body.error | 1: openai | upstream_error | {"code":"upstream_error","message":"The provider r |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | messages/buffered | errors.anthropic.400 | client.body.error | 1: anthropic | upstream_error | {"code":"upstream_error","message":"The provider r |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| wrong_value | e2e | chat/buffered | errors.google-vertex.400 | client.body.status_code | 1: google-vertex:google/gemini-2.5-flash | 502 | 500 |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | chat/buffered | errors.google-vertex.400 | client.body.error | 1: google-vertex:google/gemini-2.5-flash | upstream_error | {"code":"gateway_error","message":"gateway_context |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.cached_write | billing.total_nanos | 1: venice | {"nanos":140011000,"lines":[["cached_write_text_to | {"nanos":83216000,"lines":[["input_text_tokens",12 | -625724325 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| dropped | e2e | chat/buffered | errors.google-vertex.401 | client.body.provider_failure_diagnostics.category | 1: google-vertex:google/gemini-2.5-flash | credentials_invalid_or_forbidden |  |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| wrong_value | e2e | chat/buffered | errors.deepinfra.400 | client.body.reason | 1: deepinfra | all_candidates_failed | upstream_rejected_request |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | chat/buffered | errors.deepinfra.400 | client.status | 1: deepinfra | 502 | 400 |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| wrong_value | e2e | chat/buffered | errors.deepinfra.400 | client.body.status_code | 1: deepinfra | 502 | 400 |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| wrong_value | e2e | responses/buffered | errors.openai.400 | client.body.reason | 1: openai | all_candidates_failed | upstream_rejected_request |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | responses/buffered | errors.openai.400 | client.status | 1: openai | 502 | 400 |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| wrong_value | e2e | responses/buffered | errors.openai.400 | client.body.status_code | 1: openai | 502 | 400 |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| wrong_value | e2e | messages/buffered | errors.anthropic.400 | client.body.reason | 1: anthropic | all_candidates_failed | upstream_rejected_request |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | messages/buffered | errors.anthropic.400 | client.status | 1: anthropic | 502 | 400 |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| wrong_value | e2e | messages/buffered | errors.anthropic.400 | client.body.status_code | 1: anthropic | 502 | 400 |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| dropped | pricing | batch | batch:documented | billing.meter.cached_write_text_tokens | 1: openai-eu | {"quantity":1000,"nanos":137500,"rule":"offer-2d7b | null | -8387500 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | batch | batch:documented | billing.total_nanos | 1: openai-eu | {"nanos":30508803,"lines":[["cached_read_text_toke | {"nanos":30508528,"lines":[["cached_read_text_toke | -16775 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| dropped | executor | chat/stream | resp:max | client.tool_call.id | 1: amazon-bedrock | call_SIM_UP_0001 |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | chat/stream | resp:max | client.tool_call.arguments | 1: amazon-bedrock | SIM-UP-ARG-Lyon |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | chat/buffered | resp:max | client.tool_call.id | 1: amazon-bedrock | call_SIM_UP_0001 |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | chat/buffered | resp:max | client.tool_call.arguments | 1: amazon-bedrock | SIM-UP-ARG-Lyon |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | responses/stream | resp:max | client.tool_call.id | 1: amazon-bedrock | call_SIM_UP_0001 |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | responses/stream | resp:max | client.tool_call.arguments | 1: amazon-bedrock | SIM-UP-ARG-Lyon |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | responses/buffered | resp:max | client.tool_call.id | 1: amazon-bedrock | call_SIM_UP_0001 |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | responses/buffered | resp:max | client.tool_call.arguments | 1: amazon-bedrock | SIM-UP-ARG-Lyon |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | messages/stream | resp:max | client.tool_call.id | 1: amazon-bedrock | call_SIM_UP_0001 |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | messages/stream | resp:max | client.tool_call.arguments | 1: amazon-bedrock | SIM-UP-ARG-Lyon |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | messages/buffered | resp:max | client.tool_call.id | 1: amazon-bedrock | call_SIM_UP_0001 |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | messages/buffered | resp:max | client.tool_call.arguments | 1: amazon-bedrock | SIM-UP-ARG-Lyon |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | chat/stream | resp:text | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| billing_under | executor | chat/stream | resp:text | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| dropped | executor | chat/buffered | resp:text | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| billing_under | executor | chat/buffered | resp:text | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| dropped | executor | chat/stream | resp:max | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | chat/stream | resp:max | client.usage | 1: amazon-bedrock | usage object |  |  | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/stream | resp:max | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| dropped | executor | chat/buffered | resp:max | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | chat/buffered | resp:max | client.usage | 1: amazon-bedrock | usage object |  |  | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/buffered | resp:max | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/stream | resp:finish:length | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/buffered | resp:finish:length | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/stream | resp:finish:content_filter | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/buffered | resp:finish:content_filter | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/stream | resp:finish:stop_sequence | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/buffered | resp:finish:stop_sequence | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/stream | resp:finish:pause_turn | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/buffered | resp:finish:pause_turn | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/stream | resp:finish:refusal | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | chat/buffered | resp:finish:refusal | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| dropped | executor | responses/stream | resp:text | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| billing_under | executor | responses/stream | resp:text | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| dropped | executor | responses/buffered | resp:text | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| billing_under | executor | responses/buffered | resp:text | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| dropped | executor | responses/stream | resp:max | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | responses/stream | resp:max | client.usage | 1: amazon-bedrock | usage object |  |  | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/stream | resp:max | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| dropped | executor | responses/buffered | resp:max | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | responses/buffered | resp:max | client.usage | 1: amazon-bedrock | usage object |  |  | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/buffered | resp:max | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/stream | resp:finish:length | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/buffered | resp:finish:length | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/stream | resp:finish:content_filter | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/buffered | resp:finish:content_filter | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/stream | resp:finish:stop_sequence | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/buffered | resp:finish:stop_sequence | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/stream | resp:finish:pause_turn | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/buffered | resp:finish:pause_turn | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/stream | resp:finish:refusal | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| billing_under | executor | responses/buffered | resp:finish:refusal | billing.output | 1: amazon-bedrock | {"tokens":5003,"nanos":50030000,"meter":"output_te | {"tokens":0,"nanos":0} | -50030000 | apps/docs/v1/guides/prompt-caching.mdx | **none** |
+| dropped | executor | messages/stream | resp:text | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | messages/buffered | resp:text | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | messages/stream | resp:max | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| dropped | executor | messages/buffered | resp:max | client.text | 1: amazon-bedrock | SIM-UPSTREAM-TEXT-0001 the forecast is clear |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| error_mapping | e2e | chat/buffered | failover.all-503 | client.body.error | 1: groq | upstream_error | {"code":"upstream_error","message":"All 3 provider |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | chat/buffered | failover.all-fail-last-429 | client.body.error | 1: groq | upstream_error | {"code":"upstream_error","message":"All 3 provider |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| error_mapping | e2e | chat/buffered | errors.google-vertex.429 | client.body.status_code | 1: google-vertex:google/gemini-2.5-flash | 429 | 500 |  | apps/docs/v1/api-reference/errors.mdx | **none** |
+| dropped | e2e | chat/buffered | errors.google-vertex.429 | client.headers.retry-after | 1: google-vertex:google/gemini-2.5-flash | 7 |  |  | apps/docs/v1/api-reference/limits.mdx | **none** |
+| error_mapping | e2e | chat/stream | billing.google-vertex.chat.stream | client.status | 1: google-vertex:google/gemini-2.5-flash | 200 | 500 |  | assumed: The provider returned a complete, successful response; the cl | **none** |
+| billing_under | e2e | chat/stream | billing.google-vertex.chat.stream | billing.chargeCount | 1: google-vertex:google/gemini-2.5-flash | 1 | 0 |  | assumed: Every successful managed request is charged exactly once. | **none** |
+| error_mapping | e2e | chat/buffered | billing.google-vertex.chat.buffered | client.status | 1: google-vertex:google/gemini-2.5-flash | 200 | 500 |  | assumed: The provider returned a complete, successful response; the cl | **none** |
+| billing_under | e2e | chat/buffered | billing.google-vertex.chat.buffered | billing.chargeCount | 1: google-vertex:google/gemini-2.5-flash | 1 | 0 |  | assumed: Every successful managed request is charged exactly once. | **none** |
+| dropped | e2e | chat/buffered | billing.google-vertex.chat.buffered | client.body.usage.completion_tokens | 1: google-vertex:google/gemini-2.5-flash | 5003 |  |  | https://platform.openai.com/docs/api-reference/chat/object | **none** |
+| error_mapping | e2e | responses/stream | billing.google-vertex.responses.stream | client.status | 1: google-vertex:google/gemini-2.5-flash | 200 | 500 |  | assumed: The provider returned a complete, successful response; the cl | **none** |
+| billing_under | e2e | responses/stream | billing.google-vertex.responses.stream | billing.chargeCount | 1: google-vertex:google/gemini-2.5-flash | 1 | 0 |  | assumed: Every successful managed request is charged exactly once. | **none** |
+| wrong_value | e2e | responses/stream | billing.google-vertex.responses.stream | billing | 1: google-vertex:google/gemini-2.5-flash | a catalogue price card for the served route | 0 |  | https://ai.google.dev/api/generate-content#UsageMetadata | **none** |
+| error_mapping | e2e | responses/buffered | billing.google-vertex.responses.buffered | client.status | 1: google-vertex:google/gemini-2.5-flash | 200 | 500 |  | assumed: The provider returned a complete, successful response; the cl | **none** |
+| billing_under | e2e | responses/buffered | billing.google-vertex.responses.buffered | billing.chargeCount | 1: google-vertex:google/gemini-2.5-flash | 1 | 0 |  | assumed: Every successful managed request is charged exactly once. | **none** |
+| wrong_value | e2e | responses/buffered | billing.google-vertex.responses.buffered | billing | 1: google-vertex:google/gemini-2.5-flash | a catalogue price card for the served route | 0 |  | https://ai.google.dev/api/generate-content#UsageMetadata | **none** |
+| dropped | e2e | responses/buffered | billing.google-vertex.responses.buffered | client.body.usage.input_tokens_details.cached_tokens | 1: google-vertex:google/gemini-2.5-flash | 20011 |  |  | https://platform.openai.com/docs/api-reference/responses/object | **none** |
+| error_mapping | e2e | messages/stream | billing.google-vertex.messages.stream | client.status | 1: google-vertex:google/gemini-2.5-flash | 200 | 500 |  | assumed: The provider returned a complete, successful response; the cl | **none** |
+| billing_under | e2e | messages/stream | billing.google-vertex.messages.stream | billing.chargeCount | 1: google-vertex:google/gemini-2.5-flash | 1 | 0 |  | assumed: Every successful managed request is charged exactly once. | **none** |
+| error_mapping | e2e | messages/buffered | billing.google-vertex.messages.buffered | client.status | 1: google-vertex:google/gemini-2.5-flash | 200 | 500 |  | assumed: The provider returned a complete, successful response; the cl | **none** |
+| billing_under | e2e | messages/buffered | billing.google-vertex.messages.buffered | billing.chargeCount | 1: google-vertex:google/gemini-2.5-flash | 1 | 0 |  | assumed: Every successful managed request is charged exactly once. | **none** |
+| dropped | e2e | messages/buffered | billing.google-vertex.messages.buffered | client.body.usage.cache_read_input_tokens | 1: google-vertex:google/gemini-2.5-flash | 20011 |  |  | https://docs.anthropic.com/en/api/messages | **none** |
+| error_mapping | e2e | images.generations/buffered | nontext.images.generations.openai | client.status | 1: openai:openai/gpt-image-1 | 200 | 500 |  | assumed: The provider returned a documented 2xx response; the client m | **none** |
+| dropped | e2e | images.generations/buffered | nontext.images.generations.openai | upstream.calls[0].url | 1: openai:openai/gpt-image-1 | https://api.openai.com/v1/images/generations |  |  | https://platform.openai.com/docs/api-reference/images/create | **none** |
+| dropped | e2e | images.generations/buffered | nontext.images.generations.openai | upstream.calls[0].body.quality | 1: openai:openai/gpt-image-1 | low |  |  | https://platform.openai.com/docs/api-reference/images/create | **none** |
+| dropped | e2e | images.generations/buffered | nontext.images.generations.openai | upstream.calls[0].body.size | 1: openai:openai/gpt-image-1 | 1024x1024 |  |  | https://platform.openai.com/docs/api-reference/images/create | **none** |
+| dropped | e2e | images.generations/buffered | nontext.images.generations.openai | client.body.data[0].b64_json | 1: openai:openai/gpt-image-1 |  |  |  | apps/docs/openapi/v1/openapi.yaml | **none** |
+| dropped | e2e | images.generations/buffered | nontext.images.generations.openai | client.body.created | 1: openai:openai/gpt-image-1 |  |  |  | apps/docs/openapi/v1/openapi.yaml | **none** |
+| dropped | e2e | images.generations/buffered | nontext.images.generations.openai | billing.successAudits | 1: openai:openai/gpt-image-1 | 1 | 0 |  | assumed: Every successful request writes one request-log row (success  | **none** |
+| wrong_value | e2e | images.generations/buffered | nontext.images.generations.openai | billing | 1: openai:openai/gpt-image-1 | a catalogue price card for the served route | 0 |  | https://platform.openai.com/docs/api-reference/images/object | **none** |
+| error_mapping | e2e | images.edits/buffered | nontext.images.edits.openai | client.status | 1: openai:openai/gpt-image-1 | 200 | 500 |  | assumed: The provider returned a documented 2xx response; the client m | **none** |
+| dropped | e2e | images.edits/buffered | nontext.images.edits.openai | upstream.calls[0].url | 1: openai:openai/gpt-image-1 | https://api.openai.com/v1/images/edits |  |  | https://platform.openai.com/docs/api-reference/images/createEdit | **none** |
+| dropped | e2e | images.edits/buffered | nontext.images.edits.openai | upstream.calls[0].method | 1: openai:openai/gpt-image-1 | POST |  |  | https://platform.openai.com/docs/api-reference/images/createEdit | **none** |
+| dropped | e2e | images.edits/buffered | nontext.images.edits.openai | client.body.data[0].b64_json | 1: openai:openai/gpt-image-1 |  |  |  | apps/docs/openapi/v1/openapi.yaml | **none** |
+| dropped | e2e | images.edits/buffered | nontext.images.edits.openai | billing.successAudits | 1: openai:openai/gpt-image-1 | 1 | 0 |  | assumed: Every successful request writes one request-log row (success  | **none** |
+| wrong_value | e2e | images.edits/buffered | nontext.images.edits.openai | billing | 1: openai:openai/gpt-image-1 | a catalogue price card for the served route | 0 |  | https://platform.openai.com/docs/api-reference/images/object | **none** |
+| invented | pricing | text.generate | text.generate:documented | billing.meter.cached_write_text_tokens_5m | 1: anthropic | null | {"quantity":512,"nanos":64000} | 64000 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.batch.cached_read_tex | billing.total_nanos | 1: anthropic | {"nanos":7522175,"lines":[["cached_read_text_token | {"nanos":1504435,"lines":[["input_text_tokens",123 | -6017740 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.batch.cached_read_tex | billing.total_nanos | 1: anthropic | {"nanos":8274393,"lines":[["cached_read_text_token | {"nanos":1654879,"lines":[["input_text_tokens",123 | -6619514 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.batch.cached_write_te | billing.total_nanos | 1: anthropic | {"nanos":8025000,"lines":[["cached_write_text_toke | {"nanos":1605000,"lines":[["input_text_tokens",123 | -6420000 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.batch.cached_write_te | billing.total_nanos | 1: anthropic | {"nanos":8827500,"lines":[["cached_write_text_toke | {"nanos":1765500,"lines":[["input_text_tokens",123 | -7062000 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.batch.cached_write_te | billing.total_nanos | 1: anthropic | {"nanos":8140813,"lines":[["cached_write_text_toke | {"nanos":1628163,"lines":[["input_text_tokens",123 | -6512650 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.batch.cached_write_te | billing.total_nanos | 1: anthropic | {"nanos":8954894,"lines":[["cached_write_text_toke | {"nanos":1790979,"lines":[["input_text_tokens",123 | -7163915 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.batch.input_text_toke | billing.total_nanos | 1: anthropic | {"nanos":7408000,"lines":[["input_text_tokens","in | {"nanos":1481600,"lines":[["input_text_tokens",123 | -5926400 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.batch.input_text_toke | billing.total_nanos | 1: anthropic | {"nanos":8148800,"lines":[["input_text_tokens","in | {"nanos":1629760,"lines":[["input_text_tokens",123 | -6519040 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.cached_read_ | billing.total_nanos | 1: anthropic | {"nanos":16548785,"lines":[["cached_read_text_toke | {"nanos":3309757,"lines":[["input_text_tokens",123 | -13239028 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.cached_write | billing.total_nanos | 1: anthropic | {"nanos":16050000,"lines":[["cached_write_text_tok | {"nanos":3210000,"lines":[["input_text_tokens",123 | -12840000 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.cached_write | billing.total_nanos | 1: anthropic | {"nanos":17655000,"lines":[["cached_write_text_tok | {"nanos":3531000,"lines":[["input_text_tokens",123 | -14124000 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.cached_write | billing.total_nanos | 1: anthropic | {"nanos":16281625,"lines":[["cached_write_text_tok | {"nanos":3256325,"lines":[["input_text_tokens",123 | -13025300 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.cached_write | billing.total_nanos | 1: anthropic | {"nanos":17909788,"lines":[["cached_write_text_tok | {"nanos":3581958,"lines":[["input_text_tokens",123 | -14327830 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.input_text_t | billing.total_nanos | 1: anthropic | {"nanos":14816000,"lines":[["input_text_tokens","i | {"nanos":2963200,"lines":[["input_text_tokens",123 | -11852800 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| billing_under | pricing | text.generate | text.generate:rule.standard.input_text_t | billing.total_nanos | 1: anthropic | {"nanos":16297600,"lines":[["input_text_tokens","i | {"nanos":3259520,"lines":[["input_text_tokens",123 | -13038080 | assumed: The route's catalogue price card is the billing contract: eac | **none** |
+| invented | pricing | text.generate | text.generate:fallback.cache-read.no-rul | billing.meter.cached_read_text_tokens | 1: venice | null | {"quantity":1024,"nanos":30720000} | 30720000 | spec venice usage schema | **none** |
+| invented | pricing | text.generate | text.generate:fallback.cache-read.no-rul | billing.meter.input_text_tokens | 1: venice | null | {"quantity":1576,"nanos":47280000} | 47280000 | spec venice usage schema | **none** |
+| invented | pricing | text.generate | text.generate:fallback.cache-read.no-rul | billing.meter.output_text_tokens | 1: venice | null | {"quantity":448,"nanos":80640000} | 80640000 | spec venice usage schema | **none** |
+| billing_over | pricing | text.generate | text.generate:fallback.cache-read.no-rul | billing.total_nanos | 1: venice | {"nanos":0,"lines":[]} | {"nanos":158640000,"lines":[["input_text_tokens",1 | 158640000 | spec venice usage schema | **none** |
 
-## Allowed (839 groups)
+## Allowed (927 groups)
 
 | Kind | Layer | Surface/mode | Case | Path | Providers | Expected | Actual | Δ nanos | Source | Allow-list |
 |---|---|---|---|---|---|---|---|---|---|---|
-| dropped | executor | messages/stream | resp:max | client.citations | 98: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, ambient, … | https://sim.example/cite-0001 |  |  | https://docs.anthropic.com/en/docs/build-with-claude/citations | stream-citations-refusal |
-| dropped | executor | messages/buffered | resp:max | client.citations | 98: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, ambient, … | https://sim.example/cite-0001 |  |  | https://docs.anthropic.com/en/docs/build-with-claude/citations | stream-citations-refusal |
+| error_mapping | executor | chat | chat.param.prompt | client.status | 105: ai21, aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, … | 200 | 400 |  | apps/docs/v1/api-reference/parameters.mdx | request-other-rejections |
+| error_mapping | executor | messages | messages.param.prompt | client.status | 105: ai21, aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, … | 200 | 400 |  | apps/docs/v1/api-reference/parameters.mdx | request-other-rejections |
+| dropped | executor | responses | responses.tools.tool_choice.allowed_tool | upstream.body(client $.tools[].description) | 97: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, ambient, … | SIM-TOOL-DESC-weather |  |  | assumed: Every value the client sends in content, tools or history mus | request-content-values |
+| dropped | executor | responses | responses.tools.tool_choice.allowed_tool | upstream.body(client $.tools[].parameters.properties.sim_arg | 97: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, ambient, … | SIM-ARG-DESC-city |  |  | assumed: Every value the client sends in content, tools or history mus | request-content-values |
+| dropped | executor | messages/stream | resp:max | client.citations | 95: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, ambient, … | https://sim.example/cite-0001 |  |  | https://docs.anthropic.com/en/docs/build-with-claude/citations | stream-citations-refusal |
+| dropped | executor | messages/buffered | resp:max | client.citations | 95: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, ambient, … | https://sim.example/cite-0001 |  |  | https://docs.anthropic.com/en/docs/build-with-claude/citations | stream-citations-refusal |
+| dropped | executor | messages | messages.content.part.document_pdf | upstream.body(client $.messages[].content[].context) | 94: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, ambient, … | SIM-DOC-CONTEXT-0001 |  |  | assumed: Every value the client sends in content, tools or history mus | request-content-values |
+| dropped | executor | messages | messages.content.part.document_text | upstream.body(client $.messages[].content[].source.data) | 94: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, ambient, … | SIM-DOC-TEXT-0001 |  |  | assumed: Every value the client sends in content, tools or history mus | request-content-values |
 | dropped | executor | chat | chat.content.system-parts | upstream.body(client $.messages[].name) | 83: ai21, aion-labs, alibaba-cloud, alibaba, amazon-bedrock, ambient, … | sim-user-name |  |  | assumed: Every value the client sends in content, tools or history mus | request-content-values |
 | invented | executor | chat | chat.param.image_config | upstream.body.$.image_config | 71: ai21, aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, … |  | {"aspect_ratio":"16:9"} |  | spec specs/ai21.json properties.image_config | request-unsupported-forwarded |
 | invented | executor | responses | responses.param.image_config | upstream.body.$.image_config | 71: ai21, aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, … |  | {"aspect_ratio":"sim-aspect-ratio","image_size":"0 |  | spec specs/ai21.json properties.image_config | request-unsupported-forwarded |
-| error_mapping | executor | responses | responses.content.part.input_file_url | upstream.call | 69: aion-labs, akashml, alibaba-cloud, alibaba, arcee-ai, atlascloud, … | an upstream request | unsupported_parameter: This provider's Chat Comple |  | assumed: A valid request routed to an active provider must reach that  | request-executor-file-url-rejected |
-| invented | executor | responses | responses.param.background | upstream.body.$.background | 67: ai21, aion-labs, akashml, alibaba-cloud, alibaba, arcee-ai, … |  | false |  | apps/docs/v1/api-reference/parameters.mdx | request-unsupported-forwarded |
+| error_mapping | executor | responses | responses.content.part.input_file_url | upstream.call | 71: aion-labs, akashml, alibaba-cloud, alibaba, arcee-ai, atlascloud, … | an upstream request | unsupported_parameter: This provider's Chat Comple |  | assumed: A valid request routed to an active provider must reach that  | request-executor-file-url-rejected |
+| invented | executor | responses | responses.param.background | upstream.body.$.background | 70: ai21, aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, … |  | false |  | apps/docs/v1/api-reference/parameters.mdx | request-unsupported-forwarded |
 | invented | executor | chat | chat.param.max_tool_calls | upstream.body.$.max_tool_calls | 63: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, arcee-ai, … |  | 9 |  | spec specs/aion-labs.json properties.max_tool_calls | request-unsupported-forwarded |
+| invented | executor | responses | responses.param.max_tool_calls | upstream.body.$.max_tool_calls | 59: aion-labs, akashml, alibaba-cloud, alibaba, amazon-bedrock, arcee-ai, … |  | 9 |  | spec specs/aion-labs.json properties.max_tool_calls | request-unsupported-forwarded |
 | invented | executor | chat | chat.param.web_search_options | upstream.body.$.web_search_options | 59: ai21, aion-labs, akashml, alibaba-cloud, ambient, arcee-ai, … |  | {"search_context_size":"low","user_location":{"typ |  | spec specs/ai21.json properties.web_search_options | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.max_tool_calls | upstream.body.$.max_tool_calls | 57: aion-labs, akashml, alibaba-cloud, alibaba, arcee-ai, atlascloud, … |  | 9 |  | spec specs/aion-labs.json properties.max_tool_calls | request-unsupported-forwarded |
 | invented | executor | responses | responses.param.modalities | upstream.body.$.modalities | 55: ai21, aion-labs, amazon-bedrock, ambient, avian, azure, … |  | ["text"] |  | spec specs/ai21.json properties.modalities | request-unsupported-forwarded |
+| renamed | executor | messages | messages.param.metadata | upstream.body.$.user | 53: akashml, alibaba, amazon-bedrock, ambient, arcee-ai, atlascloud, … | sim-user-meta-4c3 | at $.metadata.user_id |  | spec specs/akashml.json properties.user | request-params-dropped-or-changed |
 | invented | executor | chat | chat.param.modalities | upstream.body.$.modalities | 50: ai21, aion-labs, ambient, avian, baidu, baseten, … |  | ["text","audio"] |  | spec specs/ai21.json properties.modalities | request-unsupported-forwarded |
-| renamed | executor | messages | messages.param.metadata | upstream.body.$.user | 50: akashml, alibaba, ambient, arcee-ai, atlascloud, azure, … | sim-user-meta-4c3 | at $.metadata.user_id |  | spec specs/akashml.json properties.user | request-params-dropped-or-changed |
-| wrong_value | executor | responses | responses.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 48: alibaba, amazon-bedrock, arcee-ai, atlascloud, azure, baidu, … | hash of workspace and key | sim-pck-7a3 |  | apps/docs/v1/guides/prompt-caching.mdx | request-params-dropped-or-changed |
-| wrong_value | executor | chat | chat.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 47: alibaba, amazon-bedrock, arcee-ai, atlascloud, azure, bytedance-seed, … | hash of workspace and key | sim-pck-7a3 |  | apps/docs/v1/guides/prompt-caching.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | chat | chat.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 49: alibaba, amazon-bedrock, arcee-ai, atlascloud, azure, bytedance-seed, … | hash of workspace and key | sim-pck-7a3 |  | apps/docs/v1/guides/prompt-caching.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | responses | responses.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 49: alibaba, amazon-bedrock, arcee-ai, atlascloud, azure, bytedance-seed, … | hash of workspace and key | sim-pck-7a3 |  | apps/docs/v1/guides/prompt-caching.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | messages | messages.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 49: alibaba, amazon-bedrock, arcee-ai, atlascloud, azure, bytedance-seed, … | hash of workspace and key | sim-prompt-cache-key |  | apps/docs/v1/guides/prompt-caching.mdx | request-params-dropped-or-changed |
 | invented | executor | chat | chat.param.safety_identifier | upstream.body.$.safety_identifier | 42: ai21, aion-labs, akashml, alibaba-cloud, ambient, arcee-ai, … |  | sim-safety-9d2 |  | spec specs/ai21.json properties.safety_identifier | request-unsupported-forwarded |
-| wrong_value | executor | responses | responses.param.service_tier=batch | upstream.body.$.service_tier | 42: alibaba, amazon-bedrock, atlascloud, baidu, bytedance-seed, byteplus, … | one of ["auto","default","flex","scale","priority" | batch |  | assumed: no alibaba spec; OpenAI schema (openai) used as a stand-in at | request-params-dropped-or-changed |
-| invented | executor | responses | responses.param.safety_identifier | upstream.body.$.safety_identifier | 41: ai21, aion-labs, akashml, alibaba-cloud, ambient, arcee-ai, … |  | sim-safety-9d2 |  | spec specs/ai21.json properties.safety_identifier | request-unsupported-forwarded |
-| wrong_value | executor | chat | chat.param.service_tier=batch | upstream.body.$.service_tier | 41: alibaba, amazon-bedrock, atlascloud, bytedance-seed, byteplus, cerebra, … | one of ["auto","default","flex","scale","priority" | batch |  | assumed: no alibaba spec; OpenAI schema (openai) used as a stand-in at | request-params-dropped-or-changed |
-| wrong_value | executor | responses | responses.param.service_tier=default | upstream.body.$.service_tier | 41: akashml, alibaba, amazon-bedrock, atlascloud, baidu, bytedance-seed, … | default | standard |  | apps/docs/v1/guides/service-tiers.mdx | request-params-dropped-or-changed |
-| wrong_value | executor | chat | chat.param.service_tier=default | upstream.body.$.service_tier | 40: akashml, alibaba, amazon-bedrock, atlascloud, bytedance-seed, byteplus, … | default | standard |  | apps/docs/v1/guides/service-tiers.mdx | request-params-dropped-or-changed |
+| invented | executor | responses | responses.param.safety_identifier | upstream.body.$.safety_identifier | 42: ai21, aion-labs, akashml, alibaba-cloud, ambient, arcee-ai, … |  | sim-safety-9d2 |  | spec specs/ai21.json properties.safety_identifier | request-unsupported-forwarded |
 | invented | executor | chat | chat.param.metadata | upstream.body.$.metadata.sim_meta_key | 38: ai21, akashml, alibaba-cloud, avian, baseten, canopy-wave, … |  | sim-meta-value-55 |  | spec specs/ai21.json properties.metadata | request-unsupported-forwarded |
 | invented | executor | responses | responses.param.metadata | upstream.body.$.metadata.sim_meta_key | 38: ai21, akashml, alibaba-cloud, avian, baseten, canopy-wave, … |  | sim-meta-value-55 |  | spec specs/ai21.json properties.metadata | request-unsupported-forwarded |
-| wrong_value | executor | responses | responses.param.service_tier=standard | upstream.body.$.service_tier | 37: alibaba, amazon-bedrock, atlascloud, baidu, bytedance-seed, byteplus, … | one of ["auto","default","flex","scale","priority" | standard |  | assumed: no alibaba spec; OpenAI schema (openai) used as a stand-in at | request-params-dropped-or-changed |
-| invented | executor | chat | chat.param.user_id | upstream.body.$.user | 36: ai21, aion-labs, alibaba-cloud, avian, canopy-wave, chutes, … |  | sim-user-id-4c2 |  | spec specs/ai21.json properties.user | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.user | upstream.body.$.user | 36: ai21, aion-labs, alibaba-cloud, avian, canopy-wave, chutes, … |  | sim-user-4c1 |  | spec specs/ai21.json properties.user | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.user | upstream.body.$.user | 36: ai21, aion-labs, alibaba-cloud, avian, canopy-wave, chutes, … |  | sim-user-4c1 |  | spec specs/ai21.json properties.user | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.top_k | upstream.body.$.top_k | 36: akashml, alibaba, amazon-bedrock, atlascloud, avian, azure, … |  | 41 |  | spec specs/akashml.json properties.top_k | request-unsupported-forwarded |
-| wrong_value | executor | chat | chat.param.service_tier=standard | upstream.body.$.service_tier | 36: alibaba, amazon-bedrock, atlascloud, bytedance-seed, byteplus, clarifa, … | one of ["auto","default","flex","scale","priority" | standard |  | assumed: no alibaba spec; OpenAI schema (openai) used as a stand-in at | request-params-dropped-or-changed |
-| invented | executor | chat | chat.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 35: ai21, aion-labs, akashml, alibaba-cloud, ambient, avian, … |  | sim-pck-7a3 |  | spec specs/ai21.json properties.prompt_cache_key | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.tools | upstream.body.$.tools.0.function.name | 35: aion-labs, alibaba-cloud, arcee-ai, avian, baidu, canopy-wave, … |  | sim_tool_weather |  | spec specs/aion-labs.json properties.tools.items | request-unsupported-forwarded |
-| invented | executor | messages | messages.param.tools | upstream.body.$.tools.0.function.name | 35: aion-labs, alibaba-cloud, arcee-ai, avian, baidu, canopy-wave, … |  | sim_tool_weather |  | spec specs/aion-labs.json properties.tools.items | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.min_p | upstream.body.$.min_p | 38: ai21, alibaba, amazon-bedrock, atlascloud, avian, azure, … |  | 0.07 |  | spec specs/ai21.json properties.min_p | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.top_k | upstream.body.$.top_k | 37: ai21, akashml, alibaba, amazon-bedrock, atlascloud, avian, … |  | 41 |  | spec specs/ai21.json properties.top_k | request-unsupported-forwarded |
+| invented | executor | messages | messages.param.top_k | upstream.body.$.top_k | 37: ai21, akashml, alibaba, amazon-bedrock, atlascloud, avian, … |  | 41 |  | spec specs/ai21.json properties.top_k | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.repetition_penalty | upstream.body.$.repetition_penalty | 37: ai21, akashml, alibaba, amazon-bedrock, atlascloud, avian, … |  | 1.07 |  | spec specs/ai21.json properties.repetition_penalty | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.tools | upstream.body.$.tools.0.function.name | 36: aion-labs, alibaba-cloud, arcee-ai, avian, baidu, canopy-wave, … |  | sim_tool_weather |  | spec specs/aion-labs.json properties.tools.items | request-unsupported-forwarded |
+| invented | executor | responses | responses.param.tools | upstream.body.$.tools.0.function.name | 36: aion-labs, alibaba-cloud, arcee-ai, avian, baidu, canopy-wave, … |  | sim_tool_weather |  | spec specs/aion-labs.json properties.tools.items | request-unsupported-forwarded |
+| invented | executor | messages | messages.param.tools | upstream.body.$.tools.0.function.name | 36: aion-labs, alibaba-cloud, arcee-ai, avian, baidu, canopy-wave, … |  | sim_tool_weather |  | spec specs/aion-labs.json properties.tools.items | request-unsupported-forwarded |
 | invented | executor | chat | chat.param.service_tier | upstream.body.$.service_tier | 35: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | flex |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.service_tier=standard | upstream.body.$.service_tier | 35: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | standard |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.service_tier=default | upstream.body.$.service_tier | 35: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | standard |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.service_tier=fast | upstream.body.$.service_tier | 35: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | fast |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.service_tier=ultrafast | upstream.body.$.service_tier | 35: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | ultrafast |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.service_tier=priority | upstream.body.$.service_tier | 35: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | priority |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.service_tier=batch | upstream.body.$.service_tier | 35: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | batch |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 35: ai21, aion-labs, akashml, alibaba-cloud, ambient, avian, … |  | sim-pck-7a3 |  | spec specs/ai21.json properties.prompt_cache_key | request-unsupported-forwarded |
+| invented | executor | responses | responses.param.service_tier | upstream.body.$.service_tier | 35: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | flex |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
+| invented | executor | responses | responses.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 35: ai21, aion-labs, akashml, alibaba-cloud, ambient, avian, … |  | sim-pck-7a3 |  | spec specs/ai21.json properties.prompt_cache_key | request-unsupported-forwarded |
 | invented | executor | messages | messages.param.service_tier | upstream.body.$.service_tier | 35: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | auto |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| wrong_value | executor | chat | chat.param.service_tier=ultrafast | upstream.body.$.service_tier | 35: alibaba, amazon-bedrock, atlascloud, bytedance-seed, cerebras, cloudfl, … | one of ["auto","default","flex","scale","priority" | ultrafast |  | assumed: no alibaba spec; OpenAI schema (openai) used as a stand-in at | request-params-dropped-or-changed |
-| invented | executor | messages | messages.param.top_k | upstream.body.$.top_k | 35: akashml, alibaba, atlascloud, avian, azure, bytedance-seed, … |  | 41 |  | spec specs/akashml.json properties.top_k | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.min_p | upstream.body.$.min_p | 35: alibaba, amazon-bedrock, atlascloud, avian, azure, bytedance-seed, … |  | 0.07 |  | assumed: no alibaba spec; OpenAI schema (openai) used as a stand-in at | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 34: ai21, aion-labs, akashml, alibaba-cloud, ambient, avian, … |  | sim-pck-7a3 |  | spec specs/ai21.json properties.prompt_cache_key | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.tools | upstream.body.$.tools.0.function.name | 34: aion-labs, alibaba-cloud, arcee-ai, avian, canopy-wave, cerebras, … |  | sim_tool_weather |  | spec specs/aion-labs.json properties.tools.items | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.service_tier | upstream.body.$.service_tier | 34: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | flex |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.service_tier=standard | upstream.body.$.service_tier | 34: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | standard |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.service_tier=default | upstream.body.$.service_tier | 34: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | standard |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.service_tier=fast | upstream.body.$.service_tier | 34: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | fast |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.service_tier=ultrafast | upstream.body.$.service_tier | 34: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | ultrafast |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.service_tier=priority | upstream.body.$.service_tier | 34: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | priority |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.service_tier=batch | upstream.body.$.service_tier | 34: ai21, aion-labs, alibaba-cloud, ambient, arcee-ai, avian, … |  | batch |  | spec specs/ai21.json properties.service_tier | request-unsupported-forwarded |
+| invented | executor | messages | messages.param.prompt_cache_key | upstream.body.$.prompt_cache_key | 35: ai21, aion-labs, akashml, alibaba-cloud, ambient, avian, … |  | sim-prompt-cache-key |  | spec specs/ai21.json properties.prompt_cache_key | request-unsupported-forwarded |
+| invented | executor | responses | responses.param.top_k | upstream.body.$.top_k | 35: ai21, akashml, alibaba, amazon-bedrock, atlascloud, avian, … |  | 41 |  | spec specs/ai21.json properties.top_k | request-unsupported-forwarded |
+| dropped | executor | messages | messages.param.thinking | upstream.body.$.reasoning_effort | 34: aion-labs, akashml, alibaba, amazon-bedrock, arcee-ai, atlascloud, … | present |  |  | https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking | request-params-dropped-or-changed |
+| invented | executor | chat | chat.param.user_id | upstream.body.$.user | 34: ai21, aion-labs, alibaba-cloud, avian, canopy-wave, chutes, … |  | sim-user-id-4c2 |  | spec specs/ai21.json properties.user | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.user | upstream.body.$.user | 34: ai21, aion-labs, alibaba-cloud, avian, canopy-wave, chutes, … |  | sim-user-4c1 |  | spec specs/ai21.json properties.user | request-unsupported-forwarded |
+| invented | executor | responses | responses.param.user | upstream.body.$.user | 34: ai21, aion-labs, alibaba-cloud, avian, canopy-wave, chutes, … |  | sim-user-4c1 |  | spec specs/ai21.json properties.user | request-unsupported-forwarded |
+| invented | executor | messages | messages.param.user | upstream.body.$.user | 34: ai21, aion-labs, alibaba-cloud, avian, canopy-wave, chutes, … |  | sim-user |  | spec specs/ai21.json properties.user | request-unsupported-forwarded |
 | invented | executor | messages | messages.param.metadata | upstream.body.$.metadata.user_id | 34: ai21, aion-labs, alibaba-cloud, avian, canopy-wave, chutes, … |  | client value |  | spec specs/ai21.json properties.user | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.repetition_penalty | upstream.body.$.repetition_penalty | 34: akashml, alibaba, amazon-bedrock, atlascloud, avian, azure, … |  | 1.07 |  | spec specs/akashml.json properties.repetition_penalty | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.top_k | upstream.body.$.top_k | 33: akashml, alibaba, atlascloud, avian, bytedance-seed, canopy-wave, … |  | 41 |  | spec specs/akashml.json properties.top_k | request-unsupported-forwarded |
-| wrong_value | executor | responses | responses.param.service_tier=ultrafast | upstream.body.$.service_tier | 31: alibaba, atlascloud, bytedance-seed, cerebras, cloudflare, deepinfra, … | one of ["auto","default","flex","scale","priority" | ultrafast |  | assumed: no alibaba spec; OpenAI schema (openai) used as a stand-in at | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.store | upstream.body.$.store | 31: alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, cloudflare, … | true |  |  | assumed: Phaseo does not document store; OpenAI-dialect providers that | request-params-dropped-or-changed |
-| dropped | executor | messages | messages.param.thinking | upstream.body.$.reasoning_effort | 29: aion-labs, akashml, alibaba, arcee-ai, atlascloud, azure, … | present |  |  | https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking | request-params-dropped-or-changed |
-| dropped | executor | responses | responses.param.store | upstream.body.$.store | 28: alibaba, atlascloud, bytedance-seed, cloudflare, google-vertex, groq, … | true |  |  | assumed: Phaseo does not document store; OpenAI-dialect providers that | request-params-dropped-or-changed |
-| invented | executor | responses | responses.param.seed | upstream.body.$.seed | 26: amazon-bedrock, avian, azure, baidu, byteplus, canopy-wave, … |  | 424242 |  | assumed: no amazon-bedrock spec; OpenAI schema (openai) used as a stan | request-unsupported-forwarded |
-| dropped | executor | chat | chat.param.reasoning_effort=none | upstream.body.$.reasoning_effort | 26: aion-labs, alibaba-cloud, alibaba, amazon-bedrock, atlascloud, azure, … | none |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.store | upstream.body.$.store | 33: alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, cloudflare, … | true |  |  | assumed: Phaseo does not document store; OpenAI-dialect providers that | request-params-dropped-or-changed |
+| dropped | executor | responses | responses.param.store | upstream.body.$.store | 31: alibaba, amazon-bedrock, atlascloud, bytedance-seed, cloudflare, googl, … | true |  |  | assumed: Phaseo does not document store; OpenAI-dialect providers that | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=none | upstream.body.$.reasoning_effort | 31: aion-labs, alibaba-cloud, alibaba, amazon-bedrock, atlascloud, azure, … | none |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=minimal | upstream.body.$.reasoning_effort | 26: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, baidu, … | minimal |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort | upstream.body.$.reasoning_effort | 25: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=low | upstream.body.$.reasoning_effort | 25: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | low |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=medium | upstream.body.$.reasoning_effort | 25: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | medium |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=xhigh | upstream.body.$.reasoning_effort | 25: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | xhigh |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| invented | executor | responses | responses.param.seed | upstream.body.$.seed | 25: amazon-bedrock, ambient, avian, azure, byteplus, canopy-wave, … |  | 424242 |  | assumed: no amazon-bedrock spec; OpenAI schema (openai) used as a stan | request-unsupported-forwarded |
+| dropped | executor | chat | chat.param.reasoning_effort=max | upstream.body.$.reasoning_effort | 24: aion-labs, alibaba, amazon-bedrock, atlascloud, bytedance-seed, empiri, … | max |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning | upstream.body.$.reasoning_effort | 24: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | messages | messages.param.reasoning | upstream.body.$.reasoning_effort | 24: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
 | invented | executor | chat | chat.param.parallel_tool_calls | upstream.body.$.parallel_tool_calls | 24: aion-labs, avian, canopy-wave, chutes, crusoe, deepinfra, … |  | false |  | spec specs/aion-labs.json properties.parallel_tool_calls | request-unsupported-forwarded |
 | invented | executor | responses | responses.param.parallel_tool_calls | upstream.body.$.parallel_tool_calls | 24: aion-labs, avian, canopy-wave, chutes, crusoe, deepinfra, … |  | false |  | spec specs/aion-labs.json properties.parallel_tool_calls | request-unsupported-forwarded |
-| invented | executor | messages | messages.param.stop_sequences | upstream.body.$.stop | 24: avian, byteplus, canopy-wave, chutes, clarifai, crusoe, … |  | ["SIM-STOP-1","SIM-STOP-2"] |  | spec specs/avian.json properties.stop | request-unsupported-forwarded |
-| dropped | executor | chat | chat.param.reasoning_effort=minimal | upstream.body.$.reasoning_effort | 24: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, baidu, … | minimal |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort | upstream.body.$.reasoning_effort | 23: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort=low | upstream.body.$.reasoning_effort | 23: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | low |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort=medium | upstream.body.$.reasoning_effort | 23: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | medium |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort=xhigh | upstream.body.$.reasoning_effort | 23: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | xhigh |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| invented | executor | chat | chat.param.stop | upstream.body.$.stop | 22: avian, byteplus, canopy-wave, chutes, clarifai, crusoe, … |  | ["SIM-STOP-1","SIM-STOP-2"] |  | spec specs/avian.json properties.stop | request-unsupported-forwarded |
-| dropped | executor | chat | chat.param.reasoning_effort=max | upstream.body.$.reasoning_effort | 22: aion-labs, alibaba, amazon-bedrock, atlascloud, bytedance-seed, empiri, … | max |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning | upstream.body.$.reasoning_effort | 22: aion-labs, alibaba, amazon-bedrock, atlascloud, azure, bytedance-seed, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | pricing | text.generate | catalogue:cache-read-missing | catalogue.cached_read_text_tokens | 21: akashml, alibaba-cloud, amazon-bedrock, azure, baidu, byteplus, … | a cache-read price | null |  | spec akashml usage schema | catalogue-data-rows |
+| invented | executor | messages | messages.param.stop_sequences | upstream.body.$.stop | 23: ambient, avian, byteplus, canopy-wave, chutes, clarifai, … |  | ["SIM-STOP-1","SIM-STOP-2"] |  | spec specs/ambient.json properties.stop | request-unsupported-forwarded |
+| dropped | executor | responses | responses.param.reasoning | upstream.body.$.reasoning_effort | 22: aion-labs, alibaba, amazon-bedrock, atlascloud, bytedance-seed, inflec, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.top_logprobs | upstream.body.$.top_logprobs | 22: alibaba-cloud, arcee-ai, atlascloud, byteplus, cerebras, cloudflare, … | 3 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | responses | responses.param.top_logprobs | upstream.body.$.top_logprobs | 22: alibaba-cloud, arcee-ai, atlascloud, byteplus, cerebras, cloudflare, … | 3 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| invented | executor | chat | chat.param.stop | upstream.body.$.stop | 21: ambient, avian, byteplus, canopy-wave, chutes, clarifai, … |  | ["SIM-STOP-1","SIM-STOP-2"] |  | spec specs/ambient.json properties.stop | request-unsupported-forwarded |
 | invented | executor | chat | chat.param.stream_options | upstream.body.$.stream_options.include_usage | 21: ai21, avian, canopy-wave, chutes, crusoe, featherless, … |  | true |  | spec specs/ai21.json properties.stream_options | request-unsupported-forwarded |
 | invented | executor | chat | chat.base | upstream.body.$.stream_options | 21: avian, canopy-wave, chutes, crusoe, featherless, fireworks, … |  | {"include_usage":true} |  | assumed: Phaseo streams every text request upstream and buffers on its | request-invented-defaults |
 | invented | executor | responses | responses.base | upstream.body.$.stream_options | 21: avian, canopy-wave, chutes, crusoe, featherless, fireworks, … |  | {"include_usage":true} |  | assumed: Phaseo streams every text request upstream and buffers on its | request-invented-defaults |
 | invented | executor | messages | messages.base | upstream.body.$.stream_options | 21: avian, canopy-wave, chutes, crusoe, featherless, fireworks, … |  | {"include_usage":true} |  | assumed: Phaseo streams every text request upstream and buffers on its | request-invented-defaults |
-| dropped | executor | messages | messages.param.reasoning | upstream.body.$.reasoning_effort | 21: aion-labs, alibaba, atlascloud, azure, bytedance-seed, empiriolabs, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| invented | executor | chat | chat.param.seed | upstream.body.$.seed | 20: avian, byteplus, canopy-wave, chutes, clarifai, darkbloom, … |  | 424242 |  | spec specs/avian.json properties.seed | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.seed | upstream.body.$.seed | 20: ambient, avian, byteplus, canopy-wave, chutes, clarifai, … |  | 424242 |  | spec specs/ambient.json properties.seed | request-unsupported-forwarded |
 | invented | executor | responses | responses.param.stream_options | upstream.body.$.stream_options.include_usage | 20: avian, canopy-wave, chutes, crusoe, featherless, fireworks, … |  | true |  | spec specs/avian.json properties.stream_options | request-unsupported-forwarded |
-| dropped | executor | responses | responses.param.reasoning | upstream.body.$.reasoning_effort | 19: aion-labs, alibaba, atlascloud, bytedance-seed, inflection, ionrouter-, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | responses | responses.param.top_logprobs | upstream.body.$.top_logprobs | 19: alibaba-cloud, arcee-ai, baidu, cerebras, cloudflare, fireworks, … | 3 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| invented | executor | chat | chat.param.logprobs | upstream.body.$.logprobs | 18: ambient, avian, byteplus, canopy-wave, clarifai, darkbloom, … |  | true |  | spec specs/ambient.json properties.logprobs | request-unsupported-forwarded |
-| dropped | executor | chat | chat.param.top_logprobs | upstream.body.$.top_logprobs | 18: alibaba-cloud, arcee-ai, cerebras, cloudflare, fireworks, google-verte, … | 3 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| invented | executor | chat | chat.param.logit_bias | upstream.body.$.logit_bias | 17: avian, byteplus, canopy-wave, clarifai, darkbloom, deepinfra, … |  | {"1729":7} |  | spec specs/avian.json properties.logit_bias | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.frequency_penalty | upstream.body.$.frequency_penalty | 17: ambient, avian, byteplus, canopy-wave, chutes, clarifai, … |  | 0.11 |  | spec specs/ambient.json properties.frequency_penalty | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.logit_bias | upstream.body.$.logit_bias | 19: ai21, avian, byteplus, canopy-wave, chutes, clarifai, … |  | {"1729":7} |  | spec specs/ai21.json properties.logit_bias | request-unsupported-forwarded |
+| dropped | pricing | text.generate | catalogue:cache-read-missing | catalogue.cached_read_text_tokens | 18: akashml, alibaba-cloud, azure, baidu, byteplus, deepinfra, … | a cache-read price | null |  | spec akashml usage schema | catalogue-data-rows |
+| invented | executor | chat | chat.param.logprobs | upstream.body.$.logprobs | 18: ambient, avian, byteplus, canopy-wave, chutes, clarifai, … |  | true |  | spec specs/ambient.json properties.logprobs | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.frequency_penalty | upstream.body.$.frequency_penalty | 18: ambient, avian, byteplus, canopy-wave, chutes, clarifai, … |  | 0.11 |  | spec specs/ambient.json properties.frequency_penalty | request-unsupported-forwarded |
+| invented | executor | chat | chat.param.presence_penalty | upstream.body.$.presence_penalty | 18: ambient, avian, byteplus, canopy-wave, chutes, clarifai, … |  | 0.13 |  | spec specs/ambient.json properties.presence_penalty | request-unsupported-forwarded |
+| dropped | executor | chat | chat.param.logprobs | upstream.body.$.logprobs | 17: alibaba-cloud, arcee-ai, atlascloud, cerebras, cloudflare, empiriolabs, … | true |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
 | invented | executor | chat | chat.param.tool_choice | upstream.body.$.tool_choice | 16: aion-labs, avian, chutes, crusoe, featherless, gmicloud, … |  | required |  | spec specs/aion-labs.json properties.tool_choice | request-unsupported-forwarded |
 | invented | executor | responses | responses.param.tool_choice | upstream.body.$.tool_choice | 16: aion-labs, avian, chutes, crusoe, featherless, gmicloud, … |  | required |  | spec specs/aion-labs.json properties.tool_choice | request-unsupported-forwarded |
 | invented | executor | messages | messages.param.tool_choice | upstream.body.$.tool_choice | 16: aion-labs, avian, chutes, crusoe, featherless, gmicloud, … |  | required |  | spec specs/aion-labs.json properties.tool_choice | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.presence_penalty | upstream.body.$.presence_penalty | 16: avian, byteplus, canopy-wave, chutes, clarifai, darkbloom, … |  | 0.13 |  | spec specs/avian.json properties.presence_penalty | request-unsupported-forwarded |
-| dropped | executor | responses | responses.param.prompt | upstream.body.$.prompt.id | 15: amazon-bedrock, azure, baidu, byteplus, clarifai, darkbloom, … | pmpt_sim_0001 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.logprobs | upstream.body.$.logprobs | 14: alibaba-cloud, arcee-ai, cerebras, cloudflare, fireworks, google-verte, … | true |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| wrong_value | executor | chat | chat.param.reasoning_effort=max | upstream.body.$.reasoning_effort | 14: akashml, alibaba-cloud, arcee-ai, cohere, friendli, mistral-eu, … | max | high |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.presence_penalty | upstream.body.$.presence_penalty | 14: arcee-ai, atlascloud, cerebras, deepseek, google-vertex, inflection, … | 0.13 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.logit_bias | upstream.body.$.logit_bias | 13: arcee-ai, atlascloud, empiriolabs, google-vertex, inference-net, infle, … | {"1729":7} |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | responses | responses.param.prompt | upstream.body.$.prompt.id | 13: amazon-bedrock, azure, byteplus, clarifai, darkbloom, doubleword, … | pmpt_sim_0001 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| invented | executor | chat | chat.param.top_logprobs | upstream.body.$.top_logprobs | 13: avian, canopy-wave, chutes, crusoe, deepinfra, featherless, … |  | 3 |  | spec specs/avian.json properties.top_logprobs | request-unsupported-forwarded |
+| invented | executor | responses | responses.param.top_logprobs | upstream.body.$.top_logprobs | 13: avian, canopy-wave, chutes, crusoe, deepinfra, featherless, … |  | 3 |  | spec specs/avian.json properties.top_logprobs | request-unsupported-forwarded |
 | invented | executor | chat | chat.param.response_format | upstream.body.$.response_format.type | 13: aion-labs, avian, canopy-wave, chutes, crusoe, featherless, … |  | json_schema |  | spec specs/aion-labs.json properties.response_format | request-unsupported-forwarded |
 | invented | executor | responses | responses.param.text | upstream.body.$.response_format.type | 13: aion-labs, avian, canopy-wave, chutes, crusoe, featherless, … |  | json_schema |  | spec specs/aion-labs.json properties.response_format | request-unsupported-forwarded |
 | invented | executor | chat | chat.format.json_object | upstream.body.$.response_format.type | 13: aion-labs, avian, canopy-wave, chutes, crusoe, featherless, … |  | json_object |  | spec specs/aion-labs.json properties.response_format | request-unsupported-forwarded |
 | invented | executor | responses | responses.format.json_object | upstream.body.$.response_format.type | 13: aion-labs, avian, canopy-wave, chutes, crusoe, featherless, … |  | json_object |  | spec specs/aion-labs.json properties.response_format | request-unsupported-forwarded |
-| invented | executor | chat | chat.param.top_logprobs | upstream.body.$.top_logprobs | 12: avian, canopy-wave, deepinfra, featherless, gmicloud, hyperbolic, … |  | 3 |  | spec specs/avian.json properties.top_logprobs | request-unsupported-forwarded |
-| invented | executor | responses | responses.param.top_logprobs | upstream.body.$.top_logprobs | 12: avian, canopy-wave, deepinfra, featherless, gmicloud, hyperbolic, … |  | 3 |  | spec specs/avian.json properties.top_logprobs | request-unsupported-forwarded |
-| dropped | executor | chat | chat.param.presence_penalty | upstream.body.$.presence_penalty | 12: cerebras, google-vertex, inflection, mistral-eu, moonshotai-turbo, ope, … | 0.13 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | responses | responses.param.reasoning | upstream.body.$.reasoning.effort | 12: amazon-bedrock, ambient, baidu, byteplus, clarifai, darkbloom, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| wrong_value | executor | chat | chat.param.reasoning_effort=minimal | upstream.body.$.reasoning_effort | 12: akashml, alibaba-cloud, cohere, fireworks, friendli, mistral, … | minimal | low |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| wrong_value | executor | chat | chat.param.reasoning_effort=xhigh | upstream.body.$.reasoning_effort | 12: akashml, arcee-ai, baidu, cohere, friendli, mistral, … | xhigh | high |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| wrong_value | executor | chat | chat.base | upstream.url | 11: alibaba-cloud, arcee-ai, deepinfra, inflection, longcat, mistral-eu, … | ^https://[^/]+\\.ap-southeast-1\\.maas\\.aliyuncs\ | https://dashscope-intl.aliyuncs.com/compatible-mod |  | https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai- | request-url-and-dialect |
-| wrong_value | executor | responses | responses.base | upstream.url | 11: alibaba-cloud, arcee-ai, deepinfra, inflection, longcat, mistral-eu, … | ^https://[^/]+\\.ap-southeast-1\\.maas\\.aliyuncs\ | https://dashscope-intl.aliyuncs.com/compatible-mod |  | https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai- | request-url-and-dialect |
-| wrong_value | executor | messages | messages.base | upstream.url | 11: alibaba-cloud, arcee-ai, deepinfra, inflection, longcat, mistral-eu, … | ^https://[^/]+\\.ap-southeast-1\\.maas\\.aliyuncs\ | https://dashscope-intl.aliyuncs.com/compatible-mod |  | https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai- | request-url-and-dialect |
-| dropped | executor | messages | messages.param.thinking | upstream.body.$.reasoning.effort | 10: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | present |  |  | https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.frequency_penalty | upstream.body.$.frequency_penalty | 10: google-vertex, inflection, mistral-eu, moonshotai-turbo, openrouter, r, … | 0.11 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.top_p | upstream.body.$.top_p | 10: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 0.91 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | responses | responses.param.top_p | upstream.body.$.top_p | 10: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 0.91 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | messages | messages.param.top_p | upstream.body.$.top_p | 10: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 0.91 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning | upstream.body.$.reasoning.effort | 9: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort | upstream.body.$.reasoning.effort | 9: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort=low | upstream.body.$.reasoning.effort | 9: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | low |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort=medium | upstream.body.$.reasoning.effort | 9: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | medium |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | messages | messages.param.reasoning | upstream.body.$.reasoning.effort | 9: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.logit_bias | upstream.body.$.logit_bias | 9: google-vertex, inflection, io-net, openrouter, reflection, siliconflow, … | {"1729":7} |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.top_k | upstream.body.$.top_k | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 41 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | responses | responses.param.top_k | upstream.body.$.top_k | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 41 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | messages | messages.param.top_k | upstream.body.$.top_k | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 41 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.temperature | upstream.body.$.temperature | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 0.37 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | responses | responses.param.temperature | upstream.body.$.temperature | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 0.37 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | messages | messages.param.temperature | upstream.body.$.temperature | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 0.37 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.stream_options | upstream.body.$.stream_options.include_obfuscation | 9: ambient, byteplus, clarifai, darkbloom, deepseek, doubleword, … | false |  |  | https://platform.openai.com/docs/api-reference/chat-streaming | request-params-dropped-or-changed |
-| wrong_value | pricing | text.generate | catalogue:cache-read-not-discounted.stan | catalogue.cached_read_text_tokens.price_per_unit | 8: atlascloud, baseten, cerebras, openai, ovhcloud, parasail, … | < input price | {"cacheRead":"0.55","input":"0.55","unit_size":100 |  | assumed: Provider pricing page not checked; a cache hit that costs not | catalogue-data-rows |
-| wrong_type | executor | chat | chat.content.second-system | upstream.body(client $.messages[].content) | 8: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | structured value | embedded in a JSON string |  | assumed: Every value the client sends in content, tools or history mus | request-content-values |
-| dropped | executor | chat | chat.param.parallel_tool_calls | upstream.body.$.parallel_tool_calls | 8: deepseek, sambanova, siliconflow, switchpoint, thinking-machines, upst, … | false |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | responses | responses.param.parallel_tool_calls | upstream.body.$.parallel_tool_calls | 8: deepseek, sambanova, siliconflow, switchpoint, thinking-machines, upst, … | false |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | chat | chat.param.reasoning_effort=minimal | upstream.body.$.reasoning_effort | 12: akashml, alibaba-cloud, cohere, deepseek, fireworks, friendli, … | minimal | low |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | chat | chat.base | upstream.url | 12: alibaba-cloud, arcee-ai, deepinfra, deepseek, inflection, longcat, … | ^https://[^/]+\\.ap-southeast-1\\.maas\\.aliyuncs\ | https://dashscope-intl.aliyuncs.com/compatible-mod |  | https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai- | request-url-and-dialect |
+| wrong_value | executor | responses | responses.base | upstream.url | 12: alibaba-cloud, arcee-ai, deepinfra, deepseek, inflection, longcat, … | ^https://[^/]+\\.ap-southeast-1\\.maas\\.aliyuncs\ | https://dashscope-intl.aliyuncs.com/compatible-mod |  | https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai- | request-url-and-dialect |
+| wrong_value | executor | messages | messages.base | upstream.url | 12: alibaba-cloud, arcee-ai, deepinfra, deepseek, inflection, longcat, … | ^https://[^/]+\\.ap-southeast-1\\.maas\\.aliyuncs\ | https://dashscope-intl.aliyuncs.com/compatible-mod |  | https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai- | request-url-and-dialect |
+| dropped | executor | chat | chat.param.frequency_penalty | upstream.body.$.frequency_penalty | 12: arcee-ai, atlascloud, deepseek, google-vertex, inflection, openrouter, … | 0.11 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| wrong_value | pricing | text.generate | catalogue:cache-read-not-discounted.stan | catalogue.cached_read_text_tokens.price_per_unit | 10: atlascloud, baseten, cerebras, deepinfra, doubleword, inference-net, … | < input price | {"cacheRead":"0.55","input":"0.55","unit_size":100 |  | assumed: Provider pricing page not checked; a cache hit that costs not | catalogue-data-rows |
+| dropped | executor | responses | responses.param.reasoning | upstream.body.$.reasoning.effort | 10: amazon-bedrock, ambient, byteplus, clarifai, darkbloom, empiriolabs, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | chat | chat.param.reasoning_effort=xhigh | upstream.body.$.reasoning_effort | 10: akashml, arcee-ai, baidu, cohere, deepseek, friendli, … | xhigh | high |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.top_k | upstream.body.$.top_k | 10: alibaba-cloud, anthropic-aws-us, anthropic-aws, anthropic, arcee-ai, g, … | 41 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | responses | responses.param.top_k | upstream.body.$.top_k | 10: alibaba-cloud, anthropic-aws-us, anthropic-aws, anthropic, arcee-ai, g, … | 41 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | messages | messages.param.top_k | upstream.body.$.top_k | 10: alibaba-cloud, anthropic-aws-us, anthropic-aws, anthropic, arcee-ai, g, … | 41 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.top_p | upstream.body.$.top_p | 10: anthropic-aws-us, anthropic-aws, anthropic, atlascloud, byteplus, goog, … | 0.91 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | responses | responses.param.top_p | upstream.body.$.top_p | 10: anthropic-aws-us, anthropic-aws, anthropic, atlascloud, byteplus, goog, … | 0.91 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | messages | messages.param.top_p | upstream.body.$.top_p | 10: anthropic-aws-us, anthropic-aws, anthropic, atlascloud, byteplus, goog, … | 0.91 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| wrong_type | executor | chat | chat.content.second-system | upstream.body(client $.messages[].content) | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | structured value | embedded in a JSON string |  | assumed: Every value the client sends in content, tools or history mus | request-content-values |
+| dropped | executor | messages | messages.param.thinking | upstream.body.$.reasoning.effort | 9: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | present |  |  | https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.seed | upstream.body.$.seed | 9: arcee-ai, atlascloud, fireworks, inference-net, inflection, openrouter, … | 424242 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | responses | responses.param.seed | upstream.body.$.seed | 9: arcee-ai, atlascloud, fireworks, inference-net, inflection, openrouter, … | 424242 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat/stream | resp:finish:refusal | client.refusal | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://platform.openai.com/docs/api-reference/chat/object | stream-citations-refusal |
+| dropped | executor | chat/buffered | resp:finish:refusal | client.refusal | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://platform.openai.com/docs/api-reference/chat/object | stream-citations-refusal |
+| dropped | executor | responses/stream | resp:finish:refusal | client.refusal | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://platform.openai.com/docs/api-reference/responses/object | stream-citations-refusal |
+| dropped | executor | responses/buffered | resp:finish:refusal | client.refusal | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://platform.openai.com/docs/api-reference/responses/object | stream-citations-refusal |
+| dropped | executor | messages/stream | resp:finish:refusal | client.refusal | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://docs.anthropic.com/en/api/messages | stream-citations-refusal |
+| dropped | executor | messages/buffered | resp:finish:refusal | client.refusal | 9: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://docs.anthropic.com/en/api/messages | stream-citations-refusal |
+| dropped | executor | chat | chat.param.temperature | upstream.body.$.temperature | 9: anthropic-aws-us, anthropic-aws, anthropic, atlascloud, byteplus, goog, … | 0.37 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | responses | responses.param.temperature | upstream.body.$.temperature | 9: anthropic-aws-us, anthropic-aws, anthropic, atlascloud, byteplus, goog, … | 0.37 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | messages | messages.param.temperature | upstream.body.$.temperature | 9: anthropic-aws-us, anthropic-aws, anthropic, atlascloud, byteplus, goog, … | 0.37 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| error_mapping | executor | responses | responses.content.part.input_image_file_ | upstream.call | 8: ai21, amazon-bedrock, cohere, google-vertex-eu, google-vertex, inflect, … | an upstream request | Error: ai21_text_input_only |  | assumed: A valid request routed to an active provider must reach that  | request-executor-local-errors |
+| dropped | executor | chat | chat.param.reasoning | upstream.body.$.reasoning.effort | 8: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort | upstream.body.$.reasoning.effort | 8: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=low | upstream.body.$.reasoning.effort | 8: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | low |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=medium | upstream.body.$.reasoning.effort | 8: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | medium |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | messages | messages.param.reasoning | upstream.body.$.reasoning.effort | 8: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | high |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | chat | chat.param.reasoning_effort=max | upstream.body.$.reasoning_effort | 8: akashml, alibaba-cloud, arcee-ai, cohere, friendli, nvidia, … | max | high |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.stream_options | upstream.body.$.stream_options.include_obfuscation | 8: ambient, byteplus, clarifai, darkbloom, doubleword, meta, … | false |  |  | https://platform.openai.com/docs/api-reference/chat-streaming | request-params-dropped-or-changed |
 | invented | executor | chat | chat.param.top_p | upstream.body.$.top_p | 8: aion-labs, avian, canopy-wave, chutes, crusoe, morph, … |  | 0.91 |  | spec specs/aion-labs.json properties.top_p | request-unsupported-forwarded |
 | invented | executor | responses | responses.param.top_p | upstream.body.$.top_p | 8: aion-labs, avian, canopy-wave, chutes, crusoe, morph, … |  | 0.91 |  | spec specs/aion-labs.json properties.top_p | request-unsupported-forwarded |
 | invented | executor | messages | messages.param.top_p | upstream.body.$.top_p | 8: aion-labs, avian, canopy-wave, chutes, crusoe, morph, … |  | 0.91 |  | spec specs/aion-labs.json properties.top_p | request-unsupported-forwarded |
-| dropped | executor | chat | chat.param.reasoning_effort=none | upstream.body.$.reasoning.effort | 8: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | none |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort=minimal | upstream.body.$.reasoning.effort | 8: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | minimal |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort=xhigh | upstream.body.$.reasoning.effort | 8: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | xhigh |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.reasoning_effort=max | upstream.body.$.reasoning.effort | 8: ambient, byteplus, clarifai, darkbloom, deepseek, meta, … | max |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | messages/stream | resp:finish:refusal | client.refusal | 8: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://docs.anthropic.com/en/api/messages | stream-citations-refusal |
-| dropped | executor | messages/buffered | resp:finish:refusal | client.refusal | 8: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://docs.anthropic.com/en/api/messages | stream-citations-refusal |
-| wrong_value | executor | chat | chat.param.reasoning_effort=none | upstream.body.$.reasoning_effort | 8: akashml, arcee-ai, cohere, friendli, moonshotai-turbo, stepfun, … | none | low |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | chat/stream | resp:finish:refusal | client.refusal | 8: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://platform.openai.com/docs/api-reference/chat/object | stream-citations-refusal |
-| dropped | executor | chat/buffered | resp:finish:refusal | client.refusal | 8: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://platform.openai.com/docs/api-reference/chat/object | stream-citations-refusal |
-| dropped | executor | responses/stream | resp:finish:refusal | client.refusal | 8: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://platform.openai.com/docs/api-reference/responses/object | stream-citations-refusal |
-| dropped | executor | responses/buffered | resp:finish:refusal | client.refusal | 8: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | SIM-UPSTREAM-REFUSAL-0001 cannot help with that |  |  | https://platform.openai.com/docs/api-reference/responses/object | stream-citations-refusal |
-| wrong_value | executor | chat | chat.param.reasoning_effort=instant | upstream.body.$.reasoning_effort | 7: akashml, arcee-ai, cohere, fireworks, friendli, stepfun, … | instant | low |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| wrong_value | executor | responses | responses.base | upstream.dialect | 7: baidu, byteplus, darkbloom, deepseek, doubleword, sakana, … | ["openai-chat"] | openai-responses |  | https://cloud.baidu.com/doc/qianfan-api/s/3m7of64lb | request-url-and-dialect |
-| dropped | executor | chat | chat.param.parallel_tool_calls | upstream.body.$.tool_choice.disable_parallel_tool_use | 7: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | true |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | responses | responses.param.parallel_tool_calls | upstream.body.$.tool_choice.disable_parallel_tool_use | 7: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | true |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | messages | messages.param.thinking | upstream.body.$.thinking.budget_tokens | 7: amazon-bedrock, anthropic-aws-us, anthropic-aws, anthropic-us, anthrop, … | 2048 |  |  | https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.parallel_tool_calls | upstream.body.$.parallel_tool_calls | 7: sambanova, siliconflow, switchpoint, thinking-machines, upstage, weigh, … | false |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | responses | responses.param.parallel_tool_calls | upstream.body.$.parallel_tool_calls | 7: sambanova, siliconflow, switchpoint, thinking-machines, upstage, weigh, … | false |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | chat | chat.param.reasoning_effort=instant | upstream.body.$.reasoning_effort | 7: akashml, arcee-ai, cohere, deepseek, fireworks, friendli, … | instant | low |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=none | upstream.body.$.reasoning.effort | 7: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | none |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=minimal | upstream.body.$.reasoning.effort | 7: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | minimal |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=xhigh | upstream.body.$.reasoning.effort | 7: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | xhigh |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.reasoning_effort=max | upstream.body.$.reasoning.effort | 7: ambient, byteplus, clarifai, darkbloom, meta, sail-research, … | max |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | chat | chat.base | upstream.dialect | 7: amazon-bedrock, azure, byteplus, darkbloom, doubleword, sakana, … | ["openai-chat","openai-responses","anthropic-messa | unknown |  | https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-co | request-url-and-dialect |
+| wrong_value | executor | responses | responses.base | upstream.dialect | 7: amazon-bedrock, azure, byteplus, darkbloom, doubleword, sakana, … | ["openai-chat","openai-responses","anthropic-messa | unknown |  | https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-co | request-url-and-dialect |
+| wrong_value | executor | messages | messages.base | upstream.dialect | 7: amazon-bedrock, azure, byteplus, darkbloom, doubleword, sakana, … | ["openai-chat","openai-responses","anthropic-messa | unknown |  | https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-co | request-url-and-dialect |
+| error_mapping | executor | messages | messages.content.part.document_url | upstream.call | 7: ai21, amazon-bedrock, cohere, google-vertex, inflection, longcat, … | an upstream request | Error: ai21_text_input_only |  | assumed: A valid request routed to an active provider must reach that  | request-executor-local-errors |
+| error_mapping | executor | responses | responses.content.part.input_file_url | upstream.call | 7: ai21, amazon-bedrock, cohere, google-vertex, inflection, longcat, … | an upstream request | Error: ai21_text_input_only |  | assumed: A valid request routed to an active provider must reach that  | request-executor-local-errors |
+| dropped | executor | chat | chat.param.reasoning_effort=instant | upstream.body.$.reasoning_effort | 7: aion-labs, alibaba-cloud, baidu, minimax-lightning, minimax, upstage, … | instant |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.stop | upstream.body.$.stop | 7: alibaba-cloud, atlascloud, empiriolabs, google-vertex, openrouter, ref, … | ["SIM-STOP-1","SIM-STOP-2"] |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | messages | messages.param.stop_sequences | upstream.body.$.stop | 7: alibaba-cloud, atlascloud, empiriolabs, google-vertex, openrouter, ref, … | ["SIM-STOP-1","SIM-STOP-2"] |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
 | invented | executor | responses | responses.param.stream_options | upstream.body.$.stream_options.include_obfuscation | 6: groq, ovhcloud, sail-research, sambanova, spacex-ai, venice |  | false |  | spec specs/groq.json properties.stream_options | request-unsupported-forwarded |
-| dropped | executor | chat | chat.param.seed | upstream.body.$.seed | 6: arcee-ai, fireworks, inflection, openrouter, siliconflow, streamlake | 424242 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| dropped | executor | responses | responses.param.seed | upstream.body.$.seed | 6: arcee-ai, fireworks, inflection, openrouter, siliconflow, streamlake | 424242 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
-| wrong_value | executor | chat | chat.base | upstream.dialect | 6: byteplus, darkbloom, deepseek, doubleword, sakana, xiaomi | ["openai-chat"] | openai-responses |  | https://docs.byteplus.com/en/docs/ModelArk/1494384 | request-url-and-dialect |
-| wrong_value | executor | messages | messages.base | upstream.dialect | 6: byteplus, darkbloom, deepseek, doubleword, sakana, xiaomi | ["openai-chat"] | openai-responses |  | https://docs.byteplus.com/en/docs/ModelArk/1494384 | request-url-and-dialect |
-| error_mapping | executor | responses | responses.content.part.input_file_url | upstream.call | 6: ai21, cohere, google-vertex, inflection, longcat, perplexity | an upstream request | Error: ai21_text_input_only |  | assumed: A valid request routed to an active provider must reach that  | request-executor-local-errors |
-| dropped | executor | chat | chat.param.reasoning_effort=instant | upstream.body.$.reasoning_effort | 6: aion-labs, alibaba-cloud, baidu, minimax-lightning, minimax, wafer | instant |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.min_p | upstream.body.$.min_p | 6: arcee-ai, baseten, fireworks, friendli, io-net, spacex-ai | 0.07 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| wrong_value | executor | chat | chat.param.reasoning_effort=none | upstream.body.$.reasoning_effort | 6: akashml, arcee-ai, deepseek, friendli, stepfun, z-ai | none | low |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| invented | executor | responses | responses.base | upstream.body.$.store | 6: azure, byteplus, google-ai-studio, openai-eu, openai, spacex-ai |  | false |  | assumed: Phaseo streams every text request upstream and buffers on its | request-invented-defaults |
 | error_mapping | executor | chat | chat.agent10.step10 | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.agent10.step10 | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.agent10.step10 | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| wrong_value | executor | chat | chat.param.service_tier=fast | upstream.body.$.service_tier | 5: cerebras, deepinfra, fireworks, groq, nebius-token-factory | one of ["auto","default","flex","priority"] or rem | fast |  | spec specs/cerebras.json properties.service_tier | request-params-dropped-or-changed |
-| wrong_value | executor | responses | responses.param.service_tier=fast | upstream.body.$.service_tier | 5: cerebras, deepinfra, fireworks, groq, nebius-token-factory | one of ["auto","default","flex","priority"] or rem | fast |  | spec specs/cerebras.json properties.service_tier | request-params-dropped-or-changed |
-| dropped | executor | chat | chat.param.min_p | upstream.body.$.min_p | 5: baseten, fireworks, friendli, io-net, spacex-ai | 0.07 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| dropped | executor | chat | chat.param.repetition_penalty | upstream.body.$.repetition_penalty | 5: alibaba-cloud, arcee-ai, baseten, io-net, parasail | 1.07 |  |  | apps/docs/v1/api-reference/parameters.mdx | request-params-dropped-or-changed |
+| error_mapping | executor | chat | chat.content.part.file_id | upstream.call | 5: ai21, amazon-bedrock, google-vertex-eu, google-vertex, perplexity | an upstream request | Error: ai21_text_input_only |  | assumed: A valid request routed to an active provider must reach that  | request-executor-local-errors |
+| error_mapping | executor | responses | responses.content.part.input_file_id | upstream.call | 5: ai21, amazon-bedrock, google-vertex-eu, google-vertex, perplexity | an upstream request | Error: ai21_text_input_only |  | assumed: A valid request routed to an active provider must reach that  | request-executor-local-errors |
 | error_mapping | executor | chat | chat.param.response_format | client.status | 5: hyperbolic, infermatic, longcat, switchpoint, thinking-machines | 200 | 400 |  | apps/docs/v1/api-reference/parameters.mdx | request-other-rejections |
 | error_mapping | executor | responses | responses.param.text | client.status | 5: hyperbolic, infermatic, longcat, switchpoint, thinking-machines | 200 | 400 |  | apps/docs/v1/api-reference/parameters.mdx | request-other-rejections |
 | error_mapping | executor | chat | chat.format.json_object | client.status | 5: hyperbolic, infermatic, longcat, switchpoint, thinking-machines | 200 | 400 |  | apps/docs/v1/api-reference/parameters.mdx | request-other-rejections |
 | error_mapping | executor | responses | responses.format.json_object | client.status | 5: hyperbolic, infermatic, longcat, switchpoint, thinking-machines | 200 | 400 |  | apps/docs/v1/api-reference/parameters.mdx | request-other-rejections |
+| wrong_value | pricing | text.generate | catalogue:ambiguous-duplicate.input_text | catalogue.input_text_tokens.price_per_unit | 5: baidu, baseten, canopy-wave, moonshotai, morph | one rule per meter, plan and condition set | {"rules":["baidu:baidu/ernie-4.5-turbo:ernie-4.5-t |  | assumed: Two equally specific rules for the same meter leave the price | catalogue-data-rows |
+| wrong_value | pricing | text.generate | catalogue:ambiguous-duplicate.output_tex | catalogue.output_text_tokens.price_per_unit | 5: baidu, baseten, canopy-wave, moonshotai, morph | one rule per meter, plan and condition set | {"rules":["baidu:baidu/ernie-4.5-turbo:ernie-4.5-t |  | assumed: Two equally specific rules for the same meter leave the price | catalogue-data-rows |
+| invented | executor | messages | messages.base | upstream.body.$.store | 5: byteplus, google-ai-studio, openai-eu, openai, spacex-ai |  | false |  | assumed: Phaseo streams every text request upstream and buffers on its | request-invented-defaults |
+| wrong_value | pricing | text.generate | catalogue:ambiguous-duplicate.cached_rea | catalogue.cached_read_text_tokens.price_per_unit | 5: baidu, baseten, canopy-wave, moonshotai, morph | one rule per meter, plan and condition set | {"rules":["baidu:baidu/ernie-4.5-turbo:ernie-4.5-t |  | assumed: Two equally specific rules for the same meter leave the price | catalogue-data-rows |
+| error_mapping | executor | chat | chat.content.part.input_audio | upstream.call | 5: ai21, amazon-bedrock, google-vertex-eu, google-vertex, perplexity | an upstream request | Error: ai21_text_input_only |  | assumed: A valid request routed to an active provider must reach that  | request-executor-local-errors |
+| error_mapping | executor | responses | responses.content.part.input_audio | upstream.call | 5: ai21, amazon-bedrock, google-vertex-eu, google-vertex, perplexity | an upstream request | Error: ai21_text_input_only |  | assumed: A valid request routed to an active provider must reach that  | request-executor-local-errors |
+| dropped | executor | messages | messages.param.thinking | upstream.body.$.thinking.budget_tokens | 5: anthropic-aws-us, anthropic-aws, anthropic, google-vertex-eu, google-v | 2048 |  |  | https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking | request-params-dropped-or-changed |
 | error_mapping | executor | chat | chat.base | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.reasoning | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.reasoning_effort | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
@@ -396,13 +564,9 @@ New groups:
 | error_mapping | executor | chat | chat.param.provider_options | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.user_id | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.user | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | chat | chat.param.include_reasoning | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | chat | chat.param.prediction | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.service_tier | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | chat | chat.param.service_tier=standard | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | chat | chat.param.service_tier=default | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | chat | chat.param.service_tier=fast | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | chat | chat.param.service_tier=ultrafast | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | chat | chat.param.service_tier=priority | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | chat | chat.param.service_tier=batch | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.prompt_cache_key | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.prompt_cache_retention | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.prompt_cache_retention=in_mem | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
@@ -418,6 +582,7 @@ New groups:
 | error_mapping | executor | chat | chat.param.n | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.param.web_search_options | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.base | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | responses | responses.param.prompt | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.background | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.include | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.max_output_tokens | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
@@ -426,12 +591,6 @@ New groups:
 | error_mapping | executor | responses | responses.param.parallel_tool_calls | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.reasoning | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.service_tier | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | responses | responses.param.service_tier=standard | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | responses | responses.param.service_tier=default | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | responses | responses.param.service_tier=fast | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | responses | responses.param.service_tier=ultrafast | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | responses | responses.param.service_tier=priority | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | responses | responses.param.service_tier=batch | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.store | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.temperature | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.text | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
@@ -457,7 +616,6 @@ New groups:
 | error_mapping | executor | responses | responses.param.seed | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.max_tool_calls | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.top_logprobs | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
-| error_mapping | executor | responses | responses.param.prompt | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | responses | responses.param.stream_options | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.base | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.param.max_tokens | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
@@ -470,6 +628,9 @@ New groups:
 | error_mapping | executor | messages | messages.param.metadata | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.param.session_id | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.param.reasoning | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | messages | messages.param.context_management | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | messages | messages.param.user | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | messages | messages.param.prompt_cache_key | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.param.stop_sequences | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.param.cache_control | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.param.provider_options | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
@@ -477,6 +638,7 @@ New groups:
 | error_mapping | executor | messages | messages.param.meta | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.param.echo_upstream_request | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | messages | messages.param.thinking | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | messages | messages.param.output_config | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.content.part.text | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.content.part.image_url | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.content.part.image_data_url | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
@@ -496,33 +658,41 @@ New groups:
 | error_mapping | executor | chat | chat.cache.prompt_cache_breakpoint | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.cache.prompt_cache_breakpoint-user | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 | error_mapping | executor | chat | chat.cache.anthropic-agent-scope | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | chat | chat.reasoning.effort-none | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | chat | chat.reasoning.effort-minimal | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | chat | chat.reasoning.enabled-only | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | chat | chat.reasoning.exclude | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | chat | chat.format.json_object | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | chat | chat.stream.include_usage | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
+| error_mapping | executor | responses | responses.content.part.input_text | upstream.call | 5: liquid-ai, liquid, private-model, scaledown, venice-e2ee | an upstream request | liquid-ai_base_url_missing: liquid-ai_base_url_mis |  | assumed: A valid request routed to an active provider must reach that  | harness-unroutable-providers |
 
-… 539 more groups in results/gate.json.
+… 627 more groups in results/gate.json.
 
 ## Allow-list use
 
-- `request-unsupported-forwarded`: 3505
-- `request-params-dropped-or-changed`: 2041
-- `harness-unroutable-providers`: 1463
-- `request-content-values`: 753
-- `stream-citations-refusal`: 376
-- `catalogue-data-rows`: 282
-- `request-invented-defaults`: 150
-- `request-executor-local-errors`: 117
-- `request-executor-file-url-rejected`: 112
-- `request-url-and-dialect`: 75
-- `request-other-rejections`: 28
-- `billing-gemini-thinking`: 20
-- `stream-midstream-errors`: 20
-- `stream-finish-mapping`: 16
+- `request-unsupported-forwarded`: 2348
+- `request-params-dropped-or-changed`: 1548
+- `request-content-values`: 1275
+- `harness-unroutable-providers`: 1015
+- `request-other-rejections`: 362
+- `stream-citations-refusal`: 348
+- `catalogue-data-rows`: 226
+- `request-executor-local-errors`: 158
+- `request-invented-defaults`: 140
+- `request-executor-file-url-rejected`: 100
+- `request-url-and-dialect`: 78
+- `stream-finish-mapping`: 42
+- `stream-grammar`: 42
+- `billing-messages-usage`: 40
+- `stream-midstream-errors`: 26
+- `request-executor-explicit-rejections`: 23
+- `billing-chat-cached-reads`: 21
+- `billing-meter-label`: 20
+- `billing-responses-claude-cache`: 18
 - `by-design-openai-request-id`: 16
-- `request-executor-explicit-rejections`: 15
-- `billing-meter-label`: 14
-- `billing-pricing-throws`: 7
-- `routing-nontext-misc`: 6
-- `reasoning-roundtrip`: 4
-- `stream-grammar`: 4
+- `reasoning-roundtrip`: 12
+- `billing-gemini-thinking`: 12
+- `routing-nontext-misc`: 9
+- `billing-pricing-throws`: 5
 - `by-design-google-cached-content-byok`: 3
-- `billing-chat-cached-reads`: 2
-- `billing-responses-claude-cache`: 2
-- `billing-messages-usage`: 2
+- Unused entries (remove when the fix lands): `by-design-google-vertex-cached-content-byok`, `by-design-google-vertex-eu-cached-content-byok`

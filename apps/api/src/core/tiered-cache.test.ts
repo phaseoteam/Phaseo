@@ -178,6 +178,29 @@ describe("tieredRead", () => {
 		expect(loader).toHaveBeenCalledTimes(1);
 	});
 
+	it("awaits a lower-layer read once an isolate copy has gone unchecked for maxUncheckedMs", async () => {
+		vi.useFakeTimers({ now: 1_000_000 });
+		// Configured like a published value that only a publisher writes (the rate limit plan).
+		const options = {
+			key: "k:unchecked", loader: async () => null, l1FreshMs: 60_000, negativeFreshMs: 30_000, maxUncheckedMs: 120_000,
+			l3: { freshS: 60 }, isShareable: () => false, isFreshInL3: () => true,
+		} as const;
+		expect(await tieredRead(options)).toBeNull();
+		// Another isolate publishes while this one is idle.
+		runtime.store.set("k:unchecked", envelope("published", 1_010_000));
+
+		// Within the bound a stale copy is still served, and revalidated in the background.
+		vi.setSystemTime(1_090_000);
+		expect(await tieredRead(options)).toBeNull();
+		await drainBackground();
+		expect(await tieredRead(options)).toBe("published");
+
+		// Past the bound the request waits for the read instead.
+		runtime.store.set("k:unchecked", envelope("republished", 1_100_000));
+		vi.setSystemTime(1_300_000);
+		expect(await tieredRead(options)).toBe("republished");
+	});
+
 	it("negative-caches missing values", async () => {
 		const loader = vi.fn(async () => null);
 		const options = { key: "k:missing", loader, l1FreshMs: 1000, negativeFreshMs: 30_000, l3: { freshS: 600 } } as const;

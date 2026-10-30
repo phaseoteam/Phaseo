@@ -3,38 +3,78 @@ title: "2月"
 description: "2026年2月のPhaseo製品更新、SDKの変更、モデルリリース。"
 ---
 
-<Update label="2026年2月26日" tags={["機能","モデルリリース","ドキュメント"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### 機能
+<ChangelogFilters labels={{"product":"製品","api":"API と SDK","models":"モデル"}} clearLabel="クリア" />
 
-- Gemini 3.1 Flash Image Previewをモデル検索、ゲートウェイ互換性、ドキュメントでサポートしました。
+<Update label="2026年2月27日">
 
-### モデルのリリース
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- メールでのサインインに失敗した場合、汎用のエラーページではなくサインインページ上に、パスワードの誤りやメール未確認などの理由が表示されます ([#116](https://github.com/phaseoteam/Phaseo/pull/116))。
+- メールでのサインアップでは、パスワードの条件（小文字、大文字、数字、記号）が表示され、フォーム送信前に確認されます ([#113](https://github.com/phaseoteam/Phaseo/pull/113))。
+- モデル表で100万単位あたりの価格が正しく表示され、ページ幅いっぱいに表示されるようになりました。以前は一部の行で極端に高い価格が表示されていました ([#113](https://github.com/phaseoteam/Phaseo/pull/113), [#116](https://github.com/phaseoteam/Phaseo/pull/116))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- Gemini 3 へのリクエストでは、`reasoning.effort` が各モデルの対応する思考レベル（`minimal` から `high`）に対応付けられます ([#113](https://github.com/phaseoteam/Phaseo/pull/113))。
+
+</div>
+
+</Update>
+
+<Update label="2026年2月26日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- **破壊的変更:** `/v1/responses/ws` は実験的機能と位置付けられ、プレフィックスのないモデル ID を拒否するようになりました。`openai/<model>` 形式の ID を送信し、本番環境では `POST /v1/responses` を使用してください ([#112](https://github.com/phaseoteam/Phaseo/pull/112))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Gemini 3.1 Flash Image Preview (Nano Banana 2) モデルリリース画像](../../../images/model-releases/2026-02-26--google--gemini-3-1-flash-image-preview.png)
 
 - [Google: Gemini 3.1 Flash Image Preview (Nano Banana 2)](https://phaseo.app/models/google/gemini-3.1-flash-image-preview)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月24日" tags={["モデルリリース"]}>
+<Update label="2026年2月24日">
 
-### モデルのリリース
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Qwen 3.5 122B A10B モデルリリース画像](../../../images/model-releases/2026-02-24--qwen--qwen3-5-122b-a10b.png)
 
+- [Qwen: Qwen 3.5 122B A10B](https://phaseo.app/models/qwen/qwen3.5-122b-a10b)
 - [Inception: Mercury 2](https://phaseo.app/models/inception/mercury-2)
 - [Inception: Mercury Edit 2](https://phaseo.app/models/inception/mercury-edit-2)
 - [Liquid AI: LFM 2 24B A2B](https://phaseo.app/models/liquid-ai/lfm-2-24b-a2b)
-- [Qwen: Qwen 3.5 122B A10B](https://phaseo.app/models/qwen/qwen3.5-122b-a10b)
 - [Qwen: Qwen 3.5 27B](https://phaseo.app/models/qwen/qwen3.5-27b)
 - [Qwen: Qwen 3.5 35B A3B](https://phaseo.app/models/qwen/qwen3.5-35b-a3b)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月23日" tags={["モデルリリース"]}>
+<Update label="2026年2月23日">
 
-### モデルのリリース
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![GPT Audio 1.5 モデルリリース画像](../../../images/model-releases/2026-02-23--openai--gpt-audio-1-5.png)
 
@@ -42,41 +82,61 @@ description: "2026年2月のPhaseo製品更新、SDKの変更、モデルリリ�
 - [OpenAI: GPT Realtime 1.5](https://phaseo.app/models/openai/gpt-realtime-1.5)
 - [Qwen: Qwen 3.5 Flash](https://phaseo.app/models/qwen/qwen3.5-flash)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月19日" tags={["機能","モデルリリース","料金","ドキュメント"]}>
+<Update label="2026年2月19日">
 
-### 機能
+<div data-changelog-category="models">
 
-- Gemini 3.1 Pro Previewをモデル検索、料金、ゲートウェイ、ドキュメントでサポートしました。
-
-### モデルのリリース
+<p className="changelog-category">モデル</p>
 
 ![Gemini 3.1 Pro Preview モデルリリース画像](../../../images/model-releases/2026-02-19--google--gemini-3-1-pro-preview.png)
 
 - [Google: Gemini 3.1 Pro Preview](https://phaseo.app/models/google/gemini-3.1-pro-preview)
 - [Google: Gemini 3.1 Pro Preview Customtools](https://phaseo.app/models/google/gemini-3.1-pro-preview-customtools)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月18日" tags={["機能","モデルリリース","ドキュメント"]}>
+<Update label="2026年2月18日">
 
-### 機能
+<div data-changelog-category="product">
 
-- Claude Sonnet 4.6をモデル検索、ゲートウェイ互換性、ドキュメントでサポートしました。
+<p className="changelog-category">製品</p>
 
-### モデルのリリース
+- モデルページのライトモードでプロバイダーのロゴが1つだけ表示されるようになりました。以前はライト版とダーク版が両方表示されることがありました ([#81](https://github.com/phaseoteam/Phaseo/pull/81))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- Baseten、Chutes、Cohere、Together、Cerebras へのリクエストでは、プロバイダーが対応していないパラメーターが除外され、プロバイダーからの `400` で失敗しなくなりました ([#82](https://github.com/phaseoteam/Phaseo/pull/82))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Lyria 3 モデルリリース画像](../../../images/model-releases/2026-02-18--google--lyria-3.png)
 
 - [Google: Lyria 3](https://phaseo.app/models/google/lyria-3)
 - [Prime Intellect: Intellect 3.1](https://phaseo.app/models/prime-intellect/intellect-3.1)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月17日" tags={["モデルリリース"]}>
+<Update label="2026年2月17日">
 
-### モデルのリリース
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Claude Sonnet 4.6 モデルリリース画像](../../../images/model-releases/2026-02-17--anthropic--claude-sonnet-4-6.png)
 
@@ -88,11 +148,15 @@ description: "2026年2月のPhaseo製品更新、SDKの変更、モデルリリ�
 - [xAI: Grok 4.20](https://phaseo.app/models/x-ai/grok-4.20)
 - [xAI: Grok 4.20 Multi Agent Beta](https://phaseo.app/models/x-ai/grok-4.20-multi-agent-beta)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月16日" tags={["モデルリリース"]}>
+<Update label="2026年2月16日">
 
-### モデルのリリース
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Qwen 3.5 397B A17B モデルリリース画像](../../../images/model-releases/2026-02-16--qwen--qwen3-5-397b-a17b.png)
 
@@ -100,78 +164,138 @@ description: "2026年2月のPhaseo製品更新、SDKの変更、モデルリリ�
 - [Qwen: Qwen 3.5 Plus](https://phaseo.app/models/qwen/qwen3.5-plus)
 - [Qwen: Qwen 3.5 Plus (2026-02-15)](https://phaseo.app/models/qwen/qwen3.5-plus-2026-02-15)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月15日" tags={["モデルリリース"]}>
+<Update label="2026年2月15日">
 
-### モデルのリリース
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- 設定画面に **Account**、**Billing**、**Usage**、**API** の各セクションをタブで分けたサイドバーが付き、**Account** には詳細、MFA、危険ゾーンの個別ページが用意されました ([#54](https://github.com/phaseoteam/Phaseo/pull/54), [#55](https://github.com/phaseoteam/Phaseo/pull/55))。
+- **Settings -> Credits** に、クレジット残高が USD で設定したしきい値を下回るとメールで通知する、オプトインの残高不足アラートが追加されました ([#54](https://github.com/phaseoteam/Phaseo/pull/54))。
+- **Settings -> Keys** に、各キーのステータスと、リクエスト上限および支出上限の使用状況が表示されます ([#55](https://github.com/phaseoteam/Phaseo/pull/55))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 - [ByteDance: Seed 2.0 Code Preview (2026-02-15)](https://phaseo.app/models/bytedance/seed-2.0-code-preview-2026-02-15)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月14日" tags={["モデルリリース"]}>
+<Update label="2026年2月14日">
 
-### モデルのリリース
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 - [ByteDance: Seed 2.0 Lite](https://phaseo.app/models/bytedance/seed-2.0-lite)
 - [ByteDance: Seed 2.0 Mini](https://phaseo.app/models/bytedance/seed-2.0-mini)
 - [ByteDance: Seed 2.0 Pro](https://phaseo.app/models/bytedance/seed-2.0-pro)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月12日" tags={["モデルリリース"]}>
+<Update label="2026年2月13日">
 
-### モデルのリリース
+<div data-changelog-category="product">
+
+<p className="changelog-category">製品</p>
+
+- サインインしていない訪問者がメッセージを送信しようとすると、Chat に **Create account** と **Sign in** ボタン付きのバナーが表示されます ([#52](https://github.com/phaseoteam/Phaseo/pull/52))。
+
+</div>
+
+</Update>
+
+<Update label="2026年2月12日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- AI SDK 用プロバイダーパッケージが `1.0.1` から npm で公開されました。[AI SDK](../guides/integrations/ai-sdk.mdx) を参照してください ([#48](https://github.com/phaseoteam/Phaseo/pull/48))。
+- TypeScript SDK `1.0.1` に devtools のリクエストキャプチャが同梱され、別途 devtools core パッケージをインストールする必要がなくなりました ([#47](https://github.com/phaseoteam/Phaseo/pull/47), [#48](https://github.com/phaseoteam/Phaseo/pull/48))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![MiniMax M2.5 モデルリリース画像](../../../images/model-releases/2026-02-12--minimax--minimax-m2-5.png)
 
+- [MiniMax: MiniMax M2.5](https://phaseo.app/models/minimax/minimax-m2.5)
 - [ByteDance: Seedance 2.0](https://phaseo.app/models/bytedance/seedance-2.0)
 - [ByteDance: Seedance 2.0 Fast](https://phaseo.app/models/bytedance/seedance-2.0-fast)
 - [Inclusion AI: Ring 1T 2.5](https://phaseo.app/models/inclusionai/ring-1t-2.5)
-- [MiniMax: MiniMax M2.5](https://phaseo.app/models/minimax/minimax-m2.5)
 - [OpenAI: GPT 5.3 Codex Spark](https://phaseo.app/models/openai/gpt-5.3-codex-spark)
+
+</div>
 
 </Update>
 
-<Update label="2026年2月11日" tags={["モデルリリース"]}>
+<Update label="2026年2月11日">
 
-### モデルのリリース
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![GLM 5 モデルリリース画像](../../../images/model-releases/2026-02-11--z-ai--glm-5.png)
 
 - [z.AI: GLM 5](https://phaseo.app/models/z-ai/glm-5)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月9日" tags={["モデルリリース"]}>
+<Update label="2026年2月9日">
 
-### モデルのリリース
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Composer 1.5 モデルリリース画像](../../../images/model-releases/2026-02-09--cursor--composer-1-5.png)
 
 - [Cursor: Composer 1.5](https://phaseo.app/models/cursor/composer-1.5)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月5日" tags={["モデルリリース"]}>
+<Update label="2026年2月5日">
 
-### モデルのリリース
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Claude Opus 4.6 モデルリリース画像](../../../images/model-releases/2026-02-05--anthropic--claude-opus-4-6.png)
 
 - [Anthropic: Claude Opus 4.6](https://phaseo.app/models/anthropic/claude-opus-4.6)
 - [OpenAI: GPT 5.3 Codex](https://phaseo.app/models/openai/gpt-5.3-codex)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月4日" tags={["モデルリリース"]}>
+<Update label="2026年2月4日">
 
-### モデルのリリース
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
 
 ![Voxtral Mini Transcribe 2 モデルリリース画像](../../../images/model-releases/2026-02-04--mistral--voxtral-mini-transcribe-2.png)
 
 - [Mistral: Voxtral Mini Transcribe 2](https://phaseo.app/models/mistral/voxtral-mini-transcribe-2)
 
-</Update>
+</div>
 
+</Update>

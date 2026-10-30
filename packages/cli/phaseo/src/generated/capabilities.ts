@@ -13,6 +13,7 @@ export const CAPABILITIES = {
 	PROVIDERS_READ: "providers:read",
 	PRICING_READ: "pricing:read",
 	CREDITS_READ: "credits:read",
+	BILLING_WRITE: "billing:write",
 	ACTIVITY_READ: "activity:read",
 	ANALYTICS_READ: "analytics:read",
 	GENERATIONS_READ: "generations:read",
@@ -116,9 +117,19 @@ export const DEFAULT_CLI_OAUTH_CAPABILITIES = Object.freeze([
 	...CLI_CONTROL_CAPABILITIES,
 ]);
 
-export const DEFAULT_MANAGEMENT_KEY_CAPABILITIES = Object.freeze([
-	...CONTROL_CAPABILITIES,
-]);
+// billing:write starts credit purchases, so it is opt-in everywhere: it is not a default CLI
+// login scope (`phaseo login --scopes billing:write`) and new management keys only get it
+// when it is asked for explicitly.
+export const OPT_IN_CONTROL_CAPABILITIES = Object.freeze([CAPABILITIES.BILLING_WRITE]);
+const OPT_IN_CONTROL_CAPABILITY_SET = new Set<string>(OPT_IN_CONTROL_CAPABILITIES);
+
+export function isOptInCapability(scope: string): boolean {
+	return OPT_IN_CONTROL_CAPABILITY_SET.has(scope);
+}
+
+export const DEFAULT_MANAGEMENT_KEY_CAPABILITIES = Object.freeze(
+	CONTROL_CAPABILITIES.filter((scope) => !OPT_IN_CONTROL_CAPABILITY_SET.has(scope)),
+);
 
 export const ALL_SUPPORTED_SCOPES = Object.freeze([
 	...IDENTITY_SCOPES,

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Callout } from "@/components/ui/callout";
 import { Spinner } from "@/components/ui/spinner";
 import { AlertTriangle, CheckCircle2, Info, Sparkles } from "lucide-react";
 import {
@@ -85,6 +86,11 @@ export default function RedeemCreditCodeCard(props: Props) {
 		}
 		return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
 	}, [teams, t]);
+	// The select shows the chosen item's label, not its id.
+	const teamItems = useMemo(
+		() => teamOptions.map((team) => ({ value: team.id, label: team.name })),
+		[teamOptions]
+	);
 	const invoiceTeamIdSet = useMemo(() => {
 		const set = new Set<string>();
 		for (const workspaceId of invoiceTeamIds) {
@@ -241,6 +247,7 @@ export default function RedeemCreditCodeCard(props: Props) {
 							<Label htmlFor="redeem-credit-team">{t("team")}</Label>
 							<Select
 								value={selectedTeamId}
+								items={teamItems}
 								onValueChange={setSelectedTeamId}
 								disabled={disabled || isSubmitting || teamOptions.length === 0}
 							>
@@ -270,15 +277,11 @@ export default function RedeemCreditCodeCard(props: Props) {
 							selectedTeamIsInvoice
 						}
 						className={cn(
-							"h-11 w-full text-base font-semibold transition-all duration-200",
-							buttonState === "idle" &&
-								"border border-black !bg-black !text-white shadow-sm hover:!bg-zinc-900",
-							buttonState === "submitting" &&
-								"border border-black !bg-zinc-900 !text-white shadow-sm",
+							"h-11 w-full text-base font-semibold shadow-sm transition-all duration-200",
 							buttonState === "success" &&
-								"border border-emerald-300 !bg-emerald-100 !text-emerald-900 shadow-sm hover:!bg-emerald-200",
+								"border border-emerald-200 !bg-emerald-50 !text-emerald-900 hover:!bg-emerald-100 dark:border-emerald-900/60 dark:!bg-emerald-950/30 dark:!text-emerald-100 dark:hover:!bg-emerald-950/50",
 							buttonState === "error" &&
-								"border border-rose-300 !bg-rose-100 !text-rose-900 shadow-sm hover:!bg-rose-200"
+								"border border-red-200 !bg-red-50 !text-red-900 hover:!bg-red-100 dark:border-red-900/60 dark:!bg-red-950/30 dark:!text-red-100 dark:hover:!bg-red-950/50"
 						)}
 					>
 						{buttonState === "submitting" ? (
@@ -291,29 +294,13 @@ export default function RedeemCreditCodeCard(props: Props) {
 				</div>
 
 				{resultMessage ? (
-					<Alert
-						className={cn(
-							"border",
-							resultTone === "success" &&
-								"border-emerald-200 bg-emerald-50/80 text-emerald-700",
-							resultTone === "error" &&
-								"border-rose-200 bg-rose-50/80 text-rose-700"
-						)}
+					<Callout
+						tone={resultTone === "error" ? "critical" : "success"}
+						icon={resultTone === "error" ? AlertTriangle : CheckCircle2}
+						role={resultTone === "error" ? "alert" : "status"}
 					>
-						{resultTone === "error" ? (
-							<AlertTriangle className="h-4 w-4" />
-						) : (
-							<CheckCircle2 className="h-4 w-4" />
-						)}
-						<AlertDescription
-							className={cn(
-								resultTone === "success" && "text-emerald-700",
-								resultTone === "error" && "text-rose-700"
-							)}
-						>
-							<p>{resultMessage}</p>
-						</AlertDescription>
-					</Alert>
+						<p>{resultMessage}</p>
+					</Callout>
 				) : null}
 
 				{showDisclaimer ? (

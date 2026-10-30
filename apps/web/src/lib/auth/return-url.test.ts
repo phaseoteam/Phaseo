@@ -14,6 +14,12 @@ describe("sanitizeReturnUrl", () => {
 		expect(sanitizeReturnUrl(path)).toBe("/");
 	});
 
+	it("drops the single-use token from credit top-up review links", () => {
+		const id = "00000000-0000-4000-8000-0000000000aa";
+		expect(sanitizeReturnUrl(`/settings/credits/topups/${id}?token=secret`)).toBe(`/settings/credits/topups/${id}`);
+		expect(sanitizeReturnUrl(encodeURIComponent(`/de-DE/settings/credits/topups/${id}?token=secret`))).toBe(`/de-DE/settings/credits/topups/${id}`);
+	});
+
 	it("accepts URL-encoded internal paths", () => {
 		expect(sanitizeReturnUrl("%2Fsettings%2Fcredits", "/")).toBe("/settings/credits");
 	});

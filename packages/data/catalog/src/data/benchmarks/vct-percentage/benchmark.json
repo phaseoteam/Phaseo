@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "vct-percentage",
-  "benchmark_name": "Virology Capabilities Test (%)",
-  "category": "healthcare",
-  "ascending_order": true,
-  "type": "percentage",
-  "link": "https://research.meta.ai/static/muse-glimmer-methodology",
-  "total_models": 1
-}

@@ -218,6 +218,30 @@ export function applyReasoningParams(args: {
 	}
 	if (args.providerId === "alibaba-cloud") {
 		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		const upstreamModel = String(args.providerModelSlug ?? args.ir.model ?? "").toLowerCase();
+		// glm-5.3 always thinks: it takes reasoning_effort low, high or max only,
+		// and enable_thinking false fails the request. Requests to turn thinking
+		// off run at low.
+		// https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-chat-completions
+		if (/(^|\/)glm-5\.3\b/.test(upstreamModel)) {
+			const glmEffort = reasoning.enabled === false || rawEffort === "none" || rawEffort === "minimal" || rawEffort === "low"
+				? "low"
+				: rawEffort === "medium" || rawEffort === "high"
+					? "high"
+					: rawEffort === "xhigh" || rawEffort === "max"
+						? "max"
+						: undefined;
+			if ("input" in args.request) {
+				if (glmEffort !== undefined) args.request.reasoning = { effort: glmEffort };
+				return;
+			}
+			if (typeof reasoning.maxTokens === "number") {
+				args.request.thinking_budget = reasoning.maxTokens;
+			} else if (glmEffort !== undefined) {
+				args.request.reasoning_effort = glmEffort;
+			}
+			return;
+		}
 		const effort = rawEffort === "minimal" || rawEffort === "low"
 			? "low"
 			: rawEffort === "medium"

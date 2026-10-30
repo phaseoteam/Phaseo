@@ -35,7 +35,7 @@ icon: "database-zap"
 | Google AI Studio और [Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) पर [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) | Gemini 2.5 और बाद के मॉडलों पर स्वचालित | आपके बनाए स्पष्ट कैश के लिए `cached_content` |
 | [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | स्वचालित | `prompt_cache_key` और `x-grok-conv-id` हेडर |
 | [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | स्वचालित | कुछ और नहीं |
-| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | स्वचालित, 5 मिनट के TTL के साथ | कुछ और नहीं |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | स्वचालित, 5 मिनट के TTL के साथ; Kimi K3 पर 1 घंटे का TTL ऑप्ट-इन है | `prompt_cache_key` और `prompt_cache_options` |
 | [Groq](https://console.groq.com/docs/prompt-caching) | Groq द्वारा सूचीबद्ध मॉडलों पर स्वचालित | कुछ और नहीं |
 | [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | स्वचालित | `prompt_cache_key`, साथ में `x-session-affinity` हेडर और `user` |
 | [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | स्वचालित | `prompt_cache_key` |
@@ -44,6 +44,9 @@ icon: "database-zap"
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | स्वचालित (अंतर्निहित); स्पष्ट कैश ऑप्ट-इन हैं | ब्लॉक-स्तरीय `cache_control` |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | स्वचालित; Venice Claude ब्रेकपॉइंट ख़ुद जोड़ता है | ब्लॉक-स्तरीय `cache_control` |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | स्वचालित; प्रतिधारण अवधि ऑप्ट-इन है | `prompt_cache_key`, `prompt_cache_breakpoint` और `prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | स्वचालित; Claude और Gemini 2.5 मॉडलों पर स्पष्ट कैशिंग | Claude और Gemini 2.5 मॉडलों पर ब्लॉक `cache_control`, बिना `ttl` के |
+| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | स्वचालित | `prompt_cache_key` और `x-session-affinity` हेडर |
+| [Morph](https://docs.morphllm.com/sdk/components/caching) | स्वचालित | `prompt_cache_key` और `x-session-id` हेडर |
 
 अन्य OpenAI-संगत प्रदाताओं को `prompt_cache_key` तभी मिलता है जब उनका API उसे स्वीकार करता हो, और कोई अन्य कैश नियंत्रण नहीं मिलता। Phaseo हमेशा कुंजी के बजाय आपके वर्कस्पेस और कुंजी का हैश भेजता है। [प्रदाता से जुड़ाव](#provider-affinity) देखें।
 
@@ -101,7 +104,7 @@ Anthropic हर अनुरोध में अधिकतम चार क�
 किसी कंटेंट ब्लॉक पर कैश चिह्न लगाएँ, ताकि उस ब्लॉक तक (उसे मिलाकर) सब कुछ कैश हो जाए। Phaseo दो रूप स्वीकार करता है:
 
 - `cache_control`: `{"type": "ephemeral"}`, जिसमें वैकल्पिक `ttl` का मान `5m` या `1h` हो सकता है।
-- `prompt_cache_breakpoint`: OpenAI का `{"mode": "explicit"}`, जिसमें `30m` या `12h` वाला `ttl` वैकल्पिक रूप से दिया जा सकता है। जब किसी ब्लॉक पर दोनों हों, तो `prompt_cache_breakpoint` लागू होता है।
+- `prompt_cache_breakpoint`: OpenAI का `{"mode": "explicit"}`, जिसमें `30m` या `12h` वाला `ttl` वैकल्पिक रूप से दिया जा सकता है ([OpenAI पर 12 घंटे का कैश](#12-hour-cache-on-openai) देखें)। जब किसी ब्लॉक पर दोनों हों, तो `prompt_cache_breakpoint` लागू होता है।
 
 ```json
 {
@@ -126,11 +129,12 @@ Chat Completions और Responses में टेक्स्ट और इम�
 | OpenAI और Azure OpenAI, पुराने मॉडल | हटाया जाता है | हटाया जाता है |
 | DeepInfra | हटाया जाता है | भेजा जाता है |
 | Alibaba Model Studio और Venice | भेजा जाता है | हटाया जाता है |
+| Inference.net, Claude और Gemini 2.5 मॉडल | बिना `ttl` के भेजा जाता है | हटाया जाता है |
 | अन्य प्रदाता | हटाया जाता है | हटाया जाता है |
 
-टूल परिभाषाओं पर लगे चिह्न केवल Claude रूट, Alibaba Model Studio और Venice तक पहुँचते हैं; OpenAI टूल पर ब्रेकपॉइंट स्वीकार नहीं करता। चिह्न हटाने से प्रॉम्प्ट का बाकी हिस्सा नहीं बदलता, इसलिए कैश किया गया प्रीफ़िक्स बिना चिह्न वाले अनुरोध जैसा ही रहता है।
+टूल परिभाषाओं पर लगे चिह्न केवल Claude रूट, Alibaba Model Studio, Venice और Inference.net के Claude और Gemini 2.5 मॉडलों तक पहुँचते हैं; OpenAI टूल पर ब्रेकपॉइंट स्वीकार नहीं करता। चिह्न हटाने से प्रॉम्प्ट का बाकी हिस्सा नहीं बदलता, इसलिए कैश किया गया प्रीफ़िक्स बिना चिह्न वाले अनुरोध जैसा ही रहता है।
 
-Amazon Bedrock और Google Vertex AI, Claude 3.7 Sonnet, 3.5 Sonnet और 3 Opus को केवल 5 मिनट के लिए कैश करते हैं, और Bedrock इन मॉडलों पर `ttl` अस्वीकार कर सकता है। इन रूट पर Phaseo आपके ब्रेकपॉइंट बिना `ttl` के भेजता है, इसलिए वे 5 मिनट के लिए कैश होते हैं, और हटाए गए `1h` को `X-Phaseo-Dropped-Params` हेडर और `meta.routing.dropped_params` में `cache_control.ttl` के रूप में रिपोर्ट करता है।
+Amazon Bedrock और Google Vertex AI, Claude 3.7 Sonnet, 3.5 Sonnet और 3 Opus को केवल 5 मिनट के लिए कैश करते हैं, और Bedrock इन मॉडलों पर `ttl` अस्वीकार कर सकता है। इन रूट पर Phaseo आपके ब्रेकपॉइंट बिना `ttl` के भेजता है, इसलिए वे 5 मिनट के लिए कैश होते हैं, और हटाए गए `1h` को `X-Phaseo-Dropped-Params` हेडर और `meta.routing.dropped_params` में `cache_control.ttl` के रूप में रिपोर्ट करता है। Inference.net ब्रेकपॉइंट को बिना `ttl` के दस्तावेज़ करता है, इसलिए Phaseo वहाँ भी `ttl` को इसी तरह हटाता और रिपोर्ट करता है, और लिखे गए टोकन का बिल 5 मिनट वाले लेखन के रूप में बनता है।
 
 <span id="openai-retention-and-options"></span>
 ### OpenAI प्रतिधारण और विकल्प
@@ -139,10 +143,13 @@ OpenAI के कैश नियंत्रण मॉडल की पीढ�
 
 | फ़ील्ड | मान | किसे भेजा जाता है |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` या `explicit`; `ttl`: `30m`, या OpenAI पर `12h` | GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडल, और DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit` या `explicit`; `ttl`: `30m` या `12h` | GPT-5.6 और बाद के OpenAI मॉडल |
+| `prompt_cache_options` | `mode`: `implicit` या `explicit`; `ttl`: `30m` | GPT-5.6 और बाद के Azure OpenAI मॉडल |
+| `prompt_cache_options` | `mode`: `explicit`; `ttl`: `5m` या `1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`; `ttl`: `5m`, या Kimi K3 पर `1h` | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` या `24h` | GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडल |
 
-GPT-5.6 और बाद के मॉडलों पर OpenAI `30m` (डिफ़ॉल्ट) या `12h` वाला `ttl` स्वीकार करता है, और Azure OpenAI केवल `30m`। `explicit` मोड में केवल वही ब्रेकपॉइंट कैश होते हैं जो आप लगाते हैं। DeepInfra वही ऑब्जेक्ट `5m` या `1h` वाले `ttl` के साथ उपयोग करता है, और सत्र के हर अनुरोध में `prompt_cache_key` चाहिए। अन्य प्रदाताओं को इनमें से कोई फ़ील्ड नहीं मिलता।
+GPT-5.6 और बाद के मॉडलों पर OpenAI `30m` (डिफ़ॉल्ट) या `12h` वाला `ttl` स्वीकार करता है, और Azure OpenAI केवल `30m`। `explicit` मोड में केवल वही ब्रेकपॉइंट कैश होते हैं जो आप लगाते हैं। DeepInfra वही ऑब्जेक्ट `5m` या `1h` वाले `ttl` के साथ उपयोग करता है, और सत्र के हर अनुरोध में `prompt_cache_key` चाहिए। Moonshot AI `mode: "implicit"` और `5m` (डिफ़ॉल्ट) या `1h` वाला `ttl` लेता है। Phaseo `1h` केवल उन Kimi K3 रूट को भेजता है जिनकी 1 घंटे के लेखन की कीमत है, ताकि उन लेखनों का बिल उसी कीमत पर बने; बाकी जगह वह `ttl` हटाता है और उसे `X-Phaseo-Dropped-Params` हेडर में `prompt_cache_options.ttl` के रूप में रिपोर्ट करता है। अन्य प्रदाताओं को इनमें से कोई फ़ील्ड नहीं मिलता।
 
 दोनों में से कोई भी फ़ील्ड शीर्ष स्तर पर या `provider_options.openai` के अंतर्गत भेजें। दोनों मौजूद हों, तो शीर्ष-स्तरीय मान लागू होता है:
 
@@ -161,6 +168,8 @@ GPT-5.6 और बाद के मॉडलों पर OpenAI `30m` (डि�
   }
 }
 ```
+
+<span id="12-hour-cache-on-openai"></span>
 
 ### OpenAI पर 12 घंटे का कैश
 
@@ -204,7 +213,7 @@ Gemini 2.5 और बाद के मॉडल अपने-आप अंतर
 ```
 
 - Google AI Studio पर `cached_content` केवल आपकी अपनी Google API कुंजी (BYOK) के साथ काम करता है। Phaseo की कुंजी के साथ अनुरोध 400 लौटाता है, क्योंकि कैश उसी खाते का होता है जिसने उसे बनाया।
-- Vertex AI पर कैश उस Google Cloud प्रोजेक्ट का होना चाहिए जिसकी क्रेडेंशियल अनुरोध को पूरा करती है, इसलिए अपनी Vertex AI क्रेडेंशियल उपयोग करें।
+- Vertex AI पर `cached_content` केवल आपकी अपनी Vertex AI क्रेडेंशियल के साथ काम करता है; Phaseo की क्रेडेंशियल के साथ अनुरोध 400 लौटाता है। कैश का पूरा नाम, `projects/{project}/locations/{location}/cachedContents/{id}`, भेजें, तो Phaseo अनुरोध उसी प्रोजेक्ट और लोकेशन पर भेजता है। `cachedContents/abc123` जैसा छोटा नाम आपके सर्विस अकाउंट JSON के `project_id` और `region` का उपयोग करता है, और इनमें से कोई एक न हो तो 400 लौटाता है।
 - Google, Gemini 4 Argon और बाद के मॉडलों पर स्पष्ट कैश का समर्थन नहीं करता।
 
 `provider_options.google.cache_control` और `provider_options.google.cache_ttl` स्वीकार किए जाते हैं, लेकिन Google को नहीं भेजे जाते।
@@ -423,7 +432,7 @@ Phaseo हर इनपुट टोकन का शुल्क केवल �
 
 कुंजी, `session_id` या कैश चिह्न के बिना भी, Phaseo शुरुआती संदर्भ को 15 मिनट तक उस प्रदाता पर पिन करता है जिसने उसके लिए कैश read या write रिपोर्ट किया था, बशर्ते उस प्रदाता का कैश्ड इनपुट उसके सामान्य इनपुट से सस्ता हो।
 
-Phaseo प्रदाताओं को आपके वर्कस्पेस और `prompt_cache_key` का हैश भेजता है, कच्ची कुंजी कभी नहीं, इसलिए दो वर्कस्पेस में एक ही कुंजी कभी प्रदाता का कैश साझा नहीं करती। केवल `session_id` होने पर Phaseo, OpenAI, xAI, Fireworks और Cerebras के लिए सत्र से यह हैश बनाता है। Fireworks और Cloudflare Workers AI को यह `x-session-affinity` हेडर में भी मिलता है, और xAI को यह `x-grok-conv-id` के रूप में मिलता है, जब तक आप `provider_options.xai.conversation_id` सेट न करें। जवाबों में अब भी आपका अपना `prompt_cache_key` लौटता है।
+Phaseo प्रदाताओं को आपके वर्कस्पेस और `prompt_cache_key` का हैश भेजता है, कच्ची कुंजी कभी नहीं, इसलिए दो वर्कस्पेस में एक ही कुंजी कभी प्रदाता का कैश साझा नहीं करती। केवल `session_id` होने पर Phaseo, OpenAI, xAI, Fireworks और Cerebras के लिए सत्र से यह हैश बनाता है। Fireworks, Cloudflare Workers AI और Baseten को यह `x-session-affinity` हेडर में भी मिलता है, Morph को `x-session-id` हेडर में, और xAI को यह `x-grok-conv-id` के रूप में मिलता है, जब तक आप `provider_options.xai.conversation_id` सेट न करें। जवाबों में अब भी आपका अपना `prompt_cache_key` लौटता है।
 
 किसी एक अनुरोध के लिए इसे बंद करने हेतु `provider.cache_aware_routing` को `false` सेट करें। जब
 अनुरोध में `session_id` हो, लेकिन उसे केवल सामान्य संदर्भ-आधारित रूटिंग उपयोग करनी हो, तो

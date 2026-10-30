@@ -23,7 +23,9 @@ SPEND_REPORTS_ENABLED = "false"
 # Also enables the per-minute catalogue revision publisher; catalogue
 # snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
-GATEWAY_SPEND_LIMIT_DO_MODE = "off"
+# Enforce: the spend-limit coordinator decides key caps, department budgets and workspace
+# budgets for API-key requests; when it is unavailable the legacy key-limit check decides.
+GATEWAY_SPEND_LIMIT_DO_MODE = "enforce"
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 AMAZON_BEDROCK_REGION = "us-west-2"
@@ -125,7 +127,7 @@ preview_bucket_name = "phaseo-data-contributions-preview"
 [[durable_objects.bindings]]
 name = "REALTIME_RELAY"
 class_name = "RealtimeRelayDurableObject"
-script_name = "phaseo-gateway"
+script_name = "phaseo-realtime"
 
 [[durable_objects.bindings]]
 name = "PROVIDER_RATE_LIMITS"

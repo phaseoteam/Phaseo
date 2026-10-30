@@ -1,6 +1,0 @@
-{
-  "key": "together:openai/whisper-large-v3:audio.translations",
-  "api_provider_id": "together", "provider_slug": "together", "api_model_id": "openai/whisper-large-v3", "capability_id": "audio.translations",
-  "rules": [{"meter":"input_audio_minutes","unit":"minute","unit_size":1,"price_per_unit":0.0015,"currency":"USD","pricing_plan":"standard","note":"$0.0015 per audio minute.","match":[],"priority":100,"effective_from":null,"region":null,"cache_duration_seconds":null,"conditions":[],"source":{"kind":"pricing","url":"https://www.together.ai/pricing","accessed_at":"2026-08-20T00:00:00Z","notes":"Together uses the Whisper Large v3 audio rate for the OpenAI-compatible translations endpoint."}}],
-  "regions": [], "service_tiers": ["standard"], "sources": [], "verification": {"status":"verified","checked_at":"2026-08-20T00:00:00Z","notes":"Verified from Together's current pricing and compatibility documentation."}
-}

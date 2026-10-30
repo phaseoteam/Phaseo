@@ -1,0 +1,238 @@
+---
+title: "实时语音会话"
+description: "通过 Phaseo 中继进行实时语音通话，干净地结束通话，并在通话结束时获得最终账单。"
+icon: "phone"
+---
+
+<Note>
+实时语音目前处于 Beta 阶段，并按工作区控制访问权限。
+</Note>
+
+实时会话是你的客户端与供应商实时模型之间的语音通话，由 Phaseo 中继，以便计量和计费。中继会原样转发供应商自己的事件，并添加三个自有事件：`session.end`、`session.warning` 和 `session.ended`。
+
+## 开始会话
+
+在你的服务器上创建会话：
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
+```
+
+响应包含 `client_secret`、`connect.url`、`max_duration_seconds` 和 `idle_timeout_seconds`（API 会话中始终为 `null`）。在 `api.phaseo.app` 上向 `connect.url` 打开一个 WebSocket，并使用 WebSocket 子协议 `statsync-realtime` 和 `rtsec.<client_secret>`。中继会选择 `statsync-realtime`；如果只提供 `rtsec.<client_secret>`，由于没有选中任何协议，浏览器和大多数 WebSocket 库都会握手失败。供应商就绪后，中继会发送 `relay.connected`，然后以 `{"type": "client.audio", "audio": "<base64 PCM16>"}` 的形式接收麦克风音频：OpenAI、xAI 和 ElevenLabs 使用 24 kHz，Google 和 Mistral 使用 16 kHz。
+
+会话开始时，Phaseo 会预留 $5 的额度，并在通话进行过程中延长预留。
+
+[TypeScript](/zh-Hans/v1/sdk-reference/typescript/audio-realtime) 和 [Python](/zh-Hans/v1/sdk-reference/python/audio-realtime) SDK 会替你完成以上所有步骤：`client.realtime.connect()` 创建会话并打开套接字，`session.end()` 返回 `session.ended`。其他 SDK 也有同样的小型客户端，每个包的 README 中都有示例。
+
+| SDK | 连接 | WebSocket 库 |
+| --- | --- | --- |
+| Go | `realtime.Connect(ctx, client, realtime.Options{...})` | `github.com/coder/websocket`，位于单独的 `realtime` 包中 |
+| Java | `client.realtime.connect(Map.of("model", ...))` | JDK `java.net.http.WebSocket` |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { ... })` | `System.Net.WebSockets.ClientWebSocket` |
+| PHP | `$client->realtime()->connect(["model" => ...])` | `phrity/websocket`（可选，`composer require phrity/websocket`） |
+| Ruby | `client.realtime.connect(model: ...)` | `websocket` gem（可选） |
+| Rust | `client.realtime().connect(RealtimeOptions::new(...))` | `tungstenite`，需启用 `realtime` feature |
+
+C++ SDK 没有实时客户端。
+
+### Google Live 连接
+
+在整个通话期间持续发送麦克风音频，包括静音。如果连接约 150 秒没有收到音频，Google 会关闭该连接（关闭代码 `1008`），通话随后以 `provider_closed` 结束。在 2 分钟没有音频后，中继会发送带有 `threshold: "input_idle"` 的 `provider_closing` 警告。轮次之间的静音不属于任何轮次，因此不会计费。
+
+Google 还会大约每 10 分钟替换一次连接。中继会借助 Google 的会话恢复功能把通话转移到新连接上，保持你的套接字打开，并在切换完成后发送 `{"type": "relay.provider_reconnected", "reconnects": 1}`。切换期间（通常不到一秒）你发送的音频会被暂存并继续转发。恢复后的连接会重新处理到目前为止的对话，Google 会在下一轮把这部分再次按输入 token 计费，因此每次切换后，长通话的每轮成本会略有增加。所有这些都包含在 `usage` 和账单中。只有在无法恢复时，中继才会发出 `provider_closing` 警告，此时通话会在 Google 关闭连接时结束。
+
+### GPT Live 会话
+
+GPT Live（`openai/gpt-live-1`）负责处理语音，并把推理交给 Responses 后端模型。使用 `POST /v1/live/sessions` 创建：
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1",
+    "provider": "openai",
+    "voice": "marin",
+    "backend_model": "openai/gpt-5.6-luna",
+    "backend_settings": {
+      "tools": [{ "type": "function", "name": "get_time", "description": "Returns the current UTC time.", "parameters": { "type": "object", "properties": {} } }]
+    }
+  }'
+```
+
+`voice` 可以是 `alloy`、`ash`、`ballad`、`beacon`、`bossa`、`cedar`、`cinder`、`coral`、`delta`、`echo`、`gleam`、`marin`、`meridian`、`quartz`、`ripple`、`sage`、`shimmer`、`stone`、`tempo`、`verse`、`vesper` 或 `willow` 之一。`backend_model` 为 `openai/gpt-5.6-luna`（默认）或 `openai/gpt-5.6-terra`。连接和流式发送 24 kHz 音频的方式与其他会话相同。
+
+函数工具在你的客户端上运行。后端的调用会以 `response.event` 的形式到达，其 `event.item.type` 为 `function_call`。调用的名称和 `arguments` 来自模型，而通话者所说的话可能会影响它们，因此请将其视为不可信的输入：
+
+1. 只运行你声明过的工具（按 `name` 查找），拒绝任何其他名称。
+2. 将 `arguments` 解析为 JSON，并在使用前根据工具的 `parameters` schema 进行校验。
+3. 检查已登录用户是否有权执行该调用要求的操作，并在任何会更改数据、花钱或联系他人的操作之前先征得用户确认。
+
+然后运行工具，发送结果，并请求后续回复。如果某个调用未通过这些检查，请不要运行它，而是发送一个说明原因的 `output`：
+
+```json
+{ "type": "response.item.create", "item": { "type": "function_call_output", "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" } }
+{ "type": "response.create" }
+```
+
+中继只接受针对后端所发起调用的 `function_call_output`，每个调用一次，最大 64 KB；`response.create` 只在至少发送过一个输出后才被接受。其他任何内容都会收到 `{"type": "relay.client_event_rejected", "reason": "..."}`，通话继续进行。Phaseo 从不自行运行函数工具。
+
+GPT Live 通话按语音秒数计费（每分钟 $0.05，依据 GPT Live 自己的 `usage.seconds`），再加上后端模型每次响应所用的 token，包括工具结果之后的回复。如果会话约 30 秒没有收到音频，GPT Live 会使其过期，通话以 `provider_idle_timeout` 结束。请持续发送麦克风音频，包括静音。
+
+### ElevenLabs Realtime 会话
+
+ElevenLabs Realtime 有两个模型：`eleven-labs/eleven-realtime-v1-mini` 是更快、更便宜的默认模型；`eleven-labs/eleven-realtime-v1-max` 会先推理再回答，适合复杂指令和多步骤工具使用。两者都使用与 OpenAI 相同的创建请求和中继，音频为 24 kHz。Phaseo 使用自己的密钥连接 ElevenLabs；你的客户端只会看到中继。
+
+ElevenLabs 按通话连接的每一秒计费，另加其使用的语言模型 token，并且在通话期间不报告用量。中继会在通话进行时计量连接时长，因此预留和透支上限的工作方式与其他供应商相同。通话结束后，Phaseo 会读取 ElevenLabs 对该对话的账单，并按该账单与 Phaseo 自身按标价计算的总额中较大者收费。这通常需要几秒钟。如果耗时更长，`session.ended` 会带着 `billing_status: "pending"` 和一个 `final_bill` 请求到达，账单会在 ElevenLabs 报告后立即结算，通常在几分钟内。在此之前，你的预留会保持不变。如果 24 小时后 ElevenLabs 仍未报告账单，该会话会转入账单审核，而不是仅按连接时长收费。
+
+### 流式转录
+
+Mistral 的 Voxtral Realtime 模型会在音频到达时实时转录：`mistral/voxtral-mini-transcribe-realtime-3` 和 `mistral/voxtral-mini-transcribe-realtime`。它们不会用语音回复，因此创建会话时不要传 `voice` 或 `instructions`：
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
+```
+
+以同样的方式连接，并以 `client.audio` 发送 16 kHz PCM16。Mistral 的事件会原样转发：先是 `session.created`，然后每段新文本对应一个 `transcription.text.delta`，Mistral 发送时还会有 `transcription.language` 和 `transcription.segment`。要更改转录设置，请发送 `{"type": "session.update", "session": {...}}`，其中可包含 `language`、`target_streaming_delay_ms`（80 到 1,200，或 2,400）、`context_bias`、`diarize` 和 `turn_detection` 中的任意字段。其他字段（包括音频格式）会以 `relay.client_event_rejected` 拒绝。音频开始后设置即固定，因此请在第一个 `client.audio` 之前发送 `session.update`；之后的更新同样会被拒绝。较旧的 `mistral/voxtral-mini-transcribe-realtime` 仅接受 `target_streaming_delay_ms`。
+
+发送 `session.end` 后，中继会结束发往 Mistral 的音频流，并最多等待 10 秒以接收包含完整转录文本的 `transcription.done`，然后结算并发送 `session.ended`。已发送的音频都会被使用，不会丢弃。
+
+流式转录按你发送的音频分钟数计费（Voxtral Mini Transcribe Realtime 3 为每分钟 $0.008），由中继计量。`transcription.done` 中 Mistral 自己的计数为最低收费。对于已有的录音，请改用[音频转录](/zh-Hans/v1/api-reference/endpoint/audio-transcriptions)。
+
+## 结束会话
+
+当通话者挂断时，发送 `session.end`：
+
+```json
+{ "type": "session.end", "reason": "caller hung up" }
+```
+
+| 字段 | 类型 | 默认值 | 含义 |
+| --- | --- | --- | --- |
+| `reason` | string | 无 | 你自己的备注，最多 120 个可打印字符，会作为 `client_reason` 原样返回。 |
+| `cancel_response` | boolean | `true` | `true` 会取消仍在播放的回复。`false` 会让回复播放完毕，最长 20 秒。 |
+
+随后，中继会：
+
+1. 停止接收音频；
+2. 丢弃供应商尚未提交到某个轮次的麦克风音频；
+3. 取消正在进行的回复，或让其播放完毕，并最多等待 10 秒以获取其用量；
+4. 对于 GPT Live，向供应商发送 `session.close` 并等待 `session.closed`；
+5. 结算账单；
+6. 发送 `session.ended`；
+7. 以代码 `1000` 关闭套接字。
+
+不发送 `session.end` 直接关闭套接字也会结束通话，并以相同方式计费，但你的客户端不会收到 `session.ended`。
+
+## session.ended
+
+每次通话结束时，中继都会发送 `session.ended`：无论是你请求的结束、供应商发起的结束，还是网关发起的结束。它会在你的套接字仍然打开时、中继关闭套接字之前发送。
+
+```json
+{
+  "type": "session.ended",
+  "session_id": "rt_01k8...",
+  "reason": "client_requested",
+  "initiated_by": "client",
+  "client_reason": "caller hung up",
+  "duration_seconds": 184.2,
+  "usage": { "input_audio_tokens": 1840, "output_audio_tokens": 3120, "input_text_tokens": 412 },
+  "cost": {
+    "total_usd": 0.231,
+    "total_nanos": 231000000,
+    "estimated": false,
+    "estimate_basis": null,
+    "debt_nanos": 0,
+    "uncollected_nanos": 0,
+    "currency": "USD"
+  },
+  "billing_status": "settled"
+}
+```
+
+| 字段 | 含义 |
+| --- | --- |
+| `reason` | 稳定的原因代码。请参阅[原因代码](#reason-codes)。 |
+| `initiated_by` | `client`、`gateway` 或 `provider`。 |
+| `duration_seconds` | 自中继连接以来的时长。 |
+| `usage` | 计费计量：按模态划分的 token 数，以及对于 xAI 和 GPT Live 的 `audio_seconds`。 |
+| `cost.estimated` | 当某个被中断轮次的供应商用量始终未到达，部分用量根据计量的音频估算时为 `true`。`estimate_basis` 说明原因。 |
+| `cost.debt_nanos` | 超出你的预留和可用余额、作为透支收取的那部分成本。 |
+| `cost.uncollected_nanos` | 超出透支上限而未收取的成本。 |
+| `provider_close_code` | 当供应商结束通话时，供应商的 WebSocket 关闭代码。 |
+| `billing_status` | `settled`、`pending` 或 `unresolved`。 |
+
+如果结算仍在重试，`billing_status` 为 `pending`，`cost` 显示当前的估算值。如果会话需要账单审核，则为 `unresolved`。在这两种情况下，`final_bill` 都会给出在结算完成后获取最终成本的请求：
+
+```json
+"final_bill": { "method": "GET", "path": "/v1/generations?id=realtime%3Art_01k8..." }
+```
+
+<span id="reason-codes"></span>
+
+### 原因代码
+
+| `reason` | `initiated_by` | 触发时机 |
+| --- | --- | --- |
+| `client_requested` | client | 你发送了 `session.end`。 |
+| `client_disconnected` | client | 你的套接字在没有 `session.end` 的情况下关闭。 |
+| `provider_closed` | provider | 供应商关闭了连接，例如 Google 在约 150 秒没有音频后（代码 `1008`），或在中继无法恢复的 `goAway` 之后。 |
+| `provider_idle_timeout` | provider | GPT Live 因约 30 秒没有收到音频而使会话过期。 |
+| `provider_error` | provider | 供应商连接失败或报告了错误。 |
+| `max_duration_reached` | gateway | 达到了供应商的会话时长上限。 |
+| `insufficient_funds` | gateway | 达到了透支上限。 |
+| `key_revoked` | gateway | 通话期间 API 密钥被撤销或删除。 |
+| `key_expired` | gateway | 通话期间 API 密钥已过期。 |
+| `key_blocked` | gateway | 通话期间 API 密钥被暂停。 |
+| `workspace_disabled` | gateway | 工作区已不存在。 |
+| `policy_blocked` | gateway | 工作区策略变更阻止了该模型，或将该供应商从允许列表中移除，并且在 `policy_blocked` 警告 30 秒后仍然有效。 |
+| `input_rejected` | gateway | 中继拒绝了客户端音频：数据过大、快于实时速度，或供应商处理跟不上。 |
+| `session_reconciled` | gateway | 中继丢失了状态，会话被对账流程关闭。 |
+| `gateway_error` | gateway | Phaseo 无法处理供应商事件或记录用量。 |
+| `idle_timeout` | gateway | 仅限 Playground：五分钟没有音频。 |
+| `spend_limit_reached` | gateway | 仅限 Playground：达到了密钥支出上限或工作区预算。 |
+
+以后可能会添加新的代码，因此请把未知的 `reason` 当作 `gateway_error` 处理。
+
+## session.warning
+
+警告会在不结束通话的情况下告诉你即将发生什么。每个代码在每个阈值下最多发送一次。
+
+```json
+{ "type": "session.warning", "code": "max_duration_approaching", "message": "...", "seconds_remaining": 120, "expires_at": "2026-10-22T11:00:00.000Z" }
+```
+
+| `code` | 额外字段 | 触发时机 |
+| --- | --- | --- |
+| `max_duration_approaching` | `seconds_remaining`、`expires_at` | 距离供应商会话时长上限还有 2 分 30 秒时。 |
+| `provider_closing` | `seconds_remaining`，空闲情况下还有 `threshold: "input_idle"` | Google 即将关闭连接：在中继无法恢复的 `goAway` 之后，或（`input_idle`）因为 2 分钟没有收到音频。 |
+| `funds_low` | `remaining_usd` | 无法延长额度预留。通话将使用你的可用余额继续进行。 |
+| `overdraft_in_use` | `remaining_usd`、`overdraft_used_usd` | 你的可用余额已用完，通话正在使用透支额度运行。当透支上限剩余不足 $0.25 时会再次发送。 |
+| `spend_limit_exceeded` | `limit`（`key` 或 `workspace_budget`） | 达到了密钥支出上限或工作区预算。通话继续进行；新的请求会被拒绝。 |
+| `policy_blocked` | `status`，当 `status` 为 `ending` 时还有 `seconds_remaining` 和 `ends_at` | 工作区策略现在阻止该通话，或其供应商已从允许列表中移除。除非撤销该变更，否则通话会在 30 秒后结束；如果撤销，会收到第二条带有 `status: "cleared"` 的警告。 |
+
+`remaining_usd` 是通话结束前仍可花费的金额，包括透支额度。
+
+## 限制
+
+API 会话永远不会因为空闲而被结束，支出上限也只会发出警告。只有在发生以下情况之一时，通话才会自行结束：
+
+| 限制 | 值 |
+| --- | --- |
+| OpenAI Realtime | 60 分钟 |
+| xAI | 120 分钟 |
+| Google Live | 60 分钟，跨中继恢复的所有连接累计。如果你的客户端约 150 秒停止发送音频，通话也会结束。 |
+| GPT Live | 25 分钟 |
+| ElevenLabs Realtime | 30 分钟 |
+| Mistral 流式转录 | 60 分钟 |
+| 透支上限 | 超出你的预留和可用余额 $1 |
+| 失去访问权限 | 密钥被撤销、过期或暂停，或工作区被删除。会在约一分钟内检测到，随后通话立即结束，没有宽限期。 |
+| 策略变更 | 在 `policy_blocked` 警告 30 秒后，如果策略仍然阻止该通话 |
+
+会话时长限制从中继连接时开始计算，而不是从会话创建时开始计算。

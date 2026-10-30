@@ -235,8 +235,8 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         stream: true,
     };
     const req = mapGatewayToAzureChat(modifiedBody);
-    const config = resolveAzureConfig();
-    const deployment = azureDeployment(args);
+    const config = resolveAzureConfig(args);
+    const deployment = config.deployment ? encodeURIComponent(config.deployment) : azureDeployment(args);
 	const url = usesAzureV1(config.apiVersion)
 		? azureOpenAIV1Url("chat/completions", config.baseUrl, config.apiVersion)
 		: azureUrl(`openai/deployments/${deployment}/chat/completions`, config.apiVersion, config.baseUrl);

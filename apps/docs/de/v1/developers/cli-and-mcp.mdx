@@ -1,6 +1,6 @@
 ---
 title: "CLI und MCP"
-description: "Nutze die Phaseo CLI für Terminalautomatisierung oder verbinde den authentifizierten MCP-Server mit KI-Clients, um aktuelle Phaseo-Daten lesend abzurufen."
+description: "Nutze die Phaseo CLI für Terminalautomatisierung oder verbinde den authentifizierten MCP-Server mit KI-Clients, um aktuelle Phaseo-Daten abzurufen und, wenn du es erlaubst, dein Konto zu verwalten."
 icon: "square-terminal"
 ---
 
@@ -11,7 +11,7 @@ Nutze Phaseo im Terminal mit der CLI oder verbinde einen KI-Client über MCP. Be
 | Schnittstelle | Am besten für | Zugriff |
 | --- | --- | --- |
 | Phaseo CLI | Terminal-Workflows, CI, Verwaltung und Automatisierung | Lesen und Schreiben, beschränkt durch deine Scopes und Workspace-Rolle |
-| Phaseo MCP | Live-Phaseo-Daten in Codex, Claude, ChatGPT und anderen MCP-Clients | Authentifiziert und schreibgeschützt |
+| Phaseo MCP | Live-Phaseo-Daten in Codex, Claude, ChatGPT und anderen MCP-Clients sowie optionale Kontoverwaltung | Authentifiziert; schreibgeschützt, außer du verbindest dich mit Kontoverwaltung |
 | Docs MCP | Aktuelle Phaseo-Dokumentation beim Programmieren nachschlagen | Nur Dokumentation und schreibgeschützt |
 | Phaseo-Plugin | Phaseo MCP, Docs MCP und die Phaseo-Skills in einem Schritt in Claude Code oder Codex installieren | Wie beim jeweiligen MCP-Server |
 
@@ -75,12 +75,41 @@ Füge für einen anderen MCP-Client dieselbe URL als entfernten Streamable-HTTP-
 
 ### Über MCP verfügbare Daten
 
-- Modelle, Anbieter, Organisationen, Endpunktfamilien und Preise
+- Modelle, Anbieter, Benchmark-Ranglisten, Preise und Kostenschätzungen
 - Guthaben, Aktivität, Analysen, Anfrageprotokolle und Generierungsmetadaten
-- Workspaces, Mitglieder, Voreinstellungen, Einstellungen und Guardrails
-- Metadaten zu API-Schlüsseln, Management-Schlüsseln, OAuth-Anwendungen und Webhooks ohne geheime Werte
 
-MCP führt keine kostenpflichtigen Inferenzen aus, gibt keine geheimen Werte zurück und ändert keine Phaseo-Ressourcen. Nutze dafür das Dashboard, die CLI oder die Management-API.
+Diese Tools sind schreibgeschützt. Sie geben niemals Prompts, Antworten oder geheime Werte zurück.
+
+### Konto verwalten (optional)
+
+Damit ein Agent deinen Phaseo-Workspace ändern kann, verbinde dich stattdessen über die Verwaltungs-URL:
+
+`https://mcp.phaseo.app/mcp?access=manage`
+
+```bash
+codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
+codex mcp login phaseo
+```
+
+Bei der Anmeldung listet der Zustimmungsbildschirm jede angeforderte Berechtigung einzeln auf, etwa das Verwalten von API-Schlüsseln oder das Löschen von Budgets, und kennzeichnet sie mit **Lesen**, **Schreiben** oder **Löschen**. Entferne das Häkchen bei allem, was du nicht erlauben möchtest. Der Agent erhält nur Tools für die erlaubten Berechtigungen, und Phaseo prüft bei jeder Änderung weiterhin deine Workspace-Rolle. Ein Mitglied, das weder Owner noch Admin ist, kann auf diesem Weg also keine Einstellungen ändern, die Admins vorbehalten sind.
+
+Wenn du dich bereits über die schreibgeschützte URL verbunden hast, stelle den Client auf die Verwaltungs-URL um und melde dich erneut an. Um zum schreibgeschützten Zugriff zurückzukehren, verbinde dich wieder über die normale URL oder widerrufe die App unter **Einstellungen → Verbundene Apps**.
+
+| Bereich | Tools | Berechtigungen |
+| --- | --- | --- |
+| API-Schlüssel | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
+| Budgets | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
+| Ausgabenregeln | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
+| Anbieter-Schlüssel (BYOK) | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
+| Guardrails | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
+| Voreinstellungen | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
+| Einstellungen | `settings_get`, `settings_update` (Routing-Modus, Datenschutz und ZDR, Protokollierung, Anbieterbeschränkungen) | `settings:read`, `settings:write` |
+| Webhooks | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
+| Observability-Ziele | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+
+Tools, die etwas ändern oder löschen, sind entsprechend gekennzeichnet, sodass MCP-Clients, die das unterstützen, vor jedem Aufruf nachfragen. Ein neuer API-Schlüssel oder ein neues Webhook-Signaturgeheimnis wird einmal im Tool-Ergebnis angezeigt und kann danach nicht erneut angezeigt werden. Gespeicherte Anbieter-Schlüssel und Zugangsdaten von Zielen werden nie zurückgegeben.
+
+MCP bietet keine Tools für Abrechnung, Zahlungen, Workspaces, Mitglieder, Management-Schlüssel oder OAuth-Apps. Nutze dafür das Dashboard, die CLI oder die Management-API.
 
 ## Docs MCP
 

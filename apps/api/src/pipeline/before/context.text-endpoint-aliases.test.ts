@@ -175,10 +175,14 @@ describe("fetchGatewayContext text endpoint aliases", () => {
 		expect(
 			runtime.supabase.rpc.mock.calls.map(([, args]) => args.endpoint),
 		).toContain("text.generate");
+		// The fallback has no provider model slug, and a public request never loads
+		// admin internal pricing (loadPriceCard's last two arguments since #2807).
 		expect(loadPriceCardMock).toHaveBeenCalledWith(
 			"mistral",
 			"mistral/devstral-2",
 			expect.any(String),
+			null,
+			false,
 		);
 	});
 

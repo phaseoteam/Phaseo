@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
@@ -84,6 +85,7 @@ import {
         DetailMetricTile,
         DetailSection,
 } from "./DetailDialogPrimitives";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
@@ -228,16 +230,14 @@ function formatMoneyFromNanos(value: number | null | undefined, locale: string):
 	return formatMoneyFromUsd(value / 1e9, locale);
 }
 
-function formatMoneyFromUsd(value: number | null | undefined, locale: string): string {
+function formatMoneyFromUsd(value: number | null | undefined, _locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
 	const digits = value !== 0 && Math.abs(value) < 0.00001 ? 9 : 5;
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
 function formatMilliseconds(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	if (value < 1000) return new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short", maximumFractionDigits: 0 }).format(value);
-	return new Intl.NumberFormat(locale, { style: "unit", unit: "second", unitDisplay: "short", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value / 1000);
+	return formatLatency(value, locale) ?? "-";
 }
 
 function formatSettledCost(job: AsyncJobRow | AsyncJobDetailRow, locale: string): string {

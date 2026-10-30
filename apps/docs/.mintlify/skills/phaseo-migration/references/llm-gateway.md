@@ -57,7 +57,7 @@ export const toPhaseoModel = (id: string) => modelMap[id] ?? id;
 | Fallback chains | `models` array or dynamic routes | Triggers on 429 and 5xx |
 | Provider allow and deny logic | `provider.only`, `provider.ignore`, presets | Keep at least one eligible provider |
 | Shared prompt and parameter defaults | Presets (`"model": "@slug"`) | Move them out of call sites |
-| Provider keys | BYOK, or managed Phaseo credits | BYOK fallback to credits is a dashboard setting |
+| Provider keys | BYOK (`phaseo byok create` or `POST /v1/byok`), or managed Phaseo credits | BYOK fallback to credits is the `byok_fallback_enabled` workspace setting (`phaseo settings update` or `PATCH /v1/settings`) |
 | Request logs | Request logs and `GET /v1/generations?id=<request_id>` | Replay failed requests from `replay_request` when `replay_supported` is true |
 
 ## Gotchas

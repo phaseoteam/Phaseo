@@ -1,8 +1,0 @@
-{
-  "key": "ltx:ltx-2-fast:video.generate", "api_provider_id": "ltx", "provider_slug": "ltx", "api_model_id": "ltx-2-fast", "capability_id": "video.generate",
-  "rules": [
-    { "meter": "output_video_seconds", "unit": "second", "unit_size": 1, "price_per_unit": 0.04, "currency": "USD", "pricing_plan": "standard", "match": [{ "path": "resolution", "op": "eq", "value": "1920x1080" }], "conditions": [], "priority": 100, "effective_from": "2025-10-29T00:00:00Z", "effective_to": "2026-08-15T00:00:00Z", "source": "https://docs.ltx.io/ltx-2-deprecation" },
-    { "meter": "output_video_seconds", "unit": "second", "unit_size": 1, "price_per_unit": 0.08, "currency": "USD", "pricing_plan": "standard", "match": [{ "path": "resolution", "op": "eq", "value": "2560x1440" }], "conditions": [], "priority": 100, "effective_from": "2025-10-29T00:00:00Z", "effective_to": "2026-08-15T00:00:00Z", "source": "https://docs.ltx.io/ltx-2-deprecation" },
-    { "meter": "output_video_seconds", "unit": "second", "unit_size": 1, "price_per_unit": 0.16, "currency": "USD", "pricing_plan": "standard", "match": [{ "path": "resolution", "op": "eq", "value": "3840x2160" }], "conditions": [], "priority": 100, "effective_from": "2025-10-29T00:00:00Z", "effective_to": "2026-08-15T00:00:00Z", "source": "https://docs.ltx.io/ltx-2-deprecation" }
-  ], "regions": [], "service_tiers": ["standard"], "sources": [{ "url": "https://docs.ltx.io/ltx-2-deprecation", "kind": "pricing" }], "verification": { "status": "verified", "checked_at": "2026-08-11T00:00:00Z", "notes": "Legacy rates retained through removal while requests are automatically served by LTX-2.3." }
-}

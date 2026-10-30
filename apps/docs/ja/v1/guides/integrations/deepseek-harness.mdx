@@ -29,7 +29,7 @@ phaseo deepseek-harness
 phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
-セットアップでは有効期限のないGatewayキー`Phaseo CLI: DeepSeek Harness API Key`も作成し、Harnessの保護された`$DSH_HOME/.credentials.yaml`ストアに直接書き込みます。選択したモデルのみ設定する場合は`--catalog default`を使います。
+セットアップでは90日後に失効し、月額100ドルの利用上限があるGatewayキー`Phaseo CLI: DeepSeek Harness API Key`も作成し、Harnessの保護された`$DSH_HOME/.credentials.yaml`ストアに直接書き込みます。失効したキーは`phaseo deepseek-harness`を再実行すると置き換わります。選択したモデルのみ設定する場合は`--catalog default`を使います。
 
 `phaseo integrations remove deepseek-harness`で連携を削除すると、Phaseo管理の設定だけが削除され、CLI作成キーが失効します。
 

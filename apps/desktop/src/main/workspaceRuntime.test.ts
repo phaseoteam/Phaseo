@@ -1,0 +1,342 @@
+import { describe, expect, it, vi } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
+import { WorkspaceRuntime } from "./workspaceRuntime";
+import { WorkspaceStore } from "./workspaceStore";
+import { AgentInputRejectedError } from "./agentAdapter";
+import { SecretVault } from "./secretVault";
+
+describe("workspace orchestration", () => {
+	it("persists first-observed text and activity order despite batching and updates", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-event-order-"));
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, callbacks) => {
+			callbacks.onDelta("preface", "Checking");
+			callbacks.onActivity?.({ id: "tool", type: "tool", title: "Command", text: "", status: "running" });
+			callbacks.onDelta("final", "Done");
+			callbacks.onActivity?.({ id: "tool", type: "tool", title: "Command", text: "Result", status: "completed" });
+		}, cancel: async () => {} }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "owned", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Inspect" });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			const task = runtime.store.getTask(id), tool = task.activities![0];
+			expect(task.messages[0].timelineOrder).toBeLessThan(task.messages[1].timelineOrder!);
+			expect(task.messages[1].timelineOrder).toBeLessThan(tool.timelineOrder!);
+			expect(tool.timelineOrder).toBeLessThan(task.messages[2].timelineOrder!);
+			expect(tool.text).toBe("Result");
+			expect(runtime.store.getTaskView(id).activities![0].timelineOrder).toBe(tool.timelineOrder);
+		} finally { await runtime.close(); rmSync(directory, {recursive:true,force:true}); }
+	});
+	it.each(["send", "resume"] as const)("runs again after a stopped chat receives %s", async next => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-stopped-rerun-"));
+		let release: (() => void) | undefined;
+		const run = vi.fn<AgentAdapter["run"]>(async (_task, _cwd, _text, callbacks) => { if (run.mock.calls.length === 1) { callbacks.onSession("native"); await new Promise<void>(resolve => { release = resolve; }); } });
+		const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => { release?.(); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "owned", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "First" });
+			await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(1));
+			await runtime.command({ type: "cancel", id });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("interrupted"));
+			await runtime.command(next === "send" ? { type: "send", id, text: "Second" } : { type: "resume", id });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			expect(run).toHaveBeenCalledTimes(2); expect(runtime.store.getTask(id).queue).toEqual([]);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("clears OAuth expiry when replacing the credential with a manual API key", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-oauth-renewal-"));
+		const vault = new SecretVault(path.join(directory, "secrets"), { available: () => true, encrypt: value => Buffer.from(value), decrypt: value => value.toString() });
+		const runtime = new WorkspaceRuntime(directory, undefined, vault);
+		try {
+			await vault.set("old-secret", "owned-old-key");
+			runtime.store.saveAccount({ id: "owned", name: "Phaseo", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.phaseo.app/v1", secretId: "old-secret", oauthExpiresAt: "2000-01-01T00:00:00.000Z" });
+			await runtime.command({ type: "update-account", id: "owned", name: "Renamed" });
+			expect(runtime.store.getAccounts()[0].oauthExpiresAt).toBe("2000-01-01T00:00:00.000Z");
+			await runtime.command({ type: "update-account", id: "owned", apiKey: "owned-manual-key" });
+			const account = runtime.store.getAccounts()[0];
+			expect(account.oauthExpiresAt).toBeUndefined();
+			expect(await vault.get(account.secretId!)).toBe("owned-manual-key");
+			await expect(vault.get("old-secret")).rejects.toThrow();
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+ it("retains explicit native actions on preflight rejection and rejects other harnesses before enqueueing", async () => {
+  const started = performance.now(), stages: { stage: string; ms: number }[] = []; const mark = (stage: string) => stages.push({ stage, ms: Math.round(performance.now() - started) });
+  const directory = mkdtempSync(path.join(tmpdir(), "phaseo-native-admission-")); const run = vi.fn<AgentAdapter["run"]>(async () => { throw new AgentInputRejectedError("Catalog unavailable"); }); const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => {} }));
+  mark("setup");
+  try { const nativeAction = { kind: "command" as const, id: "review", name: "review", arguments: "target" }; const state = await runtime.command({ type: "create-task", harness: "opencode", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+   await runtime.command({ type: "send", id, text: "/review target", nativeAction }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("failed"));
+   expect(runtime.store.getTask(id)).toMatchObject({ queue: [{ text: "/review target", nativeAction }], messages: [] }); expect(run.mock.calls[0][6]).toEqual(nativeAction); mark("preflight");
+   const other = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const otherId = other.tasks.find(task => task.id !== id)!.id;
+   await expect(runtime.command({ type: "send", id: otherId, text: "/review target", nativeAction })).rejects.toThrow("require OpenCode"); expect(runtime.store.getTask(otherId).queue).toEqual([]); mark("cross-harness");
+  } finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); mark("cleanup"); if (performance.now() - started > 1000) console.log("NATIVE_ADMISSION_INTEGRATION_TIMING", stages); }
+ }, 15000);
+
+	it("sets up execution and publishes streaming changes without reading unrelated conversation bodies", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-metadata-stream-"));
+		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, value) => { callbacks = value; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); } }));
+		const changed = vi.fn(); runtime.onChange = changed;
+		let fullReads: ReturnType<typeof vi.spyOn> | undefined;
+		try {
+			fullReads = vi.spyOn(runtime.store, "get").mockImplementation(() => { throw new Error("Full history read during execution"); });
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+			expect(state.tasks[0]).not.toHaveProperty("messages");
+			await runtime.command({ type: "send", id, text: "Secret input" }); await vi.waitFor(() => expect(callbacks).toBeDefined());
+			changed.mockClear();
+			callbacks!.onDelta("reply", "Secret streamed response");
+			await vi.waitFor(() => expect(runtime.store.getTask(id).messages.some(message => message.text === "Secret streamed response")).toBe(true));
+			// Streaming updates to the chat list are coalesced, so this one follows within 100 ms.
+			await vi.waitFor(() => expect(changed).toHaveBeenCalled()); expect(JSON.stringify(changed.mock.calls)).not.toContain("Secret streamed response");
+			for (const [state] of changed.mock.calls) for (const task of state.tasks) expect(task).not.toHaveProperty("messages");
+			finish?.(); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			expect(fullReads).not.toHaveBeenCalled();
+		} finally { fullReads?.mockRestore(); await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("keeps instructions queued during account sign-in until explicitly resumed", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-sign-in-queue-"));
+		const run = vi.fn(async () => {}); const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => {} }));
+		try {
+			runtime.store.saveAccount({ id: "owned", name: "Owned", harness: "grok", kind: "native", configured: true, configDirectory: directory });
+			const state = await runtime.command({ type: "create-task", harness: "grok", accountId: "owned", model: "default", mode: "plan" }); const id = state.tasks[0].id;
+			const release = runtime.beginAccountSignIn("owned"); expect(() => runtime.beginAccountSignIn("owned")).toThrow("already in progress");
+			await expect(runtime.command({ type: "update-account", id: "owned", archived: true })).rejects.toThrow("Finish or cancel");
+			await expect(runtime.command({ type: "update-account", id: "owned", name: "Changed during login" })).rejects.toThrow("Finish or cancel");
+			expect(runtime.store.get().accounts.find(account => account.id === "owned")).toMatchObject({ name: "Owned" });
+			expect(runtime.store.get().accounts.find(account => account.id === "owned")?.archived).toBeUndefined();
+			await runtime.command({ type: "send", id, text: "Retain instruction" }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("failed"));
+			expect(runtime.store.getTask(id)).toMatchObject({ queue: [{ text: "Retain instruction" }], messages: [], error: expect.stringContaining("sign-in") }); expect(run).not.toHaveBeenCalled();
+			release(); const nextRelease = runtime.beginAccountSignIn("owned"); release(); expect(() => runtime.beginAccountSignIn("owned")).toThrow("already in progress"); nextRelease();
+			expect(run).not.toHaveBeenCalled(); await runtime.command({ type: "resume", id }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			expect(run).toHaveBeenCalledOnce(); expect(runtime.store.getTask(id).queue).toHaveLength(0);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("prevents native profile sign-in while that account owns an execution", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-account-execution-"));
+		let finish: (() => void) | undefined;
+		const run = vi.fn(async () => { await new Promise<void>(resolve => { finish = resolve; }); });
+		const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => { finish?.(); } }));
+		try {
+			runtime.store.saveAccount({ id: "owned", name: "Owned", harness: "grok", kind: "native", configured: true, configDirectory: directory });
+			const state = await runtime.command({ type: "create-task", harness: "grok", accountId: "owned", model: "default", mode: "plan" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+			expect(() => runtime.assertAccountIdle("owned")).toThrow("Stop this account");
+			expect(() => runtime.assertAccountIdle("unrelated")).not.toThrow();
+			await runtime.command({ type: "cancel", id }); await vi.waitFor(() => expect(() => runtime.assertAccountIdle("owned")).not.toThrow());
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("prevents managed MCP changes during Grok execution and releases the guard after cancellation", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-grok-mcp-"));
+		let finish: (() => void) | undefined;
+		const run = vi.fn(async () => { await new Promise<void>(resolve => { finish = resolve; }); });
+		const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => { finish?.(); } }));
+		const connection = { id: "fixture", name: "Fixture", transport: "http" as const, url: "https://example.invalid/mcp", enabled: false };
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "grok", model: "default", mode: "plan" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+			await expect(runtime.mcp({ type: "save", connection })).rejects.toThrow("Stop affected tasks");
+			expect(runtime.store.get().mcpConnections).toHaveLength(0);
+			await runtime.command({ type: "cancel", id });
+			await vi.waitFor(() => runtime.mcp({ type: "save", connection }));
+			expect(runtime.store.get().mcpConnections).toEqual([connection]);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("retains discovered native models across workspace restart", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-native-models-"));
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, callbacks) => { callbacks.onModels?.([{ id: "native-model", name: "Native model", default: true }]); callbacks.onModes?.([{ id: "analysis", name: "Analysis", default: true }]); }, cancel: async () => {} }));
+		let closed = false;
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed")); await runtime.close(); closed = true;
+			const restored = new WorkspaceRuntime(directory); try { expect(restored.store.getTask(id).nativeModels).toEqual([{ id: "native-model", name: "Native model", default: true }]); expect(restored.store.getTask(id).nativeModes).toEqual([{ id: "analysis", name: "Analysis", default: true }]); } finally { await restored.close(); }
+		} finally { if (!closed) await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it.each([true, false])("only restores input when rejection is confirmed (%s)", async confirmed => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-preflight-"));
+		const run = vi.fn().mockRejectedValueOnce(confirmed ? new AgentInputRejectedError("Setup failed") : new Error("Transport disconnected")).mockResolvedValue(undefined);
+		const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => {} }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Original instruction" });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("failed"));
+			const failed = runtime.store.getTask(id); expect(run).toHaveBeenCalledTimes(1);
+			if (confirmed) {
+				expect(failed.queue).toHaveLength(1); expect(failed.messages).toEqual([]); const original = failed.queue[0];
+				await runtime.command({ type: "resume", id }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+				expect(runtime.store.getTask(id).messages).toEqual([expect.objectContaining({ id: original.id, text: original.text })]); expect(run).toHaveBeenCalledTimes(2);
+			} else { expect(failed.queue).toEqual([]); expect(failed.messages).toHaveLength(1); }
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("blocks duplicate steering sends and waits for delivery settlement during shutdown", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-close-")); let finish: (() => void) | undefined; let reject: ((error: Error) => void) | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async () => { await new Promise<void>(resolve => { finish = resolve; }); }, steer: async () => { await new Promise<void>((_resolve, fail) => { reject = fail; }); }, cancel: async () => { finish?.(); reject?.(new Error("Disconnected")); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(finish).toBeDefined());
+			const delivery = runtime.command({ type: "steer", id, text: "Change direction" }); await vi.waitFor(() => expect(reject).toBeDefined());
+			await expect(runtime.command({ type: "steer", id, text: "Duplicate" })).rejects.toThrow("Wait for");
+			await runtime.close(); expect((await delivery).tasks[0].steeringReviewCount).toBe(1);
+			const restored = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
+			try { expect(restored.getTask(id).steering?.[0].status).toBe("unconfirmed"); } finally { restored.close(); }
+		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("persists steering before delivery and retains rejected and uncertain instructions without replay", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-"));
+		let finish: (() => void) | undefined;
+		const steer = vi.fn();
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async () => { await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); }, steer }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(finish).toBeDefined());
+			steer.mockImplementationOnce(async message => { expect(runtime.store.getTask(id).steering?.[0]).toMatchObject({ id: message.id, status: "sending" }); });
+			await runtime.command({ type: "steer", id, text: "Change direction" });
+			expect(runtime.store.getTask(id).messages.at(-1)).toMatchObject({ text: "Change direction", delivery: "steer" }); expect(runtime.store.getTask(id).steering).toEqual([]);
+			steer.mockRejectedValueOnce(new AgentInputRejectedError("Turn finished")); await runtime.command({ type: "steer", id, text: "Rejected" });
+			steer.mockRejectedValueOnce(new Error("Transport closed")); await runtime.command({ type: "steer", id, text: "Uncertain" });
+			const pending = runtime.store.getTask(id).steering!; expect(pending.map(message => message.status)).toEqual(["rejected", "unconfirmed"]); expect(runtime.store.getTask(id).queue).toEqual([]);
+			await runtime.command({ type: "steer-queue", id, messageId: pending[0].id }); expect(runtime.store.getTask(id).queue[0].text).toBe("Rejected");
+			await runtime.command({ type: "steer-discard", id, messageId: pending[1].id }); expect(runtime.store.getTask(id).steering).toEqual([]);
+			await runtime.command({ type: "cancel", id }); expect(steer).toHaveBeenCalledTimes(3);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("validates typed forms, preserves other requests and removes externally settled forms", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-form-runtime-"));
+		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, input) => { callbacks = input; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "opencode", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(callbacks).toBeDefined());
+			const approval = callbacks!.onApproval("write", "Review action");
+			const answer = callbacks!.onForm!({ id: "native-form", title: "Count", fields: [{ type: "integer", key: "count", required: true, minimum: 1 }] });
+			const requestId = runtime.store.getTask(id).forms![0].id;
+			await expect(runtime.command({ type: "form-answer", id, requestId, answer: { count: 0 } })).rejects.toThrow("valid integer");
+			expect(runtime.store.getTask(id).forms).toHaveLength(1);
+			await runtime.command({ type: "form-answer", id, requestId, answer: { count: 3 } }); expect(await answer).toEqual({ count: 3 });
+			expect(runtime.store.getTask(id).status).toBe("waiting");
+			const controller = new AbortController(); const external = callbacks!.onForm!({ id: "external", title: "External", fields: [{ type: "string", key: "name" }] }, controller.signal);
+			controller.abort(); expect(await external).toBeNull(); expect(runtime.store.getTask(id).forms).toEqual([]);
+			await runtime.command({ type: "cancel", id }); expect(await approval).toBe("decline");
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("keeps simultaneous approvals visible and cancels unanswered questions", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-requests-"));
+		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, input) => { callbacks = input; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" });
+			await vi.waitFor(() => expect(callbacks).toBeDefined());
+			const first = callbacks!.onApproval("write", "First edit"); const second = callbacks!.onApproval("write", "Second edit");
+			const question = callbacks!.onQuestion!([{ id: "choice", header: "Scope", question: "Which scope?", options: [{ label: "Small" }] }]);
+			const pending = runtime.store.getTask(id); expect(pending.approvals).toHaveLength(2);
+			await runtime.command({ type: "approval", id, approvalId: pending.approvals![0].id, decision: "accept" });
+			expect(await first).toBe("accept"); expect(runtime.store.getTask(id).status).toBe("waiting");
+			await expect(runtime.command({ type: "answer", id, requestId: pending.questions![0].id, answers: { wrong: ["Small"] } })).rejects.toThrow("Answer this question");
+			await runtime.command({ type: "cancel", id });
+			expect(await second).toBe("decline"); expect(await question).toEqual({});
+			await vi.waitFor(() => expect(runtime.store.getTask(id).questions).toEqual([]));
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("checks typed and optional answers, offers lasting choices only where given, and reviews plans", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-question-kinds-"));
+		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, input) => { callbacks = input; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "plan", permissionMode: "full-access" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(callbacks).toBeDefined());
+			const typed = callbacks!.onQuestion!([{ id: "count", header: "Count", question: "How many?", input: { kind: "integer", min: 1 } }, { id: "name", header: "Name", question: "Name?", required: false }], { origin: "Fixture server" });
+			const request = runtime.store.getTask(id).questions![0]; expect(request.origin).toBe("Fixture server");
+			await expect(runtime.command({ type: "answer", id, requestId: request.id, answers: { count: ["0"], name: [""] } })).rejects.toThrow("Count: Enter 1 or more.");
+			await runtime.command({ type: "answer", id, requestId: request.id, answers: { count: ["2"], name: [""] } });
+			expect(await typed).toEqual({ count: ["2"], name: [""] });
+			// Full access answers approvals itself, but a plan always waits for the person.
+			expect(await callbacks!.onApproval("Run", "ls", { always: "Allow always" })).toBe("accept");
+			const plan = callbacks!.onPlan!("# Ship it\n\n1. Build");
+			const approval = runtime.store.getTask(id).approvals![0]; expect(approval).toMatchObject({ kind: "plan", description: "# Ship it\n\n1. Build" });
+			await expect(runtime.command({ type: "approval", id, approvalId: approval.id, decision: "always" })).rejects.toThrow("does not offer");
+			await expect(runtime.command({ type: "approval", id, approvalId: approval.id, decision: "accept", feedback: "No" })).rejects.toThrow();
+			await runtime.command({ type: "approval", id, approvalId: approval.id, decision: "decline", feedback: "Smaller steps" });
+			expect(await plan).toEqual({ decision: "decline", feedback: "Smaller steps" });
+			const second = callbacks!.onPlan!("# Ship it\n\n1. Build in steps");
+			await runtime.command({ type: "approval", id, approvalId: runtime.store.getTask(id).approvals![0].id, decision: "accept" });
+			expect(await second).toEqual({ decision: "accept" }); expect(runtime.store.getTask(id).mode).toBe("code");
+			await vi.waitFor(() => expect(runtime.store.getTask(id).activities?.filter(activity => activity.proposed).map(activity => activity.proposed)).toEqual([{ outcome: "revised", feedback: "Smaller steps" }, { outcome: "implemented" }]));
+		} finally { finish?.(); await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("keeps message-answered questions past the turn and sends the answer as a message", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-message-questions-"));
+		const prompts: string[] = []; let callbacks: AgentCallbacks | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, text, input) => { prompts.push(text); callbacks = input; if (prompts.length === 1) expect(await input.onQuestion!([{ id: "0", header: "Question", question: "Which colour?", options: [{ label: "Blue" }], isOther: true }], { responseMode: "message" })).toEqual({}); }, cancel: async () => {} }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			const request = runtime.store.getTask(id).questions![0]; expect(request.responseMode).toBe("message");
+			expect(callbacks).toBeDefined();
+			await runtime.command({ type: "answer", id, requestId: request.id, answers: { "0": ["Blue"] } });
+			await vi.waitFor(() => expect(prompts).toHaveLength(2));
+			expect(prompts[1]).toContain("Which colour?\nBlue");
+			expect(runtime.store.getTask(id).questions).toEqual([]);
+			expect(runtime.store.getTask(id).activities?.some(activity => activity.title === "Question answered" && activity.text.includes("→ Blue"))).toBe(true);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("serializes queued work and keeps streamed output and native session identity", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-runtime-"));
+		const prompts: string[] = [];
+		let finish: (() => void) | undefined;
+		const adapterFactory = (): AgentAdapter => ({
+			run: async (_task, _cwd, text, callbacks) => {
+				prompts.push(text); callbacks.onSession("native"); callbacks.onDelta("response", "Reply to "); callbacks.onDelta("response", text);
+				callbacks.onActivity?.({ id: "tool", type: "tool", title: "Read file", text: "Started", status: "running" });
+				callbacks.onActivity?.({ id: "tool", type: "tool", title: "Read file", text: "Contents", status: "completed" });
+				callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: "Before", steps: [{ text: "Inspect", status: "pending" }] });
+				callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: "After", explanation: "Confirmed update", steps: [{ text: "Inspect", status: "completed" }] });
+				await new Promise<void>(resolve => { finish = resolve; });
+			}, cancel: async () => { finish?.(); },
+		});
+		const runtime = new WorkspaceRuntime(directory, adapterFactory);
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" });
+			const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "First" });
+			await runtime.command({ type: "send", id, text: "Second" });
+			// Chat now starts the orchestration server first; a prompt queued meanwhile must survive the setup.
+			await vi.waitFor(() => expect(prompts).toEqual(["First"])); expect(runtime.store.getTask(id).queue).toHaveLength(1);
+			finish?.(); await vi.waitFor(() => expect(prompts).toEqual(["First", "Second"]));
+			expect(runtime.store.getTask(id).nativeSessionId).toBe("native");
+			await vi.waitFor(() => expect(runtime.store.getTask(id).messages.filter(message => message.role === "assistant")).toHaveLength(2));
+			expect(runtime.store.getTask(id).messages.find(message => message.role === "assistant")?.text).toBe("Reply to First");
+			expect(runtime.store.getTask(id).activities?.[0]).toMatchObject({ text: "Contents", status: "completed" });
+			expect(runtime.store.getTask(id).activities?.[1]).toMatchObject({ text: "After", explanation: "Confirmed update", steps: [{ text: "Inspect", status: "completed" }] });
+			const reader = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
+			try { expect(reader.getTask(id).activities?.[1]).toMatchObject({ explanation: "Confirmed update", steps: [{ text: "Inspect", status: "completed" }] }); } finally { reader.close(); }
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("requires an explicit decision and does not drain queued work after cancellation", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-runtime-"));
+		let callbacks: AgentCallbacks | undefined;
+		let finish: (() => void) | undefined;
+		const adapterFactory = (): AgentAdapter => ({
+			run: async (_task, _cwd, _text, input) => { callbacks = input; await new Promise<void>(resolve => { finish = resolve; }); },
+			cancel: async () => { finish?.(); },
+		});
+		const runtime = new WorkspaceRuntime(directory, adapterFactory);
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" });
+			const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "First" });
+			await vi.waitFor(() => expect(callbacks).toBeDefined());
+			const decision = callbacks!.onApproval("command", "Run command?");
+			const approval = runtime.store.getTask(id).approvals![0];
+			expect(runtime.store.getTask(id).status).toBe("waiting");
+			await expect(runtime.command({ type: "approval", id, approvalId: "wrong", decision: "accept" })).rejects.toThrow("no longer pending");
+			await runtime.command({ type: "approval", id, approvalId: approval.id, decision: "decline" });
+			expect(await decision).toBe("decline");
+			await runtime.command({ type: "send", id, text: "Second" });
+			await runtime.command({ type: "cancel", id });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("interrupted"));
+			expect(runtime.store.getTask(id).queue).toHaveLength(1);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+});

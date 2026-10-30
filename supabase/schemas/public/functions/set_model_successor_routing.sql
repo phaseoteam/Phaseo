@@ -28,16 +28,20 @@ begin
     if jsonb_array_length(v_compatibility->'warnings') > 0 and not coalesce(p_allow_incompatible,false) then
       raise exception 'Successor % has compatibility warnings: %. Accept them to approve.', v_successor, (select string_agg(x,', ') from jsonb_array_elements_text(v_compatibility->'warnings') x);
     end if;
-    insert into public.v2_model_successor_routing as s (model_slug, auto_route_enabled, approved_successor_slug, approved_by, approved_at, compatibility, notes)
+    insert into public.v2_model_successor_routing as s (model_slug, auto_route_enabled, approved_successor_slug, approved_by, approved_at, compatibility, notes, approval_source, auto_approval_blocked)
     values (p_model_slug, true, v_successor, p_actor_user_id, now(),
-      v_compatibility || jsonb_build_object('accepted_warnings', jsonb_array_length(v_compatibility->'warnings') > 0), nullif(btrim(p_notes),''))
+      v_compatibility || jsonb_build_object('accepted_warnings', jsonb_array_length(v_compatibility->'warnings') > 0), nullif(btrim(p_notes),''), 'admin', false)
     on conflict (model_slug) do update set auto_route_enabled=true, approved_successor_slug=excluded.approved_successor_slug,
       approved_by=excluded.approved_by, approved_at=excluded.approved_at, compatibility=excluded.compatibility,
-      notes=coalesce(excluded.notes, s.notes), updated_at=now();
+      notes=coalesce(excluded.notes, s.notes), approval_source='admin', auto_approval_blocked=false, updated_at=now();
   else
-    update public.v2_model_successor_routing set auto_route_enabled=false, approved_successor_slug=null, approved_by=null,
-      approved_at=null, compatibility='{}'::jsonb, notes=coalesce(nullif(btrim(p_notes),''), notes), updated_at=now()
-    where model_slug=p_model_slug;
+    -- Revoking also stops the hourly job from approving the model again;
+    -- approving it by hand lifts that block.
+    insert into public.v2_model_successor_routing as s (model_slug, notes, auto_approval_blocked)
+    values (p_model_slug, nullif(btrim(p_notes),''), true)
+    on conflict (model_slug) do update set auto_route_enabled=false, approved_successor_slug=null, approved_by=null,
+      approved_at=null, compatibility='{}'::jsonb, approval_source=null, auto_approval_blocked=true,
+      notes=coalesce(excluded.notes, s.notes), updated_at=now();
   end if;
 
   v_current := public.get_model_successor_routing(p_model_slug);

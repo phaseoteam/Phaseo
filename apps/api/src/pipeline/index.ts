@@ -12,6 +12,7 @@ import { errorCodeOf, withErrorObject, withErrorObjectResponse } from "@core/err
 import { auditFailure } from "./audit";
 import { Timer } from "./telemetry/timer";
 import { gatewayTraceFor } from "./telemetry/gateway-trace";
+import { requestReceivedAtMs } from "./telemetry/request-receipt";
 import type { PipelineTiming } from "./execute";
 import { resolvePipeline } from "./registry";
 import { DecisionsSchema, ResponsesSchema } from "@core/schemas";
@@ -24,7 +25,11 @@ import {
 	logPipelineExecutionError,
 } from "./error-response";
 import { rejectedByRateLimitPolicy as rejectedByRateLimitPolicyOnly, withRateLimitPolicyHeaders as withRateLimitPolicyHeadersOnly } from "@core/rate-limit-policies";
+import {
+	createConcurrencyLeases, releaseConcurrencyAfter, releaseConcurrencyLeases, type ConcurrencyLeases,
+} from "@core/customer-rate-limits";
 import { rejectedBySpendBlockForEveryModel, withSpendWarningHeader } from "@core/spend-blocks";
+import { releaseSpend } from "@core/spend-limits";
 import type { PipelineContext } from "./before/types";
 
 // Admission headers on every response: rate limit policy headers and the spend rule warning.
@@ -51,8 +56,8 @@ function getAutoRouterClassifierHandler() {
 	return autoRouterClassifierHandler;
 }
 
-/** Request classifiers call Responses, or Decisions for decision models. */
-function getRequestClassifierHandler(path: "responses" | "decisions") {
+/** Request classifiers call Responses, or Decisions for decision models (also the classifier test route). */
+export function getRequestClassifierHandler(path: "responses" | "decisions") {
 	if (path === "responses") return getAutoRouterClassifierHandler();
 	decisionsClassifierHandler ??= makeEndpointHandler({ endpoint: "decisions", schema: DecisionsSchema });
 	return decisionsClassifierHandler;
@@ -264,7 +269,20 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
     const { endpoint, schema } = opts;
 
     return async function handler(req: Request) {
-        const timer = new Timer();
+        // Concurrency slots taken by rate limit policies are held until the response has been delivered.
+        const concurrency = createConcurrencyLeases();
+        try {
+            return releaseConcurrencyAfter(await handleRequest(req, concurrency), concurrency);
+        } catch (error) {
+            releaseConcurrencyLeases(concurrency);
+            throw error;
+        }
+    };
+
+    async function handleRequest(req: Request, concurrency: ConcurrencyLeases): Promise<Response> {
+        const timer = new Timer(undefined, requestReceivedAtMs(req));
+        // Receipt to pipeline entry: admission middleware, chiefly authentication.
+        timer.between("admission", "request_start");
         const gatewayTrace = gatewayTraceFor(req);
         gatewayTrace?.mark("pipeline_entry");
         const timing: PipelineTiming = {
@@ -371,6 +389,8 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				}
 				if (attemptedModels.has(modelFallbackAttemptKey(fallbackPre.ctx))) {
 					attempts.push({ model: fallbackPre.ctx.model, status: null, stage: "skipped" });
+					// Never executed: free its spend-limit admission (enforce mode; no-op without one).
+					releaseSpend(fallbackPre.ctx.spendAdmission);
 					continue;
 				}
 				attemptedModels.add(modelFallbackAttemptKey(fallbackPre.ctx));
@@ -380,6 +400,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				// One HTTP request is one admission against rate limit policies.
 				rateLimitAdmissionId ??= fallbackPre.ctx.billingRequestId;
 				fallbackPre.ctx.rateLimitAdmissionId = rateLimitAdmissionId;
+				fallbackPre.ctx.rateLimitConcurrency = concurrency;
 				fallbackPre.ctx.routingDiagnostics = {
 					...(fallbackPre.ctx.routingDiagnostics ?? {}),
 					modelFallback: {
@@ -448,6 +469,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             pre.ctx.meta.before_ms = beforeMs;
         }
         pre.ctx.gatewayTimingTrace = gatewayTrace;
+        pre.ctx.rateLimitConcurrency = concurrency;
 
         try {
 			const response = withRateLimitPolicyHeaders(await runWithHeaders({ pre, req, endpoint, timing }), pre.ctx);
@@ -483,5 +505,5 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
                 req,
             }), pre.ctx);
         }
-    };
+    }
 }

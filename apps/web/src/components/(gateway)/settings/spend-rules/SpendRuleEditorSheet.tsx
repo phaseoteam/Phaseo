@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Callout } from "@/components/ui/callout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -75,9 +76,9 @@ const WORKSPACE_ZONE = "__workspace__";
 export function useSpendActionError() {
 	const t = useTranslations("SettingsUI.spendAlerts");
 	return (result: SpendRuleActionError, maxRules: number) => {
-		if (result.code === "spend_rule_limit_reached" || (result.status === 409 && !result.code)) return t("errors.limit", { max: maxRules });
-		if (result.code === "rate_limited" || result.status === 429) return t("errors.rateLimited");
 		if (result.code === "no_notification_destinations" || result.code === "no_active_destinations") return t("errors.noDestinations");
+		if (result.code === "spend_rule_limit_reached") return t("errors.limit", { max: maxRules });
+		if (result.code === "rate_limited" || result.status === 429) return t("errors.rateLimited");
 		if (result.status === 401 || result.status === 403) return t("errors.forbidden");
 		if (result.status === 404) return t("errors.notFound");
 		if (result.status === 400) return result.message ?? t("errors.invalid");
@@ -445,7 +446,8 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 							</div>
 						</Section>
 
-						{canBlock(draft) ? (
+						{/* Block is offered once the gateway enforces blocks, and kept for a rule that already blocks. */}
+						{(data.blocksEnabled || draft.action === "block") && canBlock(draft) ? (
 							<Section title={t("editor.sectionAction")}>
 								<OptionTiles
 									label={t("editor.sectionAction")}
@@ -478,13 +480,13 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 											</div>
 											<Switch id="spend-rule-free-models" checked={draft.blockFreeModels} onCheckedChange={(checked) => update({ blockFreeModels: Boolean(checked) })} />
 										</div>
-										<div className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-xs text-muted-foreground">
+										<Callout tone="warning" className="text-xs">
 											<p>{t.rich("editor.bestEffort", {
 												keys: (chunks) => <Link href="/settings/keys" className="underline underline-offset-3 hover:text-foreground">{chunks}</Link>,
 												budgets: (chunks) => <Link href="/settings/budgets" className="underline underline-offset-3 hover:text-foreground">{chunks}</Link>,
 											})}</p>
-											{data.blocksEnabled ? null : <p className="font-medium text-foreground">{t("editor.blockingOff")}</p>}
-										</div>
+											{data.blocksEnabled ? null : <p className="mt-1 font-medium">{t("editor.blockingOff")}</p>}
+										</Callout>
 									</>
 								) : null}
 							</Section>

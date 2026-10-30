@@ -1,9 +1,8 @@
 "use client";
 
-import { Fragment, createContext, useContext, useCallback, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { Fragment, createContext, useContext, useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
@@ -20,9 +19,15 @@ export function PrivateSettingsProvider({ scope, children }: { scope: AccountQue
 	return <SettingsScopeContext value={scope}>{children}</SettingsScopeContext>;
 }
 
+const SETTINGS_WRITE_EVENT = "phaseo:settings-write";
+
 export function useInvalidatePrivateSettings() {
 	const client = useQueryClient();
-	return useCallback(() => invalidateAccountQueries(client), [client]);
+	return useCallback(() => {
+		// A write shows its own result, so drop any held snapshot of changes made elsewhere.
+		if (typeof window !== "undefined") window.dispatchEvent(new Event(SETTINGS_WRITE_EVENT));
+		return invalidateAccountQueries(client);
+	}, [client]);
 }
 
 /** Also invalidate after partial writes; never put mutation responses in the cache. */
@@ -42,6 +47,14 @@ export function useSettingsRouter() {
 	return useMemo(() => ({ ...router, refresh }), [router, refresh]);
 }
 
+/** Refetches stale data; resolves true when the server returned something different. */
+export async function revalidateStaleSettings(query: { data: unknown; isStale: boolean; refetch: () => Promise<{ isSuccess: boolean; data: unknown }> }) {
+	if (!query.isStale) return false;
+	const before = query.data;
+	const result = await query.refetch();
+	return result.isSuccess && result.data !== before;
+}
+
 /** Only display DTOs belong here: never secret-reveal, payment or MFA responses. */
 export function PrivateSettingsQuery<T>({ path, children, workspace = true, resource, preferredWorkspaceId, parameters, workspaceId }: {
 	path: `/api/account/${string}` | "/api/enterprise/directory";
@@ -54,7 +67,6 @@ export function PrivateSettingsQuery<T>({ path, children, workspace = true, reso
 }) {
 	const t = useTranslations("SettingsUI.privateQuery");
 	const context = useContext(SettingsScopeContext);
-	const [refreshVersion, setRefreshVersion] = useState(0);
 	if (!context) throw new Error("Missing private settings scope");
 	const scope = workspace ? { ...context, workspaceId: workspaceId ?? context.workspaceId } : { ...context, workspaceId: null };
 	const cacheParams = new URLSearchParams();
@@ -91,8 +103,38 @@ export function PrivateSettingsQuery<T>({ path, children, workspace = true, reso
 	});
 	const identity = JSON.stringify(options.queryKey);
 	const [initialRead, setInitialRead] = useState(() => ({ identity, stale: query.isStale }));
+	// Changes made elsewhere load when the tab is shown again. Views copy data into
+	// drafts, so offer to remount rather than replacing what someone is editing.
+	// The view keeps the held snapshot until "Show latest" or the next write.
+	const [mountVersion, setMountVersion] = useState(0);
+	const [held, setHeld] = useState<{ data: T; changed: boolean } | null>(null);
+	const { data: currentData, isStale, refetch } = query;
+	useEffect(() => {
+		if (currentData === undefined || held) return;
+		function revalidate() {
+			if (document.visibilityState !== "visible" || !isStale) return;
+			setHeld({ data: currentData as T, changed: false });
+			void revalidateStaleSettings({ data: currentData, isStale, refetch: () => refetch({ cancelRefetch: false }) }).then((changed) => {
+				setHeld((current) => current && changed ? { ...current, changed: true } : null);
+			});
+		}
+		document.addEventListener("visibilitychange", revalidate);
+		window.addEventListener("focus", revalidate);
+		window.addEventListener("online", revalidate);
+		return () => {
+			document.removeEventListener("visibilitychange", revalidate);
+			window.removeEventListener("focus", revalidate);
+			window.removeEventListener("online", revalidate);
+		};
+	}, [currentData, held, isStale, refetch]);
+	useEffect(() => {
+		const release = () => setHeld(null);
+		window.addEventListener(SETTINGS_WRITE_EVENT, release);
+		return () => window.removeEventListener(SETTINGS_WRITE_EVENT, release);
+	}, []);
 	if (initialRead.identity !== identity) {
 		setInitialRead({ identity, stale: query.isStale });
+		setHeld(null);
 		return <SettingsSectionFallback />;
 	}
 	if (workspace && !scope.workspaceId) return <p>{t("selectWorkspace")}</p>;
@@ -104,9 +146,9 @@ export function PrivateSettingsQuery<T>({ path, children, workspace = true, reso
 	if (initialRead.stale && !query.isFetchedAfterMount && query.isFetching) return <SettingsSectionFallback />;
 	if (!query.data) return <SettingsSectionFallback />;
 	return <>
-		<div className="mb-2 flex justify-end"><Button variant="ghost" size="icon" aria-label={t("refresh")} disabled={query.isFetching} onClick={() => void query.refetch().then((result) => { if (result.isSuccess) setRefreshVersion((version) => version + 1); })}><RefreshCw className={query.isFetching ? "size-4 animate-spin" : "size-4"} /></Button></div>
 		{query.error ? <p role="status">{t("refreshFailed")}</p> : null}
-		<Fragment key={refreshVersion}>{children(query.data)}</Fragment>
+		{held?.changed ? <p role="status" className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">{t("changedElsewhere")}<Button variant="link" size="sm" className="h-auto p-0" onClick={() => { setHeld(null); setMountVersion((version) => version + 1); }}>{t("showLatest")}</Button></p> : null}
+		<Fragment key={mountVersion}>{children(held ? held.data : query.data)}</Fragment>
 	</>;
 }
 

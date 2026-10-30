@@ -29,7 +29,7 @@ Die CLI lässt nicht zu Phaseo gehörende Einträge in `$DSH_HOME/cordis.patch.y
 phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
-Das Setup erstellt außerdem einen nicht ablaufenden Gateway-Schlüssel namens `Phaseo CLI: DeepSeek Harness API Key` und schreibt ihn direkt in den geschützten Harness-Speicher `$DSH_HOME/.credentials.yaml`. Verwende `--catalog default`, um nur das ausgewählte Modell einzurichten.
+Das Setup erstellt außerdem einen Gateway-Schlüssel namens `Phaseo CLI: DeepSeek Harness API Key`, der nach 90 Tagen abläuft und ein monatliches Ausgabelimit von 100 $ hat, und schreibt ihn direkt in den geschützten Harness-Speicher `$DSH_HOME/.credentials.yaml`. Führe `phaseo deepseek-harness` erneut aus, um einen abgelaufenen Schlüssel zu ersetzen. Verwende `--catalog default`, um nur das ausgewählte Modell einzurichten.
 
 Mit `phaseo integrations remove deepseek-harness` werden nur die von Phaseo verwalteten Einstellungen entfernt und der von der CLI erstellte Schlüssel widerrufen.
 

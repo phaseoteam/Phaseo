@@ -143,7 +143,7 @@ describe("account policy settings routes", () => {
 				{ provider_model_id: "pm-openai", model_slug: "openai/gpt-test" },
 				{ provider_model_id: "pm-anthropic", model_slug: "anthropic/claude-test" },
 			]), { status: 200 });
-			if (url.includes("v2_route_capabilities")) return new Response(JSON.stringify([
+			if (url.includes("v2_effective_route_capabilities")) return new Response(JSON.stringify([
 				{ provider_model_id: "pm-openai", capability_id: "responses" },
 				{ provider_model_id: "pm-anthropic", capability_id: "messages" },
 			]), { status: 200 });
@@ -227,6 +227,136 @@ describe("account policy settings routes", () => {
 		await expect(response.json()).resolves.toEqual({ error: "no_draft_changes" });
 		expect(publishRpcCalled).toBe(false);
 	});
+
+	it("forwards a semver label and reports one that is already taken", async () => {
+		let rpcBody: any = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(input, init);
+			const url = request.url;
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
+			if (url.includes("/presets?")) return new Response(JSON.stringify([{
+				workspace_id: "workspace-1", created_by: "user-1", name: "Stable", slug: "stable", description: null,
+				config: { models: ["openai/gpt-test"] }, visibility: "team", draft_name: "Stable", draft_slug: "stable",
+				draft_description: null, draft_config: { models: ["openai/gpt-other"] }, draft_visibility: "team", versioning_method: "semver",
+			}]), { status: 200 });
+			if (url.includes("/rpc/publish_preset_version")) {
+				rpcBody = JSON.parse(await request.text());
+				return new Response(JSON.stringify({ code: "23505", message: "duplicate key value violates unique constraint \"preset_versions_preset_id_version_label_key\"" }), { status: 409 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/account/settings/presets/preset-1/versions", {
+			method: "POST",
+			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ versionLabel: "1.2.0" }),
+		}, env);
+
+		expect(rpcBody?.requested_label).toBe("1.2.0");
+		expect(response.status).toBe(409);
+		await expect(response.json()).resolves.toEqual({ error: "version_label_taken" });
+	});
+
+	describe("preset version labels", () => {
+		const VERSION_ID = "7d0b6f0e-3c1a-4f0b-9a55-2f3c4d5e6f70";
+		function stubLabels({ role = "admin", createdBy = "owner-2", visibility = "team", rpc }: { role?: string; createdBy?: string; visibility?: string; rpc?: (name: string, body: any) => Response }) {
+			const calls: Array<{ name: string; body: any }> = [];
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(input, init);
+				const url = request.url;
+				if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+				if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role }]), { status: 200 });
+				if (url.includes("/presets?")) return new Response(JSON.stringify([{ id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: visibility, active_version_id: "version-3" }]), { status: 200 });
+				if (url.includes("/preset_versions?")) return new Response(JSON.stringify([
+					{ id: "version-3", version_number: 3, version_label: "v3", config: { models: ["openai/gpt-test"], prompt: { messages: [{ role: "user", content: "Hi {{name}}" }] }, parameters: { temperature: 0.2 } } },
+					{ id: "version-2", version_number: 2, version_label: "v2", config: null },
+				]), { status: 200 });
+				if (url.includes("/preset_version_labels?")) return new Response(JSON.stringify([{ label: "production", version_id: "version-2", updated_at: "2026-10-27T00:00:00Z" }, { label: "staging", version_id: "version-3", updated_at: "2026-10-27T00:00:00Z" }]), { status: 200 });
+				const rpcMatch = url.match(/\/rpc\/([a-z_]+)/);
+				if (rpcMatch) {
+					const body = JSON.parse(await request.text());
+					calls.push({ name: rpcMatch[1], body });
+					return rpc?.(rpcMatch[1], body) ?? new Response(JSON.stringify(rpcMatch[1] === "remove_preset_version_label" ? true : { label: body.p_label, version_id: body.p_version_id }), { status: 200 });
+				}
+				return new Response(JSON.stringify([]), { status: 200 });
+			}));
+			return calls;
+		}
+		const purged: string[][] = [];
+		const executionCtx = { waitUntil() {}, passThroughOnException() {}, props: {}, cache: { purge: async ({ tags }: { tags: string[] }) => { purged.push(tags); return { success: true }; } } };
+		const request = (path: string, init: RequestInit = {}) => app.request(`https://phaseo.app/api/account/settings/presets/preset-1${path}`, { ...init, headers: { authorization: "Bearer session-token", "content-type": "application/json" } }, env, executionCtx as never);
+
+		it("lists versions with their labels and whether the caller can move them", async () => {
+			stubLabels({});
+			const response = await request("/versions");
+			expect(response.status).toBe(200);
+			await expect(response.json()).resolves.toMatchObject({
+				versions: [{ id: "version-3", version_label: "v3", labels: ["staging"] }, { id: "version-2", version_label: "v2", labels: ["production"] }],
+				labels: [{ label: "production", version_id: "version-2" }, { label: "staging", version_id: "version-3" }],
+				activeVersionId: "version-3",
+				canManageLabels: true,
+			});
+		});
+
+		it("returns each version's models and template, and no other config, so the editor can show and compare them", async () => {
+			stubLabels({ role: "member" });
+			const body = await (await request("/versions")).json() as { versions: Array<{ config: unknown }> };
+			expect(body.versions.map((version) => version.config)).toEqual([
+				{ models: ["openai/gpt-test"], prompt: { messages: [{ role: "user", content: "Hi {{name}}" }] } },
+				{ models: [], prompt: null },
+			]);
+		});
+
+		it("does not show a private preset's versions to other members", async () => {
+			stubLabels({ role: "member", visibility: "private" });
+			expect((await request("/versions")).status).toBe(404);
+		});
+
+		it("tells members who did not create the preset that they cannot move labels", async () => {
+			stubLabels({ role: "member" });
+			await expect((await request("/versions")).json()).resolves.toMatchObject({ canManageLabels: false });
+		});
+
+		it("moves a label to another version through the guarded RPC", async () => {
+			const calls = stubLabels({});
+			const response = await request("/labels/Production", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) });
+			expect(response.status).toBe(200);
+			expect(calls).toEqual([{ name: "set_preset_version_label", body: { p_preset_id: "preset-1", p_label: "production", p_version_id: VERSION_ID, actor_user_id: "user-1" } }]);
+			expect(purged.at(-1)).toContain("web-api-marketplace-preset-preset-1");
+		});
+
+		it("refuses members on someone else's preset before calling the database", async () => {
+			const calls = stubLabels({ role: "member" });
+			const response = await request("/labels/production", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) });
+			expect(response.status).toBe(403);
+			expect(calls).toEqual([]);
+		});
+
+		it("rejects labels that look like versions", async () => {
+			const calls = stubLabels({});
+			const response = await request("/labels/v2", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) });
+			expect(response.status).toBe(400);
+			await expect(response.json()).resolves.toEqual({ error: "invalid_preset_label" });
+			expect(calls).toEqual([]);
+		});
+
+		it("maps a version from another preset to 404", async () => {
+			stubLabels({ rpc: () => new Response(JSON.stringify({ code: "P0001", message: "preset_version_not_found" }), { status: 400 }) });
+			const response = await request("/labels/production", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) });
+			expect(response.status).toBe(404);
+			await expect(response.json()).resolves.toEqual({ error: "preset_version_not_found" });
+		});
+
+		it("removes a label, and reports a label that was not there", async () => {
+			const calls = stubLabels({});
+			expect((await request("/labels/staging", { method: "DELETE" })).status).toBe(200);
+			expect(calls[0]).toEqual({ name: "remove_preset_version_label", body: { p_preset_id: "preset-1", p_label: "staging", actor_user_id: "user-1" } });
+			stubLabels({ rpc: () => new Response("false", { status: 200 }) });
+			expect((await request("/labels/staging", { method: "DELETE" })).status).toBe(404);
+		});
+	});
+
 	it("does not expose upstream versions when the source preset is no longer public", async () => {
 		const requestedUrls: string[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
@@ -299,6 +429,28 @@ describe("account policy settings routes", () => {
 		expect(requestedUrls.some((url) => url.includes("/preset_versions") && url.includes("visibility=eq.public"))).toBe(true);
 	});
 
+	it("rejects a preset whose prompt template does not parse, before touching the database", async () => {
+		const requestedUrls: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			requestedUrls.push(url);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/account/settings/presets", {
+			method: "POST",
+			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", name: "@triage", config: { prompt: { messages: [{ role: "user", content: "Hi {{name" }] } } }),
+		}, env, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
+
+		expect(response.status).toBe(400);
+		const body = await response.json() as Record<string, any>;
+		expect(body.error).toBe("invalid_prompt_template");
+		expect(body.issues[0]).toMatchObject({ keyword: "template_syntax", path: ["prompt", "messages", 0, "content"] });
+		expect(requestedUrls.some((url) => url.includes("/presets"))).toBe(false);
+	});
+
 	it("returns private routing, preset, and guardrail payloads", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
@@ -330,7 +482,7 @@ describe("account policy settings routes", () => {
 				return new Response(JSON.stringify(providers), { status: 200 });
 			}
 			if (url.includes("data_api_provider_models")) return new Response(JSON.stringify([{ provider_id: "openai", api_model_id: "gpt-test", internal_model_id: "openai/gpt-test", is_active_gateway: true }]), { status: 200 });
-			if (url.includes("v2_route_capabilities")) {
+			if (url.includes("v2_effective_route_capabilities")) {
                 expect(new URL(url).searchParams.get("or")).toContain("metadata->data_policy.not.is.null");
                 expect(new URL(url).searchParams.get("provider_model_id")).toBe("in.(pm-native)");
                 expect(new URL(url).searchParams.get("limit")).toBe("500");
@@ -412,7 +564,14 @@ describe("account policy settings routes", () => {
 });
 
 describe("successor routing settings", () => {
-	function stub(role: string, writes: Array<{ url: string; method: string; body: unknown }>, models: string[] = ["lab/old", "lab/new"]) {
+	const overviewRow = {
+		model: "lab/old", name: "Old", status: "retired", deprecated_at: null, retired_at: "2026-09-01T00:00:00+00:00",
+		unserved_since: "2026-10-20T00:00:00+00:00", last_used_at: "2026-10-28T00:00:00+00:00", requests: 12,
+		suggested_replacement: "lab/new", approved: true, workspace_override: false, replacement: "lab/new", replacement_name: "New",
+		target: "lab/new", reason: "eligible", price_ratio: "1.25", price_comparable: true, price_skipped_meters: ["native_web_search_requests"],
+		served_by: [{ model: "lab/new", requests: 3, last_at: "2026-10-28T00:00:00+00:00" }],
+	};
+	function stub(role: string, writes: Array<{ url: string; method: string; body: unknown }>, models: string[] = ["lab/old", "lab/new"], overview: Response | null = null) {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const request = input instanceof Request ? input : new Request(input, init);
 			const url = request.url;
@@ -421,6 +580,7 @@ describe("successor routing settings", () => {
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
 			if (request.method !== "GET" && request.method !== "HEAD") {
 				const text = await request.text();
+				if (url.includes("/rpc/get_workspace_model_successor_overview")) return overview ?? new Response(JSON.stringify([overviewRow]), { status: 200 });
 				writes.push({ url, method: request.method, body: text ? JSON.parse(text) : null });
 				return new Response(null, { status: 201 });
 			}
@@ -451,8 +611,22 @@ describe("successor routing settings", () => {
 			pricePolicy: "limit",
 			maxPriceIncreasePercent: 20,
 			replacements: [{ model: "lab/old", successor: null, updatedAt: "2026-10-12T00:00:00Z" }],
+			models: [{
+				model: "lab/old", name: "Old", status: "retired", retiredAt: "2026-09-01T00:00:00+00:00", unservedSince: "2026-10-20T00:00:00+00:00",
+				lastUsedAt: "2026-10-28T00:00:00+00:00", requests: 12, suggestedReplacement: "lab/new", replacement: "lab/new", replacementName: "New",
+				workspaceOverride: false, reason: "eligible", priceRatio: 1.25, priceComparable: true, priceSkippedMeters: ["native_web_search_requests"],
+				servedBy: [{ model: "lab/new", requests: 3, lastAt: "2026-10-28T00:00:00+00:00" }],
+			}],
+			modelsAvailable: true,
 			workspaceId: "workspace-1",
 		});
+	});
+
+	it("still returns the settings when the affected models cannot be loaded", async () => {
+		stub("admin", [], undefined, new Response(JSON.stringify({ message: "timeout" }), { status: 500 }));
+		const response = await app.request("https://phaseo.app/api/account/settings/routing/successor?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ canManage: true, enabled: true, models: [], modelsAvailable: false });
 	});
 
 	it("lets admins save the setting and validates it", async () => {

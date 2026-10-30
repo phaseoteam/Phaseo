@@ -1,0 +1,81 @@
+---
+title: "fx"
+icon: "/icons/brands/vercel.svg"
+description: "Verbinde den fx-Programmieragenten von Vercel Labs über eine benutzerdefinierte Modellverbindung mit dem Phaseo Gateway."
+---
+
+[fx](https://fx.sh) ist ein Open-Source-Programmieragent von Vercel Labs. Er kann über eine benannte benutzerdefinierte Verbindung jeden OpenAI-kompatiblen Chat-Completions-Endpunkt aufrufen, sodass Phaseo als sein Modell-Gateway dient. fx läuft unter macOS und Linux.
+
+## 1) fx konfigurieren
+
+Verwende die Phaseo-CLI, um die Verbindung hinzuzufügen, kompatible Phaseo-Modelle zu synchronisieren und Phaseo zum aktiven Provider von fx zu machen:
+
+```bash
+phaseo login
+phaseo fx --model openai/gpt-5.6-terra
+```
+
+Fehlt fx in einem interaktiven Terminal, zeigt Phaseo den offiziellen Installationsbefehl an und fragt vor der Ausführung nach. Anschließend:
+
+- Der Befehl fügt `~/.fx/settings.json` eine `phaseo`-Verbindung hinzu und behält deine anderen Einstellungen und Verbindungen bei;
+- Er synchronisiert bis zu 256 kompatible Phaseo-Modelle, die Höchstzahl, die fx akzeptiert, samt ihren Kontext- und Ausgabelimits;
+- Er legt `phaseo` als aktiven fx-Provider fest und speichert den vorherigen Provider, damit dieser beim Entfernen wiederhergestellt werden kann;
+- Er erstellt einen `Phaseo CLI: fx API Key`, der nach 90 Tagen abläuft und ein monatliches Ausgabenlimit von 100 $ hat, und speichert ihn in der nur für den Eigentümer lesbaren Datei `~/.config/phaseo/integrations/fx.env`. Führe `phaseo fx` erneut aus, um einen abgelaufenen Schlüssel zu ersetzen.
+
+Verwende `--catalog default`, um nur das ausgewählte Modell einzurichten, oder `--dry-run`, um die Dateiänderungen in der Vorschau anzuzeigen.
+
+## 2) Den Schlüssel in deiner Shell laden
+
+fx liest Schlüssel für benutzerdefinierte Verbindungen nur aus Umgebungsvariablen, niemals aus seiner Einstellungsdatei. Füge diese Zeile einmal zu `~/.zshrc` oder `~/.bashrc` hinzu und öffne dann ein neues Terminal:
+
+```bash
+[ -f "$HOME/.config/phaseo/integrations/fx.env" ] && . "$HOME/.config/phaseo/integrations/fx.env"
+```
+
+Die Zeile setzt `PHASEO_FX_API_KEY`, wenn die Datei existiert, und bewirkt nichts mehr, nachdem du die Integration entfernt hast.
+
+## 3) fx starten
+
+```bash
+fx
+```
+
+Wechsle Modelle mit `/model` oder wähle mit `FX_MODEL=<id> fx` eine beliebige Phaseo-Modell-ID für einen einzelnen Lauf. Wechsle mit `fx provider <name>` zurück zu einem anderen Provider.
+
+## Manuelle Konfiguration
+
+Füge die Verbindung zu `~/.fx/settings.json` hinzu. fx akzeptiert keine benutzerdefinierten Verbindungen in einer projektbezogenen `.fx.json`.
+
+```json
+{
+  "provider": "phaseo",
+  "providers": {
+    "phaseo": {
+      "protocol": "openai-chat-completions",
+      "base_url": "https://api.phaseo.app/v1",
+      "auth": { "type": "bearer", "env": "PHASEO_API_KEY" },
+      "model_metadata": {
+        "openai/gpt-5.6-terra": { "context_window": 400000, "max_output_tokens": 128000 }
+      }
+    }
+  },
+  "models": { "phaseo": "openai/gpt-5.6-terra" }
+}
+```
+
+Exportiere anschließend `PHASEO_API_KEY` und führe `fx` aus. Ohne `context_window` kann fx nicht ermitteln, wann die Unterhaltung komprimiert werden muss. Gib daher Limits für die Modelle an, die du verwendest. Die obigen Limits sind Beispiele; die tatsächlichen Werte findest du über den [Models-Endpunkt](../../api-reference/endpoint/models.mdx).
+
+## Entfernen
+
+```bash
+phaseo integrations remove fx
+```
+
+Dadurch werden die `phaseo`-Verbindung und das Modell entfernt, dein vorheriger fx-Provider wird wiederhergestellt, falls Phaseo noch aktiv ist, die Schlüsseldatei wird gelöscht und der Schlüssel widerrufen.
+
+## Überprüfung
+
+- Führe `fx status --json` aus, um den aktiven Provider, den Endpunkt und das Modell zu bestätigen.
+- Führe eine kleine Anfrage wie `fx ask "Summarize README.md"` aus, bevor du Dateien bearbeiten lässt.
+- Meldet fx fehlende Zugangsdaten, öffne ein neues Terminal oder prüfe, ob die Zeile im Shell-Profil vorhanden ist.
+- fx-Funktionen, die nur mit AI Gateway verfügbar sind, etwa die Gateway-Websuche und Guthabenprüfungen, stehen über benutzerdefinierte Verbindungen nicht zur Verfügung.

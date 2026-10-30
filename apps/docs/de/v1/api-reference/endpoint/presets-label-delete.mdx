@@ -1,0 +1,10 @@
+---
+title: "Label der Voreinstellung entfernen"
+sidebarTitle: "Label entfernen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml DELETE /presets/{id}/labels/{label}"
+description: "Entfernt ein Label von einer Voreinstellung."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `presets:write` und einer zugeordneten Benutzeridentität erforderlich. Die Person, die die Voreinstellung erstellt hat, kann ihre Labels ändern, bei geteilten Voreinstellungen auch Workspace-Owner und -Admins.</Note>
+
+Anfragen, die das Label noch pinnen, schlagen mit `preset_version_not_found` fehl, bis du es wieder hinzufügst.

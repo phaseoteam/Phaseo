@@ -64,6 +64,8 @@ begin
     'approved_successor_slug', v_state.approved_successor_slug,
     'approved_by', v_state.approved_by,
     'approved_at', v_state.approved_at,
+    'approval_source', v_state.approval_source,
+    'auto_approval_blocked', coalesce(v_state.auto_approval_blocked, false),
     'approved_compatibility', coalesce(v_state.compatibility, '{}'::jsonb),
     'notes', v_state.notes,
     -- An approval only covers the successor that was reviewed.

@@ -1,41 +1,21 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { computeBillSummary } from "./engine";
 import type { PriceCard, PriceRule } from "./types";
-
-const dataRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
-    "../../../../../packages/data/catalog/src/data");
+import { VENICE_CARDS } from "./__fixtures__/venice-cards";
 
 function card(model: string, capability = "text.generate"): PriceCard {
-    const raw = JSON.parse(fs.readFileSync(path.join(dataRoot, "pricing/venice",
-        model.replaceAll("/", "-"), capability, "pricing.json"), "utf8"));
+    const raw = VENICE_CARDS[`${model}|${capability}`];
+    if (!raw) throw new Error(`missing Venice fixture for ${model} ${capability}`);
     return {
         provider: "venice", model, endpoint: capability, currency: "USD",
         effective_from: null, effective_to: null, version: null,
-        rules: raw.rules.map((rule: PriceRule) => ({
+        rules: raw.rules.map((rule) => ({
             ...rule, price_per_unit: String(rule.price_per_unit),
-        })),
+        }) as unknown as PriceRule),
     };
 }
 
 describe("Venice September catalog pricing", () => {
-    it("exposes the four new standard text routes under existing canonical IDs", () => {
-        const rows = JSON.parse(fs.readFileSync(path.join(dataRoot, "api_providers/venice/models.json"), "utf8"));
-        for (const [slug, model] of Object.entries({
-            "gemini-3-8-flash": "google/gemini-3.8-flash",
-            "claude-fable-5-1": "anthropic/claude-fable-5.1",
-            "openai-gpt-6-astra": "openai/gpt-6-astra",
-            "openai-gpt-6-astra-pro": "openai/gpt-6-astra-pro",
-        })) {
-            expect(rows.find((row: { provider_model_slug: string }) => row.provider_model_slug === slug)).toMatchObject({
-                internal_model_id: model, api_model_id: model,
-                is_active_gateway: true, routable: true, effective_to: null,
-            });
-        }
-    });
-
     it.each([
         ["openai/gpt-6-astra", 272000, 10, 1, 12.5, 50],
         ["openai/gpt-6-astra", 272001, 20, 2, 25, 75],
@@ -90,21 +70,6 @@ describe("Venice September catalog pricing", () => {
             const bill = computeBillSummary({ requests: 1 }, priceCard, { duration_seconds: duration });
             expect(bill.lines).toHaveLength(1);
             expect(bill.lines[0].line_nanos).toBe(expected);
-        }
-    });
-
-    it("keeps unsupported Venice endpoints and E2EE routes disabled and linked to existing models", () => {
-        for (const provider of ["venice", "venice-e2ee"]) {
-            const rows = JSON.parse(fs.readFileSync(path.join(dataRoot, "api_providers", provider, "models.json"), "utf8"));
-            for (const row of rows) {
-                if (provider === "venice" && row.capabilities.every((cap: { capability_id: string }) => cap.capability_id === "text.generate")) continue;
-                expect(row.is_active_gateway).toBe(false);
-                expect(row.routable).toBe(false);
-                expect(row.routing_status).toBe("disabled");
-                if (!row.effective_to) {
-                    expect(fs.existsSync(path.join(dataRoot, "models", row.internal_model_id, "model.json"))).toBe(true);
-                }
-            }
         }
     });
 });

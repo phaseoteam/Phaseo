@@ -3,6 +3,10 @@ const emitGatewayRequestEventMock = vi.fn(async () => {});
 vi.mock("@observability/events", () => ({
 	emitGatewayRequestEvent: (...args: unknown[]) => emitGatewayRequestEventMock(...args),
 }));
+const enqueueGatewayOtlpExportMock = vi.hoisted(() => vi.fn(async (_input: any) => {}));
+vi.mock("@observability/otlp-export", () => ({
+	enqueueGatewayOtlpExport: (input: unknown) => enqueueGatewayOtlpExportMock(input),
+}));
 const background = vi.hoisted(() => [] as Promise<unknown>[]);
 vi.mock("@/runtime/env", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/runtime/env")>()),
@@ -26,6 +30,7 @@ async function handleError(...args: Parameters<typeof handleErrorWithoutWaiting>
 
 beforeEach(() => {
 	emitGatewayRequestEventMock.mockReset();
+	enqueueGatewayOtlpExportMock.mockClear();
 	background.length = 0;
 });
 
@@ -154,6 +159,66 @@ describe("handleError", () => {
 		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ errorCode: "gateway:phaseo_free_model_limit_exceeded", provider: null }));
 	});
 
+	it("keeps a key spend cap Retry-After longer than a day", async () => {
+		const response = await handleError({
+			stage: "before",
+			endpoint: "embeddings",
+			res: new Response(JSON.stringify({
+				error: "key_limit_exceeded",
+				reason: "monthly_cost_limit_reached",
+				description: "This API key has reached its monthly spend limit ($0.0117 of $0.01).",
+			}), { status: 429, headers: { "Retry-After": "388800" } }),
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(429);
+		expect(response.headers.get("Retry-After")).toBe("388800");
+		const payload = await response.json();
+		expect(payload.error).toMatchObject({ type: "rate_limit_error", metadata: { retry_after_seconds: 388800 } });
+	});
+
+	it("still drops a provider Retry-After longer than a day", async () => {
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "upstream_error",
+				reason: "all_candidates_failed",
+				failed_statuses: [429],
+			}), { status: 429, headers: { "Retry-After": "388800" } }),
+			ctx: { requestId: "G-LONG-429", workspaceId: "workspace", model: "openai/gpt-oss-120b", meta: {}, providers: [{ providerId: "deepinfra" }] } as any,
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(429);
+		expect(response.headers.get("Retry-After")).toBeNull();
+	});
+
+	it("returns a provider rejection of the request as an invalid_request_error", async () => {
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "embeddings",
+			res: new Response(JSON.stringify({
+				error: "upstream_error",
+				reason: "upstream_rejected_request",
+				description: "The provider rejected the request (HTTP 400): Invalid type for 'input'.",
+				attempt_count: 1,
+				failed_providers: ["openai"],
+				failed_statuses: [400],
+				failure_sample: [{ provider: "openai", status: 400, upstream_error_message: "Invalid type for 'input'.", upstream_error_param: "input" }],
+			}), { status: 400 }),
+			ctx: { requestId: "G-REJECTED-400", workspaceId: "workspace", model: "openai/text-embedding-3-small", meta: {}, providers: [{ providerId: "openai" }] } as any,
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(400);
+		const payload = await response.json();
+		expect(payload).toMatchObject({
+			status_code: 400,
+			code: "upstream_error",
+			reason: "upstream_rejected_request",
+			error: { type: "invalid_request_error", param: "input" },
+		});
+		expect(String(payload.error.message)).toContain("Invalid type for 'input'.");
+	});
+
 	it("keeps BYOK upstream quota headers and the throttling status when every provider returned 429", async () => {
 		const response = await handleError({
 			stage: "execute",
@@ -206,6 +271,32 @@ describe("handleError", () => {
 			code: "rate_limit_exceeded", error_origin: "user", reason: "policy_requests_per_minute", policy_id: "policy-1", limit_scope: "key",
 		});
 		expect(capturedAuditArgs).toMatchObject({ errorCode: "user:rate_limit_exceeded", provider: null });
+	});
+
+	it("keeps which key limit or department budget refused the request, and when it resets", async () => {
+		const response = await handleError({
+			stage: "before",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "key_limit_exceeded",
+				reason: "department_daily_cost_budget_reached",
+				reset_at: "2026-10-30T00:00:00.000Z",
+				department_id: "dept-1",
+				department_name: "Engineering",
+				current_value: 173000,
+				description: "The Engineering department has reached its daily budget ($0.000173 of $0.00002).",
+			}), { status: 429, headers: { "Retry-After": "27703" } }),
+			ctx: { requestId: "G-KEY-LIMIT", workspaceId: "workspace", model: "openai/gpt-5", meta: {} } as any,
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(429);
+		const body = await response.json();
+		expect(body).toMatchObject({
+			code: "key_limit_exceeded", reason: "department_daily_cost_budget_reached", reset_at: "2026-10-30T00:00:00.000Z",
+			department_id: "dept-1", department_name: "Engineering",
+			error: { metadata: { reason: "department_daily_cost_budget_reached", reset_at: "2026-10-30T00:00:00.000Z", retry_after_seconds: 27703 } },
+		});
+		expect(body.current_value).toBeUndefined();
 	});
 
 	it("preserves guardrail enforcement metadata on blocked before-stage requests", async () => {
@@ -268,6 +359,9 @@ describe("handleError", () => {
 		const policy = { stage: "execute" as const, status: 429, errorCode: "rate_limit_exceeded", body: { error: "rate_limit_exceeded", reason: "policy_requests_per_minute" } };
 		const provider = { stage: "execute" as const, status: 429, errorCode: "rate_limit_exceeded", body: { error: { code: "rate_limit_exceeded", message: "Too many requests" } } };
 		expect(classifyAttribution(policy)).toBe("user");
+		for (const reason of ["policy_tokens_per_minute", "policy_concurrent_requests", "policy_unavailable"]) {
+			expect(classifyAttribution({ ...policy, body: { ...policy.body, reason } })).toBe("user");
+		}
 		expect(classifyAttribution(provider)).toBe(classifyAttribution({ ...provider, errorCode: "upstream_error" }));
 	});
 
@@ -279,6 +373,27 @@ describe("handleError", () => {
 		}
 		// Other 403s keep the gateway ops policy.
 		expect(classifyErrorType({ stage: "execute", status: 403, errorCode: "forbidden", body: {} })).toBe("system");
+	});
+
+	it("tells the caller which residency requirements no provider met", async () => {
+		const res = await handleError({
+			stage: "execute",
+			res: new Response(JSON.stringify({
+				error: "model_region_unavailable",
+				reason: "no_provider_meets_residency_requirements",
+				description: "This model has no provider that offers zero data retention.",
+				action: "Relax the residency requirements or choose another model.",
+				unmet_requirements: { zero_data_retention: true, data_region: "eu", extra: "dropped" },
+			}), { status: 403, headers: { "content-type": "application/json" } }),
+			endpoint: "responses",
+			ctx: { requestId: "G-TEST-RESIDENCY", meta: {}, model: "acme/model", rawBody: { model: "acme/model" } } as any,
+			auditFailure: async () => {},
+		});
+		const payload = await res.json();
+		expect(res.status).toBe(403);
+		expect(payload.reason).toBe("no_provider_meets_residency_requirements");
+		expect(payload.action).toBe("Relax the residency requirements or choose another model.");
+		expect(payload.unmet_requirements).toEqual({ zero_data_retention: true, data_region: "eu" });
 	});
 
 	it("preserves before-stage system labels from provider candidate gaps", async () => {
@@ -722,6 +837,115 @@ describe("handleError", () => {
 			requestMethod: "POST",
 			requestPath: "/v1/responses",
 		}));
+	});
+
+	it("keeps the authenticated key and workspace on failures before the request context exists", async () => {
+		let capturedAuditArgs: any = null;
+		await handleError({
+			stage: "before",
+			res: new Response(JSON.stringify({ error: "unsupported_model" }), { status: 400, headers: { "content-type": "application/json" } }),
+			endpoint: "responses",
+			requestObservability: {
+				requestPayload: { model: "openai/gpt-5-nano", input: "private prompt" },
+				requestedModel: "openai/gpt-5-nano",
+				workspaceId: "ws_agent",
+				apiKeyId: "key_agent",
+			},
+			auditFailure: async (args) => {
+				capturedAuditArgs = args;
+			},
+		});
+
+		// The audit, telemetry and broadcast paths read the key's data policy from these.
+		expect(capturedAuditArgs).toMatchObject({ workspaceId: "ws_agent", keyId: "key_agent" });
+		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_agent", keyId: "key_agent" }));
+	});
+
+	it("keeps content out of the telemetry for a failure before the request context exists when the key requires ZDR", async () => {
+		// The real telemetry event, with the key's guardrail requiring zero data retention.
+		const sendAxiomWideEvent = vi.fn(async (_event: Record<string, unknown>) => {});
+		vi.resetModules();
+		vi.doUnmock("@observability/events");
+		vi.doMock("@observability/axiom", () => ({
+			sendAxiomWideEvent,
+			emitGatewayTelemetryDeliveryFailure: async () => {},
+			emitGatewayOperationalFailure: async () => {},
+		}));
+		vi.doMock("@/pipeline/before/workspacePolicy", () => ({
+			fetchWorkspacePolicy: async () => ({ privacyZdrOnly: true, neverStoreContent: false }),
+		}));
+		// Broadcasts (the customer's own destination) are not under test and would hit the network.
+		vi.doMock("@observability/otlp-export", () => ({ enqueueGatewayOtlpExport: async () => {} }));
+		try {
+			const env = await import("@/runtime/env");
+			env.configureRuntime({
+				SUPABASE_URL: "https://example.supabase.co",
+				SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+				GATEWAY_CACHE: {} as KVNamespace,
+				NODE_ENV: "test",
+				AXIOM_API_KEY: "axiom_test_key",
+				AXIOM_DATASET: "gateway-wide",
+				AXIOM_DETAIL_SAMPLE_RATE: "1",
+			} as any);
+			const { handleError: handleWithTelemetry } = await import("./error-handler");
+			await handleWithTelemetry({
+				stage: "before",
+				res: new Response(JSON.stringify({ error: "no_zero_data_retention_provider", input: "private echoed prompt" }), {
+					status: 400,
+					headers: { "content-type": "application/json" },
+				}),
+				endpoint: "responses",
+				requestObservability: {
+					requestPayload: { model: "openai/gpt-5-nano", input: "private prompt" },
+					requestedModel: "openai/gpt-5-nano",
+					workspaceId: "ws_zdr",
+					apiKeyId: "key_zdr_guardrail",
+				},
+				auditFailure: async () => {},
+			});
+			await Promise.all(background.splice(0));
+			env.clearRuntime();
+		} finally {
+			vi.doUnmock("@observability/axiom");
+			vi.doUnmock("@/pipeline/before/workspacePolicy");
+			vi.doUnmock("@observability/otlp-export");
+			vi.resetModules();
+		}
+
+		const event = sendAxiomWideEvent.mock.calls.map((call) => call[0]).find((entry) => entry.event_type !== "gateway.telemetry_delivery");
+		expect(event).toMatchObject({ observability_detail_level: "full", key_id: "key_zdr_guardrail", workspace_id: "ws_zdr", status_code: 400 });
+		expect(event?.request_payload_redacted_json).toBeUndefined();
+		expect(event?.gateway_response_redacted_json).toBeUndefined();
+		expect(event?.provider_response_redacted_json).toBeUndefined();
+		expect(event?.error_details_redacted_json).toBeUndefined();
+		expect(JSON.stringify(event)).not.toContain("private");
+	});
+
+	it("exports request metadata and its trace keys on failures before the request context exists", async () => {
+		const run = async (headers: Record<string, string>) => {
+			enqueueGatewayOtlpExportMock.mockClear();
+			await handleError({
+				stage: "before",
+				res: new Response(JSON.stringify({ error: "insufficient_credits" }), { status: 402, headers: { "content-type": "application/json" } }),
+				endpoint: "chat.completions",
+				req: new Request("https://example.test/v1/chat/completions", { method: "POST", headers }),
+				requestObservability: {
+					requestPayload: { model: "openai/gpt-5-nano", metadata: { trace_id: "conversation-42", span_name: "checkout" } },
+					requestedModel: "openai/gpt-5-nano",
+					workspaceId: "ws_agent",
+					apiKeyId: "key_agent",
+				},
+				auditFailure: async () => {},
+			});
+			return enqueueGatewayOtlpExportMock.mock.calls[0]?.[0];
+		};
+
+		const fromMetadata = await run({});
+		expect(fromMetadata?.metadata).toEqual({ trace_id: "conversation-42", span_name: "checkout" });
+		expect(fromMetadata?.traceContext?.traceId).toMatch(/^[0-9a-f]{32}$/);
+
+		const fromHeader = await run({ traceparent: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01" });
+		expect(fromHeader?.traceContext).toMatchObject({ traceId: "0af7651916cd43dd8448eb211c80319c", parentSpanId: "b7ad6b7169203331" });
 	});
 
 	it("captures malformed early request payloads for observability", async () => {

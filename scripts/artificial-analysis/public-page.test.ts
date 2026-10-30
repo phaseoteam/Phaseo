@@ -97,3 +97,14 @@ test("rejects corrupt data and malformed full datasets", () => {
 	assert.throws(() => decodePublicData(data, manifest.key));
 	assert.throws(() => decodePublicData(encrypt({ models: [] }), manifest.key), /empty/);
 });
+
+test("retains V5 provenance, new evaluation slugs and raw fields without guessing scales", () => {
+	const row = { ...model, futureMetric: -2, intelligenceIndexEvaluations: [{ slug: "future-v5-evaluation", score: -3, outputTokensPerTask: 0 }] };
+	const page = html(`a:${JSON.stringify({ initialModels: [row], manifest })}\n`).replace("v4.3.2", "v5.0");
+	const result = extractFullPublicModels(page, encrypt({ models: [row] }), source, "2026-10-27T00:00:00Z");
+	assert.deepEqual(result.methodologyVersions, ["5.0"]);
+	assert.equal(result.models[0].evaluations?.[0].slug, "future-v5-evaluation");
+	assert.equal(result.models[0].evaluations?.[0].score, -3);
+	assert.equal((result.models[0].sourceData as Record<string, unknown>).futureMetric, -2);
+	assert.equal((result.models[0].benchmarkScores as Record<string, unknown>).futureMetric, undefined);
+});

@@ -467,6 +467,37 @@
 		},
 		"defaultTitle": "Neuer Chat",
 		"branchTitle": "Abzweigung: {title}",
+		"logImport": {
+			"title": "Protokollierte Anfrage fortsetzen",
+			"description": "Öffnet die Anfrage als neuen Chat mit eigener Sitzung, gespeichert in diesem Browser. Wähle aus, was übernommen wird.",
+			"loading": "Anfrage wird geladen…",
+			"failed": "Diese Anfrage konnte nicht geladen werden. Prüfe, ob du im zugehörigen Workspace angemeldet bist.",
+			"unavailable": { "not_stored": "Prompt und Antwort dieser Anfrage wurden nicht gespeichert. Aktiviere Gateway-I/O-Protokolle in den Datenschutzeinstellungen, um neue Anfragen zu speichern.", "too_large": "Diese Anfrage war zu groß zum Speichern und kann daher nicht geöffnet werden.", "deleted": "Der gespeicherte Prompt und die Antwort dieser Anfrage sind abgelaufen oder wurden gelöscht.", "unsupported": "Nur Anfragen an Chat Completions, Responses und Messages können im Chat geöffnet werden." },
+			"summary": "{count, plural, one {# Nachricht} other {# Nachrichten}} · {model}",
+			"modelUnavailable": "{model} ist im Chat nicht verfügbar, daher verwendet der Chat {fallback}. Du kannst das Modell nach dem Öffnen wechseln.",
+			"carryOver": "Übernehmen",
+			"options": {
+				"pinProvider": "Anbieter festlegen ({provider})",
+				"keepParams": "Parameter (Temperatur, maximale Tokens, Reasoning)",
+				"keepSystemPrompt": "System-Prompt",
+				"keepServerTools": "Server-Tools",
+				"keepFunctionTools": "{count, plural, one {# Funktions-Tool} other {# Funktions-Tools}}",
+				"keepFunctionToolsHint": "Der Chat kann sie nicht ausführen. Sind sie deklariert, werden frühere Tool-Aufrufe als Aufrufe gesendet, sonst als Text.",
+				"includeResponse": "Die protokollierte Antwort"
+			},
+			"workspaceMismatch": "Der Chat sendet aus deinem aktiven Workspace, der nicht der Workspace dieser Anfrage ist.",
+			"warnings": {
+				"earlier_history_missing": "Diese Anfrage hat eine frühere Antwort per ID fortgesetzt, daher fehlen die Züge davor.",
+				"unsupported_content": "Einige Inhalte konnten nicht angezeigt werden und wurden weggelassen.",
+				"attachment_reference": "Einige Anhänge wurden per ID referenziert und nicht mit der Anfrage gespeichert.",
+				"no_response": "Die protokollierte Antwort fehlt oder ist fehlgeschlagen, daher endet der Chat mit der Anfrage.",
+				"response_truncated": "Die protokollierte Antwort wurde abgeschnitten.",
+				"extra_choices": "Nur die erste der Antwortvarianten wird übernommen.",
+				"unanswered_tool_calls": "Einige Tool-Aufrufe haben kein Ergebnis. Sie werden beim Fortsetzen als Text gesendet."
+			},
+			"cancel": "Abbrechen",
+			"continue": "Im Chat öffnen"
+		},
 		"errors": {
 			"signInToChat": "Melde dich an, um den Chat zu starten.",
 			"selectModelToChat": "Wähle ein Modell aus, um den Chat zu starten.",
@@ -1122,6 +1153,7 @@
 		"realtimeBillingOpenAI": "OpenAI-Nutzungsereignisse",
 		"realtimeBillingXai": "xAI-Dauermessung",
 		"realtimeBillingGoogle": "Google-Nutzungsmetadaten",
+		"realtimeBillingProvider": "{provider}-Nutzung",
 		"selectRealtimeModel": "Echtzeitmodell auswählen",
 		"searchRealtimeModels": "Echtzeitmodelle suchen...",
 		"noRealtimeModels": "Keine Echtzeitmodelle gefunden.",
@@ -1656,7 +1688,7 @@
 		"hideAllRuns": "Alle Durchläufe ausblenden",
 		"yourGateway": "Dein Gateway",
 		"yourGatewayTtft": "Dein Gateway (TTFT)",
-		"yourGatewayThroughput": "Dein Gateway (Tokens/s)",
+		"yourGatewayThroughput": "Dein Gateway (tps)",
 		"tie": "Unentschieden",
 		"latestProvider": "Letztes Ergebnis: {provider}",
 		"requestFailed": "Die Anfrage konnte nicht abgeschlossen werden. Prüfe Endpunkt und Zugangsdaten und versuche es erneut.",
@@ -1674,7 +1706,7 @@
 		"throughput": "Durchsatz",
 		"responsePlaceholder": "Antwort erscheint hier...",
 		"gatewayLabel": "Gateway",
-		"openaiThroughput": "OpenAI API (Tokens/s)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"feedback": {
 		"category": "Feedbackkategorie",
@@ -2000,7 +2032,7 @@
 			"cacheFailure": "Der Modell-Cache konnte nicht neu validiert werden.",
 			"successorRouting": {
 				"title": "Nachfolger-Routing",
-				"description": "Erlaube, Anfragen an dieses Modell an seinen Nachfolger zu senden, sobald es 72 Stunden lang von keinem Anbieter bereitgestellt wurde. Workspaces müssen dies ebenfalls aktivieren.",
+				"description": "Erlaube, Anfragen an dieses Modell an seinen Nachfolger zu senden, sobald es 72 Stunden lang von keinem Anbieter bereitgestellt wurde. Nachfolger werden automatisch freigegeben, außer wenn sie keinen Anbieter haben oder die Ausgabetypen dieses Modells nicht unterstützen. Workspaces müssen dies ebenfalls aktivieren.",
 				"replacement": "Nachfolger",
 				"noReplacement": "Nicht festgelegt",
 				"serving": "Bereitstellung",
@@ -2009,6 +2041,8 @@
 				"approval": "Freigabe",
 				"notApproved": "Nicht freigegeben",
 				"approved": "Freigegeben für {model} am {date}",
+				"approvedAutomatically": "Automatisch freigegeben für {model} am {date}",
+				"autoBlocked": "Die automatische Freigabe ist für dieses Modell aus, weil sie widerrufen wurde. Wenn du es freigibst, wird die automatische Freigabe wieder aktiviert.",
 				"approvalStale": "Freigegeben für {model}, aber der Nachfolger hat sich geändert. Bitte erneut prüfen.",
 				"blocking": "Kann nicht freigegeben werden: {issues}",
 				"warnings": "Prüfung nötig: {issues}",
@@ -2019,6 +2053,7 @@
 				"updateApproval": "Freigabe aktualisieren",
 				"reapprove": "Neuen Nachfolger freigeben",
 				"revoke": "Widerrufen",
+				"blockAuto": "Nicht automatisch freigeben",
 				"loadFailed": "Nachfolger-Routing konnte nicht geladen werden.",
 				"saveFailed": "Nachfolger-Routing konnte nicht gespeichert werden.",
 				"rejected": "Der Nachfolger konnte nicht freigegeben werden. Prüfe die Probleme oben und versuche es erneut.",
@@ -2394,7 +2429,11 @@
 			"rule": "Regel: {keyword}"
 		},
 		"realtimeBillingTitle": "Echtzeitabrechnung",
-		"realtimeBillingDescription": "Prüfe fehlende Nutzungsdaten, zurückgehaltene Mittel und protokollierte Abrechnungsentscheidungen."
+		"realtimeBillingDescription": "Prüfe fehlende Nutzungsdaten, zurückgehaltene Mittel und protokollierte Abrechnungsentscheidungen.",
+		"keyIncidentsTitle": "Vorfälle bei Schlüsselspeicherorten",
+		"keyIncidentsDescription": "Alle API-Schlüssel widerrufen oder pausieren, die auf einer Plattform mit Datenleck gespeichert sind.",
+		"slackAgentTitle": "Slack-Agent",
+		"slackAgentDescription": "Alle Slack-Agent-Installationen mit den Personen, Antworten, Gebühren und Modellausgaben dieses Monats."
 	},
 	"webhookPage": {
 		"description": "Sende signierte Updates mit Wiederholungsversuchen aus asynchronen Video- und Stapelaufträgen an deine Anwendung.",

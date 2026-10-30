@@ -15,6 +15,10 @@ icon: "bell-ring"
 5. हर कॉन्फ़िगर किए गए चैनल के लिए **टेस्ट भेजें** चुनें।
 6. सभी परीक्षण सफल होने के बाद गंतव्य बनाएँ।
 
+CLI से `phaseo notifications destinations create` चलाएँ, `phaseo notifications destinations test <id>` से उसकी जाँच करें, फिर `phaseo notifications routes set <event-kind> --destination-ids <id>` से चुनें कि उसे कौन-से अलर्ट मिलें।
+
+कस्टम वेबहुक बनाते समय उन्हें एक साइनिंग सीक्रेट मिलता है। खुलने वाले डायलॉग से इसे कॉपी करें; यह केवल एक बार दिखाया जाता है।
+
 Phaseo इन विकल्पों का समर्थन करता है:
 
 - ईमेल पते और वितरण सूचियाँ
@@ -61,3 +65,72 @@ Phaseo इन विकल्पों का समर्थन करता �
 क्रेडेंशियल बदलने या चैनल का कॉन्फ़िगरेशन बदलने के बाद मौजूदा गंतव्य के पास **टेस्ट भेजें** इस्तेमाल करें। जिन गंतव्यों की अब निगरानी नहीं होती, उन्हें हटा दें, ताकि अलर्ट किसी छोड़े हुए चैनल पर डिलीवर हुए न दिखें।
 
 कस्टम वेबहुक में HTTPS अनिवार्य है, और उन्हें अनुरोध को प्रोसेस करने से पहले सत्यापित करना चाहिए। तुरंत सफल प्रतिक्रिया लौटाएँ और धीमे काम को बैकग्राउंड जॉब में भेजें।
+
+## वेबहुक सिग्नेचर सत्यापित करें
+
+Phaseo हर कस्टम वेबहुक डिलीवरी को, सहेजे गए गंतव्य से भेजे गए परीक्षणों सहित, उसी तरीके से साइन करता है जैसे [वीडियो और बैच वेबहुक](./async-video-and-batch.mdx)। हर अनुरोध में ये हेडर होते हैं:
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature`, `x-phaseo-timestamp` के मान, एक बिंदु (`.`) और **बिना बदले अनुरोध बॉडी** का हेक्साडेसिमल HMAC-SHA256 है, जिसकी कुंजी गंतव्य का साइनिंग सीक्रेट (`whsec_…`) है। `x-phaseo-timestamp` Unix सेकंड में होता है।
+
+डिलीवरी सत्यापित करने के लिए:
+
+1. JSON के रूप में पार्स करने से पहले मूल बॉडी पढ़ें।
+2. सिग्नेचर फिर से गणना करें और स्थिर समय में तुलना करें।
+3. आपकी घड़ी से पाँच मिनट से अधिक अंतर वाले टाइमस्टैम्प अस्वीकार करें।
+4. `x-phaseo-event-id` के आधार पर डुप्लिकेट हटाएँ। विफल डिलीवरी दोबारा भेजी जाती हैं, और हर प्रयास नए टाइमस्टैम्प के साथ फिर से साइन होता है।
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody, प्राप्त हुई अनुरोध बॉडी है, ठीक वैसी ही, स्ट्रिंग के रूप में।
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body, प्राप्त हुई अनुरोध बॉडी है, ठीक वैसी ही, bytes के रूप में।
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### सीक्रेट बनाएँ या बदलें
+
+सीक्रेट केवल एक बार, गंतव्य बनाते समय दिखाया जाता है। इसे बदलने के लिए **Settings → Notifications** में गंतव्य के पास **सीक्रेट बदलें** चुनें, या [`POST /v1/notifications/destinations/{id}/rotate-secret`](/hi/v1/api-reference/endpoint/notifications-destination-rotate-secret) कॉल करें। अगली डिलीवरी नए सीक्रेट से साइन होती है और पुराना काम करना बंद कर देता है, इसलिए अपना रिसीवर तुरंत अपडेट करें।
+
+साइनिंग उपलब्ध होने से पहले बने कस्टम वेबहुक के पास कोई सीक्रेट नहीं है और वे अब भी बिना साइन के भेजे जाते हैं। Settings में वे **बिना साइन** दिखते हैं। **सीक्रेट बनाएँ** चुनें, सीक्रेट को अपने रिसीवर में जोड़ें, फिर सत्यापन जाँचने के लिए परीक्षण भेजें। **गंतव्य जोड़ें** पैनल से, गंतव्य सहेजने से पहले भेजे गए परीक्षण साइन नहीं होते क्योंकि तब तक कोई सीक्रेट नहीं होता।
+
+ईमेल, Slack, Discord और Microsoft Teams गंतव्य साइन नहीं होते: ये सेवाएँ वेबहुक URL या बॉट टोकन को स्वयं प्रमाणित करती हैं।

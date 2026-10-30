@@ -72,26 +72,16 @@ export function checkCard(card: SweepCard, _route: SweepRoute | null): Mismatch[
 
 	if (!card.rules.length) {
 		const now = SWEEP_NOW_MS;
-		const future = card.fixtureRules.some((rule) => rule.effective_from && Date.parse(rule.effective_from) > now);
+		const future = card.dbRules.some((rule) => rule.effective_from && Date.parse(rule.effective_from) > now);
 		push("no-current-rules", {
 			kind: "wrong_value",
 			path: "catalogue.effective_to",
 			expected: "at least one rule in effect for an active route",
-			actual: card.fixtureRules.map((rule) => [rule.meter, rule.pricing_plan, rule.effective_from ?? null, rule.effective_to ?? null]),
+			actual: card.dbRules.map((rule) => [rule.id, rule.pricing_plan, rule.effective_from, rule.effective_to]),
 			source: { kind: "assumed", reason: "An active route whose card has no rule in effect fails with pricing_card_missing_for_executed_route after the provider has served the request (pipeline/after/pricing.ts loadProviderPricing)." },
 			note: future ? "every rule starts in the future" : "every rule has expired",
 		});
 		return out;
-	}
-
-	for (const [field, value] of Object.entries(card.unsupportedCardFields)) {
-		push(`unsupported-card-field.${field}`, {
-			kind: "dropped",
-			path: `catalogue.${field}`,
-			expected: value,
-			actual: null,
-			source: { kind: "assumed", reason: `The card sets ${field}, which neither the pricing loader nor the engine reads, so it is never applied.` },
-		});
 	}
 
 	const currencies = [...new Set(card.rules.map((rule) => String(rule.currency ?? "USD").toUpperCase()))];

@@ -9,6 +9,7 @@ import { UserUsageChip } from "./UserUsageChip";
 import { KeyUsageCharts } from "./KeyUsageCharts";
 import { KeyNameHeading } from "./KeyNameHeading";
 import KeySettingsForm from "@/components/(gateway)/settings/keys/KeySettingsForm";
+import { KeyStorageLocationList } from "@/components/(gateway)/settings/keys/KeyStorageLocationPicker";
 import { KeyPageActions } from "@/components/(gateway)/settings/keys/KeyPageActions";
 import { type KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";
 
@@ -22,7 +23,7 @@ export async function KeyDetailView({ data }: { data: KeyDetailData }) {
 		<header className="flex items-center justify-between gap-4 border-b pb-6">
 			<div className="flex min-w-0 items-center gap-4">
 				<Button variant="ghost" size="icon" asChild><Link href="/settings/keys" aria-label={t("keyDetail.back")}><ArrowLeft className="size-4" /></Link></Button>
-				<div className="min-w-0"><div className="flex flex-wrap items-center gap-3"><KeyNameHeading key={key.name} k={key} canManage={data.canManage} /><Badge variant="outline">{expired ? t("labels.expired") : key.status === "active" ? t("labels.enabled") : t("labels.disabled")}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{data.workspaceName ?? t("labels.workspace")} · {t("usageViewFilters.apiKey")}</p></div>
+				<div className="min-w-0"><div className="flex flex-wrap items-center gap-3"><KeyNameHeading key={key.name} k={key} canManage={data.canManage} /><Badge variant="outline">{key.status === "revoked" || key.status === "compromised" ? t("labels.revoked") : expired ? t("labels.expired") : key.status === "active" ? t("labels.enabled") : t("labels.disabled")}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{data.workspaceName ?? t("labels.workspace")} · {t("usageViewFilters.apiKey")}</p></div>
 			</div>
 			{data.canManage && <KeyPageActions k={key} />}
 		</header>
@@ -32,7 +33,7 @@ export async function KeyDetailView({ data }: { data: KeyDetailData }) {
 				{[
 					[t("keyDetail.prefix"), `${key.prefix}…`], [t("teams.createdBy"), key.created_by ? <UserUsageChip userId={key.created_by} name={data.creatorName} avatarUrl={data.creatorAvatarUrl} workspaceId={key.workspace_id} currentUserId={data.currentUserId} canViewWorkspaceUsers={data.canManage} /> : t("teams.unknown")],
 					[t("teams.created"), date(key.created_at, t("teams.unknown"))], [t("oauthDetail.lastUsed"), date(key.last_used_at ?? (String(usage?.last_used_at ?? "") || null), t("labels.never"))],
-					[t("strings.Expires"), date(key.expires_at, t("labels.noExpiry"))], [t("keyDetail.keyId"), key.id],
+					[t("strings.Expires"), date(key.expires_at, t("labels.noExpiry"))], [t("keyStorage.storedIn"), key.storage_locations?.length ? <KeyStorageLocationList value={key.storage_locations} /> : t("keyStorage.notSet")], [t("keyDetail.keyId"), key.id],
 				].map(([label, value]) => <div key={String(label)}><dt className="text-muted-foreground">{label}</dt><dd className="mt-1 break-all font-medium">{value}</dd></div>)}
 			</dl>
 		</section>

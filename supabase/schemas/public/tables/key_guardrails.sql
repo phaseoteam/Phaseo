@@ -17,6 +17,11 @@ CREATE TRIGGER gateway_workspace_publication
   FOR EACH ROW
   EXECUTE FUNCTION private.capture_gateway_workspace_publication();
 
+CREATE TRIGGER protect_slack_agent_guardrail
+  BEFORE DELETE OR UPDATE ON public.key_guardrails
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_slack_agent_guardrail();
+
 CREATE POLICY "key_guardrails_delete_own_team" ON "public"."key_guardrails"
   FOR DELETE
   TO "authenticated"

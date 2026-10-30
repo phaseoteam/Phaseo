@@ -99,6 +99,17 @@ describe("publishBroadcastEvent", () => {
 		expect(message).not.toHaveProperty("telemetry");
 	});
 
+	it("leaves events too large for a message to the outbox where no bucket is bound", async () => {
+		// The EU and US workers have no I/O log bucket.
+		delete bindings.current.GATEWAY_IO_LOGS_BUCKET;
+		const random = new Uint8Array(200_000);
+		for (let offset = 0; offset < random.length; offset += 65_536) crypto.getRandomValues(random.subarray(offset, offset + 65_536));
+		expect(await publish(telemetry(Array.from(random, (byte) => byte.toString(16).padStart(2, "0")).join("")))).toBe(false);
+		expect(send).not.toHaveBeenCalled();
+		// Smaller events still use the queue.
+		expect(await publish()).toBe(true);
+	});
+
 	it("reports a failed send so the caller can use the outbox", async () => {
 		send.mockRejectedValueOnce(new Error("queue unavailable"));
 		vi.spyOn(console, "error").mockImplementation(() => undefined);

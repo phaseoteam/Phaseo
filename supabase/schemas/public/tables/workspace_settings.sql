@@ -62,6 +62,7 @@ CREATE TABLE "public"."workspace_settings" (
   "model_successor_redirect_enabled"             boolean                  NOT NULL DEFAULT false,
   "model_successor_price_policy"                 text                     NOT NULL DEFAULT 'never'::text,
   "model_successor_max_price_increase_percent"   integer                  NOT NULL DEFAULT 0,
+  "io_logging_contents_access"                   text                     NOT NULL DEFAULT 'members'::text,
   "department_spend_attribution"                 text                     NOT NULL DEFAULT 'all'::text,
   "billing_time_zone"                            text                     NOT NULL DEFAULT 'UTC'::text,
   "spend_report_cadence"                         text                     NOT NULL DEFAULT 'weekly'::text,
@@ -83,6 +84,7 @@ CREATE TABLE "public"."workspace_settings" (
   CONSTRAINT "workspace_settings_data_contribution_discount_check" CHECK (((data_contribution_discount_bps >= 0) AND (data_contribution_discount_bps <= 10000))),
   CONSTRAINT "workspace_settings_data_contribution_sample_rate_check" CHECK (((data_contribution_sample_rate_bps >= 0) AND (data_contribution_sample_rate_bps <= 10000))),
   CONSTRAINT "workspace_settings_department_spend_attribution_check" CHECK ((department_spend_attribution = ANY (ARRAY['all'::text, 'primary'::text]))),
+  CONSTRAINT "workspace_settings_io_logging_contents_access_check" CHECK ((io_logging_contents_access = ANY (ARRAY['members'::text, 'admins'::text]))),
   CONSTRAINT "workspace_settings_io_logging_billing_status_check" CHECK ((io_logging_billing_status = ANY (ARRAY['active'::text, 'grace'::text, 'suspended'::text]))),
   CONSTRAINT "workspace_settings_io_logging_price_per_million_units_check" CHECK ((io_logging_price_per_million_units_nanos >= 0)),
   CONSTRAINT "workspace_settings_io_logging_retention_days_check" CHECK (((io_logging_retention_days >= 90) AND (io_logging_retention_days <= 365))),
@@ -163,6 +165,8 @@ COMMENT ON COLUMN "public"."workspace_settings"."data_contribution_enabled" IS '
 COMMENT ON COLUMN "public"."workspace_settings"."data_contribution_sample_rate_bps" IS 'Deterministic redacted I/O retention rate in basis points. Platform controlled; initially 10000 (100%).';
 
 COMMENT ON COLUMN "public"."workspace_settings"."io_logging_billing_status" IS 'Extended-retention state consumed by the gateway I/O logging path.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."io_logging_contents_access" IS 'Who may read stored request and response payloads: members (any workspace member) or admins (owners and admins only).';
 
 COMMENT ON COLUMN "public"."workspace_settings"."io_logging_price_per_million_units_nanos" IS 'Reserved extended-retention price override; zero uses the default.';
 

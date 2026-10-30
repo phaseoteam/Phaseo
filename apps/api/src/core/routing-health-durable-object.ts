@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import type { GatewayBindings } from "@/runtime/env.types";
 import {
     HEALTH_REPORT_MAX_AGE_MS, HEALTH_PUBLISH_INTERVAL_MS, HEALTH_SNAPSHOT_MAX_AGE_MS,
-    healthPoolName, healthSnapshotKey, reduceHealth,
+    healthPoolName, healthSnapshotKey, reduceHealth, validTokenMix,
     type HealthObservation, type HealthEvidence, type HealthSnapshot, type HealthReceipt,
 } from "@pipeline/execute/health-evidence";
 
@@ -105,7 +105,8 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
             !Number.isFinite(event.observedAt) || !Number.isFinite(event.startedAt) ||
             event.startedAt > event.observedAt || !Number.isFinite(event.latencyMs) || event.latencyMs < 0 ||
             (event.tps !== null && (!Number.isFinite(event.tps) || event.tps < 0)) ||
-            typeof event.ok !== "boolean" || typeof event.limited !== "boolean" || typeof event.probe !== "boolean") {
+            typeof event.ok !== "boolean" || typeof event.limited !== "boolean" || typeof event.probe !== "boolean" ||
+            (event.tokens !== undefined && !validTokenMix(event.tokens))) {
             throw new Error("Invalid health observation");
         }
         if (event.observedAt < now - HEALTH_REPORT_MAX_AGE_MS || event.observedAt > now + 5_000) return null;

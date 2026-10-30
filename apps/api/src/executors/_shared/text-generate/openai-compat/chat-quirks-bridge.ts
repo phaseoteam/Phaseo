@@ -26,6 +26,7 @@ export function applyChatResponseQuirks(args: {
 	providerId?: string;
 	choice: any;
 	rawContent: string;
+	model?: string;
 }): { main: string; reasoning: string[] } {
 	const quirks = getProviderQuirks(args.providerId);
 
@@ -33,6 +34,8 @@ export function applyChatResponseQuirks(args: {
 		return quirks.extractReasoning({
 			choice: args.choice,
 			rawContent: args.rawContent,
+			providerId: args.providerId,
+			model: args.model,
 		});
 	}
 

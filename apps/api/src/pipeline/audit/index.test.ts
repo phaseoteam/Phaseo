@@ -29,6 +29,7 @@ vi.mock("@core/workspace-usage-rollups", () => ({
 vi.mock("./io-logging", () => ({
 	resolveGatewayIoLoggingPolicy: (...args: any[]) => resolveGatewayIoLoggingPolicyMock(...args),
 	persistGatewayIoLog: (...args: any[]) => persistGatewayIoLogMock(...args),
+	requestZeroDataRetention: () => false,
 }));
 
 vi.mock("./upstream-requests", () => ({
@@ -128,6 +129,9 @@ describe("audit request detail persistence", () => {
 	it.each([
 		["a requests-per-minute policy rejection", "user:rate_limit_exceeded", "policy_requests_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "requests" }],
 		["a tokens-per-minute policy rejection", "user:rate_limit_exceeded", "policy_tokens_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "tokens" }],
+		["a concurrency policy rejection", "user:rate_limit_exceeded", "policy_concurrent_requests", { policy_id: "policy-1", limit_scope: "member", limit: "concurrent_requests" }],
+		["a strict policy that could not be checked", "user:rate_limit_exceeded", "policy_unavailable", { policy_id: "policy-1", limit_scope: "member", limit: "unavailable" }],
+		["an unknown reason", "user:rate_limit_exceeded", "something_else", null],
 		["a provider rate limit", "rate_limit_exceeded", "policy_requests_per_minute", null],
 	])("records the rejecting rate limit policy on %s", async (_label, errorCode, reason, expected) => {
 		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
@@ -227,46 +231,37 @@ describe("audit request detail persistence", () => {
 		}
 	});
 
-	it("stores replay-ready details for successful requests", async () => {
+	it("stores replay-ready metadata for successful requests", async () => {
 		const gatewayRequestRows: any[] = [];
-		const detailRows: any[] = [];
 		const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 		ensureAppIdMock.mockResolvedValueOnce(null);
 
+		const fromMock = vi.fn((table: string) => {
+			if (table === "gateway_requests") {
+				return {
+					insert: vi.fn((row: any) => {
+						gatewayRequestRows.push(row);
+						return {
+							select: vi.fn(() => ({
+								single: vi.fn(async () => ({
+									data: {
+										id: "row_1",
+										created_at: "2026-05-05T12:00:00.000Z",
+										workspace_id: "ws_1",
+									},
+									error: null,
+								})),
+							})),
+						};
+					}),
+				};
+			}
+
+			throw new Error(`unexpected table ${table}`);
+		});
 		getSupabaseAdminMock.mockReturnValue({
 			rpc: vi.fn(async () => ({ data: "v2_request_event_1", error: null })),
-			from: vi.fn((table: string) => {
-				if (table === "gateway_requests") {
-					return {
-						insert: vi.fn((row: any) => {
-							gatewayRequestRows.push(row);
-							return {
-								select: vi.fn(() => ({
-									single: vi.fn(async () => ({
-										data: {
-											id: "row_1",
-											created_at: "2026-05-05T12:00:00.000Z",
-											workspace_id: "ws_1",
-										},
-										error: null,
-									})),
-								})),
-							};
-						}),
-					};
-				}
-
-				if (table === "gateway_request_details") {
-					return {
-						insert: vi.fn(async (row: any) => {
-							detailRows.push(row);
-							return { error: null };
-						}),
-					};
-				}
-
-				throw new Error(`unexpected table ${table}`);
-			}),
+			from: fromMock,
 		});
 
 		await auditSuccess({
@@ -338,19 +333,9 @@ describe("audit request detail persistence", () => {
 		);
 		expect(gatewayRequestRows[0].usage_input_quad_tokens).toBeGreaterThan(0);
 		expect(gatewayRequestRows[0].usage_output_quad_tokens).toBeGreaterThan(0);
-		expect(detailRows).toHaveLength(1);
-		expect(detailRows[0]).toEqual(
-			expect.objectContaining({
-				request_id: "req_success_1",
-				workspace_id: "ws_1",
-				request_payload: {
-					model: "openai/gpt-5-nano",
-					messages: [{ role: "user", content: "hello" }],
-				},
-				request_content: [{ role: "user", content: "hello" }],
-				metadata: expect.objectContaining({ replay_supported: true, response_timeline: { version: 1, routing_ms: 12 } }),
-			}),
-		);
+		// Content lives only in the I/O log in R2; there's no separate details row.
+		expect(persistGatewayIoLogMock).toHaveBeenCalledOnce();
+		expect(fromMock).not.toHaveBeenCalledWith("gateway_request_details");
 		expect(consoleErrorSpy).not.toHaveBeenCalledWith(
 			"[audit] ensureAppId returned null",
 			expect.anything(),
@@ -360,7 +345,6 @@ describe("audit request detail persistence", () => {
 
 	it("persists only the synthetic identity for a stealth request", async () => {
 		const gatewayRequestRows: any[] = [];
-		const detailRows: any[] = [];
 		const v2Events: any[] = [];
 		getSupabaseAdminMock.mockReturnValue({
 			rpc: vi.fn(async (_rpc: string, payload: any) => {
@@ -375,12 +359,6 @@ describe("audit request detail persistence", () => {
 							data: { id: "row_stealth", created_at: "2026-08-27T12:00:00.000Z", workspace_id: "ws_stealth" },
 							error: null,
 						})) })) };
-					}),
-				};
-				if (table === "gateway_request_details") return {
-					insert: vi.fn(async (row: any) => {
-						detailRows.push(row);
-						return { error: null };
 					}),
 				};
 				throw new Error(`unexpected table ${table}`);
@@ -444,55 +422,39 @@ describe("audit request detail persistence", () => {
 			provider_model_id: "stealth:stealth/test-model-20260827",
 			provider_api_model_id: "stealth/test-model-20260827",
 		});
-		expect(detailRows[0]).toMatchObject({
-			model_id: "stealth/test-model-20260827",
-			provider: "stealth",
-			provider_request: null,
-			provider_response: null,
-			gateway_response: { model: "stealth/test-model-20260827", output_text: "ok" },
-		});
-		expect(JSON.stringify({ gatewayRequestRows, detailRows, v2Events, upstream: persistGatewayUpstreamRequestsMock.mock.calls }))
+		expect(JSON.stringify({ gatewayRequestRows, v2Events, upstream: persistGatewayUpstreamRequestsMock.mock.calls }))
 			.not.toMatch(/openai|pam_openai_secret|oai-stealth-test-model-internal|api\.openai\.com/i);
 	});
 
-	it("stores replay-ready details for execute-stage failures", async () => {
+	it("stores replay-ready metadata for execute-stage failures", async () => {
 		const gatewayRequestRows: any[] = [];
-		const detailRows: any[] = [];
 
+		const fromMock = vi.fn((table: string) => {
+			if (table === "gateway_requests") {
+				return {
+					insert: vi.fn((row: any) => {
+						gatewayRequestRows.push(row);
+						return {
+							select: vi.fn(() => ({
+								single: vi.fn(async () => ({
+									data: {
+										id: "row_2",
+										created_at: "2026-05-05T12:05:00.000Z",
+										workspace_id: "ws_2",
+									},
+									error: null,
+								})),
+							})),
+						};
+					}),
+				};
+			}
+
+			throw new Error(`unexpected table ${table}`);
+		});
 		getSupabaseAdminMock.mockReturnValue({
 			rpc: vi.fn(async () => ({ data: "v2_request_event_2", error: null })),
-			from: vi.fn((table: string) => {
-				if (table === "gateway_requests") {
-					return {
-						insert: vi.fn((row: any) => {
-							gatewayRequestRows.push(row);
-							return {
-								select: vi.fn(() => ({
-									single: vi.fn(async () => ({
-										data: {
-											id: "row_2",
-											created_at: "2026-05-05T12:05:00.000Z",
-											workspace_id: "ws_2",
-										},
-										error: null,
-									})),
-								})),
-							};
-						}),
-					};
-				}
-
-				if (table === "gateway_request_details") {
-					return {
-						insert: vi.fn(async (row: any) => {
-							detailRows.push(row);
-							return { error: null };
-						}),
-					};
-				}
-
-				throw new Error(`unexpected table ${table}`);
-			}),
+			from: fromMock,
 		});
 
 		await auditFailure({
@@ -538,23 +500,16 @@ describe("audit request detail persistence", () => {
 				],
 			}),
 		);
-		expect(detailRows).toHaveLength(1);
-		expect(detailRows[0]).toEqual(
-			expect.objectContaining({
-				request_id: "req_failure_1",
-				workspace_id: "ws_2",
-				success: false,
-				request_payload: {
-					model: "openai/gpt-5.4-nano",
-					input: [{ role: "user", content: "retry me" }],
-				},
-				request_content: [{ role: "user", content: "retry me" }],
-				metadata: expect.objectContaining({
-					replay_supported: true,
-					stage: "execute",
-				}),
-			}),
+		expect(gatewayRequestRows[0].detail_metadata).toEqual(expect.objectContaining({
+			replay_supported: true,
+			stage: "execute",
+		}));
+		// Content lives only in the I/O log in R2; there's no separate details row.
+		expect(persistGatewayIoLogMock).toHaveBeenCalledWith(
+			expect.objectContaining({ requestId: "req_failure_1", success: false }),
+			expect.anything(),
 		);
+		expect(fromMock).not.toHaveBeenCalledWith("gateway_request_details");
 	});
 
 	it("persists pre-model failures with an explicit unknown model", async () => {
@@ -581,9 +536,6 @@ describe("audit request detail persistence", () => {
 						}),
 					};
 				}
-				if (table === "gateway_request_details") {
-					return { insert: vi.fn(async () => ({ error: null })) };
-				}
 				throw new Error(`unexpected table ${table}`);
 			}),
 		});
@@ -605,7 +557,7 @@ describe("audit request detail persistence", () => {
 		}));
 	});
 
-	it("completes the audit without a separate rollup call when detail persistence fails", async () => {
+	it("completes the audit without a separate rollup call", async () => {
 		getSupabaseAdminMock.mockReturnValue({
 			rpc: vi.fn(async () => ({ data: "v2_request_event_3", error: null })),
 			from: vi.fn((table: string) => {
@@ -622,14 +574,6 @@ describe("audit request detail persistence", () => {
 									error: null,
 								})),
 							})),
-						})),
-					};
-				}
-
-				if (table === "gateway_request_details") {
-					return {
-						insert: vi.fn(async () => ({
-							error: { message: "details insert failed" },
 						})),
 					};
 				}
@@ -898,97 +842,6 @@ describe("audit request detail persistence", () => {
 			workspace_id: "ws_rpc_fallback",
 			usage_meters: expect.any(Array),
 		}));
-	});
-
-	it("disables request detail persistence in local testing mode when the detail table is missing", async () => {
-		isLocalTestingModeEnabledMock.mockReturnValue(true);
-		const detailInsertMock = vi
-			.fn()
-			.mockResolvedValueOnce({
-				error: {
-					code: "PGRST205",
-					message:
-						"Could not find the table 'public.gateway_request_details' in the schema cache",
-				},
-			})
-			.mockResolvedValue({ error: null });
-
-		getSupabaseAdminMock.mockReturnValue({
-			rpc: vi.fn(async () => ({ data: "v2_request_event_4", error: null })),
-			from: vi.fn((table: string) => {
-				if (table === "gateway_requests") {
-					return {
-						insert: vi.fn(() => ({
-							select: vi.fn(() => ({
-								single: vi.fn(async () => ({
-									data: {
-										id: "row_4",
-										created_at: "2026-05-05T12:15:00.000Z",
-										workspace_id: "ws_4",
-									},
-									error: null,
-								})),
-							})),
-						})),
-					};
-				}
-
-				if (table === "gateway_request_details") {
-					return {
-						insert: detailInsertMock,
-					};
-				}
-
-				throw new Error(`unexpected table ${table}`);
-			}),
-		});
-
-		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-		await auditSuccess({
-			requestId: "req_success_local_missing_details_1",
-			workspaceId: "ws_4",
-			provider: "openai",
-			model: "openai/gpt-5-nano",
-			endpoint: "chat.completions",
-			stream: false,
-			byok: false,
-			usagePriced: { prompt_tokens: 2, completion_tokens: 1, pricing: { lines: [] } },
-			totalCents: 0.001,
-			totalNanos: 1000000,
-			currency: "USD",
-			statusCode: 200,
-			requestPayload: { model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hello" }] },
-			gatewayResponse: { id: "resp_3", output_text: "hi" },
-			providerRequest: { model: "openai/gpt-5-nano" },
-			providerResponse: { id: "chatcmpl_3" },
-		});
-
-		await auditSuccess({
-			requestId: "req_success_local_missing_details_2",
-			workspaceId: "ws_4",
-			provider: "openai",
-			model: "openai/gpt-5-nano",
-			endpoint: "chat.completions",
-			stream: false,
-			byok: false,
-			usagePriced: { prompt_tokens: 2, completion_tokens: 1, pricing: { lines: [] } },
-			totalCents: 0.001,
-			totalNanos: 1000000,
-			currency: "USD",
-			statusCode: 200,
-			requestPayload: { model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hello again" }] },
-			gatewayResponse: { id: "resp_4", output_text: "hi again" },
-			providerRequest: { model: "openai/gpt-5-nano" },
-			providerResponse: { id: "chatcmpl_4" },
-		});
-
-		expect(detailInsertMock).toHaveBeenCalledTimes(1);
-		expect(warnSpy).toHaveBeenCalledWith(
-			"[audit] gateway_request_details not available in local testing mode; skipping request detail persistence."
-		);
-
-		warnSpy.mockRestore();
 	});
 
 	it("combines legacy column fallbacks before retrying the audit insert", async () => {

@@ -106,3 +106,12 @@ it("settles web search and delegated tokens together, including usage received a
 	await settleRealtimeSession({ auth, sessionId: "rt_test", usage });
 	expect(state.rpc).toHaveBeenCalledTimes(1);
 });
+
+it("records an estimated settlement only for internal relay callers", async () => {
+	const usage = ingestLiveUsage({ live_started: true }, { type: "session.closed", usage: { seconds: 60 } });
+	await settleRealtimeSession({ auth, sessionId: "rt_test", usage, estimated: true, estimateBasis: "interrupted_turn_metered_audio" });
+	expect(state.rpc.mock.calls[0][1]).toMatchObject({ p_estimated: true, p_estimate_basis: "interrupted_turn_metered_audio" });
+	state.row.status = "connected";
+	await settleRealtimeSession({ auth, sessionId: "rt_test", usage });
+	expect(state.rpc.mock.calls[1][1]).toMatchObject({ p_estimated: false, p_estimate_basis: null });
+});

@@ -123,6 +123,26 @@ if err != nil {
 fmt.Println(batchSocketURL, videoSocketURL, genericSocketURL, resourceSocketURL)
 ```
 
+## Realtime voice (beta)
+
+The `realtime` package creates a realtime session and opens the relay WebSocket with `github.com/coder/websocket`. It is a separate package, so that dependency is only compiled when you import it. Provider events pass through unchanged.
+
+```go
+import "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime"
+
+session, err := realtime.Connect(ctx, client, realtime.Options{Model: "openai/gpt-realtime-2", Voice: "marin"})
+if err != nil {
+	return err
+}
+session.OnWarning(func(w realtime.Warning) { log.Println(w.Code) })
+events := session.Events() // every event until the socket closes
+_ = session.SendAudio(ctx, pcm16Chunk) // PCM16 bytes; base64 is handled for you
+ended, err := session.End(ctx, realtime.EndOptions{Reason: "caller hung up"})
+// ended.Reason, ended.Usage, ended.Cost.TotalUSD, ended.BillingStatus
+```
+
+If the socket closes without `session.ended`, `End` returns a `*realtime.ClosedError` whose `FinalBill.Path` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.

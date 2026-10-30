@@ -15,8 +15,7 @@
 		"**/.turbo/**",
 		"**/node_modules/**",
 		"apps/api/.wrangler/**",
-		"apps/web/scripts/**",
-		"packages/data/catalog/src/data/__tests__/**"
+		"apps/web/scripts/**"
 	],
 	"jest": false
 }

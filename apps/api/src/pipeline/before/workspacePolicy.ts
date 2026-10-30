@@ -223,6 +223,7 @@ function isWorkspacePolicyLike(value: unknown): value is WorkspacePolicy {
 		(policy.privacyEnableFreeMayTrain === undefined || typeof policy.privacyEnableFreeMayTrain === "boolean") &&
 		(policy.privacyEnableInputOutputLogging === undefined || typeof policy.privacyEnableInputOutputLogging === "boolean") &&
 		(policy.privacyZdrOnly === undefined || typeof policy.privacyZdrOnly === "boolean") &&
+		(policy.neverStoreContent === undefined || typeof policy.neverStoreContent === "boolean") &&
 		typeof policy.enforceAllowed === "boolean" &&
 		(policy.dynamicRoute === null || policy.dynamicRoute === undefined || typeof policy.dynamicRoute === "object") &&
 		Array.isArray(policy.activeGuardrailIds) &&
@@ -244,6 +245,7 @@ function cloneWorkspacePolicy(policy: WorkspacePolicy): WorkspacePolicy {
 		privacyEnableFreeMayTrain: policy.privacyEnableFreeMayTrain ?? true,
 		privacyEnableInputOutputLogging: policy.privacyEnableInputOutputLogging ?? true,
 		privacyZdrOnly: policy.privacyZdrOnly ?? false,
+		neverStoreContent: policy.neverStoreContent ?? false,
 		enforceAllowed: policy.enforceAllowed,
 		activeGuardrailIds: [...policy.activeGuardrailIds],
 		dynamicRoute: policy.dynamicRoute
@@ -382,10 +384,27 @@ function extractProviderHints(body: any): ProviderHintSet {
 	};
 }
 
+/**
+ * Whether a provider may serve the request under its `provider.only` and
+ * `provider.ignore` and the workspace policy's provider allow and block lists,
+ * as applyWorkspacePolicy filters them; for narrowing Auto's shortlist before
+ * each candidate is checked.
+ */
+export function providerPermittedByPolicy(body: any, workspacePolicy: WorkspacePolicy | null): (providerId: string) => boolean {
+	const hints = extractProviderHints(body);
+	const only = hints.only.length ? new Set(hints.only) : null;
+	const ignore = new Set(hints.ignore);
+	const allow = workspacePolicy?.providerAllowlist ? new Set(workspacePolicy.providerAllowlist) : null;
+	const block = new Set(workspacePolicy?.providerBlocklist ?? []);
+	return (providerId) => (!allow || allow.has(providerId)) && !block.has(providerId)
+		&& (!only || only.has(providerId)) && !ignore.has(providerId);
+}
+
 export function buildWorkspacePolicy(args: {
 	globalSettings?: WorkspaceSettingsRow | null;
 	guardrails?: GuardrailRow[];
 	dynamicRoute?: DynamicRoutePolicy | null;
+	neverStoreContent?: boolean;
 }): WorkspacePolicy {
 	let providerAllowlist: Set<string> | null = null;
 	const providerBlocklist = new Set<string>();
@@ -507,6 +526,7 @@ export function buildWorkspacePolicy(args: {
 		privacyEnableFreeMayTrain,
 		privacyEnableInputOutputLogging,
 		privacyZdrOnly,
+		neverStoreContent: args.neverStoreContent === true,
 		enforceAllowed,
 		activeGuardrailIds: (args.guardrails ?? []).map((guardrail) => guardrail.id),
 		dynamicRoute: args.dynamicRoute ?? null,
@@ -553,7 +573,7 @@ export async function fetchWorkspacePolicy(args: {
 			.maybeSingle(),
 		supabase
 			.from("keys")
-			.select("created_by,oauth_user_id")
+			.select("created_by,oauth_user_id,never_store_content")
 			.eq("id", args.apiKeyId)
 			.eq("workspace_id", args.workspaceId)
 			.maybeSingle(),
@@ -659,6 +679,7 @@ export async function fetchWorkspacePolicy(args: {
 		globalSettings: (settingsResult.data ?? null) as WorkspaceSettingsRow | null,
 		guardrails,
 		dynamicRoute,
+		neverStoreContent: keyResult.data?.never_store_content === true,
 	});
 	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
 	const raw = JSON.stringify(policy);

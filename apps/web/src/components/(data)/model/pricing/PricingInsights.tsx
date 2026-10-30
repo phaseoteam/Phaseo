@@ -114,6 +114,7 @@ import {
 	dispatchProviderInspectorOpen,
 	subscribeProviderInspector,
 } from "@/components/(data)/model/pricing/providerInspectorSync";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const dailyAveragePricePer1MCache = new WeakMap<ModelPricingHistoryRule, number>();
 
@@ -201,7 +202,7 @@ function formatTokenCount(value: number, formatCount: (count: number) => string)
 function formatUsdValue(value: number | null, locale: string, freeLabel: string): string {
 	if (value == null || !Number.isFinite(value)) return "--";
 	if (value === 0) return freeLabel;
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 6 }).format(value);
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 6 }).format(value);
 }
 
 function formatAxisUsd(value: number, locale: string): string {

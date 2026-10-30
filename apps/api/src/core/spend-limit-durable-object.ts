@@ -1,4 +1,6 @@
-// Purpose: Coordinate API-key spend/request caps and workspace budgets for one workspace.
+// Purpose: Coordinate API-key spend/request caps, department budgets and workspace budgets for one
+//          workspace. A department budget counts the cost of every key the seed lists for the
+//          department (private.department_budget_key_departments), like a shared key cost limit.
 // Why: Capped keys currently bypass the cached gateway context and recount day/week/month usage
 //      in Postgres on every request.
 // How: One object per workspace seeds usage from `gateway_spend_limit_seed`, keeps hot counters
@@ -65,6 +67,20 @@ export type SpendLimitSeed = {
 		}>;
 	} | null;
 	excluded_rows: Array<{ request_id: string; key_id: string | null; success: boolean; cost_nanos: number; created_at: string }>;
+	/** Absent from seeds written before department budgets could block. */
+	department_budgets?: Array<{
+		id: string;
+		department_id: string;
+		department_name: string | null;
+		interval: KeyWindow;
+		limit_nanos: number;
+		/** Successful gateway_requests cost of `key_ids` in the window, less excluded request ids. */
+		usage_nanos: number;
+		window_start: string;
+		reset_at: string | null;
+		/** Every key whose cost counts toward the department. */
+		key_ids: string[];
+	}> | null;
 };
 
 type KeyState = {
@@ -84,6 +100,20 @@ type BudgetState = {
 	statusUsage: number;
 	windowStart: number | null;
 	resetAt: string | null;
+};
+
+/** A department budget: counted like a key cost limit, over every key of the department. */
+type DepartmentBudgetState = {
+	id: string;
+	departmentId: string;
+	departmentName: string | null;
+	interval: KeyWindow;
+	limit: number;
+	/** Seeded usage (excluding recorded spend not yet in the seed, as for keys). */
+	base: number;
+	windowStart: number;
+	resetAt: string | null;
+	keyIds: Set<string>;
 };
 
 type Pending = {
@@ -146,6 +176,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private seeding: Promise<void> | null = null;
 	private readonly keys = new Map<string, KeyState>();
 	private budgets: BudgetState[] = [];
+	private departmentBudgets: DepartmentBudgetState[] = [];
 	private workspaceAvgCost = 0;
 	private readonly pending = new Map<string, Pending>();
 	private readonly seen = new Set<string>();
@@ -212,11 +243,15 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		key.lastUsedAt = now;
 		const requests = need.requests > 0 ? 1 : 0;
 
-		const denial = this.keyDenial(keyId, key, windows, now) ?? this.budgetDenial(windows, now);
+		const departments = this.departmentsOf(keyId, windows);
+		const denial = this.keyDenial(keyId, key, windows, now) ?? this.departmentDenial(departments, now) ??
+			this.budgetDenial(windows, now);
 		if (denial) {
 			if (!requests) return { ok: false, denial: null };
-			// Ask isolates holding slices of this allowance to return them early.
-			if (denial.contended) this.drainUntil.set(denial.gate.reason?.startsWith("workspace_") ? "*" : keyId, now + SPEND_LEASE.drainMs);
+			// Ask isolates holding slices of this allowance to return them early. Workspace and
+			// department budgets are shared by many keys, so every key drains.
+			const shared = denial.gate.reason?.startsWith("workspace_") || denial.gate.reason?.startsWith("department_");
+			if (denial.contended) this.drainUntil.set(shared ? "*" : keyId, now + SPEND_LEASE.drainMs);
 			return { ok: false, denial };
 		}
 
@@ -224,7 +259,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		// Leases never outlive the seeded UTC day, so their holds apply to the windows they used.
 		const dayEnd = windows.daily + DAY_MS - SPEND_LEASE.windowSkewMs;
 		const requestLimits = KEY_WINDOWS.filter((window) => key.limits[window].requests > 0);
-		const costLimited = KEY_WINDOWS.some((window) => key.limits[window].cost > 0) || this.budgets.length > 0;
+		const costLimited = KEY_WINDOWS.some((window) => key.limits[window].cost > 0) || this.budgets.length > 0 ||
+			departments.length > 0;
 		if (!requestLimits.length && !costLimited) {
 			// Nothing to enforce: a long, unpersisted lease that admits everything.
 			const expiresAt = Math.min(now + SPEND_LEASE.unlimitedTtlMs, dayEnd);
@@ -256,6 +292,11 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			}
 			for (const budget of this.budgets) {
 				const used = this.budgetUsage(budget) + this.budgetHolds(budget);
+				grantCost = Math.min(grantCost, Math.floor(Math.max(0, budget.limit - used - costFloor(budget.limit)) / SPEND_LEASE.shareDivisor));
+			}
+			// Slices of every key of a department count against its budget (departmentHolds).
+			for (const budget of departments) {
+				const used = this.departmentUsage(budget) + this.departmentHolds(budget);
 				grantCost = Math.min(grantCost, Math.floor(Math.max(0, budget.limit - used - costFloor(budget.limit)) / SPEND_LEASE.shareDivisor));
 			}
 		}
@@ -490,6 +531,21 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			windowStart: budget.window_start ? parse(budget.window_start) : null,
 			resetAt: budget.reset_at ?? null,
 		})).filter((budget) => budget.limit > 0);
+		// Older seeds have no department budgets: nothing to enforce for departments.
+		this.departmentBudgets = (Array.isArray(seed.department_budgets) ? seed.department_budgets : [])
+			.filter((budget) => KEY_WINDOWS.includes(budget?.interval))
+			.map((budget) => ({
+				id: String(budget.id),
+				departmentId: String(budget.department_id),
+				departmentName: typeof budget.department_name === "string" ? budget.department_name : null,
+				interval: budget.interval,
+				limit: nonNegative(budget.limit_nanos),
+				base: nonNegative(budget.usage_nanos),
+				windowStart: parse(budget.window_start),
+				resetAt: budget.reset_at ?? null,
+				keyIds: new Set((Array.isArray(budget.key_ids) ? budget.key_ids : []).map(String)),
+			}))
+			.filter((budget) => budget.limit > 0);
 		if (!this.workspaceAvgCost) {
 			const averages = [...this.keys.values()].map((key) => key.avgCost).filter((value) => value > 0);
 			if (averages.length) this.workspaceAvgCost = averages.reduce((sum, value) => sum + value, 0) / averages.length;
@@ -559,6 +615,29 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		return total;
 	}
 
+	/** Department budgets `keyId` counts toward in the seeded windows. */
+	private departmentsOf(keyId: string, windows: WindowStarts): DepartmentBudgetState[] {
+		return this.departmentBudgets.filter((budget) => budget.keyIds.has(keyId) && budget.windowStart === windows[budget.interval]);
+	}
+
+	/** Same accounting as keyUsage, over every key of the department. */
+	private departmentUsage(budget: DepartmentBudgetState): number {
+		let usage = budget.base;
+		for (const entry of this.pending.values()) {
+			if (budget.keyIds.has(entry.keyId) && entry.at >= budget.windowStart) usage += entry.cost;
+		}
+		return usage;
+	}
+
+	private departmentHolds(budget: DepartmentBudgetState): number {
+		let total = 0;
+		for (const lease of this.leases.values()) {
+			if (!budget.keyIds.has(lease.keyId) || lease.starts[budget.interval] !== budget.windowStart || !this.alive(lease)) continue;
+			total += this.holdOf(lease).cost;
+		}
+		return total;
+	}
+
 	private buckets(keyId: string, key: KeyState, windows: WindowStarts): GateCheck["buckets"] {
 		if (!key.limited) return null;
 		const bucket = (window: KeyWindow) => {
@@ -615,6 +694,38 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			if (metric === "requests" ? used + held + 1 > limit : used + held >= limit) return deny(window, metric, used, true);
 		}
 		return null;
+	}
+
+	/**
+	 * A department budget the key counts toward is used up (or its remainder is held by slices),
+	 * with the same pre-check semantics as workspace budgets: admit while usage is below the limit.
+	 */
+	private departmentDenial(departments: DepartmentBudgetState[], now: number): SpendDenial | null {
+		if (!departments.length) return null;
+		const order: Record<KeyWindow, number> = { daily: 1, weekly: 2, monthly: 3 };
+		const states = departments
+			.map((budget) => ({ budget, usage: this.departmentUsage(budget), held: this.departmentHolds(budget) }))
+			.sort((left, right) => order[left.budget.interval] - order[right.budget.interval] ||
+				(left.budget.departmentName ?? "").localeCompare(right.budget.departmentName ?? "") ||
+				left.budget.departmentId.localeCompare(right.budget.departmentId));
+		const pick = states.find((state) => state.usage >= state.budget.limit) ??
+			states.find((state) => state.usage + state.held >= state.budget.limit);
+		if (!pick) return null;
+		return {
+			contended: pick.usage < pick.budget.limit,
+			gate: {
+				ok: false,
+				reason: `department_${pick.budget.interval}_cost_budget_reached`,
+				resetAt: pick.budget.resetAt ?? iso(windowEnd(pick.budget.interval, pick.budget.windowStart)),
+				now: iso(now),
+				limitWindow: pick.budget.interval,
+				limitMetric: "cost",
+				currentValue: pick.usage,
+				limitValue: pick.budget.limit,
+				departmentId: pick.budget.departmentId,
+				departmentName: pick.budget.departmentName,
+			},
+		};
 	}
 
 	/** Same reasons and shape as gateway_workspace_budget_status. */

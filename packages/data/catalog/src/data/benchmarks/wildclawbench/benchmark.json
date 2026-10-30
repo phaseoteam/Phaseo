@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "wildclawbench",
-  "benchmark_name": "WildClawBench",
-  "category": "agents",
-  "ascending_order": true,
-  "type": "percentage",
-  "link": "https://research.meta.ai/static/muse-glimmer-methodology",
-  "total_models": 1
-}

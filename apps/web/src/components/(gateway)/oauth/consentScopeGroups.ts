@@ -1,6 +1,7 @@
 export type ConsentScopeGroupKey =
 	| "identity"
 	| "gateway"
+	| "billing"
 	| "catalog"
 	| "data"
 	| "workspaces"
@@ -20,6 +21,7 @@ export type ConsentScopeGroup = {
 function groupKeyForScope(scope: string): ConsentScopeGroupKey {
 	if (["openid", "profile", "email", "me:read"].includes(scope)) return "identity";
 	if (scope.startsWith("gateway:")) return "gateway";
+	if (scope.startsWith("billing:")) return "billing";
 	if (/^(models|providers|pricing|private_models):/.test(scope)) return "catalog";
 	if (/^(credits|activity|analytics|generations|feedback):/.test(scope)) return "data";
 	if (scope.startsWith("workspaces:")) return "workspaces";

@@ -16,6 +16,7 @@ import { modelMarkdownComponents } from "../modelMarkdown";
 import type { ModelLineageLinks } from "./modelOverviewMetadata";
 import ModelFaqAccordion from "./ModelFaqAccordion";
 import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 function parseTypes(value: string | null | undefined): string[] {
 	if (!value) return [];
@@ -274,7 +275,7 @@ const PRICING_METER_PRIORITY = [
 	"requests",
 ];
 
-function formatCurrency(amount: number, currency: string, locale: string): string {
+function formatCurrency(amount: number, currency: string): string {
 	const normalizedCurrency = normalizeCurrencyCode(currency);
 	const fractionDigits = amount === 0 ? 0 : amount < 0.0001 ? 8 : amount < 0.01 ? 4 : 2;
 	const options: Intl.NumberFormatOptions = {
@@ -284,9 +285,9 @@ function formatCurrency(amount: number, currency: string, locale: string): strin
 		maximumFractionDigits: fractionDigits,
 	};
 	try {
-		return new Intl.NumberFormat(locale, options).format(amount);
+		return new Intl.NumberFormat(MONEY_LOCALE, options).format(amount);
 	} catch {
-		return new Intl.NumberFormat(locale, {
+		return new Intl.NumberFormat(MONEY_LOCALE, {
 			...options,
 			currency: "USD",
 		}).format(amount);
@@ -322,7 +323,7 @@ function normaliseRulePrice(
 	const millionUnitLabel = millionUnitLabels[unit];
 	if (millionUnitLabel) {
 		const price = rawPrice * (1_000_000 / unitSize);
-		const formattedCurrency = formatCurrency(price, rule.currency, locale);
+		const formattedCurrency = formatCurrency(price, rule.currency);
 		const unitLabel = translatePricing?.(`units.${unit}`) ?? millionUnitLabel.replace("1M ", "");
 		return {
 			price,
@@ -337,7 +338,7 @@ function normaliseRulePrice(
 	const unitLabel = translatePricing
 		? translatePricing(`unitsSingular.${PRICING_UNITS.has(unit) ? unit : "unit"}`)
 		: unit || "unit";
-	const formattedCurrency = formatCurrency(price, rule.currency, locale);
+	const formattedCurrency = formatCurrency(price, rule.currency);
 	return {
 		price,
 		formattedPrice: translatePricing

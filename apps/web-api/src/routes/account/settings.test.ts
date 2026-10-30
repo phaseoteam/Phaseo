@@ -38,6 +38,16 @@ it("reports weekly and monthly key usage from the gateway's window totals", asyn
 	expect(urls.some((url) => url.includes("/rpc/get_workspace_key_usage"))).toBe(false);
 });
 
+it("leaves workload identity keys off the Keys page", async () => {
+	const fetchMock = vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input));
+	vi.stubGlobal("fetch", fetchMock);
+	await app.request("https://phaseo.app/api/account/settings/keys?workspaceId=workspace-1", { headers: { authorization: `Bearer ${sessionToken}` } }, env);
+	const keyList = fetchMock.mock.calls
+		.map(([input]) => new URL(input instanceof Request ? input.url : String(input)))
+		.find((url) => url.pathname.endsWith("/rest/v1/keys"));
+	expect(keyList?.searchParams.get("key_kind")).toBe("neq.workload_identity");
+});
+
 function authenticatedFetch(input: RequestInfo | URL): Response {
 	const url = input instanceof Request ? input.url : String(input);
 	if (url.includes("/auth/v1/user")) {
@@ -141,6 +151,18 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 	if (url.includes("v2_models")) {
 		return new Response(JSON.stringify([{
 			model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai",
+		}]), { status: 200 });
+	}
+	if (url.includes("/rpc/broadcast_destination_health_summary")) {
+		return new Response(JSON.stringify([{
+			destination_id: "destination-row-1",
+			last_success_at: "2026-10-21T09:00:00Z",
+			last_failure_at: "2026-10-21T10:00:00Z",
+			last_http_status: 401,
+			last_error: "OTLP endpoint returned 401",
+			consecutive_failures: 3,
+			delivered_24h: "120",
+			failed_24h: "4",
 		}]), { status: 200 });
 	}
 	if (url.includes("workspace_broadcast_destinations")) {
@@ -279,7 +301,7 @@ describe("account settings routes", () => {
 		);
 		expect(response.status).toBe(200);
 		expect(ledgerQuery?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
-		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage))");
+		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month)");
 		expect(ledgerQuery?.searchParams.get("limit")).toBe("250");
 		const body = await response.json() as { transactions: Array<{ kind: string | null }> };
 		expect(body.transactions.map(row => row.kind)).toEqual(billingKinds);
@@ -480,6 +502,15 @@ describe("account settings routes", () => {
 				id: "destination-row-1",
 				destinationId: "destination-1",
 				samplingRate: 0.5,
+				health: {
+					lastSuccessAt: "2026-10-21T09:00:00Z",
+					lastFailureAt: "2026-10-21T10:00:00Z",
+					lastHttpStatus: 401,
+					lastError: "OTLP endpoint returned 401",
+					consecutiveFailures: 3,
+					delivered24h: 120,
+					failed24h: 4,
+				},
 			}],
 		});
 		await expect(danger.json()).resolves.toEqual({ signedIn: true });

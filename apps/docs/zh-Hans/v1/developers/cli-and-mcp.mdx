@@ -1,6 +1,6 @@
 ---
 title: "CLI 与 MCP"
-description: "使用 Phaseo CLI 自动化终端任务，或将经过身份验证的 MCP 服务器连接到 AI 客户端，以只读方式获取 Phaseo 实时数据。"
+description: "使用 Phaseo CLI 自动化终端任务，或将经过身份验证的 MCP 服务器连接到 AI 客户端，以获取 Phaseo 实时数据，并在你允许时管理账户。"
 icon: "square-terminal"
 ---
 
@@ -11,7 +11,7 @@ icon: "square-terminal"
 | 接口 | 适用场景 | 访问权限 |
 | --- | --- | --- |
 | Phaseo CLI | 终端工作流、CI、管理和自动化 | 根据授权范围和工作区角色限制读取与写入权限 |
-| Phaseo MCP | 在 Codex、Claude、ChatGPT 等 MCP 客户端中访问 Phaseo 实时数据 | 已验证身份，仅可读取 |
+| Phaseo MCP | 在 Codex、Claude、ChatGPT 等 MCP 客户端中访问 Phaseo 实时数据，并可选择管理账户 | 已验证身份；除非以账户管理方式连接，否则仅可读取 |
 | Docs MCP | 在编写代码时查阅最新 Phaseo 文档 | 仅文档，只读 |
 | Phaseo 插件 | 在 Claude Code 或 Codex 中一次性安装 Phaseo MCP、Docs MCP 和 Phaseo 技能 | 与各 MCP 服务器相同 |
 
@@ -75,12 +75,41 @@ codex mcp list
 
 ### MCP 可读取的数据
 
-- 模型、提供商、组织、端点系列和价格
+- 模型、提供商、基准排名、价格和成本估算
 - 积分、活动、分析、请求日志和生成元数据
-- 工作区、成员、预设、设置和护栏
-- API 密钥、管理密钥、OAuth 应用和 webhook 的元数据，不含密钥值
 
-MCP 不会运行计费推理、返回密钥值或修改 Phaseo 资源。需要执行这些操作时，请使用控制台、CLI 或管理 API。
+这些工具仅可读取，绝不会返回提示词、响应或密钥值。
+
+### 管理账户（可选）
+
+如需让智能体更改你的 Phaseo 工作区，请改用管理 URL 连接：
+
+`https://mcp.phaseo.app/mcp?access=manage`
+
+```bash
+codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
+codex mcp login phaseo
+```
+
+登录时，授权同意页面会逐项列出此连接请求的每项权限，例如管理 API 密钥或删除预算，并标记为**读取**、**写入**或**删除**。取消勾选你不想授予的权限。智能体只会获得你所允许权限对应的工具；每次更改时，Phaseo 仍会检查你在工作区中的角色，因此既不是所有者也不是管理员的成员无法通过这种方式更改仅限管理员的设置。
+
+如果你已通过只读 URL 连接，请将客户端切换到管理 URL 并重新登录。如需恢复只读访问，请使用普通 URL 重新连接，或在**设置 → 已连接应用**中撤销该应用。
+
+| 范围 | 工具 | 权限 |
+| --- | --- | --- |
+| API 密钥 | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
+| 预算 | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
+| 支出规则 | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
+| 提供商密钥（BYOK） | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
+| 护栏 | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
+| 预设 | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
+| 设置 | `settings_get`, `settings_update` (路由模式、隐私和 ZDR、日志记录、提供商限制) | `settings:read`, `settings:write` |
+| Webhook | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
+| 可观测性目标 | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+
+会更改或删除内容的工具都带有相应标记，因此支持此功能的 MCP 客户端会在每次调用前请你确认。新的 API 密钥或 webhook 签名密钥只会在工具结果中显示一次，之后无法再次显示。已保存的提供商密钥和目标凭证绝不会返回。
+
+MCP 不提供账单、付款、工作区、成员、管理密钥或 OAuth 应用相关的工具。如需执行这些操作，请使用控制台、CLI 或管理 API。
 
 ## Docs MCP
 

@@ -1,10 +1,18 @@
+import { relativeUnit } from "@phaseo/app-kit/format";
+import { DARK_PALETTES, DEFAULT_THEME, LIGHT_PALETTES } from "@phaseo/app-kit/theme";
+
+// The theme model (palettes, accents, presets) lives in packages/shared/app-kit so the mobile app
+// reads the same one.
+export { readableForegroundForAccent } from "@phaseo/app-kit/theme/colour";
+
+
 export const DISPLAY_LOCALES = ["system", "en-GB", "en-US"] as const;
 export const DISPLAY_DATE_STYLES = ["short", "medium", "long", "iso"] as const;
 export const DISPLAY_HOUR_CYCLES = ["system", "12h", "24h"] as const;
 export const DISPLAY_RELATIVE_TIMES = ["contextual", "relative", "absolute"] as const;
 export const DISPLAY_NUMBER_NOTATIONS = ["standard", "compact"] as const;
-export const DISPLAY_LIGHT_PALETTES = ["phaseo", "paper", "warm"] as const;
-export const DISPLAY_DARK_PALETTES = ["phaseo", "slate", "midnight"] as const;
+export const DISPLAY_LIGHT_PALETTES = LIGHT_PALETTES;
+export const DISPLAY_DARK_PALETTES = DARK_PALETTES;
 export const DISPLAY_DENSITIES = ["comfortable", "compact"] as const;
 export const DISPLAY_CODE_LANGUAGES = ["typescript", "python", "curl"] as const;
 export const DISPLAY_LANDING_PAGES = ["home", "models", "chat"] as const;
@@ -46,10 +54,10 @@ export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
 	hourCycle: "system",
 	relativeTime: "contextual",
 	numberNotation: "standard",
-	lightPalette: "phaseo",
-	darkPalette: "phaseo",
-	lightAccent: "#0069a8",
-	darkAccent: "#0078b8",
+	lightPalette: DEFAULT_THEME.lightPalette,
+	darkPalette: DEFAULT_THEME.darkPalette,
+	lightAccent: DEFAULT_THEME.lightAccent,
+	darkAccent: DEFAULT_THEME.darkAccent,
 	density: "comfortable",
 	codeLanguage: "typescript",
 	landingPage: "home",
@@ -73,17 +81,6 @@ export function isValidTimeZone(value: unknown): value is string {
 
 export function isValidAccentColor(value: unknown): value is string {
 	return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
-}
-
-export function readableForegroundForAccent(value: string): "#ffffff" | "#0b0b0b" {
-	const channels = [1, 3, 5].map((offset) => Number.parseInt(value.slice(offset, offset + 2), 16) / 255);
-	const [red, green, blue] = channels.map((channel) =>
-		channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
-	);
-	const luminance = (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
-	const whiteContrast = 1.05 / (luminance + 0.05);
-	const darkContrast = (luminance + 0.05) / 0.052;
-	return whiteContrast >= darkContrast ? "#ffffff" : "#0b0b0b";
 }
 
 export function normalizeDisplayPreferences(value: unknown): DisplayPreferences {
@@ -139,6 +136,13 @@ export function normalizeDisplayPreferences(value: unknown): DisplayPreferences 
 function localeFor(preferences: DisplayFormattingPreferences): string | undefined {
 	return preferences.locale === "system" ? undefined : preferences.locale;
 }
+
+/**
+ * Money always reads in US format ("$12.50", "-$3.00"), whatever the UI locale;
+ * en-GB would otherwise show "US$12.50". Dates, percentages and plain numbers
+ * keep the user's locale.
+ */
+export const MONEY_LOCALE = "en-US";
 
 function timeZoneFor(preferences: DisplayFormattingPreferences): string | undefined {
 	return preferences.timeZone === "system" ? undefined : preferences.timeZone;
@@ -292,16 +296,6 @@ export function formatDisplayDateTimeRange(
 	return `${formatDisplayDateTime(start, preferences)} – ${formatDisplayDateTime(end, preferences)}`;
 }
 
-function relativeUnit(milliseconds: number): { unit: Intl.RelativeTimeFormatUnit; value: number } {
-	const absolute = Math.abs(milliseconds);
-	if (absolute < 60_000) return { unit: "second", value: Math.round(milliseconds / 1_000) };
-	if (absolute < 3_600_000) return { unit: "minute", value: Math.round(milliseconds / 60_000) };
-	if (absolute < 86_400_000) return { unit: "hour", value: Math.round(milliseconds / 3_600_000) };
-	if (absolute < 2_592_000_000) return { unit: "day", value: Math.round(milliseconds / 86_400_000) };
-	if (absolute < 31_536_000_000) return { unit: "month", value: Math.round(milliseconds / 2_592_000_000) };
-	return { unit: "year", value: Math.round(milliseconds / 31_536_000_000) };
-}
-
 export function formatDisplayTimestamp(
 	value: string | number | Date | null | undefined,
 	preferences: DisplayFormattingPreferences,
@@ -325,7 +319,7 @@ export function formatDisplayNumber(
 	options?: Intl.NumberFormatOptions,
 ): string {
 	const notation = options?.notation ?? preferences.numberNotation;
-	const locale = localeFor(preferences);
+	const locale = options?.style === "currency" ? MONEY_LOCALE : localeFor(preferences);
 	const numberOptions: Intl.NumberFormatOptions = {
 		...options,
 		notation,

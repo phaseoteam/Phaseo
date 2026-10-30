@@ -82,8 +82,30 @@ describe("account model source routes", () => {
 		expect(await response.json()).toEqual({ models: [{ model_id: "test/staged", hidden: true }] });
 		const query = new URL(requests.find((url) => url.includes("/rest/v1/v2_models"))!);
 		expect(query.searchParams.get("hidden")).toBe("eq.true");
+		expect(query.searchParams.get("status")).toBeNull();
 		expect(requests.some((url) => url.includes("/rest/v1/v2_model_provider_routes"))).toBe(false);
 		expect(requests.some((url) => url.includes("/rest/v1/v2_benchmark_results"))).toBe(false);
+	});
+
+	it("limits hidden models to unreleased drafts when staged models are requested", async () => {
+		const requests: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			requests.push(url);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.includes("/rest/v1/users")) return Response.json({ role: "admin" });
+			if (url.includes("/rest/v1/v2_models")) return Response.json([{ model_id: "test/staged", hidden: true, status: "draft" }]);
+			return Response.json([]);
+		}));
+		const response = await app.request(
+			"https://phaseo.app/api/account/models/hidden?staged=true",
+			{ headers: { authorization: "Bearer session-token" } },
+			{ ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" },
+		);
+		expect(response.status).toBe(200);
+		const query = new URL(requests.find((url) => url.includes("/rest/v1/v2_models"))!);
+		expect(query.searchParams.get("hidden")).toBe("eq.true");
+		expect(query.searchParams.get("status")).toBe("eq.draft");
 	});
 
 	it("batches hidden model routes into a bounded number of chunked lookups", async () => {

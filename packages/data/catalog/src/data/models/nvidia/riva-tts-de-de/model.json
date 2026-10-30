@@ -1,9 +1,0 @@
-{
-  "model_id": "nvidia/riva-tts-de-de", "organisation_id": "nvidia", "name": "Riva TTS German (Germany)", "status": "Available", "previous_model_id": null,
-  "description": "NVIDIA Riva text-to-speech model for German.", "announced_date": null, "release_date": null, "deprecation_date": null, "retirement_date": null, "license": "Riva license",
-  "input_types": "text", "output_types": "audio", "api_model_id": "nvidia/riva-tts-de-de", "links": [], "details": [], "benchmarks": [], "family_id": null, "page_notice": null,
-  "model_type": "audio", "knowledge_cutoff": null, "limits": { "context": null, "input": null, "output": null }, "modalities": { "input": ["text"], "output": ["audio/*"] },
-  "reasoning": { "supported": false, "options": [] }, "capabilities": { "attachment": false, "tool_call": false, "structured_output": false, "temperature": false, "streaming": true, "web_search": false },
-  "open_weights": false, "sources": [{ "kind": "provider_docs", "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/nvr-tts-de-de/", "accessed_at": "2026-08-23T00:00:00Z", "notes": null }],
-  "verification": { "status": "verified", "checked_at": "2026-08-23T00:00:00Z", "notes": "Verified against OVHcloud's current endpoint page." }, "last_updated": "2026-08-23T00:00:00Z", "removal_date": null, "replacement_model_id": null, "license_url": null
-}

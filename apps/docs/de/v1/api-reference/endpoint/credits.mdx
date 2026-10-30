@@ -8,3 +8,18 @@ description: "So erfasst und berechnet das Gateway Anfragen."
 <Note>
 Für diesen Endpunkt ist ein Management-API-Schlüssel erforderlich. Standardmäßige Gateway-API-Schlüssel werden nicht akzeptiert.
 </Note>
+
+## Guthaben über CLI oder API aufladen
+
+Agenten und Skripte können eine Aufladung mit `POST /v1/credits/topups` oder der CLI starten. Die Belastung genehmigt immer ein Mensch.
+
+```bash
+phaseo login --scopes billing:write
+phaseo credits add --amount 20
+```
+
+- Das Token braucht den Scope `billing:write`. Er wird nie standardmäßig vergeben: Füge ihn mit `phaseo login --scopes billing:write` hinzu oder trage ihn bei einem Management-Schlüssel ein.
+- Aufladungen betragen $5 bis $500. Ein Arbeitsbereich kann 5 gleichzeitig offen haben, und jede läuft nach 30 Minuten ab.
+- **Noch keine gespeicherte Karte:** Die Antwort enthält eine `checkout_url`. Ein Owner oder Admin des Arbeitsbereichs öffnet sie und bezahlt mit einer neuen Karte, die für spätere Aufladungen gespeichert wird.
+- **Gespeicherte Karte:** Jeder Owner und Admin erhält eine E-Mail mit einem einmalig nutzbaren Link. Einer von ihnen öffnet ihn, meldet sich an und wählt **Bestätigen** oder **Ablehnen**. Beim Bestätigen wird die Karte belastet, mit Bankprüfung, falls die Bank sie verlangt.
+- Frage `GET /v1/credits/topups/{id}` (oder `phaseo credits topups get <id>`) ab, bis `final` den Wert `true` hat. Das Guthaben wird gutgeschrieben, wenn der Status `paid` ist. `declined`, `expired` und `failed` enthalten einen `reason`-Code: Nicht automatisch wiederholen, sondern einen Menschen fragen.

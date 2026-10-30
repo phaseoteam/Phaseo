@@ -25,7 +25,7 @@ export function TabButton({ label, icon, layout, isFocused, ref: _ref, style: _s
     return (
       <Pressable {...props} {...a11y}>
         <View className="items-center gap-1 py-2">
-          <View className={cn("h-9 w-12 items-center justify-center rounded-full", isFocused && "bg-sidebar-accent")}>
+          <View className={cn("h-9 w-12 items-center justify-center rounded-md", isFocused && "bg-sidebar-accent")}>
             <Icon icon={icon} tone={tone} size={21} strokeWidth={isFocused ? 2.2 : 1.8} />
           </View>
           <Text variant="caption" className={cn("text-[11px]", isFocused ? "font-semibold text-foreground" : "text-muted-foreground")}>{label}</Text>
@@ -35,7 +35,7 @@ export function TabButton({ label, icon, layout, isFocused, ref: _ref, style: _s
   }
   return (
     <Pressable {...props} {...a11y}>
-      <View className={cn("h-10 flex-row items-center gap-3 rounded-lg px-3", isFocused && "bg-sidebar-accent")}>
+      <View className={cn("h-10 flex-row items-center gap-3 rounded-md px-3", isFocused && "bg-sidebar-accent")}>
         <Icon icon={icon} tone={tone} size={19} strokeWidth={isFocused ? 2.2 : 1.8} />
         <Text variant="body" className={cn(isFocused ? "font-semibold text-foreground" : "text-muted-foreground")}>{label}</Text>
       </View>

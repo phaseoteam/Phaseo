@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { config as dotenvConfig } from "dotenv";
 
 type CliArgs = {
     statuses: string[];
@@ -16,16 +17,14 @@ type CatalogProvider = {
     status: string;
 };
 
+// Maps older provider IDs to v2_providers.provider_slug.
 const PROVIDER_ALIASES: Record<string, string> = {
     arcee: "arcee-ai",
-    "arcee-ai": "arcee-ai",
-    xai: "x-ai",
-    "x-ai": "x-ai",
-    novita: "novitaai",
-    "novita-ai": "novitaai",
+    "x-ai": "xai",
+    novitaai: "novita",
 };
 
-const DEFAULT_STATUSES = ["Alpha", "Beta"];
+const DEFAULT_STATUSES = ["alpha", "beta"];
 
 const DEFAULT_SCENARIOS = [
     "responses_nonstream_hi",
@@ -115,11 +114,11 @@ function parseArgs(argv: string[]): CliArgs {
 }
 
 function printUsage() {
-    console.log("Run live provider tests for non-Ready providers (Alpha/Beta) using the existing harness.");
+    console.log("Run live provider tests for alpha/beta providers (v2_providers.status) using the existing harness.");
     console.log("");
     console.log("Usage:");
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta");
-    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta -- --statuses Alpha,Beta");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta -- --statuses alpha,beta");
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta -- --provider baseten");
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta -- --scenarios chat_nonstream_hi,chat_stream_hi");
     console.log("");
@@ -128,41 +127,37 @@ function printUsage() {
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta -- -- --gateway-url http://127.0.0.1:8787/v1 --allow-transient-failures");
 }
 
-function loadCatalogProviders(
-    catalogProvidersDir: string,
-    statuses: Set<string>,
-    providerFilter: Set<string>
-): CatalogProvider[] {
-    const out: CatalogProvider[] = [];
-    const dirs = fs.readdirSync(catalogProvidersDir, { withFileTypes: true });
-    for (const dirent of dirs) {
-        if (!dirent.isDirectory()) continue;
-        const providerFile = path.join(catalogProvidersDir, dirent.name, "api_provider.json");
-        if (!fs.existsSync(providerFile)) continue;
+function loadLocalEnv(apiRoot: string) {
+    for (const file of [".dev.vars", ".env.local", ".env"]) {
+        const envPath = path.join(apiRoot, file);
+        if (fs.existsSync(envPath)) dotenvConfig({ path: envPath, override: false });
+    }
+}
 
-        try {
-            const raw = fs.readFileSync(providerFile, "utf8");
-            const parsed = JSON.parse(raw) as { api_provider_id?: unknown; status?: unknown };
-            const providerIdRaw =
-                typeof parsed.api_provider_id === "string" && parsed.api_provider_id.trim()
-                    ? parsed.api_provider_id.trim()
-                    : dirent.name;
-            const providerId = normalizeProviderId(providerIdRaw);
-            const status = typeof parsed.status === "string" ? parsed.status.trim() : "";
-            if (!providerId || !status || !statuses.has(status.toLowerCase())) continue;
-            if (providerFilter.size > 0 && !providerFilter.has(providerId)) continue;
-            out.push({ id: providerId, status });
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.warn(`[alpha-beta-live] Skipping invalid provider file ${providerFile}: ${message}`);
-        }
+// Read-only: selects provider slugs by v2_providers.status.
+async function loadCatalogProviders(statuses: Set<string>, providerFilter: Set<string>): Promise<CatalogProvider[]> {
+    const supabaseUrl = (process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+    const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
+    if (!supabaseUrl || !supabaseKey) {
+        throw new Error("SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY are required to select providers");
     }
 
-    const deduped = new Map<string, CatalogProvider>();
-    for (const row of out) {
-        if (!deduped.has(row.id)) deduped.set(row.id, row);
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
+    const { data, error } = await supabase
+        .from("v2_providers")
+        .select("provider_slug,status")
+        .in("status", [...statuses]);
+    if (error) throw new Error(`Failed to load providers: ${error.message}`);
+
+    const out = new Map<string, CatalogProvider>();
+    for (const row of data ?? []) {
+        const providerId = normalizeProviderId(String(row.provider_slug ?? ""));
+        if (!providerId || out.has(providerId)) continue;
+        if (providerFilter.size > 0 && !providerFilter.has(providerId)) continue;
+        out.set(providerId, { id: providerId, status: String(row.status) });
     }
-    return [...deduped.values()].sort((a, b) => a.id.localeCompare(b.id));
+    return [...out.values()].sort((x, y) => x.id.localeCompare(y.id));
 }
 
 function runBaseLiveProviderScript(apiRoot: string, args: string[]): Promise<number> {
@@ -190,23 +185,9 @@ async function main() {
     }
 
     const apiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-    const repoRoot = path.resolve(apiRoot, "..", "..");
-    const catalogProvidersDir = path.join(
-        repoRoot,
-        "packages",
-        "data",
-        "catalog",
-        "src",
-        "data",
-        "api_providers"
-    );
+    loadLocalEnv(apiRoot);
 
-    if (!fs.existsSync(catalogProvidersDir)) {
-        throw new Error(`Catalog providers directory not found: ${catalogProvidersDir}`);
-    }
-
-    const providers = loadCatalogProviders(
-        catalogProvidersDir,
+    const providers = await loadCatalogProviders(
         new Set(args.statuses.map((s) => s.toLowerCase())),
         new Set(args.providers)
     );

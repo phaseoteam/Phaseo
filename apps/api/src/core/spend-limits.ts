@@ -1,23 +1,31 @@
-// Purpose: Isolate-side client for API-key spend/request caps and workspace budgets.
+// Purpose: Isolate-side client for API-key spend/request caps, department budgets and workspace budgets.
 // Why: Capped keys bypass the cached gateway context and recount usage in Postgres per request.
 // How: The per-workspace SpendLimit Durable Object grants this isolate leases (slices of the
 //      remaining allowance). Requests are admitted from a held slice without awaiting; only a
 //      missing or exhausted slice awaits the object. Spend is recorded idempotently in the
 //      background after the charge. Behind GATEWAY_SPEND_LIMIT_DO_MODE (off | shadow | enforce).
 //
-// Wiring (not done here):
-//   before:  const decision = await checkSpendLimit({ workspaceId, keyId, admissionId: ctx.billingRequestId })
-//            enforce: "denied" -> respond like `!context.keyLimit.ok` with decision.keyLimit;
-//                     "unavailable" -> fall back to the request-context RPC path.
-//            shadow:  shadowSpendLimit({ ... }, context.keyLimit) after the legacy check.
-//   after:   recordSpend({ admission, workspaceId, keyId, billingRequestId, requestId, costNanos })
-//            once the request is charged and its gateway_requests row (success = true) is queued;
-//            releaseSpend(admission) when the request ends without a successful charge.
+// Wiring:
+//   shadow (wired): guardContext calls shadowSpendLimitOnce beside the legacy key-limit check, and
+//            handleSuccessAudit calls recordShadowSpend once the gateway_requests row is written.
+//            Neither changes what the request gets; divergences are logged.
+//   enforce (wired): beforeRequest gives each non-OAuth API-key request one SpendLimitSlot, and
+//            guardContext (which can run once per candidate model) decides it once through
+//            enforcedSpendLimit (checkSpendLimit with admissionId = requestId:attempt):
+//              "denied"      -> the same `key_limit_exceeded` 429 as the legacy key-limit check;
+//              "allowed"     -> the coordinator is authoritative: the legacy denial is skipped;
+//              "unavailable" -> the legacy request-context check decides, as before.
+//            The admission rides on ctx.spendAdmission. handleSuccessAudit calls recordSpend once
+//            the request is charged; handleFailureAudit, execute-stage handleError and a failed
+//            beforeRequest call releaseSpend. An admission that is never settled (a path that
+//            reaches neither) stops holding allowance after SPEND_LEASE.inFlightHoldMs.
+//            Batch, realtime and OAuth requests get no slot and keep the legacy check.
 
 import type { GateCheck } from "@pipeline/before/types";
 import { LeasePool, type LeaseTransport } from "@core/lease-pool";
 import type { LeaseAcquireResult, LeaseReturn, LeaseVector } from "@core/lease-pool";
 import { dispatchBackground, getBindingsIfConfigured } from "@/runtime/env";
+import { awaitShared } from "@core/shared-wait";
 import type { GatewayBindings } from "@/runtime/env.types";
 import type { SpendDenial, SpendLeaseMeta, SpendRecordEntry, SpendRecordResult } from "@core/spend-limits.shared";
 
@@ -294,10 +302,170 @@ export function shadowSpendLimit(
 	return run;
 }
 
+/** The coordinator seeds keys by UUID; OAuth requests carry a client ID instead and are skipped. */
+const KEY_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Requests already shadowed in this isolate (guardContext runs more than once per request). */
+const SHADOWED_MAX = 10_000;
+const shadowed = new Set<string>();
+
+function currentMode(): SpendLimitMode {
+	try {
+		return getSpendLimitMode();
+	} catch {
+		return "off";
+	}
+}
+
+/**
+ * Shadow mode, before the request: compares the coordinator with the legacy key-limit decision
+ * once per request, in the background. Does nothing unless GATEWAY_SPEND_LIMIT_DO_MODE is
+ * "shadow". Never throws or waits.
+ */
+export function shadowSpendLimitOnce(
+	args: { workspaceId: string; keyId: string | null | undefined; requestId: string; internal?: boolean },
+	legacy: Pick<GateCheck, "ok" | "reason"> & Partial<GateCheck>,
+): void {
+	try {
+		if (args.internal || !args.keyId || !KEY_ID.test(args.keyId) || currentMode() !== "shadow") return;
+		if (shadowed.has(args.requestId)) return;
+		if (shadowed.size >= SHADOWED_MAX) shadowed.delete(shadowed.values().next().value as string);
+		shadowed.add(args.requestId);
+		void shadowSpendLimit({ workspaceId: args.workspaceId, keyId: args.keyId, admissionId: args.requestId }, legacy)
+			.catch(() => undefined);
+	} catch (error) {
+		console.warn("spend_limit_shadow_failed", { error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
+/**
+ * Shadow mode, after the request: tells the coordinator about a successful request's cost once
+ * its gateway_requests row is written, so its usage tracks the legacy count. Does nothing unless
+ * GATEWAY_SPEND_LIMIT_DO_MODE is "shadow". Never throws.
+ */
+export function recordShadowSpend(args: {
+	workspaceId: string;
+	keyId: string | null | undefined;
+	billingRequestId: string;
+	requestId: string;
+	costNanos: number;
+	internal?: boolean;
+}): void {
+	try {
+		if (args.internal || !args.keyId || !KEY_ID.test(args.keyId) || currentMode() !== "shadow") return;
+		recordSpend({
+			workspaceId: args.workspaceId,
+			keyId: args.keyId,
+			billingRequestId: args.billingRequestId,
+			requestId: args.requestId,
+			costNanos: args.costNanos,
+		});
+	} catch (error) {
+		console.warn("spend_limit_shadow_record_failed", { error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
+/**
+ * One beforeRequest attempt's enforce-mode decision, shared by every guardContext run of it. A
+ * request retried with a fallback model makes a new attempt, so `attempt` keeps its admission
+ * (and the coordinator's lease ids derived from it) apart from the previous attempt's.
+ */
+export type SpendLimitSlot = { attempt: string; decision: Promise<SpendLimitDecision> | null };
+
+export function createSpendLimitSlot(): SpendLimitSlot {
+	return { attempt: crypto.randomUUID(), decision: null };
+}
+
+/**
+ * Enforce mode, before the request: the coordinator's decision for this request, computed once
+ * per slot (admissionId = requestId:attempt). Null (use the legacy key-limit check alone) unless
+ * GATEWAY_SPEND_LIMIT_DO_MODE is "enforce" and the request is a non-internal API-key request with
+ * a slot. Never throws.
+ */
+export function enforcedSpendLimit(args: {
+	workspaceId: string;
+	keyId: string | null | undefined;
+	requestId: string;
+	internal?: boolean;
+	slot?: SpendLimitSlot | null;
+}): Promise<SpendLimitDecision> | null {
+	try {
+		if (!args.slot || args.internal || !args.keyId || !KEY_ID.test(args.keyId)) return null;
+		if (args.slot.decision) return args.slot.decision;
+		if (currentMode() !== "enforce") return null;
+		args.slot.decision = boundedDecision(checkSpendLimit({ workspaceId: args.workspaceId, keyId: args.keyId, admissionId: `${args.requestId}:${args.slot.attempt}` }));
+		return args.slot.decision;
+	} catch (error) {
+		console.warn("spend_limit_enforce_failed", { error: error instanceof Error ? error.message : String(error) });
+		return null;
+	}
+}
+
+/** Longest a request waits for the coordinator (a cold seed reads Postgres) before the legacy check decides. */
+export const ENFORCE_WAIT_MS = 2_000;
+
+/**
+ * The coordinator's decision, or "unavailable" once ENFORCE_WAIT_MS passes so a stalled object or
+ * seed falls back to the legacy check instead of stalling the request. A late admission is
+ * released when it arrives.
+ */
+async function boundedDecision(decision: Promise<SpendLimitDecision>): Promise<SpendLimitDecision> {
+	const result = await awaitShared(decision, ENFORCE_WAIT_MS);
+	if (result.settled) return result.value;
+	background(decision.then((late) => {
+		if (late.outcome === "allowed") releaseSpend(late.admission);
+	}));
+	console.warn("spend_limit_enforce_timeout", { waitedMs: ENFORCE_WAIT_MS });
+	return { outcome: "unavailable", keyLimit: null, admission: null, error: "spend_limit_timeout" };
+}
+
+/** The admission a slot's decision allowed, if any (for recordSpend / releaseSpend). */
+export async function slotAdmission(slot: SpendLimitSlot | null | undefined): Promise<SpendAdmission | null> {
+	const decision = await slot?.decision?.catch(() => null);
+	return decision?.outcome === "allowed" ? decision.admission : null;
+}
+
+/**
+ * Enforce mode, after a successful request: counts its cost once its gateway_requests row is
+ * written (with the request's admission when it had one), or releases the admission when no row
+ * was written, as the legacy check would not count it either. Does nothing unless
+ * GATEWAY_SPEND_LIMIT_DO_MODE is "enforce". Never throws.
+ */
+export function settleEnforcedSpend(args: {
+	admission?: SpendAdmission | null;
+	rowWritten: boolean;
+	workspaceId: string;
+	keyId: string | null | undefined;
+	billingRequestId: string;
+	requestId: string;
+	costNanos: number;
+	internal?: boolean;
+}): void {
+	try {
+		if (!args.rowWritten) {
+			releaseSpend(args.admission);
+			return;
+		}
+		if (args.internal || !args.keyId || !KEY_ID.test(args.keyId)) return;
+		// An admission means the request was admitted in enforce mode: always settle it.
+		if (!args.admission && currentMode() !== "enforce") return;
+		recordSpend({
+			admission: args.admission,
+			workspaceId: args.workspaceId,
+			keyId: args.keyId,
+			billingRequestId: args.billingRequestId,
+			requestId: args.requestId,
+			costNanos: args.costNanos,
+		});
+	} catch (error) {
+		console.warn("spend_limit_enforce_record_failed", { error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
 /** Clears isolate lease state (tests only). */
 export function __resetSpendLimitsForTests(): void {
 	pools.clear();
 	recordQueues.clear();
+	shadowed.clear();
 }
 
 /** Flushes queued spend records now (tests and shutdown paths). */

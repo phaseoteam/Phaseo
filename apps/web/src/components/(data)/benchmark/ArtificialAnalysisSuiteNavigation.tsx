@@ -7,7 +7,7 @@ export default function ArtificialAnalysisSuiteNavigation({ suite, selectedId, c
 	const href = (metric: string, version: number) => `/benchmarks/${suite.id}?metric=${metric}${version === suite.current_version ? "" : `&version=${version}`}`;
 	return <nav aria-label="Artificial Analysis" className="flex flex-wrap items-center gap-3">
 		{suite.versions.map((version) => version === suite.selected_version
-			? <Link key={version} href={href(selected?.key ?? "intelligence", version)} aria-current="page" className="font-medium text-foreground">{currentLabel ?? `v${version}`}</Link>
-			: <Link key={version} href={href("intelligence", version)} className="hover:text-foreground hover:underline">v{version}</Link>)}
+			? <Link key={version} href={href(selected?.key ?? "intelligence", version)} aria-current="page" className="rounded-md bg-muted px-3 py-2 text-sm font-medium text-foreground">{currentLabel ?? `v${version}`}</Link>
+			: <Link key={version} href={href(selected?.key ?? "intelligence", version)} className="rounded-md px-3 py-2 text-sm hover:bg-muted hover:text-foreground">v{version}</Link>)}
 	</nav>;
 }

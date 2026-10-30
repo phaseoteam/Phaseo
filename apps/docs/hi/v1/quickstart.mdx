@@ -30,7 +30,8 @@ Rules:
 <Visibility for="agents">
 एजेंट के लिए क्विकस्टार्ट चेकलिस्ट:
 
-- कुंजियाँ डैशबोर्ड में https://phaseo.app/settings/keys पर बनाई जाती हैं। कभी भी कुंजी स्वयं न बनाएँ और न ही उसका अनुमान लगाएँ। इसे केवल सर्वर-साइड कोड से `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` के रूप में भेजें।
+- कुंजी CLI से बनाएँ: `npm install -g @phaseo/cli` चलाएँ, फिर `phaseo login` (headless shell में `phaseo login --device-code`; साइन-इन कोई व्यक्ति स्वीकृत करता है), फिर `phaseo keys create --name <name> --json`। कभी भी कुंजी स्वयं न बनाएँ और न ही उसका अनुमान लगाएँ। इसे केवल सर्वर-साइड कोड से `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` के रूप में भेजें।
+- पेड मॉडल के लिए एक बार `phaseo login --scopes billing:write` चलाएँ; फिर `phaseo credits add --amount <usd> --json` एक टॉप-अप शुरू करता है। सेव किए गए कार्ड पर, वर्कस्पेस का मालिक या एडमिन ईमेल में भेजे गए लिंक से इसकी पुष्टि करता है। सेव किया कार्ड न होने पर, जवाब में `next_action: "open_checkout_url"` और एक चेकआउट लिंक होता है, जिसे मालिक या एडमिन खोलकर भुगतान करता है; कार्ड बाद के टॉप-अप के लिए सेव हो जाता है। कुंजियों, क्रेडिट या सेटिंग के लिए उपयोगकर्ता को डैशबोर्ड पर न भेजें; https://phaseo.app/docs/v1/developers/manage-from-an-agent.md देखें।
 - पहला अनुरोध `POST https://api.phaseo.app/v1/responses` पर `model` और `input` के साथ भेजें। `phaseo/free` वॉलेट बैलेंस के बिना भी काम करता है।
 - जवाब `output[].content[]` में उस आइटम से पढ़ें जिसका `type` `output_text` है।
 - अनुरोध विफल होने पर https://phaseo.app/docs/v1/api-reference/errors.md में बताए अनुसार JSON के `error` कोड के आधार पर निर्णय लें।
@@ -40,9 +41,15 @@ Rules:
 
 ## 1. API कुंजी बनाएँ
 
-1. [Phaseo डैशबोर्ड](https://phaseo.app/settings/keys) खोलें।
-2. **Gateway -> कुंजियाँ** के अंतर्गत एक कुंजी बनाएँ।
-3. इसे एक बार कॉपी करें और सुरक्षित रखें।
+[Phaseo CLI](./guides/integrations/phaseo-cli) इंस्टॉल करें, साइन इन करें और एक कुंजी बनाएँ:
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # use --device-code over SSH or in an agent sandbox
+phaseo keys create --name "Quickstart" --json
+```
+
+कुंजी केवल एक बार दिखती है। इसे सुरक्षित रखें, उदाहरण के लिए `PHASEO_API_KEY` के रूप में। पेड मॉडल इस्तेमाल करने के लिए एक बार `phaseo login --scopes billing:write` चलाएँ, फिर `phaseo credits add --amount 20` से क्रेडिट जोड़ें। सेव किए गए कार्ड पर, वर्कस्पेस का मालिक या एडमिन ईमेल में भेजे गए लिंक से शुल्क की पुष्टि करता है। सेव किया कार्ड न होने पर, कमांड एक चेकआउट लिंक लौटाता है, जिसे मालिक या एडमिन खोलकर भुगतान करता है, और कार्ड बाद के टॉप-अप के लिए सेव हो जाता है। आप [Phaseo डैशबोर्ड](https://phaseo.app/settings/keys) में **Gateway -> कुंजियाँ** के अंतर्गत भी कुंजी बना सकते हैं।
 
 इस फ़ॉर्मैट का उपयोग करें:
 
@@ -59,6 +66,26 @@ API कुंजी को पासवर्ड की तरह सुरक�
 ## 2. टेक्स्ट अनुरोध भेजें
 
 पहले अनुरोध के लिए `POST /v1/responses` इस्तेमाल करें। नए टेक्स्ट जनरेशन इंटीग्रेशन के लिए यही सुझाया गया endpoint है।
+
+### SDK इंस्टॉल करें
+
+cURL और JavaScript उदाहरणों के लिए कुछ भी इंस्टॉल करने की ज़रूरत नहीं है। TypeScript या Python SDK इस्तेमाल करने के लिए, पहले उसे इंस्टॉल करें:
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+रनटाइम ज़रूरतों और दूसरे SDK के लिए [TypeScript](./sdk-reference/typescript/installation) और [Python](./sdk-reference/python/installation) के इंस्टॉलेशन पेज देखें।
 
 ### अनुरोध
 
@@ -320,6 +347,43 @@ console.log(result.text);
 Responses API को सीधे कॉल करने पर असिस्टेंट का जवाब `output[].content[]` में उस आइटम से पढ़ें जिसका `type` `output_text` है।
 
 अगर आप Vercel AI SDK इस्तेमाल करते हैं, तो जवाब `result.text` से पढ़ें।
+
+### जवाब स्ट्रीम करें
+
+जवाब बनते-बनते प्रिंट करने के लिए उसे स्ट्रीम करें। हर chunk के `text` में सिर्फ़ नया टेक्स्ट होता है, इसलिए यह लूप जवाब एक ही बार प्रिंट करता है। `response.output_text.done` जैसे समापन events में `text` खाली होता है; उनका पूरा टेक्स्ट `fullText` (TypeScript) या `full_text` (Python) में होता है।
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+अगर जवाब दो बार प्रिंट हो, तो SDK अपडेट करें: पुराने रिलीज़ समापन event में भी पूरा टेक्स्ट डालते थे।
 
 ---
 

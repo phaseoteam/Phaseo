@@ -3,6 +3,10 @@ export interface ApiKeyUpdateRequest {
   disabled?: boolean;
   expires_at?: string | null;
   include_byok_in_limit?: boolean;
+  ip_allowlist?: {
+    address: string;
+    label: string;
+  }[];
   limit?: number | null;
   limit_reset?: "daily" | "weekly" | "monthly";
   limits?: {
@@ -22,4 +26,5 @@ export interface ApiKeyUpdateRequest {
   name?: string;
   scopes?: string | string[];
   soft_blocked?: boolean;
+  storage_locations?: string[] | null;
 }

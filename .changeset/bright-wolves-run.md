@@ -1,7 +1,6 @@
 ---
 "@phaseo/cpp-sdk": minor
 "@phaseo/csharp-sdk": minor
-"@phaseo/data-catalog": patch
 "@phaseo/gateway-api": minor
 "@phaseo/go-sdk": minor
 "@phaseo/java-sdk": minor

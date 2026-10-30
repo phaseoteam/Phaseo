@@ -3,42 +3,88 @@ title: "5月"
 description: "Phaseo 2026年5月的产品更新、SDK 变更和模型发布。"
 ---
 
-<Update label="2026年5月31日" tags={["模型发布"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### 模型发布
+<ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
+
+<Update label="2026年5月31日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** 文本请求只能通过 `service_tier` 选择层级；请将 `speed: "fast"` 改为 `service_tier: "priority"`，同步请求使用 `service_tier: "batch"` 时现在会返回验证错误；参见 [服务层级](../guides/service-tiers.mdx) ([#565](https://github.com/phaseoteam/Phaseo/pull/565))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Cosmos3 Super Reasoner 模型发布图片](../../../images/model-releases/2026-05-31--nvidia--cosmos3-super-reasoner.png)
 
 - [Nvidia: Cosmos3 Super Reasoner](https://phaseo.app/models/nvidia/cosmos3-super-reasoner)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月30日" tags={["模型发布"]}>
+<Update label="2026年5月30日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Grok Imagine Video 1.5 Preview 模型发布图片](../../../images/model-releases/2026-05-30--x-ai--grok-imagine-video-1-5-preview.png)
 
 - [xAI: Grok Imagine Video 1.5 Preview](https://phaseo.app/models/x-ai/grok-imagine-video-1.5-preview)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月29日" tags={["模型发布"]}>
+<Update label="2026年5月29日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面的快速入门会列出模型支持的端点及其 HTTP 方法，选择一个端点即可更新示例代码 ([#521](https://github.com/phaseoteam/Phaseo/pull/521))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 使用 `service_tier: "priority"` 的请求现在只会路由到支持该层级的提供商，Venice 以相同的模型 ID 处理 Claude Opus 4.8 的 priority 请求；参见 [服务层级](../guides/service-tiers.mdx) ([#524](https://github.com/phaseoteam/Phaseo/pull/524), [#530](https://github.com/phaseoteam/Phaseo/pull/530))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [StepFun: Step 3.7 Flash](https://phaseo.app/models/stepfun/step-3.7-flash)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月28日" tags={["功能","模型发布","提供商支持","定价"]}>
+<Update label="2026年5月28日">
 
-### 功能
+<div data-changelog-category="product">
 
-- 定价选择器现在能更清晰地展示 Qwen 3.7 Max 的不同版本，减少预览版、带日期版本和当前路由之间的混淆 ([PR #418](https://github.com/phaseoteam/Phaseo/pull/418)).
-- 我们更新了 AWS 上 Anthropic 供应商的品牌展示，让供应商列表中的 Bedrock 和 Claude Platform 路由更容易区分 ([PR #415](https://github.com/phaseoteam/Phaseo/pull/415)).
+<p className="changelog-category">产品</p>
 
-### 模型发布
+- 当提供商只有一个有效方案（例如仅批处理定价）时，模型定价面板仍会显示方案选择器 ([#515](https://github.com/phaseoteam/Phaseo/pull/515))。
+- Anthropic on AWS 路由在模型定价和提供商列表中显示 AWS 标志和更清晰的提供商名称 ([#519](https://github.com/phaseoteam/Phaseo/pull/519), [#525](https://github.com/phaseoteam/Phaseo/pull/525), [#526](https://github.com/phaseoteam/Phaseo/pull/526))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Claude Opus 4.8 模型发布图片](../../../images/model-releases/2026-05-28--anthropic--claude-opus-4-8.png)
 
@@ -47,109 +93,178 @@ description: "Phaseo 2026年5月的产品更新、SDK 变更和模型发布。"
 - [Google: Gemini 3 Pro Image (Nano Banana Pro)](https://phaseo.app/models/google/gemini-3-pro-image)
 - [Google: Gemini 3.1 Flash Image (Nano Banana 2)](https://phaseo.app/models/google/gemini-3.1-flash-image)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月26日" tags={["模型发布"]}>
+<Update label="2026年5月26日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Qwen 3.7 Plus (2026-05-26) 模型发布图片](../../../images/model-releases/2026-05-26--qwen--qwen3-7-plus-2026-05-26.png)
 
 - [Qwen: Qwen 3.7 Plus (2026-05-26)](https://phaseo.app/models/qwen/qwen3.7-plus-2026-05-26)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月25日" tags={["模型发布"]}>
+<Update label="2026年5月25日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Qwen 3.7 Max (2026-05-17) 模型发布图片](../../../images/model-releases/2026-05-25--qwen--qwen3-7-max-2026-05-17.png)
 
 - [Qwen: Qwen 3.7 Max (2026-05-17)](https://phaseo.app/models/qwen/qwen3.7-max-2026-05-17)
 - [Qwen: Qwen 3.7 Max Preview](https://phaseo.app/models/qwen/qwen3.7-max-preview)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月21日" tags={["模型发布"]}>
+<Update label="2026年5月21日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Qwen 3.7 Max 模型发布图片](../../../images/model-releases/2026-05-21--qwen--qwen3-7-max.png)
 
 - [Qwen: Qwen 3.7 Max](https://phaseo.app/models/qwen/qwen3.7-max)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月20日" tags={["模型发布"]}>
+<Update label="2026年5月20日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Command A+ 模型发布图片](../../../images/model-releases/2026-05-20--cohere--command-a-plus.png)
 
 - [Cohere: Command A+](https://phaseo.app/models/cohere/command-a-plus)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月19日" tags={["功能","模型发布","SDK","文档"]}>
+<Update label="2026年5月19日">
 
-### SDK 发布
+<div data-changelog-category="product">
 
-- TypeScript Agent SDK 的推出新增了专用软件包，可基于 Phaseo Gateway 构建智能体应用 ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)). 请参阅 [`@phaseo/agent-sdk`](https://github.com/phaseoteam/Phaseo/tree/main/packages/sdk/agent-sdk-ts).
+<p className="changelog-category">产品</p>
 
-### 模型发布
+- **Models** 列出了免费路由器，其页面显示它可以路由到哪些免费模型以及最近的使用情况；参见 [使用免费路由器起步](../cookbook/free-router-first-deploy.mdx) ([#495](https://github.com/phaseoteam/Phaseo/pull/495))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Gemini 3.5 Flash 模型发布图片](../../../images/model-releases/2026-05-19--google--gemini-3-5-flash.png)
 
 - [Google: Gemini 3.5 Flash](https://phaseo.app/models/google/gemini-3.5-flash)
 - [Qwen: Qwen 3.5 LiveTranslate Flash Realtime (2026-05-19)](https://phaseo.app/models/qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月18日" tags={["模型发布"]}>
+<Update label="2026年5月18日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Composer 2.5 模型发布图片](../../../images/model-releases/2026-05-18--cursor--composer-2-5.png)
 
 - [Cursor: Composer 2.5](https://phaseo.app/models/cursor/composer-2.5)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月16日" tags={["功能","模型发布","提供商支持","SDK","定价","文档"]}>
+<Update label="2026年5月16日">
 
-### 功能
+<div data-changelog-category="models">
 
-- 我们完善了供应商启用状态和区域筛选，让用户能在发出请求前更容易识别不可用路由 ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-- 免费路由器在定价、供应商选择和网关路由中的行为现在更加可预测 ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-### SDK 发布
-
-- Agent SDK 文档和示例现已发布，并提供了有关持久循环、并行工具和智能体编排的首批公开工作流指南 ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-### 模型发布
+<p className="changelog-category">模型</p>
 
 - [xAI: Grok TTS](https://phaseo.app/models/x-ai/grok-tts)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月15日" tags={["模型发布"]}>
+<Update label="2026年5月15日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Grok Build 0.1 模型发布图片](../../../images/model-releases/2026-05-15--x-ai--grok-build-0-1.png)
 
 - [xAI: Grok Build 0.1](https://phaseo.app/models/x-ai/grok-build-0.1)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月7日" tags={["功能","模型发布","提供商支持","定价"]}>
+<Update label="2026年5月9日">
 
-### 功能
+<div data-changelog-category="product">
 
-- 我们扩展了供应商可用性和定价摘要，让模型页面更清晰地展示路由、层级和成本差异 ([PR #474](https://github.com/phaseoteam/Phaseo/pull/474)).
-- 产品现已显示实时分钟价格，便于将音频和实时会话模型与按 token 计费的模型进行比较 ([PR #477](https://github.com/phaseoteam/Phaseo/pull/477)).
+<p className="changelog-category">产品</p>
 
-### 模型发布
+- Chat 可以使用相同的提示词、模型和临时聊天设置，重试失败的图像或视频生成 ([#479](https://github.com/phaseoteam/Phaseo/pull/479))。
+
+</div>
+
+</Update>
+
+<Update label="2026年5月8日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- TypeScript、Python、Go、C#、Java、PHP 和 Ruby SDK `2.0.4` 在类型中加入了 `session_id`、结构化错误诊断和模型可用性字段；参见 [发布说明](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4) ([#476](https://github.com/phaseoteam/Phaseo/pull/476))。
+
+</div>
+
+</Update>
+
+<Update label="2026年5月7日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **Models** 上的定价悬浮卡片会显示图像、视频和分档文本价格，并按质量、分辨率、时长、音频和上下文长度分组 ([#474](https://github.com/phaseoteam/Phaseo/pull/474))。
+- **Models** 会按分钟价格显示按分钟计费的音频模型（如 `whisper-1`），例如每分钟 $0.006，而不是四舍五入后的 token 价格 ([#477](https://github.com/phaseoteam/Phaseo/pull/477))。
+- 模型页面标题栏新增模型 ID 控件，可在模型的别名之间切换并复制所选 ID ([#473](https://github.com/phaseoteam/Phaseo/pull/473))。
+- **Models** 侧边栏中的筛选计数现在会随其他已选筛选条件更新 ([#473](https://github.com/phaseoteam/Phaseo/pull/473))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** `/v1/videos`、`/v1/batches`、`/v1/files` 和 `/v1/music/generations` 暂时停用，并返回 `501 not_implemented`；在重新启用之前，请暂停对这些端点的调用 ([#473](https://github.com/phaseoteam/Phaseo/pull/473))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Gemini 3.1 Flash-Lite 模型发布图片](../../../images/model-releases/2026-05-07--google--gemini-3-1-flash-lite.png)
 
@@ -158,44 +273,98 @@ description: "Phaseo 2026年5月的产品更新、SDK 变更和模型发布。"
 - [OpenAI: GPT Realtime Translate](https://phaseo.app/models/openai/gpt-realtime-translate)
 - [OpenAI: GPT Realtime Whisper](https://phaseo.app/models/openai/gpt-realtime-whisper)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月6日" tags={["功能","模型发布"]}>
+<Update label="2026年5月6日">
 
-### 功能
+<div data-changelog-category="api">
 
-- 我们扩展了视频生成和异步作业生命周期的支持，并更清晰地处理供应商长时间任务的状态 ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
-- 网关界面现会显示更多预留、完成和失败状态，帮助排查异步媒体请求 ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
+<p className="changelog-category">API 与 SDK</p>
 
-### 模型发布
+- 模型列表端点接受 `availability=all`，以包含即将推出和未激活的模型，每个提供商条目都会返回 `availability_status` 和 `availability_reason`；参见 [列出模型](../api-reference/endpoint/models.mdx) ([#466](https://github.com/phaseoteam/Phaseo/pull/466))。
+- 错误响应包含 `failed_providers`、`routing_diagnostics` 和 `provider_failure_diagnostics`，可指出缺少凭据或区域限制等原因；参见 [错误与调试](../api-reference/errors.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467))。
+- 获取生成记录端点返回 `replay_request` 和 `replay_supported`，可将已记录的请求重新发送到原始端点；参见 [获取生成记录](../api-reference/endpoint/generation.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Grok Imagine Image Quality 模型发布图片](../../../images/model-releases/2026-05-06--x-ai--grok-imagine-image-quality.png)
 
 - [xAI: Grok Imagine Image Quality](https://phaseo.app/models/x-ai/grok-imagine-image-quality)
 
+</div>
+
 </Update>
 
-<Update label="2026年5月5日" tags={["模型发布"]}>
+<Update label="2026年5月5日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![chat-latest 模型发布图片](../../../images/model-releases/2026-05-05--openai--chat-latest.png)
 
 - [OpenAI: chat-latest](https://phaseo.app/models/openai/chat-latest)
 
-</Update>
-
-<Update label="2026年5月1日" tags={["功能","SDK"]}>
-
-### SDK 发布
-
-- [TypeScript SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4): 已根据最新网关架构更新生成的 OpenAPI 和模型信息。
-- [Python SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fpy-sdk%402.0.4): 已根据最新网关架构更新生成的 OpenAPI 和模型信息。
-- [Go SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fgo-sdk%402.0.4): 已根据最新网关架构更新生成的 OpenAPI 和模型信息。
-- [C# SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fcsharp-sdk%402.0.4): 已根据最新网关架构更新生成的 OpenAPI 和模型信息。
-- [Java SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fjava-sdk%402.0.4): 已根据最新网关架构更新生成的 OpenAPI 和模型信息。
-- [PHP SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fphp-sdk%402.0.4): 已根据最新网关架构更新生成的 OpenAPI 和模型信息。
-- [Ruby SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fruby-sdk%402.0.4): 已根据最新网关架构更新生成的 OpenAPI 和模型信息。
+</div>
 
 </Update>
 
+<Update label="2026年5月4日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **Settings -> Usage** 将活动分为 **Logs**、**Jobs** 和 **Sessions** 视图，支持实时刷新，筛选条件和时间范围会保存在 URL 中 ([#463](https://github.com/phaseoteam/Phaseo/pull/463), [#467](https://github.com/phaseoteam/Phaseo/pull/467))。
+- 模型 Playground 会在失败的图像和视频生成上显示 **Retry** 和 **Delete**，**Retry** 会沿用相同的提示词和模型 ([#465](https://github.com/phaseoteam/Phaseo/pull/465))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- Chat Completions 和 Responses 请求接受 `session_id`，用于在使用日志中将相关请求归为同一会话 ([#463](https://github.com/phaseoteam/Phaseo/pull/463))。
+
+</div>
+
+</Update>
+
+<Update label="2026年5月2日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 屏蔽模型或提供商的工作区策略重新生效，被屏蔽的请求会在路由前被拒绝 ([#444](https://github.com/phaseoteam/Phaseo/pull/444))。
+
+</div>
+
+</Update>
+
+<Update label="2026年5月1日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型 Playground 新增 **TTS** 和 **Music** 模式，用于文本转语音和音乐生成模型 ([#441](https://github.com/phaseoteam/Phaseo/pull/441))。
+- **Models** 上的模型卡片不再为付费模型显示 **Free**，即将推出筛选的计数也与列出的模型一致 ([#441](https://github.com/phaseoteam/Phaseo/pull/441))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- TypeScript、Python、Go、C#、Java、PHP 和 Ruby SDK `2.0.3` 在类型列表中加入了最新的模型 ID 和基准测试 ID；参见 [发布说明](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.3) ([#439](https://github.com/phaseoteam/Phaseo/pull/439))。
+
+</div>
+
+</Update>

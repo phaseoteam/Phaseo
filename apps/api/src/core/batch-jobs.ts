@@ -83,6 +83,8 @@ export type BatchJobMeta = {
 		traceFlags: number;
 		traceState?: string | null;
 	} | null;
+	/** The create request's string metadata, for the finalize span. */
+	otelMetadata?: Record<string, string> | null;
 };
 
 export type BatchJobRecord = {

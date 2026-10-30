@@ -6,13 +6,25 @@ The Next.js website, dashboard, and internal catalog editor.
 
 From the repository root, run `pnpm install`, then `pnpm --filter @phaseo/web dev`. The local site runs at http://localhost:3100. Configure the required local environment and backend services before using authenticated features; never commit credentials.
 
+## Error source maps
+
+Production builds upload source maps to PostHog so error stacks show the original file and line. The upload runs only when these build-time variables are set, and never for Vercel preview builds:
+
+| Variable | Value |
+| --- | --- |
+| `POSTHOG_SOURCEMAPS_API_KEY` | PostHog personal API key with the error tracking write scope. Secret. |
+| `POSTHOG_SOURCEMAPS_PROJECT_ID` | PostHog project ID. |
+| `POSTHOG_SOURCEMAPS_HOST` | Optional. Defaults to `https://eu.posthog.com`. |
+
+The browser maps are uploaded as release `phaseo-web` at the deployment's commit. They are then deleted from the build output with their `sourceMappingURL` comments, so the site never serves or links to them. If the upload fails, the build logs a warning, removes the maps the same way and continues. Without the variables the build makes no browser maps and skips the upload.
+
 ## Catalog management
 
 The database is the catalog source of truth. Admins use `/internal/data` to manage models, organisations, providers, routes, prices, and benchmark results. `/internal/data/registries` manages supporting catalog settings, and `/internal/data/imports` reviews provider price proposals.
 
 Public visitors should [report incorrect information](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) or [request missing data](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) with the affected record and official sources. Maintainers review the issue and apply approved updates in the editor.
 
-The `Catalog Database Snapshot` workflow reads the production database and exports the eight public catalog namespaces to `packages/data/catalog/generated/database-v2`, then opens a reviewable pull request when the snapshot changes. There is no JSON import path: archived `packages/data/catalog/src/data` fixtures and generated snapshots are validation/publication artifacts only and do not update the live catalog.
+The production database is the only copy of the catalog. The repository holds no catalog JSON, exports, or import path.
 
 ## Validation
 

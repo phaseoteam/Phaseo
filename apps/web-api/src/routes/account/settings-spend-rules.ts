@@ -283,7 +283,7 @@ accountSettingsSpendRulesRouter.post("/spend-rules", async (c) => {
 	const body = await readBody(c);
 	const access = await managerContext(c, body.workspaceId);
 	if ("response" in access) return access.response;
-	const parsed = parseSpendRuleInput(ruleInput(body), { parseTimeZone: parseIanaTimeZone });
+	const parsed = parseSpendRuleInput(ruleInput(body), { parseTimeZone: parseIanaTimeZone, blocksEnabled: c.env.SPEND_RULE_BLOCKS_ENABLED === "true" });
 	if (parsed.ok === false) return badRequest(c, parsed.message);
 	const { context } = access;
 	const result = await context.client.rpc("save_workspace_spend_rule", {
@@ -324,7 +324,7 @@ accountSettingsSpendRulesRouter.patch("/spend-rules/:ruleId", async (c) => {
 	if (existing.error) return json(c, { error: "settings_unavailable" }, 503);
 	if (!existing.data) return notFound(c);
 	const input = ruleInput(body);
-	const parsed = parseSpendRuleInput(input, { existing: spendRuleFieldsFromRow(existing.data as unknown as SpendRuleRow), parseTimeZone: parseIanaTimeZone });
+	const parsed = parseSpendRuleInput(input, { existing: spendRuleFieldsFromRow(existing.data as unknown as SpendRuleRow), parseTimeZone: parseIanaTimeZone, blocksEnabled: c.env.SPEND_RULE_BLOCKS_ENABLED === "true" });
 	if (parsed.ok === false) return badRequest(c, parsed.message);
 	const result = await context.client.rpc("save_workspace_spend_rule", {
 		p_workspace_id: context.workspaceId,

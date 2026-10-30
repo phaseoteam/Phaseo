@@ -3,7 +3,7 @@ import { requireUser } from "@/auth/requireUser";
 import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
-import { encryptNotificationTarget, isNotificationEventKind, isSpendReportCadence, NOTIFICATION_DESTINATION_TYPES, parseIanaTimeZone, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
+import { encryptNotificationTarget, isNotificationEventKind, isSpendReportCadence, isSignedNotificationDestinationType, issueNotificationSigningSecret, NOTIFICATION_DESTINATION_TYPES, parseIanaTimeZone, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
 
 const EMPTY_TIER_SUMMARY = { lastMonthCents: 0, mtdCents: 0, teamTier: "basic" as const };
 
@@ -300,9 +300,11 @@ creditsRouter.post("/notification-destinations", async (c) => {
 	try {
 		const target = validateNotificationTarget(type, body.target);
 		const encrypted = await encryptNotificationTarget(c.env, target);
-		const result = await context.client.from("notification_destinations").insert({ workspace_id: workspaceId, name, type, status: "active", target_preview: targetPreview(type, target), ...encrypted, created_by: context.user.id }).select("id,name,type,target_preview,status,created_at").single();
+		const signing = isSignedNotificationDestinationType(type) ? await issueNotificationSigningSecret(c.env) : null;
+		const result = await context.client.from("notification_destinations").insert({ workspace_id: workspaceId, name, type, status: "active", target_preview: targetPreview(type, target), ...encrypted, ...signing?.columns, created_by: context.user.id }).select("id,name,type,target_preview,status,created_at,signing_secret_rotated_at").single();
 		if (result.error) throw result.error;
-		return c.json({ destination: { id: String(result.data.id), name: result.data.name, type: result.data.type, targetPreview: result.data.target_preview, status: result.data.status, createdAt: result.data.created_at } }, 201, PRIVATE_NO_STORE_HEADERS);
+		// The signing secret is shown once, in this response only.
+		return c.json({ destination: { id: String(result.data.id), name: result.data.name, type: result.data.type, targetPreview: result.data.target_preview, status: result.data.status, createdAt: result.data.created_at, hasSigningSecret: Boolean(signing), signingSecretRotatedAt: result.data.signing_secret_rotated_at ?? null }, ...(signing ? { signingSecret: signing.secret } : {}) }, 201, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		return c.json({ error: error instanceof Error ? error.message : "notification_destination_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS);
 	}
@@ -318,6 +320,28 @@ creditsRouter.delete("/notification-destinations/:destinationId", async (c) => {
 	const result = await context.client.from("notification_destinations").update({ status: "deleted", deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", c.req.param("destinationId")).eq("workspace_id", workspaceId).neq("status", "deleted");
 	if (result.error) return c.json({ error: "notification_destination_delete_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+// Generates a signing secret for a custom webhook destination, or replaces the current one.
+// Destinations created before signing existed get their first secret here. Shown once.
+creditsRouter.post("/notification-destinations/:destinationId/signing-secret", async (c) => {
+	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	const workspaceId = String(body.workspaceId ?? "").trim();
+	const context = await requireWorkspace({ req: { raw: c.req.raw, query: (key) => key === "workspaceId" ? workspaceId : undefined }, env: c.env });
+	if (!context) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+	const membership = await context.client.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", context.user.id).maybeSingle();
+	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const destinationId = String(c.req.param("destinationId") ?? "");
+	const existing = await context.client.from("notification_destinations").select("id,type").eq("id", destinationId).eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").maybeSingle();
+	if (existing.error) return c.json({ error: "notification_destination_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!existing.data) return c.json({ error: "notification_destination_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	if (!isSignedNotificationDestinationType(String(existing.data.type))) return c.json({ error: "notification_destination_not_signed" }, 400, PRIVATE_NO_STORE_HEADERS);
+	let signing: Awaited<ReturnType<typeof issueNotificationSigningSecret>>;
+	try { signing = await issueNotificationSigningSecret(c.env); } catch { return c.json({ error: "notification_destination_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); }
+	const result = await context.client.from("notification_destinations").update({ ...signing.columns, updated_at: new Date().toISOString() }).eq("id", destinationId).eq("workspace_id", workspaceId).eq("type", "custom_webhook").neq("status", "deleted").select("id,signing_secret_rotated_at").maybeSingle();
+	if (result.error) return c.json({ error: "notification_destination_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!result.data) return c.json({ error: "notification_destination_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ signingSecret: signing.secret, signingSecretRotatedAt: result.data.signing_secret_rotated_at ?? null }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 creditsRouter.put("/notification-routes/:eventKind", async (c) => {

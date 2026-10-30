@@ -841,6 +841,8 @@ async function runTextGeneratePipelineInner(
 			debugEnabled: Boolean(pre.ctx.meta?.debug?.enabled),
 			hasTools: Array.isArray(pre.ctx.body?.tools) && pre.ctx.body.tools.length > 0,
 			serverToolsEnabled: preparedServerTools.config.enabled,
+			neverStoreContent: pre.ctx.neverStoreContent === true,
+			zeroDataRetention: pre.ctx.zeroDataRetention === true,
 		});
 		pre.ctx.responseCache = {
 			enabled: false,
@@ -878,6 +880,7 @@ async function runTextGeneratePipelineInner(
 					protocol,
 					presetId: pre.ctx.preset?.id ?? null,
 					presetSlug: pre.ctx.preset?.slug ?? null,
+					presetVersionId: pre.ctx.preset?.ref ? pre.ctx.preset.versionId ?? null : null,
 					routingMode: pre.ctx.routingMode ?? null,
 				});
 				const cacheKey = buildResponseCacheKey(

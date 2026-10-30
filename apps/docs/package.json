@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "mintlify dev --port 3101 --no-open",
-		"build": "pnpm run skills:check && pnpm run og:check && pnpm run openapi:locales:check && pnpm run validate:locales && pnpm run translation:freshness:check && mintlify validate",
+		"build": "pnpm run skills:check && pnpm run og:check && pnpm run openapi:locales:check && pnpm run validate:locales && pnpm run validate:changelog && pnpm run translation:freshness:check && mintlify validate",
 		"check:links": "mintlify broken-links",
 		"og:sync": "node scripts/sync-og-images.mjs",
 		"og:check": "node scripts/sync-og-images.mjs --check",
@@ -14,6 +14,7 @@
 		"translation:freshness:check": "node scripts/translation-freshness.mjs check",
 		"translation:freshness:record": "node scripts/translation-freshness.mjs record",
 		"validate:locales": "node scripts/validate-locales.mjs",
+		"validate:changelog": "node scripts/validate-changelog.mjs",
 		"skills:sync": "node ../../scripts/skills/sync.mjs",
 		"skills:check": "node ../../scripts/skills/sync.mjs --check",
 		"preview": "mintlify preview",

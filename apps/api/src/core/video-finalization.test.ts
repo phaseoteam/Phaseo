@@ -60,7 +60,7 @@ import { finalizeVideoJob } from "./video-finalization";
 describe("video-finalization", () => {
 	it.each([undefined, { mode: "text-to-video" }])("settles LTX audio using the stored endpoint with polling options %j", async (requestOptions) => {
 		const { computeBill } = await vi.importActual<typeof import("@pipeline/pricing/engine")>("@pipeline/pricing/engine");
-		const { default: catalog } = await import("../../../../packages/data/catalog/src/data/pricing/ltx/ltx-2-3-pro/video.generate/pricing.json");
+		const { ltxLtx23ProCard: catalog } = await import("./__fixtures__/video-price-cards");
 		getVideoJobMetaMock.mockResolvedValue({ model: "ltx-2-3-pro", seconds: 20, resolution: "3840x2160",
 			ltxEndpoint: "audio-to-video", inputAudioSeconds: 20, keySource: "gateway",
 			reservationId: "video_hold:ltx_audio", reservedNanos: 6_800_000_000 });

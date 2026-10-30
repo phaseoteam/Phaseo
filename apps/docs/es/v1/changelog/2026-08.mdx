@@ -3,42 +3,176 @@ title: "agosto"
 description: "Lanzamientos de modelos de agosto de 2026 en Phaseo."
 ---
 
-<Update label="28 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### Lanzamientos de modelos
+<ChangelogFilters labels={{"product":"Producto","api":"API y SDK","models":"Modelos"}} clearLabel="Borrar" />
+
+<Update label="31 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- BYOK incluye ahora 250.000 solicitudes por espacio de trabajo cada mes UTC sin comisión de Phaseo y después cobra el 2,5 % del coste equivalente del proveedor; los metadatos de cada solicitud BYOK se conservan 90 días ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+
+</div>
+
+</Update>
+
+<Update label="30 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Los errores de Chat ahora explican qué falló y ofrecen un siguiente paso, como reintentar, iniciar sesión o elegir otro modelo; los errores `402` enlazan a Créditos y a `phaseo/free` ([#2100](https://github.com/phaseoteam/Phaseo/pull/2100)).
+- El editor de Chat deja de crecer a partir de cinco líneas y desplaza las indicaciones largas en lugar de tapar la conversación ([#2096](https://github.com/phaseoteam/Phaseo/pull/2096)).
+- Las páginas de modelos abren los detalles de un proveedor desde un enlace como `?provider=openai`, y el cuadro del proveedor muestra un ID de modelo calificado por proveedor que se puede copiar; consulta [IDs de modelo con proveedor](../guides/provider-qualified-models.mdx) ([#2095](https://github.com/phaseoteam/Phaseo/pull/2095), [#2052](https://github.com/phaseoteam/Phaseo/pull/2052)).
+- La búsqueda de modelos muestra solo los modelos que se pueden enrutar por el gateway hasta que cambies el filtro de estado; consulta [Comprueba la fiabilidad y el estado de Gateway](../developers/reliability-and-status.mdx) ([#2057](https://github.com/phaseoteam/Phaseo/pull/2057)).
+- Los rankings públicos de apps agrupan cada sitio web en una sola entrada con una URL legible, como `/apps/phaseo-chat` ([#2087](https://github.com/phaseoteam/Phaseo/pull/2087)).
+- El Trust Centre añade un documento técnico de seguridad, una lista de subencargados y un borrador de DPA, y la eliminación de cuentas borra ahora los datos de todos los almacenes activos de Phaseo en 30 días ([#2058](https://github.com/phaseoteam/Phaseo/pull/2058)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- La CLI pregunta antes de instalar un agente de programación que falta y muestra el comando exacto de instalación; usa `--skip-install` para las herramientas que gestionas tú; consulta [Agentes de programación](../guides/integrations/coding-assistants.mdx) ([#2066](https://github.com/phaseoteam/Phaseo/pull/2066)).
+- La API de gestión administra las credenciales de proveedores en `/v1/byok` y los presupuestos del espacio de trabajo en `/v1/budgets`, y todos los SDK se regeneraron en consecuencia; consulta [Listar credenciales del proveedor](../api-reference/endpoint/provider-credentials-list.mdx) ([#2086](https://github.com/phaseoteam/Phaseo/pull/2086)).
+
+</div>
+
+</Update>
+
+<Update label="29 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Ahora se pueden arrastrar archivos a Chat para adjuntarlos, incluidas imágenes HEIC y AVIF ([#2050](https://github.com/phaseoteam/Phaseo/pull/2050)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las solicitudes aceptan etiquetas en el encabezado `X-Phaseo-Metadata`, y Registros y Actividad pueden filtrar solicitudes y gasto por etiqueta; consulta [Etiquetas de solicitud](../guides/request-labels.mdx) ([#2049](https://github.com/phaseoteam/Phaseo/pull/2049)).
+
+</div>
+
+</Update>
+
+<Update label="28 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Los proveedores pueden reclamar su perfil de Phaseo con una prueba de dominio y enviar un feed de catálogo de modelos para revisión desde los ajustes de proveedor; consulta [Publicar un catálogo de proveedor](../guides/provider-catalog.mdx) ([#2037](https://github.com/phaseoteam/Phaseo/pull/2037)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Hy4 Preview ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-28--tencent--hy4-preview.png)
 
 - [Tencent Hunyuan: Hy4 Preview](https://phaseo.app/models/tencent/hy4-preview)
 
+</div>
+
 </Update>
 
-<Update label="27 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="27 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Los detalles de la solicitud muestran todos los proveedores que el enrutador clasificó o excluyó, con cada factor de puntuación y si fue elegido, intentado o degradado; consulta [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx) ([#2011](https://github.com/phaseoteam/Phaseo/pull/2011), [#2015](https://github.com/phaseoteam/Phaseo/pull/2015)).
+- Chat marca los cambios de día, las pausas de seis horas o más y los cambios de modelo, con los logotipos de los modelos nuevos ([#1992](https://github.com/phaseoteam/Phaseo/pull/1992)).
+- Las páginas de modelos muestran rendimiento y disponibilidad también para modelos con pocas solicitudes; antes, estas secciones quedaban vacías por debajo de 20 solicitudes ([#1997](https://github.com/phaseoteam/Phaseo/pull/1997)).
+- El calendario de lanzamientos muestra en pantallas pequeñas un resumen del mes con la agenda del día elegido, y "On this day" usa todo el historial de lanzamientos ([#2019](https://github.com/phaseoteam/Phaseo/pull/2019)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- El enrutamiento equilibrado pondera ahora fiabilidad, latencia, latencia de cola, rendimiento, precio y ajuste de tokens, y la disponibilidad del proveedor ya no cuenta las respuestas `400`, `403`, `413` o `429` como fallos; consulta [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx) ([#2011](https://github.com/phaseoteam/Phaseo/pull/2011)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Parse v5.0 ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-27--cohere--parse-v5.0.png)
 
 - [Cohere: Parse v5.0](https://phaseo.app/models/cohere/parse-v5.0)
 - [Inclusion AI: Ling 3.0 Flash Fin](https://phaseo.app/models/inclusionai/ling-3.0-flash-fin)
 
+</div>
+
 </Update>
 
-<Update label="26 de agosto de 2026" tags={["Lanzamientos de modelos", "Actualizaciones de modelos"]}>
+<Update label="26 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- La página de rankings añade una sección semanal **Return Rate** que muestra a qué modelos vuelven los espacios de trabajo, con intervalos de confianza ([#1961](https://github.com/phaseoteam/Phaseo/pull/1961)).
+- La búsqueda global ordena laboratorios, proveedores y modelos por relevancia en cuanto escribes, así que las coincidencias exactas como Nvidia aparecen primero ([#1974](https://github.com/phaseoteam/Phaseo/pull/1974)).
+- Las tarjetas de modelos marcan los modelos retirados y obsoletos con las insignias **End of life** o **Deprecated** ([#1977](https://github.com/phaseoteam/Phaseo/pull/1977)).
+- Los datos de privacidad de los proveedores muestran **Data policy**, ZDR y ubicaciones de procesamiento en lugar de etiquetas separadas de entrenamiento y retención ([#1954](https://github.com/phaseoteam/Phaseo/pull/1954)).
+- Al hacer clic en el logotipo de Phaseo se abre un menú de marca que copia o descarga el logotipo y la marca en SVG o PNG, en versión clara u oscura ([#1734](https://github.com/phaseoteam/Phaseo/pull/1734), [#1968](https://github.com/phaseoteam/Phaseo/pull/1968), [#1983](https://github.com/phaseoteam/Phaseo/pull/1983)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- `POST /v1/music/generate` devuelve un ID de solicitud de Phaseo, y `GET /v1/music/generate/{music_id}` devuelve los resultados con la misma forma para todos los proveedores; consulta [Generar música](../api-reference/endpoint/music-generate.mdx) ([#1941](https://github.com/phaseoteam/Phaseo/pull/1941), [#1952](https://github.com/phaseoteam/Phaseo/pull/1952)).
+- Las solicitudes fallidas reenvían el `Retry-After` del proveedor, y las solicitudes BYOK también devuelven los encabezados de cuota `X-Phaseo-Upstream-RateLimit-*`; consulta [Límites de solicitudes](../api-reference/limits.mdx) ([#1960](https://github.com/phaseoteam/Phaseo/pull/1960)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![GLM 5.3 Flash ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-26--z-ai--glm-5.3-flash.png)
 
-- [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
 - [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash)
+- [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
 - [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) se retiró al confirmarse que era Z.AI GLM-5.3-Flash.
+
+</div>
 
 </Update>
 
-<Update label="25 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="25 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Cada alerta del espacio de trabajo puede ir a sus propios destinos de notificación, así que las alertas de saldo bajo y de modelos obsoletos pueden llegar a canales distintos; consulta [Notificaciones del espacio de trabajo](../guides/workspace-notifications.mdx) ([#1830](https://github.com/phaseoteam/Phaseo/pull/1830)).
+- El nivel de servicio **Priority** se muestra ahora como **Fast** en las páginas de modelos y precios; las solicitudes que envían `priority` siguen funcionando; consulta [Niveles de servicio](../guides/service-tiers.mdx) ([#1931](https://github.com/phaseoteam/Phaseo/pull/1931)).
+- Compare conserva los modelos actuales al añadir otro, y muestra los logotipos de los proveedores y una opción de nivel para los que tienen varios planes ([#1826](https://github.com/phaseoteam/Phaseo/pull/1826)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Granite 4.2 ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-25--ibm--granite-4.2.png)
 
@@ -46,42 +180,149 @@ description: "Lanzamientos de modelos de agosto de 2026 en Phaseo."
 - [IBM: Granite 4.2 8B](https://phaseo.app/models/ibm/granite-4.2-8b)
 - [IBM: Granite 4.2 3B](https://phaseo.app/models/ibm/granite-4.2-3b)
 
-</Update>
-
-<Update label="23 de agosto de 2026" tags={["Plataforma"]}>
-
-### Administración del espacio de trabajo
-
-- Se añadieron complementos Enterprise de autoservicio para espacios de trabajo: SSO, SCIM, gestión de directorios y departamentos.
-- Se añadieron destinos de notificación del espacio de trabajo para correo electrónico, Discord, Slack, Microsoft Teams y webhooks HTTPS personalizados.
-- Se atribuyeron categorías de aplicaciones mediante `X-App-Categories` y el SDK de TypeScript.
+</div>
 
 </Update>
 
-<Update label="21 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="23 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Los propietarios de espacios de trabajo pueden contratar un plan Enterprise para 100 a 100.000 miembros, con SSO, SCIM 2.0, ajustes de directorio y departamentos y sin gasto mínimo en modelos ([#1754](https://github.com/phaseoteam/Phaseo/pull/1754), [#1743](https://github.com/phaseoteam/Phaseo/pull/1743), [#1749](https://github.com/phaseoteam/Phaseo/pull/1749)).
+- Los espacios de trabajo pueden enviar alertas de saldo bajo, facturación y modelos obsoletos por correo, Discord, Slack, Microsoft Teams o un webhook propio desde **Workspace settings -> Notifications**; consulta [Notificaciones del espacio de trabajo](../guides/workspace-notifications.mdx) ([#1796](https://github.com/phaseoteam/Phaseo/pull/1796)).
+- El Trust Centre en `/trust` describe las prácticas de seguridad de Phaseo, el tratamiento de datos, los proveedores de servicios y el estado de cumplimiento ([#1811](https://github.com/phaseoteam/Phaseo/pull/1811), [#1816](https://github.com/phaseoteam/Phaseo/pull/1816)).
+- Las páginas de organizaciones son ahora páginas de **Labs**, con rendimiento agregado y tarjetas de modelos recientes ([#1807](https://github.com/phaseoteam/Phaseo/pull/1807)).
+- Compare se abre directamente en la vista de comparación en lugar de un selector de ajustes predefinidos ([#1803](https://github.com/phaseoteam/Phaseo/pull/1803)).
+- Los ajustes de BYOK calculan las solicitudes gratuitas restantes sobre la asignación mensual de 1.000.000; antes usaban la asignación retirada de 100.000 ([#1595](https://github.com/phaseoteam/Phaseo/pull/1595)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las solicitudes pueden clasificar una app con el encabezado `X-App-Categories`, que también admite el SDK de TypeScript; consulta [Atribución de aplicaciones](../guides/app-attribution.mdx) ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799)).
+- Los sufijos de modelo `:nitro`, `:cheap` y `:fast` fijan ahora el modo de enrutamiento aunque los campos de la solicitud, los presets o los valores del espacio de trabajo pidan otro; consulta [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx) ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814)).
+- `provider.quantizations` limita ahora el enrutamiento a las ofertas con una cuantización coincidente y devuelve diagnósticos cuando ninguna coincide; consulta [Cómo elegir una estrategia de cuantización](../guides/quantization-selection.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
+
+</div>
+
+</Update>
+
+<Update label="21 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- La página de proveedores filtra por compatibilidad con BYOK, política de entrenamiento, retención de datos y región del centro de datos, y marca los proveedores externos ([#1755](https://github.com/phaseoteam/Phaseo/pull/1755), [#1758](https://github.com/phaseoteam/Phaseo/pull/1758), [#1748](https://github.com/phaseoteam/Phaseo/pull/1748)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![DeepSeek V4 Flash Vision Exp ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-21--deepseek--deepseek-v4-flash-vision-exp.png)
 
 - [DeepSeek: DeepSeek V4 Flash Vision Exp](https://phaseo.app/models/deepseek/deepseek-v4-flash-vision-exp)
 
+</div>
+
 </Update>
 
-<Update label="14 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="20 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Las páginas de modelos muestran el historial de precios por proveedor y nivel de servicio, con rangos de fechas, precios de lista o efectivos y exportación a CSV ([#1557](https://github.com/phaseoteam/Phaseo/pull/1557)).
+
+</div>
+
+</Update>
+
+<Update label="19 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Al seleccionar texto en una respuesta de Chat aparecen las acciones Explain, Improve, Shorten, Change tone y Fix grammar, que colocan una indicación en el editor ([#1619](https://github.com/phaseoteam/Phaseo/pull/1619)).
+- Chat conserva una indicación sin enviar durante el inicio de sesión y te devuelve al mismo chat y modelo ([#1728](https://github.com/phaseoteam/Phaseo/pull/1728)).
+- Los registros muestran el **Source** de cada solicitud, como Direct HTTP, un SDK por lenguaje o un agente de programación, por separado de su App ([#1723](https://github.com/phaseoteam/Phaseo/pull/1723)).
+- Los registros abren sesiones y trabajos asíncronos en paneles laterales con una cronología de solicitudes, botones de anterior y siguiente y una búsqueda **Investigate** por ID de solicitud ([#1724](https://github.com/phaseoteam/Phaseo/pull/1724)).
+- Connected Apps agrupa los permisos por recurso, y los propietarios pueden quitar permisos concretos sin revocar toda la app ([#1585](https://github.com/phaseoteam/Phaseo/pull/1585)).
+- Los filtros de modelos en móvil muestran los filtros activos como chips que se pueden quitar y los conservan todos al cambiar entre tarjetas y tabla ([#1590](https://github.com/phaseoteam/Phaseo/pull/1590)).
+- La página Tools añade un verificador de procedencia de contenido para imágenes y audio de hasta 20 MB ([#1529](https://github.com/phaseoteam/Phaseo/pull/1529)).
+- Las claves BYOK se pueden volver a guardar y la lista se actualiza justo después de un cambio; antes, guardar una clave fallaba ([#1591](https://github.com/phaseoteam/Phaseo/pull/1591)).
+- Registros y Usage Overview abren un espacio de trabajo accesible cuando el guardado ya no está disponible, y crear un espacio de trabajo vuelve a funcionar ([#1589](https://github.com/phaseoteam/Phaseo/pull/1589), [#1592](https://github.com/phaseoteam/Phaseo/pull/1592), [#1593](https://github.com/phaseoteam/Phaseo/pull/1593)).
+
+</div>
+
+</Update>
+
+<Update label="17 de agosto de 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Los presets públicos referenciados como `@publisher/slug` vuelven a resolverse, y los presets privados solo funcionan con claves de API creadas por su propietario; consulta [Preajustes](../guides/presets.mdx) ([#1707](https://github.com/phaseoteam/Phaseo/pull/1707), [#1706](https://github.com/phaseoteam/Phaseo/pull/1706)).
+
+</div>
+
+</Update>
+
+<Update label="14 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Los ajustes de privacidad están ahora en **Workspace -> Privacy** y se aplican a Chat, claves de API, tráfico de SDK y apps en todo el espacio de trabajo ([#1676](https://github.com/phaseoteam/Phaseo/pull/1676), [#1678](https://github.com/phaseoteam/Phaseo/pull/1678)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- `phaseo <agent>` configura Codex, Claude Code, OpenCode, Hermes, Pi, Prime Agent, DeepSeek Harness u OpenClaw con su propia clave de Phaseo en un solo comando; consulta [Agentes de programación](../guides/integrations/coding-assistants.mdx) ([#1685](https://github.com/phaseoteam/Phaseo/pull/1685), [#1662](https://github.com/phaseoteam/Phaseo/pull/1662)).
+- Las respuestas en streaming de `POST /v1/messages` envían los fragmentos de texto, razonamiento y argumentos de herramientas a medida que llegan; antes llegaban de golpe al final; consulta [Crear un mensaje](../api-reference/endpoint/anthropic-messages.mdx) ([#1679](https://github.com/phaseoteam/Phaseo/pull/1679), [#1681](https://github.com/phaseoteam/Phaseo/pull/1681)).
+- Los proveedores con compatibilidad desconocida para un parámetro de la solicitud siguen siendo elegibles para el enrutamiento; solo se excluyen los que se sabe que no lo admiten ([#1667](https://github.com/phaseoteam/Phaseo/pull/1667)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![GLM 5.3 ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-14--z-ai--glm-5.3.png)
 
 - [z.AI: GLM 5.3](https://phaseo.app/models/z-ai/glm-5.3)
 - [Qwen: Qwen 3.8 27B](https://phaseo.app/models/qwen/qwen3.8-27b)
 
+</div>
+
 </Update>
 
-<Update label="13 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="13 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- DeepSeek V4 Pro 0813 y DeepSeek V4 Flash 0731 aceptan `reasoning_effort`, y `minimal` se envía como `low` ([#1651](https://github.com/phaseoteam/Phaseo/pull/1651), [#1652](https://github.com/phaseoteam/Phaseo/pull/1652), [#1654](https://github.com/phaseoteam/Phaseo/pull/1654)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Gemini 3.7 Flash ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-13--google--gemini-3.7-flash.png)
 
@@ -90,77 +331,242 @@ description: "Lanzamientos de modelos de agosto de 2026 en Phaseo."
 - [DeepSeek: DeepSeek V4 Pro 0813](https://phaseo.app/models/deepseek/deepseek-v4-pro-0813)
 - [Dots Studio: dots3-note Preview](https://phaseo.app/models/dots-studio/dots3-note-prev)
 
+</div>
+
 </Update>
 
-<Update label="12 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="12 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Chat envía un ID de sesión por conversación, de modo que las solicitudes de una conversación aparecen agrupadas en los registros ([#1599](https://github.com/phaseoteam/Phaseo/pull/1599)).
+- Las páginas de modelos sustituyen Quickstart por un panel **Use This Model** con la configuración de claves, ejemplos de código por lenguaje, endpoints compatibles y parámetros ([#1637](https://github.com/phaseoteam/Phaseo/pull/1637)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Grok 4.6 ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-12--spacex-ai--grok-4.6.png)
 
 - [SpaceXAI: Grok 4.6](https://phaseo.app/models/spacex-ai/grok-4.6)
 - [Qwen: Qwen 3.8 2.4T A95B](https://phaseo.app/models/qwen/qwen3.8-2.4t-a95b)
 
+</div>
+
 </Update>
 
-<Update label="11 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="11 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Los ajustes usan una sola barra lateral con un selector **Account** y **Workspace** en lugar de navegaciones separadas ([#1509](https://github.com/phaseoteam/Phaseo/pull/1509)).
+- Usage Overview se abre para los usuarios con sesión iniciada en el móvil; antes podía devolverlos a la página de inicio de sesión ([#1556](https://github.com/phaseoteam/Phaseo/pull/1556)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las solicitudes a Gemma 4 aceptan `reasoning_effort` y dejan espacio para la respuesta final; antes, los presupuestos de salida pequeños podían devolver respuestas `502` vacías ([#1550](https://github.com/phaseoteam/Phaseo/pull/1550)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Nemotron 3.5 Lightning 30B A3B ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-11--nvidia--nemotron-3.5-lightning.png)
 
-- [Microsoft: MAI Code 1.1 Flash](https://phaseo.app/models/microsoft/mai-code-1.1-flash)
 - [Nvidia: Nemotron 3.5 Lightning 30B A3B](https://phaseo.app/models/nvidia/nemotron-3.5-lightning)
+- [Microsoft: MAI Code 1.1 Flash](https://phaseo.app/models/microsoft/mai-code-1.1-flash)
 - [SpaceXAI: Grok Imagine Image 2.0](https://phaseo.app/models/spacex-ai/grok-imagine-image-2.0)
+
+</div>
 
 </Update>
 
-<Update label="10 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="10 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- La pantalla de consentimiento de OAuth agrupa los permisos solicitados por recurso y resume el acceso de lectura, escritura y eliminación ([#1538](https://github.com/phaseoteam/Phaseo/pull/1538)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- **Cambio incompatible:** `GET /v1/models` devuelve una nueva estructura de catálogo de Phaseo con ciclo de vida, modalidades, límites, capacidades, precios y ofertas de proveedores; actualiza el código que lee los campos antiguos; consulta [Listar modelos](../api-reference/endpoint/models.mdx) ([#1531](https://github.com/phaseoteam/Phaseo/pull/1531)).
+- El servidor MCP remoto admite la versión de protocolo `2026-07-28`, y los clientes OAuth pueden registrarse con una URL de Client ID Metadata Document; consulta [CLI y MCP](../developers/cli-and-mcp.mdx) ([#1531](https://github.com/phaseoteam/Phaseo/pull/1531)).
+- `@phaseo/cli` 0.2.1 añade `phaseo update` y `phaseo doctor`, que detectan el gestor de paquetes que instaló la CLI e informan de conflictos en el PATH; consulta [CLI de Phaseo](../guides/integrations/phaseo-cli.mdx) ([#1534](https://github.com/phaseoteam/Phaseo/pull/1534), [#1535](https://github.com/phaseoteam/Phaseo/pull/1535)).
+- `phaseo integrations setup` configura Codex, Claude Code u OpenCode para usar Phaseo sin escribir claves de API en sus archivos de configuración; consulta [Agentes de programación](../guides/integrations/coding-assistants.mdx) ([#1510](https://github.com/phaseoteam/Phaseo/pull/1510), [#1545](https://github.com/phaseoteam/Phaseo/pull/1545)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Muse Glimmer 30B ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-10--meta--muse-glimmer-30b.png)
 
 - [Meta: Muse Glimmer 30B](https://phaseo.app/models/meta/muse-glimmer-30b)
 
+</div>
+
 </Update>
 
-<Update label="7 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="8 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Las páginas de modelos añaden un navegador de secciones en el móvil, y las antiguas subpáginas de modelos redirigen a la sección correspondiente ([#1508](https://github.com/phaseoteam/Phaseo/pull/1508)).
+
+</div>
+
+</Update>
+
+<Update label="7 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Las páginas de modelos muestran en gráficos la proporción de tokens de entrada servidos desde caché, a lo largo del tiempo y por proveedor ([#1499](https://github.com/phaseoteam/Phaseo/pull/1499)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 - [ByteDance: Seedance 2.5](https://phaseo.app/models/bytedance/seedance-2.5)
 
+</div>
+
 </Update>
 
-<Update label="6 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="6 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 - [Upstage: Solar Pro 4](https://phaseo.app/models/upstage/solar-pro-4)
 
+</div>
+
 </Update>
 
-<Update label="5 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="5 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Las páginas de modelos muestran TTFT, velocidad de salida, TPOT, ITL y la sobrecarga de Phaseo de P01 a P99, separados por streaming y longitud de entrada ([#1344](https://github.com/phaseoteam/Phaseo/pull/1344)).
+- Los presets guardan los cambios como borradores y los publican como versiones numeradas que no cambian, y las copias del marketplace quedan fijadas a una versión de origen; consulta [Preajustes](../guides/presets.mdx) ([#1419](https://github.com/phaseoteam/Phaseo/pull/1419)).
+- Los destinos OTLP de Broadcast exportan las trazas del gateway en el formato OpenTelemetry GenAI; el contenido de prompts y respuestas solo se envía si lo activas; consulta [Broadcast](../guides/broadcast.mdx) ([#1355](https://github.com/phaseoteam/Phaseo/pull/1355)).
+- Chat muestra orbes animados mientras un modelo trabaja o redacta una respuesta, y una nueva página de agradecimientos enumera los proyectos de código abierto en los que se apoya Phaseo ([#1459](https://github.com/phaseoteam/Phaseo/pull/1459)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- `GET /v1/models/{author}/{slug}/endpoints` muestra, para un modelo, los endpoints, parámetros compatibles y precios de cada proveedor; consulta [Listar las capacidades de endpoints del modelo](../api-reference/endpoint/model-endpoints.mdx) ([#1274](https://github.com/phaseoteam/Phaseo/pull/1274)).
+- `@phaseo/ai-sdk-provider` es compatible con AI SDK 7, incluidas herramientas, razonamiento, embeddings, imágenes, transcripción y voz; AI SDK 6 sigue en la línea 1.x; consulta [AI SDK](../guides/integrations/ai-sdk.mdx) ([#1336](https://github.com/phaseoteam/Phaseo/pull/1336)).
+- `POST /v1/feedback` y `POST /v1/events` registran valoraciones y eventos asociados a solicitudes, sesiones y presets, con los nuevos permisos de clave `feedback:read` y `feedback:write`; consulta [Recopilar comentarios sobre ajustes preestablecidos](../guides/preset-feedback.mdx) ([#1033](https://github.com/phaseoteam/Phaseo/pull/1033)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Muse Spark 1.2 ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-05--meta--muse-spark-1.2.png)
 
-- [Inclusion AI: Ling 3.0 Tiny](https://phaseo.app/models/inclusionai/ling-3.0-tiny)
 - [Meta: Muse Spark 1.2](https://phaseo.app/models/meta/muse-spark-1.2)
+- [Inclusion AI: Ling 3.0 Tiny](https://phaseo.app/models/inclusionai/ling-3.0-tiny)
 - [Meta: Muse Spark 1.2 Contributor](https://phaseo.app/models/meta/muse-spark-1.2-contributor)
 - [Mistral: Shieldstral 1.0 3B](https://phaseo.app/models/mistral/shieldstral-1.0-3b)
 
+</div>
+
 </Update>
 
-<Update label="3 de agosto de 2026" tags={["Lanzamientos de modelos"]}>
+<Update label="4 de agosto de 2026">
 
-### Lanzamientos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Los detalles de la solicitud muestran cada intento con un proveedor, incluidos reintentos y conmutaciones, con su motivo de finalización y su coste ([#1276](https://github.com/phaseoteam/Phaseo/pull/1276)).
+- Las comparaciones en paralelo de Chat usan hasta 96rem en pantallas anchas y reparten el espacio entre los modelos elegidos ([#1365](https://github.com/phaseoteam/Phaseo/pull/1365)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API y SDK</p>
+
+- Las herramientas de servidor añaden Subagent, Fusion y búsqueda de modelos, aplican `max_uses` y `max_tool_calls`, y obtienen hasta 100.000 caracteres de contenido web; consulta [Herramientas del servidor](../guides/server-tools/index.mdx) ([#1447](https://github.com/phaseoteam/Phaseo/pull/1447)).
+- Las solicitudes usan un preset indicando `@slug` en `model`, o `@username/slug` para un preset público; no hay un campo `preset` aparte; consulta [Preajustes](../guides/presets.mdx) ([#1418](https://github.com/phaseoteam/Phaseo/pull/1418)).
+- `POST /v1/audio/transcriptions` acepta los formatos de respuesta con diarización de OpenAI, `chunking_strategy` y los campos de hablantes conocidos; consulta [Crear una transcripción](../api-reference/endpoint/audio-transcriptions.mdx) ([#1451](https://github.com/phaseoteam/Phaseo/pull/1451)).
+
+</div>
+
+</Update>
+
+<Update label="3 de agosto de 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Qwen 3.8 Max ilustración del lanzamiento del modelo](../../../images/model-releases/2026-08-03--qwen--qwen3.8-max.png)
 
 - [Qwen: Qwen 3.8 Max](https://phaseo.app/models/qwen/qwen3.8-max)
 - [Sakana AI: Namazu](https://phaseo.app/models/sakana/namazu)
+
+</div>
+
+</Update>
+
+<Update label="2 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Uso añade una pestaña **Geography**, los rankings muestran el uso de 30 días por país y los usuarios nuevos eligen su país al registrarse ([#1425](https://github.com/phaseoteam/Phaseo/pull/1425)).
+- La búsqueda global muestra tus espacios de trabajo, y al elegir uno cambia a él y abre sus ajustes ([#1417](https://github.com/phaseoteam/Phaseo/pull/1417), [#1424](https://github.com/phaseoteam/Phaseo/pull/1424)).
+- Pulsar Enviar en Chat sin un modelo elegido abre el selector de modelos; antes, el botón no hacía nada ([#1421](https://github.com/phaseoteam/Phaseo/pull/1421), [#1423](https://github.com/phaseoteam/Phaseo/pull/1423)).
+
+</div>
+
+</Update>
+
+<Update label="1 de agosto de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Producto</p>
+
+- Los chats temporales muestran sus mensajes con un contorno discontinuo, y activar o desactivar el modo temporal conserva tu borrador ([#1399](https://github.com/phaseoteam/Phaseo/pull/1399), [#1362](https://github.com/phaseoteam/Phaseo/pull/1362)).
+
+</div>
 
 </Update>

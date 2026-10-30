@@ -2329,7 +2329,7 @@
 			],
 			"cookieControl": "Puedes controlar las cookies en la configuración de tu navegador. Bloquear algunos tipos puede afectar a tu experiencia o impedir que funcionen ciertas funciones.",
 			"analyticsIntro": "Podemos utilizar herramientas de analítica y seguimiento de errores de terceros, como Google Analytics, PostHog o servicios similares, para entender cómo se usa Phaseo y dónde podemos mejorarlo.",
-			"analyticsDetails": "Estas herramientas recopilan datos como las páginas visitadas, las acciones realizadas, información del dispositivo y del navegador, y una ubicación aproximada, como el país. Las configuramos para que no almacenen prompts sin procesar, Outputs ni otro contenido muy sensible enviado a través de Gateway.",
+			"analyticsDetails": "Estas herramientas recopilan datos como las páginas visitadas, las acciones realizadas, información del dispositivo y del navegador, y una ubicación aproximada, como el país. Las configuramos para que no almacenen prompts sin procesar, Outputs ni otro contenido muy sensible enviado a través de Gateway. Si has iniciado sesión y aceptado las cookies de analítica, vinculamos estos eventos, grabaciones de sesión y respuestas a encuestas con los ID de tu cuenta y tu espacio de trabajo de Phaseo, pero no con tu nombre ni tu dirección de correo electrónico. Las grabaciones de sesión enmascaran los campos de formulario y ocultan las claves de API y otros secretos que aparecen en pantalla.",
 			"legalBasesIntro": "Usamos los datos personales para los siguientes fines y sobre estas bases jurídicas (para usuarios del Reino Unido y la UE):",
 			"legalBasesItems": [
 				{
@@ -2356,6 +2356,11 @@
 					"label": "Prevenir abusos, hacer cumplir nuestras condiciones y proteger el Servicio",
 					"text": "por ejemplo, supervisando patrones de uso de alto riesgo, intentos de eludir los límites de uso o fraudes.",
 					"basis": "Base jurídica: intereses legítimos y obligaciones legales."
+				},
+				{
+					"label": "Detectar, prevenir y denunciar material de abuso sexual infantil",
+					"text": "por ejemplo, comparando automáticamente las imágenes con hashes de material de abuso sexual infantil ya identificado y, cuando encontramos material aparente de abuso, conservando la información de cuenta y de solicitud relacionada y denunciándolo a las autoridades competentes.",
+					"basis": "Base jurídica: obligaciones legales; intereses legítimos (protección de los menores y del Servicio)."
 				},
 				{
 					"label": "Cumplir obligaciones legales",
@@ -2387,6 +2392,10 @@
 					"text": "Podemos divulgar datos si creemos razonablemente que es necesario para cumplir una ley, una orden judicial u otra solicitud legal, o para proteger nuestros derechos, bienes o seguridad, o los de nuestros usuarios u otras personas."
 				},
 				{
+					"label": "Denuncias para la protección de menores",
+					"text": "Si encontramos material aparente de abuso sexual infantil, lo denunciamos, junto con la información de cuenta y de solicitud relacionada, al National Center for Missing & Exploited Children (NCMEC), a la Internet Watch Foundation, a la National Crime Agency o a otras autoridades policiales, según exija la ley."
+				},
+				{
 					"label": "Transacciones empresariales",
 					"text": "Si estudiamos o llevamos a cabo una fusión, adquisición, reorganización o venta de activos, los datos personales pueden transferirse como parte del proceso. Tomaremos medidas razonables para que el destinatario siga protegiéndolos conforme a esta Política."
 				},
@@ -2415,6 +2424,7 @@
 				"Las Outputs de modelos que cumplan los requisitos se conservan cinco minutos de forma predeterminada y un máximo de 24 horas según la política de caché configurada.",
 				"Los registros privados de I/O, si están habilitados, se configuran para conservarse durante 90, 180 o 365 días.",
 				"Las contribuciones de datos sin procesar a las que te suscribas se conservan un máximo de 30 días; las estadísticas de clasificación agregadas pueden conservarse durante más tiempo.",
+				"La información conservada por material aparente de abuso sexual infantil se guarda de forma segura y con acceso restringido durante un máximo de un año, o más tiempo si la ley lo exige.",
 				"Los proveedores de IA y los destinos configurados por los clientes aplican sus propios plazos de conservación."
 			],
 			"retentionSchedule": "Aún no hemos unificado todas las categorías de cuentas, metadatos de solicitudes, facturación, soporte, copias de seguridad y registros operativos en un único calendario de conservación fijo. Consulta <security>el documento técnico de seguridad</security> para conocer los periodos de tratamiento de contenido verificados actualmente y sus limitaciones.",
@@ -2452,7 +2462,7 @@
 			],
 			"rightsExercise": "Puedes ejercer muchos de estos derechos iniciando sesión en tu cuenta (configuración, perfil y claves de API) o escribiéndonos a <email>privacy@phaseo.app</email>. Es posible que te pidamos verificar tu identidad antes de responder.",
 			"emailOptOut": "Puedes dejar de recibir correos no esenciales usando el enlace para cancelar la suscripción del mensaje o poniéndote en contacto con nosotros. Es posible que sigamos enviándote mensajes administrativos sobre tu cuenta o cambios importantes en el Servicio.",
-			"children": "El Servicio está dirigido a personas de 13 años o más. No recopilamos conscientemente datos personales de menores de 13 años. Si crees que un menor nos ha facilitado datos personales sin el consentimiento adecuado, ponte en contacto con nosotros y tomaremos medidas para eliminarlos.",
+			"children": "El Servicio está destinado exclusivamente a adultos de 18 años o más. No recopilamos de forma consciente datos personales de menores de 18 años. Si crees que una persona menor de 18 años nos ha proporcionado datos personales, ponte en contacto con nosotros y tomaremos medidas para eliminarlos.",
 			"securityMeasures": "Usamos medidas técnicas, organizativas y administrativas para proteger los datos personales, como el cifrado en tránsito, controles de acceso basados en roles y la supervisión de actividades inusuales.",
 			"securityLimits": "Sin embargo, ningún servicio en línea puede ser completamente seguro. Eres responsable de mantener la confidencialidad de tu contraseña, claves de API y otras credenciales, y de rotar las claves si sospechas que se han visto comprometidas. Si crees que tu cuenta se ha visto comprometida, escríbenos de inmediato a <email>support@phaseo.app</email>.",
 			"thirdParties": "El Servicio puede incluir enlaces a sitios web o integraciones de terceros, incluidos proveedores de modelos de IA, documentación, pagos, analítica y herramientas para desarrolladores. No somos responsables de sus prácticas de privacidad. Te recomendamos revisar sus políticas de privacidad antes de facilitarles datos personales.",
@@ -2473,7 +2483,7 @@
 			],
 			"availability": "Podemos añadir, cambiar o retirar modelos, proveedores, endpoints u otras funciones en cualquier momento. La disponibilidad de modelos o proveedores concretos depende de esos terceros y no está garantizada.",
 			"changeNotice": "Cuando sea razonablemente posible, avisaremos con antelación de los cambios importantes en el Servicio, incluida la retirada de modelos o proveedores del directorio o del gateway. A veces tendremos que actuar de inmediato, por ejemplo, por motivos de seguridad, legales o relacionados con un proveedor, y no podemos garantizar un servicio ininterrumpido.",
-			"accountAge": "Debes tener al menos 13 años para utilizar el Servicio. Si eres menor de 18 años, solo debes utilizarlo con el permiso de tu padre, madre o tutor legal.",
+			"accountAge": "Debes tener al menos 18 años para utilizar el Servicio.",
 			"accountBusiness": "Si utilizas el Servicio en nombre de una empresa u organización, confirmas que tienes autorización para vincularla a estas Condiciones.",
 			"accountRegistration": "Almacenamos y utilizamos estos datos según se describe en nuestra <privacy>Política de privacidad</privacy>.",
 			"accountResponsibilitiesIntro": "Eres responsable de:",
@@ -2523,9 +2533,11 @@
 				"tienes todos los derechos, permisos y consentimientos necesarios para enviar los Inputs y utilizar los Outputs; y",
 				"tus Inputs y el uso del Servicio no infringirán derechos de propiedad intelectual, privacidad u otros derechos, ni nos harán incumplir ninguna ley o condición de terceros."
 			],
-			"contentModeration": "No tenemos la obligación de supervisar el User Content. Sin embargo, podemos eliminarlo o restringir el acceso si creemos razonablemente que infringe estas Condiciones o la legislación aplicable.",
+			"contentModeration": "Por lo general, no supervisamos el User Content. Sin embargo, podemos utilizar herramientas automatizadas, incluida la comparación con hashes de material de abuso sexual infantil ya identificado, para detectar contenido que infrinja estas Condiciones o la ley, y podemos eliminarlo o restringir el acceso a él.",
+			"childSafety": "Aplicamos tolerancia cero al material de abuso sexual infantil. Si tenemos conocimiento de material aparente de abuso sexual infantil, lo eliminaremos, suspenderemos las cuentas implicadas sin previo aviso ni reembolso, conservaremos la información relacionada de la que dispongamos según exija la ley y lo denunciaremos a las autoridades competentes, entre las que pueden estar el National Center for Missing & Exploited Children (NCMEC), la Internet Watch Foundation y la National Crime Agency. Estas obligaciones se aplican pese a cualquier otro compromiso de estas Condiciones, incluidos nuestro tratamiento del contenido, el registro de I/O y la configuración de retención cero de datos (zero data retention).",
 			"prohibitedIntro": "No debes:",
 			"prohibitedActions": [
+				"subir, generar, solicitar, almacenar o distribuir material de abuso sexual infantil o cualquier contenido que sexualice a menores, o utilizar el Servicio para crear o gestionar herramientas diseñadas para producir dicho material;",
 				"utilizar el Servicio de forma ilegal o incumpliendo la legislación, normativa o condiciones de proveedores externos aplicables;",
 				"utilizar el Servicio para generar o distribuir contenido dañino, abusivo, discriminatorio, fraudulento o inapropiado;",
 				"interferir en el Servicio o interrumpirlo, por ejemplo, introduciendo malware, sobrecargando nuestra infraestructura o intentando eludir límites de uso o controles de seguridad;",

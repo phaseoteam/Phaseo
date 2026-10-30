@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { installCatalogPolicyContext } from './fixtures/catalog-policy-context.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -11,6 +12,7 @@ const access = async (name = 'private.gateway_context_access') => (await db.quer
 )).rows[0].payload;
 try {
   await db.exec(await read('./fixtures/context-bundle-before.sql'));
+  await installCatalogPolicyContext(db);
   await db.exec('alter table public.byok_keys add column name text');
   await db.exec(await read('../migrations/20260916121303_gateway_context_bundle.sql'));
   await db.exec(await read('../schemas/private/functions/gateway_context_access.sql'));

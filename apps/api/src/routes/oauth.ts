@@ -2,27 +2,38 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { ALL_SUPPORTED_SCOPES, GATEWAY_ACCESS_SCOPE } from "@/lib/authz/capabilities";
+import {
+	MCP_MANAGEMENT_SCOPES,
+	PHASEO_MCP_RESOURCE,
+	RESOURCE_BOUND_MCP_SCOPES,
+	isMcpManagementChangeScope,
+	violatesMcpManagementBinding,
+} from "@/lib/oauth/mcpScopes";
 import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { authenticateManagement } from "@/pipeline/before/auth";
 import { json, withRuntime } from "@/routes/utils";
 import {
 	CLI_CLIENT_ID,
 	CLI_DEFAULT_SCOPES,
+	DESKTOP_CLIENT_ID,
 	assertRedirectAllowed,
 	authorizationConsentUrl,
 	bearerToken,
 	createOpaqueCode,
 	createUserCode,
+	desktopKeyWorkspace,
 	defaultDeviceIntervalSeconds,
 	deviceExpiresInSeconds,
 	filterAllowedScopes,
 	getApiBaseUrl,
+	getGatewayOAuthResource,
 	getIssuer,
 	getLocalJwks,
 	getSupabaseActor,
 	hashOAuthSecret,
 	hashOAuthSecretCandidates,
 	hasActiveOAuthWorkspaceAccess,
+	issueDesktopSessionKey,
 	issueTokenPairForGrant,
 	issueOAuthManagedKeyForAuthorizationCode,
 	issueMcpUpstreamToken,
@@ -37,6 +48,7 @@ import {
 	normalizeScopes,
 	normalizeUserCode,
 	parseTokenRequestBody,
+	renewDesktopKey,
 	revokeToken,
 	rotateRefreshToken,
 	verificationUriFor,
@@ -93,16 +105,8 @@ const DYNAMIC_MCP_DEFAULT_SCOPES = [
 	"oauth_clients:read",
 ] as const;
 const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
-const RESOURCE_BOUND_MCP_SCOPES = [
-	"models:read",
-	"providers:read",
-	"pricing:read",
-	"credits:read",
-	"activity:read",
-	"analytics:read",
-	"generations:read",
-] as const;
 const RESOURCE_BOUND_MCP_SCOPE_SET = new Set<string>(RESOURCE_BOUND_MCP_SCOPES);
+const MCP_STEP_UP_SCOPE_SET = new Set<string>([GATEWAY_ACCESS_SCOPE, ...MCP_MANAGEMENT_SCOPES]);
 const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
 
 class OAuthRequestBodyTooLarge extends Error {}
@@ -282,20 +286,29 @@ function requiresGatewayAccessScope(clientId: string, resource: string, scopes: 
 		&& !scopes.includes(GATEWAY_ACCESS_SCOPE);
 }
 
-// Permit explicit inference consent for an existing dynamic Phaseo MCP client.
-// This changes neither its stored allowlist nor any existing authorization grant.
+// Permit explicit inference or account-management consent for an existing
+// dynamic Phaseo MCP client. The request must name only MCP scopes; broader
+// catalogues are still narrowed or rejected. This changes neither the client's
+// stored allowlist nor any existing authorization grant.
 export function filterMcpAuthorizationScopes(
 	client: Parameters<typeof filterAllowedScopes>[0],
 	requested: string[],
 	resource: string,
 ): string[] {
 	const explicitStepUp = client.registration_source === "dynamic"
-		&& resource === "https://mcp.phaseo.app/mcp"
-		&& requested.includes(GATEWAY_ACCESS_SCOPE)
-		&& requested.every((scope) => scope === GATEWAY_ACCESS_SCOPE || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
-	return filterAllowedScopes(explicitStepUp
-		? { ...client, allowed_scopes: [...client.allowed_scopes, GATEWAY_ACCESS_SCOPE] }
+		&& resource === PHASEO_MCP_RESOURCE
+		&& requested.some((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))
+		&& requested.every((scope) => MCP_STEP_UP_SCOPE_SET.has(scope) || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
+	const scopes = filterAllowedScopes(explicitStepUp
+		? {
+			...client,
+			allowed_scopes: [...client.allowed_scopes, ...requested.filter((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))],
+		}
 		: client, requested);
+	// Management changes stay bound to the MCP resource whatever the stored allowlist says.
+	return violatesMcpManagementBinding(client.registration_source, resource, scopes)
+		? scopes.filter((scope) => !isMcpManagementChangeScope(scope))
+		: scopes;
 }
 
 function canNarrowResourceBoundMcpScopes(
@@ -458,6 +471,8 @@ oauthRouter.post(
 		// scope list. Never grant that broader request. When it also contains the
 		// canonical resource-bound MCP scopes, safely negotiate it down to that
 		// exact read-only set and return the narrowed scope in the response.
+		// Registration has no resource, so management write and delete scopes are
+		// never stored here; they are granted per authorization for the MCP resource.
 		const grantedScopes = includesUnsupportedScopes
 			? requestedScopes.filter((scope) => RESOURCE_BOUND_MCP_SCOPE_SET.has(scope))
 			: requestedScopes;
@@ -628,6 +643,10 @@ oauthRouter.post(
 		const actor = await requireSupabaseActor(req);
 		if (!actor) return oauthError("access_denied", "User session is required", 401);
 		if (!(await checkOAuthRateLimit(req, "token", `authorize-approve:${actor.userId}`))) return rateLimitError();
+		// Same rule as device approval: an MFA account must approve from an AAL2 session.
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("access_denied", "Complete two-factor verification before authorizing this application", 403);
+		}
 
 		let body: Record<string, unknown>;
 		try {
@@ -966,6 +985,9 @@ oauthRouter.post(
 			if (requiresGatewayAccessScope(client.id, grantedResource, tokenInput.scopes)) {
 				return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} consent is required for a delegated key`);
 			}
+			if (violatesMcpManagementBinding(client.registration_source, grantedResource, tokenInput.scopes)) {
+				return oauthError("invalid_scope", "Management scopes are only available on tokens bound to the Phaseo MCP");
+			}
 			// The CLI retains refreshable sessions for `login`, logout, and token
 			// renewal. Third-party PKCE clients receive durable user-funded keys.
 			const tokens = isFirstPartyCliClient(client.id)
@@ -1067,6 +1089,63 @@ oauthRouter.post(
 	}),
 );
 
+// The desktop app's key for model calls, for the person signed in to it with their Phaseo login (a Supabase session,
+// like the website's and the mobile app's); see issueDesktopSessionKey. An account with two-factor sign-in must have
+// used it in this session, as the website's API requires.
+oauthRouter.post(
+	"/desktop/key",
+	withRuntime(async (req) => {
+		const actor = await requireSupabaseActor(req);
+		if (!actor) return oauthError("invalid_token", "A Phaseo login is required", 401);
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("insufficient_user_authentication", "Finish two-factor sign-in first", 401);
+		}
+		if (!(await checkOAuthRateLimit(req, "token", `desktop-key:${actor.userId}`))) return rateLimitError();
+
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const requested = typeof body.workspace_id === "string" ? body.workspace_id.trim() : "";
+		if ((body.workspace_id !== undefined && body.workspace_id !== null && typeof body.workspace_id !== "string") || (requested && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested))) {
+			return oauthError("invalid_request", "workspace_id must be a workspace id");
+		}
+		const workspaceId = await desktopKeyWorkspace(actor.userId, requested || null);
+		const issued = workspaceId ? await issueDesktopSessionKey({ userId: actor.userId, workspaceId }) : null;
+		if (!workspaceId || !issued) return oauthError("access_denied", "You aren't a member of that workspace", 403);
+		return json({
+			access_token: issued.key,
+			token_type: "Bearer",
+			workspace_id: workspaceId,
+			scope: issued.scopes.join(" "),
+			resource: getGatewayOAuthResource(),
+			expires_at: issued.expiresAt,
+			expires_in: Math.max(0, Math.floor((Date.parse(issued.expiresAt) - Date.now()) / 1000)),
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
+// The desktop app renews its own delegated key while it is used (see renewDesktopKey), authenticated by that key. A
+// session token or another app's key can't: those have their own lifetimes.
+oauthRouter.post(
+	"/desktop/renew",
+	withRuntime(async (req) => {
+		if (!(await checkOAuthRateLimit(req, "token", "desktop-renew"))) return rateLimitError();
+		const auth = await authenticateManagement(req, { useKvCache: false });
+		if (!auth.ok || auth.authMethod !== "oauth" || auth.oauthClientId !== DESKTOP_CLIENT_ID || !auth.apiKeyRef?.startsWith("kid_") || !auth.apiKeyId) {
+			return oauthError("invalid_token", "A Phaseo desktop key is required", 401);
+		}
+		const renewed = await renewDesktopKey(auth.apiKeyId);
+		if (!renewed) return oauthError("invalid_token", "This key can no longer be renewed; sign in again", 401);
+		return json({
+			expires_at: renewed.expiresAt,
+			expires_in: Math.max(0, Math.floor((Date.parse(renewed.expiresAt) - Date.now()) / 1000)),
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
 oauthRouter.post(
 	"/revoke",
 	withRuntime(async (req) => {
@@ -1097,20 +1176,36 @@ oauthRouter.get(
 		if (!scopes.includes("openid")) {
 			return oauthError("insufficient_scope", "Token requires openid", 403);
 		}
-		const { data } = await getSupabaseAdmin().auth.admin.getUserById(auth.userId);
+		const profile = scopes.includes("profile");
+		const supabase = getSupabaseAdmin();
+		const [{ data }, account] = await Promise.all([
+			supabase.auth.admin.getUserById(auth.userId),
+			// The name set on the profile page wins over the sign-in provider's, as in the site's header.
+			profile
+				? supabase.from("users").select("display_name").eq("user_id", auth.userId).maybeSingle()
+				: Promise.resolve({ data: null }),
+		]);
 		const user = data?.user;
 		const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
-		const name =
-			typeof metadata.full_name === "string"
-				? metadata.full_name
-				: typeof metadata.name === "string"
-					? metadata.name
-					: null;
+		const metadataString = (keys: string[]) => {
+			for (const key of keys) {
+				const value = metadata[key];
+				if (typeof value === "string" && value.trim()) return value.trim();
+			}
+			return null;
+		};
+		const displayName = typeof account.data?.display_name === "string" ? account.data.display_name.trim() : "";
+		const name = displayName || metadataString(["full_name", "name"]);
+		// A first name for greetings: the display name's first word, as the profile's name is its owner's choice.
+		const givenName = (displayName ? null : metadataString(["given_name", "first_name"])) ?? name?.split(/\s+/)[0] ?? null;
+		const picture = metadataString(["avatar_url", "picture", "picture_url"]);
 		return json(
 			{
 				sub: auth.userId,
 				email: scopes.includes("email") ? user?.email ?? null : undefined,
-				name: scopes.includes("profile") ? name : undefined,
+				name: profile ? name : undefined,
+				given_name: profile ? givenName : undefined,
+				picture: profile ? picture : undefined,
 				workspace_id: auth.workspaceId,
 				client_id: auth.oauthClientId,
 				resource: auth.oauthResource ?? undefined,

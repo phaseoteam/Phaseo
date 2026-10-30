@@ -15,11 +15,10 @@ describe("google shared media mapping for file parts", () => {
 		]);
 	});
 
-	it("leaves out an OpenAI file id, which is not a Gemini file", async () => {
-		const parts = await irPartsToGeminiParts([
+	it("fails the attempt for an OpenAI file id rather than dropping the document", async () => {
+		await expect(irPartsToGeminiParts([
 			{ type: "text", text: "Summarise" },
 			{ type: "file", source: "id", data: "file-abc123" },
-		]);
-		expect(parts).toEqual([{ text: "Summarise" }]);
+		])).rejects.toMatchObject({ code: "unsupported_parameter", param: "file_id" });
 	});
 });

@@ -98,6 +98,13 @@ export interface ResponsesRequest {
       }
   )[];
   previous_response_id?: string;
+  prompt?: {
+    id: string;
+    variables?: {
+      [key: string]: unknown;
+    };
+    version?: string;
+  };
   prompt_cache_key?: string | null;
   prompt_cache_options?: {
     mode?: "implicit" | "explicit";
