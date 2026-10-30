@@ -1,0 +1,120 @@
+---
+title: "Por si te lo perdiste: Lo que lanzamos en junio de 2026"
+shortTitle: "Por si te lo perdiste: junio de 2026"
+description: Junio mejoró el descubrimiento de modelos, las señales de ciclo de vida, la monitorización, la incorporación y la cobertura de proveedores.
+publishedAt: 2026-06-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-june-2026.png
+tags:
+  - Resumen mensual
+  - Resumen mensual
+  - Producto
+  - Modelos
+draft: false
+---
+
+En junio nos centramos en mantener Phaseo útil mientras el mercado de modelos cambiaba rápidamente. Hubo mucho trabajo en el catálogo, pero el tema principal fue la fiabilidad: mejor descubrimiento, señales de ciclo de vida más claras, páginas de monitorización más completas y más proveedores.
+
+Este resumen recoge lo que se publicó entre el **1 y el 30 de junio de 2026**, según el historial de versiones, el historial de commits y los datos del catálogo del mes.
+
+## Lo que lanzamos
+
+### El descubrimiento de modelos es más fiable
+
+En junio trabajamos mucho en el descubrimiento de modelos, las comprobaciones de proveedores y las importaciones del catálogo. El descubrimiento pasó a ejecutarse en trabajos programados de Cloudflare, mejoró la recuperación, se reactivó la sincronización de issues y se empezaron a limpiar los avisos de modelos obsoletos durante la importación.
+
+Así, el catálogo depende menos de las comprobaciones manuales y las actualizaciones de los proveedores se procesan de forma más coherente.
+
+No se trata solo de mantenimiento interno. Si un proveedor añade un modelo, cambia los precios, retira un alias o modifica la disponibilidad, Phaseo debe detectarlo. En junio redujimos la posibilidad de que esos cambios pasen desapercibidos hasta que alguien los compruebe manualmente.
+
+### Las páginas de modelos muestran mejor el ciclo de vida
+
+Añadimos avisos en las páginas de modelos, tarjetas con tiempos relativos para las fechas del ciclo de vida, un orden más claro por fecha y correcciones para el desplazamiento en los detalles de modelos. También mejoramos la selección de modelos en el inicio rápido y simplificamos esos flujos.
+
+El objetivo era que cada página de modelo resultara más fiable de un vistazo: qué está disponible, qué ha cambiado, qué se ha retirado y qué conviene usar después.
+
+Esto importa porque las páginas de modelos no son páginas estáticas. Son registros que evolucionan. Un modelo puede pasar de ser un rumor a una vista previa, de una vista previa a estar activo, de activo a obsoleto o de un proveedor a varios. En junio, el producto explicó mejor esas transiciones.
+
+### Mejoraron las vistas de monitorización y uso
+
+El historial de monitorización pasó a Supabase, se pulieron las tarjetas y las fechas de estado y los enlaces ganaron visibilidad. También mejoramos la observabilidad de la configuración, y Gateway incorporó más rutas de API y métricas de uso.
+
+Así, los equipos pueden entender mejor el comportamiento actual sin tener que empezar por los registros sin procesar.
+
+En junio también mejoramos la observabilidad del enrutamiento del entorno de pruebas y mantuvimos visible desde el principio la información de errores en Axiom. Estos cambios ayudan a cerrar la brecha entre «una solicitud ha fallado» y «sabemos por qué ha fallado».
+
+### Avanzaron la incorporación y los cimientos de la CLI
+
+En junio añadimos un flujo interactivo de incorporación y los cimientos del trabajo de la CLI beta con OAuth. También corregimos la adaptación del inicio rápido de la página de inicio y seguimos afinando casos límite de cuentas y facturación.
+
+La idea era facilitar la primera experiencia y preparar futuros flujos de desarrollo local.
+
+El trabajo de la CLI con OAuth es un buen ejemplo. Es más fácil adoptar un gateway cuando los desarrolladores pueden conectar herramientas locales, autenticarse sin problemas y pasar de una primera prueba a un flujo repetible sin copiar pasos de configuración dispersos.
+
+### Siguió creciendo la cobertura de proveedores
+
+La cobertura de proveedores cambió rápidamente en junio. El catálogo añadió o actualizó la cobertura de Alibaba Cloud, Cloudflare Workers AI, DigitalOcean, Fireworks, Together, Bedrock, xAI, Moonshot, Z.AI, CrofAI, ByteDance, Venice, AtlasCloud, AkashML, GMICloud y otros.
+
+También añadimos precios, enrutamiento y actualizaciones de benchmarks para varios lanzamientos importantes, como Kimi K2.7 Code, GLM 5.2, Claude Fable 5, Claude Sonnet 5 y LongCat 2.0.
+
+Aquí es donde Phaseo debe ser útil como infraestructura, no solo como una lista. Los usuarios necesitan saber qué proveedores admiten cada modelo, cuánto cuesta cada ruta, si el modelo está activo y cómo se compara con otras opciones cercanas.
+
+## También lanzamos
+
+- El changelog pasó a una única cronología.
+- Los issues de descubrimiento de modelos se trasladaron a cron de Cloudflare.
+- Se actualizaron los datos del catálogo de planes de suscripción.
+- Añadimos un enlace a Monitor en el pie de página.
+- Corregimos la programación y la recuperación del observador de modelos.
+- Las páginas de modelos empezaron a mostrar avisos importados de los datos del catálogo.
+- El inicio rápido beta de la página de inicio se adaptó mejor a distintos tamaños de pantalla.
+- Los precios de los modelos que llegarán próximamente se hicieron visibles cuando estaban disponibles.
+- Se actualizaron dependencias de paquetes de interfaz, herramientas de configuración de Actions y bibliotecas de ejecución.
+
+## Modelos destacados
+
+Junio tuvo varios lanzamientos importantes. Kimi K2.7 Code recibió soporte en el catálogo, enlaces de Hugging Face, precios de proveedores y actualizaciones de los SDK generados. GLM 5.2 incorporó disponibilidad de proveedores, precios, compatibilidad con el esfuerzo de razonamiento, correcciones de enrutamiento y preparación para su despliegue. Claude Fable 5 y Claude Mythos 5 avanzaron por las entradas de lanzamiento, los avisos, los precios, el despliegue en proveedores y la limpieza de benchmarks.
+
+El mes terminó con una serie intensa de lanzamientos el 30 de junio: Claude Sonnet 5, Gemini Omni Flash Preview, Leanstral 1.5 y OCR 4. LongCat 2.0 también llegó a finales de mes y recibió soporte del observador antes del lanzamiento.
+
+Consulta los datos de lanzamientos más recientes:
+
+- [Ver las novedades recientes](/updates)
+
+## Resumen de lanzamientos
+
+El historial local de Git registra **163 commits** en junio. El mes se centró en la fiabilidad del descubrimiento de modelos, la cobertura de proveedores, las vistas de monitorización y uso, la incorporación, las herramientas de Gateway y una intensa serie de lanzamientos de modelos.
+
+## Modelos lanzados en junio de 2026
+
+El catálogo incluye los siguientes modelos con fecha de lanzamiento en junio de 2026:
+
+- 1 de junio: MiniMax M3 (`minimax/minimax-m3`)
+- 1 de junio: Nemotron 3 Ultra (`nvidia/nemotron-3-ultra-550b-a55b`)
+- 1 de junio: Qwen 3.7 Plus (`qwen/qwen3.7-plus`)
+- 3 de junio: Gemma 4 12B (`google/gemma-4-12b`)
+- 5 de junio: Nex N2 Mini (`nex-agi/nex-n2-mini`)
+- 5 de junio: Nex N2 Pro (`nex-agi/nex-n2-pro`)
+- 9 de junio: Claude Fable 5 (`anthropic/claude-fable-5`)
+- 9 de junio: Claude Mythos 5 (`anthropic/claude-mythos-5`)
+- 9 de junio: Gemini 3.5 Live Translate Preview (`google/gemini-3.5-live-translate-preview`)
+- 10 de junio: DiffusionGemma 26B A4B IT (`google/diffusiongemma-26b-a4b-it`)
+- 12 de junio: Kimi K2.7 Code (`moonshotai/kimi-k2.7-code`)
+- 14 de junio: Greg 2 Super (`crofai/greg-2-super`)
+- 14 de junio: Greg 2 Ultra (`crofai/greg-2-ultra`)
+- 15 de junio: Seedance 2.0 Mini (2026-06-15) (`bytedance/seedance-2.0-mini-260615`)
+- 16 de junio: GLM 5.2 (`z-ai/glm-5.2`)
+- 17 de junio: Grok Imagine Video 1.5 (`x-ai/grok-imagine-video-1.5`)
+- 23 de junio: Gemini 3.1 Flash Lite image (Nano Banana 2 Lite) (`google/gemini-3.1-flash-lite-image`)
+- 29 de junio: LongCat 2.0 (`meituan/longcat-2.0`)
+- 30 de junio: Claude Sonnet 5 (`anthropic/claude-sonnet-5`)
+- 30 de junio: Gemini Omni Flash Preview (`google/gemini-omni-flash-preview`)
+- 30 de junio: Leanstral 1.5 (`mistral/leanstral-1.5`)
+- 30 de junio: OCR 4 (`mistral/ocr-4`)
+
+## Lo que viene
+
+Junio da paso al trabajo de migración de Phaseo: una marca más clara, una sección de blog más completa y una estructura del sitio preparada para reunir novedades del producto, notas de lanzamiento de modelos, guías y artículos de datos.
+

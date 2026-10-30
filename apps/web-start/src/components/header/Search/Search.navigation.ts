@@ -1,0 +1,185 @@
+import { getSettingsSidebar } from "@/components/(gateway)/settings/Sidebar.config";
+import type { PaletteItem } from "./Search.types";
+
+export type GlobalNavigationItem = PaletteItem & { href: string };
+
+export type SearchCapabilities = {
+	autoRouting: boolean;
+	classifiers: boolean;
+	workloadIdentity: boolean;
+	slackAgent: boolean;
+	enterprise: boolean;
+	webhooks: boolean;
+	video: boolean;
+	realtime: boolean;
+	games: boolean;
+};
+
+export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
+	autoRouting: false,
+	classifiers: false,
+	workloadIdentity: false,
+	slackAgent: false,
+	enterprise: false,
+	webhooks: false,
+	video: false,
+	realtime: false,
+	games: false,
+};
+
+const GATED_DESTINATIONS: ReadonlyArray<[string, keyof SearchCapabilities]> = [
+	["/settings/routing/auto", "autoRouting"],
+	["/settings/classifiers", "classifiers"],
+	["/settings/trusted-workloads", "workloadIdentity"],
+	["/settings/slack", "slackAgent"],
+	["/settings/workspaces/enterprise", "enterprise"],
+	["/settings/webhooks", "webhooks"],
+	["/chat/video", "video"],
+	["/chat/realtime", "realtime"],
+	["/games", "games"],
+];
+
+export function isSearchDestinationEnabled(
+	href: string | undefined,
+	capabilities: SearchCapabilities,
+): boolean {
+	const pathname = href?.split(/[?#]/)[0];
+	return GATED_DESTINATIONS.every(([prefix, capability]) =>
+		pathname !== prefix && !pathname?.startsWith(`${prefix}/`) || capabilities[capability],
+	);
+}
+
+export function getGlobalNavigationItems(capabilities: SearchCapabilities): GlobalNavigationItem[] {
+	return GLOBAL_NAVIGATION_ITEMS.filter((item) => isSearchDestinationEnabled(item.href, capabilities));
+}
+
+const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
+	{ id: "nav-home", title: "Home", subtitle: "Phaseo overview", href: "/", keywords: ["dashboard", "landing"], shortcut: ["G", "H"] },
+	{ id: "nav-models", title: "Models", subtitle: "Browse the AI model catalogue", href: "/models", keywords: ["model catalogue", "llms", "ai models"], shortcut: ["G", "M"] },
+	{ id: "nav-model-table", title: "Model Table", subtitle: "View models in a compact table", href: "/models/table", keywords: ["models", "catalogue", "data table"] },
+	{ id: "nav-compare", title: "Compare Models", subtitle: "Compare model capabilities and performance", href: "/compare", keywords: ["comparison", "versus", "vs"] },
+	{ id: "nav-providers", title: "API Providers", subtitle: "Browse gateway and inference providers", href: "/api-providers", keywords: ["providers", "inference", "gateway providers"], shortcut: ["G", "P"] },
+	{ id: "nav-organisations", title: "Labs", subtitle: "Browse AI model creators", href: "/organisations", keywords: ["companies", "labs", "organizations", "organisations"] },
+	{ id: "nav-benchmarks", title: "Benchmarks", subtitle: "Explore model evaluation results", href: "/benchmarks", keywords: ["evals", "scores", "leaderboards"], shortcut: ["G", "B"] },
+	{ id: "nav-families", title: "Model Families", subtitle: "Browse related model families", href: "/families", keywords: ["families", "model series"] },
+	{ id: "nav-countries", title: "Countries", subtitle: "Explore models and labs by country", href: "/countries", keywords: ["regions", "geography"] },
+	{ id: "nav-plans", title: "Subscription Plans", subtitle: "Compare consumer AI subscriptions", href: "/subscription-plans", keywords: ["plans", "subscriptions", "chatgpt plus"] },
+	{ id: "nav-collections", title: "Collections", subtitle: "Browse curated model collections", href: "/models/collections", keywords: ["model collections", "curated"] },
+	{ id: "nav-apps", title: "Apps", subtitle: "Discover applications using the gateway", href: "/apps", keywords: ["applications", "ecosystem"] },
+	{ id: "nav-rankings", title: "Rankings", subtitle: "View model and provider rankings", href: "/rankings", keywords: ["leaderboard", "market share", "usage"] },
+	{ id: "nav-performance", title: "Performance", subtitle: "Explore latency and throughput", href: "/performance", keywords: ["speed", "latency", "throughput"] },
+	{ id: "nav-pricing", title: "Pricing", subtitle: "Compare model API pricing", href: "/pricing", keywords: ["cost", "prices", "tokens"] },
+	{ id: "nav-works-with", title: "Works With", subtitle: "Browse compatible clients and SDKs", href: "/works-with", keywords: ["compatibility", "integrations", "clients"] },
+
+	{ id: "nav-chat", title: "Chat", subtitle: "Open the Phaseo chat playground", href: "/chat", keywords: ["playground", "prompt", "conversation"] },
+	{ id: "nav-gateway", title: "Gateway", subtitle: "Phaseo AI Gateway overview", href: "/gateway", keywords: ["api", "inference", "routing"] },
+	{ id: "nav-marketplace", title: "Gateway Marketplace", subtitle: "Browse shared gateway presets", href: "/gateway/marketplace", keywords: ["presets", "routing", "marketplace"] },
+	{ id: "nav-gateway-usage", title: "Gateway Usage", subtitle: "Inspect gateway activity and costs", href: "/gateway/usage", keywords: ["requests", "logs", "spend"] },
+	{ id: "nav-migrate", title: "Migration Guides", subtitle: "Migrate models and platforms", href: "/migrate", keywords: ["migration", "upgrade", "openrouter"] },
+
+	{ id: "nav-updates", title: "Updates", subtitle: "Browse model and ecosystem updates", href: "/updates", keywords: ["news", "releases", "changelog"] },
+	{ id: "nav-update-calendar", title: "Release Calendar", subtitle: "View releases and retirements by date", href: "/updates/calendar", keywords: ["calendar", "release dates", "deprecations"] },
+	{ id: "nav-model-updates", title: "Model Updates", subtitle: "Browse model release updates", href: "/updates/models", keywords: ["releases", "new models"] },
+
+	{ id: "nav-tools", title: "Developer Tools", subtitle: "Open the Phaseo tools collection", href: "/tools", keywords: ["utilities", "developer"] },
+	{ id: "nav-content-provenance", title: "Content Provenance", subtitle: "Check images and audio for OpenAI provenance signals", href: "/tools/content-provenance", keywords: ["C2PA", "SynthID", "verification", "AI detection"] },
+	{ id: "nav-pricing-calculator", title: "Pricing Calculator", subtitle: "Estimate model request costs", href: "/tools/pricing-calculator", keywords: ["cost calculator", "tokens"] },
+	{ id: "nav-request-builder", title: "Request Builder", subtitle: "Build gateway API requests", href: "/tools/request-builder", keywords: ["api request", "curl", "json"] },
+	{ id: "nav-json-formatter", title: "JSON Formatter", subtitle: "Format and inspect JSON", href: "/tools/json-formatter", keywords: ["developer utility", "pretty print"] },
+	{ id: "nav-markdown-preview", title: "Markdown Preview", subtitle: "Preview rendered Markdown", href: "/tools/markdown-preview", keywords: ["md", "renderer"] },
+
+	{ id: "nav-settings", title: "Settings", subtitle: "Manage your account and workspace", href: "/settings", keywords: ["account", "workspace", "preferences"], shortcut: ["G", "S"] },
+	{ id: "nav-settings-profile", title: "Profile Settings", subtitle: "Manage your public profile", href: "/settings/profile", keywords: ["profile", "avatar", "name"] },
+	{ id: "nav-settings-account", title: "Account Settings", subtitle: "Manage account details and security", href: "/settings/account", keywords: ["account", "security", "mfa", "passkeys"] },
+	{ id: "nav-settings-preferences", title: "Display Preferences", subtitle: "Choose date, time, number, and theme formats", href: "/settings/preferences", keywords: ["preferences", "date format", "time zone", "locale", "clock", "theme"] },
+	{ id: "nav-settings-billing", title: "Billing", subtitle: "Manage credits and payment details", href: "/settings/credits", keywords: ["credits", "payments", "transactions", "invoices"] },
+	{ id: "nav-settings-usage", title: "Usage", subtitle: "Review gateway usage", href: "/settings/usage", keywords: ["requests", "spend", "analytics"] },
+	{ id: "nav-settings-logs", title: "Request Logs", subtitle: "Inspect individual gateway requests", href: "/settings/usage/logs", keywords: ["logs", "requests", "debug"] },
+	{ id: "nav-settings-alerts", title: "Usage Alerts", subtitle: "Configure spend and usage alerts", href: "/settings/usage/alerts", keywords: ["alerts", "budget", "notifications"] },
+	{ id: "nav-settings-members", title: "Workspace Members", subtitle: "Manage workspace members", href: "/settings/workspaces/members", keywords: ["team", "members", "invitations"] },
+	{ id: "nav-settings-access", title: "Workspace Access", subtitle: "Manage workspace access controls", href: "/settings/workspaces/access", keywords: ["roles", "permissions", "team"] },
+	{ id: "nav-settings-enterprise", title: "Workspace Enterprise", subtitle: "Manage SSO, SCIM, and Enterprise billing", href: "/settings/workspaces/enterprise", keywords: ["enterprise", "sso", "saml", "scim", "provisioning"] },
+	{ id: "nav-settings-keys", title: "API Keys", subtitle: "Create and manage gateway API keys", href: "/settings/keys", keywords: ["keys", "tokens", "credentials"] },
+	{ id: "nav-settings-budgets", title: "Budgets", subtitle: "Cap workspace spend per day, week, month or in total", href: "/settings/budgets", keywords: ["budget", "spend limit", "spending cap", "cost limit"] },
+	{ id: "nav-settings-apps", title: "Workspace Apps", subtitle: "Manage gateway applications", href: "/settings/apps", keywords: ["apps", "applications"] },
+	{ id: "nav-settings-management-keys", title: "Management Keys", subtitle: "Manage provisioning credentials", href: "/settings/management-api-keys", keywords: ["management api", "provisioning keys"] },
+	{ id: "nav-settings-routing", title: "Routing Settings", subtitle: "Configure gateway routing", href: "/settings/routing", keywords: ["routing", "providers", "fallbacks"] },
+	{ id: "nav-settings-byok", title: "Bring Your Own Key", subtitle: "Manage provider API credentials", href: "/settings/byok", keywords: ["byok", "provider keys", "credentials"] },
+	{ id: "nav-settings-presets", title: "Routing Presets", subtitle: "Create reusable routing presets", href: "/settings/presets", keywords: ["presets", "routing profiles"] },
+	{ id: "nav-settings-privacy", title: "Privacy Settings", subtitle: "Configure data handling preferences", href: "/settings/privacy", keywords: ["privacy", "retention", "zdr"] },
+	{ id: "nav-settings-guardrails", title: "Guardrails", subtitle: "Manage request and response guardrails", href: "/settings/guardrails", keywords: ["safety", "validation", "policies"] },
+	{ id: "nav-settings-rate-limits", title: "Rate limits", subtitle: "Limit requests and tokens per minute for keys, members and departments", href: "/settings/rate-limits", keywords: ["rate limit", "throttle", "rpm", "tpm", "429", "quota"] },
+	{ id: "nav-settings-trusted-workloads", title: "Trusted workloads", subtitle: "Let Vercel and GitHub Actions call the API with OIDC tokens instead of API keys", href: "/settings/trusted-workloads", keywords: ["oidc", "workload identity", "vercel", "github actions", "federation", "keyless"] },
+	{ id: "nav-settings-classifiers", title: "Classifiers", subtitle: "Label requests automatically with a model", href: "/settings/classifiers", keywords: ["labels", "taxonomy", "department", "tagging", "categorise"] },
+	{ id: "nav-settings-slack", title: "Slack", subtitle: "Add the Phaseo agent to Slack", href: "/settings/slack", keywords: ["slack", "agent", "bot", "assistant", "integration"] },
+	{ id: "nav-settings-oauth", title: "OAuth Apps", subtitle: "Manage OAuth applications and grants", href: "/settings/oauth-apps", keywords: ["oauth", "clients", "authorized apps"] },
+	{ id: "nav-settings-broadcast", title: "Broadcast", subtitle: "Configure observability destinations", href: "/settings/broadcast", keywords: ["observability", "telemetry", "destinations"] },
+	{ id: "nav-settings-webhooks", title: "Webhooks", subtitle: "Manage event webhooks", href: "/settings/webhooks", keywords: ["events", "callbacks", "notifications"] },
+
+	{ id: "nav-help", title: "Help Centre", subtitle: "Find help and support articles", href: "/help", keywords: ["support", "guides", "questions"] },
+	{ id: "nav-blog", title: "Blog", subtitle: "Read Phaseo articles", href: "/blog", keywords: ["articles", "news"] },
+	{ id: "nav-announcements", title: "Announcements", subtitle: "Read product announcements", href: "/announcements", keywords: ["news", "releases"] },
+	{ id: "nav-methodology", title: "Methodology", subtitle: "Learn how Phaseo evaluates AI systems", href: "/methodology", keywords: ["methods", "evaluation", "research"] },
+	{ id: "nav-about", title: "About", subtitle: "Learn about Phaseo", href: "/about", keywords: ["company", "mission"] },
+	{ id: "nav-faq", title: "FAQ", subtitle: "Frequently asked questions", href: "/faq", keywords: ["questions", "help"] },
+	{ id: "nav-contribute", title: "Contribute", subtitle: "Contribute data and improvements", href: "/contribute", keywords: ["github", "community", "submit"] },
+	{ id: "nav-contact", title: "Contact", subtitle: "Contact the Phaseo team", href: "/contact", keywords: ["support", "email", "sales"] },
+];
+
+// Derive settings pages from the sidebar so new subpages remain discoverable.
+const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true, showClassifiers: true, showWorkloadIdentity: true, showSlackAgent: true }).flatMap((group) =>
+	group.items.filter((item) => !item.disabled && !item.external).flatMap((item) => [
+		{ id: `nav-${item.href.slice(1).replaceAll("/", "-")}`, title: item.label, href: item.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label] },
+		...(item.children ?? []).map((child) => ({ id: `nav-${child.href.slice(1).replaceAll("/", "-")}`, title: `${item.label}: ${child.label}`, href: child.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label, child.label] })),
+	]),
+);
+
+const additionalPages: Array<[string, string]> = [
+	["/support", "Support"],
+	["/chat/decisions", "Decisions"],
+	["/settings/account/providers", "Provider Onboarding"],
+	["/settings/webhooks/new", "Create Webhook"],
+	["/settings/workspaces/private-models/new", "Create Private Model"],
+	["/settings/routing/demo", "Dynamic Routing Demo"],
+	["/api-providers/table", "Provider Table"],
+	["/api-providers/compare", "Compare Providers"],
+	["/chat/audio", "Audio Chat"],
+	["/chat/image", "Image Playground"],
+	["/chat/video", "Video Playground"],
+	["/chat/music", "Music Playground"],
+	["/chat/speech", "Text to Speech"],
+	["/chat/speech-to-text", "Speech to Text"],
+	["/chat/realtime", "Realtime Chat"],
+	["/chat/embeddings", "Embeddings Playground"],
+	["/chat/moderation", "Moderation Playground"],
+	["/chat/ocr", "OCR"],
+	["/chat/rerank", "Rerank"],
+	["/chat/fusion", "Fusion"],
+	["/experiments", "Experiments"],
+	["/experiments/spawn", "Spawn"],
+	["/experiments/council", "Council"],
+	["/tools/latency-comparison", "Latency Comparison"],
+	["/trust", "Trust Centre"],
+	["/trust/security", "Security"],
+	["/trust/dpa", "Data Processing Agreement"],
+	["/trust/subprocessors", "Subprocessors"],
+	["/terms", "Terms of Service"],
+	["/privacy", "Privacy Policy"],
+	["/mission", "Our Mission"],
+	["/acknowledgements", "Acknowledgements"],
+	["/games", "Games"],
+	["/redeem", "Redeem Credits"],
+	["/settings/account/privacy", "Account Privacy"],
+	["/settings/credits/onboarding", "Set Up Billing"],
+	["/settings/guardrails/new", "Create Guardrail"],
+	["/settings/classifiers/new", "Create Classifier"],
+	["/settings/presets/new", "Create Routing Preset"],
+	["/how-phaseo-normalises-ai-benchmarks", "How Benchmarks Are Normalised"],
+	["/how-phaseo-measures-latency-throughput", "How Performance Is Measured"],
+	["/how-phaseo-calculates-model-pricing", "How Pricing Is Calculated"],
+	["/how-phaseo-tracks-provider-availability", "How Provider Availability Is Tracked"],
+];
+
+export const GLOBAL_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = Array.from(
+	new Map([...settingsPages, ...additionalPages.map(([href, title]) => ({ id: `nav-${href.slice(1).replaceAll("/", "-")}`, href, title })), ...CURATED_NAVIGATION_ITEMS].map((item) => [item.href, item])).values(),
+);

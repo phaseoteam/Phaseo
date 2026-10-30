@@ -1,0 +1,250 @@
+"use client";
+
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from "@/components/ui/command";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
+import { XIcon } from "lucide-react";
+import type { ComponentProps, ReactNode } from "react";
+
+export type ModelSelectorProps = ComponentProps<typeof Dialog>;
+
+export const ModelSelector = (props: ModelSelectorProps) => (
+  <Dialog {...props} />
+);
+
+export type ModelSelectorTriggerProps = ComponentProps<typeof DialogTrigger>;
+
+export const ModelSelectorTrigger = (props: ModelSelectorTriggerProps) => (
+  <DialogTrigger {...props} />
+);
+
+export type ModelSelectorContentProps = ComponentProps<typeof DialogContent> & {
+  title?: ReactNode;
+  commandProps?: ComponentProps<typeof Command>;
+};
+
+export const ModelSelectorContent = ({
+  className,
+  children,
+  title,
+  commandProps,
+  ...props
+}: ModelSelectorContentProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+
+  return (
+    <DialogContent
+      className={cn("p-0", className)}
+      showCloseButton={false}
+      {...props}
+    >
+      <DialogTitle className="sr-only">{title ?? t("modelSelector")}</DialogTitle>
+      <DialogClose asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="absolute right-4 top-2.5 z-10 bg-secondary"
+        >
+          <XIcon />
+          <span className="sr-only">{t("close")}</span>
+        </Button>
+      </DialogClose>
+      <Command
+        className="**:data-[slot=command-input-wrapper]:h-auto **:data-[slot=command-input-wrapper]:pr-11"
+        {...commandProps}
+      >
+        {children}
+      </Command>
+    </DialogContent>
+  );
+};
+
+export type ModelSelectorDialogProps = ComponentProps<typeof CommandDialog>;
+
+export const ModelSelectorDialog = (props: ModelSelectorDialogProps) => (
+  <CommandDialog {...props} />
+);
+
+export type ModelSelectorInputProps = ComponentProps<typeof CommandInput>;
+
+export const ModelSelectorInput = ({
+  className,
+  ...props
+}: ModelSelectorInputProps) => (
+  <CommandInput className={cn("h-auto py-3.5", className)} {...props} />
+);
+
+export type ModelSelectorListProps = ComponentProps<typeof CommandList> & {
+  viewportClassName?: string;
+};
+
+export const ModelSelectorList = ({
+  className,
+  viewportClassName,
+  ...props
+}: ModelSelectorListProps) => (
+  <ScrollArea
+    className={cn("max-h-72", className)}
+    viewportClassName={viewportClassName}
+    keepScrollbarMounted
+  >
+    <CommandList
+      className="max-h-none overflow-visible"
+      {...props}
+    />
+  </ScrollArea>
+);
+
+export type ModelSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;
+
+export const ModelSelectorEmpty = (props: ModelSelectorEmptyProps) => (
+  <CommandEmpty {...props} />
+);
+
+export type ModelSelectorGroupProps = ComponentProps<typeof CommandGroup>;
+
+export const ModelSelectorGroup = (props: ModelSelectorGroupProps) => (
+  <CommandGroup {...props} />
+);
+
+export type ModelSelectorItemProps = ComponentProps<typeof CommandItem>;
+
+export const ModelSelectorItem = (props: ModelSelectorItemProps) => (
+  <CommandItem {...props} />
+);
+
+export type ModelSelectorShortcutProps = ComponentProps<typeof CommandShortcut>;
+
+export const ModelSelectorShortcut = (props: ModelSelectorShortcutProps) => (
+  <CommandShortcut {...props} />
+);
+
+export type ModelSelectorSeparatorProps = ComponentProps<
+  typeof CommandSeparator
+>;
+
+export const ModelSelectorSeparator = (props: ModelSelectorSeparatorProps) => (
+  <CommandSeparator {...props} />
+);
+
+export type ModelSelectorLogoProps = Omit<
+  ComponentProps<"img">,
+  "src" | "alt"
+> & {
+  provider:
+    | "moonshotai-cn"
+    | "lucid"
+    | "moonshotai"
+    | "alibaba"
+    | "xai"
+    | "nvidia"
+    | "groq"
+    | "mistral"
+    | "nebius"
+    | "deepseek"
+    | "alibaba-cn"
+    | "google-vertex-anthropic"
+    | "venice"
+    | "chutes"
+    | "cortecs"
+    | "github-models"
+    | "togetherai"
+    | "azure"
+    | "baseten"
+    | "huggingface"
+    | "opencode"
+    | "fastrouter"
+    | "google"
+    | "google-vertex"
+    | "cloudflare-workers-ai"
+    | "inception"
+    | "wandb"
+    | "openai"
+    | "zhipuai-coding-plan"
+    | "perplexity"
+    | "openrouter"
+    | "zenmux"
+    | "v0"
+    | "iflowcn"
+    | "synthetic"
+    | "deepinfra"
+    | "zhipuai"
+    | "submodel"
+    | "zai"
+    | "inference"
+    | "requesty"
+    | "morph"
+    | "lmstudio"
+    | "anthropic"
+    | "aihubmix"
+    | "fireworks-ai"
+    | "modelscope"
+    | "llama"
+    | "scaleway"
+    | "amazon-bedrock"
+    | "cerebras"
+    | (string & {});
+};
+
+export const ModelSelectorLogo = ({
+  provider,
+  className,
+  ...props
+}: ModelSelectorLogoProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+
+  return (
+    <img
+      {...props}
+      alt={t("providerLogo", { provider })}
+      className={cn("size-3 dark:invert", className)}
+      height={12}
+      src={`https://models.dev/logos/${provider}.svg`}
+      width={12}
+    />
+  );
+};
+
+export type ModelSelectorLogoGroupProps = ComponentProps<"div">;
+
+export const ModelSelectorLogoGroup = ({
+  className,
+  ...props
+}: ModelSelectorLogoGroupProps) => (
+  <div
+    className={cn(
+      "-space-x-1 flex shrink-0 items-center [&>img]:rounded-full [&>img]:bg-white [&>img]:p-px [&>img]:ring-1 dark:[&>img]:bg-neutral-950 dark:[&>img]:bg-neutral-950 dark:dark:[&>img]:bg-neutral-50",
+      className
+    )}
+    {...props}
+  />
+);
+
+export type ModelSelectorNameProps = ComponentProps<"span">;
+
+export const ModelSelectorName = ({
+  className,
+  ...props
+}: ModelSelectorNameProps) => (
+  <span className={cn("flex-1 truncate text-left", className)} {...props} />
+);

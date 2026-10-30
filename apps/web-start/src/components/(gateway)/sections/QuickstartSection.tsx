@@ -1,0 +1,869 @@
+"use client";
+
+import React, {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { ChevronDown, Copy, KeyRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
+import { jsonToPythonLiteral } from "@/components/(data)/model/quickstart/quickstartPayloads";
+import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
+import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
+
+const LANGUAGE_OPTIONS = [
+	"curl",
+	"typescript",
+	"python",
+	"typescript-sdk",
+	"python-sdk",
+	"typescript-openai",
+	"python-openai",
+] as const;
+type Language = (typeof LANGUAGE_OPTIONS)[number];
+
+const LANGUAGE_LABELS: Record<Language, string> = {
+	curl: "cURL",
+	typescript: "TypeScript (fetch)",
+	python: "Python (requests)",
+	"typescript-sdk": "TypeScript SDK",
+	"python-sdk": "Python SDK",
+	"typescript-openai": "TypeScript (OpenAI)",
+	"python-openai": "Python (OpenAI)",
+};
+
+const LANGUAGE_BADGES: Partial<Record<Language, string>> = {
+	"typescript-openai": "Beta",
+	"python-openai": "Beta",
+};
+
+const LANGUAGE_TO_SHIKI: Record<Language, ShikiLang> = {
+	curl: "bash",
+	typescript: "ts",
+	python: "python",
+	"typescript-sdk": "ts",
+	"python-sdk": "python",
+	"typescript-openai": "ts",
+	"python-openai": "python",
+};
+
+const SDK_METHODS: Record<EndpointId, { js: string; py: string }> = {
+	completions: { js: "generateText", py: "generate_text" },
+	decisions: { js: "decisions.make", py: "decisions.make" },
+	images: { js: "generateImage", py: "generate_image" },
+	video: { js: "generateVideo", py: "generate_video" },
+	audio: { js: "generateSpeech", py: "generate_speech" },
+	embeddings: { js: "generateEmbedding", py: "generate_embedding" },
+	moderations: { js: "generateModeration", py: "generate_moderation" },
+};
+
+type EndpointId =
+	| "completions"
+	| "decisions"
+	| "images"
+	| "video"
+	| "audio"
+	| "embeddings"
+	| "moderations";
+
+type EndpointConfig = {
+	id: EndpointId;
+	path: string;
+	body: (model: string) => Record<string, unknown>;
+};
+
+function resolveSpeechVoiceForModel(model: string): string {
+	const provider = model.split("/")[0]?.toLowerCase();
+	if (provider === "xiaomi") return "mimo_default";
+	if (provider === "google" || provider === "google-ai-studio") return "Kore";
+	if (provider === "elevenlabs" || provider === "eleven-labs") return "rachel";
+	return "alloy";
+}
+
+const ENDPOINT_CONFIGS: EndpointConfig[] = [
+	{
+		id: "completions",
+		path: "/chat/completions",
+		body: (model) => ({
+			model,
+			messages: [
+				{
+					role: "system",
+					content:
+						"You are an AI operations assistant helping summarise live gateway telemetry.",
+				},
+				{
+					role: "user",
+					content:
+						"Summarise the last 24 hours of latency and throughput for our release notes.",
+				},
+			],
+		}),
+	},
+	{
+		id: "decisions",
+		path: "/decisions",
+		body: (model) => ({
+			model,
+			state: {
+				customer_message: "I was charged twice and need help with a refund.",
+				account_tier: "pro",
+				days_waiting: 3,
+			},
+			questions: {
+				department: {
+					type: "choice",
+					instructions: "Which team should handle this request?",
+					criteria: {
+						billing: "Payments, invoices, refunds, and duplicate charges.",
+						support: "Product usage questions and troubleshooting.",
+						sales: "Upgrades and new accounts.",
+					},
+				},
+				is_urgent: {
+					type: "noul",
+					instructions: "Does this request require urgent handling?",
+					criteria: {
+						true: "The customer is blocked or the issue is time-sensitive.",
+						false: "The request can follow the normal support queue.",
+					},
+				},
+				customer_impact: {
+					type: "score",
+					instructions: "How severe is the customer impact?",
+					criteria: [
+						"No impact",
+						"Minor inconvenience",
+						"Significant impact",
+						"Service blocked",
+					],
+				},
+			},
+		}),
+	},
+	{
+		id: "images",
+		path: "/images/generations",
+		body: (model) => ({
+			model,
+			prompt: "Create a cinematic hero image of an AI observability dashboard lit by soft ambient light.",
+			size: "1024x1024",
+			quality: "high",
+		}),
+	},
+	{
+		id: "video",
+		path: "/videos",
+		body: (model) => ({
+			model,
+			prompt: "An engineer exploring a real-time operations room, charts updating smoothly, confident tone.",
+			duration_seconds: 6,
+			aspect_ratio: "16:9",
+		}),
+	},
+	{
+		id: "audio",
+		path: "/audio/speech",
+		body: (model) => ({
+			model,
+			voice: resolveSpeechVoiceForModel(model),
+			input: "Welcome to the Phaseo Gateway where latency, uptime, and pricing are always in your control.",
+			response_format: "mp3",
+		}),
+	},
+	{
+		id: "embeddings",
+		path: "/embeddings",
+		body: (model) => ({
+			model,
+			input: [
+				"Route requests across providers with Phaseo.",
+				"Monitor latency, throughput, and spend in real time.",
+			],
+		}),
+	},
+	{
+		id: "moderations",
+		path: "/moderations",
+		body: (model) => ({
+			model,
+			input: "Review this prompt for policy compliance before it reaches the downstream model.",
+		}),
+	},
+];
+
+const FALLBACK_MODELS: Record<EndpointId, string[]> = {
+	completions: [
+		"openai/gpt-6-astra",
+		"anthropic/claude-fable-5.1",
+		"google/gemini-3.8-flash",
+		"spacex-ai/grok-4.6",
+		"moonshotai/kimi-k3",
+		"deepseek/deepseek-v4.1-flash",
+		"minimax/minimax-m3",
+	],
+	decisions: ["typesafe/jev-1.13.0"],
+	images: [
+		"openai/gpt-image-2",
+		"openai/gpt-image-1.5",
+		"google/gemini-3.1-flash-image",
+	],
+	video: ["openai/sora-2", "openai/sora-2-pro", "google/veo-3.1-preview"],
+	audio: [
+		"eleven-labs/eleven-v3",
+		"openai/gpt-4o-mini-tts",
+		"google/gemini-3.1-flash-tts-preview",
+	],
+	embeddings: [
+		"google/gemini-embedding-2",
+		"openai/text-embedding-3-large",
+		"qwen/text-embedding-v4",
+	],
+	moderations: [
+		"openai/omni-moderation-latest",
+		"meta/llama-guard-4-12b",
+		"mistral/mistral-moderation-2",
+	],
+};
+
+const PROMOTED_MODELS: Record<EndpointId, string[]> = {
+	completions: [
+		"openai/gpt-6-astra",
+		"anthropic/claude-fable-5.1",
+		"google/gemini-3.8-flash",
+		"spacex-ai/grok-4.6",
+		"moonshotai/kimi-k3",
+		"deepseek/deepseek-v4.1-flash",
+		"minimax/minimax-m3",
+	],
+	decisions: ["typesafe/jev-1.13.0"],
+	images: [
+		"openai/gpt-image-2",
+		"openai/gpt-image-1.5",
+		"google/gemini-3.1-flash-image",
+	],
+	video: ["openai/sora-2", "openai/sora-2-pro", "google/veo-3.1-preview"],
+	audio: [
+		"eleven-labs/eleven-v3",
+		"openai/gpt-4o-mini-tts",
+		"google/gemini-3.1-flash-tts-preview",
+	],
+	embeddings: [
+		"google/gemini-embedding-2",
+		"openai/text-embedding-3-large",
+		"qwen/text-embedding-v4",
+	],
+	moderations: [
+		"openai/omni-moderation-latest",
+		"meta/llama-guard-4-12b",
+		"mistral/mistral-moderation-2",
+	],
+};
+
+const OPENAI_CLIENT_METHODS: Partial<Record<EndpointId, string>> = {
+	completions: "chat.completions.create",
+	images: "images.generate",
+	video: "videos.create",
+	audio: "audio.speech.create",
+	embeddings: "embeddings.create",
+	moderations: "moderations.create",
+};
+
+function formatHourLabel(iso: string): string {
+	const date = new Date(iso);
+	return date.toLocaleString(undefined, {
+		weekday: "short",
+		hour: "numeric",
+	});
+}
+
+function formatHoursAgoTick(value: number | string | null | undefined): string {
+	const hours =
+		value == null || Number.isNaN(Number(value))
+			? null
+			: Math.max(0, Math.round(Number(value)));
+
+	if (hours == null) {
+		return "";
+	}
+
+	return hours === 0 ? "Now" : `${hours}h`;
+}
+
+function formatHoursAgoTooltip(
+	value: number | string | null | undefined
+): string {
+	const hours =
+		value == null || Number.isNaN(Number(value))
+			? null
+			: Math.max(0, Math.round(Number(value)));
+
+	if (hours == null) {
+		return "";
+	}
+
+	return hours === 0 ? "Now" : `${hours}h ago`;
+}
+
+function indentBlock(block: string, indent: string): string {
+	return block
+		.split("\n")
+		.map((line) => `${indent}${line}`)
+		.join("\n");
+}
+
+function formatTooltipNumber(
+	value: number | string | null | undefined,
+	unit: string
+): string {
+	if (value == null) return `0 ${unit}`;
+	const numericValue =
+		typeof value === "number" ? value : Number.parseFloat(String(value));
+	if (!Number.isFinite(numericValue)) {
+		return `0 ${unit}`;
+	}
+	return `${Intl.NumberFormat("en-US", {
+		maximumFractionDigits: 1,
+	}).format(numericValue)} ${unit}`;
+}
+
+function buildSnippets(
+	config: EndpointConfig,
+	model: string
+): Record<Language, string> {
+	const payload = config.body(model);
+	const json = JSON.stringify(payload, null, 2);
+	const escapedJson = json.replace(/'/g, "\\'");
+
+	const tsJson = json
+		.split("\n")
+		.map((line) => `        ${line}`)
+		.join("\n");
+
+	const pythonJson = jsonToPythonLiteral(json)
+		.split("\n")
+		.map((line) => `    ${line}`)
+		.join("\n");
+
+	const tsLiteral = indentBlock(json, "    ");
+	const pythonLiteral = indentBlock(pythonJson, "    ");
+	const sdkMethods = SDK_METHODS[config.id];
+	const jsMethod = sdkMethods?.js ?? config.id;
+	const pyMethod = sdkMethods?.py ?? config.id;
+	const openAiMethod = OPENAI_CLIENT_METHODS[config.id];
+
+	return {
+		curl: `curl -s -X POST "${BASE_URL}${config.path}" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
+  -d '${escapedJson}'`,
+		typescript: `const response = await fetch("${BASE_URL}${config.path}", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": \`Bearer \${process.env.PHASEO_API_KEY!}\`,
+    },
+    body: JSON.stringify(
+${tsJson}
+    ),
+});
+
+if (!response.ok) {
+    throw new Error(await response.text());
+}
+
+const data = await response.json();
+console.log(data);`,
+		python: `import requests
+
+response = requests.post(
+    "${BASE_URL}${config.path}",
+    headers={
+        "Content-Type": "application/json",
+        "Authorization": "Bearer YOUR_API_KEY",
+    },
+    json=${pythonJson}
+)
+
+response.raise_for_status()
+print(response.json())`,
+		"typescript-sdk": `import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({
+    apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
+});
+
+const response = await client.${jsMethod}(
+${tsLiteral}
+);
+
+console.log(response);`,
+		"python-sdk": `import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"))
+response = client.${pyMethod}(
+${pythonLiteral}
+)
+
+print(response)`,
+		"typescript-openai": openAiMethod
+			? `// Beta: OpenAI client
+import OpenAI from "openai";
+
+const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY ?? "YOUR_OPENAI_KEY",
+});
+
+const response = await client.${openAiMethod}(
+${tsJson}
+);
+
+console.log(response);`
+			: "// This endpoint uses the native Phaseo SDK; the OpenAI client is not compatible.",
+		"python-openai": openAiMethod
+			? `# Beta: OpenAI client
+from openai import OpenAI
+import os
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+response = client.${openAiMethod}(
+${pythonJson}
+)
+
+print(response)`
+			: "# This endpoint uses the native Phaseo SDK; the OpenAI client is not compatible.",
+	};
+}
+
+function buildModelOptions(modelIds: string[]): Record<EndpointId, string[]> {
+	const lowerIds = modelIds.map((id) => id.toLowerCase());
+	const pick = (patterns: RegExp[], fallback: string[]): string[] => {
+		const matches = modelIds.filter((model, idx) =>
+			patterns.some((regex) => regex.test(lowerIds[idx]))
+		);
+		const unique = Array.from(new Set(matches));
+		const result = unique.slice(0, 4);
+		for (const candidate of fallback) {
+			if (result.length >= 4) break;
+			if (!result.includes(candidate)) result.push(candidate);
+		}
+		return result.slice(0, 4);
+	};
+
+	return {
+		completions: pick(
+			[/gpt/, /claude/, /mixtral/, /command/, /grok/, /sonnet/, /llama/],
+			FALLBACK_MODELS.completions
+		),
+		decisions: pick([/decision/, /jev/, /typesafe/], FALLBACK_MODELS.decisions),
+		images: pick(
+			[/image/, /vision/, /diffusion/, /dream/, /imagine/, /sd[.\d]/],
+			FALLBACK_MODELS.images
+		),
+		video: pick(
+			[/video/, /sora/, /runway/, /gen/, /luma/, /dream/],
+			FALLBACK_MODELS.video
+		),
+		audio: pick(
+			[/audio/, /voice/, /speech/, /whisper/, /tts/],
+			FALLBACK_MODELS.audio
+		),
+		embeddings: pick([/embed/, /embedding/], FALLBACK_MODELS.embeddings),
+		moderations: pick(
+			[/moderation/, /guard/, /safety/],
+			FALLBACK_MODELS.moderations
+		),
+	};
+}
+
+interface QuickstartSectionProps {
+	metrics: GatewayMarketingMetrics;
+}
+
+export function QuickstartSection({ metrics }: QuickstartSectionProps) {
+	const t = useTranslations("Site.gatewayQuickstart");
+	const endpointCopy = t.raw("endpoints" as never) as Record<EndpointId, { label: string; summary: string }>;
+	const [selectedEndpoint, setSelectedEndpoint] =
+		useState<EndpointId>("completions");
+	const [selectedLanguage, setSelectedLanguage] = useState<Language>("curl");
+	const [copied, setCopied] = useState(false);
+	const copyTimeoutRef = useRef<number | null>(null);
+
+	const modelOptionsByEndpoint = useMemo(
+		() => buildModelOptions(metrics.supported.modelIds ?? []),
+		[metrics.supported.modelIds]
+	);
+
+	const [selectedModels, setSelectedModels] = useState<
+		Record<EndpointId, string>
+	>(() => {
+		const initial: Record<EndpointId, string> = {
+			completions: modelOptionsByEndpoint.completions[0],
+			decisions: modelOptionsByEndpoint.decisions[0],
+			images: modelOptionsByEndpoint.images[0],
+			video: modelOptionsByEndpoint.video[0],
+			audio: modelOptionsByEndpoint.audio[0],
+			embeddings: modelOptionsByEndpoint.embeddings[0],
+			moderations: modelOptionsByEndpoint.moderations[0],
+		};
+		return initial;
+	});
+
+	useEffect(() => {
+		setSelectedModels((prev) => {
+			const next = { ...prev };
+			for (const config of ENDPOINT_CONFIGS) {
+				const options = modelOptionsByEndpoint[config.id];
+				if (!options.length) continue;
+				if (!options.includes(next[config.id])) {
+					next[config.id] = options[0];
+				}
+			}
+			return next;
+		});
+	}, [modelOptionsByEndpoint]);
+
+	useEffect(() => {
+		return () => {
+			if (copyTimeoutRef.current) {
+				window.clearTimeout(copyTimeoutRef.current);
+			}
+		};
+	}, []);
+
+	const currentConfig =
+		ENDPOINT_CONFIGS.find((config) => config.id === selectedEndpoint) ??
+		ENDPOINT_CONFIGS[0];
+	const currentModel =
+		selectedModels[selectedEndpoint] ||
+		modelOptionsByEndpoint[selectedEndpoint][0];
+	const availableLanguageOptions = useMemo<readonly Language[]>(
+		() =>
+			currentConfig.id === "decisions"
+				? LANGUAGE_OPTIONS.filter(
+						(option) =>
+							option !== "typescript-openai" && option !== "python-openai",
+					  )
+				: LANGUAGE_OPTIONS,
+		[currentConfig.id],
+	);
+
+	useEffect(() => {
+		if (!availableLanguageOptions.includes(selectedLanguage)) {
+			setSelectedLanguage("curl");
+		}
+	}, [availableLanguageOptions, selectedLanguage]);
+
+	const codeSnippets = useMemo(
+		() => buildSnippets(currentConfig, currentModel),
+		[currentConfig, currentModel]
+	);
+
+	const handleCopyCode = useCallback(() => {
+		const snippet = codeSnippets[selectedLanguage];
+		if (
+			!snippet ||
+			typeof navigator === "undefined" ||
+			!navigator.clipboard
+		) {
+			return;
+		}
+
+		navigator.clipboard.writeText(snippet).then(() => {
+			setCopied(true);
+			if (copyTimeoutRef.current) {
+				window.clearTimeout(copyTimeoutRef.current);
+			}
+			copyTimeoutRef.current = window.setTimeout(
+				() => setCopied(false),
+				1400
+			);
+		});
+	}, [codeSnippets, selectedLanguage]);
+
+	return (
+		<section id="quickstart" className="py-12">
+			<div className="mx-auto max-w-7xl space-y-6 px-6 lg:px-8">
+				<div className="max-w-3xl space-y-2">
+					<h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+						{t("title")}
+					</h2>
+					<p className="text-sm text-slate-600 dark:text-slate-400">
+						{t("description")}
+					</p>
+				</div>
+
+				<div className="grid gap-5 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
+					<div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+						<div className="space-y-1">
+							<p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+								{t("setupHeading")}
+							</p>
+							<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+								{t("fromZeroHeading")}
+							</h3>
+						</div>
+						<div className="mt-4 space-y-3">
+							<div className="flex gap-3">
+								<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
+									1
+								</span>
+								<div className="space-y-1">
+									<p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+										{t("step1Title")}
+									</p>
+									<p className="text-sm text-slate-600 dark:text-slate-400">
+										{t("step1Description")}{" "}
+										<code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-900">
+											PHASEO_API_KEY
+										</code>
+										.
+									</p>
+									<Button asChild size="sm" variant="outline" className="h-8">
+										<Link href="/settings/keys">
+											<KeyRound className="h-3.5 w-3.5" />
+												{t("apiKeys")}
+										</Link>
+									</Button>
+								</div>
+							</div>
+							<div className="flex gap-3">
+								<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
+									2
+								</span>
+								<div>
+									<p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+										{t("step2Title")}
+									</p>
+									<p className="text-sm text-slate-600 dark:text-slate-400">
+										{t("step2Description")}
+									</p>
+								</div>
+							</div>
+							<div className="flex gap-3">
+								<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
+									3
+								</span>
+								<div>
+									<p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+										{t("step3Title")}
+									</p>
+									<p className="text-sm text-slate-600 dark:text-slate-400">
+										{t("step3Description")}
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<Card className="border-slate-200">
+					<CardHeader className="space-y-3">
+						<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+							<div className="space-y-1">
+								<CardTitle className="text-xl">
+									{endpointCopy[currentConfig.id].label}
+								</CardTitle>
+								<p className="text-sm text-slate-600 dark:text-slate-400">
+									{endpointCopy[currentConfig.id].summary}
+								</p>
+							</div>
+							<DropdownMenu>
+								<DropdownMenuTrigger render={<Button
+										variant="outline"
+										size="sm"
+										className="flex items-center gap-2" />}>
+
+										{endpointCopy[currentConfig.id].label}
+										<ChevronDown className="h-4 w-4" />
+
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end" className="rounded-lg">
+									{ENDPOINT_CONFIGS.map((config) => (
+										<DropdownMenuItem
+											key={config.id}
+											onClick={() =>
+												setSelectedEndpoint(config.id)
+											}
+											className="rounded-lg"
+										>
+											<div className="flex flex-col">
+													<span>{endpointCopy[config.id].label}</span>
+												<span className="text-xs text-slate-500 dark:text-slate-300">
+														{endpointCopy[config.id].summary}
+												</span>
+											</div>
+										</DropdownMenuItem>
+									))}
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
+						<div className="flex flex-wrap items-center gap-3">
+							<DropdownMenu>
+								<DropdownMenuTrigger render={<Button
+										variant="outline"
+										size="sm"
+										className="flex items-center gap-2" />}>
+
+										<span>
+											{LANGUAGE_LABELS[selectedLanguage]}
+										</span>
+										{LANGUAGE_BADGES[selectedLanguage] ? (
+											<span className="rounded-full border px-2 py-0.5 text-[0.6rem] uppercase text-slate-500 dark:text-slate-300">
+												{
+													LANGUAGE_BADGES[
+														selectedLanguage
+													]
+												}
+											</span>
+										) : null}
+										<ChevronDown className="h-4 w-4" />
+
+								</DropdownMenuTrigger>
+								<DropdownMenuContent className="rounded-lg">
+									{availableLanguageOptions.map((option) => (
+										<DropdownMenuItem
+											key={option}
+											onClick={() =>
+												setSelectedLanguage(
+													option as Language
+												)
+											}
+											className="rounded-lg"
+										>
+											<div className="flex items-center justify-between gap-2">
+												<span>
+													{LANGUAGE_LABELS[option]}
+												</span>
+												{LANGUAGE_BADGES[option] ? (
+													<span className="rounded-full border px-2 py-0.5 text-[0.6rem] uppercase text-slate-500 dark:text-slate-300">
+														{
+															LANGUAGE_BADGES[
+																option
+															]
+														}
+													</span>
+												) : null}
+											</div>
+										</DropdownMenuItem>
+									))}
+								</DropdownMenuContent>
+							</DropdownMenu>
+							<Button
+								variant="outline"
+								size="sm"
+								className="flex items-center gap-1"
+								onClick={handleCopyCode}
+							>
+								<Copy className="h-4 w-4" />
+									{copied ? t("copied") : t("copyCode")}
+							</Button>
+							{availableLanguageOptions.some(
+								(option) =>
+									option === "typescript-openai" || option === "python-openai",
+							) ? (
+								<p className="text-xs text-slate-500 dark:text-slate-300">
+									{t("openAiBetaNotice")}
+								</p>
+							) : null}
+							<p className="text-xs text-slate-500 dark:text-slate-300">
+								{t("baseUrl")}: {BASE_URL}
+								{currentConfig.path}
+							</p>
+						</div>
+					</CardHeader>
+
+					<CardContent>
+						{(() => {
+							const baseModels =
+								modelOptionsByEndpoint[currentConfig.id] ??
+								FALLBACK_MODELS[currentConfig.id] ??
+								[];
+							const promoted =
+								PROMOTED_MODELS[currentConfig.id] ?? [];
+							const availableModels = Array.from(
+								new Set([...promoted, ...baseModels])
+							);
+							const activeModel =
+								selectedModels[currentConfig.id] ??
+								availableModels[0] ??
+								baseModels[0] ??
+								"openai/gpt-6-astra";
+
+							return (
+								<div className="space-y-3">
+									<div className="space-y-2">
+										<p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+														{t("model")}
+										</p>
+										<DropdownMenu>
+											<DropdownMenuTrigger render={<Button
+													variant="outline"
+													size="sm"
+													className="flex items-center gap-2" />}>
+
+													<span>{activeModel}</span>
+													<ChevronDown className="h-4 w-4" />
+
+											</DropdownMenuTrigger>
+											<DropdownMenuContent className="rounded-lg">
+												{availableModels.map(
+													(model) => (
+														<DropdownMenuItem
+															key={model}
+															onClick={() =>
+																setSelectedModels(
+																	(prev) => ({
+																		...prev,
+																		[currentConfig.id]:
+																			model,
+																	})
+																)
+															}
+															className="rounded-lg"
+														>
+															{model}
+														</DropdownMenuItem>
+													)
+												)}
+											</DropdownMenuContent>
+										</DropdownMenu>
+										<p className="text-xs text-slate-500 dark:text-slate-300">
+											{t.rich("modelPayloadHelp", {
+												model: (chunks) => <code>{chunks}</code>,
+											})}
+										</p>
+									</div>
+									<CodeBlock
+										label={
+											LANGUAGE_LABELS[selectedLanguage]
+										}
+										code={codeSnippets[selectedLanguage]}
+										lang={
+											LANGUAGE_TO_SHIKI[selectedLanguage]
+										}
+									/>
+								</div>
+							);
+						})()}
+					</CardContent>
+					</Card>
+				</div>
+			</div>
+		</section>
+	);
+}

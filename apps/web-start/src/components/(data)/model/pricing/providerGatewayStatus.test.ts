@@ -1,0 +1,132 @@
+import {
+	chooseGatewayStatus,
+	getGatewayStatusSortRank,
+	resolveGatewayStatus,
+} from "@/components/(data)/model/pricing/providerGatewayStatus";
+
+describe("providerGatewayStatus", () => {
+	it("orders active, deranked levels, coming soon, and inactive states", () => {
+		const statuses = [
+			"active",
+			"deranked_lvl1",
+			"deranked_lvl2",
+			"deranked_lvl3",
+			"internal_testing",
+			"coming_soon",
+			"inactive",
+			"disabled",
+		];
+
+			expect(
+			statuses.map((status) => getGatewayStatusSortRank(status)),
+		).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+	});
+
+	it("keeps external catalogue providers distinct from inactive providers", () => {
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: false,
+				providerStatus: "external",
+				providerRoutingStatus: "disabled",
+				modelRoutingStatus: "active",
+				capabilityStatus: "active",
+			}),
+		).toBe("external");
+	});
+
+	it("shows route lifecycle status for an external provider offer", () => {
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: false,
+				providerAvailabilityStatus: "available",
+				phaseoStatus: "planned",
+				providerStatus: "external",
+				providerRoutingStatus: "active",
+				modelRoutingStatus: "active",
+				capabilityStatus: "active",
+			}),
+		).toBe("coming_soon");
+	});
+
+	it("prefers the best routable status within a provider offer", () => {
+		expect(
+			chooseGatewayStatus([
+				"inactive",
+				"internal_testing",
+				"deranked_lvl2",
+				"coming_soon",
+			]),
+		).toBe("deranked_lvl2");
+	});
+
+	it("resolves provider and model routing deranks before active", () => {
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: true,
+				capabilityStatus: "active",
+				providerRoutingStatus: "deranked_lvl1",
+				modelRoutingStatus: "active",
+			}),
+		).toBe("deranked_lvl1");
+
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: true,
+				capabilityStatus: "active",
+				providerRoutingStatus: "active",
+				modelRoutingStatus: "deranked_lvl3",
+			}),
+		).toBe("deranked_lvl3");
+	});
+
+	it("keeps internal testing distinct from generic coming soon", () => {
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: true,
+				capabilityStatus: "internal_testing",
+				providerRoutingStatus: "active",
+				modelRoutingStatus: "active",
+			}),
+		).toBe("internal_testing");
+	});
+
+	it("uses the explicit provider, Phaseo, and access statuses", () => {
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: false,
+				providerAvailabilityStatus: "coming_soon",
+				phaseoStatus: "planned",
+				accessScope: "public",
+				providerRoutingStatus: "active",
+				modelRoutingStatus: "disabled",
+			}),
+		).toBe("coming_soon");
+
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: false,
+				providerAvailabilityStatus: "available",
+				phaseoStatus: "implementing",
+				accessScope: "public",
+			}),
+		).toBe("coming_soon");
+
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: false,
+				providerAvailabilityStatus: "available",
+				phaseoStatus: "testing",
+				accessScope: "internal",
+			}),
+		).toBe("internal_testing");
+
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: false,
+				providerAvailabilityStatus: "removed",
+				phaseoStatus: "enabled",
+				accessScope: "public",
+			}),
+		).toBe("inactive");
+	});
+});

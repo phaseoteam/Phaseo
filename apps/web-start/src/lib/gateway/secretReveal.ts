@@ -1,0 +1,295 @@
+export const PHASEO_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+
+export type ApiKeyPresetId = "development" | "production" | "ci" | "sandbox";
+
+export type ApiKeyLimitPreset = {
+	id: ApiKeyPresetId;
+	limits: {
+		dailyRequests: number;
+		weeklyRequests: number;
+		monthlyRequests: number;
+		dailyCostNanos: number;
+		weeklyCostNanos: number;
+		monthlyCostNanos: number;
+	};
+};
+
+export const API_KEY_LIMIT_PRESETS: ApiKeyLimitPreset[] = [
+	{
+		id: "development",
+		limits: {
+			dailyRequests: 1_000,
+			weeklyRequests: 0,
+			monthlyRequests: 0,
+			dailyCostNanos: 1_000_000_000,
+			weeklyCostNanos: 0,
+			monthlyCostNanos: 0,
+		},
+	},
+	{
+		id: "production",
+		limits: {
+			dailyRequests: 0,
+			weeklyRequests: 0,
+			monthlyRequests: 0,
+			dailyCostNanos: 0,
+			weeklyCostNanos: 0,
+			monthlyCostNanos: 0,
+		},
+	},
+	{
+		id: "ci",
+		limits: {
+			dailyRequests: 5_000,
+			weeklyRequests: 25_000,
+			monthlyRequests: 0,
+			dailyCostNanos: 2_000_000_000,
+			weeklyCostNanos: 10_000_000_000,
+			monthlyCostNanos: 0,
+		},
+	},
+	{
+		id: "sandbox",
+		limits: {
+			dailyRequests: 100,
+			weeklyRequests: 1_000,
+			monthlyRequests: 0,
+			dailyCostNanos: 250_000_000,
+			weeklyCostNanos: 1_000_000_000,
+			monthlyCostNanos: 0,
+		},
+	},
+];
+
+export function getApiKeyPreset(id: ApiKeyPresetId): ApiKeyLimitPreset {
+	return (
+		API_KEY_LIMIT_PRESETS.find((preset) => preset.id === id) ??
+		API_KEY_LIMIT_PRESETS[0]
+	);
+}
+
+type SecretConfigArgs = {
+	apiKey: string;
+	baseUrl?: string;
+	envVarName?: string;
+};
+
+function normalizeBaseUrl(baseUrl?: string): string {
+	return (baseUrl || PHASEO_GATEWAY_BASE_URL).replace(/\/+$/, "");
+}
+
+export function buildEnvFile(args: SecretConfigArgs): string {
+	const envVarName = args.envVarName || "PHASEO_API_KEY";
+	return `${envVarName}="${args.apiKey}"\nPHASEO_BASE_URL="${normalizeBaseUrl(args.baseUrl)}"\n`;
+}
+
+export type AppConfigSnippet = {
+	id: string;
+	label: string;
+	value: string;
+};
+
+export function buildAppConfigSnippets(args: SecretConfigArgs): AppConfigSnippet[] {
+	const baseUrl = normalizeBaseUrl(args.baseUrl);
+	const apiKey = args.apiKey;
+
+	return [
+		{
+			id: "shell",
+			label: "Shell exports",
+			value: `export PHASEO_API_KEY="${apiKey}"\nexport PHASEO_BASE_URL="${baseUrl}"`,
+		},
+		{
+			id: "openai-node",
+			label: "OpenAI SDK (Node)",
+			value: `import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: process.env.PHASEO_API_KEY,\n  baseURL: "${baseUrl}",\n});`,
+		},
+		{
+			id: "openai-python",
+			label: "OpenAI SDK (Python)",
+			value: `import os\nfrom openai import OpenAI\n\nclient = OpenAI(\n    api_key=os.environ["PHASEO_API_KEY"],\n    base_url="${baseUrl}",\n)`,
+		},
+		{
+			id: "vercel-ai-sdk",
+			label: "Vercel AI SDK",
+			value: `import { createOpenAI } from "@ai-sdk/openai";\n\nexport const phaseo = createOpenAI({\n  apiKey: process.env.PHASEO_API_KEY,\n  baseURL: "${baseUrl}",\n});`,
+		},
+		{
+			id: "codex",
+			label: "Codex",
+			value: `[model_providers.phaseo]\nname = "Phaseo"\nbase_url = "${baseUrl}"\nenv_key = "PHASEO_API_KEY"`,
+		},
+		{
+			id: "claude-code",
+			label: "Claude Code",
+			value: `export ANTHROPIC_BASE_URL="${baseUrl.replace(/\/v1$/, "")}"\nexport ANTHROPIC_AUTH_TOKEN="${apiKey}"\nexport ANTHROPIC_API_KEY=""`,
+		},
+		{
+			id: "opencode",
+			label: "OpenCode",
+			value: `{\n  "provider": {\n    "phaseo": {\n      "npm": "@ai-sdk/openai-compatible",\n      "options": {\n        "baseURL": "${baseUrl}",\n        "apiKey": "{env:PHASEO_API_KEY}"\n      }\n    }\n  }\n}`,
+		},
+	];
+}
+
+export type CollectionExport = {
+	id: string;
+	label: string;
+	filename: string;
+	mimeType: string;
+	content: string;
+};
+
+export function buildCollectionExports(baseUrl = PHASEO_GATEWAY_BASE_URL): CollectionExport[] {
+	const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+	const origin = normalizedBaseUrl.replace(/\/v1$/, "");
+
+	return [
+		{
+			id: "postman",
+			label: "Postman",
+			filename: "phaseo-gateway.postman_collection.json",
+			mimeType: "application/json",
+			content: JSON.stringify(
+				{
+					info: {
+						name: "Phaseo Gateway",
+						schema:
+							"https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+					},
+					variable: [
+						{ key: "base_url", value: normalizedBaseUrl },
+						{ key: "api_key", value: "paste-your-phaseo-key" },
+						{ key: "model", value: "openai/gpt-4.1-mini" },
+					],
+					item: [
+						{
+							name: "List models",
+							request: {
+								method: "GET",
+								header: [
+									{ key: "Authorization", value: "Bearer {{api_key}}" },
+								],
+								url: "{{base_url}}/models?endpoints=chat/completions",
+							},
+						},
+						{
+							name: "Chat completion",
+							request: {
+								method: "POST",
+								header: [
+									{ key: "Authorization", value: "Bearer {{api_key}}" },
+									{ key: "Content-Type", value: "application/json" },
+								],
+								url: "{{base_url}}/chat/completions",
+								body: {
+									mode: "raw",
+									raw: JSON.stringify(
+										{
+											model: "{{model}}",
+											messages: [
+												{
+													role: "user",
+													content: "Say hello from Phaseo.",
+												},
+											],
+										},
+										null,
+										2,
+									),
+								},
+							},
+						},
+					],
+				},
+				null,
+				2,
+			),
+		},
+		{
+			id: "insomnia",
+			label: "Insomnia",
+			filename: "phaseo-gateway.insomnia.json",
+			mimeType: "application/json",
+			content: JSON.stringify(
+				{
+					_type: "export",
+					__export_format: 4,
+					__export_source: "phaseo",
+					resources: [
+						{
+							_id: "wrk_phaseo_gateway",
+							_type: "workspace",
+							name: "Phaseo Gateway",
+						},
+						{
+							_id: "env_phaseo_gateway",
+							_type: "environment",
+							parentId: "wrk_phaseo_gateway",
+							name: "Base Environment",
+							data: {
+								base_url: normalizedBaseUrl,
+								api_key: "paste-your-phaseo-key",
+								model: "openai/gpt-4.1-mini",
+							},
+						},
+						{
+							_id: "req_phaseo_models",
+							_type: "request",
+							parentId: "wrk_phaseo_gateway",
+							name: "List models",
+							method: "GET",
+							url: "{{ _.base_url }}/models?endpoints=chat/completions",
+							headers: [
+								{
+									name: "Authorization",
+									value: "Bearer {{ _.api_key }}",
+								},
+							],
+						},
+						{
+							_id: "req_phaseo_chat",
+							_type: "request",
+							parentId: "wrk_phaseo_gateway",
+							name: "Chat completion",
+							method: "POST",
+							url: "{{ _.base_url }}/chat/completions",
+							headers: [
+								{
+									name: "Authorization",
+									value: "Bearer {{ _.api_key }}",
+								},
+								{ name: "Content-Type", value: "application/json" },
+							],
+							body: {
+								mimeType: "application/json",
+								text: JSON.stringify(
+									{
+										model: "{{ _.model }}",
+										messages: [
+											{
+												role: "user",
+												content: "Say hello from Phaseo.",
+											},
+										],
+									},
+									null,
+									2,
+								),
+							},
+						},
+					],
+				},
+				null,
+				2,
+			),
+		},
+		{
+			id: "http",
+			label: ".http file",
+			filename: "phaseo-gateway.http",
+			mimeType: "text/plain",
+			content: `@baseUrl = ${normalizedBaseUrl}\n@apiKey = paste-your-phaseo-key\n@model = openai/gpt-4.1-mini\n\n### List models\nGET {{baseUrl}}/models?endpoints=chat/completions\nAuthorization: Bearer {{apiKey}}\n\n### Chat completion\nPOST {{baseUrl}}/chat/completions\nAuthorization: Bearer {{apiKey}}\nContent-Type: application/json\nOrigin: ${origin}\n\n{\n  "model": "{{model}}",\n  "messages": [\n    {\n      "role": "user",\n      "content": "Say hello from Phaseo."\n    }\n  ]\n}\n`,
+		},
+	];
+}

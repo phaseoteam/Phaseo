@@ -1,0 +1,53 @@
+"use client";
+
+import React from "react";
+import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Download, FileText, FileSpreadsheet } from "lucide-react";
+
+interface ExportDropdownProps {
+	onExportCSV: () => void;
+	onExportPDF: () => void;
+	disabled?: boolean;
+	iconOnly?: boolean;
+}
+
+export default function ExportDropdown({
+	onExportCSV,
+	onExportPDF,
+	disabled = false,
+	iconOnly = false,
+}: ExportDropdownProps) {
+	const t = useTranslations("SettingsUI");
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger render={<Button
+					variant="outline"
+					size={iconOnly ? "icon" : "sm"}
+					disabled={disabled}
+					aria-label={t("strings.Export" as never)}
+					title={t("strings.Export" as never)} />}>
+
+					<Download className={iconOnly ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+					{iconOnly ? null : t("strings.Export" as never)}
+
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end">
+				<DropdownMenuItem onClick={onExportCSV}>
+					<FileSpreadsheet className="mr-2 h-4 w-4" />
+					{t("strings.Export as CSV" as never)}
+				</DropdownMenuItem>
+				<DropdownMenuItem onClick={onExportPDF}>
+					<FileText className="mr-2 h-4 w-4" />
+					{t("strings.Export as PDF" as never)}
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+}

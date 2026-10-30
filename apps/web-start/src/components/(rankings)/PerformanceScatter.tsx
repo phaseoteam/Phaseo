@@ -1,0 +1,253 @@
+// components/(rankings)/PerformanceScatter.tsx
+// Purpose: Scatter chart showing cost vs performance trade-offs
+// Why: Helps users visualize model efficiency
+// How: Uses Recharts ScatterChart with cost and latency/throughput axes
+
+"use client";
+
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import {
+    ScatterChart,
+    Scatter,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    ZAxis,
+} from "recharts";
+import { Logo } from "@/components/Logo";
+import type { PerformanceData } from "@/lib/fetchers/rankings/getRankingsData";
+import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
+
+export type PerformanceMode = "throughput" | "latency";
+
+type PerformanceScatterRow = PerformanceData & {
+    model_name?: string | null;
+    organisation_id?: string | null;
+    provider_name?: string | null;
+};
+
+interface PerformanceScatterProps {
+    data: PerformanceScatterRow[];
+    mode?: PerformanceMode;
+}
+
+export function PerformanceScatter({
+    data,
+    mode = "throughput",
+}: PerformanceScatterProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatCompact = (value: number, _locale?: string) => Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
+    if (!data.length) {
+        return (
+            <EmptyChartPreview
+                title={t("notEnoughData")}
+                description={t("performanceDataEmptyDescription")}
+                heightClassName="h-[500px]"
+            />
+        );
+    }
+
+    const chartData = data
+        .map((row) => {
+            const cost = Number(row.cost_per_1m_tokens);
+            const latency = Number(row.median_latency_ms);
+            const throughput = Number(row.median_throughput);
+            const requests = Number(row.requests);
+            const modelName = row.model_name?.trim() || row.model_id || t("unknownModelLabel");
+            const providerName =
+                row.provider_name?.trim() || row.provider || t("unknownProviderLabel");
+
+            const yValue = mode === "throughput" ? throughput : latency;
+
+            if (
+                !Number.isFinite(cost) ||
+                !Number.isFinite(yValue) ||
+                !Number.isFinite(requests)
+            ) {
+                return null;
+            }
+
+            return {
+                x: cost,
+                y: yValue,
+                z: requests,
+                modelId: row.model_id || "",
+                modelName,
+                organisationId: row.organisation_id || null,
+                providerName,
+                providerId: row.provider || "unknown",
+                requests,
+                cost,
+                latency,
+                throughput,
+            };
+        })
+        .filter(Boolean) as Array<{
+            x: number;
+            y: number;
+            z: number;
+            modelId: string;
+            modelName: string;
+            organisationId: string | null;
+            providerName: string;
+            providerId: string;
+            requests: number;
+            cost: number;
+            latency: number;
+            throughput: number;
+        }>;
+
+    if (!chartData.length) {
+        return (
+            <EmptyChartPreview
+                title={t("notEnoughData")}
+                description={t("performanceDataEmptyDescription")}
+                heightClassName="h-[500px]"
+            />
+        );
+    }
+
+    return (
+        <div className="h-[500px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 20, right: 20, bottom: 60, left: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <XAxis
+                        type="number"
+                        dataKey="x"
+                        name={t("costPerMillionTokensName")}
+                        label={{
+                            value: t("costPerMillionTokensAxis"),
+                            position: "bottom",
+                            offset: 40,
+                        }}
+                        domain={[0, "auto"]}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <YAxis
+                        type="number"
+                        dataKey="y"
+                        name={mode === "throughput" ? t("throughput") : t("latency")}
+                        label={{
+                            value:
+                                mode === "throughput"
+                                    ? t("throughputAxis")
+                                    : t("latencyP50Column"),
+                            angle: -90,
+                            position: "left",
+                            offset: 40,
+                        }}
+                        domain={[0, "auto"]}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <ZAxis type="number" dataKey="z" range={[50, 1000]} />
+                    <Tooltip
+                        cursor={false}
+                        content={({ payload }) => {
+                            if (!payload?.[0]) return null;
+                            const point = payload[0].payload;
+                            const modelHref = getModelDetailsHref(
+                                point.organisationId,
+                                point.modelId
+                            );
+                            const providerHref =
+                                point.providerId && point.providerId !== "unknown"
+                                    ? `/api-providers/${encodeURIComponent(point.providerId)}`
+                                    : null;
+                            return (
+                                <div className="min-w-[260px] rounded-lg border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/90">
+                                    <div className="flex items-center gap-2 pb-2">
+                                        {providerHref ? (
+                                            <Link
+                                                href={providerHref}
+                                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800"
+                                                aria-label={point.providerName}
+                                            >
+                                                <div className="relative h-4 w-4">
+                                                    <Logo
+                                                        id={point.providerId}
+                                                        alt={point.providerName}
+                                                        className="object-contain"
+                                                        fill
+                                                    />
+                                                </div>
+                                            </Link>
+                                        ) : (
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800">
+                                                <div className="relative h-4 w-4">
+                                                    <Logo
+                                                        id={point.providerId}
+                                                        alt={point.providerName}
+                                                        className="object-contain"
+                                                        fill
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            {modelHref ? (
+                                                <Link
+                                                    href={modelHref}
+                                                    className="truncate text-sm font-medium block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+                                                >
+                                                    {point.modelName}
+                                                </Link>
+                                            ) : (
+                                                <p className="truncate text-sm font-medium">
+                                                    {point.modelName}
+                                                </p>
+                                            )}
+                                            {providerHref ? (
+                                                <Link
+                                                    href={providerHref}
+                                                    className="truncate text-xs text-muted-foreground block underline underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+                                                >
+                                                    {point.providerName}
+                                                </Link>
+                                            ) : (
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {point.providerName}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-xs">
+                                        <span className="text-muted-foreground">{t("costLabel")}</span>
+                                        <span className="text-right tabular-nums">
+                                            {t("costPerMillionTokensValue", { value: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD" }).format(point.cost) })}
+                                        </span>
+                                        <span className="text-muted-foreground">
+                                            {mode === "throughput" ? t("throughput") : t("latency")}
+                                        </span>
+                                        <span className="text-right tabular-nums">
+                                            {mode === "throughput"
+                                                ? t("throughputValue", { value: new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(point.throughput) })
+                                                : t("latencyValue", { value: new Intl.NumberFormat(locale).format(Math.round(point.latency)) })}
+                                        </span>
+                                        <span className="text-muted-foreground">{t("requestsLabel")}</span>
+                                        <span className="text-right tabular-nums">
+                                            {formatCompact(point.requests, locale)}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        }}
+                    />
+                    <Scatter data={chartData} fill="hsl(var(--primary))" fillOpacity={0.6} />
+                </ScatterChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}

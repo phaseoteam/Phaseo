@@ -1,0 +1,316 @@
+"use client";
+
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
+
+import Link from "next/link";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { AlertCircle, CheckCircle2, Loader2, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Logo } from "@/components/Logo";
+import { updateGlobalGuardrailsSettings } from "@/app/(dashboard)/settings/guardrails/actions";
+import type { AccountPrivacyPolicy, SettingsAccountPrivacyInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { formatProviderOfferDisplayName, formatProviderOfferVariantLabel, resolveProviderLogoId } from "@/lib/providers/providerOffers";
+
+type Props = Omit<SettingsAccountPrivacyInitialData, "signedIn"> & {
+	workspaceId?: string | null;
+	workspaceLogStorage?: {
+		enabled: boolean;
+		retentionDays: number;
+		includeProviderPayloads: boolean;
+		// null when the current value couldn't be loaded; the selector stays locked.
+		contentsAccess: "members" | "admins" | null;
+	} | null;
+};
+type PrivacyModel = Props["models"][number];
+
+const compareModelsByOrganisationAndName = (a: PrivacyModel, b: PrivacyModel) =>
+	a.organisationName.localeCompare(b.organisationName, undefined, { sensitivity: "base" }) ||
+	a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
+
+function SettingRow({ title, description, checked, onCheckedChange, disabled }: { title: string; description: string; checked: boolean; onCheckedChange: (value: boolean) => void; disabled?: boolean }) {
+	return <div className="flex items-center justify-between gap-6 border-b border-border/60 py-4 last:border-b-0">
+		<div><div className="text-sm font-medium">{title}</div><p className="mt-0.5 text-sm text-muted-foreground">{description}</p></div>
+		<Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
+	</div>;
+}
+
+function DebouncedSearchInput({ value, onChange, placeholder, disabled }: { value: string; onChange: (value: string) => void; placeholder: string; disabled?: boolean }) {
+	const [draft, setDraft] = useState(value);
+	useEffect(() => setDraft(value), [value]);
+	useEffect(() => {
+		if (draft === value) return;
+		const timer = window.setTimeout(() => startTransition(() => onChange(draft)), 180);
+		return () => window.clearTimeout(timer);
+	}, [draft, onChange, value]);
+	return <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={placeholder} className="pl-9" disabled={disabled} /></div>;
+}
+
+export default function AccountPrivacySettingsClient({
+	policy: initialPolicy,
+	providers,
+	models,
+	workspaceId = null,
+	workspaceLogStorage = null,
+}: Props) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string, values?: Record<string, string | number>) =>
+		t(settingsStringKey(key) as never, values as never);
+	const tUi = useTranslations("Common.ui");
+	const invalidateSettings = useInvalidatePrivateSettings();
+	const [policy, setPolicy] = useState<AccountPrivacyPolicy>(() => {
+		const legacy = initialPolicy as AccountPrivacyPolicy & { blockedProviderIds?: string[]; blockedApiModelIds?: string[] };
+		const legacyProviders = legacy.blockedProviderIds ?? [];
+		const legacyModels = legacy.blockedApiModelIds ?? [];
+		return {
+			...initialPolicy,
+			providerRestrictionMode: initialPolicy.providerRestrictionMode ?? (legacyProviders.length ? "blocklist" : "none"),
+			providerRestrictionProviderIds: initialPolicy.providerRestrictionProviderIds ?? legacyProviders,
+			modelRestrictionMode: initialPolicy.modelRestrictionMode ?? (legacyModels.length ? "blocklist" : "none"),
+			modelRestrictionModelIds: initialPolicy.modelRestrictionModelIds ?? legacyModels,
+		};
+	});
+	const [query, setQuery] = useState("");
+	const [routeKind, setRouteKind] = useState<"providers" | "models">("providers");
+	const [availabilityKind, setAvailabilityKind] = useState<"providers" | "models">("models");
+	const [availabilityState, setAvailabilityState] = useState<"all" | "available" | "unavailable">("all");
+	const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved" | "pending" | "error">("idle");
+	const [logStorage, setLogStorage] = useState(workspaceLogStorage);
+	const lastSavedPolicy = useRef(JSON.stringify(policy));
+	const lastSavedLogStorage = useRef(JSON.stringify(workspaceLogStorage));
+	useEffect(() => {
+		if (!workspaceId) return;
+		const serialized = JSON.stringify(policy);
+		if (serialized === lastSavedPolicy.current) return;
+		setAutosaveStatus("saving");
+		let cancelled = false;
+		const timer = window.setTimeout(async () => {
+			try {
+				await updateGlobalGuardrailsSettings(policy, workspaceId);
+				void invalidateSettings();
+				if (cancelled) return;
+				lastSavedPolicy.current = serialized;
+				setAutosaveStatus("saved");
+			} catch {
+				if (cancelled) return;
+				setAutosaveStatus("error");
+				toast.error(tUi("privacyEligibility.saveWorkspacePolicyFailed"));
+			}
+		}, 650);
+		return () => { cancelled = true; window.clearTimeout(timer); };
+	}, [policy, workspaceId, invalidateSettings]);
+	useEffect(() => {
+		if (!logStorage || !workspaceId) return;
+		const serialized = JSON.stringify(logStorage);
+		if (serialized === lastSavedLogStorage.current) return;
+		setAutosaveStatus("saving");
+		let cancelled = false;
+		const timer = window.setTimeout(async () => {
+			try {
+				await updateGlobalGuardrailsSettings({
+					ioLoggingEnabled: logStorage.enabled,
+					ioLoggingRetentionDays: logStorage.retentionDays,
+					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
+					ioLoggingContentsAccess: logStorage.contentsAccess ?? undefined,
+				}, workspaceId);
+				void invalidateSettings();
+				if (cancelled) return;
+				lastSavedLogStorage.current = serialized;
+				setAutosaveStatus("saved");
+			} catch {
+				if (cancelled) return;
+				setAutosaveStatus("error");
+				toast.error(s("Could not save workspace log storage settings"));
+			}
+		}, 650);
+		return () => { cancelled = true; window.clearTimeout(timer); };
+	}, [logStorage, workspaceId, invalidateSettings]);
+	const normalized = query.trim().toLowerCase();
+	const visibleProviders = useMemo(() => providers
+		.filter((item) => `${item.name} ${item.id} ${item.offer_label ?? ""}`.toLowerCase().includes(normalized))
+		.sort((a, b) => {
+			const familyOrder = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+			if (familyOrder) return familyOrder;
+			const aVariant = formatProviderOfferVariantLabel({ offerLabel: a.offer_label, offerScope: a.offer_scope as "global" | "regional" | "specialized" | null, providerId: a.id });
+			const bVariant = formatProviderOfferVariantLabel({ offerLabel: b.offer_label, offerScope: b.offer_scope as "global" | "regional" | "specialized" | null, providerId: b.id });
+			if (aVariant === "Standard") return -1;
+			if (bVariant === "Standard") return 1;
+			return aVariant.localeCompare(bVariant, undefined, { sensitivity: "base" });
+		}), [normalized, providers]);
+	const visibleModels = useMemo(() => models
+		.filter((item) => `${item.name} ${item.organisationName}`.toLowerCase().includes(normalized))
+		.sort(compareModelsByOrganisationAndName), [models, normalized]);
+	const groupedModels = useMemo(() => Object.entries(Object.groupBy(visibleModels, (model) => model.organisationName))
+		.sort(([a], [b]) => a.localeCompare(b, undefined, { sensitivity: "base" })), [visibleModels]);
+	const toggleList = (key: "providerRestrictionProviderIds" | "modelRestrictionModelIds", id: string, checked: boolean) => setPolicy((current) => ({ ...current, [key]: checked ? [...new Set([...current[key], id])] : current[key].filter((value) => value !== id) }));
+	const set = <K extends keyof AccountPrivacyPolicy>(key: K, value: AccountPrivacyPolicy[K]) => setPolicy((current) => ({ ...current, [key]: value }));
+	const providerSelectionEnabled = policy.providerRestrictionMode !== "none";
+	const modelSelectionEnabled = policy.modelRestrictionMode !== "none";
+	const selectionLabel = (mode: "none" | "allowlist" | "blocklist", count: number) => mode === "none" ? tUi("privacyEligibility.allowAll") : mode === "allowlist" ? tUi("privacyEligibility.allowedCount", { count }) : tUi("privacyEligibility.blockedCount", { count });
+	const modeLabel = (mode: "none" | "allowlist" | "blocklist", subject: "providers" | "models") => {
+		if (subject === "models" && mode === "blocklist") {
+			return tUi("privacy.allowAllExceptSelectedModels");
+		}
+		const phrase = mode === "none"
+			? `Allow all ${subject}`
+			: mode === "allowlist"
+				? `Only allow selected ${subject}`
+				: `Allow all except selected ${subject}`;
+		return s(phrase);
+	};
+	const setOrganisation = (ids: string[], selected: boolean) => setPolicy((current) => ({ ...current, modelRestrictionModelIds: selected ? [...new Set([...current.modelRestrictionModelIds, ...ids])] : current.modelRestrictionModelIds.filter((id) => !ids.includes(id)) }));
+	const scopeLabel = tUi("privacyEligibility.workspace");
+	const routeAllowed = (candidatePolicy: AccountPrivacyPolicy, kind: "provider" | "model", id: string) => {
+		const mode = kind === "provider" ? candidatePolicy.providerRestrictionMode : candidatePolicy.modelRestrictionMode;
+		const ids = kind === "provider" ? candidatePolicy.providerRestrictionProviderIds : candidatePolicy.modelRestrictionModelIds;
+		if (mode === "none") return true;
+		const selected = ids.includes(id);
+		return mode === "allowlist" ? selected : !selected;
+	};
+	const providerAvailability = useMemo(() => new Map(providers.map((provider) => {
+		const workspaceAllowed = routeAllowed(policy, "provider", provider.id);
+		const available = workspaceAllowed;
+		const reason = !workspaceAllowed
+			? policy.providerRestrictionMode === "allowlist"
+				? tUi("privacyEligibility.outsideProviderAllowlist", { scope: scopeLabel })
+				: tUi("privacyEligibility.blockedByProviderRule", { scope: scopeLabel })
+			: null;
+		return [provider.id, { ...provider, available, reason }];
+	})), [policy, providers]);
+	const effectiveProviders = [...providerAvailability.values()];
+	const providerCoverageGroups = useMemo(() => {
+		const groups = Object.groupBy(effectiveProviders, (provider) => provider.provider_family_id || provider.id);
+		return Object.entries(groups).map(([familyId, variants]) => ({
+			familyId,
+			name: (variants ?? []).find((variant) => variant.id === familyId)?.name ?? variants?.[0]?.name ?? familyId,
+			variants: (variants ?? []).sort((a, b) => a.name.localeCompare(b.name)),
+		})).sort((a, b) => a.name.localeCompare(b.name));
+	}, [effectiveProviders]);
+	const effectiveModels = useMemo(() => models.map((model) => {
+		const workspaceAllowed = routeAllowed(policy, "model", model.id);
+		const allowedByModel = workspaceAllowed;
+		const providerRouteIds = model.providerIds ?? [];
+		const permittedProviders = providerRouteIds.filter((id) => providerAvailability.get(id)?.available !== false);
+		const hasPermittedRoute = providerRouteIds.length === 0 || permittedProviders.length > 0;
+		const available = allowedByModel && hasPermittedRoute;
+		const reason = !workspaceAllowed
+			? policy.modelRestrictionMode === "allowlist"
+				? tUi("privacyEligibility.outsideModelAllowlist", { scope: scopeLabel })
+				: tUi("privacyEligibility.blockedByModelRule", { scope: scopeLabel })
+			: !hasPermittedRoute ? tUi("privacyEligibility.noPermittedProviderRoutes") : null;
+		return { ...model, available, reason };
+	}).sort(compareModelsByOrganisationAndName), [models, policy, providerAvailability]);
+	const availabilityItems = availabilityKind === "providers" ? effectiveProviders : effectiveModels;
+	const availabilityCounts = { available: availabilityItems.filter((item) => item.available).length, unavailable: availabilityItems.filter((item) => !item.available).length };
+	const visibleAvailabilityItems = availabilityItems.filter((item) => availabilityState === "all" || (availabilityState === "available") === item.available);
+	const visibleProviderCoverageGroups = providerCoverageGroups.filter((group) => availabilityState === "all" || group.variants.some((variant) => (availabilityState === "available") === variant.available));
+	const noAvailabilityMessage = tUi("privacyEligibility.noItemsMatchFilters", {
+		type: availabilityKind === "providers"
+				? tUi("privacyEligibility.providers")
+				: tUi("privacyEligibility.models"),
+	});
+	return <div className="space-y-8">
+		<section>
+			<h2 className="text-base font-semibold">{s("Data Handling")}</h2>
+			<p className="mt-1 text-sm text-muted-foreground">{s("phraseSetTheMinimumPrivacyStandardForEveryRequestInThisWorkspace")}</p>
+			<div className="mt-3 rounded-lg border px-4">
+				<SettingRow title={s("Allow paid routes that may train")} description={s("phrasePermitPaidRoutesWhoseProviderMayUsePromptsOrCompletionsForTraining")} checked={policy.privacyEnablePaidMayTrain} onCheckedChange={(value) => set("privacyEnablePaidMayTrain", value)} />
+				<SettingRow title={s("Allow free routes that may train")} description={s("phrasePermitFreeRoutesWhoseProviderMayUsePromptsOrCompletionsForTraining")} checked={policy.privacyEnableFreeMayTrain} onCheckedChange={(value) => set("privacyEnableFreeMayTrain", value)} />
+				<SettingRow title={s("Allow prompt logging")} description={s("phrasePermitProvidersThatMayRetainPromptsButDoNotUseThemForTraining")} checked={policy.privacyEnableInputOutputLogging} onCheckedChange={(value) => set("privacyEnableInputOutputLogging", value)} />
+				<SettingRow title={s("Require zero data retention")} description={s("phraseOnlyRouteRequestsWhereTheSelectedCapabilityIsEligibleForZDR")} checked={policy.privacyZdrOnly} onCheckedChange={(value) => set("privacyZdrOnly", value)} />
+			</div>
+		</section>
+		{logStorage ? <section className="border-t pt-8">
+			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+				<div>
+					<h2 className="text-base font-semibold">{s("Gateway Log Storage")}</h2>
+					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{s("phraseControlPrivateRequestAndResponsePayloadStorageForThisWorkspace")}</p>
+				</div>
+				<div className="min-w-0 rounded-lg border px-4">
+					<SettingRow title={s("Store request and response payloads")} description={policy.privacyZdrOnly ? s("phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn") : s("phraseKeepPrivatePayloadCopiesForRequestDetailsAndReplay")} checked={logStorage.enabled && !policy.privacyZdrOnly} disabled={policy.privacyZdrOnly} onCheckedChange={(enabled) => setLogStorage((current) => current ? { ...current, enabled } : current)} />
+					{logStorage.enabled && !policy.privacyZdrOnly ? <>
+						<div className="flex flex-col gap-3 border-b border-border/60 py-4 sm:flex-row sm:items-center sm:justify-between">
+							<div><div className="text-sm font-medium">{s("Retention")}</div><p className="mt-0.5 text-sm text-muted-foreground">{s("phraseChooseHowLongPrivatePayloadCopiesRemainAvailable")}</p></div>
+							<Select value={String(logStorage.retentionDays)} onValueChange={(value) => setLogStorage((current) => current ? { ...current, retentionDays: Number(value) } : current)}>
+								<SelectTrigger className="w-full rounded-md sm:w-40"><SelectValue /></SelectTrigger>
+								<SelectContent><SelectItem value="90">{tUi("privacy.retention90Days")}</SelectItem><SelectItem value="180">{tUi("privacy.retention180Days")}</SelectItem><SelectItem value="365">{tUi("privacy.retention365Days")}</SelectItem></SelectContent>
+							</Select>
+						</div>
+						<SettingRow title={s("Include provider payloads")} description={s("phraseAlsoRetainTheTransformedUpstreamRequestAndProviderResponse")} checked={logStorage.includeProviderPayloads} onCheckedChange={(includeProviderPayloads) => setLogStorage((current) => current ? { ...current, includeProviderPayloads } : current)} />
+					</> : null}
+					<div className="flex flex-col gap-3 border-b border-border/60 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+						<div><div className="text-sm font-medium">{tUi("privacy.contentsAccessTitle")}</div><p className="mt-0.5 text-sm text-muted-foreground">{tUi("privacy.contentsAccessDescription")}</p></div>
+						<Select value={logStorage.contentsAccess ?? undefined} disabled={logStorage.contentsAccess === null} onValueChange={(value) => setLogStorage((current) => current ? { ...current, contentsAccess: value === "admins" ? "admins" : "members" } : current)}>
+							<SelectTrigger className="w-full rounded-md sm:w-48"><SelectValue /></SelectTrigger>
+							<SelectContent><SelectItem value="members">{tUi("privacy.contentsAccessMembers")}</SelectItem><SelectItem value="admins">{tUi("privacy.contentsAccessAdmins")}</SelectItem></SelectContent>
+						</Select>
+					</div>
+				</div>
+			</div>
+		</section> : null}
+		<section className="border-t pt-8">
+			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+				<div>
+					<h2 className="text-base font-semibold">{s("Route Access")}</h2>
+					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{s("phraseControlWhichProvidersAndModelsThisWorkspaceMayUseScopedGuardrailsCanRestrictIndividualMembersAndAPIKeysFurther")}</p>
+				</div>
+				<div className="min-w-0">
+			<div className="grid gap-4 sm:grid-cols-2">
+				<div className="space-y-2"><label className="text-sm font-medium">{s("Provider mode")}</label><Select value={policy.providerRestrictionMode} onValueChange={(value) => set("providerRestrictionMode", value as AccountPrivacyPolicy["providerRestrictionMode"])}><SelectTrigger className="w-full"><SelectValue>{modeLabel(policy.providerRestrictionMode, "providers")}</SelectValue></SelectTrigger><SelectContent><SelectItem value="none">{s("Allow all providers")}</SelectItem><SelectItem value="allowlist">{s("Only allow selected providers")}</SelectItem><SelectItem value="blocklist">{s("Allow all except selected providers")}</SelectItem></SelectContent></Select></div>
+				<div className="space-y-2"><label className="text-sm font-medium">{s("Model mode")}</label><Select value={policy.modelRestrictionMode} onValueChange={(value) => set("modelRestrictionMode", value as AccountPrivacyPolicy["modelRestrictionMode"])}><SelectTrigger className="w-full"><SelectValue>{modeLabel(policy.modelRestrictionMode, "models")}</SelectValue></SelectTrigger><SelectContent><SelectItem value="none">{s("Allow all models")}</SelectItem><SelectItem value="allowlist">{s("Only allow selected models")}</SelectItem><SelectItem value="blocklist">{tUi("privacy.allowAllExceptSelectedModels")}</SelectItem></SelectContent></Select></div>
+			</div>
+			<div className="mt-5">
+				<div role="tablist" aria-label={tUi("privacyEligibility.routeAccessType")} className="grid grid-cols-2 border-b">
+					<button type="button" role="tab" aria-selected={routeKind === "providers"} onClick={() => setRouteKind("providers")} className={`relative flex min-h-12 flex-col items-center justify-center gap-0 px-3 text-sm transition-colors sm:flex-row sm:gap-2 ${routeKind === "providers" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}><span className="font-medium">{tUi("privacyEligibility.providers")}</span><span className="text-xs opacity-70">{selectionLabel(policy.providerRestrictionMode, policy.providerRestrictionProviderIds.length)}</span>{routeKind === "providers" ? <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-sm bg-primary" /> : null}</button>
+					<button type="button" role="tab" aria-selected={routeKind === "models"} onClick={() => setRouteKind("models")} className={`relative flex min-h-12 flex-col items-center justify-center gap-0 px-3 text-sm transition-colors sm:flex-row sm:gap-2 ${routeKind === "models" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}><span className="font-medium">{tUi("privacyEligibility.models")}</span><span className="text-xs opacity-70">{selectionLabel(policy.modelRestrictionMode, policy.modelRestrictionModelIds.length)}</span>{routeKind === "models" ? <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-sm bg-primary" /> : null}</button>
+				</div>
+				<div className="mt-3"><DebouncedSearchInput value={query} onChange={setQuery} placeholder={routeKind === "providers" ? s("phraseSearchProviders") : tUi("accessibility.searchModels")} disabled={routeKind === "providers" ? !providerSelectionEnabled : !modelSelectionEnabled} /></div>
+				<ScrollArea className="mt-2 h-80 rounded-lg border bg-background"><div className="p-2">
+					{routeKind === "providers" ? providerSelectionEnabled ? <>{visibleProviders.map((provider) => { const familyId = provider.provider_family_id || provider.id; const displayName = formatProviderOfferDisplayName({ providerId: provider.id, providerName: provider.name, offerLabel: provider.offer_label, offerScope: provider.offer_scope as "global" | "regional" | "specialized" | null }); return <label key={provider.id} className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/50"><Checkbox checked={policy.providerRestrictionProviderIds.includes(provider.id)} onCheckedChange={(value) => toggleList("providerRestrictionProviderIds", provider.id, value === true)} /><Logo id={resolveProviderLogoId({ providerId: familyId, providerFamilyId: familyId })} alt="" className="size-4 object-contain" width={16} height={16} /><Link href={`/api-providers/${encodeURIComponent(provider.id)}`} onClick={(event) => event.stopPropagation()} className="min-w-0 flex-1 truncate text-sm underline-offset-4 hover:underline">{displayName}</Link></label>; })}</> : <p className="px-2 py-8 text-center text-sm text-muted-foreground">{tUi("privacyEligibility.allProvidersAllowed")}</p> : modelSelectionEnabled ? <>{groupedModels.map(([organisation, items]) => { const orgIds = (items ?? []).map((model) => model.id); const allSelected = orgIds.every((id) => policy.modelRestrictionModelIds.includes(id)); return <div key={organisation} className="mb-4"><div className="mb-1 flex items-center justify-between gap-3 px-2"><div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"><Logo id={items?.[0]?.organisationId ?? ""} alt="" className="size-4 object-contain" width={16} height={16} />{organisation}</div><Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setOrganisation(orgIds, !allSelected)}>{allSelected ? tUi("privacyEligibility.clearAll") : tUi("privacyEligibility.selectAll")}</Button></div>{(items ?? []).map((model) => <label key={model.id} className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-muted/50"><Checkbox checked={policy.modelRestrictionModelIds.includes(model.id)} onCheckedChange={(value) => toggleList("modelRestrictionModelIds", model.id, value === true)} /><Link href={`/models/${model.id}`} onClick={(event) => event.stopPropagation()} className="text-sm underline-offset-4 hover:underline">{model.name}</Link></label>)}</div>; })}</> : <p className="px-2 py-8 text-center text-sm text-muted-foreground">{tUi("privacyEligibility.allModelsAllowed")}</p>}
+				</div></ScrollArea>
+			</div>
+				</div>
+			</div>
+		</section>
+		<section className="border-t pt-8">
+			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+				<div>
+					<h2 className="text-base font-semibold">{tUi("privacyEligibility.title")}</h2>
+					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{tUi("privacyEligibility.workspaceDescription")}</p>
+				</div>
+				<div className="min-w-0 space-y-4">
+				<div className="border-b pb-4">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+						<div><div className="text-sm font-medium text-muted-foreground">{tUi("privacyEligibility.effectiveAvailability")}</div><div className="mt-1 text-2xl font-semibold tracking-tight">{tUi("privacyEligibility.routableSummary", { available: availabilityCounts.available, total: availabilityItems.length })}</div></div>
+						<div className="text-xs text-muted-foreground sm:text-right"><div>{tUi("privacyEligibility.passedScopeRules", { count: availabilityCounts.available, scope: scopeLabel })}</div><div>{tUi("privacyEligibility.excludedCount", { count: availabilityCounts.unavailable })}</div></div>
+					</div>
+				</div>
+				<div className="space-y-2">
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div className="flex items-center gap-3"><div className="text-sm font-medium">{availabilityKind === "models" ? tUi("privacyEligibility.modelCoverage") : tUi("privacyEligibility.providerCoverage")}</div><div className="inline-flex items-center rounded-lg border bg-background p-1"><Button type="button" variant="ghost" size="sm" className={`h-8 rounded-md px-3 ${availabilityKind === "providers" ? "bg-muted text-foreground" : "text-muted-foreground"}`} onClick={() => setAvailabilityKind("providers")}>{tUi("privacyEligibility.providers")}</Button><Button type="button" variant="ghost" size="sm" className={`h-8 rounded-md px-3 ${availabilityKind === "models" ? "bg-muted text-foreground" : "text-muted-foreground"}`} onClick={() => setAvailabilityKind("models")}>{tUi("privacyEligibility.models")}</Button></div></div>
+						<div className="inline-flex items-center rounded-lg border bg-background p-1"><Button type="button" variant="ghost" size="sm" className={`h-8 rounded-md px-3 ${availabilityState === "all" ? "bg-muted text-foreground" : "text-muted-foreground"}`} onClick={() => setAvailabilityState("all")}>{tUi("privacyEligibility.allCount", { count: availabilityItems.length })}</Button><Button type="button" variant="ghost" size="sm" className={`h-8 rounded-md px-3 ${availabilityState === "available" ? "bg-muted text-foreground" : "text-muted-foreground"}`} onClick={() => setAvailabilityState("available")}>{tUi("privacyEligibility.availableCount", { count: availabilityCounts.available })}</Button><Button type="button" variant="ghost" size="sm" className={`h-8 rounded-md px-3 ${availabilityState === "unavailable" ? "bg-muted text-foreground" : "text-muted-foreground"}`} onClick={() => setAvailabilityState("unavailable")}>{tUi("privacyEligibility.unavailableCount", { count: availabilityCounts.unavailable })}</Button></div>
+					</div>
+					{availabilityKind === "providers" && visibleProviderCoverageGroups.length ? <ScrollArea className="h-[36rem] rounded-lg border bg-background"><ul className="divide-y">{visibleProviderCoverageGroups.map((group) => <li key={group.familyId} className="flex min-h-10 items-center justify-between gap-2 px-3 py-1.5"><div className="flex min-w-0 items-center gap-2"><Logo id={resolveProviderLogoId({ providerId: group.familyId, providerFamilyId: group.familyId })} alt="" width={16} height={16} className="size-4 shrink-0 rounded-sm object-contain" /><Link href={`/api-providers/${encodeURIComponent(group.familyId)}`} className="truncate text-sm font-medium underline-offset-4 hover:underline">{group.name}</Link></div><div className="flex min-w-0 flex-wrap justify-end gap-1">{group.variants.map((variant) => <Tooltip key={variant.id}><TooltipTrigger asChild><span className={`inline-flex h-6 items-center rounded-md border px-2 text-xs ${variant.available ? "border-border bg-muted/40 text-foreground" : "border-border text-muted-foreground opacity-60"}`}>{formatProviderOfferVariantLabel({ offerLabel: variant.offer_label, offerScope: variant.offer_scope as "global" | "regional" | "specialized" | null, providerId: variant.id })}</span></TooltipTrigger><TooltipContent side="top"><div className="font-medium">{variant.name}</div><div>{variant.available ? tUi("privacyEligibility.available") : variant.reason}</div></TooltipContent></Tooltip>)}</div></li>)}</ul></ScrollArea> : availabilityKind === "models" && visibleAvailabilityItems.length ? <ScrollArea className="h-[36rem] rounded-lg border bg-background"><ul className="divide-y">{visibleAvailabilityItems.map((item) => {
+						const isModel = availabilityKind === "models" && "providerIds" in item;
+						const providerIds = isModel ? item.providerIds ?? [] : [];
+						const accessibleCount = providerIds.filter((id) => providerAvailability.get(id)?.available !== false).length;
+						return <li key={item.id} className="flex min-h-10 items-center justify-between gap-2 px-3 py-1.5"><div className="flex min-w-0 items-center gap-2"><Logo id={isModel ? item.organisationId ?? "" : item.id} alt="" width={16} height={16} className="size-4 shrink-0 rounded-sm object-contain" /><div className="min-w-0"><Link href={`/models/${item.id}`} className="block truncate text-sm font-medium underline-offset-4 hover:underline">{item.name}</Link>{item.reason ? <div className="truncate text-xs text-muted-foreground">{item.reason}</div> : null}</div></div><div className="flex shrink-0 items-center gap-2">{isModel ? <div className="flex items-center gap-1">{providerIds.map((providerId) => { const provider = providerAvailability.get(providerId); return <Tooltip key={`${item.id}-${providerId}`}><TooltipTrigger asChild><button type="button" aria-label={tUi("privacyEligibility.providerAvailability", { provider: provider?.name ?? providerId, status: provider?.available === false ? provider.reason ?? tUi("privacyEligibility.unavailable") : tUi("privacyEligibility.available") })} className="inline-flex items-center justify-center rounded-md p-0.5 hover:bg-muted/60"><Logo id={resolveProviderLogoId({ providerId: provider?.provider_family_id || providerId, providerFamilyId: provider?.provider_family_id })} alt="" width={16} height={16} className={`size-4 rounded-sm ${provider?.available === false ? "grayscale opacity-40" : ""}`} /></button></TooltipTrigger><TooltipContent side="top" sideOffset={6}><div className="space-y-1"><div className="font-medium">{provider?.name ?? providerId}</div><div>{provider?.available === false ? provider.reason ?? tUi("privacyEligibility.unavailable") : tUi("privacyEligibility.available")}</div></div></TooltipContent></Tooltip>; })}</div> : null}<Badge className="h-6 rounded-md px-2" variant={isModel ? accessibleCount > 0 ? "secondary" : "outline" : item.available ? "secondary" : "outline"}>{isModel ? `${accessibleCount}/${providerIds.length}` : item.available ? tUi("privacyEligibility.available") : tUi("privacyEligibility.unavailable")}</Badge></div></li>;
+					})}</ul></ScrollArea> : <div className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">{noAvailabilityMessage}</div>}
+				</div>
+				</div>
+			</div>
+		</section>
+		<div className="flex min-h-8 justify-end text-sm text-muted-foreground" role="status" aria-live="polite">
+			{autosaveStatus === "saving" ? <span className="inline-flex items-center gap-2"><Loader2 className="size-4 animate-spin" />{tUi("privacyEligibility.savingChanges")}</span> : autosaveStatus === "saved" ? <span className="inline-flex items-center gap-2"><CheckCircle2 className="size-4" />{tUi("privacyEligibility.changesSaved")}</span> : autosaveStatus === "pending" ? <span className="inline-flex items-center gap-2 text-amber-500"><AlertCircle className="size-4" />{tUi("privacyEligibility.cacheUpdatePending")}</span> : autosaveStatus === "error" ? <span className="inline-flex items-center gap-2 text-destructive"><AlertCircle className="size-4" />{tUi("privacyEligibility.saveFailed")}</span> : <span>{tUi("privacyEligibility.saveAutomatically")}</span>}
+		</div>
+	</div>;
+}

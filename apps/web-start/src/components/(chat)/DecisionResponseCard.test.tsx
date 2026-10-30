@@ -1,0 +1,84 @@
+import type { ReactNode } from "react";
+import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
+import { NextIntlClientProvider } from "next-intl";
+import { englishSettingsUiMessages } from "@/i18n/default-messages";
+import { nestDottedMessageKeys } from "@/i18n/message-overlays";
+import { DecisionResponseCard } from "./DecisionResponseCard";
+
+function renderToStaticMarkup(children: ReactNode) {
+	return renderMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }}>{children}</NextIntlClientProvider>);
+}
+
+describe("DecisionResponseCard", () => {
+	it("renders canonical ordered answers, repeated names and typed boolean choices", () => {
+		const html = renderToStaticMarkup(<DecisionResponseCard result={{ answers: [
+			{ type: "predicate", name: null, probability: 0.9 },
+			{ type: "choice", name: "decision", choice: false, confidence: 0.7, probabilities: [
+				{ value: false, probability: 0.9 }, { value: "false", probability: 0.1 },
+			] },
+			{ type: "refusal", name: "decision" },
+		] }} />);
+		expect(html).toContain("90%");
+		expect(html).toContain("False");
+		expect(html).toContain("&quot;False&quot;");
+		expect(html).toContain("No decision output returned.");
+	});
+	it("renders a refused question without a score or probability", () => {
+		const html = renderToStaticMarkup(
+			<DecisionResponseCard result={{ answers: { decision: { type: "refusal" } } }} />,
+		);
+		expect(html).toContain("No decision output returned.");
+		expect(html).not.toMatch(/>\d+(?:\.\d+)?%</);
+		expect(html).not.toContain("Weighted average");
+	});
+
+	it("renders a Noul answer once without a repeated summary and strip", () => {
+		const html = renderToStaticMarkup(
+			<DecisionResponseCard
+				result={{
+					answers: {
+						decision: { type: "noul", noul: 0.71 },
+					},
+				}}
+			/>,
+		);
+
+		expect(html).toContain("Yes");
+		expect(html).toContain("71%");
+		expect(html).toContain("No");
+		expect(html).toContain("29%");
+		expect(html).not.toContain("yes probability");
+		expect(html).not.toContain('role="img"');
+	});
+
+	it("uses score names and explains the weighted average", () => {
+		const html = renderToStaticMarkup(
+			<DecisionResponseCard
+				result={{
+					answers: {
+						decision: {
+							type: "score",
+							score: 0.21,
+							confidence: 0.79,
+							legend: {
+								"0": "0 = No evidence",
+								"1": "1 = Early signal",
+								"2": "2 = Repeated evidence",
+								"3": "3 = Strong evidence",
+							},
+							probabilities: { "0": 0.9, "1": 0.04, "2": 0.02, "3": 0.04 },
+						},
+					},
+				}}
+			/>,
+		);
+
+		expect(html).toContain("No evidence");
+		expect(html).toContain("Early signal");
+		expect(html).toContain("Repeated evidence");
+		expect(html).toContain("Strong evidence");
+		expect(html).toContain("Weighted average: 0.21 of 3");
+		expect(html).not.toContain("0 = No evidence");
+		expect(html).not.toContain("/ 3");
+	});
+});

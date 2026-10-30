@@ -1,0 +1,117 @@
+---
+title: "Por si te lo perdiste: Lo que lanzamos en mayo de 2026"
+shortTitle: "Por si te lo perdiste: mayo de 2026"
+description: "En mayo avanzamos en vídeo, trabajos asíncronos, activación de proveedores y observabilidad para producción."
+publishedAt: 2026-05-31
+author: Phaseo Team
+category: data
+pinned: true
+coverImage: /blog-images/recap-may-2026.png
+tags:
+  - Resumen mensual
+  - Resumen mensual
+  - Producto
+  - Modelos
+draft: false
+---
+
+Mayo ha sido uno de los meses con más lanzamientos de Phaseo hasta ahora. El producto ha ido más allá de ser un directorio de modelos y se ha adentrado en los flujos de trabajo de la pasarela: hemos avanzado en vídeo, trabajos asíncronos, observabilidad, activación de proveedores y SDK.
+
+Este resumen abarca los cambios publicados entre el **1 y el 31 de mayo de 2026**, según el historial de lanzamientos, el historial de confirmaciones y los datos del catálogo de ese mes.
+
+## Novedades
+
+### Los trabajos de vídeo y asíncronos ganaron funciones
+
+En mayo llegó una importante actualización de la pasarela que abarca el lanzamiento de vídeo, la visibilidad del uso, el diagnóstico de solicitudes y el ciclo de vida de los trabajos asíncronos por lotes y de vídeo.
+
+Incluyó la comprobación de estados, la cancelación, la consulta y descarga de contenido, y datos de uso más claros. En pocas palabras: ahora es más fácil iniciar, seguir, inspeccionar y depurar los trabajos de larga duración.
+
+Fue un cambio importante para el producto. Los trabajos de vídeo y por lotes no se comportan como las solicitudes sencillas de chat: tardan más, pueden fallar de distintas formas y requieren mejores herramientas para seguir su progreso. En mayo, esos flujos empezaron a sentirse como una parte central de la pasarela.
+
+### La observabilidad se acercó al uso real en producción
+
+En mayo, el diagnóstico de solicitudes se volvió más útil. La pasarela añadió detalles más claros sobre cada solicitud, avisos tempranos de errores, estados de activación de proveedores y mejores formas de actualizar los datos de uso.
+
+Para los equipos que ejecutan cargas de trabajo reales, esto reduce las conjeturas. Si una solicitud falla, se enruta de una forma inesperada o utiliza un proveedor distinto al esperado, el producto debería ayudar a explicar qué ha ocurrido.
+
+Esa es la diferencia entre una pasarela de demostración y una que un equipo puede operar de verdad. La observabilidad no consiste solo en mostrar gráficos: también debe aportar el contexto necesario para corregir la siguiente solicitud.
+
+### La activación y los precios de los proveedores quedaron más claros
+
+Ahora es más fácil entender la disponibilidad de los proveedores en las páginas del catálogo y en los datos internos. Los estados de activación empezaron a mostrarse de forma más coherente, mejoraron los resúmenes de precios y las tarjetas emergentes, y se corrigió el precio por minuto en tiempo real.
+
+En mayo también se actualizaron los datos de proveedores como Google, Anthropic, Baseten, Venice, Novita, CrofAI y AWS, entre otros. Algunas actualizaciones fueron pequeñas por separado, pero en conjunto hicieron que el catálogo estuviera más actualizado y fuera más fiable.
+
+Esto resulta especialmente útil cuando un mismo modelo está disponible a través de varios proveedores. Los usuarios necesitan saber no solo que existe un modelo, sino también dónde se puede ejecutar, cuánto cuesta y si la ruta está activa.
+
+### Se lanzó el Agent SDK para TypeScript
+
+En mayo presentamos el primer trabajo público del Agent SDK de TypeScript para Phaseo. El lanzamiento añadió código y ejemplos del SDK, documentación, compatibilidad con las herramientas de desarrollo y utilidades de migración para el contrato de la pasarela.
+
+El objetivo era facilitar la creación de flujos de agentes de larga duración sin obligar a cada equipo a combinar desde cero su propio ciclo de ejecución, herramientas, telemetría y reintentos.
+
+Los primeros ejemplos se centraron en tareas prácticas: revisión de código, investigación, clasificación de solicitudes de soporte y herramientas locales paralelas. Así, los desarrolladores tuvieron un punto de partida más claro que una referencia de API sin más.
+
+### Se automatizó más el descubrimiento de modelos
+
+Añadimos la sincronización de incidencias de GitHub para los cambios en los modelos de los proveedores, notificaciones controladas y una gestión más clara del descubrimiento de modelos. También actualizamos los datos de benchmarks y mejoramos el orden por fecha y el comportamiento de las familias de modelos.
+
+Este trabajo ayuda a que el catálogo siga el ritmo de los cambios rápidos de los proveedores sin convertir cada actualización en una búsqueda manual. También facilita distinguir los cambios reales de los proveedores del ruido generado por el descubrimiento automático.
+
+El catálogo solo es útil si se mantiene al día. Mayo sirvió para reducir el trabajo manual necesario para conseguirlo.
+
+## También se lanzó
+
+- Se aplazó la carga de la búsqueda de la cabecera para que la página principal pudiera cargarse antes que el índice de búsqueda.
+- Se corrigieron las estadísticas mensuales de tokens de la página de inicio.
+- Se arreglaron los reintentos de contenido multimedia y la gestión de duplicados.
+- Se corrigió el orden de clasificación de los benchmarks.
+- Se añadió validación de URL a los enlaces sociales de las organizaciones.
+- Se reforzaron las reglas de créditos para modelos gratuitos y las políticas de los espacios de trabajo.
+- Llegaron actualizaciones de dependencias de Next.js, Mintlify, Hono, Zod, PostHog y las herramientas de CI.
+
+## Modelos destacados
+
+En mayo llegó una gran variedad de modelos. OpenAI añadió `chat-latest` y varios modelos en tiempo real. Google impulsó Gemini 3.1 Flash-Lite y Gemini 3.5 Flash, y más adelante en el mes añadió lanzamientos de modelos de imagen. xAI añadió Grok Imagine Image Quality, Grok Build 0.1 y una entrada de vista previa de Grok Imagine Video 1.5.
+
+El mes también incluyó Claude Opus 4.8, Command A+, variantes de Qwen 3.7 Max, Cursor Composer 2.5, Step 3.7 Flash, CrofAI Greg RP y NVIDIA Cosmos3 Super Reasoner.
+
+Consulta aquí los datos de los lanzamientos más recientes:
+
+- [Explorar las novedades recientes](/updates)
+
+## Resumen de actividad
+
+El historial local de Git muestra **77 confirmaciones** durante mayo. El mes se centró en vídeo y trabajos asíncronos, activación de proveedores, observabilidad, el lanzamiento del SDK, correcciones de precios, automatización del descubrimiento de modelos y una serie constante de lanzamientos en el catálogo.
+
+## Modelos lanzados en mayo de 2026
+
+El catálogo incluye estos modelos con fechas de lanzamiento de mayo de 2026:
+
+- 5 de mayo: chat-latest (`openai/chat-latest`)
+- 6 de mayo: Grok Imagine Image Quality (`x-ai/grok-imagine-image-quality`)
+- 7 de mayo: Gemini 3.1 Flash-Lite (`google/gemini-3.1-flash-lite`)
+- 7 de mayo: GPT Realtime 2 (`openai/gpt-realtime-2`)
+- 7 de mayo: GPT Realtime Translate (`openai/gpt-realtime-translate`)
+- 7 de mayo: GPT Realtime Whisper (`openai/gpt-realtime-whisper`)
+- 15 de mayo: Grok Build 0.1 (`x-ai/grok-build-0.1`)
+- 18 de mayo: Composer 2.5 (`cursor/composer-2.5`)
+- 19 de mayo: Gemini 3.5 Flash (`google/gemini-3.5-flash`)
+- 19 de mayo: Qwen 3.5 LiveTranslate Flash Realtime (2026-05-19) (`qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19`)
+- 20 de mayo: Command A+ (`cohere/command-a-plus`)
+- 21 de mayo: Qwen 3.7 Max (`qwen/qwen3.7-max`)
+- 25 de mayo: Qwen 3.7 Max (2026-05-17) (`qwen/qwen3.7-max-2026-05-17`)
+- 25 de mayo: Qwen 3.7 Max Preview (`qwen/qwen3.7-max-preview`)
+- 26 de mayo: Qwen 3.7 Plus (2026-05-26) (`qwen/qwen3.7-plus-2026-05-26`)
+- 28 de mayo: Claude Opus 4.8 (`anthropic/claude-opus-4.8`)
+- 28 de mayo: Greg RP (`crofai/greg-rp`)
+- 28 de mayo: Gemini 3.1 Flash Image (Nano Banana 2) (`google/gemini-3.1-flash-image`)
+- 28 de mayo: Gemini 3 Pro Image (Nano Banana Pro) (`google/gemini-3-pro-image`)
+- 29 de mayo: Step 3.7 Flash (`stepfun/step-3.7-flash`)
+- 30 de mayo: Grok Imagine Video 1.5 Preview (`x-ai/grok-imagine-video-1.5-preview`)
+- 31 de mayo: Cosmos3 Super Reasoner (`nvidia/cosmos3-super-reasoner`)
+
+## Próximos pasos
+
+En mayo dejamos preparado el terreno para que en junio hubiera más automatización del catálogo, más cobertura de proveedores, mejores páginas de monitorización y más avances en incorporación y flujos de trabajo de desarrollo local.

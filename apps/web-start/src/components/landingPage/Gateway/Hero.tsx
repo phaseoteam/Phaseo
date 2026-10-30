@@ -1,0 +1,295 @@
+"use client";
+
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
+import { localizedGatewayMetricWindow } from "@/components/landingPage/gatewayMetricWindow";
+import {
+	BarChart3,
+	Boxes,
+	Network,
+	ArrowRight,
+	Globe2,
+	Cpu,
+	Route,
+	ShieldCheck,
+	Zap,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { GatewayHeroVariant } from "@/lib/statsig/shared";
+import { WordRotate } from "@/components/ui/word-rotate";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+
+const SALES_HREF = "/sign-up";
+const DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";
+
+type GatewayHeroStats = {
+	tokens24h: number;
+	supportedModels: number | null;
+	supportedProviders: number | null;
+};
+
+type HeroStatItem = {
+	label: string;
+	value: React.ReactNode;
+	icon: React.ElementType;
+	accent: string;
+};
+
+function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" }) {
+	const t = useTranslations("Site.gatewayHero");
+	return (
+		<div className="mt-10 flex flex-wrap items-center gap-4">
+			<Button
+				asChild
+				size="lg"
+				className={
+					ctaVariant === "experimental"
+						? "h-12 gap-2 bg-emerald-600 px-6 text-base font-medium text-white hover:bg-emerald-500"
+						: "h-12 gap-2 bg-zinc-900 px-6 text-base font-medium text-white hover:bg-zinc-800"
+				}
+			>
+				<Link href={SALES_HREF}>
+					{t("startFree")}
+					<ArrowRight className="h-4 w-4" />
+				</Link>
+			</Button>
+			<Button
+				asChild
+				size="lg"
+				variant="outline"
+				className="h-12 gap-2 border-zinc-300 px-6 text-base font-medium dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+			>
+				<Link href={DOCS_HREF}>
+					<Globe2 className="h-4 w-4" />
+					{t("viewDocumentation")}
+				</Link>
+			</Button>
+		</div>
+	);
+}
+
+function ClassicHeroIntro({
+	heroStats,
+}: {
+	heroStats: HeroStatItem[];
+}) {
+	const t = useTranslations("Site.gatewayHero");
+	const [tokensStat, modelsStat, providersStat] = heroStats;
+
+	return (
+		<div className="space-y-10">
+			<div className="mx-auto max-w-4xl text-center">
+				<h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl lg:text-6xl">
+					{t("classicTitle")}{" "}
+					<span className="relative text-sky-700 dark:text-sky-300">
+						<WordRotate
+							words={t.raw("classicRotatingWords") as string[]}
+							duration={4000}
+						/>
+					</span>
+				</h1>
+
+				<p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+					{t("classicDescription")}
+				</p>
+
+				<div className="flex justify-center">
+					<HeroActions ctaVariant="classic" />
+				</div>
+			</div>
+			<div className="mx-auto grid max-w-3xl gap-8 border-t border-zinc-200/80 pt-6 text-center text-sm dark:border-zinc-800 md:grid-cols-3">
+				<div className="space-y-1">
+					<p className="text-zinc-500 dark:text-zinc-400">
+						{tokensStat?.label ?? t("monthlyTokens")}
+					</p>
+					<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
+						{tokensStat?.value ?? "--"}
+					</p>
+				</div>
+				<div className="space-y-1">
+					<p className="text-zinc-500 dark:text-zinc-400">
+						{modelsStat?.label ?? t("models")}
+					</p>
+					<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
+						{modelsStat?.value ?? "--"}
+					</p>
+				</div>
+				<div className="space-y-1">
+					<p className="text-zinc-500 dark:text-zinc-400">
+						{providersStat?.label ?? t("providers")}
+					</p>
+					<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
+						{providersStat?.value ?? "--"}
+					</p>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
+	const t = useTranslations("Site.gatewayHero");
+	return (
+		<div className="rounded-[2.25rem] border border-zinc-200/70 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950 sm:p-10">
+			<div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+				<div>
+					<Badge className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs uppercase tracking-[0.22em] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+						{t("experimentalBadge")}
+					</Badge>
+
+					<h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl lg:text-6xl">
+						{t("experimentalTitle")}{" "}
+						<span className="relative whitespace-nowrap text-emerald-700 dark:text-emerald-300">
+							<WordRotate
+								words={t.raw("experimentalRotatingWords") as string[]}
+								duration={4200}
+							/>
+						</span>
+					</h1>
+
+					<p className="mt-5 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+					{t("experimentalDescription")}
+					</p>
+
+					<HeroActions ctaVariant="experimental" />
+
+					<div className="mt-8 grid gap-3 sm:grid-cols-3">
+						{heroStats.map((s) => (
+							<div
+								key={`chip-${s.label}`}
+								className="rounded-2xl border border-zinc-200/80 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-900/50"
+							>
+								<p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+									{s.label}
+								</p>
+								<p className="mt-1 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+									{s.value}
+								</p>
+							</div>
+						))}
+					</div>
+				</div>
+
+				<div className="rounded-3xl border border-zinc-200/80 bg-zinc-950 p-6 text-zinc-100 dark:border-zinc-800">
+					<p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
+						{t("routingCockpit")}
+					</p>
+					<div className="mt-5 space-y-4">
+						<div className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
+							<div className="mt-0.5 rounded-xl bg-emerald-500/20 p-2">
+								<Route className="h-4 w-4 text-emerald-300" />
+							</div>
+							<div>
+								<p className="text-sm font-semibold">{t("policyDrivenRouting")}</p>
+								<p className="mt-1 text-xs leading-relaxed text-zinc-400">
+									{t("policyDrivenRoutingDescription")}
+								</p>
+							</div>
+						</div>
+						<div className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
+							<div className="mt-0.5 rounded-xl bg-sky-500/20 p-2">
+								<Cpu className="h-4 w-4 text-sky-300" />
+							</div>
+							<div>
+								<p className="text-sm font-semibold">{t("modelPortability")}</p>
+								<p className="mt-1 text-xs leading-relaxed text-zinc-400">
+									{t("modelPortabilityDescription")}
+								</p>
+							</div>
+						</div>
+						<div className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
+							<div className="mt-0.5 rounded-xl bg-amber-500/20 p-2">
+								<ShieldCheck className="h-4 w-4 text-amber-300" />
+							</div>
+							<div>
+								<p className="text-sm font-semibold">{t("productionGuardrails")}</p>
+								<p className="mt-1 text-xs leading-relaxed text-zinc-400">
+									{t("productionGuardrailsDescription")}
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+						<div className="mb-2 flex items-center justify-between text-xs font-medium text-zinc-400">
+							<span>{t("liveRequestEfficiency")}</span>
+							<span className="inline-flex items-center gap-1 text-emerald-300">
+								<Zap className="h-3.5 w-3.5" />
+								{t("stable")}
+							</span>
+						</div>
+						<div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+							<div className="h-full w-[82%] rounded-full bg-gradient-to-r from-emerald-400 to-sky-400" />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+export function Hero({
+	stats,
+	tokensWindowHours = 24,
+	heroVariant = "classic",
+}: {
+	stats?: GatewayHeroStats;
+	tokensWindowHours?: number;
+	heroVariant?: GatewayHeroVariant;
+}) {
+	const t = useTranslations("Site.gatewayHero");
+	const tLanding = useTranslations("SettingsUI.landingGaps");
+	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const roundTo = (value: number | null, step: number) => {
+		if (value == null) return null;
+		return Math.max(0, Math.round(value / step) * step);
+	};
+	const formatWithPlus = (value: number | null, fallback = "--") => {
+		if (value == null) return fallback;
+		return <>{format.number(value)}+</>;
+	};
+	const formatTokens = (value: number | null, fallback = "0+") => {
+		if (value == null) return fallback;
+		return `${formatRoundedCount(value, locale)}+`;
+	};
+	const tokensWindowLabel =
+		tokensWindowHours >= 24 * 28
+			? t("monthlyTokens")
+			: tLanding("tokensWindow", { window: localizedGatewayMetricWindow(tokensWindowHours, locale, tLanding("selectedWindow")) });
+
+	const heroStats = [
+		{
+			label: tokensWindowHours >= 24 * 28 ? t("monthlyTokens") : tokensWindowLabel,
+			value: formatTokens(stats?.tokens24h ?? null),
+			icon: BarChart3,
+			accent: "#10b981",
+		},
+		{
+			label: t("models"),
+			value: formatWithPlus(roundTo(stats?.supportedModels ?? null, 25)),
+			icon: Boxes,
+			accent: "#f59e0b",
+		},
+		{
+			label: t("providers"),
+			value: formatWithPlus(roundTo(stats?.supportedProviders ?? null, 5)),
+			icon: Network,
+			accent: "#8b5cf6",
+		},
+	] as HeroStatItem[];
+
+	return (
+		<section className="w-full">
+			<div className="mx-auto px-6 pb-16 lg:px-8">
+				{heroVariant === "experimental" ? (
+					<ExperimentalHeroIntro heroStats={heroStats} />
+				) : (
+					<ClassicHeroIntro heroStats={heroStats} />
+				)}
+			</div>
+		</section>
+	);
+}

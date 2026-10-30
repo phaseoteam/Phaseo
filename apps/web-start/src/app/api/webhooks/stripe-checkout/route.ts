@@ -1,0 +1,1237 @@
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+import { isSupportedTopUpSettlement } from "@/lib/server/topUpValidation";
+import { createClient } from "@supabase/supabase-js";
+import { sendBillingDiscordWebhook } from "@/lib/automations/billingDiscord";
+import {
+	deriveFirstName,
+	sendCreditsPurchasedEvent,
+} from "@/lib/automations/resend-events";
+import { getStripe } from "@/lib/stripe";
+import { readBoundedTextBody } from "@/lib/server/boundedRequestBody";
+import { IDENTITY_ADDON_KEY } from "@/lib/billing/identityAddon";
+import { ENTERPRISE_MEMBER_OVERAGE_USD } from "@/lib/billing/enterprisePricing";
+import { recordCreditTopupPaymentFromWebhook } from "@/lib/server/creditTopups";
+
+const TOP_UP_PURPOSES = new Set(["top_up", "top_up_one_off", "auto_top_up", "credits_topup_offsession"]);
+type AppliedCreditRow = { applied?: boolean; before_balance_nanos?: number; after_balance_nanos?: number };
+
+function readPaymentIntentPurpose(pi: Stripe.PaymentIntent): string | null {
+    const raw = typeof pi.metadata?.purpose === "string" ? pi.metadata.purpose.trim() : "";
+    return raw.length > 0 ? raw : null;
+}
+
+function toLedgerKind(purpose: string): "top_up" | "top_up_one_off" | "auto_top_up" {
+    if (purpose === "top_up_one_off") return "top_up_one_off";
+    if (purpose === "auto_top_up" || purpose === "credits_topup_offsession") return "auto_top_up";
+    return "top_up";
+}
+
+function readPaymentMethodId(pi: Stripe.PaymentIntent): string | null {
+    if (typeof pi.payment_method === "string" && pi.payment_method.trim().length > 0) {
+        return pi.payment_method;
+    }
+    if (pi.payment_method && typeof pi.payment_method === "object" && "id" in pi.payment_method) {
+        const id = (pi.payment_method as Stripe.PaymentMethod).id;
+        return typeof id === "string" && id.trim().length > 0 ? id : null;
+    }
+    return null;
+}
+
+function readTeamIdFromPaymentIntent(pi: Stripe.PaymentIntent): string | null {
+    const raw = typeof pi.metadata?.workspace_id === "string" ? pi.metadata.workspace_id.trim() : "";
+    return raw.length > 0 ? raw : null;
+}
+
+function readCustomerIdFromPaymentIntent(pi: Stripe.PaymentIntent): string | null {
+    if (typeof pi.customer === "string" && pi.customer.trim().length > 0) {
+        return pi.customer;
+    }
+    if (pi.customer && typeof pi.customer === "object" && "id" in pi.customer) {
+        const id = (pi.customer as Stripe.Customer | Stripe.DeletedCustomer).id;
+        return typeof id === "string" && id.trim().length > 0 ? id : null;
+    }
+    return null;
+}
+
+async function resolveCustomerIdentity(
+    stripe: Stripe,
+    stripeCustomerId: string | null
+): Promise<{ email: string | null; firstName: string }> {
+    if (!stripeCustomerId) {
+        return { email: null, firstName: "" };
+    }
+
+    try {
+        const customer = await stripe.customers.retrieve(stripeCustomerId);
+        if ("deleted" in customer && customer.deleted) {
+            return { email: null, firstName: "" };
+        }
+        const email =
+            typeof customer.email === "string" && customer.email.trim().length > 0
+            ? customer.email
+            : null;
+        const firstName = deriveFirstName(customer.name ?? email);
+        return { email, firstName };
+    } catch (error) {
+        console.warn("[stripe-webhook] Failed to resolve customer email", {
+            stripeCustomerId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return { email: null, firstName: "" };
+    }
+}
+
+async function resolveCheckoutSessionIdForPaymentIntent(
+    stripe: Stripe,
+    paymentIntentId: string
+): Promise<string | undefined> {
+    try {
+        const sessions = await stripe.checkout.sessions.list({
+            payment_intent: paymentIntentId,
+            limit: 1,
+        });
+        const first = sessions.data[0];
+        if (!first?.id) return undefined;
+        return first.id;
+    } catch (error) {
+        console.warn("[stripe-webhook] Failed to resolve checkout session for payment_intent", {
+            paymentIntentId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return undefined;
+    }
+}
+
+type WalletAttributionRow = {
+    workspace_id: string;
+    stripe_customer_id: string | null;
+    balance_nanos?: number | null;
+};
+
+async function resolveWalletForTopUpPaymentIntent(args: {
+    supabase: ReturnType<typeof getSupabase>;
+    paymentIntentId: string;
+    stripeCustomerId: string | null;
+    metadataTeamId: string | null;
+    includeBalance?: boolean;
+}): Promise<WalletAttributionRow | null> {
+    const { supabase, paymentIntentId, stripeCustomerId, metadataTeamId, includeBalance = false } = args;
+    const walletSelect = includeBalance
+        ? "workspace_id,stripe_customer_id,balance_nanos"
+        : "workspace_id,stripe_customer_id";
+
+    async function resolveByWorkspaceId(workspaceId: string): Promise<WalletAttributionRow | null> {
+        const { data: byWorkspaceWalletRaw, error: byWorkspaceErr } = await supabase
+            .from("wallets")
+            .select(walletSelect as any)
+            .eq("workspace_id", workspaceId)
+            .maybeSingle();
+        if (byWorkspaceErr) throw byWorkspaceErr;
+        const byWorkspaceWallet = (byWorkspaceWalletRaw ?? null) as WalletAttributionRow | null;
+        if (!byWorkspaceWallet?.workspace_id) return null;
+
+        if (!stripeCustomerId || byWorkspaceWallet.stripe_customer_id === stripeCustomerId) {
+            if (!stripeCustomerId) {
+                console.warn("[stripe-webhook] Resolved wallet without customer via metadata workspace_id fallback", {
+                    paymentIntentId,
+                    workspaceId: byWorkspaceWallet.workspace_id,
+                });
+            }
+            return byWorkspaceWallet;
+        }
+
+        const updateQuery = supabase
+            .from("wallets")
+            .update({ stripe_customer_id: stripeCustomerId })
+            .eq("workspace_id", byWorkspaceWallet.workspace_id);
+        if (byWorkspaceWallet.stripe_customer_id) {
+            updateQuery.eq("stripe_customer_id", byWorkspaceWallet.stripe_customer_id);
+        } else {
+            updateQuery.is("stripe_customer_id", null);
+        }
+
+        const { error: backfillErr } = await updateQuery;
+        if (backfillErr) {
+            console.warn("[stripe-webhook] Failed to refresh wallet stripe_customer_id from metadata fallback", {
+                paymentIntentId,
+                workspaceId: byWorkspaceWallet.workspace_id,
+                existingCustomerId: byWorkspaceWallet.stripe_customer_id,
+                newCustomerId: stripeCustomerId,
+                error: backfillErr.message,
+            });
+            return byWorkspaceWallet;
+        }
+
+        console.log("[stripe-webhook] Refreshed wallet stripe_customer_id from metadata fallback", {
+            paymentIntentId,
+            workspaceId: byWorkspaceWallet.workspace_id,
+            previousCustomerId: byWorkspaceWallet.stripe_customer_id,
+            newCustomerId: stripeCustomerId,
+        });
+        return { ...byWorkspaceWallet, stripe_customer_id: stripeCustomerId };
+    }
+
+    if (metadataTeamId) {
+        const byWorkspaceWallet = await resolveByWorkspaceId(metadataTeamId);
+        if (byWorkspaceWallet?.workspace_id) {
+            return byWorkspaceWallet;
+        }
+    }
+
+    if (!stripeCustomerId) return null;
+
+    const { data: byCustomerWalletRaw, error: byCustomerErr } = await supabase
+        .from("wallets")
+        .select(walletSelect as any)
+        .eq("stripe_customer_id", stripeCustomerId)
+        .maybeSingle();
+
+    if (byCustomerErr) {
+        if (byCustomerErr.code === "PGRST116") {
+            console.warn("[stripe-webhook] Multiple wallets share stripe_customer_id; workspace metadata required", {
+                paymentIntentId,
+                stripeCustomerId,
+                workspaceId: metadataTeamId,
+            });
+            return null;
+        }
+        throw byCustomerErr;
+    }
+
+    return (byCustomerWalletRaw ?? null) as WalletAttributionRow | null;
+}
+
+async function ensureReusablePaymentMethod(
+    stripe: Stripe,
+    customerId: string,
+    paymentMethodId: string
+): Promise<void> {
+    try {
+        await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
+    } catch (err: any) {
+        const msg = String(err?.message ?? "");
+        // Already attached is fine and expected on retries.
+        if (!msg.toLowerCase().includes("already attached")) {
+            throw err;
+        }
+    }
+
+    const customer = await stripe.customers.retrieve(customerId);
+    if ("deleted" in customer && customer.deleted) return;
+
+    const defaultPm = customer.invoice_settings?.default_payment_method;
+    const defaultPmId = typeof defaultPm === "string" ? defaultPm : (defaultPm as Stripe.PaymentMethod | null)?.id;
+
+    if (!defaultPmId) {
+        await stripe.customers.update(customerId, {
+            invoice_settings: { default_payment_method: paymentMethodId },
+        });
+    }
+}
+
+function getWebhookSecret(): string {
+    const raw = process.env.STRIPE_WEBHOOK_SECRET;
+    const secret = typeof raw === "string" ? raw.trim().replace(/^["']|["']$/g, "") : "";
+    if (!secret) throw new Error("Stripe webhook signing secret missing");
+    return secret;
+}
+
+function summarizeStripeSignatureHeader(signature: string) {
+    const parts = signature
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+    const timestamp = parts.find((part) => part.startsWith("t=")) ?? null;
+    const v1 = parts.filter((part) => part.startsWith("v1="));
+
+    return {
+        present: signature.length > 0,
+        timestamp,
+        v1Count: v1.length,
+    };
+}
+
+function getSupabase() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+        throw new Error("Supabase env not set");
+    }
+    return createClient(supabaseUrl, supabaseServiceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+}
+
+function stripeResourceId(value: string | { id?: string } | null | undefined): string | null {
+    if (typeof value === "string" && value.trim()) return value;
+    const id = value && typeof value === "object" ? value.id : null;
+    return typeof id === "string" && id.trim() ? id : null;
+}
+
+function subscriptionPeriod(subscription: Stripe.Subscription) {
+    const item = subscription.items.data[0];
+    return {
+        start: item?.current_period_start ?? null,
+        end: item?.current_period_end ?? null,
+    };
+}
+
+function integerMetadata(metadata: Stripe.Metadata | null | undefined, key: string): number | null {
+    const value = Number(metadata?.[key]);
+    return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
+async function addEnterpriseMemberOverageToInvoice(args: {
+    supabase: ReturnType<typeof getSupabase>;
+    stripe: Stripe;
+    invoice: Stripe.Invoice;
+}) {
+    const { invoice, stripe, supabase } = args;
+    if (invoice.status !== "draft") return;
+
+    const subscriptionDetails = invoice.parent?.subscription_details;
+    const subscriptionId = stripeResourceId(subscriptionDetails?.subscription);
+    const workspaceId = String(subscriptionDetails?.metadata?.workspace_id ?? "").trim();
+    const customerId = stripeResourceId(invoice.customer);
+    if (!subscriptionId || !workspaceId || !customerId) return;
+
+    const { data: addonSubscription, error: subscriptionError } = await supabase
+        .from("workspace_addon_subscriptions")
+        .select("included_members")
+        .eq("workspace_id", workspaceId)
+        .eq("addon_key", IDENTITY_ADDON_KEY)
+        .eq("provider_subscription_id", subscriptionId)
+        .maybeSingle();
+    if (subscriptionError) throw subscriptionError;
+    if ((addonSubscription?.included_members ?? 0) < 100_000) return;
+
+    const { error: refreshError } = await supabase.rpc("refresh_workspace_enterprise_member_overage", {
+        p_workspace_id: workspaceId,
+    });
+    if (refreshError) throw refreshError;
+
+    const { data: usageRows, error: usageError } = await supabase
+        .from("workspace_addon_usage_monthly")
+        .select("period_start,quantity,reported_quantity")
+        .eq("workspace_id", workspaceId)
+        .eq("addon_key", IDENTITY_ADDON_KEY)
+        .eq("metric_key", "member_overage");
+    if (usageError) throw usageError;
+
+    const unreportedRows = (usageRows ?? []).map((row) => ({
+        periodStart: String(row.period_start),
+        quantity: Number(row.quantity ?? 0),
+        reportedQuantity: Number(row.reported_quantity ?? 0),
+    })).filter((row) => row.quantity > row.reportedQuantity);
+    const overageQuantity = unreportedRows.reduce((total, row) => total + row.quantity - row.reportedQuantity, 0);
+    if (overageQuantity <= 0) return;
+
+    const invoiceItem = await stripe.invoiceItems.create({
+        customer: customerId,
+        invoice: invoice.id,
+        subscription: subscriptionId,
+        currency: "usd",
+        description: `Enterprise member overage (${overageQuantity.toLocaleString("en-US")} unique members)`,
+        quantity: overageQuantity,
+        unit_amount_decimal: Stripe.Decimal.from(String(ENTERPRISE_MEMBER_OVERAGE_USD * 100)),
+        metadata: {
+            purpose: "enterprise_member_overage",
+            workspace_id: workspaceId,
+            period_starts: unreportedRows.map((row) => row.periodStart).join(",").slice(0, 500),
+        },
+    }, { idempotencyKey: `enterprise-member-overage:${invoice.id}` });
+
+    for (const row of unreportedRows) {
+        const { error: updateError } = await supabase
+            .from("workspace_addon_usage_monthly")
+            .update({ reported_quantity: row.quantity, reported_at: new Date().toISOString(), stripe_meter_event_id: invoiceItem.id })
+            .eq("workspace_id", workspaceId)
+            .eq("addon_key", IDENTITY_ADDON_KEY)
+            .eq("metric_key", "member_overage")
+            .eq("period_start", row.periodStart)
+            .eq("reported_quantity", row.reportedQuantity);
+        if (updateError) throw updateError;
+    }
+}
+
+async function createFinalEnterpriseOverageInvoice(args: {
+    supabase: ReturnType<typeof getSupabase>;
+    stripe: Stripe;
+    subscription: Stripe.Subscription;
+}) {
+    const { stripe, subscription, supabase } = args;
+    const workspaceId = String(subscription.metadata?.workspace_id ?? "").trim();
+    const customerId = stripeResourceId(subscription.customer);
+    if (!workspaceId || !customerId || String(subscription.metadata?.addon_key ?? "") !== IDENTITY_ADDON_KEY) return;
+
+    const { error: refreshError } = await supabase.rpc("refresh_workspace_enterprise_member_overage", {
+        p_workspace_id: workspaceId,
+    });
+    if (refreshError) throw refreshError;
+
+    const { data: usageRows, error: usageError } = await supabase
+        .from("workspace_addon_usage_monthly")
+        .select("period_start,quantity,reported_quantity")
+        .eq("workspace_id", workspaceId)
+        .eq("addon_key", IDENTITY_ADDON_KEY)
+        .eq("metric_key", "member_overage");
+    if (usageError) throw usageError;
+
+    const unreportedRows = (usageRows ?? []).map((row) => ({
+        periodStart: String(row.period_start),
+        quantity: Number(row.quantity ?? 0),
+        reportedQuantity: Number(row.reported_quantity ?? 0),
+    })).filter((row) => row.quantity > row.reportedQuantity);
+    const overageQuantity = unreportedRows.reduce((total, row) => total + row.quantity - row.reportedQuantity, 0);
+    if (overageQuantity <= 0) return;
+
+    const invoice = await stripe.invoices.create({
+        customer: customerId,
+        auto_advance: false,
+        collection_method: "charge_automatically",
+        description: "Final Self Serve Enterprise member overage",
+        metadata: {
+            purpose: "enterprise_member_overage_final",
+            workspace_id: workspaceId,
+            subscription_id: subscription.id,
+        },
+    }, { idempotencyKey: `enterprise-member-overage-final-invoice:${subscription.id}` });
+
+    const invoiceItem = await stripe.invoiceItems.create({
+        customer: customerId,
+        invoice: invoice.id,
+        currency: "usd",
+        description: `Final Enterprise member overage (${overageQuantity.toLocaleString("en-US")} unique members)`,
+        quantity: overageQuantity,
+        unit_amount_decimal: Stripe.Decimal.from(String(ENTERPRISE_MEMBER_OVERAGE_USD * 100)),
+        metadata: {
+            purpose: "enterprise_member_overage_final",
+            workspace_id: workspaceId,
+            subscription_id: subscription.id,
+            period_starts: unreportedRows.map((row) => row.periodStart).join(",").slice(0, 500),
+        },
+    }, { idempotencyKey: `enterprise-member-overage-final-item:${subscription.id}` });
+
+    await stripe.invoices.finalizeInvoice(invoice.id, { auto_advance: true }, {
+        idempotencyKey: `enterprise-member-overage-finalize:${subscription.id}`,
+    });
+
+    for (const row of unreportedRows) {
+        const { error: updateError } = await supabase
+            .from("workspace_addon_usage_monthly")
+            .update({ reported_quantity: row.quantity, reported_at: new Date().toISOString(), stripe_meter_event_id: invoiceItem.id })
+            .eq("workspace_id", workspaceId)
+            .eq("addon_key", IDENTITY_ADDON_KEY)
+            .eq("metric_key", "member_overage")
+            .eq("period_start", row.periodStart)
+            .eq("reported_quantity", row.reportedQuantity);
+        if (updateError) throw updateError;
+    }
+
+}
+
+function paymentIntentRail(paymentIntent: Stripe.PaymentIntent): "card" | "ach" | "bank_transfer" | "unknown" {
+    const paymentMethod = paymentIntent.payment_method;
+    if (paymentMethod && typeof paymentMethod !== "string") {
+        if (paymentMethod.type === "card") return "card";
+        if (paymentMethod.type === "us_bank_account") return "ach";
+    }
+    const customerBalance = paymentIntent.payment_method_options?.customer_balance;
+    if (
+        paymentIntent.status === "succeeded"
+        && paymentIntent.payment_method_types.includes("customer_balance")
+        && customerBalance?.bank_transfer?.type === "us_bank_transfer"
+    ) return "bank_transfer";
+    return "unknown";
+}
+
+async function syncAddonSubscriptionFromStripe(args: {
+    supabase: ReturnType<typeof getSupabase>;
+    subscription: Stripe.Subscription;
+    eventCreated: number;
+}) {
+    const { subscription, eventCreated, supabase } = args;
+    const workspaceId = String(subscription.metadata?.workspace_id ?? "").trim();
+    const addonKey = String(subscription.metadata?.addon_key ?? "").trim();
+    if (!workspaceId || addonKey !== IDENTITY_ADDON_KEY) return;
+
+    const period = subscriptionPeriod(subscription);
+    const priceId = subscription.items.data[0]?.price?.id ?? null;
+    const graceUntil = subscription.status === "past_due"
+        ? new Date((eventCreated + 7 * 24 * 60 * 60) * 1000).toISOString()
+        : null;
+    const { error } = await supabase.rpc("sync_workspace_addon_subscription", {
+        p_workspace_id: workspaceId,
+        p_addon_key: addonKey,
+        p_provider_customer_id: stripeResourceId(subscription.customer),
+        p_provider_subscription_id: subscription.id,
+        p_provider_price_id: priceId,
+        p_quote_id: String(subscription.metadata?.quote_id ?? "").trim() || null,
+        p_plan_key: String(subscription.metadata?.plan_key ?? "").trim() || null,
+        p_pricing_version: String(subscription.metadata?.pricing_version ?? "").trim() || null,
+        p_included_members: integerMetadata(subscription.metadata, "included_members"),
+        p_fee_policy: String(subscription.metadata?.fee_policy ?? "").trim() || null,
+        p_included_card_top_up_nanos: integerMetadata(subscription.metadata, "included_card_top_up_nanos") ?? 0,
+        p_status: subscription.status,
+        p_current_period_start: period.start ? new Date(period.start * 1000).toISOString() : null,
+        p_current_period_end: period.end ? new Date(period.end * 1000).toISOString() : null,
+        p_cancel_at_period_end: subscription.cancel_at_period_end,
+        p_grace_until: graceUntil,
+        p_provider_event_created: eventCreated,
+        p_metadata: { source: "stripe_webhook" },
+    });
+    if (error) throw error;
+
+    const quoteId = String(subscription.metadata?.quote_id ?? "").trim();
+    if (quoteId && (subscription.status === "active" || subscription.status === "trialing")) {
+        const { error: quoteError } = await supabase
+            .from("workspace_enterprise_quotes")
+            .update({ consumed_at: new Date(eventCreated * 1000).toISOString(), updated_at: new Date().toISOString() })
+            .eq("id", quoteId)
+            .eq("workspace_id", workspaceId);
+        if (quoteError) throw quoteError;
+    }
+}
+
+async function enqueueAutoTopUpFailureFromWebhook(args: {
+    supabase: ReturnType<typeof getSupabase>;
+    paymentIntent: Stripe.PaymentIntent;
+}): Promise<void> {
+    const workspaceId = readTeamIdFromPaymentIntent(args.paymentIntent);
+    if (!workspaceId) return;
+
+    const { data: settings, error: settingsError } = await args.supabase
+        .from("workspace_settings")
+        .select("auto_top_up_failure_email_enabled")
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+    if (settingsError || settings?.auto_top_up_failure_email_enabled === false) return;
+
+    const { data: workspace, error: workspaceError } = await args.supabase
+        .from("workspaces")
+        .select("name,owner_user_id")
+        .eq("id", workspaceId)
+        .maybeSingle();
+    if (workspaceError || !workspace?.owner_user_id) return;
+
+    const { data: owner, error: ownerError } = await args.supabase.auth.admin.getUserById(workspace.owner_user_id);
+    const email = String(owner?.user?.email ?? "").trim();
+    if (ownerError || !email) return;
+
+    const reason = String(
+        args.paymentIntent.last_payment_error?.message ?? "The saved payment method could not be charged.",
+    ).slice(0, 500);
+    const { error: enqueueError } = await args.supabase.from("email_outbox").upsert(
+        {
+            dedupe_key: `auto_top_up_failed:${args.paymentIntent.id}`,
+            kind: "auto_top_up_failed",
+            template: "auto_top_up_failed",
+            to_email: email,
+            subject: "Auto Top-Up failed",
+            workspace_id: workspaceId,
+            user_id: workspace.owner_user_id,
+            payload: {
+                workspace_name: String(workspace.name ?? "your workspace"),
+                reason,
+            },
+        },
+        { onConflict: "dedupe_key", ignoreDuplicates: true },
+    );
+    if (enqueueError) throw enqueueError;
+}
+
+/* Fees: Reverse-engineer the original amount from the total received, then apply the flat top-up fee. */
+function computeNetAndFeeFromGross(grossNanos: number, feePct: number) {
+    const minFeeNanos = 1_000_000_000; // $1 in nanos
+
+    // Reverse-engineer: if user paid $X total including our fee, what was the original amount?
+    // Original = Total / (1 + fee_rate)
+    const originalNanos = Math.round(grossNanos / (1 + feePct / 100));
+    const feeNanos = grossNanos - originalNanos;
+
+    // Ensure minimum fee when percentage fee falls below $1
+    if (feeNanos < minFeeNanos) {
+        const adjustedFeeNanos = Math.min(grossNanos, minFeeNanos);
+        const adjustedOriginalNanos = Math.max(grossNanos - adjustedFeeNanos, 0);
+        return { netNanos: adjustedOriginalNanos, feeNanos: adjustedFeeNanos };
+    }
+
+    return { netNanos: originalNanos, feeNanos };
+}
+
+function mapStripeRefundStatus(status?: string | null): "Pending" | "Succeeded" | "Failed" | "Canceled" {
+    const normalized = String(status ?? "").toLowerCase();
+    if (normalized === "succeeded") return "Succeeded";
+    if (normalized === "failed") return "Failed";
+    if (normalized === "canceled" || normalized === "cancelled") return "Canceled";
+    return "Pending";
+}
+
+function mapStripeInvoiceStatus(
+    status?: Stripe.Invoice.Status | null
+): "draft" | "open" | "paid" | "void" | "uncollectible" {
+    const normalized = String(status ?? "").toLowerCase();
+    if (normalized === "open") return "open";
+    if (normalized === "paid") return "paid";
+    if (normalized === "void") return "void";
+    if (normalized === "uncollectible") return "uncollectible";
+    return "draft";
+}
+
+function invoiceMetadataValue(invoice: Stripe.Invoice, key: string): string | null {
+    const raw = invoice.metadata?.[key];
+    return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
+}
+
+function unixToIso(value?: number | null): string | null {
+    if (value == null || !Number.isFinite(Number(value))) return null;
+    return new Date(Number(value) * 1000).toISOString();
+}
+
+async function upsertTeamInvoiceFromStripeInvoice(args: {
+    supabase: ReturnType<typeof getSupabase>;
+    invoice: Stripe.Invoice;
+    forceStatus?: "draft" | "open" | "paid" | "void" | "uncollectible";
+}) {
+    const { supabase, invoice, forceStatus } = args;
+    const stripeInvoiceId = invoice.id;
+    if (!stripeInvoiceId) return;
+
+    const { data: existing } = await supabase
+        .from("workspace_invoices")
+        .select("workspace_id,period_start,period_end")
+        .eq("stripe_invoice_id", stripeInvoiceId)
+        .maybeSingle();
+
+    const workspaceId =
+        existing?.workspace_id ??
+        invoiceMetadataValue(invoice, "workspace_id");
+    if (!workspaceId) {
+        console.warn("[stripe-webhook] invoice event missing workspace_id metadata", {
+            stripeInvoiceId,
+            eventStatus: invoice.status ?? null,
+        });
+        return;
+    }
+
+    const periodStart =
+        existing?.period_start ??
+        invoiceMetadataValue(invoice, "period_start") ??
+        invoiceMetadataValue(invoice, "cycle_start") ??
+        unixToIso((invoice as any).period_start);
+    const periodEnd =
+        existing?.period_end ??
+        invoiceMetadataValue(invoice, "period_end") ??
+        invoiceMetadataValue(invoice, "cycle_end") ??
+        unixToIso((invoice as any).period_end);
+
+    if (!periodStart || !periodEnd) {
+        console.warn("[stripe-webhook] invoice event missing period metadata", {
+            stripeInvoiceId,
+            workspaceId,
+        });
+        return;
+    }
+
+    const status = forceStatus ?? mapStripeInvoiceStatus(invoice.status);
+    const amountNanos = Number(invoice.amount_due ?? invoice.total ?? 0) * 10_000_000;
+    const row = {
+        workspace_id: workspaceId,
+        period_start: periodStart,
+        period_end: periodEnd,
+        amount_nanos: Math.max(0, Number.isFinite(amountNanos) ? amountNanos : 0),
+        currency: "USD",
+        status,
+        stripe_invoice_id: stripeInvoiceId,
+        stripe_invoice_number: invoice.number ?? null,
+        due_at: unixToIso(invoice.due_date),
+        issued_at: unixToIso(invoice.status_transitions?.finalized_at),
+        paid_at: unixToIso(invoice.status_transitions?.paid_at),
+        updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from("workspace_invoices").upsert([row], {
+        onConflict: "workspace_id,period_start,period_end",
+    });
+    if (error) throw error;
+}
+
+const MAX_STRIPE_WEBHOOK_BYTES = 1024 * 1024;
+
+export async function POST(req: Request) {
+    const stripe = getStripe();
+    const supabase = getSupabase();
+
+    // IMPORTANT: read raw body for signature verification
+    const boundedBody = await readBoundedTextBody(req, MAX_STRIPE_WEBHOOK_BYTES);
+    if (!boundedBody.ok) {
+        return new Response("Webhook body too large", { status: 413 });
+    }
+    const rawBody = boundedBody.text;
+    const signature = req.headers.get("stripe-signature") ?? "";
+    const signatureSummary = summarizeStripeSignatureHeader(signature);
+
+    let event: Stripe.Event;
+    try {
+        const webhookSecret = getWebhookSecret();
+        event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    } catch (err: any) {
+        console.error("[stripe-webhook] Signature verification failed", {
+            error: err?.message ?? String(err),
+            bodyLength: rawBody.length,
+            hasStripeSignatureHeader: signatureSummary.present,
+            signatureTimestamp: signatureSummary.timestamp,
+            signatureV1Count: signatureSummary.v1Count,
+            hasConfiguredSecret: Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim()),
+        });
+        return NextResponse.json(
+            { message: `Webhook Error: ${err?.message || String(err)}` },
+            { status: 400 }
+        );
+    }
+
+    async function upsertLedger(row: any) {
+        return supabase.from("credit_ledger").upsert([row], {
+            onConflict: "ref_type,ref_id",
+        });
+    }
+
+    try {
+        switch (event.type) {
+            case "customer.subscription.created":
+            case "customer.subscription.updated":
+            case "customer.subscription.paused":
+            case "customer.subscription.resumed": {
+                const eventSubscription = event.data.object as Stripe.Subscription;
+                const subscription = await stripe.subscriptions.retrieve(eventSubscription.id);
+                await syncAddonSubscriptionFromStripe({
+                    supabase,
+                    subscription,
+                    eventCreated: event.created,
+                });
+                break;
+            }
+
+            case "customer.subscription.deleted": {
+                const eventSubscription = event.data.object as Stripe.Subscription;
+                await createFinalEnterpriseOverageInvoice({ supabase, stripe, subscription: eventSubscription });
+                const subscription = await stripe.subscriptions.retrieve(eventSubscription.id);
+                await syncAddonSubscriptionFromStripe({ supabase, subscription, eventCreated: event.created });
+                break;
+            }
+
+            case "payment_intent.created": {
+                const pi = event.data.object as Stripe.PaymentIntent;
+                const purpose = readPaymentIntentPurpose(pi);
+                if (!purpose || !TOP_UP_PURPOSES.has(purpose)) break;
+
+                const stripeCustomerId = readCustomerIdFromPaymentIntent(pi);
+                const metadataTeamId = readTeamIdFromPaymentIntent(pi);
+
+                const wallet = await resolveWalletForTopUpPaymentIntent({
+                    supabase,
+                    paymentIntentId: pi.id,
+                    stripeCustomerId,
+                    metadataTeamId,
+                    includeBalance: true,
+                });
+
+                if (!wallet?.workspace_id) break;
+
+                const beforeBalanceNanos = Number(wallet.balance_nanos ?? 0);
+
+                await supabase
+                    .from("credit_ledger")
+                    .upsert(
+                        [
+                            {
+                                workspace_id: wallet.workspace_id,
+                                kind: toLedgerKind(purpose),
+                                amount_nanos: 0,
+                                before_balance_nanos: beforeBalanceNanos,
+                                after_balance_nanos: beforeBalanceNanos,
+                                ref_type: "Stripe_Payment_Intent",
+                                ref_id: pi.id,
+                                status: "Processing",
+                                event_time: new Date().toISOString(),
+                            },
+                        ],
+                        { onConflict: "ref_type,ref_id", ignoreDuplicates: true as any }
+                    );
+
+                break;
+            }
+
+            case "payment_intent.succeeded": {
+                const pi = event.data.object as Stripe.PaymentIntent;
+                if (pi.status !== "succeeded") break;
+                const purpose = readPaymentIntentPurpose(pi);
+                if (!purpose || !TOP_UP_PURPOSES.has(purpose)) {
+                    console.warn("[stripe-webhook] Ignored payment_intent.succeeded with unsupported purpose", {
+                        paymentIntentId: pi.id,
+                        purpose: purpose ?? null,
+                    });
+                    break;
+                }
+				const grossCents = Number(pi.amount_received ?? pi.amount ?? 0);
+				if (!isSupportedTopUpSettlement(pi.currency, grossCents)) {
+					console.error("[stripe-webhook] Refused unsupported top-up settlement", {
+						paymentIntentId: pi.id,
+						currency: pi.currency,
+						amount: grossCents,
+					});
+					break;
+				}
+
+                const stripeCustomerId = readCustomerIdFromPaymentIntent(pi);
+                const paymentMethodId = readPaymentMethodId(pi);
+                const metadataTeamId = readTeamIdFromPaymentIntent(pi);
+
+                const wallet = await resolveWalletForTopUpPaymentIntent({
+                    supabase,
+                    paymentIntentId: pi.id,
+                    stripeCustomerId,
+                    metadataTeamId,
+                });
+
+                if (!wallet?.workspace_id) break;
+
+                // Stripe amounts are in cents; convert to nanos (1 USD = 1e9 nanos).
+                const grossNanos = grossCents * 10_000_000;
+
+                // Fetch the team's CURRENT tier from database (includes instant upgrades)
+                const { data: teamData, error: teamErr } = await supabase
+                    .from('workspaces')
+                    .select('tier')
+                    .eq('id', wallet.workspace_id)
+                    .single();
+
+                if (teamErr) {
+                    console.error(`[stripe-webhook] Failed to fetch team tier:`, teamErr);
+                }
+
+                // PAYG top-up fee is now a flat 5% across tiers.
+                const tier = teamData?.tier ?? 'basic';
+                const feePct = 5.0;
+
+                console.log(`[stripe-webhook] Workspace ${wallet.workspace_id} tier: ${tier}, fee: ${feePct}%`);
+
+                if (paymentMethodId && stripeCustomerId) {
+                    try {
+                        await ensureReusablePaymentMethod(stripe, stripeCustomerId, paymentMethodId);
+                    } catch (pmErr) {
+                        console.warn("[stripe-webhook] Failed to attach/set default payment method", {
+                            paymentIntentId: pi.id,
+                            customerId: stripeCustomerId,
+                            paymentMethodId,
+                            error: String((pmErr as any)?.message ?? pmErr),
+                        });
+                    }
+                }
+
+                const settledPaymentIntent = await stripe.paymentIntents.retrieve(pi.id, {
+                    expand: ["payment_method"],
+                });
+                const { data: feePolicyRows, error: feePolicyError } = await supabase.rpc(
+                    "claim_workspace_top_up_fee_policy",
+                    {
+                        p_workspace_id: wallet.workspace_id,
+                        p_stripe_payment_intent_id: pi.id,
+                        p_gross_nanos: grossNanos,
+                        p_payment_rail: paymentIntentRail(settledPaymentIntent),
+                        p_seen_at: new Date(event.created * 1000).toISOString(),
+                    },
+                );
+                if (feePolicyError) throw feePolicyError;
+                const feeWaived = Boolean(Array.isArray(feePolicyRows) ? feePolicyRows[0]?.fee_waived : (feePolicyRows as any)?.fee_waived);
+                const { netNanos, feeNanos } = feeWaived
+                    ? { netNanos: grossNanos, feeNanos: 0 }
+                    : computeNetAndFeeFromGross(grossNanos, feePct);
+                const kind = toLedgerKind(purpose);
+                const { data: appliedRows, error: applyErr } = await supabase.rpc("stripe_apply_payment_intent_credit", {
+                    p_workspace_id: wallet.workspace_id,
+                    p_payment_intent_id: pi.id,
+                    p_kind: kind,
+                    p_amount_nanos: netNanos,
+                    p_event_time: new Date().toISOString(),
+                });
+
+                if (applyErr) throw applyErr;
+
+                // API/CLI top-up requests (credit_topup_requests): mark the request paid. Runs on
+                // retries too, so a request still settles if an earlier attempt failed after crediting.
+                await recordCreditTopupPaymentFromWebhook({ db: supabase, paymentIntent: pi, outcome: "paid" });
+
+                const applied = (appliedRows?.[0] as AppliedCreditRow | undefined) ?? { applied: false };
+
+                if (!applied.applied) {
+                    console.log("[stripe-webhook] Duplicate payment_intent.succeeded ignored", {
+                        paymentIntentId: pi.id,
+                    });
+                    break;
+                }
+
+                const beforeBalanceNanos = Number(applied.before_balance_nanos ?? 0);
+                const afterBalanceNanos = Number(applied.after_balance_nanos ?? 0);
+                const netUsd = (netNanos / 1_000_000_000).toFixed(2);
+                const feeUsd = (feeNanos / 1_000_000_000).toFixed(2);
+                const beforeUsd = (beforeBalanceNanos / 1_000_000_000).toFixed(2);
+                const afterUsd = (afterBalanceNanos / 1_000_000_000).toFixed(2);
+
+                console.log(
+                    `[stripe-webhook] Payment credited net=$${netUsd} fee=$${feeUsd} balance_before=$${beforeUsd} balance_after=$${afterUsd}`
+                );
+
+                const customerIdentity = await resolveCustomerIdentity(stripe, stripeCustomerId);
+                const creditedAtIso = new Date().toISOString();
+                const checkoutSessionId = await resolveCheckoutSessionIdForPaymentIntent(stripe, pi.id);
+                const creditsPurchasedPayload = {
+                    workspaceId: wallet.workspace_id,
+                    paymentIntentId: pi.id,
+                    firstName: customerIdentity.firstName,
+                    checkoutSessionId,
+                    currency: String(pi.currency ?? "usd").toLowerCase(),
+                    amountNanos: netNanos,
+                    kind,
+                    creditedAtIso,
+                };
+                if (customerIdentity.email) {
+                    try {
+                        await sendCreditsPurchasedEvent({
+                            email: customerIdentity.email,
+                            payload: creditsPurchasedPayload,
+                        });
+                    } catch (error) {
+                        console.error("[stripe-webhook] Failed sending credits.purchased event", {
+                            paymentIntentId: pi.id,
+                            workspaceId: wallet.workspace_id,
+                            checkoutSessionId: checkoutSessionId ?? null,
+                            error: error instanceof Error ? error.message : String(error),
+                        });
+                    }
+                }
+                try {
+                    await sendBillingDiscordWebhook({
+                        event: "credits_purchased",
+                        email: customerIdentity.email,
+                        payload: creditsPurchasedPayload,
+                    });
+                } catch (error) {
+                    console.error("[stripe-webhook] Failed sending billing Discord webhook", {
+                        paymentIntentId: pi.id,
+                        workspaceId: wallet.workspace_id,
+                        checkoutSessionId: checkoutSessionId ?? null,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                }
+
+                break;
+            }
+
+            case "payment_intent.payment_failed": {
+                const pi = event.data.object as Stripe.PaymentIntent;
+                const purpose = readPaymentIntentPurpose(pi);
+                if (!purpose || !TOP_UP_PURPOSES.has(purpose)) break;
+
+                // Only a pending entry can fail. A late or replayed failure must never downgrade a
+                // credited (Paid) entry: stripe_apply_payment_intent_credit would then credit it again.
+                await supabase
+                    .from("credit_ledger")
+                    .update({ status: "Failed", event_time: new Date().toISOString() })
+                    .eq("ref_type", "Stripe_Payment_Intent")
+                    .eq("ref_id", pi.id)
+                    .eq("status", "Processing");
+
+                if (purpose === "auto_top_up" || purpose === "credits_topup_offsession") {
+                    await enqueueAutoTopUpFailureFromWebhook({ supabase, paymentIntent: pi });
+                }
+                await recordCreditTopupPaymentFromWebhook({ db: supabase, paymentIntent: pi, outcome: "failed" });
+                break;
+            }
+
+            case "refund.created": {
+                const refund = event.data.object as Stripe.Refund;
+                const piId = (refund.payment_intent as string) ?? null;
+                if (!piId) break;
+
+                const { data: piLedger } = await supabase
+                    .from("credit_ledger")
+                    .select("workspace_id, amount_nanos")
+                    .eq("ref_type", "Stripe_Payment_Intent")
+                    .eq("ref_id", piId)
+                    .maybeSingle();
+
+                const workspaceId = piLedger?.workspace_id ?? null;
+                if (!workspaceId) {
+                    console.warn("[stripe-webhook] refund.created: no matching payment ledger entry", {
+                        refundId: refund.id,
+                        paymentIntentId: piId,
+                    });
+                    break;
+                }
+
+                const originalNetNanos = Number(piLedger?.amount_nanos ?? 0);
+
+                const pi = await stripe.paymentIntents.retrieve(piId);
+                const originalGrossCents = Number(pi.amount_received ?? pi.amount ?? 0) || 0;
+                const originalGrossNanos = originalGrossCents * 10_000_000;
+                const refundGrossCents = Number(refund.amount ?? 0) || 0;
+                const refundGrossNanos = refundGrossCents * 10_000_000;
+
+                const ratio = originalGrossNanos > 0 ? Math.min(1, refundGrossNanos / originalGrossNanos) : 1;
+                const refundNetNanos = Math.max(0, Math.round(originalNetNanos * ratio));
+                const negativeNetNanos = -refundNetNanos;
+                const mappedStatus = mapStripeRefundStatus(refund.status);
+
+                // Read current wallet balance for a more accurate placeholder
+                const { data: currentWallet } = await supabase
+                    .from("wallets")
+                    .select("balance_nanos")
+                    .eq("workspace_id", workspaceId)
+                    .maybeSingle();
+                const currentBalance = Number(currentWallet?.balance_nanos ?? 0);
+
+                // Insert only if missing. Do not overwrite existing rows from API path.
+                await supabase.from("credit_ledger").upsert(
+                    [
+                        {
+                            workspace_id: workspaceId,
+                            kind: "refund",
+                            amount_nanos: negativeNetNanos,
+                            before_balance_nanos: currentBalance,
+                            after_balance_nanos: currentBalance,
+                            ref_type: "Stripe_Refund",
+                            ref_id: refund.id,
+                            status: mappedStatus,
+                            event_time: new Date().toISOString(),
+                            source_ref_type: "Stripe_Payment_Intent",
+                            source_ref_id: piId,
+                        },
+                    ],
+                    {
+                        onConflict: "ref_type,ref_id",
+                        ignoreDuplicates: true,
+                    }
+                );
+
+                // Always align mutable fields without touching before/after balances.
+                await supabase
+                    .from("credit_ledger")
+                    .update({
+                        status: mappedStatus,
+                        amount_nanos: negativeNetNanos,
+                        source_ref_type: "Stripe_Payment_Intent",
+                        source_ref_id: piId,
+                        event_time: new Date().toISOString(),
+                    })
+                    .eq("ref_type", "Stripe_Refund")
+                    .eq("ref_id", refund.id);
+
+                if (mappedStatus === "Succeeded") {
+                    const { data: refRow } = await supabase
+                        .from("credit_ledger")
+                        .select("workspace_id, amount_nanos, before_balance_nanos, after_balance_nanos, status")
+                        .eq("ref_type", "Stripe_Refund")
+                        .eq("ref_id", refund.id)
+                        .maybeSingle();
+
+                    const priorStatus = String(refRow?.status ?? "").toLowerCase();
+                    const priorBefore = Number(refRow?.before_balance_nanos ?? 0);
+                    const priorAfter = Number(refRow?.after_balance_nanos ?? 0);
+                    const alreadyApplied = priorStatus === "succeeded" && priorBefore !== priorAfter;
+
+                    if (!alreadyApplied) {
+                        const applyTeamId = refRow?.workspace_id ?? workspaceId;
+                        const applyDeltaNanos = Number(refRow?.amount_nanos ?? negativeNetNanos);
+
+                        if (applyTeamId && applyDeltaNanos < 0) {
+                            const { data: deltaRows, error: deltaErr } = await supabase.rpc("wallet_apply_delta", {
+                                p_workspace_id: applyTeamId,
+                                p_delta_nanos: applyDeltaNanos,
+                            });
+
+                            if (deltaErr) {
+                                console.error("[stripe-webhook] wallet_apply_delta failed for refund.created", {
+                                    refundId: refund.id,
+                                    workspaceId: applyTeamId,
+                                    error: deltaErr.message,
+                                });
+                                throw deltaErr;
+                            }
+
+                            const balanceResult = deltaRows?.[0] ?? {};
+                            const beforeBalanceNanos = Number(balanceResult.before_balance_nanos ?? priorBefore);
+                            const afterBalanceNanos = Number(balanceResult.after_balance_nanos ?? priorAfter);
+
+                            await supabase
+                                .from("credit_ledger")
+                                .update({
+                                    before_balance_nanos: beforeBalanceNanos,
+                                    after_balance_nanos: afterBalanceNanos,
+                                    status: "Succeeded",
+                                    event_time: new Date().toISOString(),
+                                })
+                                .eq("ref_type", "Stripe_Refund")
+                                .eq("ref_id", refund.id);
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case "refund.updated": {
+                const refund = event.data.object as Stripe.Refund;
+                const status = refund.status as string | undefined;
+                const { data: existingRefundRow } = await supabase
+                    .from("credit_ledger")
+                    .select("workspace_id, amount_nanos, before_balance_nanos, after_balance_nanos, status")
+                    .eq("ref_type", "Stripe_Refund")
+                    .eq("ref_id", refund.id)
+                    .maybeSingle();
+
+                const priorStatus = String(existingRefundRow?.status ?? "").toLowerCase();
+                const priorBefore = Number(existingRefundRow?.before_balance_nanos ?? 0);
+                const priorAfter = Number(existingRefundRow?.after_balance_nanos ?? 0);
+                const alreadyApplied = priorStatus === "succeeded" && priorBefore !== priorAfter;
+
+                await supabase
+                    .from("credit_ledger")
+                    .update({
+                        status:
+                            status === "succeeded"
+                                ? "Succeeded"
+                                : status === "failed"
+                                    ? "Failed"
+                                    : status === "canceled"
+                                        ? "Canceled"
+                                        : status,
+                        event_time: new Date().toISOString(),
+                    })
+                    .eq("ref_type", "Stripe_Refund")
+                    .eq("ref_id", refund.id);
+
+                if (status === "succeeded" && !alreadyApplied) {
+                    let workspaceId = existingRefundRow?.workspace_id ?? null;
+                    let refundNetNegativeNanos = Number(existingRefundRow?.amount_nanos ?? 0);
+
+                    if (!workspaceId) {
+                        const { data: fallbackRow } = await supabase
+                            .from("credit_ledger")
+                            .select("workspace_id, amount_nanos")
+                            .eq("ref_type", "Stripe_Refund")
+                            .eq("ref_id", refund.id)
+                            .maybeSingle();
+                        workspaceId = fallbackRow?.workspace_id ?? null;
+                        refundNetNegativeNanos = Number(fallbackRow?.amount_nanos ?? 0);
+                    }
+
+                    if (workspaceId && refundNetNegativeNanos < 0) {
+                        // Use atomic RPC to prevent race conditions with concurrent balance changes
+                        const { data: deltaRows, error: deltaErr } = await supabase.rpc("wallet_apply_delta", {
+                            p_workspace_id: workspaceId,
+                            p_delta_nanos: refundNetNegativeNanos,
+                        });
+
+                        if (deltaErr) {
+                            console.error("[stripe-webhook] wallet_apply_delta failed for refund", {
+                                refundId: refund.id,
+                                workspaceId,
+                                error: deltaErr.message,
+                            });
+                            throw deltaErr;
+                        }
+
+                        const balanceResult = deltaRows?.[0] ?? {};
+                        const beforeBalanceNanos = Number(balanceResult.before_balance_nanos ?? 0);
+                        const afterBalanceNanos = Number(balanceResult.after_balance_nanos ?? 0);
+
+                        await supabase
+                            .from("credit_ledger")
+                            .update({
+                                before_balance_nanos: beforeBalanceNanos,
+                                after_balance_nanos: afterBalanceNanos,
+                                status: "Succeeded",
+                                event_time: new Date().toISOString(),
+                            })
+                            .eq("ref_type", "Stripe_Refund")
+                            .eq("ref_id", refund.id);
+                    }
+                }
+
+                break;
+            }
+
+            case "invoice.created": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await addEnterpriseMemberOverageToInvoice({ supabase, stripe, invoice });
+                await upsertTeamInvoiceFromStripeInvoice({ supabase, invoice });
+                break;
+            }
+
+            case "invoice.finalized":
+            case "invoice.updated": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                });
+                break;
+            }
+
+            case "invoice.paid":
+            case "invoice.payment_succeeded": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                    forceStatus: "paid",
+                });
+                break;
+            }
+
+            case "invoice.payment_failed": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                    forceStatus: "open",
+                });
+				const subscriptionId = stripeResourceId(invoice.parent?.subscription_details?.subscription);
+				if (subscriptionId) {
+					const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+					await syncAddonSubscriptionFromStripe({ supabase, subscription, eventCreated: event.created });
+				}
+                break;
+            }
+
+            case "invoice.marked_uncollectible": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                    forceStatus: "uncollectible",
+                });
+                break;
+            }
+
+            case "invoice.voided": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                    forceStatus: "void",
+                });
+                break;
+            }
+
+            default:
+                return NextResponse.json({ ignored: true });
+        }
+
+        return NextResponse.json({ received: true });
+    } catch (err: any) {
+        return NextResponse.json({ error: err?.message ?? String(err) }, { status: 500 });
+    }
+}

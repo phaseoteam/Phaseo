@@ -1,0 +1,145 @@
+"use client";
+
+import { Link } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
+import { Logo } from "@/components/Logo";
+import type { ModalityLeaderboardEntry } from "@/components/(rankings)/ModalityLeaderboards";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
+
+type RankingMetricLeaderboardProps = {
+	metricId: string;
+	title: string;
+	description: string;
+	entries: ModalityLeaderboardEntry[];
+};
+
+export function RankingMetricLeaderboard({
+	metricId,
+	title,
+	description,
+	entries,
+}: RankingMetricLeaderboardProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const tUnits = useTranslations("Catalogue.modelDetail.pricing.units");
+	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const visibleEntries = entries.slice(0, 5);
+	const formatValue = (entry: ModalityLeaderboardEntry) => {
+		if (metricId === "audio-cache") {
+			return `${format.number(entry.value / 60, { maximumFractionDigits: entry.value >= 600 ? 0 : 1 })} ${tUnits("minute")}`;
+		}
+		if (metricId === "video-seconds" || metricId === "speech-seconds") {
+			return `${format.number(entry.value, { maximumFractionDigits: 1 })} ${tUnits("second")}`;
+		}
+		if (metricId === "text-throughput") {
+			return format.tps(entry.value) ?? "-";
+		}
+		if (metricId === "text-latency") {
+			return format.latency(entry.value) ?? "-";
+		}
+		const unit = metricId.includes("image") ? tUnits("image") : tUnits("token");
+		return `${metricId.includes("image") ? format.number(entry.value, { maximumFractionDigits: 1 }) : formatRoundedCount(entry.value, locale)} ${unit}`;
+	};
+
+	if (!visibleEntries.length) return (
+		<div className="space-y-2">
+			<h3 className="text-lg font-semibold">{title}</h3>
+			<p className="text-sm text-muted-foreground">{t("noMeasuredUsage")}</p>
+		</div>
+	);
+
+	return (
+		<div className="min-w-0">
+			<div className="space-y-0.5 pb-3">
+				<h3 className="text-lg font-semibold">{title}</h3>
+				<p className="text-sm text-muted-foreground">{description}</p>
+			</div>
+			<div className="border-t border-border/70">
+				{visibleEntries.map((entry, index) => {
+					const organisationId = entry.organisation_id ?? null;
+					const providerId = entry.provider_id ?? null;
+					const logoId = organisationId ?? entry.model_id;
+					const modelHref = getModelDetailsHref(
+						organisationId,
+						entry.model_id,
+					);
+					const organisationHref = organisationId
+						? `/organisations/${encodeURIComponent(organisationId)}`
+						: null;
+
+					return (
+						<div
+							key={entry.key}
+							className="grid min-h-14 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-border/70 py-2.5"
+						>
+							<span className="text-xs tabular-nums text-muted-foreground">
+								{index + 1}.
+							</span>
+							{organisationHref ? (
+								<Link
+									href={organisationHref}
+									aria-label={entry.organisation_name ?? entry.model_name}
+									className="relative size-6"
+								>
+									<Logo
+										id={logoId}
+										alt={entry.organisation_name ?? entry.model_name}
+										className="object-contain"
+										fill
+									/>
+								</Link>
+							) : (
+								<span className="relative size-6">
+									<Logo
+										id={logoId}
+										alt={entry.model_name}
+										className="object-contain"
+										fill
+									/>
+								</span>
+							)}
+							<div className="min-w-0">
+								{modelHref ? (
+									<Link
+										href={modelHref}
+										className="block truncate text-sm font-medium underline decoration-transparent underline-offset-2 transition-colors hover:decoration-current"
+									>
+										{entry.model_name}
+									</Link>
+								) : (
+									<span className="block truncate text-sm font-medium">
+										{entry.model_name}
+									</span>
+								)}
+								{providerId ? (
+									<Link
+										href={`/api-providers/${encodeURIComponent(providerId)}`}
+										className="block truncate text-xs text-muted-foreground underline decoration-transparent underline-offset-2 transition-colors hover:decoration-current"
+									>
+										{entry.provider_name ?? providerId}
+									</Link>
+								) : entry.organisation_name ? (
+									<span className="block truncate text-xs text-muted-foreground">
+										{entry.organisation_name}
+									</span>
+								) : null}
+							</div>
+							<div className="pl-3 text-right">
+								<div className="whitespace-nowrap text-sm font-medium tabular-nums">
+									{formatValue(entry)}
+								</div>
+								{entry.tertiary ? (
+									<div className="whitespace-nowrap text-xs text-muted-foreground">
+										{entry.tertiary}
+									</div>
+								) : null}
+							</div>
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+}

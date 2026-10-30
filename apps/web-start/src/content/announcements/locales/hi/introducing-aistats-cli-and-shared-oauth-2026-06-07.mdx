@@ -1,0 +1,149 @@
+---
+title: "Phaseo CLI की शुरुआत"
+description: "डेवलपर और एजेंट Phaseo के साथ तेज़ी से काम कर सकें—पहले लॉगिन से लेकर प्रोडक्शन अनुरोध को समझने तक।"
+publishedAt: 2026-07-15
+author: Phaseo Team
+category: guides
+pinned: true
+coverImage: /blog-images/blog-cli-oauth.png
+tags:
+  - रिलीज़
+  - CLI
+  - OAuth
+  - उत्पाद
+draft: false
+---
+
+आज हम **Phaseo CLI** पेश कर रहे हैं: टर्मिनल से Phaseo के साथ काम करने का एक नया तरीका।
+
+CLI डेवलपर के सबसे ज़्यादा इस्तेमाल होने वाले टूल—प्रमाणीकरण, API keys, क्रेडिट, मॉडल, वर्कस्पेस नियंत्रण और अनुरोध लॉग—उसी जगह उपलब्ध कराता है जहाँ काम हो रहा होता है। यह स्थानीय टर्मिनल, रिमोट shell और एजेंट वर्कफ़्लो, सभी में उतना ही उपयोगी है।
+
+हमारा लक्ष्य सरल है: किसी विचार से चलने और निगरानी किए जा सकने वाले AI ऐप तक पहुँचने का रास्ता बहुत छोटा करना।
+
+## लॉगिन से पहले अनुरोध तक
+
+नए AI gateway के साथ शुरुआत करने के लिए अक्सर पहला अनुरोध भेजने से पहले दस्तावेज़, डैशबोर्ड, environment variables और टर्मिनल के बीच आना-जाना पड़ता है। अब Phaseo यह सेटअप एक सतत प्रक्रिया में ले आता है।
+
+CLI इंस्टॉल करें, अपने Phaseo खाते से लॉगिन करें और एक key बनाएँ:
+
+<CliInstallTabs packageName="@phaseo/cli" />
+
+```bash
+phaseo login
+phaseo keys create --name "My first Phaseo key"
+```
+
+आपके लैपटॉप पर `phaseo login` ब्राउज़र खोलता है। SSH sessions, remote environments और अन्य headless workflows में device-code login स्थानीय callback की ज़रूरत के बिना वही अनुभव देता है।
+
+```bash
+phaseo login --device-code
+```
+
+इसके बाद CLI आपका मौजूदा workspace, credit balance, उपलब्ध models, providers, pricing, presets और guardrails दिखा सकता है। काम छोड़कर डैशबोर्ड पर जाए बिना आप API keys और workspace settings भी संभाल सकते हैं।
+
+शुरुआती अनुभव बताता है कि हम CLI को कैसा बनाना चाहते हैं: सीधा, आसानी से समझ आने वाला और उपयोगी—इसके लिए डेवलपर को पहले हर API endpoint की बनावट सीखने की ज़रूरत नहीं। Commands के साथ अंतर्निहित सहायता मिलती है, इंटरैक्टिव उपयोग के लिए आसानी से पढ़ा जा सकने वाला आउटपुट और दूसरे टूल को नतीजा देने के लिए JSON आउटपुट भी मिलता है।
+
+## पूरे Phaseo प्लेटफ़ॉर्म के लिए एक इंटरफ़ेस
+
+पहली रिलीज़ में सिर्फ़ प्रमाणीकरण से कहीं अधिक शामिल है। यह Phaseo के कई वर्कफ़्लो को एक ही command-line interface में लाती है:
+
+- API keys बनाएँ, देखें, अपडेट करें, निष्क्रिय करें और हटाएँ
+- भरोसेमंद automation के लिए स्पष्ट क्षमताओं वाली management keys बनाएँ
+- workspaces की सूची देखें, सदस्यों की जानकारी लें और सदस्यता प्रबंधित करें
+- presets, settings और guardrails देखें और कॉन्फ़िगर करें
+- models, providers और pricing देखें
+- credits, activity, analytics और generations देखें
+- gateway requests की जाँच करें और ID से किसी एक request की जानकारी पाएँ
+- dedicated command उपलब्ध न होने पर सीधे प्रमाणीकृत Phaseo API endpoint को कॉल करें
+
+CLI अब किसी प्रोजेक्ट को शुरुआती सेटअप से रोज़मर्रा के संचालन तक ले जा सकती है। डेवलपर एक ही टर्मिनल session में प्रमाणीकृत हो सकता है, सीमित अधिकार वाली key बना सकता है, खाते में credit की पुष्टि कर सकता है, model चुन सकता है और उससे निकले traffic की जाँच कर सकता है।
+
+टीमों के लिए यह कामकाज का एक समान इंटरफ़ेस भी बनाती है। स्थानीय विकास में इस्तेमाल किए जाने वाले commands को scripts, runbooks, remote environments और सावधानी से सीमित automation में ले जाया जा सकता है—डैशबोर्ड पर निर्भर हुए बिना।
+
+## लोगों और एजेंटों के लिए बनी
+
+डेवलपर और coding agents किसी प्रोजेक्ट को समझने के लिए तेज़ी से टर्मिनल का इस्तेमाल कर रहे हैं। उन्हें Phaseo का आधिकारिक इंटरफ़ेस देने से वे integration code बनाने के अलावा सक्रिय workspace की पुष्टि कर सकते हैं, सही key बना सकते हैं, उपलब्ध credit जाँच सकते हैं और request चलने के बाद क्या हुआ, यह पता लगा सकते हैं।
+
+अधिकांश commands संरचित JSON आउटपुट का समर्थन करते हैं। इसलिए वही इंटरफ़ेस prompt पर काम करने वाले व्यक्ति और कोई काम पूरा कर रहे agent, दोनों के लिए उपयोगी है:
+
+```bash
+phaseo whoami --json
+phaseo credits get --json
+phaseo models list --limit 20 --json
+```
+
+यह Phaseo CLI skill की नींव भी है, जो संगत agents को किसी प्रोजेक्ट के भीतर इन workflows का सुरक्षित और एकसमान उपयोग करना सिखा सकती है।
+
+यह अंतर मायने रखता है। किसी agent को यह अंदाज़ा नहीं लगाना चाहिए कि डैशबोर्ड के किस पेज पर setting है, user interface से जानकारी नहीं निकालनी चाहिए और न ही डेवलपर से टूल के बीच जानकारी कॉपी करने को कहना चाहिए। प्रमाणीकृत और संरचित CLI के ज़रिए वह अपनी अनुमति वाला state देख सकता है और उसी समर्थित इंटरफ़ेस से स्पष्ट कार्रवाई कर सकता है जिसका इस्तेमाल डेवलपर करता है।
+
+हम उत्पाद के साथ CLI skill भी बना रहे हैं, ताकि agents उपलब्ध commands समझें, machine-readable आउटपुट को प्राथमिकता दें, नए बनाए गए secrets उजागर न करें और integration की समस्या का निदान करने के लिए ज़रूरत पड़ने पर किसी एक request की जानकारी पा सकें।
+
+## हर अनुरोध को समझें
+
+AI के साथ काम request सफल होने पर खत्म नहीं होता। डेवलपर को यह जानना होता है कि उसे किस model और provider ने संभाला, इसमें कितना समय लगा, कितना खर्च आया और कुछ विफल क्यों हुआ।
+
+Phaseo CLI यह संदर्भ सीधे टर्मिनल में उपलब्ध कराती है। हाल के requests में से ज़रूरी requests छाँटें और फिर किसी एक request को विस्तार से देखें:
+
+```bash
+phaseo logs list --since 1h --status error --json
+phaseo logs get <request-id> --json
+```
+
+Request विवरण में routing, status, latency, model, provider और cost की जाँच के लिए ज़रूरी संचालन-संदर्भ मिलता है। इससे डेवलपर और agents एक ही जगह पर तेज़ी से काम दोहरा और बेहतर कर सकते हैं: बनाएँ, चलाएँ, जाँचें और सुधारें।
+
+शुरुआत में filtered request lists और किसी एक request को देखने की सुविधा है। Live tailing बाद में आएगी।
+
+आगे चलकर हम चाहते हैं कि CLI Phaseo के लिए पूरा observability साथी बने। इसमें बेहतर filtering, संबंधित requests और generations के बीच आसान navigation, cost और latency के साफ़ सारांश, तथा ऐप विकसित या debug करते समय traffic को live देखने के workflows शामिल होंगे।
+
+सिद्धांत वही रहेगा: समस्या सुलझाने के लिए पर्याप्त संचालन-संदर्भ दें और संवेदनशील application data को सामान्य CLI आउटपुट से बाहर रखें।
+
+## हमारी दिशा: API और डैशबोर्ड के बराबर सुविधाएँ
+
+यह लॉन्च CLI की शुरुआत है, इसकी सीमा नहीं।
+
+हमारा दीर्घकालिक लक्ष्य है कि API या डैशबोर्ड से उपलब्ध Phaseo का हर सार्थक workflow CLI में भी अच्छी तरह से डिज़ाइन किए गए रास्ते से पूरा हो सके। Phaseo में कोई कार्रवाई की जा सकती है, तो डेवलपर को टर्मिनल छोड़े बिना उसे ढूँढ़ने, चलाने और स्वचालित करने में सक्षम होना चाहिए।
+
+हम CLI को पूरे प्लेटफ़ॉर्म में आगे बढ़ाने की योजना बना रहे हैं, जिसमें शामिल हैं:
+
+- workspace, सदस्य और पहुँच का अधिक व्यापक प्रबंधन
+- API key और management key के पूरे जीवनचक्र का नियंत्रण
+- presets, routing, providers और guardrails का पूरा कॉन्फ़िगरेशन
+- usage, खर्च, credits और performance की अधिक विस्तृत रिपोर्ट
+- generations और requests की व्यापक observability
+- export किए जा सकने वाले diagnostics, ताकि support और incident की जाँच तेज़ हो
+- CI, deployment systems और agents के लिए बेहतर non-interactive workflows
+- Phaseo की नई सुविधाएँ आते ही उनके लिए मूल commands
+
+सुविधाओं की बराबरी का अर्थ API routes की लंबी सूची को यांत्रिक रूप से दिखाना नहीं है। CLI को आम काम raw requests हाथ से जोड़ने से आसान बनाने चाहिए। हम उपयोगी defaults, साफ़ सहायता, अनुमानित errors और स्थिर JSON आउटपुट वाले केंद्रित commands जोड़ते रहेंगे।
+
+जब तक कोई dedicated command उपलब्ध नहीं होता, प्रमाणीकृत `phaseo api` command समर्थित API endpoints के लिए वैकल्पिक रास्ता देता है। इससे उन्नत उपयोगकर्ता CLI में काम जारी रख सकते हैं, जबकि ऊँचे स्तर के commands का दायरा बढ़ता है।
+
+डैशबोर्ड डेटा देखने और Phaseo को इंटरैक्टिव ढंग से कॉन्फ़िगर करने का सबसे अच्छा दृश्य इंटरफ़ेस बना रहेगा। CLI उसका संचालन-संबंधी साथी होगी: तेज़ी से चलने वाली, स्वचालित करने में आसान और जहाँ भी shell चल सके वहाँ उपलब्ध।
+
+## डिफ़ॉल्ट रूप से सुरक्षित
+
+CLI Phaseo में बन रही उसी OAuth नींव का उपयोग करती है: सुरक्षित browser login, device authorization, कम समय तक चलने वाला access और बदलते रहने वाले refresh tokens। जहाँ ऑपरेटिंग सिस्टम सुविधा देता है, वहाँ sessions सुरक्षित credential storage में रखे जाते हैं; sign out करने पर stored session रद्द हो जाता है।
+
+पहुँच workspace की सदस्यता के साथ तुरंत बदलती है। किसी उपयोगकर्ता को workspace से हटाए जाने पर उसका CLI session उस workspace की जानकारी पढ़ या बदल नहीं सकता।
+
+Request inspection में जानबूझकर केवल metadata दिखाया जाता है। CLI log commands में prompts, request bodies, headers, traces और end-user identifiers उजागर नहीं होते।
+
+Management keys में स्पष्ट क्षमताएँ होती हैं, ताकि automation को सिर्फ़ उतनी पहुँच मिले जितनी उसे चाहिए। सामान्य gateway keys पर workspace policy, routing configuration, limits और guardrails लागू रहते हैं। नई बनाई गई secrets केवल एक बार दिखाई जाती हैं। उन्हें repository में commit करने या logs में लिखने के बजाय secret manager में रखना चाहिए।
+
+CLI की सुविधाएँ बढ़ने पर भी ये सीमाएँ अहम रहेंगी। नए commands API और डैशबोर्ड वाला workspace authorization model अपनाएँगे; वे अधिक अधिकार वाला अलग control path नहीं बनाएँगे।
+
+## आज उपलब्ध
+
+Phaseo CLI आज उपलब्ध है। यह डिफ़ॉल्ट रूप से `https://api.phaseo.app` से जुड़ती है और स्थानीय या preview deployment के लिए `PHASEO_API_URL` से कॉन्फ़िगर की जा सकती है।
+
+उपयोगकर्ताओं द्वारा बनाए गए OAuth apps अब भी निजी परीक्षण में हैं। इस रिलीज़ का उद्देश्य डेवलपर, टीम और agents के लिए first-party CLI अनुभव को भरोसेमंद बनाना है।
+
+CLI के पीछे का साझा OAuth काम आगे चलकर हमारे अपने terminal अनुभव से भी अधिक उपयोगी होगा। हमारा इरादा है कि इससे स्वीकृत third-party apps को स्पष्ट scopes माँगने, उपयोगकर्ता की सहमति पाने और workspace-aware authorization model के अंतर्गत काम करने का आधार मिले। First-party CLI के ज़रिए इन नियंत्रणों की पुष्टि करते हुए हम OAuth app बनाना निजी रख रहे हैं।
+
+इंस्टॉल होने के बाद, अपडेट उपलब्ध होने पर CLI आपको बताएगी। आप इसे कभी भी स्वयं अपडेट कर सकते हैं:
+
+<CliInstallTabs packageName="@phaseo/cli" mode="update" title="CLI अपडेट करें" />
+
+टर्मिनल Phaseo इस्तेमाल करने का प्रथम श्रेणी का तरीका होना चाहिए। यह रिलीज़ उसकी नींव रखती है: सुरक्षित login, उपयोगी commands का बड़ा समूह, agents और automation के लिए संरचित आउटपुट और अनुरोध के स्रोत code के पास ही उसका संदर्भ।
+
+अब हम CLI, API और डैशबोर्ड के बीच की दूरी लगातार घटाते रहेंगे, ताकि डेवलपर जहाँ चाहें वहाँ Phaseo का पूरा workflow पूरा कर सकें।

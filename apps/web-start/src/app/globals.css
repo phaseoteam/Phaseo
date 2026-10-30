@@ -1,0 +1,415 @@
+@import "katex/dist/katex.min.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* The palettes, status colours and radius, generated from packages/shared/app-kit/src/theme/tokens.ts. */
+@import "./theme-tokens.generated.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+	--animate-marquee: marquee var(--duration) infinite linear;
+	--animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+	--animate-shiny-text: shiny-text 1.15s cubic-bezier(.6, .6, 0, 1) both;
+	--animate-accordion-down: accordion-down 0.2s ease-out;
+	--animate-accordion-up: accordion-up 0.2s ease-out;
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar: var(--sidebar);
+	--color-chart-5: var(--chart-5);
+	--color-chart-4: var(--chart-4);
+	--color-chart-3: var(--chart-3);
+	--color-chart-2: var(--chart-2);
+	--color-chart-1: var(--chart-1);
+	--color-ring: var(--ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-success: var(--success);
+	--color-warning: var(--warning);
+	--color-info: var(--info);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+
+	@keyframes marquee {
+		from {
+			transform: translateX(0);
+		}
+		to {
+			transform: translateX(calc(-100% - var(--gap)));
+		}
+	}
+	@keyframes marquee-vertical {
+		from {
+			transform: translateY(0);
+		}
+		to {
+			transform: translateY(calc(-100% - var(--gap)));
+		}
+	}
+	@keyframes shiny-text {
+		0% {
+			background-position: 100% 0;
+		}
+		100% {
+			background-position: 0% 0;
+		}
+	}
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+	--animate-shine: shine var(--duration) infinite linear;
+	@keyframes shine {
+		0% {
+			background-position: 0% 0%;
+		}
+		50% {
+			background-position: 100% 100%;
+		}
+		to {
+			background-position: 0% 0%;
+		}
+	}
+	--font-heading: var(--font-phaseo-sans);
+	--font-sans: var(--font-phaseo-sans);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@keyframes modality-ticker {
+	from {
+		transform: translateY(0);
+	}
+	to {
+		transform: translateY(-50%);
+	}
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--color-gray-200, currentcolor);
+	}
+	* {
+		@apply border-border outline-ring/50;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
+	a[href],
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+	html {
+		@apply font-sans;
+	}
+	.dark body {
+		--dot-bg: #161616;
+		--dot-color: #848282;
+	}
+}
+
+@utility text-balance {
+	text-wrap: balance;
+}
+
+/*
+  ---break---
+*/
+
+/* The palette colours are in theme-tokens.generated.css. These are the website's
+   own tokens, and the older primary, ring and charts that the accent blocks
+   further down override. */
+:root {
+	--font-phaseo-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+	--sidebar-primary: oklch(0.588 0.158 241.966);
+	--sidebar-primary-foreground: oklch(0.977 0.013 236.62);
+	--sidebar-ring: oklch(0.708 0 0);
+	--primary: oklch(0.5 0.134 242.749);
+	--primary-foreground: oklch(0.977 0.013 236.62);
+	--ring: oklch(0.708 0 0);
+	--chart-1: oklch(0.828 0.111 230.318);
+	--chart-2: oklch(0.685 0.169 237.323);
+	--chart-3: oklch(0.588 0.158 241.966);
+	--chart-4: oklch(0.5 0.134 242.749);
+	--chart-5: oklch(0.443 0.11 240.79);
+
+	--chart-axis-color: #4b5563;
+}
+
+html[data-font="han-simplified"] {
+	--font-phaseo-sans: var(--font-noto-sans-simplified-chinese), "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+html[data-font="devanagari"] {
+	--font-phaseo-sans: var(--font-noto-sans-devanagari), "Nirmala UI", "Mangal", sans-serif;
+}
+
+html[data-font="japanese"] {
+	--font-phaseo-sans: var(--font-noto-sans-japanese), "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+
+html[data-font="arabic"] {
+	--font-phaseo-sans: var(--font-noto-sans-arabic), Tahoma, Arial, sans-serif;
+}
+
+/*
+  ---break---
+*/
+
+.dark {
+	--sidebar-primary: oklch(0.685 0.169 237.323);
+	--sidebar-primary-foreground: oklch(0.293 0.066 243.157);
+	--sidebar-ring: oklch(0.556 0 0);
+	--primary: oklch(0.443 0.11 240.79);
+	--primary-foreground: oklch(0.977 0.013 236.62);
+	--ring: oklch(0.556 0 0);
+	--chart-1: oklch(0.828 0.111 230.318);
+	--chart-2: oklch(0.685 0.169 237.323);
+	--chart-3: oklch(0.588 0.158 241.966);
+	--chart-4: oklch(0.5 0.134 242.749);
+	--chart-5: oklch(0.443 0.11 240.79);
+
+	--chart-axis-color: #e5e7eb;
+}
+
+/* Account-level appearance palettes. Their token colours are in
+   theme-tokens.generated.css; these blocks retint Tailwind's zinc and slate
+   scales to match. Accent variables are applied by the display preferences
+   provider so custom colours remain safe and global. */
+:root[data-light-palette="paper"]:not(.dark) {
+	--color-zinc-50: oklch(98.4% 0.003 247.858);
+	--color-zinc-100: oklch(96.8% 0.007 247.896);
+	--color-zinc-200: oklch(92.9% 0.013 255.508);
+	--color-zinc-300: oklch(86.9% 0.022 252.894);
+	--color-zinc-400: oklch(70.4% 0.04 256.788);
+	--color-zinc-500: oklch(55.4% 0.046 257.417);
+	--color-zinc-600: oklch(44.6% 0.043 257.281);
+	--color-zinc-700: oklch(37.2% 0.044 257.287);
+	--color-zinc-800: oklch(27.9% 0.041 260.031);
+	--color-zinc-900: oklch(20.8% 0.042 265.755);
+	--color-zinc-950: oklch(12.9% 0.042 264.695);
+}
+
+:root[data-light-palette="warm"]:not(.dark) {
+	--color-zinc-50: oklch(98.5% 0.001 106.423);
+	--color-zinc-100: oklch(97% 0.001 106.424);
+	--color-zinc-200: oklch(92.3% 0.003 48.717);
+	--color-zinc-300: oklch(86.9% 0.005 56.366);
+	--color-zinc-400: oklch(70.9% 0.01 56.259);
+	--color-zinc-500: oklch(55.3% 0.013 58.071);
+	--color-zinc-600: oklch(44.4% 0.011 73.639);
+	--color-zinc-700: oklch(37.4% 0.01 67.558);
+	--color-zinc-800: oklch(26.8% 0.007 34.298);
+	--color-zinc-900: oklch(21.6% 0.006 56.043);
+	--color-zinc-950: oklch(14.7% 0.004 49.25);
+	--color-slate-50: var(--color-zinc-50);
+	--color-slate-100: var(--color-zinc-100);
+	--color-slate-200: var(--color-zinc-200);
+	--color-slate-300: var(--color-zinc-300);
+	--color-slate-400: var(--color-zinc-400);
+	--color-slate-500: var(--color-zinc-500);
+	--color-slate-600: var(--color-zinc-600);
+	--color-slate-700: var(--color-zinc-700);
+	--color-slate-800: var(--color-zinc-800);
+	--color-slate-900: var(--color-zinc-900);
+	--color-slate-950: var(--color-zinc-950);
+}
+
+:root.dark[data-dark-palette="slate"] {
+	--color-zinc-50: oklch(98.4% 0.003 247.858);
+	--color-zinc-100: oklch(96.8% 0.007 247.896);
+	--color-zinc-200: oklch(92.9% 0.013 255.508);
+	--color-zinc-300: oklch(86.9% 0.022 252.894);
+	--color-zinc-400: oklch(70.4% 0.04 256.788);
+	--color-zinc-500: oklch(55.4% 0.046 257.417);
+	--color-zinc-600: oklch(44.6% 0.043 257.281);
+	--color-zinc-700: oklch(37.2% 0.044 257.287);
+	--color-zinc-800: oklch(27.9% 0.041 260.031);
+	--color-zinc-900: oklch(20.8% 0.042 265.755);
+	--color-zinc-950: oklch(12.9% 0.042 264.695);
+}
+
+:root.dark[data-dark-palette="midnight"] {
+	--color-zinc-50: oklch(98% 0.006 270);
+	--color-zinc-100: oklch(96% 0.01 270);
+	--color-zinc-200: oklch(92% 0.018 270);
+	--color-zinc-300: oklch(86% 0.026 270);
+	--color-zinc-400: oklch(70% 0.04 270);
+	--color-zinc-500: oklch(55% 0.045 270);
+	--color-zinc-600: oklch(44% 0.045 270);
+	--color-zinc-700: oklch(36% 0.045 270);
+	--color-zinc-800: oklch(26% 0.04 270);
+	--color-zinc-900: oklch(19% 0.035 270);
+	--color-zinc-950: oklch(12% 0.03 270);
+	--color-slate-50: var(--color-zinc-50);
+	--color-slate-100: var(--color-zinc-100);
+	--color-slate-200: var(--color-zinc-200);
+	--color-slate-300: var(--color-zinc-300);
+	--color-slate-400: var(--color-zinc-400);
+	--color-slate-500: var(--color-zinc-500);
+	--color-slate-600: var(--color-zinc-600);
+	--color-slate-700: var(--color-zinc-700);
+	--color-slate-800: var(--color-zinc-800);
+	--color-slate-900: var(--color-zinc-900);
+	--color-slate-950: var(--color-zinc-950);
+}
+
+:root:not(.dark) {
+	--primary: var(--light-user-accent, #0069a8);
+	--primary-foreground: var(--light-user-accent-foreground, #ffffff);
+	--ring: var(--light-user-accent, #0069a8);
+	--sidebar-primary: var(--light-user-accent, #0069a8);
+	--sidebar-primary-foreground: var(--light-user-accent-foreground, #ffffff);
+	--chart-1: color-mix(in oklch, var(--light-user-accent, #0069a8) 42%, var(--background));
+	--chart-2: color-mix(in oklch, var(--light-user-accent, #0069a8) 58%, var(--background));
+	--chart-3: color-mix(in oklch, var(--light-user-accent, #0069a8) 74%, var(--background));
+	--chart-4: var(--light-user-accent, #0069a8);
+	--chart-5: color-mix(in oklch, var(--light-user-accent, #0069a8) 78%, var(--foreground));
+}
+
+:root.dark {
+	--primary: var(--dark-user-accent, #0078b8);
+	--primary-foreground: var(--dark-user-accent-foreground, #ffffff);
+	--ring: var(--dark-user-accent, #0078b8);
+	--sidebar-primary: var(--dark-user-accent, #0078b8);
+	--sidebar-primary-foreground: var(--dark-user-accent-foreground, #ffffff);
+	--chart-1: color-mix(in oklch, var(--dark-user-accent, #0078b8) 42%, var(--background));
+	--chart-2: color-mix(in oklch, var(--dark-user-accent, #0078b8) 58%, var(--background));
+	--chart-3: color-mix(in oklch, var(--dark-user-accent, #0078b8) 74%, var(--background));
+	--chart-4: var(--dark-user-accent, #0078b8);
+	--chart-5: color-mix(in oklch, var(--dark-user-accent, #0078b8) 78%, var(--foreground));
+}
+
+/*
+  ---break---
+*/
+
+@layer base {
+	.theme {
+		--animate-marquee: marquee var(--duration) infinite linear;
+		--animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+	}
+}
+
+@layer utilities {
+	[data-pii-hidden="true"] {
+		filter: blur(4px);
+		user-select: none;
+		-webkit-user-select: none;
+	}
+
+	html[data-density="compact"] [data-slot="preference-row"] {
+		padding-block: 0.625rem;
+	}
+
+	html[data-density="compact"] [data-slot="table-head"] {
+		height: 2rem;
+		padding-inline: 0.375rem;
+	}
+
+	html[data-density="compact"] [data-slot="table-cell"] {
+		padding: 0.375rem;
+	}
+
+	html[data-density="compact"] [data-slot="select-item"],
+	html[data-density="compact"] [data-slot="dropdown-menu-item"],
+	html[data-density="compact"] [data-slot="dropdown-menu-sub-trigger"] {
+		min-height: 1.5rem;
+		padding-block: 0.25rem;
+	}
+
+	html[data-density="compact"] [data-slot="input"],
+	html[data-density="compact"] [data-slot="select-trigger"][data-size="default"],
+	html[data-density="compact"] [data-slot="button"][data-size="default"] {
+		height: 1.75rem;
+		min-height: 1.75rem;
+	}
+}
+
+/* Streamdown Tailwind utility source */
+@source "../../node_modules/streamdown/dist/*.js";
+/* Class recipes shared with the mobile app (the callout tones). */
+@source "../../../../packages/shared/app-kit/src/ui-recipes/callout.ts";
+
+/* Shared components (@phaseo/ui) live outside this app, so Tailwind has to be told to scan them. */
+@source "../../../../packages/shared/ui/src";
+
+@layer utilities {
+	@keyframes token-stream {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-50%);
+		}
+	}
+
+	.animate-token-stream {
+		animation: token-stream var(--stream-duration, 12s) linear infinite;
+	}
+
+	@keyframes latency-ping {
+		0% {
+			transform: translateX(0);
+			opacity: 0.9;
+		}
+		50% {
+			opacity: 1;
+		}
+		100% {
+			transform: translateX(100%);
+			opacity: 0.4;
+		}
+	}
+
+	.animate-latency-ping {
+		animation: latency-ping var(--latency-duration, 1.2s) ease-in-out
+			infinite;
+	}
+
+	@keyframes latency-dot {
+		0% {
+			transform: translate(0, -50%);
+		}
+		100% {
+			transform: translate(calc(100% - 1rem), -50%);
+		}
+	}
+
+	.animate-latency-dot {
+		animation: latency-dot var(--latency-duration, 1.2s) ease-in-out
+			infinite;
+	}
+}

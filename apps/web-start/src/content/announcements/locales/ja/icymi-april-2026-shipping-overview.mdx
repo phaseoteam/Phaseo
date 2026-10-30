@@ -1,0 +1,139 @@
+---
+title: "見逃した方へ： 2026年4月にリリースした内容"
+shortTitle: "見逃した方へ： 2026年4月"
+description: 4月は価格情報がわかりやすくなり、ワークスペースの管理が強化され、製品全体のモデルデータも安定しました。
+publishedAt: 2026-04-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-april-2026.png
+tags:
+  - 月次まとめ
+  - 月次まとめ
+  - 製品
+  - モデル
+draft: false
+---
+
+4月はPhaseoにとってリリースの多い月でした。モデルの比較、価格の確認、アクセス管理、新しいリリースの把握が、製品全体でよりわかりやすくなりました。
+
+このまとめでは、リリース履歴、コミット履歴、今月のカタログデータをもとに、**2026年4月1日から30日まで**に公開した内容を紹介します。
+
+## 4月に提供したもの
+
+### 価格を確認しやすく
+
+4月の大きなテーマのひとつは価格でした。モデルページの価格履歴をわかりやすくし、価格ラベルを見直し、価格情報がない場合の扱いを改善し、プロバイダーの割引価格を修正しました。
+
+モデルの価格は単純とは限らないため、この改善は重要です。同じモデルを複数のプロバイダーが提供し、地域、請求プラン、特別なルートによって条件が異なることがあります。優れた価格ページは数字を表示するだけでなく、利用者が行いたい作業に適したプロバイダールートを判断できるようにするべきです。
+
+4月には、マルチモーダルモデルのトークン集計課金も修正しました。また、ルールが不足している標準外の請求プランをより安全に扱えるようにしました。こうしたケースは例外的ですが、未対応のままだと価格ページへの信頼を損なうことがあります。
+
+価格ページはこちらです。
+
+- [価格を見る](/pricing)
+
+### チーム中心の表現をワークスペースに変更
+
+4月、製品全体で「チーム」という表現を「ワークスペース」に変更しました。設定にワークスペース管理機能を追加し、ワークスペース一覧を修正し、課金とキーの各フローをこのモデルに合わせて安定させました。
+
+この変更が重要なのは、「ワークスペース」のほうが実際の使い方をよく表すためです。個人のプロジェクト、会社の環境、実験用の環境、共同利用する本番環境など、さまざまなものをワークスペースとして扱えます。「チーム」より範囲が広く、使い方を限定しません。
+
+アクセス制御、アカウント設定、課金、今後の共同作業機能に向けても、より明確な基盤になりました。
+
+### モデルページの無駄な処理を削減
+
+個別のデータリクエストを減らし、頻繁に変わるデータと比較的安定したカタログデータを別々に扱うことで、モデルページを高速化しました。モデルカレンダーにはリリース日ごとの詳細表示を追加し、アップデート欄の日付表示もわかりやすくしました。
+
+こうした改善は、変更点を意識していなくても利用者が実感できます。ページが速く開き、必要な情報が早く表示され、リリース履歴も確認しやすくなります。
+
+モデルの読み込み状態、プロバイダーカード、カルーセル、ホームページのフィードも見直しました。これらの変更により、モデルの探索体験が洗練され、データベースにUIを載せただけのような印象も薄れました。
+
+### GatewayとSDKの対応範囲を拡大
+
+4月にはrerankに対応し、APIとSDKでのモデルアクセス確認を強化し、API互換性を拡大し、新しいモデル向けに生成済みSDKを更新しました。
+
+大切なのは各部分の整合性です。カタログで有効なモデルをAPIが認識し、SDKが正しく提供し、ドキュメントが説明し、利用できないルートへ製品が利用者を誘導しないことが必要です。
+
+また、無料モデルの利用開始、移行ガイド、モデルID、APIメタデータに関するSDKとドキュメントも整理しました。これにより、製品を調べる段階から実際に開発するまでの隔たりが小さくなりました。
+
+### 機能とともにセキュリティと信頼性も改善
+
+4月にはセキュリティに関する告知を公開し、インシデントバナーを更新し、登録時の保護を強化しました。キャッシュ、CI、リリース補助ツールを改善し、共有プレビュー画像のURLも修正しました。
+
+セキュリティや信頼性の更新は、新機能の告知と同じ調子で書く必要はありません。何が起きたのか利用者が把握できるよう、明確で事実に基づき、見つけやすくする必要があります。4月には、製品とブログでこうした情報をより直接的に伝えました。
+
+## そのほかのリリース
+
+- お知らせハブとホームページのお知らせ欄を公開しました。
+- モデルカレンダーのリリース日分析をわかりやすくしました。
+- プロバイダーとアプリの使用状況メトリクスを拡充しました。
+- 比較ダッシュボードとベンチマークのスコアを更新しました。
+- モデル発見のアラートを分けて調整し、重複通知を減らしました。
+- 残高不足メールの連携とオンボーディングの自動化を追加しました。
+- CIと依存関係の更新を複数行い、リリースプロセスを改善しました。
+
+## モデルの注目ポイント
+
+4月はカタログに多くの更新がありました。Claude Opus 4.7ではGateway互換性とベンチマークの作業が進みました。GPT Image 2、GPT 5.5、GPT 5.5 ProによりOpenAIの対応範囲が広がりました。DeepSeek V4 Flash、V4 Pro、V4 Pro Lightningも重要なDeepSeekの新モデル群として加わりました。
+
+そのほか、Qwen 3.6モデル、Gemini Deep Researchのプレビュー、Gemini Embedding 2、Gemini Robotics ER 1.6 Preview、Mistral Medium 3.5、Granite 4.1、Grok 4.3、Hy3 Preview、Wan 2.7 T2V、Music 2.6、複数のXiaomi MiMo V2.5モデルが登場しました。
+
+最新のリリースデータはこちらで確認できます。
+
+- [最近の更新を見る](/updates)
+
+## 4月のリリース概要
+
+ローカルのGit履歴では、4月に**215件のコミット**がありました。依存関係、CI、カタログ関連のコミットも多くありましたが、製品の改善は価格、ワークスペース、モデルページ、API対応範囲、セキュリティ告知、大規模なモデルデータ更新を中心に進みました。
+
+## 2026年4月にリリースされたモデル
+
+カタログには、2026年4月をリリース日とする次のモデルが含まれています。
+
+- 4月1日: Trinity Large Thinking (`arcee-ai/trinity-large-thinking`)
+- 4月1日: Qwen 3.6 Plus (`qwen/qwen3.6-plus`)
+- 4月1日: GLM 5V Turbo (`z-ai/glm-5v-turbo`)
+- 4月2日: Gemma 4 26B A4B (`google/gemma-4-26b-a4b`)
+- 4月2日: Gemma 4 31B (`google/gemma-4-31b`)
+- 4月3日: Wan 2.7 T2V (`qwen/wan2.7-t2v`)
+- 4月7日: GLM 5.1 (`z-ai/glm-5.1`)
+- 4月8日: Muse Spark (`meta/muse-spark`)
+- 4月8日: Muse Spark Contemplating (`meta/muse-spark-contemplating`)
+- 4月11日: Music 2.6 (`minimax/music-2.6`)
+- 4月13日: Kimi K2.6 Code Preview (`moonshotai/kimi-k2.6-code-preview`)
+- 4月14日: Gemini Robotics ER 1.6 Preview (`google/gemini-robotics-er-1.6-preview`)
+- 4月15日: Gemini 3.1 Flash TTS Preview (`google/gemini-3.1-flash-tts-preview`)
+- 4月16日: Claude Opus 4.7 (`anthropic/claude-opus-4.7`)
+- 4月17日: Qwen 3.6 35B A3B (`qwen/qwen3.6-35b-a3b`)
+- 4月17日: Grok TTS (`x-ai/grok-tts`)
+- 4月20日: Kimi K2.6 (`moonshotai/kimi-k2.6`)
+- 4月20日: Qwen 3.5 Plus (2026-04-20) (`qwen/qwen3.5-plus-2026-04-20`)
+- 4月21日: Gemini Deep Research Max Preview (04-2026) (`google/deep-research-max-preview-04-2026`)
+- 4月21日: Gemini Deep Research Preview (04-2026) (`google/deep-research-preview-04-2026`)
+- 4月21日: GPT Image 2 (`openai/gpt-image-2`)
+- 4月22日: Gemini Embedding 2 (`google/gemini-embedding-2`)
+- 4月22日: Qwen 3.6 27B (`qwen/qwen3.6-27b`)
+- 4月22日: MiMo V2.5 (`xiaomi/mimo-v2.5`)
+- 4月22日: MiMo V2.5 Pro (`xiaomi/mimo-v2.5-pro`)
+- 4月22日: MiMo V2.5 TTS (`xiaomi/mimo-v2.5-tts`)
+- 4月23日: GPT 5.5 (`openai/gpt-5.5`)
+- 4月23日: GPT 5.5 Pro (`openai/gpt-5.5-pro`)
+- 4月23日: Hy3 Preview (`tencent/hy3-preview`)
+- 4月24日: DeepSeek V4 Flash (`deepseek/deepseek-v4-flash`)
+- 4月24日: DeepSeek V4 Pro (`deepseek/deepseek-v4-pro`)
+- 4月25日: DeepSeek V4 Pro Lightning (`deepseek/deepseek-v4-pro-lightning`)
+- 4月28日: Seed 2.0 Lite (2026-04-28) (`bytedance/seed-2.0-lite-2026-04-28`)
+- 4月28日: Seed 2.0 Mini (2026-04-28) (`bytedance/seed-2.0-mini-2026-04-28`)
+- 4月28日: Nemotron 3 Nano Omni 30B A3B Reasoning (`nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`)
+- 4月28日: Laguna XS.2 (`poolside/laguna-xs.2`)
+- 4月29日: Granite 4.1 30B (`ibm/granite-4.1-30b`)
+- 4月29日: Granite 4.1 3B (`ibm/granite-4.1-3b`)
+- 4月29日: Granite 4.1 8B (`ibm/granite-4.1-8b`)
+- 4月29日: Mistral Medium 3.5 (`mistral/mistral-medium-3.5`)
+- 4月30日: Grok 4.3 (`x-ai/grok-4.3`)
+
+## 次の展開
+
+4月は5月に向けた土台を整えました。価格情報がわかりやすくなり、ワークスペースの基盤が強化され、モデルページの信頼性が高まり、Gatewayは非同期処理と動画の拡張に備えました。
+

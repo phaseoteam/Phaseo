@@ -1,0 +1,929 @@
+import type { StatsigProfile } from "@/lib/statsig/shared";
+import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
+import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
+import type { BroadcastDestinationHealth } from "@/components/(gateway)/settings/observability/broadcastHealth";
+import type { DisplayPreferences } from "@/lib/displayPreferences";
+import type { BudgetInterval as WorkspaceBudgetInterval } from "@/components/(gateway)/settings/budgets/workspaceBudgets";
+import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
+import type { SpendBlock, SpendRule, SpendRulePreview } from "@/components/(gateway)/settings/spend-rules/spendRules";
+
+export type SettingsLayoutInitialData = {
+	isEnterpriseInvoiceMode: boolean;
+	showBroadcast: boolean;
+	signedIn: boolean;
+	workspaceId: string | null;
+	workspaceName: string | null;
+	accountContext: null | {
+		platformRole: string;
+		isInternalAdmin: boolean;
+		isProvider: boolean;
+		providerMode?: boolean;
+		providerSlugs: string[];
+		workspaceRole: string | null;
+		workspaceKind: "personal" | "organization" | "enterprise" | "provider" | null;
+		workspaceExperience: "self_serve" | "enterprise" | "provider" | null;
+		experiences: Array<"self_serve" | "enterprise" | "provider" | "internal">;
+	};
+};
+
+export type SettingsBetaInitialData = {
+	isAdmin: boolean;
+	profile: StatsigProfile;
+	signedIn: boolean;
+};
+
+export type PrivacyGlobalSettings = {
+	privacy_enable_paid_may_train?: boolean | null;
+	privacy_enable_free_may_train?: boolean | null;
+	privacy_enable_free_may_publish_prompts?: boolean | null;
+	privacy_enable_input_output_logging?: boolean | null;
+	privacy_zdr_only?: boolean | null;
+	io_logging_enabled?: boolean | null;
+	io_logging_retention_days?: number | null;
+	io_logging_include_provider_payloads?: boolean | null;
+	io_logging_contents_access?: "members" | "admins" | null;
+	provider_restriction_mode?: string | null;
+	provider_restriction_provider_ids?: string[] | null;
+	provider_restriction_enforce_allowed?: boolean | null;
+	model_restriction_mode?: string | null;
+	model_restriction_model_ids?: string[] | null;
+};
+
+export type SettingsPrivacyInitialData = {
+	accountPolicy: AccountPrivacyPolicy | null;
+	activeProviderModels: Array<{
+		apiModelId: string;
+		internalModelId: string | null;
+		providerId: string;
+	}>;
+	initialGlobal: PrivacyGlobalSettings | null;
+	policy: AccountPrivacyPolicy;
+	providers: Array<{ id: string; name: string; provider_family_id?: string | null; offer_label?: string | null; offer_scope?: string | null }>;
+	models: Array<{ id: string; name: string; organisationId: string | null; organisationName: string; providerIds: string[] }>;
+	teamName: string | null;
+	workspaceId: string | null;
+	dataContribution: DataContributionSettings;
+};
+
+export type DataContributionClassifier = {
+	id: string;
+	slug: string;
+	name: string;
+	description: string | null;
+	kind: "phaseo_task" | "custom";
+	instructions: string;
+	categories: Record<string, string[]>;
+	model: string;
+	service_tier: "standard" | "flex";
+	sample_rate_bps: number;
+	enabled: boolean;
+	created_at: string;
+	updated_at: string;
+};
+
+export type DataContributionSettings = {
+	available: boolean;
+	enabled: boolean;
+	policyVersion: string;
+	consentedAt: string | null;
+	sampleRateBps: number;
+	classifierSampleRateBps: number;
+	discountBps: number;
+	contributions30d: number;
+	discountNanos30d: number;
+	classifiers: DataContributionClassifier[];
+	analytics: Array<{
+		usage_date: string;
+		classifier_id: string;
+		primary_category: string;
+		model_slug: string;
+		provider_slug: string;
+		request_count: number;
+		input_tokens: number;
+		output_tokens: number;
+	}>;
+};
+
+export type SettingsAccountDangerInitialData = {
+	signedIn: boolean;
+};
+
+export type SettingsAccountDetailsInitialData = {
+	hasPassword: boolean;
+	teams: Array<{ id: string; name: string; publisherHandle: string | null }>;
+	user: {
+		id: string;
+		displayName?: string | null;
+		email?: string | null;
+		defaultWorkspaceId?: string | null;
+		declaredCountryCode?: string | null;
+		countryStorageAvailable?: boolean;
+		obfuscateInfo: boolean;
+		createdAt: string;
+	} | null;
+};
+
+export type SettingsAccountMfaInitialData = {
+	hasPassword: boolean;
+	mfaEnabled: boolean;
+	mfaFactorId: string | null;
+	signedIn: boolean;
+};
+
+export type AccountPrivacyPolicy = {
+	privacyEnablePaidMayTrain: boolean;
+	privacyEnableFreeMayTrain: boolean;
+	privacyEnableInputOutputLogging: boolean;
+	privacyZdrOnly: boolean;
+	providerRestrictionMode: "none" | "allowlist" | "blocklist";
+	providerRestrictionProviderIds: string[];
+	modelRestrictionMode: "none" | "allowlist" | "blocklist";
+	modelRestrictionModelIds: string[];
+};
+
+export type SettingsAccountPrivacyInitialData = {
+	signedIn: boolean;
+	policy: AccountPrivacyPolicy;
+	providers: Array<{ id: string; name: string; provider_family_id?: string | null; offer_label?: string | null; offer_scope?: string | null }>;
+	models: Array<{ id: string; name: string; organisationId: string | null; organisationName: string; providerIds: string[] }>;
+};
+
+export type SettingsBroadcastInitialData = {
+	configuredDestinations: Array<{
+		destinationConfig: Record<string, unknown> | null;
+		destinationId: string;
+		enabled: boolean;
+		id: string;
+		name: string;
+		samplingRate: number;
+		updatedAt: string | null;
+		health: BroadcastDestinationHealth | null;
+	}>;
+	teamName: string | null;
+	workspaceId: string | null;
+};
+
+export type SettingsAppRow = {
+	app_key: string;
+	category: string | null;
+	created_at: string | null;
+	docs_url: string | null;
+	id: string;
+	image_url: string | null;
+	is_active: boolean;
+	is_managed: boolean;
+	is_public: boolean;
+	last_seen: string | null;
+	title: string;
+	url: string | null;
+};
+
+export type SettingsAppsInitialData = { apps: SettingsAppRow[] };
+
+export type SettingsAuthorizedAppsInitialData = {
+	authorizedApps: Array<Record<string, unknown>>;
+	signedIn: boolean;
+	userId: string | null;
+};
+
+export type SettingsOAuthAppsInitialData = {
+	initialTeamId: string | null;
+	oauthApps: Array<Record<string, unknown>>;
+	signedIn: boolean;
+};
+
+export type SettingsOAuthAppDetailInitialData = {
+	authorizations: Array<Record<string, unknown>>;
+	currentUserId: string | null;
+	oauthApp: Record<string, unknown> | null;
+	recentRequests: Array<{
+		request_id: string;
+		created_at: string;
+		oauth_user_id: string | null;
+		endpoint: string | null;
+		model_id: string | null;
+		provider: string | null;
+		success: boolean;
+		status_code: number | null;
+		error_code: string | null;
+		cost_nanos: number | null;
+		latency_ms: number | null;
+	}>;
+	signedIn: boolean;
+	usageStats: Array<Record<string, unknown>>;
+	userDirectory: Array<{ email: string | null; full_name: string | null; user_id: string }>;
+};
+
+export type SettingsManagementApiKeysInitialData = {
+	currentUserId: string | undefined;
+	teamsWithKeys: Array<{ id: string; keys: Array<Record<string, unknown>>; name: string }>;
+	workspace: { id: string; name: string } | null;
+};
+
+export type ByokKeyEntry = {
+	alwaysUse: boolean;
+	createdAt: string;
+	lastUsedAt: string | null;
+	enabled: boolean;
+	errorMessage: string | null;
+	id: string;
+	name: string;
+	prefix?: string;
+	providerId: string;
+	routingMode: "priority" | "fallback";
+	sortOrder: number;
+	suffix?: string;
+	verificationStatus: string | null;
+	allowedModelSlugs: string[];
+	allowedApiKeyIds: string[];
+};
+
+export type SettingsByokInitialData = {
+	fallbackEnabled: boolean;
+	freeRemaining: number;
+	keyEntries: ByokKeyEntry[];
+	legacyHiddenTotal: number;
+	monthlyRequestCount: number;
+	nextMonthStartIso: string;
+	paidTierRequests: number;
+	workspaceId: string | null;
+};
+
+export type SettingsKeysInitialData = {
+	currentUserId: string | undefined;
+	initialWorkspaceId: string | null;
+	/** When the key usage was read, so limit projections stay anchored to it. */
+	observedAt?: number;
+	teamsWithKeys: Array<{ id: string; name: string; keys: Array<Record<string, unknown>> }>;
+	workspaces: Array<{ id: string; name: string }>;
+};
+
+export type SettingsCreditsOnboardingInitialData = {
+	canAccessOnboarding: boolean;
+	canManageBilling: boolean;
+	currentBillingMode: "wallet" | "invoice";
+	initialBillingDay: number;
+	initialPaymentTermsDays: 14 | 30;
+	invoiceProfileEnabled: boolean;
+	signedIn: boolean;
+	signerName: string;
+	team: { name: string; tier: string } | null;
+	workspaceId: string | null;
+};
+
+export type SettingsCreditsTransactionsInitialData = {
+	billingMode: "wallet" | "invoice";
+	invoices: Array<{
+		id: string;
+		period_start: string;
+		period_end: string;
+		amount_nanos: number;
+		currency?: string | null;
+		status: "draft" | "open" | "paid" | "void" | "uncollectible";
+		stripe_invoice_id?: string | null;
+		stripe_invoice_number?: string | null;
+		due_at?: string | null;
+		issued_at?: string | null;
+		paid_at?: string | null;
+		created_at?: string | null;
+		updated_at?: string | null;
+	}>;
+	isEnterpriseInvoiceMode: boolean;
+	stripeCustomerId: string | null;
+	teamTier: string;
+	transactions: Array<{
+		id: string;
+		amount_nanos?: number | null;
+		description?: string | null;
+		created_at?: string | null;
+		status?: string | null;
+		kind?: string | null;
+		ref_type?: string | null;
+		ref_id?: string | null;
+		source_ref_type?: string | null;
+		source_ref_id?: string | null;
+		before_balance_nanos?: number | null;
+		after_balance_nanos?: number | null;
+	}>;
+	workspaceId: string | null;
+};
+
+export type SettingsCreditsInitialData = {
+	declaredCountryCode: string | null;
+	initialBalance: number;
+	latestPaymentSuccessAt: string | null;
+	mfaEnabled: boolean;
+	autoTopUpFailureEmailEnabled: boolean;
+	lowBalanceEmailEnabled: boolean;
+	lowBalanceEmailThresholdUsd: number | null;
+	paymentMethodExpiringEmailEnabled: boolean;
+	modelDeprecationAlertsEnabled: boolean;
+	modelDeprecationAlertsIncludeAdmins: boolean;
+	/** Whether spend rules count a person toward all their departments or only the primary one. */
+	departmentSpendAttribution?: "all" | "primary";
+	/** IANA time zone for spend rule calendar periods (rules without their own zone) and spend reports. */
+	billingTimeZone?: string;
+	/** How often owners (and admins when included) get the spend report email. */
+	spendReportCadence?: SpendReportCadence;
+	/** Whether admins get the spend report email too. */
+	spendReportIncludeAdmins?: boolean;
+	notificationDestinations: NotificationDestination[];
+	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
+	obfuscateInfo: boolean;
+	/** Average daily credits charged recently; null when it could not be measured. */
+	recentCreditSpend?: { dailyNanos: number; windowDays: number; observedAt: number } | null;
+	stripeInfo: {
+		customer: { email: string | null; id: string | null };
+		defaultPaymentMethodId: string | null;
+		hasPaymentMethod: boolean;
+		paymentMethods: Array<{
+			card: { brand: string | null; exp_month: number | null; exp_year: number | null; last4: string | null };
+			id: string;
+		}>;
+	};
+	workspaceId: string | null;
+	wallet: {
+		stripe_customer_id?: string | null;
+		balance_bigint?: number | null;
+		auto_top_up_enabled: boolean | null;
+		low_balance_threshold: number | null;
+		auto_top_up_amount: number | null;
+		[key: string]: unknown;
+	} | null;
+};
+
+export type SettingsPreferencesInitialData = {
+	preferences: DisplayPreferences;
+	signedIn: boolean;
+};
+
+export type ProviderOnboardingSubmission = {
+	id: string;
+	provider_slug: string;
+	provider_name: string;
+	website_url: string;
+	logo_url: string | null;
+	catalog_url: string | null;
+	application_type: "new" | "claim";
+	catalog_mode: "managed" | "remote";
+	status: string;
+	provider_review_status: string;
+	provider_review_reason: string | null;
+	model_count: number;
+	validation_summary: Record<string, unknown> | null;
+	submitted_at: string | null;
+	created_at: string;
+};
+
+export type SettingsProviderOnboardingInitialData = {
+	signedIn: boolean;
+	isAdmin: boolean;
+	linkedProviders: Array<{
+		provider_slug: string;
+		workspace_id: string;
+		role: string;
+		status: "pending" | "active";
+		verified_at: string | null;
+	}>;
+	catalogProviders: Array<{
+		provider_slug: string;
+		name?: string;
+		operatingStatus?: string;
+		provider_review_status?: string | null;
+		provider_approval_status?: string | null;
+		website_url?: string | null;
+		canManageCatalog?: boolean;
+		workspace_id: string;
+		role: string;
+		status: "pending" | "active";
+		verified_at: string | null;
+	}>;
+	submissions: ProviderOnboardingSubmission[];
+	syncSources: Array<{
+		provider_slug: string;
+		status: string;
+		delivery_mode: "polling" | "webhook_and_polling";
+		catalog_url: string | null;
+		webhookUrl: string;
+		webhookConfigured: boolean;
+		last_success_at: string | null;
+		last_polled_at: string | null;
+		last_catalog_sha256: string | null;
+		consecutive_failures: number;
+		last_error: string | null;
+		etag: string | null;
+		last_modified: string | null;
+		next_poll_at: string | null;
+	}>;
+	reviewRevisions: Array<{
+		id: string;
+		provider_slug: string;
+		trigger: string;
+		status: string;
+		review_status: string;
+		review_summary: Record<string, number> | null;
+		model_count: number | null;
+		error_message: string | null;
+		created_at: string;
+		completed_at: string | null;
+		models: Array<{
+			model_slug: string;
+			canonical_model_slug: string | null;
+			match_type: "exact" | "alias" | "new_model" | null;
+			provider_model_slug: string;
+			name: string;
+			availability: "ready" | "not_ready" | "degraded" | "deprecated" | "retired";
+			available_from: string | null;
+			deprecated_at: string | null;
+			shutdown_at: string | null;
+			decision: "pending" | "approved" | "rejected" | "needs_changes";
+			decision_reason: string | null;
+			route_projection_status: "not_projected" | "staged" | "probe_passed" | "enabled" | "failed";
+			route_projection_error: string | null;
+			reviewed_at: string | null;
+		}>;
+	}>;
+	events: Array<{ id: string; provider_slug: string; run_id: string | null; event_type: string; title: string; message: string; payload: Record<string, unknown>; read_at: string | null; created_at: string }>;
+	contracts: { schemaUrl: string; openApiUrl: string };
+};
+
+export type NotificationDestination = {
+	id: string;
+	name: string;
+	type: "email" | "discord" | "discord_webhook" | "slack" | "microsoft_teams" | "custom_webhook";
+	targetPreview: string;
+	status: string;
+	createdAt: string | null;
+	/** Custom webhooks only: deliveries carry x-phaseo-signature. Older destinations stay unsigned until a secret is generated. */
+	hasSigningSecret?: boolean;
+	signingSecretRotatedAt?: string | null;
+};
+
+/** workspace_settings.spend_report_cadence: daily 09:00, weekly Monday 09:00, monthly on the 1st, in the billing time zone. */
+export type SpendReportCadence = "off" | "daily" | "weekly" | "monthly";
+
+export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "broadcast_destination_failing" | "spend_alert" | "spend_blocked" | "spend_report";
+
+export type SettingsPaymentMethodsInitialData = {
+	customerId: string | null;
+	initialData: {
+		customer: { id: string; email: string | null };
+		defaultPaymentMethodId: string | null;
+		paymentMethods: Array<{
+			brand: string | null; created: number | null; expMonth: number | null;
+			expYear: number | null; funding: string | null; id: string; last4: string | null;
+		}>;
+	};
+	obfuscateInfo: boolean;
+};
+
+export type SettingsObservabilityDestinationNewInitialData = {
+	destinationFound: boolean;
+	keys: Array<{ id: string; name: string | null; prefix: string | null }>;
+	modelOptions: Array<{ value: string; label: string; logoId?: string | null; subtitle?: string | null }>;
+	providerOptions: Array<{ value: string; label: string; logoId?: string | null; subtitle?: string | null }>;
+	teamName: string | null;
+	workspaceId: string | null;
+};
+
+export type SettingsRoutingInitialData = {
+	responseHealingEnabled: boolean;
+	responseHealingLocked: boolean;
+	responseHealingMode: "safe" | "strict";
+	routingMode: "balanced" | "price" | "latency" | "throughput";
+	teamName: string | null;
+	alphaChannelEnabled: boolean;
+	betaChannelEnabled: boolean;
+	workspaceId: string | null;
+};
+
+export type AutoRoutingObjective = "balanced" | "quality" | "cost" | "latency";
+export type AutoRoutingSpendProfile = "economy" | "standard" | "premium" | "unrestricted" | "custom";
+export type AutoRoutingConfiguration = {
+	allowedPatterns: string[];
+	spendProfile: AutoRoutingSpendProfile;
+	maxInputPricePerMillion: number | null;
+	maxOutputPricePerMillion: number | null;
+	objective: AutoRoutingObjective;
+	allowFallbacks: boolean;
+	revision: string | null;
+	updatedAt: string | null;
+};
+export type SettingsAutoRoutingInitialData = {
+	autoRouting: AutoRoutingConfiguration;
+	canManage: boolean;
+	teamName: string | null;
+	workspaceId: string | null;
+};
+
+export type DynamicRouteMode = "balanced" | "price" | "latency" | "throughput";
+export type DynamicRouteAction = {
+	model?: string | null;
+	modelFallbacks?: string[];
+	routingMode?: DynamicRouteMode;
+	providerOrder: string[];
+	providerOnly: string[];
+	providerIgnore: string[];
+	allowFallbacks: boolean;
+};
+export type DynamicRouteNodeType = "start" | "condition" | "percentage" | "model" | "rate_limit" | "budget_limit" | "end";
+export type DynamicRouteNode = {
+	id: string;
+	type: DynamicRouteNodeType;
+	position?: { x: number; y: number } | null;
+	data: Record<string, any>;
+};
+export type DynamicRouteEdge = { id: string; source: string; target: string; sourceHandle?: string | null };
+export type DynamicRouteRule = {
+	id: string;
+	name: string;
+	enabled: boolean;
+	condition: {
+		field: "always" | "endpoint" | "model" | "session_id" | "metadata";
+		operator: "equals" | "not_equals" | "contains" | "starts_with" | "exists";
+		value?: string | null;
+		metadataKey?: string | null;
+	};
+	action: DynamicRouteAction;
+};
+export type DynamicRouteConfig = {
+	schemaVersion?: 2;
+	entryNodeId?: string | null;
+	nodes?: DynamicRouteNode[];
+	edges?: DynamicRouteEdge[];
+	cacheAwareRouting: boolean;
+	sessionAffinity: boolean;
+	defaultAction: DynamicRouteAction;
+	rules: DynamicRouteRule[];
+};
+export type DynamicRouteRow = {
+	id: string;
+	workspace_id: string;
+	name: string;
+	description: string | null;
+	status: "active" | "paused";
+	version: number;
+	deployed_version?: number | null;
+	config: DynamicRouteConfig;
+	keyIds: string[];
+	created_at: string;
+	updated_at: string;
+	versions?: Array<{ version: number; status: "draft" | "deployed" | "superseded"; created_at: string; created_by?: string | null }>;
+};
+export type SettingsDynamicRoutesInitialData = {
+	workspaceId: string | null;
+	routes: DynamicRouteRow[];
+	keys: Array<{ id: string; name: string; prefix: string; status: string }>;
+	providers: Array<{ id: string; name: string; status?: string | null; routingStatus?: string | null }>;
+};
+
+export type SettingsPresetsInitialData = {
+	currentUserId: string | undefined;
+	initialTeamId: string | null;
+	workspacePublisher: { handle: string | null; canManage: boolean };
+	teams: Array<{ id: string; name: string }>;
+	teamsWithPresets: Array<{ id: string; name: string; presets: Array<Record<string, unknown>> }>;
+};
+
+export type SettingsGuardrailProviderModel = { providerId: string; apiModelId: string; internalModelId: string | null; internalModelName?: string | null; organisationId?: string | null; organisationName?: string | null; providerPolicy?: { zeroDataRetention: boolean; dataPolicyTier: string; dataPolicyConfidence: string }; capabilities?: Array<{ id: string; dataPolicy: Record<string, unknown> | null }> };
+export type SettingsGuardrailRow = { id: string; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null; daily_limit_requests?: number | null; weekly_limit_requests?: number | null; monthly_limit_requests?: number | null; daily_limit_cost_nanos?: number | null; weekly_limit_cost_nanos?: number | null; monthly_limit_cost_nanos?: number | null };
+export type SettingsGuardrailMember = { id: string; name: string; role: string };
+export type SettingsGuardrailProvider = { id: string; name: string; familyId: string; offerLabel: string | null; offerScope: "global" | "regional" | "specialized" | null };
+export type SettingsGuardrailsInitialData = { activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrailKeyIdsByGuardrailId: Record<string, string[]>; guardrailMemberIdsByGuardrailId: Record<string, string[]>; guardrails: SettingsGuardrailRow[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; providers: SettingsGuardrailProvider[]; workspaceId: string | null };
+export type SettingsGuardrailEditorData = { accountPolicy: AccountPrivacyPolicy; activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrail: SettingsGuardrailRow | null; initialKeyIds: string[]; initialMemberIds: string[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; mode: "create" | "edit"; providers: SettingsGuardrailProvider[]; teamName: string | null; workspaceId: string | null };
+
+/** A request classifier in API units (sample_rate 0 to 1, budget in USD) with this month's spend. */
+export type SettingsClassifier = {
+	id: string;
+	workspace_id: string;
+	name: string;
+	description: string | null;
+	enabled: boolean;
+	model: string;
+	instructions: string;
+	dimensions: ClassifierDimension[];
+	sample_rate: number;
+	sample_by: SampleBy;
+	input_scope: InputScope;
+	scope: ClassifierScope;
+	monthly_budget_usd: number | null;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+	usage: { classifications: number; costUsd: number };
+};
+export type SettingsClassifiersInitialData = {
+	canManageClassifiers: boolean;
+	workspaceId: string | null;
+	/** First day of the current UTC month, which spend covers. */
+	month: string;
+	limit: number;
+	classifiers: SettingsClassifier[];
+	keys: Array<{ id: string; name: string; prefix: string; status: string }>;
+	apps: Array<{ id: string; title: string }>;
+};
+
+export type SettingsRateLimitTargetType = "key" | "member" | "department" | "guardrail" | "end_user_default";
+
+export type SettingsRateLimitPolicy = {
+	id: string;
+	name: string;
+	description: string | null;
+	requestsPerMinute: number | null;
+	tokensPerMinute: number | null;
+	/** Requests in progress at once. */
+	concurrentRequests: number | null;
+	/** Strict mode: limits are checked before sending, and requests are rejected when they can't be. */
+	failClosed: boolean;
+	updatedAt: string;
+};
+
+export type SettingsRateLimitsInitialData = {
+	workspaceId: string | null;
+	canManageRateLimits: boolean;
+	policies: SettingsRateLimitPolicy[];
+	assignments: Array<{ id: string; policyId: string; targetType: SettingsRateLimitTargetType; targetId: string | null }>;
+	targets: {
+		keys: Array<{ id: string; name: string; prefix: string; status: string }>;
+		members: Array<{ id: string; name: string | null; role: string }>;
+		departments: Array<{ id: string; name: string }>;
+		guardrails: Array<{ id: string; name: string }>;
+	};
+	/** Requests each policy rejected in the last throttleWindowHours. */
+	throttles: Array<{ policyId: string; throttledRequests: number; lastThrottledAt: string | null }>;
+	throttleWindowHours: number;
+	/** The workspace's trust-ladder tier from the gateway; null when unavailable, absent from older responses. */
+	tier?: SettingsRateLimitTier | null;
+};
+
+export type SettingsWorkloadIdentityProvider = "vercel" | "github_actions";
+
+/** A trust policy from the gateway's /v1/workload-identity/policies (web-api settings-workload-identity). */
+export type SettingsWorkloadIdentityPolicy = {
+	id: string;
+	name: string;
+	provider: SettingsWorkloadIdentityProvider;
+	issuer: string;
+	/** Vercel team ID or GitHub repository owner ID the token must carry. */
+	ownerId: string;
+	/** Exact-match conditions on other token claims, such as project_id or environment. */
+	claimConditions: Record<string, string[]>;
+	maxTokenLifetimeSeconds: number;
+	status: "active" | "disabled";
+	lastUsedAt: string | null;
+	createdAt: string | null;
+	updatedAt: string | null;
+};
+
+export type SettingsWorkloadIdentityInitialData = {
+	workspaceId: string | null;
+	/** False when the workspace is outside the rollout. */
+	available: boolean;
+	/** Owners and admins only. */
+	canManage: boolean;
+	/** The audience every token must be issued for. */
+	audience: string;
+	policies: SettingsWorkloadIdentityPolicy[];
+};
+
+export type SettingsRateLimitTierName = "new" | "standard" | "trusted" | "enterprise";
+/** GET /v1/rate-limits/tier: the workspace's tier and whether its owner can raise it one step. */
+export type SettingsRateLimitTier = {
+	tier: SettingsRateLimitTierName;
+	requestsPerMinute: number;
+	target: SettingsRateLimitTierName | null;
+	targetRequestsPerMinute: number | null;
+	eligible: boolean;
+	refusal: "disabled" | "override" | "raised" | "top_tier" | "no_paid_top_up" | "too_new" | "not_enough_spend" | "cooldown" | null;
+	/** Epoch ms. */
+	activeUntil: number | null;
+	availableAt: number | null;
+	durationDays: number;
+	thresholds: { minAgeDays: number; minLifetimePaidSpendUsd: number };
+	/** The signed-in user is the owner and the workspace is eligible. */
+	canRaise: boolean;
+};
+
+/** A workspace budget with usage from the gateway's enforcement function (web-api settings-budgets). */
+export type SettingsWorkspaceBudget = {
+	id: string;
+	interval: WorkspaceBudgetInterval;
+	limit_usd: number;
+	limit_nanos: number;
+	usage_usd: number;
+	usage_nanos: number;
+	remaining_nanos: number;
+	percent_used: number;
+	exceeded: boolean;
+	window_start: string | null;
+	/** Null for lifetime budgets, which never reset. */
+	reset_at: string | null;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+};
+/** A department budget: alerts at about 80% and 100%, and at 100% blocks the department's API-key requests (web-api settings-budgets). */
+export type SettingsDepartmentBudget = Omit<SettingsWorkspaceBudget, "interval"> & {
+	interval: Exclude<WorkspaceBudgetInterval, "lifetime">;
+	department_id: string;
+	department_name: string | null;
+};
+export type SettingsBudgetsInitialData = {
+	workspaceId: string | null;
+	canManageBudgets: boolean;
+	/** Database time the usage was read, so projections match between render and hydration. */
+	observedAt: string;
+	budgets: SettingsWorkspaceBudget[];
+	/** Null when department budgets couldn't be read; absent from older web-api responses. */
+	departmentBudgets?: SettingsDepartmentBudget[] | null;
+	departments?: Array<{ id: string; name: string }>;
+};
+
+/** GET /api/account/settings/spend-rules: rules in the control API shape (snake_case, nanos and *_usd). */
+export type SettingsSpendRulesInitialData = {
+	workspaceId: string;
+	canManageSpendRules: boolean;
+	maxRules: number;
+	testSendsPerMinute: number;
+	/** Whether block rules block requests yet (SPEND_RULE_BLOCKS_ENABLED); until then they only notify. */
+	blocksEnabled?: boolean;
+	/** Whether spend report emails go out yet (SPEND_REPORTS_ENABLED); the settings save either way. */
+	reportsEnabled?: boolean;
+	/** The zone a rule with time_zone null uses. */
+	billingTimeZone: string;
+	/** How often owners (and admins when included) get the spend report email. */
+	spendReportCadence?: SpendReportCadence;
+	/** Whether admins get the spend report email too. */
+	spendReportIncludeAdmins?: boolean;
+	rules: SpendRule[];
+};
+/** GET /api/account/settings/spend-rules/options: what the rule editor's scope and base pickers offer. */
+export type SettingsSpendRuleOptions = {
+	workspaceId: string;
+	/** Cost limits in USD by window; null when the key has none. */
+	keys: Array<{ id: string; name: string; prefix: string; status: string; limitsUsd: { daily: number | null; weekly: number | null; monthly: number | null } }>;
+	members: Array<{ id: string; name: string | null; role: string }>;
+	departments: Array<{ id: string; name: string }>;
+	providers: Array<{ id: string; name: string }>;
+	/** Workspace budget limits in USD by interval (daily, weekly, monthly, lifetime). */
+	budgetsUsd: Partial<Record<string, number | null>>;
+};
+
+/** GET /api/account/settings/spend-rules/blocks: the workspace's active spend blocks. */
+export type SettingsSpendBlocksData = { workspaceId: string; canLift: boolean; blocks: SpendBlock[] };
+
+/** The "spend-rules" settings resource: rules, editor options, active blocks and a preview per enabled, evaluated rule. */
+export type SettingsSpendAlertsData = SettingsSpendRulesInitialData & {
+	options: SettingsSpendRuleOptions;
+	previews: Record<string, SpendRulePreview>;
+	/** Active blocks, newest first. Empty when they could not be read. */
+	blocks: SpendBlock[];
+};
+
+export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };
+
+export type WorkspacePrivacySettings = {
+	isAuthenticated: boolean;
+	privacyEnablePaidMayTrain: boolean;
+	privacyEnableFreeMayTrain: boolean;
+	privacyZdrOnly: boolean;
+	providerRestrictionMode: "none" | "allowlist" | "blocklist";
+	providerRestrictionProviderIds: string[];
+	accountProviderRestrictionMode: "none" | "allowlist" | "blocklist";
+	accountProviderRestrictionProviderIds: string[];
+};
+
+export type TeamsSettingsData = {
+	teams: Array<{ id: string; name: string; publisherHandle?: string | null; logoUrl?: string | null }>;
+	membersByTeam: Record<string, any[]>;
+	invitesByTeam: Record<string, any[]>;
+	requestsByTeam: Record<string, any[]>;
+	initialTeamId: string | null;
+	currentUserId: string | null;
+	personalTeamId: string | null;
+	manageableTeamIds: string[];
+	walletBalances: Record<string, number>;
+	teamSsoSettingsByTeam: Record<string, any>;
+};
+
+export type UsageLabelFacet = { key: string; value: string };
+export type UsageLabelSummary = UsageLabelFacet & { requestCount: number; totalCostNanos: number; isSampled: boolean };
+/** What any workspace member can read about a request classifier: names, label keys and allowed values. */
+export type RequestClassifierSummary = { id: string; name: string; enabled: boolean; dimensions: Array<{ key: string; name: string; multiple: boolean; values: string[] }> };
+type UsageLogsPayload = { appNameEntries: Array<[string, string]>; availableKeys: Array<{ id: string; name: string | null; prefix: string | null }>; clientSources: Array<{ id: string; name: string }>; dedupedModels: string[]; dedupedProviders: string[]; labelFacets: UsageLabelFacet[]; labelSummary: UsageLabelSummary | null; requestClassifiers?: RequestClassifierSummary[]; logAppIds: string[]; logEndpoints: string[]; logFinishReasons: string[]; logErrorCodes: string[]; logStatusCodes: number[]; initialRequestsPage: any; modelMetadataEntries: Array<[string, any]>; modelProviderEntries: Array<[string, string[]]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]> };
+type UsageJobsPayload = { appMetadataEntries: Array<[string, any]>; jobProviders: string[]; modelMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]>; recentJobs: any[] };
+type UsageSessionsPayload = { appMetadataEntries: Array<[string, any]>; modelMetadataEntries: Array<[string, any]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]>; sessionAppIds: string[]; sessionModelIds: string[]; sessionProviderIds: string[]; sessions: any[] };
+export type UsageUpstreamRequestRow = {
+	id: string;
+	created_at: string;
+	gateway_request_id: string;
+	request_id: string;
+	sequence: number;
+	round_number: number;
+	attempt_number: number | null;
+	attempt_count?: number | null;
+	request_latency_ms?: number | null;
+	request_created_at?: string | null;
+	internal_attempt_number: number | null;
+	stage: string;
+	endpoint: string;
+	model_id: string;
+	provider: string | null;
+	api_model_id: string | null;
+	provider_model_slug: string | null;
+	status_code: number | null;
+	status_text: string | null;
+	success: boolean;
+	outcome: string;
+	retryable: boolean | null;
+	fallback_attempted: boolean;
+	was_probe: boolean;
+	key_source: "gateway" | "byok" | null;
+	key_id: string | null;
+	native_response_id: string | null;
+	provider_finish_reason: string | null;
+	finish_reason: string | null;
+	duration_ms: number | null;
+	latency_ms: number | null;
+	generation_ms: number | null;
+	total_ms: number | null;
+	request_build_ms: number | null;
+	upstream_headers_ms: number | null;
+	retry_delay_ms: number | null;
+	usage: unknown;
+	cost_nanos: number | string | null;
+	currency: string | null;
+	client_source_id?: string | null;
+	client_source_name?: string | null;
+	client_source_kind?: string | null;
+	client_source_version?: string | null;
+	client_source_detection?: string | null;
+	error_code: string | null;
+	error_type: string | null;
+	error_message: string | null;
+	error_description: string | null;
+	error_param: string | null;
+	request_payload: unknown;
+	response_payload: unknown;
+	metadata: unknown;
+};
+type UsageUpstreamPayload = { availableKeys: Array<{ id: string; name: string | null; prefix: string | null }>; modelMetadataEntries: Array<[string, any]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]>; upstreamRequests: UsageUpstreamRequestRow[] };
+export type SettingsUsageLogsLoadState = "ready" | "unauthorized" | "no_workspace" | "forbidden" | "failed";
+export type SettingsUsageLogsInitialData = { signedIn: boolean; workspaceId: string | null; loadState?: SettingsUsageLogsLoadState } & ({ view: "logs"; data: UsageLogsPayload | null } | { view: "upstream"; data: UsageUpstreamPayload | null } | { view: "jobs"; data: UsageJobsPayload | null } | { view: "sessions"; data: UsageSessionsPayload | null });
+
+export type KeySecurityKey = {
+	id: string;
+	name: string;
+	prefix: string;
+	status: "active" | "paused";
+	created_by: string | null;
+	owner_name: string | null;
+	/** Owners and admins only. */
+	owner_email: string | null;
+	created_at: string;
+	/** Null when the key has never been used for a request. */
+	last_used_at: string | null;
+	expires_at: string | null;
+	storage_locations: string[];
+	has_spend_limit: boolean;
+	has_ip_allowlist: boolean;
+	never_used: boolean;
+	idle: boolean;
+	safe_to_remove: boolean;
+	risk: number;
+};
+
+export type KeySecuritySummary = {
+	total: number;
+	paused: number;
+	no_spend_limit: number;
+	never_expires: number;
+	idle: number;
+	safe_to_remove: number;
+	no_ip_allowlist: number;
+	no_storage_location: number;
+	locations: Array<{ id: string; keys: number }>;
+};
+
+export type KeyStorageIncidentNotice = {
+	id: string;
+	location_id: string;
+	action: "revoke" | "pause";
+	title: string;
+	customer_message: string;
+	source_url: string | null;
+	applied_at: string;
+	keys: number;
+	key_ids: string[];
+};
+
+export type SettingsKeySecurityInitialData = {
+	workspaceId: string;
+	canManage: boolean;
+	maxBulkKeys: number;
+	observedAt: number;
+	summary: KeySecuritySummary;
+	keys: KeySecurityKey[];
+	/** Platform breaches in the last 90 days where Phaseo revoked or paused this workspace's keys. */
+	incidents: KeyStorageIncidentNotice[];
+};

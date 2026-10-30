@@ -1,0 +1,168 @@
+import {
+	Bot,
+	Braces,
+	Package,
+	TerminalSquare,
+	type LucideIcon,
+} from "lucide-react";
+
+export type LanguageGroupId =
+	| "raw"
+	| "phaseo-client"
+	| "phaseo-agent"
+	| "openai"
+	| "anthropic";
+
+export type LanguageOption = {
+	value: string;
+	label: string;
+	group: LanguageGroupId;
+	placement?: "direct" | "grouped";
+	icon?: LucideIcon;
+	disabled: boolean;
+};
+
+export const LANGUAGE_GROUP_META: Record<
+	LanguageGroupId,
+	{ label: string; icon: LucideIcon }
+> = {
+	raw: { label: "Raw HTTP", icon: TerminalSquare },
+	"phaseo-client": { label: "Phaseo Client SDKs", icon: Braces },
+	"phaseo-agent": { label: "Phaseo Agent SDK", icon: Bot },
+	openai: { label: "OpenAI SDK", icon: Package },
+	anthropic: { label: "Anthropic SDK", icon: Package },
+};
+
+export const LANGUAGE_OPTIONS: LanguageOption[] = [
+	{ value: "curl", label: "cURL", group: "raw", placement: "direct", icon: TerminalSquare, disabled: false },
+	{
+		value: "ai-sdk",
+		label: "Vercel AI SDK",
+		group: "phaseo-client",
+		placement: "direct",
+		icon: Bot,
+		disabled: false,
+	},
+	{ value: "node-fetch", label: "Node.js fetch", group: "raw", disabled: false },
+	{ value: "python-requests", label: "Python requests", group: "raw", disabled: false },
+	{ value: "typescript-sdk", label: "TypeScript SDK", group: "phaseo-client", disabled: false },
+	{ value: "python-sdk", label: "Python SDK", group: "phaseo-client", disabled: false },
+	{ value: "go-sdk", label: "Go SDK", group: "phaseo-client", disabled: false },
+	{ value: "csharp-sdk", label: "C# SDK", group: "phaseo-client", disabled: false },
+	{ value: "java-sdk", label: "Java SDK", group: "phaseo-client", disabled: false },
+	{ value: "php-sdk", label: "PHP SDK", group: "phaseo-client", disabled: false },
+	{ value: "ruby-sdk", label: "Ruby SDK", group: "phaseo-client", disabled: false },
+	{ value: "agent-sdk-ts", label: "TypeScript Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-python", label: "Python Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-go", label: "Go Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-csharp", label: "C# Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-php", label: "PHP Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-ruby", label: "Ruby Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "openai-python", label: "OpenAI Python Client", group: "openai", disabled: false },
+	{ value: "openai-node", label: "OpenAI Node.js Client", group: "openai", disabled: false },
+	{ value: "anthropic-python", label: "Anthropic Python Client", group: "anthropic", disabled: false },
+	{ value: "anthropic-node", label: "Anthropic TypeScript Client", group: "anthropic", disabled: false },
+];
+
+export const LANGUAGE_GROUP_ORDER: LanguageGroupId[] = [
+	"raw",
+	"phaseo-client",
+	"phaseo-agent",
+	"openai",
+	"anthropic",
+];
+
+export const DIRECT_LANGUAGE_ORDER = ["curl", "ai-sdk"] as const;
+
+export const STREAMING_PATHS = new Set(["/chat/completions", "/responses", "/messages"]);
+export const AI_SDK_ENDPOINTS = new Set(["chat.completions", "messages", "responses"]);
+export const GENERIC_PHASEO_SDK_ENDPOINTS = new Set([
+	"chat.completions",
+	"messages",
+	"responses",
+]);
+export const INSTALLABLE_LANGUAGES = new Set([
+	"ai-sdk",
+	"agent-sdk-ts",
+	"agent-sdk-python",
+	"agent-sdk-go",
+	"agent-sdk-csharp",
+	"agent-sdk-php",
+	"agent-sdk-ruby",
+	"typescript-sdk",
+	"python-sdk",
+	"go-sdk",
+	"csharp-sdk",
+	"java-sdk",
+	"php-sdk",
+	"ruby-sdk",
+	"openai-python",
+	"openai-node",
+	"anthropic-python",
+	"anthropic-node",
+]);
+
+export const PHASEO_METHODS: Record<string, { ts: string; py: string }> = {
+	extractions: { ts: "extractions.create", py: "extractions.create" },
+	"chat.completions": { ts: "generateText", py: "generate_text" },
+	responses: { ts: "generateResponse", py: "generate_response" },
+	decisions: { ts: "decisions.make", py: "decisions.make" },
+	embeddings: { ts: "generateEmbedding", py: "generate_embedding" },
+	moderations: { ts: "generateModeration", py: "generate_moderation" },
+	"moderations.create": { ts: "generateModeration", py: "generate_moderation" },
+	"images.generations": { ts: "generateImage", py: "generate_image" },
+	"images.edits": { ts: "generateImageEdit", py: "generate_image_edit" },
+	"audio.speech": { ts: "generateSpeech", py: "generate_speech" },
+	"audio.transcriptions": { ts: "generateTranscription", py: "generate_transcription" },
+	"audio.translations": { ts: "generateTranslation", py: "generate_translation" },
+	"video.generations": { ts: "generateVideo", py: "generate_video" },
+	"batch.create": { ts: "createBatch", py: "create_batch" },
+};
+
+export const OPENAI_METHODS: Record<string, { ts: string; py: string }> = {
+	"chat.completions": { ts: "chat.completions.create", py: "chat.completions.create" },
+	responses: { ts: "responses.create", py: "responses.create" },
+};
+
+export function getInstallationCode(language: string): string {
+	switch (language) {
+		case "ai-sdk":
+			return "npm install ai @phaseo/ai-sdk-provider";
+		case "agent-sdk-ts":
+			return "pnpm add @phaseo/sdk @phaseo/agent-sdk";
+		case "agent-sdk-python":
+			return "pip install phaseo phaseo-agent-sdk";
+		case "agent-sdk-go":
+			return "go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest";
+		case "agent-sdk-csharp":
+			return "dotnet add package Phaseo.Sdk\ndotnet add package Phaseo.AgentSdk";
+		case "agent-sdk-php":
+			return "composer require phaseo/sdk phaseo/agent-sdk";
+		case "agent-sdk-ruby":
+			return "gem install phaseo_sdk phaseo_agent_sdk";
+		case "typescript-sdk":
+			return "npm install @phaseo/sdk";
+		case "python-sdk":
+			return "pip install phaseo";
+		case "go-sdk":
+			return "go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2@latest";
+		case "csharp-sdk":
+			return "dotnet add package Phaseo.Sdk";
+		case "java-sdk":
+			return "git clone https://github.com/phaseoteam/Phaseo.git\ncd Phaseo\ngit checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011\nmvn -f packages/sdk/sdk-java/pom.xml -DskipTests install\n\n<!-- Add to your application's pom.xml -->\n<dependency>\n  <groupId>app.phaseo</groupId>\n  <artifactId>phaseo-sdk</artifactId>\n  <version>3.0.0</version>\n</dependency>";
+		case "php-sdk":
+			return "composer require phaseo/sdk";
+		case "ruby-sdk":
+			return "gem install phaseo_sdk";
+		case "openai-python":
+			return "pip install openai";
+		case "openai-node":
+			return "npm install openai";
+		case "anthropic-python":
+			return "pip install anthropic";
+		case "anthropic-node":
+			return "npm install @anthropic-ai/sdk";
+		default:
+			return "";
+	}
+}

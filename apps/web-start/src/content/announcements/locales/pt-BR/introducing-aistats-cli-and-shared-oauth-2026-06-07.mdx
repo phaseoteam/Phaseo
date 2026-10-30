@@ -1,0 +1,150 @@
+---
+title: "Conheça a CLI da Phaseo"
+description: "Uma forma mais rápida para desenvolvedores e agentes trabalharem com a Phaseo, do primeiro login até a análise de uma solicitação em produção."
+publishedAt: 2026-07-15
+author: Phaseo Team
+category: guides
+pinned: true
+coverImage: /blog-images/blog-cli-oauth.png
+tags:
+  - Lançamento
+  - CLI
+  - OAuth
+  - Produto
+draft: false
+---
+
+Hoje estamos apresentando a **CLI da Phaseo**, uma nova forma de trabalhar com a Phaseo pelo terminal.
+
+A CLI reúne as ferramentas mais usadas pelos desenvolvedores — autenticação, chaves de API, créditos, modelos, controles de workspaces e registros de solicitações — no lugar onde o trabalho já acontece. Ela funciona em um terminal local, em um shell remoto ou em um fluxo com agentes.
+
+Nosso objetivo é simples: encurtar bastante o caminho entre uma ideia e um aplicativo de IA funcional e observável.
+
+## Do login à primeira solicitação
+
+Começar a usar um novo gateway de IA costuma exigir alternar entre documentação, painel, variáveis de ambiente e terminal antes de enviar a primeira solicitação. Agora, a Phaseo reúne essa configuração em um fluxo contínuo.
+
+Instale a CLI, entre com sua conta Phaseo e crie uma chave:
+
+<CliInstallTabs packageName="@phaseo/cli" />
+
+```bash
+phaseo login
+phaseo keys create --name "My first Phaseo key"
+```
+
+No seu notebook, `phaseo login` abre o navegador. Em sessões SSH, ambientes remotos e outros fluxos sem interface gráfica, o login por código de dispositivo mantém a mesma experiência sem exigir um retorno local.
+
+```bash
+phaseo login --device-code
+```
+
+Depois disso, a CLI mostra o workspace atual, o saldo de créditos, os modelos disponíveis, os provedores, os preços, as predefinições e as proteções. Você pode gerenciar chaves de API e configurações do workspace sem interromper o trabalho para abrir o painel.
+
+Esse primeiro fluxo representa como queremos que a CLI seja: direta, fácil de descobrir e útil sem exigir que desenvolvedores aprendam primeiro a estrutura de cada endpoint da API. Os comandos incluem ajuda integrada, saída legível para uso interativo e saída JSON para encaminhar resultados a outras ferramentas.
+
+## Uma interface para toda a plataforma Phaseo
+
+A primeira versão oferece muito mais do que autenticação. Ela reúne diversos fluxos da Phaseo em uma única interface de linha de comando:
+
+- criar, consultar, atualizar, desativar e excluir chaves de API
+- criar chaves de gerenciamento com permissões explícitas para automações confiáveis
+- listar workspaces, consultar membros e gerenciar a participação no workspace
+- consultar e configurar predefinições, ajustes e proteções
+- explorar modelos, provedores e preços
+- verificar créditos, atividade, análises e gerações
+- inspecionar solicitações do Gateway e consultar uma solicitação específica pelo ID
+- chamar diretamente um endpoint autenticado da API da Phaseo quando ainda não houver um comando dedicado
+
+Assim, a CLI já pode acompanhar um projeto da configuração inicial à operação cotidiana. Em uma única sessão de terminal, um desenvolvedor pode autenticar-se, criar uma chave com permissões limitadas, verificar os créditos da conta, escolher um modelo e inspecionar o tráfego resultante.
+
+Para as equipes, ela também oferece uma interface operacional consistente. Os comandos usados no desenvolvimento local podem ser levados para scripts, procedimentos operacionais, ambientes remotos e automações com escopo limitado, sem depender de ações no painel.
+
+## Feita para pessoas e agentes
+
+Cada vez mais, desenvolvedores e agentes de programação usam o terminal para entender um projeto. Uma interface oficial da Phaseo permite ir além da geração de código de integração: eles podem verificar o workspace ativo, criar a chave correta, conferir os créditos disponíveis e investigar o que aconteceu depois de uma solicitação.
+
+A maioria dos comandos oferece saída JSON estruturada. Assim, a mesma interface atende tanto uma pessoa no terminal quanto um agente executando uma tarefa:
+
+```bash
+phaseo whoami --json
+phaseo credits get --json
+phaseo models list --limit 20 --json
+```
+
+Essa também é a base para uma habilidade da CLI da Phaseo que poderá ensinar agentes compatíveis a usar esses fluxos com segurança e consistência dentro de um projeto.
+
+Essa diferença importa. Um agente não deveria precisar adivinhar qual página do painel contém uma configuração, extrair dados de uma interface ou pedir a um desenvolvedor que copie informações entre ferramentas. Com uma CLI autenticada e estruturada, ele pode consultar o estado ao qual tem acesso e realizar uma ação explícita pela mesma interface compatível que um desenvolvedor usaria.
+
+Estamos desenvolvendo a habilidade da CLI junto com o produto para que agentes entendam os comandos disponíveis, prefiram saídas legíveis por máquina, evitem expor segredos recém-criados e consultem uma solicitação específica quando precisarem de evidências para diagnosticar uma integração.
+
+## Entenda cada solicitação
+
+O trabalho com IA raramente termina quando a solicitação funciona. Desenvolvedores precisam saber qual modelo e provedor a processaram, quanto tempo levou, quanto custou e por que algo falhou.
+
+A CLI da Phaseo disponibiliza esse contexto diretamente no terminal. Você pode filtrar as solicitações recentes para encontrar as importantes e, em seguida, inspecionar uma delas em detalhes:
+
+```bash
+phaseo logs list --since 1h --status error --json
+phaseo logs get <request-id> --json
+```
+
+Os detalhes incluem o contexto operacional necessário para investigar roteamento, status, latência, modelo, provedor e custo. Isso encurta o ciclo de feedback para desenvolvedores e agentes: criar, executar, inspecionar e melhorar no mesmo lugar.
+
+Estamos começando com listas de solicitações filtradas e consulta individual. O acompanhamento em tempo real virá depois.
+
+Com o tempo, queremos que a CLI se torne um complemento completo de observabilidade da Phaseo. Isso inclui filtros mais avançados, navegação mais simples entre solicitações e gerações relacionadas, resumos mais claros de custo e latência e fluxos ao vivo para acompanhar o tráfego durante o desenvolvimento ou a depuração de um aplicativo.
+
+O princípio continuará o mesmo: mostrar contexto operacional suficiente para resolver o problema, mantendo dados sensíveis dos aplicativos fora da saída geral da CLI.
+
+## Nossa direção: paridade com a API e o painel
+
+Este lançamento é o começo da CLI, não seu limite.
+
+Nosso objetivo de longo prazo é oferecer uma opção bem projetada na CLI para todo fluxo importante da Phaseo exposto pela API ou pelo painel. Se uma ação puder ser feita na Phaseo, desenvolvedores devem conseguir encontrá-la, executá-la e automatizá-la sem sair do terminal.
+
+Planejamos expandir a CLI por toda a plataforma, incluindo:
+
+- gerenciamento mais completo de workspaces, membros e acessos
+- controle do ciclo de vida completo de chaves de API e de gerenciamento
+- configuração completa de predefinições, roteamento, provedores e proteções
+- relatórios mais detalhados de uso, gastos, créditos e desempenho
+- observabilidade mais ampla de gerações e solicitações
+- diagnósticos exportáveis que acelerem o suporte e a investigação de incidentes
+- fluxos melhores sem interação para CI, sistemas de implantação e agentes
+- comandos próprios para novos recursos da Phaseo assim que forem lançados
+
+Paridade de recursos não significa expor mecanicamente uma longa lista de rotas da API. A CLI deve facilitar as tarefas comuns, em vez de obrigar alguém a montar solicitações brutas à mão. Continuaremos adicionando comandos específicos, com padrões úteis, ajuda clara, erros previsíveis e saída JSON estável.
+
+Enquanto não houver um comando dedicado, `phaseo api` oferece acesso autenticado a endpoints compatíveis da API. Assim, usuários avançados podem continuar trabalhando pela CLI enquanto o conjunto de comandos de alto nível cresce.
+
+O painel continuará sendo a melhor interface visual para explorar dados e configurar a Phaseo de forma interativa. A CLI será sua contraparte operacional: rápida de executar, fácil de automatizar e disponível em qualquer lugar que tenha um shell.
+
+## Segurança por padrão
+
+A CLI usa a mesma base de OAuth que estamos construindo em toda a Phaseo: login seguro pelo navegador, autorização por dispositivo, acesso de curta duração e tokens de atualização rotativos. Quando disponível, as sessões usam o armazenamento seguro de credenciais do sistema operacional; sair revoga a sessão armazenada.
+
+O acesso acompanha em tempo real a participação nos workspaces. Se uma pessoa for removida de um workspace, a sessão da CLI deixará de consultar ou alterar as informações desse espaço.
+
+A inspeção de solicitações mostra intencionalmente apenas metadados. Os comandos de registros da CLI não expõem prompts, corpos de solicitações, cabeçalhos, rastros nem identificadores de usuários finais.
+
+As chaves de gerenciamento usam permissões explícitas para que cada automação receba somente o acesso necessário. As chaves normais do Gateway continuam sujeitas às políticas do workspace, à configuração de roteamento, aos limites e às proteções. Segredos recém-criados são mostrados uma única vez e devem ser guardados em um gerenciador de segredos, não em um repositório ou em registros.
+
+À medida que a CLI se aproximar de uma paridade mais ampla de recursos, esses limites continuarão importantes. Os novos comandos herdarão o mesmo modelo de autorização por workspace da API e do painel, em vez de criar um caminho de controle separado e mais privilegiado.
+
+## Disponível hoje
+
+A CLI da Phaseo já está disponível. Por padrão, ela se conecta a `https://api.phaseo.app` e pode apontar para uma implantação local ou de prévia usando `PHASEO_API_URL`.
+
+Aplicativos OAuth criados por usuários continuam em testes privados. Este lançamento se concentra em tornar confiável a experiência da CLI oficial para desenvolvedores, equipes e agentes.
+
+O trabalho compartilhado de OAuth por trás da CLI acabará servindo para mais do que nossa própria experiência no terminal. A intenção é criar a base para aplicativos de terceiros aprovados, capazes de solicitar permissões claras, receber consentimento dos usuários e seguir o mesmo modelo de autorização por workspace. A criação de aplicativos OAuth continuará privada enquanto validamos esses controles pela CLI oficial.
+
+Depois de instalada, a CLI avisa quando há uma atualização disponível. Você também pode atualizá-la manualmente a qualquer momento:
+
+<CliInstallTabs packageName="@phaseo/cli" mode="update" title="Atualizar a CLI" />
+
+O terminal deve ser uma forma de primeira classe de usar a Phaseo. Este lançamento estabelece essa base: login seguro, um conjunto amplo de comandos úteis, saída estruturada para agentes e automações e contexto das solicitações perto do código que as produziu.
+
+A partir daqui, continuaremos aproximando a CLI, a API e o painel até que todo o fluxo da Phaseo possa ser conduzido no ambiente que os desenvolvedores escolherem.
+

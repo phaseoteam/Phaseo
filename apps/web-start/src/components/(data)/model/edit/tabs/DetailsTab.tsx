@@ -1,0 +1,334 @@
+"use client"
+
+import { type ReactNode, useEffect, useRef, useState } from "react"
+import { useLocale, useTranslations } from "next-intl"
+import { DatePickerInput } from "@/components/ui/date-picker-input"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { fetchAdminModelEditorSource } from "@/lib/fetchers/internal/adminModelEditorClient"
+import type { ModelData } from "../ModelEditDialog"
+
+interface DetailsTabProps {
+  modelId: string
+  model: ModelData
+  onModelChange: (model: ModelData) => void
+  onDetailsChange?: (details: ModelDetail[]) => void
+  onLinksChange?: (links: ModelLink[]) => void
+}
+
+interface ModelDetail {
+  id: string
+  detail_name: string
+  detail_value: string
+}
+
+interface ModelLink {
+  id: string
+  platform: string
+  kind: string
+  title: string
+  url: string
+}
+
+const DETAIL_FIELDS = [
+  {
+    key: "input_context_length",
+    inputType: "number",
+  },
+  {
+    key: "output_context_length",
+    inputType: "number",
+  },
+  {
+    key: "knowledge_cutoff",
+    inputType: "date",
+  },
+  {
+    key: "parameter_count",
+    inputType: "text",
+  },
+  {
+    key: "training_tokens",
+    inputType: "text",
+  },
+] as const
+
+const LINK_FIELDS = [
+  { key: "announcement", label: "Announcement" },
+  { key: "api_reference", label: "API reference" },
+  { key: "model_card", label: "Model card" },
+  { key: "paper", label: "Paper" },
+  { key: "playground", label: "Playground" },
+  { key: "repository", label: "Repository" },
+  { key: "weights", label: "Weights" },
+] as const
+
+type DetailFieldKey = (typeof DETAIL_FIELDS)[number]["key"]
+type LinkFieldKey = (typeof LINK_FIELDS)[number]["key"]
+
+const COMPACT_DETAIL_FIELDS = new Set<DetailFieldKey>([
+  "parameter_count",
+  "training_tokens",
+])
+
+function sanitizeDigitInput(value: string): string {
+  return value.replace(/[^\d]/g, "")
+}
+
+function formatCompactNumberLabel(value: string, locale: string): string {
+  if (!value) return ""
+  const normalized = value.replace(/^0+(?=\d)/, "")
+  const safe = normalized || "0"
+  const numeric = Number(safe)
+  if (!Number.isFinite(numeric)) return ""
+  return new Intl.NumberFormat(locale, {
+    notation: "compact",
+    maximumFractionDigits: 2,
+  }).format(numeric)
+}
+
+function createEmptyDetailValues(): Record<DetailFieldKey, string> {
+  return {
+    input_context_length: "",
+    output_context_length: "",
+    knowledge_cutoff: "",
+    parameter_count: "",
+    training_tokens: "",
+  }
+}
+
+function createEmptyLinkValues(): Record<LinkFieldKey, string> {
+  return {
+    announcement: "",
+    api_reference: "",
+    model_card: "",
+    paper: "",
+    playground: "",
+    repository: "",
+    weights: "",
+  }
+}
+
+function getLinkFieldLabel(kind: string): string {
+  const field = LINK_FIELDS.find((linkField) => linkField.key === kind)
+  if (field) return field.label
+  return kind
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+function FieldRow({
+  label,
+  description,
+  children,
+}: {
+  label: string
+  description?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
+      <div className="space-y-0.5">
+        <Label className="text-sm font-medium">{label}</Label>
+        {description ? (
+          <p className="text-xs text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <div>{children}</div>
+    </div>
+  )
+}
+
+export default function DetailsTab({
+  modelId,
+  model,
+  onModelChange,
+  onDetailsChange,
+  onLinksChange,
+}: DetailsTabProps) {
+  const locale = useLocale()
+  const tEditor = useTranslations("Common.ui.modelEditor")
+  void model
+  void onModelChange
+
+  const [detailValues, setDetailValues] = useState<Record<DetailFieldKey, string>>(createEmptyDetailValues())
+  const [linkValues, setLinkValues] = useState<Record<LinkFieldKey, string>>(createEmptyLinkValues())
+  const [preservedLinks, setPreservedLinks] = useState<ModelLink[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const onDetailsChangeRef = useRef(onDetailsChange)
+  const onLinksChangeRef = useRef(onLinksChange)
+
+  useEffect(() => {
+    onDetailsChangeRef.current = onDetailsChange
+  }, [onDetailsChange])
+
+  useEffect(() => {
+    onLinksChangeRef.current = onLinksChange
+  }, [onLinksChange])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const source = await fetchAdminModelEditorSource(modelId)
+      const detailsData = source.model?.model_details ?? []
+      const linksData = source.model?.model_links ?? []
+
+      const nextDetails = createEmptyDetailValues()
+      for (const row of detailsData ?? []) {
+        const key = row.detail_name as DetailFieldKey
+        if (key in nextDetails) {
+          nextDetails[key] = row.detail_value?.toString() ?? ""
+        }
+      }
+      setDetailValues(nextDetails)
+
+      const nextLinks = createEmptyLinkValues()
+      const primaryLinkKinds = new Set<LinkFieldKey>()
+      const preservedLinkRows: ModelLink[] = []
+      for (const row of linksData ?? []) {
+        const kind = (row.kind ?? row.platform ?? "").trim()
+        const url = row.url?.trim() ?? ""
+        if (!kind || !url) continue
+
+        const key = kind as LinkFieldKey
+        if (key in nextLinks && !primaryLinkKinds.has(key)) {
+          nextLinks[key] = url
+          primaryLinkKinds.add(key)
+        } else {
+          preservedLinkRows.push({
+            id: `${kind}:${url}`,
+            platform: kind,
+            kind,
+            title: row.title?.trim() || getLinkFieldLabel(kind),
+            url,
+          })
+        }
+      }
+      setLinkValues(nextLinks)
+      setPreservedLinks(preservedLinkRows)
+      setLoaded(true)
+    }
+
+    void fetchData()
+  }, [modelId])
+
+  useEffect(() => {
+    if (!loaded) return
+    const payload: ModelDetail[] = DETAIL_FIELDS
+      .map((field) => ({
+        id: field.key,
+        detail_name: field.key,
+        detail_value: detailValues[field.key].trim(),
+      }))
+      .filter((row) => row.detail_value.length > 0)
+
+    onDetailsChangeRef.current?.(payload)
+  }, [detailValues, loaded])
+
+  useEffect(() => {
+    if (!loaded) return
+    const editableLinks: ModelLink[] = LINK_FIELDS
+      .map((field) => ({
+        id: field.key,
+        platform: field.key,
+        kind: field.key,
+        title: field.label,
+        url: linkValues[field.key].trim(),
+      }))
+      .filter((row) => row.url.length > 0)
+
+    const editableKeys = new Set(editableLinks.map((row) => `${row.kind}:${row.url}`))
+    const payload = [
+      ...editableLinks,
+      ...preservedLinks.filter((row) => {
+        const url = row.url.trim()
+        return url.length > 0 && !editableKeys.has(`${row.kind}:${url}`)
+      }),
+    ]
+
+    onLinksChangeRef.current?.(payload)
+  }, [linkValues, preservedLinks, loaded])
+
+  return (
+    <div className="space-y-5">
+      <section className="rounded-lg border p-4 space-y-4">
+        <div className="text-sm font-semibold">{tEditor("detailsHeading")}</div>
+        {DETAIL_FIELDS.map((field) => {
+          const isCompactField = COMPACT_DETAIL_FIELDS.has(field.key)
+          const compactLabel = isCompactField
+            ? formatCompactNumberLabel(detailValues[field.key], locale)
+            : ""
+          const fieldTranslationKey = `detailFields.${field.key}`
+
+          return (
+            <FieldRow key={field.key} label={tEditor(`${fieldTranslationKey}.label` as never)}>
+              {field.inputType === "date" ? (
+                <DatePickerInput
+                  value={detailValues[field.key]}
+                  onChange={(value) =>
+                    setDetailValues((prev) => ({
+                      ...prev,
+                      [field.key]: value,
+                    }))
+                  }
+                  placeholder={tEditor(`${fieldTranslationKey}.placeholder` as never)}
+                />
+              ) : isCompactField ? (
+                <div className="relative">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={detailValues[field.key]}
+                    onChange={(event) =>
+                      setDetailValues((prev) => ({
+                        ...prev,
+                        [field.key]: sanitizeDigitInput(event.target.value),
+                      }))
+                    }
+                    placeholder={tEditor(`${fieldTranslationKey}.placeholder` as never)}
+                    className={compactLabel ? "pr-16" : undefined}
+                  />
+                  {compactLabel ? (
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                      {compactLabel}
+                    </span>
+                  ) : null}
+                </div>
+              ) : (
+                <Input
+                  type={field.inputType}
+                  value={detailValues[field.key]}
+                  onChange={(event) =>
+                    setDetailValues((prev) => ({
+                      ...prev,
+                      [field.key]: event.target.value,
+                    }))
+                  }
+                  placeholder={tEditor(`${fieldTranslationKey}.placeholder` as never)}
+                />
+              )}
+            </FieldRow>
+          )
+        })}
+      </section>
+
+      <section className="rounded-lg border p-4 space-y-4">
+        <div className="text-sm font-semibold">{tEditor("linksHeading")}</div>
+        {LINK_FIELDS.map((field) => (
+          <FieldRow key={field.key} label={tEditor(`linkFields.${field.key}` as never)}>
+            <Input
+              type="url"
+              value={linkValues[field.key]}
+              onChange={(event) =>
+                setLinkValues((prev) => ({
+                  ...prev,
+                  [field.key]: event.target.value,
+                }))
+              }
+              placeholder="https://..."
+            />
+          </FieldRow>
+        ))}
+      </section>
+    </div>
+  )
+}

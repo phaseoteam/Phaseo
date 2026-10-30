@@ -1,0 +1,329 @@
+"use client";
+import { startOfUTCWeek } from "./time-buckets";
+
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import type { MarketShareTimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
+import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
+import {
+	ChartContainer,
+	ChartTooltip,
+} from "@/components/ui/chart";
+import {
+	assignOrderedSeriesColours,
+	keyForSeries,
+} from "@/components/(rankings)/chart-colors";
+
+type MarketShareStackedBarProps = {
+	data: MarketShareTimeseriesData[];
+	dimension: "organization" | "provider";
+	metric?: "requests" | "tokens";
+	normalizeToPercent?: boolean;
+};
+
+type SeriesStyle = Record<string, { label: string; color: string; stroke: string }>;
+const TOP_SERIES = 10;
+
+function formatPercent(value: number, locale: string, lessThanOneLabel: string) {
+	if (!Number.isFinite(value)) return "--";
+	if (value > 0 && value < 1) return lessThanOneLabel;
+	return new Intl.NumberFormat(locale, {
+		style: "percent",
+		maximumFractionDigits: 0,
+	}).format(value / 100);
+}
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function MarketShareStackedBar({
+	data,
+	dimension,
+	metric = "requests",
+	normalizeToPercent = false,
+}: MarketShareStackedBarProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatBucketLabel = (value: string, _locale?: string) => format.calendarDate(value, value);
+	const formatNumber = (value: number, _locale?: string) => metric === "tokens" ? formatRoundedCount(value, locale) : Number.isFinite(value)
+		? format.number(value, { maximumFractionDigits: 1 })
+		: "--";
+	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+	const [nowMs] = useState(() => Date.now());
+
+	if (!data.length) {
+		return (
+				<EmptyChartPreview
+					title={t("marketShareEmptyTitle", {
+						dimension: t(`marketShareDimension.${dimension === "organization" ? "organisation" : "provider"}`),
+					})}
+					description={t("marketShareEmptyDescription")}
+				heightClassName="h-[360px]"
+			/>
+		);
+	}
+
+	const totalsByGroup = new Map<string, number>();
+	const bucketMap = new Map<number, Record<string, number> & { bucket: string; bucketTs: number }>();
+	const bucketTotals = new Map<number, number>();
+
+	for (const row of data) {
+		const bucketTs = new Date(row.bucket).getTime();
+		if (!Number.isFinite(bucketTs)) continue;
+		const key = row.name || "Unknown";
+		if (key.trim().toLowerCase() === "unknown") continue;
+		const value =
+			metric === "tokens"
+				? Number(row.tokens ?? 0)
+				: Number(row.requests ?? 0);
+
+		if (!Number.isFinite(value)) continue;
+
+		const entry =
+			bucketMap.get(bucketTs) ??
+			({
+				bucket: formatBucketLabel(row.bucket, locale),
+				bucketTs,
+			} as Record<string, number> & { bucket: string; bucketTs: number });
+
+		entry[key] = (entry[key] ?? 0) + value;
+		bucketMap.set(bucketTs, entry);
+		bucketTotals.set(bucketTs, (bucketTotals.get(bucketTs) ?? 0) + value);
+		totalsByGroup.set(key, (totalsByGroup.get(key) ?? 0) + value);
+	}
+
+	const sortedGroups = Array.from(totalsByGroup.entries())
+		.sort((a, b) => b[1] - a[1])
+		.map(([name]) => name);
+
+	if (!sortedGroups.length) {
+		return (
+				<EmptyChartPreview
+					title={t("marketShareEmptyTitle", {
+						dimension: t(`marketShareDimension.${dimension === "organization" ? "organisation" : "provider"}`),
+					})}
+					description={t("marketShareEmptyDescription")}
+				heightClassName="h-[360px]"
+			/>
+		);
+	}
+
+	const existingBucketTs = Array.from(bucketMap.keys());
+	const currentWeekTs = startOfUTCWeek(new Date(nowMs)).getTime();
+	const endWeekTs =
+		existingBucketTs.length > 0
+			? Math.max(...existingBucketTs, currentWeekTs)
+			: currentWeekTs;
+	const endWeek = startOfUTCWeek(new Date(endWeekTs));
+	for (let i = 51; i >= 0; i -= 1) {
+		const ts = endWeek.getTime() - i * WEEK_MS;
+		if (!bucketMap.has(ts)) {
+			bucketMap.set(ts, {
+				bucket: formatBucketLabel(new Date(ts).toISOString(), locale),
+				bucketTs: ts,
+			} as Record<string, number> & { bucket: string; bucketTs: number });
+			bucketTotals.set(ts, bucketTotals.get(ts) ?? 0);
+		}
+	}
+
+	const rankedGroups = sortedGroups.filter((group) => group !== "Other");
+	const topGroups = rankedGroups.slice(0, TOP_SERIES);
+	const overflowGroups = rankedGroups.slice(TOP_SERIES);
+	const hasOther = overflowGroups.length > 0 || sortedGroups.includes("Other");
+	const groupOrder = hasOther ? [...topGroups, "Other"] : topGroups;
+
+	const keyMap = new Map<string, string>();
+	topGroups.forEach((group) => {
+		keyMap.set(group, keyForSeries(group));
+	});
+	if (hasOther) {
+		keyMap.set("Other", "other");
+	}
+
+	const colourMap = assignOrderedSeriesColours(topGroups);
+
+	const seriesStyle: SeriesStyle = {};
+	topGroups.forEach((group) => {
+		const key = keyMap.get(group) ?? group;
+		const c = colourMap[group];
+		seriesStyle[key] = {
+			label: group,
+			color: c?.fill ?? "hsl(210 70% 75%)",
+			stroke: c?.stroke ?? c?.fill ?? "hsl(210 70% 55%)",
+		};
+	});
+	if (hasOther) {
+		seriesStyle.other = {
+			label: "Other",
+			color: "hsl(0 0% 70% / 0.6)",
+			stroke: "hsl(0 0% 50%)",
+		};
+	}
+
+	const chartData = Array.from(bucketMap.values())
+		.sort((a, b) => a.bucketTs - b.bucketTs)
+		.map(({ bucket, bucketTs, ...rest }) => {
+			const bucketTotal = bucketTotals.get(bucketTs) ?? 0;
+			const row: Record<string, number | string> = { bucket };
+			topGroups.forEach((group) => {
+				const key = keyMap.get(group) ?? group;
+				const rawValue = Number(rest[group] ?? 0);
+				row[`${key}__raw`] = rawValue;
+				row[key] =
+					normalizeToPercent && bucketTotal > 0
+						? (rawValue / bucketTotal) * 100
+						: rawValue;
+			});
+			if (hasOther) {
+				let otherTotal = Number(rest.Other ?? 0);
+				for (const group of overflowGroups) {
+					otherTotal += Number(rest[group] ?? 0);
+				}
+				row.other =
+					normalizeToPercent && bucketTotal > 0
+						? (otherTotal / bucketTotal) * 100
+						: otherTotal;
+				row.other__raw = otherTotal;
+			}
+			return row;
+		});
+
+	const seriesKeys = groupOrder.map((group) => keyMap.get(group) ?? group);
+
+	const chartConfig = {
+		value: { label: "Usage", color: "hsl(var(--primary))" },
+		...Object.fromEntries(
+			Object.entries(seriesStyle).map(([k, v]) => [
+				k,
+				{ label: v.label, color: v.color },
+			])
+		),
+	} as const;
+
+	return (
+		<ChartContainer config={chartConfig} className="h-[360px] w-full">
+			<BarChart
+				data={chartData}
+				barCategoryGap="10%"
+				margin={{ top: 16, right: 12, left: 0, bottom: 32 }}
+			>
+				<CartesianGrid vertical={false} className="stroke-muted" />
+				<XAxis
+					dataKey="bucket"
+					minTickGap={24}
+					interval="preserveStartEnd"
+					tickLine={false}
+					axisLine={false}
+				/>
+				<YAxis
+					tickFormatter={(value) =>
+						normalizeToPercent
+							? formatPercent(Number(value), locale, t("lessThanOnePercent"))
+							: metric === "tokens" ? formatCompactAxisTick(Number(value), locale) : formatNumber(Number(value), locale)
+					}
+					width={60}
+					tickLine={false}
+					axisLine={false}
+					domain={normalizeToPercent ? [0, 100] : undefined}
+					ticks={normalizeToPercent ? [0, 25, 50, 75, 100] : undefined}
+				/>
+				<ChartTooltip
+					content={(props) => {
+						const sortedPayload =
+							props.payload
+								?.filter((item) => Number(item?.value ?? 0) > 0)
+								.sort(
+									(a, b) => Number(b?.value ?? 0) - Number(a?.value ?? 0)
+								) ?? [];
+						const otherPayload = sortedPayload.find(
+							(item) => String(item?.dataKey ?? "") === "other"
+						);
+						const hoveredPayload = hoveredKey
+							? sortedPayload.find(
+									(item) =>
+										String(item?.dataKey ?? "") === hoveredKey &&
+										hoveredKey !== "other"
+								)
+							: undefined;
+						const topPayload = sortedPayload
+							.filter((item) => String(item?.dataKey ?? "") !== "other")
+							.slice(0, TOP_SERIES);
+						const hoveredAlreadyVisible =
+							hoveredPayload &&
+							topPayload.some(
+								(item) => String(item?.dataKey ?? "") === hoveredKey
+							);
+						const filteredPayload = [
+							...topPayload,
+							...(hoveredPayload && !hoveredAlreadyVisible ? [hoveredPayload] : []),
+							...(otherPayload ? [otherPayload] : []),
+						];
+						if (!filteredPayload.length) return null;
+						return (
+							<div className="grid min-w-[13rem] items-start gap-1.5 rounded-md bg-popover px-2.5 py-2 text-xs text-popover-foreground shadow-lg ring-1 ring-foreground/10">
+								<div className="font-medium">{String(props.label ?? "")}</div>
+								<div className="grid gap-0.5">
+									{filteredPayload.map((item) => {
+										const val = Number(item?.value ?? 0);
+										const seriesKey = String(item?.dataKey ?? item?.name ?? "");
+										const payload = (item?.payload ?? {}) as Record<string, unknown>;
+										const rawValue = Number(payload[`${seriesKey}__raw`] ?? val);
+										const cfg = seriesStyle[seriesKey];
+										const isHovered = hoveredKey === seriesKey;
+										return (
+											<div
+												key={seriesKey}
+												className={`flex items-center gap-1.5 rounded-sm px-1 py-0.5 ${
+													isHovered ? "bg-muted" : ""
+												}`}
+											>
+												<span
+													className="h-3.5 w-1 shrink-0 rounded-[1px]"
+													style={{ backgroundColor: cfg?.color }}
+												/>
+												<span className="min-w-0 flex-1 truncate">
+													{cfg?.label ?? String(item?.name ?? "")}
+												</span>
+												<span className="whitespace-nowrap pl-3 font-medium tabular-nums">
+													{normalizeToPercent
+									? `${formatPercent(val, locale, t("lessThanOnePercent"))} · ${formatNumber(rawValue, locale)}`
+									: formatNumber(val, locale)}
+												</span>
+											</div>
+										);
+									})}
+								</div>
+							</div>
+						);
+					}}
+				/>
+				{seriesKeys.map((key, index) => {
+					const s = seriesStyle[key];
+					return (
+						<Bar
+							key={key}
+							dataKey={key}
+							name={s?.label}
+							stackId="share"
+							fill={`var(--color-${key}, ${s?.color})`}
+							fillOpacity={1}
+							radius={
+								index === seriesKeys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]
+							}
+							onMouseOver={() => {
+								setHoveredKey((current) => (current === key ? current : key));
+							}}
+							onMouseOut={() => {
+								setHoveredKey((current) => (current === key ? null : current));
+							}}
+							isAnimationActive={false}
+						/>
+					);
+				})}
+			</BarChart>
+		</ChartContainer>
+	);
+}

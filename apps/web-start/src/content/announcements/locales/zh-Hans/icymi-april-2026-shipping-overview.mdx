@@ -1,0 +1,139 @@
+---
+title: "错过了？回顾： 2026 年 4 月发布内容"
+shortTitle: "错过了？回顾： 2026 年 4 月"
+description: 4 月，价格信息更加清晰，工作区控制更加完善，产品中的模型数据也更加稳定。
+publishedAt: 2026-04-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-april-2026.png
+tags:
+  - 月度回顾
+  - 月度回顾
+  - 产品
+  - 模型
+draft: false
+---
+
+4 月是 Phaseo 发布节奏非常密集的一个月。产品在模型比较、价格查询、访问管理和新品跟进方面都变得更加清晰易用。
+
+本回顾涵盖 **2026 年 4 月 1 日至 4 月 30 日** 发布的内容，依据当月的发布记录、提交记录和目录数据整理而成。
+
+## 本月发布
+
+### 价格信息更易查看
+
+价格是 4 月的重要主题之一。模型页面的价格历史更加清晰，价格标签得到调整，缺少价格信息时的处理更加谨慎，提供商折扣价格也已修正。
+
+这项工作很重要，因为模型定价很少是简单的。同一模型可能由多个提供商提供，覆盖不同地区、计费等级和特殊路由。好的价格页面不应只显示一个数字，还应帮助用户判断哪条提供商路由适合当前任务。
+
+4 月还修正了多模态模型的聚合 token 计费，并改进了对规则缺失的非标准计费等级的处理。这些情况虽然少见，但如果一直未解决，就会让价格页面显得不可靠。
+
+查看价格页面：
+
+- [浏览价格](/pricing)
+
+### 产品中的“团队”改为“工作区”
+
+4 月，产品将各处“团队”相关表述改为“工作区”。设置页面增加了工作区管理功能，修复了工作区列表，并围绕这一模式稳定了计费和密钥流程。
+
+这个词语调整很重要，因为“工作区”更贴近人们的实际使用方式。工作区可以是个人项目、公司环境、实验项目，也可以是共享的生产环境。它比“团队”涵盖范围更广，也不会对使用方式作过多假设。
+
+这一变化也为访问控制、账户设置、计费和未来的协作功能打下了更清晰的基础。
+
+### 模型页面减少了不必要的工作
+
+我们减少了模型页面分别发起的数据请求，并区分处理变化频繁的数据和较稳定的目录数据，从而提升了页面速度。模型日历新增了按发布日期查看详情的功能，“更新”区域的日期处理也更加清晰。
+
+即使用户不了解具体改动，也能感受到这类优化：页面打开更快，重要信息更早出现，发布历史也更容易浏览。
+
+我们还调整了模型加载状态、提供商卡片、轮播栏和首页信息流。综合来看，模型发现体验更加完善，不再像给数据库表套上一层界面。
+
+### Gateway 和 SDK 覆盖更多使用场景
+
+4 月新增了 rerank 支持，强化了 API 和 SDK 中的模型访问检查，扩展了 API 兼容性，并更新了用于新模型的生成式 SDK。
+
+关键在于保持各部分一致：如果模型已在目录中启用，API 就应识别它，SDK 应正确提供它，文档应说明它，产品也不应把用户引向他们无法使用的路由。
+
+4 月还改进了 SDK 和文档，涵盖免费模型的接入、迁移指南、模型 ID 和 API 元数据。这些改动缩短了从浏览产品到基于产品构建应用之间的距离。
+
+### 新功能发布的同时加强了安全与可靠性
+
+4 月发布了安全公告文案，更新了事件横幅，加强了注册保护，改进了缓存、CI 和发布辅助工具，并修复了共享预览图片 URL。
+
+安全和可靠性公告不必采用功能发布的语气，但必须清晰、客观且足够醒目，让用户知道发生了什么。4 月，我们将这类信息更直接地放到了产品和博客页面中。
+
+## 其他更新
+
+- 公告中心和首页公告区域正式上线。
+- 模型日历对发布日期的分析更加清晰。
+- 丰富了提供商和应用的使用指标。
+- 更新了比较仪表板和基准评分。
+- 拆分并收紧了模型发现提醒，减少重复通知。
+- 上线了低余额邮件接入和引导流程自动化。
+- 多项 CI 和依赖更新推动了发布流程继续改进。
+
+## 模型亮点
+
+4 月是目录更新丰富的一个月。Claude Opus 4.7 上线，同时完成了 Gateway 兼容性和基准测试相关工作。GPT Image 2、GPT 5.5 和 GPT 5.5 Pro 扩大了 OpenAI 的模型覆盖范围。DeepSeek V4 Flash、V4 Pro 和 V4 Pro Lightning 则组成了一批重要的 DeepSeek 新模型。
+
+本月还发布了 Qwen 3.6 系列模型、Gemini Deep Research 预览版、Gemini Embedding 2、Gemini Robotics ER 1.6 Preview、Mistral Medium 3.5、Granite 4.1、Grok 4.3、Hy3 Preview、Wan 2.7 T2V、Music 2.6，以及多个 Xiaomi MiMo V2.5 版本。
+
+查看最新发布数据：
+
+- [查看近期更新](/updates)
+
+## 本月概览
+
+本地 Git 历史记录显示，4 月共有 **215 次提交**。其中许多涉及依赖、CI 和目录；产品方面的工作主要集中在价格、工作区、模型页面、API 覆盖、安全信息和大量模型数据更新上。
+
+## 2026 年 4 月发布的模型
+
+目录中以下模型的发布日期为 2026 年 4 月：
+
+- 4 月 1 日：Trinity Large Thinking (`arcee-ai/trinity-large-thinking`)
+- 4 月 1 日：Qwen 3.6 Plus (`qwen/qwen3.6-plus`)
+- 4 月 1 日：GLM 5V Turbo (`z-ai/glm-5v-turbo`)
+- 4 月 2 日：Gemma 4 26B A4B (`google/gemma-4-26b-a4b`)
+- 4 月 2 日：Gemma 4 31B (`google/gemma-4-31b`)
+- 4 月 3 日：Wan 2.7 T2V (`qwen/wan2.7-t2v`)
+- 4 月 7 日：GLM 5.1 (`z-ai/glm-5.1`)
+- 4 月 8 日：Muse Spark (`meta/muse-spark`)
+- 4 月 8 日：Muse Spark Contemplating (`meta/muse-spark-contemplating`)
+- 4 月 11 日：Music 2.6 (`minimax/music-2.6`)
+- 4 月 13 日：Kimi K2.6 Code Preview (`moonshotai/kimi-k2.6-code-preview`)
+- 4 月 14 日：Gemini Robotics ER 1.6 Preview (`google/gemini-robotics-er-1.6-preview`)
+- 4 月 15 日：Gemini 3.1 Flash TTS Preview (`google/gemini-3.1-flash-tts-preview`)
+- 4 月 16 日：Claude Opus 4.7 (`anthropic/claude-opus-4.7`)
+- 4 月 17 日：Qwen 3.6 35B A3B (`qwen/qwen3.6-35b-a3b`)
+- 4 月 17 日：Grok TTS (`x-ai/grok-tts`)
+- 4 月 20 日：Kimi K2.6 (`moonshotai/kimi-k2.6`)
+- 4 月 20 日：Qwen 3.5 Plus (2026-04-20) (`qwen/qwen3.5-plus-2026-04-20`)
+- 4 月 21 日：Gemini Deep Research Max Preview (04-2026) (`google/deep-research-max-preview-04-2026`)
+- 4 月 21 日：Gemini Deep Research Preview (04-2026) (`google/deep-research-preview-04-2026`)
+- 4 月 21 日：GPT Image 2 (`openai/gpt-image-2`)
+- 4 月 22 日：Gemini Embedding 2 (`google/gemini-embedding-2`)
+- 4 月 22 日：Qwen 3.6 27B (`qwen/qwen3.6-27b`)
+- 4 月 22 日：MiMo V2.5 (`xiaomi/mimo-v2.5`)
+- 4 月 22 日：MiMo V2.5 Pro (`xiaomi/mimo-v2.5-pro`)
+- 4 月 22 日：MiMo V2.5 TTS (`xiaomi/mimo-v2.5-tts`)
+- 4 月 23 日：GPT 5.5 (`openai/gpt-5.5`)
+- 4 月 23 日：GPT 5.5 Pro (`openai/gpt-5.5-pro`)
+- 4 月 23 日：Hy3 Preview (`tencent/hy3-preview`)
+- 4 月 24 日：DeepSeek V4 Flash (`deepseek/deepseek-v4-flash`)
+- 4 月 24 日：DeepSeek V4 Pro (`deepseek/deepseek-v4-pro`)
+- 4 月 25 日：DeepSeek V4 Pro Lightning (`deepseek/deepseek-v4-pro-lightning`)
+- 4 月 28 日：Seed 2.0 Lite (2026-04-28) (`bytedance/seed-2.0-lite-2026-04-28`)
+- 4 月 28 日：Seed 2.0 Mini (2026-04-28) (`bytedance/seed-2.0-mini-2026-04-28`)
+- 4 月 28 日：Nemotron 3 Nano Omni 30B A3B Reasoning (`nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`)
+- 4 月 28 日：Laguna XS.2 (`poolside/laguna-xs.2`)
+- 4 月 29 日：Granite 4.1 30B (`ibm/granite-4.1-30b`)
+- 4 月 29 日：Granite 4.1 3B (`ibm/granite-4.1-3b`)
+- 4 月 29 日：Granite 4.1 8B (`ibm/granite-4.1-8b`)
+- 4 月 29 日：Mistral Medium 3.5 (`mistral/mistral-medium-3.5`)
+- 4 月 30 日：Grok 4.3 (`x-ai/grok-4.3`)
+
+## 接下来
+
+4 月为 5 月的工作打下了更好的基础：价格更加清晰，工作区更加完善，模型页面更加可靠，Gateway 也为更多异步处理和视频工作做好了准备。
+

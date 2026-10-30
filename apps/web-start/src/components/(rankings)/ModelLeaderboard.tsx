@@ -1,0 +1,441 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
+import Link from "next/link";
+import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { cn } from "@/lib/utils";
+import { formatModelDisplayName } from "@/lib/models/displayName";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
+import { ChevronDown } from "lucide-react";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+
+type LeaderboardRange = "today" | "week" | "month" | "trending";
+
+export type ModelLeaderboardEntry = {
+	key: string;
+	model_id: string;
+	model_name: string;
+	provider_id?: string | null;
+	organisation_id?: string | null;
+	organisation_name?: string | null;
+	organisation_colour?: string | null;
+	tokens: number;
+	rank?: number | null;
+	prev_rank?: number | null;
+	trend?: "up" | "down" | "same" | "new";
+	change_value?: number | null;
+	change_label?: string | null;
+};
+
+type ModelLeaderboardProps = {
+	dataByRange: Partial<Record<LeaderboardRange, ModelLeaderboardEntry[]>>;
+	defaultRange?: LeaderboardRange;
+	showRangeControls?: boolean;
+	title?: string;
+	subtitle?: string;
+	maxCollapsed?: number;
+	maxExpanded?: number;
+};
+
+const RANGE_OPTIONS: Array<{
+	key: LeaderboardRange;
+	labelKey: "today" | "last7Days" | "last30Days" | "trending";
+}> = [
+	{ key: "today", labelKey: "today" },
+	{ key: "week", labelKey: "last7Days" },
+	{ key: "month", labelKey: "last30Days" },
+	{ key: "trending", labelKey: "trending" },
+];
+
+function getChangeDisplay(entry: ModelLeaderboardEntry, newLabel: string) {
+	const trend = entry.trend ?? "same";
+	const fallbackChange =
+		Number.isFinite(entry.prev_rank ?? NaN) &&
+		Number.isFinite(entry.rank ?? NaN)
+			? Number(entry.prev_rank) - Number(entry.rank)
+			: 0;
+	const rawValue =
+		typeof entry.change_value === "number"
+			? entry.change_value
+			: fallbackChange;
+
+	if (trend === "new") {
+		return { text: newLabel, className: "text-indigo-500" };
+	}
+
+	if (!Number.isFinite(rawValue) || rawValue === 0) {
+		return { text: "--", className: "text-muted-foreground" };
+	}
+
+	const label = entry.change_label ? ` ${entry.change_label}` : "";
+	const text = `${rawValue > 0 ? "+" : ""}${rawValue}${label}`;
+	const className =
+		rawValue > 0 ? "text-emerald-600" : "text-rose-500";
+
+	return { text, className };
+}
+
+function getModelHref(entry: ModelLeaderboardEntry) {
+	return getModelDetailsHref(entry.organisation_id, entry.model_id);
+}
+
+function getOrganisationHref(entry: ModelLeaderboardEntry) {
+	if (!entry.organisation_id) return null;
+	return `/organisations/${encodeURIComponent(entry.organisation_id)}`;
+}
+
+function getProviderHref(entry: ModelLeaderboardEntry) {
+	if (!entry.provider_id) return null;
+	return `/api-providers/${encodeURIComponent(entry.provider_id)}`;
+}
+
+export function ModelLeaderboard({
+	dataByRange,
+	defaultRange = "week",
+	showRangeControls = true,
+	title,
+	subtitle,
+	maxCollapsed = 10,
+	maxExpanded = 20,
+}: ModelLeaderboardProps) {
+	const tUi = useTranslations("Common.ui");
+	const locale = useLocale();
+	const availableRanges = useMemo(
+		() =>
+			RANGE_OPTIONS.filter(
+				(option) => dataByRange[option.key]?.length
+			),
+		[dataByRange]
+	);
+
+	const [range, setRange] = useState<LeaderboardRange>(() => {
+		if (dataByRange[defaultRange]?.length) return defaultRange;
+		return availableRanges[0]?.key ?? "week";
+	});
+	const [showAll, setShowAll] = useState(false);
+
+	const entries = dataByRange[range] ?? [];
+	const visibleEntries = entries.slice(0, maxCollapsed);
+	const extraEntries = entries.slice(maxCollapsed, maxExpanded);
+
+	if (!entries.length) {
+		return (
+			<RankingsEmptyState
+				title={tUi("rankings.noDataTitle")}
+				description={tUi("rankings.noDataDescription")}
+			/>
+		);
+	}
+
+	return (
+		<div className="space-y-4">
+			{showRangeControls || title ? (
+				<div
+					className={[
+						"flex items-start gap-3",
+						title ? "justify-between" : "justify-end",
+					].join(" ")}
+				>
+					{title ? (
+						<div className="space-y-0.5">
+							<h3 className="text-xl font-semibold leading-8">{title}</h3>
+							{subtitle ? (
+								<p className="text-sm text-muted-foreground">{subtitle}</p>
+							) : null}
+						</div>
+					) : null}
+					{showRangeControls ? (
+					<Select
+						value={range}
+						onValueChange={(value) => {
+							setRange(value as LeaderboardRange);
+							setShowAll(false);
+						}}
+					>
+						<SelectTrigger className="h-9 min-w-40 shrink-0 rounded-md px-3">
+						<SelectValue placeholder={tUi("select.range")} />
+						</SelectTrigger>
+						<SelectContent className="min-w-44 rounded-md">
+							{RANGE_OPTIONS.map((option) => (
+								<SelectItem
+									key={option.key}
+									value={option.key}
+									disabled={!dataByRange[option.key]?.length}
+									className="whitespace-nowrap rounded-md"
+								>
+									{tUi(`rangeOptions.${option.labelKey}`)}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					) : null}
+				</div>
+			) : null}
+
+			<div className="space-y-2">
+				<div className="grid gap-2 md:grid-cols-2">
+					{visibleEntries.map((entry, index) => {
+					const change = getChangeDisplay(entry, tUi("rankings.new"));
+					const rankValue =
+						typeof entry.rank === "number" ? entry.rank : NaN;
+					const rankLabel =
+						Number.isFinite(rankValue) &&
+						rankValue > 0 &&
+						rankValue < 1000
+							? `#${rankValue}`
+							: `#${index + 1}`;
+					const logoId =
+						entry.organisation_id ??
+						entry.provider_id ??
+						entry.model_id;
+					const modelHref = getModelHref(entry);
+					const organisationHref = getOrganisationHref(entry);
+					const providerHref = getProviderHref(entry);
+					const logoHref = organisationHref ?? providerHref ?? modelHref;
+					const modelName = formatModelDisplayName(
+						entry.model_name,
+						entry.model_id,
+					);
+					return (
+						<div
+							key={entry.key}
+							className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
+						>
+							<div className="w-6 shrink-0 text-xs text-muted-foreground">
+								{rankLabel}
+							</div>
+							{logoHref ? (
+								<Link
+									href={logoHref}
+									className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800"
+									aria-label={entry.organisation_name ?? modelName}
+								>
+									<div className="relative h-5 w-5">
+										<Logo
+											id={logoId}
+											alt={
+												entry.organisation_name ??
+												modelName
+											}
+											className="object-contain"
+											fill
+										/>
+									</div>
+								</Link>
+							) : (
+								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800">
+									<div className="relative h-5 w-5">
+										<Logo
+											id={logoId}
+											alt={
+												entry.organisation_name ??
+												modelName
+											}
+											className="object-contain"
+											fill
+										/>
+									</div>
+								</div>
+							)}
+							<div className="min-w-0 flex-1">
+								{modelHref ? (
+									<Link
+										href={modelHref}
+										className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
+									>
+										{modelName}
+									</Link>
+								) : (
+									<div className="block min-w-0 truncate font-medium">
+										{modelName}
+									</div>
+								)}
+								{entry.organisation_name ? (
+									organisationHref ? (
+										<Link
+											href={organisationHref}
+											className="block min-w-0 truncate text-xs text-muted-foreground underline decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
+										>
+											{entry.organisation_name}
+										</Link>
+									) : (
+										<span className="block min-w-0 truncate text-xs text-muted-foreground">
+											{entry.organisation_name}
+										</span>
+									)
+								) : null}
+							</div>
+							<div className="shrink-0 text-right">
+								<div className="tabular-nums text-sm">
+									{formatRoundedCount(entry.tokens, locale)}
+								</div>
+								<div className={cn("text-xs", change.className)}>
+									{change.text}
+								</div>
+							</div>
+						</div>
+					);
+				})}
+				</div>
+				{extraEntries.length > 0 ? (
+					<div
+						className={cn(
+							"grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out",
+							showAll
+								? "grid-rows-[1fr] opacity-100"
+								: "grid-rows-[0fr] opacity-0"
+						)}
+					>
+						<div className="overflow-hidden">
+							<div className="pt-2">
+								<div className="grid gap-2 md:grid-cols-2">
+									{extraEntries.map((entry, index) => {
+							const change = getChangeDisplay(entry, tUi("rankings.new"));
+							const rankValue =
+								typeof entry.rank === "number"
+									? entry.rank
+									: NaN;
+							const rankLabel =
+								Number.isFinite(rankValue) &&
+								rankValue > 0 &&
+								rankValue < 1000
+									? `#${rankValue}`
+									: `#${index + maxCollapsed + 1}`;
+							const logoId =
+								entry.organisation_id ??
+								entry.provider_id ??
+								entry.model_id;
+							const modelHref = getModelHref(entry);
+							const organisationHref = getOrganisationHref(entry);
+							const providerHref = getProviderHref(entry);
+							const logoHref = organisationHref ?? providerHref ?? modelHref;
+							const modelName = formatModelDisplayName(
+								entry.model_name,
+								entry.model_id,
+							);
+							return (
+								<div
+									key={`${entry.key}-extra`}
+									className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
+								>
+									<div className="w-6 shrink-0 text-xs text-muted-foreground">
+										{rankLabel}
+									</div>
+									{logoHref ? (
+										<Link
+											href={logoHref}
+											className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800"
+											aria-label={entry.organisation_name ?? modelName}
+										>
+											<div className="relative h-5 w-5">
+												<Logo
+													id={logoId}
+													alt={
+														entry.organisation_name ??
+														modelName
+													}
+													className="object-contain"
+													fill
+												/>
+											</div>
+										</Link>
+									) : (
+										<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800">
+											<div className="relative h-5 w-5">
+												<Logo
+													id={logoId}
+													alt={
+														entry.organisation_name ??
+														modelName
+													}
+													className="object-contain"
+													fill
+												/>
+											</div>
+										</div>
+									)}
+									<div className="min-w-0 flex-1">
+										{modelHref ? (
+											<Link
+												href={modelHref}
+												className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
+											>
+												{modelName}
+											</Link>
+										) : (
+											<div className="block min-w-0 truncate font-medium">
+												{modelName}
+											</div>
+										)}
+										{entry.organisation_name ? (
+											organisationHref ? (
+												<Link
+													href={organisationHref}
+													className="block min-w-0 truncate text-xs text-muted-foreground underline decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
+												>
+													{entry.organisation_name}
+												</Link>
+											) : (
+												<span className="block min-w-0 truncate text-xs text-muted-foreground">
+													{entry.organisation_name}
+												</span>
+											)
+										) : null}
+									</div>
+									<div className="shrink-0 text-right">
+										<div className="tabular-nums text-sm">
+											{formatRoundedCount(entry.tokens, locale)}
+										</div>
+										<div
+											className={cn(
+												"text-xs",
+												change.className
+											)}
+										>
+											{change.text}
+										</div>
+									</div>
+								</div>
+							);
+						})}
+								</div>
+							</div>
+						</div>
+					</div>
+				) : null}
+			</div>
+
+			{entries.length > maxCollapsed ? (
+				<div className="flex justify-center">
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => setShowAll((prev) => !prev)}
+						aria-expanded={showAll}
+					>
+						<span className="flex items-center gap-2">
+							{tUi("rankings.showTop", { count: showAll ? maxCollapsed : maxExpanded })}
+							<ChevronDown
+								className={cn(
+									"h-4 w-4 transition-transform",
+									showAll && "rotate-180"
+								)}
+							/>
+						</span>
+					</Button>
+				</div>
+			) : null}
+		</div>
+	);
+}

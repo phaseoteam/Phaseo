@@ -1,0 +1,155 @@
+---
+title: "错过了？回顾： 2026 年 7 月发布内容"
+shortTitle: "错过了？回顾： 2026 年 7 月"
+description: 7 月，Phaseo 正式发布，目录与路由基础设施完成重建，开发者工具得到扩展，模型覆盖范围大幅增加。
+publishedAt: 2026-07-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-july-2026.png
+tags:
+  - 月度回顾
+  - 月度回顾
+  - 产品
+  - 模型
+draft: false
+---
+
+7 月是 Phaseo 的重要转折点。AI Stats 更名为 Phaseo，但工作远不止更新品牌。我们重建了目录和路由的核心基础，扩展了 Gateway 及开发者工具，发布了更多语言版本的 SDK，并跟进了今年最密集的模型发布期之一。
+
+本回顾涵盖 **2026 年 7 月 1 日至 7 月 30 日** 发布的内容，依据当月的发布记录、已合并的拉取请求和目录数据整理而成。
+
+## 本月发布
+
+### AI Stats 更名为 Phaseo
+
+7 月，AI Stats 正式以 Phaseo 的名称面向公众。
+
+新名称更能体现产品的定位：用于发现、路由和观测 AI 模型的平台。品牌更新覆盖了公共网站、文档、SDK 示例、环境变量指南、网站图标、规范 URL 和产品文案。
+
+这项调整并非为了破坏现有集成。已有配置仍然有效；新的开发者示例则采用 Phaseo 名称和 `PHASEO_*` 变量。
+
+这次迁移也为未来的公告、模型发布说明、指南和数据文章理清了产品结构。Phaseo 可以作为基础设施继续成长，而不再只被看作统计网站。
+
+### 目录和 Gateway 建立了更坚实的 V2 基础
+
+本月规模最大的技术变化是模型数据和路由的 V2 架构。
+
+Phaseo 现在为实验室、模型、别名、提供商、提供商路由、能力、区域、变体、服务等级、价格方案、用量计量、请求事实和路由决策建立了更清晰的规范结构。仓库中的目录数据仍是内容编辑的来源，并会直接导入 V2。
+
+公开模型视图改用由 Cloudflare 支持的紧凑投影，并行加载模型页面的各个区块，目录响应也会缓存。我们还改进了缓存失效机制，让管理员刷新时可以同时清除 Worker 数据和对应的已渲染网站路由。
+
+对用户来说，目录现在可以更真实地呈现模型市场：标准和免费变体、特定提供商的可用性、外部路由、即将推出和非活跃模型、按时间段计价，以及标准、批处理、弹性和优先服务等级。
+
+Gateway 也获得了更可靠的路由基础，包括由提供商维护的适配器、有序的提供商和 BYOK 回退、断路器恢复、统一的流式时间记录、保护隐私的遥测，以及请求记录中更准确的路由标识。
+
+这类基础设施不像新页面那样显眼，却支撑了 Phaseo 接下来几乎所有工作。
+
+### MCP、CLI 和 SDK 开发工具得到扩展
+
+7 月推出了经过身份验证的 MCP，兼容工具可以只读方式浏览 Phaseo 的模型、价格、用量和请求健康数据。
+
+相关 OAuth 工作包括动态客户端注册、PKCE、可刷新的会话、资源绑定的作用域、同意管理、浏览器元数据发现，以及更严格地区分只读 MCP 访问和有特权的 Gateway 操作。为了准备提交插件，公开 MCP 接口随后收敛为十个经过审核的只读工具。
+
+CLI 增加了更安全的 OAuth 流程、请求日志检查，以及分析和价格命令。管理密钥也进一步收紧了权限范围。
+
+SDK 覆盖范围大幅扩大。Phaseo 为多种语言准备并发布了生产级客户端包和 Agent SDK，包括 TypeScript、Python、Go、PHP、Ruby、Java、C#、C++ 和 Rust。Agent SDK 还提供了实用基础能力，例如工具、重试、审批、人工审核、可恢复状态、事件和 Gateway Responses 支持。
+
+目标很简单：开发者可以通过自己偏好的技术栈使用 Phaseo，无需从头重建身份验证、请求处理、智能体循环和可观测性。
+
+### Chat、工具和异步流程功能增强
+
+7 月，Chat 收到了一系列可靠性和易用性改进。
+
+工具调用现在能够更一致地流式传输和显示，也包括当前 Gemini 模型的服务器工具追踪。响应耗时和元数据更加清晰，LaTeX 渲染得到恢复，模型选择更快，移动端设置和视口行为也经过优化。Chat 和 Fusion 现在共用一个工作区，用户可以直接从会话选择器打开 Fusion。
+
+Gateway 也改进了 AI 基础设施中不那么像聊天的部分。Batch API 得到了生产部署所需的强化，实时语音会话采用了安全的服务器中介流程，视频 API 支持则通过分阶段发布逐步推出。
+
+这些变化让 Phaseo 更适合长时间运行和多模态任务，而不仅是单轮文本请求。
+
+### 价格和可观测性更加可信
+
+7 月既改进了 Phaseo 记录的数据，也改进了产品解释这些数据的方式。
+
+模型性能页面增加了更清晰的提供商归属信息和更丰富的百分位视图。单一提供商图表可以同时显示 P50、P75、P90、P95 和 P99；多提供商图表仍会保留对比。每周用量数据也已恢复，并采用适合模型的单位，例如 token、生成视频小时、音频秒数、图像、字符或请求次数。
+
+流式用量采集得到加强：如果提供商发送权威的最终用量数据，计费会等待这些数据到齐。提供商返回的空响应如果仍需计费，也会被正确记录和结算，不再作为零成本失败而丢失。
+
+价格页面更清楚地展示提供商可用性、服务等级比较、分时费率和免费变体，并重建了价格计算器。Phaseo 的价格也更明确：Gateway 按量付费；BYOK 每月包含一百万次请求，超过后收取 2.5% 的服务费。
+
+总体目标是在请求运行前后，都能解释成本和性能方面的选择。
+
+## 其他更新
+
+- Passkeys 已全面开放，可用于免密码登录和账户管理。
+- 为工作区身份验证增加了受控开放的 SAML SSO 基础功能。
+- 改进了模型页面的 SEO、站点地图覆盖、生命周期链接、通知和未找到页面的处理。
+- 提供商数据政策元数据更加准确，导入方式也更加一致。
+- 模型和价格监控器增加了更安全的自动化、去重提醒和更可靠的目录同步。
+- 公共模型页面恢复了免费变体和外部提供商处理，并显示启用、即将推出和非活跃状态。
+- 改进了提供商面板、目录筛选器、排行榜导航和模型血缘链接。
+- 网站将更多 Web 数据请求迁移到由 Cloudflare 支持的 API 路由。
+- Next.js 和其他依赖项获得了安全和兼容性更新。
+
+## 模型亮点
+
+7 月的模型发布和提供商覆盖扩展尤为密集。
+
+OpenAI 的 GPT-5.6 Sol、Terra 和 Luna 加入目录，GPT Live 1 及 Mini 变体也一同上线。Google 增加了 Gemini 3.6 Flash 和 Gemini 3.5 Flash-Lite。Anthropic 发布 Claude Opus 5，Poolside 增加了 Laguna XS 2.1 和 Laguna S 2.1。
+
+Moonshot AI 的 Kimi K3 是本月规模最大的提供商集成项目之一。Phaseo 为 Venice、SiliconFlow、GMI Cloud、Novita、Nebius Token Factory、Baseten、Fireworks、DigitalOcean、Wafer、CrofAI 等提供商添加并完善了路由。现在，标准、优先和弹性路由都能支持特定提供商的 K3 部署，而且无需更改公开模型 ID。
+
+本月还推出了 Thinking Machines 的 Inkling 系列、SpaceXAI Grok 4.5、Aion 3.0、Meta Muse 媒体模型、Sakana Fugu 模型、Ling 3.0 Flash、Macaron V1 Venti、Fugu Cyber、Qwen3.8 Max Preview，以及 Google Lyria 3.5 的目录覆盖。
+
+查看最新发布数据：
+
+- [查看近期更新](/updates)
+
+## 本月概览
+
+GitHub 历史记录显示，7 月 1 日至 30 日期间合并了 **272 个拉取请求**。本月重点包括迁移到 Phaseo、目录与路由 V2 架构、经过身份验证的开发者工具、SDK 发布、Chat 和异步流程、价格和可观测性，以及异常密集的提供商和模型上线。
+
+## 2026 年 7 月发布的模型
+
+7 月更新日志包括以下模型发布和恢复可用的模型：
+
+- 7 月 1 日：Claude Fable 5 恢复可用 (`anthropic/claude-fable-5`)
+- 7 月 2 日：Laguna XS 2.1 (`poolside/laguna-xs-2.1`)
+- 7 月 6 日：GPT Realtime 2.1 (`openai/gpt-realtime-2.1`)
+- 7 月 6 日：GPT Realtime 2.1 Mini (`openai/gpt-realtime-2.1-mini`)
+- 7 月 6 日：Hy3 (`tencent/hy3`)
+- 7 月 7 日：Aion 3.0 (`aion-labs/aion-3.0`)
+- 7 月 7 日：Aion 3.0 Mini (`aion-labs/aion-3.0-mini`)
+- 7 月 7 日：Muse Image (`meta/muse-image`)
+- 7 月 7 日：Muse Video (`meta/muse-video`)
+- 7 月 7 日：Fugu (`sakana/fugu`)
+- 7 月 7 日：Fugu Ultra (`sakana/fugu-ultra`)
+- 7 月 8 日：GPT Live 1 (`openai/gpt-live-1`)
+- 7 月 8 日：GPT Live 1 Mini (`openai/gpt-live-1-mini`)
+- 7 月 8 日：Grok 4.5 (`spacex-ai/grok-4.5`)
+- 7 月 8 日：Kat Coder Air V2.5 (`kwaipilot/kat-coder-air-v2.5`)
+- 7 月 8 日：Kat Coder Pro V2.5 (`kwaipilot/kat-coder-pro-v2.5`)
+- 7 月 9 日：GPT 5.6 Sol (`openai/gpt-5.6-sol`)
+- 7 月 9 日：GPT 5.6 Terra (`openai/gpt-5.6-terra`)
+- 7 月 9 日：GPT 5.6 Luna (`openai/gpt-5.6-luna`)
+- 7 月 15 日：Inkling (`thinking-machines/inkling`)
+- 7 月 15 日：Inkling 64K (`thinking-machines/inkling-64k`)
+- 7 月 15 日：Inkling Small (`thinking-machines/inkling-small`)
+- 7 月 16 日：Kimi K3 (`moonshotai/kimi-k3`)
+- 7 月 19 日：Laguna S 2.1 (`poolside/laguna-s-2.1`)
+- 7 月 19 日：Qwen3.8 Max Preview (`qwen/qwen3.8-max-preview`)
+- 7 月 21 日：Gemini 3.6 Flash (`google/gemini-3.6-flash`)
+- 7 月 21 日：Gemini 3.5 Flash-Lite (`google/gemini-3.5-flash-lite`)
+- 7 月 21 日：Macaron V1 Venti (`mindai/macaron-v1-venti`)
+- 7 月 21 日：Fugu Cyber (`sakana/fugu-cyber`)
+- 7 月 23 日：Ling 3.0 Flash (`inclusionai/ling-3.0-flash`)
+- 7 月 24 日：Claude Opus 5 (`anthropic/claude-opus-5`)
+
+## 接下来
+
+7 月为 Phaseo 下一阶段打下了平台基础：更深入的可观测性、更广泛的多模态和异步支持、更可靠的目录自动更新，以及在 Web、CLI、MCP 和各语言 SDK 中保持一致的开发者体验。
+
+在 [2026 年 7 月 30 日](https://x.com/sama/status/2082880720989532597)，OpenAI 将 GPT-5.6 Luna API 价格下调了 80%，将 Terra 价格下调了 20%，并表示目标是在各个档位提供最佳价格与智能水平的平衡。这也是我们希望行业前进的方向。模型、推理、路由和生产软件的改进，应让所有人每花一美元都能获得更多智能。
+
+我们的使命是打造覆盖面最广的 AI Gateway，并在每个档位提供最佳的价格与智能水平平衡。我们会继续降低自身成本，并通过更低价格将节省让给用户。我们的目标不是利润最大化，而是与用户一起打造尽可能好的产品。Phaseo 将继续保持开源，社区也始终可以参与决定我们下一步构建什么。
+

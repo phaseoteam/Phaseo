@@ -1,0 +1,36 @@
+import { Pencil } from "lucide-react";
+import { getTranslations } from "next-intl/server";
+import { CatalogIssueButton } from "@/components/(data)/CatalogIssueButton";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
+
+interface OrganisationEditButtonProps {
+  organisationId: string;
+}
+
+export default async function OrganisationEditButton({
+  organisationId,
+}: OrganisationEditButtonProps) {
+  const authStatus = await fetchInternalAuthStatus().catch(() => ({
+    isAdmin: false,
+    signedIn: false,
+  }));
+
+  if (!authStatus.isAdmin) {
+    return <CatalogIssueButton entity="Organisation" id={organisationId} />;
+  }
+
+  const t = await getTranslations("Catalogue.organisations");
+
+  return (
+    <Button variant="outline" size="sm" asChild>
+      <Link
+        href={`/internal/data/organisations/${organisationId}/edit`}
+        aria-label={t("editOrganisation")}
+      >
+        <Pencil className="h-4 w-4" />
+      </Link>
+    </Button>
+  );
+}

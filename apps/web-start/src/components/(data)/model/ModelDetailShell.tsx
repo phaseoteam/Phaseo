@@ -1,0 +1,340 @@
+import { ReactNode, Suspense } from "react";
+import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
+import { getModelAccessLayout } from "@/lib/models/modelAccessLayout";
+import { IntentLink as Link } from "@/components/navigation/IntentLink";
+import {
+	fetchFrontendModelHeader,
+	fetchFrontendModelGatewayMetadata,
+	fetchFrontendModelOverview,
+	fetchFrontendModelPageNotice,
+	fetchFrontendModelSubscriptionPlans,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { Logo } from "@/components/Logo";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Scale } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
+import ModelIdentifierControl from "./ModelIdentifierControl";
+import ModelEditButton from "./edit/ModelEditButton";
+import ModelDescriptionPanel from "./ModelDescriptionPanel";
+import ModelPageNotice from "./ModelPageNotice";
+import ModelStickyHeader from "./ModelStickyHeader";
+import UnreleasedBadge from "./UnreleasedBadge";
+import { UseModelSheet } from "./UseModelSheet";
+import { toQuickstartGatewayMetadata } from "./quickstart/quickstartGatewayMetadata";
+import ModelStatusBanner from "./overview/ModelStatusBanner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WorkspacePolicyNotice from "../WorkspacePolicyNotice";
+import { resolveLocalizedModelDescription } from "@/i18n/localized-model-description";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import type { ModelOverviewHeader } from "@/lib/fetchers/models/getModelOverviewHeader";
+import {
+	FREE_ROUTER_MODEL_ID,
+	FREE_ROUTER_NAME,
+	FREE_ROUTER_ORGANISATION_ID,
+	isFreeRouterModelId,
+} from "@/lib/models/freeRouter";
+import { getLocale, getTranslations } from "next-intl/server";
+
+interface ModelDetailShellProps {
+	modelId: string;
+	children: ReactNode;
+	tab?: string;
+	includeHidden?: boolean;
+	header?: ModelOverviewHeader;
+	modelOverview?: ModelOverviewPage | null;
+	requestedAlias?: string;
+	canChat?: boolean;
+	chatModelId?: string;
+	canCompare?: boolean;
+	organisationHref?: string;
+	statusBanner?: ReactNode;
+	descriptionOverride?: string | null;
+	showUnreleased?: boolean;
+}
+
+const DECISIONS_CAPABILITY_IDS = new Set([
+	"decisions.make",
+	"decision.make",
+	"typed.decisions",
+	"systemone",
+	"system.one",
+]);
+
+function matchesDecisionsModel(modelId: string, modelOverview?: ModelOverviewPage | null): boolean {
+	const normalizedModelId = modelId.trim().toLowerCase();
+	const outputTypes = String(modelOverview?.output_types ?? "")
+		.toLowerCase()
+		.split(/[\s,;|/]+/)
+		.filter(Boolean);
+	return modelOverview?.pricing?.some((rule) =>
+			DECISIONS_CAPABILITY_IDS.has(rule.capability_id.trim().toLowerCase()),
+		) === true ||
+		outputTypes.some((value) => value === "decision" || value === "decisions" || value === "decision_output") ||
+		normalizedModelId === "typesafe/jev-latest" ||
+		normalizedModelId.startsWith("typesafe/jev-");
+}
+
+function getVisibleTabKeys(modelStatus?: string | null): string[] {
+	if (modelStatus === "Retired") {
+		return ["overview", "benchmarks"];
+	}
+
+	const isLimitedAvailabilityModel =
+		modelStatus === "Announced" || modelStatus === "Withheld";
+	if (isLimitedAvailabilityModel) {
+		return ["overview"];
+	}
+
+	return [
+		"overview",
+		"playground",
+		"providers",
+		"pricing",
+		"performance",
+		"apps",
+		"activity",
+		"quickstart",
+		"benchmarks",
+		"family",
+		"timeline",
+	];
+}
+
+async function ModelNotice({ modelId, includeHidden, status }: { modelId: string; includeHidden: boolean; status?: string | null }) {
+	const notice = await fetchFrontendModelPageNotice(modelId, includeHidden).catch(() => null);
+	return notice ? <div className="mb-6"><ModelPageNotice notice={notice} /></div> : <ModelStatusBanner status={status} className="mb-6" />;
+}
+
+async function ModelStickyHeaderContent({ modelId, chatModelId, organisationId, organisationName, modelName, canChat, canCompare, organisationHref, gatewayMetadataPromise, showUnreleased, isDecisionsModel }: {
+	modelId: string; chatModelId?: string; organisationId: string; organisationName: string; modelName: string; canChat: boolean; canCompare: boolean; organisationHref?: string; gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null>; showUnreleased: boolean; isDecisionsModel: boolean;
+}) {
+	const gatewayMetadata = await gatewayMetadataPromise;
+	return <ModelStickyHeader modelId={modelId} chatModelId={chatModelId} organisationId={organisationId} organisationName={organisationName} modelName={modelName} observeId="model-detail-primary-header" canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadata={gatewayMetadata} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />;
+}
+
+async function ModelQuickstartAction({ modelId, chatModelId, modelName, gatewayMetadataPromise }: { modelId: string; chatModelId?: string; modelName: string; gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null> }) {
+	const gatewayMetadata = await gatewayMetadataPromise;
+	return <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} triggerId="quickstart" className="col-span-2 w-full min-w-[8.5rem] justify-center sm:w-auto sm:flex-1 xl:flex-none" />;
+}
+
+export default async function ModelDetailShell({
+	modelId,
+	children,
+	tab,
+	includeHidden = false,
+	header: prefetchedHeader,
+	modelOverview: prefetchedModelOverview,
+	requestedAlias,
+	canChat: canChatOverride,
+	chatModelId,
+	canCompare = true,
+	organisationHref,
+	statusBanner,
+	descriptionOverride,
+	showUnreleased = false,
+}: ModelDetailShellProps) {
+	const t = await getTranslations("Catalogue.models");
+	const tx = await getTranslations();
+	const locale = await getLocale();
+	const isFreeRouter = isFreeRouterModelId(modelId);
+	const gatewayMetadataPromise = isFreeRouter
+		? Promise.resolve(null)
+		: fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
+	// One trimmed copy for both client components, so the page embeds it once.
+	const quickstartMetadataPromise = gatewayMetadataPromise.then(toQuickstartGatewayMetadata);
+	const subscriptionPlansPromise = isFreeRouter
+		? Promise.resolve([])
+		: fetchFrontendModelSubscriptionPlans(modelId).catch(() => null);
+	const [header, modelOverview] = isFreeRouter
+		? [
+				{
+					model_id: FREE_ROUTER_MODEL_ID,
+					name: FREE_ROUTER_NAME,
+					organisation_id: FREE_ROUTER_ORGANISATION_ID,
+					organisation: {
+						name: "Phaseo",
+						country_code: "",
+					},
+					aliases: [],
+					status: "Available",
+					hidden: false,
+				},
+				null,
+			]
+		: await Promise.all([
+				prefetchedHeader ?? fetchFrontendModelHeader(modelId, includeHidden).catch(() => null),
+				prefetchedModelOverview !== undefined
+					? Promise.resolve(prefetchedModelOverview)
+					: fetchFrontendModelOverview(modelId).catch(() => null),
+			]);
+
+	if (!header) {
+		notFound();
+	}
+	const modelDescription = descriptionOverride !== undefined
+		? descriptionOverride
+		: isFreeRouter
+		? tx("Common.ui.publicModelCopy.freeRouterDescription")
+		: modelOverview
+		? resolveLocalizedModelDescription(modelOverview, locale, tx)
+		: null;
+
+	const visibleTabKeys = getVisibleTabKeys(header.status);
+	const scopedVisibleTabKeys = isFreeRouter
+		? ["overview"]
+		: visibleTabKeys;
+	const [gatewayMetadata, subscriptionPlans] = await Promise.all([
+		gatewayMetadataPromise,
+		subscriptionPlansPromise,
+	]);
+	const { canUseApi } = getModelAccessLayout({
+		hasSubscriptions: subscriptionPlans === null ? null : subscriptionPlans.length > 0,
+		hasApiProviders: (gatewayMetadata?.providers.length ?? 0) > 0,
+		isPrivateModel: header.is_private === true,
+	});
+	const canChat = canUseApi && (canChatOverride ?? header.status !== "Retired");
+	const capabilities = decisionModelCapabilities(gatewayMetadata?.activeProviders.map(provider => provider.endpoint) ?? []);
+	const isDecisionsModel = !isFreeRouter && (gatewayMetadata?.activeProviders.length
+		? capabilities.includes("decisions.make") : matchesDecisionsModel(modelId, modelOverview));
+	const supportsText = capabilities.includes("text.generate") || !isDecisionsModel;
+	if (tab && !scopedVisibleTabKeys.includes(tab)) {
+		redirect(`/models/${modelId}`);
+	}
+
+	return (
+		<main className="flex flex-col">
+			<Suspense fallback={null}>
+				<ModelStickyHeaderContent modelId={modelId} chatModelId={chatModelId} organisationId={header.organisation_id} organisationName={header.organisation.name} modelName={header.name} canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadataPromise={quickstartMetadataPromise} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />
+			</Suspense>
+
+			<div className="container mx-auto px-4 py-8">
+				<WorkspacePolicyNotice kind="model" id={modelId} />
+				{statusBanner ?? (
+					<Suspense fallback={<ModelStatusBanner status={header.status} className="mb-6" />}>
+						<ModelNotice modelId={modelId} includeHidden={includeHidden} status={header.status} />
+					</Suspense>
+				)}
+
+				<div
+					id="model-detail-primary-header"
+					className="mb-5 flex w-full flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"
+				>
+					<div className="flex w-full items-start gap-4">
+						<div className="flex shrink-0 items-center justify-center">
+							<div className="relative flex h-10 w-10 items-center justify-center rounded-xl border md:h-16 md:w-16">
+								{header.is_private || header.organisation.logo_url ? (
+									<Avatar className="size-full rounded-md after:rounded-md">
+										{header.organisation.logo_url ? <AvatarImage src={header.organisation.logo_url} alt={`${header.organisation.name} logo`} className="rounded-md object-cover" /> : null}
+										<AvatarFallback className="rounded-md">{header.organisation.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+									</Avatar>
+								) : <div className="relative h-8 w-8 md:h-12 md:w-12">
+									<Logo
+										id={header.organisation_id}
+										alt={header.name}
+										className="object-contain"
+										fill
+									/>
+								</div>}
+							</div>
+						</div>
+						<div className="flex min-w-0 flex-1 flex-col justify-center">
+							<div className="flex flex-col items-start gap-3 md:flex-row md:flex-wrap md:items-center md:gap-5">
+								<h1 className="text-3xl font-bold leading-tight text-left">
+										<Link
+											href={organisationHref ?? `/organisations/${header.organisation_id}`}
+											className="underline-offset-4 hover:underline"
+										>
+										{header.organisation.name}:
+									</Link>{" "}
+									<span>{header.name}</span>
+								</h1>
+								{includeHidden && header.hidden ? (
+									<Badge variant="secondary">{t("hidden")}</Badge>
+								) : null}
+								{showUnreleased ? <UnreleasedBadge /> : null}
+							</div>
+							<div className="mt-2 flex w-full flex-col items-start gap-2">
+				<ModelIdentifierControl
+					defaultIdentifier={header.model_id}
+					aliases={header.aliases}
+					variants={header.variants}
+					requestedAlias={requestedAlias}
+				/>
+							</div>
+						</div>
+					</div>
+
+					<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap xl:mt-0 xl:ml-6 xl:w-auto xl:flex-nowrap xl:items-center">
+						{!isFreeRouter && !header.is_private && !header.hidden ? (
+							<Suspense fallback={null}><ModelEditButton modelId={modelId} tab={tab} /></Suspense>
+						) : null}
+						{canChat ? (
+							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+								<Link href={`${isDecisionsModel && !supportsText ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
+									<MessageSquare className="h-4 w-4" />
+									{isDecisionsModel && !supportsText ? t("detail.actions.openDecisions") : t("detail.actions.chat")}
+								</Link>
+							</Button>
+						) : null}
+						{canCompare ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+							<Link href={`/compare?models=${modelId}`}>
+								<Scale className="h-4 w-4" />
+								{t("detail.actions.compare")}
+							</Link>
+						</Button> : null}
+						{canChat && isDecisionsModel && supportsText ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+							<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}><Scale className="h-4 w-4" />{t("detail.actions.openDecisions")}</Link>
+						</Button> : null}
+						{canChat && supportsText ? <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={quickstartMetadataPromise} /></Suspense> : null}
+					</div>
+				</div>
+
+				{modelDescription ? (
+					<div className="w-full">
+						<ModelDescriptionPanel description={modelDescription} />
+					</div>
+				) : null}
+
+				<div className="mt-6 min-h-full">{children}</div>
+			</div>
+		</main>
+	);
+}
+
+export function ModelDetailShellSkeleton({
+	children,
+}: {
+	children: ReactNode;
+}) {
+	return (
+		<main className="flex flex-col">
+			<div className="container mx-auto px-4 py-8">
+				<div className="mb-5 flex w-full flex-col items-center justify-between gap-2 md:flex-row md:items-start md:gap-0">
+					<div className="flex flex-col items-center gap-4 md:flex-row">
+						<div className="flex items-center justify-center">
+							<div className="relative flex h-10 w-10 items-center justify-center rounded-xl border md:h-16 md:w-16">
+								<Skeleton className="h-8 w-8 rounded-lg md:h-12 md:w-12" />
+							</div>
+						</div>
+						<div className="flex flex-col items-center justify-center md:items-start">
+							<div className="flex items-center gap-3">
+								<Skeleton className="mb-1 h-9 w-56" />
+							</div>
+							<Skeleton className="mb-1 h-5 w-40" />
+						</div>
+					</div>
+
+					<div className="mt-2 flex w-full flex-col gap-2 md:mt-0 md:ml-6 md:w-auto">
+						<Skeleton className="h-9 w-full md:w-24" />
+						<Skeleton className="h-9 w-full md:w-24" />
+					</div>
+				</div>
+				<Skeleton className="mb-4 h-12 w-full rounded-md" />
+
+				<div className="mt-6 min-h-full">{children}</div>
+			</div>
+		</main>
+	);
+}

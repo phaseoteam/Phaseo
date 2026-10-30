@@ -1,0 +1,310 @@
+"use client";
+import { localizedBenchmarkConfiguration, localizedArtificialAnalysisMetric } from "@/i18n/benchmark-display";
+import { useLocale, useTranslations } from "next-intl";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
+import { webQueryKeys } from "@/lib/query/queryKeys";
+import NumberFlow from "@number-flow/react";
+import { Link } from "@/i18n/navigation";
+import { ArrowUpRight, Bot, BrainCircuit, ChevronsUpDown, CircleDollarSign, Code2, ExternalLink, ListChecks, ListX, TrendingUp } from "lucide-react";
+import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
+import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
+import { applyArtificialAnalysisOrganisationColours, artificialAnalysisChartColour, artificialAnalysisConfigurationRank, artificialAnalysisSummaryRank, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisProgressIndexId, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark, isArtificialAnalysisProgressIndex, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
+
+const configurationOrder = ["none", "low", "medium", "high", "xhigh", "max"];
+const metricIcons = {
+	intelligence: BrainCircuit,
+	coding: Code2,
+	agentic: Bot,
+	cost: CircleDollarSign,
+};
+
+
+
+function releaseTime(value: string | null | undefined) {
+	if (!value) return Number.NEGATIVE_INFINITY;
+	const time = Date.parse(value);
+	return Number.isNaN(time) ? Number.NEGATIVE_INFINITY : time;
+}
+
+function formatReleaseDate(value: string | null | undefined, locale: string, unavailable: string) {
+	if (!value) return unavailable;
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return unavailable;
+	return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(date);
+}
+
+function modelDateDescending(left: PublicBenchmarkRankingEntry, right: PublicBenchmarkRankingEntry) {
+	return releaseTime(right.release_date) - releaseTime(left.release_date) || left.model_name.localeCompare(right.model_name);
+}
+
+function configurationRank(value: string | null) {
+	const index = configurationOrder.indexOf(value || "none");
+	return index < 0 ? configurationOrder.length : index;
+}
+
+function orderConfigurations(configurations: Configuration[]) {
+	return [...configurations].sort((left, right) => configurationRank(left.variant) - configurationRank(right.variant) || Number(left.score) - Number(right.score));
+}
+
+function configurationKey(configuration: Configuration) {
+	return configuration.result_key || configuration.variant || "default";
+}
+
+function releaseMonth(value: string | null | undefined, locale: string, unavailable: string) {
+	if (!value || Number.isNaN(Date.parse(value))) return { key: "unknown", label: unavailable };
+	const date = new Date(value);
+	return {
+		key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+		label: new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(date),
+	};
+}
+
+type DisplayResult = { benchmarkId: string; score: number | null; otherInfo: string | null; sourceLink: string | null };
+type Configuration = NonNullable<PublicBenchmarkRankingEntry["configurations"]>[number];
+
+function AnimatedScore({ benchmarkId, score }: { benchmarkId: string; score: number }) {
+	const locale = useLocale();
+	const cost = isArtificialAnalysisCostBenchmark(benchmarkId);
+	return <span className="tabular-nums">{cost ? "$" : ""}<NumberFlow locales={cost ? MONEY_LOCALE : locale} value={score} format={cost ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { minimumFractionDigits: 1, maximumFractionDigits: 1 }} /></span>;
+}
+
+function barScore(benchmarkId: string, score: number, locale: string) {
+	if (isArtificialAnalysisCostBenchmark(benchmarkId)) return `$${new Intl.NumberFormat(MONEY_LOCALE, { notation: "compact", maximumFractionDigits: 1 }).format(score)}`;
+	return Number(score).toLocaleString(locale, { maximumFractionDigits: 1 });
+}
+
+function localConfigurations(results: ModelBenchmarkResult[], benchmarkId: string): Configuration[] {
+	return results.filter((item) => item.benchmark_id === benchmarkId && item.score !== null).map((item) => ({
+		variant: item.variant ?? null,
+		result_key: item.result_key ?? null,
+		score: Number(item.score),
+		other_info: item.other_info,
+		source_link: item.source_link,
+		updated_at: item.updated_at,
+	}));
+}
+
+function ModelHoverCard({ entry, configurations, metricLabel, rank, total }: { entry: PublicBenchmarkRankingEntry; configurations: Configuration[]; metricLabel?: string; rank: number; total: number }) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	return <HoverCardContent side="top" align="center" className="w-72 rounded-xl p-3">
+		<div className="flex items-start gap-2.5">
+			<span className="relative size-8 shrink-0 overflow-hidden rounded-md bg-muted">
+				<Logo id={entry.organisation_id ?? entry.model_id} alt={tx("Catalogue.models.detail.quickstart.support.optionLogoAlt", { name: entry.organisation_name ?? entry.model_name })} fill className="object-contain p-1" />
+			</span>
+			<div className="min-w-0 flex-1">
+				<Link href={`/models/${entry.model_id}`} className="font-medium leading-5 decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}</Link>
+				<p className="text-xs text-muted-foreground">{entry.organisation_name ?? tx("Catalogue.benchmarks.unknownOrganization" as never)} · {formatReleaseDate(entry.release_date, locale, tx("Common.ui.benchmarkChartCopy.releaseDateUnavailable" as never))}</p>
+			</div>
+		</div>
+		<div className="mt-3 space-y-1.5 border-t pt-2.5">
+			{orderConfigurations(configurations).map((item) => <div key={item.result_key || item.variant || "default"} className="flex items-center justify-between gap-3 text-xs">
+				<span className="text-muted-foreground">{localizedBenchmarkConfiguration(item.variant, tx)}</span>
+				<span className="font-medium tabular-nums">{metricLabel ? `${metricLabel}: ` : ""}{Number(item.score).toLocaleString(locale, { maximumFractionDigits: 2 })}</span>
+			</div>)}
+		</div>
+		<p className="mt-2 text-xs text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.rankRankOfTotalConfigurations", { rank, total })}</p>
+	</HoverCardContent>;
+}
+
+export function ArtificialAnalysisBenchmarks({ highlights, results = [], rankings: initialRankings = [], rankSummaries, loadRankings = false, modelId, modelName, initialExpandedMetric = null }: {
+	highlights: ModelBenchmarkHighlight[];
+	results?: ModelBenchmarkResult[];
+	rankings?: PublicBenchmarkRanking[];
+	rankSummaries?: Record<string, ArtificialAnalysisRankSummary>;
+	loadRankings?: boolean;
+	modelId?: string;
+	modelName?: string;
+	initialExpandedMetric?: string | null;
+}) {
+	const tx = useTranslations();
+	const locale = useLocale();
+	const metrics = artificialAnalysisMetrics.map((metric) => localizedArtificialAnalysisMetric(metric, tx));
+	const aaResults = useMemo(() => results.filter((item) => (isArtificialAnalysisBenchmark(item.benchmark_id) || isArtificialAnalysisProgressIndex(item.benchmark_id)) && item.score !== null), [results]);
+	const variants = useMemo(() => [...new Set(aaResults.map((item) => item.variant).filter((value): value is string => Boolean(value)))].sort((a, b) => {
+		const ai = configurationOrder.indexOf(a);
+		const bi = configurationOrder.indexOf(b);
+		return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi) || a.localeCompare(b);
+	}), [aaResults]);
+	const preferred = variants.includes("max") ? "max" : variants.at(-1) ?? "";
+	const [selectedVariant, setSelectedVariant] = useState(preferred);
+	const [expandedMetric, setExpandedMetric] = useState<string | null>(initialExpandedMetric);
+	const rankingQuery = useQuery({
+		queryKey: webQueryKeys.public.benchmarkRankings(),
+		queryFn: async () => {
+			const [payload, organisationPayload] = await Promise.all([
+				fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[] }>("/api/_web/rankings/benchmarks", { credentials: "same-origin" }),
+				fetchPublicWebApi<{ organisations: Array<{ organisation_id: string; colour: string | null }> }>("/api/_web/organisations", { credentials: "same-origin" }).catch(() => ({ organisations: [] })),
+			]);
+			return applyArtificialAnalysisOrganisationColours(payload.benchmarks, new Map(organisationPayload.organisations.map((organisation) => [organisation.organisation_id, organisation.colour])));
+		},
+		enabled: loadRankings && Boolean(expandedMetric) && initialRankings.length === 0,
+	});
+	const rankings = initialRankings.length ? initialRankings : rankingQuery.data ?? [];
+	const [selectionByMetric, setSelectionByMetric] = useState<Record<string, string[]>>({});
+	const [pickerOpen, setPickerOpen] = useState(false);
+	const [pickerQuery, setPickerQuery] = useState("");
+	const pickerScrollY = useRef<number | null>(null);
+	useEffect(() => {
+		if (!pickerOpen || pickerScrollY.current === null) return;
+		const restore = () => window.scrollTo({ top: pickerScrollY.current ?? 0, behavior: "auto" });
+		const firstFrame = requestAnimationFrame(() => requestAnimationFrame(restore));
+		return () => cancelAnimationFrame(firstFrame);
+	}, [pickerOpen]);
+	const toDisplay = (item: ModelBenchmarkResult): DisplayResult => ({ benchmarkId: item.benchmark_id, score: item.score, otherInfo: item.other_info, sourceLink: item.source_link });
+	const selectedResults: DisplayResult[] = selectedVariant ? aaResults.filter((item) => item.variant === selectedVariant && !isArtificialAnalysisProgressIndex(item.benchmark_id)).map(toDisplay) : [];
+	const fallback: DisplayResult[] = highlights.filter((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
+	// The importer's effort labels can differ for non-reasoning models; a lone score still belongs to the model.
+	const progressResults = aaResults.filter((item) => isArtificialAnalysisProgressIndex(item.benchmark_id));
+	const progressResult = progressResults.find((item) => item.variant === (selectedVariant || null)) ?? (progressResults.length === 1 ? progressResults[0] : undefined);
+	const progress: DisplayResult | undefined = progressResult ? toDisplay(progressResult) : progressResults.length ? undefined : highlights.find((item) => isArtificialAnalysisProgressIndex(item.benchmarkId) && item.score !== null);
+	const indexResults = selectedResults.length ? selectedResults : fallback;
+	const available = progress ? [...indexResults, progress] : indexResults;
+	if (!indexResults.length && !progressResults.length && !progress) return null;
+
+	const versions = [...new Set(available.map((item) => artificialAnalysisVersion(item.otherInfo)).filter(Boolean))];
+	const activeRanking = rankings.find((ranking) => ranking.benchmark_id === expandedMetric);
+	const lowerIsBetter = activeRanking?.lower_is_better ?? isArtificialAnalysisCostBenchmark(expandedMetric ?? "");
+	const progressLabel = tx("Common.ui.benchmarkChartCopy.progressIndex" as never);
+	const activeMetric = isArtificialAnalysisProgressIndex(expandedMetric ?? "") ? { label: progressLabel } : metrics.find((metric) => metric.key === artificialAnalysisMetricKey(expandedMetric ?? ""));
+	const progressActive = expandedMetric === artificialAnalysisProgressIndexId;
+	const comparisonEntries = (benchmarkId: string) => {
+		const ranking = rankings.find((item) => item.benchmark_id === benchmarkId);
+		const lowerIsBetter = ranking?.lower_is_better ?? isArtificialAnalysisCostBenchmark(benchmarkId);
+		const localResult = available.find((item) => item.benchmarkId === benchmarkId);
+		const version = artificialAnalysisVersion(localResult?.otherInfo);
+		const entries = (ranking?.entries ?? []).filter((entry) => !version || !entry.other_info || artificialAnalysisVersion(entry.other_info) === version);
+		if (!modelId || localResult?.score == null) return entries;
+		const existing = entries.find((entry) => entry.model_id === modelId);
+		const local = localConfigurations(aaResults, benchmarkId).filter((item) => !version || !artificialAnalysisVersion(item.other_info) || artificialAnalysisVersion(item.other_info) === version);
+		const configurations = local.length ? local : existing?.configurations?.length ? existing.configurations : [{ variant: null, result_key: null, score: localResult.score, other_info: localResult.otherInfo, source_link: localResult.sourceLink, updated_at: null }];
+		const current: PublicBenchmarkRankingEntry = {
+			...existing,
+			model_id: modelId,
+			model_name: modelName ?? existing?.model_name ?? modelId,
+			organisation_id: existing?.organisation_id ?? modelId.split("/")[0],
+			organisation_name: existing?.organisation_name ?? null,
+			score: (lowerIsBetter ? Math.min : Math.max)(...configurations.map((item) => item.score)),
+			rank: existing?.rank ?? 0,
+			configurations,
+		};
+		return [...entries.filter((entry) => entry.model_id !== modelId), current].sort((left, right) => (lowerIsBetter ? left.score - right.score : right.score - left.score) || left.model_name.localeCompare(right.model_name));
+	};
+	const waitingForRankings = loadRankings && !initialRankings.length && !rankingQuery.data && !rankingQuery.isSuccess;
+	const entries = expandedMetric && !waitingForRankings ? comparisonEntries(expandedMetric) : [];
+	const datedEntries = [...entries].sort(modelDateDescending);
+	const pickerRows = datedEntries.flatMap((entry) => {
+		const configurations = orderConfigurations(entry.configurations?.length ? entry.configurations : [{ variant: null, result_key: null, score: Number(entry.score), other_info: entry.other_info ?? null, source_link: entry.source_link ?? null, updated_at: entry.updated_at ?? null }]);
+		return configurations.map((configuration) => ({ key: `${entry.model_id}:${configurationKey(configuration)}`, entry, configuration }));
+	});
+	const normalizedPickerQuery = pickerQuery.trim().toLocaleLowerCase();
+	const visiblePickerRows = normalizedPickerQuery ? pickerRows.filter((row) => `${row.entry.model_name} ${row.entry.organisation_name ?? ""} ${row.entry.model_id} ${localizedBenchmarkConfiguration(row.configuration.variant, tx)}`.toLocaleLowerCase().includes(normalizedPickerQuery)) : pickerRows;
+	const pickerGroups = [...visiblePickerRows.reduce((groups, row) => {
+		const month = releaseMonth(row.entry.release_date, locale, tx("Common.ui.benchmarkChartCopy.releaseDateUnavailable" as never));
+		const group = groups.get(month.key) ?? { ...month, rows: [] as typeof pickerRows };
+		group.rows.push(row);
+		groups.set(month.key, group);
+		return groups;
+	}, new Map<string, { key: string; label: string; rows: typeof pickerRows }>()).values()];
+	const currentIndex = entries.findIndex((entry) => entry.model_id === modelId);
+	const defaultVisibleModels = 14;
+	const defaultStart = currentIndex < 0 ? 0 : Math.min(Math.max(0, currentIndex - 6), Math.max(0, entries.length - defaultVisibleModels));
+	const defaultSelection = entries.slice(defaultStart, defaultStart + defaultVisibleModels).map((entry) => entry.model_id);
+	if (modelId && entries.some((entry) => entry.model_id === modelId) && !defaultSelection.includes(modelId)) defaultSelection.unshift(modelId);
+	const defaultSelectedKeys = pickerRows.filter((row) => defaultSelection.includes(row.entry.model_id)).map((row) => row.key);
+	const selectedKeys = expandedMetric ? selectionByMetric[expandedMetric] ?? defaultSelectedKeys : [];
+	const chartRows = pickerRows.filter((row) => selectedKeys.includes(row.key)).sort((left, right) => {
+		const scoreDifference = Number(left.configuration.score) - Number(right.configuration.score);
+		return (lowerIsBetter ? scoreDifference : -scoreDifference)
+			|| left.entry.rank - right.entry.rank
+			|| configurationRank(left.configuration.variant) - configurationRank(right.configuration.variant);
+	});
+	const hasSelectedModel = Boolean(modelId && chartRows.some((row) => row.entry.model_id === modelId));
+	const maxScore = Math.max(...chartRows.map((row) => Number(row.configuration.score)), 1);
+	// Index scores start at zero; the Progress Index scale has no meaningful zero, so bars start just below the lowest shown.
+	const minScore = Math.min(...chartRows.map((row) => Number(row.configuration.score)));
+	const chartBase = isArtificialAnalysisProgressIndex(expandedMetric ?? "") && chartRows.length ? Math.max(0, minScore - Math.max((maxScore - minScore) * 0.25, 5)) : 0;
+	const rankFor = (benchmarkId: string, score: number) => {
+		const summary = rankSummaries?.[benchmarkId];
+		if (summary && !rankings.length) {
+			const version = artificialAnalysisVersion(available.find((item) => item.benchmarkId === benchmarkId)?.otherInfo);
+			const local = localConfigurations(aaResults, benchmarkId).filter((item) => !version || !artificialAnalysisVersion(item.other_info) || artificialAnalysisVersion(item.other_info) === version);
+			return artificialAnalysisSummaryRank(summary, score, modelId, version, local.map((item) => item.score));
+		}
+		const ranking = rankings.find((item) => item.benchmark_id === benchmarkId);
+		if (!ranking) return null;
+		const comparisons = comparisonEntries(benchmarkId);
+		if (!comparisons.some((entry) => entry.model_id !== modelId)) return null;
+		return artificialAnalysisConfigurationRank(comparisons, score, ranking.lower_is_better);
+	};
+	const progressRank = progress?.score == null ? null : rankFor(artificialAnalysisProgressIndexId, progress.score);
+	const setSelectedKeys = (keys: string[]) => expandedMetric && setSelectionByMetric((current) => ({ ...current, [expandedMetric]: keys }));
+
+	return <section aria-label={tx("Common.ui.benchmarkChartCopy.artificialAnalysisBenchmarks" as never)}>
+		<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+			<div className="flex items-center gap-3"><ArtificialAnalysisLogo /><div><h2 className="font-semibold">Artificial Analysis</h2><p className="text-xs text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.independentEvaluations" as never)}{versions.length ? ` · ${tx("Catalogue.rankings.indexVersion", { versions: versions.join(" / v") })}` : ""}</p></div></div>
+			{variants.length > 1 ? <div className="flex items-center gap-2 text-sm"><span className="text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.modelConfiguration" as never)}</span><Select value={selectedVariant} onValueChange={setSelectedVariant}><SelectTrigger size="sm" aria-label={tx("Product.latency.configuration" as never)} className="min-w-36"><SelectValue>{localizedBenchmarkConfiguration(selectedVariant, tx)}</SelectValue></SelectTrigger><SelectContent align="end">{variants.map((variant) => <SelectItem key={variant} value={variant}>{localizedBenchmarkConfiguration(variant, tx)}</SelectItem>)}</SelectContent></Select></div> : null}
+		</div>
+
+		{indexResults.length ? <div className="mt-4 grid grid-cols-2 border-t lg:grid-cols-4">
+			{metrics.map(({ id: fallbackId, key, label }, index) => {
+				const result = available.filter((item) => artificialAnalysisMetricKey(item.benchmarkId) === key).sort((left, right) => right.benchmarkId.localeCompare(left.benchmarkId, "en", { numeric: true }))[0];
+				const id = result?.benchmarkId ?? fallbackId;
+				const rank = result?.score == null ? null : rankFor(id, result.score);
+				const active = expandedMetric === id;
+				const MetricIcon = metricIcons[key];
+				return <button key={id} type="button" aria-expanded={active} onClick={() => { setPickerOpen(false); setExpandedMetric(active ? null : id); }} className={`group min-w-0 py-3 text-left sm:py-4 ${index % 2 ? "border-l pl-4 sm:pl-5" : "pr-4 sm:pr-5"} ${index > 1 ? "border-t lg:border-t-0 lg:border-l lg:pl-5" : ""}`}>
+					<span className="flex items-center gap-2 text-sm font-medium"><MetricIcon className={`size-4 transition-colors ${active ? "text-[#8842FD]" : "text-muted-foreground group-hover:text-foreground"}`} />{label}</span>
+					<span className="mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><span>{result?.score == null ? tx("Product.gatewayBenchmark.notAvailable" as never) : <AnimatedScore benchmarkId={id} score={result.score} />}</span>{result?.score != null && rank ? <><span aria-hidden="true" className="flex items-baseline text-sm font-medium text-muted-foreground" title={tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: rank.rank, total: rank.total })}>(#<NumberFlow locales={locale} value={rank.rank} />)</span><span className="sr-only">{tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: rank.rank, total: rank.total })}</span></> : null}</span>
+				</button>;
+			})}
+		</div> : null}
+
+		{progress?.score != null ? <button type="button" aria-expanded={progressActive} onClick={() => { setPickerOpen(false); setExpandedMetric(progressActive ? null : artificialAnalysisProgressIndexId); }} className={`group flex w-full items-center justify-between gap-4 border-t py-3 text-left sm:py-4 ${indexResults.length ? "" : "mt-4"}`}>
+			<span className="min-w-0">
+				<span className="flex items-center gap-2 text-sm font-medium"><TrendingUp className={`size-4 transition-colors ${progressActive ? "text-[#8842FD]" : "text-muted-foreground group-hover:text-foreground"}`} />{progressLabel}</span>
+				<span className="mt-0.5 block text-xs text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.progressIndexHelp" as never)}</span>
+			</span>
+			<span className="flex shrink-0 items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><AnimatedScore benchmarkId={artificialAnalysisProgressIndexId} score={progress.score} />{progressRank ? <><span aria-hidden="true" className="flex items-baseline text-sm font-medium text-muted-foreground" title={tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: progressRank.rank, total: progressRank.total })}>(#<NumberFlow locales={locale} value={progressRank.rank} />)</span><span className="sr-only">{tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: progressRank.rank, total: progressRank.total })}</span></> : null}</span>
+		</button> : null}
+
+		{expandedMetric ? <div className="border-b py-5" aria-live="polite">
+			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+				<div><h3 className="text-sm font-medium">{tx("Common.ui.benchmarkChartCopy.metricComparison", { metric: activeMetric?.label ?? "" })}</h3><p className="text-xs text-muted-foreground">{lowerIsBetter ? tx("Common.ui.benchmarkComparison.lowerIsBetter" as never) : tx("Common.ui.modelCreation.form.higherIsBetter" as never)} · {tx("Common.ui.benchmarkChartCopy.rankedAcrossEvaluatedConfigurations" as never)}</p></div>
+				{entries.length ? <Popover open={pickerOpen} onOpenChange={setPickerOpen}><PopoverTrigger asChild><Button variant="outline" size="sm" className="w-full justify-between sm:w-64" onPointerDown={() => { pickerScrollY.current = window.scrollY; }} onKeyDown={() => { pickerScrollY.current = window.scrollY; }}><span>{tx("Common.ui.benchmarkChartCopy.selectedOfTotalConfigurations", { selected: selectedKeys.length, total: pickerRows.length })}</span><ChevronsUpDown className="size-3.5 text-muted-foreground" /></Button></PopoverTrigger><PopoverContent initialFocus={false} align="end" className="w-[min(28rem,calc(100vw-2rem))] gap-0 p-0">
+					<Command shouldFilter={false}><CommandInput value={pickerQuery} onValueChange={setPickerQuery} placeholder={tx("Common.ui.benchmarkChartCopy.searchModelsOrConfigurations" as never)} /><CommandList className="max-h-80"><CommandEmpty>{tx("Common.ui.benchmarkChartCopy.noEvaluatedConfigurationFound" as never)}</CommandEmpty>{pickerGroups.map((group) => <CommandGroup key={group.key} heading={group.label} className="overflow-visible [&_[cmdk-group-heading]]:sticky [&_[cmdk-group-heading]]:top-0 [&_[cmdk-group-heading]]:z-10 [&_[cmdk-group-heading]]:bg-popover [&_[cmdk-group-heading]]:shadow-[0_1px_0_hsl(var(--border))]">{group.rows.map(({ key, entry, configuration }) => { const selected = selectedKeys.includes(key); return <CommandItem key={key} value={key} data-checked={selected} onSelect={() => setSelectedKeys(selected ? selectedKeys.filter((item) => item !== key) : [...selectedKeys, key])} className="min-h-8 py-1"><span className="relative size-5 shrink-0 overflow-hidden rounded bg-muted"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain p-0.5" /></span><span className="min-w-0 flex-1 truncate">{entry.model_name} <span className="text-muted-foreground">({localizedBenchmarkConfiguration(configuration.variant, tx)})</span></span></CommandItem>; })}</CommandGroup>)}</CommandList></Command>
+					<div className="grid grid-cols-2 gap-1.5 border-t bg-popover p-2"><Button type="button" variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelectedKeys([])}>{tx("Common.search.clear" as never)}<ListX className="size-3.5" /></Button><Button type="button" variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelectedKeys(pickerRows.map((row) => row.key))}>{tx("Common.authFlows.oauthConsent.selectAll" as never)}<ListChecks className="size-3.5" /></Button></div>
+				</PopoverContent></Popover> : null}
+			</div>
+			{loadRankings && !rankings.length && (rankingQuery.isPending || rankingQuery.isFetching) ? <p role="status">{tx("Common.ui.accessibility.loading")}</p> : loadRankings && !rankings.length && rankingQuery.isError ? <Button variant="outline" onClick={() => void rankingQuery.refetch()}>{tx("Common.errors.tryAgain")}</Button> : chartRows.length ? <ScrollArea className="w-full" scrollBarOrientation="horizontal" viewportClassName="pb-3"><div className="relative h-[360px] border-b" style={{ width: `${Math.max(chartRows.length * 54 + 144, 480)}px`, minWidth: "100%" }}>
+				<div className="pointer-events-none absolute inset-x-16 bottom-[140px] top-4 flex flex-col justify-between">{[0, 1, 2, 3, 4].map((line) => <span key={line} className="border-t border-dashed border-border/70" />)}</div>
+								<div className="absolute inset-x-16 bottom-0 top-4 flex items-end gap-1.5">{chartRows.map(({ entry, configuration }) => {
+									const isSelectedModel = entry.model_id === modelId;
+									const proportionalHeight = ((Number(configuration.score) - chartBase) / (maxScore - chartBase)) * 205;
+									const height = Math.max(proportionalHeight, 3);
+									const compactBar = proportionalHeight < 30;
+									const colour = artificialAnalysisChartColour(entry.organisation_id, entry.organisation_colour);
+									const isOpenAI = entry.organisation_id === "openai";
+									return <HoverCard key={`${entry.model_id}:${configuration.result_key || configuration.variant || "default"}`}><HoverCardTrigger asChild delay={80} closeDelay={80}><div tabIndex={0} aria-label={entry.model_name} className="group flex h-full min-w-12 flex-1 basis-12 cursor-default flex-col items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className={`relative flex w-8 items-end justify-center rounded-t-[3px] text-[10px] font-semibold tabular-nums sm:w-9 ${compactBar ? "" : `pb-2 ${hasSelectedModel && !isSelectedModel ? "text-foreground" : "text-white"}`}`} style={{ height }}><span aria-hidden="true" className={`absolute inset-0 rounded-t-[3px] transition-[filter,opacity] duration-300 group-hover:brightness-110 ${isOpenAI ? "bg-black" : "shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"} ${hasSelectedModel && !isSelectedModel ? "opacity-20" : ""}`} style={{ backgroundColor: isOpenAI ? undefined : colour }} /><span className={`relative z-10 ${compactBar ? "absolute bottom-full mb-1 text-foreground" : ""}`}>{barScore(expandedMetric, Number(configuration.score), locale)}</span></span><span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span><div className="relative h-[112px] w-full"><Link href={`/models/${entry.model_id}`} className="absolute right-1/2 top-0 line-clamp-2 w-24 origin-top-right -rotate-[55deg] whitespace-normal break-words text-right text-[11px] leading-[1.15] decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}{configuration.variant ? <span className="text-muted-foreground"> ({localizedBenchmarkConfiguration(configuration.variant, tx)})</span> : null}</Link></div></div></HoverCardTrigger><ModelHoverCard entry={entry} configurations={[configuration]} metricLabel={activeMetric?.label} {...artificialAnalysisConfigurationRank(entries, configuration.score, lowerIsBetter)} /></HoverCard>;
+				})}</div>
+				</div></ScrollArea> : <p className="text-sm text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.selectModelsToCompare" as never)}</p>}
+		</div> : null}
+
+		<div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+			<Link href={expandedMetric ? `/benchmarks/${expandedMetric}#model-results` : "/rankings#benchmarks"} className="inline-flex items-center gap-1 hover:text-foreground">{tx("Common.ui.benchmarkChartCopy.viewFullLeaderboard" as never)} <ArrowUpRight className="size-3.5" /></Link>
+			<a href={available[0]?.sourceLink || "https://artificialanalysis.ai/models"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">{tx("Common.ui.benchmarkChartCopy.sourceArtificialAnalysis" as never)} <ExternalLink className="size-3.5" /></a>
+		</div>
+	</section>;
+}

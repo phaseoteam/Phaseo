@@ -1,0 +1,253 @@
+"use client";
+
+import * as React from "react";
+import { useTranslations } from "next-intl";
+import {
+	Check,
+	ChevronDown,
+	Copy,
+	Download,
+	ShieldCheck,
+	TestTube2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
+
+import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+	PHASEO_GATEWAY_BASE_URL,
+	buildAppConfigSnippets,
+	buildCollectionExports,
+	buildEnvFile,
+} from "@/lib/gateway/secretReveal";
+import { OnePasswordSaveButton } from "./OnePasswordSaveButton";
+import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+
+type SecretKind = "api-key" | "management-key";
+
+type SecretRevealActionsProps = {
+	secret: string;
+	name: string;
+	kind?: SecretKind;
+	envVarName?: string;
+	baseUrl?: string;
+	enableTest?: boolean;
+};
+
+type CopyTextButtonProps = {
+	value: string;
+	children: React.ReactNode;
+	onCopied?: () => void;
+	variant?: React.ComponentProps<typeof Button>["variant"];
+};
+
+function downloadTextFile(filename: string, content: string, mimeType: string) {
+	const blob = new Blob([content], { type: mimeType });
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement("a");
+	anchor.href = url;
+	anchor.download = filename;
+	document.body.appendChild(anchor);
+	anchor.click();
+	anchor.remove();
+	window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function CopyTextButton({
+	value,
+	children,
+	onCopied,
+	variant = "outline",
+}: CopyTextButtonProps) {
+	const t = useTranslations("SettingsUI");
+	const [copied, setCopied] = React.useState(false);
+
+	async function copy() {
+		try {
+			await navigator.clipboard.writeText(value);
+			setCopied(true);
+			window.setTimeout(() => setCopied(false), 2000);
+			onCopied?.();
+		} catch {
+			toast.error(t("strings.Could not copy to clipboard" as never));
+		}
+	}
+
+	return (
+		<Button type="button" variant={variant} size="sm" onClick={copy}>
+			{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+			{copied ? t("strings.Copied" as never) : children}
+		</Button>
+	);
+}
+
+export function SecretRevealActions({
+	secret,
+	name,
+	kind = "api-key",
+	envVarName = kind === "management-key"
+		? "PHASEO_MANAGEMENT_KEY"
+		: "PHASEO_API_KEY",
+	baseUrl = PHASEO_GATEWAY_BASE_URL,
+	enableTest = kind === "api-key",
+}: SecretRevealActionsProps) {
+	const t = useTranslations("SettingsUI");
+	const [testState, setTestState] = React.useState<
+		"idle" | "testing" | "success" | "error"
+	>("idle");
+	const appConfigSnippets = React.useMemo(
+		() => buildAppConfigSnippets({ apiKey: secret, baseUrl }),
+		[secret, baseUrl],
+	);
+	const collectionExports = React.useMemo(
+		() => buildCollectionExports(baseUrl),
+		[baseUrl],
+	);
+	const envFile = React.useMemo(
+		() => buildEnvFile({ apiKey: secret, baseUrl, envVarName }),
+		[secret, baseUrl, envVarName],
+	);
+	const onePasswordUrls = React.useMemo(
+		() => ["https://phaseo.app", "https://api.phaseo.app"],
+		[],
+	);
+
+	async function testKey() {
+		setTestState("testing");
+		try {
+			const body = await fetchAccountWebApi<{ ok: boolean; message?: string }>("/api/account/auth/test-key", await getBrowserAccessToken(), {
+				method: "POST",
+				body: JSON.stringify({ apiKey: secret }),
+			});
+			if (body?.ok === false) {
+				throw new Error(
+					body?.message || t("strings.phraseTheKeyCouldNotBeVerifiedRightNow" as never),
+				);
+			}
+			setTestState("success");
+			toast.success(t("strings.Key works" as never));
+		} catch (error) {
+			setTestState("error");
+			toast.error(localizedSettingsError(error, t, "Could not test API key"));
+		}
+	}
+
+	return (
+		<div className="space-y-3">
+			<div className="flex flex-wrap items-center gap-2">
+				<CopyTextButton
+					value={secret}
+					variant="default"
+					onCopied={() => toast.success(t("strings.Copied key" as never))}
+				>
+					{t("strings.Copy key" as never)}
+				</CopyTextButton>
+				<CopyTextButton
+					value={envFile}
+					onCopied={() => toast.success(t("strings.phraseCopiedEnv" as never))}
+				>
+					{t("strings.phraseCopyEnv" as never)}
+				</CopyTextButton>
+
+				{kind === "api-key" ? (
+					<DropdownMenu>
+						<DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
+
+								{t("strings.Copy config" as never)}
+								<ChevronDown className="h-4 w-4" />
+
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="start" className="rounded-lg">
+							{appConfigSnippets.map((snippet) => (
+								<DropdownMenuItem
+									key={snippet.id}
+									onClick={() => {
+										void navigator.clipboard
+											.writeText(snippet.value)
+											.then(() => toast.success(`Copied ${snippet.label}`))
+											.catch(() => toast.error(t("strings.Could not copy config" as never)));
+									}}
+									className="rounded-lg"
+								>
+									{snippet.label}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				) : null}
+
+				{kind === "api-key" ? (
+					<DropdownMenu>
+						<DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
+
+								<Download className="h-4 w-4" />
+								{t("strings.Export" as never)}
+								<ChevronDown className="h-4 w-4" />
+
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="start" className="rounded-lg">
+							{collectionExports.map((item) => (
+								<DropdownMenuItem
+									key={item.id}
+									onClick={() => {
+										downloadTextFile(
+											item.filename,
+											item.content,
+											item.mimeType,
+										);
+										toast.success(`${t("strings.Downloaded" as never)} ${item.label} ${t("strings.collection" as never)}`);
+									}}
+									className="rounded-lg"
+								>
+									{item.label}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				) : null}
+
+				{enableTest ? (
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={testKey}
+						disabled={testState === "testing"}
+					>
+						{testState === "success" ? (
+							<ShieldCheck className="h-4 w-4 text-emerald-600" />
+						) : (
+							<TestTube2 className="h-4 w-4" />
+						)}
+						{testState === "testing" ? t("strings.phraseTesting" as never) : t("strings.Test key" as never)}
+					</Button>
+				) : null}
+			</div>
+
+			<div className="flex flex-wrap items-start gap-x-3 gap-y-2 border-t border-border/60 pt-3">
+				<OnePasswordSaveButton
+					title={name || t("finalSettingsCopy.apiKeyTitle")}
+					secret={secret}
+					notes={
+						kind === "management-key"
+							? t("finalSettingsCopy.managementKeyNote")
+							: t("finalSettingsCopy.gatewayKeyNote")
+					}
+					urls={onePasswordUrls}
+				/>
+				{kind === "api-key" ? (
+							<p className="max-w-sm text-xs leading-4 text-muted-foreground">
+								{t("strings.phraseExportsUsePlaceholdersSoDownloadedCollectionsDoNotContainTheSecret" as never)}
+					</p>
+				) : null}
+			</div>
+		</div>
+	);
+}

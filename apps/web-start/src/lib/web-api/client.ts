@@ -1,0 +1,201 @@
+import { cache } from "react";
+import { sdkExportStore, sdkRequestFromChat } from "@/lib/chat/sdkExport";
+import { isPublicLocale } from "@/i18n/locales";
+import { anySignal, timeoutSignal } from "@/lib/abortSignals";
+
+const DEFAULT_WEB_API_ORIGIN = "https://phaseo.app";
+const PUBLIC_WEB_API_TIMEOUT_MS = 15_000;
+
+export class WebApiError extends Error {
+	readonly status: number;
+	readonly detail?: string;
+	readonly issues?: Array<{ path: string; message: string }>;
+	/** The response's machine-readable `error`, kept even when `detail` is its message. */
+	readonly code?: string;
+
+	constructor(path: string, status: number, detail?: string, issues?: Array<{ path: string; message: string }>, code?: string) {
+		super(detail || `Cloudflare web API request failed (${status}): ${path}`);
+		this.name = "WebApiError";
+		this.status = status;
+		this.detail = detail;
+		this.issues = issues;
+		this.code = code;
+	}
+}
+
+function getWebApiOrigin(): string {
+	if (typeof window !== "undefined") return "";
+	return (process.env.WEB_API_ORIGIN ?? DEFAULT_WEB_API_ORIGIN).replace(/\/+$/, "");
+}
+
+async function readJsonPayload<T>(
+	response: Response,
+	path: string,
+): Promise<
+		(T & { error?: unknown; message?: unknown; detail?: unknown; issues?: Array<{path:string;message:string}> }) | undefined
+> {
+	const body = await response.text();
+	if (!body.trim()) return undefined;
+
+	try {
+		return JSON.parse(body) as T & {
+			error?: unknown;
+			message?: unknown;
+			detail?: unknown;
+		};
+	} catch {
+		throw new WebApiError(
+			path,
+			response.status,
+			`Expected a JSON response but received ${response.headers.get("content-type") || "an unknown content type"}.`,
+		);
+	}
+}
+
+/**
+ * Fetch public website data from the Cloudflare Worker.
+ *
+ * Next's data cache is deliberately disabled here. Public freshness, stale
+ * serving, cache tags, and revalidation are owned by Cloudflare so there is a
+ * single cache contract for every web deployment.
+ */
+async function fetchPublicWebApiUncached<T>(
+	path: `/api/_web/${string}`,
+	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
+): Promise<T> {
+	// Bound both fetching and reading the body so cached prerenders can reach
+	// their fallback instead of hanging until Next's cache-fill deadline.
+	const deadline = timeoutSignal(PUBLIC_WEB_API_TIMEOUT_MS);
+	const response = await fetch(`${getWebApiOrigin()}${path}`, {
+		headers: { Accept: "application/json" },
+		// Disable Next's data cache without native fetch's no-cache request
+		// headers, which ask upstream shared caches to revalidate.
+		next: { revalidate: 0 },
+		signal: options.signal
+			? anySignal([options.signal, deadline])
+			: deadline,
+		credentials: options.credentials ?? "omit",
+	});
+
+	if (!response.ok) {
+		throw new WebApiError(path, response.status);
+	}
+
+	return (await response.json()) as T;
+}
+
+// The timeout signal above opts out of Next's automatic fetch deduplication.
+// Share the parsed public response across metadata and Server Components in
+// one render only; Cloudflare still owns freshness between incoming requests.
+const fetchPublicWebApiForRender = cache((path: `/api/_web/${string}`) =>
+	fetchPublicWebApiUncached<unknown>(path),
+);
+
+export function fetchPublicWebApi<T>(
+	path: `/api/_web/${string}`,
+	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
+): Promise<T> {
+	if (
+		typeof window === "undefined" &&
+		!options.signal &&
+		(options.credentials === undefined || options.credentials === "omit")
+	) {
+		return fetchPublicWebApiForRender(path) as Promise<T>;
+	}
+	// Explicit cancellation and credentialed requests keep their own lifetime.
+	// Browser revalidation is owned by the existing query client.
+	return fetchPublicWebApiUncached<T>(path, options);
+}
+
+export async function fetchOptionalPublicWebApi<T>(
+	path: `/api/_web/${string}`,
+	options: { signal?: AbortSignal } = {},
+): Promise<T | null> {
+	try {
+		return await fetchPublicWebApi<T>(path, options);
+	} catch (error) {
+		if (error instanceof WebApiError && error.status === 404) return null;
+		throw error;
+	}
+}
+
+export async function fetchAccountWebApi<T>(
+	path: `/api/account/${string}`,
+	accessToken?: string | null,
+	init: RequestInit = {},
+): Promise<T> {
+	const response = await fetch(`${getWebApiOrigin()}${path}`, {
+		...init,
+		headers: {
+			Accept: "application/json",
+			...(init.body ? { "Content-Type": "application/json" } : {}),
+			...init.headers,
+			...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+		},
+		cache: "no-store",
+	});
+	const payload = await readJsonPayload<T>(response, path);
+	if (!response.ok) {
+		throw new WebApiError(
+			path,
+			response.status,
+			typeof payload?.message === "string"
+				? payload.message
+				: typeof payload?.detail === "string"
+					? payload.detail
+					: typeof payload?.error === "string" ? payload.error : undefined,
+			Array.isArray(payload?.issues) ? payload.issues.slice(0, 10) : undefined,
+			typeof payload?.error === "string" ? payload.error : undefined,
+		);
+	}
+	return payload as T;
+}
+
+export async function fetchInternalWebApi<T>(
+	path: `/api/internal/${string}`,
+	accessToken: string | null,
+	init: RequestInit = {},
+): Promise<T> {
+	const response = await fetch(`${getWebApiOrigin()}${path}`, {
+		...init,
+		headers: { Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+		cache: "no-store",
+	});
+	const payload = await readJsonPayload<T>(response, path);
+	if (!response.ok) throw new WebApiError(path, response.status, typeof payload?.error === "string" ? payload.error : undefined);
+	return payload as T;
+}
+
+export async function fetchInternalWebApiResponse(
+	path: `/api/internal/${string}`,
+	accessToken: string | null,
+	init: RequestInit = {},
+): Promise<Response> {
+	return fetch(`${getWebApiOrigin()}${path}`, {
+		...init,
+		headers: { Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+		cache: "no-store",
+	});
+}
+
+/** Authenticated, private chat proxy request owned by the Cloudflare Worker. */
+export async function fetchChatWebApi(path: `/api/chat/${string}`, init: RequestInit = {}): Promise<Response> {
+	const sdkRequest = typeof window === "undefined" ? null : sdkRequestFromChat(path, init);
+	if (sdkRequest) sdkExportStore.set(sdkRequest);
+	const { getBrowserAccessToken } = await import("@/lib/fetchers/internal/accountAuthClient");
+	const accessToken = await getBrowserAccessToken();
+	const response = await fetch(`${getWebApiOrigin()}${path}`, {
+		...init,
+		headers: { ...init.headers, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+		cache: "no-store",
+	});
+	if (sdkRequest && sdkExportStore.get() === sdkRequest) sdkExportStore.set({ ...sdkRequest, status: response.status, requestId: response.headers.get("x-request-id") ?? response.headers.get("x-phaseo-request-id") ?? undefined });
+	if (response.status === 403 && typeof window !== "undefined") {
+		const payload = await response.clone().json().catch(() => null);
+		if (payload?.error === "chat_privacy_review_required") {
+			const locale = window.location.pathname.split("/")[1];
+			window.location.assign(`${isPublicLocale(locale) ? `/${locale}` : ""}/chat`);
+		}
+	}
+	return response;
+}

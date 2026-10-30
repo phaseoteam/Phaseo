@@ -1,0 +1,194 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { CheckIcon, CopyIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
+import {
+  type ComponentProps,
+  createContext,
+  type HTMLAttributes,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { type BundledLanguage, codeToHtml, type ShikiTransformer } from "shiki";
+
+type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
+  code: string;
+  language: BundledLanguage;
+  showLineNumbers?: boolean;
+};
+
+type CodeBlockContextType = {
+  code: string;
+};
+
+const CodeBlockContext = createContext<CodeBlockContextType>({
+  code: "",
+});
+
+const lineNumberTransformer: ShikiTransformer = {
+  name: "line-numbers",
+  line(node, line) {
+    node.children.unshift({
+      type: "element",
+      tagName: "span",
+      properties: {
+        className: [
+          "inline-block",
+          "min-w-10",
+          "mr-4",
+          "text-right",
+          "select-none",
+          "text-neutral-500 dark:text-neutral-400",
+        ],
+      },
+      children: [{ type: "text", value: String(line) }],
+    });
+  },
+};
+
+export async function highlightCode(
+  code: string,
+  language: BundledLanguage,
+  showLineNumbers = false
+) {
+  const transformers: ShikiTransformer[] = showLineNumbers
+    ? [lineNumberTransformer]
+    : [];
+
+  return await Promise.all([
+    codeToHtml(code, {
+      lang: language,
+      theme: "one-light",
+      transformers,
+    }),
+    codeToHtml(code, {
+      lang: language,
+      theme: "one-dark-pro",
+      transformers,
+    }),
+  ]);
+}
+
+export const CodeBlock = ({
+  code,
+  language,
+  showLineNumbers = false,
+  className,
+  children,
+  ...props
+}: CodeBlockProps) => {
+  const highlightKey = `${language}:${showLineNumbers}:${code}`;
+  const [highlighted, setHighlighted] = useState({ key: "", html: "", darkHtml: "" });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    highlightCode(code, language, showLineNumbers)
+      .then(([light, dark]) => {
+        if (cancelled) return;
+        setHighlighted({ key: highlightKey, html: light, darkHtml: dark });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHighlighted({ key: highlightKey, html: "", darkHtml: "" });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [code, highlightKey, language, showLineNumbers]);
+
+  const html = highlighted.key === highlightKey ? highlighted.html : "";
+  const darkHtml = highlighted.key === highlightKey ? highlighted.darkHtml : "";
+
+  return (
+    <CodeBlockContext.Provider value={{ code }}>
+      <div
+        className={cn(
+          "group relative w-full overflow-hidden rounded-md border border-neutral-200 bg-white text-neutral-950 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50",
+          className
+        )}
+        {...props}
+      >
+        <div className="relative">
+          {html && darkHtml ? (
+            <>
+              <div
+                className="overflow-auto dark:hidden [&>pre]:m-0 [&>pre]:bg-background! [&>pre]:p-4 [&>pre]:text-foreground! [&>pre]:text-sm [&_code]:font-mono [&_code]:text-sm"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: "this is needed."
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
+              <div
+                className="hidden overflow-auto dark:block [&>pre]:m-0 [&>pre]:bg-background! [&>pre]:p-4 [&>pre]:text-foreground! [&>pre]:text-sm [&_code]:font-mono [&_code]:text-sm"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: "this is needed."
+                dangerouslySetInnerHTML={{ __html: darkHtml }}
+              />
+            </>
+          ) : (
+            <pre className="m-0 overflow-auto bg-background p-4 text-sm text-foreground">
+              <code className="font-mono text-sm">{code}</code>
+            </pre>
+          )}
+          {children && (
+            <div className="absolute top-2 right-2 flex items-center gap-2">
+              {children}
+            </div>
+          )}
+        </div>
+      </div>
+    </CodeBlockContext.Provider>
+  );
+};
+
+export type CodeBlockCopyButtonProps = ComponentProps<typeof Button> & {
+  onCopy?: () => void;
+  onError?: (error: Error) => void;
+  timeout?: number;
+};
+
+export const CodeBlockCopyButton = ({
+  onCopy,
+  onError,
+  timeout = 2000,
+  children,
+  className,
+  ...props
+}: CodeBlockCopyButtonProps) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const { code } = useContext(CodeBlockContext);
+  const t = useTranslations("Product.chatRooms.aiElements");
+
+  const copyToClipboard = async () => {
+    if (typeof window === "undefined" || !navigator?.clipboard?.writeText) {
+      onError?.(new Error("Clipboard API not available"));
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(code);
+      setIsCopied(true);
+      onCopy?.();
+      setTimeout(() => setIsCopied(false), timeout);
+    } catch (error) {
+      onError?.(error as Error);
+    }
+  };
+
+  const Icon = isCopied ? CheckIcon : CopyIcon;
+
+  return (
+    <Button
+      className={cn("shrink-0", className)}
+      onClick={copyToClipboard}
+      aria-label={isCopied ? t("codeCopied") : t("copyCode")}
+      size="icon"
+      variant="ghost"
+      {...props}
+    >
+      {children ?? <Icon size={14} />}
+    </Button>
+  );
+};

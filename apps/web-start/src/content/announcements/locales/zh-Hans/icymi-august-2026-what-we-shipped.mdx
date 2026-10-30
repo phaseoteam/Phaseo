@@ -1,0 +1,133 @@
+---
+title: "错过了？回顾： 2026 年 8 月发布内容"
+shortTitle: "错过了？回顾： 2026 年 8 月"
+description: 8 月让编程工具接入更快捷、请求追踪更深入、工作区控制可自助管理，并全面清理了提供商目录。
+publishedAt: 2026-08-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-august-2026.png
+tags:
+  - 月度回顾
+  - 月度回顾
+  - 产品
+  - 模型
+draft: false
+---
+
+即使按我们平时的节奏来看，8 月也非常忙碌。我们让 Phaseo 更容易连接编程工具，记录更多 Gateway 请求的处理过程，增加了工作区自助控制，并着手彻底清理早就需要整顿的提供商目录。
+
+本回顾涵盖 **2026 年 8 月 1 日至 8 月 30 日** 发布的内容，依据已合并的拉取请求、发布记录和当月目录数据整理而成。
+
+## 本月发布
+
+### 编程工具接入更方便
+
+Phaseo CLI 现在可以处理从安装到发出第一个有效请求之间的更多步骤。
+
+我们新增了独立发布、更新检查、`doctor` 命令，以及与 OpenCode 和其他编程智能体的集成。一键配置环境时，会检测受支持的工具、说明即将安装的内容，并在修改本地配置前征求同意。CLI 还可以在应用确定使用某条路由前先比较模型。
+
+我们还新增了引导式 OpenRouter 迁移流程，重点处理真正会变化的部分：凭证、基础 URL、模型标识符和请求归属信息。
+
+本月还加入了桌面工作区和 Expo 移动客户端的初步代码。这两者都还不是完整的客户端发布版本，而是将相同的工作区、模型目录和请求历史带出浏览器的起点。
+
+### 可观测性现在覆盖整个请求过程
+
+我们现在会记录更多请求生命周期信息，包括延迟、流式传输行为、用量、提供商尝试次数和最终路由决策。
+
+8 月新增了 token 间延迟和缓存输入测量，持久化了上游请求尝试记录，并加入 GenAI OpenTelemetry 导出。我们还改进了用量日志查看，恢复了请求来源归属，并将其与 Chat 应用分开。路由视图现在会说明为何选择某个提供商。
+
+模型性能页面新增了更完善的筛选器、同步的图表悬停状态、价格历史、提供商详情和每周回访率。我们调整了低流量规则，让数据较少的模型仍能显示有用信息，同时不把极小样本说成结论。上游数据源发生故障时，排名仍可查看。
+
+请求变慢、成本过高、需要重试或被发往意料之外的地方时，现在有更多依据可以解释原因。
+
+### 多模态 API 开始共享同一套基础设施
+
+本月批处理、视频、实时、图像、音乐、转录和文档处理工作负载都有变化。有些增加了新路由，另一些则完善了较不显眼的计费、归属或故障处理工作。
+
+我们加强了 Batch 和 Video API 流程中的归属、计费和故障控制。实时中继准入和 Durable Objects 生命周期也再次得到检查。音频提供商现在遵循更一致的契约，生成的音乐也可以走完完整的异步流程，包括结果获取。
+
+Gateway 新增了 Meta Muse Image 1.0 和多个 MiniMax 媒体模型的路由。Cohere Parse v5 将文档解析纳入标准路由层级，Gemini 转录模型则扩大了音频覆盖范围。
+
+提供商自有适配器和由数据库驱动的配置正逐步取代一次性的路由代码。新的模态可以复用身份验证、用量采集、计费、追踪和回退机制，而不必再另建一套需要维护的系统。
+
+### 工作区新增企业级控制，无需排队提交支持请求
+
+SSO、SCIM、目录管理和部门管理的企业自助扩展现已推出。SCIM 增加了服务提供商实现、部门权限和更安全的对账机制。
+
+工作区通知现在可以发送到电子邮件、Discord、Slack、Microsoft Teams 或自定义 HTTPS Webhook。团队可以为每条提醒选择接收位置，而不是把所有通知都放进同一个全局信息流。
+
+隐私控制现在适用于整个工作区，目录中提供了提供商政策筛选器，Phaseo 信任中心也已上线。模型和提供商页面还更清楚地说明了数据保留、区域处理和数据政策。
+
+团队不应该为了弄清请求在哪里运行、提供商如何处理数据、谁能访问工作区或提醒会发送到哪里而开支持工单。现在，这些答案都更接近相关设置。
+
+### Chat 和 Compare 消除了许多细小的不便
+
+8 月对 Chat 的任何单项改动都不算巨大，但合在一起就很明显。
+
+并排比较现在更好地利用宽屏，同时让笔记本电脑和平板上的消息保持易读。登录后草稿会保留，模型会话的分类更加可靠；消息尚未选择模型时，模型选择器会自动打开。Chat 还增加了活动指示器、接收确认、助手选择操作，以及当前模型更换时的时间线标记。
+
+移动端模型筛选器现在与桌面端一致，全局搜索按相关性排序，搜索结果会显示提供商的区域名称，目录卡片会显示生命周期状态。Compare 会直接打开，并记住上次的控件位置。
+
+这些改进主要是消除使用阻力，而这正是 Chat 和 Compare 所需要的。
+
+### 我们逐一审查了提供商目录
+
+我们全面检查了目录中模型的身份和可用性、价格、区域、服务等级、隐私政策、参数支持和退役状态。
+
+审查范围包括主要第一方平台以及数十家较小的推理服务提供商。过程中，我们将提供商可用性与 Phaseo 路由状态分开，新增了独立的免费模型记录，保护了隐身提供商的身份，并修复了对非活跃及外部提供商的处理。
+
+价格现在支持按时间段查看历史、促销、非高峰费率、按等级制定的政策，以及更清楚的折扣比较。我们还将 Priority 服务等级改名为 Fast。这更符合开发者的实际选择，也比旧的内部名称更明确。
+
+实际结果是重复记录和失效路由减少了。要回答目录存在的核心问题也更容易了：谁能运行这个模型、在哪里运行、适用什么政策、价格是多少？
+
+## 其他更新
+
+- 预设支持不可变版本、分支来源记录、调用保护和反馈可观测性。
+- 模型能力发现和工具调用常见问题已可从目录页面查看。
+- 改进了 Server Tools 的流式传输和显示行为。
+- 根据当前目录数据更新了 Models API 和 MCP 接口。
+- 提供商和实验室页面增加了更多标志、区域标签和清晰的可用状态。
+- 品牌素材现可下载为 SVG 和 PNG，并提供浅色和深色预览。
+- 数据库访问迁移到 PlanetScale，减少了出站流量，并为查询添加标签以便诊断。
+- Next.js 升级到了 16.3 版本线，之后又进行了兼容性和安全更新。
+
+## 模型亮点
+
+8 月发布的模型覆盖编程、媒体、文档和开放权重，没有任何一个模型独占整个月的焦点。
+
+Z.AI 的 GLM 5.3 是本月路由工作量最大的项目之一。随后发布的 GLM 5.3 Flash 覆盖了 OpenRouter、Baseten、FriendliAI、CrofAI、Morph、Reka、Databricks、AkashML、GMI Cloud、DigitalOcean、Parasail 等路由。Qwen 3.8 系列也扩展了，新增 Max、2.4T A95B、27B 和 Flash 版本。
+
+Google 发布了 Gemini 3.7 Flash，xAI 则新增 Grok 4.6 和 Grok Imagine Image 2.0。媒体模型包括 Muse Spark 1.2、Muse Glimmer 30B、Seedance 2.5 和 DeepSeek V4 Flash Vision Exp。Cohere Parse v5 增加了文档解析，IBM Granite 4.2 系列则推出了 3B、8B 和 30B 版本。
+
+查看最新发布数据：
+
+- [查看近期更新](/updates)
+
+## 本月概览
+
+GitHub 历史记录显示，8 月 1 日至 30 日期间合并了 **557 个拉取请求**。8 月更新日志记录了 **29 款模型发布**。大部分工作集中在编程工具配置、请求追踪、多模态 API、工作区管理和目录清理。
+
+## 2026 年 8 月发布的模型
+
+8 月更新日志包含以下模型发布：
+
+- 8 月 3 日：Qwen 3.8 Max (`qwen/qwen3.8-max`) 和 Namazu (`sakana/namazu`)
+- 8 月 5 日：Ling 3.0 Tiny (`inclusionai/ling-3.0-tiny`)、Muse Spark 1.2 (`meta/muse-spark-1.2`)、Muse Spark 1.2 Contributor (`meta/muse-spark-1.2-contributor`) 和 Shieldstral 1.0 3B (`mistral/shieldstral-1.0-3b`)
+- 8 月 6 日：Solar Pro 4 (`upstage/solar-pro-4`)
+- 8 月 7 日：Seedance 2.5 (`bytedance/seedance-2.5`)
+- 8 月 10 日：Muse Glimmer 30B (`meta/muse-glimmer-30b`)
+- 8 月 11 日：MAI Code 1.1 Flash (`microsoft/mai-code-1.1-flash`)、Nemotron 3.5 Lightning 30B A3B (`nvidia/nemotron-3.5-lightning`) 和 Grok Imagine Image 2.0 (`spacex-ai/grok-imagine-image-2.0`)
+- 8 月 12 日：Grok 4.6 (`spacex-ai/grok-4.6`) 和 Qwen 3.8 2.4T A95B (`qwen/qwen3.8-2.4t-a95b`)
+- 8 月 13 日：Gemini 3.7 Flash (`google/gemini-3.7-flash`)、OCR 4.1 (`mistral/ocr-4.1`)、DeepSeek V4 Pro 0813 (`deepseek/deepseek-v4-pro-0813`) 和 dots3-note Preview (`dots-studio/dots3-note-prev`)
+- 8 月 14 日：GLM 5.3 (`z-ai/glm-5.3`) 和 Qwen 3.8 27B (`qwen/qwen3.8-27b`)
+- 8 月 21 日：DeepSeek V4 Flash Vision Exp (`deepseek/deepseek-v4-flash-vision-exp`)
+- 8 月 25 日：Granite 4.2 30B (`ibm/granite-4.2-30b`)、Granite 4.2 8B (`ibm/granite-4.2-8b`) 和 Granite 4.2 3B (`ibm/granite-4.2-3b`)
+- 8 月 26 日：Qwen 3.8 Flash (`qwen/qwen3.8-flash`) 和 GLM 5.3 Flash (`z-ai/glm-5.3-flash`)
+- 8 月 27 日：Parse v5.0 (`cohere/parse-v5.0`) 和 Ling 3.0 Flash Fin (`inclusionai/ling-3.0-flash-fin`)
+- 8 月 28 日：Hy4 Preview (`tencent/hy4-preview`)
+
+## 接下来
+
+桌面端和移动端的基础功能仍在建设中，一些多模态流程也还有提供商特有的差异。9 月的工作将继续完善这些客户端、减少特殊处理，并让路由信息更容易帮助用户在模型和提供商之间做出选择。
+

@@ -1,0 +1,209 @@
+"use client";
+import { useSettingsWrite } from "../settings/PrivateSettingsQuery";
+
+import * as React from "react";
+import { toast } from "sonner";
+
+import {
+	setBillingNotificationPreference,
+	setLowBalanceEmailAlert,
+} from "@/app/(dashboard)/settings/credits/actions";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import NotificationRouteSelector from "@/components/(gateway)/settings/notifications/NotificationRouteSelector";
+import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";
+import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
+
+function parseThreshold(value: string): number | null {
+	const normalized = value.trim();
+	if (!/^(?:\d+|\d*\.\d{1,2})$/.test(normalized)) return null;
+	const parsed = Number(normalized);
+	if (!Number.isFinite(parsed) || parsed < 0) return null;
+	const nanos = Math.round(parsed * 1_000_000_000);
+	return Number.isSafeInteger(nanos) ? parsed : null;
+}
+
+export default function LowBalanceEmailAlertsClient(props: {
+	autoTopUpFailureEmailEnabled: boolean;
+	enabled: boolean;
+	paymentMethodExpiringEmailEnabled: boolean;
+	thresholdUsd: number | null;
+	destinations: NotificationDestination[];
+	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
+}) {
+	const t = useTranslations("SettingsUI.credits");
+	const settingsT = useTranslations("SettingsUI");
+	const [autoTopUpFailureEnabled, setAutoTopUpFailureEnabled] = React.useState(props.autoTopUpFailureEmailEnabled);
+	const write = useSettingsWrite();
+	const [enabled, setEnabled] = React.useState(Boolean(props.enabled));
+	const [paymentMethodExpiringEnabled, setPaymentMethodExpiringEnabled] = React.useState(props.paymentMethodExpiringEmailEnabled);
+	const [threshold, setThreshold] = React.useState<string>(
+		props.thresholdUsd == null ? "0" : String(props.thresholdUsd),
+	);
+
+	const debounceRef = React.useRef<number | null>(null);
+	const preferenceDebounceRef = React.useRef<Record<string, number>>({});
+	React.useEffect(() => {
+		const preferenceTimers = preferenceDebounceRef.current;
+		return () => {
+			if (debounceRef.current != null) window.clearTimeout(debounceRef.current);
+			Object.values(preferenceTimers).forEach((timer) => window.clearTimeout(timer));
+		};
+	}, []);
+
+	const scheduleSave = React.useCallback(
+		(next: { enabled: boolean; thresholdUsd: number | null }) => {
+			if (debounceRef.current != null) window.clearTimeout(debounceRef.current);
+			debounceRef.current = window.setTimeout(() => {
+				toast.promise(write(setLowBalanceEmailAlert(next)), {
+					loading: t("savingAlert"),
+					success: t("saved"),
+					error: (e: unknown) =>
+						localizedSettingsError(e, settingsT, "Action failed", t("saveAlertFailed")),
+				});
+			}, 500);
+		},
+		[t, settingsT, write],
+	);
+	const schedulePreferenceSave = React.useCallback((preference: "autoTopUpFailure" | "paymentMethodExpiring", nextEnabled: boolean) => {
+		const existing = preferenceDebounceRef.current[preference];
+		if (existing != null) window.clearTimeout(existing);
+		preferenceDebounceRef.current[preference] = window.setTimeout(() => {
+			toast.promise(write(setBillingNotificationPreference({ preference, enabled: nextEnabled })), {
+				loading: t("savingPreference"),
+				success: t("saved"),
+					error: (error: unknown) =>
+						localizedSettingsError(error, settingsT, "Action failed", t("savePreferenceFailed")),
+			});
+		}, 500);
+	}, [t, settingsT, write]);
+
+	const parsedThresholdUsd = React.useMemo(() => parseThreshold(threshold), [threshold]);
+	const thresholdInvalid = enabled && parsedThresholdUsd == null;
+
+	return (
+		<section aria-labelledby="notifications-title" className="space-y-3">
+			<h2 id="notifications-title" className="font-heading text-base font-medium">
+			{t("notifications")}
+			</h2>
+			<div className="overflow-hidden rounded-xl border bg-background/40">
+				<div className="px-4 py-4">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+						<div className="min-w-0">
+							<h3 className="text-sm font-medium">{t("lowBalanceAlerts")}</h3>
+							<p className="mt-0.5 text-sm text-muted-foreground">
+								{t("lowBalanceDescription")}
+							</p>
+						</div>
+						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+							<NotificationRouteSelector destinations={props.destinations} eventKind="low_balance" initialDestinationIds={props.notificationRoutes.low_balance ?? []} />
+							<Switch
+								checked={enabled}
+								aria-label={t("enableLowBalance")}
+								onCheckedChange={(nextEnabled) => {
+									const next = Boolean(nextEnabled);
+									setEnabled(next);
+									if (next) {
+										setThreshold("0");
+										scheduleSave({ enabled: true, thresholdUsd: 0 });
+										return;
+									}
+									scheduleSave({ enabled: false, thresholdUsd: null });
+								}}
+							/>
+						</div>
+					</div>
+					<div
+						className={cn(
+							"grid transition-[grid-template-rows,opacity] duration-200 ease-out",
+							enabled ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+						)}
+						aria-hidden={!enabled}
+					>
+						<div className="min-h-0 overflow-hidden">
+							<div className="flex flex-col gap-2.5 pt-3 pl-3 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
+								<div className="min-w-0">
+									<Label htmlFor="low-balance-threshold" className="text-xs font-medium">
+										{t("creditThreshold")}
+									</Label>
+									<p className="mt-0.5 text-xs text-muted-foreground">
+										{t("thresholdDescription")}
+									</p>
+								</div>
+								<div className="w-full shrink-0 sm:w-32">
+									<div className="relative">
+										<span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs text-muted-foreground">$</span>
+										<Input
+											id="low-balance-threshold"
+											type="number"
+											inputMode="decimal"
+											min={0}
+											step={0.01}
+											placeholder="0"
+											className="h-8 pl-7 text-right text-sm"
+											value={threshold}
+											disabled={!enabled}
+											onChange={(e) => {
+												const value = e.target.value;
+												setThreshold(value);
+												const nextThreshold = parseThreshold(value);
+												if (debounceRef.current != null) window.clearTimeout(debounceRef.current);
+												if (enabled && nextThreshold != null) {
+													scheduleSave({ enabled: true, thresholdUsd: nextThreshold });
+												}
+											}}
+										/>
+									</div>
+									{thresholdInvalid ? (
+										<p className="mt-1.5 text-xs text-destructive">
+												{t("thresholdInvalid")}
+										</p>
+									) : null}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+					<div className="min-w-0">
+						<h3 className="text-sm font-medium">{t("autoTopUpFailed")}</h3>
+						<p className="mt-0.5 text-sm text-muted-foreground">{t("autoTopUpDescription")}</p>
+					</div>
+					<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+						<NotificationRouteSelector destinations={props.destinations} eventKind="auto_top_up_failed" initialDestinationIds={props.notificationRoutes.auto_top_up_failed ?? []} />
+						<Switch
+							checked={autoTopUpFailureEnabled}
+							aria-label={t("enableAutoTopUp")}
+							onCheckedChange={(nextEnabled) => {
+								const next = Boolean(nextEnabled);
+								setAutoTopUpFailureEnabled(next);
+								schedulePreferenceSave("autoTopUpFailure", next);
+							}}
+						/>
+					</div>
+				</div>
+				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+					<div className="min-w-0">
+						<h3 className="text-sm font-medium">{t("paymentMethodExpiring")}</h3>
+						<p className="mt-0.5 text-sm text-muted-foreground">{t("paymentMethodExpiringDescription")}</p>
+					</div>
+					<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+						<NotificationRouteSelector destinations={props.destinations} eventKind="payment_method_expiring" initialDestinationIds={props.notificationRoutes.payment_method_expiring ?? []} />
+						<Switch
+							checked={paymentMethodExpiringEnabled}
+							aria-label={t("enablePaymentMethodExpiring")}
+							onCheckedChange={(nextEnabled) => {
+								const next = Boolean(nextEnabled);
+								setPaymentMethodExpiringEnabled(next);
+								schedulePreferenceSave("paymentMethodExpiring", next);
+							}}
+						/>
+					</div>
+				</div>
+			</div>
+		</section>
+	);
+}

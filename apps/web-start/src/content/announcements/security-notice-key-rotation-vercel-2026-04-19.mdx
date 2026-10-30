@@ -1,0 +1,54 @@
+---
+title: "Security Notice: Third-Party Breach (April 19, 2026)"
+description: Incident response update following Vercel's April 19, 2026 security bulletin, including mitigation actions and customer guidance.
+publishedAt: 2026-04-21T12:00:00Z
+author: Phaseo Team
+category: announcements
+pinned: false
+tags:
+  - Security
+  - Incident Response
+  - Key Rotation
+draft: true
+---
+
+## Summary
+
+Following Vercel's security bulletin published on **April 19, 2026**, we initiated incident-response procedures across Phaseo.
+As part of that response, we rotated Phaseo internal platform secrets and credentials, invalidated prior internal values, and verified key-handling paths across gateway services.
+
+As of **April 21, 2026**, we have no evidence of unauthorized access to Phaseo user data.
+Customer-managed API keys were not rotated by us. We recommend that all customers rotate their API keys for safety as a precaution.
+
+## Official Bulletin
+
+- [Vercel April 2026 security incident](https://vercel.com/kb/bulletin/vercel-april-2026-security-incident)
+
+Key points reported by Vercel include:
+- Unauthorized access to certain internal Vercel systems.
+- Initial impact to a limited customer subset involving non-sensitive environment variables.
+- No reported evidence that sensitive environment variable values were accessed.
+- No reported evidence of compromise to npm packages published by Vercel.
+
+## Actions Taken by Phaseo
+
+- Rotated Phaseo internal platform secrets and credentials.
+- Invalidated superseded key material and completed control checks.
+- Reinforced key-management defaults and operational safeguards.
+- Reviewed service activity and logs for suspicious behavior.
+- Continued active monitoring and incident-response review.
+
+## Required Customer Actions
+
+1. Rotate your Phaseo API keys in [/settings/keys](/settings/keys).
+2. Update application, worker, and CI/CD secrets to the new values.
+3. Confirm traffic on the new keys.
+4. Revoke old keys after cutover.
+
+<Callout title="Status" tone="warning">
+Please prioritize production key rotation.
+</Callout>
+
+## Ongoing updates
+
+This page will be updated as and when additional verified information becomes available.

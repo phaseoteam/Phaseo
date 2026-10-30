@@ -1,0 +1,376 @@
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { DisplayDate } from "@/components/display/DisplayValue";
+import { ArrowRight, ChevronDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Logo } from "@/components/Logo";
+import { cn } from "@/lib/utils";
+import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
+import RetiresBadge from "./RetiresBadge";
+
+interface DeprecationWarningsProps {
+	warnings?: DeprecationWarning[];
+	id?: string;
+	showHeader?: boolean;
+}
+
+type AlertCardMode = "deprecated" | "retired";
+
+function formatFutureDays(days: number) {
+	if (days <= 0) return "today";
+	return `in ${days}d`;
+}
+
+function deriveOrganisationId(
+	modelId: string,
+	organisationId: string | null,
+): string | null {
+	if (organisationId) return organisationId;
+	const [firstSegment] = modelId.split("/");
+	return firstSegment || null;
+}
+
+function ModelLink({
+	modelId,
+	modelName,
+	organisationId,
+	className,
+}: {
+	modelId: string;
+	modelName: string | null;
+	organisationId: string | null;
+	className?: string;
+}) {
+	const resolvedOrganisationId = deriveOrganisationId(modelId, organisationId);
+	const href = getModelDetailsHref(resolvedOrganisationId, modelId);
+	const label = modelName?.trim() || modelId;
+
+	if (!href) return <span className={className}>{label}</span>;
+
+	return (
+		<Link href={href} className={cn("underline decoration-transparent hover:decoration-current transition-colors duration-200", className)}>
+			{label}
+		</Link>
+	);
+}
+
+function AlertCard({
+	row,
+	mode,
+}: {
+	row: DeprecationWarning;
+	mode: AlertCardMode;
+}) {
+	const tAuditCopy = useTranslations();
+	const t = useTranslations("SettingsUI");
+	const modelOrgId = deriveOrganisationId(row.modelId, row.organisationId);
+	const replacementOrgId = row.replacementModelId
+		? deriveOrganisationId(row.replacementModelId, null)
+		: null;
+	const hasReadableName =
+		Boolean(row.modelName?.trim()) && row.modelName?.trim() !== row.modelId;
+
+	const deprecatedBadgeLabel =
+		row.retirementDaysUntil !== null
+			? `Retires ${formatFutureDays(row.retirementDaysUntil)}`
+			: "Deprecated";
+
+	const deprecatedBadgeClassName =
+		row.severity === "critical"
+			? "h-5 shrink-0 border-red-300 bg-red-50 px-1.5 text-[11px] text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300"
+			: row.severity === "warning"
+				? "h-5 shrink-0 border-amber-300 bg-amber-50 px-1.5 text-[11px] text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+				: row.severity === "notice"
+					? "h-5 shrink-0 border-blue-300 bg-blue-50 px-1.5 text-[11px] text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300"
+				: "h-5 shrink-0 border-amber-200 bg-amber-50/60 px-1.5 text-[11px] text-amber-800/70 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200/70";
+
+	const badge =
+		mode === "deprecated" ? (
+			<RetiresBadge
+				label={deprecatedBadgeLabel}
+				retirementDate={row.retirementDate}
+				className={deprecatedBadgeClassName}
+			/>
+		) : (
+			<Badge
+				variant="outline"
+				className="h-5 shrink-0 gap-1 border-red-300 bg-red-50 px-1.5 text-[11px] text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300"
+			>
+				<span className="font-semibold">{t("strings.Retired" as never)}</span>
+			</Badge>
+		);
+
+	return (
+		<div
+			className={cn(
+				"rounded-xl border bg-card p-3 shadow-sm transition-shadow hover:shadow-md",
+			)}
+		>
+			<div className="flex min-w-0 items-start justify-between gap-3">
+				<div className="flex min-w-0 items-start gap-2">
+					{modelOrgId ? (
+						<Logo
+							id={modelOrgId}
+							width={16}
+							height={16}
+							className="mt-1 shrink-0 rounded-sm"
+						/>
+					) : (
+						<span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
+					)}
+					<div className="min-w-0">
+						<ModelLink
+							modelId={row.modelId}
+							modelName={row.modelName}
+							organisationId={row.organisationId}
+							className="block truncate text-sm font-semibold tracking-tight"
+						/>
+						{hasReadableName ? (
+							<div className="mt-0.5 truncate text-[11px] font-mono text-muted-foreground">
+								{row.modelId}
+							</div>
+						) : null}
+					</div>
+				</div>
+				{badge}
+			</div>
+
+			<div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+				{mode === "deprecated" ? (
+					<>
+						{row.lastUsedAt ? (
+							<span className="inline-flex items-center gap-1">
+								<span>
+									{t("strings.Last used" as never)}{" "}
+									<span className="font-medium text-foreground">
+										<DisplayDate value={row.lastUsedAt} />
+									</span>
+								</span>
+							</span>
+						) : null}
+					</>
+				) : (
+					<span>
+						{t("strings.Retired" as never)}{" "}
+						<span className="font-medium text-foreground">
+							{row.retirementDate ? <DisplayDate value={row.retirementDate} /> : tAuditCopy("Common.status.unknown")}
+						</span>
+					</span>
+				)}
+			</div>
+
+			{mode === "retired" ? (
+				<p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+					{t("strings.phraseThisModelIsRetiredAndNoLongerUsable" as never)}
+				</p>
+			) : null}
+
+			{row.replacementModelId ? (
+				<div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+					<ArrowRight className="h-3 w-3 shrink-0" />
+					<span className="shrink-0">{t("strings.Recommended replacement:" as never)}</span>
+					<ModelLink
+						modelId={row.replacementModelId}
+						modelName={null}
+						organisationId={replacementOrgId}
+						className="truncate font-medium text-foreground"
+					/>
+				</div>
+			) : mode === "deprecated" ? (
+				<div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+					<ArrowRight className="h-3 w-3 shrink-0 opacity-60" />
+					<span>{t("strings.phraseNoRecommendedReplacementYet" as never)}</span>
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+// Fills whole rows in both the two- and three-column grids.
+const VISIBLE_BEFORE_MORE = 6;
+
+// Native disclosure with its marker hidden, so the chevron is the only indicator.
+function ShowMore({ label, children }: { label: string; children: ReactNode }) {
+	return (
+		<details className="group rounded-md border">
+			<summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+				<ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+				{label}
+			</summary>
+			<div className="grid gap-2 border-t p-2 md:grid-cols-2 xl:grid-cols-3">{children}</div>
+		</details>
+	);
+}
+
+function CardsBlock({
+	rows,
+	mode,
+	title,
+	collapsible = false,
+}: {
+	rows: DeprecationWarning[];
+	mode: AlertCardMode;
+	title: string;
+	collapsible?: boolean;
+}) {
+	const t = useTranslations("SettingsUI");
+	const tWithCount = t as unknown as (
+		key: string,
+		values: { count: number },
+	) => string;
+	if (!rows.length) return null;
+
+	const visibleRows = collapsible ? rows.slice(0, VISIBLE_BEFORE_MORE) : rows;
+	const hiddenRows = collapsible ? rows.slice(VISIBLE_BEFORE_MORE) : [];
+
+	return (
+		<div className="space-y-2">
+			<h4 className="px-1 text-sm font-semibold text-foreground">{title}</h4>
+			<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+				{visibleRows.map((row) => (
+					<AlertCard key={`${mode}-${row.modelId}`} row={row} mode={mode} />
+				))}
+			</div>
+
+			{collapsible && hiddenRows.length > 0 ? (
+				<ShowMore label={tWithCount("strings.Show {count} more", { count: hiddenRows.length })}>
+					{hiddenRows.map((row) => (
+						<AlertCard
+							key={`${mode}-${row.modelId}-more`}
+							row={row}
+							mode={mode}
+						/>
+					))}
+				</ShowMore>
+			) : null}
+		</div>
+	);
+}
+
+function SectionBlock({
+	title,
+	rows,
+	mode,
+}: {
+	title: string;
+	rows: DeprecationWarning[];
+	mode: AlertCardMode;
+}) {
+	const t = useTranslations("SettingsUI");
+	const tWithCount = t as unknown as (
+		key: string,
+		values: { count: number },
+	) => string;
+	if (!rows.length) return null;
+
+	const visibleRows = rows.slice(0, VISIBLE_BEFORE_MORE);
+	const hiddenRows = rows.slice(VISIBLE_BEFORE_MORE);
+
+	return (
+		<div className="space-y-2">
+			<div className="flex items-center gap-2 px-1">
+				<h4 className="text-sm font-semibold">{title}</h4>
+				<Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
+					{rows.length}
+				</Badge>
+			</div>
+
+			<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+				{visibleRows.map((row) => (
+					<AlertCard key={`${mode}-${row.modelId}`} row={row} mode={mode} />
+				))}
+			</div>
+
+			{hiddenRows.length > 0 ? (
+				<ShowMore label={tWithCount("strings.Show {count} more", { count: hiddenRows.length })}>
+					{hiddenRows.map((row) => (
+						<AlertCard
+							key={`${mode}-${row.modelId}-more`}
+							row={row}
+							mode={mode}
+						/>
+					))}
+				</ShowMore>
+			) : null}
+		</div>
+	);
+}
+
+function sortByRetirementDateAsc(rows: DeprecationWarning[]) {
+	return rows.slice().sort((a, b) => {
+		const aValue = a.retirementDate ? new Date(a.retirementDate).getTime() : Number.POSITIVE_INFINITY;
+		const bValue = b.retirementDate ? new Date(b.retirementDate).getTime() : Number.POSITIVE_INFINITY;
+		return aValue - bValue;
+	});
+}
+
+function sortRecentRetired(rows: DeprecationWarning[]) {
+	return rows.slice().sort((a, b) => {
+		const aDays = a.retirementDaysUntil ?? -9999;
+		const bDays = b.retirementDaysUntil ?? -9999;
+		return bDays - aDays;
+	});
+}
+
+// Rendered inside the client alerts page, so this must stay synchronous.
+export default function DeprecationWarnings({
+	warnings,
+	id = "lifecycle-alerts",
+	showHeader = true,
+}: DeprecationWarningsProps = {}) {
+	const rawWarnings = warnings ?? [];
+	const t = useTranslations("SettingsUI");
+	if (!rawWarnings.length) return null;
+
+	const deprecatedRows = sortByRetirementDateAsc(
+		rawWarnings.filter(
+			(row) =>
+				(row.retirementDaysUntil ?? row.deprecationDaysUntil) !== null &&
+				(row.retirementDaysUntil ?? row.deprecationDaysUntil)! >= 0,
+		),
+	);
+
+	const deprecatedInUseRows = deprecatedRows.filter((row) => row.countAsAlert);
+	const deprecatedFyiRows = deprecatedRows.filter((row) => !row.countAsAlert);
+
+	const recentRetiredRows = sortRecentRetired(
+		rawWarnings.filter((row) => (row.retirementDaysUntil ?? 0) < 0),
+	);
+	if (!deprecatedRows.length && !recentRetiredRows.length) return null;
+
+	return (
+		<div id={id} className="space-y-3">
+			{showHeader ? (
+				<div className="flex items-center gap-2">
+					<h3 className="text-base font-semibold">{t("strings.Model Lifecycle Alerts" as never)}</h3>
+					<Separator className="flex-1" />
+				</div>
+			) : null}
+
+			<div className="space-y-5">
+				<CardsBlock
+					title={t("strings.Models You Use" as never)}
+					rows={deprecatedInUseRows}
+					mode="deprecated"
+				/>
+				{deprecatedInUseRows.length > 0 && deprecatedFyiRows.length > 0 ? (
+					<Separator className="my-2" />
+				) : null}
+				<CardsBlock
+					title={t("strings.Models You Don't Use" as never)}
+					rows={deprecatedFyiRows}
+					mode="deprecated"
+					collapsible
+				/>
+				<SectionBlock
+					title={t("strings.Recent Retirements" as never)}
+					rows={recentRetiredRows}
+					mode="retired"
+				/>
+			</div>
+		</div>
+	);
+}

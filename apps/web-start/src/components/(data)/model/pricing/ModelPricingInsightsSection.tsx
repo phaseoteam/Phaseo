@@ -1,0 +1,122 @@
+import { CircleAlert } from "lucide-react";
+import { getTranslations } from "next-intl/server";
+import {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
+import ModelPricingInsightsClient from "@/components/(data)/model/pricing/ModelPricingInsightsClient";
+import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
+import {
+	fetchFrontendModelPendingApiReleaseState,
+	fetchFrontendModelPricing,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+
+const OPTIONAL_PRICING_INSIGHTS_TIMEOUT_MS = 2_500;
+
+function withOptionalPricingTimeout<T>(
+	promise: Promise<T>,
+	fallback: T,
+	label: string
+): Promise<T> {
+	let timeout: ReturnType<typeof setTimeout> | null = null;
+	const timeoutPromise = new Promise<T>((resolve) => {
+		timeout = setTimeout(() => {
+			console.warn(`[pricing] ${label} timed out; using fallback.`);
+			resolve(fallback);
+		}, OPTIONAL_PRICING_INSIGHTS_TIMEOUT_MS);
+	});
+
+	return Promise.race([promise, timeoutPromise])
+		.catch((error) => {
+			console.warn(`[pricing] ${label} failed; using fallback.`, {
+				error,
+			});
+			return fallback;
+		})
+		.finally(() => {
+			if (timeout) clearTimeout(timeout);
+		});
+}
+
+export default async function ModelPricingInsightsSection({
+	modelId,
+	includeHidden,
+	showPageHeader = false,
+	hasSubmittedProviderPrices = false,
+}: {
+	modelId: string;
+	includeHidden: boolean;
+	showPageHeader?: boolean;
+	hasSubmittedProviderPrices?: boolean;
+}) {
+	const providers = await withOptionalPricingTimeout(
+		fetchFrontendModelPricing(modelId, undefined, includeHidden),
+		[],
+		"pricing providers"
+	);
+	const pendingApiRelease = await withOptionalPricingTimeout(
+		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
+		null,
+		"pending API release state"
+	);
+	const providersForDisplay = providers || [];
+	const tEmpty = await getTranslations("Catalogue.modelDetail.emptyStates");
+	const providerIds = Array.from(
+		new Set(providersForDisplay.map((provider) => provider.provider.api_provider_id)),
+	).sort((a, b) => a.localeCompare(b));
+	if (!providersForDisplay.length) {
+		const isPreview = pendingApiRelease?.isPendingApiRelease === true || hasSubmittedProviderPrices;
+		return (
+			<div className="space-y-3">
+				{pendingApiRelease?.isPendingApiRelease ? (
+					<ModelPendingApiReleaseBanner
+						modelName={pendingApiRelease.modelName}
+						surface="pricing"
+					/>
+				) : null}
+				<Empty className="rounded-md border p-6">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<CircleAlert className="size-4" />
+						</EmptyMedia>
+						<EmptyTitle>{isPreview ? tEmpty("noHistoryTitle") : tEmpty("noPricingTitle")}</EmptyTitle>
+						<EmptyDescription>
+							{isPreview
+								? tEmpty("submittedPrices")
+								: tEmpty("noPricingDescription")}
+						</EmptyDescription>
+					</EmptyHeader>
+					<EmptyContent>
+						{!isPreview ? (
+							<EmptyDescription>
+								{tEmpty("suggestProviders")}
+							</EmptyDescription>
+						) : null}
+					</EmptyContent>
+				</Empty>
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-4">
+			{pendingApiRelease?.isPendingApiRelease ? (
+				<ModelPendingApiReleaseBanner
+					modelName={pendingApiRelease.modelName}
+					surface="pricing"
+				/>
+			) : null}
+			<ModelPricingInsightsClient
+				modelId={modelId}
+				providers={providersForDisplay}
+				providerIds={providerIds}
+				includeHidden={includeHidden}
+				showPageHeader={showPageHeader}
+			/>
+		</div>
+	);
+}

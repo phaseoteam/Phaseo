@@ -1,0 +1,282 @@
+import Image from "next/image";
+import { Link } from "@/i18n/navigation";
+import { IntentLink } from "@/components/navigation/IntentLink";
+import { getLocale, getTranslations } from "next-intl/server";
+import { FooterStatusIndicator } from "@/components/FooterStatusIndicator";
+import { ThemeSelector } from "@/components/theme-toggle";
+import { Logo } from "@/components/Logo";
+import { FooterYearRange } from "./FooterYearRange";
+import { FooterLocaleSwitcher } from "@/components/i18n/FooterLocaleSwitcher";
+import { getLocalizedDocsHref } from "@/lib/docs";
+
+const startYear = 2025;
+
+const productLinks = [
+	{ href: "/models", label: "Models" },
+	{ href: "/chat", label: "Chat" },
+	{ href: "/api-providers", label: "Providers" },
+	{ href: "/apps", label: "Apps" },
+	{ href: "/rankings", label: "Rankings" },
+	{ href: "/tools", label: "Tools" },
+];
+
+const developerLinks = [
+	{ href: "/v1", label: "Documentation", external: true, docs: true },
+	{
+		href: "/v1/api-reference/introduction",
+		label: "API Reference",
+		external: true,
+		docs: true,
+	},
+	{ href: "/v1/quickstart", label: "Quickstart", external: true, docs: true },
+	{
+		href: "/v1/sdk-reference/typescript/overview",
+		label: "SDKs",
+		external: true,
+		docs: true,
+	},
+];
+
+const resourceLinks = [
+	{ href: "/compare", label: "Compare" },
+	{ href: "/migrate", label: "Migration Guides" },
+	{ href: "/methodology", label: "Methodology" },
+	{ href: "/blog", label: "Blog" },
+];
+
+const companyLinks = [
+	{ href: "/about", label: "About" },
+	{ href: "/trust", label: "Trust Centre" },
+	{ href: "/mission", label: "Mission" },
+	{ href: "/pricing", label: "Pricing" },
+	{ href: "/works-with", label: "Works With" },
+	{ href: "/acknowledgements", label: "Acknowledgements" },
+	{ href: "/contact", label: "Support" },
+	{ href: "/privacy", label: "Privacy" },
+	{ href: "/terms", label: "Terms" },
+];
+
+const communityLinks = [
+	{
+		href: "https://discord.gg/aQyywCvgZ5",
+		label: "Discord",
+		logoId: "discord",
+		external: true,
+	},
+	{
+		href: "https://github.com/phaseoteam/Phaseo",
+		label: "GitHub",
+		logoId: "github",
+		external: true,
+	},
+	{
+		href: "https://www.linkedin.com/company/phaseoapp/",
+		label: "LinkedIn",
+		logoId: "linkedin",
+		external: true,
+	},
+	{
+		href: "https://www.reddit.com/r/Phaseo/",
+		label: "Reddit",
+		logoId: "reddit",
+		external: true,
+	},
+	{ href: "https://x.com/phaseoteam", label: "X", logoId: "x", external: true },
+];
+
+type FooterLink = {
+	href: string;
+	label: string;
+	logoId?: string;
+	external?: boolean;
+	docs?: boolean;
+};
+
+const FOOTER_LABEL_KEYS = {
+	Models: "models",
+	Chat: "chat",
+	Providers: "providers",
+	Apps: "apps",
+	Rankings: "rankings",
+	Tools: "tools",
+	Monitor: "monitor",
+	Documentation: "documentation",
+	"API Reference": "apiReference",
+	Quickstart: "quickstart",
+	SDKs: "sdks",
+	Compare: "compare",
+	"Migration Guides": "migrationGuides",
+	Methodology: "methodology",
+	Blog: "blog",
+	About: "about",
+	"Trust Centre": "trustCentre",
+	Mission: "mission",
+	Pricing: "pricing",
+	"Works With": "worksWith",
+	Acknowledgements: "acknowledgements",
+	Support: "support",
+	Privacy: "privacy",
+	Terms: "terms",
+	Discord: "discord",
+	GitHub: "github",
+	LinkedIn: "linkedin",
+	Reddit: "reddit",
+	X: "x",
+} as const;
+
+type FooterLabel = keyof typeof FOOTER_LABEL_KEYS;
+
+async function FooterLinkList({
+	title,
+	links,
+	titleKey,
+}: {
+	title: string;
+	links: FooterLink[];
+	titleKey: "explore" | "build" | "resources" | "company" | "community";
+}) {
+	const [t, locale] = await Promise.all([getTranslations("Common.footer"), getLocale()]);
+	return (
+		<div className="flex min-w-0 flex-col gap-2">
+			<h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+			{t(titleKey)}
+			</h3>
+			<ul className="lg:space-y-1.5">
+				{links.map((link) => (
+					<li key={`${title}-${link.href}`}>
+						<Link
+							href={link.docs ? getLocalizedDocsHref(locale, link.href) : link.href}
+							prefetch={false}
+							target={link.external ? "_blank" : undefined}
+							rel={link.external ? "noopener noreferrer" : undefined}
+							className={`group inline-flex min-h-7 max-w-full items-center break-words py-0.5 text-sm text-zinc-600 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 lg:min-h-0 lg:py-0 dark:text-zinc-400 dark:hover:text-zinc-50 ${link.logoId ? "lg:w-28" : ""}`}
+						>
+							{link.logoId ? (
+								<span
+									aria-hidden="true"
+									className="mr-0 hidden h-4 w-0 -translate-x-1 items-center justify-center overflow-hidden opacity-0 transition-all duration-300 ease-out lg:inline-flex group-hover:mr-2 group-hover:w-4 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:mr-2 group-focus-visible:w-4 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none"
+								>
+									<Logo
+										id={link.logoId}
+										alt=""
+										width={14}
+										height={14}
+										className="h-3.5 w-3.5 object-contain"
+									/>
+								</span>
+							) : null}
+											{t(FOOTER_LABEL_KEYS[link.label as FooterLabel])}
+						</Link>
+					</li>
+				))}
+			</ul>
+		</div>
+	);
+}
+
+export default async function Footer() {
+	const t = await getTranslations("Common.footer");
+	return (
+		<footer className="mt-auto w-full overflow-x-clip border-t border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+			<div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+				<div className="grid grid-cols-2 items-start gap-x-4 gap-y-6 sm:gap-x-6 lg:grid-cols-5 xl:grid-cols-[minmax(0,1.25fr)_repeat(5,minmax(0,0.8fr))]">
+					<div className="col-span-2 min-w-0 lg:col-span-5 xl:col-span-1">
+						<div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+							<IntentLink href="/" className="inline-flex w-fit max-w-full items-center">
+								<Image
+									src="/wordmark_light.svg"
+									alt="Phaseo"
+									width={154}
+									height={40}
+									className="h-7 w-[108px] dark:hidden"
+								/>
+								<Image
+									src="/wordmark_dark.svg"
+									alt="Phaseo"
+									width={154}
+									height={40}
+									className="hidden h-7 w-[108px] dark:block"
+								/>
+							</IntentLink>
+							<div className="relative order-3 top-px w-full max-w-full md:order-none md:w-auto">
+								<FooterStatusIndicator />
+							</div>
+							<div className="ml-auto md:hidden">
+								<ThemeSelector className="py-0" labelSize="sm" showSelectedLabel={false} />
+							</div>
+						</div>
+					</div>
+					<div className="col-span-2 grid grid-cols-2 gap-x-4 sm:gap-x-6 lg:hidden">
+						<div className="flex min-w-0 flex-col gap-6">
+											<FooterLinkList title="Explore" titleKey="explore" links={productLinks} />
+											<FooterLinkList title="Resources" titleKey="resources" links={resourceLinks} />
+											<FooterLinkList title="Community" titleKey="community" links={communityLinks} />
+						</div>
+						<div className="flex min-w-0 flex-col gap-6">
+											<FooterLinkList title="Build" titleKey="build" links={developerLinks} />
+											<FooterLinkList title="Company" titleKey="company" links={companyLinks} />
+						</div>
+					</div>
+					<div className="hidden lg:contents">
+										<FooterLinkList title="Explore" titleKey="explore" links={productLinks} />
+										<FooterLinkList title="Build" titleKey="build" links={developerLinks} />
+										<FooterLinkList title="Resources" titleKey="resources" links={resourceLinks} />
+										<FooterLinkList title="Company" titleKey="company" links={companyLinks} />
+										<FooterLinkList title="Community" titleKey="community" links={communityLinks} />
+					</div>
+				</div>
+
+				<div className="flex flex-col gap-3 border-t border-zinc-200/80 pt-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+						<p className="whitespace-nowrap font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">
+							&copy; <FooterYearRange startYear={startYear} /> {"\u2022"} Phaseo
+						</p>
+						<div className="hidden md:block lg:hidden">
+							<ThemeSelector className="py-0" labelSize="sm" showSelectedLabel={false} />
+						</div>
+						<div className="hidden lg:block">
+							<ThemeSelector className="py-0" labelSize="sm" />
+						</div>
+						<FooterLocaleSwitcher />
+					</div>
+					<p className="hidden shrink-0 items-center gap-x-1.5 text-xs sm:max-md:inline-flex">
+						<span>{t("helpLabel")}</span>
+						<Link
+							href="https://github.com/phaseoteam/Phaseo/issues"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+						>
+											{t("issue")}
+						</Link>
+						<span aria-hidden="true">·</span>
+						<IntentLink
+							href="/contact"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+						>
+											{t("support")}
+						</IntentLink>
+					</p>
+					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:max-md:hidden">
+						<span>{t("needHelp")}</span>
+						<Link
+							href="https://github.com/phaseoteam/Phaseo/issues"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+						>
+											{t("openIssue")}
+						</Link>
+						<span>{t("or")}</span>
+						<IntentLink
+							href="/contact"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+						>
+											{t("contactSupport")}
+						</IntentLink>
+					</p>
+				</div>
+			</div>
+		</footer>
+	);
+}

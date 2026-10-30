@@ -1,0 +1,328 @@
+"use client";
+
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { Loader2, LogIn, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import {
+	deletePasskeyAction,
+	startPasskeyRegistrationAction,
+	verifyPasskeyRegistrationAction,
+} from "@/app/(dashboard)/settings/account/actions";
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	parsePasskeyCreationOptions,
+	serializePasskeyRegistrationCredential,
+} from "@/lib/auth/passkeyWebAuthn";
+import { createClient } from "@/utils/supabase/client";
+
+type Passkey = {
+	id: string;
+	friendly_name?: string;
+	created_at: string;
+	last_used_at?: string;
+};
+
+type PendingPasskeyAction =
+	| { type: "register" }
+	| { passkeyId: string; type: "remove" };
+
+export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
+	const format = useDisplayFormatters();
+	const router = useRouter();
+	const [passkeys, setPasskeys] = React.useState<Passkey[]>([]);
+	const [loading, setLoading] = React.useState(true);
+	const [pending, setPending] = React.useState(false);
+	const [reauthOpen, setReauthOpen] = React.useState(false);
+	const [currentPassword, setCurrentPassword] = React.useState("");
+	const [freshSignInRequired, setFreshSignInRequired] = React.useState(false);
+	const [requestedAction, setRequestedAction] =
+		React.useState<PendingPasskeyAction | null>(null);
+
+	const load = React.useCallback(async () => {
+		setLoading(true);
+		try {
+			const { data, error } = await createClient().auth.passkey.list();
+			if (error) throw error;
+			setPasskeys((data ?? []) as Passkey[]);
+		} catch (error) {
+			const message =
+				error instanceof Error && error.message.includes("passkey_disabled")
+					? s("phrasePasskeysAreNotEnabledForThisEnvironmentYet")
+					: localizedSettingsError(error, t, "Could not load passkeys", s("Could not load passkeys"));
+			if (!message.includes("passkey_disabled")) toast.error(message);
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	React.useEffect(() => {
+		let cancelled = false;
+		queueMicrotask(() => {
+			if (!cancelled) void load();
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [load]);
+
+	async function executeAction(
+		action: PendingPasskeyAction,
+		password?: string,
+	) {
+		if (action.type === "register") {
+			const startResult = await startPasskeyRegistrationAction(password);
+			if (!startResult.ok) return startResult;
+
+			const publicKey = parsePasskeyCreationOptions(startResult.data.options);
+			const credential = await navigator.credentials.create({ publicKey });
+			if (!(credential instanceof PublicKeyCredential)) {
+				throw new Error(s("Passkey registration was cancelled"));
+			}
+
+			const verifyResult = await verifyPasskeyRegistrationAction(
+				startResult.data.challengeId,
+				serializePasskeyRegistrationCredential(credential),
+				password,
+			);
+			if (!verifyResult.ok) return verifyResult;
+
+			toast.success(s("Passkey added"));
+			await load();
+			return verifyResult;
+		}
+
+		const deleteResult = await deletePasskeyAction(
+			action.passkeyId,
+			password,
+		);
+		if (!deleteResult.ok) return deleteResult;
+		setPasskeys((items) =>
+			items.filter((item) => item.id !== action.passkeyId),
+		);
+		toast.success(s("Passkey removed"));
+		return deleteResult;
+	}
+
+	function requestAction(action: PendingPasskeyAction) {
+		setRequestedAction(action);
+		setCurrentPassword("");
+		setFreshSignInRequired(false);
+		setReauthOpen(true);
+	}
+
+	async function confirmAndExecute(event: React.FormEvent) {
+		event.preventDefault();
+		if (!requestedAction) return;
+		if (hasPassword && !currentPassword) {
+			toast.error(s("Enter your current password"));
+			return;
+		}
+
+		setPending(true);
+		try {
+			const result = await executeAction(
+				requestedAction,
+				hasPassword ? currentPassword : undefined,
+			);
+			if (!result.ok) {
+				if (
+					result.code === "fresh_sign_in_required" ||
+					result.code === "not_authenticated"
+				) {
+					setFreshSignInRequired(true);
+					return;
+				}
+				throw new Error(result.message);
+			}
+
+			setReauthOpen(false);
+			setRequestedAction(null);
+			setCurrentPassword("");
+		} catch (error) {
+			const fallback =
+				requestedAction.type === "register"
+					? s("Could not add passkey")
+					: s("Could not remove passkey");
+			const message =
+				error instanceof Error && error.message.includes("passkey_disabled")
+					? s("phrasePasskeysAreNotEnabledForThisEnvironmentYet")
+					: localizedSettingsError(error, t, "Could not remove passkey", fallback);
+			toast.error(message);
+		} finally {
+			setPending(false);
+		}
+	}
+
+	async function restartSignIn() {
+		setPending(true);
+		try {
+			await createClient().auth.signOut();
+		} finally {
+			router.push(
+				`/sign-in?returnUrl=${encodeURIComponent("/settings/account/mfa")}`,
+			);
+			router.refresh();
+		}
+	}
+
+	return (
+		<>
+			<section aria-labelledby="passkeys-title" className="space-y-3">
+				<h2 id="passkeys-title" className="font-heading text-base font-medium">
+					{s("Passkeys")}
+				</h2>
+				<div className="overflow-hidden rounded-xl border bg-background/40">
+					<div className="px-4 py-4">
+						<div className="flex items-start justify-between gap-4">
+							<div className="min-w-0">
+				<h3 className="text-sm font-medium">{s("Device Passkeys")}</h3>
+								<p className="mt-0.5 text-sm text-muted-foreground">
+					{s("phraseSignInWithYourDeviceBiometricsPINOrSecurityKey")}
+								</p>
+							</div>
+							<Button
+								onClick={() => requestAction({ type: "register" })}
+								disabled={pending}
+							>
+								{pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+								{s("Add Passkey")}
+							</Button>
+						</div>
+
+						<div className="pt-3 pl-3 sm:pl-4">
+							{loading ? (
+							<p className="text-xs text-muted-foreground">{s("phraseLoadingPasskeys")}</p>
+							) : null}
+							{!loading && passkeys.length === 0 ? (
+								<p className="text-xs text-muted-foreground">{s("phraseNoPasskeysAddedYet")}</p>
+							) : null}
+							{passkeys.map((passkey, index) => (
+								<div
+									key={passkey.id}
+									className={index === 0 ? "flex items-center justify-between gap-3" : "mt-2 flex items-center justify-between gap-3 border-t pt-2"}
+								>
+									<div className="min-w-0">
+										<p className="truncate text-xs font-medium">
+										{passkey.friendly_name || s("Passkey")}
+										</p>
+										<p className="mt-0.5 text-xs text-muted-foreground">
+											{s("Added")} {format.date(passkey.created_at)}
+										</p>
+									</div>
+									<Button
+										variant="ghost"
+										size="icon"
+									aria-label={s("Remove passkey")}
+										onClick={() =>
+											requestAction({ type: "remove", passkeyId: passkey.id })
+										}
+										disabled={pending}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<Dialog
+				open={reauthOpen}
+				onOpenChange={(open) => {
+					if (pending) return;
+					setReauthOpen(open);
+					if (!open) {
+						setRequestedAction(null);
+						setCurrentPassword("");
+						setFreshSignInRequired(false);
+					}
+				}}
+			>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>{s("Verify it&apos;s you")}</DialogTitle>
+						<DialogDescription>
+							{s("phraseAddingOrRemovingAPasskeyChangesHowYourAccountCanBeAccessedSoRecentAuthenticationIsRequired")}
+						</DialogDescription>
+					</DialogHeader>
+
+					{freshSignInRequired ? (
+						<div className="space-y-4">
+							<p className="text-sm text-muted-foreground">
+								{s("phraseYourLastSignInIsTooOldForThisSecurityChangeSignInAgainThenReturnHereToContinue")}
+							</p>
+							<DialogFooter>
+								<Button type="button" onClick={restartSignIn} disabled={pending}>
+									{pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
+									{s("Sign in again")}
+								</Button>
+							</DialogFooter>
+						</div>
+					) : (
+						<form onSubmit={confirmAndExecute} className="space-y-4">
+							{hasPassword ? (
+								<div className="grid gap-2">
+									<Label htmlFor="passkey-current-password">
+										{s("Current password")}
+									</Label>
+									<Input
+										id="passkey-current-password"
+										type="password"
+										autoComplete="current-password"
+										value={currentPassword}
+										onChange={(event) => setCurrentPassword(event.target.value)}
+										disabled={pending}
+										autoFocus
+									/>
+								</div>
+							) : (
+								<p className="text-sm text-muted-foreground">
+									{s("phraseContinueUsingYourRecentSocialSSOOrPasskeySignIn")}
+								</p>
+							)}
+
+							<DialogFooter>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => setReauthOpen(false)}
+									disabled={pending}
+								>
+									{s("Cancel")}
+								</Button>
+								<Button
+									type="submit"
+									disabled={pending || (hasPassword && !currentPassword)}
+								>
+									{pending ? (
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									) : null}
+									{s("Continue")}
+								</Button>
+							</DialogFooter>
+						</form>
+					)}
+				</DialogContent>
+			</Dialog>
+		</>
+	);
+}

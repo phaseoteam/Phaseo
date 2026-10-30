@@ -1,0 +1,104 @@
+import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
+
+export type GatewayStatusFilter =
+	| "active"
+	| "coming_soon"
+	| "not_active"
+	| "deprecated"
+	| "retired";
+
+export type OptionCount = {
+	value: string;
+	count: number;
+};
+
+export type ModelsFilterFacets = {
+	statusCounts: Record<GatewayStatusFilter, number>;
+	endpointOptions: OptionCount[];
+	inputModalityOptions: OptionCount[];
+	outputModalityOptions: OptionCount[];
+	featureOptions: OptionCount[];
+	tierOptions: OptionCount[];
+	supportedParameterOptions: OptionCount[];
+	providerOptions: OptionCount[];
+	regionOptions: OptionCount[];
+	creatorOptions: OptionCount[];
+	/** Optional so the page tolerates catalogue responses cached before licences shipped. */
+	licenseOptions?: OptionCount[];
+	yearOptions: OptionCount[];
+};
+
+export type ModelsPageData = {
+	models: ModelsPageModel[];
+	facets: ModelsFilterFacets;
+};
+
+export type ModelsPageModel = Omit<
+	Pick<
+		ModelCard,
+		| "model_id"
+		| "base_model_id"
+		| "variant_kind"
+		| "variants"
+		| "name"
+		| "organisation_id"
+		| "organisation_name"
+		| "organisation_colour"
+		| "organisation_logo_url"
+		| "status"
+		| "deprecation_date"
+		| "retirement_date"
+		| "removal_date"
+		| "primary_date"
+		| "primary_timestamp"
+		| "primary_group_key"
+		| "gateway_status"
+		| "gateway_provider_count"
+		| "gateway_active_provider_count"
+		| "gateway_endpoints"
+		| "gateway_input_modalities"
+		| "gateway_output_modalities"
+		| "gateway_features"
+		| "gateway_provider_names"
+		| "gateway_execution_regions"
+		| "gateway_active_provider_names"
+		| "gateway_provider_details"
+		| "gateway_api_model_ids"
+		| "context_lengths"
+		| "supported_parameters"
+		| "lowest_input_price"
+		| "lowest_output_price"
+		| "lowest_standard_input_price"
+		| "lowest_standard_output_price"
+		| "lowest_standard_input_price_label"
+		| "lowest_standard_input_price_unit"
+		| "lowest_standard_output_price_label"
+		| "lowest_standard_output_price_unit"
+		| "lowest_from_price"
+		| "lowest_from_price_unit"
+		| "pricing_detail_rows"
+		| "pricing_summary"
+		| "pricing_provider_id"
+		| "popularity_tokens_week"
+		| "weekly_usage_metric"
+		| "weekly_usage_quantity"
+		| "weekly_usage_unit"
+		| "throughput_week"
+		| "latency_week"
+	>,
+	"gateway_status"
+> & {
+	description?: string | null;
+	license?: string | null;
+	gateway_status?:
+		| "active"
+		| "coming_soon"
+		| "inactive"
+		| "not_listed"
+		| "deprecated"
+		| "retired"
+		| null;
+	gateway_tiers?: string[];
+	router_requests_30d?: number | null;
+	router_spend_nanos_30d?: number | null;
+};

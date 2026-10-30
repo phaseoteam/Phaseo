@@ -1,0 +1,175 @@
+// components/header/Header.tsx  (STATIC)
+import Link from "next/link";
+import { IntentLink } from "@/components/navigation/IntentLink";
+import Image from "next/image";
+import { Suspense } from "react";
+import { getLocale, getTranslations } from "next-intl/server";
+import AuthControls from "./AuthControls";
+import MainNav from "./MainNav";
+import { SearchWithCapabilities as SearchWrapper } from "@/components/header/Search/SearchWithCapabilities";
+import { HeaderAnnouncements } from "./HeaderAnnouncements";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import HeaderShell from "./HeaderShell";
+import SettingsSidebarTrigger from "@/components/(gateway)/settings/SettingsSidebarTrigger";
+import { BrandMenu } from "./BrandMenu";
+import { autoRoutingFlag, requestClassifiersFlag, slackAgentSettingsEnabled, workloadIdentityFlag } from "@/lib/flags";
+import { getLocalizedDocsHref } from "@/lib/docs";
+import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messages";
+import { getPublicMessages } from "@/i18n/messages";
+import { isPublicLocale } from "@/i18n/routing";
+import { getSettingsNavigationCopy } from "@/components/(gateway)/settings/Sidebar.labels";
+import { getHeaderAccountData } from "./getHeaderAccountData";
+import { connection } from "next/server";
+
+const showHeaderAnnouncement = false;
+
+async function GatedSettingsSidebarTrigger() {
+	await connection();
+	const locale = await getLocale();
+	const publicLocale = isPublicLocale(locale) ? locale : "en-GB";
+	const [showAutoRouting, showClassifiers, showSlackAgent, showWorkloadIdentity, messages, navigationMessages, account] = await Promise.all([
+		autoRoutingFlag(), requestClassifiersFlag().catch(() => false), slackAgentSettingsEnabled(), workloadIdentityFlag().catch(() => false), getPublicMessages(publicLocale), getSettingsNavigationMessages(publicLocale),
+		getHeaderAccountData(),
+	]);
+	const copy = getSettingsNavigationCopy(navigationMessages, messages.SettingsUI.sidebarNew);
+	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} showClassifiers={showClassifiers} showWorkloadIdentity={showWorkloadIdentity} showSlackAgent={showSlackAgent} copy={copy} providerMode={account.providerMode === true} />;
+}
+
+export default async function Header() {
+	const [t, locale] = await Promise.all([
+		getTranslations("Common.nav"),
+		getLocale(),
+	]);
+	const docsLink = getLocalizedDocsHref(locale, "/v1");
+	const headerContent = (
+		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:gap-x-1 max-[19.375rem]:gap-x-0 lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+			<div className="flex min-w-0 items-center gap-[var(--site-header-left-gap,1.25rem)] overflow-hidden max-[22rem]:gap-1 lg:shrink-0">
+				<Suspense fallback={null}>
+					<GatedSettingsSidebarTrigger />
+				</Suspense>
+				<BrandMenu>
+					<IntentLink
+						href="/"
+						aria-label={t("home")}
+						className="inline-flex h-[var(--site-header-control-h,2.25rem)] shrink-0 items-center rounded-lg px-2 transition-colors hover:bg-zinc-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 data-[state=open]:bg-zinc-100/70 lg:px-[var(--site-header-nav-px,0.75rem)] dark:hover:bg-zinc-900/60 dark:focus-visible:ring-zinc-600/50 dark:data-[state=open]:bg-zinc-900/60"
+					>
+						<Image
+							src="/wordmark_light.svg"
+							alt="Phaseo"
+							width={154}
+							height={40}
+							className="h-[var(--site-header-logo-height,2.5rem)] w-auto select-none max-[22rem]:h-3.5 max-[19.375rem]:h-3 dark:hidden"
+							style={{ width: "auto" }}
+							priority
+						/>
+						<Image
+							src="/wordmark_dark.svg"
+							alt="Phaseo"
+							width={154}
+							height={40}
+							className="hidden h-[var(--site-header-logo-height,2.5rem)] w-auto select-none max-[22rem]:h-3.5 max-[19.375rem]:h-3 dark:block"
+							style={{ width: "auto" }}
+							priority
+						/>
+					</IntentLink>
+				</BrandMenu>
+				<div className="hidden h-[var(--site-header-divider-height,1.5rem)] w-px bg-zinc-200/70 dark:bg-zinc-800 lg:block" />
+				<div className="hidden max-w-full lg:block">
+					<Suspense
+						fallback={
+							<div className="flex items-center gap-1.5">
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-24 rounded-lg" />
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-16 rounded-lg" />
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-24 rounded-lg" />
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-20 rounded-lg" />
+								<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-16 rounded-lg" />
+							</div>
+						}
+					>
+						<MainNav />
+					</Suspense>
+				</div>
+			</div>
+
+			<div className="flex min-w-0 justify-center lg:shrink-0">
+				<Suspense
+					fallback={
+						<Skeleton className="h-9 w-[clamp(6rem,23vw,12rem)] max-[25rem]:w-9 xl:w-[var(--site-header-search-width-xl,14rem)]" />
+					}
+				>
+					<SearchWrapper
+						className="h-9 w-[clamp(6rem,23vw,12rem)] max-[25rem]:w-9 xl:w-[var(--site-header-search-width-xl,14rem)]"
+					/>
+				</Suspense>
+			</div>
+
+			<div className="flex min-w-0 items-center justify-end gap-1 lg:ml-auto lg:gap-3">
+				<div className="hidden lg:order-0 lg:block">
+					<Suspense
+						fallback={
+							<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-16 rounded-lg" />
+						}
+					>
+						<Link href={docsLink} target="_blank" rel="noreferrer" prefetch={false}>
+							<Button
+								variant="ghost"
+								className="h-[var(--site-header-control-h,2.25rem)] rounded-lg px-2 text-[13px] font-medium text-zinc-600 shadow-none hover:bg-zinc-100/70 xl:px-2.5 dark:text-zinc-300 dark:hover:bg-zinc-900/60"
+							>
+								{t("documentation")}
+							</Button>
+						</Link>
+					</Suspense>
+				</div>
+				<div className="hidden lg:block">
+					<Suspense
+						fallback={
+							<div className="flex items-center gap-2">
+								<Skeleton className="h-[calc(var(--site-header-control-h,2.5rem)-0.125rem)] w-32 rounded-lg" />
+								<Skeleton className="h-[calc(var(--site-header-control-h,2.5rem)-0.25rem)] w-8 rounded-lg" />
+							</div>
+						}
+					>
+						<AuthControls variant="desktop" />
+					</Suspense>
+				</div>
+				<div className="flex items-center lg:hidden">
+					<Suspense
+						fallback={
+							<Skeleton className="size-[var(--site-header-control-h,2.5rem)] rounded-lg" />
+						}
+					>
+						<AuthControls variant="mobile" />
+					</Suspense>
+				</div>
+			</div>
+		</div>
+	);
+
+	return (
+		<header
+			className="sticky z-50 border-b bg-white/80 backdrop-blur dark:bg-zinc-950/80"
+			style={{ top: "var(--site-notice-height, 0px)" }}
+		>
+			<Suspense
+				fallback={
+					<div className="w-full max-w-full px-4 max-[22rem]:px-2 max-[19.375rem]:px-1 lg:px-5 xl:px-6">
+						{headerContent}
+					</div>
+				}
+			>
+				<HeaderShell>{headerContent}</HeaderShell>
+			</Suspense>
+
+			{showHeaderAnnouncement ? (
+				<HeaderAnnouncements
+					message={t("releaseAnnouncement")}
+					href="/"
+					tertiaryLabel={t("readDocs")}
+					tertiaryHref={docsLink}
+					label={t("newRelease")}
+				/>
+			) : null}
+		</header>
+	);
+}

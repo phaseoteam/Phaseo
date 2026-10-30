@@ -1,0 +1,81 @@
+import { getTranslations } from "next-intl/server";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "@/i18n/navigation";
+import type { SignInModel } from "@/lib/fetchers/landing/sign-in/types";
+import { fetchFrontendSignInMainModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+
+export default async function KeyModels() {
+	const tCopy = await getTranslations("Site.landingGaps");
+
+	// If consumer didn't provide data, fetch main models by ID from Supabase
+	let models: SignInModel[] = [];
+
+	// Default model ids to display on the sign-in page
+	const defaultIds = [
+		"openai/gpt-6-astra",
+		"anthropic/claude-fable-5.1",
+		"spacex-ai/grok-4.6",
+		"google/gemini-3.8-flash",
+		"openai/omni-moderation",
+		"google/veo-3.1-preview",
+	];
+	try {
+		models = await fetchFrontendSignInMainModels(defaultIds);
+	} catch {
+		// On error, fallback to empty list
+		models = [];
+	}
+
+	// Preserve the exact order from `defaultIds`. Map the fetched models into
+	// that order and then append any extra models returned by the fetcher.
+	const modelsById = new Map(models.map((m) => [m.model_id, m]));
+	const ordered: SignInModel[] = [];
+	for (const id of defaultIds) {
+		const match = modelsById.get(id);
+		if (match) ordered.push(match);
+	}
+	// Append any models that weren't in defaultIds at the end
+	for (const m of models) {
+		if (!defaultIds.includes(m.model_id)) ordered.push(m);
+	}
+
+	return (
+		<div className="flex flex-col gap-3">
+			<div className="rounded-full border border-border bg-white/80 px-4 py-2 text-center text-sm font-medium text-muted-foreground shadow-sm dark:bg-black/70">
+{tCopy("copy002")}
+</div>
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+				{ordered.map((m: SignInModel) => (
+					<Card key={m.model_id} className="p-4">
+						<CardHeader className="p-0 mb-2">
+							<div className="flex items-start gap-3">
+								<div className="flex-1 min-w-0">
+									<CardTitle className="text-lg font-semibold">
+										<Link
+											href={`/models/${m.model_id}`}
+											className="inline-flex min-w-0 text-current"
+										>
+											<span className="relative inline-flex max-w-full truncate font-semibold leading-tight text-current underline decoration-transparent hover:decoration-current transition-colors duration-200">
+												{m.name}
+											</span>
+										</Link>
+									</CardTitle>
+									<div className="text-sm text-gray-500">
+										<Link
+											href={`/organisations/${m.data_organisations.organisation_id}`}
+											className="text-xs text-muted-foreground truncate flex items-center gap-1"
+										>
+											<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
+												{m.data_organisations.name}
+											</span>
+										</Link>
+									</div>
+								</div>
+							</div>
+						</CardHeader>
+					</Card>
+				))}
+			</div>
+		</div>
+	);
+}

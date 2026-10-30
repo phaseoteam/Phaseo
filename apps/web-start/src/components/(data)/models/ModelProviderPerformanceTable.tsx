@@ -1,0 +1,355 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
+import {
+	type ColumnDef,
+	getCoreRowModel,
+	getSortedRowModel,
+	type SortingState,
+	useReactTable,
+	flexRender,
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
+
+import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import type { ModelProviderPerformance } from "@/lib/fetchers/models/getModelPerformance";
+import { cn } from "@/lib/utils";
+import { formatProviderDuration } from "@/components/(data)/models/modelPerformanceFormatting";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+
+function formatMetric(
+	value: number | null,
+	suffix: string,
+	decimals: number,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"]
+): string {
+	if (value == null) return "--";
+	return `${formatNumber(value, {
+		minimumFractionDigits: decimals,
+		maximumFractionDigits: decimals,
+		notation: "standard",
+	})}${suffix}`;
+}
+
+function getUptimeColorClass(value: number | null): string {
+	if (value == null) return "bg-border/70 dark:bg-border/50";
+	if (value >= 90) return "bg-emerald-500";
+	if (value >= 75) return "bg-amber-500";
+	return "bg-rose-500";
+}
+
+function formatRangeLabel(
+	start: string,
+	end: string,
+	formatDateParts: ReturnType<typeof useDisplayFormatters>["dateParts"]
+): string {
+	const startDate = new Date(start);
+	const endDate = new Date(end);
+	if (
+		!Number.isFinite(startDate.getTime()) ||
+		!Number.isFinite(endDate.getTime())
+	) {
+		return `${start} – ${end}`;
+	}
+
+	const startLabel = formatDateParts(startDate, {
+		weekday: "short",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+	const endLabel = formatDateParts(endDate, {
+		weekday: "short",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+
+	return `${startLabel} – ${endLabel}`;
+}
+
+interface ProviderTableProps {
+	providers: ModelProviderPerformance[];
+}
+
+export default function ModelProviderPerformanceTable({
+	providers,
+}: ProviderTableProps) {
+	const t = useTranslations("Catalogue.modelDetail.performance");
+	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const [sorting, setSorting] = useState<SortingState>([
+		{ id: "avgThroughput", desc: true },
+	]);
+
+	const columns = useMemo<ColumnDef<ModelProviderPerformance>[]>(
+		() => [
+			{
+				id: "provider",
+				accessorKey: "providerName",
+				header: ({ column }) => (
+					<Button
+						variant="ghost"
+						className="px-0 font-semibold"
+						onClick={() =>
+							column.toggleSorting(column.getIsSorted() === "asc")
+						}
+					>
+						{t("provider")}
+						<ArrowUpDown className="ml-2 h-4 w-4" />
+					</Button>
+				),
+				cell: ({ row }) => {
+					const provider = row.original;
+					return (
+						<div className="flex items-center gap-3">
+							<Link
+								href={`/api-providers/${provider.provider}`}
+								prefetch={false}
+								className="inline-flex rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+							>
+								<Logo
+									id={provider.provider}
+									alt={`${
+										provider.providerName ||
+										provider.provider
+									} logo`}
+									width={28}
+									height={28}
+									className="h-7 w-7 rounded"
+								/>
+							</Link>
+							<Link
+								href={`/api-providers/${provider.provider}`}
+								prefetch={false}
+								className="font-medium relative underline decoration-transparent hover:decoration-current transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded-sm"
+							>
+								{provider.providerName || provider.provider}
+							</Link>
+						</div>
+					);
+				},
+			},
+			{
+				accessorKey: "avgThroughput",
+				header: ({ column }) => (
+					<Button
+						variant="ghost"
+						className="px-0 font-semibold"
+						onClick={() =>
+							column.toggleSorting(column.getIsSorted() === "asc")
+						}
+					>
+						{t("throughput")}
+						<ArrowUpDown className="ml-2 h-4 w-4" />
+					</Button>
+				),
+				cell: ({ row }) => (
+					<span className="ml-3">
+						{formatMetric(row.original.avgThroughput, " t/s", 2, format.number)}
+					</span>
+				),
+			},
+			{
+				accessorKey: "avgLatencyMs",
+				header: ({ column }) => (
+					<Button
+						variant="ghost"
+						className="px-0 font-semibold"
+						onClick={() =>
+							column.toggleSorting(column.getIsSorted() === "asc")
+						}
+					>
+						{t("latency")}
+						<ArrowUpDown className="ml-2 h-4 w-4" />
+					</Button>
+				),
+				cell: ({ row }) => (
+					<span className="ml-3">
+						{formatMetric(row.original.avgLatencyMs, " ms", 0, format.number)}
+					</span>
+				),
+			},
+			{
+				accessorKey: "avgGenerationMs",
+				header: ({ column }) => (
+					<Button
+						variant="ghost"
+						className="px-0 font-semibold"
+						onClick={() =>
+							column.toggleSorting(column.getIsSorted() === "asc")
+						}
+					>
+						{t("endToEndLatency")}
+						<ArrowUpDown className="ml-2 h-4 w-4" />
+					</Button>
+				),
+				cell: ({ row }) => (
+					<span className="ml-3">
+						{formatProviderDuration(row.original.avgGenerationMs)}
+					</span>
+				),
+			},
+			{
+				id: "uptime",
+				header: t("requestSuccess"),
+				enableSorting: false,
+				cell: ({ row }) => (
+					<div className="flex items-center gap-4">
+						<div className="flex flex-wrap items-center gap-1">
+							{row.original.uptimeBuckets.map((bucket, index) => {
+								const color = getUptimeColorClass(
+									bucket.successPct
+								);
+								const label =
+									bucket.successPct != null
+										? `${bucket.successPct.toFixed(0)}% ${t("success")}`
+										: t("noData");
+								return (
+									<div
+										key={`${row.original.provider}-${bucket.start}-${index}`}
+										className={`h-2.5 w-9 rounded-full transition-colors ${color}`}
+											title={t("uptimeBucketTitle", {
+											status: label,
+											range: formatRangeLabel(
+												bucket.start,
+												bucket.end,
+												format.dateParts,
+											),
+										})}
+									>
+										<span className="sr-only">
+											{t("duringRange", {
+												range: formatRangeLabel(
+													bucket.start,
+													bucket.end,
+													format.dateParts,
+												),
+											})}
+										</span>
+									</div>
+								);
+							})}
+						</div>
+						<span className="text-xs text-muted-foreground whitespace-nowrap">
+							{row.original.uptimePct != null
+								? `${row.original.uptimePct.toFixed(1)}%`
+								: "--"}
+						</span>
+					</div>
+				),
+			},
+		],
+		[t, format]
+	);
+
+	const table = useReactTable({
+		data: providers,
+		columns,
+		state: {
+			sorting,
+		},
+		onSortingChange: setSorting,
+		getCoreRowModel: getCoreRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+	});
+
+	if (!providers.length) {
+		return (
+			<div className="rounded-lg border border-dashed border-gray-300 bg-muted/20 p-6 text-center">
+				<p className="text-sm font-semibold text-muted-foreground">
+					{t("noProviderPerformanceData")}
+				</p>
+			</div>
+		);
+	}
+
+	return (
+		<div className="rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+			<div className="flex flex-wrap items-center justify-between gap-2">
+				<div>
+					<p className="text-xs uppercase tracking-wide text-muted-foreground">
+						{t("providerPerformance")}
+					</p>
+					<h3 className="text-lg font-semibold text-foreground">
+						{t("last24Hours")}
+					</h3>
+				</div>
+			</div>
+
+			<div className="mt-4">
+				<Table>
+					<TableHeader>
+						{table.getHeaderGroups().map((headerGroup) => (
+							<TableRow key={headerGroup.id}>
+								{headerGroup.headers.map((header) => {
+									const meta =
+										(header.column.columnDef.meta as
+											| { headClassName?: string }
+											| undefined) ?? {};
+									return (
+										<TableHead
+											key={header.id}
+											className={cn(meta.headClassName)}
+										>
+											{header.isPlaceholder
+												? null
+												: flexRender(
+														header.column.columnDef
+															.header,
+														header.getContext()
+												  )}
+										</TableHead>
+									);
+								})}
+							</TableRow>
+						))}
+					</TableHeader>
+					<TableBody>
+						{table.getRowModel().rows?.length ? (
+							table.getRowModel().rows.map((row) => (
+								<TableRow key={row.id}>
+									{row.getVisibleCells().map((cell) => {
+										const meta =
+											(cell.column.columnDef.meta as
+												| { cellClassName?: string }
+												| undefined) ?? {};
+										return (
+											<TableCell
+												key={cell.id}
+												className={cn(meta.cellClassName)}
+											>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext()
+												)}
+											</TableCell>
+										);
+									})}
+								</TableRow>
+							))
+						) : (
+							<TableRow>
+								<TableCell
+									colSpan={columns.length}
+									className="h-24 text-center"
+								>
+									{t("noProvidersFound")}
+								</TableCell>
+							</TableRow>
+						)}
+					</TableBody>
+				</Table>
+			</div>
+		</div>
+	);
+}

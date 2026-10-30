@@ -1,0 +1,4888 @@
+"use client";
+
+import { chatLocalStorage } from "@/lib/chat/userStorage";
+import { getOpenUIContext, OPENUI_FORMAT, updateOpenUIState } from "./openui/openuiHelpers";
+import { loadOpenUILibrary } from "./openui/loadOpenUI";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import {
+	Sidebar,
+	SidebarInset,
+	SidebarProvider,
+	SidebarRail,
+} from "@/components/ui/sidebar";
+import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import { fetchChatWebApi } from "@/lib/web-api/client";
+import { showChatCompletionNotification } from "@/lib/chat/completionNotifications";
+import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
+import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
+import type {
+	ChatMessage,
+	ChatModelSettings,
+	ChatServerToolConfigs,
+	ChatServerToolType,
+	ChatSettings,
+	ChatTag,
+	ChatThread,
+	UnifiedChatEndpoint,
+} from "@/lib/indexeddb/chats";
+import {
+	deleteChat,
+	getAllChatTags,
+	getAllChats,
+	getChatThreadSessionId,
+	normalizeChatTags,
+	upsertChat,
+	upsertChatTags,
+} from "@/lib/indexeddb/chats";
+import {
+	ChatConversation,
+	type ChatSendPayload,
+} from "@/components/(chat)/ChatConversation";
+import { ChatHeader } from "@/components/(chat)/ChatHeader";
+import { ModelSettingsDialog } from "@/components/(chat)/ModelSettingsDialog";
+import {
+	type ChatRequestErrorDetails,
+} from "@/components/(chat)/ChatRequestErrorNotice";
+import { ChatSearchDialog } from "@/components/(chat)/ChatSearchDialog";
+import { ChatRenameDialog } from "@/components/(chat)/ChatRenameDialog";
+import { ChatDeleteDialog } from "@/components/(chat)/ChatDeleteDialog";
+import { ChatNewChatDialog } from "@/components/(chat)/ChatNewChatDialog";
+import { ChatTagsDialog } from "@/components/(chat)/ChatTagsDialog";
+import {
+	coerceResponseText,
+	appendImagesToText,
+	extractResponseImages,
+	resolveChatReasoningSummary,
+	extractReasoningText,
+	extractResponseToolCalls,
+	extractResponseText,
+	type ChatToolCall,
+	type ChatTraceEvent,
+} from "@/components/(chat)/chatPayload";
+import {
+	buildUserMessageContent,
+	prepareAttachments,
+	prepareInlineAttachmentPreviews,
+} from "@/components/(chat)/playground/attachment-utils";
+import {
+	APP_HEADERS,
+	DEFAULT_SETTINGS,
+	DEFAULT_SERVER_TOOLS,
+	STORAGE_KEYS,
+	TEMP_CHAT_ID,
+	LOCAL_CHAT_API_BASE_URL,
+	inferChatApiTarget,
+	resolveChatApiBaseUrl,
+	buildServerToolDefinitions,
+	buildDefaultSystemPrompt,
+	createInitialChatThread,
+	buildPersonalizationPrompt,
+	buildTitle,
+	ensureModelOverridesForIds,
+	ensureVariants,
+	extractTotalCostUsd,
+	formatModelLabel,
+	formatOrgLabel,
+	generateId,
+	getChangedSettings,
+	getEffectiveModelSettings,
+	getRequestedChatServiceTier,
+	getOrgId,
+	isGeneratedDefaultSystemPrompt,
+	normalizeServerTools,
+	normalizeBaseUrl,
+	nowIso,
+	shouldRequestImageModalities,
+	type ChatResponseLayout,
+	type ChatApiTarget,
+	type NewChatModelPreference,
+	type PersonalizationSettings,
+	type SettingChange,
+} from "@/components/(chat)/playground/chat-playground-core";
+import {
+	useChatModelCatalog,
+} from "@/components/(chat)/playground/use-chat-model-catalog";
+import { useChatAuth } from "@/components/(chat)/playground/use-chat-auth";
+import { useGroupedChatThreads } from "@/components/(chat)/playground/use-grouped-chat-threads";
+import {
+	createChatStreamTextError,
+	parseChatErrorResponse,
+	parseChatStreamErrorFrame,
+	type ChatErrorPayload,
+} from "@/components/(chat)/playground/chat-request-errors";
+import {
+	linkChatPerformanceMessage,
+	markChatPerformance,
+} from "@/components/(chat)/playground/chat-performance";
+import {
+	ChatSidebar,
+} from "@/components/(chat)/ChatSidebar";
+import { ChatShortcutHelpDialog } from "@/components/(chat)/ChatShortcutReference";
+import { getChatPayloadRequestId } from "@/components/(chat)/chatMessageMetadata";
+import { replayInputPrefix } from "@/components/(chat)/chatLogImport";
+import { ChatLogImportDialog } from "@/components/(chat)/ChatLogImportDialog";
+import {
+	combineReasoningEffortSupports,
+	filterReasoningEffortOptions,
+	getModelReasoningEffortSupport,
+	resolveChatReasoningEffort,
+} from "@/components/(chat)/playground/reasoningEffortSupport";
+import {
+	getModelServiceTierSupport,
+	getServiceTierOptions,
+	resolveChatServiceTier,
+	assertChatServiceTierSupported,
+} from "@/components/(chat)/playground/serviceTierSupport";
+
+type ChatPlaygroundProps = {
+	models: GatewaySupportedModel[];
+	modelParam?: string | null;
+	promptParam?: string | null;
+	/** The workspace Chat bills, for opening logged requests. */
+	activeWorkspaceId?: string | null;
+};
+
+const CHAT_SHORTCUT_OVERLAY_SELECTOR = [
+	'[data-state="open"][role="dialog"]',
+	'[data-state="open"][role="menu"]',
+	'[data-state="open"][role="listbox"]',
+	'[data-state="open"][data-radix-popper-content-wrapper]',
+	'[data-slot="dialog-content"]',
+].join(", ");
+
+const isChatShortcutOverlayOpen = () => {
+	if (typeof document === "undefined") return false;
+	return Boolean(document.querySelector(CHAT_SHORTCUT_OVERLAY_SELECTOR));
+};
+
+const normalizeChatServiceTier = (value: unknown): string | null => {
+	if (typeof value !== "string") return null;
+	const normalized = value.trim().toLowerCase();
+	if (!normalized) return null;
+	if (normalized === "default") return "standard";
+	if (normalized === "fast") return "priority";
+	return normalized;
+};
+
+const resolvePayloadServiceTier = (payload: any): string | null => {
+	for (const candidate of [
+		payload?.service_tier,
+		payload?.serviceTier,
+		payload?.meta?.service_tier,
+		payload?.meta?.serviceTier,
+		payload?.response?.service_tier,
+		payload?.response?.serviceTier,
+		payload?.response?.meta?.service_tier,
+		payload?.response?.meta?.serviceTier,
+		payload?.response?.metadata?.service_tier,
+		payload?.response?.metadata?.serviceTier,
+		payload?.usage?.service_tier,
+		payload?.usage?.serviceTier,
+		payload?.response?.usage?.service_tier,
+		payload?.response?.usage?.serviceTier,
+		payload?.response?.output?.usage?.service_tier,
+		payload?.response?.output?.usage?.serviceTier,
+	]) {
+		const normalized = normalizeChatServiceTier(candidate);
+		if (normalized) return normalized;
+	}
+	return null;
+};
+
+const focusChatModelPickerSearch = () => {
+	if (typeof window === "undefined") return;
+	const focusSearch = () => {
+		document
+			.querySelector<HTMLInputElement>(
+				"[data-chat-model-selector-search='true']",
+			)
+			?.focus({ preventScroll: true });
+	};
+	focusSearch();
+	for (const delay of [0, 25, 75, 150, 250, 400]) {
+		window.setTimeout(focusSearch, delay);
+	}
+};
+
+const normalizeStoredBaseUrl = (value: string | null) =>
+	(value ?? "").trim().replace(/\/+$/, "");
+
+const DATETIME_TOOL_NAMES = new Set(["gateway_datetime", "gateway:datetime"]);
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+	Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const normalizeServerToolKey = (value: unknown) => {
+	if (typeof value !== "string") return null;
+	const normalized = value.trim();
+	if (!normalized) return null;
+	if (DATETIME_TOOL_NAMES.has(normalized)) return "gateway:datetime";
+	return normalized;
+};
+
+const hasRenderableToolValue = (value: unknown): boolean => {
+	if (value == null) return false;
+	if (typeof value === "string") return value.trim().length > 0;
+	if (Array.isArray(value)) {
+		return value.some((item) => hasRenderableToolValue(item));
+	}
+	if (isPlainRecord(value)) {
+		return Object.values(value).some((item) =>
+			hasRenderableToolValue(item),
+		);
+	}
+	return true;
+};
+
+const collectRequestServerToolInputs = (tools: unknown[]) => {
+	const inputs = new Map<string, Record<string, unknown>>();
+	for (const tool of tools) {
+		if (!isPlainRecord(tool)) continue;
+		const key = normalizeServerToolKey(tool.type);
+		if (!key || !isPlainRecord(tool.parameters)) continue;
+		inputs.set(key, tool.parameters);
+	}
+	return inputs;
+};
+
+const getRequestContext = (
+	message: ChatMessage | undefined,
+): Record<string, unknown> | null => {
+	const meta = isPlainRecord(message?.meta) ? message.meta : null;
+	return isPlainRecord(meta?.request_context)
+		? meta.request_context
+		: null;
+};
+
+const buildRetrySendPayload = (
+	contextMessages: ChatMessage[],
+): ChatSendPayload | undefined => {
+	const userMessage = [...contextMessages]
+		.reverse()
+		.find((message) => message.role === "user");
+	const context = getRequestContext(userMessage);
+	if (!context) return undefined;
+	const serverTools = Array.isArray(context.server_tools)
+		? normalizeServerTools(context.server_tools as ChatServerToolType[])
+		: undefined;
+	const serverToolConfigs = isPlainRecord(context.server_tool_configs)
+		? (context.server_tool_configs as ChatServerToolConfigs)
+		: undefined;
+	const hasServerToolContext =
+		serverTools !== undefined || serverToolConfigs !== undefined;
+	const apiServerToolsEnabled =
+		typeof context.api_server_tools_enabled === "boolean"
+			? context.api_server_tools_enabled
+			: hasServerToolContext
+				? true
+				: undefined;
+	const webSearchEnabled =
+		typeof context.web_search_enabled === "boolean"
+			? context.web_search_enabled
+			: undefined;
+	if (
+		serverTools === undefined &&
+		serverToolConfigs === undefined &&
+		apiServerToolsEnabled === undefined &&
+		webSearchEnabled === undefined
+	) {
+		return undefined;
+	}
+	return {
+		content: userMessage?.content ?? "",
+		attachments: [],
+		webSearchEnabled: webSearchEnabled ?? false,
+		apiServerToolsEnabled: apiServerToolsEnabled ?? false,
+		serverTools: serverTools ?? [],
+		serverToolConfigs: serverToolConfigs ?? {},
+	};
+};
+
+const getBrowserTimeZone = () => {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+	} catch {
+		return null;
+	}
+};
+
+const appendTimezone = (timezones: string[], value: unknown) => {
+	if (typeof value !== "string") return;
+	const timezone = value.trim();
+	if (timezone && !timezones.includes(timezone)) {
+		timezones.push(timezone);
+	}
+};
+
+const appendTimezoneList = (timezones: string[], value: unknown) => {
+	if (!Array.isArray(value)) return;
+	for (const item of value) {
+		appendTimezone(timezones, item);
+	}
+};
+
+const getDefaultDatetimeTimezones = () => {
+	const timezones: string[] = [];
+	appendTimezone(timezones, "UTC");
+	appendTimezone(timezones, getBrowserTimeZone());
+	return timezones.length ? timezones : ["UTC"];
+};
+
+const parseToolInput = (toolCall: ChatToolCall): Record<string, unknown> => {
+	if (isPlainRecord(toolCall.input)) {
+		return toolCall.input as Record<string, unknown>;
+	}
+	if (toolCall.inputText) {
+		try {
+			const parsed = JSON.parse(toolCall.inputText);
+			if (isPlainRecord(parsed)) {
+				return parsed as Record<string, unknown>;
+			}
+		} catch {
+			return {};
+		}
+	}
+	return {};
+};
+
+const mergeRequestToolInput = (
+	toolInput: Record<string, unknown>,
+	requestInput: Record<string, unknown>,
+) => {
+	const merged = {
+		...requestInput,
+		...toolInput,
+	};
+	for (const [key, value] of Object.entries(requestInput)) {
+		if (
+			hasRenderableToolValue(value) &&
+			!hasRenderableToolValue(toolInput[key])
+		) {
+			merged[key] = value;
+		}
+	}
+	return merged;
+};
+
+const enrichToolCallWithRequestInput = (
+	toolCall: ChatToolCall,
+	requestServerToolInputs: Map<string, Record<string, unknown>>,
+): ChatToolCall => {
+	const key =
+		normalizeServerToolKey(toolCall.name) ??
+		normalizeServerToolKey(toolCall.type);
+	if (!key) return toolCall;
+	const requestInput = requestServerToolInputs.get(key);
+	if (!requestInput || !hasRenderableToolValue(requestInput)) {
+		return toolCall;
+	}
+	if (key === "gateway:datetime") {
+		return {
+			...toolCall,
+			input: requestInput,
+			inputText: JSON.stringify(requestInput),
+		};
+	}
+	const toolInput = parseToolInput(toolCall);
+	const mergedInput = mergeRequestToolInput(toolInput, requestInput);
+	if (
+		JSON.stringify(mergedInput) === JSON.stringify(toolInput) &&
+		hasRenderableToolValue(toolInput)
+	) {
+		return toolCall;
+	}
+	return {
+		...toolCall,
+		input: mergedInput,
+		inputText: JSON.stringify(mergedInput),
+	};
+};
+
+const isValidTimezone = (timezone: string) => {
+	try {
+		new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+		return true;
+	} catch {
+		return false;
+	}
+};
+
+const extractShortOffset = (offsetName: string) => {
+	if (offsetName === "UTC" || offsetName === "GMT") {
+		return "+00:00";
+	}
+	const match = offsetName.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/i);
+	if (!match) {
+		return "+00:00";
+	}
+	const sign = match[1];
+	const hours = String(Number(match[2])).padStart(2, "0");
+	const minutes = String(Number(match[3] ?? "0")).padStart(2, "0");
+	return `${sign}${hours}:${minutes}`;
+};
+
+const formatIsoInTimezone = (date: Date, timezone: string) => {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone: timezone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+		hourCycle: "h23",
+		timeZoneName: "shortOffset",
+	}).formatToParts(date);
+	const partMap = new Map(parts.map((part) => [part.type, part.value]));
+	const offsetName = partMap.get("timeZoneName") ?? "GMT";
+	const offset = extractShortOffset(offsetName);
+	return `${partMap.get("year") ?? "0000"}-${partMap.get("month") ?? "01"}-${partMap.get("day") ?? "01"}T${partMap.get("hour") ?? "00"}:${partMap.get("minute") ?? "00"}:${partMap.get("second") ?? "00"}.${String(date.getUTCMilliseconds()).padStart(3, "0")}${offset}`;
+};
+
+const buildClientDatetimeToolResults = (
+	toolCalls: ChatToolCall[],
+	defaultTimezones: string[],
+) => {
+	const results: Array<{ toolCallId: string; content: string }> = [];
+	for (const toolCall of toolCalls) {
+		if (!DATETIME_TOOL_NAMES.has(toolCall.name)) return null;
+		const input = parseToolInput(toolCall);
+		const timezones: string[] = [];
+		appendTimezoneList(timezones, input.timezones);
+		const resolvedTimezones = timezones.length
+			? timezones
+			: defaultTimezones.length
+				? defaultTimezones
+				: ["UTC"];
+		const invalidTimezone = resolvedTimezones.find(
+			(timezone) => !isValidTimezone(timezone),
+		);
+		if (invalidTimezone) {
+			results.push({
+				toolCallId: toolCall.id,
+				content: JSON.stringify({
+					error: "invalid_timezone",
+					timezone: invalidTimezone,
+					timezones: resolvedTimezones,
+					message: "timezones must contain valid IANA timezone names",
+				}),
+			});
+			continue;
+		}
+		const now = new Date();
+		const datetimeResults = resolvedTimezones.map((timezone) => ({
+			timezone,
+			datetime: formatIsoInTimezone(now, timezone),
+		}));
+		results.push({
+			toolCallId: toolCall.id,
+			content: JSON.stringify({
+				timezones: datetimeResults,
+			}),
+		});
+	}
+	return results.length ? results : null;
+};
+
+function compareChatTags(a: ChatTag, b: ChatTag) {
+	return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+}
+
+function ChatPlaygroundContent({
+	models,
+	modelParam,
+	promptParam,
+	activeWorkspaceId = null,
+}: ChatPlaygroundProps) {
+	const tChat = useTranslations("Product.chat");
+	const isUnified = true;
+	const [threads, setThreads] = useState<ChatThread[]>([]);
+	const [activeId, setActiveId] = useState<string | null>(null);
+	const [isSending, setIsSending] = useState(false);
+	const [, setError] = useState<string | null>(null);
+	const [requestError, setRequestError] =
+		useState<ChatRequestErrorDetails | null>(null);
+	const [apiTarget, setApiTarget] = useState<ChatApiTarget>("default");
+	const [baseUrl, setBaseUrl] = useState("");
+	const {
+		authLoading,
+		authUser,
+		handleSignOut,
+		isAdmin,
+		isAuthenticated,
+	} = useChatAuth();
+	const [debugEnabled, setDebugEnabled] = useState(() => {
+		if (typeof window === "undefined") return false;
+		return chatLocalStorage.getItem(STORAGE_KEYS.debugMode) === "true";
+	});
+	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
+	const [modelSettingsTargetModelId, setModelSettingsTargetModelId] =
+		useState<string | null>(null);
+	const [modelPickerOpen, setModelPickerOpen] = useState(false);
+	const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
+	const [searchOpen, setSearchOpen] = useState(false);
+	const [renameOpen, setRenameOpen] = useState(false);
+	const [renameValue, setRenameValue] = useState("");
+	const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [deleteTargets, setDeleteTargets] = useState<ChatThread[]>([]);
+	const [tagsOpen, setTagsOpen] = useState(false);
+	const [tagsTargets, setTagsTargets] = useState<ChatThread[]>([]);
+	const [chatTags, setChatTags] = useState<ChatTag[]>([]);
+	const [activeTagId, setActiveTagId] = useState<string | null>(null);
+	const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
+	const [pendingNewChat, setPendingNewChat] = useState<{
+		modelId: string;
+		settings: ChatSettings;
+		defaultSettings: ChatSettings;
+		changes: SettingChange[];
+	} | null>(null);
+	const [newChatModelPreference, setNewChatModelPreference] =
+		useState<NewChatModelPreference>("blank");
+	const [temporaryMode, setTemporaryMode] = useState(false);
+	const [composerRequiresAudioInput, setComposerRequiresAudioInput] =
+		useState(false);
+	const [responseLayout, setResponseLayout] = useState<ChatResponseLayout>(() => {
+		if (typeof window === "undefined") return "sequential";
+		return chatLocalStorage.getItem(STORAGE_KEYS.responseLayout) ===
+			"side-by-side"
+			? "side-by-side"
+			: "sequential";
+	});
+	const [temporaryThread, setTemporaryThread] = useState<ChatThread | null>(
+		null,
+	);
+	const [previousStoredId, setPreviousStoredId] = useState<string | null>(
+		null,
+	);
+	const [groupingNowMs] = useState(() => Date.now());
+
+	const {
+		selectableModels,
+		defaultModelId,
+		resolvedQueryModelId,
+		queryModelIsValid,
+		modelOptions,
+		modelCapabilitiesById,
+		providerOptions,
+		providerNameById,
+		getSupportedProviderIdsForModel,
+		isProviderSupportedForModel,
+		resolveRequestModelIdForProvider,
+		resolveReplacementModelId,
+		orgNameById,
+		modelDisplayNameById,
+		modelOrgIdById,
+		modelLinkById,
+		getModelCapabilities,
+		modelSupportsAudioInputById,
+		supportsModelAudioInput,
+		isModelCapabilityCompatible,
+		isModelSelectableForContext,
+		getPrimaryCapabilityForModel,
+	} = useChatModelCatalog({ models, modelParam });
+	const queryPrompt = promptParam ?? "";
+	const initialModelId = modelParam?.trim()
+		? (queryModelIsValid ? resolvedQueryModelId : "")
+		: null;
+	const [personalization, setPersonalization] =
+		useState<PersonalizationSettings>({
+			name: "",
+			role: "",
+			notes: "",
+			accentColor: "#111111",
+		});
+
+	const shouldDebug = debugEnabled && isAdmin;
+
+	const handleDebugChange = useCallback((value: boolean) => {
+		setDebugEnabled(value);
+		if (typeof window !== "undefined") {
+			chatLocalStorage.setItem(
+				STORAGE_KEYS.debugMode,
+				value ? "true" : "false",
+			);
+		}
+	}, []);
+
+	const handleResponseLayoutChange = useCallback(
+		(value: ChatResponseLayout) => {
+			setResponseLayout(value);
+			if (typeof window !== "undefined") {
+				chatLocalStorage.setItem(STORAGE_KEYS.responseLayout, value);
+			}
+		},
+		[],
+	);
+
+	const handleExportChats = useCallback(async () => {
+		const chats = await getAllChats("text");
+		const payload = {
+			exportedAt: new Date().toISOString(),
+			chats,
+		};
+		const blob = new Blob([JSON.stringify(payload, null, 2)], {
+			type: "application/json",
+		});
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = `phaseo-chats-${Date.now()}.json`;
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		URL.revokeObjectURL(url);
+	}, []);
+
+	const activeThread = useMemo(() => {
+		if (temporaryMode && temporaryThread) return temporaryThread;
+		return threads.find((thread) => thread.id === activeId) ?? null;
+	}, [temporaryMode, temporaryThread, threads, activeId]);
+	const activeModelCapability = useMemo(() => {
+		if (!activeThread?.modelId) return null;
+		return "responses" as UnifiedChatEndpoint;
+	}, [activeThread?.modelId]);
+	const allTags = useMemo(() => {
+		const byId = new Map<string, ChatTag>();
+		for (const tag of chatTags) {
+			byId.set(tag.id, tag);
+		}
+		for (const thread of threads) {
+			for (const tag of normalizeChatTags(thread.tags)) {
+				if (!byId.has(tag.id)) {
+					byId.set(tag.id, tag);
+				}
+			}
+		}
+		return Array.from(byId.values()).sort(compareChatTags);
+	}, [chatTags, threads]);
+	const activeVisibleTagId = useMemo(
+		() =>
+			activeTagId && allTags.some((tag) => tag.id === activeTagId)
+				? activeTagId
+				: null,
+		[activeTagId, allTags],
+	);
+	const visibleThreads = useMemo(() => {
+		if (!activeVisibleTagId) return threads;
+		return threads.filter((thread) =>
+			normalizeChatTags(thread.tags).some(
+				(tag) => tag.id === activeVisibleTagId,
+			),
+		);
+	}, [activeVisibleTagId, threads]);
+	const { sortedThreads, groupedThreads } = useGroupedChatThreads(
+		visibleThreads,
+		groupingNowMs,
+	);
+
+	const persistThread = useCallback(async (thread: ChatThread) => {
+		await upsertChat(thread, "text");
+	}, []);
+
+	const setActiveThread = useCallback(
+		(thread: ChatThread | null) => {
+			if (!thread) return;
+			setTemporaryMode(false);
+			setTemporaryThread(null);
+			setActiveId(thread.id);
+			if (typeof window !== "undefined") {
+				chatLocalStorage.setItem(
+					STORAGE_KEYS.activeChatId,
+					thread.id,
+				);
+			}
+		},
+		[setActiveId],
+	);
+
+	const handleImportFromLog = useCallback(
+		async (thread: ChatThread) => {
+			await upsertChat(thread, "text");
+			setThreads((prev) => [thread, ...prev.filter((item) => item.id !== thread.id)]);
+			setActiveThread(thread);
+		},
+		[setActiveThread],
+	);
+
+	const ensureInitialThread = useCallback(
+		async (existing: ChatThread[]) => {
+			const newThread = createInitialChatThread(existing, initialModelId, tChat("defaultTitle"));
+			if (!newThread) return existing;
+			await upsertChat(newThread, "text");
+			return [newThread, ...existing];
+		},
+		[initialModelId, tChat],
+	);
+
+	useEffect(() => {
+		let mounted = true;
+		(async () => {
+			const storedBase = chatLocalStorage.getItem(STORAGE_KEYS.baseUrl);
+			const storedApiTarget = inferChatApiTarget(
+				chatLocalStorage.getItem(STORAGE_KEYS.apiTarget),
+				storedBase,
+			);
+			const storedActive = chatLocalStorage.getItem(
+				STORAGE_KEYS.activeChatId,
+			);
+			const storedPersonalName =
+				chatLocalStorage.getItem(STORAGE_KEYS.personalizationName) ??
+				"";
+			const storedPersonalRole =
+				chatLocalStorage.getItem(STORAGE_KEYS.personalizationRole) ??
+				"";
+			const storedPersonalNotes =
+				chatLocalStorage.getItem(
+					STORAGE_KEYS.personalizationNotes,
+				) ?? "";
+			const storedAccent =
+				chatLocalStorage.getItem(
+					STORAGE_KEYS.personalizationAccent,
+				) ?? "#111111";
+			const storedNewChatModelPreference = chatLocalStorage.getItem(
+				STORAGE_KEYS.newChatModelPreference,
+			);
+			if (!mounted) return;
+			// Remove the obsolete, unscoped credential too; never import it.
+			window.localStorage.removeItem(STORAGE_KEYS.apiKey);
+			chatLocalStorage.removeItem(STORAGE_KEYS.apiKey);
+			setApiTarget(storedApiTarget);
+			setBaseUrl(
+				storedApiTarget === "custom"
+					? normalizeStoredBaseUrl(storedBase)
+					: "",
+			);
+			setPersonalization({
+				name: storedPersonalName,
+				role: storedPersonalRole,
+				notes: storedPersonalNotes,
+				accentColor: storedAccent,
+			});
+			setNewChatModelPreference(
+				storedNewChatModelPreference === "selected" ? "selected" : "blank",
+			);
+
+			const [chats, storedTags] = await Promise.all([
+				getAllChats("text"),
+				getAllChatTags(),
+			]);
+			if (!mounted) return;
+			const normalized = await ensureInitialThread(chats);
+			if (!mounted) return;
+			setThreads((current) => {
+				const currentIds = new Set(current.map((thread) => thread.id));
+				return [
+					...current,
+					...normalized.filter((thread) => !currentIds.has(thread.id)),
+				];
+			});
+			setChatTags(storedTags.sort(compareChatTags));
+
+			const initialId =
+				initialModelId === null &&
+				storedActive &&
+				normalized.some((t) => t.id === storedActive)
+					? storedActive
+					: (normalized[0]?.id ?? null);
+			setActiveId((current) =>
+				initialModelId !== null ? initialId : current ?? initialId,
+			);
+			if (initialId) {
+				chatLocalStorage.setItem(STORAGE_KEYS.activeChatId, initialId);
+			}
+		})();
+		return () => {
+			mounted = false;
+		};
+	}, [
+		ensureInitialThread,
+		initialModelId,
+	]);
+
+	useEffect(() => {
+		if (!activeThread?.modelId) return;
+		if (typeof window !== "undefined") {
+			chatLocalStorage.setItem(
+				STORAGE_KEYS.lastModelId,
+				activeThread.modelId,
+			);
+		}
+	}, [activeThread?.modelId]);
+
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		chatLocalStorage.setItem(
+			STORAGE_KEYS.personalizationName,
+			personalization.name,
+		);
+		chatLocalStorage.setItem(
+			STORAGE_KEYS.personalizationRole,
+			personalization.role,
+		);
+		chatLocalStorage.setItem(
+			STORAGE_KEYS.personalizationNotes,
+			personalization.notes,
+		);
+		chatLocalStorage.setItem(
+			STORAGE_KEYS.personalizationAccent,
+			personalization.accentColor,
+		);
+	}, [personalization]);
+
+	const createThreadWithSettings = useCallback(
+		async (modelId: string, settings: ChatSettings) => {
+			setError(null);
+			const previousActiveId = activeId;
+			const previousTemporaryMode = temporaryMode;
+			const previousTemporaryThread = temporaryThread;
+			const id = generateId();
+			const createdAt = nowIso();
+			const normalizedSettings =
+				modelId.trim().length > 0
+					? settings
+					: {
+							...settings,
+							compareModelIds: [],
+						};
+			const systemPrompt =
+				normalizedSettings.systemPrompt ?? buildDefaultSystemPrompt(modelId);
+			const modelOverridesById = ensureModelOverridesForIds(normalizedSettings, [
+				modelId,
+				...(normalizedSettings.compareModelIds ?? []),
+			]);
+			const newThread: ChatThread = {
+				id,
+				title: tChat("defaultTitle"),
+				titleLocked: false,
+				modelId,
+				createdAt,
+				updatedAt: createdAt,
+				messages: [],
+				settings: {
+					...normalizedSettings,
+					systemPrompt,
+					modelOverridesById,
+				},
+			};
+			setThreads((prev) => [newThread, ...prev]);
+			setActiveThread(newThread);
+			try {
+				await upsertChat(newThread, "text");
+			} catch (error) {
+				setThreads((prev) => prev.filter((thread) => thread.id !== id));
+				if (previousTemporaryMode && previousTemporaryThread) {
+					setTemporaryMode(true);
+					setTemporaryThread(previousTemporaryThread);
+				}
+				setActiveId((current) =>
+					current === id ? previousActiveId : current,
+				);
+				if (
+					typeof window !== "undefined" &&
+					chatLocalStorage.getItem(STORAGE_KEYS.activeChatId) === id
+				) {
+					if (previousActiveId) {
+						chatLocalStorage.setItem(
+							STORAGE_KEYS.activeChatId,
+							previousActiveId,
+						);
+					} else {
+						chatLocalStorage.removeItem(STORAGE_KEYS.activeChatId);
+					}
+				}
+				throw error;
+			}
+		},
+		[
+			activeId,
+			setActiveThread,
+			tChat,
+			temporaryMode,
+			temporaryThread,
+		],
+	);
+
+	const createThread = useCallback(async () => {
+		const shouldKeepSelectedModels =
+			newChatModelPreference === "selected" && Boolean(activeThread?.modelId);
+		const selectedModel = shouldKeepSelectedModels
+			? (activeThread?.modelId ?? "")
+			: "";
+		const selectedCompareModelIds = shouldKeepSelectedModels
+			? (activeThread?.settings.compareModelIds ?? [])
+			: [];
+		const defaultSettings: ChatSettings = {
+			...DEFAULT_SETTINGS,
+			systemPrompt: buildDefaultSystemPrompt(selectedModel),
+			compareMode: selectedCompareModelIds.length > 0,
+			compareModelIds: selectedCompareModelIds,
+		};
+		if (activeThread) {
+			const comparisonModelId = activeThread.modelId || selectedModel;
+			const comparisonSettings = comparisonModelId
+				? { ...activeThread.settings, ...getEffectiveModelSettings(activeThread, comparisonModelId) }
+				: activeThread.settings;
+			const comparisonModelDisplayName =
+				comparisonModelId
+					? activeThread.settings.modelOverridesById?.[
+							comparisonModelId
+						]?.displayName?.trim() ||
+						modelDisplayNameById[comparisonModelId]
+					: undefined;
+			const comparisonProviderLabel = comparisonSettings.providerId
+				? providerNameById.get(comparisonSettings.providerId)
+				: undefined;
+			const changes = getChangedSettings(
+				comparisonSettings,
+				comparisonModelId,
+				comparisonModelDisplayName,
+				comparisonProviderLabel,
+			);
+			if (changes.length > 0) {
+				setPendingNewChat({
+					modelId: selectedModel,
+					settings: activeThread.settings,
+					defaultSettings,
+					changes,
+				});
+				setNewChatDialogOpen(true);
+				return;
+			}
+		}
+		await createThreadWithSettings(selectedModel, defaultSettings);
+	}, [
+		activeThread,
+		createThreadWithSettings,
+		modelDisplayNameById,
+		newChatModelPreference,
+		providerNameById,
+	]);
+
+	const handleNewChatDecision = useCallback(
+		(useCurrent: boolean) => {
+			if (!pendingNewChat) {
+				setNewChatDialogOpen(false);
+				return;
+			}
+			const modelId = pendingNewChat.modelId;
+			const settings = useCurrent
+				? pendingNewChat.settings
+				: pendingNewChat.defaultSettings;
+			setNewChatDialogOpen(false);
+			setPendingNewChat(null);
+			void createThreadWithSettings(modelId, settings);
+		},
+		[pendingNewChat, createThreadWithSettings],
+	);
+
+	const handleNewChatModelPreferenceChange = useCallback(
+		(value: NewChatModelPreference) => {
+			setNewChatModelPreference(value);
+			if (typeof window !== "undefined") {
+				chatLocalStorage.setItem(
+					STORAGE_KEYS.newChatModelPreference,
+					value,
+				);
+			}
+		},
+		[],
+	);
+
+	const updateStoredThread = useCallback(
+		async (nextThread: ChatThread, persist = true) => {
+			let threadToPersist = nextThread;
+			setThreads((prev) =>
+				prev.map((thread) => {
+					if (thread.id !== nextThread.id) {
+						return thread;
+					}
+					if (thread.messages === nextThread.messages) {
+						threadToPersist = { ...thread, ...nextThread };
+						return threadToPersist;
+					}
+					const currentById = new Map(
+						thread.messages.map((message) => [message.id, message]),
+					);
+					const nextById = new Map(
+						nextThread.messages.map((message) => [message.id, message]),
+					);
+					const orderedIds = thread.messages.map((message) => message.id);
+					for (const message of nextThread.messages) {
+						if (!currentById.has(message.id)) {
+							orderedIds.push(message.id);
+						}
+					}
+					const mergedMessages = orderedIds
+						.map((id) => nextById.get(id) ?? currentById.get(id))
+						.filter((message): message is ChatMessage => Boolean(message));
+					threadToPersist = {
+						...thread,
+						...nextThread,
+						messages: mergedMessages,
+						updatedAt:
+							nextThread.updatedAt > thread.updatedAt
+								? nextThread.updatedAt
+								: thread.updatedAt,
+					};
+					return threadToPersist;
+				}),
+			);
+			if (persist) {
+				await persistThread(threadToPersist);
+			}
+		},
+		[persistThread],
+	);
+
+	const updateThreadState = useCallback(
+		async (nextThread: ChatThread, persist = true) => {
+			if (temporaryMode && nextThread.id === TEMP_CHAT_ID) {
+				setTemporaryThread(nextThread);
+				return;
+			}
+			await updateStoredThread(nextThread, persist);
+		},
+		[temporaryMode, updateStoredThread],
+	);
+
+	const applyMessageUpdate = useCallback(
+		(
+			thread: ChatThread,
+			messageId: string,
+			updater: (message: ChatMessage) => ChatMessage,
+		) => {
+			const messages = thread.messages.map((message) =>
+				message.id === messageId ? updater(message) : message,
+			);
+			return { ...thread, messages, updatedAt: nowIso() };
+		},
+		[],
+	);
+
+	const appendAssistantVariant = useCallback(
+		(
+			thread: ChatThread,
+			messageId: string,
+			variant: {
+				id: string;
+				content: string;
+				createdAt: string;
+				usage?: Record<string, unknown> | null;
+				meta?: Record<string, unknown> | null;
+			},
+		) => {
+			let variantIndex = 0;
+			const nextThread = applyMessageUpdate(
+				thread,
+				messageId,
+				(message) => {
+					const variants = [...ensureVariants(message), variant];
+					variantIndex = variants.length - 1;
+					const orgId = getOrgId(message.modelId ?? thread.modelId);
+					return {
+						...message,
+						modelId: message.modelId ?? thread.modelId,
+						providerId:
+							message.providerId ?? thread.settings.providerId,
+						providerName:
+							message.providerName ??
+							orgNameById[orgId] ??
+							formatOrgLabel(orgId),
+						content: variant.content,
+						variants,
+						activeVariantIndex: variantIndex,
+						usage: variant.usage ?? null,
+						meta: variant.meta ?? null,
+					};
+				},
+			);
+			return { nextThread, variantIndex };
+		},
+		[applyMessageUpdate, orgNameById],
+	);
+
+	const updateAssistantVariant = useCallback(
+		(
+			thread: ChatThread,
+			messageId: string,
+			variantIndex: number,
+			content: string,
+			usage?: Record<string, unknown> | null,
+			meta?: Record<string, unknown> | null,
+			providerId?: string | null,
+		) => {
+			return applyMessageUpdate(thread, messageId, (message) => {
+				const variants = ensureVariants(message).map(
+					(variant, index) => {
+						if (index !== variantIndex) {
+							return variant;
+						}
+						const nextMeta = meta
+							? { ...(variant.meta ?? {}), ...meta }
+							: (variant.meta ?? null);
+						return {
+							...variant,
+							content,
+							usage: usage ?? variant.usage ?? null,
+							meta: nextMeta,
+						};
+					},
+				);
+				const activeIndex = variantIndex;
+				const activeVariant = variants[activeIndex];
+				const orgId = getOrgId(message.modelId ?? thread.modelId);
+				const resolvedProviderId =
+					providerId && providerId !== "auto"
+						? providerId
+						: message.providerId ?? thread.settings.providerId;
+				return {
+					...message,
+					modelId: message.modelId ?? thread.modelId,
+					providerId: resolvedProviderId,
+					providerName:
+						(resolvedProviderId
+							? providerNameById.get(resolvedProviderId)
+							: null) ??
+						message.providerName ??
+						orgNameById[orgId] ??
+						formatOrgLabel(orgId),
+					content: activeVariant?.content ?? message.content,
+					variants,
+					activeVariantIndex: activeIndex,
+					usage: activeVariant?.usage ?? message.usage ?? null,
+					meta: activeVariant?.meta ?? message.meta ?? null,
+				};
+			});
+		},
+		[applyMessageUpdate, orgNameById, providerNameById],
+	);
+
+	const handleSaveSettings = useCallback(() => {
+		chatLocalStorage.setItem(STORAGE_KEYS.apiTarget, apiTarget);
+		if (apiTarget === "custom") {
+			const customBaseUrl = normalizeStoredBaseUrl(baseUrl);
+			if (customBaseUrl) {
+				chatLocalStorage.setItem(STORAGE_KEYS.baseUrl, customBaseUrl);
+			} else {
+				chatLocalStorage.removeItem(STORAGE_KEYS.baseUrl);
+			}
+		} else {
+			chatLocalStorage.removeItem(STORAGE_KEYS.baseUrl);
+		}
+		setSettingsOpen(false);
+	}, [apiTarget, baseUrl]);
+
+	const executeCompletion = useCallback(
+		async (
+			thread: ChatThread,
+			contextMessages: ChatMessage[],
+			targetAssistantId?: string,
+			sendPayload?: ChatSendPayload,
+			compareGroupId?: string,
+			requestModelId?: string,
+			manageSendingState = true,
+		) => {
+			const payloadMessages = [] as Array<{
+				role: string;
+				content: string;
+			}>;
+			const selectedModelId = requestModelId ?? thread.modelId;
+			const compareMeta = (compareGroupId || thread.settings.interactiveAnswers) ? {
+				...(compareGroupId ? { compare_group_id: compareGroupId } : {}),
+				...(thread.settings.interactiveAnswers ? { response_format: OPENUI_FORMAT } : {}),
+			} : null;
+			const personalizationPrompt =
+				buildPersonalizationPrompt(personalization);
+			const systemPrompt = thread.settings.systemPrompt?.trim() ?? "";
+			const mergedSystemPrompt = [systemPrompt, personalizationPrompt]
+				.filter(Boolean)
+				.join("\n\n");
+			if (mergedSystemPrompt) {
+				payloadMessages.push({
+					role: "system",
+					content: mergedSystemPrompt,
+				});
+			}
+			// Unedited messages opened from a request log go as their original
+			// structured input, so tool calls, results and attachments survive.
+			const replayPrefix = replayInputPrefix(thread.replay, contextMessages);
+			const systemMessageCount = payloadMessages.length;
+			payloadMessages.push(
+				...contextMessages.slice(replayPrefix.count).map((msg) => ({
+					role: msg.role,
+					content: getOpenUIContext(msg),
+				})),
+			);
+
+			const resolvedBaseUrl = resolveChatApiBaseUrl(apiTarget, baseUrl);
+			const base = resolvedBaseUrl
+				? normalizeBaseUrl(resolvedBaseUrl)
+				: undefined;
+			const preparedAttachments =
+				sendPayload?.attachments?.length
+					? await prepareAttachments(sendPayload.attachments)
+					: [];
+			const endpoint: UnifiedChatEndpoint = "responses";
+			const effectiveModelSettings = getEffectiveModelSettings(
+				thread,
+				selectedModelId,
+			);
+			const effectiveProviderId = isProviderSupportedForModel(
+				selectedModelId,
+				effectiveModelSettings.providerId,
+			)
+				? effectiveModelSettings.providerId
+				: "auto";
+			const requestExecutionModelId = resolveRequestModelIdForProvider(
+				selectedModelId,
+				effectiveProviderId,
+			);
+			const reasoningEffortSupport = getModelReasoningEffortSupport({
+				models,
+				modelId: selectedModelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedReasoningEffort = resolveChatReasoningEffort(
+				effectiveModelSettings.reasoningEffort ?? "medium",
+				reasoningEffortSupport,
+			);
+			const serviceTierSupport = getModelServiceTierSupport({
+				models,
+				modelId: selectedModelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedServiceTier = resolveChatServiceTier(
+				effectiveModelSettings.serviceTier ?? "standard",
+			);
+			assertChatServiceTierSupported(resolvedServiceTier, serviceTierSupport);
+			const wantsImageModalities =
+				endpoint === "responses" &&
+				(effectiveModelSettings.imageOutputEnabled ||
+					shouldRequestImageModalities(selectedModelId));
+			const streamEnabled =
+				endpoint === "responses" &&
+				Boolean(effectiveModelSettings.stream) &&
+				!wantsImageModalities;
+			const textInput = payloadMessages
+				.filter((message) => message.content.trim().length > 0)
+				.map((message, index) => {
+					const isLatestUserTurn =
+						message.role === "user" &&
+						index === payloadMessages.length - 1;
+					if (
+						!isLatestUserTurn ||
+						endpoint !== "responses" ||
+						!preparedAttachments.length
+					) {
+						return {
+							role: message.role,
+							content: message.content,
+						};
+					}
+					const contentParts: Array<Record<string, unknown>> = [];
+					const latestMessageText = sendPayload?.content?.trim() ?? "";
+					if (latestMessageText) {
+						contentParts.push({
+							type: "input_text",
+							text: latestMessageText,
+						});
+					}
+					for (const attachment of preparedAttachments) {
+						if (attachment.isImage) {
+							contentParts.push({
+								type: "input_image",
+								image_url: attachment.dataUrl,
+							});
+						} else if (attachment.isAudio) {
+							const data = attachment.dataUrl.includes(",")
+								? attachment.dataUrl.split(",")[1] ?? ""
+								: attachment.dataUrl;
+							const formatFromMime = attachment.mimeType
+								.toLowerCase()
+								.split("/")
+								[1]?.split(";")[0]
+								?.trim();
+							contentParts.push({
+								type: "input_audio",
+								input_audio: {
+									data,
+									format: formatFromMime || "wav",
+								},
+							});
+						} else if (attachment.isVideo) {
+							contentParts.push({
+								type: "input_video",
+								url: attachment.dataUrl,
+							});
+						} else {
+							contentParts.push({
+								type: "input_file",
+								filename: attachment.name,
+								file_data: attachment.dataUrl,
+							});
+						}
+					}
+					return {
+						role: message.role,
+						content: contentParts,
+					};
+				});
+			// Replay items are Responses input items of other shapes; code below only
+			// looks for the system message by role, which they never claim.
+			const input: typeof textInput = replayPrefix.items.length > 0
+				? [
+						...textInput.slice(0, systemMessageCount),
+						...(replayPrefix.items as typeof textInput),
+						...textInput.slice(systemMessageCount),
+					]
+				: textInput;
+			const requestBody: Record<string, unknown> = {
+				model: requestExecutionModelId,
+				session_id: getChatThreadSessionId(thread),
+			};
+			let requestUsesGatewayDatetimeServerTool = false;
+			let requestServerToolInputs = new Map<
+				string,
+				Record<string, unknown>
+			>();
+			const setOptionalRequestNumber = (
+				key: string,
+				value: number | null | undefined,
+			) => {
+				if (typeof value === "number" && Number.isFinite(value)) {
+					requestBody[key] = value;
+				}
+			};
+			setOptionalRequestNumber("temperature", effectiveModelSettings.temperature);
+			setOptionalRequestNumber(
+				"max_output_tokens",
+				effectiveModelSettings.maxOutputTokens,
+			);
+			setOptionalRequestNumber("top_p", effectiveModelSettings.topP);
+			setOptionalRequestNumber("top_k", effectiveModelSettings.topK);
+			setOptionalRequestNumber("min_p", effectiveModelSettings.minP);
+			setOptionalRequestNumber("top_a", effectiveModelSettings.topA);
+			setOptionalRequestNumber(
+				"presence_penalty",
+				effectiveModelSettings.presencePenalty,
+			);
+			setOptionalRequestNumber(
+				"frequency_penalty",
+				effectiveModelSettings.frequencyPenalty,
+			);
+			setOptionalRequestNumber(
+				"repetition_penalty",
+				effectiveModelSettings.repetitionPenalty,
+			);
+			setOptionalRequestNumber("seed", effectiveModelSettings.seed);
+			const requestedServiceTier = getRequestedChatServiceTier({
+				serviceTier: resolvedServiceTier,
+			});
+			requestBody.service_tier = requestedServiceTier;
+			if (endpoint === "responses") {
+				requestBody.input = input;
+				requestBody.meta = true;
+				requestBody.stream = streamEnabled;
+				if (wantsImageModalities) {
+					requestBody.modalities = ["text", "image"];
+				}
+				const apiServerToolsEnabled =
+					sendPayload?.apiServerToolsEnabled ??
+					effectiveModelSettings.apiServerToolsEnabled ??
+					DEFAULT_SETTINGS.apiServerToolsEnabled;
+				const datetimeTimezones = getDefaultDatetimeTimezones();
+				const tools = isUnified && apiServerToolsEnabled
+					? buildServerToolDefinitions(
+							sendPayload?.serverTools ??
+								effectiveModelSettings.serverTools ??
+								DEFAULT_SERVER_TOOLS,
+							sendPayload?.serverToolConfigs ??
+								effectiveModelSettings.serverToolConfigs,
+							{ datetimeTimezones },
+						)
+					: [];
+				if (tools.length > 0) {
+					requestBody.tools = tools;
+					requestServerToolInputs =
+						collectRequestServerToolInputs(tools);
+					requestUsesGatewayDatetimeServerTool = tools.some(
+						(tool) => tool.type === "gateway:datetime",
+					);
+				}
+				// Chat can't run a logged request's own functions. Declaring them keeps
+				// the imported tool calls valid. Without server tools, tool_choice
+				// "none" also stops new calls; with them, a stray call only shows as a
+				// tool call because later turns are sent as text.
+				const replayFunctionTools = thread.replay?.functionTools ?? [];
+				if (replayFunctionTools.length > 0) {
+					requestBody.tools = [...tools, ...replayFunctionTools];
+					if (tools.length === 0) requestBody.tool_choice = "none";
+				}
+			}
+
+			if (effectiveProviderId && effectiveProviderId !== "auto") {
+				requestBody.provider = {
+					only: [effectiveProviderId],
+				};
+			}
+			if (endpoint === "responses" && effectiveModelSettings.reasoningEnabled) {
+				requestBody.reasoning = {
+					effort: resolvedReasoningEffort,
+					summary: resolveChatReasoningSummary(selectedModelId),
+				};
+			}
+
+			setError(null);
+			setRequestError(null);
+			if (manageSendingState) {
+				setIsSending(true);
+			}
+
+			const performanceRunId = sendPayload?.performanceRunId;
+			const requestStartedAt = performance.now();
+			let responseHeadersAt: number | null = null;
+			let firstTokenAt: number | null = null;
+			let finalUsage: Record<string, unknown> | null = null;
+			let finalMeta: Record<string, unknown> | null = null;
+			let finalServiceTier: string | null =
+				normalizeChatServiceTier(requestedServiceTier) ?? "standard";
+			let finalProviderId: string | null =
+				effectiveProviderId && effectiveProviderId !== "auto"
+					? effectiveProviderId
+					: null;
+			let latestThread = thread;
+			const assistantId = targetAssistantId ?? generateId();
+			let streamingMessageId = assistantId;
+			let variantIndex = 0;
+			let assistantContent = "";
+			let placeholderReady = false;
+
+			const resolveMetaProviderId = (
+				meta: Record<string, unknown> | null | undefined,
+			): string | null => {
+				if (!meta) return null;
+				if (
+					typeof meta.provider === "string" &&
+					meta.provider.trim().length > 0
+				) {
+					return meta.provider.trim();
+				}
+				const routing =
+					meta.routing &&
+					typeof meta.routing === "object" &&
+					!Array.isArray(meta.routing)
+						? (meta.routing as Record<string, unknown>)
+						: null;
+				if (
+					routing &&
+					typeof routing.selected_provider === "string" &&
+					routing.selected_provider.trim().length > 0
+				) {
+					return routing.selected_provider.trim();
+				}
+				return null;
+			};
+
+			const resolvePayloadProviderId = (payload: any): string | null => {
+				for (const candidate of [
+					payload?.provider,
+					payload?.response?.provider,
+				]) {
+					if (typeof candidate === "string" && candidate.trim().length > 0) {
+						return candidate.trim();
+					}
+				}
+				return (
+					resolveMetaProviderId(payload?.meta ?? null) ??
+					resolveMetaProviderId(payload?.response?.meta ?? null) ??
+					resolveMetaProviderId(payload?.response?.metadata ?? null)
+				);
+			};
+
+			const extractPayloadMeta = (
+				payload: any,
+			): Record<string, unknown> | null => {
+				const meta =
+					payload?.meta ??
+					payload?.response?.meta ??
+					payload?.response?.metadata ??
+					null;
+				const normalizedMeta =
+					meta && typeof meta === "object" && !Array.isArray(meta)
+						? (meta as Record<string, unknown>)
+						: null;
+				const requestId = getChatPayloadRequestId(payload, endpoint);
+				if (!normalizedMeta && !requestId) return null;
+				return {
+					...(normalizedMeta ?? {}),
+					...(requestId ? { request_id: requestId } : {}),
+				};
+			};
+
+			if (targetAssistantId) {
+				const initialVariant = {
+					id: generateId(),
+					content: "Generating...",
+					createdAt: nowIso(),
+					meta: compareMeta ?? undefined,
+				};
+				const result = appendAssistantVariant(
+					latestThread,
+					targetAssistantId,
+					initialVariant,
+				);
+				latestThread = result.nextThread;
+				variantIndex = result.variantIndex;
+				assistantContent = streamEnabled ? "" : initialVariant.content;
+				streamingMessageId = targetAssistantId;
+				placeholderReady = true;
+				void updateThreadState(latestThread, false);
+			} else {
+				const orgId = getOrgId(selectedModelId);
+				const createdAt = nowIso();
+				const assistantMessage: ChatMessage = {
+					id: assistantId,
+					role: "assistant",
+					content: "Generating...",
+					createdAt,
+					modelId: selectedModelId,
+					providerId: effectiveProviderId,
+					providerName:
+						orgNameById[orgId] ?? formatOrgLabel(orgId),
+					variants: [
+						{
+							id: assistantId,
+							content: "Generating...",
+							createdAt,
+							meta: compareMeta ?? undefined,
+						},
+					],
+					activeVariantIndex: 0,
+					meta: compareMeta ?? undefined,
+				};
+				latestThread = {
+					...thread,
+					messages: [...thread.messages, assistantMessage],
+					updatedAt: nowIso(),
+				};
+				placeholderReady = true;
+				void updateThreadState(latestThread, false);
+			}
+
+			const buildClientMeta = (endAt: number) => {
+				const firstResponseAt = firstTokenAt ?? responseHeadersAt ?? endAt;
+				const latencyMs = Math.max(0, firstResponseAt - requestStartedAt);
+				const generationMs = Math.max(0, endAt - firstResponseAt);
+				const endToEndMs = Math.max(0, endAt - requestStartedAt);
+				return {
+					latencyMs,
+					generationMs,
+					endToEndMs,
+				};
+			};
+
+			const mergeMeta = (
+				clientMeta: Record<string, unknown>,
+			): Record<string, unknown> => {
+				const providerId =
+					finalProviderId ??
+					resolveMetaProviderId(finalMeta) ??
+					(effectiveProviderId && effectiveProviderId !== "auto"
+						? effectiveProviderId
+						: null);
+				return {
+					...(compareMeta ?? {}),
+					...(finalMeta ?? {}),
+					...(providerId ? { provider: providerId } : {}),
+					...(finalServiceTier
+						? { service_tier: finalServiceTier }
+						: {}),
+					client: clientMeta,
+				};
+			};
+
+			try {
+				if (thread.settings.interactiveAnswers) {
+					const interactivePrompt = (await loadOpenUILibrary()).getOpenUIPrompt();
+					const systemMessage = input.find((message) => message.role === "system");
+					if (systemMessage && typeof systemMessage.content === "string") {
+						systemMessage.content += `\n\n${interactivePrompt}`;
+					} else {
+						input.unshift({ role: "system", content: interactivePrompt });
+					}
+				}
+				markChatPerformance(performanceRunId, "request-dispatch");
+				const response = await fetchChatWebApi("/api/chat/text", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						baseUrl: base,
+						requestBody,
+						appHeaders: APP_HEADERS,
+						debug: shouldDebug,
+					}),
+				});
+				responseHeadersAt = performance.now();
+				markChatPerformance(performanceRunId, "response-headers");
+				// eslint-disable-next-line no-console
+				console.log(
+					"[chat] response",
+					response.status,
+					response.statusText,
+				);
+
+				if (!response.ok) {
+					throw await parseChatErrorResponse(response);
+				}
+
+				if (!streamEnabled || !response.body) {
+					const contentType = response.headers.get("content-type") ?? "";
+					let data: any = null;
+					if (contentType.includes("application/json")) {
+						data = await response.json();
+					} else if (contentType.startsWith("text/")) {
+						const textPayload = await response.text();
+						data = { output_text: textPayload };
+					} else {
+						const blob = await response.blob();
+						const objectUrl = URL.createObjectURL(blob);
+						assistantContent = `[Open result](${objectUrl})`;
+					}
+					markChatPerformance(performanceRunId, "stream-first-frame");
+
+					if (data) {
+						const reply = extractResponseText(data);
+						const images = extractResponseImages(data);
+						finalUsage =
+							data?.usage ??
+							data?.response?.usage ??
+							data?.response?.output?.usage ??
+							null;
+						finalMeta = extractPayloadMeta(data);
+						finalServiceTier =
+							resolvePayloadServiceTier(data) ?? finalServiceTier;
+						finalProviderId =
+							resolvePayloadProviderId(data) ?? finalProviderId;
+						const clientMeta = buildClientMeta(performance.now());
+						const mergedMeta = mergeMeta(clientMeta);
+						const reasoningText =
+							endpoint === "responses"
+								? extractReasoningText(data)
+								: "";
+						if (reasoningText) {
+							mergedMeta.reasoning_text = reasoningText;
+						}
+						const toolCalls = extractResponseToolCalls(data).map(
+							(toolCall) =>
+								enrichToolCallWithRequestInput(
+									toolCall,
+									requestServerToolInputs,
+								),
+						);
+						if (toolCalls.length) {
+							mergedMeta.tool_calls = toolCalls;
+						}
+						const traceEvents: ChatTraceEvent[] = [];
+						if (reasoningText) {
+							traceEvents.push({
+								id: "reasoning",
+								type: "reasoning",
+								sequence: traceEvents.length,
+								text: reasoningText,
+							});
+						}
+						for (const toolCall of toolCalls) {
+							traceEvents.push({
+								id: `tool:${toolCall.id}`,
+								type: "tool_call",
+								sequence: traceEvents.length,
+								toolCallId: toolCall.id,
+							});
+						}
+						if (
+							!reply.trim() &&
+							images.length === 0 &&
+							!reasoningText.trim() &&
+							toolCalls.length === 0
+						) {
+							const emptyResponseError = new Error(
+								"The provider returned an empty response. Please retry.",
+							) as Error & { code: string };
+							emptyResponseError.code = "empty_response";
+							throw emptyResponseError;
+						}
+						const totalCostUsd = extractTotalCostUsd(finalUsage);
+						if (totalCostUsd) {
+							mergedMeta.total_cost_usd = totalCostUsd;
+						}
+						assistantContent = appendImagesToText(reply, images);
+						if (!assistantContent) {
+							assistantContent = "Request completed.";
+						}
+						if (assistantContent) {
+							traceEvents.push({
+								id: "response",
+								type: "response",
+								sequence: traceEvents.length,
+								text: assistantContent,
+							});
+						}
+						if (traceEvents.length) {
+							mergedMeta.trace_events = traceEvents;
+						}
+						markChatPerformance(performanceRunId, "stream-first-token");
+						if (shouldDebug) {
+							// eslint-disable-next-line no-console
+							console.log("[chat] non-stream final usage/meta", {
+								usage: finalUsage,
+								meta: mergedMeta,
+								endpoint,
+							});
+						}
+						if (placeholderReady) {
+							latestThread = updateAssistantVariant(
+								latestThread,
+								assistantId,
+								variantIndex,
+								assistantContent,
+								finalUsage,
+								mergedMeta,
+								finalProviderId,
+							);
+							await updateThreadState(latestThread, !temporaryMode);
+							markChatPerformance(performanceRunId, "stream-complete");
+							return;
+						}
+						markChatPerformance(performanceRunId, "stream-complete");
+						return;
+					}
+					if (shouldDebug) {
+						// eslint-disable-next-line no-console
+						console.log("[chat] non-stream final usage/meta", {
+							usage: finalUsage,
+							meta: finalMeta,
+						});
+					}
+					if (placeholderReady) {
+						latestThread = updateAssistantVariant(
+							latestThread,
+							assistantId,
+							variantIndex,
+							assistantContent,
+							finalUsage,
+							mergeMeta(buildClientMeta(performance.now())),
+							finalProviderId,
+						);
+						await updateThreadState(latestThread, !temporaryMode);
+						markChatPerformance(performanceRunId, "stream-complete");
+						return;
+					}
+					markChatPerformance(performanceRunId, "stream-complete");
+					return;
+				}
+
+				let buffer = "";
+				const streamToolCalls = new Map<string, ChatToolCall>();
+				const streamToolAliases = new Map<string, string>();
+				const resolveStreamToolId = (value: unknown) => {
+					if (typeof value !== "string" || !value.trim()) return null;
+					const trimmed = value.trim();
+					return streamToolAliases.get(trimmed) ?? trimmed;
+				};
+				const aliasStreamToolId = (
+					source: unknown,
+					target: string | null,
+				) => {
+					if (
+						typeof source !== "string" ||
+						!source.trim() ||
+						!target
+					) {
+						return;
+					}
+					streamToolAliases.set(source.trim(), target);
+				};
+				const upsertStreamToolCall = (toolCall: ChatToolCall) => {
+					const enrichedToolCall = enrichToolCallWithRequestInput(
+						toolCall,
+						requestServerToolInputs,
+					);
+					const existing = streamToolCalls.get(enrichedToolCall.id);
+					const next: ChatToolCall = existing
+						? {
+								...existing,
+								...enrichedToolCall,
+								input:
+									enrichedToolCall.input ?? existing.input,
+								inputText:
+									enrichedToolCall.inputText ??
+									existing.inputText,
+								output:
+									enrichedToolCall.output ??
+									existing.output,
+								errorText:
+									enrichedToolCall.errorText ??
+									existing.errorText,
+								status:
+									enrichedToolCall.status === "running" &&
+									existing.status !== "running"
+										? existing.status
+										: enrichedToolCall.status,
+							}
+						: enrichedToolCall;
+					streamToolCalls.set(next.id, next);
+				};
+				const appendStreamToolArguments = (
+					id: string,
+					deltaText: string,
+				) => {
+					const existing =
+						streamToolCalls.get(id) ??
+						({
+							id,
+							type: "function_call",
+							name: "tool",
+							status: "running",
+						} satisfies ChatToolCall);
+					const inputText = `${existing.inputText ?? ""}${deltaText}`;
+					upsertStreamToolCall({
+						...existing,
+						inputText,
+						status: "running",
+					});
+				};
+				const getStreamToolCalls = () =>
+					Array.from(streamToolCalls.values());
+				const streamTraceEvents = new Map<string, ChatTraceEvent>();
+				let nextTraceSequence = 0;
+				let activeResponseTraceId: string | null = null;
+				const ensureTraceEvent = (
+					id: string,
+					create: (sequence: number) => ChatTraceEvent,
+				) => {
+					const existing = streamTraceEvents.get(id);
+					if (existing) return existing;
+					const event = create(nextTraceSequence++);
+					streamTraceEvents.set(id, event);
+					return event;
+				};
+				const upsertReasoningTrace = (text: string) => {
+					if (!text) return;
+					ensureTraceEvent("reasoning", (sequence) => ({
+						id: "reasoning",
+						type: "reasoning",
+						sequence,
+						text,
+					}));
+					const event = streamTraceEvents.get("reasoning");
+					if (event?.type === "reasoning") {
+						streamTraceEvents.set("reasoning", {
+							...event,
+							text,
+						});
+					}
+				};
+				const upsertToolTrace = (toolCallId: string) => {
+					if (!toolCallId) return;
+					activeResponseTraceId = null;
+					const id = `tool:${toolCallId}`;
+					ensureTraceEvent(id, (sequence) => ({
+						id,
+						type: "tool_call",
+						sequence,
+						toolCallId,
+					}));
+				};
+				const upsertResponseTrace = (text: string) => {
+					if (!text) return;
+					const id =
+						activeResponseTraceId ?? `response:${nextTraceSequence}`;
+					activeResponseTraceId = id;
+					ensureTraceEvent(id, (sequence) => ({
+						id,
+						type: "response",
+						sequence,
+						text,
+					}));
+					const event = streamTraceEvents.get(id);
+					if (event?.type === "response") {
+						streamTraceEvents.set(id, {
+							...event,
+							text,
+						});
+					}
+				};
+				const getTraceEvents = () =>
+					Array.from(streamTraceEvents.values()).sort(
+						(a, b) => a.sequence - b.sequence,
+					);
+				const getPendingClientDatetimeToolCalls = () => {
+					if (requestUsesGatewayDatetimeServerTool) return [];
+					return getStreamToolCalls().filter(
+						(toolCall) =>
+							DATETIME_TOOL_NAMES.has(toolCall.name) &&
+							toolCall.status !== "running" &&
+							toolCall.output === undefined &&
+							!toolCall.errorText,
+					);
+				};
+
+				if (!placeholderReady && targetAssistantId) {
+					const initialVariant = {
+						id: generateId(),
+						content: "",
+						createdAt: nowIso(),
+						meta: compareMeta ?? undefined,
+					};
+					const result = appendAssistantVariant(
+						latestThread,
+						targetAssistantId,
+						initialVariant,
+					);
+					latestThread = result.nextThread;
+					variantIndex = result.variantIndex;
+					streamingMessageId = targetAssistantId;
+					await updateThreadState(latestThread, false);
+				} else if (!placeholderReady) {
+					const orgId = getOrgId(selectedModelId);
+					const assistantMessage: ChatMessage = {
+						id: assistantId,
+						role: "assistant",
+						content: "",
+						createdAt: nowIso(),
+						modelId: selectedModelId,
+						providerId: effectiveProviderId,
+						providerName:
+							orgNameById[orgId] ?? formatOrgLabel(orgId),
+						variants: [
+							{
+								id: assistantId,
+								content: "",
+								createdAt: nowIso(),
+								meta: compareMeta ?? undefined,
+							},
+						],
+						activeVariantIndex: 0,
+						meta: compareMeta ?? undefined,
+					};
+					latestThread = {
+						...thread,
+						messages: [...thread.messages, assistantMessage],
+						updatedAt: nowIso(),
+					};
+					await updateThreadState(latestThread, false);
+				}
+
+				const reader = response.body.getReader();
+				const decoder = new TextDecoder();
+				const streamFrameDelayMs = 50;
+				let flushTimer: number | null = null;
+				let pendingMetaPartial: Record<string, unknown> | undefined;
+				let lastFlushAt = 0;
+				let flushPromise = Promise.resolve();
+				const scheduleUpdate = (
+					metaPartial?: Record<string, unknown>,
+				) => {
+					if (metaPartial) {
+						pendingMetaPartial = metaPartial;
+					}
+					if (flushTimer != null) return;
+					const now = performance.now();
+					const elapsed = now - lastFlushAt;
+					const delay =
+						elapsed >= streamFrameDelayMs
+							? 0
+							: streamFrameDelayMs - elapsed;
+					flushTimer = window.setTimeout(() => {
+						flushTimer = null;
+						lastFlushAt = performance.now();
+						const meta = pendingMetaPartial;
+						pendingMetaPartial = undefined;
+						flushPromise = flushPromise.then(async () => {
+							latestThread = updateAssistantVariant(
+								latestThread,
+								assistantId,
+								variantIndex,
+								assistantContent,
+								undefined,
+								meta,
+								finalProviderId,
+							);
+							await updateThreadState(latestThread, false);
+						});
+					}, delay);
+				};
+				const flushPendingStreamUpdate = async () => {
+					if (flushTimer != null) {
+						window.clearTimeout(flushTimer);
+						flushTimer = null;
+						lastFlushAt = performance.now();
+						const meta = pendingMetaPartial;
+						pendingMetaPartial = undefined;
+						flushPromise = flushPromise.then(async () => {
+							latestThread = updateAssistantVariant(
+								latestThread,
+								assistantId,
+								variantIndex,
+								assistantContent,
+								undefined,
+								meta,
+								finalProviderId,
+							);
+							await updateThreadState(latestThread, false);
+						});
+					}
+					await flushPromise;
+				};
+				const throwStreamError = async (
+					streamError: ChatErrorPayload,
+				): Promise<never> => {
+					if (flushTimer != null) {
+						window.clearTimeout(flushTimer);
+						flushTimer = null;
+						pendingMetaPartial = undefined;
+					}
+					await flushPromise;
+					throw streamError;
+				};
+				let reasoningContent = "";
+				const reasoningSummaries: Record<number, string> = {};
+				const buildStreamingMetaPartial = () => {
+					const toolCalls = getStreamToolCalls();
+					const traceEvents = getTraceEvents();
+					if (
+						!reasoningContent &&
+						toolCalls.length === 0 &&
+						traceEvents.length === 0
+					) {
+						return undefined;
+					}
+					return {
+						...(compareMeta ?? {}),
+						...(finalMeta ?? {}),
+						...(finalServiceTier
+							? { service_tier: finalServiceTier }
+							: {}),
+						...(reasoningContent
+							? { reasoning_text: reasoningContent }
+							: {}),
+						...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+						...(traceEvents.length
+							? { trace_events: traceEvents }
+							: {}),
+					};
+				};
+
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+					markChatPerformance(performanceRunId, "stream-first-frame");
+					buffer += decoder.decode(value, { stream: true });
+					const frames = buffer.split(/\r?\n\r?\n/);
+					buffer = frames.pop() ?? "";
+					for (const frame of frames) {
+						if (!firstTokenAt) {
+							firstTokenAt = performance.now();
+						}
+						const lines = frame.split(/\r?\n/);
+						let frameEventType = "";
+						const frameDataLines: string[] = [];
+						for (const line of lines) {
+							const trimmed = line.trim();
+							if (!trimmed) continue;
+							if (trimmed.startsWith("event:")) {
+								frameEventType = trimmed.slice(6).trim();
+								continue;
+							}
+							if (trimmed.startsWith("data:")) {
+								frameDataLines.push(trimmed.slice(5).trimStart());
+							}
+						}
+						const data = frameDataLines.join("").trim();
+						if (!data || data === "[DONE]") continue;
+						let parsed: any;
+						try {
+							parsed = JSON.parse(data);
+						} catch {
+							if (frameEventType === "error") {
+								await throwStreamError(
+									createChatStreamTextError(data, {
+										frame_event_type: frameEventType,
+										data,
+									}),
+								);
+							}
+							continue;
+						}
+						const streamError = parseChatStreamErrorFrame(
+							parsed,
+							frameEventType,
+						);
+						if (streamError) {
+							await throwStreamError(streamError);
+						}
+						try {
+								if (parsed?.usage || parsed?.response?.usage) {
+									finalUsage =
+										parsed?.usage ??
+										parsed?.response?.usage ??
+										null;
+									if (shouldDebug) {
+										// eslint-disable-next-line no-console
+										console.log(
+											"[chat] stream usage",
+											finalUsage,
+										);
+									}
+								}
+								const parsedMeta = extractPayloadMeta(parsed);
+								if (parsedMeta) {
+									finalMeta = {
+										...(finalMeta ?? {}),
+										...parsedMeta,
+									};
+								}
+								finalServiceTier =
+									resolvePayloadServiceTier(parsed) ?? finalServiceTier;
+								finalProviderId =
+									resolvePayloadProviderId(parsed) ??
+									finalProviderId;
+								let responseText = "";
+								let delta = "";
+								let reasoningDelta = "";
+								let reasoningUpdated = false;
+								let summaryUpdated = false;
+								let toolCallUpdated = false;
+					const summaryIndex =
+						typeof parsed?.summary_index === "number"
+							? parsed.summary_index
+							: typeof parsed?.summaryIndex === "number"
+								? parsed.summaryIndex
+								: null;
+								const appendSummaryDelta = (
+									deltaText: string,
+								) => {
+									if (summaryIndex == null) return false;
+									const previous =
+										reasoningSummaries[summaryIndex] ?? "";
+									const next = previous + deltaText;
+									if (next === previous) return false;
+									reasoningSummaries[summaryIndex] = next;
+									return true;
+								};
+								const setSummaryText = (text: string) => {
+									if (summaryIndex == null) return false;
+									if (
+										reasoningSummaries[summaryIndex] ===
+										text
+									)
+										return false;
+									reasoningSummaries[summaryIndex] = text;
+									return true;
+								};
+								const rebuildSummaryText = () => {
+									const indices = Object.keys(
+										reasoningSummaries,
+									)
+										.map((value) => Number(value))
+										.filter((value) =>
+											Number.isFinite(value),
+										)
+										.sort((a, b) => a - b);
+									return indices
+										.map(
+											(index) =>
+												reasoningSummaries[index],
+										)
+										.filter(Boolean)
+										.join("\n\n");
+								};
+								const frameType = parsed?.type ?? frameEventType;
+								if (
+									frameType === "response.output_item.added" ||
+									frameType === "response.output_item.done"
+								) {
+									const item =
+										parsed?.item &&
+										typeof parsed.item === "object"
+											? {
+													...parsed.item,
+													status:
+														parsed.item.status ??
+														(frameType ===
+														"response.output_item.added"
+															? "in_progress"
+															: "completed"),
+												}
+											: null;
+									const toolCalls = extractResponseToolCalls({
+										output: item ? [item] : [],
+									});
+									for (const toolCall of toolCalls) {
+										aliasStreamToolId(
+											parsed?.item?.id,
+											toolCall.id,
+										);
+										aliasStreamToolId(
+											parsed?.item?.call_id,
+											toolCall.id,
+										);
+										aliasStreamToolId(
+											parsed?.item_id,
+											toolCall.id,
+										);
+										upsertStreamToolCall(toolCall);
+										upsertToolTrace(toolCall.id);
+										toolCallUpdated = true;
+									}
+									if (
+										toolCalls.length === 0 &&
+										frameType ===
+											"response.output_item.done"
+									) {
+										responseText = extractResponseText({
+											output: item ? [item] : [],
+										});
+									}
+								} else if (
+									frameType ===
+									"response.function_call_arguments.delta"
+								) {
+									if (parsed?.call_id) {
+										aliasStreamToolId(
+											parsed?.item_id,
+											parsed.call_id,
+										);
+									}
+									const resolvedId =
+										resolveStreamToolId(
+											parsed?.call_id ??
+												parsed?.item_id,
+										);
+									if (
+										resolvedId &&
+										typeof parsed?.delta === "string"
+									) {
+										appendStreamToolArguments(
+											resolvedId,
+											parsed.delta,
+										);
+										upsertToolTrace(resolvedId);
+										toolCallUpdated = true;
+									}
+								} else if (
+									frameType ===
+									"response.function_call_arguments.done"
+								) {
+									const parsedToolName =
+										typeof parsed?.name === "string"
+											? parsed.name.trim()
+											: "";
+									if (parsedToolName === "tool_call") {
+										continue;
+									}
+									if (parsed?.call_id) {
+										aliasStreamToolId(
+											parsed?.item_id,
+											parsed.call_id,
+										);
+									}
+									const resolvedId =
+										resolveStreamToolId(
+											parsed?.call_id ??
+												parsed?.item_id,
+										);
+									if (resolvedId) {
+										const existing =
+											streamToolCalls.get(resolvedId);
+										const toolCalls =
+											extractResponseToolCalls({
+												output: [
+													{
+														type: "function_call",
+														id: resolvedId,
+														call_id: resolvedId,
+														name:
+															parsed?.name ??
+															existing?.name,
+														arguments:
+															parsed?.arguments ??
+															existing?.inputText,
+														status: "completed",
+													},
+												],
+											});
+										for (const toolCall of toolCalls) {
+											upsertStreamToolCall(toolCall);
+											upsertToolTrace(toolCall.id);
+											toolCallUpdated = true;
+										}
+									}
+								} else if (
+									frameType === "response.output_text.delta"
+								) {
+									if (typeof parsed?.delta === "string") {
+										delta = parsed.delta;
+									}
+								} else if (
+									frameType === "response.reasoning.delta" ||
+									frameType === "response.reasoning_text.delta"
+								) {
+									if (typeof parsed?.delta === "string") {
+										reasoningDelta = parsed.delta;
+									}
+								} else if (
+									frameType ===
+										"response.output_item.delta" &&
+									parsed?.item?.type === "reasoning"
+								) {
+									const deltaText =
+										parsed?.delta?.text ??
+										parsed?.delta?.content ??
+										parsed?.delta;
+									if (typeof deltaText === "string") {
+										reasoningDelta = deltaText;
+									}
+								} else if (
+									frameType ===
+									"response.reasoning_summary_text.delta"
+								) {
+									if (typeof parsed?.delta === "string") {
+										summaryUpdated =
+											appendSummaryDelta(parsed.delta) ||
+											summaryUpdated;
+									}
+								} else if (
+									frameType ===
+									"response.reasoning_summary_text.done"
+								) {
+									if (typeof parsed?.text === "string") {
+										summaryUpdated =
+											setSummaryText(parsed.text) ||
+											summaryUpdated;
+									}
+								} else if (
+									frameType ===
+									"response.reasoning_summary_part.done"
+								) {
+									const partText = parsed?.part?.text;
+									if (
+										typeof partText === "string" &&
+										partText
+									) {
+										if (
+											summaryIndex != null &&
+											!reasoningSummaries[summaryIndex]
+										) {
+											summaryUpdated =
+												setSummaryText(partText) ||
+												summaryUpdated;
+										}
+									}
+								} else if (
+									frameType === "response.output_text.done"
+								) {
+									if (typeof parsed?.text === "string") {
+										responseText = parsed.text;
+									}
+								} else if (
+									frameType ===
+									"response.content_part.done"
+								) {
+									const partText =
+										parsed?.part?.text ??
+										parsed?.content?.text ??
+										parsed?.text;
+									if (typeof partText === "string") {
+										responseText = partText;
+									}
+								} else if (
+									frameType === "error" ||
+									frameType === "response.failed"
+								) {
+									const streamError = parseChatStreamErrorFrame(
+										parsed,
+										frameType,
+									);
+									if (streamError) throw streamError;
+								} else if (frameType === "response.completed") {
+									responseText = extractResponseText(
+										parsed?.response ?? parsed,
+									);
+									for (const toolCall of extractResponseToolCalls(
+										parsed?.response ?? parsed,
+									)) {
+										upsertStreamToolCall(toolCall);
+										upsertToolTrace(toolCall.id);
+										toolCallUpdated = true;
+									}
+									const images = extractResponseImages(
+										parsed?.response ?? parsed,
+									);
+									if (images.length > 0) {
+										assistantContent = appendImagesToText(
+											responseText || assistantContent,
+											images,
+										);
+										responseText = assistantContent;
+									}
+									if (!reasoningContent) {
+										reasoningContent = extractReasoningText(
+											parsed?.response ?? parsed,
+										);
+										if (reasoningContent) {
+											upsertReasoningTrace(
+												reasoningContent,
+											);
+										}
+									}
+								} else {
+									const responseDelta =
+										typeof parsed?.delta === "string"
+											? parsed.delta
+											: typeof parsed?.text === "string"
+												? parsed.text
+												: "";
+									responseText =
+										coerceResponseText(
+											parsed?.response?.output_text,
+										) ||
+										coerceResponseText(parsed?.output_text);
+									delta =
+										parsed?.choices?.[0]?.delta?.content ??
+										parsed?.choices?.[0]?.message
+											?.content ??
+										responseDelta ??
+										"";
+								}
+								if (summaryUpdated) {
+									reasoningContent = rebuildSummaryText();
+									upsertReasoningTrace(reasoningContent);
+									reasoningUpdated = true;
+								}
+								const hasSummary =
+									Object.keys(reasoningSummaries).length > 0;
+								if (delta) {
+									if (!firstTokenAt) {
+										firstTokenAt = performance.now();
+									}
+									markChatPerformance(
+										performanceRunId,
+										"stream-first-token",
+									);
+									assistantContent += delta;
+									upsertResponseTrace(assistantContent);
+									if (reasoningDelta && !hasSummary) {
+										if (
+											!reasoningContent.endsWith(
+												reasoningDelta,
+											)
+										) {
+											reasoningContent += reasoningDelta;
+										}
+										upsertReasoningTrace(reasoningContent);
+									}
+									scheduleUpdate(buildStreamingMetaPartial());
+								} else if (reasoningDelta && !hasSummary) {
+									if (!firstTokenAt) {
+										firstTokenAt = performance.now();
+									}
+									markChatPerformance(
+										performanceRunId,
+										"stream-first-token",
+									);
+									if (
+										!reasoningContent.endsWith(
+											reasoningDelta,
+										)
+									) {
+										reasoningContent += reasoningDelta;
+									}
+									upsertReasoningTrace(reasoningContent);
+									scheduleUpdate(buildStreamingMetaPartial());
+								} else if (reasoningUpdated) {
+									scheduleUpdate(buildStreamingMetaPartial());
+								} else if (
+									responseText &&
+									responseText !== assistantContent
+								) {
+									if (!firstTokenAt) {
+										firstTokenAt = performance.now();
+									}
+									markChatPerformance(
+										performanceRunId,
+										"stream-first-token",
+									);
+									assistantContent = responseText;
+									upsertResponseTrace(assistantContent);
+									scheduleUpdate(buildStreamingMetaPartial());
+								} else if (toolCallUpdated) {
+									scheduleUpdate(buildStreamingMetaPartial());
+								}
+						} catch (error) {
+							if (error instanceof SyntaxError) continue;
+							throw error;
+						}
+					}
+				}
+
+				const pendingClientDatetimeToolCalls =
+					getPendingClientDatetimeToolCalls();
+				if (pendingClientDatetimeToolCalls.length > 0) {
+					const toolResults = buildClientDatetimeToolResults(
+						pendingClientDatetimeToolCalls,
+						getDefaultDatetimeTimezones(),
+					);
+					if (toolResults) {
+						for (const result of toolResults) {
+							const toolCall = streamToolCalls.get(result.toolCallId);
+							if (!toolCall) continue;
+							upsertStreamToolCall({
+								...toolCall,
+								output: result.content,
+								status: "completed",
+							});
+						}
+						scheduleUpdate(buildStreamingMetaPartial());
+						const continuationInput = [
+							...input,
+							...pendingClientDatetimeToolCalls.map((toolCall) => ({
+								type: "function_call",
+								call_id: toolCall.id,
+								name: toolCall.name,
+								arguments:
+									toolCall.inputText ??
+									JSON.stringify(toolCall.input ?? {}),
+							})),
+							...toolResults.map((result) => ({
+								type: "function_call_output",
+								call_id: result.toolCallId,
+								output: result.content,
+							})),
+						];
+						const continuationBody = {
+							...requestBody,
+							input: continuationInput,
+							stream: false,
+							tools: undefined,
+							tool_choice: undefined,
+						};
+						const continuationResponse = await fetchChatWebApi(
+							"/api/chat/text",
+							{
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify({
+									baseUrl: base,
+									requestBody: continuationBody,
+									appHeaders: APP_HEADERS,
+									debug: shouldDebug,
+								}),
+							},
+						);
+						if (continuationResponse.ok) {
+							const contentType =
+								continuationResponse.headers.get(
+									"content-type",
+								) ?? "";
+							const continuationData = contentType.includes(
+								"application/json",
+							)
+								? await continuationResponse.json()
+								: {
+										output_text:
+											await continuationResponse.text(),
+									};
+							const continuationText =
+								extractResponseText(continuationData);
+							const continuationImages = extractResponseImages(
+								continuationData,
+							);
+							const nextContent = appendImagesToText(
+								continuationText,
+								continuationImages,
+							);
+							if (nextContent) {
+								assistantContent = nextContent;
+								upsertResponseTrace(assistantContent);
+							}
+							finalUsage =
+								continuationData?.usage ??
+								continuationData?.response?.usage ??
+								finalUsage;
+							finalMeta =
+								extractPayloadMeta(continuationData) ?? finalMeta;
+							finalServiceTier =
+								resolvePayloadServiceTier(continuationData) ??
+								finalServiceTier;
+							finalProviderId =
+								resolvePayloadProviderId(continuationData) ??
+								finalProviderId;
+						} else {
+							throw await parseChatErrorResponse(
+								continuationResponse,
+							);
+						}
+					}
+				}
+
+				await flushPendingStreamUpdate();
+
+				const clientMeta = buildClientMeta(performance.now());
+				const mergedMeta = mergeMeta(clientMeta);
+				if (reasoningContent) {
+					mergedMeta.reasoning_text = reasoningContent;
+				}
+				const toolCalls = getStreamToolCalls();
+				if (toolCalls.length) {
+					mergedMeta.tool_calls = toolCalls;
+				}
+				const traceEvents = getTraceEvents();
+				if (traceEvents.length) {
+					mergedMeta.trace_events = traceEvents;
+				}
+				if (!assistantContent.trim() && !reasoningContent.trim() && toolCalls.length === 0) {
+					const emptyResponseError = new Error(
+						"The provider returned an empty response. Please retry.",
+					) as Error & { code: string };
+					emptyResponseError.code = "empty_response";
+					throw emptyResponseError;
+				}
+				const totalCostUsd = extractTotalCostUsd(finalUsage);
+				if (totalCostUsd) {
+					mergedMeta.total_cost_usd = totalCostUsd;
+				}
+				if (shouldDebug) {
+					// eslint-disable-next-line no-console
+					console.log("[chat] stream final usage/meta", {
+						usage: finalUsage,
+						meta: mergedMeta,
+					});
+				}
+				latestThread = updateAssistantVariant(
+					latestThread,
+					assistantId,
+					variantIndex,
+					assistantContent,
+					finalUsage,
+					mergedMeta,
+					finalProviderId,
+				);
+
+				await updateThreadState(latestThread, !temporaryMode);
+				showChatCompletionNotification();
+				markChatPerformance(performanceRunId, "stream-complete");
+			} catch (err) {
+				markChatPerformance(performanceRunId, "request-error");
+				const message =
+					err instanceof Error
+						? err.message
+						: "Failed to send message.";
+				const structuredError = err as ChatErrorPayload;
+				const errorCode =
+					typeof structuredError?.code === "string"
+						? structuredError.code
+						: "";
+				setError(message);
+				const nextRequestError: ChatRequestErrorDetails = {
+					status:
+						typeof structuredError?.status === "number"
+							? structuredError.status
+							: null,
+					message,
+					errorCode: errorCode || null,
+					requestId:
+						typeof structuredError?.requestId === "string"
+							? structuredError.requestId
+							: null,
+					description:
+						typeof structuredError?.description === "string"
+							? structuredError.description
+							: null,
+					details: Array.isArray(structuredError?.details)
+						? structuredError.details
+						: [],
+					routingDiagnostics:
+						structuredError?.routingDiagnostics ?? null,
+					rawPayload: structuredError?.rawPayload ?? null,
+					modelId: selectedModelId,
+					providerId: effectiveProviderId ?? null,
+					endpoint,
+					timestamp: nowIso(),
+				};
+				setRequestError(nextRequestError);
+				if (latestThread) {
+					const errorMeta = {
+						...(compareMeta ?? {}),
+						...(finalMeta ?? {}),
+						client: buildClientMeta(performance.now()),
+						chat_request_error: nextRequestError,
+					};
+					const existingMessage = latestThread.messages.find(
+						(m) => m.id === streamingMessageId
+					);
+					if (existingMessage) {
+						latestThread = updateAssistantVariant(
+							latestThread,
+							streamingMessageId,
+							variantIndex,
+							message,
+							undefined,
+							errorMeta,
+						);
+					} else {
+						const orgId = getOrgId(selectedModelId);
+						const errorMessage: ChatMessage = {
+							id: generateId(),
+							role: "assistant",
+							content: message,
+							createdAt: nowIso(),
+							modelId: selectedModelId,
+							providerId: latestThread.settings.providerId,
+							providerName:
+								orgNameById[orgId] ?? formatOrgLabel(orgId),
+							variants: [
+								{
+									id: generateId(),
+									content: message,
+									createdAt: nowIso(),
+									meta: errorMeta,
+								},
+							],
+							activeVariantIndex: 0,
+							meta: errorMeta,
+						};
+						latestThread = {
+							...latestThread,
+							messages: [...latestThread.messages, errorMessage],
+							updatedAt: nowIso(),
+						};
+					}
+					await updateThreadState(latestThread, !temporaryMode);
+				}
+			} finally {
+				if (manageSendingState) {
+					setIsSending(false);
+				}
+				markChatPerformance(performanceRunId, "send-complete");
+			}
+		},
+		[
+			apiTarget,
+			baseUrl,
+			isUnified,
+			personalization,
+			shouldDebug,
+			appendAssistantVariant,
+			isProviderSupportedForModel,
+			resolveRequestModelIdForProvider,
+			orgNameById,
+			temporaryMode,
+			updateAssistantVariant,
+			updateThreadState,
+		],
+	);
+
+	const buildThreadForModel = useCallback(
+		(thread: ChatThread, modelId: string): ChatThread => {
+			const effective = getEffectiveModelSettings(thread, modelId);
+			return {
+				...thread,
+				settings: {
+					...thread.settings,
+					...effective,
+				},
+			};
+		},
+		[],
+	);
+	const normalizeThreadForAvailableModels = useCallback(
+		(thread: ChatThread): { thread: ChatThread; changed: boolean } => {
+			if (!thread.modelId) return { thread, changed: false };
+
+			let changed = false;
+			const notices: string[] = [];
+			const currentOverrides = thread.settings.modelOverridesById ?? {};
+			const nextOverrides: Record<string, Partial<ChatModelSettings>> = {};
+			let nextModelId = thread.modelId;
+			let nextSystemPrompt = thread.settings.systemPrompt;
+
+			const primaryResolution = resolveReplacementModelId(thread.modelId, {
+				allowDefaultFallback: true,
+			});
+			if (
+				primaryResolution.modelId &&
+				primaryResolution.modelId !== thread.modelId
+			) {
+				const previousDisplayName =
+					currentOverrides[thread.modelId]?.displayName ?? "";
+				const nextDisplayName =
+					currentOverrides[primaryResolution.modelId]?.displayName ?? "";
+				if (
+					!thread.settings.systemPrompt ||
+					isGeneratedDefaultSystemPrompt(
+						thread.settings.systemPrompt,
+						thread.modelId,
+						previousDisplayName,
+					)
+				) {
+					nextSystemPrompt = buildDefaultSystemPrompt(
+						primaryResolution.modelId,
+						nextDisplayName,
+					);
+				}
+				nextModelId = primaryResolution.modelId;
+				changed = true;
+				notices.push(
+					primaryResolution.reason === "successor"
+						? `Primary model \`${thread.modelId}\` is no longer available. Switched to its latest available successor \`${primaryResolution.modelId}\`.`
+						: `Primary model \`${thread.modelId}\` is no longer available. Switched to fallback model \`${primaryResolution.modelId}\`.`,
+				);
+			}
+
+			const nextCompareModelIds: string[] = [];
+			for (const compareModelId of thread.settings.compareModelIds ?? []) {
+				if (!compareModelId || compareModelId === nextModelId) continue;
+				const compareResolution = resolveReplacementModelId(compareModelId);
+				if (!compareResolution.modelId) {
+					changed = true;
+					notices.push(
+						`Removed compare model \`${compareModelId}\` because it is no longer available.`,
+					);
+					continue;
+				}
+				if (compareResolution.modelId !== compareModelId) {
+					changed = true;
+					notices.push(
+						`Compare model \`${compareModelId}\` is no longer available. Switched to successor \`${compareResolution.modelId}\`.`,
+					);
+				}
+				if (
+					compareResolution.modelId !== nextModelId &&
+					!nextCompareModelIds.includes(compareResolution.modelId)
+				) {
+					nextCompareModelIds.push(compareResolution.modelId);
+				}
+			}
+
+			const selectedModelIds = new Set<string>([
+				nextModelId,
+				...nextCompareModelIds,
+			]);
+			for (const [modelId, override] of Object.entries(currentOverrides)) {
+				if (!selectedModelIds.has(modelId)) {
+					changed = true;
+					continue;
+				}
+				const nextOverride = { ...override };
+				if (!isProviderSupportedForModel(modelId, nextOverride.providerId)) {
+					nextOverride.providerId = "auto";
+					changed = true;
+					notices.push(
+						`Provider lock \`${override.providerId}\` for \`${modelId}\` is no longer available. Reset to \`Auto (Gateway)\`.`,
+					);
+				}
+				nextOverrides[modelId] = nextOverride;
+			}
+
+			const primaryOverride = nextOverrides[nextModelId];
+			const primaryProviderId =
+				primaryOverride?.providerId ?? thread.settings.providerId;
+			let nextProviderId = thread.settings.providerId;
+			if (!isProviderSupportedForModel(nextModelId, primaryProviderId)) {
+				if (primaryOverride?.providerId !== undefined) {
+					nextOverrides[nextModelId] = {
+						...primaryOverride,
+						providerId: "auto",
+					};
+				} else {
+					nextProviderId = "auto";
+				}
+				changed = true;
+				notices.push(
+					`Provider lock \`${primaryProviderId}\` for \`${nextModelId}\` is no longer available. Reset to \`Auto (Gateway)\`.`,
+				);
+			}
+
+			const nextThread: ChatThread = {
+				...thread,
+				modelId: nextModelId,
+				settings: {
+					...thread.settings,
+					systemPrompt: nextSystemPrompt,
+					providerId: nextProviderId,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: ensureModelOverridesForIds(
+						{
+							...thread.settings,
+							systemPrompt: nextSystemPrompt,
+							providerId: nextProviderId,
+							compareModelIds: nextCompareModelIds,
+							compareMode: nextCompareModelIds.length > 0,
+							modelOverridesById: nextOverrides,
+						},
+						[nextModelId, ...nextCompareModelIds],
+					),
+				},
+				updatedAt: changed ? nowIso() : thread.updatedAt,
+			};
+
+			if (notices.length > 0) {
+				const noticeKey = notices.join("||");
+				const hasNotice = nextThread.messages.some(
+					(message) =>
+						(message.meta as { chat_state_notice_key?: string } | null)
+							?.chat_state_notice_key === noticeKey,
+				);
+				if (!hasNotice) {
+					changed = true;
+					nextThread.messages = [
+						...nextThread.messages,
+						{
+							id: generateId(),
+							role: "assistant",
+							content: [
+								"Updated this chat to match current model availability:",
+								...notices.map((notice) => `- ${notice}`),
+							].join("\n"),
+							createdAt: nowIso(),
+							modelId: nextThread.modelId,
+							meta: {
+								chat_state_notice_key: noticeKey,
+								chat_state_notice_type: "availability_migration",
+							},
+						},
+					];
+					nextThread.updatedAt = nowIso();
+				}
+			}
+
+			return { thread: nextThread, changed };
+		},
+		[
+			isProviderSupportedForModel,
+			resolveReplacementModelId,
+		],
+	);
+	useEffect(() => {
+		if (!threads.length || !selectableModels.length) return;
+		let cancelled = false;
+		(async () => {
+			const normalizedThreads = threads.map((thread) =>
+				normalizeThreadForAvailableModels(thread),
+			);
+			const changedThreads = normalizedThreads
+				.filter((result) => result.changed)
+				.map((result) => result.thread);
+			if (!changedThreads.length) return;
+			await Promise.all(
+				changedThreads.map((thread) => upsertChat(thread, "text")),
+			);
+			if (cancelled) return;
+			setThreads(normalizedThreads.map((result) => result.thread));
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [normalizeThreadForAvailableModels, selectableModels.length, threads]);
+
+	const handleSend = useCallback(
+		async (payload: ChatSendPayload) => {
+			const performanceRunId = payload.performanceRunId;
+			markChatPerformance(performanceRunId, "playground-send-received");
+			if (!activeThread || isSending) return false;
+			const content = buildUserMessageContent(payload);
+			if (!content.trim() && payload.attachments.length === 0) return false;
+			if (!isAuthenticated) {
+				setError(tChat("errors.signInToChat"));
+				return false;
+			}
+			if (!activeThread.modelId) {
+				setError(tChat("errors.selectModelToChat"));
+				setModelPickerOpen(true);
+				return false;
+			}
+			const effectiveModelSettings = getEffectiveModelSettings(
+				activeThread,
+				activeThread.modelId,
+			);
+			const effectiveProviderId = isProviderSupportedForModel(
+				activeThread.modelId,
+				effectiveModelSettings.providerId,
+			)
+				? effectiveModelSettings.providerId
+				: "auto";
+			const requestExecutionModelId = resolveRequestModelIdForProvider(
+				activeThread.modelId,
+				effectiveProviderId,
+			);
+			const reasoningEffortSupport = getModelReasoningEffortSupport({
+				models,
+				modelId: activeThread.modelId,
+				providerId: effectiveProviderId,
+				requestModelId:
+					effectiveProviderId === "auto" ? null : requestExecutionModelId,
+			});
+			const resolvedReasoningEffort = resolveChatReasoningEffort(
+				effectiveModelSettings.reasoningEffort ?? "medium",
+				reasoningEffortSupport,
+			);
+			let inlineAttachmentPreviews: Awaited<
+				ReturnType<typeof prepareInlineAttachmentPreviews>
+			> = [];
+			if (payload.attachments.length) {
+				try {
+					inlineAttachmentPreviews = await prepareInlineAttachmentPreviews(
+						payload.attachments,
+					);
+				} catch {
+					inlineAttachmentPreviews = [];
+				}
+			}
+
+			const userMessageMeta: Record<string, unknown> = {
+				request_context: {
+					model_id: activeThread.modelId,
+					compare_model_ids: activeThread.settings.compareModelIds ?? [],
+					reasoning_enabled: Boolean(activeThread.settings.reasoningEnabled),
+					reasoning_effort: resolvedReasoningEffort,
+					web_search_enabled: payload.webSearchEnabled,
+					api_server_tools_enabled: payload.apiServerToolsEnabled,
+					server_tools: payload.serverTools,
+					server_tool_configs: payload.serverToolConfigs,
+					attachments_count: payload.attachments.length,
+				},
+			};
+			if (inlineAttachmentPreviews.length) {
+				userMessageMeta.attachment_previews = inlineAttachmentPreviews;
+			}
+
+			const userMessage: ChatMessage = {
+				id: generateId(),
+				role: "user",
+				content,
+				createdAt: nowIso(),
+				meta: userMessageMeta,
+			};
+			linkChatPerformanceMessage(performanceRunId, userMessage.id);
+			markChatPerformance(performanceRunId, "user-message-created");
+
+			const nextTitle = activeThread.titleLocked
+				? activeThread.title
+				: buildTitle(
+						[...(activeThread.messages ?? []), userMessage],
+						tChat("defaultTitle"),
+					);
+
+			let updatedThread: ChatThread = {
+				...activeThread,
+				title: nextTitle,
+				messages: [...activeThread.messages, userMessage],
+				updatedAt: nowIso(),
+			};
+			const normalizedOverrides = ensureModelOverridesForIds(
+				updatedThread.settings,
+				[
+					updatedThread.modelId,
+					...(updatedThread.settings.compareModelIds ?? []),
+				],
+			);
+			if (normalizedOverrides !== updatedThread.settings.modelOverridesById) {
+				updatedThread = {
+					...updatedThread,
+					settings: {
+						...updatedThread.settings,
+						modelOverridesById: normalizedOverrides,
+					},
+				};
+			}
+
+			markChatPerformance(performanceRunId, "thread-update-start");
+			await updateThreadState(updatedThread, !temporaryMode);
+			markChatPerformance(performanceRunId, "thread-update-complete");
+			const inferredEndpoint: UnifiedChatEndpoint = "responses";
+			if (
+				isUnified &&
+				!isModelCapabilityCompatible(
+					updatedThread.modelId,
+					inferredEndpoint,
+				)
+			) {
+				setError(
+					tChat("errors.unsupportedOutputModality"),
+				);
+				setModelPickerOpen(true);
+				return true;
+			}
+			const hasAudioAttachment = payload.attachments.some((file) =>
+				file.type.startsWith("audio/"),
+			);
+			if (
+				hasAudioAttachment &&
+				!supportsModelAudioInput(updatedThread.modelId)
+			) {
+				setError(
+					tChat("errors.unsupportedAudioInput"),
+				);
+				setModelPickerOpen(true);
+				return true;
+			}
+			const candidateModelIds = Array.from(
+				new Set([
+					updatedThread.modelId,
+					...(updatedThread.settings.compareModelIds ?? []),
+				]),
+			).filter(Boolean);
+			const enabledModelIds = candidateModelIds.filter((modelId) => {
+				const modelSettings = getEffectiveModelSettings(
+					updatedThread,
+					modelId,
+				);
+				if (modelSettings.enabled === false) return false;
+				if (
+					isUnified &&
+					!isModelCapabilityCompatible(modelId, inferredEndpoint)
+				) {
+					return false;
+				}
+				if (
+					hasAudioAttachment &&
+					!supportsModelAudioInput(modelId)
+				) {
+					return false;
+				}
+				return true;
+			});
+			if (enabledModelIds.length === 0) {
+				setError(
+						hasAudioAttachment
+							? tChat("errors.noSelectedModelsCanAcceptAudio")
+							: tChat("errors.noSelectedModelsMatchOutput"),
+				);
+				setModelSettingsTargetModelId(updatedThread.modelId);
+				setModelSettingsOpen(true);
+				return true;
+			}
+			if (enabledModelIds.length === 1) {
+				await executeCompletion(
+					buildThreadForModel(updatedThread, enabledModelIds[0]),
+					updatedThread.messages,
+					undefined,
+					payload,
+					undefined,
+					enabledModelIds[0],
+				);
+				return true;
+			}
+			const compareGroupId = generateId();
+			setIsSending(true);
+			try {
+				await Promise.all(
+					enabledModelIds.map((modelId) =>
+						executeCompletion(
+							buildThreadForModel(updatedThread, modelId),
+							updatedThread.messages,
+							undefined,
+							payload,
+							compareGroupId,
+							modelId,
+							false,
+						),
+					),
+				);
+			} finally {
+				setIsSending(false);
+			}
+			return true;
+		},
+		[
+			activeThread,
+			buildThreadForModel,
+			executeCompletion,
+			isProviderSupportedForModel,
+			isModelCapabilityCompatible,
+			isUnified,
+			isSending,
+			isAuthenticated,
+			models,
+			resolveRequestModelIdForProvider,
+			supportsModelAudioInput,
+			tChat,
+			temporaryMode,
+			updateThreadState,
+		],
+	);
+
+	const handleEditMessage = useCallback(
+		async (messageId: string, content: string) => {
+			if (!activeThread || isSending) return;
+			const nextContent = content.trim();
+			if (!nextContent) return;
+			if (!isAuthenticated) {
+				setError(tChat("errors.signInToChat"));
+				return;
+			}
+
+			const messageIndex = activeThread.messages.findIndex(
+				(message) => message.id === messageId,
+			);
+			if (messageIndex < 0) return;
+			const originalMessage = activeThread.messages[messageIndex];
+			if (!originalMessage || originalMessage.role !== "user") return;
+
+			const editedThread = applyMessageUpdate(
+				activeThread,
+				messageId,
+				(message) => {
+					const variants = [
+						...ensureVariants(message),
+						{
+							id: generateId(),
+							content: nextContent,
+							createdAt: nowIso(),
+							usage: null,
+							meta: message.meta ?? null,
+						},
+					];
+					const activeVariantIndex = variants.length - 1;
+					return {
+						...message,
+						content: nextContent,
+						variants,
+						activeVariantIndex,
+					};
+				},
+			);
+
+			const nextTitle = editedThread.titleLocked
+				? editedThread.title
+				: buildTitle(editedThread.messages, tChat("defaultTitle"));
+			const updatedThread = {
+				...editedThread,
+				title: nextTitle,
+				updatedAt: nowIso(),
+			};
+
+			await updateThreadState(updatedThread, !temporaryMode);
+
+			const nextUserMessageIndex = updatedThread.messages.findIndex(
+				(message, index) => index > messageIndex && message.role === "user",
+			);
+			const assistantRangeEnd =
+				nextUserMessageIndex === -1
+					? updatedThread.messages.length
+					: nextUserMessageIndex;
+			const targetAssistants = updatedThread.messages.slice(
+				messageIndex + 1,
+				assistantRangeEnd,
+			).filter((message) => message.role === "assistant");
+			const contextMessages = updatedThread.messages.slice(0, messageIndex + 1);
+
+			setIsSending(true);
+			try {
+				if (targetAssistants.length === 0) {
+					const targetModelId = updatedThread.modelId;
+					await executeCompletion(
+						buildThreadForModel(updatedThread, targetModelId),
+						contextMessages,
+						undefined,
+						undefined,
+						undefined,
+						targetModelId,
+						false,
+					);
+					return;
+				}
+
+				await Promise.all(
+					targetAssistants.map((assistantMessage) => {
+						const targetModelId =
+							assistantMessage.modelId ?? updatedThread.modelId;
+						return executeCompletion(
+							buildThreadForModel(updatedThread, targetModelId),
+							contextMessages,
+							assistantMessage.id,
+							undefined,
+							undefined,
+							targetModelId,
+							false,
+						);
+					}),
+				);
+			} finally {
+				setIsSending(false);
+			}
+		},
+		[
+			activeThread,
+			applyMessageUpdate,
+			buildThreadForModel,
+			executeCompletion,
+			isAuthenticated,
+			isSending,
+			tChat,
+			temporaryMode,
+			updateThreadState,
+		],
+	);
+
+	const handleSelectVariant = useCallback(
+		(messageId: string, variantIndex: number) => {
+			if (!activeThread) return;
+			const message = activeThread.messages.find(
+				(entry) => entry.id === messageId,
+			);
+			if (!message) return;
+			const variants = ensureVariants(message);
+			const selected = variants[variantIndex];
+			if (!selected) return;
+			const nextThread = updateAssistantVariant(
+				activeThread,
+				messageId,
+				variantIndex,
+				selected.content,
+				selected.usage ?? null,
+				selected.meta ?? null,
+			);
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[
+			activeThread,
+			temporaryMode,
+			updateAssistantVariant,
+			updateThreadState,
+		],
+	);
+
+	const handleRetryAssistant = useCallback(
+		async (messageId: string) => {
+			if (!activeThread || isSending) return;
+			if (!isAuthenticated) {
+				setError(tChat("errors.signInToChat"));
+				return;
+			}
+			const messageIndex = activeThread.messages.findIndex(
+				(message) => message.id === messageId,
+			);
+			if (messageIndex < 0) return;
+			const contextMessages = activeThread.messages.slice(
+				0,
+				messageIndex,
+			);
+			const retryPayload = buildRetrySendPayload(contextMessages);
+			const targetModelId =
+				activeThread.messages[messageIndex]?.modelId ??
+				activeThread.modelId;
+			const targetSettings = getEffectiveModelSettings(
+				activeThread,
+				targetModelId,
+			);
+			if (targetSettings.enabled === false) {
+				setError(
+					tChat("errors.modelTurnedOff"),
+				);
+				setModelSettingsTargetModelId(targetModelId);
+				setModelSettingsOpen(true);
+				return;
+			}
+			await executeCompletion(
+				buildThreadForModel(activeThread, targetModelId),
+				contextMessages,
+				messageId,
+				retryPayload,
+				undefined,
+				targetModelId,
+			);
+		},
+		[
+			activeThread,
+			buildThreadForModel,
+			executeCompletion,
+			isAuthenticated,
+			isSending,
+			tChat,
+		],
+	);
+	const handleBranchAssistant = useCallback(
+		async (messageId: string) => {
+			if (!activeThread) return;
+			const messageIndex = activeThread.messages.findIndex(
+				(message) => message.id === messageId,
+			);
+			if (messageIndex < 0) return;
+			setError(null);
+			const createdAt = nowIso();
+			const branchTitle = tChat("branchTitle", {
+				title: activeThread.title || tChat("defaultTitle"),
+			});
+			const messages = activeThread.messages
+				.slice(0, messageIndex + 1)
+				.map((message) => ({
+					...message,
+					usage: message.usage ?? null,
+					meta: message.meta ?? null,
+					variants: message.variants
+						? message.variants.map((variant) => ({
+								...variant,
+								usage: variant.usage ?? null,
+								meta: variant.meta ?? null,
+							}))
+						: undefined,
+				}));
+			const newThread: ChatThread = {
+				id: generateId(),
+				title: branchTitle,
+				titleLocked: false,
+				pinned: false,
+				modelId: activeThread.modelId,
+				createdAt,
+				updatedAt: createdAt,
+				messages,
+				settings: { ...activeThread.settings },
+				...(activeThread.replay ? { replay: activeThread.replay } : {}),
+			};
+		await upsertChat(newThread, "text");
+			setThreads((prev) => [newThread, ...prev]);
+			setActiveThread(newThread);
+		},
+		[activeThread, setActiveThread, tChat],
+	);
+	const updateActiveSettings = useCallback(
+		(partial: Partial<ChatSettings>) => {
+			if (!activeThread) return;
+			const nextThread = {
+				...activeThread,
+				settings: { ...activeThread.settings, ...partial },
+				updatedAt: nowIso(),
+			};
+			updateThreadState(nextThread, !temporaryMode);
+		},
+			[
+				activeThread,
+				temporaryMode,
+				updateThreadState,
+			],
+	);
+
+	const handleOpenUIStateChange = useCallback((messageId: string, variantId: string, state: Record<string, unknown>) => {
+		if (!activeThread || isSending) return;
+		const nextThread = applyMessageUpdate(activeThread, messageId, (message) => updateOpenUIState(message, variantId, state));
+		void updateThreadState(nextThread, !temporaryMode);
+	}, [activeThread, isSending, applyMessageUpdate, updateThreadState, temporaryMode]);
+
+	const updateActiveModel = useCallback(
+		(modelId: string) => {
+			const requiredCapability = getPrimaryCapabilityForModel(modelId);
+			if (
+				!isModelSelectableForContext(
+					modelId,
+					requiredCapability,
+					composerRequiresAudioInput,
+				)
+			) {
+				return;
+			}
+			if (!activeThread) {
+				const defaults: ChatSettings = {
+					...DEFAULT_SETTINGS,
+					systemPrompt: buildDefaultSystemPrompt(modelId),
+				};
+				void createThreadWithSettings(modelId, defaults)
+					.then(() => {
+						if (typeof window !== "undefined") {
+							chatLocalStorage.setItem(
+								STORAGE_KEYS.lastModelId,
+								modelId,
+							);
+						}
+					})
+					.catch(() => {
+						setError(tChat("errors.createChatFailed"));
+					});
+				return;
+			}
+			const currentModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					activeThread.modelId
+				]?.displayName ?? "";
+			const nextModelDisplayName =
+				activeThread.settings.modelOverridesById?.[modelId]
+					?.displayName ?? "";
+			const nextCompareModelIds = Array.from(
+				new Set(
+					(activeThread.settings.compareModelIds ?? []).filter(
+						(id) =>
+							id &&
+							id !== modelId &&
+							isModelSelectableForContext(
+								id,
+								requiredCapability,
+								composerRequiresAudioInput,
+							),
+					),
+				),
+			);
+			const nextSystemPrompt =
+				!activeThread.settings.systemPrompt ||
+				isGeneratedDefaultSystemPrompt(
+					activeThread.settings.systemPrompt,
+					activeThread.modelId,
+					currentModelDisplayName,
+				)
+					? buildDefaultSystemPrompt(modelId, nextModelDisplayName)
+					: activeThread.settings.systemPrompt;
+			const nextModelOverrides = ensureModelOverridesForIds(
+				activeThread.settings,
+				[modelId, ...nextCompareModelIds],
+			);
+			const nextThread = {
+				...activeThread,
+				modelId,
+				settings: {
+					...activeThread.settings,
+					systemPrompt: nextSystemPrompt,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: nextModelOverrides,
+				},
+				updatedAt: nowIso(),
+			};
+			const effectiveProviderId =
+				getEffectiveModelSettings(nextThread, modelId).providerId;
+			if (!isProviderSupportedForModel(modelId, effectiveProviderId)) {
+				const currentOverrides =
+					nextThread.settings.modelOverridesById ?? {};
+				const existingModelOverrides = currentOverrides[modelId] ?? {};
+				nextThread.settings = {
+					...nextThread.settings,
+					providerId:
+						existingModelOverrides.providerId === undefined
+							? "auto"
+							: nextThread.settings.providerId,
+					modelOverridesById: {
+						...currentOverrides,
+						[modelId]: {
+							...existingModelOverrides,
+							providerId: "auto",
+						},
+					},
+				};
+			}
+			if (typeof window !== "undefined") {
+				chatLocalStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
+			}
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[
+			activeThread,
+			createThreadWithSettings,
+			getPrimaryCapabilityForModel,
+			isProviderSupportedForModel,
+			isModelSelectableForContext,
+			composerRequiresAudioInput,
+			temporaryMode,
+			updateThreadState,
+		],
+	);
+
+	const removeSelectedModel = useCallback(
+		(modelId: string) => {
+			if (!activeThread) return;
+			const compare = activeThread.settings.compareModelIds ?? [];
+			if (modelId !== activeThread.modelId) {
+				const nextCompare = compare.filter((id) => id !== modelId);
+				updateActiveSettings({
+					compareModelIds: nextCompare,
+					compareMode: nextCompare.length > 0,
+				});
+				return;
+			}
+			if (compare.length === 0) {
+				const nextThread: ChatThread = {
+					...activeThread,
+					modelId: "",
+					settings: {
+						...activeThread.settings,
+						compareModelIds: [],
+						compareMode: false,
+					},
+					updatedAt: nowIso(),
+				};
+				updateThreadState(nextThread, !temporaryMode);
+				return;
+			}
+			const [nextPrimary, ...restCompare] = compare;
+			if (!nextPrimary) return;
+			const nextThread: ChatThread = {
+				...activeThread,
+				modelId: nextPrimary,
+				settings: {
+					...activeThread.settings,
+					compareModelIds: restCompare,
+					compareMode: restCompare.length > 0,
+				},
+				updatedAt: nowIso(),
+			};
+			if (typeof window !== "undefined") {
+				chatLocalStorage.setItem(
+					STORAGE_KEYS.lastModelId,
+					nextPrimary,
+				);
+			}
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[activeThread, temporaryMode, updateActiveSettings, updateThreadState],
+	);
+	const removeAllSelectedModels = useCallback(() => {
+		if (!activeThread) return;
+		const nextThread: ChatThread = {
+			...activeThread,
+			modelId: "",
+			settings: {
+				...activeThread.settings,
+				compareModelIds: [],
+				compareMode: false,
+			},
+			updatedAt: nowIso(),
+		};
+		updateThreadState(nextThread, !temporaryMode);
+	}, [activeThread, temporaryMode, updateThreadState]);
+
+	const updateCompareModelIds = useCallback(
+		(ids: string[]) => {
+			if (!activeThread) return;
+			const requiredCapability = getPrimaryCapabilityForModel(
+				activeThread.modelId,
+			);
+			const nextCompareModelIds = Array.from(
+				new Set(
+					ids.filter(
+						(id) =>
+							id &&
+							id !== activeThread.modelId &&
+							isModelSelectableForContext(
+								id,
+								requiredCapability,
+								composerRequiresAudioInput,
+							),
+					),
+				),
+			);
+			const nextModelOverrides = ensureModelOverridesForIds(
+				activeThread.settings,
+				[activeThread.modelId, ...nextCompareModelIds],
+			);
+			const nextThread: ChatThread = {
+				...activeThread,
+				settings: {
+					...activeThread.settings,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: nextModelOverrides,
+				},
+				updatedAt: nowIso(),
+			};
+			updateThreadState(nextThread, !temporaryMode);
+		},
+			[
+				activeThread,
+				composerRequiresAudioInput,
+				getPrimaryCapabilityForModel,
+				isModelSelectableForContext,
+				temporaryMode,
+				updateThreadState,
+			],
+	);
+
+	const updateSelectedModelOrder = useCallback(
+		(ids: string[]) => {
+			if (!activeThread) return;
+			const currentSelectedIds = [
+				activeThread.modelId,
+				...(activeThread.settings.compareModelIds ?? []),
+			].filter(Boolean);
+			const knownSelectedIds = new Set(currentSelectedIds);
+			const nextSelectedIds = Array.from(
+				new Set(ids.filter((id) => knownSelectedIds.has(id))),
+			);
+			if (nextSelectedIds.length === 0) return;
+			for (const id of currentSelectedIds) {
+				if (!nextSelectedIds.includes(id)) {
+					nextSelectedIds.push(id);
+				}
+			}
+			const [nextPrimaryModelId, ...nextCompareModelIds] =
+				nextSelectedIds;
+			if (!nextPrimaryModelId) return;
+			const currentModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					activeThread.modelId
+				]?.displayName ?? "";
+			const nextModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					nextPrimaryModelId
+				]?.displayName ?? "";
+			const nextSystemPrompt =
+				!activeThread.settings.systemPrompt ||
+				isGeneratedDefaultSystemPrompt(
+					activeThread.settings.systemPrompt,
+					activeThread.modelId,
+					currentModelDisplayName,
+				)
+					? buildDefaultSystemPrompt(
+							nextPrimaryModelId,
+							nextModelDisplayName,
+						)
+					: activeThread.settings.systemPrompt;
+			const nextModelOverrides = ensureModelOverridesForIds(
+				activeThread.settings,
+				[nextPrimaryModelId, ...nextCompareModelIds],
+			);
+			const nextThread: ChatThread = {
+				...activeThread,
+				modelId: nextPrimaryModelId,
+				settings: {
+					...activeThread.settings,
+					systemPrompt: nextSystemPrompt,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: nextModelOverrides,
+				},
+				updatedAt: nowIso(),
+			};
+			if (typeof window !== "undefined") {
+				chatLocalStorage.setItem(
+					STORAGE_KEYS.lastModelId,
+					nextPrimaryModelId,
+				);
+			}
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[activeThread, temporaryMode, updateThreadState],
+	);
+
+	const addComposerModelSet = useCallback(
+		(modelIds: string[]) => {
+			if (!activeThread) return;
+			const currentSelectedIds = [
+				activeThread.modelId,
+				...(activeThread.settings.compareModelIds ?? []),
+			].filter(Boolean);
+			const nextSelectedIds = Array.from(
+				new Set([...currentSelectedIds, ...modelIds.filter(Boolean)]),
+			);
+			const [nextPrimaryModelId, ...candidateCompareIds] =
+				nextSelectedIds;
+			if (!nextPrimaryModelId) return;
+			const requiredCapability =
+				getPrimaryCapabilityForModel(nextPrimaryModelId);
+			if (
+				!isModelSelectableForContext(
+					nextPrimaryModelId,
+					requiredCapability,
+					composerRequiresAudioInput,
+				)
+			) {
+				return;
+			}
+			const nextCompareModelIds = candidateCompareIds.filter((id) =>
+				isModelSelectableForContext(
+					id,
+					requiredCapability,
+					composerRequiresAudioInput,
+				),
+			);
+			const currentModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					activeThread.modelId
+				]?.displayName ?? "";
+			const nextModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					nextPrimaryModelId
+				]?.displayName ?? "";
+			const nextSystemPrompt =
+				!activeThread.settings.systemPrompt ||
+				isGeneratedDefaultSystemPrompt(
+					activeThread.settings.systemPrompt,
+					activeThread.modelId,
+					currentModelDisplayName,
+				)
+					? buildDefaultSystemPrompt(
+							nextPrimaryModelId,
+							nextModelDisplayName,
+						)
+					: activeThread.settings.systemPrompt;
+			const nextModelOverrides = ensureModelOverridesForIds(
+				activeThread.settings,
+				[nextPrimaryModelId, ...nextCompareModelIds],
+			);
+			const nextThread: ChatThread = {
+				...activeThread,
+				modelId: nextPrimaryModelId,
+				settings: {
+					...activeThread.settings,
+					systemPrompt: nextSystemPrompt,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: nextModelOverrides,
+				},
+				updatedAt: nowIso(),
+			};
+			if (typeof window !== "undefined") {
+				chatLocalStorage.setItem(
+					STORAGE_KEYS.lastModelId,
+					nextPrimaryModelId,
+				);
+			}
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[
+			activeThread,
+			composerRequiresAudioInput,
+			getPrimaryCapabilityForModel,
+			isModelSelectableForContext,
+			temporaryMode,
+			updateThreadState,
+		],
+	);
+
+	const toggleComposerModel = useCallback(
+		(modelId: string) => {
+			if (!activeThread) return;
+			if (!activeThread.modelId) {
+				updateActiveModel(modelId);
+				return;
+			}
+			if (activeThread.modelId === modelId) {
+				removeSelectedModel(modelId);
+				return;
+			}
+			const compare = activeThread.settings.compareModelIds ?? [];
+			const nextCompare = compare.includes(modelId)
+				? compare.filter((id) => id !== modelId)
+				: [...compare, modelId];
+			updateCompareModelIds(nextCompare);
+		},
+		[
+			activeThread,
+			removeSelectedModel,
+			updateActiveModel,
+			updateCompareModelIds,
+		],
+	);
+
+	const openModelSettingsForModel = useCallback(
+		(modelId?: string | null) => {
+			const targetModelId = modelId ?? activeThread?.modelId ?? null;
+			if (!targetModelId) return;
+			setModelSettingsTargetModelId(targetModelId);
+			setModelSettingsOpen(true);
+		},
+		[activeThread?.modelId],
+	);
+
+	useEffect(() => {
+		if (!activeThread?.modelId) return;
+		let cancelled = false;
+		let nextThread: ChatThread | null = null;
+		const effectiveSettings = getEffectiveModelSettings(
+			activeThread,
+			activeThread.modelId,
+		);
+		if (
+			!isProviderSupportedForModel(
+				activeThread.modelId,
+				effectiveSettings.providerId,
+			)
+		) {
+			const currentOverrides = activeThread.settings.modelOverridesById ?? {};
+			const existingModelOverrides =
+				currentOverrides[activeThread.modelId] ?? {};
+			nextThread = {
+				...activeThread,
+				settings: {
+					...activeThread.settings,
+					providerId:
+						existingModelOverrides.providerId === undefined
+							? "auto"
+							: activeThread.settings.providerId,
+					modelOverridesById: {
+						...currentOverrides,
+						[activeThread.modelId]: {
+							...existingModelOverrides,
+							providerId: "auto",
+						},
+					},
+				},
+				updatedAt: nowIso(),
+			};
+		}
+		const compatibilityThread = nextThread ?? activeThread;
+		const compareIds = compatibilityThread.settings.compareModelIds ?? [];
+		if (compareIds.length) {
+			const requiredCapability: UnifiedChatEndpoint = "responses";
+			const normalizedCompareIds = compareIds.filter(
+				(id) =>
+					id &&
+					id !== compatibilityThread.modelId &&
+					isModelSelectableForContext(
+						id,
+						requiredCapability,
+						composerRequiresAudioInput,
+					),
+			);
+			const unchanged =
+				normalizedCompareIds.length === compareIds.length &&
+				normalizedCompareIds.every((id, index) => id === compareIds[index]);
+			if (!unchanged) {
+				nextThread = {
+					...compatibilityThread,
+					settings: {
+						...compatibilityThread.settings,
+						compareModelIds: normalizedCompareIds,
+						compareMode: normalizedCompareIds.length > 0,
+					},
+					updatedAt: nowIso(),
+				};
+			}
+		}
+		if (nextThread) {
+			const threadToUpdate = nextThread;
+			queueMicrotask(() => {
+				if (!cancelled) {
+					void updateThreadState(threadToUpdate, !temporaryMode);
+				}
+			});
+		}
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		activeThread,
+		composerRequiresAudioInput,
+		isProviderSupportedForModel,
+		isModelSelectableForContext,
+		tChat,
+		temporaryMode,
+		updateThreadState,
+	]);
+	const activeModelId = activeThread?.modelId ?? null;
+	const activeCompareModelIds = activeThread?.settings.compareModelIds;
+	const activeModelOverrides = activeThread?.settings.modelOverridesById;
+
+	const handleAudioAttachmentRequirementChange = useCallback(
+		(requiresAudioInput: boolean) => {
+			setComposerRequiresAudioInput(requiresAudioInput);
+			if (!requiresAudioInput || !activeModelId) return;
+			if (supportsModelAudioInput(activeModelId)) return;
+			setError(
+				tChat("errors.audioAttachmentNeedsModel"),
+			);
+			setModelPickerOpen(true);
+		},
+		[activeModelId, supportsModelAudioInput, tChat],
+	);
+
+	const handleDeleteThread = async () => {
+		if (deleteTargets.length === 0) return;
+		const targetIds = new Set(deleteTargets.map((thread) => thread.id));
+		await Promise.all(
+			deleteTargets.map((thread) => deleteChat(thread.id, "text")),
+		);
+		setThreads((prev) => prev.filter((thread) => !targetIds.has(thread.id)));
+		if (activeId && targetIds.has(activeId)) {
+			const remaining = threads.filter(
+				(thread) => !targetIds.has(thread.id),
+			);
+			setActiveId(remaining[0]?.id ?? null);
+		}
+		setDeleteOpen(false);
+		setDeleteTargets([]);
+	};
+
+	const requestDeleteThread = (thread: ChatThread) => {
+		setDeleteTargets([thread]);
+		setDeleteOpen(true);
+	};
+
+	const requestDeleteThreads = (targets: ChatThread[]) => {
+		if (targets.length === 0) return;
+		setDeleteTargets(targets);
+		setDeleteOpen(true);
+	};
+
+	const handleDeleteOpenChange = (open: boolean) => {
+		setDeleteOpen(open);
+		if (!open) {
+			setDeleteTargets([]);
+		}
+	};
+
+	const handleRename = (thread: ChatThread) => {
+		setRenameTargetId(thread.id);
+		setRenameValue(thread.title);
+		setRenameOpen(true);
+	};
+
+	const handleRenameSave = async () => {
+		if (!renameTargetId) return;
+		const trimmed = renameValue.trim();
+		if (!trimmed) return;
+		const thread = threads.find((t) => t.id === renameTargetId);
+		if (!thread) return;
+		await updateStoredThread({
+			...thread,
+			title: trimmed,
+			titleLocked: true,
+		});
+		setRenameOpen(false);
+	};
+
+	const handlePinToggle = async (thread: ChatThread) => {
+		await updateStoredThread({
+			...thread,
+			pinned: !thread.pinned,
+		});
+	};
+
+	const handleEditTags = (thread: ChatThread) => {
+		setTagsTargets([thread]);
+		setTagsOpen(true);
+	};
+
+	const handleEditSelectedTags = (targets: ChatThread[]) => {
+		if (targets.length === 0) return;
+		setTagsTargets(targets);
+		setTagsOpen(true);
+	};
+
+	const handleTagsOpenChange = (open: boolean) => {
+		setTagsOpen(open);
+		if (!open) {
+			setTagsTargets([]);
+		}
+	};
+
+	const handleTagsSave = async (tags: ChatTag[]) => {
+		if (tagsTargets.length === 0) return;
+		const targetIds = new Set(tagsTargets.map((target) => target.id));
+		const sortedTags = [...tags].sort(compareChatTags);
+		if (sortedTags.length > 0) {
+			await upsertChatTags(sortedTags);
+			setChatTags((prev) => {
+				const byId = new Map(prev.map((tag) => [tag.id, tag]));
+				for (const tag of sortedTags) {
+					byId.set(tag.id, tag);
+				}
+				return Array.from(byId.values()).sort(compareChatTags);
+			});
+		}
+		const updatedThreads = threads
+			.filter((thread) => targetIds.has(thread.id))
+			.map((thread) => ({
+				...thread,
+				tags: sortedTags,
+			}));
+		await Promise.all(
+			updatedThreads.map((thread) => updateStoredThread(thread)),
+		);
+		handleTagsOpenChange(false);
+	};
+
+	const toggleTemporaryMode = useCallback(() => {
+		if (!temporaryMode) {
+			setPreviousStoredId(activeId);
+			setTemporaryMode(true);
+			setTemporaryThread({
+				id: TEMP_CHAT_ID,
+				sessionId: crypto.randomUUID(),
+				title: tChat("shortcuts.temporaryChatTitle"),
+				titleLocked: true,
+				modelId: activeThread?.modelId ?? defaultModelId,
+				createdAt: nowIso(),
+				updatedAt: nowIso(),
+				messages: [],
+				settings: activeThread?.settings ?? { ...DEFAULT_SETTINGS },
+			});
+			return;
+		}
+		setTemporaryMode(false);
+		setTemporaryThread(null);
+		if (previousStoredId) {
+			setActiveId(previousStoredId);
+		}
+	}, [
+		activeId,
+		activeThread?.modelId,
+		activeThread?.settings,
+		defaultModelId,
+		previousStoredId,
+		setActiveId,
+		temporaryMode,
+	]);
+
+	useEffect(() => {
+		const handleShortcut = (event: KeyboardEvent) => {
+			const key = event.key.toLowerCase();
+			const isShortcutHelpKey =
+				(event.ctrlKey || event.metaKey) &&
+				!event.altKey &&
+				!event.shiftKey &&
+				(key === "/" || event.code === "Slash");
+			if (isShortcutHelpKey) {
+				if (!shortcutHelpOpen && isChatShortcutOverlayOpen()) return;
+				event.preventDefault();
+				setShortcutHelpOpen((open) => !open);
+				return;
+			}
+			const isSearchKey =
+				(event.ctrlKey || event.metaKey) &&
+				!event.altKey &&
+				!event.shiftKey &&
+				key === "k";
+			if (isSearchKey) {
+				if (isChatShortcutOverlayOpen()) return;
+				event.preventDefault();
+				setSearchOpen(true);
+				return;
+			}
+			if (
+				event.repeat ||
+				!(event.ctrlKey || event.metaKey) ||
+				event.altKey ||
+				!event.shiftKey ||
+				isChatShortcutOverlayOpen()
+			) {
+				return;
+			}
+			if (key === "m") {
+				event.preventDefault();
+				if (document.activeElement instanceof HTMLElement) {
+					document.activeElement.blur();
+				}
+				setModelPickerOpen(true);
+				focusChatModelPickerSearch();
+				return;
+			}
+			if (key === "c") {
+				event.preventDefault();
+				void createThread();
+				return;
+			}
+			if (key === "u") {
+				event.preventDefault();
+				toggleTemporaryMode();
+			}
+		};
+		window.addEventListener("keydown", handleShortcut);
+		return () => window.removeEventListener("keydown", handleShortcut);
+	}, [createThread, shortcutHelpOpen, toggleTemporaryMode]);
+
+	const selectedModelIds = useMemo(() => {
+		const ids: string[] = [];
+		if (activeModelId) {
+			ids.push(activeModelId);
+		}
+		for (const id of activeCompareModelIds ?? []) {
+			if (!id || id === activeModelId) continue;
+			ids.push(id);
+		}
+		return Array.from(new Set(ids));
+	}, [activeCompareModelIds, activeModelId]);
+	const selectedModelReasoningSupports = useMemo(
+		() =>
+			selectedModelIds.map((modelId) => {
+				const modelSettings = activeThread
+					? getEffectiveModelSettings(activeThread, modelId)
+					: DEFAULT_SETTINGS;
+				const providerId = isProviderSupportedForModel(
+					modelId,
+					modelSettings.providerId,
+				)
+					? modelSettings.providerId
+					: "auto";
+				return {
+					modelId,
+					support: getModelReasoningEffortSupport({
+						models,
+						modelId,
+						providerId,
+						requestModelId:
+							providerId === "auto"
+								? null
+								: resolveRequestModelIdForProvider(modelId, providerId),
+					}),
+				};
+			}),
+		[
+			activeThread,
+			isProviderSupportedForModel,
+			models,
+			resolveRequestModelIdForProvider,
+			selectedModelIds,
+		],
+	);
+	const selectedReasoningEffortSupport = useMemo(() => {
+		const combined = combineReasoningEffortSupports(
+			selectedModelReasoningSupports.map((entry) => entry.support),
+		);
+		if (combined?.supportedValues.length) return combined;
+		const primaryModelId = activeThread?.modelId ?? selectedModelIds[0];
+		return (
+			selectedModelReasoningSupports.find(
+				(entry) => entry.modelId === primaryModelId,
+			)?.support ??
+			selectedModelReasoningSupports.find((entry) => entry.support)?.support ??
+			null
+		);
+	}, [activeThread?.modelId, selectedModelIds, selectedModelReasoningSupports]);
+	const reasoningOptions = useMemo(() => {
+		return filterReasoningEffortOptions(
+			REASONING_OPTIONS,
+			selectedReasoningEffortSupport,
+		);
+	}, [selectedReasoningEffortSupport]);
+	const selectedReasoningEffort = resolveChatReasoningEffort(
+		activeThread?.settings.reasoningEffort ??
+			DEFAULT_SETTINGS.reasoningEffort ??
+			"medium",
+		selectedReasoningEffortSupport,
+	);
+	const selectedModelDisplayNameById = useMemo(() => {
+		const labels: Record<string, string> = {};
+		for (const modelId of selectedModelIds) {
+			const model = models.find(
+				(entry) =>
+					entry.selectorModelId === modelId || entry.modelId === modelId,
+			);
+			const defaultLabel = model?.modelName ?? formatModelLabel(modelId);
+			const overrideLabel =
+				activeModelOverrides?.[modelId]?.displayName?.trim();
+			labels[modelId] = overrideLabel || defaultLabel;
+		}
+		return labels;
+	}, [activeModelOverrides, models, selectedModelIds]);
+	const selectedModelEnabledById = useMemo(() => {
+		const enabledById: Record<string, boolean> = {};
+		for (const modelId of selectedModelIds) {
+			enabledById[modelId] =
+				activeModelOverrides?.[modelId]?.enabled !== false;
+		}
+		return enabledById;
+	}, [activeModelOverrides, selectedModelIds]);
+	const modelSettingsChoices = useMemo(
+		() => {
+			const requiredCapability = activeModelCapability;
+			const requiresAudioInput = composerRequiresAudioInput;
+			const byId = new Map<
+				string,
+				{
+					id: string;
+					label: string;
+					orgId: string;
+					orgName: string;
+					releaseDate: string | null;
+					disabled: boolean;
+				}
+			>();
+			const orderedOptions = [
+				...modelOptions.active,
+				...modelOptions.comingSoon,
+			];
+			for (const model of orderedOptions) {
+				const selectorModelId = model.modelId;
+				const modelCapabilities = getModelCapabilities(selectorModelId);
+				if (
+					requiredCapability &&
+					!modelCapabilities.includes(requiredCapability)
+				) {
+					continue;
+				}
+				if (
+					requiresAudioInput &&
+					!supportsModelAudioInput(selectorModelId)
+				) {
+					continue;
+				}
+				if (byId.has(selectorModelId)) continue;
+				// Keep selector labels canonical; nicknames are display-only in chat UI.
+				const baseLabel =
+					model.label || formatModelLabel(selectorModelId);
+				const isDisabled =
+					activeModelOverrides?.[selectorModelId]?.enabled === false;
+				byId.set(selectorModelId, {
+					id: selectorModelId,
+					label: isDisabled ? `${baseLabel} (Off)` : baseLabel,
+					orgId: model.orgId,
+					orgName: model.orgName,
+					releaseDate: model.releaseDate,
+					disabled:
+						model.gatewayStatus === "inactive" ||
+						model.chatBlockedReasons.length > 0,
+				});
+			}
+			return Array.from(byId.values());
+		},
+			[
+				activeModelCapability,
+				activeModelOverrides,
+				composerRequiresAudioInput,
+				getModelCapabilities,
+				modelOptions.active,
+				modelOptions.comingSoon,
+				supportsModelAudioInput,
+			],
+	);
+	const selectedModelLabel = useMemo(() => {
+		if (!activeModelId) return "Select model";
+		return (
+			selectedModelDisplayNameById[activeModelId] ??
+			formatModelLabel(activeModelId)
+		);
+	}, [activeModelId, selectedModelDisplayNameById]);
+	const selectedModelsHint = useMemo(() => {
+		if (selectedModelIds.length <= 1) {
+			if (!activeModelId) return "Select model";
+			const activeLabel =
+				selectedModelDisplayNameById[activeModelId] ?? activeModelId;
+			return selectedModelEnabledById[activeModelId] === false
+				? `${activeLabel} (Off)`
+				: activeLabel;
+		}
+		const preview = selectedModelIds
+			.slice(0, 5)
+			.map((modelId) => {
+				const label = selectedModelDisplayNameById[modelId] ?? modelId;
+				return selectedModelEnabledById[modelId] === false
+					? `${label} (Off)`
+					: label;
+			});
+		const overflow = Math.max(0, selectedModelIds.length - preview.length);
+		const label = preview.join(", ");
+		return overflow > 0 ? `${label} +${overflow}` : label;
+	}, [
+		activeModelId,
+		selectedModelDisplayNameById,
+		selectedModelEnabledById,
+		selectedModelIds,
+	]);
+	const modelSettingsModelId =
+		modelSettingsTargetModelId ?? activeModelId;
+	const activeModelSettings = useMemo(() => {
+		if (!activeThread || !modelSettingsModelId) return null;
+		return getEffectiveModelSettings(activeThread, modelSettingsModelId);
+	}, [activeThread, modelSettingsModelId]);
+	const dialogModelSettings: ChatModelSettings = useMemo(() => {
+		if (activeModelSettings) return activeModelSettings;
+		const fallbackModelId = modelSettingsModelId ?? activeModelId ?? "";
+		const fallbackDisplayName =
+			activeModelOverrides?.[fallbackModelId]?.displayName ?? "";
+		return {
+			temperature: DEFAULT_SETTINGS.temperature,
+			maxOutputTokens: DEFAULT_SETTINGS.maxOutputTokens,
+			topP: DEFAULT_SETTINGS.topP,
+			topK: DEFAULT_SETTINGS.topK,
+			minP: DEFAULT_SETTINGS.minP,
+			topA: DEFAULT_SETTINGS.topA,
+			presencePenalty: DEFAULT_SETTINGS.presencePenalty,
+			frequencyPenalty: DEFAULT_SETTINGS.frequencyPenalty,
+			repetitionPenalty: DEFAULT_SETTINGS.repetitionPenalty,
+			seed: DEFAULT_SETTINGS.seed,
+			systemPrompt: buildDefaultSystemPrompt(
+				fallbackModelId,
+				fallbackDisplayName,
+			),
+			stream: DEFAULT_SETTINGS.stream,
+			providerId: DEFAULT_SETTINGS.providerId,
+			serviceTier: DEFAULT_SETTINGS.serviceTier,
+			reasoningEnabled: DEFAULT_SETTINGS.reasoningEnabled,
+			reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
+			endpoint: DEFAULT_SETTINGS.endpoint,
+			webSearchEnabled: DEFAULT_SETTINGS.webSearchEnabled,
+			apiServerToolsEnabled: DEFAULT_SETTINGS.apiServerToolsEnabled,
+			serverTools: DEFAULT_SETTINGS.serverTools,
+			serverToolConfigs: DEFAULT_SETTINGS.serverToolConfigs,
+			imageOutputEnabled: DEFAULT_SETTINGS.imageOutputEnabled,
+			enabled: true,
+			displayName: "",
+		};
+	}, [
+		activeModelSettings,
+		activeModelId,
+		activeModelOverrides,
+		modelSettingsModelId,
+	]);
+	const dialogReasoningEffortSupport = useMemo(() => {
+		if (!modelSettingsModelId) return null;
+		const providerId = isProviderSupportedForModel(
+			modelSettingsModelId,
+			dialogModelSettings.providerId,
+		)
+			? dialogModelSettings.providerId
+			: "auto";
+		return getModelReasoningEffortSupport({
+			models,
+			modelId: modelSettingsModelId,
+			providerId,
+			requestModelId:
+				providerId === "auto"
+					? null
+					: resolveRequestModelIdForProvider(modelSettingsModelId, providerId),
+		});
+	}, [
+		dialogModelSettings.providerId,
+		isProviderSupportedForModel,
+		modelSettingsModelId,
+		models,
+		resolveRequestModelIdForProvider,
+	]);
+	const dialogReasoningEffort = resolveChatReasoningEffort(
+		dialogModelSettings.reasoningEffort ?? "medium",
+		dialogReasoningEffortSupport,
+	);
+	const dialogServiceTierSupport = useMemo(() => {
+		if (!modelSettingsModelId) return null;
+		const providerId = isProviderSupportedForModel(
+			modelSettingsModelId,
+			dialogModelSettings.providerId,
+		)
+			? dialogModelSettings.providerId
+			: "auto";
+		return getModelServiceTierSupport({
+			models,
+			modelId: modelSettingsModelId,
+			providerId,
+			requestModelId:
+				providerId === "auto"
+					? null
+					: resolveRequestModelIdForProvider(modelSettingsModelId, providerId),
+		});
+	}, [
+		dialogModelSettings.providerId,
+		isProviderSupportedForModel,
+		modelSettingsModelId,
+		models,
+		resolveRequestModelIdForProvider,
+	]);
+	const dialogServiceTier = resolveChatServiceTier(
+		dialogModelSettings.serviceTier ?? "standard",
+	);
+	const dialogServiceTierOptions = getServiceTierOptions(dialogServiceTierSupport);
+	const temperatureValue = activeModelSettings?.temperature ?? 0.7;
+	const maxTokensValue = activeModelSettings?.maxOutputTokens ?? 800;
+	const topPValue = activeModelSettings?.topP ?? 1;
+	const topKValue = activeModelSettings?.topK ?? 40;
+	const minPValue = activeModelSettings?.minP ?? 0;
+	const topAValue = activeModelSettings?.topA ?? 0;
+	const frequencyValue = activeModelSettings?.frequencyPenalty ?? 0;
+	const presenceValue = activeModelSettings?.presencePenalty ?? 0;
+	const repetitionValue = activeModelSettings?.repetitionPenalty ?? 1;
+
+	const updateModelSettingsForModel = useCallback(
+		(modelId: string, partial: Partial<ChatModelSettings>) => {
+			if (!activeThread || !modelId) return;
+			const currentOverrides = activeThread.settings.modelOverridesById ?? {};
+			const existingModelOverrides = currentOverrides[modelId] ?? {};
+			const nextPartial = { ...partial };
+			if (typeof partial.displayName === "string" && partial.systemPrompt === undefined) {
+				const previousDisplayName =
+					typeof existingModelOverrides.displayName === "string"
+						? existingModelOverrides.displayName
+						: "";
+				const nextDisplayName = partial.displayName;
+				const nextDefaultPrompt = buildDefaultSystemPrompt(
+					modelId,
+					nextDisplayName,
+				);
+				const currentEffectiveSystemPrompt = getEffectiveModelSettings(
+					activeThread,
+					modelId,
+				).systemPrompt;
+				const hasExplicitModelPrompt =
+					existingModelOverrides.systemPrompt !== undefined;
+				const isStillOnDefaultTemplate =
+					isGeneratedDefaultSystemPrompt(
+						currentEffectiveSystemPrompt,
+						modelId,
+						previousDisplayName,
+					);
+				if (!hasExplicitModelPrompt || isStillOnDefaultTemplate) {
+					nextPartial.systemPrompt = nextDefaultPrompt;
+				}
+			}
+			const nextModelOverrides = {
+				...existingModelOverrides,
+				...nextPartial,
+			};
+			const nextThread: ChatThread = {
+				...activeThread,
+				settings: {
+					...activeThread.settings,
+					modelOverridesById: {
+						...currentOverrides,
+						[modelId]: nextModelOverrides,
+					},
+				},
+				updatedAt: nowIso(),
+			};
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[
+			activeThread,
+			temporaryMode,
+			updateThreadState,
+		],
+	);
+	const updateModelSettings = useCallback(
+		(partial: Partial<ChatModelSettings>) => {
+			if (!modelSettingsModelId) return;
+			updateModelSettingsForModel(modelSettingsModelId, partial);
+		},
+		[modelSettingsModelId, updateModelSettingsForModel],
+	);
+
+	const updateModelSettingNumber = useCallback(
+		(key: keyof ChatModelSettings, value: number | null) => {
+			updateModelSettings({ [key]: value } as Partial<ChatModelSettings>);
+		},
+		[updateModelSettings],
+	);
+	const applyModelSettingsToAll = useCallback(() => {
+		if (!activeThread || !modelSettingsModelId) return;
+		const selectedIds = Array.from(
+			new Set([
+				activeThread.modelId,
+				...(activeThread.settings.compareModelIds ?? []),
+			]),
+		).filter(Boolean);
+		if (selectedIds.length < 2) return;
+		const sourceSettings = getEffectiveModelSettings(
+			activeThread,
+			modelSettingsModelId,
+		);
+		const { providerId: _ignoredProviderId, ...sharedSettings } =
+			sourceSettings;
+		const currentOverrides = activeThread.settings.modelOverridesById ?? {};
+		const nextOverrides = { ...currentOverrides };
+		for (const modelId of selectedIds) {
+			nextOverrides[modelId] = {
+				...(currentOverrides[modelId] ?? {}),
+				...sharedSettings,
+			};
+		}
+		const nextThread: ChatThread = {
+			...activeThread,
+			settings: {
+				...activeThread.settings,
+				modelOverridesById: nextOverrides,
+			},
+			updatedAt: nowIso(),
+		};
+		updateThreadState(nextThread, !temporaryMode);
+	}, [
+		activeThread,
+		modelSettingsModelId,
+		temporaryMode,
+		updateThreadState,
+	]);
+	const handleModelSettingsModelChange = useCallback(
+		(modelId: string) => {
+			setModelSettingsTargetModelId(modelId);
+			updateActiveModel(modelId);
+		},
+		[updateActiveModel],
+	);
+	const resetModelSettings = useCallback(() => {
+		if (!activeThread || !modelSettingsModelId) return;
+		const currentOverrides = activeThread.settings.modelOverridesById ?? {};
+		if (!(modelSettingsModelId in currentOverrides)) return;
+		const nextOverrides = { ...currentOverrides };
+		delete nextOverrides[modelSettingsModelId];
+		const nextThread: ChatThread = {
+			...activeThread,
+			settings: {
+				...activeThread.settings,
+				modelOverridesById: nextOverrides,
+			},
+			updatedAt: nowIso(),
+		};
+		updateThreadState(nextThread, !temporaryMode);
+	}, [
+		activeThread,
+		modelSettingsModelId,
+		temporaryMode,
+		updateThreadState,
+	]);
+	return (
+		<div className="flex h-full min-h-0 min-w-0 w-full overflow-hidden bg-background text-foreground">
+			<Sidebar collapsible="icon" className="border-r border-border bg-background">
+				<ChatSidebar
+					groupedThreads={groupedThreads}
+					threads={threads}
+					activeId={activeId}
+					temporaryMode={temporaryMode}
+					onCreateThread={createThread}
+					onSearch={() => setSearchOpen(true)}
+					onSelectThread={setActiveThread}
+					onRenameThread={handleRename}
+					onPinToggle={handlePinToggle}
+					onEditTags={handleEditTags}
+					onEditSelectedTags={handleEditSelectedTags}
+					onRequestDelete={requestDeleteThread}
+					onRequestDeleteSelected={requestDeleteThreads}
+					tags={allTags}
+					activeTagId={activeVisibleTagId}
+					onTagFilterChange={setActiveTagId}
+				/>
+				<SidebarRail />
+			</Sidebar>
+			<SidebarInset className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
+				<ChatHeader
+					activeThread={activeThread}
+					modelOptions={modelOptions}
+					modelPickerOpen={modelPickerOpen}
+					onModelPickerOpenChange={setModelPickerOpen}
+					onUpdateModel={updateActiveModel}
+					temporaryMode={temporaryMode}
+					onToggleTemporaryMode={toggleTemporaryMode}
+					onInteractiveAnswersChange={(enabled) => updateActiveSettings({ interactiveAnswers: enabled })}
+					interactiveAnswersDisabled={isSending}
+					onOpenModelSettings={() =>
+						openModelSettingsForModel(activeThread?.modelId ?? null)
+					}
+					settingsOpen={settingsOpen}
+					onSettingsOpenChange={setSettingsOpen}
+					apiTarget={apiTarget}
+					onApiTargetChange={setApiTarget}
+					baseUrl={baseUrl}
+					onBaseUrlChange={setBaseUrl}
+					onSaveSettings={handleSaveSettings}
+					personalization={personalization}
+					onPersonalizationChange={setPersonalization}
+					newChatModelPreference={newChatModelPreference}
+					onNewChatModelPreferenceChange={
+						handleNewChatModelPreferenceChange
+					}
+					onExportChats={handleExportChats}
+					isAdmin={isAdmin}
+					debugEnabled={debugEnabled}
+					onDebugChange={handleDebugChange}
+					responseLayout={responseLayout}
+					onResponseLayoutChange={handleResponseLayoutChange}
+					allowModelCompare
+					compareModelIds={
+						activeThread?.settings.compareModelIds ?? []
+					}
+					onCompareModelIdsChange={updateCompareModelIds}
+					onSelectedModelOrderChange={updateSelectedModelOrder}
+					onRemoveModel={removeSelectedModel}
+					onRemoveAllModels={removeAllSelectedModels}
+					onOpenModelSettingsForModel={openModelSettingsForModel}
+					onUpdateModelSettingsForModel={updateModelSettingsForModel}
+					modelDisplayNameById={selectedModelDisplayNameById}
+					modelEnabledById={selectedModelEnabledById}
+					modelCapabilitiesById={modelCapabilitiesById}
+					modelSupportsAudioInputById={modelSupportsAudioInputById}
+					requiredCapability={activeModelCapability}
+					requireAudioInput={composerRequiresAudioInput}
+				/>
+				<ChatConversation
+					onOpenUIStateChange={handleOpenUIStateChange}
+					activeThread={activeThread}
+					isSending={isSending}
+					temporaryMode={temporaryMode}
+					temporaryReturnThreadId={previousStoredId}
+					mode="unified"
+					webSearchEnabled={
+						activeThread?.settings.webSearchEnabled ?? false
+					}
+					onWebSearchEnabledChange={(enabled) =>
+						updateActiveSettings({ webSearchEnabled: enabled })
+					}
+					apiServerToolsEnabled={
+						activeThread?.settings.apiServerToolsEnabled ??
+						DEFAULT_SETTINGS.apiServerToolsEnabled
+					}
+					serverTools={
+						normalizeServerTools(activeThread?.settings.serverTools)
+					}
+					onServerToolsChange={(serverTools: ChatServerToolType[]) =>
+						updateActiveSettings({
+							serverTools: normalizeServerTools(serverTools),
+							apiServerToolsEnabled: true,
+						})
+					}
+					serverToolConfigs={
+						activeThread?.settings.serverToolConfigs ??
+						DEFAULT_SETTINGS.serverToolConfigs
+					}
+					onServerToolConfigsChange={(
+						serverToolConfigs: ChatServerToolConfigs,
+					) => updateActiveSettings({ serverToolConfigs })}
+					reasoningEnabled={
+						activeThread?.settings.reasoningEnabled ?? false
+					}
+					reasoningEffort={
+						selectedReasoningEffort
+					}
+					reasoningOptions={reasoningOptions}
+					onReasoningEnabledChange={(enabled) =>
+						updateActiveSettings({ reasoningEnabled: enabled })
+					}
+					onReasoningEffortChange={(effort) =>
+						updateActiveSettings({ reasoningEffort: effort })
+					}
+					presetPrompt={queryPrompt}
+					onSend={handleSend}
+					onEditMessage={handleEditMessage}
+					onRetryAssistant={handleRetryAssistant}
+					onBranchAssistant={handleBranchAssistant}
+					onSelectVariant={handleSelectVariant}
+					orgNameById={orgNameById}
+					modelDisplayNameById={modelDisplayNameById}
+					modelOrgIdById={modelOrgIdById}
+					modelLinkById={modelLinkById}
+					isAuthenticated={isAuthenticated}
+					accentColor={personalization.accentColor}
+					selectedModelId={activeThread?.modelId ?? ""}
+					selectedModelLabel={selectedModelLabel}
+					selectedModelCount={selectedModelIds.length}
+					selectedModelsHint={selectedModelsHint}
+					selectedModelIds={selectedModelIds}
+					modelOptions={modelOptions.active}
+					onToggleModel={toggleComposerModel}
+					onOpenModelPicker={() => setModelPickerOpen(true)}
+					onAddModelSet={addComposerModelSet}
+					onAudioAttachmentRequirementChange={
+						handleAudioAttachmentRequirementChange
+					}
+					requestError={requestError}
+					responseLayout={responseLayout}
+				/>
+			</SidebarInset>
+			{modelSettingsOpen ? (
+				<ModelSettingsDialog
+				open={modelSettingsOpen}
+				onOpenChange={(open) => {
+					setModelSettingsOpen(open);
+					if (!open) {
+						setModelSettingsTargetModelId(null);
+					}
+				}}
+				settings={dialogModelSettings}
+				selectedModelId={modelSettingsModelId}
+				modelChoices={modelSettingsChoices}
+				onModelChange={handleModelSettingsModelChange}
+					modelLabel={
+						modelSettingsModelId
+							? models.find((m) => m.modelId === modelSettingsModelId)
+									?.modelName ??
+								formatModelLabel(modelSettingsModelId)
+							: undefined
+					}
+				providerOptions={providerOptions}
+				supportedProvidersForModel={
+					modelSettingsModelId
+						? getSupportedProviderIdsForModel(modelSettingsModelId)
+						: undefined
+				}
+				serviceTierOptions={dialogServiceTierOptions}
+				serviceTier={dialogServiceTier}
+				reasoningSupport={dialogReasoningEffortSupport}
+				reasoningEffort={dialogReasoningEffort}
+				temperatureValue={temperatureValue}
+				maxTokensValue={maxTokensValue}
+				topPValue={topPValue}
+				topKValue={topKValue}
+				minPValue={minPValue}
+				topAValue={topAValue}
+				frequencyValue={frequencyValue}
+				presenceValue={presenceValue}
+				repetitionValue={repetitionValue}
+				onUpdate={updateModelSettings}
+				onUpdateNumber={updateModelSettingNumber}
+				onReset={resetModelSettings}
+				onApplyToAll={applyModelSettingsToAll}
+				canApplyToAll={selectedModelIds.length > 1}
+				/>
+			) : null}
+			<ChatSearchDialog
+				open={searchOpen}
+				onOpenChange={setSearchOpen}
+				threads={sortedThreads}
+				onSelectThread={(thread) => {
+					setActiveThread(thread);
+					setSearchOpen(false);
+				}}
+			/>
+			<ChatRenameDialog
+				open={renameOpen}
+				onOpenChange={setRenameOpen}
+				value={renameValue}
+				onChange={setRenameValue}
+				onSave={handleRenameSave}
+			/>
+			<ChatDeleteDialog
+				open={deleteOpen}
+				onOpenChange={handleDeleteOpenChange}
+				onConfirm={handleDeleteThread}
+				count={deleteTargets.length}
+			/>
+			<ChatTagsDialog
+				key={
+					tagsOpen && tagsTargets.length > 0
+						? tagsTargets.map((thread) => thread.id).join(":")
+						: "chat-tags"
+				}
+				open={tagsOpen}
+				thread={tagsTargets[0] ?? null}
+				threads={tagsTargets}
+				availableTags={allTags}
+				onOpenChange={handleTagsOpenChange}
+				onSave={handleTagsSave}
+			/>
+			<ChatShortcutHelpDialog
+				open={shortcutHelpOpen}
+				onOpenChange={setShortcutHelpOpen}
+			/>
+			<ChatLogImportDialog
+				models={models}
+				fallbackModelId={activeThread?.modelId ?? initialModelId ?? ""}
+				activeWorkspaceId={activeWorkspaceId}
+				onImport={handleImportFromLog}
+			/>
+			<ChatNewChatDialog
+				open={newChatDialogOpen}
+				changes={pendingNewChat?.changes ?? []}
+				onOpenChange={(open) => {
+					setNewChatDialogOpen(open);
+					if (!open) {
+						setPendingNewChat(null);
+					}
+				}}
+				onUseCurrent={() => handleNewChatDecision(true)}
+				onUseDefaults={() => handleNewChatDecision(false)}
+			/>
+		</div>
+	);
+}
+
+export default function ChatPlayground(props: ChatPlaygroundProps) {
+	return (
+		<SidebarProvider defaultOpen contained className="h-full min-w-0 overflow-hidden">
+			<ChatPlaygroundContent {...props} />
+		</SidebarProvider>
+	);
+}

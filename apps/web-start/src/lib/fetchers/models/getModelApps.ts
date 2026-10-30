@@ -1,0 +1,1 @@
+export type ModelAppUsage = { appId: string; title: string; imageUrl: string | null; url: string | null; lastSeen: string | null; totalRequests: number; successfulRequests: number; totalTokens: number };

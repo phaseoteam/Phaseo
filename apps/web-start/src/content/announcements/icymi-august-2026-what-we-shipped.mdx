@@ -1,0 +1,132 @@
+---
+title: "ICYMI: What We Shipped in August 2026"
+shortTitle: "ICYMI: August 2026"
+description: August brought faster coding-tool setup, deeper request tracing, self-service workspace controls, and a thorough provider catalogue cleanup.
+publishedAt: 2026-08-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-august-2026.png
+tags:
+  - ICYMI
+  - Monthly Recap
+  - Product
+  - Models
+draft: false
+---
+
+August was busy, even by our standards. We made Phaseo easier to connect to coding tools, recorded more of what happens to every Gateway request, added self-service workspace controls, and worked through a long overdue provider catalogue cleanup.
+
+This recap covers the work that shipped from **1 August 2026** through **30 August 2026**, based on merged pull requests, release history, and catalogue data for the month.
+
+## What shipped
+
+### Coding tools became easier to connect
+
+The Phaseo CLI can now handle more of the work between installation and a useful first request.
+
+We added standalone publishing, update checks, a `doctor` command, and integrations for OpenCode and other coding agents. One-command harness setup detects supported tools, explains what it will install, and asks before touching local configuration. The CLI can also run model comparisons before you commit an application to one route.
+
+We also added a guided OpenRouter migration. It concentrates on the details that actually change: credentials, base URLs, model identifiers, and request attribution.
+
+The first desktop workspace and Expo mobile client code also landed this month. Neither is a finished client launch yet. They are the starting point for taking the same workspaces, model catalogue, and request history outside the browser.
+
+### Observability now follows the whole request
+
+We now record more of a request's life, including latency, streaming behaviour, usage, provider attempts, and the final routing decision.
+
+August added inter-token latency and cached-input measurement, persisted upstream request attempts, and introduced GenAI OpenTelemetry export. We also improved usage-log inspection, restored request-source attribution, and separated that attribution from the Chat app. Routing views now explain why a provider was selected.
+
+Model performance pages gained better filters, synchronized chart hover states, pricing history, provider details, and weekly return rates. We adjusted the low-volume rules so sparse models can still show useful data without pretending a tiny sample is conclusive. Rankings now stay available when an upstream feed fails.
+
+When a request is slow, expensive, retried, or sent somewhere unexpected, there is now more evidence to explain why.
+
+### Multimodal APIs started sharing the same plumbing
+
+Batch, video, realtime, image, music, transcription, and document workloads all changed this month. Some gained new routes; others needed less glamorous work around billing, ownership, or failure handling.
+
+We tightened ownership, billing, and failure controls in the Batch and Video API pipelines. Realtime relay admission and Durable Object lifecycles also received another pass. Audio providers now follow more consistent contracts, and generated music can make it through the full async lifecycle, including retrieval.
+
+The Gateway added routes for Meta Muse Image 1.0 and several MiniMax media models. Cohere Parse v5 brought document parsing to a standard route tier, while Gemini transcription models expanded audio coverage.
+
+Provider-owned adapters and database-driven configuration are gradually replacing one-off routing code. New modalities can reuse authentication, usage capture, billing, tracing, and fallback instead of arriving with another separate stack to maintain.
+
+### Workspaces gained enterprise controls without an enterprise ticket queue
+
+Self-service Enterprise add-ons launched for SSO, SCIM, directory management, and departments. SCIM gained a service-provider implementation, department entitlements, and safer reconciliation.
+
+Workspace notifications can now be routed to email, Discord, Slack, Microsoft Teams, or custom HTTPS webhooks. Teams can choose destinations per alert instead of treating every notification as one global stream.
+
+Privacy controls now apply across the workspace, provider-policy filters are available in the catalogue, and the Phaseo Trust Centre is live. Model and provider pages also expose clearer retention, regional processing, and data-policy information.
+
+Teams should not need a support thread to find out where requests run, how a provider handles data, who can access a workspace, or where an alert will land. Those answers now live much closer to the settings they affect.
+
+### Chat and Compare shed a lot of small annoyances
+
+None of August's Chat changes is enormous. The combination is noticeable.
+
+Side-by-side comparisons now use wide screens more effectively while keeping message content readable on laptops and tablets. Drafts survive sign-in, model rooms classify more reliably, and the model picker opens when a message has no selected model. Chat also gained activity indicators, acknowledgements, assistant selection actions, and timeline markers when the active model changes.
+
+Mobile model filters now match desktop, global search ranks by relevance, regional provider names appear in results, and catalogue cards show lifecycle state. Compare opens directly and keeps its controls where you left them.
+
+This is mostly friction removal, which is exactly what Chat and Compare needed.
+
+### We audited the provider catalogue, provider by provider
+
+We reviewed model identity, availability, pricing, regions, service tiers, privacy policies, parameter support, and retirement state across the provider catalogue.
+
+That meant checking the major first-party platforms as well as dozens of smaller inference providers. Along the way, we separated provider availability from Phaseo routing status, added standalone free-model records, protected stealth-provider identities, and fixed handling for inactive and external providers.
+
+Pricing now handles time-windowed history, promotions, off-peak rates, tier-specific policies, and clearer discount comparisons. We also renamed the Priority service tier to Fast. That is what developers are choosing, and it is less ambiguous than our old internal label.
+
+The practical result is fewer duplicate records and dead routes. It is also easier to answer the question the catalogue exists for: who can run this model, where, under which policy, and at what price?
+
+## Also shipped
+
+- Presets gained immutable versions, fork lineage, invocation hardening, and feedback observability.
+- Model capability discovery and tool-calling FAQs became available from catalogue surfaces.
+- Server Tools streaming and display behaviour improved.
+- The Models API and MCP surface were modernized around current catalogue data.
+- Provider and lab pages gained broader logo coverage, regional labels, and clearer availability states.
+- Brand assets can now be downloaded in SVG and PNG formats, with light and dark previews.
+- Database access moved to PlanetScale, with lower egress and tagged queries for better diagnosis.
+- Next.js moved to the 16.3 release line, with follow-up compatibility and security updates.
+
+## Model highlights
+
+August's releases covered coding, media, documents, and open weights. No single model owned the whole month.
+
+Z.AI's GLM 5.3 became one of our largest routing efforts of the month. GLM 5.3 Flash followed, with routes across OpenRouter, Baseten, FriendliAI, CrofAI, Morph, Reka, Databricks, AkashML, GMI Cloud, DigitalOcean, Parasail, and others. Qwen's 3.8 family expanded too, adding Max, 2.4T A95B, 27B, and Flash releases.
+
+Google released Gemini 3.7 Flash, while xAI added Grok 4.6 and Grok Imagine Image 2.0. The media side included Muse Spark 1.2, Muse Glimmer 30B, Seedance 2.5, and DeepSeek V4 Flash Vision Exp. Cohere Parse v5 added document parsing, and IBM's Granite 4.2 family arrived in 3B, 8B, and 30B sizes.
+
+Browse the latest release data here:
+
+- [Explore recent updates here](/updates)
+
+## Shipping snapshot
+
+GitHub history shows **557 merged pull requests** between 1 and 30 August. The August changelog records **29 model releases**. Most of the work clustered around coding-tool setup, request tracing, multimodal APIs, workspace administration, and catalogue cleanup.
+
+## Models released in August 2026
+
+The August changelog includes these model releases:
+
+- 3 August: Qwen 3.8 Max (`qwen/qwen3.8-max`) and Namazu (`sakana/namazu`)
+- 5 August: Ling 3.0 Tiny (`inclusionai/ling-3.0-tiny`), Muse Spark 1.2 (`meta/muse-spark-1.2`), Muse Spark 1.2 Contributor (`meta/muse-spark-1.2-contributor`), and Shieldstral 1.0 3B (`mistral/shieldstral-1.0-3b`)
+- 6 August: Solar Pro 4 (`upstage/solar-pro-4`)
+- 7 August: Seedance 2.5 (`bytedance/seedance-2.5`)
+- 10 August: Muse Glimmer 30B (`meta/muse-glimmer-30b`)
+- 11 August: MAI Code 1.1 Flash (`microsoft/mai-code-1.1-flash`), Nemotron 3.5 Lightning 30B A3B (`nvidia/nemotron-3.5-lightning`), and Grok Imagine Image 2.0 (`spacex-ai/grok-imagine-image-2.0`)
+- 12 August: Grok 4.6 (`spacex-ai/grok-4.6`) and Qwen 3.8 2.4T A95B (`qwen/qwen3.8-2.4t-a95b`)
+- 13 August: Gemini 3.7 Flash (`google/gemini-3.7-flash`), OCR 4.1 (`mistral/ocr-4.1`), DeepSeek V4 Pro 0813 (`deepseek/deepseek-v4-pro-0813`), and dots3-note Preview (`dots-studio/dots3-note-prev`)
+- 14 August: GLM 5.3 (`z-ai/glm-5.3`) and Qwen 3.8 27B (`qwen/qwen3.8-27b`)
+- 21 August: DeepSeek V4 Flash Vision Exp (`deepseek/deepseek-v4-flash-vision-exp`)
+- 25 August: Granite 4.2 30B (`ibm/granite-4.2-30b`), Granite 4.2 8B (`ibm/granite-4.2-8b`), and Granite 4.2 3B (`ibm/granite-4.2-3b`)
+- 26 August: Qwen 3.8 Flash (`qwen/qwen3.8-flash`) and GLM 5.3 Flash (`z-ai/glm-5.3-flash`)
+- 27 August: Parse v5.0 (`cohere/parse-v5.0`) and Ling 3.0 Flash Fin (`inclusionai/ling-3.0-flash-fin`)
+- 28 August: Hy4 Preview (`tencent/hy4-preview`)
+
+## Next up
+
+The desktop and mobile foundations are still foundations, and several multimodal paths still have provider-specific edges. September's work is to push those clients further, remove more of those special cases, and make the new routing evidence easier to use when choosing between models and providers.

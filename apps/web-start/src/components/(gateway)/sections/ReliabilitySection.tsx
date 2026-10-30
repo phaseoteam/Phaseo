@@ -1,0 +1,276 @@
+"use client";
+
+import { BarChart3, CircuitBoard } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	ChartContainer,
+	ChartTooltip,
+	ChartTooltipContent,
+} from "@/components/ui/chart";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
+
+function formatPercent(value: number | null | undefined, locale: string, digits = 2): string {
+	const normalized = value == null || Number.isNaN(value) ? 0 : value;
+	return `${new Intl.NumberFormat(locale, {
+		minimumFractionDigits: digits,
+		maximumFractionDigits: digits,
+	}).format(normalized)}%`;
+}
+
+function formatLatency(value: number | null | undefined, locale: string): string {
+	const normalized = value == null || Number.isNaN(value) ? 0 : value;
+	return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Math.round(normalized))} ms`;
+}
+
+function formatHoursAgoTick(
+	value: number | string | null | undefined,
+	locale: string,
+	nowLabel: string,
+	hourAbbreviation: string
+): string {
+	const hours =
+		value == null || Number.isNaN(Number(value))
+			? null
+			: Math.max(0, Math.round(Number(value)));
+
+	if (hours == null) {
+		return "";
+	}
+
+	return hours === 0
+		? nowLabel
+		: `${new Intl.NumberFormat(locale).format(hours)} ${hourAbbreviation}`;
+}
+
+function formatTooltipNumber(
+	value: number | string | null | undefined,
+	unit: string,
+	formatNumber: ReturnType<typeof useDisplayFormatters>["number"]
+): string {
+	if (value == null) return `0 ${unit}`;
+	const numericValue =
+		typeof value === "number" ? value : Number.parseFloat(String(value));
+	if (!Number.isFinite(numericValue)) {
+		return `0 ${unit}`;
+	}
+	return `${formatNumber(numericValue, {
+		maximumFractionDigits: 1,
+		notation: "standard",
+	})} ${unit}`;
+}
+
+interface ReliabilitySectionProps {
+	metrics: GatewayMarketingMetrics;
+}
+
+export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
+	const t = useTranslations("Site.gatewayMarketing.reliability");
+	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatCompactNumber = (value: number | null | undefined) =>
+		format.number(value == null || Number.isNaN(value) ? 0 : value, {
+			maximumFractionDigits: 1,
+		});
+	const formatAbsoluteNumber = (value: number | string | null | undefined) => {
+		if (value == null) return "0";
+		const numericValue = typeof value === "number" ? value : Number.parseFloat(String(value));
+		return Number.isFinite(numericValue) ? format.number(Math.round(numericValue)) : "0";
+	};
+	const formatHourLabel = (iso: string) => format.dateParts(iso, {
+		weekday: "short",
+		hour: "numeric",
+	});
+	const throughputData = (() => {
+		return metrics.timeseries.throughput.map((point) => {
+			const hoursAgo =
+				typeof point.hoursAgo === "number" ? point.hoursAgo : 0;
+			return {
+				...point,
+				label: formatHoursAgoTick(
+					hoursAgo,
+					locale,
+					t("now"),
+					t("hourAbbreviation")
+				),
+				requestsPerHour: point.requests,
+				tokensPerHour: Math.round(point.tokensPerMin * 60),
+				hoursAgo,
+			};
+		});
+	})();
+
+	const tokensSparkline = throughputData.map((point) => ({
+		label: point.label,
+		tokens: point.tokensPerHour,
+	}));
+
+	return (
+		<section id="reliability-open" className="py-16">
+			<div className="mx-auto max-w-7xl space-y-10 px-6 lg:px-8">
+				<div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,500px)]">
+					<div className="space-y-4">
+						<h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+							{t("title")}
+						</h2>
+						<p className="text-sm text-slate-600 dark:text-slate-400">
+							{t("description")}
+						</p>
+					</div>
+					<Card className="border-slate-200">
+						<CardHeader className="space-y-3">
+							<CardTitle className="flex items-center gap-2 text-base">
+								<CircuitBoard className="h-4 w-4 text-slate-500 dark:text-slate-300" />
+								{t("last24Hours")}
+							</CardTitle>
+							<div className="grid grid-cols-2 gap-4 text-sm text-slate-700 dark:text-slate-300">
+								<div className="flex items-center justify-between">
+									<span>{t("uptime")}</span>
+									<span className="font-semibold">
+										{formatPercent(
+											metrics.summary.uptimePct,
+											locale,
+											3
+										)}
+									</span>
+								</div>
+								<div className="flex items-center justify-between">
+									<span>{t("medianLatency")}</span>
+									<span className="font-semibold">
+										{formatLatency(
+											metrics.summary.latencyP50Ms,
+											locale
+										)}
+									</span>
+								</div>
+								<div className="flex items-center justify-between">
+									<span>{t("tokensServed")}</span>
+									<span className="font-semibold">
+										{formatCompactNumber(
+											metrics.summary.tokens24h
+										)}
+									</span>
+								</div>
+								<div className="flex items-center justify-between">
+									<span>{t("modelsSupported")}</span>
+									<span className="font-semibold">
+										{formatAbsoluteNumber(
+											metrics.summary.supportedModels
+										)}
+									</span>
+								</div>
+							</div>
+						</CardHeader>
+					</Card>
+				</div>
+
+				<Card className="border-slate-200">
+					<CardHeader className="space-y-2">
+						<CardTitle className="flex items-center gap-2 text-base">
+							<BarChart3 className="h-4 w-4 text-slate-500 dark:text-slate-300" />
+													{t("tokensPerHour")}
+						</CardTitle>
+						<p className="text-sm text-slate-600 dark:text-slate-400">
+							{t("chartDescription")}
+						</p>
+					</CardHeader>
+					<CardContent>
+						<ChartContainer
+							config={{
+								tokens: {
+									label: t("tokens"),
+									color: "hsl(145 80% 45%)",
+								},
+							}}
+							className="h-[220px] w-full"
+						>
+							<AreaChart data={tokensSparkline}>
+								<defs>
+									<linearGradient
+										id="sparklineFill"
+										x1="0"
+										x2="0"
+										y1="0"
+										y2="1"
+									>
+										<stop
+											offset="5%"
+											stopColor="hsl(210 90% 45%)"
+											stopOpacity={0.25}
+										/>
+										<stop
+											offset="95%"
+											stopColor="hsl(210 90% 45%)"
+											stopOpacity={0}
+										/>
+									</linearGradient>
+								</defs>
+								<CartesianGrid strokeDasharray="3 3" />
+								<XAxis
+									dataKey="label"
+									tickLine={false}
+									axisLine={false}
+									interval={0}
+								/>
+								<YAxis
+									tickFormatter={(value) =>
+										formatCompactNumber(value)
+									}
+									width={68}
+								/>
+								<ChartTooltip
+									content={
+										<ChartTooltipContent
+											className="gap-2.5"
+											labelFormatter={(_, payload) =>
+												(() => {
+													const hoursAgo = payload?.[0]?.payload?.hoursAgo;
+													if (typeof hoursAgo !== "number") return "";
+													return hoursAgo === 0
+														? t("now")
+														: t("hoursAgo", { count: Math.max(0, Math.round(hoursAgo)) });
+												})()
+											}
+											formatter={(value) => {
+												const resolved = Array.isArray(
+													value
+												)
+													? value[0]
+													: value;
+												return (
+													<div className="flex flex-col gap-0.5">
+														<span className="font-mono text-sm font-semibold text-slate-900 dark:text-slate-100">
+															{formatTooltipNumber(
+															resolved,
+															t("tokens"),
+															format.number
+															)}
+														</span>
+														<span className="text-[0.65rem] uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
+														{t("perHour")}
+														</span>
+													</div>
+												);
+											}}
+										/>
+									}
+								/>
+								<Area
+									type="monotone"
+									dataKey="tokens"
+									stroke="hsl(145 80% 45%)"
+									fill="url(#sparklineFill)"
+									strokeWidth={2}
+									dot={false}
+									isAnimationActive={false}
+								/>
+							</AreaChart>
+						</ChartContainer>
+					</CardContent>
+				</Card>
+			</div>
+		</section>
+	);
+}

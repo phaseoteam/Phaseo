@@ -1,0 +1,2559 @@
+"use client";
+
+import { SortableTableHead } from "../SortableTableHead";
+// The dashboard's formats are shared with the mobile app's usage screen.
+import {
+	formatUsageDeltaPercent as formatDeltaPercent,
+	formatUsageNumber as formatNumber,
+	formatUsagePercent as formatPercent,
+	formatUsageUsd as formatCurrency,
+	formatUsageUsdAxis,
+} from "@phaseo/app-kit/format";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React from "react";
+import { useLocale, useTranslations } from "next-intl";
+import {
+	Bar,
+	BarChart,
+	CartesianGrid,
+	Cell,
+	Area,
+	AreaChart,
+	Line,
+	LineChart,
+	Tooltip,
+	XAxis,
+	YAxis,
+} from "recharts";
+import {
+	Blocks,
+	AppWindow,
+	BarChart3,
+	ChevronDown,
+	ChevronUp,
+	ArrowUpRight,
+	Check,
+	ChevronRight,
+	CircleDot,
+	CircleDollarSign,
+	Filter,
+	Hash,
+	KeyRound,
+	LineChart as LineChartIcon,
+	ListFilter,
+	Plus,
+	Search,
+	Settings2,
+	Coins,
+	Table2,
+	UserRound,
+	Workflow,
+	X,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import AppLogo from "@/components/(data)/apps/AppLogo";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+	ChartContainer,
+	ChartTooltipContent,
+	type ChartConfig,
+} from "@/components/ui/chart";
+import {
+	TooltipContent as UiTooltipContent,
+	Tooltip as UiTooltip,
+	TooltipTrigger as UiTooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import type { GuardrailEnforcementMetricsResult } from "@/lib/gateway/usage/guardrailEnforcementMetrics";
+import { formatUsageComparisonRange, type UsageRangePreset } from "@/lib/gateway/usage/timeRange";
+import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
+import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
+import UsageLabelBreakdown from "@/components/(gateway)/usage/UsageLabelBreakdown";
+import LabelFilterSummary from "@/components/(gateway)/usage/LabelFilterSummary";
+import { type RequestClassifierSummary } from "@/components/(gateway)/usage/requestClassifierLabels";
+import { Logo } from "@/components/Logo";
+import type { UsageLabelFacet, UsageLabelSummary } from "@/lib/fetchers/internal/settingsTypes";
+import type {
+	ObservabilityBreakdownItem,
+	ObservabilityData,
+	ObservabilityExploreRow,
+	ObservabilityKpi,
+	ObservabilityRankedItem,
+	ObservabilitySeriesPoint,
+	ObservabilityTab,
+	ObservabilityTrendMetricCharts,
+	ObservabilityTimeSeriesChart,
+} from "./types";
+import {
+	prepareTrendChartData,
+	shouldOpenTrendExplore,
+	stopTrendControlClick,
+} from "./trendChart";
+import { MonthSpendChart } from "./MonthSpendChart";
+
+const CHART_COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#dc2626"];
+
+type ObservabilityFilterField = "workspace" | "key" | "model" | "user";
+type ObservabilityFilterOperator = "include" | "exclude";
+
+type ObservabilityFilter = {
+	id: string;
+	field: ObservabilityFilterField;
+	operator: ObservabilityFilterOperator;
+	values: ObservabilityFilterOption[];
+};
+
+type ObservabilityFilterOption = {
+	value: string;
+	label: string;
+	logoId?: string | null;
+};
+
+const FILTER_FIELDS: Array<{
+	id: ObservabilityFilterField;
+	messageKey: "fieldWorkspace" | "dimensionApiKey" | "dimensionModel" | "fieldUser";
+	icon: React.ComponentType<{ className?: string }>;
+}> = [
+	{ id: "workspace", messageKey: "fieldWorkspace", icon: Workflow },
+	{ id: "key", messageKey: "dimensionApiKey", icon: KeyRound },
+	{ id: "model", messageKey: "dimensionModel", icon: Blocks },
+	{ id: "user", messageKey: "fieldUser", icon: UserRound },
+];
+
+function formatKpiValue(kpi: ObservabilityKpi, value = kpi.value): string {
+	if (kpi.format === "currency") return formatCurrency(value);
+	if (kpi.format === "currency_per_million") return `${formatCurrency(value)}/M`;
+	if (kpi.format === "percent") return formatPercent(value);
+	return formatNumber(value);
+}
+
+function formatCompactDeltaPercent(value: number): string {
+	return `${Math.abs(value).toFixed(1)}%`;
+}
+
+function uniqueOptions(values: string[], limit = 80): ObservabilityFilterOption[] {
+	return Array.from(new Set(values.filter(Boolean)))
+		.sort((a, b) => a.localeCompare(b))
+		.slice(0, limit)
+		.map((value) => ({ value, label: value }));
+}
+
+function buildFilterOptions(data: ObservabilityData, currentWorkspaceLabel: string): Record<
+	ObservabilityFilterField,
+	ObservabilityFilterOption[]
+> {
+	return {
+		workspace: [{ value: "current", label: currentWorkspaceLabel }],
+		key: uniqueOptions(data.exploreRows.map((row) => row.apiKey)),
+		model:
+			data.filterOptions?.models?.length
+				? data.filterOptions.models
+				: uniqueOptions(data.exploreRows.map((row) => row.model)),
+		user: [],
+	};
+}
+
+function filterFieldMessageKey(field: ObservabilityFilterField) {
+	return FILTER_FIELDS.find((item) => item.id === field)?.messageKey ?? "fieldUser";
+}
+
+function FilterSearchBox({
+	value,
+	placeholder,
+	onChange,
+	onEnter,
+}: {
+	value: string;
+	placeholder?: string;
+	onChange: (value: string) => void;
+	onEnter?: () => void;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	return (
+		<div className="relative border-b">
+			<Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+			<Input
+				value={value}
+				onChange={(event) => onChange(event.target.value)}
+				onKeyDown={(event) => {
+					if (event.key === "Enter") onEnter?.();
+				}}
+				placeholder={placeholder ?? t("searchOptions")}
+				className="h-9 rounded-none border-0 pl-9 shadow-none focus-visible:ring-0"
+			/>
+		</div>
+	);
+}
+
+function FilterFieldMenu({
+	query,
+	onQueryChange,
+	onSelect,
+}: {
+	query: string;
+	onQueryChange: (value: string) => void;
+	onSelect: (field: ObservabilityFilterField) => void;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	const normalized = query.trim().toLowerCase();
+	const fields = FILTER_FIELDS.map((item) => ({
+		...item,
+		label: t(item.messageKey),
+	})).filter((item) => item.label.toLowerCase().includes(normalized));
+	return (
+		<div>
+			<FilterSearchBox value={query} onChange={onQueryChange} />
+			<div className="p-1">
+				{fields.map((item) => {
+					const Icon = item.icon;
+					return (
+						<button
+							key={item.id}
+							type="button"
+							className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm font-medium hover:bg-muted"
+							onClick={() => onSelect(item.id)}
+						>
+							<span className="flex min-w-0 items-center gap-2">
+								<Icon className="h-4 w-4 text-muted-foreground" />
+								<span className="truncate">{item.label}</span>
+							</span>
+							<ChevronRight className="h-4 w-4 text-muted-foreground" />
+						</button>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
+
+function FilterValueMenu({
+	field,
+	query,
+	options,
+	selectedValues = [],
+	onQueryChange,
+	onBack,
+	onSelect,
+	onAddText,
+}: {
+	field: ObservabilityFilterField;
+	query: string;
+	options: ObservabilityFilterOption[];
+	selectedValues?: ObservabilityFilterOption[];
+	onQueryChange: (value: string) => void;
+	onBack?: () => void;
+	onSelect: (option: ObservabilityFilterOption) => void;
+	onAddText: () => void;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	const normalized = query.trim().toLowerCase();
+	const visibleOptions = options
+		.filter((option) => option.label.toLowerCase().includes(normalized))
+		.slice(0, 40);
+	const selectedValueSet = new Set(selectedValues.map((option) => option.value));
+	const FieldIcon =
+		FILTER_FIELDS.find((item) => item.id === field)?.icon ?? Filter;
+	return (
+		<div>
+			{onBack ? (
+				<button
+					type="button"
+					className="flex w-full items-center gap-2 border-b px-3 py-2 text-left text-sm font-medium hover:bg-muted"
+					onClick={onBack}
+				>
+					<ChevronRight className="h-4 w-4 rotate-180 text-muted-foreground" />
+					<FieldIcon className="h-4 w-4 text-muted-foreground" />
+					{t(filterFieldMessageKey(field))}
+				</button>
+			) : null}
+			<FilterSearchBox
+				value={query}
+				onChange={onQueryChange}
+				onEnter={onAddText}
+				placeholder={
+					field === "user"
+						? t("userSearch")
+						: t("searchField", { field: t(filterFieldMessageKey(field)).toLowerCase() })
+				}
+			/>
+			<div className="max-h-72 overflow-y-auto p-1">
+				{visibleOptions.map((option) => (
+					<button
+						key={option.value}
+						type="button"
+						className={cn(
+							"flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-muted",
+							selectedValueSet.has(option.value) ? "bg-muted" : null,
+						)}
+						onClick={() => onSelect(option)}
+					>
+						<span className="flex min-w-0 items-center gap-2">
+							{field === "model" && option.logoId ? (
+								<span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-sm border bg-background">
+									<Logo
+										id={option.logoId}
+										alt={option.label}
+										width={16}
+										height={16}
+										className="h-4 w-4 object-contain"
+										fallbackToColor
+									/>
+								</span>
+							) : null}
+							<span className="min-w-0 truncate">{option.label}</span>
+						</span>
+						{selectedValueSet.has(option.value) ? (
+							<Check className="h-4 w-4 text-foreground" />
+						) : null}
+					</button>
+				))}
+				{visibleOptions.length === 0 ? (
+					<button
+						type="button"
+						className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-muted"
+						onClick={onAddText}
+					>
+						<span className="min-w-0 truncate">
+							{query.trim()
+								? t("addValue", { value: query.trim() })
+								: t("noFieldOptions", { field: t(filterFieldMessageKey(field)).toLowerCase() })}
+						</span>
+						{query.trim() ? (
+							<Plus className="h-3.5 w-3.5 text-muted-foreground" />
+						) : null}
+					</button>
+				) : null}
+			</div>
+		</div>
+	);
+}
+
+function AppliedFilterChip({
+	filter,
+	options,
+	onUpdate,
+	onRemove,
+}: {
+	filter: ObservabilityFilter;
+	options: Record<ObservabilityFilterField, ObservabilityFilterOption[]>;
+	onUpdate: (filter: Partial<ObservabilityFilter>) => void;
+	onRemove: () => void;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	const [valueOpen, setValueOpen] = React.useState(false);
+	const [valueQuery, setValueQuery] = React.useState("");
+	const FieldIcon =
+		FILTER_FIELDS.find((item) => item.id === filter.field)?.icon ?? Filter;
+	return (
+		<div className="inline-flex h-9 max-w-full items-center overflow-hidden rounded-md border bg-background text-sm">
+			<div className="flex h-full items-center gap-1.5 border-r px-2 font-medium">
+				<FieldIcon className="h-3.5 w-3.5 text-muted-foreground" />
+				{t(filterFieldMessageKey(filter.field))}
+			</div>
+			<button
+				type="button"
+				className="h-full border-r px-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+				onClick={() =>
+					onUpdate({
+						operator: filter.operator === "include" ? "exclude" : "include",
+					})
+				}
+			>
+				{filter.values.length <= 1
+					? t(filter.operator === "include" ? "is" : "isNot")
+					: t(filter.operator === "include" ? "isAnyOf" : "isNoneOf")}
+			</button>
+			<Popover open={valueOpen} onOpenChange={setValueOpen}>
+				<PopoverTrigger asChild>
+					<button
+						type="button"
+						className="h-full max-w-[220px] truncate border-r px-2 font-medium hover:bg-muted"
+					>
+						{filter.values.length === 0
+							? t("selectValues")
+							: filter.values.length === 1
+								? filter.values[0]?.label ?? t("selectValues")
+								: t("selectedValuesCount", { count: filter.values.length })}
+					</button>
+				</PopoverTrigger>
+				<PopoverContent align="start" className="w-[280px] p-0">
+					<FilterValueMenu
+						field={filter.field}
+						query={valueQuery}
+						options={options[filter.field]}
+						selectedValues={filter.values}
+						onQueryChange={setValueQuery}
+						onSelect={(option) => {
+							const selected = filter.values.some(
+								(item) => item.value === option.value,
+							);
+							onUpdate({
+								values: selected
+									? filter.values.filter((item) => item.value !== option.value)
+									: [...filter.values, option],
+							});
+						}}
+						onAddText={() => {
+							const value = valueQuery.trim();
+							if (!value) return;
+							const nextOption = { value, label: value };
+							onUpdate({
+								values: filter.values.some((item) => item.value === value)
+									? filter.values
+									: [...filter.values, nextOption],
+							});
+							setValueQuery("");
+						}}
+					/>
+				</PopoverContent>
+			</Popover>
+			<button
+				type="button"
+				className="flex h-full w-8 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+				onClick={onRemove}
+			>
+				<X className="h-3.5 w-3.5" />
+			</button>
+		</div>
+	);
+}
+
+function Sparkline({
+	data,
+	height = 42,
+	formatValue = formatNumber,
+	onHoverPoint,
+}: {
+	data: ObservabilitySeriesPoint[];
+	height?: number;
+	formatValue?: (value: number) => string;
+	onHoverPoint?: (point: ObservabilitySeriesPoint | null) => void;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
+	const activePointerIdRef = React.useRef<number | null>(null);
+	const suppressClickUntilRef = React.useRef(0);
+	const width = 92;
+	const values = data.map((point) => point.value);
+	const min = Math.min(...values, 0);
+	const max = Math.max(...values, 1);
+	const range = max - min || 1;
+	const coordinates = data.map((point, index) => {
+		const x = data.length <= 1 ? width : (index / (data.length - 1)) * width;
+		const y = height - ((point.value - min) / range) * (height - 6) - 3;
+		return { point, x, y };
+	});
+	const points = coordinates
+		.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`)
+		.join(" ");
+	const latest = data[data.length - 1];
+	const hovered =
+		hoveredIndex === null ? null : coordinates[hoveredIndex] ?? null;
+	const titlePoint = hovered?.point ?? latest;
+	const handlePointerMove = React.useCallback(
+		(event: React.PointerEvent<SVGSVGElement>) => {
+			if (data.length === 0) return;
+			if (
+				event.pointerType !== "mouse" &&
+				activePointerIdRef.current !== event.pointerId
+			) {
+				return;
+			}
+			const rect = event.currentTarget.getBoundingClientRect();
+			const relativeX =
+				rect.width > 0
+					? ((event.clientX - rect.left) / rect.width) * width
+					: width;
+			const index =
+				data.length <= 1
+					? 0
+					: Math.max(
+							0,
+							Math.min(
+								data.length - 1,
+								Math.round((relativeX / width) * (data.length - 1)),
+							),
+						);
+			setHoveredIndex(index);
+			onHoverPoint?.(data[index] ?? null);
+		},
+		[data, onHoverPoint],
+	);
+	const clearHoveredPoint = React.useCallback(() => {
+		setHoveredIndex(null);
+		onHoverPoint?.(null);
+	}, [onHoverPoint]);
+	const handlePointerDown = React.useCallback(
+		(event: React.PointerEvent<SVGSVGElement>) => {
+			if (event.pointerType === "mouse") return;
+			event.preventDefault();
+			activePointerIdRef.current = event.pointerId;
+			event.currentTarget.setPointerCapture(event.pointerId);
+			handlePointerMove(event);
+		},
+		[handlePointerMove],
+	);
+	const handlePointerEnd = React.useCallback(
+		(event: React.PointerEvent<SVGSVGElement>) => {
+			if (activePointerIdRef.current !== event.pointerId) return;
+			activePointerIdRef.current = null;
+			if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+				event.currentTarget.releasePointerCapture(event.pointerId);
+			}
+			suppressClickUntilRef.current = Date.now() + 1000;
+			clearHoveredPoint();
+		},
+		[clearHoveredPoint],
+	);
+	const handlePointerLeave = React.useCallback(() => {
+		if (activePointerIdRef.current !== null) return;
+		clearHoveredPoint();
+	}, [clearHoveredPoint]);
+	const handleClick = React.useCallback(
+		(event: React.MouseEvent<SVGSVGElement>) => {
+			if (Date.now() > suppressClickUntilRef.current) return;
+			event.preventDefault();
+			event.stopPropagation();
+			suppressClickUntilRef.current = 0;
+		},
+		[],
+	);
+
+	if (data.length === 0) {
+		return (
+			<svg
+				viewBox={`0 0 ${width} ${height}`}
+				role="img"
+				aria-label={t("noTrendData")}
+				className="h-full min-h-[34px] w-full min-w-[72px] overflow-visible text-blue-500"
+			/>
+		);
+	}
+
+	return (
+		<svg
+			viewBox={`0 0 ${width} ${height}`}
+			role="img"
+			aria-label={
+				titlePoint
+					? `${titlePoint.label}: ${formatValue(titlePoint.value)}`
+					: t("noTrendData")
+			}
+			className="h-full min-h-[34px] w-full min-w-[72px] touch-pan-y select-none overflow-visible text-blue-500"
+			onClick={handleClick}
+			onContextMenu={(event) => event.preventDefault()}
+			onPointerDown={handlePointerDown}
+			onPointerMove={handlePointerMove}
+			onPointerUp={handlePointerEnd}
+			onPointerCancel={handlePointerEnd}
+			onPointerLeave={handlePointerLeave}
+		>
+			<title>
+				{titlePoint
+					? `${titlePoint.label}: ${formatValue(titlePoint.value)}`
+					: t("noTrendData")}
+			</title>
+			<polyline
+				points={points}
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			{hovered ? (
+				<circle
+					cx={hovered.x}
+					cy={hovered.y}
+					r={3.1}
+					fill="var(--background)"
+					stroke="currentColor"
+					strokeWidth={2}
+					pointerEvents="none"
+				/>
+			) : null}
+			<rect width={width} height={height} fill="transparent" />
+		</svg>
+	);
+}
+
+// Only quality metrics have a good direction. More spend, requests or tokens is
+// not good or bad news in itself, so those deltas stay neutral.
+const KPI_GOOD_DIRECTION: Partial<Record<ObservabilityKpi["id"], "up" | "down">> = {
+	success_rate: "up",
+	cache: "up",
+	blended_price: "down",
+};
+
+function kpiDeltaClass(kpi: ObservabilityKpi): string {
+	const direction = KPI_GOOD_DIRECTION[kpi.id];
+	if (!direction || !kpi.deltaPercent) return "text-muted-foreground";
+	const improved = direction === "up" ? kpi.deltaPercent > 0 : kpi.deltaPercent < 0;
+	return improved ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
+}
+
+/**
+ * Two significant figures, so a footer fits a narrow card. Dollar amounts
+ * under $10 keep their cents, so $0.20 doesn't read as $0.2.
+ */
+function compactKpiFormat(kpi: ObservabilityKpi, largest: number): (value: number) => string {
+	const currency = kpi.format === "currency";
+	return new Intl.NumberFormat("en", currency && largest < 10
+		? { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }
+		: { notation: "compact", maximumSignificantDigits: 2, ...(currency ? { style: "currency", currency: "USD" } : {}) },
+	).format;
+}
+
+/** A projection range; one value when both ends round alike. */
+function formatProjectedRange(kpi: ObservabilityKpi, low: number, high: number): string {
+	const format = compactKpiFormat(kpi, high);
+	const [lowLabel, highLabel] = [format(low), format(high)];
+	return lowLabel === highLabel ? lowLabel : `${lowLabel}–${highLabel}`;
+}
+
+/** A signed change, such as +$412 or −1.2K. */
+function formatChange(kpi: ObservabilityKpi, change: number): string {
+	const label = compactKpiFormat(kpi, Math.abs(change))(Math.abs(change));
+	if (label === compactKpiFormat(kpi, 0)(0)) return label;
+	return `${change > 0 ? "+" : "−"}${label}`;
+}
+
+const RUNNING_PERIOD_LABELS = {
+	day: "kpiForecastDay",
+	week: "kpiForecastWeek",
+	month: "kpiForecastMonth",
+	quarter: "kpiForecastQuarter",
+	year: "kpiForecastYear",
+} as const;
+
+function KpiFooterRow({ kpi, previousLabel }: { kpi: ObservabilityKpi; previousLabel: string | null }) {
+	const t = useTranslations("SettingsUI.observability");
+	const footer = kpi.footer;
+	if (!footer || (footer.kind !== "projected" && !previousLabel)) return null;
+	let label: string;
+	let value: string;
+	if (footer.kind === "projected") {
+		const { period } = footer;
+		label = period.kind === "running"
+			? t(RUNNING_PERIOD_LABELS[period.unit])
+			: period.days === 1 ? t("kpiForecastNextDay") : t("kpiForecastNextDays", { days: period.days });
+		value = formatProjectedRange(kpi, footer.low, footer.high);
+	} else if (footer.kind === "change") {
+		label = t("kpiChangeVs", { period: previousLabel! });
+		value = formatChange(kpi, footer.value);
+	} else {
+		label = previousLabel!;
+		value = footer.value === null ? "–" : formatKpiValue(kpi, footer.value);
+	}
+	// The label gives way on a narrow card; the figure never does.
+	return (
+		<div className="flex min-w-0 items-baseline justify-between gap-2 border-t border-dashed px-4 py-2 text-xs text-muted-foreground">
+			<span className="truncate">{label}</span>
+			<span className="shrink-0 font-medium tabular-nums text-foreground">{value}</span>
+		</div>
+	);
+}
+
+function KpiMetric({ kpi, previousLabel }: { kpi: ObservabilityKpi; previousLabel: string | null }) {
+	const t = useTranslations("SettingsUI.observability");
+	const [hoveredPoint, setHoveredPoint] =
+		React.useState<ObservabilitySeriesPoint | null>(null);
+	const positive = (kpi.deltaPercent ?? 0) >= 0;
+	const DeltaIcon = positive ? ChevronUp : ChevronDown;
+	const displayValue = hoveredPoint?.value ?? kpi.value;
+	return (
+		<Link
+			href="/settings/usage/explore"
+			className="group relative block min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+		>
+			<Card className="h-full gap-0 rounded-lg py-0 transition-colors group-hover:bg-muted/20">
+				<div className="grid min-h-[124px] min-w-0 grid-rows-[auto_1fr] gap-2 px-4 py-4 sm:min-h-[112px] sm:gap-2 sm:py-3">
+					<CardTitle className="whitespace-nowrap text-xs font-medium leading-tight text-muted-foreground">
+						{kpi.label}
+					</CardTitle>
+					<div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_minmax(96px,0.8fr)] items-center gap-4 sm:grid-cols-[minmax(0,1fr)_80px] sm:gap-3">
+						<div className="min-w-0">
+							<div className="truncate text-2xl font-semibold tracking-tight">
+								{formatKpiValue(kpi, displayValue)}
+							</div>
+							<div
+								className={cn(
+									"mt-2 inline-flex max-w-full items-center gap-1 text-xs font-medium",
+									hoveredPoint ? "text-muted-foreground" : kpiDeltaClass(kpi),
+								)}
+							>
+								{hoveredPoint ? (
+									<span>{hoveredPoint.label}</span>
+								) : (
+									<UiTooltip delayDuration={750}>
+										<UiTooltipTrigger asChild>
+											<span className="inline-flex items-center gap-1">
+												{kpi.deltaPercent !== null ? (
+													<DeltaIcon className="h-3 w-3" />
+												) : null}
+												<span>{kpi.deltaPercent === null ? t("noPrior") : formatCompactDeltaPercent(kpi.deltaPercent)}</span>
+											</span>
+										</UiTooltipTrigger>
+										<UiTooltipContent side="bottom" sideOffset={6}>
+											{previousLabel ? t("comparedWithPeriod", { period: previousLabel }) : t("comparedWithPreviousPeriod")}
+										</UiTooltipContent>
+									</UiTooltip>
+								)}
+							</div>
+						</div>
+						<div className="h-10 min-w-0 w-full text-right sm:h-auto">
+							<Sparkline
+								data={kpi.sparkline}
+								height={38}
+								formatValue={(value) => formatKpiValue(kpi, value)}
+								onHoverPoint={setHoveredPoint}
+							/>
+						</div>
+					</div>
+				</div>
+				<KpiFooterRow kpi={kpi} previousLabel={previousLabel} />
+			</Card>
+		</Link>
+	);
+}
+
+function ExploreButton() {
+	const t = useTranslations("SettingsUI.observability");
+	return (
+		<Button asChild variant="ghost" size="sm" className="h-6 gap-1 px-1.5 text-xs">
+			<Link href="/settings/usage/explore">
+				{t("explore")}
+				<ArrowUpRight className="h-3.5 w-3.5" />
+			</Link>
+		</Button>
+	);
+}
+
+function ChartCard({
+	title,
+	subtitle,
+	actions,
+	children,
+	className,
+}: {
+	title: string;
+	subtitle?: string;
+	actions?: React.ReactNode;
+	children: React.ReactNode;
+	className?: string;
+}) {
+	return (
+		<Card className={cn("rounded-lg", className)}>
+			<CardHeader className="flex flex-row items-start justify-between gap-3 pb-2">
+				<div className="min-w-0">
+					<CardTitle className="text-base">{title}</CardTitle>
+					{subtitle ? (
+						<p className="text-sm text-muted-foreground">{subtitle}</p>
+					) : null}
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
+					{actions}
+					<ExploreButton />
+				</div>
+			</CardHeader>
+			<CardContent>
+				{children}
+			</CardContent>
+		</Card>
+	);
+}
+
+function BarBreakdownChart({
+	data,
+	label,
+	height = 300,
+}: {
+	data: ObservabilityBreakdownItem[];
+	label: string;
+	height?: number;
+}) {
+	const chartConfig = {
+		value: { label, color: CHART_COLORS[0] },
+	} satisfies ChartConfig;
+	return (
+		<ChartContainer
+			config={chartConfig}
+			className="w-full min-w-0 [aspect-ratio:auto]"
+			style={{ width: "100%", height, minHeight: height }}
+		>
+			<BarChart data={data} margin={{ top: 12, right: 12, bottom: 48, left: 0 }}>
+				<CartesianGrid vertical={false} />
+				<XAxis
+					dataKey="label"
+					angle={-28}
+					textAnchor="end"
+					interval={0}
+					height={64}
+					tickLine={false}
+					axisLine={false}
+				/>
+				<YAxis tickLine={false} axisLine={false} width={44} />
+				<Tooltip content={<ChartTooltipContent />} />
+				<Bar
+					dataKey="value"
+					fill="var(--color-value)"
+					radius={[4, 4, 0, 0]}
+					isAnimationActive={false}
+				/>
+			</BarChart>
+		</ChartContainer>
+	);
+}
+
+function DonutBreakdownChart({
+	data,
+	height = 300,
+}: {
+	data: ObservabilityBreakdownItem[];
+	height?: number;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	return <BarBreakdownChart data={data} label={t("value")} height={height} />;
+}
+
+function timeSeriesChartConfig(data: ObservabilityTimeSeriesChart) {
+	return Object.fromEntries(
+		data.series.map((item, index) => [
+			item.id,
+			{
+				label: item.label,
+				color: item.color ?? CHART_COLORS[index % CHART_COLORS.length],
+			},
+		]),
+	) satisfies ChartConfig;
+}
+
+function timeSeriesYAxisDomain(max: number) {
+	return [0, max > 0 ? max : 1];
+}
+
+type TimeSeriesValueKind = "number" | "currency";
+
+function formatAxisValue(value: number, kind: TimeSeriesValueKind) {
+	if (kind === "currency") return formatUsageUsdAxis(value);
+	return formatNumber(value);
+}
+
+function timeSeriesXAxisTicks(data: ObservabilityTimeSeriesChart) {
+	const labels = data.data.map((point) => String(point.label));
+	if (labels.length <= 7) return labels;
+	const step = Math.ceil((labels.length - 1) / 6);
+	const ticks = labels.filter((_, index) => index % step === 0);
+	const last = labels[labels.length - 1];
+	if (last && ticks[ticks.length - 1] !== last) ticks.push(last);
+	return ticks;
+}
+
+function topVisibleSeriesId(
+	point: Record<string, string | number>,
+	series: ObservabilityTimeSeriesChart["series"],
+) {
+	for (let index = series.length - 1; index >= 0; index -= 1) {
+		const item = series[index];
+		if (item && Number(point[item.id] ?? 0) > 0) return item.id;
+	}
+	return null;
+}
+
+function TimeSeriesLegend({
+	data,
+	activeSeries,
+	onActiveSeriesChange,
+}: {
+	data: ObservabilityTimeSeriesChart;
+	activeSeries: string | null;
+	onActiveSeriesChange: (seriesId: string | null) => void;
+}) {
+	return (
+		<div className="flex flex-wrap gap-x-4 gap-y-2">
+			{data.series.map((item, index) => (
+				<button
+					key={item.id}
+					type="button"
+					className={cn(
+						"flex min-w-0 items-center gap-2 rounded-sm outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring",
+						activeSeries && activeSeries !== item.id ? "opacity-45" : "opacity-100",
+					)}
+					onMouseEnter={() => onActiveSeriesChange(item.id)}
+					onMouseLeave={() => onActiveSeriesChange(null)}
+					onFocus={() => onActiveSeriesChange(item.id)}
+					onBlur={() => onActiveSeriesChange(null)}
+				>
+					<span
+						className="h-2.5 w-2.5 shrink-0 rounded-sm"
+						style={{
+							backgroundColor:
+								item.color ?? CHART_COLORS[index % CHART_COLORS.length],
+						}}
+					/>
+					<span className="truncate text-xs text-muted-foreground">
+						{item.label}
+					</span>
+				</button>
+			))}
+		</div>
+	);
+}
+
+function TimeSeriesTooltip({
+	active,
+	label,
+	payload,
+	activeSeries,
+	showPercent = false,
+}: {
+	active?: boolean;
+	label?: string | number;
+	payload?: readonly any[];
+	activeSeries: string | null;
+	showPercent?: boolean;
+}) {
+	const tAuditCopy = useTranslations();
+	if (!active || !payload?.length) return null;
+	const visiblePayload = [...payload]
+		.sort((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
+	const total = visiblePayload.reduce(
+		(sum, item) => sum + Number(item?.value ?? 0),
+		0,
+	);
+	return (
+		<div className="min-w-44 rounded-md border bg-popover p-2.5 text-popover-foreground shadow-md">
+			<div className="mb-2 flex items-center justify-between gap-4 text-xs font-medium">
+				<span>{label}</span>
+				<span className="font-mono text-muted-foreground">
+					{total > 0 ? formatNumber(total) : tAuditCopy("Common.ui.auditCopy.noActivity")}
+				</span>
+			</div>
+			<div className="space-y-1.5">
+				{visiblePayload.map((item) => {
+					const focused = activeSeries === item.dataKey;
+					const value = Number(item.value ?? 0);
+					const percent = total > 0 ? value / total : 0;
+					return (
+						<div
+							key={String(item.dataKey)}
+							className={cn(
+								"flex items-center justify-between gap-4 rounded-md px-1.5 py-0.5 text-xs",
+								focused ? "font-semibold text-foreground" : "text-muted-foreground",
+								focused ? "bg-zinc-200/70 dark:bg-zinc-800/70" : null,
+							)}
+						>
+							<span className="flex min-w-0 items-center gap-2">
+								<span
+									className="h-2.5 w-2.5 shrink-0 rounded-sm"
+									style={{ backgroundColor: item.color }}
+								/>
+								<span className="truncate">{item.name}</span>
+							</span>
+							<span className="font-mono text-foreground">
+								{formatNumber(value)}
+								{showPercent ? (
+									<span className="ml-1 text-muted-foreground">
+										{formatPercent(percent)}
+									</span>
+								) : null}
+							</span>
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
+
+function StackedTimeSeriesBarChart({
+	data,
+	height = 300,
+	showTooltipPercent = false,
+	valueKind = "number",
+}: {
+	data: ObservabilityTimeSeriesChart;
+	height?: number;
+	showTooltipPercent?: boolean;
+	valueKind?: TimeSeriesValueKind;
+}) {
+	const chartConfig = timeSeriesChartConfig(data);
+	const [activeSeries, setActiveSeries] = React.useState<string | null>(null);
+	const xAxisTicks = timeSeriesXAxisTicks(data);
+	const maxDailyTotal = Math.max(
+		0,
+		...data.data.map((point) =>
+			data.series.reduce(
+				(total, series) => total + Number(point[series.id] ?? 0),
+				0,
+			),
+		),
+	);
+	return (
+		<div className="space-y-3">
+			<ChartContainer
+				config={chartConfig}
+				className="w-full min-w-0 [aspect-ratio:auto]"
+				style={{ width: "100%", height, minHeight: height }}
+			>
+				<BarChart
+					data={data.data}
+					margin={{ top: 12, right: 12, bottom: 8, left: 0 }}
+				>
+					<CartesianGrid vertical={false} />
+					<XAxis
+						dataKey="label"
+						tickLine={false}
+						axisLine={false}
+						ticks={xAxisTicks}
+						minTickGap={18}
+						interval="preserveStartEnd"
+					/>
+					<YAxis
+						tickLine={false}
+						axisLine={false}
+						width={56}
+						tickCount={4}
+						domain={timeSeriesYAxisDomain(maxDailyTotal)}
+						tickFormatter={(value) =>
+							formatAxisValue(Number(value), valueKind)
+						}
+					/>
+					<Tooltip
+						cursor={{ fill: "var(--muted)", opacity: 0.32 }}
+						content={(props) => (
+							<TimeSeriesTooltip
+								{...props}
+								activeSeries={activeSeries}
+								showPercent={showTooltipPercent}
+							/>
+						)}
+					/>
+					{data.series.map((item) => (
+						<Bar
+							key={item.id}
+							dataKey={item.id}
+							name={item.label}
+							stackId="total"
+							fill={`var(--color-${item.id})`}
+							fillOpacity={
+								activeSeries && activeSeries !== item.id ? 0.28 : 1
+							}
+							isAnimationActive={false}
+						>
+							{data.data.map((point) => (
+								<Cell
+									key={`${item.id}-${String(point.bucket ?? point.label)}`}
+									radius={
+										topVisibleSeriesId(point, data.series) === item.id
+											? 4
+											: 0
+									}
+								/>
+							))}
+						</Bar>
+					))}
+				</BarChart>
+			</ChartContainer>
+			<TimeSeriesLegend
+				data={data}
+				activeSeries={activeSeries}
+				onActiveSeriesChange={setActiveSeries}
+			/>
+		</div>
+	);
+}
+
+function StackedTimeSeriesAreaChart({
+	data,
+	height = 300,
+	valueKind = "number",
+}: {
+	data: ObservabilityTimeSeriesChart;
+	height?: number;
+	valueKind?: TimeSeriesValueKind;
+}) {
+	const chartConfig = timeSeriesChartConfig(data);
+	const [activeSeries, setActiveSeries] = React.useState<string | null>(null);
+	const xAxisTicks = timeSeriesXAxisTicks(data);
+	const maxDailyTotal = Math.max(
+		0,
+		...data.data.map((point) =>
+			data.series.reduce(
+				(total, series) => total + Number(point[series.id] ?? 0),
+				0,
+			),
+		),
+	);
+	return (
+		<div className="space-y-3">
+			<ChartContainer
+				config={chartConfig}
+				className="w-full min-w-0 [aspect-ratio:auto]"
+				style={{ width: "100%", height, minHeight: height }}
+			>
+				<AreaChart
+					data={data.data}
+					margin={{ top: 12, right: 12, bottom: 8, left: 0 }}
+				>
+					<CartesianGrid vertical={false} />
+					<XAxis
+						dataKey="label"
+						tickLine={false}
+						axisLine={false}
+						ticks={xAxisTicks}
+						minTickGap={18}
+						interval="preserveStartEnd"
+					/>
+					<YAxis
+						tickLine={false}
+						axisLine={false}
+						width={56}
+						tickCount={4}
+						domain={timeSeriesYAxisDomain(maxDailyTotal)}
+						tickFormatter={(value) =>
+							formatAxisValue(Number(value), valueKind)
+						}
+					/>
+					<Tooltip
+						cursor={{ stroke: "var(--muted-foreground)", opacity: 0.28 }}
+						content={(props) => (
+							<TimeSeriesTooltip {...props} activeSeries={activeSeries} />
+						)}
+					/>
+					{data.series.map((item) => (
+						<Area
+							key={item.id}
+							type="monotone"
+							dataKey={item.id}
+							name={item.label}
+							stackId="total"
+							stroke={`var(--color-${item.id})`}
+							fill={`var(--color-${item.id})`}
+							fillOpacity={
+								activeSeries && activeSeries !== item.id ? 0.07 : 0.2
+							}
+							strokeOpacity={
+								activeSeries && activeSeries !== item.id ? 0.35 : 1
+							}
+							strokeWidth={activeSeries === item.id ? 3 : 2}
+							isAnimationActive={false}
+						/>
+					))}
+				</AreaChart>
+			</ChartContainer>
+			<TimeSeriesLegend
+				data={data}
+				activeSeries={activeSeries}
+				onActiveSeriesChange={setActiveSeries}
+			/>
+		</div>
+	);
+}
+
+type TrendMetric = "spend" | "requests" | "tokens";
+type TrendChartType = "bar" | "line" | "dot";
+
+const TREND_METRICS: Array<{
+	id: TrendMetric;
+	valueKind: TimeSeriesValueKind;
+	icon: React.ComponentType<{ className?: string }>;
+}> = [
+	{
+		id: "spend",
+		valueKind: "currency",
+		icon: CircleDollarSign,
+	},
+	{ id: "requests", valueKind: "number", icon: Hash },
+	{ id: "tokens", valueKind: "number", icon: Coins },
+];
+
+function trendMetricValueKind(metric: TrendMetric): TimeSeriesValueKind {
+	return TREND_METRICS.find((item) => item.id === metric)?.valueKind ?? "number";
+}
+
+function MultiSeriesLineChart({
+	data,
+	height = 300,
+	valueKind = "number",
+	dotsOnly = false,
+}: {
+	data: ObservabilityTimeSeriesChart;
+	height?: number;
+	valueKind?: TimeSeriesValueKind;
+	dotsOnly?: boolean;
+}) {
+	const chartConfig = timeSeriesChartConfig(data);
+	const [activeSeries, setActiveSeries] = React.useState<string | null>(null);
+	const xAxisTicks = timeSeriesXAxisTicks(data);
+	const maxValue = Math.max(
+		0,
+		...data.data.flatMap((point) =>
+			data.series.map((series) => Number(point[series.id] ?? 0)),
+		),
+	);
+	return (
+		<div className="space-y-3">
+			<ChartContainer
+				config={chartConfig}
+				className="w-full min-w-0 [aspect-ratio:auto]"
+				style={{ width: "100%", height, minHeight: height }}
+			>
+				<LineChart
+					data={data.data}
+					margin={{ top: 12, right: 12, bottom: 8, left: 0 }}
+				>
+					<CartesianGrid vertical={false} />
+					<XAxis
+						dataKey="label"
+						tickLine={false}
+						axisLine={false}
+						ticks={xAxisTicks}
+						minTickGap={18}
+						interval="preserveStartEnd"
+					/>
+					<YAxis
+						tickLine={false}
+						axisLine={false}
+						width={56}
+						tickCount={4}
+						domain={timeSeriesYAxisDomain(maxValue)}
+						tickFormatter={(value) =>
+							formatAxisValue(Number(value), valueKind)
+						}
+					/>
+					<Tooltip
+						cursor={{ stroke: "var(--muted-foreground)", opacity: 0.28 }}
+						content={(props) => (
+							<TimeSeriesTooltip {...props} activeSeries={activeSeries} />
+						)}
+					/>
+					{data.series.map((item) => (
+						<Line
+							key={item.id}
+							type="monotone"
+							dataKey={item.id}
+							name={item.label}
+							stroke={`var(--color-${item.id})`}
+							strokeWidth={dotsOnly ? 0 : activeSeries === item.id ? 3 : 2}
+							strokeOpacity={
+								activeSeries && activeSeries !== item.id ? 0.28 : 1
+							}
+							dot={
+								dotsOnly
+									? {
+											r: activeSeries === item.id ? 4 : 3,
+											fill: `var(--color-${item.id})`,
+											strokeWidth: 0,
+										}
+									: false
+							}
+							activeDot={{
+								r: 4,
+								fill: `var(--color-${item.id})`,
+								strokeWidth: 0,
+							}}
+							isAnimationActive={false}
+						/>
+					))}
+				</LineChart>
+			</ChartContainer>
+			<TimeSeriesLegend
+				data={data}
+				activeSeries={activeSeries}
+				onActiveSeriesChange={setActiveSeries}
+			/>
+		</div>
+	);
+}
+
+function LineTrendChart({
+	data,
+	label,
+	height = 300,
+}: {
+	data: Array<{ label: string; value: number }>;
+	label: string;
+	height?: number;
+}) {
+	const chartConfig = {
+		value: { label, color: CHART_COLORS[0] },
+	} satisfies ChartConfig;
+	const maxValue = Math.max(0, ...data.map((point) => point.value));
+	const xAxisTicks =
+		data.length <= 7
+			? data.map((point) => point.label)
+			: data
+					.filter((_, index) => index % Math.ceil((data.length - 1) / 6) === 0)
+					.map((point) => point.label);
+	const lastLabel = data[data.length - 1]?.label;
+	if (lastLabel && xAxisTicks[xAxisTicks.length - 1] !== lastLabel) {
+		xAxisTicks.push(lastLabel);
+	}
+	return (
+		<ChartContainer
+			config={chartConfig}
+			className="w-full min-w-0 [aspect-ratio:auto]"
+			style={{ width: "100%", height, minHeight: height }}
+		>
+			<LineChart data={data} margin={{ top: 12, right: 12, bottom: 8, left: 0 }}>
+				<CartesianGrid vertical={false} />
+				<XAxis
+					dataKey="label"
+					tickLine={false}
+					axisLine={false}
+					ticks={xAxisTicks}
+					minTickGap={18}
+					interval="preserveStartEnd"
+				/>
+				<YAxis
+					tickLine={false}
+					axisLine={false}
+					width={56}
+					tickCount={4}
+					domain={timeSeriesYAxisDomain(maxValue)}
+					tickFormatter={(value) => formatAxisValue(Number(value), "currency")}
+				/>
+				<Tooltip content={<ChartTooltipContent />} />
+				<Line
+					type="monotone"
+					dataKey="value"
+					stroke="var(--color-value)"
+					strokeWidth={3}
+					dot={false}
+					isAnimationActive={false}
+				/>
+			</LineChart>
+		</ChartContainer>
+	);
+}
+
+function RankedList({
+	title,
+	items,
+	kind,
+	showDelta = false,
+}: {
+	title: string;
+	items: ObservabilityRankedItem[];
+	kind: "key" | "app";
+	showDelta?: boolean;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	return (
+		<Card className="rounded-lg">
+			<CardHeader className="flex flex-row items-center justify-between gap-3">
+				<CardTitle className="text-base">{title}</CardTitle>
+				<ExploreButton />
+			</CardHeader>
+			<CardContent className="space-y-0.5">
+				{items.length === 0 ? (
+					<p className="text-sm text-muted-foreground">{t("noUsagePeriod")}</p>
+				) : null}
+				{items.map((item, index) => (
+					<RankedListItem
+						key={item.id}
+						item={item}
+						color={CHART_COLORS[index % CHART_COLORS.length]}
+						kind={kind}
+						showDelta={showDelta}
+					/>
+				))}
+			</CardContent>
+		</Card>
+	);
+}
+
+function RankedListItem({
+	item,
+	color,
+	kind,
+	showDelta,
+}: {
+	item: ObservabilityRankedItem;
+	color: string;
+	kind: "key" | "app";
+	showDelta: boolean;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	const positive = (item.deltaPercent ?? 0) >= 0;
+	const DeltaIcon = positive ? ChevronUp : ChevronDown;
+	const href = kind === "app"
+		? `/apps/${encodeURIComponent(item.id)}`
+		: "/settings/keys";
+	return (
+		<Link href={href} className="grid grid-cols-[1fr_110px] items-center gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+			<div className="min-w-0">
+				<div className="flex min-w-0 items-center gap-2">
+					{kind === "app" ? (
+						<AppLogo
+							src={item.imageUrl}
+							alt={item.label}
+							fallback={<AppWindow className="size-3.5" />}
+							className="size-6"
+						/>
+					) : (
+						<span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: color }} />
+					)}
+					<div className="truncate text-sm font-medium">{item.label}</div>
+				</div>
+				<div className="text-xs text-muted-foreground">
+					{item.subtitle ?? t("requestCount", { count: item.requests })}
+				</div>
+			</div>
+			<div className="text-right">
+				<div className="font-mono text-sm">
+					{formatNumber(item.tokens)}{" "}
+					<span className="font-sans text-xs text-muted-foreground">{t("toks")}</span>
+				</div>
+				{showDelta ? (
+					<div
+						className={cn(
+							"inline-flex items-center justify-end gap-1 text-xs font-medium",
+							positive ? "text-emerald-600" : "text-rose-600",
+						)}
+					>
+						{item.deltaPercent !== null ? (
+							<DeltaIcon className="h-3 w-3" />
+						) : null}
+						<span>
+							{item.deltaPercent === null
+								? t("noPreviousData")
+								: t("deltaVsPrevious", { percent: formatDeltaPercent(item.deltaPercent) })}
+						</span>
+					</div>
+				) : null}
+			</div>
+		</Link>
+	);
+}
+
+function TrendChartOptions({
+	showOther,
+	cumulative,
+	chartType,
+	showCumulative = true,
+	onShowOtherChange,
+	onCumulativeChange,
+	onChartTypeChange,
+}: {
+	showOther: boolean;
+	cumulative: boolean;
+	chartType: TrendChartType;
+	showCumulative?: boolean;
+	onShowOtherChange: (value: boolean) => void;
+	onCumulativeChange: (value: boolean) => void;
+	onChartTypeChange: (value: TrendChartType) => void;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	return (
+		<Popover>
+			<PopoverTrigger asChild>
+				<Button variant="ghost" size="icon" className="h-8 w-8">
+					<Settings2 className="h-4 w-4" />
+					<span className="sr-only">{t("chartOptions")}</span>
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent
+				align="end"
+				className="w-64 space-y-4 p-3"
+				onClick={stopTrendControlClick}
+			>
+				<div className="flex items-center justify-between gap-3">
+					<div className="text-sm">{t("showOther")}</div>
+					<Switch
+						checked={showOther}
+						onCheckedChange={onShowOtherChange}
+					/>
+				</div>
+				{showCumulative ? (
+					<div className="flex items-center justify-between gap-3">
+						<div className="text-sm">{t("cumulativeSum")}</div>
+						<Switch checked={cumulative} onCheckedChange={onCumulativeChange} />
+					</div>
+				) : null}
+				<div className="flex items-center justify-between gap-3">
+					<div className="text-sm">{t("chartType")}</div>
+					<ToggleGroup
+						type="single"
+						value={chartType}
+						onValueChange={(value) => {
+							if (value === "bar" || value === "line" || value === "dot") {
+								onChartTypeChange(value);
+							}
+						}}
+						variant="outline"
+						size="sm"
+					>
+						<ToggleGroupItem value="bar" aria-label={t("barChart")}>
+							<BarChart3 className="h-3.5 w-3.5" />
+						</ToggleGroupItem>
+						<ToggleGroupItem value="line" aria-label={t("lineChart")}>
+							<LineChartIcon className="h-3.5 w-3.5" />
+						</ToggleGroupItem>
+						<ToggleGroupItem value="dot" aria-label={t("dotPlot")}>
+							<CircleDot className="h-3.5 w-3.5" />
+						</ToggleGroupItem>
+					</ToggleGroup>
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
+}
+
+function TrendChartPanel({
+	title,
+	charts,
+	metric,
+}: {
+	title: string;
+	charts: ObservabilityTrendMetricCharts;
+	metric: TrendMetric;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	const [showOther, setShowOther] = React.useState(true);
+	const [cumulative, setCumulative] = React.useState(false);
+	const [chartType, setChartType] = React.useState<TrendChartType>("bar");
+	const [displayChartType, setDisplayChartType] =
+		React.useState<TrendChartType>("bar");
+	const [isChartFading, setIsChartFading] = React.useState(false);
+	const router = useRouter();
+	const rawChart = charts[metric];
+	const chart = React.useMemo(
+		() => prepareTrendChartData(rawChart, { showOther, cumulative }),
+		[rawChart, showOther, cumulative],
+	);
+	const valueKind = trendMetricValueKind(metric);
+	React.useEffect(() => {
+		if (chartType === displayChartType) return;
+		setIsChartFading(true);
+		const swapTimer = window.setTimeout(() => {
+			setDisplayChartType(chartType);
+			window.requestAnimationFrame(() => setIsChartFading(false));
+		}, 120);
+		return () => window.clearTimeout(swapTimer);
+	}, [chartType, displayChartType]);
+	const openExplore = (event: React.MouseEvent<HTMLElement>) => {
+		const target = event.target as HTMLElement;
+		if (!shouldOpenTrendExplore(target)) return;
+		router.push("/settings/usage/explore");
+	};
+	return (
+		<Card
+			className="cursor-pointer rounded-lg xl:col-span-3"
+			onClick={openExplore}
+		>
+			<CardHeader className="flex flex-row items-start justify-between gap-3 pb-2">
+				<div>
+					<CardTitle className="text-base">
+						{t("trendOverTime", { metric: t(metric) })}
+					</CardTitle>
+					<p className="mt-1 text-sm text-muted-foreground">
+						{t("trendByDay", { group: title, metric: t(metric) })}
+					</p>
+				</div>
+				<div className="flex items-center gap-1">
+					<TrendChartOptions
+						showOther={showOther}
+						cumulative={cumulative}
+						chartType={chartType}
+						onShowOtherChange={setShowOther}
+						onCumulativeChange={setCumulative}
+						onChartTypeChange={setChartType}
+					/>
+					<ExploreButton />
+				</div>
+			</CardHeader>
+			<CardContent>
+				<div
+					className={cn(
+						"transition-opacity duration-150 ease-out",
+						isChartFading ? "opacity-20" : "opacity-100",
+					)}
+				>
+					{displayChartType === "bar" ? (
+						<StackedTimeSeriesBarChart data={chart} valueKind={valueKind} />
+					) : (
+						<MultiSeriesLineChart
+							data={chart}
+							valueKind={valueKind}
+							dotsOnly={displayChartType === "dot"}
+						/>
+					)}
+				</div>
+			</CardContent>
+		</Card>
+	);
+}
+
+function TrendDelta({ item }: { item: ObservabilityRankedItem }) {
+	const t = useTranslations("SettingsUI.observability");
+	if (item.previousTokens <= 0 && item.tokens > 0) {
+		return <span className="text-emerald-600">{t("new")}</span>;
+	}
+	const positive = (item.deltaPercent ?? 0) >= 0;
+	const Icon = positive ? ChevronUp : ChevronDown;
+	return (
+		<span
+			className={cn(
+				"inline-flex items-center gap-1",
+				positive ? "text-emerald-600" : "text-rose-600",
+			)}
+		>
+			{item.deltaPercent !== null ? <Icon className="h-3 w-3" /> : null}
+			{item.deltaPercent === null
+			? t("noPrior")
+				: `${Math.abs(item.deltaPercent).toFixed(1)}%`}
+		</span>
+	);
+}
+
+function TrendingPanel({
+	title,
+	items,
+}: {
+	title: string;
+	items: ObservabilityRankedItem[];
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	return (
+		<Card className="rounded-lg">
+			<CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
+				<CardTitle className="text-base">{t("topByTokens")}</CardTitle>
+				<ExploreButton />
+			</CardHeader>
+			<CardContent className="space-y-3">
+				{items.length === 0 ? (
+					<p className="text-sm text-muted-foreground">
+						{t("noUsagePeriod")}
+					</p>
+				) : null}
+				{items.slice(0, 6).map((item, index) => (
+					<Link
+						key={item.id}
+						href="/settings/usage/explore"
+						className="grid grid-cols-[1fr_86px_72px] items-center gap-3 rounded-md px-1.5 py-1.5 transition-colors hover:bg-muted/40"
+					>
+						<div className="min-w-0">
+							<div className="flex min-w-0 items-center gap-2">
+								<span
+									className="h-2.5 w-2.5 shrink-0 rounded-sm"
+									style={{
+										backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+									}}
+								/>
+								<span className="truncate text-sm font-medium">{item.label}</span>
+							</div>
+							<div className="truncate pl-4 text-xs text-muted-foreground">
+								{item.subtitle ?? `${formatNumber(item.tokens)} ${t("toks")}`}
+							</div>
+						</div>
+						<div className="text-emerald-600">
+							<Sparkline data={item.sparkline} height={28} />
+						</div>
+						<div className="text-right text-xs font-medium">
+							<TrendDelta item={item} />
+						</div>
+					</Link>
+				))}
+			</CardContent>
+		</Card>
+	);
+}
+
+function TrendSection({
+	title,
+	charts,
+	items,
+}: {
+	title: string;
+	charts: ObservabilityTrendMetricCharts;
+	items: ObservabilityRankedItem[];
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	const [metric, setMetric] = React.useState<TrendMetric>("spend");
+	const selectedMetric =
+		TREND_METRICS.find((item) => item.id === metric) ?? TREND_METRICS[0];
+	const SelectedMetricIcon = selectedMetric.icon;
+	return (
+		<section className="space-y-3">
+			<div className="flex items-center justify-between gap-3">
+				<h2 className="text-lg font-semibold">{title}</h2>
+				<Select
+					value={metric}
+					onValueChange={(value) => {
+						if (
+							value === "spend" ||
+							value === "requests" ||
+							value === "tokens"
+						) {
+							setMetric(value);
+						}
+					}}
+				>
+					<SelectTrigger className="h-9 w-36 rounded-xl">
+						<span className="flex min-w-0 items-center gap-2">
+							<SelectedMetricIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+							<span className="truncate">{t(metric)}</span>
+						</span>
+					</SelectTrigger>
+					<SelectContent align="end">
+						{TREND_METRICS.map((item) => {
+							const Icon = item.icon;
+							return (
+								<SelectItem key={item.id} value={item.id}>
+									<span className="flex items-center gap-2">
+										<Icon className="h-4 w-4 text-muted-foreground" />
+										{t(item.id)}
+									</span>
+								</SelectItem>
+							);
+						})}
+					</SelectContent>
+				</Select>
+			</div>
+			<div className="grid gap-4 xl:grid-cols-4">
+				<TrendChartPanel title={title} charts={charts} metric={metric} />
+				<TrendingPanel title={title} items={items} />
+			</div>
+		</section>
+	);
+}
+
+function Overview({ data }: { data: ObservabilityData }) {
+	const t = useTranslations("SettingsUI.observability");
+	const locale = useLocale();
+	const previousLabel = data.previousPeriod ? formatUsageComparisonRange({ ...data.previousPeriod, locale }) : null;
+	const monthSpend = data.monthSpend ?? null;
+	const [spendView, setSpendView] = React.useState<"daily" | "month">("daily");
+	const showMonth = spendView === "month" && monthSpend !== null;
+	return (
+		<div className="space-y-4 sm:space-y-6">
+			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
+				{data.kpis.map((kpi) => (
+					<KpiMetric key={kpi.id} kpi={kpi} previousLabel={previousLabel} />
+				))}
+			</div>
+			<div className="grid gap-4 xl:grid-cols-2">
+				<RankedList title={t("topApiKeys")} items={data.topApiKeys} kind="key" />
+				<RankedList title={t("topApps")} items={data.topApps} kind="app" />
+			</div>
+			<div className="grid gap-4 xl:grid-cols-2">
+				<ChartCard
+					title={showMonth ? t("monthSpendTitle") : t("usageByModel")}
+					subtitle={showMonth ? t("monthSpendSubtitle") : t("dailySpendByModel")}
+					className="xl:col-span-2"
+					actions={monthSpend ? (
+						<ToggleGroup
+							type="single"
+							variant="outline"
+							size="sm"
+							value={showMonth ? "month" : "daily"}
+							onValueChange={(value) => { if (value === "daily" || value === "month") setSpendView(value); }}
+							aria-label={t("monthSpendTitle")}
+						>
+							<ToggleGroupItem value="daily" className="h-7 px-2.5 text-xs">{t("spendViewDaily")}</ToggleGroupItem>
+							<ToggleGroupItem value="month" className="h-7 px-2.5 text-xs">{t("spendViewMonth")}</ToggleGroupItem>
+						</ToggleGroup>
+					) : null}
+				>
+					{showMonth ? (
+						<MonthSpendChart forecast={monthSpend} formatCurrency={formatCurrency} />
+					) : (
+						<StackedTimeSeriesBarChart
+							data={data.charts.usageByModelCost}
+							valueKind="currency"
+						/>
+					)}
+				</ChartCard>
+				<ChartCard
+					title={t("usageType")}
+					subtitle={t("dailyCreditsByokSpend")}
+				>
+					<StackedTimeSeriesAreaChart
+						data={data.charts.usageTypeCost}
+						valueKind="currency"
+					/>
+				</ChartCard>
+				<ChartCard title={t("requestVolumeByModel")}>
+					<StackedTimeSeriesBarChart data={data.charts.requestVolumeByModel} />
+				</ChartCard>
+				<ChartCard
+					title={t("tokenSplit")}
+					subtitle={t("dailyInputOutputReasoningTokens")}
+				>
+					<StackedTimeSeriesBarChart data={data.charts.tokenSplit} />
+				</ChartCard>
+				<ChartCard
+					title={t("cachedAndUncachedTokens")}
+					subtitle={t("dailyCachedUncachedTokenVolume")}
+				>
+					<StackedTimeSeriesBarChart
+						data={data.charts.cacheSplit}
+						showTooltipPercent
+					/>
+				</ChartCard>
+			</div>
+		</div>
+	);
+}
+
+function Trends({ data }: { data: ObservabilityData }) {
+	const t = useTranslations("SettingsUI.observability");
+	return (
+		<div className="space-y-6">
+			<TrendSection
+				title={t("models")}
+				charts={data.charts.trends.models}
+				items={data.trendingModels}
+			/>
+			<TrendSection
+				title={t("apiKeys")}
+				charts={data.charts.trends.keys}
+				items={data.trendingKeys}
+			/>
+			<TrendSection
+				title={t("apps")}
+				charts={data.charts.trends.apps}
+				items={data.trendingApps}
+			/>
+		</div>
+	);
+}
+
+type ExploreDimension = "model" | "apiKey" | "app" | "provider";
+type ExploreMetric =
+	| "cost"
+	| "requests"
+	| "tokens"
+	| "inputTokens"
+	| "outputTokens"
+	| "cachedTokens"
+	| "errors";
+type ExploreRollup = "total" | "average";
+type ExploreSort = "desc" | "asc";
+type ExploreTableSortKey =
+	| "label"
+	| "value"
+	| "share"
+	| "requests"
+	| "tokens"
+	| "cost";
+type ExploreTableSort = {
+	key: ExploreTableSortKey;
+	direction: ExploreSort;
+} | null;
+
+const EXPLORE_DIMENSIONS: Array<{
+	id: ExploreDimension;
+	icon: React.ComponentType<{ className?: string }>;
+}> = [
+	{ id: "model", icon: Blocks },
+	{ id: "apiKey", icon: KeyRound },
+	{ id: "app", icon: Workflow },
+	{ id: "provider", icon: UserRound },
+];
+
+const EXPLORE_METRICS: Array<{
+	id: ExploreMetric;
+	valueKind: TimeSeriesValueKind;
+	icon: React.ComponentType<{ className?: string }>;
+}> = [
+	{ id: "cost", valueKind: "currency", icon: CircleDollarSign },
+	{ id: "requests", valueKind: "number", icon: Hash },
+	{ id: "tokens", valueKind: "number", icon: Coins },
+	{ id: "inputTokens", valueKind: "number", icon: Coins },
+	{ id: "outputTokens", valueKind: "number", icon: Coins },
+	{ id: "cachedTokens", valueKind: "number", icon: Coins },
+	{ id: "errors", valueKind: "number", icon: CircleDot },
+];
+
+function selectExploreOption<T extends string>(
+	items: Array<{ id: T; label: string; icon?: React.ComponentType<{ className?: string }> }>,
+	value: T,
+) {
+	return items.find((item) => item.id === value) ?? items[0];
+}
+
+const exploreToolbarGroupClass =
+	"h-9 overflow-hidden rounded-xl border border-border bg-input/50 shadow-none";
+
+const exploreToolbarButtonClass =
+	"h-9 rounded-xl border-border bg-input/50 px-3 shadow-none hover:bg-muted/50 hover:text-foreground";
+
+const exploreToolbarSegmentClass =
+	"!h-9 rounded-none border-0 bg-transparent shadow-none focus:ring-0 hover:bg-muted/50";
+
+function metricDisplayValue(value: number, kind: TimeSeriesValueKind) {
+	return kind === "currency" ? formatCurrency(value) : formatNumber(value);
+}
+
+function aggregateExploreRows(args: {
+	rows: ObservabilityExploreRow[];
+	dimension: ExploreDimension;
+	metric: ExploreMetric;
+	rollup: ExploreRollup;
+	sort: ExploreSort;
+	limit: number;
+	showOther: boolean;
+	unknownLabel: string;
+	otherLabel: string;
+}) {
+	const totals = new Map<string, { value: number; count: number; requests: number; tokens: number; cost: number; errors: number }>();
+	for (const row of args.rows) {
+		const key = String(row[args.dimension] || args.unknownLabel);
+		const current =
+			totals.get(key) ?? { value: 0, count: 0, requests: 0, tokens: 0, cost: 0, errors: 0 };
+		current.value += Number(row[args.metric] ?? 0);
+		current.count += 1;
+		current.requests += row.requests;
+		current.tokens += row.tokens;
+		current.cost += row.cost;
+		current.errors += row.errors;
+		totals.set(key, current);
+	}
+	const allRows = Array.from(totals.entries()).map(([id, values]) => ({
+		id,
+		label: id,
+		value: args.rollup === "average" && values.count > 0 ? values.value / values.count : values.value,
+		requests: values.requests,
+		tokens: values.tokens,
+		cost: values.cost,
+		errors: values.errors,
+		count: values.count,
+	}));
+	allRows.sort((a, b) =>
+		args.sort === "desc" ? b.value - a.value : a.value - b.value,
+	);
+	const visible = allRows.slice(0, args.limit);
+	const hidden = allRows.slice(args.limit);
+	if (args.showOther && hidden.length > 0) {
+		visible.push({
+			id: "other",
+			label: args.otherLabel,
+			value: hidden.reduce((sum, row) => sum + row.value, 0),
+			requests: hidden.reduce((sum, row) => sum + row.requests, 0),
+			tokens: hidden.reduce((sum, row) => sum + row.tokens, 0),
+			cost: hidden.reduce((sum, row) => sum + row.cost, 0),
+			errors: hidden.reduce((sum, row) => sum + row.errors, 0),
+			count: hidden.reduce((sum, row) => sum + row.count, 0),
+		});
+	}
+	const total = visible.reduce((sum, row) => sum + row.value, 0);
+	return {
+		rows: visible.map((row, index) => ({
+			...row,
+			share: total > 0 ? row.value / total : 0,
+			color: CHART_COLORS[index % CHART_COLORS.length],
+		})),
+		total,
+		allCount: allRows.length,
+	};
+}
+
+function ExploreSelect<T extends string>({
+	value,
+	options,
+	onValueChange,
+	className,
+	grouped = false,
+}: {
+	value: T;
+	options: Array<{
+		id: T;
+		label: string;
+		icon?: React.ComponentType<{ className?: string }>;
+	}>;
+	onValueChange: (value: T) => void;
+	className?: string;
+	grouped?: boolean;
+}) {
+	const selectedOption = selectExploreOption(options, value);
+	const SelectedIcon = selectedOption.icon;
+	return (
+		<Select value={value} onValueChange={(next) => onValueChange(next as T)}>
+			<SelectTrigger
+				className={cn(
+					"!h-9 rounded-xl shadow-none",
+					grouped &&
+						exploreToolbarSegmentClass,
+					className,
+				)}
+			>
+				<span className="flex min-w-0 items-center gap-2">
+					{SelectedIcon ? (
+						<SelectedIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+					) : null}
+					<span className="truncate">{selectedOption.label}</span>
+				</span>
+			</SelectTrigger>
+			<SelectContent align="start">
+				{options.map((item) => {
+					const Icon = item.icon;
+					return (
+						<SelectItem key={item.id} value={item.id}>
+							<span className="flex items-center gap-2">
+								{Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null}
+								{item.label}
+							</span>
+						</SelectItem>
+					);
+				})}
+			</SelectContent>
+		</Select>
+	);
+}
+
+function ExploreBarChart({
+	rows,
+	valueKind,
+	chartType,
+	height = 300,
+}: {
+	rows: Array<{ id: string; label: string; value: number; color: string }>;
+	valueKind: TimeSeriesValueKind;
+	chartType: TrendChartType;
+	height?: number;
+}) {
+	const chartConfig = Object.fromEntries(
+		rows.map((row) => [row.id, { label: row.label, color: row.color }]),
+	) satisfies ChartConfig;
+	const chartRows = rows.map((row) => ({ ...row, valueLabel: row.label }));
+	const maxValue = Math.max(0, ...rows.map((row) => row.value));
+	return (
+		<ChartContainer
+			config={chartConfig}
+			className="w-full min-w-0 [aspect-ratio:auto]"
+			style={{ width: "100%", height, minHeight: height }}
+		>
+			<BarChart
+				data={chartRows}
+				layout="vertical"
+				margin={{ top: 8, right: 16, bottom: 8, left: 8 }}
+			>
+				<CartesianGrid horizontal={false} strokeDasharray="3 3" />
+				<XAxis
+					type="number"
+					tickLine={false}
+					axisLine={false}
+					tickFormatter={(value) => formatAxisValue(Number(value), valueKind)}
+					domain={timeSeriesYAxisDomain(maxValue)}
+				/>
+				<YAxis
+					type="category"
+					dataKey="label"
+					tickLine={false}
+					axisLine={false}
+					width={132}
+				/>
+				<Tooltip
+					cursor={{ fill: "var(--muted)", opacity: 0.32 }}
+					content={(props) => {
+						const item = props.payload?.[0]?.payload;
+						if (!props.active || !item) return null;
+						return (
+							<div className="min-w-44 rounded-md border bg-popover p-2.5 text-popover-foreground shadow-md">
+								<div className="text-xs font-medium">{item.label}</div>
+								<div className="mt-1 font-mono text-sm">
+									{metricDisplayValue(Number(item.value ?? 0), valueKind)}
+								</div>
+							</div>
+						);
+					}}
+				/>
+				<Bar
+					dataKey="value"
+					fill={CHART_COLORS[0]}
+					radius={chartType === "bar" ? 4 : 999}
+					barSize={chartType === "dot" ? 8 : 14}
+					isAnimationActive
+					animationDuration={220}
+				>
+					{chartRows.map((row) => (
+						<Cell key={row.id} fill={row.color} />
+					))}
+				</Bar>
+			</BarChart>
+		</ChartContainer>
+	);
+}
+
+function Explore({ data }: { data: ObservabilityData }) {
+	const t = useTranslations("SettingsUI.observability");
+	const tStrings = useTranslations("SettingsUI.strings");
+	const [dimension, setDimension] = React.useState<ExploreDimension>("model");
+	const [metric, setMetric] = React.useState<ExploreMetric>("cost");
+	const [rollup, setRollup] = React.useState<ExploreRollup>("total");
+	const [sort, setSort] = React.useState<ExploreSort>("desc");
+	const [limit, setLimit] = React.useState("10");
+	const [showOther, setShowOther] = React.useState(true);
+	const [chartType, setChartType] = React.useState<TrendChartType>("bar");
+	const [showChart, setShowChart] = React.useState(false);
+	const [tableSort, setTableSort] = React.useState<ExploreTableSort>(null);
+	const localizedMetrics = EXPLORE_METRICS.map((item) => ({
+		...item,
+		label: t(`metric${item.id[0]?.toUpperCase()}${item.id.slice(1)}` as never),
+	}));
+	const localizedDimensions = EXPLORE_DIMENSIONS.map((item) => ({
+		...item,
+		label: t(`dimension${item.id[0]?.toUpperCase()}${item.id.slice(1)}` as never),
+	}));
+	const metricOption =
+		localizedMetrics.find((item) => item.id === metric) ?? localizedMetrics[0];
+	const dimensionOption =
+		localizedDimensions.find((item) => item.id === dimension) ??
+		localizedDimensions[0];
+	const modelLogoByLabel = React.useMemo(
+		() =>
+			new Map(
+				(data.filterOptions?.models ?? []).map((option) => [
+					option.label,
+					option.logoId,
+				]),
+			),
+		[data.filterOptions?.models],
+	);
+	const aggregated = React.useMemo(
+		() =>
+				aggregateExploreRows({
+					rows: data.exploreRows,
+					dimension,
+					metric,
+					rollup,
+					sort,
+					limit: Number(limit),
+					showOther,
+					unknownLabel: tStrings("Unknown"),
+					otherLabel: tStrings("Other"),
+				}),
+		[
+			data.exploreRows,
+			dimension,
+			metric,
+			rollup,
+			sort,
+			limit,
+			showOther,
+			tStrings,
+		],
+	);
+	const sortedRows = React.useMemo(() => {
+		if (!tableSort) return aggregated.rows;
+		return [...aggregated.rows].sort((a, b) => {
+			const left =
+				tableSort.key === "label" ? a.label : Number(a[tableSort.key] ?? 0);
+			const right =
+				tableSort.key === "label" ? b.label : Number(b[tableSort.key] ?? 0);
+			const result =
+				typeof left === "string" && typeof right === "string"
+					? left.localeCompare(right)
+					: Number(left) - Number(right);
+			return tableSort.direction === "asc" ? result : -result;
+		});
+	}, [aggregated.rows, tableSort]);
+	const cycleTableSort = (key: ExploreTableSortKey) => {
+		setTableSort((current) => {
+			if (!current || current.key !== key) return { key, direction: "desc" };
+			if (current.direction === "desc") return { key, direction: "asc" };
+			return null;
+		});
+	};
+	return (
+		<div className="flex h-[calc(100dvh-18rem)] min-h-0 flex-col gap-4 overflow-hidden">
+			<div className="shrink-0 space-y-3">
+				<div className="flex flex-wrap items-center gap-2">
+					<ButtonGroup className={exploreToolbarGroupClass}>
+						<ExploreSelect
+							value={metric}
+							options={localizedMetrics}
+							onValueChange={setMetric}
+							className="w-44"
+							grouped
+						/>
+						<ButtonGroupSeparator />
+						<span className="flex h-full items-center px-2 text-xs text-muted-foreground">
+							{t("by")}
+						</span>
+						<ButtonGroupSeparator />
+						<ExploreSelect
+							value={dimension}
+							options={localizedDimensions}
+							onValueChange={setDimension}
+							className="w-36"
+							grouped
+						/>
+					</ButtonGroup>
+					<ButtonGroup className={exploreToolbarGroupClass}>
+						<Select
+							value={sort}
+							onValueChange={(value) => setSort(value as ExploreSort)}
+						>
+							<SelectTrigger className={cn(exploreToolbarSegmentClass, "w-24")}>
+								<span>{sort === "desc" ? t("top") : t("bottom")}</span>
+							</SelectTrigger>
+							<SelectContent align="start">
+								<SelectItem value="desc">{t("top")}</SelectItem>
+								<SelectItem value="asc">{t("bottom")}</SelectItem>
+							</SelectContent>
+						</Select>
+						<ButtonGroupSeparator />
+						<Select value={limit} onValueChange={setLimit}>
+							<SelectTrigger className={cn(exploreToolbarSegmentClass, "w-20")}>
+								<span>{limit}</span>
+							</SelectTrigger>
+							<SelectContent align="start">
+								{["5", "10", "15", "25"].map((value) => (
+									<SelectItem key={value} value={value}>
+										{value}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<ButtonGroupSeparator />
+						<Select
+							value={rollup}
+							onValueChange={(value) => setRollup(value as ExploreRollup)}
+						>
+							<SelectTrigger className={cn(exploreToolbarSegmentClass, "w-36")}>
+								<span>
+									{rollup === "average" ? t("rollupAverage") : t("rollupTotal")}
+								</span>
+							</SelectTrigger>
+							<SelectContent align="start">
+								<SelectItem value="total">{t("rollupTotal")}</SelectItem>
+								<SelectItem value="average">{t("rollupAverage")}</SelectItem>
+							</SelectContent>
+						</Select>
+					</ButtonGroup>
+					<Button
+						type="button"
+						variant="outline"
+						size="lg"
+						className={cn(exploreToolbarButtonClass, "gap-2")}
+					>
+						<ListFilter className="h-4 w-4" />
+						{t("filters")}
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						size="lg"
+						className={cn(exploreToolbarButtonClass, "gap-2")}
+						onClick={() => setShowChart((current) => !current)}
+					>
+						<BarChart3 className="h-4 w-4" />
+						{showChart ? t("hideChart") : t("showChart")}
+					</Button>
+					<div className="ml-auto flex items-center gap-2">
+						<TrendChartOptions
+							showOther={showOther}
+							cumulative={false}
+							chartType={chartType}
+							showCumulative={false}
+							onShowOtherChange={setShowOther}
+							onCumulativeChange={() => undefined}
+							onChartTypeChange={setChartType}
+						/>
+					</div>
+				</div>
+				<div className="text-xs text-muted-foreground">
+					{t("showingGroups", { shown: aggregated.rows.length, total: aggregated.allCount })}
+				</div>
+			</div>
+
+			{showChart ? (
+				<div className="shrink-0 border-b pb-3">
+					<ExploreBarChart
+						rows={aggregated.rows}
+						valueKind={metricOption.valueKind}
+						chartType={chartType}
+						height={260}
+					/>
+				</div>
+			) : null}
+
+			<div className="flex min-h-0 flex-1 flex-col border-t">
+				<div className="shrink-0 py-3">
+					<div>
+						<CardTitle className="flex items-center gap-2 text-base">
+							<Table2 className="h-4 w-4 text-muted-foreground" />
+							{t("breakdown")}
+						</CardTitle>
+						<p className="mt-1 text-sm text-muted-foreground">
+							{t("metricByDimension", { metric: metricOption.label, dimension: dimensionOption.label })}
+						</p>
+					</div>
+				</div>
+				<ScrollArea
+					className="min-h-0 flex-1 border-t"
+					scrollBarOrientation="both"
+					viewportClassName="h-full"
+				>
+					<Table>
+						<TableHeader className="sticky top-0 z-10 bg-card">
+							<TableRow>
+								<SortableTableHead
+									label={dimensionOption.label}
+									sortKey="label"
+									activeSort={tableSort}
+									onSortChange={cycleTableSort}
+								/>
+								<SortableTableHead
+									label={t("value")}
+									sortKey="value"
+									activeSort={tableSort}
+									onSortChange={cycleTableSort}
+									className="text-right"
+								/>
+								<SortableTableHead
+									label={t("shareOfTotal")}
+									sortKey="share"
+									activeSort={tableSort}
+									onSortChange={cycleTableSort}
+									className="w-[220px] text-right"
+								/>
+								<SortableTableHead
+									label={t("requests")}
+									sortKey="requests"
+									activeSort={tableSort}
+									onSortChange={cycleTableSort}
+									className="text-right"
+								/>
+								<SortableTableHead
+									label={t("tokens")}
+									sortKey="tokens"
+									activeSort={tableSort}
+									onSortChange={cycleTableSort}
+									className="text-right"
+								/>
+								<SortableTableHead
+									label={t("spend")}
+									sortKey="cost"
+									activeSort={tableSort}
+									onSortChange={cycleTableSort}
+									className="text-right"
+								/>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{sortedRows.map((row) => (
+								<TableRow key={row.id}>
+									<TableCell className="max-w-[320px] truncate font-medium">
+										<span className="inline-flex min-w-0 items-center gap-2">
+											{dimension === "model" && modelLogoByLabel.get(row.label) ? (
+												<span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-sm border bg-background">
+													<Logo
+														id={modelLogoByLabel.get(row.label) ?? ""}
+														alt={row.label}
+														width={16}
+														height={16}
+														className="h-4 w-4 object-contain"
+														fallbackToColor
+													/>
+												</span>
+											) : (
+												<span
+													className="h-2.5 w-2.5 shrink-0 rounded-sm"
+													style={{ backgroundColor: row.color }}
+												/>
+											)}
+											<span className="min-w-0 truncate">{row.label}</span>
+										</span>
+									</TableCell>
+									<TableCell className="text-right font-mono">
+										{metricDisplayValue(row.value, metricOption.valueKind)}
+									</TableCell>
+									<TableCell>
+										<div className="flex items-center justify-end gap-3">
+											<Progress value={row.share * 100} className="h-1.5 w-20" />
+											<span className="w-12 text-right font-mono text-xs">
+												{formatPercent(row.share)}
+											</span>
+										</div>
+									</TableCell>
+									<TableCell className="text-right font-mono">
+										{formatNumber(row.requests)}
+									</TableCell>
+									<TableCell className="text-right font-mono">
+										{formatNumber(row.tokens)}
+									</TableCell>
+									<TableCell className="text-right font-mono">
+										{formatCurrency(row.cost)}
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				</ScrollArea>
+			</div>
+		</div>
+	);
+}
+
+function Guardrails({
+	metrics,
+}: {
+	metrics: GuardrailEnforcementMetricsResult;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	const breakdown = [
+		{ id: "blocked", label: t("blocked"), value: metrics.totals.blocked },
+		{ id: "redacted", label: t("redacted"), value: metrics.totals.redacted },
+		{ id: "flagged", label: t("flagged"), value: metrics.totals.flagged },
+	];
+	const timeline = metrics.buckets.map((bucket) => ({
+		id: bucket.bucket,
+		label: bucket.label,
+		value: bucket.total,
+	}));
+	return (
+		<div className="space-y-6">
+			<div className="grid gap-3 md:grid-cols-3">
+				{breakdown.map((item) => (
+					<Card key={item.id} className="rounded-lg">
+						<CardHeader className="pb-2">
+							<CardTitle className="text-sm text-muted-foreground">
+								{t("guardrailRequestCount", { label: item.label })}
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-semibold">{formatNumber(item.value)}</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+			<div className="grid gap-4 xl:grid-cols-2">
+				<ChartCard
+					 title={t("guardrailBreakdown")}
+				>
+					<DonutBreakdownChart data={breakdown} />
+				</ChartCard>
+				<ChartCard
+					 title={t("guardrailEventsOverTime")}
+				>
+					<BarBreakdownChart data={timeline} label={t("events")} />
+				</ChartCard>
+			</div>
+			<Card className="rounded-lg">
+				<CardHeader>
+				<CardTitle className="text-base">{t("topGuardrails")}</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					{metrics.topGuardrails.length === 0 ? (
+						<p className="text-sm text-muted-foreground">
+							{t("noGuardrailEvents")}
+						</p>
+					) : null}
+					{metrics.topGuardrails.map((guardrail) => (
+						<div
+							key={guardrail.id}
+							className="flex items-center justify-between rounded-md border px-3 py-2"
+						>
+							<code className="text-xs">{guardrail.id}</code>
+							<Badge variant="outline">{guardrail.count}</Badge>
+						</div>
+					))}
+				</CardContent>
+			</Card>
+		</div>
+	);
+}
+
+export default function ObservabilityHub({
+	data,
+	guardrailMetrics,
+	initialTab,
+	labelFacets = [],
+	labelSummary = null,
+	requestClassifiers = [],
+	labelBreakdown,
+	preset,
+	customFrom,
+	customTo,
+}: {
+	data: ObservabilityData;
+	guardrailMetrics: GuardrailEnforcementMetricsResult;
+	initialTab: ObservabilityTab;
+	labelFacets?: UsageLabelFacet[];
+	labelSummary?: UsageLabelSummary | null;
+	requestClassifiers?: RequestClassifierSummary[];
+	/** The period and key filters the "usage by label" table reads with; omitted, it is hidden. */
+	labelBreakdown?: { from: string; to: string; keyId?: string | null; excludeKey?: boolean; creatorId?: string | null };
+	preset: UsageRangePreset;
+	customFrom?: string | null;
+	customTo?: string | null;
+}) {
+	const t = useTranslations("SettingsUI.observability");
+	return (
+		<div className="space-y-6">
+			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+				<div className="min-w-0 flex-1">
+					<h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("activity")}</h1>
+					<p className="mt-1 text-xs text-muted-foreground sm:text-sm">{t("yourUsage")}</p>
+				</div>
+				<div className="flex shrink-0 flex-wrap justify-end gap-2">
+					<RequestLabelFilter facets={labelFacets} classifiers={requestClassifiers} mode="usage" />
+					<UsageLogsToolbar
+						view="logs"
+						preset={preset}
+						customFrom={customFrom}
+						customTo={customTo}
+					/>
+				</div>
+			</div>
+			{labelSummary ? (
+				<LabelFilterSummary
+					requestCount={labelSummary.requestCount}
+					totalCostNanos={labelSummary.totalCostNanos}
+					isSampled={labelSummary.isSampled}
+				/>
+			) : null}
+
+			{initialTab === "overview" ? <Overview data={data} /> : null}
+			{initialTab === "overview" && labelBreakdown ? (
+				<UsageLabelBreakdown
+					facets={labelFacets}
+					classifiers={requestClassifiers}
+					labelFilterActive={Boolean(labelSummary)}
+					{...labelBreakdown}
+				/>
+			) : null}
+			{initialTab === "trends" ? <Trends data={data} /> : null}
+			{initialTab === "explore" ? (
+				<Explore data={data} />
+			) : null}
+			{initialTab === "guardrails" ? (
+				<Guardrails metrics={guardrailMetrics} />
+			) : null}
+		</div>
+	);
+}

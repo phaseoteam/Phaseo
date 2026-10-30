@@ -1,0 +1,1757 @@
+"use client";
+
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
+import React, { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { privateUsageOptions } from "@/lib/query/privateUsage";
+import { fetchPrivateUsageOperation, fetchPrivateUsageRequest } from "@/lib/query/fetchPrivateUsage";
+import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
+import dynamic from "next/dynamic";
+import { useQueryState } from "nuqs";
+import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { buildOpenRequestInChatHref } from "@/components/(chat)/chatMessageMetadata";
+import { normalizeLogReplayEndpoint } from "@/lib/chat/logReplay";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuSeparator,
+	ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+	ChevronLeft,
+	ChevronRight,
+	ChevronsLeft,
+	CheckCircle2,
+	XCircle,
+	AppWindow,
+	Loader2,
+	Copy,
+	MessageSquare,
+	PanelRightOpen,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+	fetchPaginatedRequests,
+	fetchModelMetadata,
+	fetchGenerationLog,
+	PaginatedRequestsParams,
+	type InvestigateGenerationResult,
+	type ProviderMetadataEntry,
+	RequestRow,
+} from "@/app/(dashboard)/gateway/usage/server-actions";
+import { exportToCSV, exportToPDF } from "./export-utils";
+import { cn } from "@/lib/utils";
+import { Logo } from "@/components/Logo";
+import { formatRelativeToNow } from "@/lib/formatRelative";
+import UsageEntityHoverCard from "./UsageEntityHoverCard";
+import {
+	formatDateTime,
+	formatWordyDateTime,
+} from "@/lib/gateway/usage/timeFormatting";
+import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
+import {
+	buildUsageDisplay,
+	buildUsageFromNormalizedRequestFields,
+	extractUsageMeters,
+	formatUsageNumber,
+} from "./usageMeters";
+import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
+import {
+	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
+	normalizeProviderPromptTrainingPolicy,
+} from "@/lib/providers/promptTrainingPolicy";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
+
+import {
+	REQUEST_COLUMNS,
+	defaultRequestColumns,
+	formatRequestMetric, requestMetricNumber,
+	orderRequestColumns,
+	type RequestTableDensity,
+	type RequestColumnId,
+	type RequestColumnPreference,
+} from "./requestColumns";
+
+import RequestLabelBadges from "./RequestLabelBadges";
+import type { RequestClassifierSummary } from "./requestClassifierLabels";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
+
+const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
+
+interface UnifiedRequestsTableProps {
+	columns?: RequestColumnPreference[];
+	density?: RequestTableDensity;
+	apiKeys?: Array<{ id: string; name: string | null }>;
+	timeRange: { from: string; to: string };
+	appNames: Map<string, string>;
+	modelMetadata: ModelMetadataMap;
+	providerNames: Map<string, string>;
+	providerMetadata: Map<string, ProviderMetadataEntry>;
+	initialPage: number;
+	initialRows: RequestRow[];
+	initialTotal: number;
+	initialTotalPages: number;
+	initialHasMore: boolean;
+	initialNextCursor: { createdAt: string; id: string } | null;
+	initialPageSize: number;
+	detailBasePath?: string;
+	/** Names for classifier labels in the table and request sheet. */
+	requestClassifiers?: RequestClassifierSummary[];
+	onExportRef?: React.MutableRefObject<
+		((format: "csv" | "pdf") => void) | null
+	>;
+}
+
+function RequestRowContextMenu({
+	row,
+	modelId,
+	onInspect,
+}: {
+	row: RequestRow;
+	modelId: string | null;
+	onInspect: () => void;
+}) {
+	const tUi = useTranslations("Common.ui");
+	const router = useRouter();
+	const searchParams = useSearchParams();
+	const requestId = row.request_id?.trim() || null;
+	const sessionId = row.session_id?.trim() || null;
+	const nativeResponseId = row.native_response_id?.trim() || null;
+	const resolvedModelId = modelId?.trim() || null;
+	const canInspect = Boolean(requestId && !row.is_sample);
+	// Whether the content was stored is only known from the detail; Chat explains
+	// when it wasn't.
+	const canOpenInChat = canInspect && normalizeLogReplayEndpoint(row.endpoint) !== null;
+	const hasCopyAction = Boolean(
+		requestId || sessionId || nativeResponseId || resolvedModelId,
+	);
+	const copyValue = async (label: string, value: string) => {
+		try {
+			await navigator.clipboard.writeText(value);
+			toast.success(tUi("actions.copied", { label }));
+		} catch {
+			toast.error(tUi("actions.copyFailed", { label }));
+		}
+	};
+
+	return (
+		<ContextMenuContent className="w-56 rounded-md">
+			{canInspect ? (
+				<ContextMenuItem className="rounded-md" onClick={onInspect}>
+					<PanelRightOpen />
+					{tUi("actions.openRequestDetails")}
+				</ContextMenuItem>
+			) : null}
+			{canOpenInChat && requestId ? (
+				<ContextMenuItem
+					className="rounded-md"
+					onClick={() => router.push(buildOpenRequestInChatHref(requestId, searchParams.get("workspaceId")))}
+				>
+					<MessageSquare />
+					{tUi("actions.openInChat")}
+				</ContextMenuItem>
+			) : null}
+			{canInspect && hasCopyAction ? <ContextMenuSeparator /> : null}
+			{requestId ? (
+				<ContextMenuItem
+					className="rounded-md"
+					onClick={() => void copyValue(tUi("identifiers.requestId"), requestId)}
+				>
+					<Copy />
+					{tUi("actions.copyRequestId")}
+				</ContextMenuItem>
+			) : null}
+			{sessionId ? (
+				<ContextMenuItem
+					className="rounded-md"
+					onClick={() => void copyValue(tUi("identifiers.sessionId"), sessionId)}
+				>
+					<Copy />
+					{tUi("actions.copySessionId")}
+				</ContextMenuItem>
+			) : null}
+			{nativeResponseId ? (
+				<ContextMenuItem
+					className="rounded-md"
+					onClick={() => void copyValue(tUi("identifiers.nativeResponseId"), nativeResponseId)}
+				>
+					<Copy />
+					{tUi("actions.copyNativeResponseId")}
+				</ContextMenuItem>
+			) : null}
+			{resolvedModelId ? (
+				<ContextMenuItem
+					className="rounded-md"
+					onClick={() => void copyValue(tUi("identifiers.modelId"), resolvedModelId)}
+				>
+					<Copy />
+					{tUi("actions.copyModelId")}
+				</ContextMenuItem>
+			) : null}
+		</ContextMenuContent>
+	);
+}
+
+function isInteractiveRowTarget(target: EventTarget | null): boolean {
+	return (
+		target instanceof Element &&
+		Boolean(
+			target.closest(
+				'a, button, input, select, textarea, [role="button"], [role="link"], [data-row-click-ignore]',
+			),
+		)
+	);
+}
+
+function formatCost(nanos: number | null | undefined, _locale: string): string {
+	const dollars = Number(nanos ?? 0) / 1e9;
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5 }).format(dollars);
+}
+
+function getModelDetailsHref(modelId: string | null): string | null {
+	if (!modelId) return null;
+	const [organisationId, ...modelParts] = modelId.split("/");
+	if (!organisationId || modelParts.length === 0) return null;
+	const routeModelId = modelParts.join("/");
+	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeModelId)}`;
+}
+
+function normalizeNonEmpty(value: string | null | undefined): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : null;
+}
+
+function getRequestedModelId(row: RequestRow): string | null {
+	return (
+		normalizeNonEmpty(row.requested_model_id) ?? normalizeNonEmpty(row.model_id)
+	);
+}
+
+function getRoutedModelId(row: RequestRow): string | null {
+	const requested = getRequestedModelId(row);
+	const routed =
+		normalizeNonEmpty(row.routed_model_id) ?? normalizeNonEmpty(row.model_id);
+	if (requested && routed && /(?::free|-free)$/i.test(requested)) {
+		const base = (value: string) =>
+			value.replace(/(?::free|-free)$/i, "").toLowerCase();
+		if (base(requested) === base(routed)) return requested;
+	}
+	return routed;
+}
+
+const PHASEO_CHAT_APP_KEYS = new Set([
+	"phaseo-chat@phaseo.app",
+	"https://phaseo.app/chat",
+	"phaseo-chat@phaseo.app",
+	"phaseo-chat@phaseo.app",
+	"https://phaseo.app/chat",
+]);
+
+function isPhaseoChatApp(row: RequestRow): boolean {
+	const key = normalizeNonEmpty(row.app_key)?.toLowerCase();
+	if (!key) return false;
+	return PHASEO_CHAT_APP_KEYS.has(key);
+}
+
+function stopRowClick(event: React.MouseEvent<HTMLElement>) {
+	event.stopPropagation();
+}
+
+function getClientSource(row: RequestRow, directHttp: string) {
+	if (row.client_source_id) {
+		return {
+			id: row.client_source_id,
+			name: row.client_source_name || row.client_source_id,
+			version: row.client_source_version || null,
+			detection: row.client_source_detection || null,
+			kind: row.client_source_kind || null,
+		};
+	}
+	const metadata = row.detail_metadata;
+	const source =
+		metadata && typeof metadata === "object" && !Array.isArray(metadata)
+			? metadata.client_source
+			: null;
+	if (!source || typeof source !== "object" || Array.isArray(source)) {
+		return {
+			id: "api",
+			name: directHttp,
+			version: null,
+			detection: "unknown",
+			kind: "api",
+		};
+	}
+	const id = typeof source.id === "string" ? source.id : null;
+	if (!id) {
+		return {
+			id: "api",
+			name: directHttp,
+			version: null,
+			detection: "unknown",
+			kind: "api",
+		};
+	}
+	return {
+		id,
+		name: typeof source.name === "string" ? source.name : id,
+		version: typeof source.version === "string" ? source.version : null,
+		detection: typeof source.detection === "string" ? source.detection : null,
+		kind: typeof source.kind === "string" ? source.kind : null,
+	};
+}
+
+export default function UnifiedRequestsTable({
+	columns = defaultRequestColumns(),
+	density = "regular",
+	apiKeys = [],
+	timeRange,
+	appNames,
+	modelMetadata,
+	providerNames,
+	providerMetadata,
+	initialPage,
+	initialRows,
+	initialTotal,
+	initialTotalPages,
+	initialHasMore,
+	initialNextCursor,
+	initialPageSize,
+	detailBasePath,
+	requestClassifiers = [],
+	onExportRef,
+}: UnifiedRequestsTableProps) {
+	const tUi = useTranslations("Common.ui");
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
+	const queryClient = useQueryClient();
+	const privateQuery = usePrivateUsageRefresh();
+	const scope = privateQuery?.scope;
+	const live = privateQuery?.live ?? false;
+	const snapshotUpdatedAt = privateQuery?.updatedAt ?? 0;
+	const visibleColumns = orderRequestColumns(columns).filter(
+		({ visible }) => visible,
+	);
+	const tableRef = React.useRef<HTMLTableElement>(null);
+	const [columnOffsets, setColumnOffsets] = useState<number[]>([]);
+	const columnOrder = visibleColumns.map(({ id }) => id).join(",");
+	useEffect(() => {
+		const headers = Array.from(
+			tableRef.current?.querySelectorAll("thead th") ?? [],
+		);
+		const measure = () => {
+			let left = 0;
+			const offsets = headers.map((header) => {
+				const offset = left;
+				left += header.getBoundingClientRect().width;
+				return offset;
+			});
+			setColumnOffsets((previous) =>
+				previous.length === offsets.length &&
+				previous.every((value, index) => value === offsets[index])
+					? previous
+					: offsets,
+			);
+		};
+		const observer = new ResizeObserver(measure);
+		headers.forEach((header) => observer.observe(header));
+		measure();
+		return () => observer.disconnect();
+	}, [columnOrder]);
+	const pinnedCellProps = (index: number) => {
+		if (!visibleColumns[index].pinned) return {};
+		return {
+			"data-pinned": true,
+			style: {
+				position: "sticky" as const,
+				left: columnOffsets[index] ?? 0,
+				zIndex: 1,
+				backgroundColor: "var(--background)",
+				boxShadow: !visibleColumns[index + 1]?.pinned
+					? "inset -1px 0 0 var(--border)"
+					: undefined,
+			},
+		};
+	};
+	const userTimeZone =
+		typeof Intl !== "undefined"
+			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+			: "UTC";
+	// Cursor pagination is deliberately ordered newest-first. Supporting arbitrary
+	// sort columns would require a distinct stable cursor and index for each sort.
+	const [page, setPage] = useQueryState("page", {
+		defaultValue: 1,
+		parse: (value) => Math.max(1, parseInt(value || "1", 10)),
+		serialize: (value) => String(value),
+	});
+	const [pageSize, setPageSize] = useQueryState("per_page", {
+		defaultValue: initialPageSize,
+		parse: (value) => {
+			const parsed = Number.parseInt(value || String(initialPageSize), 10);
+			return [25, 50, 100].includes(parsed) ? parsed : initialPageSize;
+		},
+		serialize: (value) => String(value),
+	});
+
+	const [relativeNowMs, setRelativeNowMs] = useState<number | null>(null);
+
+	useEffect(() => {
+		const updateNow = () => setRelativeNowMs(Date.now());
+		updateNow();
+		const interval = setInterval(updateNow, 60_000);
+		return () => clearInterval(interval);
+	}, []);
+
+	// Filters from URL
+	const [modelFilter] = useQueryState("model");
+	const [providerFilter] = useQueryState("provider");
+	const [appFilter] = useQueryState("app");
+	const [endpointFilter] = useQueryState("endpoint");
+	const [finishReasonFilter] = useQueryState("finish_reason");
+	const [streamFilter] = useQueryState("stream");
+	const [errorCodeFilter] = useQueryState("error_code");
+	const [statusCodeFilter] = useQueryState("http_status");
+	const [keyFilter] = useQueryState("key");
+	const [statusFilter] = useQueryState("status");
+	const [requestFilter] = useQueryState("req");
+	const [sessionFilter] = useQueryState("session");
+	const [sourceFilter] = useQueryState("source");
+	const [labelKey] = useQueryState("label_key");
+	const [labelValue] = useQueryState("label_value");
+	const [labelOperator] = useQueryState("label_op");
+	const [inputTokensFilter] = useQueryState("input_tokens");
+	const [inputTokensMax] = useQueryState("input_tokens_max");
+	const [inputTokensOperator] = useQueryState("input_tokens_op");
+	const [outputTokensFilter] = useQueryState("output_tokens");
+	const [outputTokensMax] = useQueryState("output_tokens_max");
+	const [outputTokensOperator] = useQueryState("output_tokens_op");
+	const [totalTokensFilter] = useQueryState("total_tokens");
+	const [totalTokensMax] = useQueryState("total_tokens_max");
+	const [totalTokensOperator] = useQueryState("total_tokens_op");
+	const searchParams = useSearchParams();
+	const filterOperators = React.useMemo(
+		() => ({
+			model: searchParams.get("model_op") ?? "is",
+			provider: searchParams.get("provider_op") ?? "is",
+			app: searchParams.get("app_op") ?? "is",
+			endpoint: searchParams.get("endpoint_op") ?? "is",
+			finish: searchParams.get("finish_op") ?? "is",
+			stream: searchParams.get("stream_op") ?? "is",
+			error: searchParams.get("error_op") ?? "is",
+			http: searchParams.get("http_op") ?? "is",
+			key: searchParams.get("key_op") ?? "is",
+			status: searchParams.get("status_op") ?? "is",
+			source: searchParams.get("source_op") ?? "is",
+		}),
+		[searchParams],
+	);
+	const [detailRequestId, setDetailRequestId] = useQueryState("request", {
+		history: "push",
+		shallow: true,
+		scroll: false,
+	});
+
+	// Local state
+	const [pageCache, setPageCache] = useState<Map<number, RequestRow[]>>(
+		() => new Map([[initialPage, initialRows]]),
+	);
+	const [pageCursors, setPageCursors] = useState<
+		Map<number, { createdAt: string; id: string } | null>
+	>(
+		() =>
+			new Map([
+				[1, null],
+				[2, initialNextCursor],
+			]),
+	);
+	const [hasMoreByPage, setHasMoreByPage] = useState<Map<number, boolean>>(
+		() => new Map([[1, initialHasMore]]),
+	);
+	const [total, setTotal] = useState(initialTotal);
+	const [totalPages, setTotalPages] = useState(initialTotalPages);
+	const [loading, setLoading] = useState(false);
+	const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
+	const inFlightPages = React.useRef(new Set<number>());
+	const [selectedRequest, setSelectedRequest] = useState<RequestRow | null>(
+		null,
+	);
+	const [selectedDetail, setSelectedDetail] =
+		useState<InvestigateGenerationResult | null>(null);
+	const [detailLoading, setDetailLoading] = useState(false);
+	const [selectedAppName, setSelectedAppName] = useState<string | null>(null);
+	const [resolvedModelMetadata, setResolvedModelMetadata] =
+		useState<ModelMetadataMap>(new Map(modelMetadata));
+	const [resolvedProviderNames, setResolvedProviderNames] = useState<
+		Map<string, string>
+	>(new Map(providerNames));
+	const [resolvedProviderMetadata, setResolvedProviderMetadata] = useState<
+		Map<string, ProviderMetadataEntry>
+	>(new Map(providerMetadata));
+	const [dialogOpen, setDialogOpen] = useState(false);
+	// Build cache key from filters
+	const getCacheKey = useCallback(() => {
+		return `${timeRange.from}-${timeRange.to}-${pageSize}-${modelFilter}-${providerFilter}-${appFilter}-${endpointFilter}-${finishReasonFilter}-${streamFilter}-${errorCodeFilter}-${statusCodeFilter}-${keyFilter}-${statusFilter}-${requestFilter}-${sessionFilter}-${sourceFilter}-${labelKey}-${labelValue}-${labelOperator}-${inputTokensFilter}-${inputTokensMax}-${inputTokensOperator}-${outputTokensFilter}-${outputTokensMax}-${outputTokensOperator}-${totalTokensFilter}-${totalTokensMax}-${totalTokensOperator}-${JSON.stringify(filterOperators)}`;
+	}, [
+		timeRange,
+		pageSize,
+		modelFilter,
+		providerFilter,
+		appFilter,
+		endpointFilter,
+		finishReasonFilter,
+		streamFilter,
+		errorCodeFilter,
+		statusCodeFilter,
+		keyFilter,
+		statusFilter,
+		requestFilter,
+		sessionFilter,
+		sourceFilter,
+		labelKey,
+		labelValue,
+		labelOperator,
+		inputTokensFilter,
+		inputTokensMax,
+		inputTokensOperator,
+		outputTokensFilter,
+		outputTokensMax,
+		outputTokensOperator,
+		totalTokensFilter,
+		totalTokensMax,
+		totalTokensOperator,
+		filterOperators,
+	]);
+
+	const [currentCacheKey, setCurrentCacheKey] = useState(getCacheKey());
+	const requestGeneration = React.useRef(0);
+	const requestDatasetKey = JSON.stringify([scope, getCacheKey(), snapshotUpdatedAt]);
+	useEffect(() => {
+		inFlightPages.current.clear();
+		return () => { requestGeneration.current += 1; };
+	}, [requestDatasetKey]);
+
+	// Fetch a specific page
+	const fetchPage = useCallback(
+		async (pageNum: number, background = false) => {
+			const generation = requestGeneration.current;
+			if (inFlightPages.current.has(pageNum)) return null;
+			const cursor = pageNum === 1 ? null : pageCursors.get(pageNum);
+			if (pageNum > 1 && !cursor) return null;
+			inFlightPages.current.add(pageNum);
+
+			if (!background) {
+				setLoading(true);
+			} else {
+				setIsBackgroundLoading(true);
+			}
+
+			try {
+				const params: PaginatedRequestsParams = {
+					timeRange,
+					modelFilter: modelFilter || null,
+					providerFilter: providerFilter || null,
+					appFilter: appFilter || null,
+					endpointFilter: endpointFilter || null,
+					finishReasonFilter: finishReasonFilter || null,
+					streamFilter:
+						streamFilter === "streaming" || streamFilter === "non_streaming"
+							? streamFilter
+							: "all",
+					errorCodeFilter: errorCodeFilter || null,
+					statusCodeFilter:
+						typeof statusCodeFilter === "string" &&
+						/^[1-5]\d{2}$/.test(statusCodeFilter)
+							? Number.parseInt(statusCodeFilter, 10)
+							: null,
+					keyFilter: keyFilter || null,
+					statusFilter: (statusFilter as any) || "all",
+					requestFilter: requestFilter || null,
+					sessionFilter: sessionFilter || null,
+					sourceFilter: sourceFilter || null,
+					labelKey: labelKey || null,
+					labelValue: labelValue || null,
+					labelOperator: labelOperator || null,
+					filterOperators,
+					inputTokensFilter: inputTokensFilter || null,
+					inputTokensMax: inputTokensMax || null,
+					inputTokensOperator: inputTokensOperator || "gte",
+					outputTokensFilter: outputTokensFilter || null,
+					outputTokensMax: outputTokensMax || null,
+					outputTokensOperator: outputTokensOperator || "gte",
+					totalTokensFilter: totalTokensFilter || null,
+					totalTokensMax: totalTokensMax || null,
+					totalTokensOperator: totalTokensOperator || "gte",
+					cursor,
+					pageSize,
+					sortField: "created_at",
+					sortDirection: "desc",
+				};
+
+				const result = scope ? await queryClient.fetchQuery({
+					...privateUsageOptions(scope, "request-page", { params: JSON.stringify(params), snapshot: String(snapshotUpdatedAt) }, live),
+					queryFn: ({ signal }) => fetchPrivateUsageOperation<Awaited<ReturnType<typeof fetchPaginatedRequests>>>("paginatedRequests", [params], scope, signal),
+				}) : await fetchPaginatedRequests(params);
+				if (generation !== requestGeneration.current) return null;
+				const pageModelIds = Array.from(
+					new Set(
+						(result.data ?? [])
+							.flatMap((row) => [
+								getRequestedModelId(row),
+								getRoutedModelId(row),
+							])
+							.filter(
+								(id): id is string =>
+									typeof id === "string" && id.trim().length > 0,
+							),
+					),
+				);
+				const missingModelIds = pageModelIds.filter(
+					(modelId) => !resolvedModelMetadata.has(modelId),
+				);
+				if (missingModelIds.length > 0) {
+					const liveMetadata = await fetchModelMetadata(missingModelIds);
+					if (generation !== requestGeneration.current) return null;
+					setResolvedModelMetadata((prev) => {
+						const merged = new Map(prev);
+						for (const [key, value] of liveMetadata.entries()) {
+							merged.set(key, value);
+						}
+						return merged;
+					});
+				}
+
+				setPageCache((prev) => {
+					const next = new Map(prev);
+					next.set(pageNum, result.data);
+					return next;
+				});
+				setHasMoreByPage((prev) => new Map(prev).set(pageNum, result.hasMore));
+				setPageCursors((prev) =>
+					new Map(prev).set(pageNum + 1, result.nextCursor),
+				);
+
+				if (!background) {
+					setTotal((pageNum - 1) * pageSize + result.data.length);
+					setTotalPages(result.hasMore ? pageNum + 1 : pageNum);
+				}
+
+				return result;
+			} catch (error) {
+				if (generation !== requestGeneration.current) return null;
+				console.error("Error fetching requests:", error);
+				if (!background) {
+					setPageCache(new Map());
+					setTotal(0);
+					setTotalPages(0);
+				}
+				return null;
+			} finally {
+				if (generation === requestGeneration.current) {
+					inFlightPages.current.delete(pageNum);
+					if (!background) setLoading(false);
+					else setIsBackgroundLoading(false);
+				}
+			}
+		},
+		[
+			timeRange,
+			pageSize,
+			modelFilter,
+			providerFilter,
+			appFilter,
+			endpointFilter,
+			finishReasonFilter,
+			streamFilter,
+			errorCodeFilter,
+			statusCodeFilter,
+			keyFilter,
+			statusFilter,
+			requestFilter,
+			sessionFilter,
+			sourceFilter,
+			labelKey,
+			labelValue,
+			labelOperator,
+			pageCursors,
+			filterOperators,
+			inputTokensFilter,
+			inputTokensMax,
+			inputTokensOperator,
+			outputTokensFilter,
+			outputTokensMax,
+			outputTokensOperator,
+			totalTokensFilter,
+			totalTokensMax,
+			totalTokensOperator,
+			resolvedModelMetadata,
+			queryClient,
+			scope,
+			live,
+			snapshotUpdatedAt,
+		],
+	);
+
+	const refreshCurrentView = useCallback(async () => {
+		if (privateQuery) return privateQuery.refresh();
+		setPageCache(new Map());
+		await fetchPage(page, false);
+	}, [fetchPage, page, privateQuery]);
+
+	// Clear cache when filters change
+	useEffect(() => {
+		const newCacheKey = getCacheKey();
+		if (newCacheKey !== currentCacheKey) {
+			setPageCache(new Map());
+			setPageCursors(new Map([[1, null]]));
+			setHasMoreByPage(new Map());
+			setCurrentCacheKey(newCacheKey);
+			setPage(1);
+		}
+	}, [getCacheKey, currentCacheKey, setPage]);
+
+	useEffect(() => {
+		setResolvedModelMetadata(new Map(modelMetadata));
+	}, [modelMetadata]);
+
+	useEffect(() => {
+		setResolvedProviderNames(new Map(providerNames));
+	}, [providerNames]);
+
+	useEffect(() => {
+		setResolvedProviderMetadata(new Map(providerMetadata));
+	}, [providerMetadata]);
+
+	useEffect(() => {
+		setPageCache(new Map([[initialPage, initialRows]]));
+		setPageCursors(
+			new Map([
+				[1, null],
+				[2, initialNextCursor],
+			]),
+		);
+		setHasMoreByPage(new Map([[1, initialHasMore]]));
+		setTotal(initialTotal);
+		setTotalPages(initialTotalPages);
+		setLoading(false);
+	}, [
+		initialHasMore,
+		initialNextCursor,
+		initialPage,
+		initialRows,
+		initialTotal,
+		initialTotalPages,
+		snapshotUpdatedAt,
+	]);
+
+	useEffect(
+		() => registerUsageViewRefresher("logs", refreshCurrentView),
+		[refreshCurrentView],
+	);
+
+	// Fetch current page and prefetch next 2 pages
+	useEffect(() => {
+		// Check if current page is already cached
+		if (!pageCache.has(page)) {
+			// Rebuild the cursor chain from cached pages after returning to page 3+.
+			const nextPage = Array.from(pageCursors.keys()).sort((a, b) => a - b)
+				.find((candidate) => candidate <= page && !pageCache.has(candidate));
+			fetchPage(nextPage ?? page, false);
+		}
+
+		// Prefetch next 2 pages in background
+		if (live) return;
+		for (let i = 1; i <= 2; i++) {
+			const nextPage = page + i;
+			if (
+				nextPage <= totalPages &&
+				!pageCache.has(nextPage) &&
+				totalPages > 0
+			) {
+				fetchPage(nextPage, true);
+			}
+		}
+	}, [page, totalPages, pageCache, pageCursors, fetchPage, live]);
+
+	// Get current page data from cache
+	const data = pageCache.get(page) || [];
+
+	useEffect(() => {
+		if (!detailBasePath) return;
+		if (!detailRequestId) {
+			setDialogOpen(false);
+			setSelectedRequest(null);
+			setSelectedDetail(null);
+			setDetailLoading(false);
+			return;
+		}
+		let cancelled = false;
+		setSelectedDetail(null);
+		const row =
+			data.find((item) => item.request_id === detailRequestId) ?? null;
+		setSelectedRequest(row);
+		setSelectedAppName(row?.app_title ?? null);
+		setDialogOpen(Boolean(row));
+		setDetailLoading(true);
+		const detailPromise = scope ? queryClient.fetchQuery({
+			...privateUsageOptions(scope, "request-detail", { request: detailRequestId, snapshot: String(snapshotUpdatedAt) }, live),
+			queryFn: ({ signal }) => fetchPrivateUsageRequest(detailRequestId, scope, signal),
+		}) : fetchGenerationLog(detailRequestId);
+		void detailPromise
+			.then((result) => {
+				if (cancelled || !result.success || !result.data) return;
+				setSelectedDetail(result.data);
+				setSelectedRequest(result.data.request);
+				setSelectedAppName(result.data.appName);
+				setDialogOpen(true);
+			})
+			.catch(() => { if (!cancelled) setSelectedDetail(null); })
+			.finally(() => {
+				if (!cancelled) setDetailLoading(false);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [data, detailBasePath, detailRequestId, scope, live, queryClient, snapshotUpdatedAt]);
+
+	const handleRowClick = useCallback(
+		(request: RequestRow) => {
+			if (request.is_sample) return;
+			const isSelectedRequest = detailBasePath
+				? detailRequestId === request.request_id
+				: selectedRequest?.request_id === request.request_id;
+			if (isSelectedRequest && (detailBasePath || dialogOpen)) {
+				setDialogOpen(false);
+				setSelectedRequest(null);
+				setSelectedDetail(null);
+				setDetailLoading(false);
+				if (detailBasePath) void setDetailRequestId(null);
+				return;
+			}
+			setSelectedRequest(request);
+			setSelectedDetail(null);
+			setDetailLoading(Boolean(detailBasePath));
+			setSelectedAppName(request.app_title ?? null);
+			setDialogOpen(true);
+			if (detailBasePath) {
+				void setDetailRequestId(request.request_id);
+			}
+		},
+		[
+			detailBasePath,
+			detailRequestId,
+			dialogOpen,
+			selectedRequest?.request_id,
+			setDetailRequestId,
+		],
+	);
+
+	const handleDialogOpenChange = useCallback(
+		(nextOpen: boolean) => {
+			setDialogOpen(nextOpen);
+			if (!nextOpen) {
+				setSelectedDetail(null);
+				setDetailLoading(false);
+				if (detailBasePath) void setDetailRequestId(null);
+			}
+		},
+		[detailBasePath, setDetailRequestId],
+	);
+	const navigableRows = React.useMemo(
+		() => data.filter((row) => !row.is_sample),
+		[data],
+	);
+	const activeRequestId =
+		(selectedDetail?.request ?? selectedRequest)?.request_id ?? detailRequestId;
+	const activeRequestIndex = activeRequestId
+		? navigableRows.findIndex((row) => row.request_id === activeRequestId)
+		: -1;
+	const previousRequest =
+		activeRequestIndex > 0 ? navigableRows[activeRequestIndex - 1] : null;
+	const nextRequest =
+		activeRequestIndex >= 0 && activeRequestIndex < navigableRows.length - 1
+			? navigableRows[activeRequestIndex + 1]
+			: null;
+
+	const handleExport = React.useCallback(
+		(format: "csv" | "pdf") => {
+			const exportData = data.map((row) => {
+				const usage = buildUsageFromNormalizedRequestFields(row.usage, row);
+				const usageMeters = extractUsageMeters(usage);
+				const inputTokens =
+					usageMeters.find((m) => m.key === "input_tokens")?.value ?? 0;
+				const outputTokens =
+					usageMeters.find((m) => m.key === "output_tokens")?.value ?? 0;
+				const usageSummary = usageMeters.length
+					? usageMeters
+							.map((m) => `${m.label}: ${formatUsageNumber(m.value)}`)
+							.join(" | ")
+					: "-";
+				const providerLabel = row.provider
+					? resolveProviderDisplayName({
+							providerId: row.provider,
+							providerName:
+								providerNames.get(row.provider) ||
+								resolvedProviderMetadata.get(row.provider)?.name ||
+								row.provider,
+						})
+					: "-";
+				const appTitle = normalizeNonEmpty(row.app_title);
+				const mappedAppName = normalizeNonEmpty(
+					row.app_id ? appNames.get(row.app_id) : null,
+				);
+				const appLabel = appTitle ?? mappedAppName ?? "-";
+				const source = getClientSource(row, t("usageGaps.directHttp"));
+				const requestedModelId = getRequestedModelId(row);
+				const routedModelId = getRoutedModelId(row);
+				return {
+					[tUi("time.timestamp")]: new Date(row.created_at).toLocaleString(locale),
+					[tUi("requestsTable.requestedModel")]: getModelDisplayName(
+						requestedModelId,
+						resolvedModelMetadata,
+					),
+					[tUi("requestsTable.requestedModelId")]: requestedModelId || "-",
+					[tUi("requestsTable.routedModel")]: getModelDisplayName(
+						routedModelId,
+						resolvedModelMetadata,
+					),
+					[tUi("requestsTable.routedModelId")]: routedModelId || "-",
+					[tUi("select.provider")]: providerLabel,
+					[tUi("requestsTable.source")]: source?.name ?? tUi("requestsTable.directHttp"),
+					[tUi("requestsTable.sourceId")]: source?.id ?? "api",
+					[tUi("requestsTable.sourceType")]: source?.kind ?? "api",
+					[tUi("requestsTable.sourceVersion")]: source?.version ?? "-",
+					[tUi("requestsTable.sourceDetection")]: source?.detection ?? tUi("requestsTable.unknown"),
+					[tUi("requestsTable.app")]: appLabel,
+					[tUi("metrics.usage")]: usageSummary,
+					[tUi("requestsTable.inputTokens")]: formatUsageNumber(inputTokens),
+					[tUi("requestsTable.outputTokens")]: formatUsageNumber(outputTokens),
+					[tUi("metrics.cost")]: formatCost(row.cost_nanos, locale),
+					[tUi("requestsTable.generationMs")]: row.generation_ms || row.latency_ms || "-",
+					[tUi("requestsTable.finishReason")]: row.finish_reason || "-",
+					[tUi("select.status")]: row.success ? tUi("status.success") : tUi("status.error"),
+				};
+			});
+
+			const timestamp = new Date().toISOString().split("T")[0];
+			const filename = `gateway-requests-${timestamp}`;
+
+			if (format === "csv") {
+				exportToCSV(exportData, filename);
+			} else {
+				exportToPDF(exportData, filename, tUi("requestsTable.exportTitle"));
+			}
+		},
+		[data, appNames, providerNames, resolvedModelMetadata, resolvedProviderMetadata, tUi, t, locale],
+	);
+
+	// Expose export handler via ref
+	React.useEffect(() => {
+		if (onExportRef) {
+			onExportRef.current = handleExport;
+		}
+	}, [onExportRef, handleExport]);
+
+	return (
+		<div className="space-y-3">
+			{loading && data.length === 0 ? (
+				<div
+					className="flex items-center gap-3 rounded-md border border-border/70 bg-muted/15 px-3 py-2.5 text-sm"
+					role="status"
+					aria-live="polite"
+				>
+					<Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
+					<div className="min-w-0">
+						<p className="font-medium text-foreground">{tUi("requestsTable.loading")}</p>
+						<p className="truncate text-xs text-muted-foreground">
+							{tUi("requestsTable.loadingDescription")}
+						</p>
+					</div>
+				</div>
+			) : null}
+			{/* Table */}
+			<div className="min-w-0 max-w-full overflow-hidden rounded-md border">
+				<ScrollArea
+					className="w-full"
+					scrollBarOrientation="horizontal"
+					keepScrollbarMounted
+					viewportClassName="w-full pb-2"
+				>
+					<Table
+						ref={tableRef}
+						wrapInContainer={false}
+						data-density={density}
+						className={cn("isolate border-separate border-spacing-0 whitespace-nowrap text-xs [&_tr]:border-0 [&_thead_th]:border-b [&_tbody_tr:not(:last-child)>td]:border-b", {
+							"[&_tbody_td:not([colspan])]:py-1": density === "compact",
+							"[&_tbody_td:not([colspan])]:py-2": density === "regular",
+							"[&_tbody_td:not([colspan])]:py-4": density === "expanded",
+						})}
+					>
+						<TableHeader>
+							<TableRow className="h-9">
+								{visibleColumns.map(({ id }, index) => {
+									const column = REQUEST_COLUMNS.find(
+										(column) => column.id === id,
+									)!;
+									return (
+										<TableHead
+											key={id}
+											{...pinnedCellProps(index)}
+											className={"numeric" in column ? "text-right" : undefined}
+										>
+											{"description" in column ? (
+												<Tooltip>
+													<TooltipTrigger asChild>
+														<span className="cursor-help decoration-dotted underline underline-offset-4">
+															{column.label}
+														</span>
+													</TooltipTrigger>
+													<TooltipContent className="max-w-64">
+														{column.description}
+													</TooltipContent>
+												</Tooltip>
+											) : (
+												column.label
+											)}
+										</TableHead>
+									);
+								})}
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{loading && data.length === 0 ? (
+								<>
+									{Array.from({ length: Math.min(pageSize, 20) }).map(
+										(_, i) => (
+											<TableRow key={`skeleton-${i}`} className="animate-pulse">
+												{visibleColumns.map(({ id }, index) => (
+													<TableCell key={id} {...pinnedCellProps(index)}>
+														<div className="h-4 w-24 animate-pulse rounded bg-muted" />
+													</TableCell>
+												))}
+											</TableRow>
+										),
+									)}
+								</>
+							) : data.length === 0 ? (
+								<TableRow>
+									<TableCell
+										colSpan={visibleColumns.length}
+										className="py-10 text-center text-muted-foreground"
+									>
+										{t("usageGaps.copyNoRequestsFound")}</TableCell>
+								</TableRow>
+							) : (
+								<>
+									{/* Show cached data with optional loading overlay */}
+									{data.map((row, index) => {
+										const requestedModelId = getRequestedModelId(row);
+										const routedModelId = getRoutedModelId(row);
+										const rowKey = `${row.request_id}-${row.created_at}-${requestedModelId ?? "no-requested-model"}-${routedModelId ?? "no-routed-model"}-${row.provider ?? "no-provider"}-${index}`;
+										const routedModelHref =
+											row.provider === "private-model"
+												? "/settings/workspaces/private-models"
+												: getModelDetailsHref(routedModelId);
+										const routedModelMeta = routedModelId
+											? resolvedModelMetadata.get(routedModelId)
+											: undefined;
+										const providerMeta = row.provider
+											? resolvedProviderMetadata.get(row.provider)
+											: undefined;
+										const providerLabel = row.provider
+											? resolveProviderDisplayName({
+													providerId: row.provider,
+													providerName:
+														providerNames.get(row.provider) ||
+														providerMeta?.name ||
+														row.provider,
+												})
+											: null;
+										const appTitle = normalizeNonEmpty(row.app_title);
+										const mappedAppName = normalizeNonEmpty(
+											row.app_id ? appNames.get(row.app_id) : null,
+										);
+										const appLabel = row.app_id
+											? (appTitle ?? mappedAppName ?? t("usageGaps.unknownApp"))
+											: null;
+										const appHref = row.app_id
+											? `/apps/${encodeURIComponent(row.app_id)}`
+											: null;
+										const routedModelLabel = getModelDisplayName(
+											routedModelId,
+											resolvedModelMetadata,
+										);
+										const providerPolicyLabel =
+											providerMeta?.promptTrainingPolicy
+												? PROVIDER_PROMPT_TRAINING_POLICY_LABELS[
+														normalizeProviderPromptTrainingPolicy(
+															providerMeta.promptTrainingPolicy,
+														)
+													]
+												: null;
+
+										const normalizedUsage =
+											buildUsageFromNormalizedRequestFields(row.usage, row);
+										const usageMeters = extractUsageMeters(normalizedUsage);
+										const usageSummary =
+											buildUsageDisplay(normalizedUsage).tooltipLines.join(
+												"\n",
+											);
+										const cells: Record<RequestColumnId, React.ReactNode> = {
+											date: (
+												<TableCell
+													key="date"
+													className="py-2 font-mono text-xs"
+												>
+													<span
+														className="mr-2 inline-flex align-middle"
+														title={
+															row.success
+																? t("usageGaps.copySuccess")
+																: t("usageGaps.errorStatus", { status: row.status_code ?? "" })
+														}
+													>
+														{row.success ? (
+															<CheckCircle2
+																aria-label={tUi("status.success")}
+																className="size-3.5 text-emerald-600"
+															/>
+														) : (
+															<XCircle
+																aria-label={tUi("status.error")}
+																className="size-3.5 text-rose-600"
+															/>
+														)}
+													</span>
+													<HoverCard>
+														<HoverCardTrigger asChild>
+															<span className="cursor-help underline underline-offset-2 decoration-dotted">
+																{formatWordyDateTime(row.created_at, {
+																	includeTime: true,
+												locale,
+																})}
+															</span>
+														</HoverCardTrigger>
+														<HoverCardContent align="start" className="w-auto">
+															<div className="grid gap-2 text-xs">
+																<div className="grid grid-cols-[120px_1fr] gap-2">
+																	<div className="text-muted-foreground">
+																		{userTimeZone}
+																	</div>
+																	<div className="font-mono">
+																		{formatDateTime(
+																			new Date(row.created_at),
+																			userTimeZone,
+																		)}
+																	</div>
+																</div>
+																<div className="grid grid-cols-[120px_1fr] gap-2">
+																	<div className="text-muted-foreground">
+																		UTC
+																	</div>
+																	<div className="font-mono">
+																		{formatDateTime(
+																			new Date(row.created_at),
+																			"UTC",
+																		)}
+																	</div>
+																</div>
+																<div className="grid grid-cols-[120px_1fr] gap-2">
+																	<div className="text-muted-foreground">
+																		{tUi("time.relative")}
+																	</div>
+																	<div className="font-mono">
+																		{relativeNowMs
+																			? formatRelativeToNow(
+																					new Date(row.created_at),
+																					relativeNowMs, locale,
+																				)
+																			: "-"}
+																	</div>
+																</div>
+																<div className="grid grid-cols-[120px_1fr] gap-2">
+																	<div className="text-muted-foreground">
+																		{t("usageGaps.copyTimestamp")}</div>
+																	<div className="font-mono">
+																		{Math.floor(
+																			new Date(row.created_at).getTime() / 1000,
+																		)}
+																	</div>
+																</div>
+															</div>
+														</HoverCardContent>
+													</HoverCard>
+												</TableCell>
+											),
+											models: (
+												<TableCell
+													key="models"
+													className="py-2 font-medium truncate max-w-[200px]"
+												>
+													{routedModelId ? (
+														<div className="flex items-center gap-2">
+															{routedModelMeta ? (
+																<Logo
+																	id={routedModelMeta.organisationId}
+																	width={16}
+																	height={16}
+																	className="flex-shrink-0"
+																/>
+															) : null}
+															{routedModelHref ? (
+																<UsageEntityHoverCard
+																	title={routedModelLabel}
+																	subtitle={
+																		routedModelMeta?.organisationName ?? null
+																	}
+																	href={routedModelHref}
+																	visual={
+																		routedModelMeta ? (
+																			<Logo
+																				id={routedModelMeta.organisationId}
+																				width={16}
+																				height={16}
+																			/>
+																		) : null
+																	}
+																	rows={[
+																		{
+																			label: t("usageGaps.copyModelID"),
+																			value: (
+																				<code className="font-mono text-[11px]">
+																					{routedModelId}
+																				</code>
+																			),
+																		},
+																		...(routedModelMeta?.organisationName
+																			? [
+																					{
+																						label: t("usageGaps.copyOrganisation"),
+																						value:
+																							routedModelMeta.organisationName,
+																					},
+																				]
+																			: []),
+																	]}
+																>
+																	<Link
+																		href={routedModelHref}
+																		className="truncate font-medium text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-200 hover:decoration-foreground"
+																		onClick={stopRowClick}
+																	>
+																		{routedModelLabel}
+																	</Link>
+																</UsageEntityHoverCard>
+															) : (
+																<UsageEntityHoverCard
+																	title={routedModelLabel}
+																	subtitle={
+																		routedModelMeta?.organisationName ?? null
+																	}
+																	visual={
+																		routedModelMeta ? (
+																			<Logo
+																				id={routedModelMeta.organisationId}
+																				width={16}
+																				height={16}
+																			/>
+																		) : null
+																	}
+																	rows={[
+																		{
+																			label: t("usageGaps.copyModelID"),
+																			value: (
+																				<code className="font-mono text-[11px]">
+																					{routedModelId}
+																				</code>
+																			),
+																		},
+																		...(routedModelMeta?.organisationName
+																			? [
+																					{
+																						label: t("usageGaps.copyOrganisation"),
+																						value:
+																							routedModelMeta.organisationName,
+																					},
+																				]
+																			: []),
+																	]}
+																>
+																	<span
+																		className="truncate"
+																		title={routedModelId ?? undefined}
+																	>
+																		{routedModelLabel}
+																	</span>
+																</UsageEntityHoverCard>
+															)}
+														</div>
+													) : (
+														"-"
+													)}
+												</TableCell>
+											),
+											provider: (
+												<TableCell key="provider" className="py-2">
+													<div className="flex min-h-5 items-center">
+														{row.provider ? (
+															<UsageEntityHoverCard
+																title={providerLabel ?? row.provider}
+																href={
+																	row.provider === "private-model"
+																		? "/settings/workspaces/private-models"
+																		: `/api-providers/${encodeURIComponent(row.provider)}`
+																}
+																visual={
+																	<Logo
+																		id={row.provider}
+																		width={16}
+																		height={16}
+																	/>
+																}
+																rows={[
+																	{
+																		label: t("usageGaps.copyProviderID"),
+																		value: (
+																			<code className="font-mono text-[11px]">
+																				{row.provider}
+																			</code>
+																		),
+																	},
+																	...(providerPolicyLabel
+																		? [
+																				{
+																					label: t("usageGaps.copyDataPolicy"),
+																					value: providerPolicyLabel,
+																				},
+																			]
+																		: []),
+																]}
+															>
+																<Link
+																	href={
+																		row.provider === "private-model"
+																			? "/settings/workspaces/private-models"
+																			: `/api-providers/${encodeURIComponent(row.provider)}`
+																	}
+																	className="inline-flex min-w-0 max-w-[180px] items-center gap-2 font-medium text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-200 hover:decoration-foreground"
+																	onClick={stopRowClick}
+																>
+																	<Logo
+																		id={row.provider}
+																		width={14}
+																		height={14}
+																		className="flex-shrink-0"
+																	/>
+																	<span className="truncate">
+																		{providerLabel}
+																	</span>
+																</Link>
+															</UsageEntityHoverCard>
+														) : (
+															<span className="text-muted-foreground">-</span>
+														)}
+													</div>
+												</TableCell>
+											),
+											app: (
+												<TableCell key="app" className="py-2">
+													<div className="flex min-h-5 items-center">
+														{row.app_id ? (
+															<UsageEntityHoverCard
+																title={appLabel ?? t("usageGaps.unknownApp")}
+																href={appHref}
+																visual={
+																	isPhaseoChatApp(row) ? (
+																		<Logo id="phaseo" width={16} height={16} />
+																	) : (
+																		<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
+																			{row.app_image_url ? (
+																				<AvatarImage
+																					src={row.app_image_url}
+																					alt={appLabel ?? t("usageGaps.copyApp")}
+																					className="object-cover"
+																				/>
+																			) : null}
+																			<AvatarFallback className="rounded-[4px] bg-transparent text-muted-foreground">
+																				<AppWindow className="h-3 w-3" />
+																			</AvatarFallback>
+																		</Avatar>
+																	)
+																}
+																rows={[
+																	{
+																		label: t("usageGaps.copyAppID"),
+																		value: (
+																			<code className="font-mono text-[11px]">
+																				{row.app_id}
+																			</code>
+																		),
+																	},
+																	{
+																		label: t("usageGaps.copyType"),
+																		value: isPhaseoChatApp(row)
+																			? "Phaseo Chat"
+																			: t("usageGaps.workspaceApp"),
+																	},
+																]}
+															>
+																<Link
+																	href={appHref!}
+																	className="inline-flex min-w-0 max-w-[180px] items-center gap-2 font-medium text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-200 hover:decoration-foreground"
+																	onClick={stopRowClick}
+																>
+																	{isPhaseoChatApp(row) ? (
+																		<Logo
+																			id="phaseo"
+																			width={14}
+																			height={14}
+																			className="flex-shrink-0"
+																		/>
+																	) : (
+																		<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
+																			{row.app_image_url ? (
+																				<AvatarImage
+																					src={row.app_image_url}
+																					alt={appLabel ?? t("usageGaps.copyApp")}
+																					className="object-cover"
+																				/>
+																			) : null}
+																			<AvatarFallback className="rounded-[4px] bg-transparent text-muted-foreground">
+																				<AppWindow className="h-3 w-3" />
+																			</AvatarFallback>
+																		</Avatar>
+																	)}
+																	<span className="truncate">{appLabel}</span>
+																</Link>
+															</UsageEntityHoverCard>
+														) : (
+															<span className="text-muted-foreground">-</span>
+														)}
+													</div>
+												</TableCell>
+											),
+											input: (
+												<TableCell
+													key="input"
+													title={usageSummary}
+													className="py-2 text-right font-mono text-xs tabular-nums"
+												>
+													{formatRequestMetric(
+														usageMeters.find(
+															(meter) => meter.key === "input_tokens",
+														)?.value ??
+															normalizedUsage?.input_tokens ??
+															normalizedUsage?.prompt_tokens ??
+															normalizedUsage?.input_text_tokens,
+													)}
+												</TableCell>
+											),
+											output: (
+												<TableCell
+													key="output"
+													title={usageSummary}
+													className="py-2 text-right font-mono text-xs tabular-nums"
+												>
+													{formatRequestMetric(
+														usageMeters.find(
+															(meter) => meter.key === "output_tokens",
+														)?.value ??
+															normalizedUsage?.output_tokens ??
+															normalizedUsage?.completion_tokens ??
+															normalizedUsage?.output_text_tokens,
+													)}
+												</TableCell>
+											),
+											cost: (
+												<TableCell
+													key="cost"
+													className="py-2 text-right font-mono text-xs"
+												>
+													{formatCost(row.cost_nanos, locale)}
+												</TableCell>
+											),
+											speed: (
+												<TableCell
+													key="speed"
+													className="py-2 text-right font-mono text-xs tabular-nums"
+												>
+													{formatTps(requestMetricNumber(row.throughput), "en-US") ?? "—"}
+												</TableCell>
+											),
+											overhead: (
+												<TableCell
+													key="overhead"
+													className="py-2 text-right font-mono text-xs tabular-nums"
+												>
+													{formatRequestMetric(
+														row.response_timeline?.version === 1
+															? row.response_timeline.routing_ms
+															: null,
+														" ms",
+													)}
+												</TableCell>
+											),
+											ttft: (
+												<TableCell
+													key="ttft"
+													className="py-2 text-right font-mono text-xs tabular-nums"
+												>
+													{formatLatency(
+														requestMetricNumber(row.stream === true ? row.latency_ms : null),
+														"en-US",
+													) ?? "—"}
+												</TableCell>
+											),
+											labels: (
+												<TableCell key="labels" className="max-w-[18rem] py-2">
+													<RequestLabelBadges labels={row.labels} classifiers={requestClassifiers} />
+												</TableCell>
+											),
+											finish: (
+												<TableCell
+													key="finish"
+													className="py-2 text-xs text-muted-foreground"
+												>
+													{row.finish_reason || "-"}
+												</TableCell>
+											),
+											key: (
+												<TableCell key="key" className="py-2 text-xs">
+													<span title={row.key_id ?? undefined}>
+														{apiKeys.find((key) => key.id === row.key_id)
+															?.name ||
+															(row.key_id
+																? t("usageGaps.keySuffix", { suffix: row.key_id.slice(-8) })
+																: "—")}
+													</span>
+												</TableCell>
+											),
+										};
+										return (
+											<ContextMenu key={rowKey}>
+												<ContextMenuTrigger asChild>
+													<TableRow
+														className={cn(
+															loading && "opacity-50",
+															"cursor-pointer border-l-2 border-l-transparent hover:bg-muted/40",
+															detailRequestId === row.request_id &&
+																"border-l-2 border-l-foreground bg-muted/65 hover:bg-muted/65",
+														)}
+														aria-selected={detailRequestId === row.request_id}
+														data-request-row-id={row.request_id}
+														onClickCapture={(event) => {
+															if (!isInteractiveRowTarget(event.target)) {
+																void handleRowClick(row);
+															}
+														}}
+													>
+														{visibleColumns.map(({ id }, index) =>
+															React.cloneElement(
+																cells[id] as React.ReactElement<
+																	React.ComponentProps<typeof TableCell>
+																>,
+																pinnedCellProps(index),
+															),
+														)}
+													</TableRow>
+												</ContextMenuTrigger>
+												<RequestRowContextMenu
+													row={row}
+													modelId={routedModelId}
+													onInspect={() => void handleRowClick(row)}
+												/>
+											</ContextMenu>
+										);
+									})}
+								</>
+							)}
+						</TableBody>
+					</Table>
+				</ScrollArea>
+			</div>
+
+			{/* Pagination */}
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div className="flex items-center gap-2 text-xs text-muted-foreground">
+					<span>{tUi("requestsTable.rowsPerPage")}</span>
+					<Select
+						value={String(pageSize)}
+						onValueChange={(value) => {
+							void setPageSize(Number(value));
+							void setPage(1);
+						}}
+					>
+						<SelectTrigger
+							size="sm"
+							className="h-8 w-[72px] rounded-md border-border/70 bg-background"
+						>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent className="rounded-md">
+							{[25, 50, 100].map((size) => (
+								<SelectItem key={size} value={String(size)}>
+									{size}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+				{totalPages > 1 ? (
+					<div className="flex items-center gap-1">
+						{/* Quick back to page 1 - only show when page 1 is not visible */}
+						{page > 3 && (
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setPage(1)}
+								disabled={loading}
+							>
+								<ChevronsLeft className="h-4 w-4" />
+							</Button>
+						)}
+
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setPage(Math.max(1, page - 1))}
+							disabled={page === 1 || loading}
+						>
+							<ChevronLeft className="h-4 w-4" />
+						</Button>
+
+						{/* Page numbers - show current and 2 on each side */}
+						{Array.from({ length: totalPages }, (_, i) => i + 1)
+							.filter((p) => {
+								// Show current page, and up to 2 pages on each side
+								const diff = Math.abs(p - page);
+								return diff <= 2;
+							})
+							.map((p) => (
+								<Button
+									key={p}
+									variant={p === page ? "default" : "outline"}
+									size="sm"
+									onClick={() => setPage(p)}
+									disabled={loading}
+									className="min-w-[32px]"
+								>
+									{p}
+								</Button>
+							))}
+
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setPage(Math.min(totalPages, page + 1))}
+							disabled={page >= totalPages || loading}
+						>
+							<ChevronRight className="h-4 w-4" />
+						</Button>
+					</div>
+				) : (
+					<span />
+				)}
+			</div>
+
+			{/* Detail Dialog */}
+			<RequestDetailDialog
+				classifiers={requestClassifiers}
+				open={dialogOpen}
+				loading={detailLoading}
+				presentation={detailBasePath ? "sheet" : undefined}
+				headerNavigation={
+					activeRequestIndex >= 0 ? (
+						<div className="flex items-center gap-2">
+							<div className="flex items-center gap-1">
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon-sm"
+									disabled={!previousRequest}
+									aria-label={tUi("requestsTable.openPreviousRequest")}
+									onClick={() =>
+										previousRequest && handleRowClick(previousRequest)
+									}
+								>
+									<ChevronLeft className="size-4" />
+								</Button>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon-sm"
+									disabled={!nextRequest}
+									aria-label={tUi("requestsTable.openNextRequest")}
+									onClick={() => nextRequest && handleRowClick(nextRequest)}
+								>
+									<ChevronRight className="size-4" />
+								</Button>
+							</div>
+							<span className="min-w-8 text-right text-[10px] font-medium tabular-nums text-muted-foreground">
+								{activeRequestIndex + 1} / {navigableRows.length}
+							</span>
+						</div>
+					) : null
+				}
+				onOpenChange={handleDialogOpenChange}
+				request={selectedDetail?.request ?? selectedRequest}
+				modelMetadata={
+					selectedDetail
+						? new Map(selectedDetail.modelMetadata ?? [])
+						: resolvedModelMetadata
+				}
+				providerNames={
+					selectedDetail
+						? new Map(selectedDetail.providerNames ?? [])
+						: resolvedProviderNames
+				}
+				providerMetadata={
+					selectedDetail
+						? new Map(selectedDetail.providerMetadata ?? [])
+						: resolvedProviderMetadata
+				}
+				providerName={
+					(selectedDetail?.request ?? selectedRequest)?.provider
+						? (selectedDetail
+								? new Map(selectedDetail.providerNames ?? [])
+								: resolvedProviderNames
+							).get((selectedDetail?.request ?? selectedRequest)!.provider!) ||
+							(selectedDetail?.request ?? selectedRequest)!.provider
+						: null
+				}
+				appName={selectedDetail?.appName ?? selectedAppName}
+				ioLog={selectedDetail?.ioLog}
+			/>
+		</div>
+	);
+}

@@ -1,0 +1,101 @@
+import { Link } from "@/i18n/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
+import { fetchAdminCatalogList } from "@/lib/fetchers/internal/fetchAdminCatalog";
+
+const PAGE_SIZE = 100;
+
+export default async function InternalModelsPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ q?: string; page?: string; attention?: string }>;
+}) {
+	const t = await getTranslations("Product.internalTools.dataEditor");
+	const locale = await getLocale();
+	const params = await searchParams;
+	const queryText = (params.q ?? "").trim().replace(/[(),]/g, " ");
+	const currentPage = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
+	const attention = ["hidden", "missing-organisation"].includes(params.attention ?? "") ? params.attention : undefined;
+	const { rows, count } = await fetchAdminCatalogList("models", { q: queryText, page: currentPage, pageSize: PAGE_SIZE, attention });
+	const totalRows = count;
+	const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+	const hasPrev = currentPage > 1;
+	const hasNext = currentPage < totalPages;
+
+	const pageHref = (page: number) => {
+		const qp = new URLSearchParams();
+		if (queryText) qp.set("q", queryText);
+		if (attention) qp.set("attention", attention);
+		if (page > 1) qp.set("page", String(page));
+		const queryString = qp.toString();
+		return queryString ? `?${queryString}` : "?";
+	};
+
+	return (
+		<div className="container mx-auto space-y-8 py-8">
+			<div className="flex flex-col items-stretch justify-between gap-3 lg:flex-row lg:items-start">
+				<div>
+					<h1 className="text-2xl font-semibold">{t("modelsTitle")}</h1>
+					<p className="text-sm text-muted-foreground">{totalRows.toLocaleString(locale)} {t("records")}{attention === "hidden" ? " · " + t("hiddenModels") : attention === "missing-organisation" ? " · " + t("missingOrganisation") : ""}</p>
+				</div>
+				<Link href="/internal/data/models/new" className="w-full rounded-md border px-3 py-1.5 text-center text-sm hover:bg-muted/40 lg:w-auto">
+					{t("newModel")}
+				</Link>
+			</div>
+			<form className="flex flex-col gap-3 sm:flex-row" action={`/${locale}/internal/data/models`} method="get">
+				{attention ? <input type="hidden" name="attention" value={attention} /> : null}
+				<input
+					name="q"
+					aria-label={t("searchModelsPlaceholder")}
+					defaultValue={queryText}
+					placeholder={t("searchModelsPlaceholder")}
+					className="w-full rounded-md border px-3 py-2 text-sm sm:max-w-md"
+				/>
+				<button type="submit" className="rounded-md border px-3 py-2 text-sm">
+					{t("search")}
+				</button>
+			</form>
+			<nav aria-label={t("modelFilters")} className="flex flex-wrap gap-2 text-sm">
+				{[{ value: "", label: t("allModels") }, { value: "hidden", label: t("hidden") }, { value: "missing-organisation", label: t("missingOrganisation") }].map((filter) => {
+					const query = new URLSearchParams();
+					if (queryText) query.set("q", queryText);
+					if (filter.value) query.set("attention", filter.value);
+					return <Link key={filter.value} href={`?${query}`} aria-current={(attention ?? "") === filter.value ? "page" : undefined} className={`inline-flex min-h-11 items-center rounded-md border px-3 ${(attention ?? "") === filter.value ? "bg-muted font-medium" : "hover:bg-muted/40"}`}>{filter.label}</Link>;
+				})}
+			</nav>
+			{!rows.length ? <div className="rounded-lg border border-dashed px-4 py-12 text-center"><p className="font-medium">{t("noModels")}</p><p className="mt-1 text-sm text-muted-foreground">{t("tryDifferentSearch")}</p><Link href="/internal/data/models" className="mt-4 inline-flex min-h-11 items-center text-sm underline">{t("clearSearchFilters")}</Link></div> : null}
+			<div className="grid gap-2 2xl:grid-cols-2">
+				{rows.map((row: any) => (
+					<Link
+						key={row.model_id}
+						href={`/internal/data/models/edit/${row.model_id}`}
+						className="rounded-md border px-4 py-3 hover:bg-muted/40 transition-colors"
+					>
+						<div className="truncate">{row.name ?? row.model_id}</div>
+						<div className="mt-1 break-all font-mono text-xs text-muted-foreground">{row.model_id}</div>
+					</Link>
+				))}
+			</div>
+			<div className="flex flex-col gap-3 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					{t("pageSummary", { page: currentPage, pages: totalPages, total: totalRows })}
+				</div>
+				<div className="flex gap-2">
+					{hasPrev ? (
+						<Link href={pageHref(currentPage - 1)} className="rounded-md border px-3 py-1.5 hover:bg-muted/40">
+							{t("previous")}
+						</Link>
+					) : (
+						<span className="rounded-md border px-3 py-1.5 opacity-50">{t("previous")}</span>
+					)}
+					{hasNext ? (
+						<Link href={pageHref(currentPage + 1)} className="rounded-md border px-3 py-1.5 hover:bg-muted/40">
+							{t("next")}
+						</Link>
+					) : (
+						<span className="rounded-md border px-3 py-1.5 opacity-50">{t("next")}</span>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+}
