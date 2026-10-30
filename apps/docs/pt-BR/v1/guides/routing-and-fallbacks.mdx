@@ -4,6 +4,8 @@ description: "Como o Gateway seleciona provedores e mantém as solicitações co
 icon: "git-branch"
 ---
 
+import { RoutingCostExplainer } from "/snippets/routing-cost.jsx";
+
 O Phaseo Gateway encaminha cada solicitação para um provedor que pode atender ao modelo escolhido. Quando um provedor está lento, limita a taxa ou retorna erros, o Gateway pode tentar alternativas para que as solicitações sejam concluídas.
 
 ## Escolha um modo de roteamento
@@ -120,6 +122,10 @@ O log de solicitações mostra:
 Os fatores de pontuação ficam separados do contexto registrado. Um fator de pontuação altera a pontuação final do modo de roteamento ativo. O contexto registrado ajuda a explicar a decisão, mas não necessariamente afeta a pontuação.
 
 Nas solicitações de texto no modo `balanced` (Chat Completions, Responses e Messages), a Phaseo ordena os provedores elegíveis pelo custo esperado por resposta bem-sucedida. Esse custo soma o que uma solicitação típica do modelo custa no provedor, com base nos tamanhos medidos de prompt e saída do modelo e na taxa medida de acertos de cache do provedor, ao tempo de espera pelo primeiro token e pela resposta completa. Depois, ele é dividido pela taxa de sucesso recente do provedor. Erros do provedor adicionam uma penalidade extra, e limites de taxa uma penalidade menor. Provedores próximos do menor custo dividem a maior parte do tráfego, e cada provedor mantém uma pequena parcela para que a recuperação seja percebida. Para ordenar apenas por preço, envie `provider.sort: "price"`. Os demais endpoints são pontuados por confiabilidade, latência, latência de cauda, throughput, preço e adequação de tokens. O cálculo exibido mostra como cada fator contribuiu para a pontuação final, em vez de apresentar todas as métricas registradas como se fossem igualmente importantes.
+
+Escolha um cenário para ver como o custo por resposta bem-sucedida se divide entre tokens, espera e falhas, e como isso define a parcela de tráfego de cada provedor. Os provedores são exemplos.
+
+<RoutingCostExplainer locale="pt-BR" />
 
 ### Confiabilidade e disponibilidade dos provedores
 

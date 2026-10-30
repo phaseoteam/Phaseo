@@ -1,0 +1,44 @@
+---
+title: "Como os provedores ganham tráfego"
+sidebarTitle: "Ganhar tráfego"
+description: "Como o roteamento padrão divide o tráfego de um modelo entre provedores e quais mudanças dão a um endpoint uma parcela maior."
+icon: "chart-no-axes-column-increasing"
+---
+
+import { ProviderTrafficPlayground } from "/snippets/routing-cost.jsx";
+
+Quando vários provedores servem o mesmo modelo, o roteamento padrão os classifica pelo custo esperado por resposta bem-sucedida e divide o tráfego de acordo com essa classificação: o menor custo recebe a maior parcela. Esta página é para provedores que querem entender essa classificação e ganhar mais tráfego com ela.
+
+## O que a classificação mede
+
+Para cada endpoint, a Phaseo mede:
+
+- **Preço efetivo.** Quanto custa uma solicitação típica do modelo no seu endpoint, com base nos tamanhos reais de prompt e saída do modelo e na parcela dos tokens de prompt que você realmente serve do cache. Um preço de entrada baixo não ajuda se a saída ou as leituras de cache custam mais.
+- **Tempo até o primeiro token**, contado a partir do momento em que a Phaseo envia a solicitação.
+- **Velocidade de saída**, medida em toda a resposta, incluindo o primeiro token.
+- **Erros causados por você**, como respostas `5xx` e streams que falham no meio. Eles têm uma penalidade alta.
+- **Recusas por limite de taxa** (`429`). Elas têm uma penalidade menor.
+
+O tempo de espera é convertido em dólares pelo preço típico por segundo do modelo, então um endpoint mais rápido pode cobrar mais e ainda ficar em primeiro.
+
+## Experimente
+
+Os controles colocam seu endpoint contra outros três provedores do mesmo modelo. A curva mostra como o tráfego cai à medida que seu custo por resposta passa do mínimo.
+
+<ProviderTrafficPlayground locale="pt-BR" />
+
+## Como o tráfego é dividido
+
+- Provedores até cerca de 30% acima do menor custo por resposta dividem a maior parte do tráfego. Ficar um pouco atrás custa pouco.
+- Além dessa faixa, a parcela cai rapidamente.
+- Todo endpoint roteável mantém uma pequena parcela, para que recuperações e melhorias sejam notadas sem nenhuma ação sua.
+- Uma conversa que lê do seu cache de prompts costuma permanecer no seu endpoint enquanto ele estiver estável.
+
+Solicitações que definem uma ordem de provedores, ou pedem ordenação por preço, latência ou throughput, não usam essa classificação. Veja [Roteamento e alternativas](./routing-and-fallbacks.mdx).
+
+## O que traz mais tráfego
+
+- Reduza o preço de uma solicitação típica, incluindo saída e leituras de cache.
+- Sirva prompts repetidos a partir do cache.
+- Entregue o primeiro token mais cedo e faça streaming mais rápido.
+- Evite erros e recusas por limite de taxa, e aumente sua capacidade antes que a demanda atinja seus limites.

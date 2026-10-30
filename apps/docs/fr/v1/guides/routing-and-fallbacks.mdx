@@ -4,6 +4,8 @@ description: "Comment Gateway sélectionne les fournisseurs et assure la fiabili
 icon: "git-branch"
 ---
 
+import { RoutingCostExplainer } from "/snippets/routing-cost.jsx";
+
 La passerelle Phaseo achemine chaque requête vers un fournisseur capable de servir le modèle choisi. Lorsqu’un fournisseur est lent, applique une limite de débit ou renvoie des erreurs, Gateway peut tenter des solutions de repli afin que vos requêtes aboutissent.
 
 ## Choisir un mode de routage
@@ -120,6 +122,10 @@ Le journal des requêtes affiche :
 Les facteurs de score sont séparés du contexte enregistré. Un facteur de score modifie le résultat final du mode de routage actif. Le contexte enregistré permet d’expliquer la décision, mais n’influence pas nécessairement le score.
 
 Pour les requêtes texte en mode `balanced` (Chat Completions, Responses et Messages), Phaseo classe les fournisseurs éligibles selon leur coût attendu par réponse réussie. Ce coût additionne ce que coûte une requête typique du modèle chez le fournisseur, d’après les tailles de prompt et de sortie mesurées pour le modèle et le taux de succès du cache mesuré chez le fournisseur, et le temps d’attente du premier token et de la réponse complète. Il est ensuite divisé par le taux de réussite récent du fournisseur. Les erreurs du fournisseur ajoutent une pénalité supplémentaire, et les limites de débit une pénalité plus faible. Les fournisseurs proches du coût le plus bas se partagent l’essentiel du trafic, et chaque fournisseur conserve une petite part pour qu’une reprise soit détectée. Pour classer uniquement par prix, envoyez `provider.sort: "price"`. Les autres endpoints sont notés selon la fiabilité, la latence, la latence de queue, le débit, le prix et l’adéquation aux tokens. Le calcul affiché indique la contribution de chaque facteur au score final, au lieu de présenter toutes les métriques enregistrées comme également importantes.
+
+Choisissez un scénario pour voir comment le coût par réponse réussie se répartit entre tokens, attente et échecs, et comment il fixe la part de trafic de chaque fournisseur. Les fournisseurs sont des exemples.
+
+<RoutingCostExplainer locale="fr" />
 
 ### Fiabilité et disponibilité des fournisseurs
 
