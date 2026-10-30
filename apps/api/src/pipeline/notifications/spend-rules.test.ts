@@ -26,6 +26,7 @@ describe("spend rules sweep", () => {
 				events: [
 					{ workspace_id: "ws_1", rule_id: "rule_1", event_id: "ev_1", dedupe_key: "spend_alert:rule_1:2026-10-01T04:00:00Z:80", threshold: 80 },
 					{ workspace_id: "ws_2", rule_id: "rule_2", event_id: "ev_2", dedupe_key: "spend_alert:rule_2:cooldown:4900000:runway", threshold: 3, trigger: "runway" },
+					{ workspace_id: "ws_2", rule_id: "rule_3", event_id: "ev_3", dedupe_key: "spend_alert:rule_3:cooldown:81700:spike", threshold: "3.00", trigger: "spike" },
 				],
 			},
 			error: null,
@@ -37,6 +38,7 @@ describe("spend rules sweep", () => {
 			events: [
 				{ workspaceId: "ws_1", ruleId: "rule_1", eventId: "ev_1", dedupeKey: "spend_alert:rule_1:2026-10-01T04:00:00Z:80", threshold: 80 },
 				{ workspaceId: "ws_2", ruleId: "rule_2", eventId: "ev_2", dedupeKey: "spend_alert:rule_2:cooldown:4900000:runway", threshold: 3, trigger: "runway" },
+				{ workspaceId: "ws_2", ruleId: "rule_3", eventId: "ev_3", dedupeKey: "spend_alert:rule_3:cooldown:81700:spike", threshold: 3, trigger: "spike" },
 			],
 			blocks: [], publish: [],
 		});

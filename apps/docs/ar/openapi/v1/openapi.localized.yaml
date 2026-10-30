@@ -24085,7 +24085,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend: بلغ الإنفاق threshold_amount. budget_percent: بلغ الإنفاق threshold_percents من الأساس. forecast: يبلغ الإنفاق المتوقع حتى نهاية الفترة الحد. spike: الإنفاق خلال آخر window_hours لا يقل عن spike_multiplier ضعف المستوى المعتاد ولا يقل عن spike_floor. balance: ينخفض رصيد مساحة العمل أو مدة كفايته عن الحد.'
+      description: 'spend: بلغ الإنفاق threshold_amount. budget_percent: بلغ الإنفاق threshold_percents من الأساس. forecast: يبلغ الإنفاق المتوقع حتى نهاية الفترة العتبة. spike: الإنفاق خلال آخر window_hours يساوي spike_multiplier مرة على الأقل من وسيط النافذة نفسها خلال الأيام السبعة السابقة، ولا يقل عن spike_floor. balance: ينخفض رصيد مساحة العمل أو مدة كفايته عن العتبة.'
       enum:
         - spend
         - budget_percent
@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: تكون false للقواعد التي لا يدعمها التقييم بعد (قواعد spike). تُحفظ وتبدأ بالعمل في إصدار لاحق.
+          description: ما إذا كان التقييم يدعم مقياس القاعدة وفترتها وأساسها. تُقيَّم كل القواعد التي تقبلها الواجهة البرمجية.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24183,7 +24183,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'ساعات النافذة المتحركة: نافذة الارتفاع لقواعد spike وفترة احتساب معدل الاستهلاك لقواعد balance. null للفترات التقويمية.'
+          description: 'عدد ساعات نافذة rolling: نافذة الارتفاع المفاجئ لقواعد spike (56 على الأكثر، حتى تتسع الأيام السبعة السابقة لثلاث نوافذ) وفترة معدل الاستهلاك لقواعد balance. تكون null للفترات التقويمية.'
         time_zone:
           type: string
           maxLength: 64
@@ -24310,7 +24310,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'ساعات النافذة المتحركة: نافذة الارتفاع لقواعد spike وفترة احتساب معدل الاستهلاك لقواعد balance. null للفترات التقويمية.'
+          description: 'عدد ساعات نافذة rolling: نافذة الارتفاع المفاجئ لقواعد spike (56 على الأكثر، حتى تتسع الأيام السبعة السابقة لثلاث نوافذ) وفترة معدل الاستهلاك لقواعد balance. تكون null للفترات التقويمية.'
         time_zone:
           type: string
           maxLength: 64
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: وضع قاعدة الإنفاق الآن. تكون لقواعد rolling نافذتها بصفتها period. تحتوي قواعد forecast على كائن forecast، وتُقاس عتباتها على التوقع. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. أما قواعد spike فتكون فيها period وvalue وalert فارغة (null).
+      description: وضع قاعدة الإنفاق الآن. تكون لقواعد rolling نافذتها بصفتها period. تحتوي قواعد forecast على كائن forecast، وتُقاس عتباتها على التوقع. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. وتكون لقواعد spike نافذتها بصفتها period، والإنفاق خلالها بصفته القيمة، ووسيط النافذة نفسها خلال الأيام السبعة السابقة بصفته الأساس، ونقطة التنبيه بصفتها next_threshold، وكائن spike.
       required:
         - rule_id
         - metric
@@ -24472,6 +24472,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -24482,7 +24483,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: تكون false للقواعد التي لا يدعمها التقييم بعد (قواعد spike). تُحفظ وتبدأ بالعمل في إصدار لاحق.
+          description: ما إذا كان التقييم يدعم مقياس القاعدة وفترتها وأساسها. تُقيَّم كل القواعد التي تقبلها الواجهة البرمجية.
         computed_at:
           type: string
           format: date-time
@@ -24715,6 +24716,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: الشحن التلقائي مفعّل ويعمل، لذا يُسجَّل الانخفاض دون تنبيه.
+        spike:
+          type: object
+          nullable: true
+          description: 'قواعد spike فقط: الإنفاق خلال آخر window_hours مقارنةً بوسيط النافذة نفسها خلال الأيام السبعة السابقة، كما يراه التقييم. تكون null للقواعد الأخرى.'
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 'وسيط النافذة نفسها خلال الأيام السبعة السابقة: الساعات نفسها في كل يوم من الأيام السبعة السابقة للنوافذ الأقل من 24 ساعة، وإلا فالنوافذ السابقة غير المتداخلة التي تتسع لها 7 أيام.'
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: الإنفاق خلال النافذة مقسومًا على الأساس. تكون null عندما يكون الأساس 0، وعندها يُطبَّق الحد الأدنى وحده.
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 'ما يجب أن يبلغه الإنفاق خلال النافذة لإطلاق التنبيه: الأكبر بين spike_multiplier مرة من الأساس والحد الأدنى.'
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: عدد النوافذ في الأساس. تحتاج القاعدة إلى 3 على الأقل.
+            active_windows:
+              type: integer
+              description: نوافذ الأساس التي أنفقت فيها مساحة العمل أي مبلغ.
+            history_ready:
+              type: boolean
+              description: تكون false إلى أن تنفق مساحة العمل في 3 نوافذ أساس على الأقل. لا تُطلق القاعدة تنبيهًا قبل ذلك.
+            spiking:
+              type: boolean
+              description: ما إذا كانت القاعدة ستُطلق تنبيهًا الآن، قبل احتساب فترة التهدئة.
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: متى تنتهي فترة التهدئة بعد آخر تنبيه، إن لم تكن قد انتهت بعد.
         alert:
           type: object
           nullable: true

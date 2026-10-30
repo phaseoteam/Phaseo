@@ -8714,6 +8714,9 @@ public sealed class SpendRulePreview
 	[JsonPropertyName("rule_id")]
 	public string RuleId { get; set; }
 
+	[JsonPropertyName("spike")]
+	public Dictionary<string, object>? Spike { get; set; }
+
 	[JsonPropertyName("state")]
 	public Dictionary<string, object>? State { get; set; }
 

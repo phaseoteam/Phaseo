@@ -24085,7 +24085,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend : les dépenses ont atteint threshold_amount. budget_percent : les dépenses ont atteint threshold_percents de la base. forecast : les dépenses projetées à la fin de la période atteignent le seuil. spike : les dépenses des dernières window_hours atteignent au moins spike_multiplier fois le niveau habituel et au moins spike_floor. balance : le solde ou l’autonomie de l’espace de travail passe sous le seuil.'
+      description: 'spend : les dépenses ont atteint threshold_amount. budget_percent : les dépenses ont atteint threshold_percents de la base. forecast : les dépenses projetées en fin de période atteignent le seuil. spike : les dépenses des dernières window_hours atteignent au moins spike_multiplier fois la médiane de la même fenêtre sur les 7 jours précédents, et au moins spike_floor. balance : le solde ou l’autonomie de l’espace de travail passe sous le seuil.'
       enum:
         - spend
         - budget_percent
@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: Vaut false pour les règles que l’évaluation ne prend pas encore en charge (règles spike). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure.
+          description: Indique si l’évaluation prend en charge la métrique, la période et la base de la règle. Toutes les règles acceptées par l’API sont évaluées.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24183,7 +24183,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'Heures d’une fenêtre glissante : la fenêtre du pic pour les règles spike et la période d’analyse du rythme de consommation pour les règles balance. Null pour les périodes calendaires.'
+          description: 'Heures d’une fenêtre rolling : la fenêtre de pic pour les règles spike (56 au maximum, pour que 3 fenêtres tiennent dans les 7 jours précédents) et la période de consommation pour les règles balance. Vaut null pour les périodes calendaires.'
         time_zone:
           type: string
           maxLength: 64
@@ -24310,7 +24310,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'Heures d’une fenêtre glissante : la fenêtre du pic pour les règles spike et la période d’analyse du rythme de consommation pour les règles balance. Null pour les périodes calendaires.'
+          description: 'Heures d’une fenêtre rolling : la fenêtre de pic pour les règles spike (56 au maximum, pour que 3 fenêtres tiennent dans les 7 jours précédents) et la période de consommation pour les règles balance. Vaut null pour les périodes calendaires.'
         time_zone:
           type: string
           maxLength: 64
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: Où en est une règle de dépenses à présent. Les règles rolling ont leur fenêtre comme period. Les règles forecast ont un objet forecast et leurs seuils sont mesurés par rapport à la projection. Les règles balance ont la fenêtre de consommation comme period, le solde disponible comme valeur et un objet balance. Les règles spike ont period, value et alert à null.
+      description: Où en est une règle de dépenses à présent. Les règles rolling ont leur fenêtre comme period. Les règles forecast ont un objet forecast et leurs seuils sont mesurés par rapport à la projection. Les règles balance ont la fenêtre de consommation comme period, le solde disponible comme valeur et un objet balance. Les règles spike ont leur fenêtre comme period, les dépenses sur cette fenêtre comme valeur, la médiane de la même fenêtre sur les 7 jours précédents comme base, le point de déclenchement comme next_threshold et un objet spike.
       required:
         - rule_id
         - metric
@@ -24472,6 +24472,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -24482,7 +24483,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: Vaut false pour les règles que l’évaluation ne prend pas encore en charge (règles spike). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure.
+          description: Indique si l’évaluation prend en charge la métrique, la période et la base de la règle. Toutes les règles acceptées par l’API sont évaluées.
         computed_at:
           type: string
           format: date-time
@@ -24715,6 +24716,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: 'La recharge automatique est activée et fonctionne : une baisse est enregistrée sans alerte.'
+        spike:
+          type: object
+          nullable: true
+          description: 'Règles spike uniquement : les dépenses des dernières window_hours comparées à la médiane de la même fenêtre sur les 7 jours précédents, telles que l’évaluation les voit. Vaut null pour les autres règles.'
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 'La médiane de la même fenêtre sur les 7 jours précédents : les mêmes heures de chacun des 7 jours précédents pour les fenêtres de moins de 24 heures, sinon les fenêtres précédentes sans chevauchement qui tiennent en 7 jours.'
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: Les dépenses de la fenêtre divisées par la base. Vaut null quand la base est 0, auquel cas seul le plancher s’applique.
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 'Ce que les dépenses de la fenêtre doivent atteindre pour déclencher : le plus grand de spike_multiplier fois la base et du plancher.'
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: Le nombre de fenêtres de la base. Une règle en demande au moins 3.
+            active_windows:
+              type: integer
+              description: Les fenêtres de la base au cours desquelles l’espace de travail a dépensé quelque chose.
+            history_ready:
+              type: boolean
+              description: Vaut false tant que l’espace de travail n’a pas dépensé dans au moins 3 fenêtres de la base. La règle ne se déclenche pas avant.
+            spiking:
+              type: boolean
+              description: Si la règle se déclencherait maintenant, avant le délai de récupération.
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: Quand le délai de récupération après la dernière alerte se termine, s’il n’est pas encore écoulé.
         alert:
           type: object
           nullable: true

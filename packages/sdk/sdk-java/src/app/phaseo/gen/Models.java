@@ -3652,6 +3652,7 @@ public final class Models {
 		public Object previous_period;
 		public Integer reached_threshold_percent;
 		public String rule_id;
+		public Object spike;
 		public Object state;
 		public Integer threshold_amount_nanos;
 		public Double threshold_amount_usd;

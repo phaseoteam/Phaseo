@@ -22,8 +22,14 @@ CREATE OR REPLACE FUNCTION public.preview_workspace_spend_rule (
 -- state row. Forecast rules get a "forecast" object (ready, from, projected_nanos and
 -- projected_percent, by = the period end, limit_nanos, reaches_at) and their thresholds are
 -- measured against the projection; previous_period bases get "previous_period" {start, end}.
--- Spike rules get period, value and alert null. evaluated is false for rules the evaluator does not handle yet
--- (private.spend_rule_evaluable). Errors: spend_rule_not_found (deleted, or another workspace).
+-- Spike rules get their window as period, spend over it as value, the median of the same window
+-- over the previous 7 days as base_nanos (percent = value / median), the point they fire at as
+-- next_threshold (while ready and not spiking), a "spike" object (window_hours, current, baseline,
+-- multiple, multiplier, floor, fires_at, baseline_windows, active_windows, history_ready, spiking,
+-- cooldown_until) and the alert text (private.spend_spike_rule_values / spend_spike_alert_text).
+-- Every other metric gets "spike": null. evaluated is false for rules the evaluator does not
+-- handle (private.spend_rule_evaluable). Errors: spend_rule_not_found (deleted, or another
+-- workspace).
 declare
   v_rule public.workspace_spend_rules;
   v_workspace_name text;
@@ -41,6 +47,8 @@ declare
   v_balance record;
   v_has_balance boolean := false;
   v_measure numeric;
+  v_spike record;
+  v_has_spike boolean := false;
 begin
   if p_workspace_id is null or p_rule_id is null or p_now is null then
     raise exception 'invalid_spend_rule_preview' using errcode = '22023';
@@ -128,6 +136,76 @@ begin
       ) end,
       'alert', case when v_has_alert then jsonb_build_object(
         'scope_label', coalesce(nullif(btrim(v_workspace_name), ''), 'Workspace'),
+        'title', v_alert.title,
+        'message', v_alert.message
+      ) end
+    );
+  end if;
+
+  if v_rule.metric = 'spike' then
+    -- Spike rules: spend over the window, the median of the same window over the previous 7 days,
+    -- the multiple and the point the rule fires at, as the evaluator sees them
+    -- (private.spend_spike_rule_values), the cooldown state and the text.
+    select computed.* into v_spike from private.spend_spike_rule_values(p_workspace_id, p_now, p_rule_id) computed;
+    v_has_spike := found;
+    select state.last_fired_at, state.fire_count into v_state
+    from public.workspace_spend_rule_state state
+    where state.rule_id = v_rule.id and state.period_start = '-infinity'::timestamptz;
+    v_has_state := found;
+    if v_has_spike and v_spike.baseline_windows >= 3 then
+      select alert.* into v_alert
+      from private.spend_spike_alert_text(
+        v_workspace_name, v_rule.name, v_rule.scope_type, v_rule.scope_id, v_rule.scope_key_id, v_rule.scope_user_id,
+        v_rule.scope_department_id, v_rule.window_hours, v_spike.current_nanos, v_spike.baseline_nanos, v_spike.multiple,
+        v_rule.spike_multiplier, v_rule.spike_floor_nanos, v_spike.baseline_windows
+      ) alert;
+      v_has_alert := found;
+    end if;
+    return jsonb_build_object(
+      'rule_id', v_rule.id,
+      'metric', v_rule.metric,
+      'evaluated', v_evaluated,
+      'computed_at', p_now,
+      'time_zone', v_time_zone,
+      'period', case when v_has_spike then jsonb_build_object(
+        'kind', 'rolling', 'start', v_spike.period_start, 'end', v_spike.period_end, 'window_hours', v_rule.window_hours) end,
+      'value_nanos', case when v_has_spike then v_spike.current_nanos end,
+      'base_kind', null,
+      'base_ref', null,
+      'base_nanos', case when v_has_spike then v_spike.baseline_nanos end,
+      'previous_period', null,
+      'forecast', null,
+      'percent', case when v_spike.baseline_nanos > 0 then round(v_spike.current_nanos * 100 / v_spike.baseline_nanos, 1) end,
+      'threshold_percents', null,
+      'threshold_amount_nanos', null,
+      'reached_threshold_percent', null,
+      'next_threshold', case when v_has_spike and not v_spike.spiking and v_spike.history_ready then jsonb_build_object(
+        'percent', null, 'amount_nanos', v_spike.fires_at_nanos) end,
+      'block_at_nanos', null,
+      'balance', null,
+      'spike', case when v_has_spike then jsonb_build_object(
+        'window_hours', v_rule.window_hours,
+        'current_nanos', v_spike.current_nanos,
+        'baseline_nanos', v_spike.baseline_nanos,
+        'multiple', v_spike.multiple,
+        'multiplier', v_rule.spike_multiplier,
+        'floor_nanos', v_rule.spike_floor_nanos,
+        'fires_at_nanos', v_spike.fires_at_nanos,
+        'baseline_windows', v_spike.baseline_windows,
+        'active_windows', v_spike.active_windows,
+        'history_ready', v_spike.history_ready,
+        'spiking', v_spike.spiking,
+        'cooldown_until', case when v_state.last_fired_at + make_interval(mins => v_rule.cooldown_minutes) > p_now
+          then v_state.last_fired_at + make_interval(mins => v_rule.cooldown_minutes) end
+      ) end,
+      'state', case when v_has_state then jsonb_build_object(
+        'highest_percent_fired', null,
+        'amount_fired_at', null,
+        'last_fired_at', v_state.last_fired_at,
+        'fire_count', v_state.fire_count
+      ) end,
+      'alert', case when v_has_alert then jsonb_build_object(
+        'scope_label', v_alert.scope_label,
         'title', v_alert.title,
         'message', v_alert.message
       ) end

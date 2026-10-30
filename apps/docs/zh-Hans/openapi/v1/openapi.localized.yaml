@@ -24085,7 +24085,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: spend：支出达到 threshold_amount。budget_percent：支出达到基数的 threshold_percents。forecast：预计到周期结束时的支出达到阈值。spike：最近 window_hours 的支出至少为常规水平的 spike_multiplier 倍且不低于 spike_floor。balance：工作区余额或可用天数低于阈值。
+      description: spend：支出达到 threshold_amount。budget_percent：支出达到基数的 threshold_percents。forecast：预测到周期结束的支出达到阈值。spike：最近 window_hours 的支出至少为前 7 天同一窗口中位数的 spike_multiplier 倍，且至少为 spike_floor。balance：工作区余额或可用天数低于阈值。
       enum:
         - spend
         - budget_percent
@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 对于评估尚未支持的规则（spike 规则）为 false。这些规则会被保存，并将在后续版本中开始触发。
+          description: 评估是否支持该规则的指标、周期和基数。API 接受的所有规则都会被评估。
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24183,7 +24183,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 滚动窗口的小时数：spike 规则的峰值窗口，balance 规则用于计算消耗速度的回看时长。日历周期为 null。
+          description: rolling 窗口的小时数：spike 规则的峰值窗口（最多 56，以便前 7 天内能容纳 3 个窗口），balance 规则的消耗速率回溯期。日历周期为 null。
         time_zone:
           type: string
           maxLength: 64
@@ -24310,7 +24310,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 滚动窗口的小时数：spike 规则的峰值窗口，balance 规则用于计算消耗速度的回看时长。日历周期为 null。
+          description: rolling 窗口的小时数：spike 规则的峰值窗口（最多 56，以便前 7 天内能容纳 3 个窗口），balance 规则的消耗速率回溯期。日历周期为 null。
         time_zone:
           type: string
           maxLength: 64
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: 支出规则当前的状态。rolling 规则以其窗口作为 period。forecast 规则包含 forecast 对象，其阈值按预测值衡量。balance 规则以消耗速率窗口作为 period，以可用余额作为值，并包含 balance 对象。spike 规则的 period、value 和 alert 为 null。
+      description: 支出规则当前的状态。rolling 规则以其窗口作为 period。forecast 规则包含 forecast 对象，其阈值按预测值衡量。balance 规则以消耗速率窗口作为 period，以可用余额作为值，并包含 balance 对象。spike 规则以其窗口作为 period，以窗口内的支出作为值，以前 7 天同一窗口的中位数作为基数，以触发点作为 next_threshold，并包含 spike 对象。
       required:
         - rule_id
         - metric
@@ -24472,6 +24472,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -24482,7 +24483,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 对于评估尚未支持的规则（spike 规则）为 false。这些规则会被保存，并将在后续版本中开始触发。
+          description: 评估是否支持该规则的指标、周期和基数。API 接受的所有规则都会被评估。
         computed_at:
           type: string
           format: date-time
@@ -24715,6 +24716,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: 自动充值已开启且运行正常，因此余额下降只会被记录，不会发出警报。
+        spike:
+          type: object
+          nullable: true
+          description: 仅限 spike 规则：评估所见的最近 window_hours 支出与前 7 天同一窗口中位数的对比。其他规则为 null。
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 前 7 天同一窗口的中位数：窗口短于 24 小时时，取前 7 天每天的相同时段；否则取 7 天内能容纳的、互不重叠的之前窗口。
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: 窗口内支出除以基数。基数为 0 时为 null，此时只适用下限。
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 窗口内支出需达到多少才会触发：基数的 spike_multiplier 倍与下限中的较大者。
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: 基数包含的窗口数。规则至少需要 3 个。
+            active_windows:
+              type: integer
+              description: 工作区有任何支出的基数窗口数。
+            history_ready:
+              type: boolean
+              description: 在工作区至少在 3 个基数窗口内有支出之前为 false。在此之前规则不会触发。
+            spiking:
+              type: boolean
+              description: 不考虑冷却时间时，规则现在是否会触发。
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: 上次提醒后的冷却时间结束的时间（若尚未结束）。
         alert:
           type: object
           nullable: true
