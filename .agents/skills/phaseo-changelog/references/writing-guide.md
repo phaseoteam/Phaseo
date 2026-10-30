@@ -185,11 +185,15 @@ Package and version in code, then the main change. One bullet when several SDKs 
 
 ## Models
 
-New models, routes, prices and retirements. Every bullet starts with the model link: `[Provider: Model Name](https://phaseo.app/models/<org>/<id>)`.
+New models, routes and prices. Every bullet starts with the model link: `[Provider: Model Name](https://phaseo.app/models/<org>/<id>)`.
+
+Model deprecations and retirements are never changelog entries, including a preview retired because its release has a different Phaseo ID. Deprecation notices and the model page cover them.
 
 ### New model
 
-Release artwork first when it exists, then the link. When the day has several models, the pictured one is listed first (see `changelog-format.md`). Add one short clause only when there is something a reader needs that the name doesn't say, such as a free period or an unusual price.
+Release artwork first when it exists, then the link. The bullet is the model link and nothing else: no price, context, parameters, reasoning levels or lineage. The model page carries those. When the day has several models, the pictured one is listed first (see `changelog-format.md`).
+
+A model updated in place under the same Phaseo ID (for example, a preview becoming the release) is also just the model link.
 
 ```md
 ![Claude Haiku 5.5 model release artwork](/images/model-releases/2026-10-07--anthropic--claude-haiku-5.5.png)
@@ -222,7 +226,7 @@ List it once, with the models it brings, in the Models section.
 
 ### Price change
 
-New price, old price, and when it changed if not on the entry's date.
+Only for a price change on a model already listed, never as part of a release bullet. New price, old price, and when it changed if not on the entry's date.
 
 ```md
 - [Google: Gemini 4 Argon](https://phaseo.app/models/google/gemini-4-argon) now costs $4 input and $20 output per million tokens (was $5 and $25).
@@ -230,24 +234,10 @@ New price, old price, and when it changed if not on the entry's date.
 
 ### Free or promotional period
 
-Always give the end date and time in UTC.
+A separate bullet from the release, on the day the free period starts. Always give the end date and time in UTC.
 
 ```md
 - [Base Labs: Mammoth](https://phaseo.app/models/baselabs/mammoth) is free until October 28, 2026, 06:59 UTC.
-```
-
-### Deprecation announced
-
-Retirement date, what happens to requests afterwards, and the replacement.
-
-```md
-- **Deprecated:** [OpenAI: GPT-5.4](https://phaseo.app/models/openai/gpt-5.4) retires on December 1, 2026. After that, requests return `410 model_retired` unless retired model routing is on; the replacement is [OpenAI: GPT-6.1 Terra](https://phaseo.app/models/openai/gpt-6.1-terra).
-```
-
-### Retirement
-
-```md
-- [OpenAI: GPT-5.4](https://phaseo.app/models/openai/gpt-5.4) is retired; see [Model Deprecation and Retirement](/v1/guides/model-retirement).
 ```
 
 ### Stealth models and reveals
@@ -255,7 +245,7 @@ Retirement date, what happens to requests afterwards, and the replacement.
 Announce the stealth model as it is listed. When it is revealed, add a bullet on the reveal date; don't rewrite the earlier entry.
 
 ```md
-- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) is revealed as [Z.AI: GLM-5.3-Flash](https://phaseo.app/models/zai/glm-5.3-flash) and retired.
+- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) is revealed as [Z.AI: GLM-5.3-Flash](https://phaseo.app/models/zai/glm-5.3-flash).
 ```
 
 ### Rename or new model ID
@@ -272,6 +262,7 @@ Say whether the old ID keeps working.
 - Catalogue data fixes, benchmark syncs and description edits that don't change what a model can do.
 - Refactors, performance work nobody would notice, tests, CI, dependency updates and internal tools.
 - Anything a customer cannot use yet.
+- Model deprecations and retirements.
 
 ## Before you finish
 

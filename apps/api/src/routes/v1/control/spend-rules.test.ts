@@ -145,7 +145,7 @@ describe("spend rules management API", () => {
 		expect(body.max_rules).toBe(50);
 		expect(body.data.map((rule: any) => rule.id)).toEqual([RULE, "00000000-0000-4000-8000-000000000006"]);
 		expect(body.data[0]).toMatchObject({ base_amount_nanos: 100e9, base_amount_usd: 100, destination_ids: [DEST], evaluated: true });
-		expect(body.data[1]).toMatchObject({ metric: "spike", evaluated: false, spike_multiplier: 3, spike_floor_usd: 5, destination_ids: [] });
+		expect(body.data[1]).toMatchObject({ metric: "spike", evaluated: true, spike_multiplier: 3, spike_floor_usd: 5, destination_ids: [] });
 		expect(body.data[0]).not.toHaveProperty("workspace_spend_rule_destinations");
 	});
 
@@ -176,6 +176,7 @@ describe("spend rules management API", () => {
 				[{ name: "x", metric: "forecast", period: "rolling", window_hours: 2, threshold_amount_usd: 5 }, "forecast rules need a day, week or month period"],
 				[{ name: "x", metric: "forecast", period: "month" }, "forecast rules need either threshold_amount, or base_kind with threshold_percents"],
 				[{ name: "x", metric: "spike", period: "day" }, "spike rules need the rolling period (window_hours is the spike window)"],
+				[{ name: "x", metric: "spike", period: "rolling", window_hours: 57 }, "spike rules need a window_hours of at most 56: the median needs 3 windows in the previous 7 days"],
 				[{ name: "x", metric: "balance", period: "rolling", window_hours: 24, scope_type: "key", scope_id: KEY, threshold_amount_usd: 5 }, "balance rules need the workspace scope"],
 				[{ name: "x", metric: "balance", period: "rolling", window_hours: 24 }, "balance rules need threshold_amount, runway_days, or both"],
 				[{ name: "x", metric: "spend", period: "day", threshold_amount_usd: 5, runway_days: 3 }, "runway_days is not used by spend rules; set it to null"],
@@ -235,11 +236,11 @@ describe("spend rules management API", () => {
 			expect(args.p_destination_ids).toEqual([]);
 		});
 
-		it("accepts every metric the table allows; spike rules come back with evaluated false, the rest with true", async () => {
+		it("accepts every metric the table allows, and evaluates each of them", async () => {
 			const spike = await call("/", "POST", { name: "Spike", metric: "spike", period: "rolling", window_hours: 6 });
 			expect(spike.status).toBe(201);
 			expect(state.rpc.mock.calls[0][1].p_rule).toMatchObject({ spike_multiplier: 3, spike_floor_nanos: 5_000_000_000, cooldown_minutes: 360 });
-			expect((await spike.json() as any).data).toMatchObject({ evaluated: false, spike_floor_usd: 5 });
+			expect((await spike.json() as any).data).toMatchObject({ evaluated: true, spike_floor_usd: 5 });
 			for (const body of [
 				{ name: "Forecast", metric: "forecast", period: "month", base_kind: "previous_period", threshold_percents: [120] },
 				{ name: "Rolling", metric: "spend", period: "rolling", window_hours: 24, threshold_amount_usd: 50, cooldown_minutes: 60 },

@@ -3,6 +3,7 @@
 // Why: Provides transparency and insights into model usage across the gateway
 // How: Server component that fetches data and renders visualizations
 
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { Suspense } from "react";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Metadata } from "next";
@@ -295,16 +296,16 @@ function buildPerformanceEntries(
 				value,
 				value_label:
 					metric === "median_throughput"
-						? labels.throughput(new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value))
-						: labels.latency(new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)),
+						? labels.throughput(formatTps(value, locale) ?? "")
+						: labels.latency(formatLatency(value, locale) ?? ""),
 				secondary: labels.recentRequests(new Intl.NumberFormat(locale).format(Number(row.requests ?? 0))),
 				tertiary:
 					metric === "median_throughput"
 						? Number(row.median_latency_ms ?? 0) > 0
-							? labels.medianLatency(new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Number(row.median_latency_ms)))
+							? labels.medianLatency(formatLatency(Number(row.median_latency_ms), locale) ?? "")
 							: null
 						: Number(row.median_throughput ?? 0) > 0
-							? labels.throughput(new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(row.median_throughput)))
+							? labels.throughput(formatTps(Number(row.median_throughput), locale) ?? "")
 							: null,
 				lowerIsBetter,
 			};

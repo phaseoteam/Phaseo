@@ -1,7 +1,7 @@
 import type { ProviderHealthRow, ProviderModel, ProviderPricing } from "@/lib/api/models";
 // Pure web modules, shared so statuses and names match phaseo.app exactly.
-import { chooseGatewayStatus, getGatewayStatusSortRank, normalizeGatewayStatusValue, resolveGatewayStatus, type CanonicalGatewayStatus } from "../../../../../web/src/components/(data)/model/pricing/providerGatewayStatus";
-import { formatProviderOfferDisplayName, resolveProviderDisplayName, resolveProviderLogoId } from "../../../../../web/src/lib/providers/providerOffers";
+import { chooseGatewayStatus, getGatewayStatusSortRank, normalizeGatewayStatusValue, resolveGatewayStatus, type CanonicalGatewayStatus } from "@phaseo/app-kit/gateway-status";
+import { formatProviderOfferDisplayName, resolveProviderDisplayName, resolveProviderLogoId } from "@phaseo/app-kit/provider-offers";
 import { serviceTierLabel } from "./tiers";
 
 export type { CanonicalGatewayStatus };

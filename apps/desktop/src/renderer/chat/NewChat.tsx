@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, Box, Check, ChevronDown, Code2, FilePen, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { isFactoryWorktree } from "../../shared/factory/projects";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import type { Task } from "../../shared/workspace";
@@ -76,7 +77,8 @@ export function NewChat() {
 	const remembered = preferences.defaultSelection ?? preferences.recentSelection;
 	const [selections, setSelections] = useState<ModelSelection[]>(remembered ? [remembered] : []);
 	const code = mode === "code";
-	const projects = overview.projects.filter(project => !project.worktree?.removedAt);
+	// Factory's per-item worktrees stay out of the picker; their threads still list.
+	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
 	const project = projects.find(value => value.id === newChatProjectId);
 	const worktree = useWorktreeTarget(api, code ? project?.id : undefined, setOverview);
 
@@ -131,7 +133,7 @@ export function NewChat() {
 		setBusy(true);
 		const known = new Set(overview.tasks.map(task => task.id));
 		try {
-			const prepared = await menu.prepare(message.text), shared = { text: prepared.text, images: attached, threadReferences: message.threadReferences, nativeAction: prepared.nativeAction };
+			const prepared = await menu.prepare(message.text), shared = { text: prepared.text, images: attached, threadReferences: message.threadReferences, githubReferences: message.githubReferences, nativeAction: prepared.nativeAction };
 			if (compare) {
 				const ids: string[] = [];
 				for (const selection of selections) { const id = await startChat(api, command, known, { selection, mode: "chat", ...shared }); if (id) ids.push(id); }

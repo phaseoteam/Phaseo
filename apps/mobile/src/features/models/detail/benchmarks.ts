@@ -1,5 +1,5 @@
 import type { BenchmarkRanking, ModelBenchmark, ModelBenchmarkResult } from "@/lib/api/models";
-import { isEpochCapabilitiesIndex, parseEpochConfidenceInterval } from "../../../../../web/src/lib/benchmarks/epoch";
+import { isEpochCapabilitiesIndex, parseEpochConfidenceInterval } from "@phaseo/app-kit/benchmarks/epoch";
 
 export { isEpochCapabilitiesIndex, parseEpochConfidenceInterval };
 

@@ -4,14 +4,15 @@ import { View } from "react-native";
 import { Text } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { WEB_ORIGIN } from "@/lib/config";
+import { logoResolverStore } from "@/lib/logos";
 import { useAppearance } from "@/providers/AppearanceProvider";
-// The web's logo manifest and resolver are plain data and functions; sharing them
-// keeps organisation and provider logos identical to phaseo.app without a copy.
-import { resolveLogo } from "../../../web/src/lib/logos";
 
-/** Where a lab's or provider's logo is on phaseo.app, or null for an unknown ID (also for `Image.prefetch`). */
-export function logoUri(id: string, theme: "light" | "dark") {
-  const logo = resolveLogo(id, { theme, fallbackToColor: true });
+/**
+ * Where a lab's or provider's logo is on phaseo.app, or null for an unknown ID (also for `Image.prefetch`). The logo
+ * list is shared with the website (@phaseo/app-kit) and topped up from phaseo.app (lib/logos.ts).
+ */
+export function logoUri(id: string, theme: "light" | "dark", resolver = logoResolverStore.get()) {
+  const logo = resolver.resolveLogo(id, { theme, fallbackToColor: true });
   return logo?.src ? `${WEB_ORIGIN}${logo.src}` : null;
 }
 
@@ -19,7 +20,8 @@ export function logoUri(id: string, theme: "light" | "dark") {
 export function LogoMark({ id, size = 18 }: { id: string; size?: number }) {
   const { resolved } = useAppearance();
   const [failed, setFailed] = useState(false);
-  const uri = logoUri(id, resolved);
+  const resolver = logoResolverStore.use();
+  const uri = logoUri(id, resolved, resolver);
   if (!uri || failed) return null;
   return <Image source={{ uri }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityElementsHidden importantForAccessibility="no" />;
 }
@@ -33,7 +35,8 @@ export function logoTileRadius(size: number) {
 export function Logo({ id, label, colour, size = 32, className, bare }: { id?: string | null; label?: string | null; colour?: string | null; size?: number; className?: string; bare?: boolean }) {
   const { resolved } = useAppearance();
   const [failed, setFailed] = useState(false);
-  const logo = id ? resolveLogo(id, { theme: resolved, fallbackToColor: true }) : null;
+  const resolver = logoResolverStore.use();
+  const logo = id ? resolver.resolveLogo(id, { theme: resolved, fallbackToColor: true }) : null;
   const src = logo?.src && !failed ? `${WEB_ORIGIN}${logo.src}` : null;
   const name = label ?? logo?.label ?? id ?? "?";
   const radius = logoTileRadius(size);

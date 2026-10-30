@@ -40,6 +40,8 @@
 		"@number-flow/react": "^0.6.2",
 		"@octokit/rest": "^22.0.1",
 		"@openuidev/react-lang": "0.3.2",
+		"@phaseo/app-kit": "workspace:*",
+		"@phaseo/ui": "workspace:*",
 		"@posthog/nextjs-config": "^1.11.3",
 		"@react-three/drei": "^10.7.9",
 		"@react-three/fiber": "^9.6.1",
@@ -125,7 +127,7 @@
 		"use-stick-to-bottom": "^1.1.6",
 		"vaul": "^1.1.2",
 		"ws": "^8.21.0",
-		"zod": "^4.4.3"
+		"zod": "^4.6.7"
 	},
 	"devDependencies": {
 		"@eslint/eslintrc": "^3",

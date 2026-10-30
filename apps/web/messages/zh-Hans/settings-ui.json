@@ -7421,8 +7421,8 @@
 			"body": "添加警报，在支出带来意外之前得到提醒，例如在月度金额的 50%、80% 和 100% 时。"
 		},
 		"badges": {
-			"notEvaluated": "尚未评估",
-			"notEvaluatedHelp": "此警报类型已保存，但尚未检查。它将在后续版本中开始发送。",
+			"notEvaluated": "未评估",
+			"notEvaluatedHelp": "这些设置不会被检查，因此此提醒不会发送。请修改其周期或基数。",
 			"blocks": "先通知，再拦截",
 			"disabled": "已关闭",
 			"blockingNow": "正在拦截",
@@ -7502,12 +7502,15 @@
 			"delete": "删除",
 			"runway": "约可用 {days} 天",
 			"projectedBy": "预计截至 {date}",
-			"forecastFrom": "{date} 起预测"
+			"forecastFrom": "{date} 起预测",
+			"spikeUsual": "通常的 {multiple} 倍（{baseline}）",
+			"spikeNoBaseline": "尚无通常支出",
+			"spikeLearning": "正在了解通常水平"
 		},
 		"preview": {
 			"ofBase": "当前 {value} / {base}（{percent}）",
 			"value": "本周期当前支出 {value}",
-			"notEvaluated": "暂无预览：此警报类型尚未评估。",
+			"notEvaluated": "无预览：这些设置不会被评估。",
 			"disabled": "开启警报后可查看当前值。",
 			"unavailable": "当前值暂时不可用。",
 			"afterSave": "保存后将显示当前值。",
@@ -7516,7 +7519,10 @@
 			"balanceNoSpend": "余额 {balance}，过去 {hours} 小时内无支出",
 			"forecast": "目前已支出 {value}，预计到 {date} 达到 {projected}",
 			"forecastReaches": "目前已支出 {value}，预计到 {date} 达到 {projected}。按此速度将在 {reachDate} 达到 {limit}。",
-			"forecastPending": "目前已支出 {value}。周期经过足够时间后，将于 {date} 开始预测。"
+			"forecastPending": "目前已支出 {value}。周期经过足够时间后，将于 {date} 开始预测。",
+			"spike": "最近 {hours} 小时支出 {current}，是该时段通常水平 {baseline} 的 {multiple} 倍。达到 {firesAt} 时提醒。",
+			"spikeNoBaseline": "最近 {hours} 小时支出 {current}，过去 7 天该时段没有支出。达到 {firesAt} 时提醒。",
+			"spikePending": "最近 {hours} 小时支出 {current}。当工作区在过去 7 天的相同时段中有 {needed} 个有支出后，开始发送峰值提醒（目前 {active} 个）。"
 		},
 		"editor": {
 			"createTitle": "添加支出警报",
@@ -7527,7 +7533,7 @@
 			"name": "名称",
 			"namePlaceholder": "月度支出",
 			"type": "警报类型",
-			"notEvaluatedNote": "此警报类型现在会保存，并将在后续版本中开始发送。",
+			"notEvaluatedNote": "这些设置不会被检查，因此此提醒不会发送。请更改其周期或基数。",
 			"sectionScope": "监控对象",
 			"scopeType": "范围",
 			"balanceWorkspaceOnly": "余额不足警报始终覆盖整个工作区。",
@@ -7611,7 +7617,8 @@
 			"create": "添加警报",
 			"saving": "正在保存…",
 			"blockingOff": "拦截尚未启用。在此之前，此警报只发送通知。",
-			"balanceEmailNote": "此警报独立于上方的余额不足邮件。余额警报还可以监控剩余的可用天数，并使用自己的通知目标和冷却时间。自动充值正在补充余额时，两者都不会发出警报。"
+			"balanceEmailNote": "此警报独立于上方的余额不足邮件。余额警报还可以监控剩余的可用天数，并使用自己的通知目标和冷却时间。自动充值正在补充余额时，两者都不会发出警报。",
+			"spikeWindowHelp": "1 到 56 小时。与过去 7 天每天的相同时段比较；24 小时及以上则与之前的窗口比较。"
 		},
 		"issues": {
 			"nameRequired": "请输入不超过 100 个字符的名称。",
@@ -7630,7 +7637,8 @@
 			"blockPercentRange": "请输入 100 到 1000 之间的整数百分比。",
 			"blockPercentBelowThreshold": "拦截百分比不能低于最高的警报百分比。",
 			"blockAmountBelowThreshold": "拦截金额不能低于警报金额。",
-			"thresholdChip": "请使用 1 到 1000 的整数百分比，最多 {max} 个。"
+			"thresholdChip": "请使用 1 到 1000 的整数百分比，最多 {max} 个。",
+			"spikeWindowRange": "请输入 1 到 56 之间的整数小时数：通常水平需要过去 7 天内有 3 个窗口。"
 		},
 		"errors": {
 			"limit": "一个工作区最多可以有 {max} 条支出警报。",

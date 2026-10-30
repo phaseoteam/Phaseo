@@ -1688,7 +1688,7 @@
 		"hideAllRuns": "Ocultar todas as execuções",
 		"yourGateway": "Seu Gateway",
 		"yourGatewayTtft": "Seu Gateway (TTFT)",
-		"yourGatewayThroughput": "Seu Gateway (tokens/s)",
+		"yourGatewayThroughput": "Seu Gateway (tps)",
 		"tie": "Empate",
 		"latestProvider": "Resultado mais recente: {provider}",
 		"requestFailed": "Não foi possível concluir a solicitação. Confira o endpoint e as credenciais e tente novamente.",
@@ -1706,7 +1706,7 @@
 		"throughput": "Vazão",
 		"responsePlaceholder": "A resposta aparecerá aqui...",
 		"gatewayLabel": "Gateway",
-		"openaiThroughput": "OpenAI API (tokens/s)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"feedback": {
 		"category": "Categoria do feedback",

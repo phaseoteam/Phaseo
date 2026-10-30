@@ -5,6 +5,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { Check, Loader2, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
+import {
+	PALETTE_SWATCHES,
+	THEME_PRESETS as SHARED_THEME_PRESETS,
+	type ThemePreset as SharedThemePreset,
+	type ThemePresetId,
+} from "@phaseo/app-kit/theme";
 
 import { updateDisplayPreferences } from "@/app/(dashboard)/settings/preferences/actions";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
@@ -39,82 +45,19 @@ import {
 	normalizeDisplayPreferences,
 	readableForegroundForAccent,
 	type DisplayPreferences,
-	type DisplayDarkPalette,
-	type DisplayLightPalette,
 } from "@/lib/displayPreferences";
 
-const PALETTE_SWATCHES = {
-	light: {
-		phaseo: ["#ffffff", "#f5f5f5", "#171717"],
-		paper: ["#f8fafc", "#ffffff", "#29313d"],
-		warm: ["#fcfaf4", "#fffdf8", "#3b3025"],
-	},
-	dark: {
-		phaseo: ["#171717", "#262626", "#fafafa"],
-		slate: ["#17202b", "#202c39", "#e8edf3"],
-		midnight: ["#0b0d1b", "#15182b", "#eeeff8"],
-	},
-} as const;
+// The presets and swatches are shared with the mobile app (packages/shared/app-kit).
+type ThemePreset = Omit<SharedThemePreset, "name"> & { nameKey: ThemePresetId };
 
-type ThemePreset = {
-	id: string;
-	nameKey: "phaseo" | "carbon" | "midnight" | "forest" | "ember" | "orchid";
-	lightPalette: DisplayLightPalette;
-	darkPalette: DisplayDarkPalette;
-	lightAccent: string;
-	darkAccent: string;
-};
-
-const THEME_PRESETS: readonly ThemePreset[] = [
-	{
-		id: "phaseo",
-		nameKey: "phaseo",
-		lightPalette: "phaseo",
-		darkPalette: "phaseo",
-		lightAccent: "#0069a8",
-		darkAccent: "#0078b8",
-	},
-	{
-		id: "carbon",
-		nameKey: "carbon",
-		lightPalette: "paper",
-		darkPalette: "slate",
-		lightAccent: "#334155",
-		darkAccent: "#60a5fa",
-	},
-	{
-		id: "midnight",
-		nameKey: "midnight",
-		lightPalette: "paper",
-		darkPalette: "midnight",
-		lightAccent: "#4f46e5",
-		darkAccent: "#818cf8",
-	},
-	{
-		id: "forest",
-		nameKey: "forest",
-		lightPalette: "warm",
-		darkPalette: "slate",
-		lightAccent: "#15803d",
-		darkAccent: "#4ade80",
-	},
-	{
-		id: "ember",
-		nameKey: "ember",
-		lightPalette: "warm",
-		darkPalette: "midnight",
-		lightAccent: "#c2410c",
-		darkAccent: "#fb923c",
-	},
-	{
-		id: "orchid",
-		nameKey: "orchid",
-		lightPalette: "paper",
-		darkPalette: "midnight",
-		lightAccent: "#7c3aed",
-		darkAccent: "#c084fc",
-	},
-];
+const THEME_PRESETS: readonly ThemePreset[] = SHARED_THEME_PRESETS.map((preset) => ({
+	id: preset.id,
+	nameKey: preset.id,
+	lightPalette: preset.lightPalette,
+	darkPalette: preset.darkPalette,
+	lightAccent: preset.lightAccent,
+	darkAccent: preset.darkAccent,
+}));
 
 const PREVIEW_DATE = new Date("2026-09-19T16:35:00.000Z");
 const APPEARANCE_MODES = [

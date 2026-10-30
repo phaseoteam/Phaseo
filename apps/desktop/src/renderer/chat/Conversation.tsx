@@ -6,6 +6,7 @@ import type { AgentActivity, Message, Task } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import { conversationTurns, turnDuration, type TurnEntry } from "../lib/conversationTurns";
 import { contextShare, turnUsage } from "../lib/turnUsage";
+import { formatRoundedCount, formatTime } from "@phaseo/app-kit/format";
 import { formatCost } from "../../shared/usageAmounts";
 import { cn } from "../lib/utils";
 import { MessageContent } from "../components/MessageContent";
@@ -54,7 +55,7 @@ function UserMessage({ message, projectId, onAttachment, onBranch, onRewind, can
 			{!!message.attachments?.length && <div className="mt-2 flex flex-wrap gap-1.5">{message.attachments.map(attachment => <button key={attachment.id} type="button" onClick={() => onAttachment(attachment.id)} className="inline-flex h-6 items-center gap-1 rounded-md bg-background/70 px-2 text-xs hover:bg-background"><Paperclip className="size-3" />{attachment.name}</button>)}</div>}
 		</div>
 		<div className="flex items-center opacity-0 transition-opacity group-hover/message:opacity-100">
-			<span className="mr-1 text-[11px] text-muted-foreground">{new Date(message.createdAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>
+			<span className="mr-1 text-[11px] text-muted-foreground">{formatTime(message.createdAt)}</span>
 			<CopyButton text={mentionPlainText(message.text)} />
 			{onRewind && <ActionButton label="Edit from here" disabled={!canBranch} onClick={() => onRewind(message)}><PenLine /></ActionButton>}
 			<ActionButton label="Branch from here" disabled={!canBranch} onClick={() => onBranch(message.id)}><GitBranch /></ActionButton>
@@ -68,9 +69,9 @@ function WatchNotice({ message }: { message: Message }) {
 	const [open, setOpen] = useState(false), notice = message.notice!;
 	return <div data-conversation-id={`message:${message.id}`} data-notice={notice.kind} className="text-[12.5px]">
 		<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/notice flex w-full min-w-0 items-center gap-2 rounded-md py-1 text-left text-muted-foreground hover:text-foreground">
-			<GitPullRequestArrow aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} />
-			<span className="min-w-0 truncate font-medium text-foreground/85">Pull request {notice.summary}</span>
-			<span className="shrink-0 text-[11px]">{new Date(message.createdAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>
+			{notice.kind === "issue" ? <CircleDot aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} /> : <GitPullRequestArrow aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} />}
+			<span className="min-w-0 truncate font-medium text-foreground/85">{notice.kind === "issue" ? notice.summary : `Pull request ${notice.summary}`}</span>
+			<span className="shrink-0 text-[11px]">{formatTime(message.createdAt)}</span>
 			<ChevronRight aria-hidden className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/notice:opacity-100", open && "rotate-90 opacity-100")} />
 		</button>
 		{open && <div data-selectable className="mt-0.5 mb-2 ml-[7px] border-l border-border py-0.5 pl-4 text-[13px] whitespace-pre-wrap text-muted-foreground">{message.text}</div>}
@@ -182,7 +183,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 				<CopyButton text={final.value.text} />
 				{onRegenerate && user && <ActionButton label="Regenerate" disabled={!canBranch} onClick={() => onRegenerate(user)}><RotateCcw /></ActionButton>}
 				<ActionButton label="Branch from this answer" disabled={!canBranch} onClick={() => onBranch(final.value.id)}><GitBranch /></ActionButton>
-				{usage.Total !== undefined && <span className="ml-2 font-mono text-[11px] text-muted-foreground">{new Intl.NumberFormat(undefined, { notation: "compact" }).format(usage.Total)} tokens</span>}
+				{usage.Total !== undefined && <span className="ml-2 font-mono text-[11px] text-muted-foreground">{formatRoundedCount(usage.Total, "en-US")} tokens</span>}
 				{usage.Cost !== undefined && usage.Cost > 0 && <span title="What this answer cost, as the Phaseo gateway priced it." className="font-mono text-[11px] text-muted-foreground">· {formatCost(usage.Cost)}</span>}
 				{context !== undefined && <span title="How much of the model's context window the conversation used at the end of this turn. Phaseo compacts it automatically when it nears the limit." className={cn("font-mono text-[11px]", context >= 0.8 ? "text-warning" : "text-muted-foreground")}>· {Math.round(context * 100)}% of context</span>}
 			</div>}

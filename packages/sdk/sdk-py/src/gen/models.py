@@ -3226,6 +3226,7 @@ class SpendRulePreview(TypedDict):
 	previous_period: Optional[Dict[str, Any]]
 	reached_threshold_percent: Optional[int]
 	rule_id: str
+	spike: Optional[Dict[str, Any]]
 	state: Optional[Dict[str, Any]]
 	threshold_amount_nanos: Optional[int]
 	threshold_amount_usd: Optional[float]

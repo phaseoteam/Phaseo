@@ -58,6 +58,23 @@ export interface SpendRulePreviewResponse {
     } | null;
     reached_threshold_percent: number | null;
     rule_id: string;
+    spike: {
+      active_windows: number;
+      baseline_nanos: number;
+      baseline_usd: number;
+      baseline_windows: number;
+      cooldown_until: string | null;
+      current_nanos: number;
+      current_usd: number;
+      fires_at_nanos: number;
+      fires_at_usd: number;
+      floor_usd: number;
+      history_ready: boolean;
+      multiple: number | null;
+      multiplier: number;
+      spiking: boolean;
+      window_hours: number;
+    } | null;
     state: {
       amount_fired_at: string | null;
       armed?: boolean;

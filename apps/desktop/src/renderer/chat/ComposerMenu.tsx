@@ -10,6 +10,8 @@ import type { ProjectFile } from "../../shared/workspace";
 import type { PullRequest } from "../../shared/pullRequests";
 import { pullRequestStatePresentation } from "../views/pullRequests/presentation";
 import { pullRequestMatches } from "../views/pullRequests/composerPullRequests";
+import { issueStatePresentation } from "../views/issues/presentation";
+import type { GithubReferenceCandidate } from "../../shared/issueView";
 import { errorText, useWorkspace } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -69,6 +71,9 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 	const [files, setFiles] = useState<ProjectFile[]>([]);
 	const [pulls, setPulls] = useState<{ projectId: string; requests: PullRequest[]; exact?: PullRequest & { state?: string } }>();
 	const [pullsLoading, setPullsLoading] = useState(false);
+	/** `#` also searches the project's issues (and closed pull requests) on GitHub as the query changes. */
+	const [githubSearch, setGithubSearch] = useState<{ projectId: string; results: GithubReferenceCandidate[] }>();
+	const [searching, setSearching] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [form, setForm] = useState<{ prompt: McpPromptEntry; values: Record<string, string> }>();
 	// An action with choices (Reasoning, Permissions…) opens them in place of the list.
@@ -123,6 +128,12 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 		const timer = setTimeout(() => void api.pullRequest(projectId, number).then(details => { if (current) setPulls(previous => previous && previous.projectId === projectId ? { ...previous, exact: { ...details, state: details.state } } : previous); }, () => undefined), 180);
 		return () => { current = false; clearTimeout(timer); };
 	}, [pullQuery, projectId, api, pulls]);
+	useEffect(() => {
+		if (pullQuery === undefined || !api || !projectId) return;
+		let current = true; setSearching(true);
+		const timer = setTimeout(() => void api.githubReferences(projectId, pullQuery).then(value => { if (current) setGithubSearch({ projectId, results: value.results }); }, () => { if (current) setGithubSearch({ projectId, results: [] }); }).finally(() => { if (current) setSearching(false); }), 200);
+		return () => { current = false; clearTimeout(timer); };
+	}, [pullQuery, projectId, api]);
 
 	/** Replace the typed trigger with text or chips, keeping the rest of the message; `whole` replaces the message. */
 	const replace = (content: string | JSONContent[], whole = false) => {
@@ -176,14 +187,27 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 			})),
 		].slice(0, 60);
 		if (trigger.kind === "pull-request") {
-			if (!projectId || pulls?.projectId !== projectId) return [];
-			const attached = editor ? parseMentions(draftText(editor.state.doc)).flatMap(segment => typeof segment !== "string" && segment.kind === "pull-request" ? [segment.ref] : []) : [];
-			const linked = overview.tasks.find(task => task.id === taskId)?.pullRequests?.map(link => link.number) ?? [];
-			return pullRequestMatches([...pulls.exact ? [pulls.exact] : [], ...pulls.requests], query, linked).filter(request => !attached.includes(request.url)).map(request => {
+			if (!projectId) return [];
+			const attached = editor ? parseMentions(draftText(editor.state.doc)).flatMap(segment => typeof segment !== "string" && (segment.kind === "pull-request" || segment.kind === "issue") ? [segment.ref] : []) : [];
+			const current = overview.tasks.find(task => task.id === taskId), linked = current?.pullRequests?.map(link => link.number) ?? [];
+			const listed = pulls?.projectId === projectId ? pullRequestMatches([...pulls.exact ? [pulls.exact] : [], ...pulls.requests], query, linked).filter(request => !attached.includes(request.url)) : [];
+			const pullItems: Item[] = listed.map(request => {
 				const state = pullRequestStatePresentation((request as { state?: "OPEN" | "CLOSED" | "MERGED" }).state ?? "OPEN", request.draft);
 				return { key: `pull:${request.number}`, group: "Pull requests", label: `#${request.number}`, detail: request.title, icon: <state.Icon className={state.toneClassName} />,
 					run: () => replace(mentionContent({ kind: "pull-request", ref: request.url, label: `#${request.number} ${request.title}` })) };
 			});
+			// Search results add the project's issues, and pull requests the open list does not have (closed or merged ones).
+			const searched = githubSearch?.projectId === projectId ? githubSearch.results.filter(result => !attached.includes(result.url) && !listed.some(request => request.number === result.number)) : [];
+			const linkedIssues = current?.issues?.map(link => link.number) ?? [];
+			const searchedItems = searched.map((result): Item => {
+				const presentation = result.kind === "issue" ? issueStatePresentation(result.state === "closed" ? "closed" : "open") : pullRequestStatePresentation(result.state, Boolean(result.draft));
+				return { key: `${result.kind}:${result.number}`, group: result.kind === "issue" ? "Issues" : "Pull requests", label: `#${result.number}`, detail: result.title, hint: result.kind === "issue" && linkedIssues.includes(result.number) ? "Linked" : undefined, icon: <presentation.Icon className={presentation.toneClassName} />,
+					run: () => replace(mentionContent({ kind: result.kind, ref: result.url, label: `#${result.number} ${result.title}` })) };
+			});
+			const issueItems = searchedItems.filter(item => item.group === "Issues"), morePulls = searchedItems.filter(item => item.group === "Pull requests");
+			// An exact number puts its group first.
+			const exact = /^\d+$/.test(query) ? searched.find(result => String(result.number) === query) : undefined;
+			return exact?.kind === "issue" ? [...issueItems, ...pullItems, ...morePulls] : [...pullItems, ...morePulls, ...issueItems];
 		}
 		const references = editor ? parseMentions(draftText(editor.state.doc)).flatMap(segment => typeof segment !== "string" && segment.kind === "chat" ? [segment.ref] : []) : [];
 		const chats = overview.tasks.filter(task => !task.archived && task.id !== taskId && !references.includes(task.id) && matches(query, task.title))
@@ -194,7 +218,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 			...files.map(file => ({ key: `file:${file.path}`, group: "Files", label: file.name, detail: file.path === file.name ? undefined : file.path, icon: file.directory ? <Folder /> : <File />,
 				run: () => replace(mentionContent({ kind: file.directory ? "folder" : "file", ref: file.path, label: file.name })) })),
 		];
-	}, [open, triggerKey, trigger?.query, commands, nativeActions, actions, submenu, prompts, files, pulls, projectId, overview.tasks, taskId, editor]);
+	}, [open, triggerKey, trigger?.query, commands, nativeActions, actions, submenu, prompts, files, pulls, githubSearch, projectId, overview.tasks, taskId, editor]);
 
 	useEffect(() => { setActive(0); setSubmenu(undefined); }, [triggerKey, trigger?.query]);
 	const selected = Math.min(active, Math.max(0, items.length - 1));
@@ -221,9 +245,9 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 		return { text };
 	};
 
-	const empty = trigger?.kind === "slash" ? (loading ? "" : "No commands match.") : trigger?.kind === "pull-request" ? (!projectId ? "Pull requests are only available in a project." : pullsLoading ? "Finding pull request…" : "No pull requests match.") : projectId ? "No chats or files match." : "No chats match.";
+	const empty = trigger?.kind === "slash" ? (loading ? "" : "No commands match.") : trigger?.kind === "pull-request" ? (!projectId ? "Issues and pull requests are only available in a project." : pullsLoading || searching ? "Searching issues and pull requests…" : "No issues or pull requests match.") : projectId ? "No chats or files match." : "No chats match.";
 	let previous = "";
-	const menu = open ? <div role="dialog" aria-label={trigger?.kind === "slash" ? "Commands" : trigger?.kind === "pull-request" ? "Mention a pull request" : "Mention a chat or file"} className="absolute inset-x-0 bottom-full z-30 mb-2 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg">
+	const menu = open ? <div role="dialog" aria-label={trigger?.kind === "slash" ? "Commands" : trigger?.kind === "pull-request" ? "Mention an issue or pull request" : "Mention a chat or file"} className="absolute inset-x-0 bottom-full z-30 mb-2 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg">
 		{form ? <form className="flex flex-col gap-2 p-3" onSubmit={event => { event.preventDefault(); void guard(() => insertPrompt(form.prompt, form.values))(); }}>
 			<p className="text-[13px] font-semibold">{form.prompt.name} <span className="font-normal text-muted-foreground">· {form.prompt.server}</span></p>
 			{form.prompt.arguments.map((argument, index) => <label key={argument.name} className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -237,7 +261,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 				<button type="submit" className="h-7 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/85">Insert</button>
 			</div>
 		</form> : <ScrollArea className="max-h-72" viewportClassName="max-h-72">
-			<div id={listId} role="listbox" aria-label={trigger?.kind === "slash" ? "Commands" : trigger?.kind === "pull-request" ? "Pull requests" : "Chats and files"} className="py-1.5 pr-3.5 pl-1.5">
+			<div id={listId} role="listbox" aria-label={trigger?.kind === "slash" ? "Commands" : trigger?.kind === "pull-request" ? "Issues and pull requests" : "Chats and files"} className="py-1.5 pr-3.5 pl-1.5">
 				{items.map((item, index) => {
 					const heading = item.group !== previous ? item.group : undefined; previous = item.group;
 					return <div key={item.key}>

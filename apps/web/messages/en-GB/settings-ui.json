@@ -7421,8 +7421,8 @@
 			"body": "Add an alert to hear about spend before it becomes a surprise, for example at 50%, 80% and 100% of a monthly amount."
 		},
 		"badges": {
-			"notEvaluated": "Not evaluated yet",
-			"notEvaluatedHelp": "This alert type is saved but not checked yet. It starts sending in a later release.",
+			"notEvaluated": "Not evaluated",
+			"notEvaluatedHelp": "These settings are not checked, so this alert does not send. Edit its period or base.",
 			"blocks": "Notifies, then blocks",
 			"disabled": "Off",
 			"blockingNow": "Blocking now",
@@ -7502,12 +7502,15 @@
 			"delete": "Delete",
 			"runway": "about {days} days left",
 			"projectedBy": "projected by {date}",
-			"forecastFrom": "forecast from {date}"
+			"forecastFrom": "forecast from {date}",
+			"spikeUsual": "{multiple}× usual ({baseline})",
+			"spikeNoBaseline": "no usual spend yet",
+			"spikeLearning": "learning the usual"
 		},
 		"preview": {
 			"ofBase": "Currently {value} of {base} ({percent})",
 			"value": "Currently {value} this period",
-			"notEvaluated": "No preview yet: this alert type is not evaluated yet.",
+			"notEvaluated": "No preview: these settings are not evaluated.",
 			"disabled": "Turn the alert on to see its current value.",
 			"unavailable": "The current value is not available right now.",
 			"afterSave": "The current value appears after you save.",
@@ -7516,7 +7519,10 @@
 			"balanceNoSpend": "Balance {balance}, with no spend in the last {hours} hours",
 			"forecast": "Spent {value} so far, projected {projected} by {date}",
 			"forecastReaches": "Spent {value} so far, projected {projected} by {date}. At this pace it reaches {limit} on {reachDate}.",
-			"forecastPending": "Spent {value} so far. The forecast starts {date}, once enough of the period has passed."
+			"forecastPending": "Spent {value} so far. The forecast starts {date}, once enough of the period has passed.",
+			"spike": "Spent {current} in the last {hours} h, {multiple}× the usual {baseline} for this window. It alerts at {firesAt}.",
+			"spikeNoBaseline": "Spent {current} in the last {hours} h, with no spend in this window over the last 7 days. It alerts at {firesAt}.",
+			"spikePending": "Spent {current} in the last {hours} h. Spike alerts start once the workspace has spent in {needed} of the same windows over the last 7 days ({active} so far)."
 		},
 		"editor": {
 			"createTitle": "Add spend alert",
@@ -7527,7 +7533,7 @@
 			"name": "Name",
 			"namePlaceholder": "Monthly spend",
 			"type": "Alert type",
-			"notEvaluatedNote": "This alert type is saved now and starts sending in a later release.",
+			"notEvaluatedNote": "These settings are not checked, so this alert would not send. Change its period or base.",
 			"sectionScope": "What to watch",
 			"scopeType": "Scope",
 			"balanceWorkspaceOnly": "Low balance alerts always cover the whole workspace.",
@@ -7611,7 +7617,8 @@
 			"create": "Add alert",
 			"saving": "Saving…",
 			"blockingOff": "Blocking isn't switched on yet. Until it is, this alert only notifies.",
-			"balanceEmailNote": "This is separate from the low-balance email above. A balance alert can also watch days of credit left, and uses its own destinations and cooldown. Neither alerts while Auto Top-Up is refilling the balance."
+			"balanceEmailNote": "This is separate from the low-balance email above. A balance alert can also watch days of credit left, and uses its own destinations and cooldown. Neither alerts while Auto Top-Up is refilling the balance.",
+			"spikeWindowHelp": "1 to 56 hours. Compared with the same hours on each of the last 7 days, or from 24 hours with the windows before it."
 		},
 		"issues": {
 			"nameRequired": "Enter a name of up to 100 characters.",
@@ -7630,7 +7637,8 @@
 			"blockPercentRange": "Enter a whole percentage from 100 to 1000.",
 			"blockPercentBelowThreshold": "Block at or above the highest alert percentage.",
 			"blockAmountBelowThreshold": "Block at or above the alert amount.",
-			"thresholdChip": "Use whole percentages from 1 to 1000, up to {max} of them."
+			"thresholdChip": "Use whole percentages from 1 to 1000, up to {max} of them.",
+			"spikeWindowRange": "Enter a whole number of hours from 1 to 56: the usual needs 3 windows in the last 7 days."
 		},
 		"errors": {
 			"limit": "A workspace can have up to {max} spend alerts.",

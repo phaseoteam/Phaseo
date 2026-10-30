@@ -25,9 +25,9 @@ export const SPEND_RULE_BASE_REFS = ["daily", "weekly", "monthly"] as const;
 export const SPEND_RULE_ACTIONS = ["notify", "block"] as const;
 
 /**
- * What the evaluator handles so far (private.spend_rule_evaluable). Every metric the table
- * allows is accepted and saved; rules outside these lists are returned with evaluated: false
- * and fire nothing until a later release widens both this and the SQL function.
+ * What the evaluator handles (private.spend_rule_evaluable). Every metric the table allows is
+ * accepted and saved; rules outside these lists (a metric with a period or base it does not
+ * support) are returned with evaluated: false and fire nothing.
  */
 export const EVALUATED_METRICS = ["spend", "budget_percent", "forecast"] as const;
 export const EVALUATED_PERIODS = ["day", "week", "month"] as const;
@@ -36,8 +36,18 @@ export const EVALUATED_BASE_KINDS = ["amount", "workspace_budget", "key_limit", 
 export const EVALUATED_WINDOW_METRICS = ["spend", "budget_percent"] as const;
 /** The bases a rolling spend or budget_percent rule can use (previous_period: the window before). */
 export const EVALUATED_WINDOW_BASE_KINDS = ["amount", "previous_period"] as const;
-/** Metrics evaluated over a rolling window with no base (balance: window_hours is the burn-rate lookback). */
-export const EVALUATED_ROLLING_METRICS = ["balance"] as const;
+/**
+ * Metrics evaluated over a rolling window with no base (balance: window_hours is the burn-rate
+ * lookback; spike: window_hours is the spike window).
+ */
+export const EVALUATED_ROLLING_METRICS = ["balance", "spike"] as const;
+/**
+ * Spike rules compare the last window_hours with the median of the same window over the previous
+ * 7 days, and need at least this many windows of it (private.spend_spike_rule_values) ...
+ */
+export const SPIKE_MIN_BASELINE_WINDOWS = 3;
+/** ... so the longest spike window is 7 days / 3 windows = 56 hours. */
+export const MAX_SPIKE_WINDOW_HOURS = 56;
 /**
  * How far into a period a forecast waits before projecting: 3 hours of a day, a day of a week
  * and 3 days of a month, as the usage dashboard's key limit forecast does (at least about 10%).
@@ -480,6 +490,9 @@ export function spendRuleProblem(rule: SpendRuleFields): string | null {
 		if (byPercent && (rule.base_kind === null || rule.threshold_percents === null)) return "forecast rules by percentage need both base_kind and threshold_percents";
 	} else if (metric === "spike") {
 		if (rule.period !== "rolling") return "spike rules need the rolling period (window_hours is the spike window)";
+		if (rule.window_hours !== null && rule.window_hours > MAX_SPIKE_WINDOW_HOURS) {
+			return `spike rules need a window_hours of at most ${MAX_SPIKE_WINDOW_HOURS}: the median needs ${SPIKE_MIN_BASELINE_WINDOWS} windows in the previous 7 days`;
+		}
 		if (rule.base_kind !== null) return notUsed("base_kind", rules);
 		if (rule.threshold_percents !== null) return notUsed("threshold_percents", rules);
 		if (rule.threshold_amount_nanos !== null) return notUsed("threshold_amount", rules);
@@ -634,6 +647,8 @@ export type SpendRulePreview = {
 	block_at_usd: number | null;
 	/** Balance rules only: where the balance stands, as the evaluator sees it. */
 	balance: SpendRuleBalancePreview | null;
+	/** Spike rules only: spend over the window against the median of the same window over the previous 7 days. */
+	spike: SpendRuleSpikePreview | null;
 	/** armed: balance rules only (false after an alert until the balance recovers). */
 	state: { highest_percent_fired: number | null; amount_fired_at: string | null; last_fired_at: string | null; fire_count: number; armed?: boolean } | null;
 	alert: { scope_label: string; title: string; message: string } | null;
@@ -655,6 +670,33 @@ export type SpendRuleBalancePreview = {
 	armed: boolean;
 	/** Auto top-up is on and working, so a drop is recorded without an alert. */
 	auto_top_up_covers: boolean;
+};
+
+export type SpendRuleSpikePreview = {
+	window_hours: number;
+	/** Spend over the last window_hours (also value_*). */
+	current_nanos: number;
+	current_usd: number;
+	/** The median of the same window over the previous 7 days (also base_*). */
+	baseline_nanos: number;
+	baseline_usd: number;
+	/** current / baseline; null when the baseline is 0. */
+	multiple: number | null;
+	multiplier: number;
+	floor_usd: number;
+	/** What spend over the window must reach to fire: the larger of multiplier x baseline and the floor. */
+	fires_at_nanos: number;
+	fires_at_usd: number;
+	/** How many windows the baseline has (7 under 24 hours; floor(168 / window_hours) otherwise). */
+	baseline_windows: number;
+	/** Baseline windows in which the workspace spent anything. */
+	active_windows: number;
+	/** False until the workspace spent in at least SPIKE_MIN_BASELINE_WINDOWS baseline windows. */
+	history_ready: boolean;
+	/** Would fire now (ignoring the cooldown). */
+	spiking: boolean;
+	/** When the cooldown after the last alert ends, if it has not. */
+	cooldown_until: string | null;
 };
 
 export type SpendRuleForecastPreview = {
@@ -688,6 +730,27 @@ function formatForecastPreview(raw: Json | null | undefined): SpendRuleForecastP
 		limit_nanos: nanosOrNull(raw.limit_nanos),
 		limit_usd: spendNanosToUsd(raw.limit_nanos),
 		reaches_at: (raw.reaches_at ?? null) as string | null,
+	};
+}
+
+function formatSpikePreview(raw: Json | null | undefined): SpendRuleSpikePreview | null {
+	if (!raw || typeof raw !== "object") return null;
+	return {
+		window_hours: Number(raw.window_hours ?? 0),
+		current_nanos: nanosOrNull(raw.current_nanos) ?? 0,
+		current_usd: spendNanosToUsd(raw.current_nanos) ?? 0,
+		baseline_nanos: nanosOrNull(raw.baseline_nanos) ?? 0,
+		baseline_usd: spendNanosToUsd(raw.baseline_nanos) ?? 0,
+		multiple: raw.multiple === null || raw.multiple === undefined ? null : Number(raw.multiple),
+		multiplier: Number(raw.multiplier ?? DEFAULT_SPIKE_MULTIPLIER),
+		floor_usd: spendNanosToUsd(raw.floor_nanos) ?? 0,
+		fires_at_nanos: nanosOrNull(raw.fires_at_nanos) ?? 0,
+		fires_at_usd: spendNanosToUsd(raw.fires_at_nanos) ?? 0,
+		baseline_windows: Number(raw.baseline_windows ?? 0),
+		active_windows: Number(raw.active_windows ?? 0),
+		history_ready: raw.history_ready === true,
+		spiking: raw.spiking === true,
+		cooldown_until: (raw.cooldown_until ?? null) as string | null,
 	};
 }
 
@@ -748,6 +811,7 @@ export function formatSpendRulePreview(raw: Json): SpendRulePreview {
 		block_at_nanos: nanosOrNull(raw.block_at_nanos),
 		block_at_usd: spendNanosToUsd(raw.block_at_nanos),
 		balance: formatBalancePreview(raw.balance as Json | null | undefined),
+		spike: formatSpikePreview(raw.spike as Json | null | undefined),
 		state: state ? {
 			highest_percent_fired: state.highest_percent_fired === null || state.highest_percent_fired === undefined ? null : Number(state.highest_percent_fired),
 			amount_fired_at: (state.amount_fired_at ?? null) as string | null,

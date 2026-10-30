@@ -9374,16 +9374,6 @@
 			"zh-Hans": "支出规则历史",
 			"ar": "سجل قاعدة الإنفاق"
 		},
-		"spend: spend reached threshold_amount. budget_percent: spend reached threshold_percents of the base. forecast: spend projected to the period end reaches the threshold. spike: spend over the last window_hours is at least spike_multiplier times the usual level and at least spike_floor. balance: the workspace balance or runway falls below the threshold.": {
-			"es": "spend: el gasto alcanzó threshold_amount. budget_percent: el gasto alcanzó threshold_percents de la base. forecast: el gasto proyectado al final del periodo alcanza el umbral. spike: el gasto de las últimas window_hours es al menos spike_multiplier veces el nivel habitual y al menos spike_floor. balance: el saldo o la autonomía del espacio de trabajo baja del umbral.",
-			"fr": "spend : les dépenses ont atteint threshold_amount. budget_percent : les dépenses ont atteint threshold_percents de la base. forecast : les dépenses projetées à la fin de la période atteignent le seuil. spike : les dépenses des dernières window_hours atteignent au moins spike_multiplier fois le niveau habituel et au moins spike_floor. balance : le solde ou l’autonomie de l’espace de travail passe sous le seuil.",
-			"de": "spend: Ausgaben haben threshold_amount erreicht. budget_percent: Ausgaben haben threshold_percents der Basis erreicht. forecast: die bis zum Zeitraumende hochgerechneten Ausgaben erreichen den Schwellenwert. spike: Ausgaben der letzten window_hours betragen mindestens das spike_multiplier-Fache des üblichen Niveaus und mindestens spike_floor. balance: Guthaben oder Reichweite des Workspace fallen unter den Schwellenwert.",
-			"pt-BR": "spend: o gasto atingiu threshold_amount. budget_percent: o gasto atingiu threshold_percents da base. forecast: o gasto projetado para o fim do período atinge o limite. spike: o gasto nas últimas window_hours é pelo menos spike_multiplier vezes o nível habitual e pelo menos spike_floor. balance: o saldo ou a autonomia do workspace fica abaixo do limite.",
-			"hi": "spend: खर्च threshold_amount तक पहुँचा। budget_percent: खर्च आधार के threshold_percents तक पहुँचा। forecast: अवधि के अंत तक अनुमानित खर्च सीमा तक पहुँचता है। spike: पिछले window_hours का खर्च सामान्य स्तर के कम से कम spike_multiplier गुना और कम से कम spike_floor है। balance: वर्कस्पेस का बैलेंस या रनवे सीमा से नीचे जाता है।",
-			"ja": "spend: 支出が threshold_amount に達した。budget_percent: 支出が基準額の threshold_percents に達した。forecast: 期間末までの予測支出がしきい値に達する。spike: 直近 window_hours の支出が通常の水準の spike_multiplier 倍以上かつ spike_floor 以上。balance: ワークスペースの残高または残り日数がしきい値を下回る。",
-			"zh-Hans": "spend：支出达到 threshold_amount。budget_percent：支出达到基数的 threshold_percents。forecast：预计到周期结束时的支出达到阈值。spike：最近 window_hours 的支出至少为常规水平的 spike_multiplier 倍且不低于 spike_floor。balance：工作区余额或可用天数低于阈值。",
-			"ar": "spend: بلغ الإنفاق threshold_amount. budget_percent: بلغ الإنفاق threshold_percents من الأساس. forecast: يبلغ الإنفاق المتوقع حتى نهاية الفترة الحد. spike: الإنفاق خلال آخر window_hours لا يقل عن spike_multiplier ضعف المستوى المعتاد ولا يقل عن spike_floor. balance: ينخفض رصيد مساحة العمل أو مدة كفايته عن الحد."
-		},
 		"day, week (from Monday) or month in the rule's time zone, or rolling over the last window_hours.": {
 			"es": "day, week (desde el lunes) o month en la zona horaria de la regla, o rolling sobre las últimas window_hours.",
 			"fr": "day, week (à partir du lundi) ou month dans le fuseau horaire de la règle, ou rolling sur les dernières window_hours.",
@@ -9423,16 +9413,6 @@
 			"ja": "ワークスペース全体の場合は null。それ以外はキー ID、メンバーのユーザー ID、部署 ID、モデル ID、またはプロバイダー ID。",
 			"zh-Hans": "工作区范围为 null；否则为密钥 ID、成员的用户 ID、部门 ID、模型 ID 或提供商 ID。",
 			"ar": "null لنطاق مساحة العمل؛ وإلا فمعرّف مفتاح أو معرّف مستخدم لعضو أو معرّف قسم أو معرّف نموذج أو معرّف مزوّد."
-		},
-		"Hours in a rolling window: the spike window for spike rules and the burn-rate lookback for balance rules. Null for calendar periods.": {
-			"es": "Horas de una ventana móvil: la ventana del pico en las reglas spike y el periodo de consumo que se analiza en las reglas balance. Null en los periodos naturales.",
-			"fr": "Heures d’une fenêtre glissante : la fenêtre du pic pour les règles spike et la période d’analyse du rythme de consommation pour les règles balance. Null pour les périodes calendaires.",
-			"de": "Stunden eines gleitenden Fensters: das Spitzenfenster für spike-Regeln und der Rückblick für die Verbrauchsrate bei balance-Regeln. Null für Kalenderzeiträume.",
-			"pt-BR": "Horas de uma janela móvel: a janela do pico nas regras spike e o período de consumo analisado nas regras balance. Null para períodos de calendário.",
-			"hi": "रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।",
-			"ja": "ローリングウィンドウの時間数。spike ルールでは急増の判定期間、balance ルールでは消費ペースを測る期間です。暦期間では null。",
-			"zh-Hans": "滚动窗口的小时数：spike 规则的峰值窗口，balance 规则用于计算消耗速度的回看时长。日历周期为 null。",
-			"ar": "ساعات النافذة المتحركة: نافذة الارتفاع لقواعد spike وفترة احتساب معدل الاستهلاك لقواعد balance. null للفترات التقويمية."
 		},
 		"IANA time zone for calendar periods. Null uses the workspace's billing time zone.": {
 			"es": "Zona horaria IANA de los periodos naturales. Null usa la zona horaria de facturación del espacio de trabajo.",
@@ -11724,26 +11704,6 @@
 			"zh-Hans": "balance 规则：发出警报后为 false，直到余额重新高于阈值。",
 			"ar": "قواعد balance: تكون false بعد التنبيه حتى يعود الرصيد فوق الحد."
 		},
-		"False for rules the evaluator does not handle yet (spike rules). They are saved and fire from a later release.": {
-			"es": "Es false para las reglas que la evaluación aún no admite (reglas spike). Se guardan y empezarán a activarse en una versión posterior.",
-			"fr": "Vaut false pour les règles que l’évaluation ne prend pas encore en charge (règles spike). Elles sont enregistrées et se déclencheront à partir d’une version ultérieure.",
-			"de": "False für Regeln, die die Auswertung noch nicht unterstützt (Regeln vom Typ spike). Sie werden gespeichert und lösen erst ab einer späteren Version aus.",
-			"pt-BR": "É false para regras que a avaliação ainda não suporta (regras spike). Elas são salvas e passarão a disparar em uma versão futura.",
-			"hi": "उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (spike नियम)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।",
-			"ja": "評価がまだ対応していないルール（spike ルール）では false です。保存され、今後のリリースから発火します。",
-			"zh-Hans": "对于评估尚未支持的规则（spike 规则）为 false。这些规则会被保存，并将在后续版本中开始触发。",
-			"ar": "تكون false للقواعد التي لا يدعمها التقييم بعد (قواعد spike). تُحفظ وتبدأ بالعمل في إصدار لاحق."
-		},
-		"Where a spend rule stands now. Rolling rules have their window as period. Forecast rules have a forecast object, and their thresholds are measured against the projection. Balance rules have the burn-rate window as period, the available balance as value and a balance object. Spike rules have period, value and alert null.": {
-			"es": "Dónde se encuentra ahora una regla de gasto. Las reglas rolling tienen su ventana como period. Las reglas forecast tienen un objeto forecast y sus umbrales se miden con la proyección. Las reglas balance tienen como period la ventana de consumo, como valor el saldo disponible y un objeto balance. Las reglas spike tienen period, value y alert en null.",
-			"fr": "Où en est une règle de dépenses à présent. Les règles rolling ont leur fenêtre comme period. Les règles forecast ont un objet forecast et leurs seuils sont mesurés par rapport à la projection. Les règles balance ont la fenêtre de consommation comme period, le solde disponible comme valeur et un objet balance. Les règles spike ont period, value et alert à null.",
-			"de": "Wo eine Ausgabenregel gerade steht. Regeln vom Typ rolling haben ihr Fenster als period. Regeln vom Typ forecast haben ein forecast-Objekt, und ihre Schwellenwerte werden an der Prognose gemessen. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Regeln vom Typ spike haben period, value und alert null.",
-			"pt-BR": "A situação atual de uma regra de gastos. Regras rolling têm sua janela como period. Regras forecast têm um objeto forecast, e seus limites são medidos em relação à projeção. Regras balance têm a janela de consumo como period, o saldo disponível como valor e um objeto balance. Regras spike têm period, value e alert nulos.",
-			"hi": "खर्च नियम अभी कहाँ है। rolling नियमों में उनकी विंडो period होती है। forecast नियमों में एक forecast ऑब्जेक्ट होता है, और उनकी सीमाएँ अनुमान के आधार पर मापी जाती हैं। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। spike नियमों में period, value और alert null होते हैं।",
-			"ja": "支出ルールの現在の状況です。rolling ルールでは期間ウィンドウが period になります。forecast ルールには forecast オブジェクトが含まれ、しきい値は予測値に対して判定されます。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。spike ルールでは period、value、alert は null です。",
-			"zh-Hans": "支出规则当前的状态。rolling 规则以其窗口作为 period。forecast 规则包含 forecast 对象，其阈值按预测值衡量。balance 规则以消耗速率窗口作为 period，以可用余额作为值，并包含 balance 对象。spike 规则的 period、value 和 alert 为 null。",
-			"ar": "وضع قاعدة الإنفاق الآن. تكون لقواعد rolling نافذتها بصفتها period. تحتوي قواعد forecast على كائن forecast، وتُقاس عتباتها على التوقع. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. أما قواعد spike فتكون فيها period وvalue وalert فارغة (null)."
-		},
 		"Rolling rules only: the window length in hours.": {
 			"es": "Solo reglas rolling: la duración de la ventana en horas.",
 			"fr": "Règles rolling uniquement : la durée de la fenêtre en heures.",
@@ -11833,6 +11793,136 @@
 			"ja": "基準額に対する予測値の割合。",
 			"zh-Hans": "预测值占基数的百分比。",
 			"ar": "التوقع كنسبة مئوية من الأساس."
+		},
+		"spend: spend reached threshold_amount. budget_percent: spend reached threshold_percents of the base. forecast: spend projected to the period end reaches the threshold. spike: spend over the last window_hours is at least spike_multiplier times the median of the same window over the previous 7 days, and at least spike_floor. balance: the workspace balance or runway falls below the threshold.": {
+			"es": "spend: el gasto alcanzó threshold_amount. budget_percent: el gasto alcanzó threshold_percents de la base. forecast: el gasto proyectado al final del periodo alcanza el umbral. spike: el gasto de las últimas window_hours es al menos spike_multiplier veces la mediana de la misma ventana en los 7 días anteriores, y al menos spike_floor. balance: el saldo o la autonomía del espacio de trabajo cae por debajo del umbral.",
+			"fr": "spend : les dépenses ont atteint threshold_amount. budget_percent : les dépenses ont atteint threshold_percents de la base. forecast : les dépenses projetées en fin de période atteignent le seuil. spike : les dépenses des dernières window_hours atteignent au moins spike_multiplier fois la médiane de la même fenêtre sur les 7 jours précédents, et au moins spike_floor. balance : le solde ou l’autonomie de l’espace de travail passe sous le seuil.",
+			"de": "spend: Die Ausgaben haben threshold_amount erreicht. budget_percent: Die Ausgaben haben threshold_percents der Basis erreicht. forecast: Die bis Zeitraumende projizierten Ausgaben erreichen den Schwellenwert. spike: Die Ausgaben der letzten window_hours betragen mindestens das spike_multiplier-Fache des Medians desselben Fensters über die vorherigen 7 Tage und mindestens spike_floor. balance: Guthaben oder Reichweite des Workspace fallen unter den Schwellenwert.",
+			"pt-BR": "spend: o gasto atingiu threshold_amount. budget_percent: o gasto atingiu threshold_percents da base. forecast: o gasto projetado para o fim do período atinge o limite. spike: o gasto nas últimas window_hours é pelo menos spike_multiplier vezes a mediana da mesma janela nos 7 dias anteriores, e pelo menos spike_floor. balance: o saldo ou a autonomia do workspace fica abaixo do limite.",
+			"hi": "spend: खर्च threshold_amount तक पहुँचा। budget_percent: खर्च आधार के threshold_percents तक पहुँचा। forecast: अवधि के अंत तक अनुमानित खर्च सीमा तक पहुँचता है। spike: पिछले window_hours का खर्च पिछले 7 दिनों में उसी विंडो के माध्यिका (median) का कम से कम spike_multiplier गुना है, और कम से कम spike_floor। balance: वर्कस्पेस का बैलेंस या रनवे सीमा से नीचे जाता है।",
+			"ja": "spend：支出が threshold_amount に達した。budget_percent：支出が基準額の threshold_percents に達した。forecast：期間終了時の予測支出がしきい値に達する。spike：直近 window_hours の支出が、直前 7 日間の同じウィンドウの中央値の spike_multiplier 倍以上で、かつ spike_floor 以上。balance：ワークスペースの残高または残り日数がしきい値を下回った。",
+			"zh-Hans": "spend：支出达到 threshold_amount。budget_percent：支出达到基数的 threshold_percents。forecast：预测到周期结束的支出达到阈值。spike：最近 window_hours 的支出至少为前 7 天同一窗口中位数的 spike_multiplier 倍，且至少为 spike_floor。balance：工作区余额或可用天数低于阈值。",
+			"ar": "spend: بلغ الإنفاق threshold_amount. budget_percent: بلغ الإنفاق threshold_percents من الأساس. forecast: يبلغ الإنفاق المتوقع حتى نهاية الفترة العتبة. spike: الإنفاق خلال آخر window_hours يساوي spike_multiplier مرة على الأقل من وسيط النافذة نفسها خلال الأيام السبعة السابقة، ولا يقل عن spike_floor. balance: ينخفض رصيد مساحة العمل أو مدة كفايته عن العتبة."
+		},
+		"Whether the evaluator handles the rule's metric, period and base. Every rule the API accepts is evaluated.": {
+			"es": "Indica si la evaluación admite la métrica, el periodo y la base de la regla. Todas las reglas que acepta la API se evalúan.",
+			"fr": "Indique si l’évaluation prend en charge la métrique, la période et la base de la règle. Toutes les règles acceptées par l’API sont évaluées.",
+			"de": "Ob die Auswertung Metrik, Zeitraum und Basis der Regel unterstützt. Jede Regel, die die API annimmt, wird ausgewertet.",
+			"pt-BR": "Indica se a avaliação suporta a métrica, o período e a base da regra. Todas as regras aceitas pela API são avaliadas.",
+			"hi": "क्या मूल्यांकन नियम के मेट्रिक, अवधि और आधार को संभालता है। API जिन नियमों को स्वीकार करता है, उन सभी का मूल्यांकन होता है।",
+			"ja": "評価がルールの指標・期間・基準に対応しているかどうか。API が受け付けるルールはすべて評価されます。",
+			"zh-Hans": "评估是否支持该规则的指标、周期和基数。API 接受的所有规则都会被评估。",
+			"ar": "ما إذا كان التقييم يدعم مقياس القاعدة وفترتها وأساسها. تُقيَّم كل القواعد التي تقبلها الواجهة البرمجية."
+		},
+		"Hours in a rolling window: the spike window for spike rules (at most 56, so that 3 windows fit in the previous 7 days) and the burn-rate lookback for balance rules. Null for calendar periods.": {
+			"es": "Horas de una ventana rolling: la ventana de pico en las reglas spike (como máximo 56, para que quepan 3 ventanas en los 7 días anteriores) y el periodo de consumo en las reglas balance. Es null para los periodos de calendario.",
+			"fr": "Heures d’une fenêtre rolling : la fenêtre de pic pour les règles spike (56 au maximum, pour que 3 fenêtres tiennent dans les 7 jours précédents) et la période de consommation pour les règles balance. Vaut null pour les périodes calendaires.",
+			"de": "Stunden eines rolling-Fensters: das Spitzenfenster bei Regeln vom Typ spike (höchstens 56, damit 3 Fenster in die vorherigen 7 Tage passen) und der Verbrauchszeitraum bei Regeln vom Typ balance. Null für Kalenderzeiträume.",
+			"pt-BR": "Horas de uma janela rolling: a janela de pico para regras spike (no máximo 56, para que caibam 3 janelas nos 7 dias anteriores) e o período de consumo para regras balance. Nulo para períodos de calendário.",
+			"hi": "rolling विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो (अधिकतम 56, ताकि पिछले 7 दिनों में 3 विंडो आ सकें) और balance नियमों के लिए खर्च दर की अवधि। कैलेंडर अवधियों के लिए null।",
+			"ja": "rolling ウィンドウの時間数：spike ルールではスパイクのウィンドウ（直前 7 日間に 3 つのウィンドウが収まるよう最大 56）、balance ルールでは消費ペースの算出期間。カレンダー期間では null です。",
+			"zh-Hans": "rolling 窗口的小时数：spike 规则的峰值窗口（最多 56，以便前 7 天内能容纳 3 个窗口），balance 规则的消耗速率回溯期。日历周期为 null。",
+			"ar": "عدد ساعات نافذة rolling: نافذة الارتفاع المفاجئ لقواعد spike (56 على الأكثر، حتى تتسع الأيام السبعة السابقة لثلاث نوافذ) وفترة معدل الاستهلاك لقواعد balance. تكون null للفترات التقويمية."
+		},
+		"Where a spend rule stands now. Rolling rules have their window as period. Forecast rules have a forecast object, and their thresholds are measured against the projection. Balance rules have the burn-rate window as period, the available balance as value and a balance object. Spike rules have their window as period, the spend over it as value, the median of the same window over the previous 7 days as base, the point they fire at as next_threshold and a spike object.": {
+			"es": "Dónde se encuentra ahora una regla de gasto. Las reglas rolling tienen su ventana como period. Las reglas forecast tienen un objeto forecast y sus umbrales se miden con la proyección. Las reglas balance tienen como period la ventana de consumo, como valor el saldo disponible y un objeto balance. Las reglas spike tienen su ventana como period, el gasto en ella como valor, la mediana de la misma ventana en los 7 días anteriores como base, el punto en que se activan como next_threshold y un objeto spike.",
+			"fr": "Où en est une règle de dépenses à présent. Les règles rolling ont leur fenêtre comme period. Les règles forecast ont un objet forecast et leurs seuils sont mesurés par rapport à la projection. Les règles balance ont la fenêtre de consommation comme period, le solde disponible comme valeur et un objet balance. Les règles spike ont leur fenêtre comme period, les dépenses sur cette fenêtre comme valeur, la médiane de la même fenêtre sur les 7 jours précédents comme base, le point de déclenchement comme next_threshold et un objet spike.",
+			"de": "Wo eine Ausgabenregel gerade steht. Regeln vom Typ rolling haben ihr Fenster als period. Regeln vom Typ forecast haben ein forecast-Objekt, und ihre Schwellenwerte werden an der Prognose gemessen. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Regeln vom Typ spike haben ihr Fenster als period, die Ausgaben darin als Wert, den Median desselben Fensters über die vorherigen 7 Tage als Basis, den Auslösepunkt als next_threshold und ein spike-Objekt.",
+			"pt-BR": "A situação atual de uma regra de gastos. Regras rolling têm sua janela como period. Regras forecast têm um objeto forecast, e seus limites são medidos em relação à projeção. Regras balance têm a janela de consumo como period, o saldo disponível como valor e um objeto balance. Regras spike têm sua janela como period, o gasto nela como valor, a mediana da mesma janela nos 7 dias anteriores como base, o ponto em que disparam como next_threshold e um objeto spike.",
+			"hi": "खर्च नियम अभी कहाँ है। rolling नियमों में उनकी विंडो period होती है। forecast नियमों में एक forecast ऑब्जेक्ट होता है, और उनकी सीमाएँ अनुमान के आधार पर मापी जाती हैं। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। spike नियमों में उनकी विंडो period, उसमें हुआ खर्च मान, पिछले 7 दिनों में उसी विंडो का माध्यिका आधार, ट्रिगर होने का बिंदु next_threshold और एक spike ऑब्जेक्ट होता है।",
+			"ja": "支出ルールの現在の状況です。rolling ルールでは期間ウィンドウが period になります。forecast ルールには forecast オブジェクトが含まれ、しきい値は予測値に対して判定されます。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。spike ルールでは period がウィンドウ、値がその間の支出、基準が直前 7 日間の同じウィンドウの中央値、next_threshold が発火する金額となり、spike オブジェクトが含まれます。",
+			"zh-Hans": "支出规则当前的状态。rolling 规则以其窗口作为 period。forecast 规则包含 forecast 对象，其阈值按预测值衡量。balance 规则以消耗速率窗口作为 period，以可用余额作为值，并包含 balance 对象。spike 规则以其窗口作为 period，以窗口内的支出作为值，以前 7 天同一窗口的中位数作为基数，以触发点作为 next_threshold，并包含 spike 对象。",
+			"ar": "وضع قاعدة الإنفاق الآن. تكون لقواعد rolling نافذتها بصفتها period. تحتوي قواعد forecast على كائن forecast، وتُقاس عتباتها على التوقع. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. وتكون لقواعد spike نافذتها بصفتها period، والإنفاق خلالها بصفته القيمة، ووسيط النافذة نفسها خلال الأيام السبعة السابقة بصفته الأساس، ونقطة التنبيه بصفتها next_threshold، وكائن spike."
+		},
+		"Spike rules only: spend over the last window_hours against the median of the same window over the previous 7 days, as the evaluator sees it. Null for other rules.": {
+			"es": "Solo reglas spike: el gasto de las últimas window_hours frente a la mediana de la misma ventana en los 7 días anteriores, tal como lo ve la evaluación. Es null para las demás reglas.",
+			"fr": "Règles spike uniquement : les dépenses des dernières window_hours comparées à la médiane de la même fenêtre sur les 7 jours précédents, telles que l’évaluation les voit. Vaut null pour les autres règles.",
+			"de": "Nur Regeln vom Typ spike: die Ausgaben der letzten window_hours im Vergleich zum Median desselben Fensters über die vorherigen 7 Tage, so wie die Auswertung sie sieht. Null für andere Regeln.",
+			"pt-BR": "Somente regras spike: o gasto nas últimas window_hours comparado à mediana da mesma janela nos 7 dias anteriores, como a avaliação o vê. Nulo para as demais regras.",
+			"hi": "केवल spike नियम: पिछले window_hours का खर्च, पिछले 7 दिनों में उसी विंडो की माध्यिका की तुलना में, जैसा मूल्यांकन इसे देखता है। अन्य नियमों के लिए null।",
+			"ja": "spike ルールのみ：評価から見た、直近 window_hours の支出と直前 7 日間の同じウィンドウの中央値の比較。その他のルールでは null です。",
+			"zh-Hans": "仅限 spike 规则：评估所见的最近 window_hours 支出与前 7 天同一窗口中位数的对比。其他规则为 null。",
+			"ar": "قواعد spike فقط: الإنفاق خلال آخر window_hours مقارنةً بوسيط النافذة نفسها خلال الأيام السبعة السابقة، كما يراه التقييم. تكون null للقواعد الأخرى."
+		},
+		"The median of the same window over the previous 7 days: the same hours on each of the 7 days before for windows under 24 hours, else the non-overlapping windows before it that fit in 7 days.": {
+			"es": "La mediana de la misma ventana en los 7 días anteriores: las mismas horas de cada uno de los 7 días anteriores para ventanas de menos de 24 horas o, si no, las ventanas anteriores sin solapamiento que caben en 7 días.",
+			"fr": "La médiane de la même fenêtre sur les 7 jours précédents : les mêmes heures de chacun des 7 jours précédents pour les fenêtres de moins de 24 heures, sinon les fenêtres précédentes sans chevauchement qui tiennent en 7 jours.",
+			"de": "Der Median desselben Fensters über die vorherigen 7 Tage: dieselben Stunden an jedem der 7 Tage davor bei Fenstern unter 24 Stunden, sonst die vorherigen, nicht überlappenden Fenster, die in 7 Tage passen.",
+			"pt-BR": "A mediana da mesma janela nos 7 dias anteriores: as mesmas horas de cada um dos 7 dias anteriores para janelas de menos de 24 horas ou, caso contrário, as janelas anteriores sem sobreposição que cabem em 7 dias.",
+			"hi": "पिछले 7 दिनों में उसी विंडो की माध्यिका: 24 घंटे से छोटी विंडो के लिए पिछले 7 दिनों में से हर दिन के वही घंटे, अन्यथा उससे पहले की बिना ओवरलैप वाली विंडो जो 7 दिनों में आ जाएँ।",
+			"ja": "直前 7 日間の同じウィンドウの中央値。24 時間未満のウィンドウでは直前 7 日それぞれの同じ時間帯、それ以外では 7 日間に収まる重ならない直前のウィンドウを使います。",
+			"zh-Hans": "前 7 天同一窗口的中位数：窗口短于 24 小时时，取前 7 天每天的相同时段；否则取 7 天内能容纳的、互不重叠的之前窗口。",
+			"ar": "وسيط النافذة نفسها خلال الأيام السبعة السابقة: الساعات نفسها في كل يوم من الأيام السبعة السابقة للنوافذ الأقل من 24 ساعة، وإلا فالنوافذ السابقة غير المتداخلة التي تتسع لها 7 أيام."
+		},
+		"Spend over the window divided by the baseline. Null when the baseline is 0, when only the floor applies.": {
+			"es": "El gasto de la ventana dividido por la base. Es null cuando la base es 0, en cuyo caso solo se aplica el mínimo.",
+			"fr": "Les dépenses de la fenêtre divisées par la base. Vaut null quand la base est 0, auquel cas seul le plancher s’applique.",
+			"de": "Die Ausgaben im Fenster geteilt durch die Basis. Null, wenn die Basis 0 ist; dann gilt nur die Untergrenze.",
+			"pt-BR": "O gasto da janela dividido pela base. Nulo quando a base é 0, caso em que só o piso se aplica.",
+			"hi": "विंडो का खर्च आधार से भाग। आधार 0 होने पर null, तब केवल न्यूनतम सीमा (floor) लागू होती है।",
+			"ja": "ウィンドウ内の支出を基準で割った値。基準が 0 のときは null で、その場合は下限額のみが適用されます。",
+			"zh-Hans": "窗口内支出除以基数。基数为 0 时为 null，此时只适用下限。",
+			"ar": "الإنفاق خلال النافذة مقسومًا على الأساس. تكون null عندما يكون الأساس 0، وعندها يُطبَّق الحد الأدنى وحده."
+		},
+		"What spend over the window must reach to fire: the larger of spike_multiplier times the baseline and the floor.": {
+			"es": "Lo que debe alcanzar el gasto de la ventana para activarse: el mayor entre spike_multiplier veces la base y el mínimo.",
+			"fr": "Ce que les dépenses de la fenêtre doivent atteindre pour déclencher : le plus grand de spike_multiplier fois la base et du plancher.",
+			"de": "Was die Ausgaben im Fenster erreichen müssen, um auszulösen: das Größere aus dem spike_multiplier-Fachen der Basis und der Untergrenze.",
+			"pt-BR": "O que o gasto da janela precisa atingir para disparar: o maior entre spike_multiplier vezes a base e o piso.",
+			"hi": "ट्रिगर होने के लिए विंडो के खर्च को कहाँ तक पहुँचना होगा: आधार का spike_multiplier गुना और न्यूनतम सीमा में से जो बड़ा हो।",
+			"ja": "発火するためにウィンドウ内の支出が達する必要のある金額：基準の spike_multiplier 倍と下限額のうち大きい方。",
+			"zh-Hans": "窗口内支出需达到多少才会触发：基数的 spike_multiplier 倍与下限中的较大者。",
+			"ar": "ما يجب أن يبلغه الإنفاق خلال النافذة لإطلاق التنبيه: الأكبر بين spike_multiplier مرة من الأساس والحد الأدنى."
+		},
+		"How many windows the baseline has. A rule needs at least 3.": {
+			"es": "Cuántas ventanas tiene la base. Una regla necesita al menos 3.",
+			"fr": "Le nombre de fenêtres de la base. Une règle en demande au moins 3.",
+			"de": "Wie viele Fenster die Basis hat. Eine Regel braucht mindestens 3.",
+			"pt-BR": "Quantas janelas a base tem. Uma regra precisa de pelo menos 3.",
+			"hi": "आधार में कितनी विंडो हैं। किसी नियम को कम से कम 3 चाहिए।",
+			"ja": "基準に含まれるウィンドウの数。ルールには 3 つ以上が必要です。",
+			"zh-Hans": "基数包含的窗口数。规则至少需要 3 个。",
+			"ar": "عدد النوافذ في الأساس. تحتاج القاعدة إلى 3 على الأقل."
+		},
+		"Baseline windows in which the workspace spent anything.": {
+			"es": "Ventanas de la base en las que el espacio de trabajo tuvo algún gasto.",
+			"fr": "Les fenêtres de la base au cours desquelles l’espace de travail a dépensé quelque chose.",
+			"de": "Basisfenster, in denen der Workspace etwas ausgegeben hat.",
+			"pt-BR": "Janelas da base em que o workspace teve algum gasto.",
+			"hi": "आधार की वे विंडो जिनमें वर्कस्पेस ने कुछ खर्च किया।",
+			"ja": "ワークスペースに何らかの支出があった基準ウィンドウの数。",
+			"zh-Hans": "工作区有任何支出的基数窗口数。",
+			"ar": "نوافذ الأساس التي أنفقت فيها مساحة العمل أي مبلغ."
+		},
+		"False until the workspace has spent in at least 3 baseline windows. The rule does not fire before then.": {
+			"es": "Es false hasta que el espacio de trabajo haya tenido gasto en al menos 3 ventanas de la base. Hasta entonces la regla no se activa.",
+			"fr": "Vaut false tant que l’espace de travail n’a pas dépensé dans au moins 3 fenêtres de la base. La règle ne se déclenche pas avant.",
+			"de": "False, bis der Workspace in mindestens 3 Basisfenstern etwas ausgegeben hat. Vorher löst die Regel nicht aus.",
+			"pt-BR": "É false até que o workspace tenha gasto em pelo menos 3 janelas da base. A regra não dispara antes disso.",
+			"hi": "जब तक वर्कस्पेस ने आधार की कम से कम 3 विंडो में खर्च न किया हो, तब तक false। उससे पहले नियम ट्रिगर नहीं होता।",
+			"ja": "ワークスペースが 3 つ以上の基準ウィンドウで支出するまでは false です。それまでルールは発火しません。",
+			"zh-Hans": "在工作区至少在 3 个基数窗口内有支出之前为 false。在此之前规则不会触发。",
+			"ar": "تكون false إلى أن تنفق مساحة العمل في 3 نوافذ أساس على الأقل. لا تُطلق القاعدة تنبيهًا قبل ذلك."
+		},
+		"Whether the rule would fire now, before the cooldown.": {
+			"es": "Si la regla se activaría ahora, sin contar el tiempo de espera.",
+			"fr": "Si la règle se déclencherait maintenant, avant le délai de récupération.",
+			"de": "Ob die Regel jetzt auslösen würde, vor der Abklingzeit.",
+			"pt-BR": "Se a regra dispararia agora, antes do intervalo de espera.",
+			"hi": "क्या नियम अभी ट्रिगर होगा, कूलडाउन से पहले।",
+			"ja": "クールダウンを考慮しない場合に、ルールが今発火するかどうか。",
+			"zh-Hans": "不考虑冷却时间时，规则现在是否会触发。",
+			"ar": "ما إذا كانت القاعدة ستُطلق تنبيهًا الآن، قبل احتساب فترة التهدئة."
+		},
+		"When the cooldown after the last alert ends, if it has not yet.": {
+			"es": "Cuándo termina el tiempo de espera tras la última alerta, si aún no ha terminado.",
+			"fr": "Quand le délai de récupération après la dernière alerte se termine, s’il n’est pas encore écoulé.",
+			"de": "Wann die Abklingzeit nach der letzten Warnung endet, falls sie noch läuft.",
+			"pt-BR": "Quando termina o intervalo de espera após o último alerta, se ainda não terminou.",
+			"hi": "पिछले अलर्ट के बाद का कूलडाउन कब खत्म होगा, अगर अभी खत्म नहीं हुआ है।",
+			"ja": "最後のアラート後のクールダウンが終わる時刻（まだ終わっていない場合）。",
+			"zh-Hans": "上次提醒后的冷却时间结束的时间（若尚未结束）。",
+			"ar": "متى تنتهي فترة التهدئة بعد آخر تنبيه، إن لم تكن قد انتهت بعد."
 		}
 	},
 	"GET /apps": {

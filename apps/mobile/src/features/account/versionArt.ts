@@ -2,7 +2,7 @@ import type { ModelCard } from "@/lib/api/models";
 import { isRetired, modelName, organisationName } from "@/lib/catalogue";
 import { formatNumber } from "@/lib/format";
 // The web's logo resolver is plain data and functions (the Logo component uses it too).
-import { resolveLogo } from "../../../../web/src/lib/logos";
+import { resolveLogo } from "@phaseo/app-kit/logos";
 
 /**
  * The version art, Phaseo's take on Android's version easter egg: five quick taps on Account → Version and build

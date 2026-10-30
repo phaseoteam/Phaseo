@@ -127,6 +127,8 @@ describe("draftIssues", () => {
 		expect(codes(draft({ scopeType: "key", scopeId: "not-a-uuid" }))).toEqual(["scopeId:scopeRequired"]);
 		expect(codes(draft({ scopeType: "model", scopeId: "openai/gpt-5" }))).toEqual([]);
 		expect(codes(draft({ period: "rolling", windowHours: "721" }))).toEqual(["windowHours:windowHoursRange"]);
+		expect(codes({ ...withMetric(draft(), "spike"), windowHours: "57" })).toEqual(["windowHours:spikeWindowRange"]);
+		expect(codes({ ...withMetric(draft(), "spike"), windowHours: "56" })).toEqual([]);
 		expect(codes(draft({ timeZone: "Nowhere/Land" }))).toEqual(["timeZone:timeZoneInvalid"]);
 	});
 
@@ -233,7 +235,7 @@ describe("evaluation and bases", () => {
 	it("knows which drafts the evaluator sends today", () => {
 		expect(draftEvaluated(draft())).toBe(true);
 		expect(draftEvaluated(draft({ period: "rolling" }))).toBe(true);
-		expect(draftEvaluated(withMetric(draft(), "spike"))).toBe(false);
+		expect(draftEvaluated(withMetric(draft(), "spike"))).toBe(true);
 		expect(draftEvaluated(withBaseKind(draft(), "previous_period"))).toBe(true);
 		expect(draftEvaluated(withMetric(draft(), "forecast"))).toBe(true);
 		expect(draftEvaluated({ ...withMetric(draft(), "balance"), runwayDays: "7" })).toBe(true);
@@ -255,7 +257,7 @@ describe("previewSummary", () => {
 		rule_id: "r1", metric: "budget_percent", evaluated: true, computed_at: "", time_zone: "UTC", period: null,
 		value_nanos: 42.1e9, value_usd: 42.1, base_kind: "amount", base_ref: null, base_nanos: 100e9, base_usd: 100, percent: 42.1,
 		threshold_percents: [50], threshold_amount_nanos: null, threshold_amount_usd: null, reached_threshold_percent: null,
-		next_threshold: null, block_at_nanos: null, block_at_usd: null, balance: null, previous_period: null, forecast: null,
+		next_threshold: null, block_at_nanos: null, block_at_usd: null, balance: null, spike: null, previous_period: null, forecast: null,
 		state: null, alert: null, ...overrides,
 	});
 
@@ -283,6 +285,18 @@ describe("previewSummary", () => {
 		});
 		expect(previewSummary(preview({ ...base, forecast: { ...forecast, ready: false, projected_nanos: null, projected_usd: null, reaches_at: null } }), null))
 			.toEqual({ kind: "forecastPending", valueUsd: 200, from: "2026-10-04T04:00:00Z", timeZone: "America/New_York" });
+	});
+
+	it("shows a spike rule's window against the usual, or how much history it needs", () => {
+		const spike = { window_hours: 3, current_nanos: 42.1e9, current_usd: 42.1, baseline_nanos: 10e9, baseline_usd: 10, multiple: 4.21, multiplier: 3,
+			floor_usd: 5, fires_at_nanos: 30e9, fires_at_usd: 30, baseline_windows: 7, active_windows: 7, history_ready: true, spiking: true, cooldown_until: null };
+		const base = { metric: "spike" as const, value_usd: 42.1, base_usd: 10, percent: 421, base_kind: null, threshold_percents: null };
+		expect(previewSummary(preview({ ...base, spike }), null))
+			.toEqual({ kind: "spike", currentUsd: 42.1, baselineUsd: 10, multiple: 4.21, firesAtUsd: 30, windowHours: 3, spiking: true });
+		expect(previewSummary(preview({ ...base, spike: { ...spike, baseline_usd: 0, multiple: null, fires_at_usd: 5 } }), null))
+			.toEqual({ kind: "spike", currentUsd: 42.1, baselineUsd: 0, multiple: null, firesAtUsd: 5, windowHours: 3, spiking: true });
+		expect(previewSummary(preview({ ...base, spike: { ...spike, active_windows: 2, history_ready: false, spiking: false } }), null))
+			.toEqual({ kind: "spikePending", currentUsd: 42.1, windowHours: 3, activeWindows: 2, baselineWindows: 7, needed: 3 });
 	});
 
 	it("has nothing to show for rules that are not evaluated", () => {
