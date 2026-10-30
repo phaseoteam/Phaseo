@@ -4,6 +4,8 @@ description: "So wählt Gateway Anbieter aus und sorgt für zuverlässige Anfrag
 icon: "git-branch"
 ---
 
+import { RoutingCostExplainer } from "/snippets/routing-cost.jsx";
+
 Das Phaseo Gateway leitet jede Anfrage an einen Anbieter weiter, der das ausgewählte Modell bereitstellen kann. Wenn ein Anbieter langsam ist, Ratenbegrenzungen ausgibt oder Fehler zurückgibt, kann das Gateway Fallbacks versuchen, damit deine Anfragen weiterhin abgeschlossen werden.
 
 ## Routing-Modus auswählen
@@ -120,6 +122,10 @@ Im Anfrageprotokoll siehst du:
 Bewertungsfaktoren werden vom protokollierten Kontext getrennt. Ein Bewertungsfaktor ändert die endgültige Punktzahl des aktiven Routing-Modus. Der protokollierte Kontext hilft bei der Erklärung, wirkt sich aber nicht unbedingt auf die Punktzahl aus.
 
 Bei `balanced`-Textanfragen (Chat Completions, Responses und Messages) ordnet Phaseo geeignete Anbieter nach ihren erwarteten Kosten pro erfolgreicher Antwort. Diese Kosten addieren, was eine typische Anfrage für das Modell beim Anbieter kostet – auf Basis der gemessenen Prompt- und Ausgabegrößen des Modells und der gemessenen Cache-Trefferquote des Anbieters –, und die Wartezeit auf das erste Token und die vollständige Antwort. Das Ergebnis wird durch die aktuelle Erfolgsquote des Anbieters geteilt. Anbieterfehler erhöhen die Kosten zusätzlich, Ratenlimits etwas weniger. Anbieter nahe den niedrigsten Kosten teilen sich den Großteil des Traffics, und jeder Anbieter behält einen kleinen Anteil, damit eine Erholung bemerkt wird. Um nur nach Preis zu ordnen, sende `provider.sort: "price"`. Andere Endpunkte werden nach Zuverlässigkeit, Latenz, Tail-Latenz, Durchsatz, Preis und Token-Eignung bewertet. Die angezeigte Berechnung zeigt, wie jeder Faktor zur Endpunktzahl beigetragen hat, statt alle protokollierten Messwerte als gleich wichtig darzustellen.
+
+Wähle ein Szenario, um zu sehen, wie sich die Kosten pro erfolgreicher Antwort auf Tokens, Wartezeit und Fehler aufteilen und wie daraus der Traffic-Anteil jedes Anbieters entsteht. Die Anbieter sind Beispiele.
+
+<RoutingCostExplainer locale="de" />
 
 ### Zuverlässigkeit und Verfügbarkeit von Anbietern
 

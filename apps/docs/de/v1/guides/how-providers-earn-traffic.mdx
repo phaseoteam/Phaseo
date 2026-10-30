@@ -1,0 +1,44 @@
+---
+title: "Wie Anbieter Traffic gewinnen"
+sidebarTitle: "Traffic gewinnen"
+description: "Wie das Standard-Routing den Traffic eines Modells auf Anbieter verteilt und welche Änderungen einem Endpunkt einen größeren Anteil bringen."
+icon: "chart-no-axes-column-increasing"
+---
+
+import { ProviderTrafficPlayground } from "/snippets/routing-cost.jsx";
+
+Wenn mehrere Anbieter dasselbe Modell bereitstellen, ordnet das Standard-Routing sie nach den erwarteten Kosten pro erfolgreicher Antwort und verteilt den Traffic nach dieser Rangfolge: Die niedrigsten Kosten erhalten den größten Anteil. Diese Seite richtet sich an Anbieter, die diese Rangfolge verstehen und mehr davon gewinnen möchten.
+
+## Was die Rangfolge misst
+
+Für jeden Endpunkt misst Phaseo:
+
+- **Effektiver Preis.** Was eine typische Anfrage für das Modell an deinem Endpunkt kostet, basierend auf den echten Prompt- und Ausgabegrößen des Modells und dem Anteil der Prompt-Tokens, den du tatsächlich aus dem Cache lieferst. Ein niedriger Eingabepreis hilft nicht, wenn Ausgabe oder Cache-Lesezugriffe mehr kosten.
+- **Zeit bis zum ersten Token**, gemessen ab dem Zeitpunkt, an dem Phaseo die Anfrage sendet.
+- **Ausgabegeschwindigkeit**, gemessen über die gesamte Antwort einschließlich des ersten Tokens.
+- **Von dir verursachte Fehler**, etwa `5xx`-Antworten und Streams, die mittendrin abbrechen. Sie werden stark gewichtet.
+- **Ablehnungen wegen Ratenlimit** (`429`). Sie werden schwächer gewichtet.
+
+Die Wartezeit wird zum typischen Preis pro Sekunde des Modells in Dollar umgerechnet. Ein schnellerer Endpunkt kann also mehr verlangen und trotzdem vorne liegen.
+
+## Ausprobieren
+
+Mit den Schiebereglern stellst du deinen Endpunkt drei anderen Anbietern desselben Modells gegenüber. Die Kurve zeigt, wie der Traffic abnimmt, wenn deine Kosten pro Antwort über dem Minimum liegen.
+
+<ProviderTrafficPlayground locale="de" />
+
+## Wie der Traffic verteilt wird
+
+- Anbieter, deren Kosten pro Antwort höchstens etwa 30 % über dem Minimum liegen, teilen sich den Großteil des Traffics. Ein kleiner Rückstand kostet nur wenig.
+- Jenseits dieses Bereichs sinkt der Anteil schnell.
+- Jeder routbare Endpunkt behält einen kleinen Anteil, damit Erholungen und Verbesserungen ohne dein Zutun erkannt werden.
+- Eine Unterhaltung, die aus deinem Prompt-Cache liest, bleibt in der Regel auf deinem Endpunkt, solange er stabil läuft.
+
+Anfragen, die eine Anbieterreihenfolge vorgeben oder nach Preis, Latenz oder Durchsatz sortieren, nutzen diese Rangfolge nicht. Siehe [Routing und Fallbacks](./routing-and-fallbacks.mdx).
+
+## Was mehr Traffic bringt
+
+- Senke den Preis einer typischen Anfrage, einschließlich Ausgabe und Cache-Lesezugriffen.
+- Liefere wiederholte Prompts aus dem Cache.
+- Liefere das erste Token früher und streame schneller.
+- Vermeide Fehler und Ablehnungen wegen Ratenlimit, und erweitere deine Kapazität, bevor die Nachfrage deine Limits erreicht.

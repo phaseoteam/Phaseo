@@ -5,6 +5,8 @@ description: "How the Gateway selects providers and keeps requests reliable."
 icon: "git-branch"
 ---
 
+import { RoutingCostExplainer } from "/snippets/routing-cost.jsx";
+
 The Phaseo Gateway routes each request to a provider that can serve your chosen model. When a provider is slow, rate-limited, or returning errors, the Gateway can attempt fallbacks so your requests still complete.
 
 ## Choose a routing mode
@@ -168,6 +170,10 @@ The request log shows:
 Score factors are separated from recorded context. A score factor changes the final score for the active routing mode. Recorded context helps explain the decision but does not necessarily affect the score.
 
 For `balanced` text requests (Chat Completions, Responses and Messages), Phaseo ranks eligible providers by their expected cost per successful answer. That cost adds what a typical request for the model costs on the provider, using the model's measured prompt and output sizes and the provider's measured cache-hit rate, to the time spent waiting for the first token and the full response. It is then divided by the provider's recent success rate. Provider errors add a further penalty, and rate limits a smaller one. Providers close to the lowest cost share most of the traffic, and every provider keeps a small share so a recovery is noticed. To rank by price alone, send `provider.sort: "price"`. Other endpoints are scored on reliability, latency, tail latency, throughput, price, and token fit. The displayed calculation shows how each factor contributed to the final score instead of presenting every recorded metric as equally important.
+
+Pick a scenario to see how the cost per successful answer splits into tokens, waiting and failures, and how that sets each provider's share of traffic. The providers are examples.
+
+<RoutingCostExplainer />
 
 ### Reliability and provider uptime
 

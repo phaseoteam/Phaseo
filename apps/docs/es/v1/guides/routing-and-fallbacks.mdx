@@ -4,6 +4,8 @@ description: "Cómo Gateway selecciona proveedores y mantiene la fiabilidad de l
 icon: "git-branch"
 ---
 
+import { RoutingCostExplainer } from "/snippets/routing-cost.jsx";
+
 Phaseo Gateway dirige cada solicitud a un proveedor que puede servir el modelo elegido. Si un proveedor responde con lentitud, limita la tasa o devuelve errores, Gateway puede intentar alternativas para que las solicitudes se completen.
 
 ## Elige un modo de enrutamiento
@@ -120,6 +122,10 @@ El registro de solicitudes muestra:
 Los factores de puntuación se muestran por separado del contexto registrado. Un factor de puntuación modifica el resultado final del modo de enrutamiento activo. El contexto registrado ayuda a explicar la decisión, pero no necesariamente afecta a la puntuación.
 
 En las solicitudes de texto en modo `balanced` (Chat Completions, Responses y Messages), Phaseo ordena los proveedores aptos según su coste esperado por respuesta correcta. Ese coste suma lo que cuesta una solicitud típica del modelo en el proveedor, a partir de los tamaños medidos de prompt y salida del modelo y de la tasa medida de aciertos de caché del proveedor, y el tiempo de espera hasta el primer token y la respuesta completa. Después se divide entre la tasa de éxito reciente del proveedor. Los errores del proveedor añaden una penalización adicional, y los límites de frecuencia una menor. Los proveedores cercanos al coste más bajo se reparten la mayor parte del tráfico, y cada proveedor conserva una pequeña parte para detectar su recuperación. Para ordenar solo por precio, envía `provider.sort: "price"`. Los demás endpoints se puntúan según fiabilidad, latencia, latencia de cola, rendimiento, precio y adecuación de tokens. El cálculo mostrado explica cómo contribuyó cada factor a la puntuación final, en lugar de presentar todas las métricas registradas como si tuvieran la misma importancia.
+
+Elige un escenario para ver cómo se reparte el coste por respuesta correcta entre tokens, espera y fallos, y cómo eso fija la cuota de tráfico de cada proveedor. Los proveedores son ejemplos.
+
+<RoutingCostExplainer locale="es" />
 
 ### Fiabilidad y disponibilidad del proveedor
 
