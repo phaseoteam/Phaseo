@@ -205,7 +205,7 @@ public class Phaseo {
 		this.enableDeprecationWarnings = enableDeprecationWarnings;
 		this.warningsAsErrors = warningsAsErrors;
 		this.logger = logger;
-		this.telemetry = new TelemetryRecorder(devtoolsConfig, "3.0.0");
+		this.telemetry = new TelemetryRecorder(devtoolsConfig, "3.1.0");
 		this.lifecycleResolver = lifecycleResolver == null ? this::fetchModelLifecycle : lifecycleResolver;
 		this.asyncJobs = new AsyncJobsResource(this);
 		this.realtime = new Realtime(this, this.basePath);
