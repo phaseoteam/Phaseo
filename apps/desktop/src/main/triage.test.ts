@@ -10,6 +10,8 @@ const commit = "821b26a8e7c9d1f2a3b4c5d6e7f8091a2b3c4d5e", main = "0123456789abc
 function fakeGit(options: { has?: string[]; offline?: boolean } = {}) {
 	const calls: string[] = [], fetched = new Set<string>();
 	const git: TriageGit = async (cwd, args) => {
+		// Like execFile, git can't start in a folder that doesn't exist.
+		if (!existsSync(cwd)) throw Object.assign(new Error("spawn git ENOENT"), { code: "ENOENT" });
 		calls.push(args.join(" "));
 		const fail = (stderr: string) => { throw Object.assign(new Error("git failed"), { stderr }); };
 		if (args[0] === "init") { mkdirSync(path.join(cwd, ".git", "info"), { recursive: true }); return ""; }
@@ -49,6 +51,8 @@ describe("triage checkout", () => {
 		expect(await prepareTriageCheckout(root, commit, git)).toEqual({ directory: path.join(root, "phaseo-0123456789ab"), commit: main, exact: false });
 		expect(calls).toContain("ls-remote https://github.com/phaseoteam/Phaseo.git refs/heads/main");
 		expect(await prepareTriageCheckout(root, undefined, fakeGit().git)).toMatchObject({ commit: main, exact: false });
+		// A fresh profile has no triage folder yet.
+		expect(await prepareTriageCheckout(path.join(root, "fresh", "triage"), undefined, fakeGit().git)).toMatchObject({ commit: main, exact: false });
 	}));
 	it("reports a network failure instead of quietly using another version", () => withRoot(async root => {
 		await expect(prepareTriageCheckout(root, commit, fakeGit({ offline: true }).git)).rejects.toThrow("Could not fetch the Phaseo source: unable to access");

@@ -70,6 +70,9 @@ export function triagePlaybookName(now = new Date()) {
 	return `.phaseo-triage/playbook-${stamp.slice(0, 8)}-${stamp.slice(8)}.md`;
 }
 
+/** The message box without the playbook link the triage screen puts first, so what the person typed survives a retry or Cancel. */
+export const withoutPlaybookLink = (draft: string) => draft.replace(/^Read @\[[^\]]*\]\(file:\.phaseo-triage[^)]*\) and follow it\.\s*/, "").trimStart();
+
 /** A triage chat's title: the first line of what the person wrote after the playbook link, or a plain name when they wrote nothing. */
 export function triageTitle(message: string) {
 	const description = message.replace(/^Read @\S+ and follow it\.\s*/, "").split("\n").map(line => line.trim()).find(Boolean) ?? "";

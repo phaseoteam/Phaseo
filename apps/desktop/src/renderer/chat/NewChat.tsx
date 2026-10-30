@@ -18,7 +18,7 @@ import { openModelPickerEvent, useModelSettingActions, type ComposerAction } fro
 import { useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionToken } from "../lib/mentions";
 import { endTriage, startTriage, useTriage } from "../shell/Triage";
-import { triageTitle, type TriagePreparation } from "../../shared/triage";
+import { triageTitle, withoutPlaybookLink, type TriagePreparation } from "../../shared/triage";
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
 import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
@@ -130,10 +130,12 @@ export function NewChat() {
 		if (!preparation || prefilled.current === preparation) return;
 		prefilled.current = preparation;
 		setOverview(preparation.workspace); setNewChatProjectId(preparation.projectId); setOfferPullRequest(false);
-		setDraft(`Read ${mentionToken({ kind: "file", ref: preparation.playbook, label: "triage-playbook.md" })} and follow it.\n\n`);
+		// Keeps what the person typed while the source was fetching; a retry swaps the earlier playbook link for this one.
+		const link = `Read ${mentionToken({ kind: "file", ref: preparation.playbook, label: "triage-playbook.md" })} and follow it.\n\n`;
+		setDraft(current => link + withoutPlaybookLink(current));
 		requestAnimationFrame(() => editor.focus("end"));
 	}, [preparation, editor, setDraft, setOverview, setNewChatProjectId]);
-	const leaveTriage = () => { endTriage(); if (draft.includes("file:.phaseo-triage")) setDraft(""); };
+	const leaveTriage = () => { endTriage(); setDraft(withoutPlaybookLink); };
 	const attached = message.images.flatMap(id => images[id] ? [images[id]] : []);
 	useEffect(() => { if (code) setSelections(current => current.length > 1 ? current.slice(0, 1) : current); }, [code]);
 

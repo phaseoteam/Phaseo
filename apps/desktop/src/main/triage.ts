@@ -27,6 +27,8 @@ export async function prepareTriageCheckout(root: string, commit: string | undef
 		catch (error) { if (!(error instanceof MissingCommitError)) throw error; }
 	}
 	let main: string | undefined;
+	// ls-remote runs in the root, which a fresh profile doesn't have yet.
+	await mkdir(root, { recursive: true });
 	try { main = (await git(root, ["ls-remote", url, "refs/heads/main"])).split(/\s/)[0]; }
 	catch (error) { throw new Error(`Could not reach ${repository} on GitHub${gitDetail(error) ? `: ${gitDetail(error)}` : "."}`, { cause: error }); }
 	if (!isCommit(main)) throw new Error(`${repository} has no main branch to fall back to.`);
