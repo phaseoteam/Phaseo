@@ -258,6 +258,14 @@ When Claude Code (in Plan mode) or Grok (in Code mode) finishes a plan, it appea
 
 Where an agent offers a lasting choice, the approval card adds it next to Allow and Deny: Always allow (ACP agents' allow-always option, or an MCP tool approval Codex lets you keep for the session or for good) and Always deny (ACP agents' reject-always option). Hover the button for the agent's own wording.
 
+## Triage
+
+Triage a Phaseo bug (in the command palette; type "triage") debugs the app with an agent working from the app's own source. The app fetches the commit it was built from (stamped into the main bundle at build time) from phaseoteam/Phaseo with one shallow fetch, into `triage/phaseo-<commit>` in the app's data folder, and adds it as a project. A later triage of the same build reuses that checkout, including any changes left in it. If GitHub does not have the commit, such as a local build, the checkout is main instead and the screen and playbook say so.
+
+The new-chat screen then asks "What went wrong?" and shows the version and commit. The message box starts with a link to a playbook written into the checkout's `.phaseo-triage` folder, which Git ignores. The playbook gives the build, the system, recent failures and warnings from the trace log (with the home folder, email addresses and tokens hidden), where the code lives and how to check it, and the job: find the cause, fix it, prove it, and decide whether it is Phaseo's bug or the person's setup. Choose any agent and model as usual. Triage always works in the checkout itself, not a new worktree.
+
+When it is Phaseo's bug, the agent drafts an issue with `draft_issue`, a tool only triage chats have. The draft appears above the message box. Review and file opens it to read and edit, and File issue creates it on GitHub with `gh` under your account and links it to the chat. Nothing else files it: the agent is told never to, and Full access and Autopilot only answer the agent's own approvals, not this button. Discard drops the draft. "Offer a pull request with the fix" is off by default; when on, the agent asks before opening one. `PHASEO_TRIAGE_REPOSITORY=owner/name` sends issues and pull requests to a test repository instead.
+
 ## Replies
 
 Replies render Markdown as GitHub does, plus:

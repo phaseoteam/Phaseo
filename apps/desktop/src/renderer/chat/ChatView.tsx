@@ -3,6 +3,7 @@ import { TerminalDrawer } from "../views/Terminals";
 import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
+import { IssueDraftPanel } from "./IssueDraftPanel";
 import { useQuestionAnswerer } from "./questionComposer";
 import { shortcut, useCommand } from "../lib/keybindings";
 import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/threadActions";
@@ -355,6 +356,7 @@ export function ChatView({ id }: { id: string }) {
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
 		</Conversation>}
 		<QuestionPanel task={task} />
+		<IssueDraftPanel task={task} />
 		<ChatComposer task={task} />
 		{drawers[task.id] && <TerminalDrawer projectId={task.projectId} taskId={task.id} />}
 		{preview && <AttachmentPreview taskId={task.id} id={preview} onClose={() => setPreview(undefined)} />}

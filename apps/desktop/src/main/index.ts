@@ -60,6 +60,11 @@ import { extractPdfText } from "./pdfText";
 import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
 import { searchProjectContents } from "./projectContentSearch";
 import { cloneRepository, cloneSource } from "./projectClone";
+import { homedir, release } from "node:os";
+import { buildStamp } from "./buildInfo";
+import { prepareTriageCheckout, writeTriagePlaybook } from "./triage";
+import { diagnosticsSection, triagePlaybook, triagePlaybookName, triageSourceRepository, type TriageBuild, type TriagePreparation } from "../shared/triage";
+import { readTraceDiagnostics } from "./diagnostics/traceDiagnostics";
 import { UsageHubs, usageHubFile } from "./usageHubs";
 import { validateUsageHubRequest } from "../shared/usageHubs";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
@@ -810,6 +815,41 @@ ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
 	const directory = await span("projects.clone", undefined, () => cloneRepository(url, result.filePaths[0]));
 	const project = workspaceRuntime.store.addProject(directory);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return { workspace: state, projectId: project.id };
+});
+const triageBuild = (): TriageBuild => ({ version: app.getVersion(), ...buildStamp, platform: process.platform, osRelease: release(), arch: process.arch, electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, packaged: app.isPackaged });
+/** Where filed issues and offered pull requests go; PHASEO_TRIAGE_REPOSITORY points them at a test repository. */
+const triageRepository = () => /^[\w.-]+\/[\w.-]+$/.test(process.env.PHASEO_TRIAGE_REPOSITORY ?? "") ? process.env.PHASEO_TRIAGE_REPOSITORY! : triageSourceRepository;
+let triagePreparing: Promise<{ projectId: string }> | undefined;
+// Triage: the running build's source as a project, for a Code chat that debugs the app itself.
+ipcMain.handle("workspace:triage-prepare", async (event): Promise<TriagePreparation> => {
+	if (!senderWindow(event) || shutdownStarted) throw new Error("Untrusted workspace request.");
+	// A second request while the first is fetching waits for it rather than fetching again.
+	triagePreparing ??= span("triage.prepare", { exact: Boolean(buildStamp.commit) }, async () => {
+		const checkout = await prepareTriageCheckout(path.join(app.getPath("userData"), "triage"), buildStamp.commit);
+		const project = workspaceRuntime.store.addProject(checkout.directory);
+		const { version } = triageBuild();
+		project.name = `Phaseo ${version} source`;
+		project.triage = { version, commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
+		workspaceRuntime.store.saveProject(project);
+		return { projectId: project.id };
+	}).finally(() => { triagePreparing = undefined; });
+	const { projectId } = await triagePreparing;
+	const workspace = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(workspace);
+	const triage = workspaceRuntime.store.getProjects().find(project => project.id === projectId)!.triage!;
+	return { workspace, projectId, build: triageBuild(), triage, playbook: triagePlaybookName() };
+});
+ipcMain.handle("workspace:triage-playbook", async (event, projectId: unknown, playbook: unknown, options: unknown) => {
+	if (!senderWindow(event) || shutdownStarted || typeof projectId !== "string" || typeof playbook !== "string") throw new Error("Invalid triage request.");
+	const project = workspaceRuntime.store.getProjects().find(value => value.id === projectId);
+	if (!project?.triage) throw new Error("This project is not a triage checkout.");
+	const offerPullRequest = Boolean(options && typeof options === "object" && (options as { offerPullRequest?: unknown }).offerPullRequest === true);
+	const logsDirectory = path.join(app.getPath("userData"), "logs");
+	const diagnostics = await readTraceDiagnostics({ traceFilePath: path.join(logsDirectory, "traces.ndjson"), logsDirectory, maxFiles: 3 }).catch(() => undefined);
+	await writeTriagePlaybook(project.directory, playbook, triagePlaybook({ build: triageBuild(), triage: project.triage, checkout: project.directory, userData: app.getPath("userData"), diagnostics: diagnosticsSection(diagnostics, homedir()), offerPullRequest }));
+});
+ipcMain.handle("workspace:issue-draft", async (event, taskId: unknown, action: unknown, edit: unknown) => {
+	if (!senderWindow(event) || shutdownStarted || typeof taskId !== "string" || (action !== "file" && action !== "discard")) throw new Error("Invalid issue draft request.");
+	await span("triage.issue", { action }, () => workspaceRuntime.issueDraftAction(taskId, action, edit));
 });
 ipcMain.handle("workspace:project-file", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid project request.");

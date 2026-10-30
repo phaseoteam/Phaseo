@@ -94,6 +94,8 @@ export type ThreadTools = {
 	issue?: (id: string | undefined, action: IssueToolAction, target: IssueToolTarget) => Promise<IssueToolResult>;
 	/** list_thread_issues: the chat's linked issues with their last known state. */
 	issueList?: (id: string | undefined) => Promise<{ issues: ThreadIssueEntry[] }>;
+	/** draft_issue, only in a triage chat: saves an issue draft the person files or discards (shared/triage.ts). */
+	draftIssue?: (draft: unknown) => { saved: true; repository: string; message: string };
 	/** read_issue: any issue in a GitHub repository, linked or not. */
 	readIssue?: (target: IssueToolTarget) => Promise<IssueRead>;
 	scheduled?: () => ScheduledTask[];
