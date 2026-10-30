@@ -58,15 +58,8 @@ try {
   await db.exec(alertsMigration);
 
   assert.ok(alertsMigration.includes(await schema('public/functions/enqueue_rate_limit_throttle_alerts.sql')), 'enqueue function matches the declarative definition');
-  // Later migrations add event kinds; the newest one that redefines the setter and CHECK must match the schema files.
-  const migrationNames = (await readdir(new URL('../migrations/', import.meta.url))).filter((name) => name.endsWith('.sql')).sort();
-  let routesMigration = alertsMigration;
-  for (const name of migrationNames) { const sql = await migration(name); if (sql.includes('CREATE OR REPLACE FUNCTION public.set_notification_event_destinations')) routesMigration = sql; }
-  const lf = (sql) => sql.replace(/\r\n/g, '\n');
-  assert.ok(lf(routesMigration).includes(lf(await schema('public/functions/set_notification_event_destinations.sql')).trim()), 'route setter matches the declarative definition');
-  const table = await schema('public/tables/notification_event_destinations.sql');
-  const check = routesMigration.match(/CHECK \(\(event_kind = ANY \(ARRAY\[[^\]]+\]\)\)\)/)?.[0];
-  assert.ok(check && table.includes(check), 'event kind constraint matches the declarative definition');
+  // The route setter and event kind constraint were last redefined by the Broadcast
+  // destination alerts migration, whose test checks them against the declarative schema.
 
   // Workspaces: 1 routed and throttled; 2 throttled, no route; 3 routed to a paused destination; 4 routed, many policies; 5 routed, no throttles.
   for (let n = 1; n <= 5; n += 1) {

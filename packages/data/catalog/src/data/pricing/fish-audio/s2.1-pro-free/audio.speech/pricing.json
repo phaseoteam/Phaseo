@@ -1,5 +1,0 @@
-{
-  "key": "fish-audio:fish-audio/s2.1-pro:free:audio.speech", "api_provider_id": "fish-audio", "provider_slug": "fish-audio", "api_model_id": "fish-audio/s2.1-pro:free", "capability_id": "audio.speech",
-  "rules": [{ "meter": "input_text_bytes", "unit": "byte", "unit_size": 1000000, "price_per_unit": 0, "currency": "USD", "pricing_plan": "free", "note": "Free access is documented through 31 August 2026 and has no production SLA or DPA guarantee.", "match": [], "priority": 100, "effective_from": "2026-06-23T00:00:00Z", "effective_to": "2026-09-01T00:00:00Z", "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits" }],
-  "regions": [], "service_tiers": ["free"], "sources": [], "verification": { "status": "verified", "checked_at": "2026-08-01T00:00:00Z", "notes": null }
-}

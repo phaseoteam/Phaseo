@@ -1,0 +1,80 @@
+---
+icon: "phone"
+title: "Voz em tempo real"
+description: "Faça uma chamada de voz em tempo real pelo relay do Phaseo com o SDK de Python e receba a cobrança final quando ela terminar."
+---
+
+<Note>
+A voz em tempo real está em beta, e o acesso é liberado por espaço de trabalho.
+</Note>
+
+**Método**: `await client.realtime.connect()` em `AsyncPhaseo` cria a sessão (`POST /v1/audio/realtime/sessions`), abre o WebSocket do relay e retorna quando o relay envia `relay.connected`. O cliente em tempo real é apenas assíncrono e precisa do pacote opcional `websockets`:
+
+```bash
+pip install "phaseo[realtime]"
+```
+
+Sem ele, `connect()` lança `ImportError` com esse comando de instalação. O protocolo do relay, os avisos e os códigos de motivo estão descritos em [Sessões de voz em tempo real](/pt-BR/v1/guides/realtime-voice).
+
+### Exemplo
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo, RealtimeSessionClosedError
+
+async def main(pcm16_chunk: bytes) -> None:
+    client = AsyncPhaseo()  # reads PHASEO_API_KEY
+    session = await client.realtime.connect(
+        "openai/gpt-realtime-2", voice="marin", instructions="Answer in one sentence."
+    )
+    session.on_warning(lambda warning: print("warning", warning["code"]))
+
+    # PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+    await session.send_audio(pcm16_chunk)
+
+    try:
+        ended = await session.end(reason="caller hung up")
+        print(ended["reason"], ended["duration_seconds"], ended["cost"]["total_usd"], ended["billing_status"])
+    except RealtimeSessionClosedError as error:
+        # The call is still billed. Fetch the final cost later with error.final_bill["path"].
+        print(error)
+    finally:
+        await client.close()
+```
+
+Para ler todos os eventos, itere sobre a sessão. O primeiro iterador também recebe os eventos que chegaram desde que `connect()` retornou, começando por `relay.connected`, e a iteração para quando o socket é fechado.
+
+```python
+async for event in session:
+    if event["type"] == "response.output_audio.delta":
+        play(event["delta"])
+```
+
+`async with session:` encerra a chamada com `end()` quando o bloco termina, se ela ainda não tiver terminado.
+
+### Opções de conexão
+
+- `model` (obrigatório): um ID de modelo em tempo real, por exemplo `openai/gpt-realtime-2`.
+- `voice`, `instructions`, `provider`, `metadata`: repassados à solicitação de criação da sessão.
+- `connect_timeout`: segundos de espera por `relay.connected`. Padrão: 30.
+- `websocket_connect`: um callable assíncrono `(url, subprotocols)` que retorna um socket conectado, para usar outra biblioteca de WebSocket.
+
+### Sessão
+
+| Membro | Descrição |
+| --- | --- |
+| `id`, `info` | O ID da sessão e a resposta de criação da sessão, sem `client_secret`. |
+| `await send_audio(pcm16)` | Envia `bytes` PCM16 como `client.audio`. O SDK os codifica em base64. |
+| `await send(event)` | Envia qualquer evento como JSON, para mensagens específicas do provedor. |
+| `on(type, listener)` | Assina um tipo de evento, ou todos os eventos com `"*"`. Retorna uma função para cancelar a assinatura. Os eventos do provedor chegam sem alterações, como dicts. |
+| `on_warning(listener)`, `on_ended(listener)` | Helpers para `session.warning` e `session.ended`. |
+| `async for event in session` | Produz todos os eventos até o socket ser fechado. |
+| `await end(reason=None, cancel_response=None, timeout=60)` | Envia `session.end` e retorna `session.ended`: `reason`, `initiated_by`, `duration_seconds`, `usage`, `cost`, `billing_status` e, se ainda não estiver liquidada, `final_bill`. |
+| `ended` | Um future de `session.ended`, seja qual for a forma como a chamada termina, incluindo encerramentos iniciados pelo provedor ou pelo gateway. |
+| `await close()` | Fecha o socket sem esperar pela cobrança. A chamada é cobrada mesmo assim. |
+
+### Erros
+
+Se o socket for fechado, ou `end()` atingir o tempo limite, sem `session.ended`, `end()` e `ended` lançam `RealtimeSessionClosedError`. Ele tem `session_id`, `close_code`, `close_reason` e `final_bill`, a solicitação que retorna o custo final depois de liquidado: `GET /v1/generations?id=realtime%3A<session_id>`. `realtime_final_bill(session_id)` monta a mesma solicitação.
+
+`connect()` lança um erro se o relay encerrar a sessão antes de se conectar, e `TimeoutError` se `relay.connected` não chegar a tempo.

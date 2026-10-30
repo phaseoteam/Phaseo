@@ -38,7 +38,7 @@ jobs:
               run: pnpm install --frozen-lockfile
 
             - name: Test model status refresh
-              run: pnpm exec tsx --test scripts/update-model-statuses.test.ts
+              run: pnpm exec tsx --test scripts/model-status-rules.test.ts
 
             - name: Refresh model statuses
               env:
@@ -46,6 +46,4 @@ jobs:
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
               run: pnpm run data:update-statuses
 
-            - name: Validate data
-              run: pnpm run validate:data
 

@@ -282,7 +282,7 @@ export default function CreateManagementKeyDialog({
 					</form>
 				) : (
 					<div className="space-y-5">
-						<div className="select-all break-all rounded-lg border border-amber-300 bg-amber-100/70 p-3 font-mono text-xs leading-5 dark:border-amber-700 dark:bg-amber-900/30 sm:text-sm">
+						<div className="ph-no-capture select-all break-all rounded-lg border border-amber-300 bg-amber-100/70 p-3 font-mono text-xs leading-5 dark:border-amber-700 dark:bg-amber-900/30 sm:text-sm">
 							{plainKey}
 						</div>
 						<p className="text-sm leading-5 text-amber-700 dark:text-amber-400">

@@ -28,6 +28,23 @@ function parseInput(value: unknown): unknown {
 	try { return JSON.parse(value); } catch { return { raw: value }; }
 }
 
+// Function names the gateway gives the server tools it runs itself: `phaseo:web_search` is
+// called as `phaseo_web_search`, a named advisor as `phaseo_advisor_<name>`, and so on.
+const GATEWAY_SERVER_TOOL_FUNCTION_NAMES = new Set([
+	"gateway_datetime", "phaseo_web_search", "phaseo_web_fetch", "phaseo_advisor", "phaseo_image_generation",
+	"phaseo_apply_patch", "phaseo_subagent", "phaseo_fusion", "phaseo_search_models",
+]);
+
+/** True for a call to one of the gateway's own server tools, by function name or `phaseo:`/`gateway:` tool type. */
+export function isGatewayServerToolName(name: string): boolean {
+	return GATEWAY_SERVER_TOOL_FUNCTION_NAMES.has(name) || name.startsWith("phaseo_advisor_") || /^(phaseo|gateway):/.test(name);
+}
+
+/** A call item the gateway already ran: it sends server-tool calls back with the result inline (`output`, or `error` on failure). */
+export function isExecutedToolCallItem(value: unknown): boolean {
+	return isRecord(value) && (value.output != null || value.error != null);
+}
+
 /** Convert provider output items into the portable AgentItem contract. */
 export function normalizeAgentItems(value: unknown): AgentItem[] {
 	if (!isRecord(value)) return [{ type: "output", value, rawProviderItem: value }];
@@ -43,13 +60,16 @@ export function normalizeAgentItems(value: unknown): AgentItem[] {
 		return [{ type: "reasoning", text: itemText(value), ...base }];
 	}
 	if (providerType === "function_call" || providerType === "tool_call") {
-		return [{
-			type: "tool_call",
-			toolCallId: stringValue(value.call_id) ?? stringValue(value.tool_call_id) ?? id ?? "tool_call",
-			name: stringValue(value.name) ?? "tool",
-			input: parseInput(value.arguments ?? value.input),
-			...base,
-		}];
+		const toolCallId = stringValue(value.call_id) ?? stringValue(value.tool_call_id) ?? id ?? "tool_call";
+		const name = stringValue(value.name) ?? "tool";
+		const call: AgentItem = { type: "tool_call", toolCallId, name, input: parseInput(value.arguments ?? value.input), ...base };
+		if (!isExecutedToolCallItem(value)) return [call];
+		// Already run by the gateway: keep the call and its result, so nothing runs it again.
+		if (value.status === "failed" || value.error != null) {
+			const error = isRecord(value.error) ? value.error : undefined;
+			return [call, { type: "error", message: stringValue(error?.message) ?? stringValue(value.error) ?? "Server tool failed", toolCallId, toolName: name, ...base }];
+		}
+		return [call, { type: "tool_result", toolCallId, name, output: value.output, ...base }];
 	}
 	if (providerType === "function_call_output" || providerType === "tool_result") {
 		return [{

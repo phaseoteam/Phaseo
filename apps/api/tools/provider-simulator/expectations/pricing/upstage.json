@@ -1,130 +1,155 @@
 {
 	"provider": "upstage",
-	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
-	"clock": "2026-10-18T12:00:00.000Z",
-	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
 	"cards": [
 		{
 			"key": "upstage:upstage/document-ocr:ocr",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-document-ocr/ocr/pricing.json",
+			"routes": ["upstage:upstage/document-ocr"],
+			"skus": ["offer-3e41d517ce26655af058@v1"],
 			"rules": [
-				["#0","standard","input_pages","0.0015/1 page",100,null,null,null]
+				["offer-3e41d517ce26655af058@v1#input_pages","standard","input_pages","0.0015/1 page",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_pages":1},"expected":{"nanos":1500000,"lines":[["input_pages",1,"#0","input_pages",1500000]]}},
-				{"id":"rule.standard.input_pages","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_pages":3},"expected":{"nanos":4500000,"lines":[["input_pages",3,"#0","input_pages",4500000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_pages":1},"expected":{"nanos":1500000,"lines":[["input_pages",1,"offer-3e41d517ce26655af058@v1#input_pages","input_pages",1500000]]}},
+				{"id":"rule.standard.input_pages","kind":"rule","targets":["offer-3e41d517ce26655af058@v1#input_pages"],"plan":"standard","usage":{"requests":1,"input_pages":3},"expected":{"nanos":4500000,"lines":[["input_pages",3,"offer-3e41d517ce26655af058@v1#input_pages","input_pages",4500000]]}}
 			]
 		},
 		{
 			"key": "upstage:upstage/document-parse:ocr",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-document-parse/ocr/pricing.json",
+			"routes": ["upstage:upstage/document-parse"],
+			"skus": ["offer-2e64a9f08336dada24b5@v1","offer-af9ccf7fbe67c20b7227@v1"],
 			"rules": [
-				["#1","standard","input_pages","0.03/1 page",110,[{"key":"mode","operator":"eq","value":"enhanced"}],null,null],
-				["#0","standard","input_pages","0.01/1 page",100,null,null,null]
+				["offer-af9ccf7fbe67c20b7227@v1#input_pages","standard","input_pages","0.03/1 page",110,[{"key":"mode","value":"enhanced","operator":"eq"}],null,null],
+				["offer-2e64a9f08336dada24b5@v1#input_pages","standard","input_pages","0.01/1 page",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","context":{"mode":"enhanced"},"usage":{"requests":1,"input_pages":1},"expected":{"nanos":30000000,"lines":[["input_pages",1,"#1","input_pages",30000000]]}},
-				{"id":"rule.standard.input_pages","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_pages":3},"expected":{"nanos":30000000,"lines":[["input_pages",3,"#0","input_pages",30000000]]}},
-				{"id":"rule.standard.input_pages.when(modeeq\"enhanced\")","kind":"rule","targets":["#1"],"plan":"standard","context":{"mode":"enhanced"},"usage":{"requests":1,"input_pages":3},"expected":{"nanos":90000000,"lines":[["input_pages",3,"#1","input_pages",90000000]]}}
+				{"id":"documented","kind":"documented","plan":"standard","context":{"mode":"enhanced"},"usage":{"requests":1,"input_pages":1},"expected":{"nanos":30000000,"lines":[["input_pages",1,"offer-af9ccf7fbe67c20b7227@v1#input_pages","input_pages",30000000]]}},
+				{"id":"rule.standard.input_pages","kind":"rule","targets":["offer-2e64a9f08336dada24b5@v1#input_pages"],"plan":"standard","usage":{"requests":1,"input_pages":3},"expected":{"nanos":30000000,"lines":[["input_pages",3,"offer-2e64a9f08336dada24b5@v1#input_pages","input_pages",30000000]]}},
+				{"id":"rule.standard.input_pages.when(modeeq\"enhanced\")","kind":"rule","targets":["offer-af9ccf7fbe67c20b7227@v1#input_pages"],"plan":"standard","context":{"mode":"enhanced"},"usage":{"requests":1,"input_pages":3},"expected":{"nanos":90000000,"lines":[["input_pages",3,"offer-af9ccf7fbe67c20b7227@v1#input_pages","input_pages",90000000]]}}
 			]
 		},
 		{
 			"key": "upstage:upstage/solar-embedding-1-large-passage:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-solar-embedding-1-large-passage/text.embed/pricing.json",
+			"routes": ["upstage:upstage/solar-embedding-1-large-passage"],
+			"skus": ["offer-09640178c210149b4d9a@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+				["offer-09640178c210149b4d9a@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"offer-09640178c210149b4d9a@v1#input_text_tokens","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-09640178c210149b4d9a@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"offer-09640178c210149b4d9a@v1#input_text_tokens","input_text_tokens",1234700]]}}
 			]
 		},
 		{
 			"key": "upstage:upstage/solar-embedding-1-large-query:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-solar-embedding-1-large-query/text.embed/pricing.json",
+			"routes": ["upstage:upstage/solar-embedding-1-large-query"],
+			"skus": ["offer-62d8011a79f8c47f7969@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
+				["offer-62d8011a79f8c47f7969@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":100000,"lines":[["input_text_tokens",1000,"offer-62d8011a79f8c47f7969@v1#input_text_tokens","input_text_tokens",100000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-62d8011a79f8c47f7969@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1234700,"lines":[["input_text_tokens",12347,"offer-62d8011a79f8c47f7969@v1#input_text_tokens","input_text_tokens",1234700]]}}
 			]
 		},
 		{
 			"key": "upstage:upstage/solar-embedding-2-passage:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-solar-embedding-2-passage/text.embed/pricing.json",
+			"routes": ["upstage:upstage/solar-embedding-2-passage"],
+			"skus": ["offer-8cdb437e5242a86dc925@v1"],
 			"rules": [
-				["#1","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
+				["offer-8cdb437e5242a86dc925@v1#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"#1","input_text_tokens",20000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",246940]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"offer-8cdb437e5242a86dc925@v1#input_text_tokens","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-8cdb437e5242a86dc925@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"offer-8cdb437e5242a86dc925@v1#input_text_tokens","input_text_tokens",246940]]}}
 			]
 		},
 		{
 			"key": "upstage:upstage/solar-embedding-2-query:text.embed",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-solar-embedding-2-query/text.embed/pricing.json",
+			"routes": ["upstage:upstage/solar-embedding-2-query"],
+			"skus": ["offer-adcd18e973f9fb089b80@v1"],
 			"rules": [
-				["#1","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
+				["offer-adcd18e973f9fb089b80@v1#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"#1","input_text_tokens",20000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",246940]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"offer-adcd18e973f9fb089b80@v1#input_text_tokens","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-adcd18e973f9fb089b80@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"offer-adcd18e973f9fb089b80@v1#input_text_tokens","input_text_tokens",246940]]}}
+			]
+		},
+		{
+			"key": "upstage:upstage/solar-mini-4:text.generate",
+			"routes": ["upstage:upstage/solar-mini-4"],
+			"skus": ["solar-mini-4-list@v1"],
+			"rules": [
+				["solar-mini-4-list@v1#output_text_tokens","standard","output_text_tokens","0.4/1000000 token",30,null,null,null],
+				["solar-mini-4-list@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.01/1000000 token",20,null,null,null],
+				["solar-mini-4-list@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",10,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":347040,"lines":[["cached_read_text_tokens",1024,"solar-mini-4-list@v1#cached_read_text_tokens","cached_read_text_tokens",10240],["input_text_tokens",1576,"solar-mini-4-list@v1#input_text_tokens","input_text_tokens",157600],["output_text_tokens",448,"solar-mini-4-list@v1#output_text_tokens","output_text_tokens",179200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["solar-mini-4-list@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2663170,"lines":[["cached_read_text_tokens",4567,"solar-mini-4-list@v1#cached_read_text_tokens","cached_read_text_tokens",45670],["input_text_tokens",12347,"solar-mini-4-list@v1#input_text_tokens","input_text_tokens",1234700],["output_text_tokens",3457,"solar-mini-4-list@v1#output_text_tokens","output_text_tokens",1382800]]}},
+				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["solar-mini-4-list@v1#output_text_tokens","solar-mini-4-list@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2617500,"lines":[["input_text_tokens",12347,"solar-mini-4-list@v1#input_text_tokens","input_text_tokens",1234700],["output_text_tokens",3457,"solar-mini-4-list@v1#output_text_tokens","output_text_tokens",1382800]]}}
 			]
 		},
 		{
 			"key": "upstage:upstage/solar-mini:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-solar-mini/text.generate/pricing.json",
+			"routes": ["upstage:upstage/solar-mini"],
+			"skus": ["offer-1f412afb85e9b9a2e61d@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.15/1000000 token",100,null,null,null]
+				["offer-1f412afb85e9b9a2e61d@v1#input_text_tokens","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["offer-1f412afb85e9b9a2e61d@v1#output_text_tokens","standard","output_text_tokens","0.15/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":457200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",390000],["output_text_tokens",448,"#1","output_text_tokens",67200]]}},
-				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":457200,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",153600,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_text_tokens",448,"#1","output_text_tokens",67200]]},"source":{"kind":"spec","spec":"upstage","path":"usageFields"}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2370600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#1","output_text_tokens",518550]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":457200,"lines":[["input_text_tokens",2600,"offer-1f412afb85e9b9a2e61d@v1#input_text_tokens","input_text_tokens",390000],["output_text_tokens",448,"offer-1f412afb85e9b9a2e61d@v1#output_text_tokens","output_text_tokens",67200]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":457200,"lines":[["cached_read_text_tokens",1024,"offer-1f412afb85e9b9a2e61d@v1#input_text_tokens","input_text_tokens",153600,"cache read at the input price"],["input_text_tokens",1576,"offer-1f412afb85e9b9a2e61d@v1#input_text_tokens","input_text_tokens",236400],["output_text_tokens",448,"offer-1f412afb85e9b9a2e61d@v1#output_text_tokens","output_text_tokens",67200]]},"source":{"kind":"spec","spec":"upstage","path":"usageFields"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-1f412afb85e9b9a2e61d@v1#input_text_tokens","offer-1f412afb85e9b9a2e61d@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2370600,"lines":[["input_text_tokens",12347,"offer-1f412afb85e9b9a2e61d@v1#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"offer-1f412afb85e9b9a2e61d@v1#output_text_tokens","output_text_tokens",518550]]}}
 			]
 		},
 		{
 			"key": "upstage:upstage/solar-pro-2:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-solar-pro-2/text.generate/pricing.json",
+			"routes": ["upstage:upstage/solar-pro-2"],
+			"skus": ["offer-8c127befa5fea9425155@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
-				["#1","standard","cached_read_text_tokens","0.015/1000000 token",100,null,null,null],
-				["#2","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+				["offer-8c127befa5fea9425155@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.015/1000000 token",100,null,null,null],
+				["offer-8c127befa5fea9425155@v1#input_text_tokens","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["offer-8c127befa5fea9425155@v1#output_text_tokens","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":635760,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",15360],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_reasoning_tokens",192,"#2","output_text_tokens",115200,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",268800]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":4468155,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",68505],["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",473400,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2074200]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":4399650,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",473400,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2074200]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":520560,"lines":[["cached_read_text_tokens",1024,"offer-8c127befa5fea9425155@v1#cached_read_text_tokens","cached_read_text_tokens",15360],["input_text_tokens",1576,"offer-8c127befa5fea9425155@v1#input_text_tokens","input_text_tokens",236400],["output_text_tokens",448,"offer-8c127befa5fea9425155@v1#output_text_tokens","output_text_tokens",268800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-8c127befa5fea9425155@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":3994755,"lines":[["cached_read_text_tokens",4567,"offer-8c127befa5fea9425155@v1#cached_read_text_tokens","cached_read_text_tokens",68505],["input_text_tokens",12347,"offer-8c127befa5fea9425155@v1#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"offer-8c127befa5fea9425155@v1#output_text_tokens","output_text_tokens",2074200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-8c127befa5fea9425155@v1#input_text_tokens","offer-8c127befa5fea9425155@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3926250,"lines":[["input_text_tokens",12347,"offer-8c127befa5fea9425155@v1#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"offer-8c127befa5fea9425155@v1#output_text_tokens","output_text_tokens",2074200]]}}
 			]
 		},
 		{
 			"key": "upstage:upstage/solar-pro-3:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-solar-pro-3/text.generate/pricing.json",
+			"routes": ["upstage:upstage/solar-pro-3"],
+			"skus": ["offer-30fb8532705496b2edad@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
-				["#1","standard","cached_read_text_tokens","0.015/1000000 token",100,null,null,null],
-				["#2","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+				["offer-30fb8532705496b2edad@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.015/1000000 token",100,null,null,null],
+				["offer-30fb8532705496b2edad@v1#input_text_tokens","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["offer-30fb8532705496b2edad@v1#output_text_tokens","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":635760,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",15360],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_reasoning_tokens",192,"#2","output_text_tokens",115200,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",268800]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":4468155,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",68505],["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",473400,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2074200]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":4399650,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",473400,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2074200]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":520560,"lines":[["cached_read_text_tokens",1024,"offer-30fb8532705496b2edad@v1#cached_read_text_tokens","cached_read_text_tokens",15360],["input_text_tokens",1576,"offer-30fb8532705496b2edad@v1#input_text_tokens","input_text_tokens",236400],["output_text_tokens",448,"offer-30fb8532705496b2edad@v1#output_text_tokens","output_text_tokens",268800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-30fb8532705496b2edad@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":3994755,"lines":[["cached_read_text_tokens",4567,"offer-30fb8532705496b2edad@v1#cached_read_text_tokens","cached_read_text_tokens",68505],["input_text_tokens",12347,"offer-30fb8532705496b2edad@v1#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"offer-30fb8532705496b2edad@v1#output_text_tokens","output_text_tokens",2074200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-30fb8532705496b2edad@v1#input_text_tokens","offer-30fb8532705496b2edad@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3926250,"lines":[["input_text_tokens",12347,"offer-30fb8532705496b2edad@v1#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"offer-30fb8532705496b2edad@v1#output_text_tokens","output_text_tokens",2074200]]}}
 			]
 		},
 		{
 			"key": "upstage:upstage/solar-pro-4:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/upstage/upstage-solar-pro-4/text.generate/pricing.json",
+			"routes": ["upstage:upstage/solar-pro-4"],
+			"skus": ["offer-7647a9337c018ecb1e40@v1"],
 			"rules": [
-				["#9","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
-				["#10","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
-				["#11","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+				["offer-7647a9337c018ecb1e40@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["offer-7647a9337c018ecb1e40@v1#input_text_tokens","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["offer-7647a9337c018ecb1e40@v1#output_text_tokens","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1302240,"lines":[["cached_read_text_tokens",1024,"#10","cached_read_text_tokens",61440],["input_text_tokens",1576,"#9","input_text_tokens",472800],["output_reasoning_tokens",192,"#11","output_text_tokens",230400,"reasoning at the output price"],["output_text_tokens",448,"#11","output_text_tokens",537600]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#10"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":9073320,"lines":[["cached_read_text_tokens",4567,"#10","cached_read_text_tokens",274020],["input_text_tokens",12347,"#9","input_text_tokens",3704100],["output_reasoning_tokens",789,"#11","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#11","output_text_tokens",4148400]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#9","#11"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8799300,"lines":[["input_text_tokens",12347,"#9","input_text_tokens",3704100],["output_reasoning_tokens",789,"#11","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#11","output_text_tokens",4148400]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1071840,"lines":[["cached_read_text_tokens",1024,"offer-7647a9337c018ecb1e40@v1#cached_read_text_tokens","cached_read_text_tokens",61440],["input_text_tokens",1576,"offer-7647a9337c018ecb1e40@v1#input_text_tokens","input_text_tokens",472800],["output_text_tokens",448,"offer-7647a9337c018ecb1e40@v1#output_text_tokens","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-7647a9337c018ecb1e40@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8126520,"lines":[["cached_read_text_tokens",4567,"offer-7647a9337c018ecb1e40@v1#cached_read_text_tokens","cached_read_text_tokens",274020],["input_text_tokens",12347,"offer-7647a9337c018ecb1e40@v1#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"offer-7647a9337c018ecb1e40@v1#output_text_tokens","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-7647a9337c018ecb1e40@v1#input_text_tokens","offer-7647a9337c018ecb1e40@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"offer-7647a9337c018ecb1e40@v1#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"offer-7647a9337c018ecb1e40@v1#output_text_tokens","output_text_tokens",4148400]]}}
 			]
 		}
 	]

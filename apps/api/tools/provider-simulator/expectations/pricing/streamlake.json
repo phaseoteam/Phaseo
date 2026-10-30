@@ -1,35 +1,37 @@
 {
 	"provider": "streamlake",
-	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
-	"clock": "2026-10-18T12:00:00.000Z",
-	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
 	"cards": [
 		{
 			"key": "streamlake:kwaipilot/kat-coder-air-v2.5:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/streamlake/kwaipilot-kat-coder-air-v2.5/text.generate/pricing.json",
+			"routes": ["streamlake:kat-coder-air-v2.5"],
+			"skus": ["offer-a305b04c072c97e15fec@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
-				["#1","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
-				["#2","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+				["offer-a305b04c072c97e15fec@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["offer-a305b04c072c97e15fec@v1#input_text_tokens","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["offer-a305b04c072c97e15fec@v1#output_text_tokens","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":535920,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",30720],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_text_tokens",448,"#2","output_text_tokens",268800]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":4063260,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",137010],["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#2","output_text_tokens",2074200]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3926250,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#2","output_text_tokens",2074200]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":535920,"lines":[["cached_read_text_tokens",1024,"offer-a305b04c072c97e15fec@v1#cached_read_text_tokens","cached_read_text_tokens",30720],["input_text_tokens",1576,"offer-a305b04c072c97e15fec@v1#input_text_tokens","input_text_tokens",236400],["output_text_tokens",448,"offer-a305b04c072c97e15fec@v1#output_text_tokens","output_text_tokens",268800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-a305b04c072c97e15fec@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":4063260,"lines":[["cached_read_text_tokens",4567,"offer-a305b04c072c97e15fec@v1#cached_read_text_tokens","cached_read_text_tokens",137010],["input_text_tokens",12347,"offer-a305b04c072c97e15fec@v1#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"offer-a305b04c072c97e15fec@v1#output_text_tokens","output_text_tokens",2074200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-a305b04c072c97e15fec@v1#input_text_tokens","offer-a305b04c072c97e15fec@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3926250,"lines":[["input_text_tokens",12347,"offer-a305b04c072c97e15fec@v1#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"offer-a305b04c072c97e15fec@v1#output_text_tokens","output_text_tokens",2074200]]}}
 			]
 		},
 		{
 			"key": "streamlake:kwaipilot/kat-coder-pro-v2.5:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/streamlake/kwaipilot-kat-coder-pro-v2.5/text.generate/pricing.json",
+			"routes": ["streamlake:kat-coder-pro-v2.5"],
+			"skus": ["offer-9b90be1872de7ded34ff@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.74/1000000 token",100,null,null,null],
-				["#1","standard","cached_read_text_tokens","0.15/1000000 token",100,null,null,null],
-				["#2","standard","output_text_tokens","2.96/1000000 token",100,null,null,null]
+				["offer-9b90be1872de7ded34ff@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.15/1000000 token",100,null,null,null],
+				["offer-9b90be1872de7ded34ff@v1#input_text_tokens","standard","input_text_tokens","0.74/1000000 token",100,null,null,null],
+				["offer-9b90be1872de7ded34ff@v1#output_text_tokens","standard","output_text_tokens","2.96/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2645920,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",153600],["input_text_tokens",1576,"#0","input_text_tokens",1166240],["output_text_tokens",448,"#2","output_text_tokens",1326080]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":20054550,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",685050],["input_text_tokens",12347,"#0","input_text_tokens",9136780],["output_text_tokens",3457,"#2","output_text_tokens",10232720]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":19369500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",9136780],["output_text_tokens",3457,"#2","output_text_tokens",10232720]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2645920,"lines":[["cached_read_text_tokens",1024,"offer-9b90be1872de7ded34ff@v1#cached_read_text_tokens","cached_read_text_tokens",153600],["input_text_tokens",1576,"offer-9b90be1872de7ded34ff@v1#input_text_tokens","input_text_tokens",1166240],["output_text_tokens",448,"offer-9b90be1872de7ded34ff@v1#output_text_tokens","output_text_tokens",1326080]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-9b90be1872de7ded34ff@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":20054550,"lines":[["cached_read_text_tokens",4567,"offer-9b90be1872de7ded34ff@v1#cached_read_text_tokens","cached_read_text_tokens",685050],["input_text_tokens",12347,"offer-9b90be1872de7ded34ff@v1#input_text_tokens","input_text_tokens",9136780],["output_text_tokens",3457,"offer-9b90be1872de7ded34ff@v1#output_text_tokens","output_text_tokens",10232720]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-9b90be1872de7ded34ff@v1#input_text_tokens","offer-9b90be1872de7ded34ff@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":19369500,"lines":[["input_text_tokens",12347,"offer-9b90be1872de7ded34ff@v1#input_text_tokens","input_text_tokens",9136780],["output_text_tokens",3457,"offer-9b90be1872de7ded34ff@v1#output_text_tokens","output_text_tokens",10232720]]}}
 			]
 		}
 	]

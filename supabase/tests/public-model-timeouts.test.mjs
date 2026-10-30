@@ -76,16 +76,21 @@ function overviewDefinition(sql) {
   const closing=sql.indexOf('$function$;',opening+10);
   return sql.slice(start,closing+11);
 }
-await db.exec(`insert into v2_request_facts(request_event_id,occurred_at,requested_model_input,success,latency_ms)
-  values (md5('dst-first')::uuid,'2026-11-01 05:15:00+00','model-a',true,10),
-    (md5('dst-second')::uuid,'2026-11-01 06:15:00+00','model-a',false,90);
-  begin; set timezone='America/New_York';`);
+// The fall-back rows get their own model and are rolled back with the check: the
+// other fixtures are dated from today's clock, so near the fall-back they would
+// land in the frozen window too, and these rows would land in later checks'
+// windows once the date has passed.
+await db.exec(`begin; set timezone='America/New_York';
+  insert into v2_models values ('model-dst','DST','2026-10-01 00:00:00+00',null,null);
+  insert into v2_request_facts(request_event_id,occurred_at,requested_model_input,success,latency_ms)
+  values (md5('dst-first')::uuid,'2026-11-01 05:15:00+00','model-dst',true,10),
+    (md5('dst-second')::uuid,'2026-11-01 06:15:00+00','model-dst',false,90);`);
 const freeze=sql=>overviewDefinition(sql).replaceAll('now()',"'2026-11-03 12:00:00+00'::timestamptz");
 await db.exec(freeze(beforeSql));
-const dstBefore=(await db.query("select * from get_model_performance_overview('model-a')")).rows;
+const dstBefore=(await db.query("select * from get_model_performance_overview('model-dst')")).rows;
 assert.equal(dstBefore[0].hourly_5d.reduce((sum,bucket)=>sum+bucket.requests,0),2,'DST fixtures are inside the frozen window');
 await db.exec(freeze(await read('../schemas/public/functions/get_model_performance_overview.sql')));
-assert.deepEqual((await db.query("select * from get_model_performance_overview('model-a')")).rows,dstBefore,'both fall-back hours preserve counts and medians');
+assert.deepEqual((await db.query("select * from get_model_performance_overview('model-dst')")).rows,dstBefore,'both fall-back hours preserve counts and medians');
 await db.exec('rollback; set timezone=\'UTC\';');
 await db.exec(`revoke all on function get_model_performance_overview(text) from public;
   grant execute on function get_model_performance_overview(text) to anon,authenticated,service_role;`);

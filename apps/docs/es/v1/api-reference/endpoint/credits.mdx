@@ -8,3 +8,18 @@ description: "Cómo registra y factura el Gateway las solicitudes."
 <Note>
 Este endpoint requiere una clave de API de administración. No se aceptan las claves de API estándar del Gateway.
 </Note>
+
+## Añadir créditos desde la CLI o la API
+
+Los agentes y scripts pueden iniciar una recarga con `POST /v1/credits/topups` o con la CLI. Una persona siempre aprueba el cargo.
+
+```bash
+phaseo login --scopes billing:write
+phaseo credits add --amount 20
+```
+
+- El token necesita el alcance `billing:write`. Nunca se concede por defecto: añádelo con `phaseo login --scopes billing:write` o inclúyelo en una clave de gestión.
+- Las recargas van de $5 a $500. Un espacio de trabajo puede tener 5 en espera a la vez, y cada una caduca a los 30 minutos.
+- **Sin tarjeta guardada:** la respuesta incluye un `checkout_url`. Un propietario o administrador del espacio de trabajo lo abre y paga con una tarjeta nueva, que se guarda para recargas posteriores.
+- **Con tarjeta guardada:** cada propietario y administrador recibe un correo con un enlace de un solo uso. Uno de ellos lo abre, inicia sesión y elige **Confirmar** o **Rechazar**. Al confirmar se cobra la tarjeta, con verificación bancaria si el banco la pide.
+- Consulta `GET /v1/credits/topups/{id}` (o `phaseo credits topups get <id>`) hasta que `final` sea `true`. Los créditos se añaden cuando el estado es `paid`. `declined`, `expired` y `failed` incluyen un código `reason`: no los reintentes automáticamente; pregunta a una persona.

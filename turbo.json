@@ -11,7 +11,6 @@
 			"outputs": [".next/**", "dist/**", "build/**", ".mint/**", "public/_i18n/**"],
 			"inputs": [
 				"$TURBO_DEFAULT$",
-				"packages/data/catalog/src/data/**",
 				"apps/api/openapi.openai.yml",
 				"apps/api/openapi.anthropic.json"
 			]
@@ -66,6 +65,9 @@
 		"HMAC_ENCRPYTION_KEY",
 		"WEBSITE_URL",
 		"ADMIN_TOKEN",
+		"POSTHOG_SOURCEMAPS_API_KEY",
+		"POSTHOG_SOURCEMAPS_PROJECT_ID",
+		"POSTHOG_SOURCEMAPS_HOST",
 		"YT_CALLBACK_URL",
 		"YT_WEBHOOK_SECRET"
 	]

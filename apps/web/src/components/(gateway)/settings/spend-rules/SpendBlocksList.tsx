@@ -50,7 +50,7 @@ export function SpendBlocksList({ blocks, canManage, options, maxRules }: {
 				<h3 className="text-sm font-medium">{t("blocks.title")}</h3>
 				<p className="mt-0.5 text-sm text-muted-foreground">{t("blocks.description")}</p>
 			</div>
-			<ul className="divide-y rounded-md border border-destructive/30 bg-destructive/5">
+			<ul className="divide-y divide-red-200 rounded-md border border-red-200 bg-red-50 dark:divide-red-900/60 dark:border-red-900/60 dark:bg-red-950/20">
 				{active.map((block) => (
 					<li key={block.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
 						<div className="min-w-0 flex-1">

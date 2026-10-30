@@ -1,0 +1,10 @@
+---
+title: "प्रीसेट लेबल हटाएँ"
+sidebarTitle: "लेबल हटाएँ"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml DELETE /presets/{id}/labels/{label}"
+description: "किसी प्रीसेट से लेबल हटाएँ।"
+---
+<Note>इस endpoint के लिए `presets:write` वाली management API key और उससे जुड़ी उपयोगकर्ता पहचान आवश्यक है। प्रीसेट बनाने वाला उसके लेबल बदल सकता है, और प्रीसेट साझा होने पर वर्कस्पेस के मालिक और एडमिन भी।</Note>
+
+जो अनुरोध अब भी लेबल को pin करते हैं, वे लेबल फिर से जोड़े जाने तक `preset_version_not_found` के साथ विफल होते हैं।

@@ -12,6 +12,7 @@ import {
 	resolveProviderParamSupportOverride,
 	textEndpointRegistryFor,
 } from "./textParamPolicy";
+import { declaredRouteParams } from "@pipeline/execute/unsupportedParams";
 
 function normalizeParamPaths(paths: string[]): string[] {
 	const unique = new Set<string>();
@@ -243,6 +244,51 @@ export function providerParamSupportStatus(
 		}
 	}
 	return "unknown";
+}
+
+export type JsonOutputType = "json_schema" | "json_object";
+
+/**
+ * The JSON output mode a request asks for, on any text surface: Chat
+ * `response_format`, Responses `text.format`, Messages `output_config.format`.
+ * Plain text output returns null.
+ */
+export function requestedJsonOutputType(body: any): JsonOutputType | null {
+	const formats = [body?.response_format, body?.text?.format, body?.output_config?.format];
+	for (const format of formats) {
+		const type = isPlainObject(format) ? format.type : null;
+		if (type === "json_schema" || type === "json_object") return type;
+	}
+	return null;
+}
+
+function declaredValuesAllow(config: unknown, type: JsonOutputType): boolean {
+	if (config === false) return false;
+	if (!isPlainObject(config)) return true;
+	const values = config.supported_values ?? config.allowed_values ?? config.enum ?? config.values;
+	if (!Array.isArray(values) || values.length === 0) return true;
+	return values.some((value) => String(value).toLowerCase() === type);
+}
+
+/**
+ * How strong the route's own evidence is that it accepts the requested JSON
+ * output mode: 0 when its capability params list `response_format` (or
+ * `structured_outputs`) with a compatible value, 1 when the route declares no
+ * parameter list at all, 2 when it declares a list that leaves the format out.
+ * Provider-wide profile support does not count: several providers serve
+ * models that reject JSON mode while the provider as a whole supports it.
+ */
+export function jsonOutputEvidenceRank(
+	candidate: Pick<ProviderCandidate, "capabilityParams">,
+	type: JsonOutputType,
+): 0 | 1 | 2 {
+	const params = declaredRouteParams(candidate.capabilityParams);
+	if (!params) return 1;
+	if ("structured_outputs" in params && declaredValuesAllow(params.structured_outputs, type)) return 0;
+	for (const key of expandCapabilityParamAliases("response_format")) {
+		if (key in params && declaredValuesAllow(params[key], type)) return 0;
+	}
+	return 2;
 }
 
 export function getUnsupportedParamsForProvider(args: {

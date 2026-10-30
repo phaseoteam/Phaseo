@@ -103,6 +103,14 @@ describe("spend rule test sends", () => {
 		expect([result.delivered, result.failed]).toEqual([0, 1]);
 	});
 
+	it("counts an email destination whose recipients are all suppressed as not delivered", async () => {
+		state.rule.workspace_spend_rule_destinations = [{ destination_id: D2 }];
+		state.deliver.mockResolvedValueOnce(208);
+		const result = await send();
+		expect(result.deliveries).toEqual([{ destination_id: D2, name: "Finance", type: "email", delivered: false, status: 208, error: "Every recipient of this email destination is suppressed" }]);
+		expect([result.delivered, result.failed]).toEqual([0, 1]);
+	});
+
 	it("is 404 for a missing rule before using the allowance", async () => {
 		state.rule = null;
 		await expect(send()).rejects.toMatchObject({ status: 404, code: "not_found" });

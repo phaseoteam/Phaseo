@@ -17,6 +17,7 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Callout } from "@/components/ui/callout";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -180,7 +181,7 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 
 	return (
 		<div className="space-y-6">
-			<p className="rounded-md border-l-2 border-primary/60 bg-muted/30 px-4 py-3 text-sm">{t("billingNote")}</p>
+			<Callout>{t("billingNote")}</Callout>
 
 			{!classifier ? (
 				<section className="space-y-3">

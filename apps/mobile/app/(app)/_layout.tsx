@@ -66,7 +66,7 @@ function Sidebar({ labelled }: { labelled: boolean }) {
         <View className="mt-4 gap-0.5 border-t border-sidebar-border pt-4">
           {SIDEBAR_SHORTCUTS.map((shortcut) => (
             <Link key={shortcut.href} href={shortcut.href} asChild>
-              <Pressable className="h-10 flex-row items-center gap-3 rounded-lg px-3 active:bg-sidebar-accent">
+              <Pressable className="h-10 flex-row items-center gap-3 rounded-md px-3 active:bg-sidebar-accent">
                 <Icon icon={shortcut.icon} tone="muted" size={19} />
                 <Text variant="body" className="text-muted-foreground">{shortcut.label}</Text>
               </Pressable>
@@ -78,14 +78,14 @@ function Sidebar({ labelled }: { labelled: boolean }) {
       {labelled ? (
         session ? (
           <Link href="/account/workspace" asChild>
-            <Pressable className="rounded-lg px-3 py-2 active:bg-sidebar-accent">
+            <Pressable className="rounded-md px-3 py-2 active:bg-sidebar-accent">
               <Text variant="caption">Workspace</Text>
               <Text variant="label" numberOfLines={1}>{workspace?.name ?? "Choose a workspace"}</Text>
             </Pressable>
           </Link>
         ) : (
           <Link href="/sign-in" asChild>
-            <Pressable className="h-10 flex-row items-center gap-3 rounded-lg px-3 active:bg-sidebar-accent">
+            <Pressable className="h-10 flex-row items-center gap-3 rounded-md px-3 active:bg-sidebar-accent">
               <Icon icon={LogIn} tone="muted" size={19} />
               <Text variant="body" className="text-muted-foreground">Sign in</Text>
             </Pressable>

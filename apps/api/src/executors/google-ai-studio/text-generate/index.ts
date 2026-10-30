@@ -31,6 +31,7 @@ import { normalizeGoogleModelSlug, resolveGoogleModelCandidates } from "../../go
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "../../google/shared/usage-fallback";
 import {
 	getDefaultGoogleThinkingLevel,
+	getLowestGoogleThinkingLevel,
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
 } from "../../google/shared/thinking";
@@ -171,6 +172,8 @@ async function irToLegacyGemini(
 	if (ir.topP !== undefined) generationConfig.topP = ir.topP;
 	if (ir.topK !== undefined) generationConfig.topK = ir.topK;
 	if (ir.stop) generationConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
+	// GenerationConfig.seed (https://ai.google.dev/api/generate-content#generationconfig).
+	if (ir.seed !== undefined) generationConfig.seed = ir.seed;
 
 	const modelName = modelOverride ?? ir.model;
 	const supportsThinkingLevel = modelSupportsGoogleThinkingLevels(modelName ?? "");
@@ -192,7 +195,7 @@ async function irToLegacyGemini(
 		};
 		if (supportsThinkingLevel) {
 			const requestedLevel = explicitlyDisabled
-				? "MINIMAL"
+				? getLowestGoogleThinkingLevel(modelName ?? "")
 				: resolveGoogleThinkingLevelForEffort(modelName ?? "", ir.reasoning?.effort)
 					?? (ir.reasoning?.enabled || Number(ir.reasoning?.maxTokens ?? 0) > 0 ? "HIGH" : undefined)
 					?? defaultThinkingLevel;
@@ -383,16 +386,26 @@ export async function irToGemini(
 		(ir.reasoning?.includeThoughts !== undefined),
 	);
 	const defaultThinkingLevel = getDefaultGoogleThinkingLevel(modelOverride ?? ir.model);
-	if (hasRequestedThinkingConfig || defaultThinkingLevel) {
-		const modelName = modelOverride ?? ir.model;
+	const thinkingModelName = modelOverride ?? ir.model;
+	const explicitlyDisabledThinking = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
+	// Disabled thinking is sent as the lowest level, as on generateContent; otherwise the
+	// model would think at its default.
+	if (hasRequestedThinkingConfig || defaultThinkingLevel || (explicitlyDisabledThinking && supportsInteractionsThinkingLevels(thinkingModelName ?? ""))) {
+		const modelName = thinkingModelName;
 		const supportsThinkingLevel = supportsInteractionsThinkingLevels(modelName ?? "");
-		const explicitlyDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
+		const explicitlyDisabled = explicitlyDisabledThinking;
 		if (supportsThinkingLevel) {
+			// Gemini 2.5 takes low, medium and high on Interactions; 2.5 Flash-Lite does not
+			// think unless asked (https://ai.google.dev/gemini-api/docs/thinking).
+			const lowerModelName = String(modelName ?? "").toLowerCase();
+			const isGemini25 = lowerModelName.includes("gemini-2.5");
 			const level = explicitlyDisabled
-				? "MINIMAL"
+				? isGemini25
+					? lowerModelName.includes("flash-lite") ? undefined : "LOW"
+					: getLowestGoogleThinkingLevel(modelName ?? "")
 				: resolveGoogleThinkingLevelForEffort(modelName ?? "", ir.reasoning?.effort)
-					?? (String(modelName ?? "").toLowerCase().includes("gemini-2.5")
-						? ({ minimal: "MINIMAL", low: "LOW", medium: "MEDIUM", high: "HIGH", xhigh: "HIGH", max: "HIGH" } as const)[ir.reasoning?.effort as "minimal" | "low" | "medium" | "high" | "xhigh" | "max"]
+					?? (isGemini25
+						? ({ minimal: "LOW", low: "LOW", medium: "MEDIUM", high: "HIGH", xhigh: "HIGH", max: "HIGH" } as const)[ir.reasoning?.effort as "minimal" | "low" | "medium" | "high" | "xhigh" | "max"]
 						: undefined)
 					?? (ir.reasoning?.enabled ? "HIGH" : undefined)
 					?? getDefaultGoogleThinkingLevel(modelName ?? "");

@@ -1,0 +1,8 @@
+---
+title: "Probar un clasificador de solicitudes"
+sidebarTitle: "Probar clasificador"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /classifiers/test"
+description: "Ejecuta una vez un clasificador guardado o un borrador sobre una solicitud y una respuesta de ejemplo."
+---
+<Note>Este endpoint hace una solicitud facturada a un modelo con tu propia credencial, por lo que requiere un token OAuth con `classifiers:write` y `gateway:access`. No se aceptan claves de gestión.</Note>

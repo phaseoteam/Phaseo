@@ -66,6 +66,7 @@
                   "v1/developers/authentication",
                   "v1/developers/integrating-with-the-gateway",
                   "v1/developers/cli-and-mcp",
+                  "v1/developers/manage-from-an-agent",
                   "v1/community/faq"
                 ]
               },
@@ -91,10 +92,12 @@
                 "expanded": false,
                 "pages": [
                   "v1/guides/presets",
+                  "v1/guides/prompt-templates",
                   "v1/guides/preset-feedback",
                   "v1/guides/service-tiers",
                   "v1/guides/prompt-caching",
                   "v1/guides/multimodality",
+                  "v1/guides/realtime-voice",
                   "v1/guides/async-video-and-batch",
                   "v1/guides/document-parsing",
                   "v1/guides/tool-calling",
@@ -142,7 +145,10 @@
                   "v1/guides/app-attribution",
                   "v1/guides/request-labels",
                   "v1/guides/request-classifiers",
-                  "v1/guides/workspace-notifications"
+                  "v1/guides/broadcast",
+                  "v1/guides/open-requests-in-chat",
+                  "v1/guides/workspace-notifications",
+                  "v1/guides/slack-agent"
                 ]
               },
               {
@@ -192,6 +198,7 @@
                       "v1/guides/integrations/codex",
                       "v1/guides/integrations/deepseek-harness",
                       "v1/guides/integrations/opencode",
+                      "v1/guides/integrations/fx",
                       "v1/guides/integrations/pi",
                       "v1/guides/integrations/prime-agent",
                       "v1/guides/integrations/aider",
@@ -215,7 +222,8 @@
                 "pages": [
                   "v1/guides/workspaces",
                   "v1/guides/workspace-audit-log",
-                  "v1/developers/management-api-keys"
+                  "v1/developers/management-api-keys",
+                  "v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -519,7 +527,12 @@
                       "v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "v1/api-reference/endpoint/dynamic-routes-deploy",
                       "v1/api-reference/endpoint/dynamic-routes-delete",
-                      "v1/api-reference/endpoint/dynamic-routes-list"
+                      "v1/api-reference/endpoint/dynamic-routes-list",
+                      "v1/api-reference/endpoint/routing-auto-get",
+                      "v1/api-reference/endpoint/routing-auto-update",
+                      "v1/api-reference/endpoint/successor-replacements-list",
+                      "v1/api-reference/endpoint/successor-replacements-save",
+                      "v1/api-reference/endpoint/successor-replacements-remove"
                     ]
                   },
                   {
@@ -531,6 +544,9 @@
                       "v1/api-reference/endpoint/presets-update",
                       "v1/api-reference/endpoint/presets-version-publish",
                       "v1/api-reference/endpoint/presets-versions-list",
+                      "v1/api-reference/endpoint/presets-labels-list",
+                      "v1/api-reference/endpoint/presets-label-set",
+                      "v1/api-reference/endpoint/presets-label-delete",
                       "v1/api-reference/endpoint/presets-fork",
                       "v1/api-reference/endpoint/presets-upstream-apply",
                       "v1/api-reference/endpoint/presets-delete",
@@ -617,7 +633,11 @@
                       "v1/api-reference/endpoint/observability-destinations-get",
                       "v1/api-reference/endpoint/observability-destinations-update",
                       "v1/api-reference/endpoint/observability-destinations-delete",
-                      "v1/api-reference/endpoint/observability-destinations-list"
+                      "v1/api-reference/endpoint/observability-destinations-list",
+                      "v1/api-reference/endpoint/observability-destinations-test-config",
+                      "v1/api-reference/endpoint/observability-destinations-test",
+                      "v1/api-reference/endpoint/observability-destinations-sample",
+                      "v1/api-reference/endpoint/classifiers-test"
                     ]
                   },
                   {
@@ -660,7 +680,11 @@
                       "v1/api-reference/endpoint/workspace-invites-list",
                       "v1/api-reference/endpoint/workspace-join-requests-list",
                       "v1/api-reference/endpoint/workspace-join-request-approve",
-                      "v1/api-reference/endpoint/workspace-join-request-reject"
+                      "v1/api-reference/endpoint/workspace-join-request-reject",
+                      "v1/api-reference/endpoint/invites-accept",
+                      "v1/api-reference/endpoint/invites-requests-list",
+                      "v1/api-reference/endpoint/rate-limits-tier-get",
+                      "v1/api-reference/endpoint/rate-limits-tier-raise"
                     ]
                   },
                   {
@@ -674,7 +698,13 @@
                       "v1/api-reference/endpoint/keys-rotate",
                       "v1/api-reference/endpoint/keys-invalidate",
                       "v1/api-reference/endpoint/keys-delete",
-                      "v1/api-reference/endpoint/keys-list"
+                      "v1/api-reference/endpoint/keys-list",
+                      "v1/api-reference/endpoint/security-report-leaked-key",
+                      "v1/api-reference/endpoint/trusted-workloads-list",
+                      "v1/api-reference/endpoint/trusted-workloads-create",
+                      "v1/api-reference/endpoint/trusted-workloads-get",
+                      "v1/api-reference/endpoint/trusted-workloads-update",
+                      "v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -710,7 +740,13 @@
                       "v1/api-reference/endpoint/oauth-clients-update",
                       "v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "v1/api-reference/endpoint/oauth-clients-delete",
-                      "v1/api-reference/endpoint/oauth-clients-list"
+                      "v1/api-reference/endpoint/oauth-clients-list",
+                      "v1/api-reference/endpoint/me-get",
+                      "v1/api-reference/endpoint/profile-get",
+                      "v1/api-reference/endpoint/profile-update",
+                      "v1/api-reference/endpoint/authorized-apps-list",
+                      "v1/api-reference/endpoint/authorized-apps-update-scopes",
+                      "v1/api-reference/endpoint/authorized-apps-revoke"
                     ]
                   },
                   {
@@ -756,6 +792,7 @@
                       "v1/api-reference/endpoint/notifications-destination-create",
                       "v1/api-reference/endpoint/notifications-destination-config-test",
                       "v1/api-reference/endpoint/notifications-destination-test",
+                      "v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "v1/api-reference/endpoint/notifications-destination-delete",
                       "v1/api-reference/endpoint/notifications-destinations-list",
                       "v1/api-reference/endpoint/notifications-routes-list",
@@ -866,7 +903,8 @@
                     "pages": [
                       "v1/sdk-reference/typescript/audio-speech",
                       "v1/sdk-reference/typescript/audio-transcriptions",
-                      "v1/sdk-reference/typescript/audio-translations"
+                      "v1/sdk-reference/typescript/audio-translations",
+                      "v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -924,7 +962,8 @@
                     "pages": [
                       "v1/sdk-reference/python/audio-speech",
                       "v1/sdk-reference/python/audio-transcriptions",
-                      "v1/sdk-reference/python/audio-translations"
+                      "v1/sdk-reference/python/audio-translations",
+                      "v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -1722,6 +1761,7 @@
                   "es/v1/developers/authentication",
                   "es/v1/developers/integrating-with-the-gateway",
                   "es/v1/developers/cli-and-mcp",
+                  "es/v1/developers/manage-from-an-agent",
                   "es/v1/community/faq"
                 ]
               },
@@ -1747,10 +1787,12 @@
                 "expanded": false,
                 "pages": [
                   "es/v1/guides/presets",
+                  "es/v1/guides/prompt-templates",
                   "es/v1/guides/preset-feedback",
                   "es/v1/guides/service-tiers",
                   "es/v1/guides/prompt-caching",
                   "es/v1/guides/multimodality",
+                  "es/v1/guides/realtime-voice",
                   "es/v1/guides/async-video-and-batch",
                   "es/v1/guides/document-parsing",
                   "es/v1/guides/tool-calling",
@@ -1798,7 +1840,10 @@
                   "es/v1/guides/app-attribution",
                   "es/v1/guides/request-labels",
                   "es/v1/guides/request-classifiers",
-                  "es/v1/guides/workspace-notifications"
+                  "es/v1/guides/broadcast",
+                  "es/v1/guides/open-requests-in-chat",
+                  "es/v1/guides/workspace-notifications",
+                  "es/v1/guides/slack-agent"
                 ]
               },
               {
@@ -1848,6 +1893,7 @@
                       "es/v1/guides/integrations/codex",
                       "es/v1/guides/integrations/deepseek-harness",
                       "es/v1/guides/integrations/opencode",
+                      "es/v1/guides/integrations/fx",
                       "es/v1/guides/integrations/pi",
                       "es/v1/guides/integrations/prime-agent",
                       "es/v1/guides/integrations/aider",
@@ -1871,7 +1917,8 @@
                 "pages": [
                   "es/v1/guides/workspaces",
                   "es/v1/guides/workspace-audit-log",
-                  "es/v1/developers/management-api-keys"
+                  "es/v1/developers/management-api-keys",
+                  "es/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -2175,7 +2222,12 @@
                       "es/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "es/v1/api-reference/endpoint/dynamic-routes-deploy",
                       "es/v1/api-reference/endpoint/dynamic-routes-delete",
-                      "es/v1/api-reference/endpoint/dynamic-routes-list"
+                      "es/v1/api-reference/endpoint/dynamic-routes-list",
+                      "es/v1/api-reference/endpoint/routing-auto-get",
+                      "es/v1/api-reference/endpoint/routing-auto-update",
+                      "es/v1/api-reference/endpoint/successor-replacements-list",
+                      "es/v1/api-reference/endpoint/successor-replacements-save",
+                      "es/v1/api-reference/endpoint/successor-replacements-remove"
                     ]
                   },
                   {
@@ -2187,6 +2239,9 @@
                       "es/v1/api-reference/endpoint/presets-update",
                       "es/v1/api-reference/endpoint/presets-version-publish",
                       "es/v1/api-reference/endpoint/presets-versions-list",
+                      "es/v1/api-reference/endpoint/presets-labels-list",
+                      "es/v1/api-reference/endpoint/presets-label-set",
+                      "es/v1/api-reference/endpoint/presets-label-delete",
                       "es/v1/api-reference/endpoint/presets-fork",
                       "es/v1/api-reference/endpoint/presets-upstream-apply",
                       "es/v1/api-reference/endpoint/presets-delete",
@@ -2273,7 +2328,11 @@
                       "es/v1/api-reference/endpoint/observability-destinations-get",
                       "es/v1/api-reference/endpoint/observability-destinations-update",
                       "es/v1/api-reference/endpoint/observability-destinations-delete",
-                      "es/v1/api-reference/endpoint/observability-destinations-list"
+                      "es/v1/api-reference/endpoint/observability-destinations-list",
+                      "es/v1/api-reference/endpoint/observability-destinations-test-config",
+                      "es/v1/api-reference/endpoint/observability-destinations-test",
+                      "es/v1/api-reference/endpoint/observability-destinations-sample",
+                      "es/v1/api-reference/endpoint/classifiers-test"
                     ]
                   },
                   {
@@ -2316,7 +2375,11 @@
                       "es/v1/api-reference/endpoint/workspace-invites-list",
                       "es/v1/api-reference/endpoint/workspace-join-requests-list",
                       "es/v1/api-reference/endpoint/workspace-join-request-approve",
-                      "es/v1/api-reference/endpoint/workspace-join-request-reject"
+                      "es/v1/api-reference/endpoint/workspace-join-request-reject",
+                      "es/v1/api-reference/endpoint/invites-accept",
+                      "es/v1/api-reference/endpoint/invites-requests-list",
+                      "es/v1/api-reference/endpoint/rate-limits-tier-get",
+                      "es/v1/api-reference/endpoint/rate-limits-tier-raise"
                     ]
                   },
                   {
@@ -2330,7 +2393,13 @@
                       "es/v1/api-reference/endpoint/keys-rotate",
                       "es/v1/api-reference/endpoint/keys-invalidate",
                       "es/v1/api-reference/endpoint/keys-delete",
-                      "es/v1/api-reference/endpoint/keys-list"
+                      "es/v1/api-reference/endpoint/keys-list",
+                      "es/v1/api-reference/endpoint/security-report-leaked-key",
+                      "es/v1/api-reference/endpoint/trusted-workloads-list",
+                      "es/v1/api-reference/endpoint/trusted-workloads-create",
+                      "es/v1/api-reference/endpoint/trusted-workloads-get",
+                      "es/v1/api-reference/endpoint/trusted-workloads-update",
+                      "es/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -2366,7 +2435,13 @@
                       "es/v1/api-reference/endpoint/oauth-clients-update",
                       "es/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "es/v1/api-reference/endpoint/oauth-clients-delete",
-                      "es/v1/api-reference/endpoint/oauth-clients-list"
+                      "es/v1/api-reference/endpoint/oauth-clients-list",
+                      "es/v1/api-reference/endpoint/me-get",
+                      "es/v1/api-reference/endpoint/profile-get",
+                      "es/v1/api-reference/endpoint/profile-update",
+                      "es/v1/api-reference/endpoint/authorized-apps-list",
+                      "es/v1/api-reference/endpoint/authorized-apps-update-scopes",
+                      "es/v1/api-reference/endpoint/authorized-apps-revoke"
                     ]
                   },
                   {
@@ -2412,6 +2487,7 @@
                       "es/v1/api-reference/endpoint/notifications-destination-create",
                       "es/v1/api-reference/endpoint/notifications-destination-config-test",
                       "es/v1/api-reference/endpoint/notifications-destination-test",
+                      "es/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "es/v1/api-reference/endpoint/notifications-destination-delete",
                       "es/v1/api-reference/endpoint/notifications-destinations-list",
                       "es/v1/api-reference/endpoint/notifications-routes-list",
@@ -2522,7 +2598,8 @@
                     "pages": [
                       "es/v1/sdk-reference/typescript/audio-speech",
                       "es/v1/sdk-reference/typescript/audio-transcriptions",
-                      "es/v1/sdk-reference/typescript/audio-translations"
+                      "es/v1/sdk-reference/typescript/audio-translations",
+                      "es/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -2580,7 +2657,8 @@
                     "pages": [
                       "es/v1/sdk-reference/python/audio-speech",
                       "es/v1/sdk-reference/python/audio-transcriptions",
-                      "es/v1/sdk-reference/python/audio-translations"
+                      "es/v1/sdk-reference/python/audio-translations",
+                      "es/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -3412,6 +3490,7 @@
                   "fr/v1/developers/authentication",
                   "fr/v1/developers/integrating-with-the-gateway",
                   "fr/v1/developers/cli-and-mcp",
+                  "fr/v1/developers/manage-from-an-agent",
                   "fr/v1/community/faq"
                 ]
               },
@@ -3437,10 +3516,12 @@
                 "expanded": false,
                 "pages": [
                   "fr/v1/guides/presets",
+                  "fr/v1/guides/prompt-templates",
                   "fr/v1/guides/preset-feedback",
                   "fr/v1/guides/service-tiers",
                   "fr/v1/guides/prompt-caching",
                   "fr/v1/guides/multimodality",
+                  "fr/v1/guides/realtime-voice",
                   "fr/v1/guides/async-video-and-batch",
                   "fr/v1/guides/document-parsing",
                   "fr/v1/guides/tool-calling",
@@ -3488,7 +3569,10 @@
                   "fr/v1/guides/app-attribution",
                   "fr/v1/guides/request-labels",
                   "fr/v1/guides/request-classifiers",
-                  "fr/v1/guides/workspace-notifications"
+                  "fr/v1/guides/broadcast",
+                  "fr/v1/guides/open-requests-in-chat",
+                  "fr/v1/guides/workspace-notifications",
+                  "fr/v1/guides/slack-agent"
                 ]
               },
               {
@@ -3538,6 +3622,7 @@
                       "fr/v1/guides/integrations/codex",
                       "fr/v1/guides/integrations/deepseek-harness",
                       "fr/v1/guides/integrations/opencode",
+                      "fr/v1/guides/integrations/fx",
                       "fr/v1/guides/integrations/pi",
                       "fr/v1/guides/integrations/prime-agent",
                       "fr/v1/guides/integrations/aider",
@@ -3561,7 +3646,8 @@
                 "pages": [
                   "fr/v1/guides/workspaces",
                   "fr/v1/guides/workspace-audit-log",
-                  "fr/v1/developers/management-api-keys"
+                  "fr/v1/developers/management-api-keys",
+                  "fr/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -3865,7 +3951,12 @@
                       "fr/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "fr/v1/api-reference/endpoint/dynamic-routes-deploy",
                       "fr/v1/api-reference/endpoint/dynamic-routes-delete",
-                      "fr/v1/api-reference/endpoint/dynamic-routes-list"
+                      "fr/v1/api-reference/endpoint/dynamic-routes-list",
+                      "fr/v1/api-reference/endpoint/routing-auto-get",
+                      "fr/v1/api-reference/endpoint/routing-auto-update",
+                      "fr/v1/api-reference/endpoint/successor-replacements-list",
+                      "fr/v1/api-reference/endpoint/successor-replacements-save",
+                      "fr/v1/api-reference/endpoint/successor-replacements-remove"
                     ]
                   },
                   {
@@ -3877,6 +3968,9 @@
                       "fr/v1/api-reference/endpoint/presets-update",
                       "fr/v1/api-reference/endpoint/presets-version-publish",
                       "fr/v1/api-reference/endpoint/presets-versions-list",
+                      "fr/v1/api-reference/endpoint/presets-labels-list",
+                      "fr/v1/api-reference/endpoint/presets-label-set",
+                      "fr/v1/api-reference/endpoint/presets-label-delete",
                       "fr/v1/api-reference/endpoint/presets-fork",
                       "fr/v1/api-reference/endpoint/presets-upstream-apply",
                       "fr/v1/api-reference/endpoint/presets-delete",
@@ -3963,7 +4057,11 @@
                       "fr/v1/api-reference/endpoint/observability-destinations-get",
                       "fr/v1/api-reference/endpoint/observability-destinations-update",
                       "fr/v1/api-reference/endpoint/observability-destinations-delete",
-                      "fr/v1/api-reference/endpoint/observability-destinations-list"
+                      "fr/v1/api-reference/endpoint/observability-destinations-list",
+                      "fr/v1/api-reference/endpoint/observability-destinations-test-config",
+                      "fr/v1/api-reference/endpoint/observability-destinations-test",
+                      "fr/v1/api-reference/endpoint/observability-destinations-sample",
+                      "fr/v1/api-reference/endpoint/classifiers-test"
                     ]
                   },
                   {
@@ -4006,7 +4104,11 @@
                       "fr/v1/api-reference/endpoint/workspace-invites-list",
                       "fr/v1/api-reference/endpoint/workspace-join-requests-list",
                       "fr/v1/api-reference/endpoint/workspace-join-request-approve",
-                      "fr/v1/api-reference/endpoint/workspace-join-request-reject"
+                      "fr/v1/api-reference/endpoint/workspace-join-request-reject",
+                      "fr/v1/api-reference/endpoint/invites-accept",
+                      "fr/v1/api-reference/endpoint/invites-requests-list",
+                      "fr/v1/api-reference/endpoint/rate-limits-tier-get",
+                      "fr/v1/api-reference/endpoint/rate-limits-tier-raise"
                     ]
                   },
                   {
@@ -4020,7 +4122,13 @@
                       "fr/v1/api-reference/endpoint/keys-rotate",
                       "fr/v1/api-reference/endpoint/keys-invalidate",
                       "fr/v1/api-reference/endpoint/keys-delete",
-                      "fr/v1/api-reference/endpoint/keys-list"
+                      "fr/v1/api-reference/endpoint/keys-list",
+                      "fr/v1/api-reference/endpoint/security-report-leaked-key",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-list",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-create",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-get",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-update",
+                      "fr/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -4056,7 +4164,13 @@
                       "fr/v1/api-reference/endpoint/oauth-clients-update",
                       "fr/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "fr/v1/api-reference/endpoint/oauth-clients-delete",
-                      "fr/v1/api-reference/endpoint/oauth-clients-list"
+                      "fr/v1/api-reference/endpoint/oauth-clients-list",
+                      "fr/v1/api-reference/endpoint/me-get",
+                      "fr/v1/api-reference/endpoint/profile-get",
+                      "fr/v1/api-reference/endpoint/profile-update",
+                      "fr/v1/api-reference/endpoint/authorized-apps-list",
+                      "fr/v1/api-reference/endpoint/authorized-apps-update-scopes",
+                      "fr/v1/api-reference/endpoint/authorized-apps-revoke"
                     ]
                   },
                   {
@@ -4102,6 +4216,7 @@
                       "fr/v1/api-reference/endpoint/notifications-destination-create",
                       "fr/v1/api-reference/endpoint/notifications-destination-config-test",
                       "fr/v1/api-reference/endpoint/notifications-destination-test",
+                      "fr/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "fr/v1/api-reference/endpoint/notifications-destination-delete",
                       "fr/v1/api-reference/endpoint/notifications-destinations-list",
                       "fr/v1/api-reference/endpoint/notifications-routes-list",
@@ -4212,7 +4327,8 @@
                     "pages": [
                       "fr/v1/sdk-reference/typescript/audio-speech",
                       "fr/v1/sdk-reference/typescript/audio-transcriptions",
-                      "fr/v1/sdk-reference/typescript/audio-translations"
+                      "fr/v1/sdk-reference/typescript/audio-translations",
+                      "fr/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -4270,7 +4386,8 @@
                     "pages": [
                       "fr/v1/sdk-reference/python/audio-speech",
                       "fr/v1/sdk-reference/python/audio-transcriptions",
-                      "fr/v1/sdk-reference/python/audio-translations"
+                      "fr/v1/sdk-reference/python/audio-translations",
+                      "fr/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -5102,6 +5219,7 @@
                   "de/v1/developers/authentication",
                   "de/v1/developers/integrating-with-the-gateway",
                   "de/v1/developers/cli-and-mcp",
+                  "de/v1/developers/manage-from-an-agent",
                   "de/v1/community/faq"
                 ]
               },
@@ -5127,10 +5245,12 @@
                 "expanded": false,
                 "pages": [
                   "de/v1/guides/presets",
+                  "de/v1/guides/prompt-templates",
                   "de/v1/guides/preset-feedback",
                   "de/v1/guides/service-tiers",
                   "de/v1/guides/prompt-caching",
                   "de/v1/guides/multimodality",
+                  "de/v1/guides/realtime-voice",
                   "de/v1/guides/async-video-and-batch",
                   "de/v1/guides/document-parsing",
                   "de/v1/guides/tool-calling",
@@ -5178,7 +5298,10 @@
                   "de/v1/guides/app-attribution",
                   "de/v1/guides/request-labels",
                   "de/v1/guides/request-classifiers",
-                  "de/v1/guides/workspace-notifications"
+                  "de/v1/guides/broadcast",
+                  "de/v1/guides/open-requests-in-chat",
+                  "de/v1/guides/workspace-notifications",
+                  "de/v1/guides/slack-agent"
                 ]
               },
               {
@@ -5228,6 +5351,7 @@
                       "de/v1/guides/integrations/codex",
                       "de/v1/guides/integrations/deepseek-harness",
                       "de/v1/guides/integrations/opencode",
+                      "de/v1/guides/integrations/fx",
                       "de/v1/guides/integrations/pi",
                       "de/v1/guides/integrations/prime-agent",
                       "de/v1/guides/integrations/aider",
@@ -5251,7 +5375,8 @@
                 "pages": [
                   "de/v1/guides/workspaces",
                   "de/v1/guides/workspace-audit-log",
-                  "de/v1/developers/management-api-keys"
+                  "de/v1/developers/management-api-keys",
+                  "de/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -5555,7 +5680,12 @@
                       "de/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "de/v1/api-reference/endpoint/dynamic-routes-deploy",
                       "de/v1/api-reference/endpoint/dynamic-routes-delete",
-                      "de/v1/api-reference/endpoint/dynamic-routes-list"
+                      "de/v1/api-reference/endpoint/dynamic-routes-list",
+                      "de/v1/api-reference/endpoint/routing-auto-get",
+                      "de/v1/api-reference/endpoint/routing-auto-update",
+                      "de/v1/api-reference/endpoint/successor-replacements-list",
+                      "de/v1/api-reference/endpoint/successor-replacements-save",
+                      "de/v1/api-reference/endpoint/successor-replacements-remove"
                     ]
                   },
                   {
@@ -5567,6 +5697,9 @@
                       "de/v1/api-reference/endpoint/presets-update",
                       "de/v1/api-reference/endpoint/presets-version-publish",
                       "de/v1/api-reference/endpoint/presets-versions-list",
+                      "de/v1/api-reference/endpoint/presets-labels-list",
+                      "de/v1/api-reference/endpoint/presets-label-set",
+                      "de/v1/api-reference/endpoint/presets-label-delete",
                       "de/v1/api-reference/endpoint/presets-fork",
                       "de/v1/api-reference/endpoint/presets-upstream-apply",
                       "de/v1/api-reference/endpoint/presets-delete",
@@ -5653,7 +5786,11 @@
                       "de/v1/api-reference/endpoint/observability-destinations-get",
                       "de/v1/api-reference/endpoint/observability-destinations-update",
                       "de/v1/api-reference/endpoint/observability-destinations-delete",
-                      "de/v1/api-reference/endpoint/observability-destinations-list"
+                      "de/v1/api-reference/endpoint/observability-destinations-list",
+                      "de/v1/api-reference/endpoint/observability-destinations-test-config",
+                      "de/v1/api-reference/endpoint/observability-destinations-test",
+                      "de/v1/api-reference/endpoint/observability-destinations-sample",
+                      "de/v1/api-reference/endpoint/classifiers-test"
                     ]
                   },
                   {
@@ -5696,7 +5833,11 @@
                       "de/v1/api-reference/endpoint/workspace-invites-list",
                       "de/v1/api-reference/endpoint/workspace-join-requests-list",
                       "de/v1/api-reference/endpoint/workspace-join-request-approve",
-                      "de/v1/api-reference/endpoint/workspace-join-request-reject"
+                      "de/v1/api-reference/endpoint/workspace-join-request-reject",
+                      "de/v1/api-reference/endpoint/invites-accept",
+                      "de/v1/api-reference/endpoint/invites-requests-list",
+                      "de/v1/api-reference/endpoint/rate-limits-tier-get",
+                      "de/v1/api-reference/endpoint/rate-limits-tier-raise"
                     ]
                   },
                   {
@@ -5710,7 +5851,13 @@
                       "de/v1/api-reference/endpoint/keys-rotate",
                       "de/v1/api-reference/endpoint/keys-invalidate",
                       "de/v1/api-reference/endpoint/keys-delete",
-                      "de/v1/api-reference/endpoint/keys-list"
+                      "de/v1/api-reference/endpoint/keys-list",
+                      "de/v1/api-reference/endpoint/security-report-leaked-key",
+                      "de/v1/api-reference/endpoint/trusted-workloads-list",
+                      "de/v1/api-reference/endpoint/trusted-workloads-create",
+                      "de/v1/api-reference/endpoint/trusted-workloads-get",
+                      "de/v1/api-reference/endpoint/trusted-workloads-update",
+                      "de/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -5746,7 +5893,13 @@
                       "de/v1/api-reference/endpoint/oauth-clients-update",
                       "de/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "de/v1/api-reference/endpoint/oauth-clients-delete",
-                      "de/v1/api-reference/endpoint/oauth-clients-list"
+                      "de/v1/api-reference/endpoint/oauth-clients-list",
+                      "de/v1/api-reference/endpoint/me-get",
+                      "de/v1/api-reference/endpoint/profile-get",
+                      "de/v1/api-reference/endpoint/profile-update",
+                      "de/v1/api-reference/endpoint/authorized-apps-list",
+                      "de/v1/api-reference/endpoint/authorized-apps-update-scopes",
+                      "de/v1/api-reference/endpoint/authorized-apps-revoke"
                     ]
                   },
                   {
@@ -5792,6 +5945,7 @@
                       "de/v1/api-reference/endpoint/notifications-destination-create",
                       "de/v1/api-reference/endpoint/notifications-destination-config-test",
                       "de/v1/api-reference/endpoint/notifications-destination-test",
+                      "de/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "de/v1/api-reference/endpoint/notifications-destination-delete",
                       "de/v1/api-reference/endpoint/notifications-destinations-list",
                       "de/v1/api-reference/endpoint/notifications-routes-list",
@@ -5902,7 +6056,8 @@
                     "pages": [
                       "de/v1/sdk-reference/typescript/audio-speech",
                       "de/v1/sdk-reference/typescript/audio-transcriptions",
-                      "de/v1/sdk-reference/typescript/audio-translations"
+                      "de/v1/sdk-reference/typescript/audio-translations",
+                      "de/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -5960,7 +6115,8 @@
                     "pages": [
                       "de/v1/sdk-reference/python/audio-speech",
                       "de/v1/sdk-reference/python/audio-transcriptions",
-                      "de/v1/sdk-reference/python/audio-translations"
+                      "de/v1/sdk-reference/python/audio-translations",
+                      "de/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -6792,6 +6948,7 @@
                   "pt-BR/v1/developers/authentication",
                   "pt-BR/v1/developers/integrating-with-the-gateway",
                   "pt-BR/v1/developers/cli-and-mcp",
+                  "pt-BR/v1/developers/manage-from-an-agent",
                   "pt-BR/v1/community/faq"
                 ]
               },
@@ -6817,10 +6974,12 @@
                 "expanded": false,
                 "pages": [
                   "pt-BR/v1/guides/presets",
+                  "pt-BR/v1/guides/prompt-templates",
                   "pt-BR/v1/guides/preset-feedback",
                   "pt-BR/v1/guides/service-tiers",
                   "pt-BR/v1/guides/prompt-caching",
                   "pt-BR/v1/guides/multimodality",
+                  "pt-BR/v1/guides/realtime-voice",
                   "pt-BR/v1/guides/async-video-and-batch",
                   "pt-BR/v1/guides/document-parsing",
                   "pt-BR/v1/guides/tool-calling",
@@ -6868,7 +7027,10 @@
                   "pt-BR/v1/guides/app-attribution",
                   "pt-BR/v1/guides/request-labels",
                   "pt-BR/v1/guides/request-classifiers",
-                  "pt-BR/v1/guides/workspace-notifications"
+                  "pt-BR/v1/guides/broadcast",
+                  "pt-BR/v1/guides/open-requests-in-chat",
+                  "pt-BR/v1/guides/workspace-notifications",
+                  "pt-BR/v1/guides/slack-agent"
                 ]
               },
               {
@@ -6918,6 +7080,7 @@
                       "pt-BR/v1/guides/integrations/codex",
                       "pt-BR/v1/guides/integrations/deepseek-harness",
                       "pt-BR/v1/guides/integrations/opencode",
+                      "pt-BR/v1/guides/integrations/fx",
                       "pt-BR/v1/guides/integrations/pi",
                       "pt-BR/v1/guides/integrations/prime-agent",
                       "pt-BR/v1/guides/integrations/aider",
@@ -6941,7 +7104,8 @@
                 "pages": [
                   "pt-BR/v1/guides/workspaces",
                   "pt-BR/v1/guides/workspace-audit-log",
-                  "pt-BR/v1/developers/management-api-keys"
+                  "pt-BR/v1/developers/management-api-keys",
+                  "pt-BR/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -7245,7 +7409,12 @@
                       "pt-BR/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "pt-BR/v1/api-reference/endpoint/dynamic-routes-deploy",
                       "pt-BR/v1/api-reference/endpoint/dynamic-routes-delete",
-                      "pt-BR/v1/api-reference/endpoint/dynamic-routes-list"
+                      "pt-BR/v1/api-reference/endpoint/dynamic-routes-list",
+                      "pt-BR/v1/api-reference/endpoint/routing-auto-get",
+                      "pt-BR/v1/api-reference/endpoint/routing-auto-update",
+                      "pt-BR/v1/api-reference/endpoint/successor-replacements-list",
+                      "pt-BR/v1/api-reference/endpoint/successor-replacements-save",
+                      "pt-BR/v1/api-reference/endpoint/successor-replacements-remove"
                     ]
                   },
                   {
@@ -7257,6 +7426,9 @@
                       "pt-BR/v1/api-reference/endpoint/presets-update",
                       "pt-BR/v1/api-reference/endpoint/presets-version-publish",
                       "pt-BR/v1/api-reference/endpoint/presets-versions-list",
+                      "pt-BR/v1/api-reference/endpoint/presets-labels-list",
+                      "pt-BR/v1/api-reference/endpoint/presets-label-set",
+                      "pt-BR/v1/api-reference/endpoint/presets-label-delete",
                       "pt-BR/v1/api-reference/endpoint/presets-fork",
                       "pt-BR/v1/api-reference/endpoint/presets-upstream-apply",
                       "pt-BR/v1/api-reference/endpoint/presets-delete",
@@ -7343,7 +7515,11 @@
                       "pt-BR/v1/api-reference/endpoint/observability-destinations-get",
                       "pt-BR/v1/api-reference/endpoint/observability-destinations-update",
                       "pt-BR/v1/api-reference/endpoint/observability-destinations-delete",
-                      "pt-BR/v1/api-reference/endpoint/observability-destinations-list"
+                      "pt-BR/v1/api-reference/endpoint/observability-destinations-list",
+                      "pt-BR/v1/api-reference/endpoint/observability-destinations-test-config",
+                      "pt-BR/v1/api-reference/endpoint/observability-destinations-test",
+                      "pt-BR/v1/api-reference/endpoint/observability-destinations-sample",
+                      "pt-BR/v1/api-reference/endpoint/classifiers-test"
                     ]
                   },
                   {
@@ -7386,7 +7562,11 @@
                       "pt-BR/v1/api-reference/endpoint/workspace-invites-list",
                       "pt-BR/v1/api-reference/endpoint/workspace-join-requests-list",
                       "pt-BR/v1/api-reference/endpoint/workspace-join-request-approve",
-                      "pt-BR/v1/api-reference/endpoint/workspace-join-request-reject"
+                      "pt-BR/v1/api-reference/endpoint/workspace-join-request-reject",
+                      "pt-BR/v1/api-reference/endpoint/invites-accept",
+                      "pt-BR/v1/api-reference/endpoint/invites-requests-list",
+                      "pt-BR/v1/api-reference/endpoint/rate-limits-tier-get",
+                      "pt-BR/v1/api-reference/endpoint/rate-limits-tier-raise"
                     ]
                   },
                   {
@@ -7400,7 +7580,13 @@
                       "pt-BR/v1/api-reference/endpoint/keys-rotate",
                       "pt-BR/v1/api-reference/endpoint/keys-invalidate",
                       "pt-BR/v1/api-reference/endpoint/keys-delete",
-                      "pt-BR/v1/api-reference/endpoint/keys-list"
+                      "pt-BR/v1/api-reference/endpoint/keys-list",
+                      "pt-BR/v1/api-reference/endpoint/security-report-leaked-key",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-list",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-create",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-get",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-update",
+                      "pt-BR/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -7436,7 +7622,13 @@
                       "pt-BR/v1/api-reference/endpoint/oauth-clients-update",
                       "pt-BR/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "pt-BR/v1/api-reference/endpoint/oauth-clients-delete",
-                      "pt-BR/v1/api-reference/endpoint/oauth-clients-list"
+                      "pt-BR/v1/api-reference/endpoint/oauth-clients-list",
+                      "pt-BR/v1/api-reference/endpoint/me-get",
+                      "pt-BR/v1/api-reference/endpoint/profile-get",
+                      "pt-BR/v1/api-reference/endpoint/profile-update",
+                      "pt-BR/v1/api-reference/endpoint/authorized-apps-list",
+                      "pt-BR/v1/api-reference/endpoint/authorized-apps-update-scopes",
+                      "pt-BR/v1/api-reference/endpoint/authorized-apps-revoke"
                     ]
                   },
                   {
@@ -7482,6 +7674,7 @@
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-create",
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-config-test",
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-test",
+                      "pt-BR/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-delete",
                       "pt-BR/v1/api-reference/endpoint/notifications-destinations-list",
                       "pt-BR/v1/api-reference/endpoint/notifications-routes-list",
@@ -7592,7 +7785,8 @@
                     "pages": [
                       "pt-BR/v1/sdk-reference/typescript/audio-speech",
                       "pt-BR/v1/sdk-reference/typescript/audio-transcriptions",
-                      "pt-BR/v1/sdk-reference/typescript/audio-translations"
+                      "pt-BR/v1/sdk-reference/typescript/audio-translations",
+                      "pt-BR/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -7650,7 +7844,8 @@
                     "pages": [
                       "pt-BR/v1/sdk-reference/python/audio-speech",
                       "pt-BR/v1/sdk-reference/python/audio-transcriptions",
-                      "pt-BR/v1/sdk-reference/python/audio-translations"
+                      "pt-BR/v1/sdk-reference/python/audio-translations",
+                      "pt-BR/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -8482,6 +8677,7 @@
                   "ja/v1/developers/authentication",
                   "ja/v1/developers/integrating-with-the-gateway",
                   "ja/v1/developers/cli-and-mcp",
+                  "ja/v1/developers/manage-from-an-agent",
                   "ja/v1/community/faq"
                 ]
               },
@@ -8507,10 +8703,12 @@
                 "expanded": false,
                 "pages": [
                   "ja/v1/guides/presets",
+                  "ja/v1/guides/prompt-templates",
                   "ja/v1/guides/preset-feedback",
                   "ja/v1/guides/service-tiers",
                   "ja/v1/guides/prompt-caching",
                   "ja/v1/guides/multimodality",
+                  "ja/v1/guides/realtime-voice",
                   "ja/v1/guides/async-video-and-batch",
                   "ja/v1/guides/document-parsing",
                   "ja/v1/guides/tool-calling",
@@ -8558,7 +8756,10 @@
                   "ja/v1/guides/app-attribution",
                   "ja/v1/guides/request-labels",
                   "ja/v1/guides/request-classifiers",
-                  "ja/v1/guides/workspace-notifications"
+                  "ja/v1/guides/broadcast",
+                  "ja/v1/guides/open-requests-in-chat",
+                  "ja/v1/guides/workspace-notifications",
+                  "ja/v1/guides/slack-agent"
                 ]
               },
               {
@@ -8608,6 +8809,7 @@
                       "ja/v1/guides/integrations/codex",
                       "ja/v1/guides/integrations/deepseek-harness",
                       "ja/v1/guides/integrations/opencode",
+                      "ja/v1/guides/integrations/fx",
                       "ja/v1/guides/integrations/pi",
                       "ja/v1/guides/integrations/prime-agent",
                       "ja/v1/guides/integrations/aider",
@@ -8631,7 +8833,8 @@
                 "pages": [
                   "ja/v1/guides/workspaces",
                   "ja/v1/guides/workspace-audit-log",
-                  "ja/v1/developers/management-api-keys"
+                  "ja/v1/developers/management-api-keys",
+                  "ja/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -8935,7 +9138,12 @@
                       "ja/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "ja/v1/api-reference/endpoint/dynamic-routes-deploy",
                       "ja/v1/api-reference/endpoint/dynamic-routes-delete",
-                      "ja/v1/api-reference/endpoint/dynamic-routes-list"
+                      "ja/v1/api-reference/endpoint/dynamic-routes-list",
+                      "ja/v1/api-reference/endpoint/routing-auto-get",
+                      "ja/v1/api-reference/endpoint/routing-auto-update",
+                      "ja/v1/api-reference/endpoint/successor-replacements-list",
+                      "ja/v1/api-reference/endpoint/successor-replacements-save",
+                      "ja/v1/api-reference/endpoint/successor-replacements-remove"
                     ]
                   },
                   {
@@ -8947,6 +9155,9 @@
                       "ja/v1/api-reference/endpoint/presets-update",
                       "ja/v1/api-reference/endpoint/presets-version-publish",
                       "ja/v1/api-reference/endpoint/presets-versions-list",
+                      "ja/v1/api-reference/endpoint/presets-labels-list",
+                      "ja/v1/api-reference/endpoint/presets-label-set",
+                      "ja/v1/api-reference/endpoint/presets-label-delete",
                       "ja/v1/api-reference/endpoint/presets-fork",
                       "ja/v1/api-reference/endpoint/presets-upstream-apply",
                       "ja/v1/api-reference/endpoint/presets-delete",
@@ -9033,7 +9244,11 @@
                       "ja/v1/api-reference/endpoint/observability-destinations-get",
                       "ja/v1/api-reference/endpoint/observability-destinations-update",
                       "ja/v1/api-reference/endpoint/observability-destinations-delete",
-                      "ja/v1/api-reference/endpoint/observability-destinations-list"
+                      "ja/v1/api-reference/endpoint/observability-destinations-list",
+                      "ja/v1/api-reference/endpoint/observability-destinations-test-config",
+                      "ja/v1/api-reference/endpoint/observability-destinations-test",
+                      "ja/v1/api-reference/endpoint/observability-destinations-sample",
+                      "ja/v1/api-reference/endpoint/classifiers-test"
                     ]
                   },
                   {
@@ -9076,7 +9291,11 @@
                       "ja/v1/api-reference/endpoint/workspace-invites-list",
                       "ja/v1/api-reference/endpoint/workspace-join-requests-list",
                       "ja/v1/api-reference/endpoint/workspace-join-request-approve",
-                      "ja/v1/api-reference/endpoint/workspace-join-request-reject"
+                      "ja/v1/api-reference/endpoint/workspace-join-request-reject",
+                      "ja/v1/api-reference/endpoint/invites-accept",
+                      "ja/v1/api-reference/endpoint/invites-requests-list",
+                      "ja/v1/api-reference/endpoint/rate-limits-tier-get",
+                      "ja/v1/api-reference/endpoint/rate-limits-tier-raise"
                     ]
                   },
                   {
@@ -9090,7 +9309,13 @@
                       "ja/v1/api-reference/endpoint/keys-rotate",
                       "ja/v1/api-reference/endpoint/keys-invalidate",
                       "ja/v1/api-reference/endpoint/keys-delete",
-                      "ja/v1/api-reference/endpoint/keys-list"
+                      "ja/v1/api-reference/endpoint/keys-list",
+                      "ja/v1/api-reference/endpoint/security-report-leaked-key",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-list",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-create",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-get",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-update",
+                      "ja/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -9126,7 +9351,13 @@
                       "ja/v1/api-reference/endpoint/oauth-clients-update",
                       "ja/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "ja/v1/api-reference/endpoint/oauth-clients-delete",
-                      "ja/v1/api-reference/endpoint/oauth-clients-list"
+                      "ja/v1/api-reference/endpoint/oauth-clients-list",
+                      "ja/v1/api-reference/endpoint/me-get",
+                      "ja/v1/api-reference/endpoint/profile-get",
+                      "ja/v1/api-reference/endpoint/profile-update",
+                      "ja/v1/api-reference/endpoint/authorized-apps-list",
+                      "ja/v1/api-reference/endpoint/authorized-apps-update-scopes",
+                      "ja/v1/api-reference/endpoint/authorized-apps-revoke"
                     ]
                   },
                   {
@@ -9172,6 +9403,7 @@
                       "ja/v1/api-reference/endpoint/notifications-destination-create",
                       "ja/v1/api-reference/endpoint/notifications-destination-config-test",
                       "ja/v1/api-reference/endpoint/notifications-destination-test",
+                      "ja/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "ja/v1/api-reference/endpoint/notifications-destination-delete",
                       "ja/v1/api-reference/endpoint/notifications-destinations-list",
                       "ja/v1/api-reference/endpoint/notifications-routes-list",
@@ -9282,7 +9514,8 @@
                     "pages": [
                       "ja/v1/sdk-reference/typescript/audio-speech",
                       "ja/v1/sdk-reference/typescript/audio-transcriptions",
-                      "ja/v1/sdk-reference/typescript/audio-translations"
+                      "ja/v1/sdk-reference/typescript/audio-translations",
+                      "ja/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -9340,7 +9573,8 @@
                     "pages": [
                       "ja/v1/sdk-reference/python/audio-speech",
                       "ja/v1/sdk-reference/python/audio-transcriptions",
-                      "ja/v1/sdk-reference/python/audio-translations"
+                      "ja/v1/sdk-reference/python/audio-translations",
+                      "ja/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -10172,6 +10406,7 @@
                   "zh-Hans/v1/developers/authentication",
                   "zh-Hans/v1/developers/integrating-with-the-gateway",
                   "zh-Hans/v1/developers/cli-and-mcp",
+                  "zh-Hans/v1/developers/manage-from-an-agent",
                   "zh-Hans/v1/community/faq"
                 ]
               },
@@ -10197,10 +10432,12 @@
                 "expanded": false,
                 "pages": [
                   "zh-Hans/v1/guides/presets",
+                  "zh-Hans/v1/guides/prompt-templates",
                   "zh-Hans/v1/guides/preset-feedback",
                   "zh-Hans/v1/guides/service-tiers",
                   "zh-Hans/v1/guides/prompt-caching",
                   "zh-Hans/v1/guides/multimodality",
+                  "zh-Hans/v1/guides/realtime-voice",
                   "zh-Hans/v1/guides/async-video-and-batch",
                   "zh-Hans/v1/guides/document-parsing",
                   "zh-Hans/v1/guides/tool-calling",
@@ -10248,7 +10485,10 @@
                   "zh-Hans/v1/guides/app-attribution",
                   "zh-Hans/v1/guides/request-labels",
                   "zh-Hans/v1/guides/request-classifiers",
-                  "zh-Hans/v1/guides/workspace-notifications"
+                  "zh-Hans/v1/guides/broadcast",
+                  "zh-Hans/v1/guides/open-requests-in-chat",
+                  "zh-Hans/v1/guides/workspace-notifications",
+                  "zh-Hans/v1/guides/slack-agent"
                 ]
               },
               {
@@ -10298,6 +10538,7 @@
                       "zh-Hans/v1/guides/integrations/codex",
                       "zh-Hans/v1/guides/integrations/deepseek-harness",
                       "zh-Hans/v1/guides/integrations/opencode",
+                      "zh-Hans/v1/guides/integrations/fx",
                       "zh-Hans/v1/guides/integrations/pi",
                       "zh-Hans/v1/guides/integrations/prime-agent",
                       "zh-Hans/v1/guides/integrations/aider",
@@ -10321,7 +10562,8 @@
                 "pages": [
                   "zh-Hans/v1/guides/workspaces",
                   "zh-Hans/v1/guides/workspace-audit-log",
-                  "zh-Hans/v1/developers/management-api-keys"
+                  "zh-Hans/v1/developers/management-api-keys",
+                  "zh-Hans/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -10625,7 +10867,12 @@
                       "zh-Hans/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "zh-Hans/v1/api-reference/endpoint/dynamic-routes-deploy",
                       "zh-Hans/v1/api-reference/endpoint/dynamic-routes-delete",
-                      "zh-Hans/v1/api-reference/endpoint/dynamic-routes-list"
+                      "zh-Hans/v1/api-reference/endpoint/dynamic-routes-list",
+                      "zh-Hans/v1/api-reference/endpoint/routing-auto-get",
+                      "zh-Hans/v1/api-reference/endpoint/routing-auto-update",
+                      "zh-Hans/v1/api-reference/endpoint/successor-replacements-list",
+                      "zh-Hans/v1/api-reference/endpoint/successor-replacements-save",
+                      "zh-Hans/v1/api-reference/endpoint/successor-replacements-remove"
                     ]
                   },
                   {
@@ -10637,6 +10884,9 @@
                       "zh-Hans/v1/api-reference/endpoint/presets-update",
                       "zh-Hans/v1/api-reference/endpoint/presets-version-publish",
                       "zh-Hans/v1/api-reference/endpoint/presets-versions-list",
+                      "zh-Hans/v1/api-reference/endpoint/presets-labels-list",
+                      "zh-Hans/v1/api-reference/endpoint/presets-label-set",
+                      "zh-Hans/v1/api-reference/endpoint/presets-label-delete",
                       "zh-Hans/v1/api-reference/endpoint/presets-fork",
                       "zh-Hans/v1/api-reference/endpoint/presets-upstream-apply",
                       "zh-Hans/v1/api-reference/endpoint/presets-delete",
@@ -10723,7 +10973,11 @@
                       "zh-Hans/v1/api-reference/endpoint/observability-destinations-get",
                       "zh-Hans/v1/api-reference/endpoint/observability-destinations-update",
                       "zh-Hans/v1/api-reference/endpoint/observability-destinations-delete",
-                      "zh-Hans/v1/api-reference/endpoint/observability-destinations-list"
+                      "zh-Hans/v1/api-reference/endpoint/observability-destinations-list",
+                      "zh-Hans/v1/api-reference/endpoint/observability-destinations-test-config",
+                      "zh-Hans/v1/api-reference/endpoint/observability-destinations-test",
+                      "zh-Hans/v1/api-reference/endpoint/observability-destinations-sample",
+                      "zh-Hans/v1/api-reference/endpoint/classifiers-test"
                     ]
                   },
                   {
@@ -10766,7 +11020,11 @@
                       "zh-Hans/v1/api-reference/endpoint/workspace-invites-list",
                       "zh-Hans/v1/api-reference/endpoint/workspace-join-requests-list",
                       "zh-Hans/v1/api-reference/endpoint/workspace-join-request-approve",
-                      "zh-Hans/v1/api-reference/endpoint/workspace-join-request-reject"
+                      "zh-Hans/v1/api-reference/endpoint/workspace-join-request-reject",
+                      "zh-Hans/v1/api-reference/endpoint/invites-accept",
+                      "zh-Hans/v1/api-reference/endpoint/invites-requests-list",
+                      "zh-Hans/v1/api-reference/endpoint/rate-limits-tier-get",
+                      "zh-Hans/v1/api-reference/endpoint/rate-limits-tier-raise"
                     ]
                   },
                   {
@@ -10780,7 +11038,13 @@
                       "zh-Hans/v1/api-reference/endpoint/keys-rotate",
                       "zh-Hans/v1/api-reference/endpoint/keys-invalidate",
                       "zh-Hans/v1/api-reference/endpoint/keys-delete",
-                      "zh-Hans/v1/api-reference/endpoint/keys-list"
+                      "zh-Hans/v1/api-reference/endpoint/keys-list",
+                      "zh-Hans/v1/api-reference/endpoint/security-report-leaked-key",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-list",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-create",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-get",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-update",
+                      "zh-Hans/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -10816,7 +11080,13 @@
                       "zh-Hans/v1/api-reference/endpoint/oauth-clients-update",
                       "zh-Hans/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "zh-Hans/v1/api-reference/endpoint/oauth-clients-delete",
-                      "zh-Hans/v1/api-reference/endpoint/oauth-clients-list"
+                      "zh-Hans/v1/api-reference/endpoint/oauth-clients-list",
+                      "zh-Hans/v1/api-reference/endpoint/me-get",
+                      "zh-Hans/v1/api-reference/endpoint/profile-get",
+                      "zh-Hans/v1/api-reference/endpoint/profile-update",
+                      "zh-Hans/v1/api-reference/endpoint/authorized-apps-list",
+                      "zh-Hans/v1/api-reference/endpoint/authorized-apps-update-scopes",
+                      "zh-Hans/v1/api-reference/endpoint/authorized-apps-revoke"
                     ]
                   },
                   {
@@ -10862,6 +11132,7 @@
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-create",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-config-test",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-test",
+                      "zh-Hans/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-delete",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destinations-list",
                       "zh-Hans/v1/api-reference/endpoint/notifications-routes-list",
@@ -10972,7 +11243,8 @@
                     "pages": [
                       "zh-Hans/v1/sdk-reference/typescript/audio-speech",
                       "zh-Hans/v1/sdk-reference/typescript/audio-transcriptions",
-                      "zh-Hans/v1/sdk-reference/typescript/audio-translations"
+                      "zh-Hans/v1/sdk-reference/typescript/audio-translations",
+                      "zh-Hans/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -11030,7 +11302,8 @@
                     "pages": [
                       "zh-Hans/v1/sdk-reference/python/audio-speech",
                       "zh-Hans/v1/sdk-reference/python/audio-transcriptions",
-                      "zh-Hans/v1/sdk-reference/python/audio-translations"
+                      "zh-Hans/v1/sdk-reference/python/audio-translations",
+                      "zh-Hans/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -11862,6 +12135,7 @@
                   "hi/v1/developers/authentication",
                   "hi/v1/developers/integrating-with-the-gateway",
                   "hi/v1/developers/cli-and-mcp",
+                  "hi/v1/developers/manage-from-an-agent",
                   "hi/v1/community/faq"
                 ]
               },
@@ -11887,10 +12161,12 @@
                 "expanded": false,
                 "pages": [
                   "hi/v1/guides/presets",
+                  "hi/v1/guides/prompt-templates",
                   "hi/v1/guides/preset-feedback",
                   "hi/v1/guides/service-tiers",
                   "hi/v1/guides/prompt-caching",
                   "hi/v1/guides/multimodality",
+                  "hi/v1/guides/realtime-voice",
                   "hi/v1/guides/async-video-and-batch",
                   "hi/v1/guides/document-parsing",
                   "hi/v1/guides/tool-calling",
@@ -11938,7 +12214,10 @@
                   "hi/v1/guides/app-attribution",
                   "hi/v1/guides/request-labels",
                   "hi/v1/guides/request-classifiers",
-                  "hi/v1/guides/workspace-notifications"
+                  "hi/v1/guides/broadcast",
+                  "hi/v1/guides/open-requests-in-chat",
+                  "hi/v1/guides/workspace-notifications",
+                  "hi/v1/guides/slack-agent"
                 ]
               },
               {
@@ -11988,6 +12267,7 @@
                       "hi/v1/guides/integrations/codex",
                       "hi/v1/guides/integrations/deepseek-harness",
                       "hi/v1/guides/integrations/opencode",
+                      "hi/v1/guides/integrations/fx",
                       "hi/v1/guides/integrations/pi",
                       "hi/v1/guides/integrations/prime-agent",
                       "hi/v1/guides/integrations/aider",
@@ -12011,7 +12291,8 @@
                 "pages": [
                   "hi/v1/guides/workspaces",
                   "hi/v1/guides/workspace-audit-log",
-                  "hi/v1/developers/management-api-keys"
+                  "hi/v1/developers/management-api-keys",
+                  "hi/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -12315,7 +12596,12 @@
                       "hi/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "hi/v1/api-reference/endpoint/dynamic-routes-deploy",
                       "hi/v1/api-reference/endpoint/dynamic-routes-delete",
-                      "hi/v1/api-reference/endpoint/dynamic-routes-list"
+                      "hi/v1/api-reference/endpoint/dynamic-routes-list",
+                      "hi/v1/api-reference/endpoint/routing-auto-get",
+                      "hi/v1/api-reference/endpoint/routing-auto-update",
+                      "hi/v1/api-reference/endpoint/successor-replacements-list",
+                      "hi/v1/api-reference/endpoint/successor-replacements-save",
+                      "hi/v1/api-reference/endpoint/successor-replacements-remove"
                     ]
                   },
                   {
@@ -12327,6 +12613,9 @@
                       "hi/v1/api-reference/endpoint/presets-update",
                       "hi/v1/api-reference/endpoint/presets-version-publish",
                       "hi/v1/api-reference/endpoint/presets-versions-list",
+                      "hi/v1/api-reference/endpoint/presets-labels-list",
+                      "hi/v1/api-reference/endpoint/presets-label-set",
+                      "hi/v1/api-reference/endpoint/presets-label-delete",
                       "hi/v1/api-reference/endpoint/presets-fork",
                       "hi/v1/api-reference/endpoint/presets-upstream-apply",
                       "hi/v1/api-reference/endpoint/presets-delete",
@@ -12413,7 +12702,11 @@
                       "hi/v1/api-reference/endpoint/observability-destinations-get",
                       "hi/v1/api-reference/endpoint/observability-destinations-update",
                       "hi/v1/api-reference/endpoint/observability-destinations-delete",
-                      "hi/v1/api-reference/endpoint/observability-destinations-list"
+                      "hi/v1/api-reference/endpoint/observability-destinations-list",
+                      "hi/v1/api-reference/endpoint/observability-destinations-test-config",
+                      "hi/v1/api-reference/endpoint/observability-destinations-test",
+                      "hi/v1/api-reference/endpoint/observability-destinations-sample",
+                      "hi/v1/api-reference/endpoint/classifiers-test"
                     ]
                   },
                   {
@@ -12456,7 +12749,11 @@
                       "hi/v1/api-reference/endpoint/workspace-invites-list",
                       "hi/v1/api-reference/endpoint/workspace-join-requests-list",
                       "hi/v1/api-reference/endpoint/workspace-join-request-approve",
-                      "hi/v1/api-reference/endpoint/workspace-join-request-reject"
+                      "hi/v1/api-reference/endpoint/workspace-join-request-reject",
+                      "hi/v1/api-reference/endpoint/invites-accept",
+                      "hi/v1/api-reference/endpoint/invites-requests-list",
+                      "hi/v1/api-reference/endpoint/rate-limits-tier-get",
+                      "hi/v1/api-reference/endpoint/rate-limits-tier-raise"
                     ]
                   },
                   {
@@ -12470,7 +12767,13 @@
                       "hi/v1/api-reference/endpoint/keys-rotate",
                       "hi/v1/api-reference/endpoint/keys-invalidate",
                       "hi/v1/api-reference/endpoint/keys-delete",
-                      "hi/v1/api-reference/endpoint/keys-list"
+                      "hi/v1/api-reference/endpoint/keys-list",
+                      "hi/v1/api-reference/endpoint/security-report-leaked-key",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-list",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-create",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-get",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-update",
+                      "hi/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -12506,7 +12809,13 @@
                       "hi/v1/api-reference/endpoint/oauth-clients-update",
                       "hi/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "hi/v1/api-reference/endpoint/oauth-clients-delete",
-                      "hi/v1/api-reference/endpoint/oauth-clients-list"
+                      "hi/v1/api-reference/endpoint/oauth-clients-list",
+                      "hi/v1/api-reference/endpoint/me-get",
+                      "hi/v1/api-reference/endpoint/profile-get",
+                      "hi/v1/api-reference/endpoint/profile-update",
+                      "hi/v1/api-reference/endpoint/authorized-apps-list",
+                      "hi/v1/api-reference/endpoint/authorized-apps-update-scopes",
+                      "hi/v1/api-reference/endpoint/authorized-apps-revoke"
                     ]
                   },
                   {
@@ -12552,6 +12861,7 @@
                       "hi/v1/api-reference/endpoint/notifications-destination-create",
                       "hi/v1/api-reference/endpoint/notifications-destination-config-test",
                       "hi/v1/api-reference/endpoint/notifications-destination-test",
+                      "hi/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "hi/v1/api-reference/endpoint/notifications-destination-delete",
                       "hi/v1/api-reference/endpoint/notifications-destinations-list",
                       "hi/v1/api-reference/endpoint/notifications-routes-list",
@@ -12662,7 +12972,8 @@
                     "pages": [
                       "hi/v1/sdk-reference/typescript/audio-speech",
                       "hi/v1/sdk-reference/typescript/audio-transcriptions",
-                      "hi/v1/sdk-reference/typescript/audio-translations"
+                      "hi/v1/sdk-reference/typescript/audio-translations",
+                      "hi/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -12720,7 +13031,8 @@
                     "pages": [
                       "hi/v1/sdk-reference/python/audio-speech",
                       "hi/v1/sdk-reference/python/audio-transcriptions",
-                      "hi/v1/sdk-reference/python/audio-translations"
+                      "hi/v1/sdk-reference/python/audio-translations",
+                      "hi/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -13552,6 +13864,7 @@
                   "ar/v1/developers/authentication",
                   "ar/v1/developers/integrating-with-the-gateway",
                   "ar/v1/developers/cli-and-mcp",
+                  "ar/v1/developers/manage-from-an-agent",
                   "ar/v1/community/faq"
                 ]
               },
@@ -13577,10 +13890,12 @@
                 "expanded": false,
                 "pages": [
                   "ar/v1/guides/presets",
+                  "ar/v1/guides/prompt-templates",
                   "ar/v1/guides/preset-feedback",
                   "ar/v1/guides/service-tiers",
                   "ar/v1/guides/prompt-caching",
                   "ar/v1/guides/multimodality",
+                  "ar/v1/guides/realtime-voice",
                   "ar/v1/guides/async-video-and-batch",
                   "ar/v1/guides/document-parsing",
                   "ar/v1/guides/tool-calling",
@@ -13628,7 +13943,10 @@
                   "ar/v1/guides/app-attribution",
                   "ar/v1/guides/request-labels",
                   "ar/v1/guides/request-classifiers",
-                  "ar/v1/guides/workspace-notifications"
+                  "ar/v1/guides/broadcast",
+                  "ar/v1/guides/open-requests-in-chat",
+                  "ar/v1/guides/workspace-notifications",
+                  "ar/v1/guides/slack-agent"
                 ]
               },
               {
@@ -13678,6 +13996,7 @@
                       "ar/v1/guides/integrations/codex",
                       "ar/v1/guides/integrations/deepseek-harness",
                       "ar/v1/guides/integrations/opencode",
+                      "ar/v1/guides/integrations/fx",
                       "ar/v1/guides/integrations/pi",
                       "ar/v1/guides/integrations/prime-agent",
                       "ar/v1/guides/integrations/aider",
@@ -13701,7 +14020,8 @@
                 "pages": [
                   "ar/v1/guides/workspaces",
                   "ar/v1/guides/workspace-audit-log",
-                  "ar/v1/developers/management-api-keys"
+                  "ar/v1/developers/management-api-keys",
+                  "ar/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -14005,7 +14325,12 @@
                       "ar/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "ar/v1/api-reference/endpoint/dynamic-routes-deploy",
                       "ar/v1/api-reference/endpoint/dynamic-routes-delete",
-                      "ar/v1/api-reference/endpoint/dynamic-routes-list"
+                      "ar/v1/api-reference/endpoint/dynamic-routes-list",
+                      "ar/v1/api-reference/endpoint/routing-auto-get",
+                      "ar/v1/api-reference/endpoint/routing-auto-update",
+                      "ar/v1/api-reference/endpoint/successor-replacements-list",
+                      "ar/v1/api-reference/endpoint/successor-replacements-save",
+                      "ar/v1/api-reference/endpoint/successor-replacements-remove"
                     ]
                   },
                   {
@@ -14017,6 +14342,9 @@
                       "ar/v1/api-reference/endpoint/presets-update",
                       "ar/v1/api-reference/endpoint/presets-version-publish",
                       "ar/v1/api-reference/endpoint/presets-versions-list",
+                      "ar/v1/api-reference/endpoint/presets-labels-list",
+                      "ar/v1/api-reference/endpoint/presets-label-set",
+                      "ar/v1/api-reference/endpoint/presets-label-delete",
                       "ar/v1/api-reference/endpoint/presets-fork",
                       "ar/v1/api-reference/endpoint/presets-upstream-apply",
                       "ar/v1/api-reference/endpoint/presets-delete",
@@ -14103,7 +14431,11 @@
                       "ar/v1/api-reference/endpoint/observability-destinations-get",
                       "ar/v1/api-reference/endpoint/observability-destinations-update",
                       "ar/v1/api-reference/endpoint/observability-destinations-delete",
-                      "ar/v1/api-reference/endpoint/observability-destinations-list"
+                      "ar/v1/api-reference/endpoint/observability-destinations-list",
+                      "ar/v1/api-reference/endpoint/observability-destinations-test-config",
+                      "ar/v1/api-reference/endpoint/observability-destinations-test",
+                      "ar/v1/api-reference/endpoint/observability-destinations-sample",
+                      "ar/v1/api-reference/endpoint/classifiers-test"
                     ]
                   },
                   {
@@ -14146,7 +14478,11 @@
                       "ar/v1/api-reference/endpoint/workspace-invites-list",
                       "ar/v1/api-reference/endpoint/workspace-join-requests-list",
                       "ar/v1/api-reference/endpoint/workspace-join-request-approve",
-                      "ar/v1/api-reference/endpoint/workspace-join-request-reject"
+                      "ar/v1/api-reference/endpoint/workspace-join-request-reject",
+                      "ar/v1/api-reference/endpoint/invites-accept",
+                      "ar/v1/api-reference/endpoint/invites-requests-list",
+                      "ar/v1/api-reference/endpoint/rate-limits-tier-get",
+                      "ar/v1/api-reference/endpoint/rate-limits-tier-raise"
                     ]
                   },
                   {
@@ -14160,7 +14496,13 @@
                       "ar/v1/api-reference/endpoint/keys-rotate",
                       "ar/v1/api-reference/endpoint/keys-invalidate",
                       "ar/v1/api-reference/endpoint/keys-delete",
-                      "ar/v1/api-reference/endpoint/keys-list"
+                      "ar/v1/api-reference/endpoint/keys-list",
+                      "ar/v1/api-reference/endpoint/security-report-leaked-key",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-list",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-create",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-get",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-update",
+                      "ar/v1/api-reference/endpoint/trusted-workloads-delete"
                     ]
                   },
                   {
@@ -14196,7 +14538,13 @@
                       "ar/v1/api-reference/endpoint/oauth-clients-update",
                       "ar/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "ar/v1/api-reference/endpoint/oauth-clients-delete",
-                      "ar/v1/api-reference/endpoint/oauth-clients-list"
+                      "ar/v1/api-reference/endpoint/oauth-clients-list",
+                      "ar/v1/api-reference/endpoint/me-get",
+                      "ar/v1/api-reference/endpoint/profile-get",
+                      "ar/v1/api-reference/endpoint/profile-update",
+                      "ar/v1/api-reference/endpoint/authorized-apps-list",
+                      "ar/v1/api-reference/endpoint/authorized-apps-update-scopes",
+                      "ar/v1/api-reference/endpoint/authorized-apps-revoke"
                     ]
                   },
                   {
@@ -14242,6 +14590,7 @@
                       "ar/v1/api-reference/endpoint/notifications-destination-create",
                       "ar/v1/api-reference/endpoint/notifications-destination-config-test",
                       "ar/v1/api-reference/endpoint/notifications-destination-test",
+                      "ar/v1/api-reference/endpoint/notifications-destination-rotate-secret",
                       "ar/v1/api-reference/endpoint/notifications-destination-delete",
                       "ar/v1/api-reference/endpoint/notifications-destinations-list",
                       "ar/v1/api-reference/endpoint/notifications-routes-list",
@@ -14352,7 +14701,8 @@
                     "pages": [
                       "ar/v1/sdk-reference/typescript/audio-speech",
                       "ar/v1/sdk-reference/typescript/audio-transcriptions",
-                      "ar/v1/sdk-reference/typescript/audio-translations"
+                      "ar/v1/sdk-reference/typescript/audio-translations",
+                      "ar/v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -14410,7 +14760,8 @@
                     "pages": [
                       "ar/v1/sdk-reference/python/audio-speech",
                       "ar/v1/sdk-reference/python/audio-transcriptions",
-                      "ar/v1/sdk-reference/python/audio-translations"
+                      "ar/v1/sdk-reference/python/audio-translations",
+                      "ar/v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
@@ -15259,7 +15610,7 @@
     },
     {
       "source": "/v1/api-reference/endpoint/realtime",
-      "destination": "/v1/api-reference/introduction"
+      "destination": "/v1/guides/realtime-voice"
     },
     {
       "source": "/v1/api-reference/endpoint/video-:slug*",
@@ -16349,7 +16700,8 @@
       "Model IDs look like `provider/model`, for example `openai/gpt-6-astra`. Do not guess IDs: list them with `GET /v1/models` or check https://phaseo.app/models. `phaseo/free` routes to an available free model and needs no wallet balance.",
       "For new text integrations prefer `POST /v1/responses`. `POST /v1/chat/completions` (OpenAI format) and `POST /v1/messages` (Anthropic format) suit existing code.",
       "The full API contract is https://phaseo.app/docs/openapi/v1/openapi.yaml. Official SDKs: `@phaseo/sdk` (TypeScript) and `phaseo` (Python), plus Go, C#, PHP, Ruby and Rust.",
-      "Search these docs over MCP at https://phaseo.app/docs/mcp, and install Phaseo skills with `npx skills add https://phaseo.app/docs`. If a page is wrong or out of date, report it with the MCP `submit_feedback` tool."
+      "Search these docs over MCP at https://phaseo.app/docs/mcp, and install Phaseo skills with `npx skills add https://phaseo.app/docs`. If a page is wrong or out of date, report it with the MCP `submit_feedback` tool.",
+      "Manage Phaseo accounts with the `phaseo` CLI (`npm install -g @phaseo/cli`, then `phaseo login` or `phaseo login --device-code`), the `/v1` Management API or the MCP server at `https://mcp.phaseo.app/mcp?access=manage`. Do not send users to the dashboard for account tasks. A person is still needed for sign-up, approving a sign-in, paying the first top-up on the checkout link that `phaseo credits add` returns when no card is saved, confirming each saved-card top-up from the emailed link, and account security (password, MFA, passkeys). Create API keys with `phaseo keys create --name <name> --json`; never guess one. Credit top-ups need `phaseo login --scopes billing:write` first. Task map: https://phaseo.app/docs/v1/developers/manage-from-an-agent.md."
     ]
   },
   "footer": {

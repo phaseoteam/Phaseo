@@ -11,6 +11,8 @@ import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@
 // where MOBILE_PUSH_ENABLED is off: the central job that sends pushes fans the alert out. Only
 // the sweep is tied to that job.
 
+// Department budget rejections (`department_<window>_cost_budget_reached`) are not recorded here:
+// sweep_department_budget_alerts already sends their 100% alert to the same people.
 const SPEND_LIMIT_REASON =
 	/^(?:workspace_(daily|weekly|monthly|lifetime)_cost_budget_reached|(daily|weekly|monthly)_(?:request|cost)_limit_reached)$/;
 // Each isolate tells the database at most once an hour per budget or key limit and period. The
@@ -89,4 +91,18 @@ export async function runSpendLimitWarningSweep(): Promise<SpendLimitSweepSummar
 	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
 	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 	return { budgets: count(result.budgets), limitedKeys: count(result.limitedKeys), warned: count(result.warned) };
+}
+
+export type DepartmentBudgetSweepSummary = { budgets: number; alerted: number };
+
+/**
+ * sweep_department_budget_alerts sends the department budget 80% warning and the 100% alert from
+ * the same hourly rollup: the gateway's department-budget rejections send no push themselves.
+ */
+export async function runDepartmentBudgetAlertSweep(): Promise<DepartmentBudgetSweepSummary> {
+	const { data, error } = await getSupabaseAdmin().rpc("sweep_department_budget_alerts", {});
+	if (error) throw new Error(`department_budget_sweep_failed:${error.message}`);
+	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
+	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
+	return { budgets: count(result.budgets), alerted: count(result.alerted) };
 }

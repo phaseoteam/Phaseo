@@ -4,7 +4,10 @@ import { getBindings } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
 import { getModelDeprecationTemplateVariables, renderModelDeprecationEmail } from "@/pipeline/notifications/model-deprecation";
 import { renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
+import { renderSlackAgentRefusedEmail } from "@/pipeline/notifications/slack-agent-refused";
 import { renderFeedbackRequestEmail } from "@/pipeline/notifications/feedback-request";
+import { renderStorageIncidentEmail } from "@/pipeline/notifications/storage-incident";
+import { renderCreditTopupConfirmationEmail } from "@/pipeline/notifications/credit-topup-confirmation";
 
 type OutboxRow = {
 	id: string;
@@ -280,6 +283,10 @@ function renderEmailForRow(row: OutboxRow): {
 			text: rendered.text,
 		};
 	}
+	if (row.template === "security_storage_incident" || row.kind === "security_storage_incident") {
+		const rendered = renderStorageIncidentEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
 	if (row.template === "auto_top_up_failed" || row.kind === "auto_top_up_failed") {
 		const rendered = renderBillingAlertEmail(row.payload ?? {}, "auto_top_up_failed");
 		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
@@ -320,6 +327,14 @@ function renderEmailForRow(row: OutboxRow): {
 			text: rendered.text,
 		};
 	}
+	if (row.template === "slack_agent_refused" || row.kind === "slack_agent_refused") {
+		const rendered = renderSlackAgentRefusedEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
+	if (row.template === "credit_topup_confirmation" || row.kind === "credit_topup_confirmation") {
+		const rendered = renderCreditTopupConfirmationEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
+	}
 	throw new Error(`unsupported_email_template:${row.template || row.kind}`);
 }
 
@@ -347,7 +362,7 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 		.select(columns)
 		.is("sent_at", null)
 		.lt("attempts", 5)
-		.not("kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled","spend_alert","spend_blocked","spend_report")')
+		.not("kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled","broadcast_destination_failing","spend_alert","spend_blocked","spend_report")')
 		.order("created_at", { ascending: true })
 		.limit(limit);
 

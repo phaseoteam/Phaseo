@@ -43,7 +43,7 @@ describe("fetchModelsPageData", () => {
 		global.fetch = jest.fn(async (url) => {
 			const path = String(url);
 			if (path.includes("/models/hidden")) return new Response(JSON.stringify({ models: [
-				{ model_id: "test/staged", name: "Staged", hidden: true, organisation: { lab_slug: "test", name: "Test" } },
+				{ model_id: "test/staged", name: "Staged", status: "draft", hidden: true, organisation: { lab_slug: "test", name: "Test" } },
 			] }));
 			if (path.includes("/api/account/")) return new Response(JSON.stringify({ private_catalogue: true, models: [] }));
 			return new Response(JSON.stringify({ models: [model("public")], facets: structuredClone(facets), pricing_complete: true, total: 1, limit: 2000 }));

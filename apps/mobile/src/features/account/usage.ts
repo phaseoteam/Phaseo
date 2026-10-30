@@ -1,3 +1,4 @@
+import { formatUsageDeltaPercent, usageDeltaPercent } from "@phaseo/app-kit/format";
 import type { UsageCell, UsageRange } from "@/lib/api/account";
 
 export type UsagePeriod = "24h" | "7d" | "30d";
@@ -24,18 +25,53 @@ export function totals(cells: UsageCell[]): UsageTotals {
   }), { requests: 0, successfulRequests: 0, costNanos: 0, tokens: 0 });
 }
 
-/** Spend per bucket across the whole range, including empty buckets so the chart keeps its shape. */
-export function series(cells: UsageCell[], range: UsageRange): number[] {
-  const step = range.bucket === "hour" ? HOUR : DAY;
-  const count = Math.max(1, Math.round((range.to.getTime() - range.from.getTime()) / step));
-  const values = new Array<number>(count).fill(0);
-  for (const cell of cells) {
-    if (!cell.bucket) continue;
-    const index = Math.floor((Date.parse(cell.bucket) - range.from.getTime()) / step);
-    const slot = Math.min(count - 1, Math.max(0, index));
-    values[slot] = (values[slot] ?? 0) + cell.costNanos;
+export type UsageBucket = { start: number; costNanos: number; requests: number; tokens: number };
+
+/**
+ * Where the API's buckets start: local hours, or local midnights (in the time zone the request names, which is the
+ * phone's), from the one holding `from` up to `to`. A 7-day range touches 8 calendar days, so it has 8 buckets.
+ */
+export function bucketStarts(range: UsageRange): number[] {
+  const starts: number[] = [];
+  const cursor = new Date(range.from);
+  if (range.bucket === "hour") cursor.setMinutes(0, 0, 0);
+  else cursor.setHours(0, 0, 0, 0);
+  while (cursor.getTime() < range.to.getTime() && starts.length < 1000) {
+    starts.push(cursor.getTime());
+    if (range.bucket === "hour") cursor.setTime(cursor.getTime() + HOUR);
+    else cursor.setDate(cursor.getDate() + 1);
   }
-  return values;
+  return starts;
+}
+
+/** Spend, requests and tokens per bucket across the whole range, including empty buckets so the chart keeps its shape. */
+export function usageBuckets(cells: UsageCell[], range: UsageRange): UsageBucket[] {
+  const starts = bucketStarts(range);
+  const buckets = starts.map((start) => ({ start, costNanos: 0, requests: 0, tokens: 0 }));
+  if (!buckets.length) return buckets;
+  for (const cell of cells) {
+    const at = cell.bucket ? Date.parse(cell.bucket) : NaN;
+    if (!Number.isFinite(at)) continue;
+    // The bucket that starts at or before the cell (an exact match unless the time zone changed meanwhile).
+    let low = 0;
+    let high = starts.length - 1;
+    while (low < high) {
+      const middle = (low + high + 1) >> 1;
+      if (starts[middle]! <= at) low = middle;
+      else high = middle - 1;
+    }
+    const bucket = buckets[low]!;
+    bucket.costNanos += cell.costNanos;
+    bucket.requests += cell.requests;
+    bucket.tokens += cell.tokens;
+  }
+  return buckets;
+}
+
+/** Spend over the last 7 days: the overview's `recent` window (always the last 7 days), else its current one. */
+export function weekSpendNanos(overview: { current: { cells: UsageCell[] }; recent?: { cells: UsageCell[] } | null } | null | undefined): number | null {
+  if (!overview) return null;
+  return totals((overview.recent ?? overview.current).cells).costNanos;
 }
 
 export function byModel(cells: UsageCell[]) {
@@ -48,9 +84,12 @@ export function byModel(cells: UsageCell[]) {
   return [...map.entries()].map(([modelId, value]) => ({ modelId, ...value })).sort((a, b) => b.costNanos - a.costNanos || b.requests - a.requests);
 }
 
-export function change(current: number, previous: number): string | null {
-  if (!previous) return current ? "New" : null;
-  const delta = ((current - previous) / previous) * 100;
-  if (Math.abs(delta) < 0.5) return "No change";
-  return `${delta > 0 ? "+" : ""}${delta.toFixed(0)}% vs previous`;
+/**
+ * The change from the previous period, as the website's usage dashboard words it: "+12.3% vs. previous period", or
+ * "No prior" when both periods are empty. The sign stands in for the website's arrow.
+ */
+export function change(current: number, previous: number): string {
+  const delta = usageDeltaPercent(current, previous);
+  if (delta === null) return "No prior";
+  return `${delta > 0 ? "+" : delta < 0 ? "−" : ""}${formatUsageDeltaPercent(delta)}% vs. previous period`;
 }

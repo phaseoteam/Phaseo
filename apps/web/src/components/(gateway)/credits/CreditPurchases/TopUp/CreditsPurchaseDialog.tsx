@@ -31,10 +31,11 @@ import { cn } from "@/lib/utils";
 import { formatCardBrand } from "./cardBrand";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { SensitiveValue } from "@/components/display/SensitiveValue";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 /* Helpers */
-const formatUSD = (v: number, locale: string) =>
-	new Intl.NumberFormat(locale, {
+const formatUSD = (v: number, _locale: string) =>
+	new Intl.NumberFormat(MONEY_LOCALE, {
 		style: "currency",
 		currency: "USD",
 	}).format(v);
@@ -661,7 +662,7 @@ export default function CreditsPurchaseDialog({
 							<div className="inline-flex w-full items-center overflow-hidden rounded-lg border border-border bg-muted/20 transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30">
 								{/* Currency badge in place of left button */}
 								<div className="flex h-10 w-10 items-center justify-center border-r border-border text-sm font-medium text-muted-foreground">
-									{new Intl.NumberFormat(locale, {
+									{new Intl.NumberFormat(MONEY_LOCALE, {
 										style: "currency",
 										currency: "USD",
 									}).formatToParts(0).find((part) => part.type === "currency")?.value ?? "USD"}

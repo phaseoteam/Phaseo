@@ -8,10 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ENTERPRISE_BASE_INCLUDED_MEMBERS, ENTERPRISE_MAX_QUOTED_MEMBERS, ENTERPRISE_MAX_SELF_SERVE_MEMBERS, ENTERPRISE_MEMBER_OVERAGE_USD, ENTERPRISE_MIN_SELF_SERVE_MEMBERS, enterpriseTierForMembers } from "@/lib/billing/enterprisePricing";
-import {
-	useDisplayFormatters,
-	useDisplayPreferences,
-} from "@/components/providers/DisplayPreferencesProvider";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const features = [
 	"sso",
@@ -65,7 +63,6 @@ export function EnterpriseSeatCalculator() {
 	const t = useTranslations("Site.pricing");
 	const translate = t as unknown as (key: string, values?: Record<string, unknown>) => string;
 	const format = useDisplayFormatters();
-	const { formattingPreferences } = useDisplayPreferences();
 	const formatNumber = (value: number) => format.number(value, { notation: "standard" });
 	const formatUsd = (value: number) => format.number(value, { style: "currency", currency: "USD", maximumFractionDigits: 2, notation: "standard" });
 	const minimumCreditFee = format.number(1, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -119,7 +116,7 @@ export function EnterpriseSeatCalculator() {
 
 				<div className="border-l border-border pl-6">
 					<p className="text-xs font-medium text-muted-foreground">{t("enterpriseSubscription")}</p>
-					<p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">$<NumberFlow value={estimatedMonthlyUsd} locales={formattingPreferences.locale} format={{ maximumFractionDigits: 2, notation: "standard" }} /><span className="text-sm font-normal text-muted-foreground">{t("monthEstimated")}</span></p>
+					<p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">$<NumberFlow value={estimatedMonthlyUsd} locales={MONEY_LOCALE} format={{ maximumFractionDigits: 2, notation: "standard" }} /><span className="text-sm font-normal text-muted-foreground">{t("monthEstimated")}</span></p>
 					<p className="mt-2 text-xs text-muted-foreground">{t("memberAllowance", { count: formatNumber(pricing.maxMembers) })}</p>
 					{overageMembers > 0 ? <p className="mt-2 text-xs text-muted-foreground">{t("memberOverageSummary", { base: formatUsd(1_999), count: formatNumber(overageMembers), rate: formatUsd(ENTERPRISE_MEMBER_OVERAGE_USD) })}</p> : null}
 				</div>

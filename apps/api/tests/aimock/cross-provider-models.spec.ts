@@ -1,11 +1,8 @@
-import { readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
-import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { resolveProviderExecutor } from "@executors/index";
 import {
     buildCrossProviderConformanceMatrix,
-    type ProviderCatalog,
     type CrossProviderDeployment,
 } from "../../../../packages/testing/provider-mock/src/index";
 import {
@@ -17,18 +14,9 @@ import {
     startAimock,
     stopAimock,
 } from "./harness";
+import { TEXT_DEPLOYMENT_CATALOGS } from "./catalog-fixtures";
 
-const catalogsRoot = path.resolve(import.meta.dirname, "../../../../packages/data/catalog/src/data/api_providers");
-const catalogs: ProviderCatalog[] = readdirSync(catalogsRoot, { withFileTypes: true }).flatMap((entry) => {
-    if (!entry.isDirectory()) return [];
-    const modelsPath = path.join(catalogsRoot, entry.name, "models.json");
-    try {
-        return [{ providerId: entry.name, models: JSON.parse(readFileSync(modelsPath, "utf8")) }];
-    } catch (error: any) {
-        if (error?.code === "ENOENT") return [];
-        throw error;
-    }
-});
+const catalogs = TEXT_DEPLOYMENT_CATALOGS;
 
 const multiProviderMatrix = buildCrossProviderConformanceMatrix(catalogs, {
     capability: "text.generate",

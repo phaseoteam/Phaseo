@@ -1,3 +1,4 @@
+import { violatesMcpManagementBinding } from "@/lib/oauth/mcpScopes";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import {
@@ -5,6 +6,7 @@ import {
 	DEFAULT_CLI_OAUTH_CAPABILITIES,
 	GATEWAY_ACCESS_SCOPE,
 	IDENTITY_SCOPES,
+	isOptInCapability,
 	parseStoredScopeList,
 } from "@/lib/authz/capabilities";
 import { resolveActiveKeyPepper, resolveKeyPepperCandidates } from "@/lib/security/keyPepper";
@@ -693,7 +695,14 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 
 export function filterAllowedScopes(client: OAuthClient, requested: string[]): string[] {
 	const allowed = new Set(parseStoredScopeList(client.allowed_scopes));
-	return requested.filter((scope) => allowed.has(scope));
+	// Opt-in scopes (billing:write) are for the first-party CLI only, whatever a client lists.
+	const optInAllowed = CLI_CLIENT_IDS.has(String(client.id ?? "").trim()) && client.is_first_party === true;
+	return requested.filter((scope) => allowed.has(scope) && (optInAllowed || !isOptInCapability(scope)));
+}
+
+/** Scopes a third-party or dynamically registered client may not register for. */
+export function thirdPartyForbiddenScopes(scopes: readonly string[]): string[] {
+	return scopes.filter((scope) => isOptInCapability(scope));
 }
 
 function isCliLoopbackRedirectUri(client: OAuthClient, redirectUri: string): boolean {
@@ -996,6 +1005,22 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 	};
 }
 
+/**
+ * Scopes for a refreshed token: the authorization's scopes, narrowed to the refreshed token's.
+ * A later login that adds scopes (such as opt-in billing:write) must not widen older sessions.
+ * Only a token with no stored scope list (null) is legacy: it keeps the authorization's scopes
+ * minus opt-in ones. An empty result means the session must log in again (the caller refuses
+ * it), because an empty list must never be stored and later read as legacy.
+ * Mirrors public.rotate_oauth_refresh_token, which stores the same set.
+ */
+export function refreshedScopes(authorizationScopes: unknown, tokenScopes: unknown): string[] {
+	const granted = Array.isArray(authorizationScopes) ? authorizationScopes.map(String) : [];
+	if (tokenScopes === null || tokenScopes === undefined) return granted.filter((scope) => !isOptInCapability(scope));
+	const held = Array.isArray(tokenScopes) ? tokenScopes.map(String) : [];
+	const heldSet = new Set(held);
+	return granted.filter((scope) => heldSet.has(scope));
+}
+
 export async function rotateRefreshToken(
 	refreshToken: string,
 	clientAuth?: { clientId?: string; clientSecret?: string | null },
@@ -1059,11 +1084,17 @@ export async function rotateRefreshToken(
 	if (membership.error || !membership.data) {
 		return { ok: false, reason: "invalid_grant" };
 	}
-	const scopes = Array.isArray(authorization.data.scopes)
-		? authorization.data.scopes.map(String)
-		: Array.isArray(data.scopes)
-			? data.scopes.map(String)
-			: [];
+	// The new pair is bound to no resource, so a dynamic client whose authorization holds MCP
+	// management scopes fails closed (checked on the authorization, as before narrowing).
+	// The pair itself takes the authorization's scopes narrowed to the refreshed token's,
+	// so a later consent never widens an existing session.
+	const authorizationScopes = Array.isArray(authorization.data.scopes) ? authorization.data.scopes.map(String) : [];
+	if (violatesMcpManagementBinding(client.registration_source, null, authorizationScopes)) {
+		return { ok: false, reason: "invalid_grant" };
+	}
+	const scopes = refreshedScopes(authorization.data.scopes, data.scopes);
+	// Nothing left in common: refuse instead of storing an empty scope list.
+	if (scopes.length === 0) return { ok: false, reason: "invalid_grant" };
 	const material = await createTokenPairMaterial({
 		userId: String(data.user_id),
 		workspaceId: String(data.workspace_id),
@@ -1141,6 +1172,79 @@ export async function revokeToken(token: string) {
 		.eq("id", keyRow.id)
 		.eq("status", "active")
 		.eq("key_kind", "oauth_delegated");
+}
+
+export const DESKTOP_KEY_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+/**
+ * Keeps the desktop app's delegated key alive while it's used, so a sign-in lasts like the CLI's renewing session
+ * without minting (and announcing to the workspace's owners) a new key each time. An expired or revoked key isn't
+ * brought back; the caller has already checked the key's authorization and membership.
+ */
+export async function renewDesktopKey(keyId: string): Promise<{ expiresAt: string } | null> {
+	const now = new Date();
+	const expiresAt = new Date(now.getTime() + DESKTOP_KEY_TTL_SECONDS * 1000).toISOString();
+	const { data, error } = await getSupabaseAdmin()
+		.from("keys")
+		.update({ expires_at: expiresAt })
+		.eq("id", keyId)
+		.eq("key_kind", "oauth_delegated")
+		.eq("oauth_client_id", DESKTOP_CLIENT_ID)
+		.eq("status", "active")
+		.gt("expires_at", now.toISOString())
+		.select("expires_at")
+		.maybeSingle();
+	if (error) throw new Error(error.message || "Failed to renew the desktop key");
+	return data?.expires_at ? { expiresAt: String(data.expires_at) } : null;
+}
+
+export const DESKTOP_KEY_SCOPES = [GATEWAY_ACCESS_SCOPE, "models:read"] as const;
+
+/**
+ * The workspace a desktop sign-in's key belongs to: the one asked for, else the person's default, else the first they
+ * joined. Membership of the one asked for is checked when the key is issued.
+ */
+export async function desktopKeyWorkspace(userId: string, requested?: string | null): Promise<string | null> {
+	if (requested) return requested;
+	const supabase = getSupabaseAdmin();
+	const [user, membership] = await Promise.all([
+		supabase.from("users").select("default_workspace_id").eq("user_id", userId).maybeSingle(),
+		supabase.from("workspace_members").select("workspace_id").eq("user_id", userId).order("joined_at", { ascending: true }).limit(1).maybeSingle(),
+	]);
+	if (user.error || membership.error) throw new Error(user.error?.message || membership.error?.message || "Failed to load the person's workspaces");
+	const fallback = membership.data?.workspace_id ? String(membership.data.workspace_id) : null;
+	const preferred = user.data?.default_workspace_id ? String(user.data.default_workspace_id) : null;
+	if (!preferred) return fallback;
+	const { data, error } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", userId).eq("workspace_id", preferred).maybeSingle();
+	if (error) throw new Error(error.message || "Failed to load the person's workspaces");
+	return data ? preferred : fallback;
+}
+
+/**
+ * The desktop app's key for model calls, issued against the person's own Phaseo login rather than an OAuth code: the
+ * app is Phaseo's, so it signs in like the website and gets no consent screen. It's the same delegated key an OAuth
+ * sign-in gave it (renewable, revocable, listed under Connected apps), and owners hear about it like any new key.
+ * Earlier desktop keys stay, one per signed-in computer; keys_oauth_delegated_active_idx doesn't count them.
+ * Null when the person isn't a member of the workspace.
+ */
+export async function issueDesktopSessionKey(args: { userId: string; workspaceId: string }) {
+	const pepper = resolveActiveKeyPepper(getBindings());
+	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
+	const generated = generateGatewayKey();
+	const { data, error } = await getSupabaseAdmin().rpc("issue_desktop_session_key", {
+		p_user_id: args.userId,
+		p_workspace_id: args.workspaceId,
+		p_key_hash: await hmacSecret(generated.secret, pepper),
+		p_key_kid: generated.kid,
+		p_key_prefix: generated.prefix,
+		p_key_name: "Phaseo desktop",
+		p_resource: getGatewayOAuthResource(),
+		p_ttl_seconds: DESKTOP_KEY_TTL_SECONDS,
+	});
+	if (error) throw new Error(error.message || "Failed to issue the desktop key");
+	if (typeof data !== "string" || !data) return null;
+	await recordOAuthKeyIssued({ kid: generated.kid, workspaceId: args.workspaceId, userId: args.userId, clientId: DESKTOP_CLIENT_ID, clientName: "Phaseo desktop" });
+	return { key: generated.plaintext, expiresAt: new Date(data).toISOString(), scopes: [...DESKTOP_KEY_SCOPES] };
 }
 
 export function makeDeviceCodeExpiry(): string {

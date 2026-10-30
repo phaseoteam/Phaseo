@@ -21,8 +21,9 @@ CREATE OR REPLACE FUNCTION public.sweep_spend_rules (
 --   3. periodic: one twelfth of the workspaces with enabled rules, by a hash of the workspace id
 --                and the 5-minute slot of p_now, so each is evaluated about once an hour when
 --                called every 5 minutes. This catches changes no usage marks: a budget or key
---                limit lowered, a rule edited, rollup hours rebuilt late. Spike rules do not
---                count here: a spike needs new usage, which marks the workspace dirty (a
+--                limit lowered, a rule edited, rollup hours rebuilt late. A slot over p_limit
+--                rotates hourly, so none of its workspaces is skipped for good. Spike rules do
+--                not count here: a spike needs new usage, which marks the workspace dirty (a
 --                workspace with other rules still evaluates its spike rules in this pass).
 --   4. balance:  workspaces with balance rules, in one of three slices by the same hash (each
 --                every 15 minutes): a balance falls or recovers without new usage (reservations,
@@ -35,10 +36,12 @@ CREATE OR REPLACE FUNCTION public.sweep_spend_rules (
 declare
   v_slots constant integer := 12;
   v_slot integer;
+  v_round bigint;
   v_dirty uuid[];
   v_rollover uuid[];
   v_periodic uuid[];
   v_balance_slots constant integer := 3;
+  v_balance_round bigint;
   v_balance uuid[];
   v_workspace uuid;
   v_result jsonb;
@@ -100,40 +103,61 @@ begin
   ) due;
 
   v_slot := (floor(extract(epoch from p_now) / 300)::bigint % v_slots)::integer;
+  -- A slot with more than p_limit workspaces starts p_limit further along each hour, so every
+  -- workspace in it is reached within ceil(n / p_limit) hours instead of only the first p_limit.
+  v_round := floor(extract(epoch from p_now) / 3600)::bigint;
   select coalesce(array_agg(due.workspace_id), '{}') into v_periodic
   from (
-    select distinct rule.workspace_id
-    from public.workspace_spend_rules rule
-    where rule.enabled
-      and rule.deleted_at is null
-      and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
-      -- Spike rules need new usage to spike, so the dirty pass covers them.
-      and rule.metric <> 'spike'
-      and (pg_catalog.hashtextextended(rule.workspace_id::text, 0) % v_slots + v_slots) % v_slots = v_slot
-      and rule.workspace_id <> all (v_dirty)
-      and rule.workspace_id <> all (v_rollover)
-    order by rule.workspace_id
-    limit p_limit
+    select slot.workspace_id
+    from (
+      select candidate.workspace_id,
+        pg_catalog.row_number() over (order by candidate.workspace_id) - 1 as position,
+        pg_catalog.count(*) over () as total
+      from (
+        select distinct rule.workspace_id
+        from public.workspace_spend_rules rule
+        where rule.enabled
+          and rule.deleted_at is null
+          and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
+          -- Spike rules need new usage to spike, so the dirty pass covers them.
+          and rule.metric <> 'spike'
+          and (pg_catalog.hashtextextended(rule.workspace_id::text, 0) % v_slots + v_slots) % v_slots = v_slot
+          and rule.workspace_id <> all (v_dirty)
+          and rule.workspace_id <> all (v_rollover)
+      ) candidate
+    ) slot
+    where ((slot.position - v_round * p_limit) % slot.total + slot.total) % slot.total < p_limit
   ) due;
 
   -- Balance rules: a balance moves without usage (reservations, refunds, top-ups, credits), so
   -- workspaces with balance rules are also taken in one of three slices by the same hash, that
-  -- is every 15 minutes when called every 5 minutes.
+  -- is every 15 minutes when called every 5 minutes. Like the periodic slot, a slice with more
+  -- than p_limit workspaces starts p_limit further along on each visit. Positions are taken over
+  -- the whole slice and workspaces another set already evaluates are dropped afterwards, so the
+  -- window does not shift with them and every workspace is reached within ceil(n / p_limit) visits.
+  v_balance_round := floor(extract(epoch from p_now) / 900)::bigint;
   select coalesce(array_agg(due.workspace_id), '{}') into v_balance
   from (
-    select distinct rule.workspace_id
-    from public.workspace_spend_rules rule
-    where rule.metric = 'balance'
-      and rule.enabled
-      and rule.deleted_at is null
-      and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
-      and (pg_catalog.hashtextextended(rule.workspace_id::text, 0) % v_balance_slots + v_balance_slots) % v_balance_slots
-        = v_slot % v_balance_slots
-      and rule.workspace_id <> all (v_dirty)
-      and rule.workspace_id <> all (v_rollover)
-      and rule.workspace_id <> all (v_periodic)
-    order by rule.workspace_id
-    limit p_limit
+    select slice.workspace_id
+    from (
+      select candidate.workspace_id,
+        pg_catalog.row_number() over (order by candidate.workspace_id) - 1 as position,
+        pg_catalog.count(*) over () as total
+      from (
+        select distinct rule.workspace_id
+        from public.workspace_spend_rules rule
+        where rule.metric = 'balance'
+          and rule.enabled
+          and rule.deleted_at is null
+          and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
+          and (pg_catalog.hashtextextended(rule.workspace_id::text, 0) % v_balance_slots + v_balance_slots) % v_balance_slots
+            = v_slot % v_balance_slots
+      ) candidate
+    ) slice
+    where ((slice.position - v_balance_round * p_limit) % slice.total + slice.total) % slice.total < p_limit
+      and slice.workspace_id <> all (v_dirty)
+      and slice.workspace_id <> all (v_rollover)
+      and slice.workspace_id <> all (v_periodic)
   ) due;
 
   foreach v_workspace in array v_dirty || v_rollover || v_periodic || v_balance loop

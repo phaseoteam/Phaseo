@@ -298,7 +298,7 @@ export default async function ModelPricing({
 					internalOnly={includeHidden}
 					creatorOrgId={identity.organisationId}
 					initialPricingTimeMs={now.getTime()}
-					runtimeStats={toPricingRuntimeStats(runtimeStats)}
+					runtimeStats={toPricingRuntimeStats(runtimeStats, { includeHourlyPerformance: includeHidden })}
 					routingHealth={routingHealth}
 					workspacePrivacySettings={workspacePrivacySettings}
 					showHeader={false}
@@ -364,7 +364,7 @@ export default async function ModelPricing({
 				internalOnly={includeHidden}
 				creatorOrgId={identity.organisationId}
 				initialPricingTimeMs={now.getTime()}
-				runtimeStats={toPricingRuntimeStats(runtimeStats)}
+				runtimeStats={toPricingRuntimeStats(runtimeStats, { includeHourlyPerformance: includeHidden })}
 				routingHealth={routingHealth}
 				workspacePrivacySettings={workspacePrivacySettings}
 				showHeader={showHeader}

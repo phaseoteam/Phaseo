@@ -34,6 +34,7 @@ import {
 } from "@/app/(dashboard)/settings/credits/actions";
 import { toast } from "sonner";
 import { CreditCard, Info, Loader2, ShieldCheck } from "lucide-react";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 interface PaymentMethodCard {
 	brand?: string | null;
@@ -69,8 +70,8 @@ interface Props {
 
 const MFA_BYPASS_CONFIRMATION = "I ACCEPT THE RISK";
 
-const fmtUSD = (v: number, locale: string) =>
-	new Intl.NumberFormat(locale, {
+const fmtUSD = (v: number, _locale: string) =>
+	new Intl.NumberFormat(MONEY_LOCALE, {
 		style: "currency",
 		currency: "USD",
 	}).format(v);

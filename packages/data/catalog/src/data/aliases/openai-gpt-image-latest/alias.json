@@ -1,8 +1,0 @@
-{
-  "alias_slug": "openai/gpt-image-latest",
-  "resolved_api_model_id": "openai/gpt-image-2.5-flare",
-  "resolved_model_id": "openai/gpt-image-2.5-flare",
-  "channel": "stable",
-  "is_enabled": true,
-  "notes": "Tracks OpenAI's default image generation and editing model."
-}

@@ -33,8 +33,8 @@ CREATE TABLE "public"."keys" (
     (COALESCE(oauth_scopes, ARRAY[]::text[]) @> ARRAY['gateway:access'::text]))),
   CONSTRAINT "keys_hash_key" UNIQUE (hash),
   CONSTRAINT "keys_id_workspace_id_key" UNIQUE (id, workspace_id),
-  CONSTRAINT "keys_issued_via_check" CHECK ((issued_via = ANY (ARRAY['dashboard'::text, 'oauth_pkce'::text, 'cli'::text]))),
-  CONSTRAINT "keys_key_kind_check" CHECK ((key_kind = ANY (ARRAY['standard'::text, 'oauth_delegated'::text]))),
+  CONSTRAINT "keys_issued_via_check" CHECK ((issued_via = ANY (ARRAY['dashboard'::text, 'oauth_pkce'::text, 'cli'::text, 'workload_identity'::text, 'desktop'::text]))),
+  CONSTRAINT "keys_key_kind_check" CHECK ((key_kind = ANY (ARRAY['standard'::text, 'oauth_delegated'::text, 'workload_identity'::text]))),
   CONSTRAINT "keys_oauth_user_id_fkey" FOREIGN KEY (oauth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "keys_pkey" PRIMARY KEY (id),
   CONSTRAINT "keys_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE,
@@ -42,7 +42,10 @@ CREATE TABLE "public"."keys" (
   CONSTRAINT "keys_created_by_fkey" FOREIGN KEY (created_by) REFERENCES public.users(user_id) ON DELETE CASCADE,
   CONSTRAINT "keys_ip_allowlist_valid" CHECK (public.valid_key_ip_allowlist(ip_allowlist)),
   "department_id"            uuid,
-  CONSTRAINT "keys_department_fkey" FOREIGN KEY (department_id, workspace_id) REFERENCES public.workspace_departments(id, workspace_id) ON DELETE SET NULL (department_id)
+  CONSTRAINT "keys_department_fkey" FOREIGN KEY (department_id, workspace_id) REFERENCES public.workspace_departments(id, workspace_id) ON DELETE SET NULL (department_id),
+  "never_store_content"      boolean                  NOT NULL DEFAULT false,
+  "storage_locations"        text[]                   NOT NULL DEFAULT '{}'::text[],
+  CONSTRAINT "keys_storage_locations_valid" CHECK (public.valid_key_storage_locations(storage_locations))
 );
 
 ALTER TABLE "public"."keys"
@@ -54,7 +57,7 @@ CREATE INDEX keys_expires_at_idx ON public.keys USING btree (expires_at)
 CREATE UNIQUE INDEX keys_kid_uidx ON public.keys USING btree (kid);
 
 CREATE UNIQUE INDEX keys_oauth_delegated_active_idx ON public.keys USING btree (oauth_user_id, workspace_id, oauth_client_id)
-  WHERE ((key_kind = 'oauth_delegated'::text) AND (status = 'active'::text));
+  WHERE ((key_kind = 'oauth_delegated'::text) AND (status = 'active'::text) AND (issued_via <> 'desktop'::text));
 
 CREATE INDEX keys_workspace_id_idx ON public.keys USING btree (workspace_id)
   WHERE (workspace_id IS NOT NULL);
@@ -63,6 +66,16 @@ CREATE TRIGGER keys_set_updated_at
   BEFORE UPDATE ON public.keys
   FOR EACH ROW
   EXECUTE FUNCTION public.update_key_updated_at();
+
+CREATE TRIGGER protect_key_never_store_content
+  BEFORE UPDATE OF never_store_content ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_never_store_content();
+
+CREATE TRIGGER protect_revoked_key_status
+  BEFORE UPDATE OF status ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_revoked_key_status();
 
 CREATE POLICY "keys_delete_own_team" ON "public"."keys"
   FOR DELETE
@@ -96,3 +109,10 @@ CREATE INDEX keys_department_id_idx ON public.keys USING btree (department_id, w
 COMMENT ON COLUMN "public"."keys"."department_id" IS 'Department whose limits and budgets this key counts toward. NULL means the key counts only toward workspace-wide limits. Requests made with OAuth use the user''s department instead.';
 
 COMMENT ON COLUMN "public"."keys"."ip_allowlist" IS 'Labeled IPv4/IPv6 addresses or CIDRs allowed to use this key. Empty permits any IP.';
+
+COMMENT ON COLUMN "public"."keys"."never_store_content" IS 'When true, Phaseo never keeps or forwards this key''s request and response content: no I/O log, cached response, detailed telemetry or observability destination content, whatever the workspace settings. Cannot be turned off once on.';
+
+COMMENT ON COLUMN "public"."keys"."storage_locations" IS 'Location ids (packages/shared/key-storage-locations) where the workspace says this key is stored, such as railway or github. Empty when not given. Used to find every key kept in a platform that reports a breach.';
+
+CREATE INDEX keys_storage_locations_idx ON public.keys USING gin (storage_locations)
+  WHERE (cardinality(storage_locations) > 0);

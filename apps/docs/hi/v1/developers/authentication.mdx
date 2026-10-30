@@ -4,7 +4,7 @@ description: "Phaseo Gateway के हर अनुरोध को प्र�
 icon: "key-round"
 ---
 
-[डैशबोर्ड](https://phaseo.app/settings/keys) में कुंजी बनाएँ, उसे सर्वर पर रखें और Gateway अनुरोधों में Bearer टोकन के रूप में भेजें।
+[Phaseo CLI](../guides/integrations/phaseo-cli) में `phaseo keys create --name <name> --json` से या [डैशबोर्ड](https://phaseo.app/settings/keys) में कुंजी बनाएँ, उसे सर्वर पर रखें और Gateway अनुरोधों में Bearer टोकन के रूप में भेजें। एजेंट को CLI इस्तेमाल करना चाहिए; [एजेंट से Phaseo प्रबंधित करें](./manage-from-an-agent) देखें।
 
 ---
 
@@ -12,6 +12,7 @@ icon: "key-round"
 
 - **Gateway API keys** आपके workspace में उपलब्ध मॉडल, प्रदाता और जनरेशन endpoints को कॉल करती हैं।
 - **प्रबंधन API कुंजियाँ** प्रशासन API को कॉल करती हैं। [प्रबंधन API कुंजियाँ](./management-api-keys.mdx) देखें।
+- **भरोसेमंद वर्कलोड** (बीटा) Vercel डिप्लॉयमेंट और GitHub Actions जॉब को सहेजी गई कुंजी के बजाय कम समय तक चलने वाले OIDC टोकन से Gateway को कॉल करने देते हैं। [भरोसेमंद वर्कलोड](./trusted-workloads.mdx) देखें।
 
 पुराना क्रेडेंशियल अमान्य करने से पहले एप्लिकेशन को नई कुंजी पर बदलकर कुंजी रोटेट करें। [कुंजी रोटेशन एंडपॉइंट](../api-reference/endpoint/keys-rotate.mdx) देखें।
 

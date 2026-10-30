@@ -1,0 +1,507 @@
+/* Phaseo desktop design system. Tokens mirror apps/web/src/app/globals.css so
+   the desktop app and the website share one visual language. */
+@layer theme, base, legacy, components, utilities;
+
+@import "tailwindcss";
+@import "tw-animate-css";
+/* Styles for views that have not moved to Tailwind yet. Layered below the
+   utilities so they never override new components. */
+@import "./styles.css" layer(legacy);
+/* The theme's colours and radius, generated from packages/shared/app-kit/src/theme/tokens.ts. */
+@import "./theme-tokens.generated.css";
+
+/* Shared components (@phaseo/ui) live outside this app, so Tailwind has to be told to scan them. */
+@source "../../../../packages/shared/ui/src";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-success: var(--success);
+	--color-warning: var(--warning);
+	/* T3's info: snoozed chats, work in progress, renamed files. */
+	--color-info: var(--info);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--font-sans: Montserrat, ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Cascadia Code", "SF Mono", Consolas, ui-monospace, monospace;
+	/* T3 Code's two small sizes, for pull request rows and timelines. */
+	--text-2xs: 0.6875rem;
+	--text-2xs--line-height: calc(1 / 0.6875);
+	--text-3xs: 0.625rem;
+	--text-3xs--line-height: calc(0.875 / 0.625);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html,
+	body,
+	#root {
+		height: 100%;
+		overflow: hidden;
+	}
+	body {
+		@apply bg-background text-foreground font-sans antialiased;
+		font-size: 13px;
+		user-select: none;
+	}
+	/* Conversation and document text stays selectable. */
+	[data-selectable],
+	input,
+	textarea,
+	[contenteditable] {
+		user-select: text;
+	}
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+}
+
+@utility drag-region {
+	-webkit-app-region: drag;
+}
+
+@utility no-drag {
+	-webkit-app-region: no-drag;
+}
+
+/* Conversation markdown. Overrides the legacy layer's message styles. */
+@layer components {
+	.message-markdown {
+		line-height: 1.7;
+		overflow-wrap: anywhere;
+	}
+	.message-markdown :where(p, ul, ol, blockquote, table) {
+		margin-block: 0 0.85em;
+	}
+	.message-markdown > :last-child {
+		margin-bottom: 0;
+	}
+	.message-markdown ul {
+		list-style: disc;
+		padding-left: 1.5em;
+	}
+	.message-markdown ol {
+		list-style: decimal;
+		padding-left: 1.5em;
+	}
+	.message-markdown li + li {
+		margin-top: 0.3em;
+	}
+	.message-markdown li::marker {
+		color: var(--muted-foreground);
+	}
+	.message-markdown :not(pre) > code {
+		border-radius: 5px;
+		background: var(--muted);
+		padding: 0.1em 0.35em;
+		font-family: var(--font-mono);
+		font-size: 0.86em;
+	}
+	.message-markdown a {
+		color: var(--primary);
+		text-decoration: underline;
+		text-decoration-color: color-mix(in oklch, var(--primary) 40%, transparent);
+		text-underline-offset: 3px;
+	}
+	.message-markdown blockquote {
+		border-left: 3px solid var(--border);
+		padding-left: 0.9em;
+		color: var(--muted-foreground);
+	}
+	.message-markdown table {
+		display: table;
+		width: max-content;
+		border-collapse: separate;
+		border-spacing: 0;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		font-size: 0.93em;
+	}
+	.message-markdown th,
+	.message-markdown td {
+		border: 0;
+		border-bottom: 1px solid var(--border);
+		padding: 0.45em 0.9em;
+		text-align: left;
+	}
+	.message-markdown tr:last-child td {
+		border-bottom: 0;
+	}
+	.message-markdown th {
+		background: color-mix(in oklch, var(--muted) 60%, transparent);
+		font-weight: 600;
+	}
+	.message-code-block {
+		margin-bottom: 0.85em;
+		overflow: hidden;
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		background: var(--card);
+	}
+	.message-code-actions {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 4px 6px 4px 12px;
+		border-bottom: 1px solid var(--border);
+		color: var(--muted-foreground);
+		font-size: 11.5px;
+	}
+	.message-code-actions button {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 0;
+		height: 26px;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		padding: 0 8px;
+		color: inherit;
+		font-size: 11.5px;
+		font-weight: 500;
+	}
+	.message-code-actions button:hover {
+		background: var(--muted);
+		color: var(--foreground);
+	}
+	.message-code-actions svg {
+		width: 13px;
+		height: 13px;
+	}
+	.message-code-block pre {
+		margin: 0;
+		padding: 14px 16px;
+		/* The surrounding ScrollArea scrolls wide code. */
+		overflow: visible;
+		width: max-content;
+		min-width: 100%;
+		border: 0;
+		border-radius: 0;
+		background: color-mix(in oklch, var(--muted) 35%, var(--card));
+		font: 12.5px/1.65 var(--font-mono);
+	}
+
+	/* Legacy views hosted in the tools panel and settings dialog. */
+	.legacy-panel {
+		font-size: 13px;
+	}
+	.legacy-panel > .page,
+	.legacy-panel > * > .page {
+		width: auto;
+		margin: 0;
+		padding: 20px 24px 32px;
+	}
+	.chat-tools-content.legacy-panel :is(.page h1, .page-heading) {
+		display: none;
+	}
+
+	/* Diffs and previews sit flush in the files panel. */
+	.files-panel .message-code-block {
+		margin: 0;
+		border: 0;
+		border-radius: 0;
+	}
+	.files-panel .message-code-block pre {
+		background: transparent;
+	}
+	.files-panel .review-diff {
+		margin: 0;
+		border: 0;
+		border-radius: 0;
+	}
+	.files-panel .review-diff + .review-diff {
+		border-top: 1px solid var(--border);
+	}
+	.files-panel .review-diff > .message-code-actions {
+		display: none;
+	}
+	.files-panel .review-diff-content {
+		max-height: none;
+	}
+	.files-panel .git-hunk-panel {
+		margin: 0;
+		padding: 12px;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+	}
+	.files-panel .git-hunk-panel h2 {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.files-panel .git-hunk > .project-toolbar {
+		margin-bottom: 4px;
+		font-size: 12px;
+		color: var(--muted-foreground);
+	}
+	.files-panel .git-hunk > .project-toolbar button {
+		min-height: 0;
+		padding: 2px 8px;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		color: var(--foreground);
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.files-panel .git-hunk > .project-toolbar button:hover {
+		background: var(--muted);
+	}
+	.files-panel .git-hunk-panel h3 {
+		margin-block: 12px 8px;
+		font-size: 12px;
+		font-weight: 700;
+	}
+
+	/* Settings is a page, not a stack of cards: sections bleed by the legacy
+	   panel padding so their contents line up with the page heading. */
+	.chat-settings-content.legacy-panel .page {
+		max-width: 760px;
+		padding: 40px 48px 64px;
+	}
+	.chat-settings-content.legacy-panel .page-heading h1 {
+		font-size: 22px;
+		font-weight: 700;
+	}
+	.chat-settings-content.legacy-panel .panel {
+		margin-inline: calc(var(--panel-padding) * -1);
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+		overflow: visible;
+	}
+	.chat-settings-content.legacy-panel .panel + .panel {
+		margin-top: 8px;
+		background: linear-gradient(var(--border), var(--border)) center top / calc(100% - var(--panel-padding) * 2) 1px no-repeat;
+	}
+	.chat-settings-content.legacy-panel .panel-heading h2 {
+		font-size: 14px;
+		font-weight: 700;
+	}
+}
+
+/* Composer editor: plain paragraphs, chips inline, placeholder on the empty first line. */
+.composer-editor { outline: none; white-space: pre-wrap; overflow-wrap: anywhere; }
+.composer-editor p { margin: 0; }
+.composer-editor p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: color-mix(in oklab, var(--muted-foreground) 80%, transparent); }
+.composer-editor .composer-chip { display: inline; }
+.composer-editor .ProseMirror-selectednode { outline: none; }
+
+/*
+ * Scrolling areas use the shadcn ScrollArea. The few that still scroll natively (legacy panels, the terminal,
+ * menus taller than the window, text areas) draw the same thin rounded thumb, with no track or arrows.
+ */
+::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-button { display: none; }
+::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 9999px; background: var(--border) padding-box; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, var(--muted-foreground) 55%, transparent) padding-box; }
+.message-markdown .message-table-scroll { margin-block: 0.75em; }
+
+/* Disclosures show a chevron that turns when open, never the browser's triangle. */
+summary { display: flex; align-items: center; gap: 0.375rem; list-style: none; cursor: pointer; }
+summary::-webkit-details-marker { display: none; }
+summary::marker { content: ""; }
+summary::before { content: ""; flex-shrink: 0; width: 0.875rem; height: 0.875rem; background: currentColor; opacity: 0.7; transition: transform 150ms; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat; }
+details[open] > summary::before { transform: rotate(90deg); }
+/* Summaries that draw their own chevron icon keep it. */
+summary:has(> svg:first-child)::before { display: none; }
+
+/* Browser loading bar, after T3 Code: grows to 90% over a few seconds, then fills and fades once the page loads. */
+@keyframes browser-loading-progress { from { transform: scaleX(0.04); } to { transform: scaleX(0.9); } }
+.browser-loading-progress { opacity: 0; transform: scaleX(1); transition: transform 150ms ease-out, opacity 150ms ease-out 220ms; }
+.browser-loading-progress[data-loading="true"] { opacity: 1; animation: browser-loading-progress 5.3s cubic-bezier(0.1, 0.5, 0.2, 1) forwards; }
+@media (prefers-reduced-motion: reduce) {
+	.browser-loading-progress, .browser-loading-progress[data-loading="true"] { transition: none; animation: none; }
+	.browser-loading-progress[data-loading="true"] { transform: scaleX(0.9); }
+}
+
+/* Code ▸ Factory: issue and pull request text, the way GitHub shows it. */
+@layer components {
+	.item-markdown {
+		line-height: 1.7;
+		overflow-wrap: anywhere;
+	}
+	.item-markdown :where(p, ul, ol, pre) {
+		margin-block: 0 0.85em;
+	}
+	.item-markdown > :last-child {
+		margin-bottom: 0;
+	}
+	.item-markdown h2 {
+		margin-block: 1.2em 0.5em;
+		font-size: 15px;
+		font-weight: 700;
+	}
+	.item-markdown > h2:first-child {
+		margin-top: 0;
+	}
+	.item-markdown ul {
+		list-style: disc;
+		padding-left: 1.5em;
+	}
+	.item-markdown li::marker {
+		color: var(--muted-foreground);
+	}
+	.item-markdown code {
+		border-radius: 4px;
+		background: var(--muted);
+		padding: 0.1em 0.35em;
+		font-family: var(--font-mono);
+		font-size: 0.86em;
+	}
+	.item-markdown pre {
+		overflow-x: auto;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		background: color-mix(in oklch, var(--muted) 45%, var(--background));
+		padding: 12px 14px;
+		font: 12px/1.6 var(--font-mono);
+	}
+	.item-markdown pre code {
+		background: transparent;
+		padding: 0;
+	}
+	/* Everything else GitHub Markdown can hold, so comments and reports look the way they do on GitHub. */
+	.item-markdown :where(blockquote, table, details, hr, .item-markdown-table) {
+		margin-block: 0 0.85em;
+	}
+	.item-markdown :where(h1, h2, h3, h4, h5, h6) {
+		margin-block: 1.2em 0.5em;
+		font-weight: 700;
+		line-height: 1.35;
+	}
+	.item-markdown h1 { font-size: 17px; }
+	.item-markdown :where(h2, h3) { font-size: 15px; }
+	.item-markdown :where(h4, h5, h6) { font-size: 14px; }
+	.item-markdown > :where(h1, h2, h3, h4, h5, h6):first-child {
+		margin-top: 0;
+	}
+	.item-markdown ol {
+		list-style: decimal;
+		padding-left: 1.5em;
+	}
+	.item-markdown :where(ul, ol) :where(ul, ol) {
+		margin-block: 0.2em;
+	}
+	.item-markdown li.task-list-item {
+		list-style: none;
+		margin-left: -1.25em;
+	}
+	.item-markdown a {
+		color: var(--info);
+		text-decoration: underline;
+		text-decoration-color: color-mix(in oklch, var(--info) 40%, transparent);
+		text-underline-offset: 2px;
+	}
+	.item-markdown a:hover {
+		text-decoration-color: currentColor;
+	}
+	.item-markdown blockquote {
+		border-left: 3px solid var(--border);
+		padding-left: 0.9em;
+		color: var(--muted-foreground);
+	}
+	.item-markdown hr {
+		border: 0;
+		border-top: 1px solid var(--border);
+	}
+	.item-markdown .item-markdown-table {
+		overflow-x: auto;
+	}
+	.item-markdown table {
+		border-collapse: collapse;
+		font-size: 0.93em;
+	}
+	.item-markdown :where(th, td) {
+		border: 1px solid var(--border);
+		padding: 0.35em 0.7em;
+		text-align: left;
+		vertical-align: top;
+	}
+	.item-markdown th {
+		background: color-mix(in oklch, var(--muted) 60%, transparent);
+		font-weight: 600;
+	}
+	.item-markdown details {
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		padding: 0.5em 0.8em;
+	}
+	.item-markdown details[open] > summary {
+		margin-bottom: 0.5em;
+	}
+	.item-markdown summary {
+		cursor: pointer;
+		font-weight: 500;
+	}
+	.item-markdown :where(sub, sup) {
+		font-size: 0.8em;
+		color: var(--muted-foreground);
+	}
+	.item-markdown kbd {
+		border: 1px solid var(--border);
+		border-bottom-width: 2px;
+		border-radius: 4px;
+		padding: 0 0.35em;
+		font-family: var(--font-mono);
+		font-size: 0.85em;
+	}
+	.item-markdown del {
+		color: var(--muted-foreground);
+	}
+	.item-markdown img {
+		max-width: 100%;
+	}
+	/* One-line Markdown in summaries and proof lines: code gets the same chip, nothing else changes the line. */
+	.inline-markdown code {
+		border-radius: 4px;
+		background: var(--muted);
+		padding: 0.05em 0.3em;
+		font-family: var(--font-mono);
+		font-size: 0.9em;
+	}
+	.inline-markdown a {
+		text-decoration: underline;
+		text-decoration-color: color-mix(in oklch, currentColor 40%, transparent);
+		text-underline-offset: 2px;
+	}
+}
+
+/* A running stage's progress shimmer. */
+@keyframes factory-sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.factory-sweep { animation: factory-sweep 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .factory-sweep { animation: none; } }

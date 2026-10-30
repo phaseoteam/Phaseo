@@ -1,117 +1,99 @@
 {
 	"provider": "arcee-ai",
-	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
-	"clock": "2026-10-18T12:00:00.000Z",
-	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
 	"cards": [
 		{
 			"key": "arcee-ai:arcee-ai/trinity-large-thinking:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/arcee-ai/arcee-ai-trinity-large-thinking/text.generate/pricing.json",
+			"routes": ["arcee-ai:arcee-ai/trinity-large-thinking"],
+			"skus": ["offer-56a96e0a32695ced3227@v1","offer-79110a2ac698257a1668@v1"],
 			"rules": [
-				["#1","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
-				["#4","standard","output_text_tokens","0.8/1000000 token",100,null,null,null],
-				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null]
+				["offer-56a96e0a32695ced3227@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["offer-56a96e0a32695ced3227@v1#output_text_tokens","standard","output_text_tokens","0.8/1000000 token",100,null,null,null],
+				["offer-79110a2ac698257a1668@v1#input_text_tokens","standard","input_text_tokens","0.25/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":813840,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",61440],["input_text_tokens",1576,"#0","input_text_tokens",394000],["output_text_tokens",448,"#4","output_text_tokens",358400]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":6126370,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",274020],["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#4","output_text_tokens",2765600]]}},
-				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["#4","#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":5852350,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#4","output_text_tokens",2765600]]}}
-			]
-		},
-		{
-			"key": "arcee-ai:arcee-ai/trinity-large:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/arcee-ai/arcee-ai-trinity-large/text.generate/pricing.json",
-			"rules": [
-				["#2","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
-				["#3","standard","output_text_tokens","1/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1098000,"lines":[["input_text_tokens",2600,"#2","input_text_tokens",650000],["output_text_tokens",448,"#3","output_text_tokens",448000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#2","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6543750,"lines":[["input_text_tokens",12347,"#2","input_text_tokens",3086750],["output_text_tokens",3457,"#3","output_text_tokens",3457000]]}}
-			]
-		},
-		{
-			"key": "arcee-ai:arcee-ai/trinity-mini:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/arcee-ai/arcee-ai-trinity-mini/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.045/1000000 token",100,null,null,null],
-				["#1","standard","output_text_tokens","0.15/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":184200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",117000],["output_text_tokens",448,"#1","output_text_tokens",67200]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1074165,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",555615],["output_text_tokens",3457,"#1","output_text_tokens",518550]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":967440,"lines":[["cached_read_text_tokens",1024,"offer-56a96e0a32695ced3227@v1#cached_read_text_tokens","cached_read_text_tokens",61440],["input_text_tokens",1576,"offer-79110a2ac698257a1668@v1#input_text_tokens","input_text_tokens",394000],["output_reasoning_tokens",192,"offer-56a96e0a32695ced3227@v1#output_text_tokens","output_text_tokens",153600,"reasoning at the output price"],["output_text_tokens",448,"offer-56a96e0a32695ced3227@v1#output_text_tokens","output_text_tokens",358400]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-56a96e0a32695ced3227@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":6757570,"lines":[["cached_read_text_tokens",4567,"offer-56a96e0a32695ced3227@v1#cached_read_text_tokens","cached_read_text_tokens",274020],["input_text_tokens",12347,"offer-79110a2ac698257a1668@v1#input_text_tokens","input_text_tokens",3086750],["output_reasoning_tokens",789,"offer-56a96e0a32695ced3227@v1#output_text_tokens","output_text_tokens",631200,"reasoning at the output price"],["output_text_tokens",3457,"offer-56a96e0a32695ced3227@v1#output_text_tokens","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["offer-56a96e0a32695ced3227@v1#output_text_tokens","offer-79110a2ac698257a1668@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":6483550,"lines":[["input_text_tokens",12347,"offer-79110a2ac698257a1668@v1#input_text_tokens","input_text_tokens",3086750],["output_reasoning_tokens",789,"offer-56a96e0a32695ced3227@v1#output_text_tokens","output_text_tokens",631200,"reasoning at the output price"],["output_text_tokens",3457,"offer-56a96e0a32695ced3227@v1#output_text_tokens","output_text_tokens",2765600]]}}
 			]
 		},
 		{
 			"key": "arcee-ai:deepseek/deepseek-v4-flash-0731:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/arcee-ai/deepseek-deepseek-v4-flash-0731/text.generate/pricing.json",
+			"routes": ["arcee-ai:deepseek/deepseek-v4-flash-latest"],
+			"skus": ["offer-32ea20b3b1ad1495bd8e@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
-				["#1","standard","cached_read_text_tokens","0.028/1000000 token",100,null,null,null],
-				["#2","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+				["offer-32ea20b3b1ad1495bd8e@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.028/1000000 token",100,null,null,null],
+				["offer-32ea20b3b1ad1495bd8e@v1#input_text_tokens","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["offer-32ea20b3b1ad1495bd8e@v1#output_text_tokens","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":374752,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",28672],["input_text_tokens",1576,"#0","input_text_tokens",220640],["output_text_tokens",448,"#2","output_text_tokens",125440]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2824416,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",127876],["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":374752,"lines":[["cached_read_text_tokens",1024,"offer-32ea20b3b1ad1495bd8e@v1#cached_read_text_tokens","cached_read_text_tokens",28672],["input_text_tokens",1576,"offer-32ea20b3b1ad1495bd8e@v1#input_text_tokens","input_text_tokens",220640],["output_text_tokens",448,"offer-32ea20b3b1ad1495bd8e@v1#output_text_tokens","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-32ea20b3b1ad1495bd8e@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2824416,"lines":[["cached_read_text_tokens",4567,"offer-32ea20b3b1ad1495bd8e@v1#cached_read_text_tokens","cached_read_text_tokens",127876],["input_text_tokens",12347,"offer-32ea20b3b1ad1495bd8e@v1#input_text_tokens","input_text_tokens",1728580],["output_text_tokens",3457,"offer-32ea20b3b1ad1495bd8e@v1#output_text_tokens","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-32ea20b3b1ad1495bd8e@v1#input_text_tokens","offer-32ea20b3b1ad1495bd8e@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"offer-32ea20b3b1ad1495bd8e@v1#input_text_tokens","input_text_tokens",1728580],["output_text_tokens",3457,"offer-32ea20b3b1ad1495bd8e@v1#output_text_tokens","output_text_tokens",967960]]}}
 			]
 		},
 		{
-			"key": "arcee-ai:deepseek/deepseek-v4-pro:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/arcee-ai/deepseek-deepseek-v4-pro/text.generate/pricing.json",
+			"key": "arcee-ai:deepseek/deepseek-v4.1-flash-1017:text.generate",
+			"routes": ["arcee-ai:deepseek/deepseek-v4.1-flash-1017"],
+			"skus": ["arcee-ai-flash-1017-standard@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","1.74/1000000 token",100,null,null,null],
-				["#1","standard","cached_read_text_tokens","0.2/1000000 token",100,null,null,null],
-				["#2","standard","output_text_tokens","3.48/1000000 token",100,null,null,null]
+				["arcee-ai-flash-1017-standard@v1#output_text_tokens","standard","output_text_tokens","1.2/1000000 token",30,null,null,null],
+				["arcee-ai-flash-1017-standard@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.006/1000000 token",20,null,null,null],
+				["arcee-ai-flash-1017-standard@v1#input_text_tokens","standard","input_text_tokens","0.3/1000000 token",10,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4506080,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",204800],["input_text_tokens",1576,"#0","input_text_tokens",2742240],["output_text_tokens",448,"#2","output_text_tokens",1559040]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":34427540,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",913400],["input_text_tokens",12347,"#0","input_text_tokens",21483780],["output_text_tokens",3457,"#2","output_text_tokens",12030360]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":33514140,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",21483780],["output_text_tokens",3457,"#2","output_text_tokens",12030360]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1016544,"lines":[["cached_read_text_tokens",1024,"arcee-ai-flash-1017-standard@v1#cached_read_text_tokens","cached_read_text_tokens",6144],["input_text_tokens",1576,"arcee-ai-flash-1017-standard@v1#input_text_tokens","input_text_tokens",472800],["output_text_tokens",448,"arcee-ai-flash-1017-standard@v1#output_text_tokens","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["arcee-ai-flash-1017-standard@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":7879902,"lines":[["cached_read_text_tokens",4567,"arcee-ai-flash-1017-standard@v1#cached_read_text_tokens","cached_read_text_tokens",27402],["input_text_tokens",12347,"arcee-ai-flash-1017-standard@v1#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"arcee-ai-flash-1017-standard@v1#output_text_tokens","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.output_text_tokens","kind":"rule","targets":["arcee-ai-flash-1017-standard@v1#output_text_tokens","arcee-ai-flash-1017-standard@v1#input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"arcee-ai-flash-1017-standard@v1#input_text_tokens","input_text_tokens",3704100],["output_text_tokens",3457,"arcee-ai-flash-1017-standard@v1#output_text_tokens","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "arcee-ai:deepseek/deepseek-v4.1-flash:text.generate",
+			"routes": ["arcee-ai:deepseek/deepseek-v4.1-flash"],
+			"skus": ["offer-arcee-deepseek-v41-flash-standard@v1"],
+			"rules": [
+				["offer-arcee-deepseek-v41-flash-standard@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.007/1000000 token",100,null,null,null],
+				["offer-arcee-deepseek-v41-flash-standard@v1#input_text_tokens","standard","input_text_tokens","0.22/1000000 token",100,null,null,null],
+				["offer-arcee-deepseek-v41-flash-standard@v1#output_text_tokens","standard","output_text_tokens","0.66/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":649568,"lines":[["cached_read_text_tokens",1024,"offer-arcee-deepseek-v41-flash-standard@v1#cached_read_text_tokens","cached_read_text_tokens",7168],["input_text_tokens",1576,"offer-arcee-deepseek-v41-flash-standard@v1#input_text_tokens","input_text_tokens",346720],["output_text_tokens",448,"offer-arcee-deepseek-v41-flash-standard@v1#output_text_tokens","output_text_tokens",295680]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-arcee-deepseek-v41-flash-standard@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":5029929,"lines":[["cached_read_text_tokens",4567,"offer-arcee-deepseek-v41-flash-standard@v1#cached_read_text_tokens","cached_read_text_tokens",31969],["input_text_tokens",12347,"offer-arcee-deepseek-v41-flash-standard@v1#input_text_tokens","input_text_tokens",2716340],["output_text_tokens",3457,"offer-arcee-deepseek-v41-flash-standard@v1#output_text_tokens","output_text_tokens",2281620]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-arcee-deepseek-v41-flash-standard@v1#input_text_tokens","offer-arcee-deepseek-v41-flash-standard@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4997960,"lines":[["input_text_tokens",12347,"offer-arcee-deepseek-v41-flash-standard@v1#input_text_tokens","input_text_tokens",2716340],["output_text_tokens",3457,"offer-arcee-deepseek-v41-flash-standard@v1#output_text_tokens","output_text_tokens",2281620]]}}
 			]
 		},
 		{
 			"key": "arcee-ai:moonshotai/kimi-k3:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/arcee-ai/moonshotai-kimi-k3/text.generate/pricing.json",
+			"routes": ["arcee-ai:moonshotai/kimi-k3"],
+			"skus": ["offer-e7f6a399ee06814411c8@v1"],
 			"rules": [
-				["#0","standard","cached_read_text_tokens","0.3/1000000 token",100,null,null,null],
-				["#1","standard","input_image_tokens","0/1000000 token",100,null,null,null],
-				["#2","standard","input_text_tokens","3/1000000 token",100,null,null,null],
-				["#3","standard","output_text_tokens","15/1000000 token",100,null,null,null]
+				["offer-e7f6a399ee06814411c8@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.3/1000000 token",100,null,null,null],
+				["offer-e7f6a399ee06814411c8@v1#input_image_tokens","standard","input_image_tokens","0/1000000 token",100,null,null,null],
+				["offer-e7f6a399ee06814411c8@v1#input_text_tokens","standard","input_text_tokens","3/1000000 token",100,null,null,null],
+				["offer-e7f6a399ee06814411c8@v1#output_text_tokens","standard","output_text_tokens","15/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":11755200,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",307200],["input_text_tokens",1576,"#2","input_text_tokens",4728000],["output_text_tokens",448,"#3","output_text_tokens",6720000]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":90266100,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1370100],["input_text_tokens",12347,"#2","input_text_tokens",37041000],["output_text_tokens",3457,"#3","output_text_tokens",51855000]]}},
-				{"id":"rule.standard.input_image_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_image_tokens":1543,"input_tokens":13890,"output_tokens":3457,"total_tokens":17347},"expected":{"nanos":88896000,"lines":[["input_image_tokens",1543,"#1","input_image_tokens",0],["input_text_tokens",12347,"#2","input_text_tokens",37041000],["output_text_tokens",3457,"#3","output_text_tokens",51855000]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#2","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":88896000,"lines":[["input_text_tokens",12347,"#2","input_text_tokens",37041000],["output_text_tokens",3457,"#3","output_text_tokens",51855000]]}}
-			]
-		},
-		{
-			"key": "arcee-ai:thinking-machines/inkling-small:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/arcee-ai/thinkingmachines-inkling-small/text.generate/pricing.json",
-			"rules": [
-				["#0","standard","input_text_tokens","0.5/1000000 token",100,null,null,null],
-				["#1","standard","cached_read_text_tokens","0.1/1000000 token",100,null,null,null],
-				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
-			],
-			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1428000,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",102400],["input_text_tokens",1576,"#0","input_text_tokens",788000],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":10778600,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",456700],["input_text_tokens",12347,"#0","input_text_tokens",6173500],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":10321900,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",6173500],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":11755200,"lines":[["cached_read_text_tokens",1024,"offer-e7f6a399ee06814411c8@v1#cached_read_text_tokens","cached_read_text_tokens",307200],["input_text_tokens",1576,"offer-e7f6a399ee06814411c8@v1#input_text_tokens","input_text_tokens",4728000],["output_text_tokens",448,"offer-e7f6a399ee06814411c8@v1#output_text_tokens","output_text_tokens",6720000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-e7f6a399ee06814411c8@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":90266100,"lines":[["cached_read_text_tokens",4567,"offer-e7f6a399ee06814411c8@v1#cached_read_text_tokens","cached_read_text_tokens",1370100],["input_text_tokens",12347,"offer-e7f6a399ee06814411c8@v1#input_text_tokens","input_text_tokens",37041000],["output_text_tokens",3457,"offer-e7f6a399ee06814411c8@v1#output_text_tokens","output_text_tokens",51855000]]}},
+				{"id":"rule.standard.input_image_tokens","kind":"rule","targets":["offer-e7f6a399ee06814411c8@v1#input_image_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_image_tokens":1543,"input_tokens":13890,"output_tokens":3457,"total_tokens":17347},"expected":{"nanos":88896000,"lines":[["input_image_tokens",1543,"offer-e7f6a399ee06814411c8@v1#input_image_tokens","input_image_tokens",0],["input_text_tokens",12347,"offer-e7f6a399ee06814411c8@v1#input_text_tokens","input_text_tokens",37041000],["output_text_tokens",3457,"offer-e7f6a399ee06814411c8@v1#output_text_tokens","output_text_tokens",51855000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-e7f6a399ee06814411c8@v1#input_text_tokens","offer-e7f6a399ee06814411c8@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":88896000,"lines":[["input_text_tokens",12347,"offer-e7f6a399ee06814411c8@v1#input_text_tokens","input_text_tokens",37041000],["output_text_tokens",3457,"offer-e7f6a399ee06814411c8@v1#output_text_tokens","output_text_tokens",51855000]]}}
 			]
 		},
 		{
 			"key": "arcee-ai:z-ai/glm-5.2:text.generate",
-			"file": "packages/data/catalog/src/data/pricing/arcee-ai/z-ai-glm-5.2/text.generate/pricing.json",
+			"routes": ["arcee-ai:zai-org/glm-5.2"],
+			"skus": ["offer-fbdd64238d0b8167648f@v1"],
 			"rules": [
-				["#0","standard","input_text_tokens","1.4/1000000 token",100,null,null,null],
-				["#1","standard","cached_read_text_tokens","0.26/1000000 token",100,null,null,null],
-				["#2","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+				["offer-fbdd64238d0b8167648f@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.26/1000000 token",100,null,null,null],
+				["offer-fbdd64238d0b8167648f@v1#input_text_tokens","standard","input_text_tokens","1.4/1000000 token",100,null,null,null],
+				["offer-fbdd64238d0b8167648f@v1#output_text_tokens","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
 			],
 			"cases": [
-				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4443840,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",266240],["input_text_tokens",1576,"#0","input_text_tokens",2206400],["output_text_tokens",448,"#2","output_text_tokens",1971200]]}},
-				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":33684020,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1187420],["input_text_tokens",12347,"#0","input_text_tokens",17285800],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}},
-				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":32496600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",17285800],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}}
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4443840,"lines":[["cached_read_text_tokens",1024,"offer-fbdd64238d0b8167648f@v1#cached_read_text_tokens","cached_read_text_tokens",266240],["input_text_tokens",1576,"offer-fbdd64238d0b8167648f@v1#input_text_tokens","input_text_tokens",2206400],["output_text_tokens",448,"offer-fbdd64238d0b8167648f@v1#output_text_tokens","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-fbdd64238d0b8167648f@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":33684020,"lines":[["cached_read_text_tokens",4567,"offer-fbdd64238d0b8167648f@v1#cached_read_text_tokens","cached_read_text_tokens",1187420],["input_text_tokens",12347,"offer-fbdd64238d0b8167648f@v1#input_text_tokens","input_text_tokens",17285800],["output_text_tokens",3457,"offer-fbdd64238d0b8167648f@v1#output_text_tokens","output_text_tokens",15210800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-fbdd64238d0b8167648f@v1#input_text_tokens","offer-fbdd64238d0b8167648f@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":32496600,"lines":[["input_text_tokens",12347,"offer-fbdd64238d0b8167648f@v1#input_text_tokens","input_text_tokens",17285800],["output_text_tokens",3457,"offer-fbdd64238d0b8167648f@v1#output_text_tokens","output_text_tokens",15210800]]}}
 			]
 		}
 	]

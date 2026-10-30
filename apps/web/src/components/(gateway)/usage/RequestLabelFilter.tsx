@@ -85,7 +85,6 @@ export default function RequestLabelFilter({
 		const value = labelValueDisplay(active.key, active.value, classifiers);
 		return active.exclude ? t("filterIsNot", { key, value }) : t("filterIs", { key, value });
 	})() : null;
-	const activeIsClassifier = active ? optionByKey.get(active.key)?.kind !== "caller" && optionByKey.has(active.key) : false;
 
 	const select = (key: string, value: string | null) => {
 		void setQueryState({
@@ -116,7 +115,7 @@ export default function RequestLabelFilter({
 						className="h-8 max-w-[min(320px,50vw)] gap-1.5 rounded-md px-2 text-xs"
 						aria-label={activeText ? t("changeFilterAria", { filter: activeText }) : t("filterAria")}
 					>
-						{activeIsClassifier ? <Sparkles className="size-3.5 shrink-0" /> : <Tag className="size-3.5 shrink-0" />}
+						<Tag className="size-3.5 shrink-0" />
 						<span className="truncate">{activeText ?? t("filterLabel")}</span>
 					</Button>
 				</PopoverTrigger>

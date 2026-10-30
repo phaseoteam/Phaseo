@@ -11,6 +11,8 @@ export function calculateOutputPerformanceMetrics(args: {
 	providerDurationMs: number | null;
 	providerTtftMs: number | null;
 	gatewayE2eMs: number | null;
+	/** Time spent on failed provider attempts; provider time, not Phaseo's. */
+	failoverMs?: number | null;
 }): OutputPerformanceMetrics {
 	const outputTokens = Number.isFinite(args.outputTokens)
 		? Math.max(0, args.outputTokens)
@@ -27,6 +29,10 @@ export function calculateOutputPerformanceMetrics(args: {
 		args.gatewayE2eMs != null && Number.isFinite(args.gatewayE2eMs)
 			? Math.max(0, args.gatewayE2eMs)
 			: null;
+	const failoverMs =
+		args.failoverMs != null && Number.isFinite(args.failoverMs)
+			? Math.max(0, args.failoverMs)
+			: 0;
 	const postFirstTokenMs =
 		providerDurationMs != null && providerTtftMs != null
 			? Math.max(0, providerDurationMs - providerTtftMs)
@@ -50,7 +56,7 @@ export function calculateOutputPerformanceMetrics(args: {
 		itlMs: null,
 		phaseoOverheadMs:
 			gatewayE2eMs != null && providerDurationMs != null
-				? Math.max(0, gatewayE2eMs - providerDurationMs)
+				? Math.max(0, gatewayE2eMs - providerDurationMs - failoverMs)
 				: null,
 	};
 }

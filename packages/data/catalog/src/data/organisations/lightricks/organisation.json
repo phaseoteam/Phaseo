@@ -1,5 +1,0 @@
-{
-  "organisation_id": "lightricks", "name": "Lightricks", "country_code": "IL", "description": "Lightricks develops the LTX family of multimodal video generation models.",
-  "website": "https://ltx.io", "links": [{ "title": "LTX", "kind": "website", "url": "https://ltx.io" }],
-  "sources": [{ "kind": "official_documentation", "url": "https://docs.ltx.io/models", "accessed_at": "2026-08-11T00:00:00Z" }]
-}

@@ -39,6 +39,7 @@ import {
 } from "./pricingMeterConditions";
 import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 interface PricingReferenceProps {
 	meters: PricingMeter[];
@@ -336,7 +337,7 @@ export function PricingReference({
 															<div className="grid grid-cols-4 gap-2">
 																{BUDGET_PRESETS.map((budget) => (
 																	<div key={budget} className="min-w-0">
-																		<p className="text-[10px] text-muted-foreground">{new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(budget)}</p>
+																		<p className="text-[10px] text-muted-foreground">{new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(budget)}</p>
 																		<p className="truncate text-xs font-semibold tabular-nums">{formatQuantity(calculateUnits(budget, meter, pricingTimeUtc), t("unlimited"))}</p>
 																	</div>
 																))}
@@ -346,7 +347,7 @@ export function PricingReference({
 												) : (
 													<>
 														<p className="mt-1 text-xs text-muted-foreground">{t("costsValue", { quantity: formatQuantity(example, t("unlimited")), price: fmtUSD(calculateCost(example, meter, pricingTimeUtc)) })}</p>
-														<p className="mt-1 text-xs text-muted-foreground">{t("buysValue", { budget: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(10), units: formatQuantity(calculateUnits(10, meter, pricingTimeUtc), t("unlimited")) })}</p>
+														<p className="mt-1 text-xs text-muted-foreground">{t("buysValue", { budget: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(10), units: formatQuantity(calculateUnits(10, meter, pricingTimeUtc), t("unlimited")) })}</p>
 													</>
 												)}
 														{timeWindow ? <p className="mt-1 text-[11px] text-muted-foreground">{formatPricingTimeWindow(timeWindow)}</p> : null}

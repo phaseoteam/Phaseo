@@ -1,28 +1,22 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { computeBill, computeBillSummary } from "./engine";
 import type { PriceCard, PriceRule } from "./types";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "../../../../..");
-const deepSeekV4ProPricingPath = path.join(
-    repoRoot,
-    "packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-pro-0813/text.generate/pricing.json",
-);
-const deepSeekV4FlashPricingPath = path.join(
-    repoRoot,
-    "packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-flash-0731/text.generate/pricing.json",
-);
-const deepSeekV4FlashVisionPricingPath = path.join(
-    repoRoot,
-    "packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-flash-vision-exp/text.generate/pricing.json",
-);
-const deepSeekV41FlashPricingPath = path.join(
-    repoRoot,
-    "packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4.1-flash/text.generate/pricing.json",
-);
+import {
+    deepSeekV41FlashCard,
+    deepSeekV4FlashCard,
+    deepSeekV4FlashVisionCard,
+    deepSeekV4ProCard,
+} from "./__fixtures__/deepseek-v4-cards";
+
+type CatalogCardFixture = {
+    api_provider_id: string;
+    api_model_id: string;
+    capability_id: string;
+    effective_from?: string | null;
+    effective_to?: string | null;
+    rules: ReadonlyArray<Record<string, unknown>>;
+};
 
 const makeDeepSeekCard = (): PriceCard => ({
     provider: "deepseek",
@@ -85,8 +79,7 @@ const makeDeepSeekCard = (): PriceCard => ({
     ],
 });
 
-function loadActiveCatalogPriceCard(pricingPath: string, nowIso = "2026-07-01T00:00:00.000Z"): PriceCard {
-    const raw = JSON.parse(fs.readFileSync(pricingPath, "utf8"));
+function loadActiveCatalogPriceCard(raw: CatalogCardFixture, nowIso = "2026-07-01T00:00:00.000Z"): PriceCard {
     const nowMs = Date.parse(nowIso);
     const rules = raw.rules
         .filter((rule: Record<string, unknown>) => {
@@ -126,7 +119,7 @@ function loadActiveCatalogPriceCard(pricingPath: string, nowIso = "2026-07-01T00
 const deepSeekV4CatalogCases = [
     {
         label: "DeepSeek V4 Pro",
-        pricingPath: deepSeekV4ProPricingPath,
+        pricingCard: deepSeekV4ProCard,
         baseTotal: "1.308625000",
         offPeakTotal: "2.662000000",
         peakTotal: "5.324000000",
@@ -138,7 +131,7 @@ const deepSeekV4CatalogCases = [
     },
     {
         label: "DeepSeek V4 Flash",
-        pricingPath: deepSeekV4FlashPricingPath,
+        pricingCard: deepSeekV4FlashCard,
         baseTotal: "0.422800000",
         offPeakTotal: "0.887000000",
         peakTotal: "1.774000000",
@@ -151,15 +144,15 @@ const deepSeekV4CatalogCases = [
 ];
 
 const deepSeekWeekendCatalogCases = [
-    ...deepSeekV4CatalogCases.map(({ label, pricingPath, offPeakTotal, peakTotal }) => ({
+    ...deepSeekV4CatalogCases.map(({ label, pricingCard, offPeakTotal, peakTotal }) => ({
         label,
-        pricingPath,
+        pricingCard,
         offPeakTotal,
         peakTotal,
     })),
     {
         label: "DeepSeek V4 Flash Vision Exp",
-        pricingPath: deepSeekV4FlashVisionPricingPath,
+        pricingCard: deepSeekV4FlashVisionCard,
         offPeakTotal: "0.887000000",
         peakTotal: "1.774000000",
     },
@@ -168,7 +161,7 @@ const deepSeekWeekendCatalogCases = [
 const deepSeekV41CatalogCases = [
     {
         label: "DeepSeek V4.1 Flash",
-        pricingPath: deepSeekV41FlashPricingPath,
+        pricingCard: deepSeekV41FlashCard,
     },
 ];
 
@@ -445,7 +438,7 @@ describe("pricing engine time-windowed rules", () => {
 
 describe("DeepSeek V4 catalog time-period pricing", () => {
 	it("bills DeepSeek Vision image tokens once through aggregate input usage", () => {
-		const card = loadActiveCatalogPriceCard(deepSeekV4FlashVisionPricingPath, "2026-08-21T00:00:00.000Z");
+		const card = loadActiveCatalogPriceCard(deepSeekV4FlashVisionCard, "2026-08-21T00:00:00.000Z");
 
 		const result = computeBillSummary(
 			// DeepSeek reports image-derived tokens within the aggregate input total.
@@ -463,8 +456,8 @@ describe("DeepSeek V4 catalog time-period pricing", () => {
 
     it.each(deepSeekV4CatalogCases)(
         "keeps current prices active for $label before the scheduled cutover",
-        ({ pricingPath, baseTotal }) => {
-            const card = loadActiveCatalogPriceCard(pricingPath, "2026-08-16T15:59:59.999Z");
+        ({ pricingCard, baseTotal }) => {
+            const card = loadActiveCatalogPriceCard(pricingCard, "2026-08-16T15:59:59.999Z");
 
             expect(card.rules).toHaveLength(3);
             expect(card.rules.every((rule) => !rule.time_windows?.length)).toBe(true);
@@ -492,8 +485,8 @@ describe("DeepSeek V4 catalog time-period pricing", () => {
 
     it.each(deepSeekV4CatalogCases)(
         "bills $label scheduled off-peak and peak prices after the cutover",
-        ({ pricingPath, peakPricesByMeter, offPeakTotal, peakTotal }) => {
-            const card = loadActiveCatalogPriceCard(pricingPath, "2026-08-16T16:00:00.000Z");
+        ({ pricingCard, peakPricesByMeter, offPeakTotal, peakTotal }) => {
+            const card = loadActiveCatalogPriceCard(pricingCard, "2026-08-16T16:00:00.000Z");
 
             expect(card.rules).toHaveLength(3);
             expect(card.rules.every((rule) => rule.time_windows?.length === 2)).toBe(true);
@@ -574,8 +567,8 @@ describe("DeepSeek V4 catalog time-period pricing", () => {
 
     it.each(deepSeekWeekendCatalogCases)(
         "keeps $label off-peak all weekend after the weekend-pricing cutover",
-        ({ pricingPath, offPeakTotal, peakTotal }) => {
-            const card = loadActiveCatalogPriceCard(pricingPath, "2026-08-22T16:00:00.000Z");
+        ({ pricingCard, offPeakTotal, peakTotal }) => {
+            const card = loadActiveCatalogPriceCard(pricingCard, "2026-08-22T16:00:00.000Z");
             const usage = {
                 input_text_tokens: 1_000_000,
                 cached_read_text_tokens: 1_000_000,
@@ -615,8 +608,8 @@ describe("DeepSeek V4 catalog time-period pricing", () => {
 
     it.each(deepSeekV41CatalogCases)(
         "applies the September 10 Flash-series price schedule for $label",
-        ({ pricingPath }) => {
-            const card = loadActiveCatalogPriceCard(pricingPath, "2026-09-10T04:00:00.000Z");
+        ({ pricingCard }) => {
+            const card = loadActiveCatalogPriceCard(pricingCard, "2026-09-10T04:00:00.000Z");
             const usage = {
                 input_text_tokens: 1_000_000,
                 cached_read_text_tokens: 1_000_000,

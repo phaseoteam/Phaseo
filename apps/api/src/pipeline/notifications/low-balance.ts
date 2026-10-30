@@ -159,7 +159,9 @@ export async function runLowBalanceEmailSweep(options: { now?: Date } = {}): Pro
 	if (error) throw new Error(`low_balance_email_sweep_failed:${error.message}`);
 	const summary = parseLowBalanceEmailSweep(data);
 	if (!automation) return summary;
-	// The rows are already marked sent: the Resend automation delivers the email.
+	// The rows are already marked sent: the Resend automation delivers the email. If its event
+	// fails, the row is reopened so the outbox drain sends the template email instead, since the
+	// sweep has already recorded the drop and will not queue it again.
 	for (const email of summary.emails) {
 		try {
 			await sendLowBalanceAutomationEvent({
@@ -176,10 +178,13 @@ export async function runLowBalanceEmailSweep(options: { now?: Date } = {}): Pro
 			summary.automationSent += 1;
 		} catch (error) {
 			summary.automationFailed += 1;
+			const { error: reopenError } = await getSupabaseAdmin().from("email_outbox").update({ sent_at: null }).eq("id", email.id);
 			console.error("[low-balance] automation event failed", {
 				workspaceId: email.workspaceId,
 				outboxId: email.id,
 				error: error instanceof Error ? error.message : String(error),
+				reopenedForDrain: !reopenError,
+				...(reopenError ? { reopenError: reopenError.message } : {}),
 			});
 		}
 	}

@@ -23,7 +23,7 @@ phaseo login
 phaseo codex
 ```
 
-Este comando verifica se o ambiente está instalado. Se estiver ausente em um terminal interativo, o Phaseo mostra o comando de instalação compatível e pede confirmação antes de executá-lo. Em seguida, cria uma chave exclusiva para o ambiente e grava a configuração. Execuções não interativas mostram instruções de instalação úteis sem fazer alterações no sistema sem supervisão. OpenCode, DeepSeek Harness, Pi, Prime Agent e OpenClaw também recebem todos os modelos de texto ativos compatíveis com Chat Completions. Use `--skip-install`, `--catalog default` ou `--dry-run` para limitar o comportamento.
+Este comando verifica se o ambiente está instalado. Se estiver ausente em um terminal interativo, o Phaseo mostra o comando de instalação compatível e pede confirmação antes de executá-lo. Em seguida, cria uma chave exclusiva para o ambiente e grava a configuração. Execuções não interativas mostram instruções de instalação úteis sem fazer alterações no sistema sem supervisão. OpenCode, fx, DeepSeek Harness, Pi, Prime Agent e OpenClaw também recebem todos os modelos de texto ativos compatíveis com Chat Completions. Use `--skip-install`, `--catalog default` ou `--dry-run` para limitar o comportamento.
 
 Use o comando com o nome do produto para qualquer integração persistente:
 
@@ -31,9 +31,9 @@ Use o comando com o nome do produto para qualquer integração persistente:
 phaseo codex
 ```
 
-Os nomes de integração compatíveis são `codex`, `claude-code`, `opencode`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` e `zed`. Os executores isolados da CLI são `cline`, `kilo`, `omp`, `muse` e `minimax`.
+Os nomes de integração compatíveis são `codex`, `claude-code`, `opencode`, `fx`, `deepseek-harness`, `pi`, `openclaw`, `hermes`, `aider`, `cline`, `roo-code`, `kilo-code`, `continue`, `cursor` e `zed`. Os executores isolados da CLI são `cline`, `kilo`, `omp`, `muse` e `minimax`.
 
-A CLI cria uma chave de API separada e sem expiração, com o nome daquele assistente. Ela configura o Aider e o Continue automaticamente em instalações limpas e também grava automaticamente as configurações de provedor/modelo do Zed. Para assistentes que mantêm segredos exclusivamente na interface do editor, ela mostra exatamente os campos restantes, inclui um link para o guia específico e permite copiar somente a chave daquele assistente:
+A CLI cria uma chave de API separada, com o nome daquele assistente, que expira após 90 dias e tem um limite de gastos mensal de $100. Ela configura o Aider e o Continue automaticamente em instalações limpas e também grava automaticamente as configurações de provedor/modelo do Zed. Para assistentes que mantêm segredos exclusivamente na interface do editor, ela mostra exatamente os campos restantes, inclui um link para o guia específico e permite copiar somente a chave daquele assistente:
 
 ```bash
 phaseo integrations credential codex
@@ -146,7 +146,7 @@ O Aider costuma esperar que modelos personalizados compatíveis com OpenAI tenha
 
 `phaseo pi` adiciona uma extensão de provedor dedicada que obtém a chave da CLI do Phaseo em tempo de execução. `phaseo prime-agent` grava um provedor baseado em comando em `~/.prime/agent/models.json`. Ambos recebem o catálogo de modelos compatíveis do Phaseo. `phaseo openclaw` registra o catálogo compatível e uma SecretRef baseada em exec, sem colocar a chave de API em `openclaw.json`.
 
-`phaseo hermes` oferece executar o instalador oficial da Nous Research quando o Hermes não estiver instalado e, em seguida, configura o agente. Ele salva as configurações anteriores de modelo do Hermes, define o Phaseo como endpoint personalizado e usa o comando oficial `hermes config set` para colocar a chave dedicada em `~/.hermes/.env` como `OPENAI_API_KEY`. O Hermes usa deliberadamente esse arquivo em texto simples para credenciais do provedor; proteja-o como qualquer outro arquivo de chave de API. A remoção restaura as configurações anteriores de modelo, remove `OPENAI_API_KEY`, exclui o estado de recuperação do Phaseo e revoga a chave.
+`phaseo hermes` oferece executar o instalador oficial da Nous Research quando o Hermes não estiver instalado e, em seguida, configura o agente. Ele salva as configurações anteriores de modelo do Hermes, define o Phaseo como endpoint personalizado e grava a chave dedicada como `OPENAI_API_KEY` no arquivo `.env` do Hermes, dentro de um bloco marcado com `# >>> phaseo managed (do not edit)`, para que a chave nunca seja passada em uma linha de comando e suas outras linhas fiquem intactas. O Phaseo pergunta ao Hermes onde esse arquivo fica: normalmente `~/.hermes/.env`, `%LOCALAPPDATA%\hermes\.env` no Windows nativo ou o `.env` de `HERMES_HOME`. Ele também define `model.key_env` do Hermes como `OPENAI_API_KEY` para que o Hermes envie a chave ao Phaseo; execute `hermes update` antes se a sua versão do Hermes não oferecer suporte a `model.key_env`. O Hermes usa deliberadamente esse arquivo em texto simples para credenciais do provedor; proteja-o como qualquer outro arquivo de chave de API. A remoção restaura as configurações anteriores de modelo, remove `OPENAI_API_KEY`, exclui o estado de recuperação do Phaseo e revoga a chave.
 
 ## MiniMax Code
 
@@ -176,6 +176,10 @@ Provedores personalizados do Codex usam o protocolo Responses.
 ## OpenCode
 
 Use o [guia específico do OpenCode](./opencode.mdx) se quiser que ele chame o Phaseo por meio de um provedor personalizado compatível com OpenAI.
+
+## fx
+
+Use o [guia específico do fx](./fx.mdx) para adicionar o Phaseo como uma conexão de modelo personalizada no agente de programação fx, da Vercel Labs.
 
 ## Claude Code
 

@@ -5,6 +5,8 @@ import type { ModelsPageModel } from "@/components/(data)/models/Models/modelsDi
 
 // The existing account endpoint checks the admin role and sends no-store
 // responses. Never request staged records from the public catalogue API.
+// Only unreleased drafts are staged: other hidden rows are retired, deprecated
+// or delisted models and must not appear as coming soon.
 export async function fetchAdminStagedModels(options: {
 	signal?: AbortSignal;
 	accessToken?: string | null;
@@ -13,9 +15,9 @@ export async function fetchAdminStagedModels(options: {
 	const token = options.accessToken === undefined ? await getBrowserAccessToken() : options.accessToken;
 	try {
 		const payload = await fetchAccountWebApi<{ models: Array<Record<string, any>> }>(
-			"/api/account/models/hidden", token, { signal: options.signal },
+			"/api/account/models/hidden?staged=true", token, { signal: options.signal },
 		);
-		return payload.models.filter((row) => row.hidden === true).map((row) => {
+		return payload.models.filter((row) => row.hidden === true && row.status === "draft").map((row) => {
 			const organisation = Array.isArray(row.organisation) ? row.organisation[0] : row.organisation;
 			return mapRawToModelCard({ ...row, organisation, organisation_id: organisation?.lab_slug ?? row.model_id.split("/")[0] }, {
 				gateway_status: "coming_soon",

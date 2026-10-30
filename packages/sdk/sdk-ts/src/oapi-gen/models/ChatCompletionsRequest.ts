@@ -40,6 +40,9 @@ export interface ChatCompletionsRequest {
   max_tokens?: number;
   max_tool_calls?: number;
   messages: {
+    audio?: {
+      id: string;
+    } | null;
     audios?: {
       audio_url: {
         url: string;
@@ -192,6 +195,13 @@ export interface ChatCompletionsRequest {
     type: "content";
   };
   presence_penalty?: number;
+  prompt?: {
+    id: string;
+    variables?: {
+      [key: string]: unknown;
+    };
+    version?: string;
+  };
   prompt_cache_key?: string | null;
   prompt_cache_options?: {
     mode?: "implicit" | "explicit";

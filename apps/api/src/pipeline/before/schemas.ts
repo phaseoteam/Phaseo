@@ -230,7 +230,15 @@ const capabilityParamDescriptorSchema = z
 const capabilityParamsSchema = z
     .union([
         z.record(z.string(), z.any()),
-        z.array(z.union([z.string().trim().min(1), capabilityParamDescriptorSchema])),
+        z.array(
+            z.union([
+                z.string().trim().min(1),
+                capabilityParamDescriptorSchema,
+                // The context RPC appends `{data_policy}` (or `{}` once nulls
+                // are stripped) to list-shaped params; it is not a parameter.
+                z.object({ data_policy: z.any().optional() }).strict(),
+            ]),
+        ),
     ])
     .transform<Record<string, any>>((value) => {
         if (!Array.isArray(value)) return value;
@@ -239,6 +247,10 @@ const capabilityParamsSchema = z
         for (const entry of value) {
             if (typeof entry === "string") {
                 params[entry] = {};
+                continue;
+            }
+            if (!("param_id" in entry)) {
+                if (entry.data_policy !== undefined) params.data_policy = entry.data_policy;
                 continue;
             }
             const { param_id: paramId, ...config } = entry;
@@ -447,8 +459,12 @@ const presetConfigSchema = z
             .nullable()
             .optional(),
         reasoning: z.record(z.string(), z.any()).nullable().optional(),
+        // Validated when rendered (core/prompt-templates), so one bad template
+        // fails its own requests with a clear error rather than the context load.
+        prompt: z.unknown().nullable().optional(),
     })
     .transform<PresetConfig>((config) => ({
+        ...(config.prompt != null ? { prompt: config.prompt } : {}),
         ...(() => {
             const provider = config.provider;
             const maxPrice = provider?.maxPrice ?? provider?.max_price ?? null;
@@ -547,6 +563,9 @@ const presetDataSchema = z
         description: z.string().nullable().optional(),
         config: presetConfigSchema,
         visibility: z.enum(["private", "team", "public"]),
+        version_id: z.string().nullable().optional(),
+        version_label: z.string().nullable().optional(),
+        ref: z.string().nullable().optional(),
     })
     .transform<PresetData>((preset) => ({
         id: preset.id,
@@ -555,6 +574,9 @@ const presetDataSchema = z
         description: preset.description ?? null,
         config: preset.config,
         visibility: preset.visibility,
+        versionId: preset.version_id ?? null,
+        versionLabel: preset.version_label ?? null,
+        ref: preset.ref ?? null,
     }));
 
 const teamEnrichmentSchema = z

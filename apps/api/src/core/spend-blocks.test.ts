@@ -89,11 +89,11 @@ const PAID: PriceCard = { provider: "openai", rules: [{ price_per_unit: "0.00000
 const FREE: PriceCard = { provider: "openai", rules: [{ price_per_unit: "0" }] } as unknown as PriceCard;
 
 let sequence = 0;
-function ctx(overrides: Partial<PipelineContext> & { authMethod?: "api_key" | "oauth" } = {}): PipelineContext {
-	const { authMethod = "api_key", ...rest } = overrides;
+function ctx(overrides: Partial<PipelineContext> & { authMethod?: "api_key" | "oauth"; apiKeyRef?: string } = {}): PipelineContext {
+	const { authMethod = "api_key", apiKeyRef = "kid_key", ...rest } = overrides;
 	return {
 		workspaceId: WS, keyId: KEY, quotaUserId: USER, model: "openai/gpt-5", internal: false,
-		requestId: `request-${++sequence}`, meta: { authMethod },
+		requestId: `request-${++sequence}`, meta: { authMethod, apiKeyRef },
 		...rest,
 	} as unknown as PipelineContext;
 }
@@ -181,7 +181,9 @@ describe("matching", () => {
 describe("request subject", () => {
 	it("uses the key for API keys and the actor for members, never an OAuth client id", () => {
 		expect(spendSubjectFor(ctx(), "openai/gpt-5-base")).toEqual({ keyId: KEY, actorUserId: USER, models: ["openai/gpt-5", "openai/gpt-5-base"] });
-		expect(spendSubjectFor(ctx({ authMethod: "oauth", keyId: "client-id" } as never))).toEqual({ keyId: null, actorUserId: USER, models: ["openai/gpt-5"] });
+		expect(spendSubjectFor(ctx({ authMethod: "oauth", apiKeyRef: "oauth_client-id", keyId: "client-id" } as never))).toEqual({ keyId: null, actorUserId: USER, models: ["openai/gpt-5"] });
+		// A delegated OAuth key is attributed to its app but is still a key, so key rules apply.
+		expect(spendSubjectFor(ctx({ authMethod: "oauth", apiKeyRef: "kid_delegated" }))).toEqual({ keyId: KEY, actorUserId: USER, models: ["openai/gpt-5"] });
 	});
 });
 

@@ -1,0 +1,238 @@
+---
+title: "रीयलटाइम वॉइस सत्र"
+description: "Phaseo रिले के ज़रिए रीयलटाइम वॉइस कॉल चलाएँ, उसे ठीक से समाप्त करें और कॉल खत्म होने पर अंतिम बिल पाएँ।"
+icon: "phone"
+---
+
+<Note>
+रीयलटाइम वॉइस बीटा में है और इसकी पहुँच हर वर्कस्पेस के लिए अलग से दी जाती है।
+</Note>
+
+रीयलटाइम सत्र आपके क्लाइंट और किसी प्रदाता के रीयलटाइम मॉडल के बीच एक वॉइस कॉल है, जिसे Phaseo रिले करता है ताकि उसे मापा जा सके और उसका बिल बनाया जा सके। रिले प्रदाता के अपने इवेंट बिना बदले आगे भेजता है और तीन इवेंट अपनी ओर से जोड़ता है: `session.end`, `session.warning` और `session.ended`।
+
+## सत्र शुरू करें
+
+अपने सर्वर से सत्र बनाएँ:
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
+```
+
+प्रतिक्रिया में `client_secret`, `connect.url`, `max_duration_seconds` और `idle_timeout_seconds` (API सत्रों के लिए हमेशा `null`) शामिल होते हैं। `api.phaseo.app` पर `connect.url` के लिए WebSocket सबप्रोटोकॉल `statsync-realtime` और `rtsec.<client_secret>` के साथ एक WebSocket खोलें। रिले `statsync-realtime` चुनता है; अगर आप केवल `rtsec.<client_secret>` देते हैं, तो कोई प्रोटोकॉल नहीं चुना जाता और ब्राउज़र तथा ज़्यादातर WebSocket लाइब्रेरी हैंडशेक में विफल हो जाती हैं। प्रदाता तैयार होते ही रिले `relay.connected` भेजता है, फिर माइक्रोफ़ोन ऑडियो को `{"type": "client.audio", "audio": "<base64 PCM16>"}` के रूप में स्वीकार करता है: OpenAI, xAI और ElevenLabs के लिए 24 kHz, Google और Mistral के लिए 16 kHz।
+
+सत्र शुरू होने पर Phaseo $5 का क्रेडिट रोककर रखता है और कॉल चलने के साथ-साथ इस रोकी गई राशि को बढ़ाता जाता है।
+
+[TypeScript](/hi/v1/sdk-reference/typescript/audio-realtime) और [Python](/hi/v1/sdk-reference/python/audio-realtime) SDK यह सब आपके लिए करते हैं: `client.realtime.connect()` सत्र बनाता है और सॉकेट खोलता है, और `session.end()` `session.ended` लौटाता है। बाकी SDK में भी ऐसा ही छोटा क्लाइंट है; हर पैकेज के README में एक उदाहरण है।
+
+| SDK | कनेक्ट | WebSocket लाइब्रेरी |
+| --- | --- | --- |
+| Go | `realtime.Connect(ctx, client, realtime.Options{...})` | `github.com/coder/websocket`, अलग `realtime` पैकेज में |
+| Java | `client.realtime.connect(Map.of("model", ...))` | JDK `java.net.http.WebSocket` |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { ... })` | `System.Net.WebSockets.ClientWebSocket` |
+| PHP | `$client->realtime()->connect(["model" => ...])` | `phrity/websocket` (वैकल्पिक, `composer require phrity/websocket`) |
+| Ruby | `client.realtime.connect(model: ...)` | `websocket` जेम (वैकल्पिक) |
+| Rust | `client.realtime().connect(RealtimeOptions::new(...))` | `tungstenite`, `realtime` फ़ीचर के पीछे |
+
+C++ SDK में कोई रीयलटाइम क्लाइंट नहीं है।
+
+### Google Live कनेक्शन
+
+पूरी कॉल के दौरान माइक्रोफ़ोन ऑडियो भेजते रहें, खामोशी भी। जिस कनेक्शन को लगभग 150 सेकंड तक कोई ऑडियो नहीं मिलता, Google उसे बंद कर देता है (क्लोज़ कोड `1008`), और फिर कॉल `provider_closed` के साथ समाप्त हो जाती है। 2 मिनट तक ऑडियो न मिलने पर रिले `threshold: "input_idle"` के साथ एक `provider_closing` चेतावनी भेजता है। बारी-बारी की बातचीत के बीच की खामोशी किसी भी बारी का हिस्सा नहीं होती, इसलिए उसका बिल नहीं बनता।
+
+Google लगभग हर 10 मिनट बाद हर कनेक्शन को बदल भी देता है। रिले Google के सत्र पुनरारंभ की मदद से कॉल को नए कनेक्शन पर ले जाता है, आपका सॉकेट खुला रखता है और बदलाव पूरा होने पर `{"type": "relay.provider_reconnected", "reconnects": 1}` भेजता है। बदलाव के दौरान (आम तौर पर एक सेकंड से कम) आप जो ऑडियो भेजते हैं, उसे रोककर रखा जाता है और आगे भेज दिया जाता है। फिर से शुरू हुआ कनेक्शन अब तक की बातचीत को दोबारा प्रोसेस करता है, और Google अगली बारी में उसका दोबारा इनपुट टोकन के रूप में बिल बनाता है, इसलिए लंबी कॉल में हर बदलाव के बाद प्रति बारी लागत थोड़ी बढ़ जाती है। यह सब `usage` और बिल में शामिल होता है। रिले `provider_closing` चेतावनी तभी देता है जब वह पुनरारंभ नहीं कर पाता, और तब कॉल उस समय समाप्त होती है जब Google कनेक्शन बंद करता है।
+
+### GPT Live सत्र
+
+GPT Live (`openai/gpt-live-1`) आवाज़ को संभालता है और तर्क का काम एक Responses बैकएंड मॉडल को सौंपता है। इसे `POST /v1/live/sessions` से बनाएँ:
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1",
+    "provider": "openai",
+    "voice": "marin",
+    "backend_model": "openai/gpt-5.6-luna",
+    "backend_settings": {
+      "tools": [{ "type": "function", "name": "get_time", "description": "Returns the current UTC time.", "parameters": { "type": "object", "properties": {} } }]
+    }
+  }'
+```
+
+`voice` इनमें से कोई एक है: `alloy`, `ash`, `ballad`, `beacon`, `bossa`, `cedar`, `cinder`, `coral`, `delta`, `echo`, `gleam`, `marin`, `meridian`, `quartz`, `ripple`, `sage`, `shimmer`, `stone`, `tempo`, `verse`, `vesper` या `willow`। `backend_model` का मान `openai/gpt-5.6-luna` (डिफ़ॉल्ट) या `openai/gpt-5.6-terra` होता है। कनेक्ट करें और 24 kHz ऑडियो उसी तरह भेजें जैसे दूसरे सत्रों में भेजते हैं।
+
+फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं। बैकएंड का कॉल एक `response.event` के रूप में आता है, जिसका `event.item.type` `function_call` होता है। उसका नाम और `arguments` मॉडल से आते हैं, और कॉल करने वाला जो कहता है वह उन्हें प्रभावित कर सकता है, इसलिए उन्हें अविश्वसनीय इनपुट मानें:
+
+1. केवल वही टूल चलाएँ जिन्हें आपने घोषित किया है, उन्हें `name` से खोजें, और किसी भी दूसरे नाम को अस्वीकार करें।
+2. `arguments` को JSON के रूप में पार्स करें और उपयोग से पहले उसे टूल के `parameters` स्कीमा के विरुद्ध जाँचें।
+3. जाँचें कि साइन-इन किया हुआ उपयोगकर्ता वह काम करने का अधिकारी है जो कॉल माँग रहा है, और डेटा बदलने, पैसा खर्च करने या किसी से संपर्क करने वाले किसी भी काम से पहले उनसे पुष्टि करें।
+
+फिर टूल चलाएँ, परिणाम भेजें और अगले उत्तर का अनुरोध करें। अगर कोई कॉल इन जाँचों में विफल रहता है, तो उसे चलाने के बजाय एक `output` भेजें जो कारण बताए:
+
+```json
+{ "type": "response.item.create", "item": { "type": "function_call_output", "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" } }
+{ "type": "response.create" }
+```
+
+रिले `function_call_output` केवल उसी कॉल के लिए स्वीकार करता है जो बैकएंड ने किया हो, हर कॉल के लिए एक बार और अधिकतम 64 KB तक, और `response.create` केवल कम से कम एक आउटपुट के बाद स्वीकार करता है। बाकी किसी भी चीज़ पर `{"type": "relay.client_event_rejected", "reason": "..."}` मिलता है और कॉल जारी रहती है। Phaseo फ़ंक्शन टूल कभी खुद नहीं चलाता।
+
+GPT Live कॉल का बिल आवाज़ के प्रति सेकंड ($0.05 प्रति मिनट, GPT Live के अपने `usage.seconds` के आधार पर) के साथ-साथ हर प्रतिक्रिया में बैकएंड मॉडल के टोकन के हिसाब से बनता है, जिसमें टूल परिणामों के बाद के उत्तर भी शामिल हैं। जिस सत्र को लगभग 30 सेकंड तक कोई ऑडियो नहीं मिलता, GPT Live उसे समाप्त कर देता है, जिससे कॉल `provider_idle_timeout` के साथ खत्म होती है। माइक्रोफ़ोन ऑडियो भेजते रहें, खामोशी भी।
+
+### ElevenLabs Realtime सत्र
+
+ElevenLabs Realtime के दो मॉडल हैं: `eleven-labs/eleven-realtime-v1-mini`, जो तेज़ और सस्ता डिफ़ॉल्ट है, और `eleven-labs/eleven-realtime-v1-max`, जो जवाब देने से पहले तर्क करता है और जटिल निर्देशों तथा कई चरणों वाले टूल उपयोग के लिए उपयुक्त है। दोनों OpenAI जैसा ही निर्माण अनुरोध और रिले उपयोग करते हैं, 24 kHz ऑडियो के साथ। Phaseo अपनी कुंजी से ElevenLabs से कनेक्ट करता है; आपके क्लाइंट को केवल रिले दिखता है।
+
+ElevenLabs कॉल के जुड़े रहने के हर सेकंड का बिल बनाता है, साथ ही उसके द्वारा उपयोग किए गए भाषा-मॉडल टोकन का भी, और कॉल के दौरान उपयोग की जानकारी नहीं देता। कॉल चलते समय रिले जुड़े रहने का समय मापता है, इसलिए रोकी गई राशि और ओवरड्राफ़्ट सीमा दूसरे प्रदाताओं की तरह ही काम करती हैं। कॉल खत्म होने पर Phaseo बातचीत के लिए ElevenLabs का बिल पढ़ता है और उसमें तथा अपनी सूची-मूल्य वाली कुल राशि में से जो बड़ी हो, वह वसूलता है। इसमें आम तौर पर कुछ सेकंड लगते हैं। अगर इससे ज़्यादा समय लगता है, तो `session.ended` `billing_status: "pending"` और एक `final_bill` अनुरोध के साथ आता है, और ElevenLabs के बिल बताते ही उसका निपटान हो जाता है, आम तौर पर कुछ मिनटों में। तब तक आपकी रोकी गई राशि बनी रहती है। अगर 24 घंटे बाद भी ElevenLabs ने बिल नहीं बताया है, तो सत्र को केवल जुड़े रहने के समय के लिए शुल्क लेने के बजाय बिलिंग समीक्षा में भेज दिया जाता है।
+
+### स्ट्रीमिंग ट्रांसक्रिप्शन
+
+Mistral के Voxtral Realtime मॉडल लाइव ऑडियो को आते ही ट्रांसक्राइब करते हैं: `mistral/voxtral-mini-transcribe-realtime-3` और `mistral/voxtral-mini-transcribe-realtime`। ये बोलकर जवाब नहीं देते, इसलिए सत्र `voice` या `instructions` के बिना बनाएँ:
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "mistral/voxtral-mini-transcribe-realtime-3"}'
+```
+
+उसी तरह कनेक्ट करें और 16 kHz PCM16 को `client.audio` के रूप में स्ट्रीम करें। Mistral के इवेंट बिना बदलाव के आगे भेजे जाते हैं: `session.created`, फिर हर नए टेक्स्ट टुकड़े के साथ `transcription.text.delta`, और जब Mistral भेजे तब `transcription.language` और `transcription.segment`। ट्रांसक्रिप्शन सेटिंग बदलने के लिए `{"type": "session.update", "session": {...}}` भेजें, जिसमें `language`, `target_streaming_delay_ms` (80 से 1,200, या 2,400), `context_bias`, `diarize` और `turn_detection` में से कोई भी हो। ऑडियो फ़ॉर्मैट सहित अन्य फ़ील्ड `relay.client_event_rejected` के साथ अस्वीकार किए जाते हैं। ऑडियो शुरू होते ही सेटिंग तय हो जाती हैं, इसलिए पहले `client.audio` से पहले `session.update` भेजें; बाद के अपडेट भी इसी तरह अस्वीकार किए जाते हैं। पुराना `mistral/voxtral-mini-transcribe-realtime` केवल `target_streaming_delay_ms` स्वीकार करता है।
+
+जब आप `session.end` भेजते हैं, तो रिले Mistral की ऑडियो स्ट्रीम समाप्त करता है और पूरा ट्रांसक्रिप्ट लाने वाले `transcription.done` के लिए 10 सेकंड तक प्रतीक्षा करता है, फिर बिल तय करके `session.ended` भेजता है। आपके द्वारा पहले से भेजा गया ऑडियो इस्तेमाल होता है; कुछ भी छोड़ा नहीं जाता।
+
+स्ट्रीमिंग ट्रांसक्रिप्शन का बिल आपके भेजे गए ऑडियो के प्रति मिनट के हिसाब से बनता है (Voxtral Mini Transcribe Realtime 3 के लिए $0.008 प्रति मिनट), जिसे रिले मापता है। `transcription.done` में Mistral की अपनी गिनती न्यूनतम शुल्क है। पहले से मौजूद रिकॉर्डिंग के लिए इसके बजाय [ऑडियो ट्रांसक्रिप्शन](/hi/v1/api-reference/endpoint/audio-transcriptions) का उपयोग करें।
+
+## सत्र समाप्त करें
+
+जब कॉल करने वाला फ़ोन रख दे, तो `session.end` भेजें:
+
+```json
+{ "type": "session.end", "reason": "caller hung up" }
+```
+
+| फ़ील्ड | प्रकार | डिफ़ॉल्ट | अर्थ |
+| --- | --- | --- | --- |
+| `reason` | string | कोई नहीं | आपका अपना नोट, अधिकतम 120 छपने योग्य अक्षर, जो `client_reason` के रूप में वापस लौटाया जाता है। |
+| `cancel_response` | boolean | `true` | `true` अभी चल रहे उत्तर को रद्द करता है। `false` उसे अधिकतम 20 सेकंड तक पूरा होने देता है। |
+
+इसके बाद रिले:
+
+1. ऑडियो स्वीकार करना बंद करता है;
+2. वह माइक्रोफ़ोन ऑडियो हटा देता है जिसे प्रदाता ने अभी तक किसी बारी में शामिल नहीं किया है;
+3. चल रहे उत्तर को रद्द करता है, या उसे पूरा होने देता है, और उसके उपयोग के लिए अधिकतम 10 सेकंड प्रतीक्षा करता है;
+4. GPT Live के लिए, प्रदाता को `session.close` भेजता है और `session.closed` की प्रतीक्षा करता है;
+5. बिल का निपटान करता है;
+6. `session.ended` भेजता है;
+7. कोड `1000` के साथ सॉकेट बंद करता है।
+
+`session.end` के बिना सॉकेट बंद करने पर भी कॉल समाप्त होती है और उसका बिल उसी तरह बनता है, लेकिन आपके क्लाइंट को `session.ended` नहीं मिलेगा।
+
+## session.ended
+
+रिले हर समाप्ति पर `session.ended` भेजता है: जो आपने माँगी हो, जो प्रदाता ने शुरू की हो और जो गेटवे ने शुरू की हो। यह तब भेजा जाता है जब आपका सॉकेट अभी खुला होता है, ठीक उससे पहले जब रिले उसे बंद करता है।
+
+```json
+{
+  "type": "session.ended",
+  "session_id": "rt_01k8...",
+  "reason": "client_requested",
+  "initiated_by": "client",
+  "client_reason": "caller hung up",
+  "duration_seconds": 184.2,
+  "usage": { "input_audio_tokens": 1840, "output_audio_tokens": 3120, "input_text_tokens": 412 },
+  "cost": {
+    "total_usd": 0.231,
+    "total_nanos": 231000000,
+    "estimated": false,
+    "estimate_basis": null,
+    "debt_nanos": 0,
+    "uncollected_nanos": 0,
+    "currency": "USD"
+  },
+  "billing_status": "settled"
+}
+```
+
+| फ़ील्ड | अर्थ |
+| --- | --- |
+| `reason` | एक स्थिर कारण कोड। [कारण कोड](#reason-codes) देखें। |
+| `initiated_by` | `client`, `gateway` या `provider`। |
+| `duration_seconds` | रिले के कनेक्ट होने के बाद से बीता समय। |
+| `usage` | जिन मीटरों का बिल बना: मोडैलिटी के अनुसार टोकन गिनती और, xAI तथा GPT Live के लिए, `audio_seconds`। |
+| `cost.estimated` | `true`, जब उपयोग का कुछ हिस्सा मापे गए ऑडियो से अनुमानित किया गया हो क्योंकि किसी बाधित बारी के लिए प्रदाता का उपयोग कभी नहीं आया। `estimate_basis` कारण बताता है। |
+| `cost.debt_nanos` | लागत का वह हिस्सा जो आपकी रोकी गई राशि और मुक्त शेष राशि से आगे ओवरड्राफ़्ट के रूप में वसूला गया। |
+| `cost.uncollected_nanos` | ओवरड्राफ़्ट सीमा से आगे की वह लागत जो वसूली नहीं गई। |
+| `provider_close_code` | प्रदाता का WebSocket क्लोज़ कोड, जब प्रदाता ने कॉल समाप्त की हो। |
+| `billing_status` | `settled`, `pending` या `unresolved`। |
+
+अगर निपटान का अभी भी दोबारा प्रयास हो रहा है, तो `billing_status` `pending` होता है और `cost` चालू अनुमान दिखाता है। अगर सत्र को बिलिंग समीक्षा की ज़रूरत है, तो यह `unresolved` होता है। दोनों ही मामलों में `final_bill` वह अनुरोध देता है जिससे निपटान के बाद अंतिम लागत प्राप्त की जा सकती है:
+
+```json
+"final_bill": { "method": "GET", "path": "/v1/generations?id=realtime%3Art_01k8..." }
+```
+
+<span id="reason-codes"></span>
+
+### कारण कोड
+
+| `reason` | `initiated_by` | कब |
+| --- | --- | --- |
+| `client_requested` | client | आपने `session.end` भेजा। |
+| `client_disconnected` | client | आपका सॉकेट `session.end` के बिना बंद हुआ। |
+| `provider_closed` | provider | प्रदाता ने अपना कनेक्शन बंद किया, उदाहरण के लिए लगभग 150 सेकंड तक ऑडियो न मिलने पर Google (कोड `1008`), या ऐसे `goAway` के बाद जिससे रिले पुनरारंभ नहीं कर सका। |
+| `provider_idle_timeout` | provider | लगभग 30 सेकंड तक कोई ऑडियो न मिलने के कारण GPT Live ने सत्र समाप्त कर दिया। |
+| `provider_error` | provider | प्रदाता कनेक्शन विफल हुआ या उसने कोई त्रुटि बताई। |
+| `max_duration_reached` | gateway | प्रदाता की सत्र सीमा पूरी हो गई। |
+| `insufficient_funds` | gateway | ओवरड्राफ़्ट सीमा पूरी हो गई। |
+| `key_revoked` | gateway | कॉल के दौरान API कुंजी रद्द या हटा दी गई। |
+| `key_expired` | gateway | कॉल के दौरान API कुंजी की अवधि समाप्त हो गई। |
+| `key_blocked` | gateway | कॉल के दौरान API कुंजी रोक दी गई। |
+| `workspace_disabled` | gateway | वर्कस्पेस अब मौजूद नहीं है। |
+| `policy_blocked` | gateway | वर्कस्पेस नीति में बदलाव ने मॉडल को रोक दिया, या प्रदाता को अनुमत सूची से हटा दिया, और `policy_blocked` चेतावनी के 30 सेकंड बाद भी वह लागू था। |
+| `input_rejected` | gateway | रिले ने क्लाइंट ऑडियो अस्वीकार कर दिया: बहुत बड़ा, वास्तविक समय से तेज़, या प्रदाता पीछे रह गया। |
+| `session_reconciled` | gateway | रिले की स्थिति खो गई और मिलान प्रक्रिया ने सत्र बंद कर दिया। |
+| `gateway_error` | gateway | Phaseo प्रदाता के इवेंट प्रोसेस नहीं कर सका या उपयोग दर्ज नहीं कर सका। |
+| `idle_timeout` | gateway | केवल Playground: पाँच मिनट तक कोई ऑडियो नहीं। |
+| `spend_limit_reached` | gateway | केवल Playground: कुंजी की खर्च सीमा या वर्कस्पेस बजट पूरा हो गया। |
+
+नए कोड जोड़े जा सकते हैं, इसलिए किसी अज्ञात `reason` को `gateway_error` की तरह मानें।
+
+## session.warning
+
+चेतावनियाँ कॉल समाप्त किए बिना बताती हैं कि आगे क्या होने वाला है। हर कोड हर सीमा-बिंदु पर अधिकतम एक बार भेजा जाता है।
+
+```json
+{ "type": "session.warning", "code": "max_duration_approaching", "message": "...", "seconds_remaining": 120, "expires_at": "2026-10-22T11:00:00.000Z" }
+```
+
+| `code` | अतिरिक्त फ़ील्ड | कब |
+| --- | --- | --- |
+| `max_duration_approaching` | `seconds_remaining`, `expires_at` | प्रदाता की सत्र सीमा से 2 मिनट 30 सेकंड पहले। |
+| `provider_closing` | `seconds_remaining`, और निष्क्रियता के मामले में `threshold: "input_idle"` | Google कनेक्शन बंद करने वाला है: ऐसे `goAway` के बाद जिससे रिले पुनरारंभ नहीं कर सका, या (`input_idle`) क्योंकि 2 मिनट से कोई ऑडियो नहीं आया है। |
+| `funds_low` | `remaining_usd` | क्रेडिट की रोकी गई राशि बढ़ाई नहीं जा सकी। कॉल आपकी मुक्त शेष राशि पर जारी रहती है। |
+| `overdraft_in_use` | `remaining_usd`, `overdraft_used_usd` | आपकी मुक्त शेष राशि खत्म हो गई है और कॉल ओवरड्राफ़्ट पर चल रही है। सीमा में $0.25 से कम बचने पर यह फिर से भेजा जाता है। |
+| `spend_limit_exceeded` | `limit` (`key` या `workspace_budget`) | कुंजी की खर्च सीमा या वर्कस्पेस बजट पूरा हो गया। कॉल जारी रहती है; नए अनुरोध अस्वीकार किए जाते हैं। |
+| `policy_blocked` | `status`, और जब `status` `ending` हो तो `seconds_remaining` तथा `ends_at` | कोई वर्कस्पेस नीति अब कॉल को रोकती है, या उसके प्रदाता को अनुमत सूची से हटा दिया गया है। जब तक बदलाव वापस न लिया जाए, कॉल 30 सेकंड बाद समाप्त हो जाती है; वापस लेने पर `status: "cleared"` के साथ दूसरी चेतावनी आती है। |
+
+`remaining_usd` वह राशि है जो कॉल समाप्त होने से पहले अभी भी खर्च कर सकती है, ओवरड्राफ़्ट सहित।
+
+## सीमाएँ
+
+API सत्र निष्क्रिय रहने के कारण कभी समाप्त नहीं किए जाते, और खर्च सीमाएँ केवल चेतावनी देती हैं। कोई कॉल अपने आप केवल तब समाप्त होती है जब इनमें से कुछ हो:
+
+| सीमा | मान |
+| --- | --- |
+| OpenAI Realtime | 60 मिनट |
+| xAI | 120 मिनट |
+| Google Live | 60 मिनट, उन सभी कनेक्शनों को मिलाकर जिन्हें रिले पुनरारंभ करता है। अगर आपका क्लाइंट लगभग 150 सेकंड तक ऑडियो भेजना बंद कर दे, तो भी कॉल समाप्त हो जाती है। |
+| GPT Live | 25 मिनट |
+| ElevenLabs Realtime | 30 मिनट |
+| Mistral स्ट्रीमिंग ट्रांसक्रिप्शन | 60 मिनट |
+| ओवरड्राफ़्ट सीमा | आपकी रोकी गई राशि और मुक्त शेष राशि से $1 अधिक |
+| पहुँच खोना | कुंजी रद्द हो जाती है, उसकी अवधि समाप्त हो जाती है या उसे रोक दिया जाता है, या वर्कस्पेस हटा दिया जाता है। लगभग एक मिनट के भीतर इसका पता चलता है, फिर कॉल बिना किसी छूट अवधि के समाप्त हो जाती है। |
+| नीति में बदलाव | `policy_blocked` चेतावनी के 30 सेकंड बाद, अगर नीति अब भी कॉल को रोकती है |
+
+सत्र सीमाएँ रिले के कनेक्ट होने के समय से गिनी जाती हैं, सत्र बनाए जाने के समय से नहीं।

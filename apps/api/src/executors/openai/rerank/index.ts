@@ -225,6 +225,26 @@ function usageToMeters(usage?: IRRerankResponse["usage"]): Record<string, number
 	return meters;
 }
 
+/** Cohere puts at most 100 documents in one search unit (https://docs.cohere.com/docs/rerank-overview). */
+const COHERE_DOCUMENTS_PER_SEARCH_UNIT = 100;
+
+/**
+ * Cohere bills rerank per search unit, reported as `meta.billed_units.search_units`
+ * (https://docs.cohere.com/reference/rerank). Its price rows charge the per-search rate on the
+ * `requests` meter, so a call counts one request per search unit billed. When Cohere omits the
+ * count, it is at least one unit per 100 documents.
+ */
+function cohereRerankMeters(usage: IRRerankResponse["usage"], documentCount: number): Record<string, number> {
+	const meters = usageToMeters(usage);
+	const reported = usage?.searchUnits;
+	const searchUnits = typeof reported === "number" && Number.isFinite(reported) && reported > 0
+		? Math.ceil(reported)
+		: Math.max(1, Math.ceil(documentCount / COHERE_DOCUMENTS_PER_SEARCH_UNIT));
+	meters.requests = searchUnits;
+	meters.search_units = searchUnits;
+	return meters;
+}
+
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRRerankRequest;
 	if (args.providerId === "baidu") {
@@ -281,7 +301,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const bill = {
 		cost_cents: 0,
 		currency: "USD" as const,
-		usage: usageToMeters(responseIr.usage),
+		usage: isCohereProvider(args.providerId)
+			? cohereRerankMeters(responseIr.usage, ir.documents.length)
+			: usageToMeters(responseIr.usage),
 		upstream_id: res.headers.get("x-request-id"),
 		finish_reason: null,
 	};

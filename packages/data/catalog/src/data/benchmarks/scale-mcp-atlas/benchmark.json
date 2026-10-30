@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "scale-mcp-atlas",
-  "benchmark_name": "Scale MCP Atlas",
-  "category": null,
-  "ascending_order": null,
-  "type": "percentage",
-  "link": null,
-  "total_models": 16
-}

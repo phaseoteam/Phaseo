@@ -1,7 +1,8 @@
 // Entry point for a full simulator run (vitest provides the gateway's path aliases).
 //   pnpm --filter @phaseo/gateway-api simulate:providers
 //   SIM_PROVIDERS=anthropic,openai pnpm --filter @phaseo/gateway-api simulate:providers
-// Writes results/<provider>.json, results/summary.json and results/MATRIX.md. No network access.
+// Writes results/<provider>.json, results/summary.json and results/MATRIX.md. Reads the catalogue from the database
+// (SELECTs only; see src/catalogue.ts for credentials); no provider calls.
 
 import { expect, it } from "vitest";
 import fs from "node:fs";
@@ -14,11 +15,13 @@ import { runGate } from "./src/expect/gate";
 import { writeCoverage } from "./src/expect/coverage";
 import { buildClientMatrix } from "./src/client-requests";
 import { listSimProviders } from "./src/providers";
+import { loadCatalogue } from "./src/catalogue";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 it("simulates every registered text provider", async () => {
 	const resultsDir = process.env.SIM_RESULTS_DIR ?? path.join(here, "results");
+	await loadCatalogue();
 	if (process.env.SIM_REPORT_ONLY) {
 		// Rebuild summary.json and MATRIX.md from an earlier run's providers/*.json.
 		const dir = path.join(resultsDir, "providers");

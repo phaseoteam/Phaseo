@@ -3,253 +3,585 @@ title: "九月"
 description: "九月 2026 - Phaseo"
 ---
 
-<Update label="2026年9月30日" tags={["模型发布"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### 模型发布
+<ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
+
+<Update label="2026年9月30日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [Voyage: Rerank 3](https://phaseo.app/models/voyage/rerank-3)
 - [Voyage: Rerank 3 Lite](https://phaseo.app/models/voyage/rerank-3-lite)
 - [Cohere: Embed 5 Pro](https://phaseo.app/models/cohere/embed-v5.0-pro)
 - [Cohere: Embed 5 Fast](https://phaseo.app/models/cohere/embed-v5.0-fast)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月29日" tags={["模型发布"]}>
+<Update label="2026年9月29日">
 
-### 模型发布
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `service_tier: "ultrafast"` 只路由到 Ultrafast 报价（首先是 GPT-6 Astra），没有可用报价时直接失败，不会回退到其他层级；参见 [Service Tiers](../guides/service-tiers.mdx) ([#2624](https://github.com/phaseoteam/Phaseo/pull/2624), [#2663](https://github.com/phaseoteam/Phaseo/pull/2663)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![GPT-6.1 Sol](/images/model-releases/2026-09-29--openai--gpt-6.1-sol.png)
 
-- [OpenAI: GPT-6.1 Sol Pro](https://phaseo.app/models/openai/gpt-6.1-sol-pro)
 - [OpenAI: GPT-6.1 Sol](https://phaseo.app/models/openai/gpt-6.1-sol)
+- [OpenAI: GPT-6.1 Sol Pro](https://phaseo.app/models/openai/gpt-6.1-sol-pro)
 - [Liquid AI: D1 (Free)](https://phaseo.app/models/liquid-ai/d1:free)
 - [Inclusion AI: Ling 3.1 Flash (Free)](https://phaseo.app/models/inclusionai/ling-3.1-flash:free)
 - [Inclusion AI: Ling 3.1 Flash](https://phaseo.app/models/inclusionai/ling-3.1-flash)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月28日" tags={["模型发布"]}>
+<Update label="2026年9月28日">
 
-### 模型发布
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 文本请求所需的最低可用额度从 $1 降至 $0.10，视频和批处理提交仍需 $1 ([#2643](https://github.com/phaseoteam/Phaseo/pull/2643)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Claude Sonnet 5.5](/images/model-releases/2026-09-28--anthropic--claude-sonnet-5.5.png)
 
+- [Anthropic: Claude Sonnet 5.5](https://phaseo.app/models/anthropic/claude-sonnet-5.5) 已添加 Anthropic、Claude Platform on AWS、Amazon Bedrock 和 Google Vertex 路由。Anthropic 公布的标准价格为每百万输入 token $2、每百万输出 token $10。
 - [ElevenLabs: Eleven v4](https://phaseo.app/models/eleven-labs/eleven-v4)
 - [ElevenLabs: Eleven v4 Turbo](https://phaseo.app/models/eleven-labs/eleven-v4-turbo)
-- [Anthropic: Claude Sonnet 5.5](https://phaseo.app/models/anthropic/claude-sonnet-5.5) 已添加 Anthropic、Claude Platform on AWS、Amazon Bedrock 和 Google Vertex 路由。Anthropic 公布的标准价格为每百万输入 token $2、每百万输出 token $10。
+
+</div>
 
 </Update>
 
-<Update label="2026年9月23日" tags={["模型发布"]}>
+<Update label="2026年9月24日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 全局搜索可容忍拼写错误并显示最近项目，工作区切换器可搜索你所有的工作区，并优先显示最近使用的 50 个 ([#2572](https://github.com/phaseoteam/Phaseo/pull/2572)).
+
+</div>
+
+</Update>
+
+<Update label="2026年9月23日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 全局搜索可按标题、描述和小标题查找文档页面，并直接打开 ([#2526](https://github.com/phaseoteam/Phaseo/pull/2526)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Aion 3.5](/images/model-releases/2026-09-23--aion-labs--aion-3.5.png)
 
+- [Aion Labs: Aion 3.5](https://phaseo.app/models/aion-labs/aion-3.5)
 - [Fireworks: Ember-1](https://phaseo.app/models/fireworks/ember-1)
 - [Together: Tev1 4B Experimental](https://phaseo.app/models/together/tev1-4b-experimental)
 - [Google: Gemini 3.8 Flash Lite TTS](https://phaseo.app/models/google/gemini-3.8-flash-lite-tts)
 - [Google: Gemini 3.8 Flash TTS](https://phaseo.app/models/google/gemini-3.8-flash-tts)
 - [Stealth: Space Bunny Alpha](https://phaseo.app/models/stealth/space-bunny-alpha)
-- [Aion Labs: Aion 3.5](https://phaseo.app/models/aion-labs/aion-3.5)
 - [Aion Labs: Aion 3.5 Mini](https://phaseo.app/models/aion-labs/aion-3.5-mini)
+
+</div>
 
 </Update>
 
-<Update label="2026年9月22日" tags={["模型发布"]}>
+<Update label="2026年9月22日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 的推理菜单只列出所选模型和提供商支持的推理强度，并替换已不适用的已保存强度 ([#2496](https://github.com/phaseoteam/Phaseo/pull/2496), [#2503](https://github.com/phaseoteam/Phaseo/pull/2503)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- Responses API 对支持的模型接受 `reasoning.effort: "instant"` ([#2503](https://github.com/phaseoteam/Phaseo/pull/2503)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Claude Opus 5.5](/images/model-releases/2026-09-22--anthropic--claude-opus-5.5.png)
 
+- [Anthropic: Claude Opus 5.5](https://phaseo.app/models/anthropic/claude-opus-5.5)
 - [OpenAI: GPT-6 Sol Pro](https://phaseo.app/models/openai/gpt-6-sol-pro)
 - [OpenAI: GPT-6 Luna Pro](https://phaseo.app/models/openai/gpt-6-luna-pro)
 - [OpenAI: GPT-6 Sol](https://phaseo.app/models/openai/gpt-6-sol)
 - [OpenAI: GPT-6 Luna](https://phaseo.app/models/openai/gpt-6-luna)
-- [Anthropic: Claude Opus 5.5](https://phaseo.app/models/anthropic/claude-opus-5.5)
 - [Upstage: Solar Mini 4](https://phaseo.app/models/upstage/solar-mini-4)
 - [Tencent Hunyuan: Hy Image 3.5 Preview](https://phaseo.app/models/tencent/hy-image-v3.5-preview)
 - [Tencent Hunyuan: Hy Image 3.5 Preview (Free)](https://phaseo.app/models/tencent/hy-image-v3.5-preview:free)
 - [Upstage: Solar Decide](https://phaseo.app/models/upstage/solar-decide)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月21日" tags={["模型发布"]}>
+<Update label="2026年9月21日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **Settings -> Preferences** 可设置语言、日期和时间格式、时区、数字格式、界面密度、登录后页面和数据遮盖，还可自定义浅色和深色主题 ([#2452](https://github.com/phaseoteam/Phaseo/pull/2452)).
+- Models 和 API Providers 表格会保存列的显示、顺序、固定和密度，并将每个模型的提供商合并到一行 ([#2473](https://github.com/phaseoteam/Phaseo/pull/2473)).
+- Chat 的代码示例新增 cURL、全部九种 SDK 语言和 Agent SDK 入门示例，并可在 Responses、Chat Completions 和 Messages 之间切换文本请求 ([#2468](https://github.com/phaseoteam/Phaseo/pull/2468), [#2469](https://github.com/phaseoteam/Phaseo/pull/2469), [#2487](https://github.com/phaseoteam/Phaseo/pull/2487)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Grok 4.7](/images/model-releases/2026-09-21--spacex-ai--grok-4.7.png)
 
+- [SpaceXAI: Grok 4.7](https://phaseo.app/models/spacex-ai/grok-4.7)
 - [Xiaomi: MiMo V2.6 Flash](https://phaseo.app/models/xiaomi/mimo-v2.6-flash)
 - [Xiaomi: MiMo V2.6 Pro](https://phaseo.app/models/xiaomi/mimo-v2.6-pro)
 - [Jared Palmer: Kev-4B](https://phaseo.app/models/jaredpalmer/kev-4b)
-- [SpaceXAI: Grok 4.7](https://phaseo.app/models/spacex-ai/grok-4.7)
+
+</div>
 
 </Update>
 
-<Update label="2026年9月20日" tags={["模型发布"]}>
+<Update label="2026年9月20日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 每个 Chat 房间都有 **Code** 按钮，可将上一次请求转换为 TypeScript 或 Python 代码，每条回复的详情都链接到对应的请求日志 ([#2443](https://github.com/phaseoteam/Phaseo/pull/2443), [#2453](https://github.com/phaseoteam/Phaseo/pull/2453)).
+- 在 Discord 中分享的模型链接会显示卡片，包含模型名称、实验室和上下文窗口，以及打开、聊天、对比和使用 API 的按钮 ([#2428](https://github.com/phaseoteam/Phaseo/pull/2428), [#2446](https://github.com/phaseoteam/Phaseo/pull/2446)).
+- 模型的提供商表格显示层级徽标，将区域和专用路由归入 **Additional Routing Options**，并默认隐藏外部列表，除非在 **Filters** 中开启 ([#2447](https://github.com/phaseoteam/Phaseo/pull/2447), [#2449](https://github.com/phaseoteam/Phaseo/pull/2449)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [StepFun: Step 5 Preview](https://phaseo.app/models/stepfun/step-5-preview)
 - [Qwen: Qwen 3.8 Omni Flash](https://phaseo.app/models/qwen/qwen3.8-omni-flash)
 - [Qwen: Qwen Image 2.1](https://phaseo.app/models/qwen/qwen-image-2.1)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月18日" tags={["模型发布"]}>
+<Update label="2026年9月19日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 新增 OCR 和 Rerank 房间，Video 和 Realtime 房间现已向所有人开放 ([#2440](https://github.com/phaseoteam/Phaseo/pull/2440), [#2242](https://github.com/phaseoteam/Phaseo/pull/2242)).
+- Chat 新增 Decisions 房间，可为每条消息选择问题类型，并查看带概率和分数的回答 ([#2429](https://github.com/phaseoteam/Phaseo/pull/2429)).
+- 排行榜的全部八个模态标签页都会显示用量，**Weekly Return Rate** 也能再次正常加载，不再报错 ([#2439](https://github.com/phaseoteam/Phaseo/pull/2439)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 只包含推理内容的响应现在返回 `200`，并带有 `length` 或 `stop` 结束原因和用量，而不是 `502` 错误 ([#2432](https://github.com/phaseoteam/Phaseo/pull/2432), [#2435](https://github.com/phaseoteam/Phaseo/pull/2435)).
+
+</div>
+
+</Update>
+
+<Update label="2026年9月18日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **测试版：** `POST /v1/decisions` 针对应用状态回答带类型的 `noul`、`choice` 和 `score` 问题，首个支持的模型是 TypeSafe Jev；参见 [Make a decision](../api-reference/endpoint/decisions.mdx) ([#2425](https://github.com/phaseoteam/Phaseo/pull/2425)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [SpaceXAI: Grok Voice Transcribe 2.0](https://phaseo.app/models/spacex-ai/grok-voice-transcribe-2.0)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月17日" tags={["模型发布"]}>
+<Update label="2026年9月17日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 日志表格会保存列的显示、顺序、固定和密度，请求详情显示 Phaseo 在将请求发送给提供商之前所用的时间 ([#2415](https://github.com/phaseoteam/Phaseo/pull/2415)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** TypeScript、Python、Go、C#、Java、PHP 和 Ruby SDK `3.0.0` 从模型端点返回 Phaseo 模型目录格式；请更新读取模型字段的代码 ([#1280](https://github.com/phaseoteam/Phaseo/pull/1280)).
+- SDK `3.0.0` 新增管理方法，涵盖 API 密钥和管理密钥、护栏、预算、预设、成员、SSO 和 SCIM、通知以及 Private Models ([#1280](https://github.com/phaseoteam/Phaseo/pull/1280), [#2422](https://github.com/phaseoteam/Phaseo/pull/2422)).
+- Phaseo CLI `0.3.0` 可配置 OpenCode 等编程智能体，并通过 Phaseo 运行 Cline、Kilo Code、oh-my-pi、Muse Code 和 MiniMax Code；参见 [Phaseo CLI](../guides/integrations/phaseo-cli.mdx) ([#2325](https://github.com/phaseoteam/Phaseo/pull/2325), [#2336](https://github.com/phaseoteam/Phaseo/pull/2336), [#1280](https://github.com/phaseoteam/Phaseo/pull/1280)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [Unbiased: Pareto 26.9](https://phaseo.app/models/unbiased/pareto)
 - [Google: Antigravity Preview (September 2026)](https://phaseo.app/models/google/antigravity-preview-09-2026)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月16日" tags={["模型发布"]}>
+<Update label="2026年9月16日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面和新的基准测试页面显示 Epoch AI Capabilities Index 的分数、排名、置信区间和随时间的变化 ([#2408](https://github.com/phaseoteam/Phaseo/pull/2408)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [Stealth: Union Alpha](https://phaseo.app/models/stealth/union-alpha) （现已停用）.
 
+</div>
+
 </Update>
 
-<Update label="2026年9月15日" tags={["模型发布"]}>
+<Update label="2026年9月15日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat、模型和提供商的隐私规则现在只来自当前活动的工作区（包括个人工作区），隐私设置也能再次保存 ([#2400](https://github.com/phaseoteam/Phaseo/pull/2400), [#2403](https://github.com/phaseoteam/Phaseo/pull/2403)).
+- 在未启用双重身份验证的情况下开启 Auto Top-Up 需要输入确认文字，已有的未启用双重验证的设置会显示警告 ([#2401](https://github.com/phaseoteam/Phaseo/pull/2401)).
+- 通过 Stripe 结账购买额度恢复正常；此前结账在到达 Stripe 之前就失败了 ([#2405](https://github.com/phaseoteam/Phaseo/pull/2405)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- Terraform 提供程序 `0.1.0` 可管理 API 密钥、护栏、提供商凭据、SCIM 组映射和可观测性目标，并可读取模型、提供商和额度 ([#2164](https://github.com/phaseoteam/Phaseo/pull/2164), [#2396](https://github.com/phaseoteam/Phaseo/pull/2396)).
+- API 密钥和管理密钥的数量上限分别计算，并且只统计有效且未过期的密钥 ([#2399](https://github.com/phaseoteam/Phaseo/pull/2399)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [Google: Gemini 3.8 Live](https://phaseo.app/models/google/gemini-3.8-live)
 - [Google: Gemini 3.8 Live Extended Thinking](https://phaseo.app/models/google/gemini-3.8-live-extended-thinking)
 
-</Update>
-
-<Update label="2026年9月13日" tags={["平台"]}>
-
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>产品</p>
-
-- 聊天室现在支持为每个请求选择 Priority 或 Flex 服务层级 ([#2357](https://github.com/phaseoteam/Phaseo/pull/2357)).
-- 模型页面现在包含交互式提供商每小时性能视图 ([#2361](https://github.com/phaseoteam/Phaseo/pull/2361)).
+</div>
 
 </Update>
 
-<Update label="2026年9月11日" tags={["模型发布", "平台"]}>
+<Update label="2026年9月14日">
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>产品</p>
+<div data-changelog-category="product">
 
-![GPT Live 1](/images/model-releases/2026-09-14--openai--gpt-live-1.png)
+<p className="changelog-category">产品</p>
 
-- [OpenAI: GPT Live 1](https://phaseo.app/models/openai/gpt-live-1) 现已在 Realtime 聊天室提供，包含内置语音选择、可配置的 Responses 委派和可选网页搜索 ([#2338](https://github.com/phaseoteam/Phaseo/pull/2338)).
+- Chat 新增导航栏，每一轮对话对应一个标记，便于在长对话中跳转 ([#2385](https://github.com/phaseoteam/Phaseo/pull/2385)).
+- Chat 模型选择器会禁用被你的护栏屏蔽的模型，新增 **Hide Unavailable** 筛选，按住 Ctrl 或 ⌘ 点击可将模型加入对比 ([#2389](https://github.com/phaseoteam/Phaseo/pull/2389)).
+- 修改账户国家后可以再次保存；此前修改会失败 ([#2392](https://github.com/phaseoteam/Phaseo/pull/2392)).
 
-### 模型发布
+</div>
+
+</Update>
+
+<Update label="2026年9月13日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- Chat 可以为每个模型选择 Standard、Priority 或 Flex，并将 Priority 和 Flex 作为 `service_tier` 发送 ([#2357](https://github.com/phaseoteam/Phaseo/pull/2357)).
+- 模型页面的提供商卡片按小时绘制最近 60 小时的可用性、延迟和吞吐量，并标出没有数据的小时 ([#2361](https://github.com/phaseoteam/Phaseo/pull/2361)).
+- Chat 会在推理内容流式到达时立即显示，每条回复的详情显示网关测得的吞吐量、输出 token 数和服务层级 ([#2359](https://github.com/phaseoteam/Phaseo/pull/2359), [#2367](https://github.com/phaseoteam/Phaseo/pull/2367)).
+- 模型弃用提醒会发送到工作区的通知目标，弃用警告会推荐替代模型；参见 [Model Deprecation and Retirement](../guides/model-retirement.mdx) ([#2136](https://github.com/phaseoteam/Phaseo/pull/2136)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 未设置 `service_tier` 或设置为 `service_tier: "default"` 的请求使用 Standard 路由，仅 Flex 的报价只服务明确请求 `flex` 的请求；参见 [Service Tiers](../guides/service-tiers.mdx) ([#2356](https://github.com/phaseoteam/Phaseo/pull/2356), [#2354](https://github.com/phaseoteam/Phaseo/pull/2354)).
+- 使用网关托管工具的请求会在每一轮模型输出的文本和工具调用到达时立即流式返回，而不是在最后一次性返回 ([#2360](https://github.com/phaseoteam/Phaseo/pull/2360), [#2363](https://github.com/phaseoteam/Phaseo/pull/2363)).
+
+</div>
+
+</Update>
+
+<Update label="2026年9月11日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **Settings -> API Keys** 支持按密钥名称搜索，或粘贴完整密钥搜索，粘贴的密钥会保持遮盖 ([#2344](https://github.com/phaseoteam/Phaseo/pull/2344)).
+- 模型页面从提供商的第一个请求起就显示其延迟、吞吐量和可用性，而不是等到 20 个请求之后，并按提供商绘制缓存命中率 ([#2339](https://github.com/phaseoteam/Phaseo/pull/2339), [#2341](https://github.com/phaseoteam/Phaseo/pull/2341)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [Sakana AI: Fugu Max](https://phaseo.app/models/sakana/fugu-max)
 - [Sakana AI: Fugu Ultra V2](https://phaseo.app/models/sakana/fugu-ultra-v2)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月10日" tags={["模型发布", "平台"]}>
+<Update label="2026年9月10日">
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>产品</p>
+<div data-changelog-category="product">
 
-- Phaseo CLI 现在包含编程智能体集成和启动器，包括安全的 OpenCode 设置和管理 ([#2325](https://github.com/phaseoteam/Phaseo/pull/2325)).
+<p className="changelog-category">产品</p>
 
-### 模型发布
+- 模型的基准测试部分新增 Artificial Analysis 的 Intelligence、Coding、Agentic 和评测成本图表，支持搜索模型，其他模型会变暗显示 ([#2321](https://github.com/phaseoteam/Phaseo/pull/2321), [#2326](https://github.com/phaseoteam/Phaseo/pull/2326)).
+- 价格历史图表使用各提供商的颜色，并用实线、点线、虚线或点划线区分服务层级，与提供商表格保持一致 ([#2323](https://github.com/phaseoteam/Phaseo/pull/2323)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Jev 1.13](/images/model-releases/2026-09-10--typesafe--jev-1.13.0.png)
 
 - [TypeSafe: Jev 1.13](https://phaseo.app/models/typesafe/jev-1.13.0)
 - [DeepSeek: DeepSeek V4.1 Flash](https://phaseo.app/models/deepseek/deepseek-v4.1-flash)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月9日" tags={["模型发布"]}>
+<Update label="2026年9月9日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面会标出需要你自己的提供商密钥的提供商；当所有路由都需要时，**Use This Model** 会先提示你添加密钥 ([#2303](https://github.com/phaseoteam/Phaseo/pull/2303)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Suno V6](/images/model-releases/2026-09-09--suno--suno-v6.png)
 
+- [Suno: Suno V6](https://phaseo.app/models/suno/suno-v6)
 - [Suno: Suno V6 Wild](https://phaseo.app/models/suno/suno-v6-wild)
 - [Suno: Suno V6 Mini](https://phaseo.app/models/suno/suno-v6-mini)
-- [Suno: Suno V6](https://phaseo.app/models/suno/suno-v6)
+
+</div>
 
 </Update>
 
-<Update label="2026年9月8日" tags={["模型发布"]}>
+<Update label="2026年9月8日">
 
-### 模型发布
+<div data-changelog-category="product">
 
-- [Nex AGI: Nex N2.5 Max](https://phaseo.app/models/nex-agi/nex-n2.5-max)
+<p className="changelog-category">产品</p>
+
+- 模型页面、基准测试页面和排行榜首先展示 Artificial Analysis 的 Intelligence、Coding、Agentic 指数和评测成本，并注明测试配置 ([#2264](https://github.com/phaseoteam/Phaseo/pull/2264)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
 ![GPT Image 2.5](/images/model-releases/2026-09-08-08--openai--gpt-image-2.5.png)
 
-- [DeepSeek: DeepSeek V4.1 Flash Preview](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview)
 - [OpenAI: GPT Image 2.5 Flare](https://phaseo.app/models/openai/gpt-image-2.5-flare)
+- [OpenAI: GPT Image 2.5 Sunburst](https://phaseo.app/models/openai/gpt-image-2.5-sunburst)
+- [Nex AGI: Nex N2.5 Max](https://phaseo.app/models/nex-agi/nex-n2.5-max)
+- [DeepSeek: DeepSeek V4.1 Flash Preview](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview)
 - [Nex AGI: Nex N2.5 Mini](https://phaseo.app/models/nex-agi/nex-n2.5-mini)
 - [Nex AGI: Nex N2.5 Pro](https://phaseo.app/models/nex-agi/nex-n2.5-pro)
-- [OpenAI: GPT Image 2.5 Sunburst](https://phaseo.app/models/openai/gpt-image-2.5-sunburst)
+
+</div>
 
 </Update>
 
-<Update label="2026年9月7日" tags={["模型发布"]}>
+<Update label="2026年9月7日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **Settings -> Billing & Credits** 在用量额度旁显示有效的 Enterprise 订阅，并通过 Stripe 门户管理 ([#2252](https://github.com/phaseoteam/Phaseo/pull/2252)).
+- 购买额度时链接到 Stripe 收据，而不是发票 ([#2256](https://github.com/phaseoteam/Phaseo/pull/2256)).
+- API 密钥列表默认隐藏已过期的密钥，优先显示已启用的密钥，新增状态筛选，并把批量操作移到浮动栏 ([#2261](https://github.com/phaseoteam/Phaseo/pull/2261)).
+- 在 Settings 中测试密钥现在支持当前的 `phaseo_v1_sk_` 密钥；此前新创建的密钥无法通过测试 ([#2251](https://github.com/phaseoteam/Phaseo/pull/2251)).
+- 设置侧边栏新增筛选框，可搜索所有 Account 和 Workspace 页面，全局搜索会推荐与当前页面相关的页面 ([#2259](https://github.com/phaseoteam/Phaseo/pull/2259)).
+- 通过别名（例如 `openai/gpt-astra-latest`）打开的模型页面会显示该别名，并在默认 ID 旁标注 **Alias** ([#2226](https://github.com/phaseoteam/Phaseo/pull/2226)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 来自 Okta 的 SCIM 预配现在可以正常工作；Phaseo 接受 Okta 发送的 `password`、`groups`、`id` 和 `meta` 属性，但不会存储它们 ([#2240](https://github.com/phaseoteam/Phaseo/pull/2240)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Mercury 2.5](/images/model-releases/2026-09-07--inception--mercury-2.5.png)
 
 - [Inception: Mercury 2.5](https://phaseo.app/models/inception/mercury-2.5)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月4日" tags={["模型发布"]}>
+<Update label="2026年9月4日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 工作区可以把专用或自托管的 OpenAI 兼容端点添加为 Private Model，仅成员可见，并通过其模型 ID 调用；参见 [Connect Dedicated Model Deployments](../guides/private-models.mdx) ([#2201](https://github.com/phaseoteam/Phaseo/pull/2201)).
+- 模型定价表把每个提供商的服务层级收进一行，按列排序时每个层级单独占一行 ([#2198](https://github.com/phaseoteam/Phaseo/pull/2198)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [Microsoft: MAI-Image-2.6-Flash](https://phaseo.app/models/microsoft/mai-image-2.6-flash)
 - [Microsoft: MAI-Image-2.6](https://phaseo.app/models/microsoft/mai-image-2.6)
 
+</div>
+
 </Update>
 
-<Update label="2026年9月3日" tags={["模型发布"]}>
+<Update label="2026年9月3日">
 
-### 模型发布
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 区域端点 `eu.api.phaseo.app` 和 `us.api.phaseo.app` 将 Chat Completions、Responses 和 Messages 请求限制在欧盟或美国的提供商路由上；参见 [Route text requests by region](../guides/regional-routing.mdx) ([#2165](https://github.com/phaseoteam/Phaseo/pull/2165), [#2171](https://github.com/phaseoteam/Phaseo/pull/2171)).
+- 函数工具和自定义工具在 Chat Completions、Responses 和 Messages 中支持 `async: true`；Phaseo 只将其发送给 OpenAI，对其他提供商会去掉该字段 ([#2193](https://github.com/phaseoteam/Phaseo/pull/2193), [#2194](https://github.com/phaseoteam/Phaseo/pull/2194)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![GPT-6 Astra](/images/model-releases/2026-09-03--openai--gpt-6-astra.png)
 
+- [OpenAI: GPT-6 Astra](https://phaseo.app/models/openai/gpt-6-astra)
 - [Inclusion AI: Ling 3.0 Flash Sante](https://phaseo.app/models/inclusionai/ling-3.0-flash-sante)
 - [Inclusion AI: Ling 3.0 Flash VL](https://phaseo.app/models/inclusionai/ling-3.0-flash-vl)
 - [Microsoft: MAI-Transcribe-2](https://phaseo.app/models/microsoft/mai-transcribe-2)
 - [OpenAI: GPT-6 Astra Pro](https://phaseo.app/models/openai/gpt-6-astra-pro)
-- [OpenAI: GPT-6 Astra](https://phaseo.app/models/openai/gpt-6-astra)
+
+</div>
 
 </Update>
 
-<Update label="2026年9月2日" tags={["模型发布"]}>
+<Update label="2026年9月2日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Muse Spark 1.3](/images/model-releases/2026-09-02--meta--muse-spark-1.3.png)
 
+- [Meta: Muse Spark 1.3](https://phaseo.app/models/meta/muse-spark-1.3)
 - [Meta: Muse Spark 1.3 Contributor](https://phaseo.app/models/meta/muse-spark-1.3-contributor)
 - [Google: Gemini 3.8 Flash](https://phaseo.app/models/google/gemini-3.8-flash)
-- [Meta: Muse Spark 1.3](https://phaseo.app/models/meta/muse-spark-1.3)
 - [Qwen: Qwen 3.8 Max 0902](https://phaseo.app/models/qwen/qwen3.8-max-0902)
+
+</div>
 
 </Update>
 
-<Update label="2026年9月1日" tags={["模型发布"]}>
+<Update label="2026年9月1日">
 
-### 模型发布
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `phaseo:web_search` 支持 `engine: "tinyfish"`，使用 TinyFish 搜索，支持语言提示、结果分页和通用域名过滤；参见 [Web Search Server Tool](../guides/server-tools/web-search.mdx) ([#2124](https://github.com/phaseoteam/Phaseo/pull/2124)).
+- 使用随机端口回环回调的原生应用（例如连接 MCP 服务器的编程智能体）进行 OAuth 登录时，不再因 `invalid_client` 失败 ([#2129](https://github.com/phaseoteam/Phaseo/pull/2129)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Claude Fable 5.1](/images/model-releases/2026-09-01--anthropic--claude-fable-5.1.png)
 
-- [Meta: Muse Voice Transcribe 1.0](https://phaseo.app/models/meta/muse-voice-transcribe-1.0)
 - [Anthropic: Claude Fable 5.1](https://phaseo.app/models/anthropic/claude-fable-5.1)
+- [Meta: Muse Voice Transcribe 1.0](https://phaseo.app/models/meta/muse-voice-transcribe-1.0)
+
+</div>
 
 </Update>

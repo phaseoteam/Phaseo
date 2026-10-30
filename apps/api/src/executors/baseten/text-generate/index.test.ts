@@ -72,7 +72,8 @@ describe("Baseten Model API text contract", () => {
 		const wire = irToOpenAIChat(decoded, "thinkingmachines/inkling", "baseten");
 		expect(wire.messages[0].content).toEqual([
 			{ type: "text", text: "Summarize" },
-			{ type: "image_url", image_url: { url: "https://example.com/i.png", detail: "original" } },
+			// Baseten documents auto/low/high only, so "original" is sent as "high".
+			{ type: "image_url", image_url: { url: "https://example.com/i.png", detail: "high" } },
 			{ type: "audio_url", audio_url: { url: "https://example.com/a.wav" } },
 			{ type: "video_url", video_url: { url: "https://example.com/v.mp4" } },
 		]);

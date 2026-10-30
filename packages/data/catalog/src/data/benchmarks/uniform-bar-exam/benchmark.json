@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "uniform-bar-exam",
-  "benchmark_name": "Uniform Bar Exam",
-  "category": "legal",
-  "ascending_order": null,
-  "type": "numerical",
-  "link": null,
-  "total_models": 1
-}

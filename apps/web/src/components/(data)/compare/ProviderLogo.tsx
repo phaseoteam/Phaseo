@@ -12,9 +12,9 @@ const SIZE_STYLES: Record<
 > = {
 	xxs: { outer: "w-5 h-5 rounded-md", inner: "w-3.5 h-3.5" },
 	xs: { outer: "w-6 h-6 rounded-md", inner: "w-4 h-4" },
-	sm: { outer: "w-8 h-8 rounded-lg", inner: "w-5 h-5" },
-	md: { outer: "w-10 h-10 rounded-xl", inner: "w-7 h-7" },
-	lg: { outer: "w-12 h-12 rounded-xl", inner: "w-8 h-8" },
+	sm: { outer: "w-8 h-8 rounded-md", inner: "w-5 h-5" },
+	md: { outer: "w-10 h-10 rounded-md", inner: "w-7 h-7" },
+	lg: { outer: "w-12 h-12 rounded-md", inner: "w-8 h-8" },
 };
 
 export function ProviderLogo({

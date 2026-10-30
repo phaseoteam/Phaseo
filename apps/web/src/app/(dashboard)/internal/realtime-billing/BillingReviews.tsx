@@ -12,13 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { decideReview, loadReviewDetails } from "./actions";
 import type { Decision, Review, ReviewDetails } from "./types";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 
 export function BillingReviews({ reviews }: { reviews: Review[] }) {
 	const t = useTranslations("SettingsUI");
 	const tStatus = useTranslations("SettingsUI.labels");
 	const locale = useLocale();
-	const usd = (nanos: number | null) => nanos == null ? t("realtimeCopy.copyUnavailable") : new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 6, maximumFractionDigits: 6 }).format(Number(nanos) / 1e9);
+	const usd = (nanos: number | null) => nanos == null ? t("realtimeCopy.copyUnavailable") : new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 6, maximumFractionDigits: 6 }).format(Number(nanos) / 1e9);
 	const labels: Record<Decision, string> = { retry: t("realtimeCopy.retry"), retain: t("realtimeCopy.retain"), capture_confirmed: t("realtimeCopy.capture_confirmed"),
 		write_off: t("realtimeCopy.write_off"), restore_access: t("realtimeCopy.restore_access") };
 	const router = useRouter();

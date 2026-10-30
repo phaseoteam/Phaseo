@@ -1,0 +1,12 @@
+---
+title: "信頼済みワークロードのポリシーを更新"
+sidebarTitle: "信頼済みワークロードのポリシーを更新"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PATCH /workload-identity/policies/{id}"
+description: "信頼済みワークロードのポリシーの名前、状態、クレーム条件、トークンの最大有効期間を変更します。"
+---
+<Note>管理キーまたは OAuth トークンの `keys:write`、もしくはワークスペースのオーナーまたは管理者が必要です。信頼済みワークロードはベータ版で、利用できないワークスペースには `404` が返ります。</Note>
+
+プラットフォーム、発行者、オーナーは変更できません。代わりに新しいポリシーを作成してください。変更は 1 分以内にゲートウェイへ反映されます。
+
+ポリシーの仕組みと Terraform での管理方法は、[信頼済みワークロード](../../developers/trusted-workloads.mdx)を参照してください。

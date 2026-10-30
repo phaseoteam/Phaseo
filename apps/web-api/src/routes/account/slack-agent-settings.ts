@@ -1,0 +1,340 @@
+import { NANOS_PER_USD, PLAN_TIERS, slackAgentPlanNanos } from "@/billing/slackAgentPricing";
+
+// Validation for the Slack agent's settings. The API speaks dollars; the table
+// stores nanodollars. The limits mirror the slack_installations constraints so a
+// bad value is a clear 400 here rather than a constraint error.
+
+export const STANDARD_PLAN_PEOPLE: readonly number[] = PLAN_TIERS.map((tier) => tier.people);
+export const MIN_CUSTOM_PLAN_PEOPLE = 101;
+export const MAX_PLAN_PEOPLE = 10_000_000;
+/** The largest monthly spending cap or key limit, in dollars. */
+export const MAX_MONTHLY_USD = 100_000;
+export const MAX_INSTRUCTIONS_CHARS = 8_000;
+export const MAX_USAGE_DATA_CHANNELS = 100;
+/** The most models people may choose per message (the slack_installations check). */
+export const MAX_ALLOWED_MODELS = 10;
+export const MAX_ANSWERS_PER_PERSON_HOUR = 10_000;
+/** The most recurring tasks an installation may keep (the slack_installations check). */
+export const MAX_SCHEDULES = 100;
+/** The slack_installations column defaults. */
+export const DEFAULT_ANSWERS_PER_PERSON_HOUR = 60;
+export const DEFAULT_ALLOW_GUESTS = true;
+export const DEFAULT_ALLOW_EXTERNAL_USERS = false;
+/**
+ * The model when an install doesn't choose one. Auto (phaseo/auto) is only open
+ * to some workspaces, so the default is a model every workspace can use.
+ */
+export const DEFAULT_SLACK_AGENT_MODEL = "openai/gpt-6-luna";
+
+export const AUTO_MODEL_ID = "phaseo/auto";
+/** How long a new shared page is kept (the slack_installations check). */
+export const PAGE_EXPIRY_DAYS: readonly number[] = [7, 30, 90];
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,199}$/;
+/** Public (C) and private (G) Slack channel ids. */
+const CHANNEL_PATTERN = /^[CG][A-Z0-9]{2,31}$/;
+
+export type OverPlan = "refuse" | "move_up";
+export type AccessMode = "everyone" | "linked";
+export type UsageDataMode = "off" | "dm" | "dm_and_channels";
+/** Where the agent may search Slack for the person asking. */
+export type SearchMode = "off" | "dm" | "dm_and_channels";
+export type ScheduleCreators = "everyone" | "linked";
+export type SlackAgentStatusChange = "active" | "paused";
+export type PageAccess = "link" | "workspace";
+
+/** code: the 400's error code, when it isn't bad_request. */
+type Result<T> = { ok: true; value: T } | { ok: false; message: string; code?: string };
+type Body = Record<string, unknown>;
+
+/** What an admin picks before installing. It travels in the signed OAuth state, in API units. */
+export type SlackAgentInstallSettings = {
+	plan_people: number;
+	over_plan: OverPlan;
+	max_people: number | null;
+	monthly_cap_usd: number;
+	token_monthly_limit_usd: number;
+	answers_per_person_hour: number;
+	allow_guests: boolean;
+	allow_external_users: boolean;
+	model: string;
+	access_mode: AccessMode;
+	usage_data_mode: UsageDataMode;
+	slack_app_id: string | null;
+};
+
+/** Columns of slack_installations a PATCH may change (status is handled separately). */
+export type SlackAgentRowUpdate = Partial<{
+	plan_people: number;
+	over_plan: OverPlan;
+	max_people: number | null;
+	monthly_cap_nanos: number;
+	answers_per_person_hour: number;
+	model: string;
+	model_choice_enabled: boolean;
+	allowed_models: string[];
+	memory_enabled: boolean;
+	search_mode: SearchMode;
+	schedules_enabled: boolean;
+	schedules_max: number;
+	schedule_creators: ScheduleCreators;
+	instructions: string | null;
+	access_mode: AccessMode;
+	usage_data_mode: UsageDataMode;
+	usage_data_channel_ids: string[];
+	allow_guests: boolean;
+	allow_external_users: boolean;
+	pages_enabled: boolean;
+	page_expiry_days: number;
+	page_default_access: PageAccess;
+	page_link_access: boolean;
+}>;
+
+export type SlackAgentPatch = {
+	update: SlackAgentRowUpdate;
+	keyMonthlyLimitNanos?: number;
+	status?: SlackAgentStatusChange;
+	changedFields: string[];
+};
+
+const ok = <T>(value: T): Result<T> => ({ ok: true, value });
+const fail = (message: string, code?: string): { ok: false; message: string; code?: string } => ({ ok: false, message, ...(code ? { code } : {}) });
+
+export function usdToNanos(usd: number): number {
+	return Math.round(usd * NANOS_PER_USD);
+}
+
+export function nanosToUsd(nanos: unknown): number {
+	const value = Number(nanos);
+	return Number.isFinite(value) ? value / NANOS_PER_USD : 0;
+}
+
+function integer(value: unknown, field: string, min: number, max: number): Result<number> {
+	if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max) {
+		return fail(`${field} must be a whole number from ${min.toLocaleString("en-US")} to ${max.toLocaleString("en-US")}`);
+	}
+	return ok(value);
+}
+
+export function parsePlanPeople(value: unknown): Result<number> {
+	if (typeof value === "number" && Number.isInteger(value)
+		&& (STANDARD_PLAN_PEOPLE.includes(value) || (value >= MIN_CUSTOM_PLAN_PEOPLE && value <= MAX_PLAN_PEOPLE))) {
+		return ok(value);
+	}
+	return fail(`plan_people must be ${STANDARD_PLAN_PEOPLE.join(", ")}, or a whole number from ${MIN_CUSTOM_PLAN_PEOPLE} to ${MAX_PLAN_PEOPLE.toLocaleString("en-US")}`);
+}
+
+function oneOf<T extends string>(value: unknown, field: string, options: readonly T[]): Result<T> {
+	return typeof value === "string" && (options as readonly string[]).includes(value)
+		? ok(value as T)
+		: fail(`${field} must be one of: ${options.join(", ")}`);
+}
+
+function maxPeople(value: unknown): Result<number | null> {
+	if (value === null) return ok(null);
+	return integer(value, "max_people", 1, MAX_PLAN_PEOPLE);
+}
+
+function usd(value: unknown, field: string, allowZero: boolean): Result<number> {
+	if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || (!allowZero && value <= 0) || value > MAX_MONTHLY_USD) {
+		return fail(`${field} must be ${allowZero ? "from 0" : "more than 0"} up to ${MAX_MONTHLY_USD.toLocaleString("en-US")} dollars`);
+	}
+	// Whole nanodollars; anything finer than that is rounding noise.
+	return ok(usdToNanos(value) / NANOS_PER_USD);
+}
+
+function isAutoModelId(id: string): boolean {
+	return id.toLowerCase() === AUTO_MODEL_ID;
+}
+
+function model(value: unknown): Result<string> {
+	const text = typeof value === "string" ? value.trim() : "";
+	return MODEL_PATTERN.test(text) ? ok(text) : fail("model must be a model id such as openai/gpt-6-luna");
+}
+
+/**
+ * The models people may choose per message: model ids, each once, at most
+ * MAX_ALLOWED_MODELS. Auto is written as phaseo/auto. Whether each is a catalogue
+ * model, and Auto is allowed, needs the database (the PATCH route).
+ */
+function allowedModelIds(value: unknown): Result<string[]> {
+	if (!Array.isArray(value)) return fail("allowed_models must be a list of model ids");
+	const ids: string[] = [];
+	for (const entry of value) {
+		const parsed = model(entry);
+		if (parsed.ok === false) return fail("allowed_models must be model ids such as openai/gpt-6-luna");
+		const id = isAutoModelId(parsed.value) ? AUTO_MODEL_ID : parsed.value;
+		if (!ids.includes(id)) ids.push(id);
+	}
+	if (ids.length > MAX_ALLOWED_MODELS) return fail(`allowed_models can list at most ${MAX_ALLOWED_MODELS} models`, "too_many_models");
+	return ok(ids);
+}
+
+function instructions(value: unknown): Result<string | null> {
+	if (value === null) return ok(null);
+	if (typeof value !== "string") return fail("instructions must be text");
+	const text = value.trim();
+	// Postgres length() counts code points, so count them the same way.
+	if ([...text].length > MAX_INSTRUCTIONS_CHARS) return fail(`instructions must be at most ${MAX_INSTRUCTIONS_CHARS.toLocaleString("en-US")} characters`);
+	return ok(text || null);
+}
+
+function channelIds(value: unknown): Result<string[]> {
+	if (!Array.isArray(value)) return fail("usage_data_channel_ids must be a list of Slack channel ids");
+	const ids = [...new Set(value.map((entry) => (typeof entry === "string" ? entry.trim() : "")))];
+	if (ids.length > MAX_USAGE_DATA_CHANNELS) return fail(`usage_data_channel_ids can list at most ${MAX_USAGE_DATA_CHANNELS} channels`);
+	if (ids.some((id) => !CHANNEL_PATTERN.test(id))) return fail("usage_data_channel_ids must be Slack channel ids such as C0123ABCD");
+	return ok(ids);
+}
+
+function expiryDays(value: unknown): Result<number> {
+	return typeof value === "number" && PAGE_EXPIRY_DAYS.includes(value) ? ok(value) : fail(`page_expiry_days must be one of: ${PAGE_EXPIRY_DAYS.join(", ")}`);
+}
+
+function bool(value: unknown, field: string): Result<boolean> {
+	return typeof value === "boolean" ? ok(value) : fail(`${field} must be true or false`);
+}
+
+function unknownField(body: Body, allowed: ReadonlySet<string>): string | null {
+	return Object.keys(body).find((field) => !allowed.has(field)) ?? null;
+}
+
+/**
+ * A plan's people limit, hard limit and spending cap must agree: the hard limit
+ * can't be below the plan, and the cap must at least cover the plan's price.
+ */
+export function planProblem(values: { plan_people: number; max_people: number | null; monthly_cap_nanos: number }): string | null {
+	if (values.max_people != null && values.max_people < values.plan_people) return "max_people must be at least plan_people";
+	const planNanos = slackAgentPlanNanos(values.plan_people);
+	if (values.monthly_cap_nanos < planNanos) {
+		return `monthly_cap_usd must be at least the plan's price ($${(planNanos / NANOS_PER_USD).toFixed(2)})`;
+	}
+	return null;
+}
+
+/**
+ * Who may view new shared pages, with the saved values: turning link sharing off
+ * moves a link default to the workspace, unless the change asks for link itself.
+ */
+export function pageAccessUpdate(update: SlackAgentRowUpdate, current: { page_default_access: string; page_link_access: boolean }): { ok: true; value: SlackAgentRowUpdate } | { ok: false; message: string; code: string } {
+	const linkAccess = update.page_link_access ?? current.page_link_access;
+	if (linkAccess) return { ok: true, value: update };
+	if (update.page_default_access === "link") {
+		return { ok: false, message: "Pages can only default to anyone with the link while link sharing is allowed", code: "page_link_access_off" };
+	}
+	if ((update.page_default_access ?? current.page_default_access) === "link") return { ok: true, value: { ...update, page_default_access: "workspace" } };
+	return { ok: true, value: update };
+}
+
+const INSTALL_FIELDS = new Set([
+	"workspaceId", "plan_people", "over_plan", "max_people", "monthly_cap_usd", "token_monthly_limit_usd",
+	"answers_per_person_hour", "allow_guests", "allow_external_users",
+	"model", "access_mode", "usage_data_mode", "slack_app_id",
+]);
+
+/** Validates an install request (and, on the callback, the settings carried in the signed state). */
+export function parseInstallSettings(body: Body): Result<SlackAgentInstallSettings> {
+	const unknown = unknownField(body, INSTALL_FIELDS);
+	if (unknown) return fail(`Unknown field: ${unknown}`);
+	const planPeople = parsePlanPeople(body.plan_people ?? STANDARD_PLAN_PEOPLE[0]);
+	if (planPeople.ok === false) return fail(planPeople.message);
+	const overPlan = oneOf<OverPlan>(body.over_plan ?? "refuse", "over_plan", ["refuse", "move_up"]);
+	if (overPlan.ok === false) return fail(overPlan.message);
+	const max = maxPeople(body.max_people ?? null);
+	if (max.ok === false) return fail(max.message);
+	if (body.monthly_cap_usd === undefined) return fail("monthly_cap_usd is required");
+	const cap = usd(body.monthly_cap_usd, "monthly_cap_usd", false);
+	if (cap.ok === false) return fail(cap.message);
+	const keyLimit = usd(body.token_monthly_limit_usd ?? 0, "token_monthly_limit_usd", true);
+	if (keyLimit.ok === false) return fail(keyLimit.message);
+	const hourly = integer(body.answers_per_person_hour ?? DEFAULT_ANSWERS_PER_PERSON_HOUR, "answers_per_person_hour", 1, MAX_ANSWERS_PER_PERSON_HOUR);
+	if (hourly.ok === false) return fail(hourly.message);
+	const guests = bool(body.allow_guests ?? DEFAULT_ALLOW_GUESTS, "allow_guests");
+	if (guests.ok === false) return fail(guests.message);
+	const external = bool(body.allow_external_users ?? DEFAULT_ALLOW_EXTERNAL_USERS, "allow_external_users");
+	if (external.ok === false) return fail(external.message);
+	const chosenModel = model(body.model ?? DEFAULT_SLACK_AGENT_MODEL);
+	if (chosenModel.ok === false) return fail(chosenModel.message);
+	const access = oneOf<AccessMode>(body.access_mode ?? "everyone", "access_mode", ["everyone", "linked"]);
+	if (access.ok === false) return fail(access.message);
+	const usage = oneOf<UsageDataMode>(body.usage_data_mode ?? "dm", "usage_data_mode", ["off", "dm", "dm_and_channels"]);
+	if (usage.ok === false) return fail(usage.message);
+	const rawAppId = body.slack_app_id ?? null;
+	if (rawAppId !== null && (typeof rawAppId !== "string" || !UUID_PATTERN.test(rawAppId))) return fail("slack_app_id must be the id of the workspace's Slack app");
+	const appId = rawAppId === null ? null : String(rawAppId);
+	const problem = planProblem({ plan_people: planPeople.value, max_people: max.value, monthly_cap_nanos: usdToNanos(cap.value) });
+	if (problem) return fail(problem);
+	return ok({
+		plan_people: planPeople.value,
+		over_plan: overPlan.value,
+		max_people: max.value,
+		monthly_cap_usd: cap.value,
+		token_monthly_limit_usd: keyLimit.value,
+		answers_per_person_hour: hourly.value,
+		allow_guests: guests.value,
+		allow_external_users: external.value,
+		model: chosenModel.value,
+		access_mode: access.value,
+		usage_data_mode: usage.value,
+		slack_app_id: appId === null ? null : appId.toLowerCase(),
+	});
+}
+
+const PATCH_FIELDS = new Set([
+	"workspaceId", "plan_people", "over_plan", "max_people", "monthly_cap_usd", "answers_per_person_hour",
+	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "search_mode", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
+	"schedules_enabled", "schedules_max", "schedule_creators", "allow_guests", "allow_external_users", "token_monthly_limit_usd", "status",
+	"pages_enabled", "page_expiry_days", "page_default_access", "page_link_access",
+]);
+
+/** Validates a settings change. Unknown fields are rejected; cross-field rules need the current row (planProblem). */
+export function parseSettingsPatch(body: Body): Result<SlackAgentPatch> {
+	const unknown = unknownField(body, PATCH_FIELDS);
+	if (unknown) return fail(`Unknown field: ${unknown}`);
+	const update: SlackAgentRowUpdate = {};
+	const patch: SlackAgentPatch = { update, changedFields: [] };
+	const take = <T>(field: string, parse: (value: unknown) => Result<T>, apply: (value: T) => void): { ok: false; message: string; code?: string } | null => {
+		if (body[field] === undefined) return null;
+		const parsed = parse(body[field]);
+		if (parsed.ok === false) return parsed;
+		apply(parsed.value);
+		patch.changedFields.push(field);
+		return null;
+	};
+	const problems = [
+		take("plan_people", parsePlanPeople, (value) => { update.plan_people = value; }),
+		take("over_plan", (value) => oneOf<OverPlan>(value, "over_plan", ["refuse", "move_up"]), (value) => { update.over_plan = value; }),
+		take("max_people", maxPeople, (value) => { update.max_people = value; }),
+		take("monthly_cap_usd", (value) => usd(value, "monthly_cap_usd", false), (value) => { update.monthly_cap_nanos = usdToNanos(value); }),
+		take("answers_per_person_hour", (value) => integer(value, "answers_per_person_hour", 1, MAX_ANSWERS_PER_PERSON_HOUR), (value) => { update.answers_per_person_hour = value; }),
+		take("model", model, (value) => { update.model = value; }),
+		take("model_choice_enabled", (value) => bool(value, "model_choice_enabled"), (value) => { update.model_choice_enabled = value; }),
+		take("allowed_models", allowedModelIds, (value) => { update.allowed_models = value; }),
+		// Off: the agent gets no note tools and no pins; saved notes are kept.
+		take("memory_enabled", (value) => bool(value, "memory_enabled"), (value) => { update.memory_enabled = value; }),
+		// Where search_slack is offered; it also needs the search scopes (Update Slack permissions).
+		take("search_mode", (value) => oneOf<SearchMode>(value, "search_mode", ["off", "dm", "dm_and_channels"]), (value) => { update.search_mode = value; }),
+		// Recurring tasks. Off: none are saved and due runs are skipped; a lower maximum keeps the ones saved.
+		take("schedules_enabled", (value) => bool(value, "schedules_enabled"), (value) => { update.schedules_enabled = value; }),
+		take("schedules_max", (value) => integer(value, "schedules_max", 1, MAX_SCHEDULES), (value) => { update.schedules_max = value; }),
+		take("schedule_creators", (value) => oneOf<ScheduleCreators>(value, "schedule_creators", ["everyone", "linked"]), (value) => { update.schedule_creators = value; }),
+		take("instructions", instructions, (value) => { update.instructions = value; }),
+		take("access_mode", (value) => oneOf<AccessMode>(value, "access_mode", ["everyone", "linked"]), (value) => { update.access_mode = value; }),
+		take("usage_data_mode", (value) => oneOf<UsageDataMode>(value, "usage_data_mode", ["off", "dm", "dm_and_channels"]), (value) => { update.usage_data_mode = value; }),
+		take("usage_data_channel_ids", channelIds, (value) => { update.usage_data_channel_ids = value; }),
+		take("allow_guests", (value) => bool(value, "allow_guests"), (value) => { update.allow_guests = value; }),
+		take("allow_external_users", (value) => bool(value, "allow_external_users"), (value) => { update.allow_external_users = value; }),
+		// Shared pages: on or off, how long new ones are kept, and who may view them.
+		take("pages_enabled", (value) => bool(value, "pages_enabled"), (value) => { update.pages_enabled = value; }),
+		take("page_expiry_days", expiryDays, (value) => { update.page_expiry_days = value; }),
+		take("page_default_access", (value) => oneOf<PageAccess>(value, "page_default_access", ["link", "workspace"]), (value) => { update.page_default_access = value; }),
+		take("page_link_access", (value) => bool(value, "page_link_access"), (value) => { update.page_link_access = value; }),
+		take("token_monthly_limit_usd", (value) => usd(value, "token_monthly_limit_usd", true), (value) => { patch.keyMonthlyLimitNanos = usdToNanos(value); }),
+		// payment_due and uninstalled are never set here: paying clears payment_due, DELETE uninstalls.
+		take("status", (value) => oneOf<SlackAgentStatusChange>(value, "status", ["active", "paused"]), (value) => { patch.status = value; }),
+	];
+	const problem = problems.find((entry) => entry !== null);
+	if (problem) return problem;
+	if (!patch.changedFields.length) return fail("Provide at least one setting to change");
+	return ok(patch);
+}

@@ -26,6 +26,10 @@ SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 PROFILE_AVATARS_PUBLIC_BASE_URL = "https://avatars.phaseo.app"
 # Recipient ID is not a credential. The channel webhook belongs in Worker secrets.
 PROVIDER_MODEL_REVIEW_SLACK_USER_ID = "U0AGDKDBLP6"
+# PostHog project 81404's public write-only key, the same one the website ships to
+# browsers. Feedback answers are sent to its survey with it. Not a credential.
+POSTHOG_PROJECT_API_KEY = "phc_nnjuRkJpsqSm4SDVhT6jVjNysvbMedzoj4u5taUQaJ3"
+
 # Display only: tells Settings whether spend rule blocks are enforced. Keep it equal to the
 # gateway's SPEND_RULE_BLOCKS_ENABLED (apps/api/wrangler*.toml), which does the enforcing.
 SPEND_RULE_BLOCKS_ENABLED = "false"
@@ -47,6 +51,15 @@ preview_bucket_name = "phaseo-profile-avatars-preview"
 binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
 bucket_name = "phaseo-gateway-io-logs"
 preview_bucket_name = "phaseo-gateway-io-logs-preview"
+
+# The Slack agent Worker's admin entrypoint (apps/slack, SlackAgentAdmin): Settings →
+# Slack lists and deletes the agent's shared pages, and uninstalling deletes them.
+# A named entrypoint is reachable only through bindings like this one. Staging has
+# none, so its settings show no pages.
+[[services]]
+binding = "SLACK_AGENT"
+service = "phaseo-slack-agent"
+entrypoint = "SlackAgentAdmin"
 
 # PR previews deploy this separately named Worker to the account's workers.dev
 # subdomain. It deliberately has no phaseo.app route, so it cannot intercept

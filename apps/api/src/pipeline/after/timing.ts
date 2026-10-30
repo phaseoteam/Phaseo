@@ -10,10 +10,22 @@ export function buildResponseTimeline(ctx?: PipelineContext | null) {
 	return {
 		version: 1,
 		routing_ms: valid ? Math.round(value) : null,
+		failover_ms: resolveFailoverMs(ctx),
 		// Allows retry intervals to exclude preparation already shown as routing.
 		...(valid && typeof startedAt === "number" && Number.isFinite(startedAt)
 			? { first_dispatch_at_ms: startedAt + value } : {}),
 	};
+}
+
+/** First upstream dispatch to the selected one: time spent on failed provider attempts.
+ * Zero when the first attempt was selected; null when either dispatch clock is missing.
+ */
+export function resolveFailoverMs(ctx?: PipelineContext | null): number | null {
+	const first = ctx?.meta.upstreamFetchStartMs;
+	const selected = ctx?.meta.selectedUpstreamFetchStartMs;
+	if (typeof first !== "number" || !Number.isFinite(first)) return null;
+	if (typeof selected !== "number" || !Number.isFinite(selected)) return null;
+	return Math.max(0, Math.round(selected - first));
 }
 
 function readTimingMetric(ctx: PipelineContext, key: string): number | null {

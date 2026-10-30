@@ -12,17 +12,18 @@ import {
 import {
 	Database,
 	Shield,
+	ShieldAlert,
 	BarChart3,
 	Settings,
 	FileCheck,
 	Users,
-	GitCompare,
 	RefreshCcw,
 	Gift,
 	Bell,
 	Gauge,
 	FlaskConical,
 	Languages,
+	MessagesSquare,
 } from "lucide-react";
 
 const internalTools = [
@@ -37,6 +38,14 @@ const internalTools = [
 	{
 		id: "realtime-billing", titleKey: "realtimeBillingTitle", descriptionKey: "realtimeBillingDescription",
 		icon: Shield, href: "/internal/realtime-billing", comingSoon: false,
+	},
+	{
+		id: "key-incidents", titleKey: "keyIncidentsTitle", descriptionKey: "keyIncidentsDescription",
+		icon: ShieldAlert, href: "/internal/key-incidents", comingSoon: false,
+	},
+	{
+		id: "slack-agent", titleKey: "slackAgentTitle", descriptionKey: "slackAgentDescription",
+		icon: MessagesSquare, href: "/internal/slack-agent", comingSoon: false,
 	},
 	{
 		id: "model-test-playground",
@@ -60,14 +69,6 @@ const internalTools = [
 		descriptionKey: "dataAuditDescription",
 		icon: BarChart3,
 		href: "/internal/audit",
-		comingSoon: false,
-	},
-	{
-		id: "api-model-conflicts",
-		titleKey: "apiModelConflictsTitle",
-		descriptionKey: "apiModelConflictsDescription",
-		icon: GitCompare,
-		href: "/internal/api-model-conflicts",
 		comingSoon: false,
 	},
 	{

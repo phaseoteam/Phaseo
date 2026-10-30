@@ -9,6 +9,8 @@ build
 .env*
 apps/mcp/.dev.vars
 apps/mcp/.wrangler/
+apps/slack/.dev.vars
+apps/slack/.wrangler/
 pnpm-debug.log
 .turbo/
 **/.turbo/
@@ -36,14 +38,14 @@ guides/private/
 .playwright-cli/
 .tools/
 .codex/tmp/
-/.claude/
+/.claude/*
+!/.claude/skills/
 /.codex/remote-control*.log
 /design-audit/
 /design-qa*
 /postman/
 /supabase/.temp/
 /apps/web/scripts/reports/
-packages/data/catalog/src/data/monitor-history.json
 packages/sdk/sdk-csharp/bin/
 packages/sdk/sdk-csharp/obj/
 packages/sdk/sdk-csharp/**/bin/
@@ -59,6 +61,7 @@ packages/sdk/sdk-ruby/*.gem
 .vercel
 /apps/desktop/out/
 /apps/desktop/release/
+/apps/desktop/output/
 
 # React Doctor local scan outputs
 /apps/web/.react-doctor-current.json

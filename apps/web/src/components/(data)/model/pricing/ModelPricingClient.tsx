@@ -1,4 +1,7 @@
 "use client";
+
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
+import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
 
 import React, {
@@ -408,13 +411,16 @@ function getProviderDefaultPlan(provider: ProviderPricing): string {
     return getPreferredPlan(getProviderAvailablePlans(provider));
 }
 
-function getProviderPromptTrainingPolicy(provider: ProviderPricing): string {
-    const override = provider.provider_models.find(
-        (model) => typeof model.prompt_training_policy_override === "string" && model.prompt_training_policy_override.trim()
-    )?.prompt_training_policy_override;
-    return normalizeProviderPromptTrainingPolicy(
-        override ?? provider.provider.prompt_training_policy ?? null
-    );
+export function getProviderPromptTrainingPolicy(provider: ProviderPricing, plan = getProviderDefaultPlan(provider)): string {
+    const scope = getProviderModelScopeForPlan(provider, plan);
+    const fallback = normalizeProviderPromptTrainingPolicy(provider.provider.prompt_training_policy);
+    const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]);
+    const policies = scope.map((model) => currentCatalogDataPolicy(model.data_policy)?.trainingPolicy
+        ?? normalizeProviderPromptTrainingPolicy(model.prompt_training_policy_override ?? fallback));
+    if (tierPolicy?.trainingPolicy != null) policies.push(tierPolicy.trainingPolicy);
+    if (policies.includes("may_train")) return "may_train";
+    if (policies.length) return policies.every((policy) => policy === "no_train") ? "no_train" : "unknown";
+    return fallback;
 }
 
 function resolveProviderGatewayStatus(provider: ProviderPricing): CanonicalGatewayStatus {
@@ -486,12 +492,11 @@ function getIgnoredPrivacyReasons(
         }
     }
 
-    const trainingPolicy = getProviderPromptTrainingPolicy(provider);
+    const trainingPolicy = getProviderPromptTrainingPolicy(provider, plan);
     if (trainingPolicy === "may_train") {
-        const defaultPlan = getProviderDefaultPlan(provider);
-        if (defaultPlan === "free" && !settings.privacyEnableFreeMayTrain) {
+        if (plan === "free" && !settings.privacyEnableFreeMayTrain) {
             reasons.push("Free training-on-inputs endpoints are disabled in workspace privacy settings");
-        } else if (defaultPlan !== "free" && !settings.privacyEnablePaidMayTrain) {
+        } else if (plan !== "free" && !settings.privacyEnablePaidMayTrain) {
             reasons.push("Paid training-on-inputs endpoints are disabled in workspace privacy settings");
         }
     }
@@ -499,7 +504,7 @@ function getIgnoredPrivacyReasons(
     return reasons;
 }
 
-function matchesPrivacyFilter(
+export function matchesPrivacyFilter(
     provider: ProviderPricing,
     filter: PrivacyFilter,
     workspacePrivacySettings: WorkspacePrivacySettings | null,
@@ -510,7 +515,7 @@ function matchesPrivacyFilter(
         return getPlanZdrEligibility(provider, plan) === true;
     }
     if (filter === "no_training") {
-        return getProviderPromptTrainingPolicy(provider) !== "may_train";
+        return getProviderPromptTrainingPolicy(provider, plan) === "no_train";
     }
     if (!workspacePrivacySettings?.isAuthenticated) return true;
         return getIgnoredPrivacyReasons(provider, workspacePrivacySettings, plan)
@@ -523,8 +528,8 @@ export function getPlanZdrEligibility(
 	plan: string,
 ): boolean | null {
 	const providerZdr = provider.provider.zero_data_retention;
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan];
-	const policies = getProviderModelScopeForPlan(provider, plan).map((model) => model.data_policy);
+	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]);
+	const policies = getProviderModelScopeForPlan(provider, plan).map((model) => currentCatalogDataPolicy(model.data_policy));
 	return resolveScopedZdr(providerZdr, policies, tierPolicy);
 }
 
@@ -537,14 +542,11 @@ function formatServiceTierLabel(plan: string): string {
 }
 
 function formatTierLatency(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "--";
-	const seconds = value / 1_000;
-	return `${seconds.toFixed(seconds >= 10 ? 1 : 2)}s`;
+	return formatLatency(value) ?? "--";
 }
 
 function formatTierThroughput(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "--";
-	return `${value >= 100 ? value.toFixed(0) : value.toFixed(1)} tps`;
+	return formatTps(value) ?? "--";
 }
 
 function formatTierUptime(stats: ProviderRuntimeStats | null): string {
@@ -628,9 +630,9 @@ function ProviderServiceTierInfoIcons({
 					: statusKey.startsWith("deranked_")
 						? "statusDescriptions.rateLimited"
 						: "statusDescriptions.inactive";
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
+	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]) ?? null;
 	const capabilityPolicies = providerModels
-		.map((providerModel) => providerModel.data_policy)
+		.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy))
 		.filter((policy): policy is NonNullable<typeof policy> => Boolean(policy));
 	const policies = tierPolicy ? [tierPolicy] : capabilityPolicies;
 	const dataPolicy = (policies.length > 0 ? policies : [null]).map((policy) => ({
@@ -640,7 +642,7 @@ function ProviderServiceTierInfoIcons({
 		contractNotes: provider.provider.data_policy_contract_notes ?? null,
 		notes: policy?.reason ?? provider.provider.prompt_training_notes ?? null,
 		sourceUrl: policy?.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
-		promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
+		promptTrainingPolicy: getProviderPromptTrainingPolicy(provider, plan),
 		zeroDataRetention: getPlanZdrEligibility(provider, plan),
 	}));
 

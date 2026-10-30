@@ -13,11 +13,13 @@ from urllib.parse import quote
 
 import httpx
 
+from .auth import ApiKeyProvider, has_authorization, resolve_async
 from .helpers import check_capabilities, check_parameter_support, parse_output, _batch_line, _accumulate_event
 from .jobs import JobFailedError, JobTimeoutError, job_status, _validate_options
 from .transport import APIResponse, PhaseoHTTPError, RawResponse, RequestHook, decode_response, request_trace_url, retry_after, validate_controls
 from .media import upload_input
 from .pagination import aiter_items, aiter_pages
+from .realtime import AsyncRealtime
 from gen import models
 
 ParsedOutput = TypeVar("ParsedOutput", bound=BaseModel)
@@ -62,9 +64,20 @@ class AsyncTextResource(AsyncResource):
     async def stream(self, params: dict[str, Any]) -> AsyncIterator[dict[str, Any]]:
         from . import _parse_chat_stream_line, _parse_response_stream_line, _parse_message_stream_line
         parser = {"/responses": _parse_response_stream_line, "/messages": _parse_message_stream_line}.get(self.path, _parse_chat_stream_line)
+        # An SSE event is named on its `event:` line; Responses data that does not name itself takes that name.
+        event_name: str | None = None
         async with self.client._stream("POST", self.path, json={**params, "stream": True}) as response:
             async for line in response.aiter_lines():
-                event = parser(line)
+                if line.startswith("event:"):
+                    event_name = line[6:].strip() or None
+                    continue
+                is_data = line.startswith("data:")
+                if parser is _parse_response_stream_line:
+                    event = _parse_response_stream_line(line, event_name if is_data else None)
+                else:
+                    event = parser(line)
+                if is_data:
+                    event_name = None
                 if event is not None:
                     yield event
 
@@ -281,13 +294,13 @@ class AsyncListableJobs(AsyncJobs):
 
 
 class AsyncPhaseo:
-    def __init__(self, api_key: str | None = None, base_url: str | None = None, *, region: str | None = None,
+    def __init__(self, api_key: str | ApiKeyProvider | None = None, base_url: str | None = None, *, region: str | None = None,
                  timeout: float = 60, max_retries: int = 0, http_client: httpx.AsyncClient | None = None,
                  headers: dict[str, str] | None = None, app: dict[str, str] | None = None,
                  client_source: str | None = None, client_source_version: str | None = None,
                  on_request: RequestHook | None = None, on_response: RequestHook | None = None,
                  on_retry: RequestHook | None = None):
-        from . import REGIONAL_BASE_URLS, DEFAULT_USER_AGENT
+        from . import REGIONAL_BASE_URLS, DEFAULT_USER_AGENT, __version__
         key = api_key or os.getenv("PHASEO_API_KEY")
         if not key:
             raise ValueError("api_key is required")
@@ -297,9 +310,12 @@ class AsyncPhaseo:
             raise ValueError("region must be one of: global, eu, us")
         validate_controls(timeout, max_retries)
         self.base_url = (base_url or REGIONAL_BASE_URLS[region or "global"]).rstrip("/")
-        self.headers = {"Authorization": f"Bearer {key}", "User-Agent": DEFAULT_USER_AGENT,
+        # A credential function sets Authorization on every request instead of once here.
+        self._api_key = key
+        self._api_key_provider = key if callable(key) else None
+        self.headers = {**({} if self._api_key_provider else {"Authorization": f"Bearer {key}"}), "User-Agent": DEFAULT_USER_AGENT,
             "X-Phaseo-Client": client_source or "phaseo-python",
-            "X-Phaseo-Client-Version": client_source_version or DEFAULT_USER_AGENT.removeprefix("phaseo-python/"), **(headers or {})}
+            "X-Phaseo-Client-Version": client_source_version or __version__, **(headers or {})}
         for field, header in (("id", "X-App-Id"), ("name", "X-App-Name"), ("url", "HTTP-Referer")):
             if app and app.get(field):
                 self.headers[header] = app[field]
@@ -324,9 +340,10 @@ class AsyncPhaseo:
         self.music = AsyncJobs(self, "/music/generate", "music")
         self.videos = AsyncListableJobs(self, "/videos", "video")
         self.batches = AsyncListableJobs(self, "/batches", "batch")
+        self.realtime = AsyncRealtime(self)
 
     def with_options(self, *, timeout: float | None = None, max_retries: int | None = None, headers: dict[str, str] | None = None) -> "AsyncPhaseo":
-        return AsyncPhaseo(api_key=self.headers["Authorization"].removeprefix("Bearer "), base_url=self.base_url,
+        return AsyncPhaseo(api_key=self._api_key, base_url=self.base_url,
             timeout=self.timeout if timeout is None else timeout, max_retries=self.max_retries if max_retries is None else max_retries,
             headers={**self.headers, **(headers or {})}, http_client=self.http,
             on_request=self.on_request, on_response=self.on_response, on_retry=self.on_retry)
@@ -343,9 +360,14 @@ class AsyncPhaseo:
             kwargs["headers"]["Idempotency-Key"] = idempotency_key
         validate_controls(timeout, max_retries)
         retries = max_retries if method.upper() in ("GET", "HEAD") else 0
+        base_headers = kwargs["headers"]
         for attempt in range(retries + 1):
             if self.on_request:
                 self.on_request({"method": method.upper(), "attempt": attempt})
+            # Each attempt, including retries, asks the function for a current credential.
+            if self._api_key_provider and not has_authorization(base_headers):
+                credential = await resolve_async(self._api_key_provider, timeout)
+                kwargs["headers"] = {**base_headers, "Authorization": f"Bearer {credential}"}
             context = self.http.stream(method, self.base_url + path, timeout=timeout, follow_redirects=False, **kwargs)
             try:
                 response = await context.__aenter__()

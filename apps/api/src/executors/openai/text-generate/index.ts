@@ -92,6 +92,9 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 // snapshot of the same model matches too.
 const OPENAI_RESPONSES_ONLY_MODELS = /^(?:gpt-5(?:\.[245])?-pro|o1-pro|o3-pro|gpt-5\.3-codex)(?:-\d{4}-\d{2}-\d{2})?$/;
 
+// GPT-6 models whose Chat Completions requests with tools must go to Responses.
+const OPENAI_GPT6_RESPONSES_TOOL_MODELS = /^gpt-6-(?:astra|sol|luna)(?:-\d{4}-\d{2}-\d{2})?$/;
+
 // Chat Completions fields with no CreateResponse property
 // (https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml).
 const OPENAI_CHAT_ONLY_FIELDS = ["stop", "seed", "frequency_penalty", "presence_penalty", "logit_bias"] as const;
@@ -804,6 +807,10 @@ function historyCarriesReplayableReasoning(ir: IRChatRequest, providerId: string
 			)));
 }
 
+function requestsChatAudioOutput(ir: IRChatRequest): boolean {
+	return ir.audioConfig != null || (Array.isArray(ir.modalities) && ir.modalities.includes("audio"));
+}
+
 async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const requestBuildStartMs = Date.now();
 	const keyInfo = resolveOpenAICompatKey({
@@ -818,6 +825,12 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	const requiresResponsesRoute = normalizedModel === "gpt-6.1-sol" ||
 		OPENAI_RESPONSES_ONLY_MODELS.test(normalizedModel) ||
 		(normalizedModel === "gpt-6-astra" && (args.ir as IRChatRequest).serviceTier === "ultrafast");
+	// GPT-6 Astra takes tools only on Responses. GPT-6 Sol and Luna take function tools on
+	// Chat Completions only at reasoning_effort "none", which a request without reasoning
+	// does not set (a request that sets it already goes to Responses).
+	// https://developers.openai.com/api/docs/guides/latest-model
+	const toolsRequireResponses = OPENAI_GPT6_RESPONSES_TOOL_MODELS.test(normalizedModel) &&
+		((args.ir as IRChatRequest).tools?.length ?? 0) > 0;
 	const hasAsyncTool = (args.ir as IRChatRequest).tools?.some((tool) => tool.async === true) ?? false;
 	// Chat Completions defines only function and custom tools; hosted tools such
 	// as web_search run on /v1/responses.
@@ -831,6 +844,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		args.protocol === "openai.chat.completions" &&
 		!(args.ir as IRChatRequest).reasoning &&
 		!requiresResponsesRoute &&
+		!toolsRequireResponses &&
 		!hasAsyncTool &&
 		!hasHostedTool &&
 		!requestsTwelveHourCache &&
@@ -864,7 +878,12 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		delete requestPayload.logprobs;
 	}
 
-	requestPayload.stream = true;
+	// Chat audio output streams only as pcm16, and some audio models do not stream at all
+	// (https://developers.openai.com/api/docs/guides/audio-chat-completions), so a
+	// non-streaming audio request is sent as one: its JSON body is read by bufferStreamToIR.
+	const chatAudioOutput = route === "chat" && requestsChatAudioOutput(irWithRequestMetadata);
+	const upstreamStreams = !(chatAudioOutput && !irWithRequestMetadata.stream);
+	requestPayload.stream = upstreamStreams;
 	// Responses requests always go upstream with store: false (documented on the
 	// Responses endpoint page). Chat Completions does not store by default, so
 	// store is only sent there when the client set it, and then as false.
@@ -876,7 +895,9 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	) {
 		ensureEncryptedReasoningInclude(requestPayload);
 	}
-	if (route === "chat") {
+	if (route === "chat" && !upstreamStreams) {
+		delete requestPayload.stream_options;
+	} else if (route === "chat") {
 		requestPayload.stream_options = {
 			...(requestPayload.stream_options ?? {}),
 			include_usage: true,

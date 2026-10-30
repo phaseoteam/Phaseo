@@ -2,7 +2,7 @@
 
 The Phaseo MCP server provides authenticated model discovery, pricing, usage, request-health information, and reviewed text inference from its interactive explorer.
 
-It reuses Phaseo OAuth permissions rather than creating a second identity system. Administrative operations remain available through the dashboard, CLI, and Management API.
+It reuses Phaseo OAuth permissions rather than creating a second identity system. Billing, workspace and other administrative operations remain in the dashboard, CLI, and Management API.
 
 ## Public tool boundary
 
@@ -14,12 +14,47 @@ The MCP server supports:
 - model cost estimates;
 - credit balance and recent activity;
 - aggregated analytics;
-- privacy-minimized request and generation metadata.
+- privacy-minimized request and generation metadata;
+- opt-in account management (see below).
 
-Catalogue and account tools remain read-only and never expose historical prompts,
+Catalogue and usage tools remain read-only and never expose historical prompts,
 responses, credentials, or raw control-plane records. The app-only inference tools
 accept a new user prompt and return its generated text after explicit Run approval.
-Administrative writes remain outside the MCP.
+
+## Account management
+
+Connecting to `https://mcp.phaseo.app/mcp?access=manage` opts in to account
+management. Its OAuth challenge and protected-resource metadata also request
+`MCP_MANAGEMENT_SCOPES` (`src/management.ts`): read, write and delete for API keys,
+budgets, spend rules, provider keys (BYOK) and guardrails; read and write for
+presets and settings. The plain `/mcp` URL never requests them.
+
+The API grants these scopes to a dynamically registered client only when it names
+them itself for the `https://mcp.phaseo.app/mcp` resource and asks for nothing outside
+the MCP scope list (`violatesMcpManagementBinding` in `apps/api/src/lib/oauth/mcpScopes.ts`).
+Registration, which has no resource, never stores management write or delete scopes;
+authorize, consent and the code exchange all apply the rule, and refresh tokens can never
+carry these scopes. The resulting delegated key is bound to the MCP resource, so it is
+rejected on `/v1` directly and only works through the MCP's token exchange.
+Broader requests are still narrowed to read-only or rejected. The consent screen lists
+every scope with a Read, Write or Delete badge and a checkbox, so the user can allow
+only some of them. Metadata-document (CIMD) clients stay read-only for now.
+
+Each tool calls the existing `/v1` Management API route with the user's
+resource-bound upstream token, so route scope checks, workspace roles and audit
+events all apply. Management tools are registered only on the manage URL, and each only when its route
+scope was granted. The plain `/mcp` URL never lists them, whatever scopes the token holds. A read-only
+connection opened with the manage URL gets a 403 `insufficient_scope` challenge
+that asks the client to sign in again.
+
+Annotations: list and get tools are read-only; create tools are additive and not
+idempotent; update, rotate, set, publish and delete tools are destructive, so clients that
+honour annotations ask before calling them. New API key and webhook signing secrets
+come back once in `oneTimeSecret` and are stripped from `result`. Stored provider keys,
+destination credentials and encrypted fields are never returned. 5xx error details are
+redacted; 4xx messages are passed through with the HTTP status.
+
+There are no billing, payment, workspace, member, management-key or OAuth-app tools.
 
 Model rankings remain evidence-based and independent of Gateway availability. Tool results report whether a model is currently routable through the Phaseo Gateway and provide its Gateway model ID, but availability never changes benchmark order or price sorting.
 

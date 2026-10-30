@@ -13,6 +13,7 @@ import { getProviderQuirks } from "./quirks";
 import { applyPromptCacheFieldPolicy, cacheMarkFields, promptCacheBreakpointValue } from "./prompt-cache-policy";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
+import { imageDetailForProvider } from "./media-parts";
 import {
 	canReplayReasoning,
 	openReasoningState,
@@ -138,13 +139,13 @@ function mapToolResultOutput(result: IRToolResult, providerId?: string): any {
 		const parts = result.parts
 			.filter((part) => part.type === "text" || part.type === "image"
 				|| (takesFiles && (part.type === "file" || (part.type === "provider_block" && part.block?.type === "input_file"))))
-			.map(mapContentPart);
+			.map((part) => mapContentPart(part, providerId));
 		if (parts.length > 0) return parts;
 	}
 	// OpenAI accepts a breakpoint on an input_text block inside
 	// function_call_output; the cache policy collapses it elsewhere.
 	return result.cacheControl
-		? [mapContentPart({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+		? [mapContentPart({ type: "text", text: result.content, cacheControl: result.cacheControl }, providerId)]
 		: result.content;
 }
 
@@ -229,19 +230,19 @@ export function irToOpenAIResponses(
 			inputItems.push({
 				type: "message",
 				role: "system",
-				content: msg.content.map(mapContentPart),
+				content: msg.content.map((part) => mapContentPart(part, providerId)),
 			});
 		} else if (msg.role === "developer") {
 			inputItems.push({
 				type: "message",
 				role: "developer",
-				content: msg.content.map(mapContentPart),
+				content: msg.content.map((part) => mapContentPart(part, providerId)),
 			});
 		} else if (msg.role === "user") {
 			inputItems.push({
 				type: "message",
 				role: "user",
-				content: msg.content.map(mapContentPart),
+				content: msg.content.map((part) => mapContentPart(part, providerId)),
 			});
 		} else if (msg.role === "assistant") {
 			const assistantContent = msg.content.map(mapAssistantContentPart).filter(Boolean);
@@ -550,7 +551,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 /**
  * Map IR content part to Responses API content item
  */
-function mapContentPart(part: IRContentPart): any {
+function mapContentPart(part: IRContentPart, providerId?: string): any {
 	if (part.type === "text") {
 		const promptCacheBreakpoint = part.cacheControl?.type === "prompt_cache_breakpoint"
 			? promptCacheBreakpointValue(part.cacheControl)
@@ -568,26 +569,24 @@ function mapContentPart(part: IRContentPart): any {
 		return { type: "input_text", text: part.text };
 	}
 
-        if (part.type === "image") {
-                if (part.source === "url") {
-                        return {
-                                type: "input_image",
-                                image_url: part.data,
-                                detail: part.detail,
-								...cacheMarkFields(part.cacheControl),
-                        };
-                } else {
-                        const dataUrl = part.data.startsWith("data:")
-                                ? part.data
-                                : `data:${part.mimeType || "image/jpeg"};base64,${part.data}`;
-                        return {
-                                type: "input_image",
-                                image_url: dataUrl,
-                                detail: part.detail,
-								...cacheMarkFields(part.cacheControl),
-                        };
-                }
-        }
+	if (part.type === "image") {
+		const detail = imageDetailForProvider(part.detail, providerId);
+		// Responses `input_image` takes an image_url (URL or data URL) or a file_id.
+		// https://platform.openai.com/docs/api-reference/responses/create
+		const image = part.source === "id"
+			? { file_id: part.data }
+			: {
+				image_url: part.source === "url" || part.data.startsWith("data:")
+					? part.data
+					: `data:${part.mimeType || "image/jpeg"};base64,${part.data}`,
+			};
+		return {
+			type: "input_image",
+			...image,
+			...(detail ? { detail } : {}),
+			...cacheMarkFields(part.cacheControl),
+		};
+	}
 
 	if (part.type === "audio") {
 		const inputAudio = part.source === "url"
@@ -616,10 +615,12 @@ function mapContentPart(part: IRContentPart): any {
 
 	if (part.type === "provider_block") return { ...part.block };
 
+	// Responses video parts are `input_video` with `video_url` as a string
+	// (SambaNova's and BytePlus's Responses references).
 	if (part.type === "video") {
 		return {
 			type: "input_video",
-			video_url: { url: part.url },
+			video_url: part.url,
 		};
 	}
 

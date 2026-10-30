@@ -83,12 +83,14 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 				? decodedDetails.parts
 				: reasoningContent ? [{ type: "reasoning_text", text: reasoningContent }] : [];
 			const content: IRContentPart[] = [...reasoningParts, ...assistantContent];
+			const audioId = typeof msgAny.audio?.id === "string" && msgAny.audio.id.length > 0 ? msgAny.audio.id : undefined;
 
 			messages.push({
 				role: "assistant",
 				content,
 				toolCalls,
 				...(typeof msgAny.name === "string" && msgAny.name.length > 0 ? { name: msgAny.name } : {}),
+				...(audioId ? { audio: { id: audioId } } : {}),
 			});
 		} else if (normalizedRole === "tool") {
 			const toolResult = normalizeToolResultContent(msgAny.content);

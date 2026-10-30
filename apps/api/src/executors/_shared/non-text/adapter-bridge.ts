@@ -43,6 +43,7 @@ import * as openaiAudioTranslation from "@providers/openai/endpoints/audio-trans
 import * as openaiVideo from "@providers/openai/endpoints/video";
 import * as mistralOcr from "@providers/mistral/endpoints/ocr";
 import * as cohereParse from "@providers/cohere/endpoints/parse";
+import * as mistralAudioSpeech from "@providers/mistral/endpoints/audio-speech";
 import * as mistralAudioTranscription from "@providers/mistral/endpoints/audio-transcription";
 import * as elevenLabsAudioSpeech from "@providers/elevenlabs/endpoints/audio-speech";
 import * as elevenLabsAudioTranscription from "@providers/elevenlabs/endpoints/audio-transcription";
@@ -61,6 +62,7 @@ import * as deepinfraAudioSpeech from "@providers/deepinfra/endpoints/audio-spee
 import * as friendliAudioTranscription from "@providers/friendli/audio-transcription";
 import * as stepfunAudioSpeech from "@providers/stepfun/audio-speech";
 import * as stepfunImages from "@providers/stepfun/images";
+import * as fireworksImages from "@providers/fireworks/images";
 import * as stepfunAudioTranscription from "@providers/stepfun/audio-transcription";
 
 type NonTextEndpoint =
@@ -628,6 +630,7 @@ async function executeProviderEndpoint(
 	switch (endpoint) {
 		case "images.generations":
 			if (providerId === "stepfun") return stepfunImages.exec(providerArgs);
+			if (providerId === "fireworks") return fireworksImages.exec(providerArgs);
 			if (providerId === "minimax" || providerId === "minimax-lightning") {
 				return minimaxImages.exec(providerArgs);
 			}
@@ -666,6 +669,9 @@ async function executeProviderEndpoint(
 			}
 			if (providerId === "elevenlabs") {
 				return elevenLabsAudioSpeech.exec(providerArgs);
+			}
+			if (providerId === "mistral") {
+				return mistralAudioSpeech.exec(providerArgs);
 			}
 			if (providerId === "xiaomi") {
 				return xiaomiAudioSpeech.exec(providerArgs);
@@ -766,7 +772,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		try {
 			const reserved = await reserveVideoGenerationCredits({
 				keyId: args.apiKeyId,
-				authMethod: args.meta.authMethod,
+				apiKeyRef: args.meta.apiKeyRef,
 				onReservationDenied: args.onReservationDenied,
 				workspaceId: args.workspaceId,
 				videoId: args.requestId,

@@ -20,8 +20,10 @@ import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { readDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
+import { releaseSpend } from "./spend-limits";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -326,10 +328,15 @@ export function extractErrorDescription(body: any): string | null {
 export function isRateLimitPolicyRejection(errorCode: string | null | undefined, body: any): boolean {
     if (errorCode !== "rate_limit_exceeded") return false;
     const reason = body?.reason ?? body?.error?.reason;
-    return reason === "policy_requests_per_minute" || reason === "policy_tokens_per_minute";
+    return reason === "policy_requests_per_minute" || reason === "policy_tokens_per_minute"
+        || reason === "policy_concurrent_requests" || reason === "policy_unavailable";
 }
 
 /** A workspace spend rule block (core/spend-blocks.ts): refused before any provider is called. */
+// Limits the gateway enforces itself, whose Retry-After is the real time until
+// the limit resets (a monthly key cap can be weeks away), never a provider value.
+const GATEWAY_LIMIT_ERROR_CODES = new Set(["key_limit_exceeded", "spend_rule_blocked"]);
+
 export function isSpendRuleBlockRejection(errorCode: string | null | undefined): boolean {
     return errorCode === "spend_rule_blocked";
 }
@@ -597,6 +604,7 @@ function hasExecuteUpstreamEvidence(body: any): boolean {
     if (Array.isArray(body.failed_statuses) && body.failed_statuses.length > 0) return true;
     if (
         body.reason === "all_candidates_failed" ||
+        body.reason === "upstream_rejected_request" ||
         body.reason === "upstream_provider_payment_required"
     ) {
         return true;
@@ -681,17 +689,20 @@ export async function handleError({
         requestPayload: unknown;
         requestedModel: string | null;
         model?: string | null;
+        workspaceId?: string | null;
+        apiKeyId?: string | null;
+        zeroDataRetention?: boolean;
     },
 }): Promise<Response> {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
-    // Keeps BYOK quota headers the execute stage already put in downstream form.
-    applyDownstreamRateLimitHeaders(headers, readDownstreamRateLimitHeaders(res.headers));
     if (timingHeader) {
         headers.set("Server-Timing", timingHeader);
         headers.set("Timing-Allow-Origin", "*");
     }
 
     console.log(`Handling ${stage} error for endpoint ${endpoint}: status ${res.status}`);
+    // Enforce mode: a request failing after admission frees its spend-limit slot (no-op without one).
+    releaseSpend(ctx?.spendAdmission);
 
     const body = await safeJson(res);
     const debugHeader = req?.headers.get("x-gateway-debug");
@@ -706,6 +717,11 @@ export async function handleError({
             process.env?.GATEWAY_DEBUG_ERRORS === "1") ||
             debugRequested);
     const errCode = extractErrorCode(body, stage === "before" ? "before_error" : "upstream_error");
+    // Keeps BYOK quota headers the execute stage already put in downstream form.
+    // Gateway-originated limits keep a Retry-After longer than a day.
+    applyDownstreamRateLimitHeaders(headers, readDownstreamRateLimitHeaders(res.headers, {
+        gatewayOriginated: GATEWAY_LIMIT_ERROR_CODES.has(errCode),
+    }));
     const description = extractErrorDescription(body);
     const upstreamUnsupportedParamSignal = extractUpstreamUnsupportedParamSignal({ stage, body });
     let attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
@@ -800,6 +816,14 @@ export async function handleError({
         requestObservability?.requestPayload ??
         recoveredRequest.requestPayload ??
         null;
+    // Rejections before makeMeta have no ctx.meta; read metadata and trace keys the same way it would.
+    const requestMetadataForObservability = ctx?.meta
+        ? ctx.meta.requestMetadata ?? null
+        : readRequestMetadata((requestPayloadForObservability as any)?.metadata);
+    const traceContextForObservability = ctx?.meta
+        ? ctx.meta.otelTraceContext ?? null
+        : parseW3cTraceContext(req?.headers.get("traceparent") ?? null, req?.headers.get("tracestate") ?? null) ??
+            metadataTraceContext(requestMetadataForObservability);
     const generationId =
         ctx?.requestId ??
         body?.generation_id ??
@@ -860,6 +884,13 @@ export async function handleError({
             if (typeof body?.[field] === "string") errorPayload[field] = body[field];
         }
         if (typeof body?.limit_value === "number") errorPayload.limit_value = body.limit_value;
+    }
+    if (errCode === "key_limit_exceeded") {
+        // Tells the caller which key limit or budget refused the request and when it resets, and for
+        // a department budget which department.
+        for (const field of ["reason", "reset_at", "department_id", "department_name"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
     }
     if (
         stage === "execute" &&
@@ -922,6 +953,20 @@ export async function handleError({
         if (typeof body?.model === "string") errorPayload.model = body.model;
         errorPayload.retired_at = typeof body?.retired_at === "string" ? body.retired_at : null;
         errorPayload.replacement_model = typeof body?.replacement_model === "string" ? body.replacement_model : null;
+    }
+    if (errCode === "model_region_unavailable") {
+        // Which residency requirements no provider met, so callers can act on them.
+        for (const field of ["reason", "action"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+        const unmet = body?.unmet_requirements;
+        if (unmet && typeof unmet === "object" && !Array.isArray(unmet)) {
+            errorPayload.unmet_requirements = {
+                ...(typeof unmet.execution_region === "string" ? { execution_region: unmet.execution_region } : {}),
+                ...(typeof unmet.data_region === "string" ? { data_region: unmet.data_region } : {}),
+                ...(unmet.zero_data_retention === true ? { zero_data_retention: true } : {}),
+            };
+        }
     }
     if (body?.routing_diagnostics && typeof body.routing_diagnostics === "object") {
         errorPayload.routing_diagnostics = body.routing_diagnostics;
@@ -1012,10 +1057,14 @@ export async function handleError({
     // Admission rejections happen before any provider is called.
     const providerForAudit = isFreeModelLimit || isPolicyRejection || isSpendBlock ? null : providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
     const loggedErrorCode = `${isFreeModelLimit ? "gateway" : attribution}:${errCode}`;
+    // Without a context, a preset's ZDR comes from the early snapshot; the I/O log and
+    // telemetry also read the key's policy and the request payload.
+    const zeroDataRetention = ctx?.zeroDataRetention === true || requestObservability?.zeroDataRetention === true;
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
-        workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? null,
+        workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? requestObservability?.workspaceId ?? null,
+        zeroDataRetention,
         endpoint,
         model: modelForObservability,
         requestedModel,
@@ -1057,7 +1106,7 @@ export async function handleError({
         generationMs: ctx ? (executeAdapterMs ? Math.round(executeAdapterMs) : null) : null,
         internalLatencyMs,
         byok: ctx ? ((ctx as any)?.meta?.keySource === "byok") : false,
-        keyId: ctx?.meta?.apiKeyId ?? null,
+        keyId: ctx?.meta?.apiKeyId ?? requestObservability?.apiKeyId ?? null,
         requestMethod: requestMeta.requestMethod,
         requestPath: requestMeta.requestPath,
         requestUrl: requestMeta.requestUrl,
@@ -1131,11 +1180,12 @@ export async function handleError({
                 errorType,
                 startedAtMs: ctx?.meta?.startedAtMs ?? Date.now(),
                 completedAtMs: Date.now(),
-                traceContext: ctx?.meta?.otelTraceContext ?? null,
+                traceContext: traceContextForObservability,
                 requestMethod: requestMeta.requestMethod,
                 requestPath: requestMeta.requestPath,
                 sessionId: auditArgs.sessionId,
                 edgeColo: requestMeta.edgeColo,
+                metadata: requestMetadataForObservability,
                 rateLimitPolicyId: isPolicyRejection ? (errorPayload.policy_id as string | undefined) ?? null : null,
                 rateLimitScope: isPolicyRejection ? (errorPayload.limit_scope as string | undefined) ?? null : null,
             })
@@ -1145,6 +1195,7 @@ export async function handleError({
         result: undefined,
         requestId: auditArgs.requestId,
         workspaceId: auditArgs.workspaceId ?? "unknown",
+        zeroDataRetention,
         endpoint,
         model: modelForObservability,
         requestedModel,
@@ -1162,7 +1213,7 @@ export async function handleError({
         edgeCountry: requestMeta.edgeCountry,
         edgeContinent: requestMeta.edgeContinent,
         edgeAsn: requestMeta.edgeAsn,
-        keyId: ctx?.meta?.apiKeyId ?? null,
+        keyId: ctx?.meta?.apiKeyId ?? requestObservability?.apiKeyId ?? null,
         statusCode,
         success: false,
         errorCode: loggedErrorCode,

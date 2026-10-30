@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
 	apiKey: "resend_key",
 	rpcCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
 	rpcResult: { data: null as unknown, error: null as { message: string } | null },
+	updates: [] as Array<{ table: string; values: Record<string, unknown>; id: unknown }>,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -17,9 +18,15 @@ vi.mock("@/runtime/env", () => ({
 			state.rpcCalls.push({ name, args });
 			return state.rpcResult;
 		},
-		from: () => {
-			throw new Error("the sweep reads and writes only through its RPC");
-		},
+		// The only direct write: reopening an outbox row whose automation event failed.
+		from: (table: string) => ({
+			update: (values: Record<string, unknown>) => ({
+				eq: async (_column: string, id: unknown) => {
+					state.updates.push({ table, values, id });
+					return { error: null };
+				},
+			}),
+		}),
 	}),
 }));
 
@@ -45,6 +52,7 @@ describe("low-balance email sweep", () => {
 		state.automationsEnabled = "true";
 		state.apiKey = "resend_key";
 		state.rpcCalls.length = 0;
+		state.updates.length = 0;
 		state.rpcResult = { data: sweepResult([]), error: null };
 		vi.restoreAllMocks();
 		vi.unstubAllGlobals();
@@ -61,6 +69,7 @@ describe("low-balance email sweep", () => {
 
 		expect(state.rpcCalls).toEqual([{ name: "sweep_low_balance_emails", args: { p_now: NOW.toISOString(), p_mark_sent: true } }]);
 		expect(summary).toMatchObject({ watched: 3, dropped: 1, emailed: 1, automationSent: 1, automationFailed: 0 });
+		expect(state.updates).toEqual([]);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
 		expect(url).toBe("https://api.resend.com/events");
@@ -103,7 +112,7 @@ describe("low-balance email sweep", () => {
 		expect(state.rpcCalls[0]?.args.p_mark_sent).toBe(false);
 	});
 
-	it("counts a failed automation event without failing the sweep", async () => {
+	it("counts a failed automation event without failing the sweep and reopens its row for the outbox drain", async () => {
 		vi.stubGlobal("fetch", vi.fn(async () => new Response("bad", { status: 500 })));
 		vi.spyOn(console, "error").mockImplementation(() => {});
 		state.rpcResult = { data: sweepResult([sweptEmail, { ...sweptEmail, id: "outbox_2", workspace_id: "ws_2" }]), error: null };
@@ -113,6 +122,10 @@ describe("low-balance email sweep", () => {
 
 		expect(summary.automationFailed).toBe(2);
 		expect(summary.automationSent).toBe(0);
+		expect(state.updates).toEqual([
+			{ table: "email_outbox", values: { sent_at: null }, id: "outbox_1" },
+			{ table: "email_outbox", values: { sent_at: null }, id: "outbox_2" },
+		]);
 	});
 
 	it("throws when the sweep RPC fails", async () => {

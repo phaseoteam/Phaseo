@@ -36,6 +36,13 @@ export type TieredCacheOptions<T> = {
 	l1FreshMs: number;
 	/** Oldest data (by production time) that may be served without awaiting. Defaults to forever. */
 	maxStaleMs?: number;
+	/**
+	 * Longest an isolate copy may go without a lower-layer read and still be served
+	 * stale. Past it, the request awaits the read. Defaults to forever, so an isolate
+	 * that sat idle serves whatever it last saw; set it when acting on an old copy is
+	 * worse than one awaited read.
+	 */
+	maxUncheckedMs?: number;
 	/** Workers Cache layer; `false` disables it. */
 	l2?: { freshS: number; storeS: number } | false;
 	/** KV layer; `false` disables it. `expirationS` omitted means the key never expires. */
@@ -318,7 +325,8 @@ export async function tieredRead<T>(options: TieredCacheOptions<T>): Promise<T |
 /** Like {@link tieredRead}, also reporting which layer served the value. */
 export async function tieredReadDetailed<T>(options: TieredCacheOptions<T>): Promise<TieredResult<T>> {
 	const entry = l1Get(options.key);
-	if (entry && servable(options, entry.envelope)) {
+	const checkedRecently = !entry || options.maxUncheckedMs === undefined || Date.now() - entry.checkedAt <= options.maxUncheckedMs;
+	if (entry && checkedRecently && servable(options, entry.envelope)) {
 		const freshMs = layerFreshMs(options, entry.envelope, options.l1FreshMs);
 		const sinceCheckMs = Date.now() - entry.checkedAt;
 		if (sinceCheckMs >= freshMs || (sinceCheckMs >= L1_STALE_RECHECK_MS && entry.envelope.v !== null

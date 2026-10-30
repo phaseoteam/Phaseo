@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Badge, Button, EmptyState, Fact, Header, LoadingState, ReadableWidth, Row, Screen, Section, Segmented, Text } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { getProviderMetrics, getProviderModels } from "@/lib/api/providers";
-import { formatCompact, formatMs, formatPercent, formatPrice, modalityLabel } from "@/lib/format";
+import { formatCompact, formatPercent, formatPrice, formatSeconds, formatSpeed, modalityLabel } from "@/lib/format";
 import { regionsLabel, trainingLabel } from "./labels";
 import { useProviders } from "./ProviderBrowser";
 
@@ -31,7 +31,7 @@ export function ProviderDetail({ id }: { id: string }) {
   return (
     <Screen>
       <Header back={!split} />
-      <ScrollView contentContainerClassName="pb-16" refreshControl={<RefreshControl refreshing={models.isRefetching} onRefresh={() => { void models.refetch(); void metrics.refetch(); }} />}>
+      <ScrollView contentContainerClassName="pb-16">
         <ReadableWidth>
           <View className="flex-row items-center gap-3 px-4 pt-2">
             <Logo id={provider.api_provider_id} label={provider.api_provider_name} colour={provider.colour} size={48} />
@@ -49,8 +49,8 @@ export function ProviderDetail({ id }: { id: string }) {
           {summary && (summary.requests24h ?? 0) > 0 ? (
             <Section title="Last 24 hours on Phaseo">
               <Fact label="Uptime" value={formatPercent(summary.uptimePct)} />
-              <Fact label="Time to first token" value={formatMs(summary.avgLatencyMs)} />
-              <Fact label="Throughput" value={summary.avgThroughput != null ? `${Math.round(summary.avgThroughput)} tokens/s` : undefined} />
+              <Fact label="Time to first token" value={formatSeconds(summary.avgLatencyMs)} />
+              <Fact label="Throughput" value={summary.avgThroughput != null ? formatSpeed(summary.avgThroughput) : undefined} />
               <Fact label="Requests" value={formatCompact(summary.requests24h)} last />
             </Section>
           ) : null}

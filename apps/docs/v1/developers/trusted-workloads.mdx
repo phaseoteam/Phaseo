@@ -1,0 +1,221 @@
+---
+title: "Trusted Workloads"
+description: "Let Vercel deployments and GitHub Actions jobs call Phaseo with a short-lived OIDC token instead of an API key."
+"og:image": "https://phaseo.app/og/dynamic?title=Trusted%20Workloads&description=Let%20Vercel%20deployments%20and%20GitHub%20Actions%20jobs%20call%20Phaseo%20with%20a%20short-lived%20OIDC%20token%20instead%20of%20an%20API%20key.&pathname=/docs/v1/developers/trusted-workloads"
+icon: "fingerprint-pattern"
+---
+
+<Note>
+Trusted workloads is in beta and is rolling out to workspaces gradually. If **Settings → API Keys → Trusted workloads** doesn't appear in your dashboard, your workspace doesn't have it yet.
+</Note>
+
+Vercel and GitHub Actions give each deployment or job a signed token that says who it is, such as "this is the `website` project's production deployment" or "this is a workflow in `acme/app`". The token expires within hours. With trusted workloads, you tell Phaseo which of these workloads to trust, and they send that token instead of an API key. Nothing long-lived has to be stored in your project settings or CI secrets.
+
+API keys keep working. Use trusted workloads for code that runs on Vercel or in GitHub Actions, and keep API keys for everything else, such as servers elsewhere, local scripts and mobile apps.
+
+---
+
+## How it works
+
+1. A workspace owner or admin creates a **trust policy** in **Settings → API Keys → Trusted workloads**. The policy names the platform, your Vercel team or GitHub owner, and optional conditions such as a project, repository, branch or environment.
+2. Your code requests a token from the platform for the audience `https://api.phaseo.app` and sends it as `Authorization: Bearer <token>`.
+3. Phaseo checks the token's signature and expiry, then looks for exactly one active policy that matches it.
+4. The request runs as that policy's key. It gets the same rate limits, budgets, logs and billing as a request made with an API key.
+
+### Why the audience matters
+
+Tokens must be issued for the audience `https://api.phaseo.app`. By default, Vercel and GitHub Actions issue tokens for an audience shared by every service your workload calls. If Phaseo accepted those, a token you sent to another service could be reused to call Phaseo. Phaseo refuses tokens with any other audience.
+
+---
+
+## Create a trust policy
+
+<Steps>
+<Step title="Open Trusted workloads">
+Go to **Settings → API Keys → Trusted workloads** and select **New policy**. Only workspace owners and admins can manage policies.
+</Step>
+<Step title="Choose the platform and fill in the IDs">
+<Tabs>
+<Tab title="Vercel">
+- **Team slug**: the team's slug, as in `vercel.com/<team-slug>`. Leave it empty if your project uses Vercel's global issuer mode (issuer `https://oidc.vercel.com` instead of `https://oidc.vercel.com/<team-slug>`).
+- **Team ID**: starts with `team_`. Find it in your Vercel team settings.
+- **Project ID** (recommended): starts with `prj_`. Find it in your Vercel project settings. Without it, every project in the team is trusted.
+- **Environment**: production, preview or development. Leave all unticked to accept any environment.
+</Tab>
+<Tab title="GitHub Actions">
+- **Owner ID**: the numeric ID of the user or organisation that owns the repository.
+- **Repository ID** (recommended): the numeric repository ID. Without it, every repository the owner has is trusted.
+- **Branch or tag** and **Environment** (optional): for example `refs/heads/main` or `production`.
+
+Get both IDs with the GitHub CLI:
+
+```bash
+gh api repos/OWNER/REPO --jq '.id, .owner.id'
+```
+
+Phaseo uses numeric IDs because names can be renamed or taken over by someone else.
+</Tab>
+</Tabs>
+</Step>
+<Step title="Set the longest token accepted">
+In **Longest token accepted (hours)**, set the longest lifetime you accept. Tokens issued to last longer are refused. The maximum is 12 hours, which covers Vercel development tokens.
+</Step>
+</Steps>
+
+Policies take effect within about a minute. Turning a policy off or deleting it stops its tokens working within the same time.
+
+---
+
+## Manage policies with Terraform or the API
+
+You can also manage policies as code with a [management key](./management-api-keys.mdx) that has the `keys:read`, `keys:write` and `keys:delete` capabilities. Only workspaces with trusted workloads can use them.
+
+With Terraform, use the `phaseo_trusted_workload` resource:
+
+```hcl
+resource "phaseo_trusted_workload" "deploy" {
+  name     = "GitHub deploy (main)"
+  platform = "github_actions"
+  owner_id = "123456"
+
+  claim_conditions = {
+    repository_id = ["987654321"]
+    ref           = ["refs/heads/main"]
+  }
+}
+```
+
+`platform` is `vercel` or `github_actions`. For Vercel, also set `issuer` to `https://oidc.vercel.com/<team-slug>`, or `https://oidc.vercel.com` for global issuer mode, and use conditions such as `project_id` and `environment`. Changing the platform, issuer or owner replaces the policy. A policy has no secret, so nothing sensitive is stored in Terraform state.
+
+With the API, send the same fields to `/v1/workload-identity/policies`. The API calls the platform `provider`:
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
+```
+
+The [API reference](../api-reference/endpoint/trusted-workloads-create.mdx) lists every field and response.
+
+---
+
+## Call Phaseo with a token
+
+<Tabs>
+<Tab title="Vercel">
+Use `getVercelOidcToken` from the server entry of `@vercel/oidc` 4.x. Passing `audience` exchanges the deployment's token for one issued to Phaseo.
+
+With the [TypeScript SDK](../sdk-reference/typescript/overview.mdx), pass a function as `apiKey`. The SDK calls it before every request, so each request uses a current token:
+
+```ts
+import Phaseo from "@phaseo/sdk";
+import { getVercelOidcToken } from "@vercel/oidc";
+
+const client = new Phaseo({
+	apiKey: () => getVercelOidcToken({ audience: "https://api.phaseo.app" }),
+});
+
+const response = await client.responses.create({
+	model: "openai/gpt-5-mini",
+	input: "Hello from a trusted workload",
+});
+```
+
+Passing a function as `apiKey` needs a version of `@phaseo/sdk` newer than 3.0.0.
+
+With any HTTP client, request a token per request and send it as a bearer token:
+
+```ts
+import { getVercelOidcToken } from "@vercel/oidc";
+
+const token = await getVercelOidcToken({ audience: "https://api.phaseo.app" });
+
+const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+	method: "POST",
+	headers: {
+		Authorization: `Bearer ${token}`,
+		"Content-Type": "application/json",
+	},
+	body: JSON.stringify({
+		model: "openai/gpt-5-mini",
+		messages: [{ role: "user", content: "Hello from a trusted workload" }],
+	}),
+});
+```
+
+Don't store the token in a module-level variable: Vercel can change it between requests.
+</Tab>
+<Tab title="GitHub Actions">
+The job needs the `id-token: write` permission to request a token.
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken("https://api.phaseo.app");
+            const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "openai/gpt-5-mini",
+                messages: [{ role: "user", content: "Hello from GitHub Actions" }],
+              }),
+            });
+            core.info(String(response.status));
+```
+
+From a shell step, request the token with `curl`:
+
+```bash
+TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+  "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.phaseo.app" | jq -r .value)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+GitHub Actions tokens are short-lived, so request a new one for long jobs.
+</Tab>
+</Tabs>
+
+---
+
+## Behaviour and limits
+
+- **Same controls as a key.** Requests run as the policy's key, so key rate limits, budgets, department links, IP allowlists, logging settings and billing apply as usual.
+- **Model calls only.** Workload tokens work where a gateway API key works. Management APIs refuse them.
+- **One matching policy.** If two workspaces trust the same workload, Phaseo can't tell which one you mean and refuses the request. Send the workspace ID in the `x-phaseo-workspace` header to choose one.
+- **Token lifetime.** Tokens issued to last longer than the policy's **Longest token accepted** are refused.
+- **API keys are unaffected.** Trusted workloads add a second way to authenticate; they don't change or disable API keys.
+
+---
+
+## Troubleshooting
+
+A refused token returns `401` with one of these messages:
+
+| Message | What it means | What to do |
+| --- | --- | --- |
+| `workload_token_wrong_audience` | The token wasn't issued for `https://api.phaseo.app`. | Request the token with that audience. |
+| `workload_issuer_not_trusted` | No active policy uses this token's issuer. | Check the Vercel team slug or issuer mode, and that the policy is on. |
+| `workload_identity_no_matching_policy` | The token is valid, but no active policy matches it. | Check the Team, Owner, Project or Repository IDs, the environment, branch or tag conditions, and that the token doesn't outlive the policy's **Longest token accepted**. |
+| `workload_identity_ambiguous` | More than one workspace trusts this workload. | Send `x-phaseo-workspace: <workspace id>`. |
+| `workload_identity_not_enabled` | Trusted workloads isn't available for this workspace yet. | Use an API key for now. |
+| `workload_token_expired` | The token has expired. | Request a new token for each request or job step. |
+| `workload_token_lifetime_too_long` | The token was issued to last longer than 12 hours, the most Phaseo accepts. | Request a shorter-lived token. |
+| `workload_token_invalid_signature` | The token's signature doesn't match the platform's keys. | Send the token unchanged, exactly as the platform issued it. |
+| `workload_jwks_unavailable` | Phaseo couldn't fetch the platform's signing keys. | Retry after a short wait. |

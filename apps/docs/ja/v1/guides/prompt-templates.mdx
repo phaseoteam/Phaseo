@@ -1,0 +1,356 @@
+---
+title: "プロンプトテンプレート"
+description: "プロンプトをプリセットに保存し、リクエストごとに変わる値だけを送信します。"
+icon: "braces"
+---
+
+プロンプトテンプレートは、`{{variables}}` を含むメッセージのリストで、[プリセット](./presets.mdx)に保存します。アプリケーションはプリセットの参照と変数の値を送信します。Phaseo は値を検証し、メッセージに値を埋め込んで、プリセットのモデルにリクエストを送信します。
+
+これにより、プロンプトのテキストをアプリケーションコードから切り離せます。デプロイせずにダッシュボードでプロンプトを変更でき、すべての呼び出し元が同じ文言、ツール、レスポンス形式を使います。
+
+テンプレートは `POST /v1/chat/completions`、`POST /v1/responses`、`POST /v1/messages` で使えます。
+
+## クイックスタート
+
+<Steps>
+<Step title="テンプレートを書く">
+
+**設定 -> プリセット** を開き、プリセットを作成するか既存のものを開いて、モデルを選び、**プロンプトテンプレート** タブを開きます。メッセージを追加し、変数を二重の波括弧で囲んで書きます。
+
+```text
+System: You triage support tickets for {{company}}. Reply in a {{tone}} tone.
+User:   Ticket: {{ticket}}
+```
+
+エディターは見つけた変数を一覧表示します。変数ごとに型、必須かどうか、既定値、説明を設定します。**試す** パネルに値を入力すると、Gateway が送信するメッセージをそのまま確認できます。確認できたら保存します。
+
+プリセットを保存すると、**保存済みのプリセットを実行** でテスト値を使った実際のリクエストを送信し、返答、モデル、トークン数を確認できます。ワークスペースのクレジットを使用します。同じパネルには、テスト値を埋め込んだ cURL、TypeScript、Python のリクエストコードもあります。
+
+</Step>
+
+<Step title="変数を送信する">
+
+`prompt.id` でプリセットを参照し、値を `prompt.variables` に入れます。`model` は省略するか、同じ参照を指定します。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": {
+      "id": "@support-triage",
+      "variables": {
+        "company": "Acme",
+        "tone": "friendly",
+        "ticket": "I was charged twice this month."
+      }
+    }
+  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const completion = await client.generateText({
+	model: "@support-triage",
+	messages: [],
+	prompt: {
+		id: "@support-triage",
+		variables: {
+			company: "Acme",
+			tone: "friendly",
+			ticket: "I was charged twice this month.",
+		},
+	},
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+completion = client.generate_text({
+    "prompt": {
+        "id": "@support-triage",
+        "variables": {
+            "company": "Acme",
+            "tone": "friendly",
+            "ticket": "I was charged twice this month.",
+        },
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="リクエストを確認する">
+
+**Gateway -> ログ** を開くと、リクエスト、処理したモデル、コストを確認できます。リクエストのメタデータにはプリセット、変数名、レンダリングされたメッセージ数が記録されますが、変数の値は記録されません。
+
+</Step>
+</Steps>
+
+## 各エンドポイントでテンプレートを使う
+
+同じ `prompt` オブジェクトを 3 つのエンドポイントすべてで使えます。テンプレートの system メッセージと developer メッセージはエンドポイントのシステム指示になり、その他のメッセージはリクエストで送信した会話の前に入ります。
+
+| エンドポイント | テンプレートの system メッセージの送り先 | テンプレートの会話が入る位置 |
+| --- | --- | --- |
+| `/v1/chat/completions` | `messages`（system メッセージのまま） | `messages` の前 |
+| `/v1/responses` | `instructions` | `input` の前 |
+| `/v1/messages` | `system` | `messages` の前 |
+
+テンプレートと一緒に会話を送信することもできます。たとえば chat リクエストでは、テンプレートのメッセージの後にユーザーの続きのターンを追加できます。
+
+```json
+{
+  "prompt": { "id": "@support-triage", "variables": { "company": "Acme", "ticket": "Refund request" } },
+  "messages": [
+    { "role": "assistant", "content": "Can you share the order number?" },
+    { "role": "user", "content": "It is 10482." }
+  ]
+}
+```
+
+## テンプレートの構文
+
+テンプレートは、ロジックを含まない Mustache の小さなサブセットを使います。テンプレートの内容がコードとして実行されることはありません。
+
+| 構文 | 動作 |
+| --- | --- |
+| `{{name}}` | 値を挿入します。テキストはそのまま、数値と真偽値はテキストとして、リストとオブジェクトは JSON として挿入されます。任意の値がない場合は何も挿入されません。 |
+| `{{customer.name}}` | オブジェクト変数のフィールドを挿入します。 |
+| `{{#name}}...{{/name}}` | 値が設定されていて `false` でない場合はブロックを 1 回、リストの場合は項目ごとに 1 回レンダリングします。ブロック内では `{{.}}` が現在の項目で、そのフィールドは名前で使えます。 |
+| `{{^name}}...{{/name}}` | 値がない、`false`、空のテキスト、空のリストのいずれかの場合にブロックをレンダリングします。 |
+| `{{! note }}` | コメントです。削除されます。 |
+| `\{{` | `{{` をそのまま書きます。 |
+
+値は HTML エスケープなしのプレーンテキストとして挿入されます。値によってメッセージのテキストは変わりますが、リクエストの構造が変わることはありません。
+
+レンダリング結果が空白だけになったメッセージは削除されます。これを使うと、メッセージ全体を任意にできます。
+
+```text
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+リストの項目ごとにテキストを繰り返すには、リストでセクションを開き、現在の項目には `{{.}}` を使います。
+
+```text
+Examples of good replies:
+{{#examples}}- {{.}}
+{{/examples}}
+```
+
+パーシャル（`{{> name}}`）、エスケープしないタグ（`{{{name}}}` と `{{& name}}`）、区切り文字の変更、ラムダには対応していません。これらを使うテンプレートは、エディターと API の両方で拒否されます。
+
+## 変数
+
+各変数には型があります。宣言が必要なのは既定の設定を変えたい変数だけです。メッセージで使われていても宣言されていない変数は、必須のテキストとして扱われます。
+
+| 型 | 受け付ける値 |
+| --- | --- |
+| `string` | テキスト。長さを制限するには `max_length` を設定します。 |
+| `number` | 数値。 |
+| `boolean` | `true` または `false`。 |
+| `enum` | `enum` に列挙した文字列のいずれか。 |
+| `array` | リスト。 |
+| `object` | JSON オブジェクト。 |
+| `any` | 任意の JSON 値。 |
+| `image` | user メッセージ用の画像。後述の「画像変数」セクションを参照してください。 |
+
+各変数には次の設定もできます。
+
+- `required`: 値がない場合、リクエストは失敗します。必須の変数には既定値を設定できません。
+- `default`: リクエストで値が省略されたときに使われます。型と一致している必要があります。
+- `description`: エディターとエラーメッセージに表示されます。最大 500 文字です。
+
+上の `notes` や `examples` のように、セクションを開くためだけに使う名前は任意で、どの値も受け付けます。
+
+リクエストは厳密に検証されます。必須の値がない、値の型が違う、テンプレートにない名前がある場合は `400` が返り、すべての問題が一度に列挙されます。そのため、タイプミスでプロンプトの一部が気づかないうちに抜け落ちることはありません。
+
+## 画像変数
+
+画像変数は user メッセージのコンテンツパート全体を埋めるため、画像の位置はテンプレート側で決まります。エディターでは、user メッセージ内で **画像を追加** を選択します。API では `variable` パートを使います。
+
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Before:" },
+    { "type": "variable", "name": "before" },
+    { "type": "text", "text": "After:" },
+    { "type": "variable", "name": "after" },
+    { "type": "text", "text": "What changed?" }
+  ]
+}
+```
+
+リクエストでは、各画像を `https` URL、`data:image/...` URL、または chat completions、Responses、Messages 形式の画像パートとして送信できます。Phaseo は呼び出したエンドポイントの形式に変換します。選択したモデルが画像入力に対応している必要があります。
+
+## ツールとレスポンス形式
+
+テンプレートには `tools`、`tool_choice`、`response_format` を chat completions 形式で含められます。Phaseo は Responses エンドポイントと Messages エンドポイント向けに変換します。
+
+テンプレートとリクエストの両方で同じ項目を設定した場合は、常にリクエストが優先されます。
+
+- ツールは関数名で結合されます。リクエストで同じ名前のツールを定義した場合は、リクエストの定義が使われます。
+- リクエストの `tool_choice` とレスポンス形式（`response_format`、`text.format`、`output_config.format`）がテンプレートの設定を置き換えます。
+
+`temperature` や `max_tokens` などのリクエストパラメーターは通常どおり機能します。プリセット自体の既定値は、リクエストで省略されたフィールドだけを補います。
+
+## API でテンプレートを作成する
+
+テンプレートはプリセットの `config.prompt` に保存されます。`presets:write` を持つ[管理 API キー](../developers/management-api-keys.mdx)でプリセットを作成または更新します。
+
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "@support-triage",
+    "visibility": "team",
+    "config": {
+      "models": ["anthropic/claude-haiku-5.5"],
+      "prompt": {
+        "messages": [
+          { "role": "system", "content": "You triage support tickets for {{company}}. Reply in a {{tone}} tone." },
+          { "role": "user", "content": "Ticket: {{ticket}}" }
+        ],
+        "variables": {
+          "company": { "type": "string", "required": true },
+          "tone": { "type": "enum", "enum": ["formal", "friendly"], "default": "formal" },
+          "ticket": { "type": "string", "required": true, "max_length": 4000 }
+        }
+      }
+    }
+  }'
+```
+
+Phaseo は保存時にテンプレートを検証します。構文エラー、不明な型、型と一致しない既定値を含むテンプレートは、`400 invalid_prompt_template` と各問題の位置を返して拒否されます。API でもエディターでも同じです。
+
+保存した変更は 2 分ほどでリクエストに反映されます。
+
+## バージョンとラベル
+
+プリセットを公開するたびに、Phaseo は変更できないバージョンを保存します（[プリセット](./presets.mdx) を参照）。リクエストはバージョンを固定しない限り、最新の公開バージョンを実行します。固定したリクエストは、そのバージョンのモデル、パラメーター、テンプレートをまとめて使います。
+
+`prompt.version` でバージョンを固定します。
+
+```json
+{
+  "prompt": {
+    "id": "@support-triage",
+    "version": "production",
+    "variables": { "company": "Acme", "ticket": "My invoice is wrong" }
+  }
+}
+```
+
+`prompt.version` には `v3`、`1.2.0`、`2026.10.27` のようなバージョンラベル、または `production` のようなラベルを指定します。テンプレートの有無にかかわらず、モデル ID にバージョンを含めることもできます。
+
+```json
+{
+  "model": "@support-triage@production",
+  "messages": [{ "role": "user", "content": "My invoice is wrong" }]
+}
+```
+
+公開プリセットでは `@publisher/support-triage@production` を使います。`model` と `prompt.version` の両方でバージョンを固定する場合は、同じバージョンを指定する必要があります。
+
+### ラベル
+
+ラベルは `production` や `staging` のような名前で、1 つの公開バージョンを指します。ラベルは英小文字、数字、ハイフン、アンダースコアの 1〜32 文字で、英字で始まり、バージョンラベル（`v1`、`v2`）のような形にはできません。
+
+**設定 -> プリセット** でプリセットを開きます。**下書きを保存** の隣にある **公開** は、変更を保存して次のバージョンとして公開します。ラベルは **バージョンとラベル** で管理します。各ラベルにはバージョンの選択欄があり、別のバージョンを選ぶとラベルが移動し、以前のバージョンを選ぶとロールバックになります。新しいラベルは **ラベルを追加** で作成します。バージョンを開くと、そのモデルとテンプレートのメッセージ、およびデフォルトのバージョン（バージョンを固定しないリクエストが実行するバージョン）との違いを確認できます。**実行** を使うと、**プロンプトテンプレート** のテスト値でそのバージョンを試せます。ラベルを変更できるのはプリセットの作成者と、プリセットが共有されている場合のワークスペースのオーナーと管理者です。`presets:write` を持つ [管理 API キー](../developers/management-api-keys.mdx) を使う場合:
+
+```bash
+curl -X PUT https://api.phaseo.app/v1/presets/support-triage/labels/production \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": "v3" }'
+```
+
+本文には `version`（バージョンラベル、または指し先をコピーする別のラベル）か `version_id` を指定します。`GET /v1/presets/{id}/labels` でラベルを一覧表示し、`DELETE /v1/presets/{id}/labels/{label}` で削除します。削除したラベルに固定したリクエストは、ラベルを再度追加するまで失敗します。
+
+### ロールバック
+
+ロールバックするには、ラベルを以前のバージョンに移します。**バージョンとラベル** でラベルのバージョンの選択欄からそのバージョンを選ぶか、`"version": "v2"` で同じリクエストを送信します。`production` に固定したリクエストは、アプリケーションを変更しなくても再び v2 を実行します。
+
+ラベルの移動は、ほかのプリセットの変更と同じく約 2 分以内にリクエストに反映されます。
+
+## エラー
+
+リクエスト内のテンプレートの問題は、コード `validation_error` とともに `400` を返します。`reason` には最初の問題のコードが入り、`details` にはすべての問題がパス付きで列挙されます。
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+    "type": "invalid_request_error"
+  },
+  "code": "validation_error",
+  "reason": "template_variable_required",
+  "description": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+  "details": [
+    {
+      "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+      "path": ["prompt", "variables", "ticket"],
+      "keyword": "template_variable_required"
+    }
+  ]
+}
+```
+
+| 理由 | 原因 |
+| --- | --- |
+| `template_variable_required` | 必須の変数がありません。 |
+| `template_variable_type` | 値が型、enum のリスト、または `max_length` に一致しません。 |
+| `template_variable_unknown` | テンプレートにない変数をリクエストで送信したか、プリセットにテンプレートがありません。 |
+| `template_variables_invalid` | `prompt.variables` がオブジェクトではありません。 |
+| `template_limit_exceeded` | 変数またはレンダリングされたテキストが、下記の上限を超えています。 |
+| `template_rendered_empty` | テンプレートが user メッセージも assistant メッセージもレンダリングせず、リクエストにもメッセージがありません。 |
+| `template_endpoint_unsupported` | テンプレートを持つプリセットが、上記の 3 つ以外のエンドポイントから呼び出されました。 |
+| `prompt_model_conflict` | `model` が `prompt.id` と異なるプリセットまたはモデルを指定しているか、`prompt.version` と異なるバージョンを固定しています。 |
+| `prompt_version_invalid` | `prompt.version` が空、64 文字を超えている、または英数字、`.`、`_`、`+`、`-` 以外の文字を含んでいます。 |
+| `prompt_model_fallbacks_unsupported` | リクエストで `models` のフォールバックが設定されています。フォールバックモデルはプリセットに登録してください。 |
+
+ワークスペースにないプリセットを `prompt.id` に指定すると `404` が返ります。
+
+存在しないバージョンやラベル、またはキーが使用できないバージョンやラベルを固定すると、理由 `preset_version_not_found` とともに `404` が返ります。
+
+## 上限
+
+| 上限 | 値 |
+| --- | --- |
+| テンプレートあたりのメッセージ数 | 64 |
+| テンプレートあたりの変数の数 | 64 |
+| 全メッセージのテンプレートテキスト | 48,000 文字 |
+| セクションのネストの深さ | 8 |
+| リクエストあたりのセクションの繰り返し回数 | 1,000 |
+| リクエストあたりのレンダリングされたテキスト | 1,000,000 文字 |
+| `prompt.variables` のサイズ | 256 KB |
+| `enum` あたりの値の数 | 100 |
+
+## ガードレールとログ
+
+[ガードレール](../cookbook/guardrails-for-api-keys.mdx)は、テンプレートが system メッセージに入れる場合でも、変数の値をユーザーコンテンツとして検査します。値を伏せ字にするガードレールは、テンプレートがその値を挿入したすべての箇所で伏せ字にします。値をブロックするガードレールはリクエストをブロックします。
+
+リクエストのメタデータには、プリセット、変数名、レンダリングされたメッセージ数が記録されます。値そのものは、ワークスペースの通常のログ設定に従い、リクエスト本文が保持される場所にのみ保持されます。
+
+## 現在の制限
+
+- `models` のフォールバックはテンプレートと併用できません。フォールバックモデルはプリセットに追加してください。
+- テンプレートが適用されるのは、chat completions、Responses、Messages のリクエストだけです。
+
+## 関連ガイド
+
+- [プリセット](./presets.mdx)
+- [構造化出力](./structured-outputs.mdx)
+- [ツール呼び出し](./tool-calling.mdx)
+- [マルチモーダル](./multimodality.mdx)

@@ -1,6 +1,0 @@
-{
-  "key":"minimax:minimax/image-01:image.generate","api_provider_id":"minimax","provider_slug":"minimax","api_model_id":"minimax/image-01","capability_id":"image.generate",
-  "rules":[{"meter":"output_image","unit":"image","unit_size":1,"price_per_unit":0.0035,"currency":"USD","pricing_plan":"standard","note":"MiniMax image-01 pay-as-you-go price per generated image.","match":[],"priority":100,"effective_from":"2026-08-21T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":{"kind":"pricing","url":"https://platform.minimax.io/docs/guides/pricing-paygo","accessed_at":"2026-08-21T00:00:00Z","notes":"Official image pricing lists image-01 at $0.0035 per image."}}],
-  "regions":[],"service_tiers":["standard"],"sources":[{"kind":"pricing","url":"https://platform.minimax.io/docs/guides/pricing-paygo","accessed_at":"2026-08-21T00:00:00Z"}],
-  "verification":{"status":"verified","checked_at":"2026-08-21T00:00:00Z","notes":"Verified image-01 at $0.0035 per generated image."}
-}

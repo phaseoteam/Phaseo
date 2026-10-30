@@ -172,6 +172,9 @@ describe("spend rule settings: writes", () => {
 		const response = await send("/spend-rules", "POST", { name: "x", metric: "spend", period: "day" });
 		expect(await response.json()).toEqual({ error: "bad_request", message: "threshold_amount_usd (or threshold_amount_nanos) is required for spend rules" });
 		expect((await send("/spend-rules", "POST", { name: "x", metric: "spend", period: "day", threshold_amount_usd: 5, time_zone: "Nowhere/Land" })).status).toBe(400);
+		// A block rule is refused while the gateway does not enforce blocks (SPEND_RULE_BLOCKS_ENABLED off here).
+		const block = await send("/spend-rules", "POST", { name: "x", metric: "spend", period: "day", threshold_amount_usd: 5, action: "block", block_at_amount_usd: 6 });
+		expect(await block.json()).toEqual({ error: "bad_request", message: "action block is not available yet; use notify" });
 		expect(rpcCalls(requests, "save_workspace_spend_rule")).toEqual([]);
 	});
 

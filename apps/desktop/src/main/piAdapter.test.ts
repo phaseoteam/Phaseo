@@ -1,0 +1,135 @@
+import { EventEmitter } from "node:events";
+import { PassThrough } from "node:stream";
+import { describe, expect, it, vi } from "vitest";
+import type { Task } from "../shared/workspace";
+import { PiRpc } from "./piRpc";
+import type { PiRecord } from "./piRpc";
+const native = vi.hoisted(() => ({ spawn: vi.fn() }));
+vi.mock("./nativeProcess", () => ({ spawnNative: native.spawn }));
+import { PiAdapter, piQuestion } from "./piAdapter";
+import { AgentInputRejectedError } from "./agentAdapter";
+
+function fixture(handle: (packet: PiRecord, send: (value: PiRecord) => void) => void) {
+	const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() });
+	let buffer = "";
+	child.stdin.on("data", chunk => { buffer += chunk.toString(); let index: number; while ((index = buffer.indexOf("\n")) !== -1) { const line = buffer.slice(0, index); buffer = buffer.slice(index + 1); handle(JSON.parse(line), value => child.stdout.write(`${JSON.stringify(value)}\n`)); } });
+	native.spawn.mockResolvedValue(child); return child;
+}
+const task: Task = { id: "task", title: "Task", harness: "pi", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
+describe("Pi native harness", () => {
+	it("maps extension dialogs like T3 Code: choices, empty text and editor prefill", () => {
+		expect(piQuestion("s", "select", "Pick", { options: ["A", "", 3] })).toEqual({ id: "s", header: "Pick", question: "Pick", options: [{ label: "A", value: "A" }, { label: "Empty value", value: "" }] });
+		expect(piQuestion("i", "input", "Name", { placeholder: "Your name" })).toEqual({ id: "i", header: "Name", question: "Your name", options: [{ label: "Submit empty value", description: "Send empty text to the extension.", value: "" }], isOther: true, required: false });
+		expect(piQuestion("e", "editor", "Edit", { message: "Edit the commit message", prefill: "feat: x\n" })).toEqual({ id: "e", header: "Edit", question: "Edit the commit message", options: [], isOther: true, required: false, initialAnswer: "feat: x\n", input: { kind: "multiline" } });
+	});
+	it.each([["typed", { dialog: ["Ada"] }, { value: "Ada" }], ["empty", { dialog: [""] }, { value: "" }], ["dismissed", {}, { cancelled: true }]] as const)("answers dialogs with the value, empty text included (%s)", async (_name, answers, expected) => {
+		const responses: PiRecord[] = [];
+		fixture((packet, output) => {
+			if (packet.type === "extension_ui_response") { responses.push(packet); output({ type: "agent_end" }); output({ type: "agent_settled" }); return; }
+			output({ type: "response", id: packet.id, success: true, data: packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "started" } : undefined });
+			if (packet.type === "prompt") output({ type: "extension_ui_request", id: "dialog", method: "editor", title: "Edit", prefill: "draft" });
+		});
+		const onQuestion = vi.fn(async () => answers as Record<string, string[]>);
+		await new PiAdapter().run(task, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onQuestion, onApproval: async () => "decline" });
+		expect(onQuestion).toHaveBeenCalledWith([expect.objectContaining({ id: "dialog", initialAnswer: "draft" })]);
+		expect(responses).toEqual([{ type: "extension_ui_response", id: "dialog", ...expected }]);
+	});
+	it.each([
+		["a chosen level the model offers", { thinking: "xhigh" }, ["set_model", "set_thinking_level", "get_state", "prompt"], "xhigh"],
+		["a level the model does not offer", { thinking: "max" }, ["set_model", "get_state", "prompt"], undefined],
+		["a non-string level", { thinking: true }, ["set_model", "get_state", "prompt"], undefined],
+		["no chosen level", undefined, ["set_model", "get_state", "prompt"], undefined],
+	] as const)("sets the thinking level after the model only for %s", async (_name, modelOptions, expected, level) => {
+		const packets: PiRecord[] = [];
+		fixture((packet, output) => {
+			packets.push(packet);
+			const data = packet.type === "set_model" ? { provider: "native", id: "model", reasoning: true, thinkingLevelMap: { xhigh: "xhigh", max: null } } : packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "handled" } : undefined;
+			output({ type: "response", id: packet.id, success: true, data });
+		});
+		await new PiAdapter().run({ ...task, model: "native/model", modelOptions }, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(packets.map(packet => packet.type).filter((type, index, all) => all.indexOf(type) === index)).toEqual(expected);
+		expect(packets.find(packet => packet.type === "set_model")).toMatchObject({ provider: "native", modelId: "model" });
+		expect(packets.find(packet => packet.type === "set_thinking_level")?.level).toBe(level);
+	});
+	it("does not set a thinking level for Pi's default model", async () => {
+		const packets: PiRecord[] = [];
+		fixture((packet, output) => { packets.push(packet); output({ type: "response", id: packet.id, success: true, data: packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "handled" } : undefined }); });
+		await new PiAdapter().run({ ...task, modelOptions: { thinking: "high" } }, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(packets.some(packet => packet.type === "set_model" || packet.type === "set_thinking_level")).toBe(false);
+	});
+ it.each(["command", "skill"] as const)("executes an explicitly selected %s through the native slash prompt", async kind => {
+  const packets: PiRecord[] = []; const id = kind === "skill" ? "skill:research" : "review"; const name = kind === "skill" ? "research" : id;
+  const child = fixture((packet, output) => { packets.push(packet); if (packet.type === "get_commands") output({ type: "response", id: packet.id, success: true, data: { commands: [{ name: id, source: kind === "skill" ? "skill" : "extension", description: "Owned" }] } }); if (packet.type === "get_state") output({ type: "response", id: packet.id, success: true, data: { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } }); if (packet.type === "prompt") { output({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Owned reply" } }); output({ type: "response", id: packet.id, success: true, data: { disposition: "handled" } }); } });
+  const approval = vi.fn(async () => "accept" as const); const delta = vi.fn(); await new PiAdapter().run(task, "/project", "handoff wrapper", { onDelta: delta, onSession: vi.fn(), onApproval: approval }, undefined, [], { kind, id, name, arguments: "target" });
+  expect(packets.filter(packet => packet.type === "get_commands")).toHaveLength(2); expect(packets.find(packet => packet.type === "prompt")?.message).toBe("/" + id + " target"); expect(approval).toHaveBeenCalledOnce(); expect(delta).toHaveBeenCalledWith("assistant", "Owned reply"); expect(child.kill).toHaveBeenCalledOnce();
+ });
+ it.each(["declined", "removed", "cancelled"])("retains input before submission when a native action is %s", async condition => {
+  let reads = 0; const packets: PiRecord[] = []; const child = fixture((packet, output) => { packets.push(packet); if (packet.type === "get_commands") output({ type: "response", id: packet.id, success: true, data: { commands: condition === "removed" && ++reads === 2 ? [] : [{ name: "review", source: "prompt" }] } }); if (["clear_queue", "abort"].includes(String(packet.type))) output({ type: "response", id: packet.id, success: true }); });
+  const adapter = new PiAdapter(); await expect(adapter.run({ ...task, mode: "code" }, "/project", "/review target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => { if (condition === "cancelled") await adapter.cancel(); return condition === "declined" ? "decline" : "accept"; } }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" })).rejects.toBeInstanceOf(AgentInputRejectedError);
+  expect(packets.some(packet => packet.type === "prompt")).toBe(false); expect(child.kill).toHaveBeenCalled();
+ });
+
+	it("waits for late steering admission before finishing", async () => {
+		let send!: (value: PiRecord) => void; let steerId: unknown; let stateId: unknown; let ready!: () => void;
+		const started = new Promise<void>(resolve => { ready = resolve; }); let states = 0;
+		fixture((packet, output) => {
+			send = output;
+			if (packet.type === "get_state") { states++; if(states===2) stateId=packet.id; else output({type:"response",id:packet.id,success:true,data:{sessionFile:"/session",isStreaming:false,pendingMessageCount:0}}); }
+			if (packet.type === "prompt") { output({type:"response",id:packet.id,success:true,data:{disposition:"started"}}); ready(); }
+			if (packet.type === "steer") { expect(packet.message).toBe("Late instruction"); steerId=packet.id; }
+		});
+		const adapter=new PiAdapter(); let finished=false; const run=adapter.run(task,"/project","Hello",{onDelta:vi.fn(),onSession:vi.fn(),onApproval:async()=>"decline"}).then(()=>{finished=true;}); await started;
+		send({type:"agent_settled"}); await vi.waitFor(()=>expect(stateId).toBeDefined());
+		const steering=adapter.steer({id:"instruction",text:"Late instruction",createdAt:""},[]); send({type:"response",id:stateId,success:true,data:{isStreaming:false,pendingMessageCount:0}}); await Promise.resolve(); expect(finished).toBe(false);
+		send({type:"response",id:steerId,success:true,data:{disposition:"queued"}}); await steering; await run; expect(states).toBeGreaterThan(2);
+		await expect(adapter.steer({id:"too-late",text:"Late instruction",createdAt:""},[])).rejects.toThrow("not accepting");
+	});
+	it("distinguishes native steering rejection from disconnect and clears native queues before abort", async () => {
+		let pendingId: unknown; let ready!: () => void; const started=new Promise<void>(resolve=>{ready=resolve;}); const commands:unknown[]=[]; let attempts=0;
+		fixture((packet,output)=>{commands.push(packet.type); if(packet.type==="get_state") output({type:"response",id:packet.id,success:true,data:{sessionFile:"/session"}}); if(packet.type==="prompt") {output({type:"response",id:packet.id,success:true,data:{disposition:"started"}});ready();} if(packet.type==="steer") {attempts++; if(attempts===1) output({type:"response",id:packet.id,success:false,error:"Rejected by native handler"}); else pendingId=packet.id;} if(packet.type==="clear_queue" || packet.type==="abort") output({type:"response",id:packet.id,success:true});});
+		const adapter=new PiAdapter(); const run=adapter.run(task,"/project","Hello",{onDelta:vi.fn(),onSession:vi.fn(),onApproval:async()=>"decline"}); const stopped=expect(run).rejects.toThrow("stopped"); await started;
+		await expect(adapter.steer({id:"reject",text:"Reject",createdAt:""},[])).rejects.toBeInstanceOf(AgentInputRejectedError);
+		const uncertain=adapter.steer({id:"uncertain",text:"Uncertain",createdAt:""},[]); const uncertainRejected=expect(uncertain).rejects.not.toBeInstanceOf(AgentInputRejectedError); expect(pendingId).toBeDefined(); await adapter.cancel(); await stopped; await uncertainRejected; expect(commands.slice(-2)).toEqual(["clear_queue","abort"]);
+	});
+	it("waits past agent_end and compaction, preserves native forks and streams extension dialogs", async () => {
+		let stateCalls = 0; let send!: (value: PiRecord) => void; let promptStarted!: () => void;
+		const started = new Promise<void>(resolve => { promptStarted = resolve; });
+		const child = fixture((packet, output) => {
+			send = output;
+			if (packet.type === "get_state") { stateCalls++; output({ type: "response", id: packet.id, success: true, data: { sessionFile: "/sessions/fork.jsonl", isStreaming: false, isCompacting: stateCalls === 2 } }); }
+			if (packet.type === "prompt") {
+				expect(packet.images).toEqual([{ type: "image", data: "YWJj", mimeType: "image/png" }]);
+				output({ type: "response", id: packet.id, success: true, data: { disposition: "started" } });
+				output({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Hello" } });
+				output({ type: "extension_ui_request", id: "question", method: "input", title: "Name" });
+				output({ type: "agent_end" }); promptStarted();
+			}
+		});
+		const onDelta = vi.fn(); const onSession = vi.fn(); const onQuestion = vi.fn(async () => ({ question: ["Answer"] }));
+		let settled = false;
+		const run = new PiAdapter().run({ ...task, nativeForkFrom: "/sessions/original.jsonl" }, "/project", "Hello", { onDelta, onSession, onQuestion, onApproval: async () => "decline" }, undefined, [{ id: "image", taskId: "task", name: "image.png", kind: "image", mimeType: "image/png", size: 3, filePath: "/image", dataUrl: "data:image/png;base64,YWJj" }]).then(() => { settled = true; });
+		await started; await Promise.resolve(); expect(settled).toBe(false);
+		send({ type: "agent_settled" }); await run;
+		expect(stateCalls).toBe(3); expect(onDelta).toHaveBeenCalledExactlyOnceWith("assistant", "Hello"); expect(onSession).toHaveBeenCalledWith("/sessions/fork.jsonl"); expect(onQuestion).toHaveBeenCalled(); expect(child.kill).toHaveBeenCalled();
+		expect(native.spawn.mock.lastCall?.[1]).toEqual(["--mode", "rpc", "--fork", "/sessions/original.jsonl", "--no-tools"]);
+	});
+	it.each([["chat", ["--tools", "mcp__phaseo__*"]], ["plan", ["--tools", "read,grep,find,ls,mcp__phaseo__*"]]] as const)("keeps only the orchestration extension tools in %s", async (mode, expected) => {
+		fixture((packet, output) => output({ type: "response", id: packet.id, success: true, data: packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "handled" } : undefined }));
+		const orchestration = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http" as const, url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
+		await new PiAdapter([orchestration]).run({ ...task, id: `pi-${mode}`, mode }, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		const args = native.spawn.mock.lastCall?.[1] as string[];
+		expect(args).not.toContain("--no-tools"); expect(args.slice(2, 4)).toEqual(expected); expect(args).toContain("--extension");
+		expect(native.spawn.mock.lastCall?.[4]).toEqual({ PHASEO_ORCHESTRATOR_URL: orchestration.url, PHASEO_ORCHESTRATOR_AUTH: "Bearer owned" });
+	});
+	it("does not launch native code tools when their turn approval is declined", async () => {
+		native.spawn.mockClear();
+		await expect(new PiAdapter().run({ ...task, mode: "code" }, "/project", "Edit", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" })).rejects.toThrow("declined");
+		expect(native.spawn).not.toHaveBeenCalled();
+	});
+	it("decodes fragmented Unicode and fails pending requests on disconnect", async () => {
+		const input = new PassThrough(); const output = new PassThrough(); const rpc = new PiRpc(input, output); const onEvent = vi.fn(); rpc.onEvent = onEvent;
+		for (const byte of Buffer.from(JSON.stringify({ type: "message_update", text: "Hello 🌍\u2028world" }) + "\n")) input.write(Buffer.from([byte]));
+		expect(onEvent).toHaveBeenCalledWith({ type: "message_update", text: "Hello 🌍\u2028world" });
+		const request = rpc.request({ type: "get_state" }); const rejected = expect(request).rejects.toThrow("connection ended"); input.end(); await rejected;
+	});
+});

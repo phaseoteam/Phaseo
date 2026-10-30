@@ -35,22 +35,6 @@
     },
     {
       "provider": "openai",
-      "capability": "image.edit",
-      "endpoint": "images.edits",
-      "cases": [
-        "nontext.images.edits.openai"
-      ]
-    },
-    {
-      "provider": "openai",
-      "capability": "image.generate",
-      "endpoint": "images.generations",
-      "cases": [
-        "nontext.images.generations.openai"
-      ]
-    },
-    {
-      "provider": "openai",
       "capability": "moderations",
       "endpoint": "moderations",
       "cases": [
@@ -182,44 +166,6 @@
       ]
     },
     {
-      "provider": "google-vertex",
-      "capability": "text.generate",
-      "endpoint": "chat.completions",
-      "cases": [
-        "errors.google-vertex.400",
-        "errors.google-vertex.401",
-        "errors.google-vertex.403",
-        "errors.google-vertex.404",
-        "errors.google-vertex.408",
-        "errors.google-vertex.413",
-        "errors.google-vertex.422",
-        "errors.google-vertex.429",
-        "errors.google-vertex.500",
-        "errors.google-vertex.503",
-        "errors.google-vertex.529",
-        "billing.google-vertex.chat.stream",
-        "billing.google-vertex.chat.buffered"
-      ]
-    },
-    {
-      "provider": "google-vertex",
-      "capability": "text.generate",
-      "endpoint": "messages",
-      "cases": [
-        "billing.google-vertex.messages.stream",
-        "billing.google-vertex.messages.buffered"
-      ]
-    },
-    {
-      "provider": "google-vertex",
-      "capability": "text.generate",
-      "endpoint": "responses",
-      "cases": [
-        "billing.google-vertex.responses.stream",
-        "billing.google-vertex.responses.buffered"
-      ]
-    },
-    {
       "provider": "groq",
       "capability": "text.generate",
       "endpoint": "chat.completions",
@@ -285,14 +231,6 @@
         "failover.all-fail-last-429",
         "dynamic.model-override-provider-only"
       ]
-    },
-    {
-      "provider": "openai",
-      "capability": "video.generate",
-      "endpoint": "video.generation",
-      "cases": [
-        "nontext.video.openai-sora-2-submit"
-      ]
     }
   ],
   "families": {
@@ -309,20 +247,24 @@
       "exercisedProviders": 1
     },
     "decisions.make": {
-      "registeredProviders": 14,
+      "registeredProviders": 15,
       "exercisedProviders": 0
     },
     "embeddings": {
       "registeredProviders": 31,
       "exercisedProviders": 1
     },
+    "extraction.extract": {
+      "registeredProviders": 1,
+      "exercisedProviders": 0
+    },
     "image.edit": {
       "registeredProviders": 16,
-      "exercisedProviders": 1
+      "exercisedProviders": 0
     },
     "image.generate": {
       "registeredProviders": 24,
-      "exercisedProviders": 1
+      "exercisedProviders": 0
     },
     "moderations": {
       "registeredProviders": 4,
@@ -346,7 +288,7 @@
     },
     "text.generate": {
       "registeredProviders": 113,
-      "exercisedProviders": 6
+      "exercisedProviders": 5
     },
     "video.edit": {
       "registeredProviders": 3,
@@ -354,7 +296,7 @@
     },
     "video.generate": {
       "registeredProviders": 22,
-      "exercisedProviders": 1
+      "exercisedProviders": 0
     }
   },
   "notCovered": [

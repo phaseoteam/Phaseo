@@ -8,3 +8,18 @@ description: "了解 Gateway 如何跟踪请求并计费。"
 <Note>
 此端点需要管理 API 密钥。不接受标准 Gateway API 密钥。
 </Note>
+
+## 通过 CLI 或 API 添加额度
+
+代理和脚本可以通过 `POST /v1/credits/topups` 或 CLI 发起充值。扣款始终由人来批准。
+
+```bash
+phaseo login --scopes billing:write
+phaseo credits add --amount 20
+```
+
+- 令牌需要 `billing:write` 范围。该范围默认不会授予：使用 `phaseo login --scopes billing:write` 添加，或在管理密钥中列出。
+- 每次充值 $5 至 $500。每个工作区最多同时有 5 个待处理的充值，每个充值 30 分钟后过期。
+- **尚无已保存的银行卡：** 响应中包含 `checkout_url`。工作区所有者或管理员打开它并用新卡付款，该卡会保存以供之后充值。
+- **已有保存的银行卡：** 每位所有者和管理员都会收到一封含一次性链接的邮件。其中一人打开链接、登录并选择 **确认** 或 **拒绝**。确认后会从银行卡扣款，如果银行要求，还会进行验证。
+- 轮询 `GET /v1/credits/topups/{id}`（或 `phaseo credits topups get <id>`），直到 `final` 为 `true`。状态为 `paid` 时会添加额度。`declined`、`expired` 和 `failed` 带有 `reason` 代码：不要自动重试，请询问相关人员。

@@ -1,0 +1,80 @@
+---
+icon: "phone"
+title: "Echtzeit-Sprache"
+description: "Führe mit dem Python SDK einen Echtzeit-Sprachanruf über das Phaseo-Relay und erhalte die endgültige Abrechnung, wenn er endet."
+---
+
+<Note>
+Echtzeit-Sprache ist in der Beta, und der Zugriff wird pro Workspace freigeschaltet.
+</Note>
+
+**Methode**: `await client.realtime.connect()` auf `AsyncPhaseo` erstellt die Sitzung (`POST /v1/audio/realtime/sessions`), öffnet den WebSocket des Relays und kehrt zurück, sobald das Relay `relay.connected` sendet. Der Echtzeit-Client ist nur asynchron verfügbar und braucht das optionale Paket `websockets`:
+
+```bash
+pip install "phaseo[realtime]"
+```
+
+Ohne das Paket löst `connect()` einen `ImportError` mit diesem Installationsbefehl aus. Das Relay-Protokoll, die Warnungen und die Grundcodes sind unter [Echtzeit-Sprachsitzungen](/de/v1/guides/realtime-voice) beschrieben.
+
+### Beispiel
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo, RealtimeSessionClosedError
+
+async def main(pcm16_chunk: bytes) -> None:
+    client = AsyncPhaseo()  # reads PHASEO_API_KEY
+    session = await client.realtime.connect(
+        "openai/gpt-realtime-2", voice="marin", instructions="Answer in one sentence."
+    )
+    session.on_warning(lambda warning: print("warning", warning["code"]))
+
+    # PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+    await session.send_audio(pcm16_chunk)
+
+    try:
+        ended = await session.end(reason="caller hung up")
+        print(ended["reason"], ended["duration_seconds"], ended["cost"]["total_usd"], ended["billing_status"])
+    except RealtimeSessionClosedError as error:
+        # The call is still billed. Fetch the final cost later with error.final_bill["path"].
+        print(error)
+    finally:
+        await client.close()
+```
+
+Um stattdessen jedes Ereignis zu lesen, iteriere über die Sitzung. Der erste Iterator erhält auch die Ereignisse, die seit der Rückkehr von `connect()` eingegangen sind, beginnend mit `relay.connected`, und die Iteration endet, wenn der Socket geschlossen wird.
+
+```python
+async for event in session:
+    if event["type"] == "response.output_audio.delta":
+        play(event["delta"])
+```
+
+`async with session:` beendet den Anruf beim Verlassen des Blocks mit `end()`, falls er nicht schon beendet ist.
+
+### Verbindungsoptionen
+
+- `model` (erforderlich): eine Echtzeit-Modell-ID, zum Beispiel `openai/gpt-realtime-2`.
+- `voice`, `instructions`, `provider`, `metadata`: werden an die Anfrage zum Erstellen der Sitzung übergeben.
+- `connect_timeout`: Sekunden, die auf `relay.connected` gewartet wird. Standard: 30.
+- `websocket_connect`: ein asynchrones Callable `(url, subprotocols)`, das einen verbundenen Socket zurückgibt, um eine andere WebSocket-Bibliothek zu verwenden.
+
+### Sitzung
+
+| Member | Beschreibung |
+| --- | --- |
+| `id`, `info` | Die Sitzungs-ID und die Antwort auf das Erstellen der Sitzung, ohne `client_secret`. |
+| `await send_audio(pcm16)` | Sendet PCM16-`bytes` als `client.audio`. Das SDK kodiert sie in Base64. |
+| `await send(event)` | Sendet ein beliebiges Ereignis als JSON, für anbieterspezifische Nachrichten. |
+| `on(type, listener)` | Abonniert einen Ereignistyp oder mit `"*"` alle Ereignisse. Gibt eine Funktion zum Abbestellen zurück. Anbieterereignisse kommen unverändert als Dicts an. |
+| `on_warning(listener)`, `on_ended(listener)` | Helfer für `session.warning` und `session.ended`. |
+| `async for event in session` | Liefert jedes Ereignis, bis der Socket geschlossen wird. |
+| `await end(reason=None, cancel_response=None, timeout=60)` | Sendet `session.end` und gibt `session.ended` zurück: `reason`, `initiated_by`, `duration_seconds`, `usage`, `cost`, `billing_status` und, sofern nicht abgerechnet, `final_bill`. |
+| `ended` | Ein Future für `session.ended`, egal wie der Anruf endet, auch wenn der Anbieter oder das Gateway das Ende ausgelöst hat. |
+| `await close()` | Schließt den Socket, ohne auf die Abrechnung zu warten. Der Anruf wird trotzdem abgerechnet. |
+
+### Fehler
+
+Wenn der Socket geschlossen wird oder `end()` in ein Timeout läuft, ohne dass `session.ended` eintrifft, lösen `end()` und `ended` einen `RealtimeSessionClosedError` aus. Der Fehler enthält `session_id`, `close_code`, `close_reason` und `final_bill`, die Anfrage, die die endgültigen Kosten zurückgibt, sobald abgerechnet ist: `GET /v1/generations?id=realtime%3A<session_id>`. `realtime_final_bill(session_id)` erstellt dieselbe Anfrage.
+
+`connect()` löst einen Fehler aus, wenn das Relay die Sitzung beendet, bevor die Verbindung steht, und einen `TimeoutError`, wenn `relay.connected` nicht rechtzeitig eintrifft.

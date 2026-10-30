@@ -2,6 +2,12 @@ export interface ChatChoice {
   finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
   index?: number;
   message?: {
+    audio?: {
+      data?: string;
+      expires_at?: number;
+      id?: string;
+      transcript?: string;
+    };
     audios?: {
       audio_url: {
         url: string;

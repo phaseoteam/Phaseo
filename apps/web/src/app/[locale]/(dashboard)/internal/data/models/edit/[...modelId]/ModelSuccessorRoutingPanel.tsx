@@ -24,6 +24,8 @@ type SuccessorRouting = {
 	auto_route_enabled: boolean;
 	approved_successor_slug: string | null;
 	approved_at: string | null;
+	approval_source: "admin" | "auto" | null;
+	auto_approval_blocked: boolean;
 	approval_current: boolean;
 	notes: string | null;
 	compatibility: Compatibility | null;
@@ -107,11 +109,12 @@ export default function ModelSuccessorRoutingPanel({ modelId }: { modelId: strin
 						{!routing.auto_route_enabled || !routing.approved_successor_slug || !routing.approved_at
 							? t("notApproved")
 							: routing.approval_current
-								? t("approved", { model: routing.approved_successor_slug, date: formatDate(routing.approved_at) })
+								? t(routing.approval_source === "auto" ? "approvedAutomatically" : "approved", { model: routing.approved_successor_slug, date: formatDate(routing.approved_at) })
 								: t("approvalStale", { model: routing.approved_successor_slug })}
 					</dd>
 				</dl>
 			) : null}
+			{routing?.auto_approval_blocked ? <p className="text-xs text-muted-foreground">{t("autoBlocked")}</p> : null}
 			{compatibility ? (
 				<div className="space-y-1 text-xs">
 					{compatibility.blocking.length > 0 ? (
@@ -145,8 +148,8 @@ export default function ModelSuccessorRoutingPanel({ modelId }: { modelId: strin
 						<Button type="button" onClick={() => save(true)} disabled={isPending || !canApprove}>
 							{!routing.auto_route_enabled ? t("approve") : routing.approval_current ? t("updateApproval") : t("reapprove")}
 						</Button>
-						<Button type="button" variant="outline" onClick={() => save(false)} disabled={isPending || !routing.auto_route_enabled}>
-							{t("revoke")}
+						<Button type="button" variant="outline" onClick={() => save(false)} disabled={isPending || (!routing.auto_route_enabled && routing.auto_approval_blocked)}>
+							{routing.auto_route_enabled ? t("revoke") : t("blockAuto")}
 						</Button>
 					</div>
 				</div>

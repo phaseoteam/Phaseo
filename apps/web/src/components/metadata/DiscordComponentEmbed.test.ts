@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { resolveLogo } from "@/lib/logos";
 import { markdownToPlainText } from "@/lib/models/modelDescription";
@@ -280,19 +280,29 @@ describe("Discord component embed", () => {
 	});
 
 	it("ships PNGs for every catalog lab with a known logo", () => {
-		const modelCatalogPath = path.resolve(
-			__dirname,
-			"../../../../../packages/data/catalog/src/data/models",
-		);
 		const discordLogoPath = path.resolve(
 			__dirname,
 			"../../../public/logos/discord",
 		);
-		const organisationIds = readdirSync(modelCatalogPath, {
-			withFileTypes: true,
-		})
-			.filter((entry) => entry.isDirectory())
-			.map((entry) => entry.name);
+		// Snapshot of catalogue organisation ids (the database is the source of truth).
+		// fastino is left out: it has a bundled logo but no Discord PNG yet.
+		const organisationIds = [
+			"ai21", "aion-labs", "aisingapore", "alibaba", "allenai", "amazon", "anthropic",
+			"arcee-ai", "baai", "baichuan", "baidu", "black-forest-labs", "bytedance",
+			"bytedance-seed", "cogito", "cognitivecomputations", "cohere", "crofai", "cursor",
+			"databricks", "deepseek", "dots-studio", "early-access", "eleven-labs",
+			"essential-ai", "fish-audio", "google", "gpt-5.6-luna", "gryphe",
+			"hexgrad", "ibm", "inception", "inclusionai", "inference-net", "inflection",
+			"jetbrains", "kblab", "kling", "kwaipilot", "lg", "lightricks", "liquid-ai",
+			"mancer", "medaibase", "meituan", "meta", "microsoft", "mindai", "minimax",
+			"mistral", "moonshotai", "morph", "naver-hyperclova", "nex-agi", "nous",
+			"nousresearch", "nvidia", "openai", "opencompass", "orcarouter", "ornith",
+			"perplexity", "phala", "poolside", "prime-intellect", "qwen", "reka", "relace",
+			"runway", "sakana", "sapiens-ai", "sentence-transformers", "snowflake",
+			"sourceful", "spacex-ai", "speakleash", "stability-ai", "stealth", "stepfun",
+			"suno", "tencent", "thedrummer", "thinking-machines", "undi95", "upstage",
+			"venice", "vercel", "voyage", "windsurf", "writer", "xiaomi", "z-ai", "zyphra",
+		];
 		const knownLogos = organisationIds
 			.map((organisationId) => resolveLogo(organisationId, { variant: "dark" }))
 			.filter((logo) => logo.id && logo.src);

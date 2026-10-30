@@ -17,7 +17,7 @@ export default async function TermsPage() {
 	const lastUpdatedDate = new Intl.DateTimeFormat(locale, {
 		dateStyle: "long",
 		timeZone: "UTC",
-	}).format(new Date("2026-08-30T00:00:00Z"));
+	}).format(new Date("2026-10-29T00:00:00Z"));
 	const serviceFeatures = t.raw("termsBody.features") as string[];
 	const accountResponsibilities = t.raw("termsBody.accountResponsibilities") as string[];
 	const autoTopUpActions = t.raw("termsBody.autoTopUpActions") as string[];
@@ -207,6 +207,7 @@ export default async function TermsPage() {
 					{userResponsibilityItems.map((item, index) => <li key={index}>{item}</li>)}
 				</ul>
 				<p className="mt-1 text-foreground/80">{t("termsBody.contentModeration")}</p>
+				<p className="mt-2 text-foreground/80">{t("termsBody.childSafety")}</p>
 			</section>
 
 			<section aria-labelledby="section-5">

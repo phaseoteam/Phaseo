@@ -11,7 +11,7 @@ Phaseo के ज़रिए अनुरोध भेजते हुए Anthr
 
 | सेटिंग | पहले | बाद में |
 | --- | --- | --- |
-| बेस URL | Anthropic का डिफ़ॉल्ट | `https://api.phaseo.app/v1` |
+| बेस URL | Anthropic का डिफ़ॉल्ट | `https://api.phaseo.app` |
 | API कुंजी | Anthropic कुंजी | `PHASEO_API_KEY` |
 | मॉडल | Anthropic मॉडल का नाम | `GET /v1/models` से मिला Phaseo मॉडल ID |
 | Messages कॉल | मौजूदा SDK कॉल | आमतौर पर अपरिवर्तित |
@@ -19,21 +19,22 @@ Phaseo के ज़रिए अनुरोध भेजते हुए Anthr
 <Steps>
 <Step title="Phaseo API कुंजी बनाएं">
 
-[Gateway Keys](https://phaseo.app/settings/keys) में एक कुंजी बनाएं और इसे अपने ऐप में `PHASEO_API_KEY` के रूप में उपलब्ध कराएं।
+[Phaseo CLI](../guides/integrations/phaseo-cli) में `phaseo keys create` से या [Gateway Keys](https://phaseo.app/settings/keys) में एक कुंजी बनाएं और इसे अपने ऐप में `PHASEO_API_KEY` के रूप में उपलब्ध कराएं।
 
 </Step>
 
 <Step title="Anthropic क्लाइंट अपडेट करें">
 
-SDK को Phaseo बेस URL पर सेट करें और अपनी Phaseo कुंजी का उपयोग करें।
+SDK को Phaseo के रूट होस्ट `https://api.phaseo.app` पर सेट करें और अपनी Phaseo कुंजी `authToken` (Python में `auth_token`) के रूप में दें। SDK `/v1/messages` अपने-आप जोड़ता है और कुंजी को `Authorization: Bearer` के रूप में भेजता है। जो एनवायरनमेंट अब Phaseo को कॉल करते हैं, उनसे `ANTHROPIC_API_KEY` हटा दें, ताकि पुराने SDK संस्करण आपकी Anthropic कुंजी भी न भेजें।
 
 <CodeGroup>
 ```typescript TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 
 const response = await client.messages.create({
@@ -48,8 +49,8 @@ import os
 import anthropic
 
 client = anthropic.Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    auth_token=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
 )
 
 response = client.messages.create(
@@ -89,7 +90,7 @@ curl https://api.phaseo.app/v1/messages \
 ## माइग्रेशन चेकलिस्ट
 
 - हर डिप्लॉयमेंट वातावरण में Phaseo कुंजी कॉन्फ़िगर है।
-- Anthropic क्लाइंट `https://api.phaseo.app/v1` का उपयोग करता है।
+- Anthropic क्लाइंट `https://api.phaseo.app` का उपयोग करता है।
 - हर प्रोडक्शन मॉडल ID को `GET /v1/models` से सत्यापित किया गया है।
 - स्टेजिंग में स्ट्रीमिंग और टूल उपयोग के फ़्लो सफल होते हैं।
 - Anthropic-विशिष्ट beta हेडर और पैरामीटर की समीक्षा की गई है।

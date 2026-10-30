@@ -16,6 +16,10 @@ Use notification destinations to send enabled workspace alerts to the tools your
 5. Select **Send test** for each configured channel.
 6. Create the destinations after every test succeeds.
 
+From the CLI, run `phaseo notifications destinations create`, check it with `phaseo notifications destinations test <id>`, then choose which alerts it receives with `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+
+Custom webhooks get a signing secret when you create them. Copy it from the dialog that opens; it is shown only once.
+
 Phaseo supports:
 
 - email addresses and distribution lists
@@ -50,3 +54,72 @@ Use mentions sparingly. A high-volume workspace alert should normally go to a mo
 Use **Send test** beside an existing destination after rotating credentials or changing channel configuration. Remove destinations that are no longer monitored so alerts do not appear delivered to an abandoned channel.
 
 Custom webhooks must use HTTPS and should validate the request before processing it. Return a successful response promptly and move slower work to a background job.
+
+## Verify webhook signatures
+
+Phaseo signs every custom webhook delivery, including tests sent from a saved destination, with the same scheme as [video and batch webhooks](./async-video-and-batch.mdx#receive-updates). Each request carries these headers:
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` is the hexadecimal HMAC-SHA256 of the `x-phaseo-timestamp` value, a literal period (`.`), and the **unmodified request body**, keyed with the destination's signing secret (`whsec_…`). `x-phaseo-timestamp` is in Unix seconds.
+
+To verify a delivery:
+
+1. Read the raw request body before parsing it as JSON.
+2. Recompute the signature and compare it in constant time.
+3. Reject timestamps more than five minutes from your clock.
+4. Deduplicate on `x-phaseo-event-id`. Failed deliveries are retried, and each attempt is signed again with a new timestamp.
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody is the request body exactly as received, as a string.
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body is the request body exactly as received, as bytes.
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### Generate or rotate a secret
+
+The secret is shown once, when the destination is created. To replace it, select **Rotate secret** beside the destination in **Settings → Notifications**, or call [`POST /v1/notifications/destinations/{id}/rotate-secret`](/v1/api-reference/endpoint/notifications-destination-rotate-secret). The next delivery is signed with the new secret and the old one stops working, so update your receiver straight away.
+
+Custom webhooks created before signing was available have no secret and are still delivered unsigned. They show **Unsigned** in Settings. Select **Generate secret**, add the secret to your receiver, then send a test to check verification. Tests sent from the **Add destination** sheet, before the destination is saved, are unsigned because no secret exists yet.
+
+Email, Slack, Discord and Microsoft Teams destinations are not signed: those services authenticate the webhook URL or bot token themselves.

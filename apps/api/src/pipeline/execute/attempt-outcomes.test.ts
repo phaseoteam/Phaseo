@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { everyAttemptRateLimited, everyAttemptRejectedRequest } from "./attempt-outcomes";
+import { everyAttemptRateLimited, everyAttemptRejectedRequest, sharedRequestRejectionStatus } from "./attempt-outcomes";
 
 const upstream = (status: number) => ({ type: "upstream_non_2xx", status });
 
@@ -30,5 +30,22 @@ describe("everyAttemptRejectedRequest", () => {
 
 	it("is false when a provider threw instead of answering", () => {
 		expect(everyAttemptRejectedRequest([upstream(400), { type: "retryable_error" }])).toBe(false);
+	});
+});
+
+describe("sharedRequestRejectionStatus", () => {
+	it.each([400, 413, 422])("is %s when every dispatched attempt returned it", (status) => {
+		expect(sharedRequestRejectionStatus([upstream(status), { type: "blocked" }, upstream(status)])).toBe(status);
+	});
+
+	it.each([
+		[[upstream(400), upstream(422)]],
+		[[upstream(400), upstream(500)]],
+		[[upstream(404)]],
+		[[{ type: "blocked" }]],
+		[[]],
+		[undefined],
+	])("is null for %j", (attempts) => {
+		expect(sharedRequestRejectionStatus(attempts as any)).toBeNull();
 	});
 });

@@ -327,6 +327,9 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"context_management",
 			"user",
 			"session_id",
+			// Cache affinity key, as on Chat and Responses; sent (namespaced) to the routes
+			// that document it and never to Claude.
+			"prompt_cache_key",
 			"provider_options",
 			"providerOptions",
 			"web_search_options",

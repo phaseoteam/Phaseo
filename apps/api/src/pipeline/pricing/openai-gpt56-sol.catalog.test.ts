@@ -1,26 +1,15 @@
-import fs from "node:fs";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { computeBillSummary } from "./engine";
 import type { PriceCard } from "./types";
+import { gpt56LunaCard, gpt56SolCard, gpt56TerraCard } from "./__fixtures__/openai-gpt56-cards";
 
-const DATA_ROOT = path.resolve(process.cwd(), "../../packages/data/catalog/src/data");
-
-function loadCard(relativePath: string): PriceCard {
-	return JSON.parse(fs.readFileSync(path.join(DATA_ROOT, relativePath), "utf8")) as PriceCard;
-}
-
-const canonicalCard = loadCard("pricing/openai/openai-gpt-5.6-sol/text.generate/pricing.json");
-const proAliasCard = loadCard("pricing/openai/openai-gpt-5.6-sol-pro/text.generate/pricing.json");
-const terraCard = loadCard("pricing/openai/openai-gpt-5.6-terra/text.generate/pricing.json");
-const terraProAliasCard = loadCard("pricing/openai/openai-gpt-5.6-terra-pro/text.generate/pricing.json");
-const lunaCard = loadCard("pricing/openai/openai-gpt-5.6-luna/text.generate/pricing.json");
-const lunaProAliasCard = loadCard("pricing/openai/openai-gpt-5.6-luna-pro/text.generate/pricing.json");
+const canonicalCard = gpt56SolCard as unknown as PriceCard;
+const terraCard = gpt56TerraCard as unknown as PriceCard;
+const lunaCard = gpt56LunaCard as unknown as PriceCard;
 
 describe("GPT-5.6 Sol catalogue billing", () => {
 	it.each([
 		["canonical slug", canonicalCard],
-		["Pro compatibility alias", proAliasCard],
 	])("bills reported reasoning tokens once for the %s", (_label, card) => {
 		const result = computeBillSummary(
 			{
@@ -42,11 +31,8 @@ describe("GPT-5.6 Sol catalogue billing", () => {
 
 	it.each([
 		["Sol canonical slug", canonicalCard, "10.800000000", "16.000000000", "60.000000000"],
-		["Sol Pro compatibility alias", proAliasCard, "10.800000000", "16.000000000", "60.000000000"],
 		["Terra canonical slug", terraCard, "6.000000000", "8.000000000", "36.000000000"],
-		["Terra Pro compatibility alias", terraProAliasCard, "6.000000000", "8.000000000", "36.000000000"],
 		["Luna canonical slug", lunaCard, "0.600000000", "0.800000000", "3.600000000"],
-		["Luna Pro compatibility alias", lunaProAliasCard, "0.600000000", "0.800000000", "3.600000000"],
 	])("applies the published high-context Priority rates for the %s", (_label, card, total, inputRate, outputRate) => {
 		const result = computeBillSummary(
 			{

@@ -21,6 +21,8 @@ import {
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
+import { inlineAudioUrlsForProvider } from "./inline-audio";
+import { isMistralProvider, normalizeMistralStreamChunk, splitContentChunks } from "./providers/mistral/quirks";
 import {
 	openAICompatHeaders,
 	openAICompatUrl,
@@ -29,6 +31,7 @@ import {
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
 import { resolveProviderKey } from "@providers/keys";
+import { cloudflareAccountAiBase, cloudflareByokCredential, cloudflareByokHeaders } from "@providers/cloudflare/credentials";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
@@ -37,6 +40,7 @@ import {
 	transformChatStream,
 	transformChatStreamToResponses,
 	transformResponsesStreamToChat,
+	normalizeTerminalResponsesFrames,
 } from "./stream-transforms";
 import {
 	adaptRequestFromUpstreamError,
@@ -46,6 +50,7 @@ import { SseParser } from "@core/sse-parser";
 import { readUpstreamStreamError } from "@core/stream-errors";
 import {
 	ANTHROPIC_REASONING_FORMAT,
+	isSealedReasoningValue,
 	openReasoningState,
 	reasoningFormatForRoute,
 	sealReasoningState,
@@ -84,17 +89,27 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Providers that keep prompt caches per replica and route on an x-session-affinity
-// header. The value is the workspace-namespaced cache key, never the raw client key.
-// https://docs.fireworks.ai/guides/prompt-caching
-// https://developers.cloudflare.com/workers-ai/features/prompt-caching
-const SESSION_AFFINITY_HEADER_PROVIDERS = new Set(["fireworks", "cloudflare"]);
+// Providers that keep prompt caches per replica and route on a session header, by the
+// header each one documents. The value is the workspace-namespaced cache key, never the
+// raw client key.
+// - Fireworks: https://docs.fireworks.ai/guides/prompt-caching
+// - Cloudflare: https://developers.cloudflare.com/workers-ai/features/prompt-caching
+// - Baseten: "Reuse the same x-session-affinity value for related requests to improve
+//   cached input tokens reuse" (https://docs.baseten.co/inference/model-apis/pricing-and-limits)
+// - Morph: "x-session-id ... Use this one: it reaches both region and worker placement"
+//   (https://docs.morphllm.com/sdk/components/caching)
+const SESSION_AFFINITY_HEADERS: ReadonlyMap<string, string> = new Map([
+	["fireworks", "x-session-affinity"],
+	["cloudflare", "x-session-affinity"],
+	["baseten", "x-session-affinity"],
+	["morph", "x-session-id"],
+]);
 
 export function sessionAffinityHeaders(args: Pick<ExecutorExecuteArgs, "providerId" | "meta">): Record<string, string> {
 	const key = args.meta?.cacheAffinityKey;
 	if (typeof key !== "string" || key.length === 0) return {};
-	if (!SESSION_AFFINITY_HEADER_PROVIDERS.has(String(args.providerId ?? "").trim().toLowerCase())) return {};
-	return { "x-session-affinity": key };
+	const header = SESSION_AFFINITY_HEADERS.get(String(args.providerId ?? "").trim().toLowerCase());
+	return header ? { [header]: key } : {};
 }
 
 export type OpenAIWirePolicy = {
@@ -120,6 +135,11 @@ export async function executeOpenAIWire(
 			byokMeta: args.byokMeta,
 		} as any);
 
+	// A Cloudflare BYOK key runs on the customer's own account with their token.
+	const cloudflareByok = args.providerId === "cloudflare" && !args.privateEndpoint
+		? cloudflareByokCredential(keyInfo)
+		: null;
+
 	// Choose endpoint based on provider capabilities
 	const modelForRouting = resolveOpenAICompatModel(
 		args.providerId,
@@ -133,10 +153,15 @@ export async function executeOpenAIWire(
 	const endpointForRoute = (targetRoute: "responses" | "chat") =>
 		targetRoute === "responses" ? "/responses" : "/chat/completions";
 
+	// Audio given by URL is downloaded and sent as base64 input_audio.
+	const inlinedAudio = await inlineAudioUrlsForProvider(args.ir, args);
+	if (inlinedAudio.ok === false) return inlinedAudio.result;
+	const encodeIr = inlinedAudio.ir;
+
 	const buildPayloadForRoute = (targetRoute: "responses" | "chat"): Record<string, any> => {
 		const requestPayload = targetRoute === "responses"
-			? irToOpenAIResponses(args.ir, modelForRouting, args.providerId, args.capabilityParams)
-			: irToOpenAIChat(args.ir, modelForRouting, args.providerId, args.capabilityParams);
+			? irToOpenAIResponses(encodeIr, modelForRouting, args.providerId, args.capabilityParams)
+			: irToOpenAIChat(encodeIr, modelForRouting, args.providerId, args.capabilityParams);
 
 		const upstreamStream = policy.useClientStreamingMode ? args.ir.stream : true;
 		const payload: Record<string, any> = {
@@ -191,11 +216,13 @@ export async function executeOpenAIWire(
 			&& sanitized.request.tools.some((tool: any) => tool?.type === "mcp");
 		const upstreamUrl = args.privateEndpoint
 			? `${args.privateEndpoint.baseUrl.replace(/\/+$/, "")}${endpointForRoute(targetRoute)}`
-			: openAICompatUrl(
-				policy.urlProviderId ?? args.providerId,
-				endpointForRoute(targetRoute),
-				modelForRouting,
-			);
+			: cloudflareByok
+				? `${cloudflareAccountAiBase(cloudflareByok.accountId)}/v1${endpointForRoute(targetRoute)}`
+				: openAICompatUrl(
+					policy.urlProviderId ?? args.providerId,
+					endpointForRoute(targetRoute),
+					modelForRouting,
+				);
 		const upstreamHeaders = args.privateEndpoint
 			? {
 				Authorization: `Bearer ${keyInfo.key}`,
@@ -210,7 +237,7 @@ export async function executeOpenAIWire(
 		const response = await fetchUpstream(args, upstreamUrl, {
 			method: "POST",
 			...(args.privateEndpoint ? { redirect: "manual" as const } : {}),
-			headers: upstreamHeaders,
+			headers: cloudflareByok ? cloudflareByokHeaders(cloudflareByok, upstreamHeaders) : upstreamHeaders,
 			body: requestBody,
 		});
 
@@ -439,6 +466,8 @@ export async function executeOpenAIWire(
 type StreamAdapterState = {
 	requestId: string;
 	providerId: string;
+	/** Gateway model id of the request, recorded on sealed reasoning state. */
+	model?: string | null;
 	choiceStates: Map<number, { reasoningChunks: string[] }>;
 	aionStates?: Map<number, any>;
 };
@@ -447,6 +476,7 @@ function createStreamAdapterState(args: ExecutorExecuteArgs): StreamAdapterState
 	return {
 		requestId: args.requestId,
 		providerId: args.providerId,
+		model: args.ir.model,
 		choiceStates: new Map(),
 	};
 }
@@ -502,17 +532,22 @@ export function resolveStreamForProtocol(
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const state = createStreamAdapterState(args);
 	const canonicalResponses = route === "responses" && options?.canonicalResponsesEvents === true;
+	// A native Responses upstream reaches clients unparsed; provider quirks fix its terminal
+	// response (usage) so streamed clients and billing match a buffered response.
+	const body = route === "responses" && !canonicalResponses
+		? normalizeTerminalResponsesFrames(res.body, args.providerId)
+		: res.body;
 
 	if (protocol === "openai.chat.completions") {
 		if (route === "responses") {
-			return transformResponsesStreamToChat(res.body, args, state);
+			return transformResponsesStreamToChat(body, args, state);
 		}
-		return transformChatStream(res.body, args, state);
+		return transformChatStream(body, args, state);
 	}
 
 	if (protocol === "openai.responses") {
-		if (canonicalResponses) return res.body;
-		return transformChatStreamToResponses(res.body, args, state);
+		if (canonicalResponses) return body;
+		return transformChatStreamToResponses(body, args, state);
 	}
 
 	if (protocol === "anthropic.messages") {
@@ -520,13 +555,13 @@ export function resolveStreamForProtocol(
 		// This keeps /messages streaming compatible whether upstream emits responses events
 		// or chat-completion chunks on a responses route.
 		const responsesStream = canonicalResponses
-			? res.body
-			: transformChatStreamToResponses(res.body, args, state);
+			? body
+			: transformChatStreamToResponses(body, args, state);
 		return transformResponsesStreamToAnthropic(responsesStream, args);
 	}
 
 	// Default: passthrough (responses protocol or unknown)
-	return res.body;
+	return body;
 }
 
 function transformResponsesStreamToAnthropic(
@@ -1026,6 +1061,7 @@ function normalizeUsageToAnthropic(usage: any): {
 	cache_creation?: { ephemeral_5m_input_tokens: number; ephemeral_1h_input_tokens: number };
 	cached_write_text_tokens_30m?: number;
 	cached_write_text_tokens_12h?: number;
+	server_tool_use?: Record<string, number>;
 } {
 	const inputTokens = Number(
 		usage?.input_tokens ??
@@ -1062,6 +1098,8 @@ function normalizeUsageToAnthropic(usage: any): {
 		// split to billing and are not part of the client usage.
 		...(typeof cache.write30mTokens === "number" ? { cached_write_text_tokens_30m: cache.write30mTokens } : {}),
 		...(typeof cache.write12hTokens === "number" ? { cached_write_text_tokens_12h: cache.write12hTokens } : {}),
+		// Messages usage has its own server_tool_use counts; billing reads web searches from it.
+		...(usage?.server_tool_use && typeof usage.server_tool_use === "object" ? { server_tool_use: usage.server_tool_use } : {}),
 	};
 }
 
@@ -1127,7 +1165,9 @@ export async function bufferStreamToIR(
 	const parser = new SseParser();
 	let finalResponse: any = null;
 	let sawDone = false;
+	const mistralStreamState = isMistralProvider(args.providerId) ? createStreamAdapterState(args) : null;
 	const applyStreamPayload = (payload: any) => {
+		if (mistralStreamState) normalizeMistralStreamChunk(payload, mistralStreamState);
 		// Responses API sends response in payload.response
 		if (route === "responses" && payload?.response) {
 			finalResponse = payload.response;
@@ -1231,6 +1271,7 @@ export async function bufferStreamToIR(
 		throw new Error("openai_stream_missing_response");
 	}
 
+	finaliseChatAudio(finalResponse);
 	const isChatLikeResponse = isChatCompletionResponse(finalResponse);
 
 	// Convert to IR using appropriate transformer
@@ -1374,6 +1415,43 @@ function mergeUsageSnapshots(prev: any, next: any): any {
 	return merged;
 }
 
+const CHAT_AUDIO_DATA_CHUNKS = Symbol("chatAudioDataChunks");
+
+/**
+ * OpenAI streams Chat audio output as `choices[].delta.audio` pieces: the id and
+ * expires_at once, and base64 `data` and `transcript` in fragments
+ * (https://platform.openai.com/docs/api-reference/chat-streaming/streaming).
+ */
+function appendChatAudioDelta(message: any, delta: any): void {
+	const audio = message.audio && typeof message.audio === "object" ? message.audio : (message.audio = {});
+	if (typeof delta.id === "string" && delta.id) audio.id = delta.id;
+	if (typeof delta.expires_at === "number") audio.expires_at = delta.expires_at;
+	if (typeof delta.transcript === "string") audio.transcript = (audio.transcript ?? "") + delta.transcript;
+	if (typeof delta.data === "string" && delta.data) {
+		(audio[CHAT_AUDIO_DATA_CHUNKS] ??= []).push(delta.data);
+	}
+}
+
+/** Each base64 fragment is encoded on its own, so padded fragments are re-encoded as one. */
+export function joinBase64Chunks(chunks: string[]): string {
+	if (chunks.slice(0, -1).every((chunk) => chunk.length % 4 === 0 && !chunk.includes("="))) {
+		return chunks.join("");
+	}
+	let binary = "";
+	for (const chunk of chunks) binary += atob(chunk);
+	return btoa(binary);
+}
+
+function finaliseChatAudio(response: any): void {
+	for (const choice of Array.isArray(response?.choices) ? response.choices : []) {
+		const audio = choice?.message?.audio;
+		const chunks: string[] | undefined = audio?.[CHAT_AUDIO_DATA_CHUNKS];
+		if (!chunks) continue;
+		audio.data = joinBase64Chunks(chunks);
+		delete audio[CHAT_AUDIO_DATA_CHUNKS];
+	}
+}
+
 function accumulateChatCompletion(finalResponse: any, payload: any): any {
 	if (!payload || !Array.isArray(payload?.choices)) {
 		if (payload?.usage && finalResponse) {
@@ -1415,6 +1493,7 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
 				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
 				...(Array.isArray(message.audios) ? { audios: message.audios } : Array.isArray(previousMessage.audios) ? { audios: previousMessage.audios } : {}),
+				...(message.audio && typeof message.audio === "object" ? { audio: message.audio } : previousMessage.audio ? { audio: previousMessage.audio } : {}),
 				...(Array.isArray(message._contentParts)
 					? { _contentParts: message._contentParts }
 					: Array.isArray(previousMessage._contentParts)
@@ -1423,7 +1502,15 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 			};
 		}
 
-		if (chunk.delta?.content) {
+		// A chunk-list delta (Mistral ThinkChunk + TextChunk) splits into text and
+		// reasoning; appending the list to the string would give "[object Object]".
+		const contentChunks = splitContentChunks(chunk.delta?.content);
+		if (contentChunks) {
+			if (contentChunks.text) choice.message.content = (choice.message.content || "") + contentChunks.text;
+			if (contentChunks.reasoning) {
+				choice.message.reasoning_content = (choice.message.reasoning_content || "") + contentChunks.reasoning;
+			}
+		} else if (chunk.delta?.content) {
 			choice.message.content = (choice.message.content || "") + chunk.delta.content;
 		}
 		if (chunk.delta?.reasoning_content) {
@@ -1433,6 +1520,15 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 		if (chunk.delta?.reasoning) {
 			choice.message.reasoning =
 				(choice.message.reasoning || "") + chunk.delta.reasoning;
+		}
+		// Keep reasoning state the gateway sealed into stream deltas (Mistral
+		// ThinkChunk signatures) for the final response.
+		if (Array.isArray(chunk.delta?.reasoning_details)) {
+			const sealedDetails = chunk.delta.reasoning_details.filter((entry: any) =>
+				isSealedReasoningValue(entry?.signature) || isSealedReasoningValue(entry?.data));
+			if (sealedDetails.length > 0) {
+				choice.message.reasoning_details = [...(choice.message.reasoning_details ?? []), ...sealedDetails];
+			}
 		}
 		if (chunk.delta?.tool_calls) {
 			if (!choice.message.tool_calls) choice.message.tool_calls = [];
@@ -1463,6 +1559,9 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				choice.message.audios = [];
 			}
 			choice.message.audios.push(...chunk.delta.audios);
+		}
+		if (chunk.delta?.audio && typeof chunk.delta.audio === "object") {
+			appendChatAudioDelta(choice.message, chunk.delta.audio);
 		}
 		if (chunk.finish_reason) {
 			choice.finish_reason = chunk.finish_reason;

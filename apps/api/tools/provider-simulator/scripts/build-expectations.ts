@@ -3,18 +3,20 @@
 //      the gateway code under test, and must be reviewable as data.
 // How: Reads specs/*.json (servers, securitySchemes, operations), specs/research.json (API reference base URLs) and
 //      the hand-kept facts below for native and cloud providers. Existing `overrides` blocks are preserved.
+//      Provider ids come from the catalogue database (v2_model_provider_routes), so it needs the credentials
+//      src/catalogue.ts reads (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).
 //
 // Usage: pnpm --filter @phaseo/gateway-api exec tsx tools/provider-simulator/scripts/build-expectations.ts
 
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadCatalogue } from "../src/catalogue";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..");
 const specsDir = path.join(root, "specs");
 const outDir = path.join(root, "expectations", "providers");
-const catalogueDir = path.resolve(root, "../../../../packages/data/catalog/src/data/api_providers");
 
 type Source = Record<string, unknown>;
 type Operation = { urlPattern: string; source: Source };
@@ -166,9 +168,9 @@ function buildFacts(provider: string): ProviderFacts {
 	return facts;
 }
 
-function main() {
+async function main() {
 	fs.mkdirSync(outDir, { recursive: true });
-	const providers = fs.readdirSync(catalogueDir).filter((id) => fs.existsSync(path.join(catalogueDir, id, "models.json")));
+	const providers = [...new Set((await loadCatalogue()).routes.map((route) => route.providerId))];
 	const ids = Array.from(new Set([...providers, ...Object.keys(manifest), ...Object.keys(HAND_KEPT)])).sort();
 	let written = 0;
 	for (const id of ids) {
@@ -188,4 +190,7 @@ function main() {
 	console.log(`[build-expectations] wrote ${written} provider files`);
 }
 
-main();
+main().catch((error) => {
+	console.error(error instanceof Error ? error.message : error);
+	process.exit(1);
+});
