@@ -6,10 +6,11 @@ import { defaultLocale, isPublicLocale } from "@/i18n/locales";
 import { buildLocalizedRootMetadata } from "@/lib/rootMetadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { createServerFn } from "@tanstack/react-start";
+import { toSerializableMetadata } from "@/lib/start/nextPage";
 
 const getRootMetadata = createServerFn({ method: "GET" })
 	.validator((locale: string) => locale)
-	.handler(async ({ data: locale }) => buildLocalizedRootMetadata(isPublicLocale(locale) ? locale : defaultLocale));
+	.handler(async ({ data: locale }) => toSerializableMetadata(await buildLocalizedRootMetadata(isPublicLocale(locale) ? locale : defaultLocale)));
 
 export const Route = createFileRoute("/{-$locale}")({
 	beforeLoad: ({ params }) => {

@@ -1,7 +1,7 @@
-import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
+import { montserratBoldPromise, montserratRegularPromise, montserratSemiboldPromise } from "@/lib/og/ogAssets";
 import { fetchFrontendOgPayload } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
 import { resolveLogo } from "@/lib/logos";
@@ -29,15 +29,6 @@ const ASSET_BASE_URL =
 	process.env.WEBSITE_URL ??
 	"http://localhost:3100";
 
-const montserratRegularPromise = readFile(
-	new URL("../profile-share/assets/Montserrat-Regular.ttf", import.meta.url),
-);
-const montserratSemiboldPromise = readFile(
-	new URL("../profile-share/assets/Montserrat-SemiBold.ttf", import.meta.url),
-);
-const montserratBoldPromise = readFile(
-	new URL("../profile-share/assets/Montserrat-Bold.ttf", import.meta.url),
-);
 
 function isoToFlagEmoji(iso2: string): string {
 	const base = 0x1f1e6;

@@ -63,7 +63,7 @@ export async function runGenerateMetadata(
 ): Promise<Record<string, unknown> | null> {
 	if (!generateMetadata) return null;
 	const result = await generateMetadata({ params: fulfilled(input.params), searchParams: fulfilled(input.search) }, Promise.resolve({}));
-	return (result as Record<string, unknown>) ?? null;
+	return toSerializableMetadata(result);
 }
 
 export type MetadataInput = { params: Record<string, unknown>; search: Record<string, unknown>; splatName?: string };
@@ -122,4 +122,10 @@ export function withLoading(Component: ComponentType, Loading: ComponentType) {
 		);
 	}
 	return WithLoading;
+}
+
+/** Metadata holds URL objects (metadataBase, images); send plain JSON across the server-function boundary. */
+export function toSerializableMetadata(metadata: unknown): Record<string, unknown> | null {
+	if (!metadata) return null;
+	return JSON.parse(JSON.stringify(metadata)) as Record<string, unknown>;
 }

@@ -1,5 +1,6 @@
 // Next: app/[locale]/layout.tsx + components/layout/RootDocument.tsx.
-import "@/app/globals.css";
+import appCss from "@/app/globals.css?url";
+import fontsCss from "@/compat/fonts.css?url";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
 import { RootDocument } from "@/components/layout/RootDocument";
@@ -14,6 +15,10 @@ export function localeFromPathname(pathname: string): PublicLocale {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
 	head: () => ({
 		meta: [{ charSet: "utf-8" }, { name: "viewport", content: "width=device-width, initial-scale=1" }],
+		links: [
+			{ rel: "stylesheet", href: appCss },
+			{ rel: "stylesheet", href: fontsCss },
+		],
 	}),
 	component: RootComponent,
 	notFoundComponent: RouteNotFound,

@@ -1,8 +1,13 @@
 "use client";
 import type { HTMLAttributes } from "react";
 import type { MarqueeProps as FastMarqueeProps } from "react-fast-marquee";
-import FastMarquee from "react-fast-marquee";
+import FastMarqueeModule from "react-fast-marquee";
 import { cn } from "@/lib/utils";
+
+// react-fast-marquee is CommonJS with an `exports.default`; Vite's interop
+// hands back the module object, so unwrap it.
+const FastMarquee =
+	(FastMarqueeModule as unknown as { default?: typeof FastMarqueeModule }).default ?? FastMarqueeModule;
 export type MarqueeProps = HTMLAttributes<HTMLDivElement>;
 export const Marquee = ({ className, ...props }: MarqueeProps) => (
 	<div

@@ -1,4 +1,3 @@
-import { defineRouting } from "next-intl/routing";
 import {
 	defaultLocale,
 	publicLocales,
@@ -43,7 +42,8 @@ const routableLocales = publicLocales as [
 	...PublicLocale[],
 ];
 
-export const routing = defineRouting({
+// next-intl defineRouting() only returned this config; web-start reads it directly.
+export const routing = {
 	locales: routableLocales,
 	defaultLocale,
 	localePrefix: "as-needed",
@@ -52,4 +52,4 @@ export const routing = defineRouting({
 		name: "PHASEO_LOCALE",
 		maxAge: 60 * 60 * 24 * 365,
 	},
-});
+} as const;

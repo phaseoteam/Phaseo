@@ -1,0 +1,14 @@
+{
+  // TanStack Start build of the Phaseo website. Preview deploys use
+  // workers.dev only; no routes or custom domains are attached here.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "phaseo-web-start-preview",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2026-10-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "upload_source_maps": false,
+  "observability": { "enabled": true },
+  "vars": { "WEB_API_ORIGIN": "https://phaseo.app" }
+}

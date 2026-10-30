@@ -32,7 +32,8 @@ function mapSegment(segment) {
 	if (m) return { file: "$", id: "$", splat: m[1] };
 	m = segment.match(/^\[([\w-]+)\]$/);
 	if (m) return { file: `$${m[1]}`, id: `$${m[1]}` };
-	if (segment.includes(".") || segment.startsWith("_")) return { file: `[${segment}]`, id: segment };
+	// Escape only the special characters: `robots[.]txt`, `[.]well-known`, `[_]_markdown`.
+	if (segment.includes(".") || segment.startsWith("_")) return { file: segment.replace(/\./g, "[.]").replace(/^_/, "[_]"), id: segment };
 	return { file: segment, id: segment };
 }
 

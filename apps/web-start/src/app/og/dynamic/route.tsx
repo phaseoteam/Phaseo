@@ -1,8 +1,8 @@
-import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
 import { parseDynamicOgParams } from "@/lib/og/dynamicOg";
+import { montserratBoldPromise, montserratRegularPromise, wordmarkDataUrlPromise } from "@/lib/og/ogAssets";
 
 // Public, parameterised share image: /og/dynamic?title=…&description=…&pathname=…
 // Inputs are validated in parseDynamicOgParams; anything rejected gets a 400
@@ -19,18 +19,6 @@ const NO_STORE_HEADERS = {
 	"X-Robots-Tag": "noindex",
 };
 
-const montserratRegularPromise = readFile(
-	new URL("../profile-share/assets/Montserrat-Regular.ttf", import.meta.url),
-);
-const montserratBoldPromise = readFile(
-	new URL("../profile-share/assets/Montserrat-Bold.ttf", import.meta.url),
-);
-const wordmarkDataUrlPromise = readFile(
-	new URL("../../../../public/wordmark_light.svg", import.meta.url),
-	"utf8",
-).then(
-	(svg) => `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`,
-);
 
 function getTitleFontSize(title: string): number {
 	const len = title.length;

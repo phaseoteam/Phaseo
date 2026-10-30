@@ -3,6 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { nextRouteHandlers } from "@/lib/start/nextRouteHandlers";
 import * as handlers from "@/app/robots.txt/route";
 
-export const Route = createFileRoute("/[robots/txt]/")({
+export const Route = createFileRoute("/robots.txt/")({
 	server: { handlers: nextRouteHandlers(handlers) },
 });

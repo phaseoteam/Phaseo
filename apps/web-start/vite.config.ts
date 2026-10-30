@@ -1,9 +1,10 @@
 import path from "node:path";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import tailwindcss from "@tailwindcss/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
-import { aliasFallbacks, serverActions, serverOnlyInClient, stripUseCache } from "./build/phaseo-plugins";
+import { aliasFallbacks, inlineVercelOgFont, serverActions, serverOnlyInClient, stripUseCache } from "./build/phaseo-plugins";
 
 const root = import.meta.dirname;
 const webRoot = path.resolve(root, "../web");
@@ -21,7 +22,8 @@ export default defineConfig(({ mode }) => {
 		define,
 		resolve: {
 			alias: [
-				{ find: /^@\/(.*)$/, replacement: `${src}/$1` },
+				// `@/app/(group)/…` has tsconfig fallbacks; the aliasFallbacks plugin resolves it.
+				{ find: /^@\/(?!app\/\()(.*)$/, replacement: `${src}/$1` },
 				{ find: /^next\/link$/, replacement: path.join(compat, "next-link.tsx") },
 				{ find: /^next\/navigation$/, replacement: path.join(compat, "next-navigation.ts") },
 				{ find: /^next\/image$/, replacement: path.join(compat, "next-image.tsx") },
@@ -36,6 +38,10 @@ export default defineConfig(({ mode }) => {
 				{ find: /^@vercel\/analytics\/react$/, replacement: path.join(compat, "noop-modules.tsx") },
 				{ find: /^next-navigation-guard$/, replacement: path.join(compat, "noop-modules.tsx") },
 				{ find: /^nuqs\/adapters\/next\/app$/, replacement: "nuqs/adapters/tanstack-router" },
+				{ find: /^next-mdx-remote\/rsc$/, replacement: path.join(compat, "next-mdx-remote-rsc.ts") },
+				{ find: /^next\/web-vitals$/, replacement: path.join(compat, "next-web-vitals.ts") },
+				{ find: /^flags\/next$/, replacement: path.join(compat, "flags-next.ts") },
+				{ find: /^next$/, replacement: path.join(compat, "next-types.ts") },
 				{ find: /^server-only$/, replacement: path.join(compat, "empty.ts") },
 				{ find: /^client-only$/, replacement: path.join(compat, "empty.ts") },
 			],
@@ -45,9 +51,11 @@ export default defineConfig(({ mode }) => {
 			serverOnlyInClient(path.join(compat, "next-headers.ts"), path.join(compat, "next-headers.client.ts")),
 			serverActions(src),
 			stripUseCache(),
+			inlineVercelOgFont(),
 			cloudflare({ viteEnvironment: { name: "ssr" } }),
 			tanstackStart({ srcDirectory: "src", router: { routesDirectory: "routes" } }),
 			viteReact(),
+			tailwindcss(),
 		],
 		server: { port: 3200 },
 	};

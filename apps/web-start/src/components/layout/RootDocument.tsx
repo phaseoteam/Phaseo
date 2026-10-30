@@ -11,7 +11,6 @@ import {
 } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { fullMessagesUrl, RootIntlProvider } from "@/i18n/RootIntlProvider";
-import "@/compat/fonts.css";
 import {
 	CookieConsentManager,
 	type CookieConsentCopy,

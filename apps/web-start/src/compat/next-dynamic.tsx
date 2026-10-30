@@ -11,9 +11,11 @@ export default function dynamic<P extends object = Record<string, unknown>>(load
 		const mod = await loader();
 		return { default: ("default" in (mod as object) ? (mod as { default: ComponentType<P> }).default : mod) as ComponentType<P> };
 	});
-	const fallback = options.loading ? options.loading({ isLoading: true, error: null }) : null;
+	// Render `loading` as a component (it may use hooks), never at module load.
+	const Loading = options.loading as ComponentType<{ isLoading?: boolean; error?: Error | null }> | undefined;
 
 	function DynamicComponent(props: P) {
+		const fallback = Loading ? <Loading isLoading error={null} /> : null;
 		const [mounted, setMounted] = useState(options.ssr !== false);
 		useEffect(() => {
 			if (!mounted) setMounted(true);

@@ -118,3 +118,47 @@ rule:
 - The page renders the same visible text as `apps/web` for an anonymous
   visitor (`scripts/parity-check.mjs <path>`), with no console errors and
   no hydration warnings.
+
+## Conventions for porting a file (agents read this)
+
+- `params` / `searchParams` stay promises: route wrappers pass already-fulfilled
+  thenables, so `const { modelId } = use(params)` returns synchronously.
+  Never `await` them in a component.
+- Server-only work goes in a sibling `*.functions.ts` file:
+
+  ```ts
+  // ModelHeader.functions.ts
+  import { createServerFn } from "@tanstack/react-start";
+  import { queryOptions } from "@tanstack/react-query";
+
+  export const getAdminModelSource = createServerFn({ method: "GET" })
+    .validator((modelId: string) => modelId)
+    .handler(async ({ data: modelId }) => {
+      const { fetchAdminModelSource } = await import("@/lib/fetchers/internal/admin");
+      return fetchAdminModelSource(modelId);
+    });
+
+  export const adminModelSourceQuery = (modelId: string) =>
+    queryOptions({ queryKey: ["admin-model-source", modelId], queryFn: () => getAdminModelSource({ data: modelId }) });
+  ```
+
+  Server functions return JSON-serialisable data (no class instances, no
+  functions; Dates become strings, so convert them back where needed).
+- Public web-API fetchers (`fetchFrontend*`, `fetchPublicWebApi`) run in both
+  places; put their `queryOptions` in a sibling `*.queries.ts` and call them
+  directly from `queryFn`.
+- Promises passed as props (`pricingPromise={...}` then `use(pricingPromise)`)
+  become `useSuspenseQuery` in the child that reads them.
+- Auth gates and redirects that must run before rendering (signed-out → sign-in,
+  admin-only pages): keep calling `redirect()` / `notFound()` from
+  `next/navigation` or `@/i18n/navigation`, but from the route's `beforeLoad`
+  through a server function, not from a component. Edit the generated route
+  file under `src/routes/` for that page.
+- Keep the rendered markup identical to `apps/web` (same elements, classes and
+  copy). Do not refactor or restyle.
+- Do not run `vite build`, `vite dev` or `tsc` (the coordinator builds the whole
+  app). Check your files with `node scripts/check-ported.mjs <files...>` from
+  `apps/web-start`.
+- Only edit the files you were assigned, new `*.functions.ts` / `*.queries.ts`
+  files next to them, and the route files for those pages. If a shared module
+  must change, note it in your report instead.
