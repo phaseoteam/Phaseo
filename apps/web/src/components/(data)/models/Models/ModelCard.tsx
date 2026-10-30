@@ -1,5 +1,7 @@
 "use client";
 
+import { useModelsLayoutTracking } from "./useModelsLayoutExperiment";
+
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
@@ -968,9 +970,11 @@ function ModelCardImpl({
 		? format.number(weeklyUsage.quantity, { maximumFractionDigits: 2, notation: "standard" })
 		: format.count(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
 
+	const trackLayout = useModelsLayoutTracking();
 	const copyModelId = async () => {
 		try {
 			await navigator.clipboard.writeText(displayModelId);
+			trackLayout("models_layout_model_id_copied", { model_id: model.model_id });
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1400);
 		} catch {
@@ -988,6 +992,7 @@ function ModelCardImpl({
 		) {
 			return;
 		}
+		trackLayout("models_layout_model_opened", { model_id: model.model_id });
 		router.push(modelHref, { scroll: true });
 	};
 
@@ -1032,6 +1037,7 @@ function ModelCardImpl({
 						<div className="flex items-center gap-1 min-w-0">
 							<Link
 								href={modelHref}
+							onClick={() => trackLayout("models_layout_model_opened", { model_id: model.model_id })}
 								prefetch={false}
 								scroll
 								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
@@ -1083,6 +1089,7 @@ function ModelCardImpl({
 					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0">
 						<Link
 							href={modelHref}
+							onClick={() => trackLayout("models_layout_model_opened", { model_id: model.model_id })}
 							prefetch={false}
 							scroll
 							aria-label={t("viewDetails")}
