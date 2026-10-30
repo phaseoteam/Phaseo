@@ -1,15 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, use } from "react";
+import { useTranslations } from "next-intl";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
 import { handleEnterpriseSsoRedirect } from "@/app/(auth)/sign-in/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthSuspenseFallback } from "../../AuthSuspenseFallback";
-import { samlSsoFlag } from "@/lib/flags";
 import {
 	buildLocalizedAuthPath,
 	resolveAuthLocale,
@@ -34,12 +33,12 @@ export default function EnterpriseSignInPage({
 	);
 }
 
-async function EnterpriseSignInPageContent({
+// samlSsoFlag() is checked in the route's beforeLoad (404 when SSO is off).
+function EnterpriseSignInPageContent({
 	searchParams,
 }: EnterpriseSignInPageProps) {
-	const t = await getTranslations("Common.authFlows.enterpriseSso");
-	if (!(await samlSsoFlag())) notFound();
-	const params = (await searchParams) ?? {};
+	const t = useTranslations("Common.authFlows.enterpriseSso");
+	const params = (searchParams ? use(searchParams) : undefined) ?? {};
 	const localeParam = Array.isArray(params.locale)
 		? params.locale[0]
 		: params.locale;

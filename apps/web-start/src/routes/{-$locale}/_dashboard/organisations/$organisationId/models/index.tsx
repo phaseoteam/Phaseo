@@ -5,13 +5,20 @@ import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/st
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/organisations/[organisationId]/models/page";
+import { organisationModelsQuery } from "@/app/[locale]/(dashboard)/organisations/[organisationId]/page.queries";
+import { notFound } from "next/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)
 	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/organisations/$organisationId/models/")({
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
+	loader: async ({ params, location, context }) => {
+		const metadataPromise = routeMetadata({ data: { params, search: location.search as Record<string, unknown> } });
+		metadataPromise.catch(() => undefined);
+		if (!(await context.queryClient.ensureQueryData(organisationModelsQuery(params.organisationId)))) notFound();
+		return { metadata: await metadataPromise };
+	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),
 });

@@ -7,27 +7,36 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 import ProviderTokenUsageChartClient from "@/components/(data)/api-providers/Gateway/ProviderTokenUsageChartClient";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import {
-	fetchFrontendMarketShareTimeseries,
-	fetchFrontendProviderNamesByIds,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+	providerMarketShareTimeseriesQuery,
+	providerNamesByIdsQuery,
+} from "./apiProvider.queries";
 import type {
 	ProviderTokenSeriesModel,
 	ProviderTokenSeriesPoint,
 } from "@/lib/fetchers/api-providers/providerDataTypes";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export default async function ProvidersTokenUsageChart() {
-	const t = await getTranslations("Catalogue.providers");
-	const { data } = await fetchFrontendMarketShareTimeseries(
-		"provider",
-		"month",
-		"day",
-		8,
-	);
+export default function ProvidersTokenUsageChart() {
+	const t = useTranslations("Catalogue.providers");
+	const { data: { data } } = useSuspenseQuery(providerMarketShareTimeseriesQuery());
 	const filtered = (data ?? []).filter(
 		(row) => row.name && row.name.toLowerCase() !== "unknown",
 	);
+
+	const totalsByProvider = new Map<string, number>();
+	for (const row of filtered) {
+		const providerId = row.name;
+		const current = totalsByProvider.get(providerId) ?? 0;
+		totalsByProvider.set(providerId, current + Number(row.tokens ?? 0));
+	}
+
+	const providerIds = Array.from(totalsByProvider.keys());
+	// Names are only fetched when there is usage to chart.
+	const providerNamesQueries = useSuspenseQueries({
+		queries: filtered.length ? [providerNamesByIdsQuery(providerIds)] : [],
+	});
 
 	if (!filtered.length) {
 		return (
@@ -53,15 +62,7 @@ export default async function ProvidersTokenUsageChart() {
 		);
 	}
 
-	const totalsByProvider = new Map<string, number>();
-	for (const row of filtered) {
-		const providerId = row.name;
-		const current = totalsByProvider.get(providerId) ?? 0;
-		totalsByProvider.set(providerId, current + Number(row.tokens ?? 0));
-	}
-
-	const providerIds = Array.from(totalsByProvider.keys());
-	const providerNames = await fetchFrontendProviderNamesByIds(providerIds);
+	const providerNames = (providerNamesQueries[0]?.data ?? {}) as Record<string, string>;
 
 	const models: ProviderTokenSeriesModel[] = providerIds
 		.map((providerId) => ({

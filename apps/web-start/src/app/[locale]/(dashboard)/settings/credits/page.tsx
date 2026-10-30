@@ -5,12 +5,13 @@ import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/Top
 import AutoTopUpClient from "@/components/(gateway)/credits/CreditPurchases/AutoTopUp/AutoTopUpClient";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { connection } from "next/server";
-import { Suspense } from "react";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Suspense, use } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { Card, CardContent } from "@/components/ui/card";
-import { fetchSettingsCreditsInitialData } from "@/lib/fetchers/internal/fetchSettingsCreditsInitialData";
+import { creditsInitialDataQuery } from "./credits.functions";
 import { projectCreditRunway } from "@/lib/gateway/usage/creditRunway";
 import { getSettingsMessages } from "@/i18n/settings";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
@@ -33,15 +34,14 @@ export default function Page(props: {
 	);
 }
 
-async function CreditsSettingsContent(props: {
+function CreditsSettingsContent(props: {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 	params: Promise<{ locale: string }>;
 }) {
-	const t = await getTranslations("SettingsUI");
-	const { locale } = await props.params;
+	const t = useTranslations("SettingsUI");
+	const { locale } = use(props.params);
 	const messages = getSettingsMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
-	await connection();
-	const searchParams = await props.searchParams;
+	const searchParams = props.searchParams ? use(props.searchParams) : undefined;
 	const params = new URLSearchParams();
 	if (searchParams) {
 		for (const [k, v] of Object.entries(searchParams)) {
@@ -51,7 +51,7 @@ async function CreditsSettingsContent(props: {
 	}
 	const queryString = params.toString();
 
-	const initialData = await fetchSettingsCreditsInitialData();
+	const { data: initialData } = useSuspenseQuery(creditsInitialDataQuery());
 
 	return (
 		<div

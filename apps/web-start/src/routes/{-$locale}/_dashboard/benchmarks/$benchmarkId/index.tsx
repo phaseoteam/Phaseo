@@ -5,13 +5,21 @@ import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/st
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/benchmarks/[benchmarkId]/page";
+import { benchmarkQuery, benchmarkSelection } from "@/app/[locale]/(dashboard)/benchmarks/[benchmarkId]/page.queries";
+import { notFound } from "next/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)
 	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/benchmarks/$benchmarkId/")({
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
+	loader: async ({ params, location, context }) => {
+		const metadataPromise = routeMetadata({ data: { params, search: location.search as Record<string, unknown> } });
+		metadataPromise.catch(() => undefined);
+		const selection = benchmarkSelection(params.benchmarkId, location.search as Record<string, unknown>);
+		if (!(await context.queryClient.ensureQueryData(benchmarkQuery(params.benchmarkId, selection)))) notFound();
+		return { metadata: await metadataPromise };
+	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),
 });

@@ -1,8 +1,9 @@
-import { Suspense } from "react";
+import { Suspense, use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import CouncilClient from "@/components/(experiments)/CouncilClient";
-import { fetchExperimentsCouncilModels } from "@/lib/fetchers/frontend/fetchExperimentsCouncilModels";
+import { chatCouncilModelsQuery } from "@/app/[locale]/(dashboard)/chat/chat.queries";
 import { buildDefaultCouncilPresets } from "@/lib/experiments/councilPresets";
 
 type FusionRunPageProps = {
@@ -22,10 +23,10 @@ export default function FusionRunPage({ params }: FusionRunPageProps) {
 	);
 }
 
-async function FusionRunPageContent({ params }: FusionRunPageProps) {
-	const { runId } = await params;
+function FusionRunPageContent({ params }: FusionRunPageProps) {
+	const { runId } = use(params);
 	const parsedRunId = Number.parseInt(runId, 10);
-	const models = await fetchExperimentsCouncilModels();
+	const { data: models } = useSuspenseQuery(chatCouncilModelsQuery());
 	const initialPresets = buildDefaultCouncilPresets(models.map((model) => model.modelId));
 	return (
 		<CouncilClient

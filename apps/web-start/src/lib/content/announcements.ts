@@ -51,6 +51,8 @@ export type AnnouncementSummary = {
 
 export type AnnouncementPost = AnnouncementSummary & {
 	content: string;
+	/** Path under src/content/announcements; keys the build-time compiled MDX module. */
+	sourceKey: string;
 	contentLocale: string;
 };
 
@@ -322,6 +324,7 @@ async function loadAnnouncements(locale?: string): Promise<AnnouncementPost[]> {
 				pinned: isPinned(frontmatter.pinned),
 				coverImage,
 				content,
+				sourceKey: path.relative(ANNOUNCEMENTS_CONTENT_ROOT, filePath).replace(/\\/g, "/"),
 			};
 		})
 	);
@@ -341,7 +344,7 @@ export async function getAnnouncementPosts(
 	const posts = await loadAnnouncements(options.locale);
 	return posts
 		.filter((post) => options.includeFuture || isPublishedDate(post.publishedAt))
-		.map(({ content: _content, contentLocale: _contentLocale, ...summary }) => summary);
+		.map(({ content: _content, contentLocale: _contentLocale, sourceKey: _sourceKey, ...summary }) => summary);
 }
 
 export async function getAnnouncementPost(

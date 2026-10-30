@@ -1,9 +1,10 @@
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
-	fetchFrontendLandingStats,
-	fetchFrontendSignInSupportedModelsStats,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { getTranslations } from "next-intl/server";
+	landingStatsQuery,
+	landingSupportedModelsStatsQuery,
+} from "@/components/landingPage/landing.queries";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 
@@ -13,12 +14,11 @@ function roundDisplayValue(raw: number, bucket: number) {
 	return Math.floor(raw / bucket) * bucket;
 }
 
-export default async function DatabaseStats() {
-	const [{ db: data, monthlyTokenTotal }, gatewayStats, t] = await Promise.all([
-		fetchFrontendLandingStats(),
-		fetchFrontendSignInSupportedModelsStats(),
-		getTranslations("Site.home"),
-	]);
+export default function DatabaseStats() {
+	const [{ data: { db: data, monthlyTokenTotal } }, { data: gatewayStats }] = useSuspenseQueries({
+		queries: [landingStatsQuery(), landingSupportedModelsStatsQuery()],
+	});
+	const t = useTranslations("Site.home");
 
 	const stats = [
 		{

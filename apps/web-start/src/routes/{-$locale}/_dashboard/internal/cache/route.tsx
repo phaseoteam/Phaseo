@@ -2,8 +2,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { nextLayoutComponent } from "@/lib/start/nextPage";
 import Layout, * as mod from "@/app/[locale]/(dashboard)/internal/cache/layout";
+import { requireInternalAdminFn } from "@/app/[locale]/(dashboard)/internal/internalAdmin.functions";
 
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/internal/cache")({
+	// Next: requireInternalAdmin("/internal") in the layout. Runs before anything renders.
+	beforeLoad: async () => {
+		await requireInternalAdminFn({ data: "/internal" });
+	},
 	component: nextLayoutComponent(Layout),
 });

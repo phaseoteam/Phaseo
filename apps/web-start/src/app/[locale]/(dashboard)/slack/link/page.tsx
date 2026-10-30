@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { use } from "react";
+import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
-import { localizeAuthPath } from "@/lib/auth/localized-paths";
-import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { SLACK_LINK_TOKEN_PATTERN } from "@/components/(gateway)/settings/slack/slackAgentForm";
 import SlackLinkConfirm from "./SlackLinkConfirm";
+import { slackLinkLocale, slackLinkToken } from "./link.functions";
 
 // The Slack agent DMs people a link here (/slack/link?token=…) to connect their
 // Slack account to their Phaseo account. Signed-out visitors sign in first and
@@ -23,22 +22,19 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 	};
 }
 
-export default async function SlackLinkPage({
+// The signed-out redirect to sign-in runs in the route's beforeLoad (requireSlackLinkSession).
+export default function SlackLinkPage({
 	params,
 	searchParams,
 }: {
 	params: Promise<{ locale: string }>;
 	searchParams: Promise<{ token?: string | string[] }>;
 }) {
-	const [{ locale: localeValue }, { token: rawToken }] = await Promise.all([params, searchParams]);
-	const locale = (isPublicLocale(localeValue) ? localeValue : "en-GB") as PublicLocale;
-	const token = typeof rawToken === "string" && SLACK_LINK_TOKEN_PATTERN.test(rawToken) ? rawToken : "";
-	const { accessToken } = await getServerAccountContext();
-	if (!accessToken) {
-		const back = `${localizeAuthPath(locale, "/slack/link")}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
-		redirect(`${localizeAuthPath(locale, "/sign-in")}?returnUrl=${encodeURIComponent(back)}`);
-	}
-	const t = await getTranslations({ locale, namespace: "SettingsUI.slack.link" });
+	const { locale: localeValue } = use(params);
+	const { token: rawToken } = use(searchParams);
+	const locale = slackLinkLocale(localeValue);
+	const token = slackLinkToken(rawToken);
+	const t = useTranslations("SettingsUI.slack.link");
 
 	return (
 		<div className="container mx-auto flex w-full min-h-0 flex-1 flex-col justify-center px-4 py-10">

@@ -1,5 +1,8 @@
 // Next: src/app/[locale]/(dashboard)/blog/[slug]/page.tsx
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { redirect } from "@/i18n/navigation";
+import { defaultLocale } from "@/i18n/locales";
+import { blogPostQuery } from "@/app/[locale]/(dashboard)/blog/[slug]/post.functions";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
@@ -11,7 +14,16 @@ const routeMetadata = createServerFn({ method: "GET" })
 	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/blog/$slug/")({
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
+	loader: async ({ params, location, context }) => {
+		const locale = params.locale ?? defaultLocale;
+		const [resolution, metadata] = await Promise.all([
+			context.queryClient.ensureQueryData(blogPostQuery(params.slug, locale)),
+			routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }),
+		]);
+		if (resolution.kind === "redirect-to-index") redirect({ href: "/blog", locale });
+		if (resolution.kind === "not-found") throw notFound();
+		return { metadata };
+	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),
 });

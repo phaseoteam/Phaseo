@@ -1,14 +1,10 @@
 import { getModelAccessLayout } from "@/lib/models/modelAccessLayout";
 import {
 	fetchFrontendModelBenchmarkHighlights,
-	fetchFrontendModelAvailability,
-	fetchFrontendModelHeader,
 	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelOverview,
-	fetchFrontendModelPerformance,
 	fetchFrontendModelPricing,
 	fetchFrontendModelSubscriptionPlans,
-	fetchFrontendModelTimeline,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import ModelOverviewSections, {
@@ -26,8 +22,6 @@ import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import {
 	getModelPath,
 	getModelMetadataIdentity,
-	isModelAliasRoute,
-	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 import {
@@ -41,31 +35,29 @@ import {
 	robotsForModelIndexability,
 } from "@/lib/seo/modelIndexability";
 import { notFound, permanentRedirect } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, use } from "react";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
+import { fulfilled } from "@/lib/start/nextPage";
+import {
+	modelPageBodyQueries,
+	modelPageFaqRelatedModelsQuery,
+	modelPagePricingQuery,
+	modelPagePrivatePerformanceQuery,
+	modelPageQuery,
+} from "./page.queries";
 import { isFreeRouterModelId } from "@/lib/models/freeRouter";
 import FreeRouterOverview from "@/components/(data)/model/free-router/FreeRouterOverview";
 import ProviderCatalogPreviewDetail from "@/components/(data)/model/ProviderCatalogPreviewDetail";
-import { fetchServerProviderCatalogPreviewsForModel } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import ModelFaqSection from "@/components/(data)/model/overview/ModelFaqSection";
-import {
-	getModelLineageLinks,
-	resolveModelLineageNames,
-} from "@/components/(data)/model/overview/modelOverviewMetadata";
 import { supportsProvenanceVerification } from "@/components/(data)/model/overview/ModelVerificationSection";
-import { getLocale, getTranslations } from "next-intl/server";
-import { withOptionalProviderVisibilityTimeout } from "@/lib/models/providerVisibilityTimeout";
-import { fetchPrivateModelOverview, fetchPrivateModelPerformance } from "@/lib/fetchers/internal/fetchSettingsPrivateModels";
+import { getTranslations } from "next-intl/server";
+import type { fetchPrivateModelPerformance } from "@/lib/fetchers/internal/fetchSettingsPrivateModels";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
-import { isAdminViewer } from "@/lib/auth/getViewerRole";
-import { adminSourceToChatModels } from "@/lib/chat/adminInternalModels";
-import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
-import { toAdminModelOverview } from "@/lib/models/adminModelOverview";
-
-const MODEL_PROVIDER_VISIBILITY_TIMEOUT_MS = 1_000;
 
 function privateModelGatewayMetadata(model: ModelOverviewPage, endpointLabel: string): ModelGatewayMetadata {
 	const provider = {
@@ -104,16 +96,15 @@ function privateModelProviders(model: ModelOverviewPage, deploymentLabel: string
 	return [{ provider: { api_provider_id: providerId, api_provider_name: providerId, offer_label: deploymentLabel, offer_scope: "specialized", status: "active", routing_status: "active" }, provider_models: [{ id: `private-model:${model.model_id}`, api_provider_id: providerId, provider_model_slug: model.model_id, model_id: model.model_id, endpoint: "chat.completions", capability_status: "active", routing_status: "active", provider_availability_status: "available", phaseo_status: "enabled", access_scope: null, is_active_gateway: true, input_modalities: "text", output_modalities: "text" }], pricing_rules: [rule("input_tokens"), rule("output_tokens")] }];
 }
 
-async function ModelCreatorModelsSectionContent({
+function ModelCreatorModelsSectionContent({
 	modelId,
 	includeHidden,
-	modelPromise,
+	model,
 }: {
 	modelId: string;
 	includeHidden: boolean;
-	modelPromise: Promise<ModelOverviewPage | null>;
+	model: ModelOverviewPage | null;
 }) {
-	const model = await modelPromise;
 	if (!model) return null;
 
 	return (
@@ -127,41 +118,33 @@ async function ModelCreatorModelsSectionContent({
 	);
 }
 
-async function ModelFaqSectionContent({
+function ModelFaqSectionContent({
 	model,
 	benchmarkCount,
 	activeProviderCount,
 	isGatewayActive,
 	showProviders,
-	pricingPromise,
-	gatewayMetadataPromise,
+	includeHidden,
+	gatewayMetadata,
 }: {
 	model: ModelOverviewPage;
 	benchmarkCount: number;
 	activeProviderCount: number;
 	isGatewayActive: boolean;
 	showProviders: boolean;
-	pricingPromise: ReturnType<typeof fetchFrontendModelPricing>;
-	gatewayMetadataPromise: Promise<
-		Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null
-	>;
+	includeHidden: boolean;
+	gatewayMetadata: Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null;
 }) {
-	const locale = await getLocale();
-	const translateFaq = await getTranslations("Catalogue.models.detail.faqContent");
-	const translateModality = await getTranslations("Common.ui.modelCreation.modalities");
-	const translatePricing = await getTranslations("Catalogue.modelDetail.pricing");
-	const [pricing, timeline, gatewayMetadata] = await Promise.all([
-		pricingPromise,
-		fetchFrontendModelTimeline(model.model_id).catch(() => null),
-		gatewayMetadataPromise.catch(() => null),
-	]);
-	const relatedModels = await resolveModelLineageNames(
-		getModelLineageLinks(timeline?.events, model.previous_model_id),
-		async (relatedModelId) =>
-			(
-				await fetchFrontendModelHeader(relatedModelId).catch(() => null)
-			)?.name,
-	);
+	const locale = useLocale();
+	const translateFaq = useTranslations("Catalogue.models.detail.faqContent");
+	const translateModality = useTranslations("Common.ui.modelCreation.modalities");
+	const translatePricing = useTranslations("Catalogue.modelDetail.pricing");
+	const [{ data: pricing }, { data: relatedModels }] = useSuspenseQueries({
+		queries: [
+			modelPagePricingQuery(model.model_id, includeHidden),
+			modelPageFaqRelatedModelsQuery(model.model_id, model.previous_model_id),
+		],
+	});
 	return (
 		<ModelFaqSection
 			model={model}
@@ -340,58 +323,30 @@ export async function generateMetadata(props: {
 	});
 }
 
-async function ModelDetailPageBody({
+function ModelDetailPageBody({
 	modelId,
 	routeParams,
 	prefetchedOverview,
 	includeHidden,
-	benchmarkPromise,
-	subscriptionPromise,
-	availabilityPromise,
-	pricingPromise,
-	gatewayMetadataPromise,
-	providerPreviewsPromise,
-	abortPricing,
 }: {
 	modelId: string;
 	routeParams: ModelRouteParams;
 	prefetchedOverview: ModelOverviewPage;
 	includeHidden: boolean;
-	benchmarkPromise: ReturnType<typeof fetchFrontendModelBenchmarkHighlights>;
-	subscriptionPromise: ReturnType<typeof fetchFrontendModelSubscriptionPlans>;
-	availabilityPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelAvailability>> | undefined>;
-	pricingPromise: ReturnType<typeof fetchFrontendModelPricing>;
-	gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null>;
-	providerPreviewsPromise: ReturnType<typeof fetchServerProviderCatalogPreviewsForModel>;
-	abortPricing: () => void;
 }) {
-	const modelPromise = Promise.resolve(prefetchedOverview);
-	const gatewayMetadataForVisibilityPromise = withOptionalProviderVisibilityTimeout(
-		gatewayMetadataPromise,
-		null,
-		MODEL_PROVIDER_VISIBILITY_TIMEOUT_MS,
-	);
-	const pricingForVisibilityPromise = withOptionalProviderVisibilityTimeout(
-		pricingPromise,
-		[],
-		MODEL_PROVIDER_VISIBILITY_TIMEOUT_MS,
-		abortPricing,
-	);
-	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability, gatewayMetadata, pricingProviders, providerPreviews] =
-		await Promise.all([
-			modelPromise,
-			benchmarkPromise,
-			subscriptionPromise,
-			availabilityPromise,
-			gatewayMetadataForVisibilityPromise,
-			pricingForVisibilityPromise,
-			providerPreviewsPromise,
-		]);
-	if (!modelOverview) notFound();
-	const privateT = await getTranslations("Catalogue.models.detail.privateModel");
+	const [
+		{ data: benchmarkHighlights },
+		{ data: subscriptionPlans },
+		{ data: availability },
+		{ data: gatewayMetadata },
+		{ data: pricingProviders },
+		{ data: providerPreviews },
+	] = useSuspenseQueries({ queries: modelPageBodyQueries(modelId, includeHidden) });
+	const modelOverview = prefetchedOverview;
+	const privateT = useTranslations("Catalogue.models.detail.privateModel");
 	const isPrivateModel = modelOverview.is_private === true;
 	const effectiveGatewayMetadata = isPrivateModel ? privateModelGatewayMetadata(modelOverview, privateT("endpoint")) : gatewayMetadata;
-	const privatePerformance = isPrivateModel ? await fetchPrivateModelPerformance(modelId) : null;
+	const { data: privatePerformance } = useSuspenseQuery(modelPagePrivatePerformanceQuery(modelId, isPrivateModel));
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
 	const hasApiProviders =
@@ -410,13 +365,15 @@ async function ModelDetailPageBody({
 		: subscriptionOnly
 		? false
 		: availability?.isGatewayActive ?? true;
+	// Public gateway models: ModelOverviewSections fetches performance itself
+	// (same fetchFrontendModelPerformance(modelId, 24) fallback).
 	const resolvedPerformancePromise = isPrivateModel
-		? Promise.resolve(privateModelPerformanceMetrics(modelOverview, privatePerformance))
+		? fulfilled(privateModelPerformanceMetrics(modelOverview, privatePerformance))
 		: isGatewayActive
-		? fetchFrontendModelPerformance(modelId, 24).catch(() => null)
-		: Promise.resolve(null);
+		? undefined
+		: fulfilled(null);
 	const isRetired = modelOverview?.status === "Retired";
-	const t = await getTranslations("Catalogue.models.detail.navigation");
+	const t = useTranslations("Catalogue.models.detail.navigation");
 	const modelPageTocItems = getModelPageTocItems({
 		subscriptionOnly,
 		showBenchmarks,
@@ -560,8 +517,8 @@ async function ModelDetailPageBody({
 										activeProviderCount={isPrivateModel ? 1 : availability?.activeProviderCount ?? effectiveGatewayMetadata?.activeProviders.length ?? 0}
 										isGatewayActive={isGatewayActive}
 										showProviders={showProviders}
-										pricingPromise={pricingPromise}
-										gatewayMetadataPromise={Promise.resolve(effectiveGatewayMetadata)}
+										includeHidden={includeHidden}
+										gatewayMetadata={effectiveGatewayMetadata}
 									/>
 								</Suspense>
 							) : null}
@@ -572,7 +529,7 @@ async function ModelDetailPageBody({
 							<ModelCreatorModelsSectionContent
 								modelId={modelId}
 								includeHidden={includeHidden}
-								modelPromise={modelPromise}
+								model={modelOverview}
 							/>
 						</Suspense>
 					)}
@@ -581,19 +538,18 @@ async function ModelDetailPageBody({
 	);
 }
 
-export default async function Page({ params }: { params: Promise<ModelRouteParams> }) {
-	const routeParams = await params;
-	let includeHidden = false;
-	let canChatInternal = false;
-	const { requestedModelId, canonicalModelId, source } = await resolveModelRouteIds(routeParams, includeHidden);
-	const isAliasRoute = isModelAliasRoute({ requestedModelId, canonicalModelId, source });
-	if (canonicalModelId !== requestedModelId && !isAliasRoute) {
-		permanentRedirect(getModelPath(canonicalModelId));
-	}
-	const requestedAlias = isAliasRoute ? requestedModelId : undefined;
-	const modelId = canonicalModelId;
-	if (isFreeRouterModelId(modelId)) {
-		const tRouter = await getTranslations("Catalogue.models.freeRouter");
+export default function Page({ params }: { params: Promise<ModelRouteParams> }) {
+	const routeParams = use(params);
+	// Redirects to the canonical id and unknown ids are handled by the route
+	// loader before rendering (see page.functions.ts resolveModelPage).
+	const { data: resolution } = useSuspenseQuery(modelPageQuery({ organisationId: routeParams.organisationId, modelId: routeParams.modelId }));
+	const tRouter = useTranslations("Catalogue.models.freeRouter");
+	if (resolution.kind === "redirect") permanentRedirect(resolution.to);
+	if (resolution.kind === "not-found") notFound();
+	if (resolution.kind === "preview") return <ProviderCatalogPreviewDetail preview={resolution.preview} />;
+	if (resolution.kind === "free-router") {
+		const { modelId, requestedAlias } = resolution;
+		const includeHidden = false;
 		return (
 			<>
 				<DiscordComponentEmbed
@@ -609,33 +565,7 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 			</>
 		);
 	}
-	// Start independent section requests alongside the overview so the header can
-	// stream as soon as its own data arrives, without serializing the lower body.
-	let benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
-	let subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
-	let availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
-	const pricingAbortController = new AbortController();
-	let pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal).catch(() => []);
-	let gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
-	const providerPreviewsPromise = fetchServerProviderCatalogPreviewsForModel(modelId).catch(() => []);
-	let modelOverview = await fetchFrontendModelOverview(modelId)
-		.then(async (model) => model ?? await fetchPrivateModelOverview(modelId))
-		.catch(() => fetchPrivateModelOverview(modelId));
-	if (!modelOverview) {
-		const providerPreview = (await providerPreviewsPromise)[0] ?? null;
-		if (providerPreview) return <ProviderCatalogPreviewDetail preview={providerPreview} />;
-		if (!(await isAdminViewer().catch(() => false))) notFound();
-		const source = await fetchAdminModelSource(requestedModelId).catch(() => null);
-		modelOverview = source ? toAdminModelOverview(source) : null;
-		if (!modelOverview) notFound();
-		includeHidden = true;
-		canChatInternal = source ? adminSourceToChatModels(source).length > 0 : false;
-		benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId, true).catch(() => []);
-		subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId, true).catch(() => []);
-		availabilityPromise = fetchFrontendModelAvailability(modelId, true).catch(() => undefined);
-		pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal, true).catch(() => []);
-		gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId, true).catch(() => null);
-	}
+	const { modelId, requestedAlias, includeHidden, canChatInternal, modelOverview } = resolution;
 	const modelHeader = {
 		model_id: modelOverview.model_id,
 		name: modelOverview.name,
@@ -659,13 +589,6 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 					routeParams={routeParams}
 					prefetchedOverview={modelOverview}
 					includeHidden={includeHidden}
-					benchmarkPromise={benchmarkPromise}
-					subscriptionPromise={subscriptionPromise}
-					availabilityPromise={availabilityPromise}
-					pricingPromise={pricingPromise}
-					gatewayMetadataPromise={gatewayMetadataPromise}
-					providerPreviewsPromise={providerPreviewsPromise}
-					abortPricing={() => pricingAbortController.abort()}
 				/>
 			</Suspense>
 		</ModelDetailShell>

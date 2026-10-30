@@ -13,16 +13,16 @@ import { BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export default async function Streaming({
+export default function Streaming({
         modelId,
         endpoint,
 }: {
         modelId?: string;
         endpoint?: string | null;
 }) {
-	const t = await getTranslations("Catalogue.models.detail.quickstart");
+	const t = useTranslations("Catalogue.models.detail.quickstart");
         const model = safeDecodeURIComponent(modelId) || "model_id_here";
         const normalizedEndpoint = endpoint?.toLowerCase() ?? null;
         const streamingPaths = new Set(["/chat/completions", "/responses"]);

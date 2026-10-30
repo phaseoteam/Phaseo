@@ -1,8 +1,9 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { getLocale, getTranslations } from "next-intl/server";
-import { fetchFrontendModelTimeline } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useLocale, useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { modelTimelineQuery } from "./modelData.queries";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 type RawEvent = {
@@ -209,7 +210,7 @@ function normaliseEvents(raws: RawEvent[]): Normalised[] {
 	});
 }
 
-export default async function ModelReleaseTimeline({
+export default function ModelReleaseTimeline({
 	// params,
 	modelId,
 	includeHidden = false,
@@ -219,9 +220,9 @@ export default async function ModelReleaseTimeline({
 	includeHidden?: boolean;
 }) {
 	// const modelId = (await params).modelId;
-	const locale = await getLocale();
-	const t = await getTranslations("Catalogue.modelTimeline");
-	const modelTimeline = await fetchFrontendModelTimeline(modelId);
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.modelTimeline");
+	const { data: modelTimeline } = useSuspenseQuery(modelTimelineQuery(modelId));
 
 	const events = modelTimeline?.events ?? [];
 	if (!events.length) return null;

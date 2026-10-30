@@ -1,18 +1,17 @@
-import { fetchFrontendRankingContextLengths } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { VerticalRankingChart } from "@/components/(rankings)/VerticalRankingChart";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
-import { connection } from "next/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { rankingContextLengthsSectionQuery } from "@/components/(rankings)/rankingSections.queries";
 
 function formatRequests(value: number, locale: string) {
 	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
-export async function ContextLengthSection() {
-	// Keep API failures out of the static shell so retries can fetch fresh data.
-	await connection();
-	const [t, locale] = await Promise.all([getTranslations("Catalogue.rankings"), getLocale()]);
-	const result = await fetchFrontendRankingContextLengths(30).catch(() => null);
+export function ContextLengthSection() {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
+	const { data: result } = useSuspenseQuery(rankingContextLengthsSectionQuery(30));
 	if (!result) return <RankingUnavailable id="context-length" title={t("contextLength")} />;
 	const rows = result.data
 		.map((row) => ({

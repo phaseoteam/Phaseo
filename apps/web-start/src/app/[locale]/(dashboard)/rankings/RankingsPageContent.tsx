@@ -7,7 +7,6 @@ import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { Suspense } from "react";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import type { PublicLocale } from "@/i18n/routing";
 import { MarketShareStackedBar } from "@/components/(rankings)/MarketShareStackedBar";
@@ -30,23 +29,19 @@ import { RankingsModalityTabs } from "@/components/(rankings)/RankingsModalityTa
 import ModelPageToc from "@/components/(data)/model/ModelPageToc";
 import { ChartSkeleton, ListSkeleton } from "@/components/(rankings)/Skeletons";
 import { InlineInfoTooltip } from "@/components/(rankings)/InlineInfoTooltip";
-import {
-    fetchFrontendMarketShare,
-    fetchFrontendMarketShareTimeseries,
-    fetchFrontendModelLeaderboardMetaByIds,
-    fetchFrontendOrganisationLogoIdsByNames,
-    fetchFrontendProviderNamesByIds,
-    fetchFrontendRankingModalityTimeseries,
-    fetchFrontendRankingsIndexability,
-    fetchFrontendRankingUniqueUserTimeseries,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import {
-	fetchFrontendRankingFastestModels,
-	fetchFrontendRankingPeriodLeaderboard,
-} from "@/lib/fetchers/frontend/fetchRankingSections";
+import { fetchFrontendRankingsIndexability } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type {
 	PerformanceData,
 } from "@/lib/fetchers/rankings/getRankingsData";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
+import {
+	fastestModelsQuery,
+	marketShareOrganizationQuery,
+	marketShareProviderQuery,
+	modalityLeaderboardsQuery,
+	uniqueUsersQuery,
+} from "./RankingsPageContent.queries";
 import { modalityMetrics, secondaryModalityMetrics } from "@/lib/fetchers/rankings/modalityMetrics";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 import { formatModelDisplayName } from "@/lib/models/displayName";
@@ -79,6 +74,8 @@ export function isRankingModality(value: string): value is RankingModality {
 }
 
 export async function generateRankingsMetadata(): Promise<Metadata> {
+	// Metadata runs on the server only; keep next-intl/server out of the component graph.
+	const { getLocale, getTranslations } = await import("next-intl/server");
 	const locale = await getLocale();
 	const t = await getTranslations("Catalogue.rankings");
 	const indexability = await fetchFrontendRankingsIndexability().catch(() => ({
@@ -107,12 +104,12 @@ export async function generateRankingsMetadata(): Promise<Metadata> {
 	});
 }
 
-export default async function RankingsPageContent({
+export default function RankingsPageContent({
 	modality = "text",
 }: {
 	modality?: RankingModality;
 }) {
-	const t = await getTranslations("Catalogue.rankings");
+	const t = useTranslations("Catalogue.rankings");
 	const translate = (key: string) => t(key as never);
 	const isTextPage = modality === "text";
 	const tocItems = isTextPage
@@ -318,23 +315,15 @@ function buildPerformanceEntries(
 		.map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
-export async function ModalityLeaderboardsServer({ modality }: { modality: RankingModality }) {
-	const [t, locale] = await Promise.all([getTranslations("Catalogue.rankings"), getLocale()]);
+export function ModalityLeaderboardsServer({ modality }: { modality: RankingModality }) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
 	const metricTitles = { text_tokens: "modalityMetricTitles.text-volume", image_outputs: "modalityMetricTitles.image-generated", embedding_tokens: "modalityMetricTitles.embedding-volume", rerank_quad_tokens: "modalityMetricTitles.rerank-volume", audio_tokens: "modalityMetricTitles.audio-tokens", video_seconds: "modalityMetricTitles.video-seconds", speech_seconds: "modalityMetricTitles.speech-seconds", transcription_seconds: "audioTranscribed", image_inputs: "modalityMetricTitles.image-inputs", audio_seconds: "modalityMetricTitles.audio-cache", video_tokens: "modalityMetricTitles.video-tokens" } as const;
 	const metricTitle = (metric: string) => t(metricTitles[metric as keyof typeof metricTitles]);
 	const unitLabel = (unit: string) => unit === "quadtokens" ? unit : t(({ tokens: "usageTokensUnit", images: "usageImagesUnit", seconds: "usageSecondsUnit" } as const)[unit as "tokens" | "images" | "seconds"]);
 	const primary = modalityMetrics[modality];
 	const secondary = secondaryModalityMetrics[modality];
-	const [series, monthly, secondaryMonthly] = await Promise.all([
-		fetchFrontendRankingModalityTimeseries(primary.metric, "year").catch(() => null),
-		fetchFrontendRankingPeriodLeaderboard(primary.metric, 30).catch(() => null),
-		secondary ? fetchFrontendRankingPeriodLeaderboard(secondary.metric, 30).catch(() => null) : null,
-	]);
-	const modelIds = [...new Set([...(series?.data ?? []), ...(monthly?.data ?? []), ...(secondaryMonthly?.data ?? [])]
-		.map((row) => row.model_id).filter((id) => id && !["other", "unknown"].includes(id.toLowerCase())))];
-	const metaMap = await fetchFrontendModelLeaderboardMetaByIds(modelIds).catch(
-		(): Awaited<ReturnType<typeof fetchFrontendModelLeaderboardMetaByIds>> => ({}),
-	);
+	const { data: { series, monthly, secondaryMonthly, modelIds, metaMap } } = useSuspenseQuery(modalityLeaderboardsQuery(modality));
 	const nameMap = Object.fromEntries(modelIds.map((id) => [id, formatModelDisplayName(metaMap[id]?.name, id)]));
 	const logoIdMap = Object.fromEntries(modelIds.map((id) => [id, metaMap[id]?.organisation_id ?? id]));
 	const organisationNameMap = Object.fromEntries(modelIds.map((id) => [id, metaMap[id]?.organisation_name ?? null]));
@@ -364,29 +353,27 @@ export async function ModalityLeaderboardsServer({ modality }: { modality: Ranki
 	return <ModalityLeaderboards sections={[section]} nameMap={nameMap} logoIdMap={logoIdMap} organisationNameMap={organisationNameMap} />;
 }
 
-async function TextRankingSignalsServer() {
-	const [t, locale] = await Promise.all([getTranslations("Catalogue.rankings"), getLocale()]);
+function TextRankingSignalsServer() {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
 	const labels = { throughput: (value: string) => t("modalityThroughputValue", { value }), latency: (value: string) => t("modalityLatencyValue", { value }), medianLatency: (value: string) => t("modalityMedianLatencyValue", { value }), recentRequests: (count: string) => t("recentRequests", { count }) };
-	const result = await fetchFrontendRankingFastestModels(30, 100).catch(() => null);
-	if (!result) return <RankingUnavailable id="fastest-models" title={t("fastestModels")} />;
-	const [metaMap, providerNames] = await Promise.all([
-		fetchFrontendModelLeaderboardMetaByIds([...new Set(result.data.map((row) => row.model_id))]).catch(() => ({})),
-		fetchFrontendProviderNamesByIds([...new Set(result.data.map((row) => row.provider))]).catch(() => ({})),
-	]);
+	const { data: fastest } = useSuspenseQuery(fastestModelsQuery());
+	if (!fastest) return <RankingUnavailable id="fastest-models" title={t("fastestModels")} />;
+	const { result, metaMap, providerNames } = fastest;
 	return <TextRankingSignals
 		throughputEntries={buildPerformanceEntries(result.data, "median_throughput", metaMap, providerNames, locale, labels)}
 		latencyEntries={buildPerformanceEntries(result.data, "median_latency_ms", metaMap, providerNames, locale, labels)}
 	/>;
 }
 
-async function TextRankingSignals({
+function TextRankingSignals({
 	throughputEntries,
 	latencyEntries,
 }: {
 	throughputEntries: ModalityLeaderboardEntry[];
 	latencyEntries: ModalityLeaderboardEntry[];
 }) {
-	const t = await getTranslations("Catalogue.rankings");
+	const t = useTranslations("Catalogue.rankings");
 	return (
 		<div className="space-y-16">
 			<section
@@ -418,20 +405,11 @@ async function TextRankingSignals({
 	);
 }
 
-async function UniqueUsersSectionServer() {
-	const t = await getTranslations("Catalogue.rankings");
-	const result = await fetchFrontendRankingUniqueUserTimeseries("year", "week", 10).catch(() => null);
-	if (!result) return <RankingUnavailable id="unique-users" title={t("uniqueUsers")} />;
-	const modelIds = Array.from(
-		new Set(
-			result.data
-				.map((row) => row.model_id)
-				.filter((id) => id && id.toLowerCase() !== "other" && id.toLowerCase() !== "unknown"),
-		),
-	);
-	const metaMap = await fetchFrontendModelLeaderboardMetaByIds(modelIds).catch(
-		(): Awaited<ReturnType<typeof fetchFrontendModelLeaderboardMetaByIds>> => ({}),
-	);
+function UniqueUsersSectionServer() {
+	const t = useTranslations("Catalogue.rankings");
+	const { data: uniqueUsers } = useSuspenseQuery(uniqueUsersQuery());
+	if (!uniqueUsers) return <RankingUnavailable id="unique-users" title={t("uniqueUsers")} />;
+	const { result, modelIds, metaMap } = uniqueUsers;
 	const nameMap = Object.fromEntries(
 		modelIds.map((modelId) => [
 			modelId,
@@ -486,24 +464,11 @@ async function UniqueUsersSectionServer() {
 	);
 }
 
-async function MarketShareOrganizationServer() {
-	const t = await getTranslations("Catalogue.rankings");
-    const [timeseriesResult, leaderboardResult] = await Promise.all([
-        fetchFrontendMarketShareTimeseries("organization", "year", "week", 10).catch(() => null),
-        fetchFrontendMarketShare("organization", "year").catch(() => null),
-    ]);
-    if (!timeseriesResult || !leaderboardResult) return <RankingUnavailable title={t("marketShareByOrganisation")} />;
-
-    const organisationNames = Array.from(
-        new Set(
-            (leaderboardResult.data ?? [])
-                .map((row) => row.name)
-                .filter((name) => name && name.toLowerCase() !== "unknown")
-        )
-    );
-    const logoMap = await fetchFrontendOrganisationLogoIdsByNames(organisationNames).catch(
-        (): Record<string, string> => ({}),
-    );
+function MarketShareOrganizationServer() {
+	const t = useTranslations("Catalogue.rankings");
+    const { data: marketShare } = useSuspenseQuery(marketShareOrganizationQuery());
+    if (!marketShare) return <RankingUnavailable title={t("marketShareByOrganisation")} />;
+    const { timeseriesResult, leaderboardResult, logoMap } = marketShare;
 
     const chartData = (timeseriesResult.data ?? []).filter(
         (row) => row.name && row.name.toLowerCase() !== "unknown"
@@ -549,29 +514,11 @@ async function MarketShareOrganizationServer() {
     );
 }
 
-async function MarketShareProviderServer() {
-	const t = await getTranslations("Catalogue.rankings");
-    const [timeseriesResult, leaderboardResult] = await Promise.all([
-        fetchFrontendMarketShareTimeseries("provider", "year", "week", 10).catch(() => null),
-        fetchFrontendMarketShare("provider", "year").catch(() => null),
-    ]);
-    if (!timeseriesResult || !leaderboardResult) return <RankingUnavailable title={t("marketShareByProvider")} />;
-
-    const providerIds = Array.from(
-        new Set(
-            [...(timeseriesResult.data ?? []), ...(leaderboardResult.data ?? [])]
-                .map((row) => row.name)
-                .filter(
-                    (id) =>
-                        id &&
-                        id.toLowerCase() !== "unknown" &&
-                        id.toLowerCase() !== "other"
-                )
-        )
-    );
-    const providerNameMap = await fetchFrontendProviderNamesByIds(providerIds).catch(
-        (): Record<string, string> => ({}),
-    );
+function MarketShareProviderServer() {
+	const t = useTranslations("Catalogue.rankings");
+    const { data: marketShare } = useSuspenseQuery(marketShareProviderQuery());
+    if (!marketShare) return <RankingUnavailable title={t("marketShareByProvider")} />;
+    const { timeseriesResult, leaderboardResult, providerNameMap } = marketShare;
 
     const chartData = (timeseriesResult.data ?? [])
         .filter((row) => row.name && row.name.toLowerCase() !== "unknown")

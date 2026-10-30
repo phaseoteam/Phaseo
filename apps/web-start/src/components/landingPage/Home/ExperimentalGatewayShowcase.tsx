@@ -1,10 +1,11 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/i18n/navigation";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { ArrowRight, Boxes, Coins, Route } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { fetchFrontendGatewayShowcase } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { landingGatewayShowcaseQuery } from "@/components/landingPage/landing.queries";
 import { localizedGatewayMetricWindow } from "@/components/landingPage/gatewayMetricWindow";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { DisplayNumber } from "@/components/display/DisplayValue";
@@ -23,14 +24,14 @@ export function ExperimentalGatewayShowcaseFallback() {
 	);
 }
 
-export default async function ExperimentalGatewayShowcase() {
-	const t = await getTranslations("SettingsUI");
-	const locale = await getLocale();
-	const { metrics, topModels: topModelsRes } =
-		await fetchFrontendGatewayShowcase({
+export default function ExperimentalGatewayShowcase() {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
+	const { data: { metrics, topModels: topModelsRes } } =
+		useSuspenseQuery(landingGatewayShowcaseQuery({
 			topAppsLimit: 0,
 			topModelsLimit: 4,
-		});
+		}));
 
 	const topModels = (topModelsRes.data ?? [])
 		.filter((row) => Number(row.total_tokens ?? 0) > 0)

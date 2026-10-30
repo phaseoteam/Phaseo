@@ -1,11 +1,8 @@
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
-
-export default async function InternalCreditsLayout({
+// The admin gate (requireInternalAdmin("/internal")) runs in the route's beforeLoad.
+export default function InternalCreditsLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
-	await requireInternalAdmin("/internal");
-
 	return <>{children}</>;
 }

@@ -3,14 +3,15 @@
 // Why: Provides quick overview of activity in last 24h
 // How: Fetches and displays summary stats in cards
 
-import { fetchFrontendModelRankings } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { rankingSummaryStatsQuery } from "@/components/(rankings)/rankingSections.queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Zap, Server, Clock, CheckCircle2, Hash } from "lucide-react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 
-export async function SummaryStats() {
-    const data = await fetchFrontendModelRankings();
+export function SummaryStats() {
+    const { data } = useSuspenseQuery(rankingSummaryStatsQuery());
     const summary = data.summary;
 
     if (!summary) {

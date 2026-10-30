@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import type { APIProviderCard } from "@/lib/fetchers/api-providers/providerDataTypes";
-import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProvidersQuery } from "../page.queries";
 import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildMetadata } from "@/lib/seo";
@@ -16,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-async function ProviderTable() {
-	const providers = await fetchFrontendAPIProviders() as APIProviderCard[];
+function ProviderTable() {
+	const { data: providers } = useSuspenseQuery(apiProvidersQuery());
 	return <APIProvidersDisplay providers={providers} />;
 }
 

@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
-import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { AppDetails } from "@/lib/fetchers/apps/types";
+import { appDetailsQuery } from "./app.queries";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
 import AppLogo from "@/components/(data)/apps/AppLogo";
 
-export default async function AppDetailShell({
+export default function AppDetailShell({
 	appId,
 	children,
 	app,
@@ -19,11 +21,14 @@ export default async function AppDetailShell({
 	app?: { id: string; title: string; url?: string | null; image_url?: string | null; slug?: string } | null;
 	tocItems?: ModelPageTocItem[];
 }) {
-	const t = await getTranslations("Product.appsDetail");
+	const t = useTranslations("Product.appsDetail");
 	let appData = app;
+	const appQueries = useSuspenseQueries({
+		queries: app ? [] : [appDetailsQuery(appId)],
+	});
 
 	if (!appData) {
-		const fetchedApp = await fetchFrontendAppDetails(appId).catch(() => null);
+		const fetchedApp = (appQueries[0]?.data as AppDetails | null | undefined) ?? null;
 
 		if (!fetchedApp) {
 			return (

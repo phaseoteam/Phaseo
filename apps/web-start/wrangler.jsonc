@@ -10,5 +10,7 @@
   "preview_urls": false,
   "upload_source_maps": false,
   "observability": { "enabled": true },
-  "vars": { "WEB_API_ORIGIN": "https://phaseo.app" }
+  "vars": { "WEB_API_ORIGIN": "https://phaseo.app" },
+  // src/content (blog, help) is read through this binding (phaseo:content-fs).
+  "assets": { "binding": "ASSETS" }
 }

@@ -1,19 +1,21 @@
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/i18n/navigation";
-import { getFormatter, getTranslations } from "next-intl/server";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
-import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { fetchInternalWebApi } from "@/lib/web-api/client";
+import { useFormatter, useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { SlackAgentInstallations } from "@/app/(dashboard)/internal/slack-agent/SlackAgentInstallations";
-import type { SlackAgentInstallationsPage } from "@/app/(dashboard)/internal/slack-agent/types";
+import { slackAgentInstallationsQuery } from "../internalAdmin.functions";
 
 export async function generateMetadata() { const t = await getTranslations("SettingsUI"); return { title: t("slackAgentInstallations.title"), robots: { index: false, follow: false } }; }
 
-export default async function SlackAgentInstallationsRoute({ searchParams }: { searchParams: Promise<{ offset?: string }> }) {
-	const t = await getTranslations("SettingsUI");
-	await requireInternalAdmin();
-	const [{ accessToken }, params, format] = await Promise.all([getServerAccountContext(), searchParams, getFormatter()]);
+// The admin gate (requireInternalAdmin) runs in the route's beforeLoad; the
+// server function re-checks it before returning installations.
+export default function SlackAgentInstallationsRoute({ searchParams }: { searchParams: Promise<{ offset?: string }> }) {
+	const t = useTranslations("SettingsUI");
+	const params = use(searchParams);
+	const format = useFormatter();
 	const offset = Math.min(100_000, Math.max(0, Math.floor(Number(params.offset) || 0)));
-	const data = await fetchInternalWebApi<SlackAgentInstallationsPage>(`/api/internal/slack-agent/installations?offset=${offset}`, accessToken);
+	const { data } = useSuspenseQuery(slackAgentInstallationsQuery(offset));
 	const month = format.dateTime(new Date(`${data.period_start}T00:00:00Z`), { month: "long", year: "numeric", timeZone: "UTC" });
 	return <main className="container mx-auto space-y-6 px-4 py-8">
 		<header className="space-y-2">

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { chatGatewayModelsOrFailureQuery } from "@/app/[locale]/(dashboard)/chat/chat.queries";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { AudioRoom } from "@/components/(chat)/rooms/AudioRoom";
 
@@ -15,14 +16,8 @@ export default function ChatMusicPage() {
 	return <Suspense fallback={null}><ChatMusicContent /></Suspense>;
 }
 
-async function ChatMusicContent() {
-	let models: Awaited<ReturnType<typeof fetchFrontendGatewayModels>> = [];
-	let modelsLoadFailed = false;
-	try {
-		models = await fetchFrontendGatewayModels();
-	} catch {
-		modelsLoadFailed = true;
-	}
+function ChatMusicContent() {
+	const { data: { models, failed: modelsLoadFailed } } = useSuspenseQuery(chatGatewayModelsOrFailureQuery());
 	return (
 		<RoomScaffold>
 			<AudioRoom

@@ -1,6 +1,6 @@
 import BenchmarksDisplay from "@/components/(data)/benchmarks/BenchmarksDisplay";
-import type { BenchmarkCard } from "@/lib/fetchers/benchmarks/types";
-import { fetchFrontendBenchmarks } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { benchmarksQuery } from "./page.queries";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,8 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-async function BenchmarksSection() {
-	const benchmarks = (await fetchFrontendBenchmarks(true)) as BenchmarkCard[];
+function BenchmarksSection() {
+	const { data: benchmarks } = useSuspenseQuery(benchmarksQuery());
 	return <BenchmarksDisplay benchmarks={benchmarks} />;
 }
 

@@ -1,18 +1,20 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, ArrowRight, BadgeCheck, GitFork } from "lucide-react";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { fetchFrontendMarketplacePresets } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { marketplacePresetsQuery } from "../../page.queries";
 
-export default async function MarketplacePublisherPage({ params }: { params: Promise<{ handle: string }> }) {
-	const { handle } = await params;
-	const t = await getTranslations("Product.gateway");
+// Alias redirects and unknown handles are resolved in the route's beforeLoad
+// (page.functions.ts resolveMarketplacePublisher).
+export default function MarketplacePublisherPage({ params }: { params: Promise<{ handle: string }> }) {
+	const { handle } = use(params);
+	const t = useTranslations("Product.gateway");
 	const normalizedHandle = decodeURIComponent(handle).trim().toLowerCase();
-	const marketplacePresets = await fetchFrontendMarketplacePresets();
-	const matchedPublisher = marketplacePresets.find((preset) => preset.publisher.handle.toLowerCase() === normalizedHandle || preset.publisher.aliases?.some((alias) => alias.toLowerCase() === normalizedHandle))?.publisher;
-	if (matchedPublisher && matchedPublisher.handle.toLowerCase() !== normalizedHandle) redirect(`/gateway/marketplace/publishers/${encodeURIComponent(matchedPublisher.handle)}`);
+	const { data: marketplacePresets } = useSuspenseQuery(marketplacePresetsQuery());
 	const presets = marketplacePresets.filter((preset) => preset.publisher.handle.toLowerCase() === normalizedHandle);
 	if (!presets.length) notFound();
 	const publisher = presets[0]!.publisher;

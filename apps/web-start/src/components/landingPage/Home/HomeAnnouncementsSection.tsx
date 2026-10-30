@@ -8,9 +8,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { getAnnouncementPosts } from "@/lib/content/announcements";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { landingAnnouncementPostsQuery } from "@/components/landingPage/landing.functions";
 
 const ANNOUNCEMENT_LIMIT = 4;
 
@@ -32,10 +33,10 @@ export function HomeAnnouncementsSectionFallback() {
 	);
 }
 
-export default async function HomeAnnouncementsSection() {
-	const locale = await getLocale();
-	const t = await getTranslations({ locale, namespace: "Content.blog" });
-	const posts = await getAnnouncementPosts({ locale });
+export default function HomeAnnouncementsSection() {
+	const locale = useLocale();
+	const t = useTranslations("Content.blog");
+	const { data: posts } = useSuspenseQuery(landingAnnouncementPostsQuery(locale, ANNOUNCEMENT_LIMIT));
 	const latest = posts.slice(0, ANNOUNCEMENT_LIMIT);
 
 	return (

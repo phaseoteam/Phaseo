@@ -1,9 +1,11 @@
 import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import AccountDangerZoneClient from "@/components/(gateway)/settings/account/AccountDangerZoneClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { fetchSettingsAccountDangerInitialData } from "@/lib/fetchers/internal/fetchSettingsAccountDangerInitialData";
+import { accountDangerInitialDataQuery } from "../account.functions";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
@@ -26,9 +28,9 @@ export default function AccountDangerPage() {
 	);
 }
 
-async function AccountDangerContent() {
-	const t = await getTranslations("SettingsUI.settingsRouteCopy");
-	const initialData = await fetchSettingsAccountDangerInitialData();
+function AccountDangerContent() {
+	const t = useTranslations("SettingsUI.settingsRouteCopy");
+	const { data: initialData } = useSuspenseQuery(accountDangerInitialDataQuery());
 
 	if (!initialData.signedIn) {
 		return (

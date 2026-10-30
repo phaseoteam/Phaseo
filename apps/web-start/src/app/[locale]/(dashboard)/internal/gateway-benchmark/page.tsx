@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 import GatewayBenchmarkClient from "./GatewayBenchmarkClient";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,8 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-export default async function GatewayBenchmarkPage() {
-	await requireInternalAdmin();
-
+// The admin gate (requireInternalAdmin) runs in the route's beforeLoad.
+export default function GatewayBenchmarkPage() {
 	return <GatewayBenchmarkClient />;
 }

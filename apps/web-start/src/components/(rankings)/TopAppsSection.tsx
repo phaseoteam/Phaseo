@@ -1,15 +1,12 @@
 import { AppsUsageList } from "@/components/(rankings)/AppsUsageList";
-import { fetchFrontendRankingTopApps } from "@/lib/fetchers/frontend/fetchRankingSections";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { rankingTopAppsSectionQuery } from "@/components/(rankings)/rankingSections.queries";
 
-export async function TopAppsSection() {
-	const t = await getTranslations("Catalogue.rankings");
-	const [today, week, month] = await Promise.all([
-		fetchFrontendRankingTopApps("today", 20).catch(() => null),
-		fetchFrontendRankingTopApps("week", 20).catch(() => null),
-		fetchFrontendRankingTopApps("month", 20).catch(() => null),
-	]);
+export function TopAppsSection() {
+	const t = useTranslations("Catalogue.rankings");
+	const { data: { today, week, month } } = useSuspenseQuery(rankingTopAppsSectionQuery(20));
 	if (!today || !week || !month) return <RankingUnavailable id="top-apps" title={t("topApps")} />;
 	const byTokens = <T extends { tokens: number }>(rows: T[]) =>
 		[...rows].sort((left, right) => Number(right.tokens ?? 0) - Number(left.tokens ?? 0));

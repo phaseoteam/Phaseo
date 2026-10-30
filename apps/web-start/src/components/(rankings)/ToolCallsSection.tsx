@@ -1,36 +1,16 @@
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { UsageStackedBar } from "@/components/(rankings)/UsageStackedBar";
-import {
-	fetchFrontendModelLeaderboardMetaByIds,
-	fetchFrontendRankingToolCallTimeseries,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { formatModelDisplayName } from "@/lib/models/displayName";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { rankingToolCallsSectionQuery } from "@/components/(rankings)/rankingSections.queries";
 
-export async function ToolCallsSection() {
-	const t = await getTranslations("Catalogue.rankings");
-	const result = await fetchFrontendRankingToolCallTimeseries(
-		"year",
-		"week",
-		10,
-	).catch(() => null);
-	if (!result) return <RankingUnavailable id="tool-calls" title={t("toolCalls")} />;
-	const modelIds = Array.from(
-		new Set(
-			result.data
-				.map((row) => row.model_id)
-				.filter(
-					(id) =>
-						id &&
-						id.toLowerCase() !== "other" &&
-						id.toLowerCase() !== "unknown",
-				),
-		),
-	);
-	const metaMap = await fetchFrontendModelLeaderboardMetaByIds(modelIds).catch(
-		(): Awaited<ReturnType<typeof fetchFrontendModelLeaderboardMetaByIds>> => ({}),
-	);
+export function ToolCallsSection() {
+	const t = useTranslations("Catalogue.rankings");
+	const { data: section } = useSuspenseQuery(rankingToolCallsSectionQuery());
+	if (!section) return <RankingUnavailable id="tool-calls" title={t("toolCalls")} />;
+	const { result, modelIds, metaMap } = section;
 	const nameMap = Object.fromEntries(
 		modelIds.map((modelId) => [
 			modelId,

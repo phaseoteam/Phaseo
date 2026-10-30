@@ -1,14 +1,15 @@
 import { Link } from "@/i18n/navigation";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
 import { ShieldBan } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getWorkspacePolicyBlockedReasons } from "@/lib/chat/effectivePolicy";
-import { fetchChatEffectivePolicy } from "@/lib/fetchers/internal/fetchChatEffectivePolicy";
+import { catalogueChatEffectivePolicyQuery } from "./catalogueViewer.functions";
 
-export default async function WorkspacePolicyNotice({ kind, id }: { kind: "model" | "provider"; id: string }) {
-	const t = await getTranslations("Common.ui.localisationGaps");
-	const policy = await fetchChatEffectivePolicy().catch(() => null);
+export default function WorkspacePolicyNotice({ kind, id }: { kind: "model" | "provider"; id: string }) {
+	const t = useTranslations("Common.ui.localisationGaps");
+	const { data: policy } = useSuspenseQuery(catalogueChatEffectivePolicyQuery());
 	const reasons = getWorkspacePolicyBlockedReasons(policy, kind === "model" ? { modelIds: [id] } : { providerIds: [id] });
 	if (!reasons.length) return null;
 	return <Alert className="mb-6 border-destructive/40 bg-destructive/5">

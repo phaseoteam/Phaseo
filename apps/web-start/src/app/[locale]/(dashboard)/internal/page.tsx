@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 import InternalToolsGrid from "@/components/internal/InternalToolsGrid";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -12,9 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
 	};
 }
 
-export default async function InternalPage() {
-	await requireInternalAdmin();
-	const t = await getTranslations("Product.internalTools");
+// The admin gate (requireInternalAdmin) runs in the route's beforeLoad.
+export default function InternalPage() {
+	const t = useTranslations("Product.internalTools");
 
 	return (
 		<main className="flex min-h-screen flex-col">

@@ -1,9 +1,11 @@
 import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import AccountMFAClient from "@/components/(gateway)/settings/account/AccountMFAClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { fetchSettingsAccountMfaInitialData } from "@/lib/fetchers/internal/fetchSettingsAccountMfaInitialData";
+import { accountMfaInitialDataQuery } from "../account.functions";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
@@ -26,9 +28,9 @@ export default function AccountMFAPage() {
 	);
 }
 
-async function AccountMFAContent() {
-	const t = await getTranslations("SettingsUI.settingsRouteCopy");
-	const initialData = await fetchSettingsAccountMfaInitialData();
+function AccountMFAContent() {
+	const t = useTranslations("SettingsUI.settingsRouteCopy");
+	const { data: initialData } = useSuspenseQuery(accountMfaInitialDataQuery());
 
 	if (!initialData.signedIn) {
 		return (

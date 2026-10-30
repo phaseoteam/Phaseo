@@ -1,23 +1,22 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchFrontendAppUsage } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { appUsageQuery } from "./app.queries";
 import { Zap } from "lucide-react";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
 import { DisplayCount } from "@/components/display/DisplayValue";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 
-export default async function TopModelsForApp({
+export default function TopModelsForApp({
 	appId,
 	range = "1m"
 }: {
 	appId: string;
 	range?: RangeKey;
 }) {
-	const locale = await getLocale();
-	const [rows, t] = await Promise.all([
-		fetchFrontendAppUsage(appId, range),
-		getTranslations({ locale, namespace: "Catalogue.appDetail" }),
-	]);
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.appDetail");
+	const { data: rows } = useSuspenseQuery(appUsageQuery(appId, range));
 
 	// Aggregate by model
 	const modelAgg = new Map<string, {

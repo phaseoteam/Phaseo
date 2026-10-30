@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { notFound, redirect } from "next/navigation";
-import { compileMDX } from "next-mdx-remote/rsc";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
-import remarkGfm from "remark-gfm";
 import { BlogTableOfContents } from "@/components/announcements/BlogTableOfContents";
 import { announcementMdxComponents } from "@/components/announcements/announcementMdxComponents";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,8 @@ import {
 	getAnnouncementPost,
 	isAnnouncementPublished,
 } from "@/lib/content/announcements";
-import {
-	createBlogHeadingsPlugin,
-	type BlogTocItem,
-} from "@/lib/content/blogToc";
+import { loadCompiledAnnouncement } from "@/components/announcements/compiledAnnouncements";
+import { blogPostQuery } from "./post.functions";
 import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
 import { buildMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -69,35 +67,17 @@ export async function generateMetadata(
 	});
 }
 
-export default async function AnnouncementPostPage({
+export default function AnnouncementPostPage({
 	params,
 }: AnnouncementPageProps) {
-	const { locale, slug } = await params;
-	const t = await getTranslations({ locale, namespace: "Content.blog" });
-	const canPreviewFuturePosts = await canPreviewFutureBlogPosts();
-	const post = await getAnnouncementPost(slug, {
-		includeFuture: canPreviewFuturePosts,
-		locale,
-	});
-
-	if (!post) {
-		if (!canPreviewFuturePosts) {
-			const previewPost = await getAnnouncementPost(slug, {
-				includeFuture: true,
-				locale,
-			});
-
-			if (previewPost && !isAnnouncementPublished(previewPost.publishedAt)) {
-				redirect("/blog");
-			}
-		}
-
-		notFound();
-	}
-
-	if (!canPreviewFuturePosts && !isAnnouncementPublished(post.publishedAt)) {
-		notFound();
-	}
+	const { locale, slug } = use(params);
+	const t = useTranslations("Content.blog");
+	// The route loader already resolved redirects and 404s for this post.
+	const { data } = useSuspenseQuery(blogPostQuery(slug, locale));
+	if (data.kind !== "post") return null;
+	const post = data.post;
+	const compiled = use(loadCompiledAnnouncement(post.sourceKey));
+	const Content = compiled.default;
 
 	const isPreview = !isAnnouncementPublished(post.publishedAt);
 	const metaParts = [
@@ -109,17 +89,7 @@ export default async function AnnouncementPostPage({
 		},
 	].filter((part) => Boolean(part.value));
 
-	const tocItems: BlogTocItem[] = [];
-	const { content } = await compileMDX({
-		source: post.content,
-		options: {
-			parseFrontmatter: false,
-			mdxOptions: {
-				remarkPlugins: [remarkGfm, createBlogHeadingsPlugin(tocItems)],
-			},
-		},
-		components: announcementMdxComponents,
-	});
+	const tocItems = compiled.toc;
 
 	return (
 		<div className="container mx-auto mt-8 mb-20 max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -184,7 +154,7 @@ export default async function AnnouncementPostPage({
 							{t("englishBodyNotice")}
 						</div>
 					) : null}
-					<div>{content}</div>
+					<div><Content components={announcementMdxComponents} /></div>
 				</article>
 			</div>
 		</div>

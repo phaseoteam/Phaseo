@@ -1,21 +1,20 @@
 import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
 import AutoRoutingContent from "./AutoRoutingContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 import { Badge } from "@/components/ui/badge";
-import { autoRoutingFlag } from "@/lib/flags";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
 	return { title: `${t("headers.autoRouting")} - ${t("headers.settings")}` };
 }
 
-export default async function AutoRoutingSettingsPage() {
-	const t = await getTranslations("SettingsUI");
-	if (!(await autoRoutingFlag())) notFound();
+// The autoRouting flag gate (notFound) runs in the route's beforeLoad.
+export default function AutoRoutingSettingsPage() {
+	const t = useTranslations("SettingsUI");
 
 	return (
 		<div className="space-y-6">

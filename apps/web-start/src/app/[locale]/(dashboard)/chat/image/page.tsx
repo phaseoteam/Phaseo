@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { chatGatewayModelsQuery } from "@/app/[locale]/(dashboard)/chat/chat.queries";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { ImageStudioRoom } from "@/components/(chat)/rooms/ImageStudioRoom";
 
@@ -15,8 +16,8 @@ export default function ChatImagePage() {
 	return <Suspense fallback={null}><ChatImageContent /></Suspense>;
 }
 
-async function ChatImageContent() {
-	const models = await fetchFrontendGatewayModels();
+function ChatImageContent() {
+	const { data: models } = useSuspenseQuery(chatGatewayModelsQuery());
 	return (
 		<RoomScaffold>
 			<ImageStudioRoom models={models} />

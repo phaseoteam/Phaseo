@@ -8,6 +8,7 @@ import {
 	useRouter as useTanstackRouter,
 } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { refreshServerData } from "./refresh";
 
 export class ReadonlyURLSearchParams extends URLSearchParams {}
 
@@ -28,7 +29,7 @@ export function useRouter(): AppRouterInstance {
 			replace: (href, options) => void router.navigate({ href, replace: true, resetScroll: options?.scroll !== false }),
 			back: () => router.history.back(),
 			forward: () => router.history.forward(),
-			refresh: () => void router.invalidate(),
+			refresh: () => void refreshServerData(router),
 			prefetch: (href) => {
 				try {
 					void router.preloadRoute({ href } as never).catch(() => undefined);

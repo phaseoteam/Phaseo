@@ -5,13 +5,22 @@ import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/st
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(auth)/oauth/consent/page";
+import { oauthConsentQuery, toConsentSearchParams } from "@/app/[locale]/(auth)/oauth/consent/page.functions";
+import { redirect } from "next/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)
 	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
 
 export const Route = createFileRoute("/{-$locale}/_auth/oauth/consent/")({
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
+	loader: async ({ params, location, context }) => {
+		const metadataPromise = routeMetadata({ data: { params, search: location.search as Record<string, unknown> } });
+		metadataPromise.catch(() => undefined);
+		// Signed-out visitors go to sign-in; already-approved requests go back to the client.
+		const resolution = await context.queryClient.ensureQueryData(oauthConsentQuery(toConsentSearchParams(location.search as Record<string, unknown>)));
+		if (resolution.kind === "sign-in" || resolution.kind === "redirect") redirect(resolution.to);
+		return { metadata: await metadataPromise };
+	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),
 });

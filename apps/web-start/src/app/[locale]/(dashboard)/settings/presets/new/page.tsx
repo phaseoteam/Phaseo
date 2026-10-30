@@ -4,20 +4,19 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import PresetEditorContent from "../PresetEditorContent";
-import {
-	fetchFrontendAPIProviders,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import { settingsApiProvidersQuery, settingsPresetModelsQuery } from "../../catalog.queries";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { getTranslations } from "next-intl/server";
-import { fetchPresetModels } from "../presetModels";
+import { useTranslations } from "next-intl";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI.settingsPageMetadata");
 	return { title: t("createPreset") };
 }
 
-export default async function NewPresetPage() {
-	const t = await getTranslations("SettingsUI");
+export default function NewPresetPage() {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div className="space-y-6">
 			<Link
@@ -57,11 +56,10 @@ export default async function NewPresetPage() {
 	);
 }
 
-async function NewPresetContent() {
-	const [models, providers] = await Promise.all([
-		fetchPresetModels(),
-		fetchFrontendAPIProviders(),
-	]);
+function NewPresetContent() {
+	const [{ data: models }, { data: providers }] = useSuspenseQueries({
+		queries: [settingsPresetModelsQuery(), settingsApiProvidersQuery()],
+	});
 
 	return (
 		<PresetEditorContent

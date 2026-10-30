@@ -1,9 +1,9 @@
 import ChatPlayground from "@/components/(chat)/ChatPlayground";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
-import { fetchChatEffectivePolicy } from "@/lib/fetchers/internal/fetchChatEffectivePolicy";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { applyChatEffectivePolicy } from "@/lib/chat/effectivePolicy";
-import { fetchServerProviderCatalogPreviews } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
 import { providerCatalogPreviewsToGatewayModels } from "@/lib/chat/providerCatalogPreviewModels";
+import { chatGatewayModelsQuery } from "./chat.queries";
+import { chatPlaygroundLoaderAccountDataQuery } from "./chat.functions";
 
 type ChatPlaygroundLoaderProps = {
     modelParam?: string | null;
@@ -18,15 +18,13 @@ const decodeQueryValue = (value: string): string => {
 	}
 };
 
-export default async function ChatPlaygroundLoader({
+export default function ChatPlaygroundLoader({
     modelParam,
     promptParam,
 }: ChatPlaygroundLoaderProps) {
-	const [catalogue, effectivePolicy, providerPreviews] = await Promise.all([
-		fetchFrontendGatewayModels(),
-		fetchChatEffectivePolicy().catch(() => null),
-		fetchServerProviderCatalogPreviews(),
-	]);
+	const [{ data: catalogue }, { data: { effectivePolicy, providerPreviews } }] = useSuspenseQueries({
+		queries: [chatGatewayModelsQuery(), chatPlaygroundLoaderAccountDataQuery()],
+	});
 	const catalogueIds = new Set(catalogue.map((model) => model.modelId));
 	const previewModels = providerCatalogPreviewsToGatewayModels(providerPreviews)
 		.filter((model) => !catalogueIds.has(model.modelId));

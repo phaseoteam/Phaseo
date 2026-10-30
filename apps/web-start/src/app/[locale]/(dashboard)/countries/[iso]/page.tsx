@@ -20,6 +20,10 @@ import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { countryQuery } from "./page.queries";
 
 async function loadCountry(isoInput: string) {
 	const iso = normaliseIso(isoInput);
@@ -62,15 +66,16 @@ export async function generateMetadata({
 	});
 }
 
-export default async function CountryDetailPage({
+export default function CountryDetailPage({
 	params,
 }: {
 	params: Promise<{ iso: string; locale: PublicLocale }>;
 }) {
-	const { iso: isoParamRaw, locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Catalogue.countryDetail" });
+	const { iso: isoParamRaw } = use(params);
+	const t = useTranslations("Catalogue.countryDetail");
 	const iso = normaliseIso(isoParamRaw);
-	const country = await loadCountry(iso);
+	// Unknown countries 404 in the route loader before rendering.
+	const { data: country } = useSuspenseQuery(countryQuery(iso));
 
 	if (!country) {
 		return notFound();

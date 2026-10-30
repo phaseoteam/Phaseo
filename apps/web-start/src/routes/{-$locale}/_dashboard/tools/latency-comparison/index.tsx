@@ -5,12 +5,18 @@ import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/st
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/tools/latency-comparison/page";
+import { getLatencyComparisonAccess } from "@/app/[locale]/(dashboard)/tools/latency-comparison/page.functions";
+import { redirect } from "next/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)
 	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/tools/latency-comparison/")({
+	beforeLoad: async () => {
+		const { redirectTo } = await getLatencyComparisonAccess();
+		if (redirectTo) redirect(redirectTo);
+	},
 	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),

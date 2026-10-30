@@ -1,10 +1,10 @@
 import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import CachedWebhooks from "@/components/(gateway)/settings/webhooks/CachedWebhooks";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { webhookSettingsEnabled } from "@/lib/flags";
-import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { connection } from "next/server";
-import { Suspense } from "react";
+import { webhookAvailabilityQuery } from "../webhooks.functions";
+import { Suspense, use } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export async function generateMetadata() {
@@ -20,18 +20,17 @@ export default function WebhookEndpointPage({
 	return <Suspense fallback={<SettingsSectionFallback />}><WebhookEndpointContent params={params} /></Suspense>;
 }
 
-async function WebhookEndpointContent({ params }: { params: Promise<{ endpointId: string }> }) {
-	await connection();
-	const t = await getTranslations("Product.webhookPage");
-	const s = await getTranslations("SettingsUI.strings");
-	const f = await getTranslations("SettingsUI.webhookFormCopy");
-	if (!(await webhookSettingsEnabled())) {
+function WebhookEndpointContent({ params }: { params: Promise<{ endpointId: string }> }) {
+	const t = useTranslations("Product.webhookPage");
+	const s = useTranslations("SettingsUI.strings");
+	const f = useTranslations("SettingsUI.webhookFormCopy");
+	const { endpointId } = use(params);
+	const { data: availability } = useSuspenseQuery(webhookAvailabilityQuery());
+	if (!availability.enabled) {
 		return <Alert><AlertTitle>{t("notEnabled")}</AlertTitle><AlertDescription>{t("enabledWorkspaces")}</AlertDescription></Alert>;
 	}
 
-	const { endpointId } = await params;
-	const { accessToken, workspaceId } = await getServerAccountContext();
-	if (!accessToken || !workspaceId) {
+	if (!availability.hasWorkspace) {
 		return <Alert><AlertTitle>{s("Select a workspace")}</AlertTitle><AlertDescription>{f("workspaceEdit")}</AlertDescription></Alert>;
 	}
 

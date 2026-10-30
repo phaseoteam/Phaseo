@@ -1,8 +1,6 @@
-import { notFound } from "next/navigation";
 import { GameHub } from "@/components/(games)/GameHub";
-import { catalogueGamesEnabled } from "@/lib/games/preview";
 
-export default async function GamesPage() {
-  if (!(await catalogueGamesEnabled())) notFound();
+// The catalogueGamesEnabled() gate runs in the route's beforeLoad (page.functions.ts).
+export default function GamesPage() {
   return <GameHub />;
 }

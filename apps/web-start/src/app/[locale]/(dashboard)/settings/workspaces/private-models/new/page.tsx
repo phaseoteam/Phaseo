@@ -1,12 +1,13 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import CachedPrivateModelEditor from "@/components/(gateway)/settings/private-models/CachedPrivateModelEditor";
-import { fetchFrontendAPIProviders, fetchFrontendModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { settingsPrivateModelCatalogQuery } from "../../../catalog.queries";
 import { getTranslations } from "next-intl/server";
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
 	return { title: `${t("privateModelsCopy.newModel")} - ${t("headers.settings")}` };
 }
-export default async function NewPrivateModelPage() {
+export default function NewPrivateModelPage() {
 	// Only model IDs and names are used, so skip the gateway enrichment.
-	const [models, providers] = await Promise.all([fetchFrontendModels({ includeGatewayData: false }).catch(() => []),fetchFrontendAPIProviders().catch(() => [])]);
-	return <CachedPrivateModelEditor catalogModels={models.map((item) => ({ id: item.model_id, name: item.name }))} providers={providers.map((item) => ({ id: item.api_provider_id, name: item.api_provider_name }))} />;
+	const { data: { catalogModels, providers } } = useSuspenseQuery(settingsPrivateModelCatalogQuery());
+	return <CachedPrivateModelEditor catalogModels={catalogModels} providers={providers} />;
 }

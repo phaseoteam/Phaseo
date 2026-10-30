@@ -20,6 +20,10 @@ import { cn } from "@/lib/utils";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { familyQuery } from "../page.queries";
 
 const STATUS_STYLES: Record<string, string> = {
 	Available:
@@ -112,15 +116,16 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function Page({
+export default function Page({
 	params,
 }: {
 	params: Promise<{ familyId: string[]; locale: PublicLocale }>;
 }) {
-	const { familyId: rawFamilyId, locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Catalogue.families" });
+	const { familyId: rawFamilyId } = use(params);
+	const t = useTranslations("Catalogue.families");
 	const familyId = parseFamilyId(rawFamilyId);
-	const family = await fetchFrontendFamily(familyId);
+	// Unknown families 404 in the route loader before rendering.
+	const { data: family } = useSuspenseQuery(familyQuery(familyId));
 
 	if (!family) notFound();
 

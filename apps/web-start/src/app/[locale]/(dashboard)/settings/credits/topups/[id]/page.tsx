@@ -1,20 +1,14 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { connection } from "next/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { use } from "react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import CreditTopupReviewActions from "@/components/(gateway)/credits/CreditTopupReview/CreditTopupReviewActions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Callout } from "@/components/ui/callout";
-import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
-import {
-	formatTopupUsd,
-	isTopupExpired,
-	loadCreditTopupForReviewer,
-	needsAuthenticationResume,
-	type CreditTopupStatus,
-} from "@/lib/server/creditTopups";
-import { getStripe } from "@/lib/stripe";
+import type { CreditTopupStatus } from "@/lib/server/creditTopups";
+import { creditTopupReviewQuery } from "../../credits.functions";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("SettingsUI.creditTopups");
@@ -28,34 +22,20 @@ function cardBrandLabel(brand: string): string {
 
 // Viewing this page never changes the request: Confirm, Decline and Continue to payment are
 // POSTs from the client component, so link scanners that open the emailed URL do nothing.
-export default async function CreditTopupReviewPage(props: {
+export default function CreditTopupReviewPage(props: {
 	params: Promise<{ locale: string; id: string }>;
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	await connection();
-	const t = await getTranslations("SettingsUI.creditTopups");
-	const { id } = await props.params;
-	const searchParams = (await props.searchParams) ?? {};
+	const t = useTranslations("SettingsUI.creditTopups");
+	const { id } = use(props.params);
+	const searchParams = (props.searchParams ? use(props.searchParams) : undefined) ?? {};
 	const token = typeof searchParams.token === "string" ? searchParams.token : "";
 
-	const supabase = await createClient();
-	const { data: { user } } = await supabase.auth.getUser();
-	const admin = createAdminClient();
-	const review = user?.id
-		? await loadCreditTopupForReviewer({
-				db: admin,
-				id,
-				userId: user.id,
-				lookupEmail: async (userId) => {
-					const result = await admin.auth.admin.getUserById(userId);
-					return result.data.user?.email ?? null;
-				},
-			})
-		: null;
+	const { data: review } = useSuspenseQuery(creditTopupReviewQuery(id));
 
 	const header = <SettingsPageHeader title={t("title")} description={t("description")} />;
 
-	if (!review) {
+	if (review.kind === "notFound") {
 		return (
 			<div className="space-y-4">
 				{header}
@@ -63,7 +43,7 @@ export default async function CreditTopupReviewPage(props: {
 			</div>
 		);
 	}
-	if (!review.canDecide) {
+	if (review.kind === "forbidden") {
 		return (
 			<div className="space-y-4">
 				{header}
@@ -72,13 +52,9 @@ export default async function CreditTopupReviewPage(props: {
 		);
 	}
 
-	const { row } = review;
-	const status: CreditTopupStatus = isTopupExpired(row) ? "expired" : row.status;
-	const amount = formatTopupUsd(row.amount_cents);
-	// A reload during 3D Secure leaves a confirmed request waiting on the bank: offer Resume.
-	const resume = await needsAuthenticationResume(getStripe(), row);
-	const { data: profile } = await admin.from("users").select("declared_country_code").eq("user_id", user!.id).maybeSingle();
-	const expiresAt = new Date(row.expires_at).toLocaleString("en-US", { timeZone: "UTC", dateStyle: "medium", timeStyle: "short" });
+	// Status, amount, Resume (3D Secure) and expiry are resolved on the server (credits.functions.ts).
+	const { status, amount, resume, expiresAt } = review;
+	const row = { id: review.id, flow: review.flow, reason: review.reason, payment_method_brand: review.paymentMethodBrand, payment_method_last4: review.paymentMethodLast4 };
 
 	const details: Array<[string, string]> = [
 		[t("amount"), amount],
@@ -117,7 +93,7 @@ export default async function CreditTopupReviewPage(props: {
 					token={token}
 					flow={row.flow}
 					resume={resume}
-					declaredCountryCode={typeof profile?.declared_country_code === "string" ? profile.declared_country_code : null}
+					declaredCountryCode={review.declaredCountryCode}
 					copy={{
 						confirm: t("confirm", { amount }),
 						decline: t("decline"),
@@ -154,7 +130,7 @@ function StatusNotice(props: {
 	reason: string | null;
 	amount: string;
 	workspace: string;
-	t: Awaited<ReturnType<typeof getTranslations<"SettingsUI.creditTopups">>>;
+	t: ReturnType<typeof useTranslations<"SettingsUI.creditTopups">>;
 }) {
 	const { status, reason, amount, workspace, t } = props;
 	if (status === "paid") {

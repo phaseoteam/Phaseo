@@ -1,11 +1,11 @@
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, use } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ShieldCheck, Terminal } from "lucide-react";
-import { approveDeviceAction, denyDeviceAction, lookupDeviceRequest } from "./actions";
-import { createClient } from "@/utils/supabase/server";
-import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { approveDeviceAction, denyDeviceAction } from "./actions";
+import { activatePageDataQuery } from "./page.functions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,18 +33,11 @@ export default function ActivatePage({ searchParams }: ActivatePageProps) {
 	);
 }
 
-async function ActivatePageContent({ searchParams }: ActivatePageProps) {
-	const t = await getTranslations("Common.authFlows.deviceActivation");
-	const params = await searchParams;
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-	if (!user) {
-		const query = new URLSearchParams();
-		if (params.user_code) query.set("user_code", params.user_code);
-		redirect(`/sign-in?returnUrl=${encodeURIComponent(`/activate?${query.toString()}`)}`);
-	}
+// Signed-out visitors are redirected to sign-in by the route's beforeLoad
+// (page.functions.ts getActivateSignInRedirect).
+function ActivatePageContent({ searchParams }: ActivatePageProps) {
+	const t = useTranslations("Common.authFlows.deviceActivation");
+	const params = use(searchParams);
 
 	if (params.approved) {
 		return <ActivationResult title={t("approvedTitle")} description={t("approvedDescription")} />;
@@ -54,11 +47,12 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 	}
 
 	const userCode = String(params.user_code ?? "").trim();
-	const request = userCode ? await lookupDeviceRequest(userCode).catch(() => ({ error: true })) : null;
-	const { data: sessionData } = await supabase.auth.getSession();
-	const { workspaces } = await fetchAccountWebApi<{
-		workspaces: Array<{ id: string; name: string; role: string }>;
-	}>("/api/account/auth/workspaces", sessionData.session?.access_token);
+	return <ActivateDeviceCard userCode={userCode} />;
+}
+
+function ActivateDeviceCard({ userCode }: { userCode: string }) {
+	const t = useTranslations("Common.authFlows.deviceActivation");
+	const { data: { request, workspaces } } = useSuspenseQuery(activatePageDataQuery(userCode));
 
 	return (
 		<div className="container mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center py-12">

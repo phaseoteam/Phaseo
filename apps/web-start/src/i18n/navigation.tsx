@@ -5,6 +5,7 @@ import { redirect as tanstackRedirect, useLocation, useRouter as useTanstackRout
 import { forwardRef, useMemo } from "react";
 import { useLocale } from "next-intl";
 import NextLink, { formatHref, type LinkProps as NextLinkProps } from "@/compat/next-link";
+import { refreshServerData } from "@/compat/refresh";
 import { defaultLocale, isPublicLocale, publicLocales, type PublicLocale } from "./locales";
 
 type Href = NextLinkProps["href"];
@@ -67,7 +68,7 @@ export function useRouter() {
 			},
 			back: () => router.history.back(),
 			forward: () => router.history.forward(),
-			refresh: () => void router.invalidate(),
+			refresh: () => void refreshServerData(router),
 		};
 	}, [router, current]);
 }

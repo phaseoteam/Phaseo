@@ -2,7 +2,8 @@ import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { chatGatewayModelsQuery } from "@/app/[locale]/(dashboard)/chat/chat.queries";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { DecisionsRoom } from "@/components/(chat)/rooms/DecisionsRoom";
 
@@ -20,8 +21,8 @@ export default function ChatDecisionsPage() {
 	);
 }
 
-async function ChatDecisionsContent() {
-	const models = await fetchFrontendGatewayModels();
+function ChatDecisionsContent() {
+	const { data: models } = useSuspenseQuery(chatGatewayModelsQuery());
 	return (
 		<RoomScaffold>
 			<DecisionsRoom models={models} />

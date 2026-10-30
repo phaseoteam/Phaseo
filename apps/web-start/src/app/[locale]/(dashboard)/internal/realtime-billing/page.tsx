@@ -1,21 +1,21 @@
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
-import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { fetchInternalWebApi } from "@/lib/web-api/client";
 import { BillingReviews } from "@/app/(dashboard)/internal/realtime-billing/BillingReviews";
-import type { Review } from "@/app/(dashboard)/internal/realtime-billing/types";
+import { realtimeBillingReviewsQuery } from "../internalAdmin.functions";
 
 export async function generateMetadata() { const t = await getTranslations("SettingsUI"); return { title: t("realtimeCopy.billingReview"), robots: { index: false, follow: false } }; }
 
-export default async function RealtimeBillingPage({ searchParams }: { searchParams: Promise<{ state?: string; offset?: string }> }) {
-	const t = await getTranslations("SettingsUI");
-	await requireInternalAdmin();
-	const [{ accessToken }, params] = await Promise.all([getServerAccountContext(), searchParams]);
+// The admin gate (requireInternalAdmin) runs in the route's beforeLoad; the
+// server function re-checks it before returning reviews.
+export default function RealtimeBillingPage({ searchParams }: { searchParams: Promise<{ state?: string; offset?: string }> }) {
+	const t = useTranslations("SettingsUI");
+	const params = use(searchParams);
 	const state = params.state === "resolved" ? "resolved" : "open";
 	const offset = Math.min(10000, Math.max(0, Math.floor(Number(params.offset) || 0)));
-	const data = await fetchInternalWebApi<{ reviews: Review[]; total: number }>(
-		`/api/internal/realtime-billing/reviews?state=${state}&offset=${offset}`, accessToken);
+	const { data } = useSuspenseQuery(realtimeBillingReviewsQuery(state, offset));
 	return <main className="container mx-auto space-y-6 px-4 py-8">
 		<header className="space-y-2"><h1 className="text-2xl font-semibold">{t("realtimeCopy.billingReview")}</h1>
 			<p className="text-sm text-muted-foreground">{t("realtimeCopy.billingReviewHelp")}</p></header>

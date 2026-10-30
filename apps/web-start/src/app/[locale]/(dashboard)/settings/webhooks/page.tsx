@@ -1,4 +1,6 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/i18n/navigation";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { Suspense } from "react";
@@ -8,9 +10,7 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import CachedWebhooks from "@/components/(gateway)/settings/webhooks/CachedWebhooks";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { webhookSettingsEnabled } from "@/lib/flags";
-import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { connection } from "next/server";
+import { webhookAvailabilityQuery } from "./webhooks.functions";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI.settingsPageMetadata");
@@ -27,13 +27,13 @@ export default function WebhooksSettingsPage() {
 	);
 }
 
-async function WebhooksSettingsContent() {
-	const t = await getTranslations("Product.webhookPage");
-	const settingsT = await getTranslations("SettingsUI.settingsPageCopy");
-	const stringsT = await getTranslations("SettingsUI.strings");
-	const locale = await getLocale();
-	await connection();
-	const isEnabled = await webhookSettingsEnabled();
+function WebhooksSettingsContent() {
+	const t = useTranslations("Product.webhookPage");
+	const settingsT = useTranslations("SettingsUI.settingsPageCopy");
+	const stringsT = useTranslations("SettingsUI.strings");
+	const locale = useLocale();
+	const { data: availability } = useSuspenseQuery(webhookAvailabilityQuery());
+	const isEnabled = availability.enabled;
 	const header = (
 		<SettingsPageHeader
 			title={settingsT("webhooksTitle")}
@@ -50,8 +50,7 @@ async function WebhooksSettingsContent() {
 		return <div className="space-y-6">{header}<Alert><Webhook className="size-4" /><AlertTitle>{t("notEnabled")}</AlertTitle><AlertDescription>{t("enabledWorkspaces")}</AlertDescription></Alert></div>;
 	}
 
-	const { accessToken, workspaceId } = await getServerAccountContext();
-	if (!accessToken || !workspaceId) {
+	if (!availability.hasWorkspace) {
 		return <div className="space-y-6">{header}<Alert><Webhook className="size-4" /><AlertTitle>{stringsT("Select a workspace")}</AlertTitle><AlertDescription>{t("chooseWorkspace")}</AlertDescription></Alert></div>;
 	}
 

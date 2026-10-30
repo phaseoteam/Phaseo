@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { chatGatewayModelsQuery } from "@/app/[locale]/(dashboard)/chat/chat.queries";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { EmbeddingsRoom } from "@/components/(chat)/rooms/EmbeddingsRoom";
 
@@ -15,8 +16,8 @@ export default function ChatEmbeddingsPage() {
 	return <Suspense fallback={null}><ChatEmbeddingsContent /></Suspense>;
 }
 
-async function ChatEmbeddingsContent() {
-	const models = await fetchFrontendGatewayModels();
+function ChatEmbeddingsContent() {
+	const { data: models } = useSuspenseQuery(chatGatewayModelsQuery());
 	return (
 		<RoomScaffold>
 			<EmbeddingsRoom models={models} />

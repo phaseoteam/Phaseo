@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchFrontendAppUsage } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { appUsageQuery } from "./app.queries";
 import { DisplayNumber } from "@/components/display/DisplayValue";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 
@@ -16,16 +17,16 @@ function fromForRange(key: RangeKey): Date {
 	return d;
 }
 
-export default async function AppUsageStats({
+export default function AppUsageStats({
 	appId,
 	range = "1m"
 }: {
 	appId: string;
 	range?: RangeKey;
 }) {
-	const rows = await fetchFrontendAppUsage(appId, range);
-	const t = await getTranslations("Catalogue.appDetail");
-	const tRange = await getTranslations("Common.timeRange");
+	const { data: rows } = useSuspenseQuery(appUsageQuery(appId, range));
+	const t = useTranslations("Catalogue.appDetail");
+	const tRange = useTranslations("Common.timeRange");
 	const rangeKeys = {"1h": "lastHour", "1d": "lastDay", "1w": "lastWeek", "4w": "lastFourWeeks", "1m": "lastMonth", "1y": "lastYear"} as const;
 
 	// Calculate current period stats

@@ -2,13 +2,14 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { CreditCard, List, PanelsTopLeft, Sparkles } from "lucide-react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { subscriptionPlanQuery } from "./SubscriptionPlanDetailShell.queries";
 import { Logo } from "@/components/Logo";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
 import { Button } from "@/components/ui/button";
 import RotatingPricing from "@/components/(data)/subscription-plans/RotatingPricing";
-import { getLocale } from "next-intl/server";
+import { useLocale } from "next-intl";
 import { getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 
 interface SubscriptionPlanDetailShellProps {
@@ -18,14 +19,14 @@ interface SubscriptionPlanDetailShellProps {
 	tab?: "overview" | "features" | "models";
 }
 
-export default async function SubscriptionPlanDetailShell({
+export default function SubscriptionPlanDetailShell({
 	planId,
 	children,
 	tocItems = [],
 	tab = "overview",
 }: SubscriptionPlanDetailShellProps) {
-	const plan = await fetchFrontendSubscriptionPlan(planId);
-	const locale = await getLocale();
+	const { data: plan } = useSuspenseQuery(subscriptionPlanQuery(planId));
+	const locale = useLocale();
 	const messages = getSubscriptionPlansMessagesFor(locale);
 
 	if (!plan) {

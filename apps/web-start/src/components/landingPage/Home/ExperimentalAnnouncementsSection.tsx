@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getAnnouncementPosts } from "@/lib/content/announcements";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { landingAnnouncementPostsQuery } from "@/components/landingPage/landing.functions";
 
 export function ExperimentalAnnouncementsSectionFallback() {
 	return (
@@ -20,10 +21,10 @@ export function ExperimentalAnnouncementsSectionFallback() {
 	);
 }
 
-export default async function ExperimentalAnnouncementsSection() {
-	const locale = await getLocale();
-	const t = await getTranslations({ locale, namespace: "Content.blog" });
-	const posts = await getAnnouncementPosts({ locale });
+export default function ExperimentalAnnouncementsSection() {
+	const locale = useLocale();
+	const t = useTranslations("Content.blog");
+	const { data: posts } = useSuspenseQuery(landingAnnouncementPostsQuery(locale, 3));
 	const [featured, ...rest] = posts.slice(0, 3);
 
 	if (!featured) {

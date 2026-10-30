@@ -1,10 +1,10 @@
-import { Suspense } from "react"
+import { Suspense, use } from "react"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { connection } from "next/server"
+import { useSuspenseQuery } from "@tanstack/react-query"
 
 import ProfileDashboard from "@/components/(gateway)/settings/profile/ProfileDashboard"
-import { fetchFrontendPublicProfile } from "@/lib/fetchers/frontend/fetchPublicCatalog"
+import { publicProfileQuery } from "./page.queries"
 import { getProfileMessages } from "@/i18n/profile"
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing"
 import { useTranslations } from "next-intl"
@@ -48,14 +48,14 @@ function PublicProfileShell({
 	)
 }
 
-async function PublicProfileContent({
+// Unknown or private profiles 404 in the route loader before rendering.
+function PublicProfileContent({
 	params,
 }: {
 	params: Promise<{ locale: string; slug: string }>
 }) {
-	await connection()
-	const { locale, slug } = await params
-	const profile = await fetchFrontendPublicProfile(slug)
+	const { locale, slug } = use(params)
+	const { data: profile } = useSuspenseQuery(publicProfileQuery(slug))
 
 	if (!profile || !profile.publicProfileEnabled) {
 		notFound()

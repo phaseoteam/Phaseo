@@ -1,8 +1,9 @@
 import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import WebhookEndpointForm from "@/components/(gateway)/settings/webhooks/WebhookEndpointForm";
-import { webhookSettingsEnabled } from "@/lib/flags";
-import { connection } from "next/server";
+import { webhookAvailabilityQuery } from "../webhooks.functions";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
@@ -15,10 +16,10 @@ export default function NewWebhookEndpointPage() {
 	return <Suspense fallback={<SettingsSectionFallback />}><NewWebhookEndpointContent /></Suspense>;
 }
 
-async function NewWebhookEndpointContent() {
-	await connection();
-	const t = await getTranslations("Product.webhookPage");
-	if (!(await webhookSettingsEnabled())) {
+function NewWebhookEndpointContent() {
+	const t = useTranslations("Product.webhookPage");
+	const { data: availability } = useSuspenseQuery(webhookAvailabilityQuery());
+	if (!availability.enabled) {
 		return <Alert><AlertTitle>{t("notEnabled")}</AlertTitle><AlertDescription>{t("enabledWorkspaces")}</AlertDescription></Alert>;
 	}
 

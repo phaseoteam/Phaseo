@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { FeedbackUnsubscribeButton } from "@/components/feedback/FeedbackUnsubscribeButton";
 import { getFeedbackMessages } from "@/i18n/feedback";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
-import { feedbackApiPath, isFeedbackToken, type FeedbackRequestView } from "@/lib/feedbackRequests";
-import { fetchOptionalPublicWebApi } from "@/lib/web-api/client";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { feedbackRequestQuery } from "../page.queries";
 
 type Params = Promise<{ locale: string; token: string }>;
 
@@ -20,19 +21,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 	};
 }
 
-export default async function FeedbackUnsubscribePage({ params }: { params: Params }) {
-	const { locale, token } = await params;
+export default function FeedbackUnsubscribePage({ params }: { params: Params }) {
+	const { locale, token } = use(params);
 	const messages = getFeedbackMessages(resolveLocale(locale));
 
-	let request: FeedbackRequestView | null = null;
-	let unavailable = false;
-	if (isFeedbackToken(token)) {
-		try {
-			request = await fetchOptionalPublicWebApi<FeedbackRequestView>(feedbackApiPath(token));
-		} catch {
-			unavailable = true;
-		}
-	}
+	const { data: { request, unavailable } } = useSuspenseQuery(feedbackRequestQuery(token));
 
 	return (
 		<div className="container mx-auto flex w-full flex-1 flex-col px-4 py-10 sm:py-16">

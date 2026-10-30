@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import OrganisationsDisplay from "@/components/(data)/organisations/OrganisationDisplay";
-import type { OrganisationCard } from "@/lib/fetchers/organisations/getAllOrganisations";
-import { fetchFrontendOrganisations } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { organisationsQuery } from "./page.queries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
@@ -19,9 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-async function OrganisationsSection() {
-	const organisations =
-		(await fetchFrontendOrganisations()) as OrganisationCard[];
+function OrganisationsSection() {
+	const { data: organisations } = useSuspenseQuery(organisationsQuery());
 	return <OrganisationsDisplay organisations={organisations} />;
 }
 

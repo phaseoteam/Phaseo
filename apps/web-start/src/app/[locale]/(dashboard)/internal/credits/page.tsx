@@ -1,5 +1,7 @@
-import { fetchAdminCreditGrants } from "@/lib/fetchers/internal/fetchAdminCreditGrants";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import { creditGrantsQuery } from "../internalAdmin.functions";
 import { createCreditGrantAction } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -49,10 +51,12 @@ function formatUsdFromNanosBigInt(nanos: bigint, _locale: string): string {
 	}).format(Number(nanos) / Number(NANOS_PER_USD));
 }
 
-export default async function InternalCreditsPage() {
-	const locale = await getLocale();
-	const t = await getTranslations("Product.internalTools.promoCredits");
-	const grants = await fetchAdminCreditGrants();
+// The admin gate runs in the credits layout route's beforeLoad; the server
+// function re-checks it before returning grants.
+export default function InternalCreditsPage() {
+	const locale = useLocale();
+	const t = useTranslations("Product.internalTools.promoCredits");
+	const { data: grants } = useSuspenseQuery(creditGrantsQuery());
 
 	const now = Date.now();
 	let outstandingNanos = BIGINT_ZERO;

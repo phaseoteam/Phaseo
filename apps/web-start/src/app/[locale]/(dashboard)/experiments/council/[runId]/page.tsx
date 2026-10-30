@@ -1,16 +1,17 @@
-import { Suspense } from "react";
-import { getTranslations } from "next-intl/server";
+import { Suspense, use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import CouncilClient from "@/components/(experiments)/CouncilClient";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
-import { fetchExperimentsCouncilModels } from "@/lib/fetchers/frontend/fetchExperimentsCouncilModels";
+import { experimentsCouncilModelsQuery } from "../council.queries";
 import { buildDefaultCouncilPresets } from "@/lib/experiments/councilPresets";
 
 type CouncilRunPageProps = {
 	params: Promise<{ runId: string }>;
 };
 
-export default async function CouncilRunPage({ params }: CouncilRunPageProps) {
-	const t = await getTranslations("Product.experimentsCouncil");
+export default function CouncilRunPage({ params }: CouncilRunPageProps) {
+	const t = useTranslations("Product.experimentsCouncil");
 	return (
 		<>
 			<NoFooterStyle />
@@ -21,7 +22,7 @@ export default async function CouncilRunPage({ params }: CouncilRunPageProps) {
 	);
 }
 
-function CouncilRunPageFallback({ t }: { t: Awaited<ReturnType<typeof getTranslations>> }) {
+function CouncilRunPageFallback({ t }: { t: ReturnType<typeof useTranslations<"Product.experimentsCouncil">> }) {
 	return (
 		<div className="flex min-h-0 flex-1 bg-white dark:bg-zinc-950">
 			<aside className="hidden w-72 shrink-0 border-r border-zinc-200/80 bg-white dark:border-zinc-800/80 dark:bg-zinc-950 lg:flex lg:flex-col">
@@ -59,13 +60,13 @@ function CouncilRunPageFallback({ t }: { t: Awaited<ReturnType<typeof getTransla
 	);
 }
 
-async function CouncilRunPageContent({ params }: CouncilRunPageProps) {
-	const resolvedParams = await params;
+function CouncilRunPageContent({ params }: CouncilRunPageProps) {
+	const resolvedParams = use(params);
 	const parsedRunId = Number.parseInt(resolvedParams.runId, 10);
 	const initialSelectedRunId =
 		Number.isInteger(parsedRunId) && parsedRunId > 0 ? parsedRunId : null;
 
-	const models = await fetchExperimentsCouncilModels();
+	const { data: models } = useSuspenseQuery(experimentsCouncilModelsQuery());
 	const initialPresets = buildDefaultCouncilPresets(models.map((model) => model.modelId));
 
 	return (

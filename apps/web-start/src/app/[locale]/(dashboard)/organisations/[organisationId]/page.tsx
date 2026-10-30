@@ -8,6 +8,10 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { notFound } from "next/navigation";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { organisationQuery } from "./page.queries";
 
 async function fetchOrganisation(organisationId: string) {
 	try {
@@ -68,17 +72,18 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function Page({
+export default function Page({
 	params,
 }: {
 	params: Promise<{ organisationId: string }>;
 }) {
-	const t = await getTranslations("Catalogue.organisations");
-	const tNav = await getTranslations("Common.nav");
-	const tSections = await getTranslations("Catalogue.models.detail.navigation");
-	const { organisationId } = await params;
+	const t = useTranslations("Catalogue.organisations");
+	const tNav = useTranslations("Common.nav");
+	const tSections = useTranslations("Catalogue.models.detail.navigation");
+	const { organisationId } = use(params);
 
-	const organisation = await fetchFrontendOrganisation(organisationId, 12).catch(() => null);
+	// Unknown organisations 404 in the route loader before rendering.
+	const { data: organisation } = useSuspenseQuery(organisationQuery(organisationId, 12));
 
 	// Generate structured data for the organisation page.
 	const generateStructuredData = () => {

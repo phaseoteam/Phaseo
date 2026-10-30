@@ -5,12 +5,18 @@ import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/st
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/onboarding/page";
+import { onboardingPageQuery } from "@/app/[locale]/(dashboard)/onboarding/onboarding.functions";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)
 	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/onboarding/")({
+	// Next: the page redirected provider-mode accounts and signed-out visitors
+	// before rendering. The query throws those redirects; the page reads the cached data.
+	beforeLoad: async ({ context }) => {
+		await context.queryClient.ensureQueryData(onboardingPageQuery());
+	},
 	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),

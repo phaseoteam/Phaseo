@@ -1,9 +1,11 @@
-import { fetchFrontendAPIProviderMetrics } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProviderMetricsQuery } from "../apiProvider.queries";
 import PerformanceCardsClient, {
 	type MetricCardSummary,
 	type Trend,
 } from "./PerformanceCardsClient";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
 function calculateDelta(
 	data: Array<{
@@ -28,16 +30,21 @@ function calculateDelta(
 	};
 }
 
-export default async function PerformanceCards({
+export default function PerformanceCards({
 	params,
 }: {
 	params?: Promise<{ apiProvider: string }> | { apiProvider: string };
 }) {
-	const t = await getTranslations("Catalogue.providers");
-	const resolvedParams = params ? await params : undefined;
+	const t = useTranslations("Catalogue.providers");
+	// Route wrappers pass already-fulfilled thenables, so use() returns synchronously.
+	const resolvedParams = params
+		? "then" in params && typeof params.then === "function"
+			? use(params as Promise<{ apiProvider: string }>)
+			: (params as { apiProvider: string })
+		: undefined;
 	const apiProvider = resolvedParams?.apiProvider ?? "";
 
-	const metrics = await fetchFrontendAPIProviderMetrics(apiProvider, 24 * 7);
+	const { data: metrics } = useSuspenseQuery(apiProviderMetricsQuery(apiProvider, 24 * 7));
 
 	const throughputData = metrics.timeseries.throughput;
 	const latencyData = metrics.timeseries.latency;

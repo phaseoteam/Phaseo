@@ -1,5 +1,6 @@
-import { getTranslations } from "next-intl/server";
-import { Suspense } from "react";
+import { useTranslations } from "next-intl";
+import { Suspense, use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 import { AnalyticsIdentitySync } from "@/components/analytics/AnalyticsIdentitySync";
 import { AuthWordmark } from "@/components/(gateway)/auth/AuthWordmark";
@@ -8,7 +9,7 @@ import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 import { buildLocalizedAuthPath } from "@/lib/auth/localized-paths";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
-import { samlSsoFlag } from "@/lib/flags";
+import { samlSsoEnabledQuery } from "./SignInPage.functions";
 
 export type SignInPageProps = {
 	locale: PublicLocale;
@@ -27,12 +28,11 @@ export function SignInPage({ locale, searchParams }: SignInPageProps) {
 	);
 }
 
-async function SignInPageContent({ locale, searchParams }: SignInPageProps) {
-	const [ssoEnabled, shared] = await Promise.all([
-		samlSsoFlag(),
-		getTranslations({ locale, namespace: "Auth.shared" }),
-	]);
-	const params = (await searchParams) ?? {};
+function SignInPageContent({ locale, searchParams }: SignInPageProps) {
+	const { data: ssoEnabled } = useSuspenseQuery(samlSsoEnabledQuery());
+	// The provider locale is the route locale, which is what callers pass as `locale`.
+	const shared = useTranslations("Auth.shared");
+	const params = (searchParams ? use(searchParams) : undefined) ?? {};
 	const signup = Array.isArray(params.signup) ? params.signup[0] : params.signup;
 	const signupNotice =
 		signup === "exists" || signup === "check-email" ? "check-email" : null;

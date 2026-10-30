@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { comparePairDataQuery } from "./pairPage.queries";
 import { ComparePairDashboard } from "@/components/(data)/compare/CompareDashboard";
 import { ComparePairSummary } from "@/components/(data)/compare/ComparePairSummary";
 import { pairPath, sortPair } from "@/components/(data)/compare/comparePairs";
@@ -18,6 +19,8 @@ export async function comparePairMetadata(ids: [string, string], locale: PublicL
 	const { view } = await loadComparePairData(sortPair(ids));
 	if (view.models.length !== 2) return {};
 	const [a, b] = view.models;
+	// Metadata runs on the server only; keep next-intl/server out of the component graph.
+	const { getTranslations } = await import("next-intl/server");
 	const t = await getTranslations({ locale, namespace: "Catalogue.comparePair" });
 	return buildLocalizedPageMetadata({
 		locale,
@@ -29,8 +32,9 @@ export async function comparePairMetadata(ids: [string, string], locale: PublicL
 	});
 }
 
-export async function ComparePairPage({ ids, locale }: { ids: [string, string]; locale: PublicLocale }) {
-	const { view, usage, related } = await loadComparePairData(sortPair(ids));
+// Unknown pairs 404 in the route loader before rendering (pairPage.queries.ts).
+export function ComparePairPage({ ids, locale }: { ids: [string, string]; locale: PublicLocale }) {
+	const { data: { view, usage, related } } = useSuspenseQuery(comparePairDataQuery(ids));
 	if (view.models.length !== 2) notFound();
 	// Keep the order the URL names, so "b-vs-a" shows b first.
 	const ordered = ids.map((id) => view.models.find((model) => model.id === id)).filter((model) => model !== undefined);

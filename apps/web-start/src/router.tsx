@@ -25,6 +25,8 @@ export function getRouter() {
 	if (typeof window !== "undefined") {
 		// Server actions refresh or redirect through the active router.
 		(globalThis as { __phaseoRouter?: typeof router }).__phaseoRouter = router;
+		// refresh() and server actions re-read server data the way Next re-renders it.
+		(globalThis as { __phaseoQueryClient?: typeof queryClient }).__phaseoQueryClient = queryClient;
 	}
 	return router;
 }

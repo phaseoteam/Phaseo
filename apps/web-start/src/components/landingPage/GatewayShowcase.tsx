@@ -1,4 +1,5 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/i18n/navigation";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Suspense } from "react";
@@ -12,7 +13,7 @@ import { Logo } from "@/components/Logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { fetchFrontendGatewayShowcase } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { landingGatewayShowcaseQuery } from "@/components/landingPage/landing.queries";
 import { localizedGatewayMetricWindow } from "@/components/landingPage/gatewayMetricWindow";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { DisplayNumber } from "@/components/display/DisplayValue";
@@ -82,14 +83,14 @@ function EmptyTelemetry({ text }: { text: string }) {
 	);
 }
 
-async function GatewayShowcaseData() {
-	const t = await getTranslations("SettingsUI");
-	const locale = await getLocale();
-	const { appImageUrls, metrics, topApps: topAppsRes, topModels: topModelsRes } =
-		await fetchFrontendGatewayShowcase({
+function GatewayShowcaseData() {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
+	const { data: { appImageUrls, metrics, topApps: topAppsRes, topModels: topModelsRes } } =
+		useSuspenseQuery(landingGatewayShowcaseQuery({
 			topAppsLimit: 25,
 			topModelsLimit: 6,
-		});
+		}));
 
 	const topAppRows = [...topAppsRes.data]
 		.filter((row) => Number(row.tokens ?? 0) > 0)
@@ -289,8 +290,8 @@ async function GatewayShowcaseData() {
 	);
 }
 
-export default async function GatewayShowcase() {
-	const t = await getTranslations("SettingsUI");
+export default function GatewayShowcase() {
+	const t = useTranslations("SettingsUI");
 	return (
 		<section className="space-y-8 py-2">
 			<div className="space-y-4">

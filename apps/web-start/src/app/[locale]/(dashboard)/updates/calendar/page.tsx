@@ -1,7 +1,8 @@
 import ModelCalendar from "@/components/(data)/models/ModelCalendar/ModelCalendar";
 import ModelCalendarRouteSwitch from "@/components/updates/ModelCalendarRouteSwitch";
 import type { ModelEvent } from "@/lib/fetchers/updates/types";
-import { fetchFrontendModelUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { modelUpdatesQuery } from "../models/page.queries";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
@@ -29,12 +30,9 @@ export async function generateMetadata(props: {
 
 const UPCOMING_LIMIT = 64;
 
-export default async function Page() {
-	const { past: pastEvents, future: upcomingEvents } =
-		await fetchFrontendModelUpdates({
-			includeAllPast: true,
-			upcomingLimit: UPCOMING_LIMIT,
-		});
+export default function Page() {
+	const { data: { past: pastEvents, future: upcomingEvents } } =
+		useSuspenseQuery(modelUpdatesQuery(UPCOMING_LIMIT));
 
 	const events: ModelEvent[] = [...pastEvents, ...upcomingEvents].sort(
 		(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()

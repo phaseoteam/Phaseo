@@ -1,16 +1,18 @@
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import DisplayPreferencesClient from "@/components/(gateway)/settings/preferences/DisplayPreferencesClient";
-import { fetchSettingsPreferencesInitialData } from "@/lib/fetchers/internal/fetchSettingsPreferencesInitialData";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { preferencesInitialDataQuery } from "./preferences.functions";
 import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
 	return { title: `${t("preferencesCopy.preferences")} - ${t("headers.settings")}` };
 }
 
-export default async function PreferencesPage() {
-	const t = await getTranslations("SettingsUI");
-	const initialData = await fetchSettingsPreferencesInitialData();
+export default function PreferencesPage() {
+	const t = useTranslations("SettingsUI");
+	const { data: initialData } = useSuspenseQuery(preferencesInitialDataQuery());
 
 	return (
 		<div className="space-y-6">

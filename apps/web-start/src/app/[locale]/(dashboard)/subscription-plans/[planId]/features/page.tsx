@@ -4,6 +4,9 @@ import SubscriptionPlanFeaturesTable from "@/components/(data)/subscription-plan
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { subscriptionPlanQuery } from "../page.queries";
 
 async function fetchPlanForFeatures(planId: string) {
 	try {
@@ -64,15 +67,15 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function Page({
+export default function Page({
 	params,
 }: {
 	params: Promise<{ locale: string; planId: string }>;
 }) {
-	const { planId, locale } = await params;
+	const { planId, locale } = use(params);
 	const messages = getSubscriptionPlansMessagesFor(locale);
 
-	const plan = await fetchFrontendSubscriptionPlan(planId);
+	const { data: plan } = useSuspenseQuery(subscriptionPlanQuery(planId));
 
 	if (!plan) {
 		return null; // Shell handles not found

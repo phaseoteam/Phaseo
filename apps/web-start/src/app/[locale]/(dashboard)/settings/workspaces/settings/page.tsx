@@ -1,5 +1,5 @@
-import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
-import { connection } from "next/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { settingsFlagQuery } from "../../settings.functions";
 import WorkspaceSettingsContent from "./WorkspaceSettingsContent";
 import { getTranslations } from "next-intl/server";
 export async function generateMetadata() {
@@ -7,7 +7,7 @@ export async function generateMetadata() {
 	return { title: t("teamSettings") };
 }
 
-export default async function Page() {
-	await connection();
-	return <WorkspaceSettingsContent canConfigureEnterprise={await enterpriseSelfServePreviewEnabled()} />;
+export default function Page() {
+	const { data: canConfigureEnterprise } = useSuspenseQuery(settingsFlagQuery("enterpriseSelfServe"));
+	return <WorkspaceSettingsContent canConfigureEnterprise={canConfigureEnterprise} />;
 }

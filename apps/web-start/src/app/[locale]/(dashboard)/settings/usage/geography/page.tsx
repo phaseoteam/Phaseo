@@ -1,13 +1,14 @@
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import { getPrivateUsageScope } from "@/lib/fetchers/internal/getPrivateUsageScope";
+import { privateUsageScopeQuery } from "../usage.functions";
 import GeographyClient from "./GeographyClient";
 
 
 export async function generateMetadata() { const t = await getTranslations("SettingsUI.settingsPageMetadata"); return { title: t("geography") }; }
-async function GeographyContent() {
-	const scope = await getPrivateUsageScope();
+function GeographyContent() {
+	const { data: scope } = useSuspenseQuery(privateUsageScopeQuery());
 	return <GeographyClient key={`${scope.userId}:${scope.workspaceId}`} scope={scope} />;
 }
 

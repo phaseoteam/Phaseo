@@ -1,14 +1,12 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
 import type { SignInModel } from "@/lib/fetchers/landing/sign-in/types";
-import { fetchFrontendSignInMainModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { landingMainModelsQuery } from "@/components/landingPage/landing.queries";
 
-export default async function KeyModels() {
-	const tCopy = await getTranslations("Site.landingGaps");
-
-	// If consumer didn't provide data, fetch main models by ID from Supabase
-	let models: SignInModel[] = [];
+export default function KeyModels() {
+	const tCopy = useTranslations("Site.landingGaps");
 
 	// Default model ids to display on the sign-in page
 	const defaultIds = [
@@ -19,12 +17,8 @@ export default async function KeyModels() {
 		"openai/omni-moderation",
 		"google/veo-3.1-preview",
 	];
-	try {
-		models = await fetchFrontendSignInMainModels(defaultIds);
-	} catch {
-		// On error, fallback to empty list
-		models = [];
-	}
+	// If consumer didn't provide data, fetch main models by ID (an empty list on error).
+	const { data: models } = useSuspenseQuery(landingMainModelsQuery(defaultIds));
 
 	// Preserve the exact order from `defaultIds`. Map the fetched models into
 	// that order and then append any extra models returned by the fetcher.

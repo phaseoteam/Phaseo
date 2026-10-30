@@ -10,6 +10,10 @@ import { buildMetadata } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { DisplayNumber } from "@/components/display/DisplayValue";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { githubContributorsQuery } from "./page.queries";
 
 type StaticContributor = {
 	name?: string;
@@ -69,31 +73,11 @@ function formatDisplayName(value: string) {
 	return cleaned.length ? cleaned : value;
 }
 
-export default async function Page({ params }: { params: Promise<{ locale: PublicLocale }> }) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Content.contribute" });
-	let contributors: StaticContributor[] = [];
-	try {
-		const response = await fetch(
-			"https://api.github.com/repos/phaseoteam/Phaseo/contributors?per_page=100",
-			{
-				next: { revalidate: 86400 }, // Cache for 24 hour
-			}
-		);
-		if (response.ok) {
-			const data = await response.json();
-			contributors = data.map((item: any) => ({
-				name: item.name || item.login,
-				login: item.login,
-				htmlUrl: item.html_url,
-				avatarUrl: item.avatar_url,
-				contributions: item.contributions,
-			}));
-		}
-	} catch (error) {
-		console.error("Failed to fetch contributors:", error);
-		// Fallback to empty array
-	}
+export default function Page({ params }: { params: Promise<{ locale: PublicLocale }> }) {
+	const { locale } = use(params);
+	const t = useTranslations("Content.contribute");
+	const { data: fetchedContributors } = useSuspenseQuery(githubContributorsQuery());
+	const contributors: StaticContributor[] = fetchedContributors;
 	const sponsors: StaticSponsor[] = staticSponsors || [];
 	const sortedContributors = [...contributors].sort(
 		(a, b) => b.contributions - a.contributions

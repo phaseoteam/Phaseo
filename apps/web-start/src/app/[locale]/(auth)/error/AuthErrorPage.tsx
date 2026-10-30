@@ -1,5 +1,5 @@
-import { getTranslations } from "next-intl/server";
-import { Suspense } from "react";
+import { useTranslations } from "next-intl";
+import { Suspense, use } from "react";
 import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 import { AuthErrorCard } from "@/components/(gateway)/auth/AuthErrorCard";
 import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
@@ -24,12 +24,11 @@ export function AuthErrorPage({ locale, searchParams }: AuthErrorPageProps) {
 	);
 }
 
-async function AuthErrorPageContent({ locale, searchParams }: AuthErrorPageProps) {
-	const [t, shared] = await Promise.all([
-		getTranslations({ locale, namespace: "Auth.error" }),
-		getTranslations({ locale, namespace: "Auth.shared" }),
-	]);
-	const params = (await searchParams) ?? {};
+function AuthErrorPageContent({ locale, searchParams }: AuthErrorPageProps) {
+	// The provider locale is the route locale, which is what callers pass as `locale`.
+	const t = useTranslations("Auth.error");
+	const shared = useTranslations("Auth.shared");
+	const params = (searchParams ? use(searchParams) : undefined) ?? {};
 	const rawCode = Array.isArray(params.code) ? params.code[0] : params.code;
 	const rawMessage = Array.isArray(params.message)
 		? params.message[0]

@@ -1,7 +1,9 @@
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
-import { fetchEpochDashboard } from "@/lib/benchmarks/epochDashboardData";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { epochDashboardQuery } from "./EpochCapabilitiesOverview.functions";
 import { EpochDashboard } from "./EpochDashboard";
 
-export async function EpochCapabilitiesOverview({ benchmark }: { benchmark: BenchmarkPage }) {
-	return <EpochDashboard data={await fetchEpochDashboard(benchmark)} />;
+export function EpochCapabilitiesOverview({ benchmark }: { benchmark: BenchmarkPage }) {
+	const { data } = useSuspenseQuery(epochDashboardQuery(benchmark));
+	return <EpochDashboard data={data} />;
 }

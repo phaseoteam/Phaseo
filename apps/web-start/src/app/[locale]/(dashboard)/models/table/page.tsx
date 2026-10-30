@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import ModelsTablePageClient from "@/components/(data)/models/Models/ModelsTablePageClient";
-import { resolveModelsCatalogueVersion } from "@/lib/models/catalogueVersion";
-import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { toAccountQueryScope } from "@/lib/query/queryKeys";
+import { modelsTablePageDataQuery } from "./page.functions";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Catalogue.models");
@@ -14,15 +13,12 @@ export async function generateMetadata(): Promise<Metadata> {
 	};
 }
 
-export default async function ModelsTablePage() {
-	const [catalogueVersion, accountContext] = await Promise.all([
-		resolveModelsCatalogueVersion(),
-		getServerAccountContext(),
-	]);
+export default function ModelsTablePage() {
+	const { data } = useSuspenseQuery(modelsTablePageDataQuery());
 	return (
 		<ModelsTablePageClient
-			catalogueVersion={catalogueVersion}
-			accountQueryScope={toAccountQueryScope(accountContext)}
+			catalogueVersion={data.catalogueVersion}
+			accountQueryScope={data.accountQueryScope}
 		/>
 	);
 }

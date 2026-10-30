@@ -2,6 +2,8 @@
 // Arguments travel as multipart form data so `FormData` arguments from
 // `<form action={fn}>` survive, next to JSON for everything else.
 
+import { refreshServerData } from "./refresh";
+
 type RouterLike = { navigate(options: { href: string; replace?: boolean }): Promise<unknown>; invalidate(): Promise<unknown> };
 
 export const SERVER_ACTION_ENDPOINT = "/api/server-actions";
@@ -45,7 +47,7 @@ export function createServerActionReference(moduleKey: string, exportName: strin
 		}
 		if (!response.ok || payload.error) throw new Error(payload.error ?? `Server action ${exportName} failed (${response.status}).`);
 		// Next refreshes the page's server data after an action; do the same.
-		void getRouter()?.invalidate();
+		void refreshServerData(getRouter());
 		return payload.result;
 	};
 	Object.defineProperty(action, "name", { value: exportName });

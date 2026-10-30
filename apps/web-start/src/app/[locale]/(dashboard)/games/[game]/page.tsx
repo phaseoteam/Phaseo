@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, use } from "react";
+import { useTranslations } from "next-intl";
 import { GameExperience } from "@/components/(games)/GameExperience";
-import { catalogueGamesEnabled } from "@/lib/games/preview";
 import { GAME_INFO, isGameKey } from "@/lib/games/types";
 import type { PublicLocale } from "@/i18n/routing";
 
@@ -24,15 +24,16 @@ export async function generateMetadata({
   };
 }
 
-async function GamePageContent({ params }: GamePageProps) {
-  if (!(await catalogueGamesEnabled())) notFound();
-  const { game } = await params;
+// catalogueGamesEnabled() and the game key are also checked in the route's
+// beforeLoad, so unknown games 404 before rendering.
+function GamePageContent({ params }: GamePageProps) {
+  const { game } = use(params);
   if (!isGameKey(game)) notFound();
   return <GameExperience game={game} />;
 }
 
-export default async function GamePage(props: GamePageProps) {
-  const t = await getTranslations("Product.gamesDetail");
+export default function GamePage(props: GamePageProps) {
+  const t = useTranslations("Product.gamesDetail");
   return (
     <Suspense
       fallback={
