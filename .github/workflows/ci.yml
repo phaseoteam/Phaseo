@@ -485,8 +485,9 @@ jobs:
             - name: Web Start (TanStack) typecheck & build
               if: matrix.app == 'web-start'
               run: |
-                  pnpm --filter @phaseo/web-start typecheck
+                  # The build generates src/routeTree.gen.ts, which the typecheck needs.
                   pnpm --filter @phaseo/web-start build
+                  pnpm --filter @phaseo/web-start typecheck
 
             - name: Web API lint, test & build
               if: matrix.app == 'web-api'
