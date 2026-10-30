@@ -1,0 +1,20 @@
+{
+  // Experiment only: vinext build of the web app on a workers.dev URL.
+  // No routes or custom domains, so phaseo.app is untouched.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "phaseo-web-vinext-preview",
+  "compatibility_date": "2026-10-30",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "vinext/server/fetch-handler",
+  "workers_dev": true,
+  "upload_source_maps": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "html_handling": "none",
+    "binding": "ASSETS",
+    "run_worker_first": ["/*", "!/_next/static/*", "!/*/_next/static/*"]
+  }
+}
