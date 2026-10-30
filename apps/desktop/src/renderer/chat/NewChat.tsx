@@ -18,7 +18,7 @@ import { openModelPickerEvent, useModelSettingActions, type ComposerAction } fro
 import { useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionToken } from "../lib/mentions";
 import { endTriage, startTriage, useTriage } from "../shell/Triage";
-import type { TriagePreparation } from "../../shared/triage";
+import { triageTitle, type TriagePreparation } from "../../shared/triage";
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
 import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
@@ -163,7 +163,11 @@ export function NewChat() {
 				// The playbook is written now, so its diagnostics are as fresh as the message; triage works in the checkout itself, never a new worktree.
 				if (triaging && preparation) await api.writeTriagePlaybook(preparation.projectId, preparation.playbook, { offerPullRequest });
 				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, create: code && !triaging ? worktree.create : undefined, ...code && autopilot && workspacePreferences.autopilot ? { autopilot } : {}, ...shared });
-				if (id) { setDraft(""); setImages({}); setAutopilot(undefined); select(id); if (triaging) endTriage(); }
+				if (id) {
+					// Named for the problem, not for the playbook link the message starts with.
+					if (triaging) { endTriage(); void command({ type: "update-task", id, title: triageTitle(prepared.text) }); }
+					setDraft(""); setImages({}); setAutopilot(undefined); select(id);
+				}
 			}
 		} catch (reason) { setError(errorText(reason)); }
 		finally { setBusy(false); }

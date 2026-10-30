@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TraceDiagnostics } from "./diagnostics";
-import { diagnosticsSection, redactLogText, triagePlaybook, triagePlaybookName, triagePlaybookPattern, validateIssueDraft, type PlaybookInput } from "./triage";
+import { diagnosticsSection, redactLogText, triagePlaybook, triageTitle, triagePlaybookName, triagePlaybookPattern, validateIssueDraft, type PlaybookInput } from "./triage";
 
 const build = { version: "0.1.0", commit: "821b26a8e7c9d1f2a3b4c5d6e7f8091a2b3c4d5e", builtAt: "2026-10-30T10:00:00.000Z", platform: "win32", osRelease: "10.0.26300", arch: "x64", electron: "45.0.0", chrome: "146.0.0.0", node: "24.1.0", packaged: true };
 const input = (overrides: Partial<PlaybookInput> = {}): PlaybookInput => ({ build, triage: { version: "0.1.0", commit: build.commit, exact: true, repository: "phaseoteam/Phaseo" }, checkout: "C:\\data\\triage\\phaseo-821b26a8e7c9", userData: "C:\\data", diagnostics: "No failures.", offerPullRequest: false, ...overrides });
@@ -25,6 +25,11 @@ describe("triage playbook", () => {
 		expect(text).toContain("**This checkout is not the exact build.**");
 		expect(text).toContain(`so this is main at ${"a".repeat(12)}`);
 		expect(triagePlaybook(input({ build: { ...build, commit: undefined }, triage: { version: "0.1.0", commit: "b".repeat(40), exact: false, repository: "phaseoteam/Phaseo" } }))).toContain("unknown: the build carries no commit");
+	});
+	it("titles the chat after the person's description, not the playbook link", () => {
+		expect(triageTitle("Read @.phaseo-triage/playbook-20261030-140509.md and follow it.\n\nThe sidebar goes blank after I archive a chat.\nIt started today.")).toBe("Triage: The sidebar goes blank after I archive a chat.");
+		expect(triageTitle("Read @.phaseo-triage/playbook-20261030-140509.md and follow it.")).toBe("Triage a Phaseo bug");
+		expect(triageTitle(`Read @x and follow it. ${"word ".repeat(30)}`)).toMatch(/^Triage: (word ){13}word…$/);
 	});
 	it("names playbooks inside the triage folder only", () => {
 		expect(triagePlaybookName(new Date("2026-10-30T14:05:09.123Z"))).toBe(".phaseo-triage/playbook-20261030-140509.md");

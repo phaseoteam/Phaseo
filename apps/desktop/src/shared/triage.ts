@@ -70,6 +70,13 @@ export function triagePlaybookName(now = new Date()) {
 	return `.phaseo-triage/playbook-${stamp.slice(0, 8)}-${stamp.slice(8)}.md`;
 }
 
+/** A triage chat's title: the first line of what the person wrote after the playbook link, or a plain name when they wrote nothing. */
+export function triageTitle(message: string) {
+	const description = message.replace(/^Read @\S+ and follow it\.\s*/, "").split("\n").map(line => line.trim()).find(Boolean) ?? "";
+	if (!description) return "Triage a Phaseo bug";
+	return `Triage: ${description.length > 70 ? `${description.slice(0, 69).trimEnd()}…` : description}`;
+}
+
 /** Log text that may end up in an issue: the home folder becomes ~ and email addresses are hidden. Tokens are already hidden by the tracer. */
 export function redactLogText(text: string, home: string) {
 	let value = text;
