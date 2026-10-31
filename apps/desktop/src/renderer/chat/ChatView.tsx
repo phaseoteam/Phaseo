@@ -49,6 +49,7 @@ import { recordPrompt } from "./promptHistory";
 import { showToast } from "../components/ui/toast";
 import { ChatNotices } from "./ChatNotices";
 import { BackgroundWork } from "./BackgroundWork";
+import { addPendingSend, dropDeliveredSends, PendingSends } from "./pendingSends";
 import { attachmentsOnlyText } from "./MessageAttachments";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
@@ -218,13 +219,19 @@ function ChatComposer({ task }: { task: Task }) {
 			return false;
 		}
 		setBusy(true);
+		// The message shows as sent at once; a refused send puts it back in the box, unless something new was typed there.
+		const typed = draft.text, settle = addPendingSend(task.id, message.text || mentionPlainText(typed));
+		draft.clear();
+		const restore = () => { if (!draft.text.trim()) draft.setText(typed); };
+		let delivered = false;
 		try {
 			const prepared = await menu.prepare(message.text);
 			if (await command({ type: "send", id: task.id, text: prepared.text || attachmentsOnlyText, attachments: message.attachments,
 				...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
-				rememberModel(selection); recordPrompt(draft.text); draft.clear(); return true;
+				delivered = true; rememberModel(selection); recordPrompt(typed); return true;
 			}
-		} catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
+			restore();
+		} catch (reason) { restore(); setError(errorText(reason)); } finally { settle(delivered); setBusy(false); }
 		return false;
 	}
 	const attachmentChips = (attachments: Attachment[]) => editor.insert(attachments.map(attachment => ({ kind: "attachment" as const, ref: attachment.id, label: attachment.name })));
@@ -326,6 +333,7 @@ export function ChatView({ id }: { id: string }) {
 	}, [id, snapshot?.lastCompletedAt, snapshot?.lastVisitedAt]);
 	const detail = useSelectedTask(api?.task, id, snapshot ? JSON.stringify([snapshot.revision, snapshot.updatedAt]) : undefined);
 	const loaded = detail.task?.id === id ? detail.task : undefined;
+	useEffect(() => { if (loaded) dropDeliveredSends(loaded.id); }, [loaded]);
 	const [preview, setPreview] = useState<string>();
 	const [rewinding, setRewinding] = useState<Message>();
 	// A rewind can remove the messages the conversation's window starts at, so the window starts over.
@@ -347,6 +355,7 @@ export function ChatView({ id }: { id: string }) {
 		<ChatHeader task={task} onOpenTerminal={() => setDrawers(current => ({ ...current, [task.id]: true }))} />
 		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={`${task.id}:${epoch}`} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)} onRewind={setRewinding}
 				onRegenerate={task.mode === "chat" ? message => void command({ type: "rewind", id: task.id, messageId: message.id, resend: true }).then(state => { if (state) setEpoch(value => value + 1); }) : undefined}>
+			<PendingSends taskId={task.id} projectId={task.projectId} />
 			{snapshot && <ThreadStatusLine task={snapshot} />}
 			<ChatNotices task={task} />
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
