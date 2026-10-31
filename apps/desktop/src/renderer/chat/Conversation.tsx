@@ -1,11 +1,11 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
+import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CornerDownRight, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import type { ConversationPage } from "../../shared/conversationPage";
-import { conversationTurns, turnDuration, type TurnEntry } from "../lib/conversationTurns";
+import { conversationTurns, turnDuration, userBursts, type Burst, type TurnEntry } from "../lib/conversationTurns";
 import { elapsedLabel, useNow } from "../lib/elapsed";
 import { contextShare, turnUsage } from "../lib/turnUsage";
 import { formatRoundedCount } from "@phaseo/app-kit/format";
@@ -50,21 +50,25 @@ function CopyButton({ text }: { text: string }) {
 	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}>{status === "copied" ? <Check /> : <Copy />}</ActionButton>;
 }
 
-function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRewind, canBranch }: { message: Message; taskId: string; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; canBranch: boolean }) {
+function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRewind, canBranch, burst, compact }: { message: Message; taskId: string; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; canBranch: boolean; burst?: Burst; compact?: boolean }) {
 	const attachments = message.attachments ?? [];
 	// Attachments sent without words stand on their own, without the text the app sent the agent in their place.
 	const bubble = !attachments.length || message.text.trim() !== attachmentsOnlyText;
+	// Inside a burst the actions sit beside the bubble, so the messages can stack tight; a narrow pane keeps them below.
+	const beside = Boolean(burst?.next && bubble && !compact);
+	const actions = <div data-find-ignore className={cn("flex items-center opacity-0 transition-opacity group-focus-within/message:opacity-100 group-hover/message:opacity-100", beside && "absolute top-1/2 right-full mr-2 -translate-y-1/2 whitespace-nowrap")}>
+		<time dateTime={message.createdAt} title={fullMessageTime(message.createdAt)} className="mr-1 text-[11px] text-muted-foreground">{messageTime(message.createdAt)}</time>
+		<CopyButton text={mentionPlainText(message.text)} />
+		{onRewind && <ActionButton label="Edit from here" disabled={!canBranch} onClick={() => onRewind(message)}><PenLine /></ActionButton>}
+		<ActionButton label="Branch from here" disabled={!canBranch} onClick={() => onBranch(message.id)}><GitBranch /></ActionButton>
+	</div>;
 	return <div data-conversation-id={`message:${message.id}`} className="group/message flex flex-col items-end gap-1">
 		<h3 className="sr-only">You said</h3>
 		{message.autopilot && <span title="Autopilot sent this to keep the task going" className="flex items-center gap-1 text-[11px] font-medium text-warning"><Plane className="size-3" />Autopilot</span>}
+		{message.delivery === "steer" && !burst?.continuesSteer && <span title="Sent into the running turn" className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground"><CornerDownRight className="size-3" />Steer</span>}
 		<MessageAttachments taskId={taskId} attachments={attachments} onPreview={onAttachment} />
-		{bubble && <div data-selectable className="message-user max-w-[85%] min-w-0 rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed"><MessageFold id={message.id} text={message.text}><MessageContent text={message.text} projectId={projectId} lineBreaks /></MessageFold></div>}
-		<div className="flex items-center opacity-0 transition-opacity group-hover/message:opacity-100">
-			<time dateTime={message.createdAt} title={fullMessageTime(message.createdAt)} className="mr-1 text-[11px] text-muted-foreground">{messageTime(message.createdAt)}</time>
-			<CopyButton text={mentionPlainText(message.text)} />
-			{onRewind && <ActionButton label="Edit from here" disabled={!canBranch} onClick={() => onRewind(message)}><PenLine /></ActionButton>}
-			<ActionButton label="Branch from here" disabled={!canBranch} onClick={() => onBranch(message.id)}><GitBranch /></ActionButton>
-		</div>
+		{bubble && <div data-selectable className={cn("message-user relative max-w-[85%] min-w-0 rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed", burst?.previous && "rounded-tr-md")}><MessageFold id={message.id} text={message.text}><MessageContent text={message.text} projectId={projectId} lineBreaks /></MessageFold>{beside && actions}</div>}
+		{!beside && actions}
 	</div>;
 }
 
@@ -162,13 +166,13 @@ function AssistantHeader({ task }: { task: Task }) {
 }
 
 const noActivities: AgentActivity[] = [];
-type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean };
+type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean; burst?: Burst };
 const sameItems = <T,>(a: readonly T[], b: readonly T[], value: (item: T) => unknown = item => item) => a.length === b.length && a.every((item, index) => value(item) === value(b[index]));
 /**
  * A turn re-renders only when its own entries or the chat fields it shows change, so loading a page of older turns
  * renders those turns alone. The callbacks are stable (see Conversation).
  */
-const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact }: TurnProps) {
+const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst }: TurnProps) {
 	// Text after the last step is the answer, even while it is still streaming.
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
@@ -181,8 +185,8 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const usage = turnUsage(usageActivities), context = contextShare(usageActivities);
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
-	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className="flex flex-col gap-4">
-		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} taskId={task.id} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} onRewind={onRewind} canBranch={canBranch} />)}
+	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className={cn("flex flex-col gap-4", burst?.next && "-mb-6")}>
+		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} taskId={task.id} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} onRewind={onRewind} canBranch={canBranch} burst={burst} compact={compact} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{/* Messages are headings, so a screen reader's heading keys move between them. */}
 			{compact ? <h3 className="sr-only">{task.model === "default" ? harnessNames[task.harness] : modelLabel(task.model)} replied</h3> : <AssistantHeader task={task} />}
@@ -206,7 +210,8 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 		{/* Code turns that changed files say so under the answer, with the way into the Diff pane. */}
 		{user && !live && complete && task.mode !== "chat" && task.projectId && user.checkpoint?.after && <TurnChanges taskId={task.id} projectId={task.projectId} message={user} />}
 	</div>;
-}, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
+}, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact
+	&& a.burst?.previous === b.burst?.previous && a.burst?.next === b.burst?.next && a.burst?.continuesSteer === b.burst?.continuesSteer && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
 	&& sameItems(a.entries, b.entries, entry => entry.value) && sameItems(a.usageActivities, b.usageActivities)
 	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness && a.task.mode === b.task.mode);
 
@@ -230,6 +235,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	const messages = useConversationPage(task, "messages", following, remember);
 	const activityEntries = useMemo(() => messages.page.activities ?? [], [messages.page.activities]);
 	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activityEntries), [messages.page.entries, activityEntries]);
+	const bursts = useMemo(() => userBursts(turns), [turns]);
 	const earlierRow = useRef<HTMLButtonElement>(null), newerRow = useRef<HTMLButtonElement>(null), lastScroll = useRef(0);
 	// Turns are memoised, so they get stable callbacks that always call the latest ones.
 	const handlers = useRef({ onAttachment, onBranch, onRewind, onRegenerate }); handlers.current = { onAttachment, onBranch, onRewind, onRegenerate };
@@ -329,7 +335,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 				{messages.page.earlier > 0 && <button ref={earlierRow} type="button" disabled={messages.loading} onClick={messages.older} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading earlier messages…</> : `Load ${messages.page.earlier} earlier messages`}</button>}
 				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
 				{messages.loading && !messages.page.entries.length && <p className="text-center text-xs text-muted-foreground">Loading messages…</p>}
-				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact}
+				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact} burst={bursts[index]}
 					onRewind={onRewind ? rewindTo : undefined} onRegenerate={onRegenerate && index === turns.length - 1 && !messages.page.later ? regenerate : undefined}
 					live={running && (turn.user?.id === activeTurn || (!turn.user && index === turns.length - 1 && !messages.page.later))}
 					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !running)} />)}
