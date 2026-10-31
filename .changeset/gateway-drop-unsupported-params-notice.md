@@ -1,5 +1,0 @@
----
-"@phaseo/gateway-api": patch
----
-
-Drop request parameters the serving provider does not support instead of forwarding them, and report them. Optional sampling parameters (`temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`) are dropped when the provider profile marks them unsupported or the route's catalogue parameters do not list them. `parallel_tool_calls`, `max_tool_calls` and `image_config` are dropped only when the provider profile marks them unsupported. A route that declares no parameters (an empty record, or one that holds only route metadata such as `service_tier`) skips the catalogue check; parameters the provider profile marks unsupported are still dropped, for example Cohere's `top_k` and Reflection's `stop`. On successful responses, dropped parameters that the client sent are named in the `X-Phaseo-Dropped-Params` response header and in `meta.routing.dropped_params`. Every dropped parameter, including one supplied by a preset or a default value, is recorded in the routing diagnostics.
