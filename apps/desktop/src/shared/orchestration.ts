@@ -61,6 +61,7 @@ export type FactoryAgentTools = {
 	read: (itemId: string) => Promise<WorkItemRead>;
 	runStage: (itemId: string, stage: string, agentId?: string) => Promise<{ runId: string; itemId: string; stage: string; agentId: string; threadId: string | null }>;
 };
+export type WorktreeMove = { branch: string; baseRef?: string; runSetup: boolean; continuationPrompt?: string };
 /** A child working in its own worktree reports its branch, so the parent can review, merge or open a pull request from it. */
 export type ChildWorktree = { projectId: string; branch: string };
 /** A question a child is waiting on, as its parent sees it; approvals and secret questions stay with the person. */
@@ -112,6 +113,8 @@ export type ThreadTools = {
 	runSchedule?: (id: string) => Promise<ScheduledTask>;
 	/** T3's browser tools, on this chat's own browser tabs; present only while the app has a window. */
 	browser?: BrowserAgentTools;
+	/** move_to_worktree: this chat continues in a new worktree of its project from its next turn. */
+	moveToWorktree?: (request: WorktreeMove) => Promise<{ projectId: string; branch: string; continuation: boolean; message: string }>;
 	/** html_preview and html_render: check a page, then show it inline in this chat above the reply. */
 	html?: { preview: (request: HtmlPreviewRequest) => Promise<HtmlPreviewResult>; render: (request: HtmlRenderRequest) => Promise<{ shown: true; title: string; height: number; message: string }> };
 	/** T3's request_secret: the person types the secret into this chat; the agent gets a reference or a file. */
@@ -124,7 +127,7 @@ export const waitDefaultMs = 10 * 60 * 1000, waitMaximumMs = 60 * 60 * 1000;
 export const activeAgentsLimit = { default: 32, minimum: 1, maximum: 256 } as const;
 export const agentLimitMessage = (active: number, maximum: number) => `${active} of ${maximum} delegated agents are already active in this workspace. Wait for some to finish (wait_thread or a delivered result), or ask the user to raise "Agents running at once" in Settings → General.`;
 /** Approval card titles for orchestration tools that need approval. */
-export const threadToolLabels: Record<string, string> = { delegate_task: "Delegate task", handoff_thread: "Hand off chat", fork_thread: "Fork chat", send_thread: "Send agent prompt", steer_thread: "Steer agent", rename_thread: "Rename agent chat", edit_thread_queue: "Edit agent queue", merge_thread_context: "Merge agent result", launch_thread: "Launch chat", launch_threads: "Launch chats", organize_thread: "Organise chat", schedule_task: "Schedule task", update_scheduled_task: "Update schedule", delete_scheduled_task: "Delete schedule", run_scheduled_task_now: "Run schedule now", run_stage: "Run Factory stage", answer_question: "Answer agent question", browser_open: "Open page in browser", browser_click: "Click in browser", browser_type: "Type in browser", browser_act: "Act in browser", browser_evaluate: "Run JavaScript in browser", browser_dialog: "Answer browser dialog" };
+export const threadToolLabels: Record<string, string> = { delegate_task: "Delegate task", handoff_thread: "Hand off chat", fork_thread: "Fork chat", send_thread: "Send agent prompt", steer_thread: "Steer agent", rename_thread: "Rename agent chat", edit_thread_queue: "Edit agent queue", merge_thread_context: "Merge agent result", launch_thread: "Launch chat", launch_threads: "Launch chats", organize_thread: "Organise chat", schedule_task: "Schedule task", update_scheduled_task: "Update schedule", delete_scheduled_task: "Delete schedule", run_scheduled_task_now: "Run schedule now", run_stage: "Run Factory stage", answer_question: "Answer agent question", move_to_worktree: "Move chat to a worktree", browser_open: "Open page in browser", browser_click: "Click in browser", browser_type: "Type in browser", browser_act: "Act in browser", browser_evaluate: "Run JavaScript in browser", browser_dialog: "Answer browser dialog" };
 /** organize_thread only asks before archiving, so its approval card names that action. */
 export const threadToolLabel = (name: string, args?: unknown) => name === "organize_thread" && (args as { action?: unknown } | undefined)?.action === "archive" ? "Archive chat" : threadToolLabels[name] ?? "Orchestration action";
 

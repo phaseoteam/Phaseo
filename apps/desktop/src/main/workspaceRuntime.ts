@@ -1,4 +1,4 @@
-import { threadToolLabel, type FactoryAgentTools, type ThreadTools } from "../shared/orchestration";
+import { threadToolLabel, type FactoryAgentTools, type ThreadTools, type WorktreeMove } from "../shared/orchestration";
 import type { BrowserAgentTools } from "../shared/browserAgent";
 import type { HtmlPreviewRequest, HtmlPreviewResult, HtmlRenderRequest } from "../shared/htmlRender";
 import { completeChat, generateTitle } from "./chatTitles";
@@ -607,9 +607,33 @@ export class WorkspaceRuntime {
 	threadTools(parentId: string): ThreadTools {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
-		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
+		const tools = { ...this.threads.forThread(parentId), moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
 		const html = this.htmlPreview ? { html: { preview: this.htmlPreview, render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
 		return this.browserTools ? { ...tools, ...html, browser: this.browserTools(parentId) } : { ...tools, ...html }; }
+	private readonly moving = new Set<string>();
+	/**
+	 * Moves a chat into a new worktree of its project. The running turn ends where it started; the next one runs in the worktree
+	 * on a fresh native session (sessions belong to their folder), with the conversation passed along as handoff context.
+	 */
+	private async moveToWorktree(id: string, request: WorktreeMove) {
+		const task = this.store.getTask(id), project = task.projectId ? this.store.getProjects().find(value => value.id === task.projectId) : undefined;
+		if (!project) throw new Error("This chat has no project, so there is no checkout to move from.");
+		if (project.worktree) throw new Error(`This chat already works in a worktree, on branch ${project.worktree.branch}.`);
+		if (task.archived || task.status === "interrupted") throw new Error("This chat is not accepting work.");
+		if (this.moving.has(id)) throw new Error("This chat is already moving to a worktree.");
+		this.moving.add(id);
+		try {
+			const { projectId } = await this.createWorktree(project.id, request.branch, request.baseRef ?? "HEAD", request.runSetup);
+			const current = this.store.getTask(id);
+			current.projectId = projectId; current.nativeSessionId = undefined; current.nativeForkFrom = undefined;
+			if (current.harness !== "phaseo") current.handoffFrom = current.harness;
+			if (request.continuationPrompt) current.queue.push({ id: randomUUID(), text: request.continuationPrompt, createdAt: new Date().toISOString() });
+			this.store.saveTask(current); this.broadcast();
+			// An idle chat starts its continuation now; a running one when its turn ends.
+			if (request.continuationPrompt && !this.executions.has(id)) this.start(id);
+			return { projectId, branch: request.branch, continuation: Boolean(request.continuationPrompt), message: request.continuationPrompt ? "Moved. End your turn now: the continuation prompt starts the next turn inside the worktree, with this conversation." : "Moved. End your turn now: the chat continues inside the worktree when the user sends the next message." };
+		} finally { this.moving.delete(id); }
+	}
 	/** Puts a page on the chat's running turn; the chat shows it above the reply. */
 	private htmlRender(id: string, request: HtmlRenderRequest) {
 		const note = this.turnNotes.get(id);
@@ -1403,7 +1427,8 @@ export class WorkspaceRuntime {
 				} } : {}),
 				onModels: nativeModels => { const current = this.store.getTask(id); current.nativeModels = nativeModels; this.store.saveTask(current); this.broadcast(); },
 				onModes: nativeModes => { const current = this.store.getTask(id); current.nativeModes = nativeModes; this.store.saveTask(current); this.broadcast(); },
-				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
+				// A chat moved to a worktree mid-turn starts a new session there; the old folder's session is not kept.
+				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId || current.projectId !== task.projectId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
 				onDelta: (itemId, text) => {
 					order(`message:${itemId}`); deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();
 				},

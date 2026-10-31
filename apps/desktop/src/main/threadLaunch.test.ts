@@ -183,6 +183,25 @@ describe("answering a child's questions", () => {
 	});
 });
 
+describe("move_to_worktree", () => {
+	it("moves the chat to a new worktree, drops the folder's native session and continues there", async () => withRuntime(async (runtime, directory, run) => {
+		const { root, git } = repository(directory), source = runtime.store.addProject(root);
+		const id = await caller(runtime, "code", "full-access", source.id), tools = runtime.threadTools(id);
+		const before = runtime.store.getTask(id); before.nativeSessionId = "old-session"; runtime.store.saveTask(before);
+		const moved = await tools.moveToWorktree!({ branch: "feature/moved", runSetup: false, continuationPrompt: "Carry on" });
+		expect(moved).toMatchObject({ branch: "feature/moved", continuation: true });
+		const project = runtime.store.getProjects().find(value => value.id === moved.projectId)!;
+		expect(project.worktree).toMatchObject({ sourceProjectId: source.id, branch: "feature/moved", baseCommit: git(["rev-parse", "HEAD"]) });
+		expect(runtime.store.getTask(id)).toMatchObject({ projectId: project.id, handoffFrom: "codex" });
+		expect(runtime.store.getTask(id).nativeSessionId).toBeUndefined();
+		await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+		expect(run.mock.calls[0][1]).toBe(project.directory);
+		expect(run.mock.calls[0][2]).toBe("Carry on");
+		await expect(tools.moveToWorktree!({ branch: "feature/again", runSetup: false })).rejects.toThrow("already works in a worktree");
+		await expect(runtime.threadTools(await caller(runtime)).moveToWorktree!({ branch: "x", runSetup: false })).rejects.toThrow("no project");
+	}));
+});
+
 describe("launch_threads", () => {
 	it("validates every entry before creating any, then reports each result", async () => withRuntime(async runtime => {
 		expect(() => validateLaunchBatch({ threads: [{ requestId: "a", title: "A", prompt: "A" }, { requestId: "a", title: "B", prompt: "B" }] })).toThrow("distinct requestId");
