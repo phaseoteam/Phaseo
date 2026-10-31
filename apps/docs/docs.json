@@ -185,6 +185,7 @@
                       "v1/guides/integrations/litellm",
                       "v1/guides/integrations/pydanticai",
                       "v1/guides/integrations/mastra",
+                      "v1/guides/integrations/eve",
                       "v1/guides/integrations/tanstack-ai",
                       "v1/guides/integrations/effect-ai"
                     ]
@@ -1881,6 +1882,7 @@
                       "es/v1/guides/integrations/litellm",
                       "es/v1/guides/integrations/pydanticai",
                       "es/v1/guides/integrations/mastra",
+                      "es/v1/guides/integrations/eve",
                       "es/v1/guides/integrations/tanstack-ai",
                       "es/v1/guides/integrations/effect-ai"
                     ]
@@ -3611,6 +3613,7 @@
                       "fr/v1/guides/integrations/litellm",
                       "fr/v1/guides/integrations/pydanticai",
                       "fr/v1/guides/integrations/mastra",
+                      "fr/v1/guides/integrations/eve",
                       "fr/v1/guides/integrations/tanstack-ai",
                       "fr/v1/guides/integrations/effect-ai"
                     ]
@@ -5341,6 +5344,7 @@
                       "de/v1/guides/integrations/litellm",
                       "de/v1/guides/integrations/pydanticai",
                       "de/v1/guides/integrations/mastra",
+                      "de/v1/guides/integrations/eve",
                       "de/v1/guides/integrations/tanstack-ai",
                       "de/v1/guides/integrations/effect-ai"
                     ]
@@ -7071,6 +7075,7 @@
                       "pt-BR/v1/guides/integrations/litellm",
                       "pt-BR/v1/guides/integrations/pydanticai",
                       "pt-BR/v1/guides/integrations/mastra",
+                      "pt-BR/v1/guides/integrations/eve",
                       "pt-BR/v1/guides/integrations/tanstack-ai",
                       "pt-BR/v1/guides/integrations/effect-ai"
                     ]
@@ -8801,6 +8806,7 @@
                       "ja/v1/guides/integrations/litellm",
                       "ja/v1/guides/integrations/pydanticai",
                       "ja/v1/guides/integrations/mastra",
+                      "ja/v1/guides/integrations/eve",
                       "ja/v1/guides/integrations/tanstack-ai",
                       "ja/v1/guides/integrations/effect-ai"
                     ]
@@ -10531,6 +10537,7 @@
                       "zh-Hans/v1/guides/integrations/litellm",
                       "zh-Hans/v1/guides/integrations/pydanticai",
                       "zh-Hans/v1/guides/integrations/mastra",
+                      "zh-Hans/v1/guides/integrations/eve",
                       "zh-Hans/v1/guides/integrations/tanstack-ai",
                       "zh-Hans/v1/guides/integrations/effect-ai"
                     ]
@@ -12261,6 +12268,7 @@
                       "hi/v1/guides/integrations/litellm",
                       "hi/v1/guides/integrations/pydanticai",
                       "hi/v1/guides/integrations/mastra",
+                      "hi/v1/guides/integrations/eve",
                       "hi/v1/guides/integrations/tanstack-ai",
                       "hi/v1/guides/integrations/effect-ai"
                     ]
@@ -13991,6 +13999,7 @@
                       "ar/v1/guides/integrations/litellm",
                       "ar/v1/guides/integrations/pydanticai",
                       "ar/v1/guides/integrations/mastra",
+                      "ar/v1/guides/integrations/eve",
                       "ar/v1/guides/integrations/tanstack-ai",
                       "ar/v1/guides/integrations/effect-ai"
                     ]
