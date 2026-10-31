@@ -221,6 +221,25 @@ describe("add_project and clone_project", () => {
 	}));
 });
 
+describe("attachments on delegate_task, launch_thread and send_thread", () => {
+	it("sends project files with the prompt, owned by the receiving chat, and refuses Chat mode and bad files", async () => withRuntime(async (runtime, directory, run) => {
+		const { root } = repository(directory), project = runtime.store.addProject(root);
+		writeFileSync(path.join(root, "log.txt"), "Stack trace\n");
+		const id = await caller(runtime, "code", "full-access", project.id), tools = runtime.threadTools(id);
+		const child = await tools.delegate({ requestId: "logs", title: "Logs", prompt: "Read the log", attachments: ["log.txt"] });
+		await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+		expect(run.mock.calls[0][5]).toEqual([expect.objectContaining({ name: "log.txt", taskId: child.id, text: "Stack trace\n" })]);
+		const launched = await tools.launch!({ requestId: "other", title: "Other", prompt: "Look", attachments: [path.join(root, "log.txt")] });
+		expect(runtime.store.getTask(launched.id).queue[0]?.attachments ?? runtime.store.getTask(launched.id).messages[0]?.attachments).toEqual([expect.objectContaining({ name: "log.txt", taskId: launched.id })]);
+		await tools.send!(child.id, "And this", ["file.txt"]);
+		expect(runtime.store.getTask(child.id).queue.at(-1)).toMatchObject({ text: "And this", attachments: [expect.objectContaining({ name: "file.txt", taskId: child.id })] });
+		await expect(tools.send!(child.id, "Missing", ["missing.txt"])).rejects.toThrow("missing.txt:");
+		const chat = runtime.threadTools(await caller(runtime, "chat", "full-access", project.id));
+		await expect(chat.delegate({ requestId: "x", title: "X", prompt: "Read", attachments: ["log.txt"] })).rejects.toThrow("Chat mode has no file access");
+		expect(() => validateDelegate({ requestId: "r", title: "T", prompt: "P", attachments: Array.from({ length: 11 }, (_, index) => `${index}.txt`) })).toThrow("up to 10");
+	}));
+});
+
 describe("launch_threads", () => {
 	it("validates every entry before creating any, then reports each result", async () => withRuntime(async runtime => {
 		expect(() => validateLaunchBatch({ threads: [{ requestId: "a", title: "A", prompt: "A" }, { requestId: "a", title: "B", prompt: "B" }] })).toThrow("distinct requestId");

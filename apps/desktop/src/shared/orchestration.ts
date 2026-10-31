@@ -17,7 +17,7 @@ export type Delegation = { parentTaskId: string; requestId: string; background?:
 export type Launch = { byTaskId: string; requestId: string };
 export const isOrchestrationChild = (task: { delegation?: Delegation }) => Boolean(task.delegation?.parentTaskId);
 export type ThreadSummary = { id: string; title: string; harness: Harness; model: string; status: TaskStatus; parentId?: string; error?: string };
-export type DelegateRequest = { requestId: string; prompt: string; title: string; harness?: Harness; model?: string; accountId?: string; background?: boolean; role?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; modelOptions?: ModelOptionValues; isolation?: "shared" | "worktree"; branch?: string };
+export type DelegateRequest = { requestId: string; prompt: string; title: string; harness?: Harness; model?: string; accountId?: string; background?: boolean; role?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; modelOptions?: ModelOptionValues; isolation?: "shared" | "worktree"; branch?: string; /** Files (absolute, or relative to the caller's checkout) sent with the prompt as attachments. */ attachments?: string[] };
 /** Where a launched chat runs: the caller's project (default), no project, a project, a new worktree of a project, or an existing worktree. */
 export type LaunchWorkspace = { strategy: "same" | "none" } | { strategy: "project" | "existing_worktree"; projectId: string } | { strategy: "worktree"; projectId?: string; branch: string; baseRef?: string };
 export type LaunchRequest = Omit<DelegateRequest, "background" | "role" | "isolation" | "branch"> & { workspace?: LaunchWorkspace };
@@ -75,7 +75,7 @@ export type ThreadTools = {
 	queue?: (id: string) => { id: string; text: string; createdAt: string }[];
 	editQueue?: (id: string, messageId: string, text?: string) => Promise<ThreadSummary>;
 	fork?: (id: string, requestId: string, messageId?: string) => Promise<ThreadSummary>;
-	send?: (id: string, text: string) => Promise<ThreadSummary>;
+	send?: (id: string, text: string, attachments?: string[]) => Promise<ThreadSummary>;
 	merge?: (id: string, requestId: string) => Promise<ThreadSummary>;
 	models?: (harness: Harness, accountId?: string, query?: string) => Promise<{ models: ModelOption[]; total: number; accounts: { id: string; name: string }[] }>;
 	agents?: (filter?: { harness?: Harness; query?: string }) => Promise<AgentCatalog>;
