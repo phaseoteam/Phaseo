@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/settings/account/workspaces/page";
 import { redirect } from "@/i18n/navigation";
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/settings/account/wo
 	beforeLoad: async ({ params }) => {
 		if ((await getSettingsHeaderAccess()).providerMode) redirect({ href: "/settings/account/providers", locale: params.locale ?? "en-GB" });
 	},
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
+	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),
 });

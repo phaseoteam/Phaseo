@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/internal/page";
 import Loading from "@/app/[locale]/(dashboard)/internal/loading";
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/internal/")({
 	beforeLoad: async () => {
 		await requireInternalAdminFn({ data: "/" });
 	},
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
+	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: withLoading(nextPageComponent(Page), Loading),
 });

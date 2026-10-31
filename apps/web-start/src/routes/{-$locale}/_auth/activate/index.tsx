@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(auth)/activate/page";
 import { getActivateSignInRedirect } from "@/app/[locale]/(auth)/activate/page.functions";
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/{-$locale}/_auth/activate/")({
 		const userCode = typeof userCodeParam === "string" ? userCodeParam : null;
 		const signInRedirect = await getActivateSignInRedirect({ data: userCode });
 		if (signInRedirect) redirect(signInRedirect);
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),

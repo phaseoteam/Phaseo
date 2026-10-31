@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/organisations/[organisationId]/models/page";
 import { organisationModelsQuery } from "@/app/[locale]/(dashboard)/organisations/[organisationId]/page.queries";
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/organisations/$orga
 		const metadataPromise = routeMetadata({ data: { params, search: location.search as Record<string, unknown> } });
 		metadataPromise.catch(() => undefined);
 		if (!(await context.queryClient.ensureQueryData(organisationModelsQuery(params.organisationId)))) notFound();
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),

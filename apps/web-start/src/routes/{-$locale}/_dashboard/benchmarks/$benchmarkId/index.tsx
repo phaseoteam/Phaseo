@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/benchmarks/[benchmarkId]/page";
 import { benchmarkQuery, benchmarkSelection } from "@/app/[locale]/(dashboard)/benchmarks/[benchmarkId]/page.queries";
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/benchmarks/$benchma
 		metadataPromise.catch(() => undefined);
 		const selection = benchmarkSelection(params.benchmarkId, location.search as Record<string, unknown>);
 		if (!(await context.queryClient.ensureQueryData(benchmarkQuery(params.benchmarkId, selection)))) notFound();
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),

@@ -4,6 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import type { FetchQueryOptions, QueryClient } from "@tanstack/react-query";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/models/[organisationId]/[modelId]/page";
 import Loading from "@/app/[locale]/(dashboard)/models/[organisationId]/[modelId]/loading";
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/models/$organisatio
 		if (resolution.kind === "model" && (resolution.includeHidden || resolution.modelId !== requestedModelId)) {
 			prefetchAll(context.queryClient, modelPageBodyQueries(resolution.modelId, resolution.includeHidden));
 		}
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: withLoading(nextPageComponent(Page), Loading),

@@ -6,6 +6,7 @@ import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react
 import { RootDocument } from "@/components/layout/RootDocument";
 import { RouteNotFound } from "@/components/layout/RouteBoundaries";
 import { metadataToHead, notFoundMetadata } from "@/lib/start/metadataToHead";
+import { StreamedMetadata } from "@/lib/start/streamedMetadata";
 import { defaultLocale, getLocaleDefinition, isPublicLocale, type PublicLocale } from "@/i18n/locales";
 
 export function localeFromPathname(pathname: string): PublicLocale {
@@ -37,6 +38,7 @@ function RootComponent() {
 	const definition = getLocaleDefinition(locale);
 	return (
 		<RootDocument locale={locale} direction={definition.dir} fontProfile={definition.font}>
+			<StreamedMetadata />
 			<Outlet />
 		</RootDocument>
 	);

@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/families/[...familyId]/page";
 import { familyQuery } from "@/app/[locale]/(dashboard)/families/page.queries";
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/families/$")({
 		metadataPromise.catch(() => undefined);
 		const familyId = (params._splat ?? "").split("/").filter(Boolean).map(decodeURIComponent).join("/");
 		if (!(await context.queryClient.ensureQueryData(familyQuery(familyId)))) notFound();
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page, { splatName: "familyId" }),

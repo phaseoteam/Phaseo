@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(auth)/oauth/consent/page";
 import { oauthConsentQuery, toConsentSearchParams } from "@/app/[locale]/(auth)/oauth/consent/page.functions";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/{-$locale}/_auth/oauth/consent/")({
 		// Signed-out visitors go to sign-in; already-approved requests go back to the client.
 		const resolution = await context.queryClient.ensureQueryData(oauthConsentQuery(toConsentSearchParams(location.search as Record<string, unknown>)));
 		if (resolution.kind === "sign-in" || resolution.kind === "redirect") redirect(resolution.to);
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),

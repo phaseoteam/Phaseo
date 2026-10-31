@@ -15,6 +15,7 @@ import { UsageStackedBar } from "@/components/(rankings)/UsageStackedBar";
 import { RankingBarTable } from "@/components/(rankings)/RankingBarTable";
 import { PublicGeography } from "@/components/(rankings)/PublicGeography";
 import { ToolCallsSection } from "@/components/(rankings)/ToolCallsSection";
+import { LazyRenderOnVisible } from "@/components/(rankings)/LazyRenderOnVisible";
 import { BenchmarkRankingsSectionServer } from "@/components/(rankings)/BenchmarkRankingsSectionServer";
 import { ContextLengthSection } from "@/components/(rankings)/ContextLengthSection";
 import { ImageInputsSection } from "@/components/(rankings)/ImageInputsSection";
@@ -144,26 +145,36 @@ export default function RankingsPageContent({
                         <ModalityLeaderboardsServer modality={modality} />
                     </Suspense>
 
+                    {/* The leaderboard and fastest models render with the page; each section
+                        below loads its data when it scrolls near the viewport. */}
                     {isTextPage ? (
                     <>
 					<Suspense fallback={<ListSkeleton />}>
 						<TextRankingSignalsServer />
 					</Suspense>
+<LazyRenderOnVisible id="benchmarks" minHeight={640}>
 					<Suspense fallback={<ListSkeleton />}>
 						<BenchmarkRankingsSectionServer />
 					</Suspense>
+</LazyRenderOnVisible>
 
+<LazyRenderOnVisible id="context-length" minHeight={560}>
 					<Suspense fallback={<ListSkeleton />}>
 						<ContextLengthSection />
 					</Suspense>
+</LazyRenderOnVisible>
 
+<LazyRenderOnVisible id="unique-users" minHeight={520}>
                     <Suspense fallback={<ChartSkeleton />}>
                         <UniqueUsersSectionServer />
                     </Suspense>
+</LazyRenderOnVisible>
 
+<LazyRenderOnVisible id="retention" minHeight={560}>
 					<Suspense fallback={<ListSkeleton />}>
 						<ModelRetentionSection />
 					</Suspense>
+</LazyRenderOnVisible>
 
                     <section id="market-share" className="scroll-mt-32 space-y-12 border-t border-border pt-12">
 						<div className="space-y-0.5">
@@ -185,9 +196,11 @@ export default function RankingsPageContent({
                                     </span>
                                 </p>
                             </div>
+<LazyRenderOnVisible minHeight={480}>
                             <Suspense fallback={<ChartSkeleton />}>
                                 <MarketShareOrganizationServer />
                             </Suspense>
+</LazyRenderOnVisible>
                         </section>
                         <section className="space-y-4">
                             <div className="space-y-0.5">
@@ -202,27 +215,37 @@ export default function RankingsPageContent({
                                     </span>
                                 </p>
                             </div>
+<LazyRenderOnVisible minHeight={480}>
                             <Suspense fallback={<ChartSkeleton />}>
                             <MarketShareProviderServer />
                         </Suspense>
+</LazyRenderOnVisible>
                         </section>
                     </section>
 
+<LazyRenderOnVisible id="tool-calls" minHeight={520}>
 					<Suspense fallback={<ChartSkeleton />}>
 						<ToolCallsSection />
 					</Suspense>
+</LazyRenderOnVisible>
 
+<LazyRenderOnVisible id="image-inputs" minHeight={520}>
 					<Suspense fallback={<ChartSkeleton />}>
 						<ImageInputsSection />
 					</Suspense>
+</LazyRenderOnVisible>
 
+<LazyRenderOnVisible id="top-apps" minHeight={560}>
 					<Suspense fallback={<ListSkeleton />}>
 						<TopAppsSection />
 					</Suspense>
+</LazyRenderOnVisible>
 
+<LazyRenderOnVisible id="geography" minHeight={560}>
 					<Suspense fallback={<ListSkeleton />}>
 						<PublicGeography />
 					</Suspense>
+</LazyRenderOnVisible>
                     </>
                     ) : null}
 

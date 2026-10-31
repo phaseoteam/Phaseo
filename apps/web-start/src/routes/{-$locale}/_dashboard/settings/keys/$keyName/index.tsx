@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/settings/keys/[keyName]/page";
 import { notFound } from "next/navigation";
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/settings/keys/$keyN
 		if (result.kind === "unauthorized") redirect({ href: "/sign-in", locale });
 		if (result.kind === "ok" && !matchesKeyRouteName(result.data.key.name, params.keyName)) redirect({ href: keyDetailHref(result.data.key), locale });
 	},
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
+	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),
 });

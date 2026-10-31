@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/page";
 import NotFound from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/not-found";
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/api-providers/$apiP
 		void context.queryClient.prefetchQuery(apiProviderModelsQuery(params.apiProvider));
 		const pageData = await context.queryClient.ensureQueryData(apiProviderPageDataQuery(params.apiProvider));
 		if (!pageData.publicHeader && !pageData.initialProviderPreviews[0]) notFound();
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	notFoundComponent: NotFound,

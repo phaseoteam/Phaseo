@@ -4,6 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { redirect } from "next/navigation";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextLayoutComponent } from "@/lib/start/nextPage";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 import { localizeAuthPath } from "@/lib/auth/localized-paths";
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/settings")({
 			redirect(`${localizeAuthPath(locale, "/sign-in")}?returnUrl=${encodeURIComponent(safeReturnUrl)}`);
 		}
 	},
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
+	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextLayoutComponent(Layout),
 });

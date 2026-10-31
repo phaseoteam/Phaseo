@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/compare/[gateway]/page";
 import { parsePairSlug } from "@/components/(data)/compare/comparePairs";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/compare/$gateway/")
 		metadataPromise.catch(() => undefined);
 		const pair = parsePairSlug(params.gateway);
 		if (pair && !comparePairExists(pair, await context.queryClient.ensureQueryData(comparePairDataQuery(pair)))) notFound();
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),

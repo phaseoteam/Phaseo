@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/help/[category]/[slug]/page";
 import { helpArticleQuery } from "@/app/[locale]/(dashboard)/help/page.functions";
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/help/$category/$slu
 		const locale = (params.locale || defaultLocale) as PublicLocale;
 		const { article, categoryData } = await context.queryClient.ensureQueryData(helpArticleQuery(locale, params.category, params.slug));
 		if (!article || !categoryData) notFound();
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),

@@ -78,9 +78,9 @@ function metadataParts(rel, splat) {
 	const staticMeta = /export\s+const\s+metadata\b/.test(code);
 	if (dynamic) {
 		return {
-			imports: [`import { createServerFn } from "@tanstack/react-start";`, `import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";`, `import { metadataToHead } from "@/lib/start/metadataToHead";`],
+			imports: [`import { createServerFn } from "@tanstack/react-start";`, `import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";`, `import { metadataToHead } from "@/lib/start/metadataToHead";`, `import { metadataLoaderData } from "@/lib/start/streamedMetadata";`],
 			decl: `const routeMetadata = createServerFn({ method: "GET" })\n\t.validator((input: MetadataInput) => input)\n\t.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));\n`,
-			options: `\tloader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown>${splat ? `, splatName: ${JSON.stringify(splat)}` : ""} } }) }),\n\thead: ({ loaderData }) => metadataToHead(loaderData?.metadata),\n`,
+			options: `\tloader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown>${splat ? `, splatName: ${JSON.stringify(splat)}` : ""} } })),\n\thead: ({ loaderData }) => metadataToHead(loaderData?.metadata),\n`,
 		};
 	}
 	if (staticMeta) {

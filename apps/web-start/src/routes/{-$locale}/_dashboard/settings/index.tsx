@@ -4,6 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { redirect } from "next/navigation";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/settings/")({
 		const locale = params.locale ?? "en-GB";
 		redirect(localizePublicPath((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale, account.providerMode ? "/settings/account/providers" : "/settings/credits"));
 	},
-	loader: async ({ params, location }) => ({ metadata: await routeMetadata({ data: { params, search: location.search as Record<string, unknown> } }) }),
+	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: withLoading(nextPageComponent(Page), Loading),
 });

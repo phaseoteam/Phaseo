@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
+import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/apps/[appId]/page";
 import { appDetailsQuery } from "@/app/[locale]/(dashboard)/apps/[appId]/page.queries";
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/apps/$appId/")({
 			const canonicalAppId = app.slug?.trim() || getPublicAppRouteSegment(app.title);
 			if (canonicalAppId !== params.appId) permanentRedirect(getPublicAppPath(app.title, app.slug));
 		}
-		return { metadata: await metadataPromise };
+		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
 	component: nextPageComponent(Page),
