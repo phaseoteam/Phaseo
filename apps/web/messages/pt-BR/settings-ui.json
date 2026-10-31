@@ -7696,7 +7696,7 @@
 			"timeZoneHelp": "Alertas diários, semanais e mensais seguem este fuso, a menos que um alerta defina o seu.",
 			"utcNote": "Orçamentos do espaço de trabalho e limites de chave continuam reiniciando à meia-noite UTC.",
 			"attribution": "Gastos por departamento",
-			"attributionHelp": "Como os gastos contam quando uma pessoa pertence a mais de um departamento.",
+			"attributionHelp": "Como as regras de gastos, os orçamentos de departamento e os limites de taxa de departamento contam uma pessoa que pertence a mais de um departamento.",
 			"attributionAll": "Todos os departamentos dela",
 			"attributionAllHelp": "Os gastos dela contam integralmente em cada departamento.",
 			"attributionPrimary": "Somente o departamento principal",

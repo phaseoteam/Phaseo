@@ -25323,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'Cómo cuentan las reglas de gasto el gasto de una persona en los departamentos cuando su clave no tiene departamento propio: all lo cuenta en todos los departamentos a los que pertenece; primary solo en su departamento principal. El departamento propio de una clave siempre prevalece.'
+      description: 'Cómo cuentan las reglas de gasto, los presupuestos de departamento y los límites de frecuencia de departamento las solicitudes de una persona en los departamentos cuando su clave no tiene departamento propio: all las cuenta en todos los departamentos a los que pertenece; primary solo en su departamento principal. El departamento propio de una clave y la anulación de directorio de un miembro siempre prevalecen.'
       enum:
         - all
         - primary

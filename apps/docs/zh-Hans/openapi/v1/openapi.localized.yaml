@@ -25323,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 当某人的密钥没有自己的部门时，支出规则如何将其支出计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门始终优先。
+      description: 当某人的密钥没有自己的部门时，支出规则、部门预算和部门速率限制如何将其请求计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门和成员的目录覆盖始终优先。
       enum:
         - all
         - primary

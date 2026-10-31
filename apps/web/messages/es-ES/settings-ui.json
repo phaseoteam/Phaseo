@@ -7696,7 +7696,7 @@
 			"timeZoneHelp": "Las alertas diarias, semanales y mensuales siguen esta zona salvo que una alerta defina la suya.",
 			"utcNote": "Los presupuestos del espacio de trabajo y los límites de clave siguen reiniciándose a medianoche UTC.",
 			"attribution": "Gasto por departamento",
-			"attributionHelp": "Cómo cuenta el gasto cuando una persona pertenece a más de un departamento.",
+			"attributionHelp": "Cómo cuentan a una persona que pertenece a más de un departamento las reglas de gasto, los presupuestos de departamento y los límites de frecuencia de departamento.",
 			"attributionAll": "Todos sus departamentos",
 			"attributionAllHelp": "Su gasto cuenta completo en cada departamento.",
 			"attributionPrimary": "Solo el departamento principal",

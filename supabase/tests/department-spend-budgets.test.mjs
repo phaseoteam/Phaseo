@@ -28,7 +28,10 @@ const schemaFiles = [
 ];
 // Department budgets block requests: the sweep's 100% push and the table comment say so.
 const blockMigrationFile = '../migrations/20261029134622_department_budgets_block_requests.sql';
-const redefinedLater = /workspace_department_budget_status|department_budget_key_departments/;
+// Counts members toward their primary department only when the workspace asks for that.
+const primaryMigrationFile = '../migrations/20261031174621_department_attribution_primary_for_budgets.sql';
+const redefinedLater = /workspace_department_budget_status/;
+const redefinedLast = /department_budget_key_departments/;
 const COMMENT_LINE = /^COMMENT ON TABLE .*$/m;
 const sweep = at => asService(async () => (await one('select public.sweep_department_budget_alerts($1) r', [at])).r);
 const status = (workspace, at = NOW) => asService(async () => (await one('select public.workspace_department_budget_status($1, $2) r', [workspace, at])).r);
@@ -43,12 +46,13 @@ try {
     const migration = await read(migrationFile);
     const attributionMigration = await read(attributionMigrationFile);
     const blockMigration = await read(blockMigrationFile);
+    const primaryMigration = await read(primaryMigrationFile);
     const sweepFile = '../schemas/public/functions/sweep_department_budget_alerts.sql';
     const tableFile = '../schemas/public/tables/workspace_department_budgets.sql';
     const sweepDefinition = (await read(sweepFile)).replace(/\r\n/g, '\n');
     const tableDefinition = (await read(tableFile)).replace(/\r\n/g, '\n');
     for (const file of schemaFiles.filter(file => file !== sweepFile && file !== tableFile)) {
-        assert.ok((redefinedLater.test(file) ? attributionMigration : migration).includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
+        assert.ok((redefinedLast.test(file) ? primaryMigration : redefinedLater.test(file) ? attributionMigration : migration).includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
     }
     // The table is created by the first migration; the later one only replaces its comment.
     assert.ok(migration.includes(tableDefinition.replace(COMMENT_LINE, migration.match(COMMENT_LINE)[0]).trim()), 'the table is in the migration');
@@ -75,9 +79,10 @@ try {
       );
       create table public.workspace_department_grants (
         workspace_id uuid not null, user_id uuid not null, department_id uuid not null, source_type text not null default 'manual',
-        source_id uuid not null default gen_random_uuid(),
+        source_id uuid not null default gen_random_uuid(), is_primary boolean not null default false, created_at timestamptz not null default now(),
         foreign key (department_id, workspace_id) references public.workspace_departments(id, workspace_id) on delete cascade
       );
+      create table public.workspace_settings (workspace_id uuid primary key, department_spend_attribution text not null default 'all');
       create table public.workspace_member_overrides (
         workspace_id uuid not null, user_id uuid not null, department_override_enabled boolean not null default false, department_id uuid,
         primary key (workspace_id, user_id)
@@ -111,6 +116,7 @@ try {
     await db.exec(migration);
     await db.exec(attributionMigration);
     await db.exec(blockMigration);
+    await db.exec(primaryMigration);
     assert.match((await one(`select obj_description('public.workspace_department_budgets'::regclass, 'pg_class') c`)).c, /Budgets block the department's API-key requests/);
 
     // Acme: Engineering and Sales. u2 is in both; u3 is granted Sales but a directory override

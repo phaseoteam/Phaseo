@@ -25323,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'Comment les règles de dépenses imputent les dépenses d’une personne aux services lorsque sa clé n’a pas de service propre : all les impute à tous les services dont elle fait partie ; primary uniquement à son service principal. Le service propre d’une clé l’emporte toujours.'
+      description: 'Comment les règles de dépenses, les budgets de service et les limites de débit de service imputent les requêtes d’une personne aux services lorsque sa clé n’a pas de service propre : all les impute à tous les services dont elle fait partie ; primary uniquement à son service principal. Le service propre d’une clé et le remplacement d’annuaire d’un membre l’emportent toujours.'
       enum:
         - all
         - primary
