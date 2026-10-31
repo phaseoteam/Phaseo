@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { agentBrowserCloseConfirmation, browserColorScheme, browserTabLimit, browserUrl, browserViewport, browserZoom, type BrowserAgentTabOpened, type BrowserColorScheme, type BrowserOpenTab, type BrowserState, type BrowserViewport } from "../../shared/browser";
 import { miniPlayerFor } from "./browserMiniPlayer";
+import { answerAgentRecordings } from "./browserRecording";
 import { dispatchKeybinding } from "./keybindings";
 
 /** A saved browser tab. name is the person's own title; title is the page's. */
@@ -101,8 +102,10 @@ function start() {
 		try { const next = openBrowserTab(current, request, id); errors.delete(context); commit(context, next); for (const listener of openedListeners) listener({ context, id, background: request.background }); }
 		catch (reason) { errors.set(context, reason instanceof Error ? reason.message : String(reason)); changed(); }
 	});
+	answerAgentRecordings();
 	// A page an agent opened joins its chat's tabs, and shows in the pane when that chat is open, unless it already floats over the chat.
 	api.onBrowserAgentTab(opened => {
+		if (opened.closed) { const current = group(opened.context), tabs = current.tabs.filter(tab => tab.id !== opened.id); live.delete(opened.id); if (tabs.length !== current.tabs.length) commit(opened.context, { tabs, active: current.active === opened.id ? tabs[0]?.id ?? "" : current.active }); return; }
 		try { const next = adoptBrowserTab(group(opened.context), opened); errors.delete(opened.context); commit(opened.context, next); if (miniPlayerFor(opened.context)?.tabId !== opened.id) for (const listener of openedListeners) listener({ context: opened.context, id: opened.id, background: false }); }
 		catch (reason) { errors.set(opened.context, reason instanceof Error ? reason.message : String(reason)); changed(); }
 	});

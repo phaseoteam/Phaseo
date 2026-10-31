@@ -20,6 +20,8 @@ const desktopApi: PhaseoDesktopApi = {
 	browserRecordingSource: id => ipcRenderer.invoke("desktop:browser-recording-source", id),
 	browserRecordingSave: (mimeType, data) => ipcRenderer.invoke("desktop:browser-recording-save", mimeType, data),
 	browserRecordingReveal: path => ipcRenderer.invoke("desktop:browser-recording-reveal", path),
+	onBrowserAgentRecord: listener => { const subscription = (_event: Electron.IpcRendererEvent, request: Parameters<typeof listener>[0]) => listener(request); ipcRenderer.on("desktop:browser-agent-record", subscription); return () => ipcRenderer.removeListener("desktop:browser-agent-record", subscription); },
+	browserAgentRecorded: (requestId, recording, error) => ipcRenderer.invoke("desktop:browser-agent-recorded", requestId, recording ?? null, error),
 	onBrowserAgentTab: listener => { const subscription = (_event: Electron.IpcRendererEvent, tab: Parameters<typeof listener>[0]) => listener(tab); ipcRenderer.on("desktop:browser-agent-tab", subscription); return () => ipcRenderer.removeListener("desktop:browser-agent-tab", subscription); },
 	onBrowserKey: listener => { const subscription = (_event: Electron.IpcRendererEvent, key: Parameters<typeof listener>[0]) => listener(key); ipcRenderer.on("desktop:browser-key", subscription); return () => ipcRenderer.removeListener("desktop:browser-key", subscription); },
 	workspace: {

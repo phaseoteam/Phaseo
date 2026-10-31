@@ -27,7 +27,7 @@ Keep these separate from the broader desktop feature ledger; an exposed tool alo
 - [x] Message-boundary forks, child messaging and idempotent conversation-result merge
 - [ ] Full provider handoff and Git worktree merge-back tools
 - [x] Top-level chat launch (single and batch) with workspace strategies including new Git worktrees, project listing, chat organisation and scheduled-task tools (fixture validation)
-- [ ] Preview tools
+- [x] Browser tools for agents: open, read, click, type, act (hover, select, key press, scroll, drag, upload), evaluate, wait, resize, colour scheme, dialogs, recording, close and screenshots (fixture validation)
 - [ ] Full latest-nightly parity audit
 
 ## Validation and limits

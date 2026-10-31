@@ -27,7 +27,7 @@ import { BrowserAgent } from "./browserAgent";
 import { BrowserRecordings } from "./browserRecordings";
 import { localServers, probeAddress } from "./browserLocalServers";
 import { readT3ProjectFile } from "./t3ProjectFile";
-import { browserId, probeUrl } from "../shared/browser";
+import { browserId, probeUrl, type BrowserRecording } from "../shared/browser";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
@@ -1031,8 +1031,24 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 
 const browserHost = new BrowserHost();
 registerFactoryIpc(ipcMain, () => factoryService, senderWindow, async window => { const picked = await dialog.showOpenDialog(window, { title: "Choose a local clone of the repository", properties: ["openDirectory"] }); return picked.canceled ? undefined : picked.filePaths[0]; });
-const browserAgent = new BrowserAgent(browserHost, () => [...appWindows].find(window => !window.isDestroyed()));
+// Recording runs in the window (it owns the tab's capture stream), so an agent's start or stop is a request the window answers.
+const agentRecordings = new Map<string, { resolve: (value: BrowserRecording | undefined) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }>();
+const browserAgent = new BrowserAgent(browserHost, () => [...appWindows].find(window => !window.isDestroyed()), (owner, request) => new Promise((resolve, reject) => {
+	const requestId = randomUUID(), timer = setTimeout(() => { agentRecordings.delete(requestId); reject(new Error("The window did not answer the recording request.")); }, 60_000);
+	agentRecordings.set(requestId, { resolve, reject, timer });
+	owner.webContents.send("desktop:browser-agent-record", { requestId, ...request });
+}));
 let browserRecordings: BrowserRecordings;
+ipcMain.handle("desktop:browser-agent-recorded", async (event, requestId: unknown, result: unknown, error: unknown) => {
+	if (!senderWindow(event)) throw new Error("Untrusted browser request.");
+	const pending = typeof requestId === "string" ? agentRecordings.get(requestId) : undefined;
+	if (!pending) return;
+	agentRecordings.delete(requestId as string); clearTimeout(pending.timer);
+	if (typeof error === "string") { pending.reject(new Error(error.slice(0, 500))); return; }
+	const saved = result as Partial<BrowserRecording> | null | undefined;
+	if (!saved) { pending.resolve(undefined); return; }
+	try { pending.resolve({ path: await browserRecordings.resolve(saved.path), mimeType: String(saved.mimeType ?? "").slice(0, 100), size: Number(saved.size) || 0 }); } catch (reason) { pending.reject(reason instanceof Error ? reason : new Error("The recording could not be found.")); }
+});
 ipcMain.handle("desktop:browser", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.command(owner, command); });
 ipcMain.handle("desktop:browser-capture", (event, id: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.capture(owner, browserId(id)); });
 ipcMain.handle("desktop:browser-pick", (event, id: unknown, cancel: unknown) => { const owner = senderWindow(event); if (!owner || typeof cancel !== "boolean") throw new Error("Untrusted browser request."); return browserHost.pick(owner, browserId(id), cancel); });

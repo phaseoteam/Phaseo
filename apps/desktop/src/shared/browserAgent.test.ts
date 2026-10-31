@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { browserAgentDefaults, browserAgentSelector, browserAgentUrl, browserTabOfChat, validateBrowserOpen, validateBrowserSnapshot, validateBrowserTab, validateBrowserTarget, validateBrowserType } from "./browserAgent";
+import { browserViewportPresets } from "./browser";
+import { browserAgentDefaults, browserAgentSelector, browserAgentUrl, browserTabOfChat, validateBrowserAct, validateBrowserAppearance, validateBrowserClose, validateBrowserDialog, validateBrowserEvaluate, validateBrowserOpen, validateBrowserResize, validateBrowserSnapshot, validateBrowserTab, validateBrowserTarget, validateBrowserType, validateBrowserWait } from "./browserAgent";
 
 describe("agent browser tools", () => {
 	it("opens only web addresses: never files, app pages, scripts or embedded credentials", () => {
@@ -32,5 +33,43 @@ describe("agent browser tools", () => {
 		expect(validateBrowserSnapshot({})).toEqual({ maxCharacters: browserAgentDefaults.snapshotCharacters });
 		expect(() => validateBrowserSnapshot({ maxCharacters: 10 })).toThrow(/maxCharacters/);
 		expect(() => validateBrowserTarget([])).toThrow("Expected browser tool arguments.");
+	});
+});
+
+describe("agent browser actions", () => {
+	it("checks each action's own fields", () => {
+		expect(validateBrowserAct({ action: "hover", selector: "#menu" })).toEqual({ action: "hover", selector: "#menu", timeoutMs: browserAgentDefaults.timeoutMs });
+		expect(() => validateBrowserAct({ action: "hover" })).toThrow("hover needs selector.");
+		expect(() => validateBrowserAct({ action: "click", selector: "a" })).toThrow(/Invalid action/);
+		expect(validateBrowserAct({ action: "select", selector: "select", values: ["Red"] })).toMatchObject({ values: ["Red"] });
+		expect(validateBrowserAct({ action: "press", key: "Enter", modifiers: ["Control"] })).toMatchObject({ key: "Enter", modifiers: ["Control"] });
+		expect(validateBrowserAct({ action: "press", key: "é" })).toMatchObject({ key: "é" });
+		for (const key of ["Enterr", "ab", "", "\n"]) expect(() => validateBrowserAct({ action: "press", key })).toThrow(/Invalid key/);
+		expect(() => validateBrowserAct({ action: "press", key: "a", modifiers: ["Hyper"] })).toThrow(/Invalid modifiers/);
+		expect(validateBrowserAct({ action: "scroll", deltaY: 120.4 })).toMatchObject({ deltaX: 0, deltaY: 120 });
+		expect(() => validateBrowserAct({ action: "scroll" })).toThrow("scroll needs deltaX or deltaY.");
+		expect(() => validateBrowserAct({ action: "scroll", deltaY: Number.POSITIVE_INFINITY })).toThrow("Invalid deltaY.");
+		expect(() => validateBrowserAct({ action: "drag", selector: "#a" })).toThrow("Invalid selector.");
+		expect(() => validateBrowserAct({ action: "upload", selector: "input", paths: [] })).toThrow("upload needs paths.");
+		expect(() => validateBrowserAct({ action: "upload", selector: "input", paths: Array(21).fill("C:/a") })).toThrow("Invalid paths.");
+	});
+	it("waits for at least one condition", () => {
+		expect(validateBrowserWait({ selector: ".spinner", state: "hidden" })).toEqual({ selector: ".spinner", state: "hidden", timeoutMs: browserAgentDefaults.timeoutMs });
+		expect(() => validateBrowserWait({})).toThrow("Pass selector, text or url to wait for.");
+		expect(() => validateBrowserWait({ text: "x", state: "gone" })).toThrow(/Invalid state/);
+	});
+	it("bounds scripts, sizes, appearance, dialogs and closing", () => {
+		expect(() => validateBrowserEvaluate({ expression: "  " })).toThrow(/Invalid expression/);
+		expect(() => validateBrowserEvaluate({ expression: "x".repeat(browserAgentDefaults.expressionLength + 1) })).toThrow(/Invalid expression/);
+		expect(validateBrowserResize({ mode: "fill" })).toEqual({ viewport: { mode: "fill" } });
+		expect(validateBrowserResize({ mode: "freeform", width: 800, height: 600 }).viewport).toMatchObject({ mode: "device", width: 800, height: 600 });
+		const preset = browserViewportPresets[0];
+		expect(validateBrowserResize({ mode: "preset", preset: preset.id, orientation: "landscape" }).viewport).toEqual({ mode: "device", width: preset.height, height: preset.width, preset: preset.id });
+		expect(() => validateBrowserResize({ mode: "preset", preset: "toaster" })).toThrow(/Invalid preset/);
+		expect(() => validateBrowserResize({ mode: "huge" })).toThrow(/Invalid mode/);
+		expect(validateBrowserAppearance({ colorScheme: "dark" })).toEqual({ colorScheme: "dark" });
+		expect(validateBrowserDialog({ action: "accept", promptText: "Ada" })).toEqual({ action: "accept", promptText: "Ada" });
+		expect(() => validateBrowserDialog({ action: "ok" })).toThrow(/Invalid action/);
+		expect(() => validateBrowserClose({})).toThrow("Pass the tabId to close.");
 	});
 });

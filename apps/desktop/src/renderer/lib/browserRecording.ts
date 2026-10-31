@@ -56,5 +56,15 @@ export async function stopBrowserRecording(tabId: string): Promise<SavedBrowserR
 	return { ...saved, tabId, url: current.url };
 }
 
-/** The file manager's name, as T3 Code labels its reveal action. */
+/** Answers an agent's request to start or stop recording one of its chat's tabs, through the same recorder the person uses. */
+export function answerAgentRecordings() {
+	const api = window.phaseoDesktop;
+	if (!api?.onBrowserAgentRecord) return;
+	api.onBrowserAgentRecord(request => {
+		const work = request.action === "start" ? startBrowserRecording(request.tabId, request.url).then(() => undefined) : stopBrowserRecording(request.tabId);
+		void work.then(saved => api.browserAgentRecorded(request.requestId, saved ? { path: saved.path, mimeType: saved.mimeType, size: saved.size } : undefined), (error: unknown) => api.browserAgentRecorded(request.requestId, undefined, error instanceof Error ? error.message : "Recording failed."));
+	});
+}
+
+/** The file manager's name, for the reveal action. */
 export function revealLabel(platform: string) { const value = platform.toLowerCase(); return value.includes("darwin") || value.includes("mac") ? "Reveal in Finder" : value.includes("win") ? "Reveal in File Explorer" : "Reveal in Files"; }
