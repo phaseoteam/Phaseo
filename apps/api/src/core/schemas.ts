@@ -13,6 +13,7 @@ import {
 	ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES,
 	OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES,
 } from "./nativeTools";
+import { isAnthropicSystemMessagePlacementValid } from "./claudeModelCapabilities";
 
 const ProviderRoutingSchema = lazySchema(() => z.object({
     // Existing gateway routing hints
@@ -426,10 +427,29 @@ const EmbeddingsMultimodalContentSchema = lazySchema(() => z.array(EmbeddingsInp
 const EmbeddingsInputObjectSchema = lazySchema(() => z.object({
 	content: EmbeddingsMultimodalContentSchema,
 }).passthrough());
-const EmbeddingsStructuredInputSchema = lazySchema(() => z.record(z.string(), z.any()).refine(
-	(value) => Object.keys(value).length > 0 && typeof value.type !== "string",
-	{ message: "structured embedding input must not be empty" },
-));
+// Flat field objects such as `{ text: "..." }` that some providers fill into a
+// prompt template (Fireworks `prompt_template`). Values must be scalars: nested
+// objects and arrays are not a shape any embeddings provider accepts, so they
+// are rejected here with a 400 instead of reaching the provider and failing there.
+// Multimodal input uses `{ content: [...] }` (EmbeddingsInputObjectSchema).
+const isStructuredInputScalar = (value: unknown): boolean =>
+	typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+const EmbeddingsStructuredInputSchema = lazySchema(() => z.record(z.string(), z.unknown()).superRefine((value, ctx) => {
+	const keys = Object.keys(value);
+	if (keys.length === 0 || typeof value.type === "string") {
+		ctx.addIssue({ code: "custom", message: "structured embedding input must not be empty" });
+		return;
+	}
+	for (const key of keys) {
+		if (!isStructuredInputScalar(value[key])) {
+			ctx.addIssue({
+				code: "custom",
+				path: [key],
+				message: "structured embedding input fields must be strings, numbers or booleans; use { content: [...] } for multimodal input",
+			});
+		}
+	}
+}));
 
 const EmbeddingsInputStringSchema = lazySchema(() => z.string().min(1));
 const EmbeddingsInputTokenArraySchema = lazySchema(() => z.array(z.number().int()).max(2048));
@@ -865,6 +885,11 @@ export const ChatCompletionsSchema = lazySchema(() => z.object({
                 // Reasoning blocks with signatures or encrypted reasoning, sent
                 // back unchanged from an earlier response.
                 reasoning_details: z.array(z.record(z.string(), z.unknown())).optional(),
+                // An earlier audio response, referenced by its id
+                // (https://platform.openai.com/docs/api-reference/chat/create).
+                // The rest of a returned message.audio (data, expires_at,
+                // transcript) is not part of the request and is stripped.
+                audio: z.object({ id: z.string().min(1) }).nullable().optional(),
             }),
             z.object({
                 role: z.literal("tool"),
@@ -992,11 +1017,14 @@ const AnthropicTextContentSchema = lazySchema(() => z.object({
 const AnthropicImageContentSchema = lazySchema(() => z.object({
     type: z.literal("image"),
     cache_control: CacheControlSchema.optional(),
+    // `file` references an upload made through the Files API.
+    // https://platform.claude.com/docs/en/build-with-claude/files
     source: z.object({
-        type: z.enum(["base64", "url"]),
+        type: z.enum(["base64", "url", "file"]),
         media_type: z.string().optional(),
         data: z.string().optional(),
         url: z.string().optional(),
+        file_id: z.string().optional(),
     }),
 }));
 
@@ -1065,15 +1093,42 @@ const AnthropicToolChoiceSchema = lazySchema(() => z.union([
     z.object({ type: z.literal("tool"), name: z.string() }),
 ]).and(z.object({ disable_parallel_tool_use: z.boolean().optional() }).passthrough()));
 
+// Mid-conversation system message
+// (https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages).
+// Strict, so the beta-only `clear_at` and `output_config` are refused rather
+// than dropped; `tool_addition` and `tool_removal` blocks fail the text schema.
+const AnthropicSystemMessageSchema = lazySchema(() => z.object({
+    role: z.literal("system"),
+    content: z.union([z.string(), z.array(AnthropicTextContentSchema).min(1)]),
+}).strict());
+
+const AnthropicMessagesListSchema = lazySchema(() => z.array(z.discriminatedUnion("role", [
+    z.object({
+        role: z.enum(["user", "assistant"]),
+        content: AnthropicMessageContentSchema,
+    }),
+    AnthropicSystemMessageSchema,
+])).min(1).max(100000).superRefine((messages, ctx) => {
+    // Consecutive system messages are judged together, as Claude does.
+    for (let start = 0; start < messages.length; start += 1) {
+        if (messages[start].role !== "system") continue;
+        let end = start;
+        while (messages[end + 1]?.role === "system") end += 1;
+        if (!isAnthropicSystemMessagePlacementValid(messages[start - 1], messages[end + 1])) {
+            ctx.addIssue({
+                code: "custom",
+                path: [start],
+                message: "A system message must immediately follow a user turn (or an assistant turn ending in a server tool result) and be the last message or be followed by an assistant turn. Use the top-level `system` field for instructions that apply from the start.",
+            });
+        }
+        start = end;
+    }
+}));
+
 export const AnthropicMessagesSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     session_id: z.string().trim().min(1).max(256).optional(),
-    messages: z.array(
-        z.object({
-            role: z.enum(["user", "assistant"]),
-            content: AnthropicMessageContentSchema,
-        })
-    ).min(1).max(100000),
+    messages: AnthropicMessagesListSchema,
     system: z.union([z.string(), z.array(AnthropicTextContentSchema)]).optional(),
     max_tokens: z.number().int().nonnegative(),
     temperature: z.number().min(0).max(1).optional(),
@@ -1140,6 +1195,8 @@ export const AnthropicMessagesSchema = lazySchema(() => z.object({
 	}).passthrough().optional(),
 	// Same end-user identifier as Chat's `user`; sent to Anthropic as metadata.user_id.
 	user: z.string().optional(),
+	// Same cache affinity key as Chat and Responses.
+	prompt_cache_key: z.string().nullable().optional(),
 
     stop_sequences: z.array(z.string()).optional(),
     web_search_options: z.record(z.string(), z.any()).optional(),

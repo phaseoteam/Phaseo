@@ -9,9 +9,11 @@ import {
 	VIDEO_API_GATE,
 	REALTIME_VOICE_GATE,
 	GATEWAY_IO_LOGGING_GATE,
-	GATEWAY_TRACE_VIEW_GATE,
 	AUTO_ROUTING_GATE,
 	REQUEST_CLASSIFIERS_GATE,
+	MODEL_SUCCESSOR_REDIRECT_GATE,
+	WORKLOAD_IDENTITY_GATE,
+	SLACK_AGENT_GATE,
 	PRESET_EXPERIMENTS_GATE,
 	SAML_SSO_GATE,
 	CATALOGUE_GAMES_PREVIEW_GATE,
@@ -21,21 +23,10 @@ import {
 	type GatewayHeroVariant,
 } from "@/lib/statsig/shared";
 
-import { identify } from "./identify";
+import { identify, identifyWorkspaceOwner } from "./identify";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 
 const statsigAdapter = getStatsigFlagsAdapter();
-
-export const gatewayTraceViewFlag = statsigAdapter
-	? flag<boolean, StatsigUser>({
-			key: GATEWAY_TRACE_VIEW_GATE,
-			identify,
-			adapter: statsigAdapter.featureGate((gate) => gate.value),
-		})
-	: flag<boolean>({
-			key: GATEWAY_TRACE_VIEW_GATE,
-			decide: () => false,
-		});
 
 export const gatewayNewHeroFlag = statsigAdapter
 	? flag<boolean, StatsigUser>({
@@ -116,6 +107,55 @@ export const requestClassifiersFlag = statsigAdapter
 			key: REQUEST_CLASSIFIERS_GATE,
 			decide: () => false,
 		});
+
+// Decided for the workspace owner, as the gateway does, so the settings
+// control only shows where the redirect can actually happen.
+export const modelSuccessorRedirectFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: MODEL_SUCCESSOR_REDIRECT_GATE,
+			identify: identifyWorkspaceOwner,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: MODEL_SUCCESSOR_REDIRECT_GATE,
+			decide: () => false,
+		});
+
+// Decided for the workspace owner, as the gateway does, so Settings → Trusted
+// workloads only shows where the gateway accepts workload tokens.
+export const workloadIdentityFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: WORKLOAD_IDENTITY_GATE,
+			identify: identifyWorkspaceOwner,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: WORKLOAD_IDENTITY_GATE,
+			decide: () => false,
+		});
+
+export const slackAgentFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: SLACK_AGENT_GATE,
+			identify,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: SLACK_AGENT_GATE,
+			decide: () => false,
+		});
+
+/**
+ * Settings → Slack stays hidden until the hosted Slack app exists. Phaseo admins
+ * see it anyway, to test with their own Slack app; web-api still checks roles.
+ */
+export async function slackAgentSettingsEnabled(): Promise<boolean> {
+	const [gateEnabled, isAdmin] = await Promise.all([
+		slackAgentFlag().catch(() => false),
+		isAdminViewer().catch(() => false),
+	]);
+	return gateEnabled || isAdmin;
+}
 
 export const presetExperimentsFlag = statsigAdapter
 	? flag<boolean, StatsigUser>({

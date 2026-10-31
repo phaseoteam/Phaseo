@@ -63,7 +63,7 @@ if (mode === "smoke") {
 	try {
 		run(["db", "start"]);
 		run(["migration", "up", "--local"]);
-		for (const file of ["declarative_schema.sql", "public_catalogue_payloads.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql", "provider_catalog_production_smoke.sql", "provider_catalog_automatic_updates.sql", "provider_catalog_retention.sql", "provider_catalog_model_requests.sql", "provider_catalog_review_notifications.sql", "provider_catalog_overrides.sql"]) {
+		for (const file of ["declarative_schema.sql", "public_catalogue_payloads.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql", "provider_catalog_production_smoke.sql", "provider_catalog_automatic_updates.sql", "provider_catalog_retention.sql", "provider_catalog_data_policy.sql", "provider_catalog_model_requests.sql", "provider_catalog_review_notifications.sql", "provider_catalog_overrides.sql"]) {
 			query(readFileSync(join(source, "tests", file), "utf8"));
 		}
 		await runRollupLockSmoke(`supabase_db_${projectId}`);

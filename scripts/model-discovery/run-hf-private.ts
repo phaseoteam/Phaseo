@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { syncUpstreamDiscoveryIssues, type UpstreamDiscoveryIssueEntry } from "./github-issues";
-import { runInternalModelDiscovery, type HuggingFaceDiscoveryIssueSignal } from "./run-internal";
+import { runHuggingFaceModelDiscovery, type HuggingFaceDiscoveryIssueSignal } from "./hf-discovery";
 
 const ISSUE_STATE_PATH = path.join(process.cwd(), "scripts", "model-discovery", "state", "provider-change-issues.json");
 
@@ -40,7 +40,7 @@ export async function syncHfIssues(
     syncIssues: HfIssueSyncImpl = syncUpstreamDiscoveryIssues
 ): Promise<void> {
     const entries = buildHfIssueEntries(hfAdditionsByOrg);
-    console.log("[internal-model-check] Syncing GitHub issues for detected upstream Hugging Face model changes.");
+    console.log("[hf-model-check] Syncing GitHub issues for detected upstream Hugging Face model changes.");
 
     try {
         const issueSync = await syncIssues(entries, {
@@ -49,19 +49,18 @@ export async function syncHfIssues(
         });
         if (!issueSync.skipped) {
             console.log(
-                `[internal-model-check] Hugging Face GitHub issue sync complete: created=${issueSync.created}, updated=${issueSync.updated}.`
+                `[hf-model-check] Hugging Face GitHub issue sync complete: created=${issueSync.created}, updated=${issueSync.updated}.`
             );
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        console.error(`[internal-model-check] Hugging Face GitHub issue sync failed: ${message}`);
+        console.error(`[hf-model-check] Hugging Face GitHub issue sync failed: ${message}`);
         throw error;
     }
 }
 
 async function main(): Promise<void> {
-    const args = [...process.argv.slice(2), "--skip-internal"];
-    await runInternalModelDiscovery(args, {
+    await runHuggingFaceModelDiscovery(process.argv.slice(2), {
         afterHfNotifications: syncHfIssues,
     });
 }
@@ -75,7 +74,7 @@ function isMainModule(): boolean {
 if (isMainModule()) {
     main().catch((error) => {
         const message = error instanceof Error ? error.message : String(error);
-        console.error(`[internal-model-check] Fatal error: ${message}`);
+        console.error(`[hf-model-check] Fatal error: ${message}`);
         process.exitCode = 1;
     });
 }

@@ -30,7 +30,8 @@ En este tutorial podrás:
 <Visibility for="agents">
 Lista de comprobación del inicio rápido para agentes:
 
-- Las claves se crean en el panel, en https://phaseo.app/settings/keys. Nunca generes ni adivines una. Envíala como `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` solo desde código del servidor.
+- Crea la clave con la CLI: `npm install -g @phaseo/cli`, luego `phaseo login` (o `phaseo login --device-code` en un shell sin interfaz gráfica; una persona aprueba el inicio de sesión) y después `phaseo keys create --name <name> --json`. Nunca generes ni adivines una clave. Envíala como `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` solo desde código del servidor.
+- Para modelos de pago, ejecuta una vez `phaseo login --scopes billing:write`; después, `phaseo credits add --amount <usd> --json` inicia una recarga. Con una tarjeta guardada, un propietario o administrador del espacio de trabajo la confirma desde un enlace enviado por correo. Sin tarjeta guardada, la respuesta incluye `next_action: "open_checkout_url"` y un enlace de pago que un propietario o administrador abre para pagar; la tarjeta queda guardada para las recargas posteriores. No envíes al usuario al panel para claves, créditos o ajustes; consulta https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - Haz la primera solicitud con `POST https://api.phaseo.app/v1/responses`, enviando `model` e `input`. `phaseo/free` funciona sin saldo en el monedero.
 - Lee la respuesta en `output[].content[]`, donde `type` es `output_text`.
 - Si la solicitud falla, decide según el código `error` del JSON, como se describe en https://phaseo.app/docs/v1/api-reference/errors.md.
@@ -40,9 +41,15 @@ Lista de comprobación del inicio rápido para agentes:
 
 ## 1. Crea una clave de API
 
-1. Abre el [panel de Phaseo](https://phaseo.app/settings/keys).
-2. Crea una clave en **Gateway -> Claves**.
-3. Cópiala una sola vez y guárdala en un lugar seguro.
+Instala la [CLI de Phaseo](./guides/integrations/phaseo-cli), inicia sesión y crea una clave:
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # use --device-code over SSH or in an agent sandbox
+phaseo keys create --name "Quickstart" --json
+```
+
+La clave solo se muestra una vez. Guárdala en un lugar seguro, por ejemplo como `PHASEO_API_KEY`. Para usar modelos de pago, ejecuta una vez `phaseo login --scopes billing:write` y añade créditos con `phaseo credits add --amount 20`. Con una tarjeta guardada, un propietario o administrador del espacio de trabajo confirma el cargo desde un enlace enviado por correo. Sin tarjeta guardada, el comando devuelve un enlace de pago que un propietario o administrador abre para pagar, y la tarjeta queda guardada para las recargas posteriores. También puedes crear la clave en el [panel de Phaseo](https://phaseo.app/settings/keys), en **Gateway -> Claves**.
 
 Usa este formato:
 
@@ -59,6 +66,26 @@ Trata tu clave de API como una contraseña. No la expongas en código del lado d
 ## 2. Envía una solicitud de texto
 
 Usa `POST /v1/responses` para la primera solicitud. Es el endpoint recomendado para generar texto en nuevas integraciones.
+
+### Instala un SDK
+
+Los ejemplos de cURL y JavaScript no necesitan instalar nada. Para usar el SDK de TypeScript o de Python, instálalo primero:
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+Consulta las páginas de instalación de [TypeScript](./sdk-reference/typescript/installation) y [Python](./sdk-reference/python/installation) para ver los requisitos de ejecución y los demás SDK.
 
 ### Solicitud
 
@@ -320,6 +347,43 @@ console.log(result.text);
 En las llamadas directas a la Responses API, lee la respuesta del asistente en `output[].content[]`, donde `type` es `output_text`.
 
 Si usas Vercel AI SDK, lee la respuesta en `result.text`.
+
+### Transmite la respuesta
+
+Para mostrar la respuesta a medida que se genera, transmítela en streaming. El campo `text` de cada fragmento contiene solo el texto nuevo, así que este bucle imprime la respuesta una sola vez. Los eventos de cierre, como `response.output_text.done`, tienen `text` vacío; su texto completo está en `fullText` (TypeScript) o `full_text` (Python).
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+Si la respuesta se imprime dos veces, actualiza el SDK: las versiones anteriores también ponían el texto completo en el evento de cierre.
 
 ---
 

@@ -44,13 +44,14 @@ export async function ArtificialAnalysisOverview({
 	const footer = <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-4 text-xs text-muted-foreground">
 		<a href="https://artificialanalysis.ai/models" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">{t("source", {brand: "Artificial Analysis"})}<ArrowUpRight className="size-3.5" /></a>
 		<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-			{benchmark.suite ? <ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} currentLabel={currentVersionLabel} /> : <span>{currentVersionLabel}</span>}
+			<span>{currentVersionLabel}</span>
 			{updated ? <span>{t("lastSynced")} {new Date(updated).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</span> : null}
 		</div>
 	</div>;
 
 	return (
 		<div className="pb-12">
+			{benchmark.suite ? <div className="border-b px-4 py-2 lg:px-6"><ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} currentLabel={latestVersion === "Unspecified" ? undefined : `v${latestVersion}`} /></div> : null}
 			{richData ? <ArtificialAnalysisDashboard rows={dashboardRows(richData.models)} footer={footer} /> : <ArtificialAnalysisExplorer points={points} footer={footer} initialView={metric === "coding" || metric === "agentic" || metric === "cost" ? metric : comparisonView} />}
 			<div className="border-b px-4 lg:px-6">
 				{richData ? <ArtificialAnalysisDeferredExplorer title={(await getTranslations("Catalogue.benchmarks"))("tocIndexComparisons")} points={points} /> : null}

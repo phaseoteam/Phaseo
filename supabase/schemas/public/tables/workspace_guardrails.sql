@@ -13,6 +13,12 @@ CREATE TABLE "public"."workspace_guardrails" (
   "provider_restriction_provider_ids"       text[]                   NOT NULL DEFAULT '{}'::text[],
   "provider_restriction_enforce_allowed"    boolean                  NOT NULL DEFAULT false,
   "allowed_api_model_ids"                   text[]                   NOT NULL DEFAULT '{}'::text[],
+  "daily_limit_requests"                    bigint                   NOT NULL DEFAULT 0,
+  "weekly_limit_requests"                   bigint                   NOT NULL DEFAULT 0,
+  "monthly_limit_requests"                  bigint                   NOT NULL DEFAULT 0,
+  "daily_limit_cost_nanos"                  bigint                   NOT NULL DEFAULT 0,
+  "weekly_limit_cost_nanos"                 bigint                   NOT NULL DEFAULT 0,
+  "monthly_limit_cost_nanos"                bigint                   NOT NULL DEFAULT 0,
   "created_at"                              timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   "updated_at"                              timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   "prompt_injection_enabled"                boolean                  NOT NULL DEFAULT false,
@@ -38,6 +44,11 @@ CREATE TRIGGER gateway_workspace_publication
   AFTER INSERT OR DELETE OR UPDATE ON public.workspace_guardrails
   FOR EACH ROW
   EXECUTE FUNCTION private.capture_gateway_workspace_publication();
+
+CREATE TRIGGER protect_slack_agent_guardrail
+  BEFORE DELETE OR UPDATE ON public.workspace_guardrails
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_slack_agent_guardrail();
 
 CREATE POLICY "team_guardrails_delete_own_team" ON "public"."workspace_guardrails"
   FOR DELETE

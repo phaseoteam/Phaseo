@@ -12,7 +12,13 @@ import {
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { debounce, useQueryState } from "nuqs";
+import { ModelsList } from "./ModelsList";
 import { ModelsGrid } from "./ModelsGrid";
+import { ModelsLayoutTrackingContext, useModelsLayoutExperiment } from "./useModelsLayoutExperiment";
+import {
+	OUTPUT_MODALITY_DISPLAY_ORDER,
+	normalizeModalityFilterValue,
+} from "./modalityOrder";
 import { OutputModalityChipRow } from "./OutputModalityChipRow";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
@@ -21,6 +27,7 @@ import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import {
 	Search,
+	List as ListIcon,
 	Grid as GridIcon,
 	Table2 as TableIcon,
 	Layers3,
@@ -207,24 +214,6 @@ const CONTEXT_LENGTH_STOPS = [
 
 const MOBILE_FILTER_FAB_VISIBILITY_THRESHOLD = 240;
 const EMPTY_OPTIONS: OptionCount[] = [];
-const OUTPUT_MODALITY_DISPLAY_ORDER = [
-	"text",
-	"image",
-	"video",
-	"audio",
-	"embeddings",
-	"decisions",
-	"decision",
-	"extraction",
-	"moderations",
-	"rerank",
-	"documents",
-	"audio_tts",
-	"audio_stt",
-	"translation",
-	"realtime",
-	"audio_music",
-] as const;
 const REGION_DISPLAY_ORDER = ["us", "eu", "apac", "jp", "au"] as const;
 const ENDPOINT_DISPLAY_ORDER = [
 	"responses",
@@ -316,47 +305,6 @@ function parseRegionParam(value: string | null): string[] {
 	);
 }
 
-function normalizeModalityFilterValue(value: string): string {
-	const normalized = String(value ?? "")
-		.trim()
-		.toLowerCase()
-		.replace(/[._/-]+/g, " ");
-	if (!normalized) return "";
-	if (normalized.includes("realtime") || normalized.includes("real time")) {
-		return "realtime";
-	}
-	if (/\bocr\b/.test(normalized) || /\bpars(e|ing)\b/.test(normalized)) {
-		return "documents";
-	}
-	if (normalized.includes("translat")) return "translation";
-	if (normalized.includes("image")) return "image";
-	if (normalized.includes("video")) return "video";
-	if (normalized.includes("music")) return "audio_music";
-	if (
-		normalized.includes("transcri") ||
-		normalized.includes("speech to text") ||
-		normalized.includes("stt")
-	) {
-		return "audio_stt";
-	}
-	if (
-		normalized.includes("text to speech") ||
-		normalized.includes("audio speech") ||
-		normalized.includes("speech synth") ||
-		normalized.includes("tts")
-	) {
-		return "audio_tts";
-	}
-	if (normalized.includes("text")) return "text";
-	if (normalized.includes("audio")) return "audio";
-	if (normalized.includes("file")) return "file";
-	if (normalized.includes("moderat")) return "moderations";
-	if (normalized.includes("rerank") || normalized.includes("re rank")) {
-		return "rerank";
-	}
-	if (normalized.includes("embed")) return "embeddings";
-	return normalized.replace(/\s+/g, "_");
-}
 
 function parseModalityParam(value: string | null): string[] {
 	return Array.from(
@@ -1262,6 +1210,11 @@ function ModelsDisplayContent({
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const isTable = pathname?.includes("/models/table");
+	const { variant: layoutVariant, ready: layoutReady, track: trackLayout, rowsRef } = useModelsLayoutExperiment(!isTable);
+	const DefaultModelsView = layoutVariant === "list" ? ModelsList : ModelsGrid;
+	const DefaultViewIcon = layoutVariant === "list" ? ListIcon : GridIcon;
+	// Literal keys so the client message scope stays narrow.
+	const defaultViewLabel = layoutVariant === "list" ? t("listView") : t("cardView");
 	const {
 		endpointOptions: baseEndpointOptions,
 		inputModalityOptions: baseInputModalityOptions,
@@ -1935,14 +1888,14 @@ function ModelsDisplayContent({
 					<Link
 						href={buildHref("/models")}
 						prefetch={false}
-						aria-label={t("cardView")}
+						aria-label={defaultViewLabel}
 						aria-current={!isTable ? "page" : undefined}
-						className={viewSwitcherItemClass(!isTable, true)}
+						className={cn(viewSwitcherItemClass(!isTable, true), !layoutReady && "invisible")}
 					>
-						<GridIcon className="h-4 w-4" />
+						<DefaultViewIcon className="h-4 w-4" />
 					</Link>
 				</TooltipTrigger>
-				<TooltipContent side="top">{t("cardView")}</TooltipContent>
+				<TooltipContent side="top">{defaultViewLabel}</TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
@@ -2176,9 +2129,10 @@ function ModelsDisplayContent({
 					<FilterCheckboxList
 						options={providerOptions}
 						selected={selectedProviders}
-						onToggle={(value) =>
-							setSelectedProviders(toggleInList(selectedProviders, value))
-						}
+						onToggle={(value) => {
+							trackLayout("models_layout_filter_changed", { control: "provider" });
+							void setSelectedProviders(toggleInList(selectedProviders, value));
+						}}
 						labelForValue={(value) => value}
 						renderStart={({ value }) => (
 							<FilterLogo value={value} />
@@ -2329,7 +2283,7 @@ function ModelsDisplayContent({
 	return (
 		<div className="flex w-full flex-1">
 			<aside className="hidden lg:block w-[20rem] shrink-0 border-r border-border/70 bg-background/95 [&_[data-slot=separator]]:-mx-4">
-				<div className="sticky top-16 flex h-[calc(100dvh-4rem)] min-h-0 flex-col">
+				<div className="sticky top-[calc(var(--site-notice-height,0px)+4rem)] flex h-[calc(100dvh-var(--site-notice-height,0px)-4rem)] min-h-0 flex-col">
 					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain [&>[data-orientation=vertical]]:opacity-0 [&>[data-orientation=vertical]]:transition-opacity [&>[data-orientation=vertical]]:duration-150 hover:[&>[data-orientation=vertical]]:opacity-100 focus-within:[&>[data-orientation=vertical]]:opacity-100">
 						<div className="space-y-4 px-4 py-2 pb-6">{filtersContent}</div>
 					</ScrollArea>
@@ -2337,7 +2291,7 @@ function ModelsDisplayContent({
 			</aside>
 
 			<section className="min-w-0 flex flex-1 flex-col">
-				<div className="z-40 shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur md:sticky md:top-[3.75rem] lg:px-8">
+				<div className="z-40 shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur md:sticky md:top-[calc(var(--site-notice-height,0px)+3.75rem)] lg:px-8">
 					<div className="md:hidden space-y-2">
 						{showPrimaryHeader ? (
 							<div className="flex items-center gap-2">
@@ -2438,7 +2392,10 @@ function ModelsDisplayContent({
 						<OutputModalityChipRow
 							options={sortOutputModalityOptions(outputModalityOptions)}
 							selected={selectedOutputModalities}
-							onChange={setSelectedOutputModalities}
+							onChange={(values) => {
+								trackLayout("models_layout_filter_changed", { control: "output_modality" });
+								void setSelectedOutputModalities(values);
+							}}
 							labelForValue={translateModality}
 							iconForValue={getModalityIcon}
 						/>
@@ -2447,9 +2404,10 @@ function ModelsDisplayContent({
 					<ActiveModelFilters filters={activeFilters} onClear={resetFilters} />
 				</div>
 
-				<div className="w-full px-4 pt-1 pb-5 lg:px-8 lg:pt-1 lg:pb-6">
-					{filteredModels.length > 0 ? (
-						<ModelsGrid
+				<ModelsLayoutTrackingContext.Provider value={trackLayout}>
+				<div ref={rowsRef} className="w-full px-4 pt-1 pb-5 lg:px-8 lg:pt-1 lg:pb-6" aria-busy={!layoutReady}>
+					{!layoutReady ? <div className="min-h-[60vh]" /> : filteredModels.length > 0 ? (
+						<DefaultModelsView
 							filteredModels={filteredModels}
 							showOrganisationPrefix
 						/>
@@ -2460,6 +2418,7 @@ function ModelsDisplayContent({
 						/>
 					)}
 				</div>
+				</ModelsLayoutTrackingContext.Provider>
 			</section>
 
 			{isMobileViewport ? (

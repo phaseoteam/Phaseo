@@ -6,7 +6,7 @@ icon: "key-round"
 
 Management-API-Schlüssel sind serverseitige Zugangsdaten für die Control Plane von Phaseo: Guthaben, Aktivitäten, Workspace-Verwaltung, Schlüsselverwaltung, Voreinstellungen, Einstellungen und Guardrails. Sie sind nicht für Inferenzanfragen gedacht.
 
-Erstelle sie unter **Dashboard → Einstellungen → Management-Schlüssel**. Das Geheimnis wird nur einmal angezeigt. Speichere es in deinem Geheimnismanager, bevor du den Dialog schließt.
+Erstelle sie mit `phaseo management-keys create --name <name> --template read-only --json` in der [Phaseo CLI](../guides/integrations/phaseo-cli) oder unter **Dashboard → Einstellungen → Management-Schlüssel**. Das Geheimnis wird nur einmal angezeigt. Speichere es in deinem Geheimnismanager.
 
 ## Zugangsdaten
 

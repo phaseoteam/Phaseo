@@ -1,8 +1,10 @@
 "use client";
 
+import { formatLatency } from "@phaseo/app-kit/format";
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle2, Clock3, Database, GitBranch, MessageSquareText, Route, Server, Wrench, type LucideIcon } from "lucide-react";
+import { Callout } from "@/components/ui/callout";
 import { CopyButton } from "@/components/ui/copy-button";
 import { cn } from "@/lib/utils";
 import { DetailTimingBar } from "./DetailDialogPrimitives";
@@ -594,6 +596,8 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 		? t("routingTrace.selectedFromCandidates" as never, { provider: routeProviderName, count: rankedDecisions.length } as never)
 		: routeProvider ? t("trace.selectedProvider" as never, { provider: routeProviderName } as never) : t("trace.noRouteSelection" as never);
 	const payloadTone: StatusTone = ioLog?.status === "stored" ? "emerald" : ioLog?.status ? "amber" : "slate";
+	// Why nothing was stored: in the reader's language when the gateway gave a reason code.
+	const ioLogNotice = ioLog?.reason === "zero_data_retention" ? t("trace.skippedZeroDataRetention" as never) : ioLog?.error ?? null;
 	const responseTone: StatusTone = request.success ? "emerald" : "amber";
 
 	React.useEffect(() => {
@@ -631,11 +635,11 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 					<div className="flex flex-wrap gap-1.5">
 						<StatusPill tone={responseTone}>{request.success ? <CheckCircle2 className="size-3" aria-hidden="true" /> : <AlertCircle className="size-3" aria-hidden="true" />}{request.success ? t("chatGaps.copyCompleted" as never) : t("chatGaps.copyFailed" as never)}</StatusPill>
 						<StatusPill>{routeProviderName}</StatusPill>
-						{ioLog ? <StatusPill tone={payloadTone}>R2 {ioLog.status}</StatusPill> : null}
+						{ioLog ? <StatusPill tone={payloadTone}>{t("trace.payloadStatus" as never, { status: ioLog.status } as never)}</StatusPill> : null}
 					</div>
 				</div>
 				<div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3 sm:grid-cols-4">
-					<div><div className="text-[10px] font-medium text-muted-foreground">{t("strings.upstreamOutcomeGeneration" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{formatTraceDuration(request.generation_ms) ?? t("usageGaps.copyNotRecorded" as never)}</div></div>
+					<div><div className="text-[10px] font-medium text-muted-foreground">{t("strings.upstreamOutcomeGeneration" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{(typeof request.generation_ms === "number" ? formatLatency(request.generation_ms) : null) ?? t("usageGaps.copyNotRecorded" as never)}</div></div>
 					<div><div className="text-[10px] font-medium text-muted-foreground">{journal ? t("trace.modelCalls" as never) : t("strings.Provider attempts" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{journal ? journal.events.filter((event) => event.type === "provider.started").length : attempts.length ? attempts.length.toLocaleString() : t("usageGaps.copyNotRecorded" as never)}</div></div>
 					<div><div className="text-[10px] font-medium text-muted-foreground">{t("trace.toolCalls" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{toolActivityCount.toLocaleString()}</div></div>
 					<div><div className="text-[10px] font-medium text-muted-foreground">{t("trace.retainedUntil" as never)}</div><div className="mt-0.5 truncate text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : t("trace.notStored" as never)}</div></div>
@@ -679,7 +683,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 								<span className="text-xs text-muted-foreground transition-transform group-open/input:rotate-180">⌄</span>
 							</summary>
 							<div className="border-t border-border/60 p-3">
-								{inputMessages.length > 0 ? <InputMessages messages={inputMessages} /> : inputPayload != null ? <p className="text-xs text-muted-foreground">{t("trace.thisRequestFormatHasNoReadableMessageListInspectTheRetainedRequestPayloadBelow" as never)}</p> : <p className="text-xs text-muted-foreground">{ioLog?.error ?? t("trace.noRequestPayloadWasRetained" as never)}</p>}
+								{inputMessages.length > 0 ? <InputMessages messages={inputMessages} /> : inputPayload != null ? <p className="text-xs text-muted-foreground">{t("trace.thisRequestFormatHasNoReadableMessageListInspectTheRetainedRequestPayloadBelow" as never)}</p> : <p className="text-xs text-muted-foreground">{ioLogNotice ?? t("trace.noRequestPayloadWasRetained" as never)}</p>}
 							</div>
 						</details>
 					</div>
@@ -711,7 +715,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 												</div>
 												{model ? <div className="mt-1 truncate pl-7 font-mono text-[10px] text-muted-foreground">{model}</div> : null}
 											</div>
-											<div className="flex items-center gap-2"><StatusPill tone={status.tone}>{status.label}</StatusPill>{formatTraceDuration(duration) ? <span className="font-mono text-[10px] text-muted-foreground">{formatTraceDuration(duration)}</span> : null}</div>
+											<div className="flex items-center gap-2"><StatusPill tone={status.tone}>{status.label}</StatusPill>{typeof duration === "number" && Number.isFinite(duration) ? <span className="font-mono text-[10px] text-muted-foreground">{formatLatency(duration)}</span> : null}</div>
 										</div>
 										{attempt.fallback_attempted === true || attempt.retryable === true ? <div className="mt-2 pl-7 text-[10px] text-muted-foreground">{t("trace.retryOrFallbackPathRecorded" as never)}</div> : null}
 									</div>
@@ -755,27 +759,26 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 							</div>;
 						})}
 						{response.toolResults.filter((result) => !response.toolCalls.some((call) => call.id !== null && call.id === result.id)).map((result) => <ToolResultCard key={result.key} result={result} />)}
-						{!hasToolDetails && toolActivityCount > 0 ? <div role="status" className="border-l-2 border-amber-500 bg-amber-500/[0.06] px-3 py-2.5">
-							<div className="flex items-center gap-2 text-xs font-semibold text-amber-800 dark:text-amber-200"><AlertCircle className="size-4" aria-hidden="true" />{t("trace.usageRecordedCallDetailsAreMissing" as never)}</div>
-							<p className="mt-1.5 text-xs leading-5 text-muted-foreground">{t("trace.theRequestUsageIncludesToolActivityButThisStoredPayloadHasNoToolArgumentsOrResultsToDisplay" as never)}</p>
-						</div> : null}
+						{!hasToolDetails && toolActivityCount > 0 ? <Callout tone="warning" role="status" title={t("trace.usageRecordedCallDetailsAreMissing" as never)}>
+							{t("trace.theRequestUsageIncludesToolActivityButThisStoredPayloadHasNoToolArgumentsOrResultsToDisplay" as never)}
+						</Callout> : null}
 						{toolActivityCount === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">{t("trace.noToolCallsOrServerToolExecutionsWereRecordedForThisRequest" as never)}</div> : null}
 					</div>
 				</LifecycleStep> : null}
 				<LifecycleStep id="trace-response" title={t("strings.Response" as never)}
 					summary={response.text ? t("trace.finalResponseReturnedByTheGateway" as never) : t("trace.noFinalTextResponseWasCaptured" as never)}
-					icon={MessageSquareText} badge={<StatusPill tone={responseTone}>{request.status_code ?? (request.success ? "Complete" : "Error")}</StatusPill>}>
+					icon={MessageSquareText} badge={<StatusPill tone={responseTone}>{request.status_code ?? (request.success ? t("chatGaps.copyCompleted" as never) : t("chatGaps.copyFailed" as never))}</StatusPill>}>
 					<div className="border-l-2 border-border bg-muted/20 px-3.5 py-3">
 						<div className="flex flex-wrap items-center justify-between gap-2">
 							<div className="flex items-center gap-2 text-xs font-medium"><CheckCircle2 className="size-3.5 text-muted-foreground" aria-hidden="true" />{response.label === "Response" ? t("strings.Response" as never) : t(("trace." + response.label.replaceAll(" ", "")) as never)}</div>
 							{outputCopy ? <CopyButton size="sm" variant="ghost" content={outputCopy} aria-label={t("trace.copyModelOutput" as never)} /> : null}
 						</div>
-						<div className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{response.text || (response.value == null ? ioLog?.error ?? "No response payload was retained for this request." : "This response did not include final text. Inspect the captured payload below.")}</div>
+						<div className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{response.text || (response.value == null ? ioLogNotice ?? "No response payload was retained for this request." : "This response did not include final text. Inspect the captured payload below.")}</div>
 					</div>
 				</LifecycleStep>
 
 				<LifecycleStep id="trace-capture" title={t("trace.logCapture" as never)}
-					summary={ioLog?.status === "stored" ? t("trace.requestAndResponsePayloadRetainedInCloudflareR2" as never) : t("trace.iOPayloadStorageStatusAndRetentionDetails" as never)}
+					summary={ioLog?.status === "stored" ? t("trace.payloadStored" as never) : t("trace.iOPayloadStorageStatusAndRetentionDetails" as never)}
 					icon={Database} badge={<StatusPill tone={payloadTone}>{ioLog?.status ?? t("realtimeCopy.copyUnavailable" as never)}</StatusPill>}>
 					<div className="space-y-3">
 						<div className="grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border/60 py-3 sm:grid-cols-3">
@@ -783,7 +786,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 							<div><div className="text-[10px] font-medium text-muted-foreground">{t("trace.payloadSize" as never)}</div><div className="mt-1 font-mono text-xs font-semibold tabular-nums">{ioLog?.bytes ? ioLog.bytes.toLocaleString() + " bytes" : t("usageGaps.copyNotRecorded" as never)}</div></div>
 							<div><div className="text-[10px] font-medium text-muted-foreground">{t("strings.Retention" as never)}</div><div className="mt-1 text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : t("usageGaps.copyNotRecorded" as never)}</div></div>
 						</div>
-						{ioLog?.error ? <p className="rounded-md border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs text-amber-800 dark:text-amber-200">{ioLog.error}</p> : null}
+						{ioLogNotice ? <p className="rounded-md border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs text-amber-800 dark:text-amber-200">{ioLogNotice}</p> : null}
 						{payload ? <details className="group/raw rounded-md border border-border/60 bg-background/60">
 							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span>{t("trace.inspectRetainedPayload" as never)}</span><span className="text-muted-foreground transition-transform group-open/raw:rotate-180">⌄</span></summary>
 							<div className="space-y-3 border-t border-border/60 p-3">
@@ -804,7 +807,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 									</div>
 								))}
 							</div>
-						</details> : <div className="rounded-md border border-dashed border-border/70 p-4 text-xs text-muted-foreground">{ioLog?.error ?? t("trace.noRetainedIOPayloadIsAvailableForThisRequest" as never)}</div>}
+						</details> : <div className="rounded-md border border-dashed border-border/70 p-4 text-xs text-muted-foreground">{ioLogNotice ?? t("trace.noRetainedIOPayloadIsAvailableForThisRequest" as never)}</div>}
 					</div>
 				</LifecycleStep>
 			</div>

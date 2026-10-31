@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Hono } from "hono";
 import type { GatewayBindings } from "@/runtime/env";
 import { requestIdFor } from "@/runtime/request-id";
+import { markRequestReceived, requestReceivedAtMs } from "@pipeline/telemetry/request-receipt";
 import { json, withRuntime } from "./utils";
 
 describe("inference request identity", () => {
@@ -21,6 +22,18 @@ describe("inference request identity", () => {
         expect(response.status).toBe(200);
         expect(body.request_id).toMatch(/^G-[0-9A-HJKMNP-TV-Z]{26}$/);
         expect(response.headers.get("x-request-id")).toBe(body.request_id);
+    });
+
+    it("gives the sanitized handler request the Worker receipt time", async () => {
+        const app = new Hono<{ Bindings: GatewayBindings }>();
+        app.post("/v1/responses", withRuntime(async (request) => json({ received_at: requestReceivedAtMs(request) ?? null })));
+        const request = new Request("https://gateway.test/v1/responses", { method: "POST" });
+        markRequestReceived(request, 1234);
+        const response = await app.fetch(request, {
+            SUPABASE_URL: "https://test.supabase.co",
+            SUPABASE_SERVICE_ROLE_KEY: "test-key",
+        } as GatewayBindings, { waitUntil() {}, passThroughOnException() {} } as unknown as ExecutionContext);
+        expect(await response.json()).toEqual({ received_at: 1234 });
     });
 });
 

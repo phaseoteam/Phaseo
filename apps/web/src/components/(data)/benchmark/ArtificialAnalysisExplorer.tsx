@@ -15,6 +15,7 @@ import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 import { artificialAnalysisChartColour, formatArtificialAnalysisScore } from "@/lib/benchmarks/artificialAnalysis";
 import type { ExplorerMetric, ExplorerPoint } from "@/lib/benchmarks/artificialAnalysisExplorer";
 import { BenchmarkDisclosure } from "./BenchmarkDisclosure";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const views = ["cost-intelligence", "intelligence", "coding", "agentic", "cost"] as const;
 const scales = ["log", "linear"] as const;
@@ -54,7 +55,7 @@ export default function ArtificialAnalysisExplorer({ points, initialView = "cost
 	const metricLabel = (metric: ExplorerMetric) => tx(`Catalogue.rankings.benchmarkMetrics.${metric}`);
 	const viewLabel = (view: View) => view === "cost-intelligence" ? `${metricLabel("cost")} × ${metricLabel("intelligence")}` : metricLabel(view);
 	const format = (metric: ExplorerMetric, score: number) => formatArtificialAnalysisScore(metric === "cost" ? "aa-intelligence-index-cost-v4" : "aa-intelligence-index-v4", score, locale);
-	const compactCost = new Intl.NumberFormat(locale, { style: "currency", currency: "USD", currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: 1 });
+	const compactCost = new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", currencyDisplay: "narrowSymbol", notation: "compact", maximumFractionDigits: 1 });
 	const configuration = (point: Pick<ExplorerPoint, "variant" | "configuration_label">) => point.configuration_label?.match(/\(([^)]+)\)$/)?.[1] ?? localizedBenchmarkConfiguration(point.variant, tx);
 	const scatter = filters.aaView === "cost-intelligence";
 	const metric: ExplorerMetric = scatter ? "intelligence" : filters.aaView as ExplorerMetric;

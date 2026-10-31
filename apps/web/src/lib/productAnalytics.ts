@@ -1,6 +1,24 @@
+import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
+
 export const PRODUCT_ANALYTICS_EVENT = "phaseo:product-analytics";
 
+type ModelsLayoutProperties = {
+	experiment: string;
+	variant: "cards" | "list";
+	in_experiment: boolean;
+	model_id?: string;
+	control?: string;
+	metric?: string;
+	value?: number;
+	rating?: string;
+};
+
 export type ProductAnalyticsEventMap = {
+	models_layout_first_rows: ModelsLayoutProperties;
+	models_layout_model_opened: ModelsLayoutProperties;
+	models_layout_model_id_copied: ModelsLayoutProperties;
+	models_layout_filter_changed: ModelsLayoutProperties;
+	models_layout_web_vital: ModelsLayoutProperties;
 	account_signup_started: { method: "email" | "github" | "gitlab" | "google" };
 	api_key_created: {
 		preset: "ci" | "development" | "production" | "sandbox";
@@ -37,6 +55,8 @@ export type ProductAnalyticsEventMap = {
 	credits_purchase_blocker_survey_viewed: {
 		surface: "settings_credits_zero_balance";
 	};
+	// Triggers the "first request" PostHog survey; sent once per workspace per browser.
+	gateway_first_usage_seen: { surface: "usage_overview" };
 	first_payment_save_card_click: {
 		amount_usd: number;
 		currency: "usd";
@@ -84,4 +104,23 @@ export function captureProductEvent<K extends keyof ProductAnalyticsEventMap>(
 			detail: { event, properties } as ProductAnalyticsPayload,
 		}),
 	);
+}
+
+/** Captures a milestone event at most once per `onceKey` in this browser. */
+export function captureProductEventOnce<K extends keyof ProductAnalyticsEventMap>(
+	event: K,
+	properties: ProductAnalyticsEventMap[K],
+	onceKey: string,
+) {
+	// Without consent the event is dropped, so don't spend the once-only marker.
+	if (typeof window === "undefined" || !isAnalyticsCaptureAllowed()) return;
+
+	const storageKey = `phaseo:product-event-once:${event}:${onceKey}`;
+	try {
+		if (window.localStorage.getItem(storageKey)) return;
+		window.localStorage.setItem(storageKey, new Date().toISOString());
+	} catch {
+		// Without storage the event may repeat; PostHog surveys still show once per person.
+	}
+	captureProductEvent(event, properties);
 }

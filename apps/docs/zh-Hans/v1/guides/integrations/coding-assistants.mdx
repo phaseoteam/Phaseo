@@ -23,7 +23,7 @@ phaseo login
 phaseo codex
 ```
 
-此命令会检查编程环境是否已安装。如果在交互式终端中未安装，Phaseo 会显示受支持的安装命令，并在运行前征求确认。随后，Phaseo 会为该环境创建专用密钥并写入配置。非交互式运行会提供可执行的安装指导，但不会擅自更改系统。OpenCode、DeepSeek Harness、Pi、Prime Agent 和 OpenClaw 也会获得所有兼容 Chat Completions 的活跃文本模型。需要缩小操作范围时，请使用 `--skip-install`、`--catalog default` 或 `--dry-run`。
+此命令会检查编程环境是否已安装。如果在交互式终端中未安装，Phaseo 会显示受支持的安装命令，并在运行前征求确认。随后，Phaseo 会为该环境创建专用密钥并写入配置。非交互式运行会提供可执行的安装指导，但不会擅自更改系统。OpenCode、fx、DeepSeek Harness、Pi、Prime Agent 和 OpenClaw 也会获得所有兼容 Chat Completions 的活跃文本模型。需要缩小操作范围时，请使用 `--skip-install`、`--catalog default` 或 `--dry-run`。
 
 所有持久集成都使用以产品命名的命令：
 
@@ -31,9 +31,9 @@ phaseo codex
 phaseo codex
 ```
 
-支持的集成名称为 `codex`、`claude-code`、`opencode`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor` 和 `zed`。隔离的 CLI 启动器为 `cline`、`kilo`、`omp`、`muse` 和 `minimax`。
+支持的集成名称为 `codex`、`claude-code`、`opencode`、`fx`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor` 和 `zed`。隔离的 CLI 启动器为 `cline`、`kilo`、`omp`、`muse` 和 `minimax`。
 
-CLI 会为该助手创建一个以其命名的独立 API 密钥，且该密钥永不过期。在全新安装中，它会自动配置 Aider 和 Continue，并自动写入 Zed 的提供商/模型设置。对于只能在编辑器 UI 中保存密钥的助手，它会显示需要填写的字段、链接到专用指南，并允许你仅复制该助手的密钥：
+CLI 会为该助手创建一个以其命名的独立 API 密钥，该密钥 90 天后过期，每月支出上限为 $100。在全新安装中，它会自动配置 Aider 和 Continue，并自动写入 Zed 的提供商/模型设置。对于只能在编辑器 UI 中保存密钥的助手，它会显示需要填写的字段、链接到专用指南，并允许你仅复制该助手的密钥：
 
 ```bash
 phaseo integrations credential codex
@@ -146,7 +146,7 @@ Aider 通常要求 OpenAI 兼容的自定义模型带有 `openai/` 前缀。由�
 
 `phaseo pi` 会添加专用提供商扩展，并在运行时从 Phaseo CLI 获取密钥。`phaseo prime-agent` 会将命令支持的提供商写入 `~/.prime/agent/models.json`。二者都会获得兼容的 Phaseo 模型目录。`phaseo openclaw` 会注册兼容模型目录和基于 exec 的 SecretRef，但不会将 API 密钥写入 `openclaw.json`。
 
-如果 Hermes 尚未安装，`phaseo hermes` 会提示运行 Nous Research 官方安装程序，随后配置已安装的智能体。它会保存 Hermes 原有模型设置，将 Phaseo 配置为自定义端点，并使用 Hermes 官方命令 `hermes config set` 将专用密钥写入 `~/.hermes/.env` 的 `OPENAI_API_KEY`。Hermes 有意使用此纯文本文件存储提供商凭证；请像保护其他 API 密钥文件一样保护它。移除时会恢复之前的模型设置、删除 `OPENAI_API_KEY` 和 Phaseo 恢复状态，并撤销密钥。
+如果 Hermes 尚未安装，`phaseo hermes` 会提示运行 Nous Research 官方安装程序，随后配置已安装的智能体。它会保存 Hermes 原有模型设置，将 Phaseo 配置为自定义端点，并将专用密钥作为 `OPENAI_API_KEY` 写入 Hermes 的 `.env` 文件，放在以 `# >>> phaseo managed (do not edit)` 标记的区块内，因此密钥绝不会通过命令行传递，你的其他行也保持不变。Phaseo 会询问 Hermes 该文件的位置：通常是 `~/.hermes/.env`，原生 Windows 上是 `%LOCALAPPDATA%\hermes\.env`，或 `HERMES_HOME` 中的 `.env`。它还会将 Hermes 的 `model.key_env` 设为 `OPENAI_API_KEY`，以便 Hermes 把密钥发送给 Phaseo；如果你的 Hermes 版本不支持 `model.key_env`，请先运行 `hermes update`。Hermes 有意使用此纯文本文件存储提供商凭证；请像保护其他 API 密钥文件一样保护它。移除时会恢复之前的模型设置、删除 `OPENAI_API_KEY` 和 Phaseo 恢复状态，并撤销密钥。
 
 ## MiniMax Code
 
@@ -176,6 +176,10 @@ Codex 自定义提供商使用 Responses 线路协议。
 ## OpenCode
 
 如果你希望 OpenCode 通过自定义 OpenAI 兼容提供商调用 Phaseo，请参阅专用的 [OpenCode 指南](./opencode.mdx)。
+
+## fx
+
+如果你希望在 Vercel Labs 的 fx 编程智能体中将 Phaseo 添加为自定义模型连接，请参阅专用的 [fx 指南](./fx.mdx)。
 
 ## Claude Code
 

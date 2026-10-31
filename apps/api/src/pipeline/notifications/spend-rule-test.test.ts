@@ -103,6 +103,14 @@ describe("spend rule test sends", () => {
 		expect([result.delivered, result.failed]).toEqual([0, 1]);
 	});
 
+	it("counts an email destination whose recipients are all suppressed as not delivered", async () => {
+		state.rule.workspace_spend_rule_destinations = [{ destination_id: D2 }];
+		state.deliver.mockResolvedValueOnce(208);
+		const result = await send();
+		expect(result.deliveries).toEqual([{ destination_id: D2, name: "Finance", type: "email", delivered: false, status: 208, error: "Every recipient of this email destination is suppressed" }]);
+		expect([result.delivered, result.failed]).toEqual([0, 1]);
+	});
+
 	it("is 404 for a missing rule before using the allowance", async () => {
 		state.rule = null;
 		await expect(send()).rejects.toMatchObject({ status: 404, code: "not_found" });
@@ -151,6 +159,19 @@ describe("spend rule test sends", () => {
 		state.preview = { ...state.preview, alert: null, spike: { ...spike, window_hours: 72, baseline_windows: 2, history_ready: false, spiking: false } };
 		result = await send();
 		expect(result.message).toBe('This is a test of spend rule "Monthly". A spike rule compares its window with the median of 3 or more windows in the previous 7 days, and a 72-hour window leaves only 2, so it cannot fire. ' + "This is a test: nothing was recorded and the rule's thresholds are unchanged.");
+	});
+
+	it("explains a spike rule that is still learning instead of sending the preview's alert text", async () => {
+		state.rule.metric = "spike";
+		state.preview = {
+			...PREVIEW, metric: "spike", base_kind: null, base_nanos: 0, value_nanos: 42.1e9, percent: null, threshold_percents: null,
+			reached_threshold_percent: null, next_threshold: null,
+			spike: { window_hours: 3, current_nanos: 42.1e9, baseline_nanos: 0, multiple: null, multiplier: 3, floor_nanos: 5e9, fires_at_nanos: 5e9, baseline_windows: 7, active_windows: 1, history_ready: false, spiking: false, cooldown_until: null },
+			alert: { scope_label: "Acme", title: "Spike: $42.10 in the last 3 hours", message: "Spend in the last 3 hours is $42.10." },
+		};
+		const result = await send();
+		expect(result.title).toBe("[TEST] Monthly: test alert");
+		expect(result.message).toBe('This is a test of spend rule "Monthly". A spike rule waits until the workspace has spent in at least 3 of its 7 baseline windows in the previous 7 days, so a new workspace does not alert on its first day. 1 has spend so far, so it cannot fire yet. ' + "This is a test: nothing was recorded and the rule's thresholds are unchanged.");
 	});
 
 	it("says when a forecast starts if it is too early to project", async () => {

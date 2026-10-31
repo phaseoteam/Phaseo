@@ -42,6 +42,28 @@ func main() {
 }
 ```
 
+## Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then give the client an `APIKeyProvider`. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
+
+In GitHub Actions (the job needs `permissions: id-token: write`):
+
+```go
+client := phaseo.NewWithAPIKeyProvider(phaseo.GitHubActionsToken(), "")
+```
+
+On Vercel, `VercelToken` exchanges the deployment's OIDC token for one issued to Phaseo. It reads `VERCEL_OIDC_TOKEN_FILE` or `VERCEL_OIDC_TOKEN`, or you can pass the per-request `x-vercel-oidc-token` header:
+
+```go
+client := phaseo.NewWithAPIKeyProvider(phaseo.VercelToken(phaseo.VercelTokenOptions{
+	TokenProvider: func(ctx context.Context) (string, error) {
+		return r.Header.Get("x-vercel-oidc-token"), nil
+	},
+}), "")
+```
+
+Both helpers cache the token until a minute before it expires and accept a custom `Audience`. Any `func(context.Context) (string, error)` works as a provider, and `phaseo.WithAPIKeyProvider(provider)` adds one to `New`. A request that sets its own `Authorization` header keeps it.
+
 ## Common methods
 
 - `CreateResponse(ctx, req)`
@@ -122,6 +144,26 @@ if err != nil {
 
 fmt.Println(batchSocketURL, videoSocketURL, genericSocketURL, resourceSocketURL)
 ```
+
+## Realtime voice (beta)
+
+The `realtime` package creates a realtime session and opens the relay WebSocket with `github.com/coder/websocket`. It is a separate package, so that dependency is only compiled when you import it. Provider events pass through unchanged.
+
+```go
+import "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime"
+
+session, err := realtime.Connect(ctx, client, realtime.Options{Model: "openai/gpt-realtime-2", Voice: "marin"})
+if err != nil {
+	return err
+}
+session.OnWarning(func(w realtime.Warning) { log.Println(w.Code) })
+events := session.Events() // every event until the socket closes
+_ = session.SendAudio(ctx, pcm16Chunk) // PCM16 bytes; base64 is handled for you
+ended, err := session.End(ctx, realtime.EndOptions{Reason: "caller hung up"})
+// ended.Reason, ended.Usage, ended.Cost.TotalUSD, ended.BillingStatus
+```
+
+If the socket closes without `session.ended`, `End` returns a `*realtime.ClosedError` whose `FinalBill.Path` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
 
 ## Free and paid models
 

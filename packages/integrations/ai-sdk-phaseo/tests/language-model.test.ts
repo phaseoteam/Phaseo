@@ -227,6 +227,8 @@ describe('Phaseo Vercel AI SDK language model compatibility', () => {
     expect(requests[0]?.url).toBe('https://gateway.example/v1/chat/completions');
     expect(requests[0]?.body.stream).toBe(false);
     expect(requests[0]?.body.model).toBe('openai/gpt-4o-mini');
+    // AI SDK passes toolChoice "auto" with no tools; OpenAI rejects tool_choice without tools.
+    expect(requests[0]?.body).not.toHaveProperty('tool_choice');
     expect(requests[0]?.headers.get('authorization')).toBe('Bearer test-key');
   });
 
@@ -312,6 +314,7 @@ describe('Phaseo Vercel AI SDK language model compatibility', () => {
     expect(requests).toHaveLength(1);
     expect(requests[0]?.body.stream).toBe(false);
     expect(requests[0]?.body.tools).toBeTruthy();
+    expect(requests[0]?.body.tool_choice).toBe('auto');
   });
 
   it('maps generateObject responses and requests json_object output mode', async () => {

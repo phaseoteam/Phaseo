@@ -35,7 +35,7 @@ phaseo login
 phaseo codex --model openai/gpt-5.6-terra
 ```
 
-Installez d’abord Codex depuis sa version officielle. La configuration crée une clé `Phaseo CLI: Codex API Key` sans expiration, la stocke dans le trousseau de clés du système et écrit un profil Phaseo dédié. Codex récupère la clé via l’assistant CLI ; elle n’est donc pas écrite en clair dans `config.toml`.
+Installez d’abord Codex depuis sa version officielle. La configuration crée une clé `Phaseo CLI: Codex API Key` qui expire au bout de 90 jours et dispose d’une limite de dépenses mensuelle de 100 $, la stocke dans le trousseau de clés du système et écrit un profil Phaseo dédié. Codex récupère la clé via l’assistant CLI, qui crée une nouvelle clé à l’expiration de l’ancienne ; elle n’est donc pas écrite en clair dans `config.toml`.
 
 Démarrez Codex avec :
 

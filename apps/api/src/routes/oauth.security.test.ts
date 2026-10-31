@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
 	consentParams: null as string | null,
 	oauthAuth: { ok: false, reason: "invalid_token" } as Record<string, unknown>,
 	pollStatus: "ok" as string,
+	displayName: null as string | null,
 }));
 
 const FUTURE_EXPIRES_AT = "2999-01-01T00:00:00.000Z";
@@ -37,7 +38,7 @@ vi.mock("@/runtime/env", () => ({
 					data: {
 						user: {
 							email: "user@example.com",
-							user_metadata: { full_name: "Phaseo User" },
+							user_metadata: { full_name: "Phaseo User", avatar_url: "https://lh3.googleusercontent.com/a/photo" },
 						},
 					},
 				}),
@@ -45,6 +46,9 @@ vi.mock("@/runtime/env", () => ({
 		},
 		rpc: async () => ({ data: state.pollStatus, error: null }),
 		from(table: string) {
+			if (table === "users") {
+				return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { display_name: state.displayName ?? null }, error: null }) }) }) };
+			}
 			if (table === "oauth_clients") {
 				return {
 					insert: async (payload: Record<string, unknown>) => {
@@ -129,6 +133,7 @@ vi.mock("@/pipeline/before/auth", () => ({
 vi.mock("@/lib/oauth/service", () => ({
 	CLI_CLIENT_ID: "phaseo_cli",
 	CLI_DEFAULT_SCOPES: ["openid"],
+	DESKTOP_CLIENT_ID: "phaseo_desktop",
 	assertRedirectAllowed: vi.fn(() => true),
 	authorizationConsentUrl: vi.fn((params: URLSearchParams) => {
 		state.consentParams = params.toString();
@@ -139,6 +144,7 @@ vi.mock("@/lib/oauth/service", () => ({
 	createOpaqueCode: vi.fn(() => "opaque-code"),
 	createUserCode: vi.fn(() => "ABCD-EFGH"),
 	defaultDeviceIntervalSeconds: vi.fn(() => 5),
+	desktopKeyWorkspace: vi.fn(async (_userId: string, requested?: string | null) => requested ?? "00000000-0000-4000-8000-000000000001"),
 	deviceExpiresInSeconds: vi.fn(() => 600),
 	filterAllowedScopes: vi.fn((client, scopes) => {
 		const allowedScopes = Array.isArray(client?.allowed_scopes)
@@ -147,6 +153,7 @@ vi.mock("@/lib/oauth/service", () => ({
 		return allowedScopes ? scopes.filter((scope: string) => allowedScopes.has(scope)) : scopes;
 	}),
 	getApiBaseUrl: vi.fn(() => "https://api.example.com"),
+	getGatewayOAuthResource: vi.fn(() => "https://api.example.com/v1"),
 	getIssuer: vi.fn(() => "https://api.example.com/oauth"),
 	getLocalJwks: vi.fn(async () => ({ keys: [] })),
 	getSupabaseActor: vi.fn(async () => ({ userId: "user_1" })),
@@ -155,6 +162,9 @@ vi.mock("@/lib/oauth/service", () => ({
 	hasActiveOAuthWorkspaceAccess: vi.fn(async () => Boolean(
 		state.authorizationRow && state.authorizationRow.revoked_at == null,
 	)),
+	issueDesktopSessionKey: vi.fn(async (args: { workspaceId: string }) => (args.workspaceId === "00000000-0000-4000-8000-00000000dead"
+		? null
+		: { key: "phaseo_v1_sk_desktop", expiresAt: "2999-01-01T00:00:00.000Z", scopes: ["gateway:access", "models:read"] })),
 	issueTokenPairForGrant: vi.fn(async (_grant: Record<string, unknown>, input: Record<string, unknown>) => {
 		state.issuedTokenPairs.push(input);
 		return { access_token: "token" };
@@ -184,6 +194,7 @@ vi.mock("@/lib/oauth/service", () => ({
 	}),
 	normalizeUserCode: vi.fn((value: string) => value.trim().toUpperCase()),
 	parseTokenRequestBody: vi.fn((raw: string) => (raw ? JSON.parse(raw) : {})),
+	renewDesktopKey: vi.fn(async (keyId: string) => (keyId === "key_desktop" ? { expiresAt: "2999-01-01T00:00:00.000Z" } : null)),
 	revokeToken: vi.fn(async () => undefined),
 	rotateRefreshToken: vi.fn(async () => ({ ok: false, reason: "invalid_grant" })),
 	validateLocalAccessToken: vi.fn(async () => ({ valid: false })),
@@ -211,6 +222,7 @@ describe("OAuth route security", () => {
 		state.deviceRow = null;
 		state.authorizationRow = null;
 		state.authorizationCodeRow = null;
+		state.displayName = null;
 		state.client = { id: "phaseo_cli", name: "Phaseo CLI", client_type: "public" };
 		state.updateResult = null;
 		state.updatePayloads.length = 0;
@@ -566,6 +578,30 @@ describe("OAuth route security", () => {
 		});
 	});
 
+	it("blocks OAuth consent approval from an MFA account with an aal1 session", async () => {
+		const service = await import("@/lib/oauth/service");
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce({ userId: "user_1", mfaRequired: true, assuranceLevel: "aal1" } as never);
+		state.client = { id: "dynamic_mcp", name: "Claude", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read"] };
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/authorize/approve", {
+			method: "POST",
+			headers: { authorization: "Bearer user-session", "content-type": "application/json" },
+			body: JSON.stringify({
+				client_id: "dynamic_mcp",
+				redirect_uri: "https://example.com/callback",
+				primary_workspace_id: "ws_1",
+				scopes: ["models:read", "keys:write"],
+				code_challenge: "a".repeat(43),
+				code_challenge_method: "S256",
+				resource: "https://mcp.phaseo.app/mcp",
+			}),
+		});
+
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({ error: "access_denied" });
+		expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
+	});
+
 	it("rejects Gateway API resource approval without gateway access consent", async () => {
 		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
 		const { oauthRouter } = await import("./oauth");
@@ -850,8 +886,112 @@ describe("OAuth route security", () => {
 		for (const registration_source of ["developer", "cimd", "first_party"] as const) {
 			expect(filterMcpAuthorizationScopes({ ...client, registration_source }, requested, params.get("resource")!)).not.toContain("gateway:access");
 		}
-		expect(filterMcpAuthorizationScopes(client, [...requested, "keys:write"], params.get("resource")!)).not.toContain("gateway:access");
+		expect(filterMcpAuthorizationScopes(client, [...requested, "workspaces:write"], params.get("resource")!)).not.toContain("gateway:access");
 		expect(filterMcpAuthorizationScopes(client, ["models:read"], params.get("resource")!)).toEqual(["models:read"]);
+	});
+
+	it("lets existing dynamic Phaseo MCP clients explicitly step up to account-management consent", async () => {
+		state.client = { id: "existing_mcp", name: "Claude", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "pricing:read"] };
+		const { oauthRouter, filterMcpAuthorizationScopes } = await import("./oauth");
+		const requested = ["models:read", "pricing:read", "keys:read", "keys:write", "keys:delete", "budgets:write", "settings:write"];
+		const challenge = "a".repeat(43);
+		const params = new URLSearchParams({ client_id: "existing_mcp", redirect_uri: "https://claude.ai/api/mcp/auth_callback", response_type: "code", scope: requested.join(" "), code_challenge: challenge, code_challenge_method: "S256", resource: "https://mcp.phaseo.app/mcp" });
+		const response = await oauthRouter.request(`https://example.com/authorize?${params}`);
+		expect(response.status).toBe(302);
+		expect(new URLSearchParams(state.consentParams ?? "").get("scope")).toBe(requested.join(" "));
+		expect(state.client.allowed_scopes).toEqual(["models:read", "pricing:read"]);
+
+		const client = state.client as Parameters<typeof filterMcpAuthorizationScopes>[0];
+		const resource = params.get("resource")!;
+		// Management scopes are only granted when the client names them for the Phaseo MCP.
+		for (const otherResource of ["https://other.example/mcp", "https://api.example.com/v1", ""]) {
+			expect(filterMcpAuthorizationScopes(client, requested, otherResource)).toEqual(["models:read", "pricing:read"]);
+		}
+		for (const registration_source of ["developer", "cimd", "first_party"] as const) {
+			expect(filterMcpAuthorizationScopes({ ...client, registration_source }, requested, resource)).toEqual(["models:read", "pricing:read"]);
+		}
+		// A request that also names a scope outside the MCP list gets no step-up at all.
+		for (const outside of ["openid", "workspaces:write", "management_keys:write", "oauth_clients:delete", "presets:delete"]) {
+			expect(filterMcpAuthorizationScopes(client, [...requested, outside], resource)).toEqual(["models:read", "pricing:read"]);
+		}
+		// Asking for read-only scopes never adds management scopes.
+		expect(filterMcpAuthorizationScopes(client, ["models:read", "pricing:read"], resource)).toEqual(["models:read", "pricing:read"]);
+	});
+
+	it("never stores management write scopes at dynamic registration, which has no resource", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ client_name: "Unbound", redirect_uris: ["https://client.example/callback"], scope: "models:read openid gateway:access keys:write", token_endpoint_auth_method: "none" }),
+		});
+		expect(response.status).toBe(201);
+		expect(state.registeredClients[0]?.allowed_scopes).toEqual(["models:read"]);
+		expect(await response.json()).toMatchObject({ scope: "models:read" });
+	});
+
+	it("strips stored management write scopes unless the authorization is for the Phaseo MCP resource", async () => {
+		const { filterMcpAuthorizationScopes } = await import("./oauth");
+		// A client whose stored allowlist already holds a write scope (for example from an older registration).
+		const client = { id: "dynamic_mcp", name: "Unbound", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "gateway:access", "keys:write", "workspaces:read"] } as Parameters<typeof filterMcpAuthorizationScopes>[0];
+		for (const resource of ["", "https://other.example/mcp", "https://api.phaseo.app/v1"]) {
+			expect(filterMcpAuthorizationScopes(client, ["models:read", "gateway:access", "keys:write"], resource)).toEqual(["models:read", "gateway:access"]);
+		}
+		// Bound to the MCP but mixed with a scope the MCP does not use.
+		expect(filterMcpAuthorizationScopes(client, ["models:read", "keys:write", "workspaces:read"], "https://mcp.phaseo.app/mcp")).toEqual(["models:read", "workspaces:read"]);
+		expect(filterMcpAuthorizationScopes(client, ["models:read", "keys:write"], "https://mcp.phaseo.app/mcp")).toEqual(["models:read", "keys:write"]);
+	});
+
+	it("rejects an unbound or unrelated authorization request for management write scopes", async () => {
+		state.client = { id: "dynamic_mcp", name: "Unbound", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "gateway:access", "keys:write"] };
+		const { oauthRouter } = await import("./oauth");
+		for (const resource of [undefined, "https://other.example/mcp"]) {
+			const params = new URLSearchParams({ client_id: "dynamic_mcp", redirect_uri: "https://client.example/callback", response_type: "code", scope: "models:read gateway:access keys:write", code_challenge: "a".repeat(43), code_challenge_method: "S256", ...(resource ? { resource } : {}) });
+			const response = await oauthRouter.request(`https://example.com/authorize?${params}`);
+			expect(response.status).toBe(400);
+			expect(await response.json()).toMatchObject({ error: "invalid_scope" });
+		}
+	});
+
+	it("does not exchange a management grant that is not bound to the Phaseo MCP resource", async () => {
+		state.client = { id: "dynamic_mcp", name: "Unbound", client_type: "public", registration_source: "dynamic", allowed_scopes: ["models:read", "gateway:access", "keys:write"] };
+		for (const resource of [undefined, "https://other.example/mcp"]) {
+			state.issuedManagedKeys.length = 0;
+			state.authorizationCodeRow = {
+				id: "authorization_code_management",
+				client_id: "dynamic_mcp",
+				user_id: "user_1",
+				workspace_id: "ws_1",
+				redirect_uri: "https://client.example/callback",
+				scopes: ["models:read", "gateway:access", "keys:write"],
+				...(resource ? { resource } : {}),
+				code_challenge: "challenge",
+				code_challenge_method: "S256",
+				expires_at: FUTURE_EXPIRES_AT,
+				used_at: null,
+			};
+			state.authorizationRow = { id: "auth_1", revoked_at: null };
+			const { oauthRouter } = await import("./oauth");
+			const response = await oauthRouter.request("https://example.com/token", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ grant_type: "authorization_code", client_id: "dynamic_mcp", code: "authorization-code", redirect_uri: "https://client.example/callback", code_verifier: "verifier", ...(resource ? { resource } : {}) }),
+			});
+			expect(response.status).toBe(400);
+			expect(await response.json()).toMatchObject({ error: "invalid_scope", error_description: "Management scopes are only available on tokens bound to the Phaseo MCP" });
+			expect(state.issuedManagedKeys).toEqual([]);
+		}
+	});
+
+	it("narrows registration to read-only scopes when management scopes come with administrative ones", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ client_name: "Catalogue", redirect_uris: ["https://client.example/callback"], scope: "models:read pricing:read keys:write workspaces:delete", token_endpoint_auth_method: "none" }),
+		});
+		expect(response.status).toBe(201);
+		expect(state.registeredClients[0]?.allowed_scopes).toEqual(["models:read", "pricing:read"]);
 	});
 
 	it("classifies legacy loopback registrations as native clients", async () => {
@@ -1029,9 +1169,76 @@ describe("OAuth route security", () => {
 			sub: "user_1",
 			email: "user@example.com",
 			name: "Phaseo User",
+			given_name: "Phaseo",
+			picture: "https://lh3.googleusercontent.com/a/photo",
 			workspace_id: "workspace_1",
 			client_id: "client_1",
 		});
+
+		// The name set on the profile page wins over the sign-in provider's.
+		state.displayName = "  Ada Lovelace  ";
+		const renamed = await oauthRouter.request("https://example.com/userinfo", { headers: { Authorization: "Bearer phaseo_v1_sk_example" } });
+		expect(await renamed.json()).toMatchObject({ name: "Ada Lovelace", given_name: "Ada" });
+
+		// Without the profile scope, neither the name nor the picture is shared.
+		state.oauthAuth = { ...state.oauthAuth, oauthScopes: ["openid", "email"] };
+		const narrow = await (await oauthRouter.request("https://example.com/userinfo", { headers: { Authorization: "Bearer phaseo_v1_sk_example" } })).json();
+		expect(narrow).not.toHaveProperty("name"); expect(narrow).not.toHaveProperty("given_name"); expect(narrow).not.toHaveProperty("picture");
+	});
+
+	it("gives the desktop app a key for the person signed in to it, after two-factor sign-in", async () => {
+		const service = await import("@/lib/oauth/service");
+		const { oauthRouter } = await import("./oauth");
+		const request = (body?: unknown) => oauthRouter.request("https://example.com/desktop/key", {
+			method: "POST",
+			headers: { authorization: "Bearer user-session", "content-type": "application/json" },
+			...(body === undefined ? {} : { body: JSON.stringify(body) }),
+		});
+		const issued = await request();
+		expect(issued.status).toBe(200);
+		expect(issued.headers.get("Cache-Control")).toBe("no-store");
+		expect(await issued.json()).toMatchObject({
+			access_token: "phaseo_v1_sk_desktop", token_type: "Bearer", workspace_id: "00000000-0000-4000-8000-000000000001",
+			scope: "gateway:access models:read", resource: "https://api.example.com/v1", expires_at: "2999-01-01T00:00:00.000Z",
+		});
+		const chosen = await request({ workspace_id: "00000000-0000-4000-8000-000000000002" });
+		expect(await chosen.json()).toMatchObject({ workspace_id: "00000000-0000-4000-8000-000000000002" });
+		expect(vi.mocked(service.issueDesktopSessionKey)).toHaveBeenLastCalledWith({ userId: "user_1", workspaceId: "00000000-0000-4000-8000-000000000002" });
+
+		// Not a member, not a workspace id, no login, or a login that skipped its second factor.
+		expect((await request({ workspace_id: "00000000-0000-4000-8000-00000000dead" })).status).toBe(403);
+		expect((await request({ workspace_id: "workspace_1" })).status).toBe(400);
+		expect((await request({ workspace_id: 7 })).status).toBe(400);
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce(null);
+		expect((await request()).status).toBe(401);
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce({ userId: "user_1", mfaRequired: true, assuranceLevel: "aal1" } as never);
+		const partial = await request();
+		expect(partial.status).toBe(401);
+		expect(await partial.json()).toMatchObject({ error: "insufficient_user_authentication" });
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce({ userId: "user_1", mfaRequired: true, assuranceLevel: "aal2" } as never);
+		expect((await request()).status).toBe(200);
+	});
+
+	it("renews the desktop app's own delegated key, and nothing else", async () => {
+		const desktop = { ok: true, workspaceId: "workspace_1", apiKeyId: "key_desktop", apiKeyRef: "kid_abc", apiKeyKid: "abc", userId: "user_1", authMethod: "oauth", oauthClientId: "phaseo_desktop", oauthScopes: ["gateway:access"] };
+		const { oauthRouter } = await import("./oauth");
+		const renew = () => oauthRouter.request("https://example.com/desktop/renew", { method: "POST", headers: { Authorization: "Bearer phaseo_v1_sk_example" } });
+		state.oauthAuth = desktop;
+		const renewed = await renew();
+		expect(renewed.status).toBe(200);
+		expect(renewed.headers.get("Cache-Control")).toBe("no-store");
+		expect(await renewed.json()).toMatchObject({ expires_at: "2999-01-01T00:00:00.000Z", expires_in: expect.any(Number) });
+		// Another app's key, a session token, a plain API key, or a key past renewing.
+		for (const auth of [
+			{ ...desktop, oauthClientId: "client_1" },
+			{ ...desktop, apiKeyRef: "oauth_phaseo_desktop" },
+			{ ...desktop, authMethod: "api_key" },
+			{ ok: false, reason: "key_expired" },
+			{ ...desktop, apiKeyId: "key_revoked" },
+		]) {
+			state.oauthAuth = auth;
+			expect((await renew()).status).toBe(401);
+		}
 	});
 
 	it("binds a delegated access token to the resource echoed at token exchange", async () => {

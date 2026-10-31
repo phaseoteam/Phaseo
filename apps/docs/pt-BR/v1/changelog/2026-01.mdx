@@ -3,14 +3,36 @@ title: "janeiro"
 description: "Atualizações do produto Phaseo, mudanças no SDK e lançamentos de modelos de janeiro de 2026."
 ---
 
-<Update label="30 de janeiro de 2026" tags={["Novidades","Lançamentos de modelos","SDK"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### Novidades
+<ChangelogFilters labels={{"product":"Produto","api":"API e SDKs","models":"Modelos"}} clearLabel="Limpar" />
 
-- O gateway foi reformulado novamente, incluindo suporte a `/messages` compatível com a Anthropic.
-- A arquitetura do banco de dados, a experiência do site, as ferramentas do playground e a direção do SDK foram atualizadas para uma expansão mais ampla.
+<Update label="30 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- O Chat em [phaseo.app/chat](https://phaseo.app/chat) permite conversar com os modelos do gateway, ajustar os parâmetros da requisição e manter o histórico no seu navegador ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- As equipes podem escolher como o gateway seleciona provedores em **Settings -> Routing**: **Balanced**, **Lowest cost**, **Lowest latency** ou **Highest throughput** ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- Uma calculadora de preços em Tools estima o custo das requisições a partir da contagem de tokens e o compara entre modelos ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- `POST /v1/messages` aceita requisições no formato Anthropic Messages, para que os SDKs da Anthropic chamem modelos do gateway; veja [Criar uma mensagem](../api-reference/endpoint/anthropic-messages.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/ocr` extrai texto de uma imagem enviada por URL ou em base64; veja [Extrair texto com OCR](../api-reference/endpoint/ocr.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- `POST /v1/music/generate` cria faixas de música, e `GET /v1/music/generate/{id}` retorna o status delas; veja [Gerar música](../api-reference/endpoint/music-generate.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+- A API de gerenciamento adiciona `GET /v1/credits` para o saldo de créditos, `GET /v1/activity` para as requisições recentes e `/v1/provisioning/keys` para listar, atualizar e excluir chaves; veja [Obter créditos](../api-reference/endpoint/credits.mdx) ([#21](https://github.com/phaseoteam/Phaseo/pull/21)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 - [z.AI: GLM 4.5 Air X](https://phaseo.app/models/z-ai/glm-4.5-air-x)
 - [z.AI: GLM 4.5 X](https://phaseo.app/models/z-ai/glm-4.5-x)
@@ -20,11 +42,15 @@ description: "Atualizações do produto Phaseo, mudanças no SDK e lançamentos 
 - [MiniMax: MiniMax M2 Her](https://phaseo.app/models/minimax/minimax-m2-her)
 - [Qwen: Qwen 3 Max Thinking](https://phaseo.app/models/qwen/qwen3-max-thinking)
 
+</div>
+
 </Update>
 
-<Update label="29 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="29 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Grok Imagine Image imagem de lançamento do modelo](../../../images/model-releases/2026-01-29--x-ai--grok-imagine-image.png)
 
@@ -32,88 +58,120 @@ description: "Atualizações do produto Phaseo, mudanças no SDK e lançamentos 
 - [xAI: Grok Imagine Image Pro](https://phaseo.app/models/x-ai/grok-imagine-image-pro)
 - [xAI: Grok Imagine Video](https://phaseo.app/models/x-ai/grok-imagine-video)
 
+</div>
+
 </Update>
 
-<Update label="27 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="27 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Kimi K2.5 imagem de lançamento do modelo](../../../images/model-releases/2026-01-27--moonshotai--kimi-k2-5.png)
 
+- [Moonshot: Kimi K2.5](https://phaseo.app/models/moonshotai/kimi-k2.5)
 - [Arcee AI: Trinity Large](https://phaseo.app/models/arcee-ai/trinity-large)
 - [CrofAI: Greg 1](https://phaseo.app/models/crofai/greg-1)
 - [CrofAI: Greg 1 Mini](https://phaseo.app/models/crofai/greg-1-mini)
 - [CrofAI: Greg 1 Super](https://phaseo.app/models/crofai/greg-1-super)
-- [Moonshot: Kimi K2.5](https://phaseo.app/models/moonshotai/kimi-k2.5)
+
+</div>
 
 </Update>
 
-<Update label="26 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="26 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Qwen 3 Max Thinking imagem de lançamento do modelo](../../../images/model-releases/2026-01-26--qwen--qwen3-max-thinking.png)
 
 - [Qwen: Qwen 3 Max Thinking](https://phaseo.app/models/qwen/qwen3-max-thinking)
 - [Upstage: Solar Pro 3 (2026-01-26)](https://phaseo.app/models/upstage/solar-pro-3)
 
+</div>
+
 </Update>
 
-<Update label="24 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="24 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![MiniMax M2 Her imagem de lançamento do modelo](../../../images/model-releases/2026-01-24--minimax--minimax-m2-her.png)
 
 - [MiniMax: MiniMax M2 Her](https://phaseo.app/models/minimax/minimax-m2-her)
 
+</div>
+
 </Update>
 
-<Update label="22 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="22 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 - [Baidu: Ernie 5.0](https://phaseo.app/models/baidu/ernie-5.0)
 
+</div>
+
 </Update>
 
-<Update label="20 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="20 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 - [Liquid AI: LFM 2.5 1.2B Thinking](https://phaseo.app/models/liquid-ai/lfm-2.5-1.2b-thinking)
 
+</div>
+
 </Update>
 
-<Update label="19 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="19 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![GLM 4.7 Flash imagem de lançamento do modelo](../../../images/model-releases/2026-01-19--z-ai--glm-4-7-flash.png)
 
 - [z.AI: GLM 4.7 Flash](https://phaseo.app/models/z-ai/glm-4.7-flash)
 
+</div>
+
 </Update>
 
-<Update label="16 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="16 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Music 2.5 imagem de lançamento do modelo](../../../images/model-releases/2026-01-16--minimax--music-2-5.png)
 
 - [MiniMax: Music 2.5](https://phaseo.app/models/minimax/music-2.5)
 
+</div>
+
 </Update>
 
-<Update label="15 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="15 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![TranslateGemma 12B imagem de lançamento do modelo](../../../images/model-releases/2026-01-15--google--translategemma-12b.png)
 
+- [Google: TranslateGemma 12B](https://phaseo.app/models/google/translategemma-12b)
 - [Black Forest Labs: Flux 2 Klein 4B](https://phaseo.app/models/black-forest-labs/flux-2-klein-4b)
 - [Black Forest Labs: Flux 2 Klein 9B](https://phaseo.app/models/black-forest-labs/flux-2-klein-9b)
-- [Google: TranslateGemma 12B](https://phaseo.app/models/google/translategemma-12b)
 - [Google: TranslateGemma 27B](https://phaseo.app/models/google/translategemma-27b)
 - [Google: TranslateGemma 4B](https://phaseo.app/models/google/translategemma-4b)
 - [Voyage: Voyage 4](https://phaseo.app/models/voyage/voyage-4)
@@ -121,62 +179,86 @@ description: "Atualizações do produto Phaseo, mudanças no SDK e lançamentos 
 - [Voyage: Voyage 4 Lite](https://phaseo.app/models/voyage/voyage-4-lite)
 - [Voyage: Voyage Multimodal 3.5](https://phaseo.app/models/voyage/voyage-multimodal-3.5)
 
+</div>
+
 </Update>
 
-<Update label="14 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="14 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![GLM Image imagem de lançamento do modelo](../../../images/model-releases/2026-01-14--z-ai--glm-image.png)
 
 - [z.AI: GLM Image](https://phaseo.app/models/z-ai/glm-image)
 
+</div>
+
 </Update>
 
-<Update label="13 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="13 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![MedGemma 1.5 4B imagem de lançamento do modelo](../../../images/model-releases/2026-01-13--google--medgemma-1-5-4b.png)
 
 - [Google: MedGemma 1.5 4B](https://phaseo.app/models/google/medgemma-1.5-4b)
 
+</div>
+
 </Update>
 
-<Update label="9 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="9 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Scribe V2 imagem de lançamento do modelo](../../../images/model-releases/2026-01-09--eleven-labs--scribe-v2.png)
 
 - [ElevenLabs: Scribe V2](https://phaseo.app/models/eleven-labs/scribe-v2)
 
+</div>
+
 </Update>
 
-<Update label="8 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="8 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 ![Jamba 2 3B imagem de lançamento do modelo](../../../images/model-releases/2026-01-08--ai21--jamba-2-3b.png)
 
 - [ai21: Jamba 2 3B](https://phaseo.app/models/ai21/jamba-2-3b)
 - [ai21: Jamba Mini 2](https://phaseo.app/models/ai21/jamba-mini-2)
 
+</div>
+
 </Update>
 
-<Update label="6 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="6 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 - [Liquid AI: LFM 2.5 1.2B](https://phaseo.app/models/liquid-ai/lfm-2.5-1.2b)
 - [Liquid AI: LFM 2.5 1.2B JP](https://phaseo.app/models/liquid-ai/lfm-2.5-1.2b-jp)
 - [Nous: NousCoder 14B](https://phaseo.app/models/nous/nouscoder-14b)
 
+</div>
+
 </Update>
 
-<Update label="3 de janeiro de 2026" tags={["Lançamentos de modelos"]}>
+<Update label="3 de janeiro de 2026">
 
-### Lançamentos de modelos
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
 
 - [z.AI: GLM 4.7](https://phaseo.app/models/z-ai/glm-4.7)
 - [MiniMax: Music 2.0](https://phaseo.app/models/minimax/music-2.0)
@@ -188,5 +270,6 @@ description: "Atualizações do produto Phaseo, mudanças no SDK e lançamentos 
 - [MiniMax: Speech 2.6](https://phaseo.app/models/minimax/speech-2.6)
 - [Arcee AI: Trinity Large](https://phaseo.app/models/arcee-ai/trinity-large)
 
-</Update>
+</div>
 
+</Update>

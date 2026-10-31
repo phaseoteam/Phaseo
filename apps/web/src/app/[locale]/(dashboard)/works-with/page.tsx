@@ -3,7 +3,6 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import apps from "@/data/works-with-phaseo.json";
 import { buildMetadata } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
@@ -25,7 +24,10 @@ type WorksWithApp = {
 	logo?: string;
 };
 
-const sortedApps = (apps as WorksWithApp[]).slice().sort((a, b) => {
+// No listed apps yet; add entries here.
+const apps: WorksWithApp[] = [];
+
+const sortedApps = apps.slice().sort((a, b) => {
 	return b.date_added.localeCompare(a.date_added);
 });
 

@@ -12,12 +12,17 @@ const state = vi.hoisted(() => ({
 	destinations: [] as Array<Record<string, unknown>>,
 	loadError: null as { message: string } | null,
 	receipts: new Set<string>(),
+	health: [] as Array<Array<Record<string, unknown>>>,
 }));
 
 vi.mock("@/runtime/env", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/runtime/env")>()),
 	getBindings: () => state.bindings,
 	getSupabaseAdmin: () => ({
+		rpc: async (name: string, args: { p_results: Array<Record<string, unknown>> }) => {
+			if (name === "record_broadcast_destination_health") state.health.push(args.p_results);
+			return { data: args.p_results.length, error: null };
+		},
 		from: (table: string) => table === "broadcast_event_receipts" ? {
 			upsert: (rows: Array<{ event_id: string }>) => ({
 				select: async () => {
@@ -93,6 +98,7 @@ describe("processBroadcastQueueBatch", () => {
 		state.destinations = [otlp("collector"), webhook("hook")];
 		state.loadError = null;
 		state.receipts = new Set();
+		state.health = [];
 		vi.spyOn(console, "warn").mockImplementation(() => undefined);
 		vi.spyOn(console, "error").mockImplementation(() => undefined);
 	});
@@ -120,6 +126,54 @@ describe("processBroadcastQueueBatch", () => {
 		expect(second.ack).toHaveBeenCalled();
 	});
 
+	it("splits OTLP requests by UTF-8 bytes, not characters", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		// Span attributes are capped at 64,000 characters, about 192 KB of this
+		// three-byte character. Thirty events fit in 3 MiB by length, not by bytes.
+		const wide = (eventId: string) => {
+			const queued = message({ eventId, destinationIds: ["collector"] });
+			const base = telemetry(eventId);
+			queued.body.telemetry = { ...base, args: { ...base.args, requestPayload: { messages: [{ role: "user", content: "漢".repeat(70_000) }] } } } as BroadcastTelemetry;
+			return queued;
+		};
+
+		const events = Array.from({ length: 30 }, (_, index) => wide(`req_${index}`));
+		const characters = events.reduce((sum, event) => sum + JSON.stringify(event.body.telemetry).length, 0);
+		expect(characters).toBeLessThan(3 * 1024 * 1024);
+
+		const summary = await processBroadcastQueueBatch(batch(...events));
+
+		expect(summary.delivered).toBe(30);
+		expect(summary.requests).toBeGreaterThan(1);
+		for (const [, init] of fetchMock.mock.calls as Array<[URL, RequestInit]>) {
+			expect(new TextEncoder().encode(String(init.body)).byteLength).toBeLessThan(3 * 1024 * 1024);
+		}
+	});
+
+	it("splits OTLP requests at a preset's lower limit, such as New Relic's 1 MB", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		state.destinations = [{ id: "nr", destination_id: "new_relic", destination_config: { license_key: "nr-1" }, enabled: true }];
+		const events = Array.from({ length: 25 }, (_, index) => {
+			const queued = message({ eventId: `req_${index}`, destinationIds: ["nr"] });
+			const base = telemetry(`req_${index}`);
+			queued.body.telemetry = { ...base, args: { ...base.args, requestPayload: { messages: [{ role: "user", content: "a".repeat(60_000) }] } } } as BroadcastTelemetry;
+			return queued;
+		});
+
+		const summary = await processBroadcastQueueBatch(batch(...events));
+
+		expect(summary.delivered).toBe(25);
+		expect(summary.requests).toBeGreaterThan(1);
+		for (const [url, init] of fetchMock.mock.calls as Array<[URL, RequestInit]>) {
+			expect(url.toString()).toBe("https://otlp.nr-data.net/v1/traces");
+			// The body is gzipped protobuf; the split is made on the JSON size,
+			// which bounds it.
+			expect((init.body as Uint8Array).byteLength).toBeLessThan(1_000_000);
+		}
+	});
+
 	it("sends webhooks one event per request", async () => {
 		const fetchMock = vi.fn().mockImplementation(async () => new Response(null, { status: 204 }));
 		vi.stubGlobal("fetch", fetchMock);
@@ -135,6 +189,46 @@ describe("processBroadcastQueueBatch", () => {
 			expect(url.toString()).toBe("https://hooks.example.com/traces");
 			expect(JSON.parse(String(init.body)).resourceSpans).toHaveLength(1);
 		}
+	});
+
+	it("writes one object per row destination for the whole batch", async () => {
+		state.destinations = [{
+			id: "bucket", destination_id: "s3", enabled: true,
+			destination_config: { bucket: "traces", region: "eu-west-2", access_key_id: "AKIA", secret_access_key: "secret" },
+		}];
+		const fetchMock = vi.fn().mockImplementation(async () => new Response(null, { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const summary = await processBroadcastQueueBatch(batch(
+			message({ eventId: "req_1", destinationIds: ["bucket"] }),
+			message({ eventId: "req_2", destinationIds: ["bucket"] }),
+		));
+
+		expect(summary).toMatchObject({ requests: 1, delivered: 2, failed: 0 });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+		expect(url.toString()).toMatch(/^https:\/\/traces\.s3\.eu-west-2\.amazonaws\.com\/phaseo\/\d{4}\/\d{2}\/\d{2}\/\d{2}\/[0-9a-f-]{36}\.jsonl\.gz$/);
+		expect(init.method).toBe("PUT");
+		const text = await new Response(new Blob([init.body as Uint8Array<ArrayBuffer>]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+		const rows = text.trim().split("\n").map((line) => JSON.parse(line));
+		expect(new Set(rows.map((row) => row.event_id))).toEqual(new Set(["req_1", "req_2"]));
+		expect(rows.every((row) => row.trace_id && row.span_id && row.attributes)).toBe(true);
+	});
+
+	it("retries a row destination's server errors and reports its error code", async () => {
+		state.destinations = [
+			{ id: "busy", destination_id: "r2", enabled: true, destination_config: { bucket: "busy", account_id: "0123456789abcdef0123456789abcdef", access_key_id: "a", secret_access_key: "s" } },
+			{ id: "denied", destination_id: "gcs", enabled: true, destination_config: { bucket: "denied", access_key_id: "a", secret_access_key: "s" } },
+		];
+		vi.stubGlobal("fetch", vi.fn(async (url: URL) => url.hostname === "storage.googleapis.com"
+			? new Response("<?xml version='1.0'?><Error><Code>AccessDenied</Code><Message>Access denied.</Message></Error>", { status: 403 })
+			: new Response(null, { status: 503 })));
+
+		const summary = await processBroadcastQueueBatch(batch(message({ eventId: "req_1", destinationIds: ["busy", "denied"] })));
+
+		expect(summary).toMatchObject({ requests: 2, delivered: 0, retried: 1, failed: 1 });
+		expect(sendBatch).toHaveBeenCalledWith([expect.objectContaining({ body: expect.objectContaining({ destinationIds: ["busy"], attempt: 2 }) })]);
+		expect(console.warn).toHaveBeenCalledWith("broadcast_delivery_failed", expect.objectContaining({ destinationId: "denied", status: 403, retryable: false, error: "Destination returned 403: AccessDenied" }));
 	});
 
 	it("requeues an event for only the destinations that failed", async () => {
@@ -180,6 +274,42 @@ describe("processBroadcastQueueBatch", () => {
 		expect(event.ack).toHaveBeenCalled();
 	});
 
+	it("records each destination's health once per batch", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (url: URL) => url.hostname === "collector.example.com"
+			? new Response(null, { status: 200 })
+			: new Response(null, { status: 401 })));
+		state.destinations = [otlp("collector"), webhook("hook"), { ...webhook("off"), enabled: false }];
+
+		await processBroadcastQueueBatch(batch(
+			message({ eventId: "req_1", destinationIds: ["collector", "hook", "off"] }),
+			message({ eventId: "req_2", destinationIds: ["collector", "hook"] }),
+		));
+
+		expect(state.health).toHaveLength(1);
+		const byId = Object.fromEntries(state.health[0].map((entry) => [entry.destination_id, entry]));
+		expect(Object.keys(byId).sort()).toEqual(["collector", "hook"]);
+		expect(byId.collector).toMatchObject({ delivered: 2, failed: 0, failures: 0, last_failure_at: null, last_error: null });
+		expect(byId.collector.last_success_at).toEqual(expect.any(String));
+		expect(byId.hook).toMatchObject({
+			delivered: 0,
+			failed: 2,
+			failures: 2,
+			last_success_at: null,
+			last_http_status: 401,
+			last_error: "Webhook endpoint returned 401",
+		});
+	});
+
+	it("counts a failure that will be retried in the streak but not as a failed event", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 503 })));
+
+		await processBroadcastQueueBatch(batch(message({ eventId: "req_1", destinationIds: ["collector"] })));
+
+		expect(state.health[0]).toEqual([expect.objectContaining({
+			destination_id: "collector", delivered: 0, failed: 0, failures: 1, last_http_status: 503,
+		})]);
+	});
+
 	it("drops events for destinations that were disabled or deleted", async () => {
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
@@ -191,6 +321,7 @@ describe("processBroadcastQueueBatch", () => {
 		expect(summary).toMatchObject({ requests: 0, failed: 2 });
 		expect(fetchMock).not.toHaveBeenCalled();
 		expect(event.ack).toHaveBeenCalled();
+		expect(state.health).toEqual([]);
 	});
 
 	it("retries the batch when destinations cannot be loaded", async () => {

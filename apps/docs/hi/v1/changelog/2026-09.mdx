@@ -3,253 +3,585 @@ title: "सितंबर"
 description: "सितंबर 2026 - Phaseo"
 ---
 
-<Update label="30 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### मॉडल रिलीज़
+<ChangelogFilters labels={{"product":"उत्पाद","api":"API और SDK","models":"मॉडल"}} clearLabel="साफ़ करें" />
+
+<Update label="30 सितंबर 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 - [Voyage: Rerank 3](https://phaseo.app/models/voyage/rerank-3)
 - [Voyage: Rerank 3 Lite](https://phaseo.app/models/voyage/rerank-3-lite)
 - [Cohere: Embed 5 Pro](https://phaseo.app/models/cohere/embed-v5.0-pro)
 - [Cohere: Embed 5 Fast](https://phaseo.app/models/cohere/embed-v5.0-fast)
 
+</div>
+
 </Update>
 
-<Update label="29 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="29 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- `service_tier: "ultrafast"` केवल Ultrafast ऑफ़र पर रूट करता है, शुरुआत GPT-6 Astra से, और दूसरे स्तर पर जाने के बजाय विफल होता है; देखें [Service Tiers](../guides/service-tiers.mdx) ([#2624](https://github.com/phaseoteam/Phaseo/pull/2624), [#2663](https://github.com/phaseoteam/Phaseo/pull/2663)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![GPT-6.1 Sol](/images/model-releases/2026-09-29--openai--gpt-6.1-sol.png)
 
-- [OpenAI: GPT-6.1 Sol Pro](https://phaseo.app/models/openai/gpt-6.1-sol-pro)
 - [OpenAI: GPT-6.1 Sol](https://phaseo.app/models/openai/gpt-6.1-sol)
+- [OpenAI: GPT-6.1 Sol Pro](https://phaseo.app/models/openai/gpt-6.1-sol-pro)
 - [Liquid AI: D1 (Free)](https://phaseo.app/models/liquid-ai/d1:free)
 - [Inclusion AI: Ling 3.1 Flash (Free)](https://phaseo.app/models/inclusionai/ling-3.1-flash:free)
 - [Inclusion AI: Ling 3.1 Flash](https://phaseo.app/models/inclusionai/ling-3.1-flash)
 
+</div>
+
 </Update>
 
-<Update label="28 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="28 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- टेक्स्ट अनुरोधों के लिए अब $1 के बजाय कम से कम $0.10 उपलब्ध क्रेडिट चाहिए, जबकि वीडियो और batch सबमिशन के लिए अब भी $1 चाहिए ([#2643](https://github.com/phaseoteam/Phaseo/pull/2643)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![Claude Sonnet 5.5](/images/model-releases/2026-09-28--anthropic--claude-sonnet-5.5.png)
 
+- [Anthropic: Claude Sonnet 5.5](https://phaseo.app/models/anthropic/claude-sonnet-5.5) Anthropic, Claude Platform on AWS, Amazon Bedrock और Google Vertex रूट के साथ जोड़ा गया। Anthropic की मानक कीमत प्रति 10 लाख इनपुट टोकन $2 और प्रति 10 लाख आउटपुट टोकन $10 है।
 - [ElevenLabs: Eleven v4](https://phaseo.app/models/eleven-labs/eleven-v4)
 - [ElevenLabs: Eleven v4 Turbo](https://phaseo.app/models/eleven-labs/eleven-v4-turbo)
-- [Anthropic: Claude Sonnet 5.5](https://phaseo.app/models/anthropic/claude-sonnet-5.5) Anthropic, Claude Platform on AWS, Amazon Bedrock और Google Vertex रूट के साथ जोड़ा गया। Anthropic की मानक कीमत प्रति 10 लाख इनपुट टोकन $2 और प्रति 10 लाख आउटपुट टोकन $10 है।
+
+</div>
 
 </Update>
 
-<Update label="23 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="24 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- ग्लोबल सर्च टाइपो सह लेता है और हाल के आइटम दिखाता है, और वर्कस्पेस स्विचर आपके सभी वर्कस्पेस खोजता है, सबसे हाल में इस्तेमाल किए गए 50 पहले ([#2572](https://github.com/phaseoteam/Phaseo/pull/2572)).
+
+</div>
+
+</Update>
+
+<Update label="23 सितंबर 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- ग्लोबल सर्च दस्तावेज़ पेजों को शीर्षक, विवरण और हेडिंग से खोजता है और उन्हें सीधे खोलता है ([#2526](https://github.com/phaseoteam/Phaseo/pull/2526)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![Aion 3.5](/images/model-releases/2026-09-23--aion-labs--aion-3.5.png)
 
+- [Aion Labs: Aion 3.5](https://phaseo.app/models/aion-labs/aion-3.5)
 - [Fireworks: Ember-1](https://phaseo.app/models/fireworks/ember-1)
 - [Together: Tev1 4B Experimental](https://phaseo.app/models/together/tev1-4b-experimental)
 - [Google: Gemini 3.8 Flash Lite TTS](https://phaseo.app/models/google/gemini-3.8-flash-lite-tts)
 - [Google: Gemini 3.8 Flash TTS](https://phaseo.app/models/google/gemini-3.8-flash-tts)
 - [Stealth: Space Bunny Alpha](https://phaseo.app/models/stealth/space-bunny-alpha)
-- [Aion Labs: Aion 3.5](https://phaseo.app/models/aion-labs/aion-3.5)
 - [Aion Labs: Aion 3.5 Mini](https://phaseo.app/models/aion-labs/aion-3.5-mini)
+
+</div>
 
 </Update>
 
-<Update label="22 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="22 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- Chat का reasoning मेनू केवल वे effort स्तर दिखाता है जिन्हें चुना गया मॉडल और प्रदाता समर्थन करते हैं, और अब लागू न होने वाले सहेजे गए स्तर को बदल देता है ([#2496](https://github.com/phaseoteam/Phaseo/pull/2496), [#2503](https://github.com/phaseoteam/Phaseo/pull/2503)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- Responses API समर्थन करने वाले मॉडल के लिए `reasoning.effort: "instant"` स्वीकार करता है ([#2503](https://github.com/phaseoteam/Phaseo/pull/2503)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![Claude Opus 5.5](/images/model-releases/2026-09-22--anthropic--claude-opus-5.5.png)
 
+- [Anthropic: Claude Opus 5.5](https://phaseo.app/models/anthropic/claude-opus-5.5)
 - [OpenAI: GPT-6 Sol Pro](https://phaseo.app/models/openai/gpt-6-sol-pro)
 - [OpenAI: GPT-6 Luna Pro](https://phaseo.app/models/openai/gpt-6-luna-pro)
 - [OpenAI: GPT-6 Sol](https://phaseo.app/models/openai/gpt-6-sol)
 - [OpenAI: GPT-6 Luna](https://phaseo.app/models/openai/gpt-6-luna)
-- [Anthropic: Claude Opus 5.5](https://phaseo.app/models/anthropic/claude-opus-5.5)
 - [Upstage: Solar Mini 4](https://phaseo.app/models/upstage/solar-mini-4)
 - [Tencent Hunyuan: Hy Image 3.5 Preview](https://phaseo.app/models/tencent/hy-image-v3.5-preview)
 - [Tencent Hunyuan: Hy Image 3.5 Preview (Free)](https://phaseo.app/models/tencent/hy-image-v3.5-preview:free)
 - [Upstage: Solar Decide](https://phaseo.app/models/upstage/solar-decide)
 
+</div>
+
 </Update>
 
-<Update label="21 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="21 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- **Settings -> Preferences** में भाषा, तारीख और समय फ़ॉर्मेट, समय क्षेत्र, संख्या फ़ॉर्मेट, घनत्व, लैंडिंग पेज और डेटा मास्किंग सेट करते हैं, साथ ही कस्टम लाइट और डार्क थीम ([#2452](https://github.com/phaseoteam/Phaseo/pull/2452)).
+- Models और API Providers तालिकाएँ कॉलम की दृश्यता, क्रम, पिनिंग और घनत्व सहेजती हैं, और हर मॉडल के प्रदाता एक पंक्ति में दिखाती हैं ([#2473](https://github.com/phaseoteam/Phaseo/pull/2473)).
+- Chat के कोड नमूनों में cURL, सभी नौ SDK भाषाएँ और Agent SDK स्टार्टर जुड़े हैं, और टेक्स्ट अनुरोधों को Responses, Chat Completions और Messages के बीच बदला जा सकता है ([#2468](https://github.com/phaseoteam/Phaseo/pull/2468), [#2469](https://github.com/phaseoteam/Phaseo/pull/2469), [#2487](https://github.com/phaseoteam/Phaseo/pull/2487)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![Grok 4.7](/images/model-releases/2026-09-21--spacex-ai--grok-4.7.png)
 
+- [SpaceXAI: Grok 4.7](https://phaseo.app/models/spacex-ai/grok-4.7)
 - [Xiaomi: MiMo V2.6 Flash](https://phaseo.app/models/xiaomi/mimo-v2.6-flash)
 - [Xiaomi: MiMo V2.6 Pro](https://phaseo.app/models/xiaomi/mimo-v2.6-pro)
 - [Jared Palmer: Kev-4B](https://phaseo.app/models/jaredpalmer/kev-4b)
-- [SpaceXAI: Grok 4.7](https://phaseo.app/models/spacex-ai/grok-4.7)
+
+</div>
 
 </Update>
 
-<Update label="20 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="20 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- हर Chat रूम में **Code** बटन है जो पिछले अनुरोध को TypeScript या Python कोड में बदलता है, और हर जवाब का विवरण उसके अनुरोध लॉग से लिंक होता है ([#2443](https://github.com/phaseoteam/Phaseo/pull/2443), [#2453](https://github.com/phaseoteam/Phaseo/pull/2453)).
+- Discord में साझा किए गए मॉडल लिंक मॉडल के नाम, लैब और कॉन्टेक्स्ट विंडो वाला कार्ड दिखाते हैं, साथ में खोलने, चैट, तुलना और API के बटन ([#2428](https://github.com/phaseoteam/Phaseo/pull/2428), [#2446](https://github.com/phaseoteam/Phaseo/pull/2446)).
+- मॉडल की प्रदाता तालिकाएँ स्तर बैज दिखाती हैं, क्षेत्रीय और विशेष रूट **Additional Routing Options** में रखती हैं, और बाहरी लिस्टिंग तब तक छिपाती हैं जब तक **Filters** में चालू न हों ([#2447](https://github.com/phaseoteam/Phaseo/pull/2447), [#2449](https://github.com/phaseoteam/Phaseo/pull/2449)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 - [StepFun: Step 5 Preview](https://phaseo.app/models/stepfun/step-5-preview)
 - [Qwen: Qwen 3.8 Omni Flash](https://phaseo.app/models/qwen/qwen3.8-omni-flash)
 - [Qwen: Qwen Image 2.1](https://phaseo.app/models/qwen/qwen-image-2.1)
 
+</div>
+
 </Update>
 
-<Update label="18 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="19 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- Chat में OCR और Rerank रूम जुड़े हैं, और Video और Realtime रूम अब सभी के लिए खुले हैं ([#2440](https://github.com/phaseoteam/Phaseo/pull/2440), [#2242](https://github.com/phaseoteam/Phaseo/pull/2242)).
+- Chat में Decisions रूम जुड़ा है, जहाँ हर संदेश के लिए प्रश्न का प्रकार चुनते हैं और संभावनाओं व स्कोर के साथ उत्तर देखते हैं ([#2429](https://github.com/phaseoteam/Phaseo/pull/2429)).
+- रैंकिंग सभी आठ मोडैलिटी टैब में उपयोग दिखाती है, और **Weekly Return Rate** विफल होने के बजाय फिर से लोड होता है ([#2439](https://github.com/phaseoteam/Phaseo/pull/2439)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- केवल reasoning वाले जवाब अब `502` त्रुटि के बजाय अपने `length` या `stop` finish reason और उपयोग के साथ `200` लौटाते हैं ([#2432](https://github.com/phaseoteam/Phaseo/pull/2432), [#2435](https://github.com/phaseoteam/Phaseo/pull/2435)).
+
+</div>
+
+</Update>
+
+<Update label="18 सितंबर 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- **बीटा:** `POST /v1/decisions` ऐप्लिकेशन की स्थिति के बारे में टाइप किए गए `noul`, `choice` और `score` प्रश्नों के उत्तर देता है, शुरुआत TypeSafe Jev से; देखें [Make a decision](../api-reference/endpoint/decisions.mdx) ([#2425](https://github.com/phaseoteam/Phaseo/pull/2425)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 - [SpaceXAI: Grok Voice Transcribe 2.0](https://phaseo.app/models/spacex-ai/grok-voice-transcribe-2.0)
 
+</div>
+
 </Update>
 
-<Update label="17 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="17 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- लॉग तालिकाएँ कॉलम की दृश्यता, क्रम, पिनिंग और घनत्व सहेजती हैं, और अनुरोध विवरण दिखाता है कि प्रदाता को भेजने से पहले Phaseo ने कितना समय लिया ([#2415](https://github.com/phaseoteam/Phaseo/pull/2415)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- **असंगत बदलाव:** TypeScript, Python, Go, C#, Java, PHP और Ruby SDK `3.0.0` मॉडल endpoint से Phaseo मॉडल कैटलॉग फ़ॉर्मेट लौटाते हैं; मॉडल फ़ील्ड पढ़ने वाला कोड अपडेट करें ([#1280](https://github.com/phaseoteam/Phaseo/pull/1280)).
+- SDK `3.0.0` में API और प्रबंधन कुंजियों, guardrails, बजट, presets, सदस्यों, SSO और SCIM, सूचनाओं और Private Models के लिए प्रबंधन मेथड जुड़े हैं ([#1280](https://github.com/phaseoteam/Phaseo/pull/1280), [#2422](https://github.com/phaseoteam/Phaseo/pull/2422)).
+- Phaseo CLI `0.3.0` OpenCode जैसे कोडिंग एजेंट सेट अप करता है, और Cline, Kilo Code, oh-my-pi, Muse Code और MiniMax Code को Phaseo से चलाता है; देखें [Phaseo CLI](../guides/integrations/phaseo-cli.mdx) ([#2325](https://github.com/phaseoteam/Phaseo/pull/2325), [#2336](https://github.com/phaseoteam/Phaseo/pull/2336), [#1280](https://github.com/phaseoteam/Phaseo/pull/1280)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 - [Unbiased: Pareto 26.9](https://phaseo.app/models/unbiased/pareto)
 - [Google: Antigravity Preview (September 2026)](https://phaseo.app/models/google/antigravity-preview-09-2026)
 
+</div>
+
 </Update>
 
-<Update label="16 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="16 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- मॉडल पेज और एक नया बेंचमार्क पेज Epoch AI के Capabilities Index का स्कोर, रैंक, विश्वास अंतराल और समय के साथ प्रगति दिखाते हैं ([#2408](https://github.com/phaseoteam/Phaseo/pull/2408)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 - [Stealth: Union Alpha](https://phaseo.app/models/stealth/union-alpha) (अब बंद).
 
+</div>
+
 </Update>
 
-<Update label="15 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="15 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- Chat, मॉडल और प्रदाता के गोपनीयता नियम अब केवल सक्रिय वर्कस्पेस से आते हैं, निजी वर्कस्पेस सहित, और गोपनीयता सेटिंग्स फिर से सहेजी जाती हैं ([#2400](https://github.com/phaseoteam/Phaseo/pull/2400), [#2403](https://github.com/phaseoteam/Phaseo/pull/2403)).
+- दो-कारक प्रमाणीकरण के बिना Auto Top-Up चालू करने के लिए टाइप की गई पुष्टि चाहिए, और इसके बिना मौजूदा सेटअप चेतावनी दिखाते हैं ([#2401](https://github.com/phaseoteam/Phaseo/pull/2401)).
+- Stripe checkout से क्रेडिट खरीदना फिर से काम करता है; पहले checkout Stripe तक पहुँचने से पहले ही विफल हो जाता था ([#2405](https://github.com/phaseoteam/Phaseo/pull/2405)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- Terraform प्रदाता `0.1.0` API कुंजियाँ, guardrails, प्रदाता क्रेडेंशियल, SCIM ग्रुप मैपिंग और observability गंतव्य प्रबंधित करता है, और मॉडल, प्रदाता व क्रेडिट पढ़ता है ([#2164](https://github.com/phaseoteam/Phaseo/pull/2164), [#2396](https://github.com/phaseoteam/Phaseo/pull/2396)).
+- API कुंजी और प्रबंधन कुंजी की सीमाएँ अलग-अलग गिनी जाती हैं, और केवल सक्रिय, अनसमाप्त कुंजियाँ गिनी जाती हैं ([#2399](https://github.com/phaseoteam/Phaseo/pull/2399)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 - [Google: Gemini 3.8 Live](https://phaseo.app/models/google/gemini-3.8-live)
 - [Google: Gemini 3.8 Live Extended Thinking](https://phaseo.app/models/google/gemini-3.8-live-extended-thinking)
 
-</Update>
-
-<Update label="13 सितंबर 2026" tags={["प्लेटफ़ॉर्म"]}>
-
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>उत्पाद</p>
-
-- चैट रूम अब Priority और Flex अनुरोधों के लिए प्रति अनुरोध सेवा स्तर चयन स्वीकार करते हैं ([#2357](https://github.com/phaseoteam/Phaseo/pull/2357)).
-- मॉडल पेज अब प्रदाताओं के प्रति घंटे प्रदर्शन के इंटरैक्टिव दृश्य देते हैं ([#2361](https://github.com/phaseoteam/Phaseo/pull/2361)).
+</div>
 
 </Update>
 
-<Update label="11 सितंबर 2026" tags={["मॉडल रिलीज़", "प्लेटफ़ॉर्म"]}>
+<Update label="14 सितंबर 2026">
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>उत्पाद</p>
+<div data-changelog-category="product">
 
-![GPT Live 1](/images/model-releases/2026-09-14--openai--gpt-live-1.png)
+<p className="changelog-category">उत्पाद</p>
 
-- [OpenAI: GPT Live 1](https://phaseo.app/models/openai/gpt-live-1) अब Realtime चैट रूम में उपलब्ध है, जिसमें आवाज़ चयन, कॉन्फ़िगर करने योग्य Responses कार्य सौंपना और वैकल्पिक वेब खोज हैं ([#2338](https://github.com/phaseoteam/Phaseo/pull/2338)).
+- Chat में हर टर्न के लिए मार्कर वाली नेविगेशन रेल जुड़ी है, जिससे लंबी बातचीत में आगे-पीछे जा सकते हैं ([#2385](https://github.com/phaseoteam/Phaseo/pull/2385)).
+- Chat मॉडल पिकर आपके guardrails द्वारा रोके गए मॉडल निष्क्रिय करता है, **Hide Unavailable** फ़िल्टर जोड़ता है, और Ctrl या ⌘-क्लिक से मॉडल तुलना में जुड़ते हैं ([#2389](https://github.com/phaseoteam/Phaseo/pull/2389)).
+- खाते का देश बदलना फिर से सहेजा जाता है; पहले यह बदलाव विफल हो जाता था ([#2392](https://github.com/phaseoteam/Phaseo/pull/2392)).
 
-### मॉडल रिलीज़
+</div>
+
+</Update>
+
+<Update label="13 सितंबर 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- Chat में हर मॉडल के लिए Standard, Priority या Flex चुन सकते हैं, और Priority व Flex को `service_tier` के रूप में भेजा जाता है ([#2357](https://github.com/phaseoteam/Phaseo/pull/2357)).
+- मॉडल पेज के प्रदाता कार्ड पिछले 60 घंटों की uptime, latency और throughput को घंटे-दर-घंटे दिखाते हैं, और बिना डेटा वाले घंटे चिह्नित करते हैं ([#2361](https://github.com/phaseoteam/Phaseo/pull/2361)).
+- Chat reasoning को स्ट्रीम होते ही दिखाता है, और हर जवाब के विवरण में गेटवे द्वारा मापा गया throughput, आउटपुट टोकन और सेवा स्तर दिखते हैं ([#2359](https://github.com/phaseoteam/Phaseo/pull/2359), [#2367](https://github.com/phaseoteam/Phaseo/pull/2367)).
+- मॉडल अप्रचलन अलर्ट वर्कस्पेस के सूचना गंतव्यों तक पहुँचते हैं, और अप्रचलन चेतावनियाँ एक प्रतिस्थापन मॉडल सुझाती हैं; देखें [Model Deprecation and Retirement](../guides/model-retirement.mdx) ([#2136](https://github.com/phaseoteam/Phaseo/pull/2136)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- बिना `service_tier` वाले या `service_tier: "default"` वाले अनुरोध Standard रूट इस्तेमाल करते हैं, और केवल-Flex ऑफ़र सिर्फ़ `flex` माँगने वाले अनुरोधों को सेवा देते हैं; देखें [Service Tiers](../guides/service-tiers.mdx) ([#2356](https://github.com/phaseoteam/Phaseo/pull/2356), [#2354](https://github.com/phaseoteam/Phaseo/pull/2354)).
+- गेटवे-प्रबंधित टूल वाले अनुरोध हर मॉडल टर्न का टेक्स्ट और टूल कॉल आते ही स्ट्रीम करते हैं, अंत में एक साथ नहीं ([#2360](https://github.com/phaseoteam/Phaseo/pull/2360), [#2363](https://github.com/phaseoteam/Phaseo/pull/2363)).
+
+</div>
+
+</Update>
+
+<Update label="11 सितंबर 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- **Settings -> API Keys** में कुंजी के नाम से या पूरी कुंजी पेस्ट करके खोज सकते हैं, और पेस्ट की गई कुंजी छिपी रहती है ([#2344](https://github.com/phaseoteam/Phaseo/pull/2344)).
+- मॉडल पेज किसी प्रदाता की latency, throughput और uptime 20 अनुरोधों के बाद के बजाय पहले अनुरोध से दिखाते हैं, और प्रदाता के अनुसार cache rate का चार्ट दिखाते हैं ([#2339](https://github.com/phaseoteam/Phaseo/pull/2339), [#2341](https://github.com/phaseoteam/Phaseo/pull/2341)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 - [Sakana AI: Fugu Max](https://phaseo.app/models/sakana/fugu-max)
 - [Sakana AI: Fugu Ultra V2](https://phaseo.app/models/sakana/fugu-ultra-v2)
 
+</div>
+
 </Update>
 
-<Update label="10 सितंबर 2026" tags={["मॉडल रिलीज़", "प्लेटफ़ॉर्म"]}>
+<Update label="10 सितंबर 2026">
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>उत्पाद</p>
+<div data-changelog-category="product">
 
-- Phaseo CLI अब कोडिंग एजेंट एकीकरण और रनर देता है, जिनमें सुरक्षित OpenCode सेटअप और प्रबंधन शामिल हैं ([#2325](https://github.com/phaseoteam/Phaseo/pull/2325)).
+<p className="changelog-category">उत्पाद</p>
 
-### मॉडल रिलीज़
+- मॉडल के बेंचमार्क सेक्शन में Intelligence, Coding, Agentic और मूल्यांकन लागत के लिए Artificial Analysis चार्ट जुड़े हैं, मॉडल खोज के साथ और बाकी मॉडल धुंधले दिखते हैं ([#2321](https://github.com/phaseoteam/Phaseo/pull/2321), [#2326](https://github.com/phaseoteam/Phaseo/pull/2326)).
+- मूल्य इतिहास चार्ट हर प्रदाता का रंग इस्तेमाल करते हैं और सेवा स्तरों को ठोस, बिंदीदार, डैश या डैश-डॉट रेखाओं से दिखाते हैं, प्रदाता तालिका के अनुरूप ([#2323](https://github.com/phaseoteam/Phaseo/pull/2323)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![Jev 1.13](/images/model-releases/2026-09-10--typesafe--jev-1.13.0.png)
 
 - [TypeSafe: Jev 1.13](https://phaseo.app/models/typesafe/jev-1.13.0)
 - [DeepSeek: DeepSeek V4.1 Flash](https://phaseo.app/models/deepseek/deepseek-v4.1-flash)
 
+</div>
+
 </Update>
 
-<Update label="9 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="9 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- मॉडल पेज उन प्रदाताओं को चिह्नित करते हैं जिन्हें आपकी अपनी प्रदाता कुंजी चाहिए, और हर रूट को इसकी ज़रूरत होने पर **Use This Model** पहले कुंजी जोड़ने को कहता है ([#2303](https://github.com/phaseoteam/Phaseo/pull/2303)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![Suno V6](/images/model-releases/2026-09-09--suno--suno-v6.png)
 
+- [Suno: Suno V6](https://phaseo.app/models/suno/suno-v6)
 - [Suno: Suno V6 Wild](https://phaseo.app/models/suno/suno-v6-wild)
 - [Suno: Suno V6 Mini](https://phaseo.app/models/suno/suno-v6-mini)
-- [Suno: Suno V6](https://phaseo.app/models/suno/suno-v6)
+
+</div>
 
 </Update>
 
-<Update label="8 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="8 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
 
-- [Nex AGI: Nex N2.5 Max](https://phaseo.app/models/nex-agi/nex-n2.5-max)
+<p className="changelog-category">उत्पाद</p>
+
+- मॉडल पेज, बेंचमार्क पेज और रैंकिंग अब Artificial Analysis के Intelligence, Coding और Agentic इंडेक्स और मूल्यांकन लागत से शुरू होते हैं, परीक्षण किए गए कॉन्फ़िगरेशन के साथ ([#2264](https://github.com/phaseoteam/Phaseo/pull/2264)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
+
 ![GPT Image 2.5](/images/model-releases/2026-09-08-08--openai--gpt-image-2.5.png)
 
-- [DeepSeek: DeepSeek V4.1 Flash Preview](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview)
 - [OpenAI: GPT Image 2.5 Flare](https://phaseo.app/models/openai/gpt-image-2.5-flare)
+- [OpenAI: GPT Image 2.5 Sunburst](https://phaseo.app/models/openai/gpt-image-2.5-sunburst)
+- [Nex AGI: Nex N2.5 Max](https://phaseo.app/models/nex-agi/nex-n2.5-max)
+- [DeepSeek: DeepSeek V4.1 Flash Preview](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview)
 - [Nex AGI: Nex N2.5 Mini](https://phaseo.app/models/nex-agi/nex-n2.5-mini)
 - [Nex AGI: Nex N2.5 Pro](https://phaseo.app/models/nex-agi/nex-n2.5-pro)
-- [OpenAI: GPT Image 2.5 Sunburst](https://phaseo.app/models/openai/gpt-image-2.5-sunburst)
+
+</div>
 
 </Update>
 
-<Update label="7 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="7 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- **Settings -> Billing & Credits** उपयोग क्रेडिट के साथ सक्रिय Enterprise सदस्यता दिखाता है और उसे Stripe पोर्टल से प्रबंधित करता है ([#2252](https://github.com/phaseoteam/Phaseo/pull/2252)).
+- क्रेडिट खरीद अब इनवॉइस के बजाय अपनी Stripe रसीद से लिंक होती है ([#2256](https://github.com/phaseoteam/Phaseo/pull/2256)).
+- API कुंजियों की सूची डिफ़ॉल्ट रूप से समाप्त कुंजियाँ छिपाती है, सक्षम कुंजियाँ पहले दिखाती है, स्थिति फ़िल्टर जोड़ती है और बल्क कार्रवाइयों को फ़्लोटिंग बार में ले जाती है ([#2261](https://github.com/phaseoteam/Phaseo/pull/2261)).
+- Settings में कुंजी का परीक्षण अब मौजूदा `phaseo_v1_sk_` कुंजियाँ स्वीकार करता है; पहले नई बनाई गई कुंजियाँ परीक्षण में विफल होती थीं ([#2251](https://github.com/phaseoteam/Phaseo/pull/2251)).
+- सेटिंग्स साइडबार में एक फ़िल्टर है जो सभी Account और Workspace पेज खोजता है, और ग्लोबल सर्च मौजूदा पेज से जुड़े पेज सुझाता है ([#2259](https://github.com/phaseoteam/Phaseo/pull/2259)).
+- किसी उपनाम, जैसे `openai/gpt-astra-latest`, से खोले गए मॉडल पेज डिफ़ॉल्ट ID के पास उस उपनाम को **Alias** लेबल के साथ दिखाते हैं ([#2226](https://github.com/phaseoteam/Phaseo/pull/2226)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- Okta से SCIM प्रोविज़निंग काम करती है; Phaseo Okta द्वारा भेजे गए `password`, `groups`, `id` और `meta` एट्रिब्यूट स्वीकार करता है और उन्हें संग्रहीत नहीं करता ([#2240](https://github.com/phaseoteam/Phaseo/pull/2240)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![Mercury 2.5](/images/model-releases/2026-09-07--inception--mercury-2.5.png)
 
 - [Inception: Mercury 2.5](https://phaseo.app/models/inception/mercury-2.5)
 
+</div>
+
 </Update>
 
-<Update label="4 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="4 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- वर्कस्पेस किसी dedicated या self-hosted OpenAI-संगत endpoint को Private Model के रूप में जोड़ सकते हैं, जिसे केवल सदस्य देखते हैं और उसके मॉडल ID से कॉल करते हैं; देखें [Connect Dedicated Model Deployments](../guides/private-models.mdx) ([#2201](https://github.com/phaseoteam/Phaseo/pull/2201)).
+- मॉडल मूल्य तालिकाएँ हर प्रदाता के सेवा स्तर एक पंक्ति में समेटती हैं, और किसी कॉलम को सॉर्ट करने पर हर स्तर अपनी अलग पंक्ति में दिखता है ([#2198](https://github.com/phaseoteam/Phaseo/pull/2198)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 - [Microsoft: MAI-Image-2.6-Flash](https://phaseo.app/models/microsoft/mai-image-2.6-flash)
 - [Microsoft: MAI-Image-2.6](https://phaseo.app/models/microsoft/mai-image-2.6)
 
+</div>
+
 </Update>
 
-<Update label="3 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="3 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- क्षेत्रीय endpoint `eu.api.phaseo.app` और `us.api.phaseo.app` Chat Completions, Responses और Messages अनुरोधों को EU या US प्रदाता रूट पर रखते हैं; देखें [Route text requests by region](../guides/regional-routing.mdx) ([#2165](https://github.com/phaseoteam/Phaseo/pull/2165), [#2171](https://github.com/phaseoteam/Phaseo/pull/2171)).
+- फ़ंक्शन और कस्टम टूल Chat Completions, Responses और Messages में `async: true` स्वीकार करते हैं; Phaseo इसे OpenAI को भेजता है और दूसरे प्रदाताओं के लिए हटा देता है ([#2193](https://github.com/phaseoteam/Phaseo/pull/2193), [#2194](https://github.com/phaseoteam/Phaseo/pull/2194)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![GPT-6 Astra](/images/model-releases/2026-09-03--openai--gpt-6-astra.png)
 
+- [OpenAI: GPT-6 Astra](https://phaseo.app/models/openai/gpt-6-astra)
 - [Inclusion AI: Ling 3.0 Flash Sante](https://phaseo.app/models/inclusionai/ling-3.0-flash-sante)
 - [Inclusion AI: Ling 3.0 Flash VL](https://phaseo.app/models/inclusionai/ling-3.0-flash-vl)
 - [Microsoft: MAI-Transcribe-2](https://phaseo.app/models/microsoft/mai-transcribe-2)
 - [OpenAI: GPT-6 Astra Pro](https://phaseo.app/models/openai/gpt-6-astra-pro)
-- [OpenAI: GPT-6 Astra](https://phaseo.app/models/openai/gpt-6-astra)
+
+</div>
 
 </Update>
 
-<Update label="2 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="2 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![Muse Spark 1.3](/images/model-releases/2026-09-02--meta--muse-spark-1.3.png)
 
+- [Meta: Muse Spark 1.3](https://phaseo.app/models/meta/muse-spark-1.3)
 - [Meta: Muse Spark 1.3 Contributor](https://phaseo.app/models/meta/muse-spark-1.3-contributor)
 - [Google: Gemini 3.8 Flash](https://phaseo.app/models/google/gemini-3.8-flash)
-- [Meta: Muse Spark 1.3](https://phaseo.app/models/meta/muse-spark-1.3)
 - [Qwen: Qwen 3.8 Max 0902](https://phaseo.app/models/qwen/qwen3.8-max-0902)
+
+</div>
 
 </Update>
 
-<Update label="1 सितंबर 2026" tags={["मॉडल रिलीज़"]}>
+<Update label="1 सितंबर 2026">
 
-### मॉडल रिलीज़
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- `phaseo:web_search` अब `engine: "tinyfish"` स्वीकार करता है, जिससे भाषा संकेत, परिणाम पेज और साझा डोमेन फ़िल्टर के साथ TinyFish से खोज होती है; देखें [Web Search Server Tool](../guides/server-tools/web-search.mdx) ([#2124](https://github.com/phaseoteam/Phaseo/pull/2124)).
+- रैंडम पोर्ट पर loopback callback इस्तेमाल करने वाले नेटिव ऐप, जैसे MCP सर्वर से जुड़ने वाले कोडिंग एजेंट, से OAuth साइन-इन अब `invalid_client` के साथ विफल नहीं होता ([#2129](https://github.com/phaseoteam/Phaseo/pull/2129)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
 
 ![Claude Fable 5.1](/images/model-releases/2026-09-01--anthropic--claude-fable-5.1.png)
 
-- [Meta: Muse Voice Transcribe 1.0](https://phaseo.app/models/meta/muse-voice-transcribe-1.0)
 - [Anthropic: Claude Fable 5.1](https://phaseo.app/models/anthropic/claude-fable-5.1)
+- [Meta: Muse Voice Transcribe 1.0](https://phaseo.app/models/meta/muse-voice-transcribe-1.0)
+
+</div>
 
 </Update>

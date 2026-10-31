@@ -27,6 +27,7 @@ export type GlobalGuardrailsSettingsPayload = {
 	ioLoggingEnabled?: boolean;
 	ioLoggingRetentionDays?: number;
 	ioLoggingIncludeProviderPayloads?: boolean;
+	ioLoggingContentsAccess?: "members" | "admins";
 };
 
 export type GuardrailUpsertPayload = GlobalGuardrailsSettingsPayload & {

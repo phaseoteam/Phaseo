@@ -29,6 +29,7 @@ import { buildCoverage, writeE2eReports } from "./report";
 import { EXECUTORS_BY_PROVIDER } from "@/executors";
 import type { Mismatch } from "../src/expect/types";
 import type { Observation } from "./types";
+import { loadCatalogue } from "../src/catalogue";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const RESULTS_DIR = process.env.SIM_RESULTS_DIR
@@ -43,7 +44,9 @@ const observations: Observation[] = [];
 const mismatches: Mismatch[] = [];
 
 describe("provider simulator: end to end", () => {
-	beforeAll(() => {
+	beforeAll(async () => {
+		// Read the catalogue rows before the network guard goes in.
+		await loadCatalogue();
 		// Installed once and kept for the whole run, so background work that outlives a case still cannot reach a network.
 		globalThis.fetch = guardedFetch;
 	});

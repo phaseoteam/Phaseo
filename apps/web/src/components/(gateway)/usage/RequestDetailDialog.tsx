@@ -1,16 +1,18 @@
 "use client";
 
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
 import dynamic from "next/dynamic";
-import { useTraceViewEnabled } from "./TraceViewGate";
 import { useLocale, useTranslations } from "next-intl";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, MessageSquare, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { buildOpenRequestInChatHref, canOpenRequestInChat } from "@/components/(chat)/chatMessageMetadata";
 import {
 	Dialog,
 	DialogContent,
@@ -593,9 +595,7 @@ function formatCost(nanos: number | null | undefined): string {
 
 function formatThroughput(value: number | string | null | undefined): string {
 	if (value === null || value === undefined) return "-";
-	const n = Number(value);
-	if (!Number.isFinite(n)) return "-";
-	return `${Math.round(n * 100) / 100} tok/s`;
+	return formatTps(Number(value)) ?? "-";
 }
 
 function formatScoreValue(value: number | null | undefined): string {
@@ -772,21 +772,21 @@ function buildUsageSummary(usage: any): {
 function RequestHeader({
 	request,
 	headerNavigation,
+	actions,
 }: {
 	request: RequestRow;
 	headerNavigation?: React.ReactNode;
+	actions?: React.ReactNode;
 }) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const timestamp = format.dateTime(request.created_at);
 	return (
-		<div className="relative">
-			{headerNavigation ? (
-				<div className="absolute right-14 top-4 z-10">{headerNavigation}</div>
-			) : null}
-			<div className="px-5 py-4 sm:px-6 sm:py-5">
-				<div className={cn("pr-10", headerNavigation && "pr-36")}>
+		<div>
+			{/* pr-14 keeps the actions clear of the dialog's close button. */}
+			<div className="flex items-start gap-3 px-5 py-4 pr-14 sm:px-6 sm:py-5 sm:pr-14">
+				<div className="min-w-0 flex-1">
 					<DialogTitle className="text-base font-semibold">{t("strings.Job details")}</DialogTitle>
 					<div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
 						<span>{timestamp}</span>
@@ -794,6 +794,12 @@ function RequestHeader({
 						<CopyableText value={request.request_id} ariaLabel={t("strings.Copy generation id" as never)} />
 					</div>
 				</div>
+				{actions || headerNavigation ? (
+					<div className="flex shrink-0 items-center gap-2">
+						{actions}
+						{headerNavigation}
+					</div>
+				) : null}
 			</div>
 			<Separator />
 		</div>
@@ -820,13 +826,13 @@ export default function RequestDetailDialog({
 	const t = useTranslations("SettingsUI");
 	const roomErrorT = useTranslations("Product.chatRooms");
 	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
+	const tUi = useTranslations("Common.ui");
 	const locale = useLocale();
 	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
 		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
-	const traceEnabled = useTraceViewEnabled();
 
 	if (!request) return null;
 	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
@@ -853,7 +859,7 @@ export default function RequestDetailDialog({
 					onOpenChange={onOpenChange}
 					disablePointerDismissal={disablePointerDismissal}
 				>
-					<ProviderInspectorSheetContent className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}>
+					<ProviderInspectorSheetContent className={"!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none"}>
 						{loadingContent}
 					</ProviderInspectorSheetContent>
 				</ProviderInspectorSheet>
@@ -1514,6 +1520,8 @@ export default function RequestDetailDialog({
 		"App where used",
 	]);
 	const trainingPolicyItem = requestDetailItems.find((item) => item.label === s("Data policy"));
+	// Zero data retention kept this request out of the I/O log, from the workspace, a key guardrail or the request itself.
+	const ioLogSkippedForZeroDataRetention = ioLog?.reason === "zero_data_retention";
 	const dataPolicyItems = [
 		...(trainingPolicyItem
 			? [{
@@ -1532,7 +1540,9 @@ export default function RequestDetailDialog({
 						? m("Retained until", {
 								date: format.dateTime(ioLog.retention_until),
 							})
-						: s("No Retained Payload")}
+						: ioLogSkippedForZeroDataRetention
+							? t("trace.skippedZeroDataRetention" as never)
+							: s("No Retained Payload")}
 				</span>
 			),
 		},
@@ -1573,7 +1583,22 @@ export default function RequestDetailDialog({
 
 	const detailContent = (
 		<>
-				<RequestHeader request={request} headerNavigation={headerNavigation} />
+				<RequestHeader
+					request={request}
+					headerNavigation={headerNavigation}
+					actions={
+						canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+							<Link
+								href={buildOpenRequestInChatHref(request.request_id, searchParams.get("workspaceId"))}
+								className={buttonVariants({ variant: "outline", size: "sm" })}
+								title={tUi("actions.openInChat")}
+							>
+								<MessageSquare />
+								<span className="sr-only sm:not-sr-only">{tUi("actions.openInChat")}</span>
+							</Link>
+						) : null
+					}
+				/>
 				{loading ? (
 					<div className="flex items-center gap-2 border-b border-border/70 px-5 py-2 text-xs text-muted-foreground sm:px-6">
 						<LoaderCircle className="size-3.5 animate-spin" />
@@ -1581,29 +1606,29 @@ export default function RequestDetailDialog({
 					</div>
 				) : null}
 				{headerActions ? (
-					<div className="border-b bg-muted/20 px-5 py-2 sm:px-6">
+					<div className="flex flex-wrap items-center gap-2 border-b bg-muted/20 px-5 py-2 sm:px-6">
 						{headerActions}
 					</div>
 				) : null}
 
 				<Tabs
-					key={`${request.request_id}:${traceEnabled}`}
+					key={request.request_id}
 					defaultValue="overview"
 					className="min-h-0 flex-1 gap-0"
 				>
-					{traceEnabled ? <TabsList
+					<TabsList
 						variant="line"
 						className="w-full shrink-0 justify-start rounded-none border-b border-border/70 px-5 sm:px-6"
 					>
 						<TabsTrigger value="overview">{t("strings.Overview" as never)}</TabsTrigger>
 						<TabsTrigger value="trace">{t("trace.trace" as never)}</TabsTrigger>
-					</TabsList> : null}
+					</TabsList>
 					<TabsContent value="overview" className="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<ScrollArea
 							className={cn(
 								presentation === "sheet"
 									? "min-h-0 flex-1"
-									: traceEnabled ? "max-h-[calc(90vh-150px)]" : "max-h-[calc(90vh-110px)]",
+									: "max-h-[calc(90vh-150px)]",
 							)}
 							viewportClassName="px-5 py-3 sm:px-6"
 						>
@@ -2708,8 +2733,8 @@ export default function RequestDetailDialog({
 							<DetailKeyValueGrid
 								columns={3}
 								items={[
-									{ label: timelineTiming.generationMs !== null ? s("Provider latency") : s("Provider duration"), value: <span className="font-mono">{timelineTiming.providerMs !== null ? `${timingLatency} ms` : "-"}</span> },
-									{ label: s("Generation time"), value: <span className="font-mono">{timelineTiming.generationMs !== null ? `${timingGeneration} ms` : "-"}</span> },
+									{ label: timelineTiming.generationMs !== null ? s("Provider latency") : s("Provider duration"), value: <span className="font-mono">{timelineTiming.providerMs !== null ? formatLatency(timingLatency) : "-"}</span> },
+									{ label: s("Generation time"), value: <span className="font-mono">{timelineTiming.generationMs !== null ? formatLatency(timingGeneration) : "-"}</span> },
 									{ label: s("Throughput"), value: <span className="font-mono">{formatThroughput(request.throughput)}</span> },
 									{ label: s("Cost"), value: <span className="font-mono">{formatCost(request.cost_nanos)}</span> },
 									{ label: s("Tokens"), value: <span className="font-mono">{usageSummary.input != null || usageSummary.output != null ? `${formatUsageNumber(usageSummary.input ?? 0, format.number)} → ${formatUsageNumber(usageSummary.output ?? 0, format.number)}` : "-"}</span> },
@@ -2717,8 +2742,6 @@ export default function RequestDetailDialog({
 								]}
 							/>
 						</GenerationSection>
-
-						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} />
 
 						<GenerationSection title={s("Response timeline")}>
 							<DetailTimingBar items={responseTimelineItems} />
@@ -2742,6 +2765,8 @@ export default function RequestDetailDialog({
 							)}
 						</GenerationSection>
 
+						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} modelName={(id) => getModelDisplayName(id, metadata)} />
+
 						<GenerationSection title={s("Data Policy")}>
 							<DetailRows items={dataPolicyItems} />
 						</GenerationSection>
@@ -2759,7 +2784,7 @@ export default function RequestDetailDialog({
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Prompt")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.request_payload ?? ioLog.payload.provider_request ?? null, null, 2)}</pre></div>
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Completion")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.gateway_response ?? ioLog.payload.provider_response ?? null, null, 2)}</pre></div>
 										</div>
-									) : <p className="text-muted-foreground">{ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
+									) : <p className="text-muted-foreground">{ioLog.status === "restricted" ? tUi("privacy.contentsRestricted") : ioLogSkippedForZeroDataRetention ? t("trace.skippedZeroDataRetention" as never) : ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
 								</div>
 							</GenerationSection>
 						) : null}
@@ -2787,7 +2812,7 @@ export default function RequestDetailDialog({
 						</div>
 						</ScrollArea>
 					</TabsContent>
-					{traceEnabled ? <TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+					<TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<ScrollArea
 							className="h-full min-h-0"
 							viewportClassName="px-5 py-3 sm:px-6"
@@ -2799,7 +2824,7 @@ export default function RequestDetailDialog({
 								providerNames={providerNames}
 							/>
 						</ScrollArea>
-					</TabsContent> : null}
+					</TabsContent>
 				</Tabs>
 		</>
 	);
@@ -2812,7 +2837,7 @@ export default function RequestDetailDialog({
 				disablePointerDismissal={disablePointerDismissal}
 			>
 				<ProviderInspectorSheetContent
-					className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}
+					className={"!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none"}
 				>
 					{detailContent}
 				</ProviderInspectorSheetContent>

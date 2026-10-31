@@ -144,7 +144,7 @@ function formatPriceAmount(value: number): string {
     if (value < 0.001) return `$${value.toFixed(4)}`;
     if (value < 0.1) return `$${value.toFixed(3)}`;
     if (value < 1) return `$${value.toFixed(2)}`;
-    return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
 
 function formatDetailValue(price: number, unit: string): string {

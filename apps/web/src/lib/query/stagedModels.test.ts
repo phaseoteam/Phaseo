@@ -26,12 +26,23 @@ describe("staged catalogue access", () => {
 	});
 	it("loads hidden rows through the authenticated no-store admin endpoint", async () => {
 		global.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({ models: [
-			{ model_id: "test/staged", name: "Staged", hidden: true, organisation: { lab_slug: "test", name: "Test lab" } },
-			{ model_id: "test/public", hidden: false },
+			{ model_id: "test/staged", name: "Staged", status: "draft", hidden: true, organisation: { lab_slug: "test", name: "Test lab" } },
+			{ model_id: "test/public", status: "draft", hidden: false },
 		] })));
 		expect(await fetchAdminStagedModels({ accessToken: "admin-token" })).toMatchObject([
 			{ model_id: "test/staged", organisation_name: "Test lab", gateway_active_provider_count: 0 },
 		]);
-		expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/account/models/hidden"), expect.objectContaining({ cache: "no-store", headers: expect.objectContaining({ Authorization: "Bearer admin-token" }) }));
+		expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/account/models/hidden?staged=true"), expect.objectContaining({ cache: "no-store", headers: expect.objectContaining({ Authorization: "Bearer admin-token" }) }));
+	});
+	it("keeps retired, deprecated and delisted hidden models out of coming soon", async () => {
+		global.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({ models: [
+			{ model_id: "test/upcoming", name: "Upcoming", status: "draft", hidden: true },
+			{ model_id: "test/retired", name: "Retired", status: "retired", hidden: true },
+			{ model_id: "test/deprecated", name: "Deprecated", status: "deprecated", hidden: true },
+			{ model_id: "test/delisted", name: "Delisted", status: "active", hidden: true },
+			{ model_id: "test/withheld", name: "Withheld", status: "disabled", hidden: true },
+		] })));
+		const staged = await fetchAdminStagedModels({ accessToken: "admin-token" });
+		expect(staged.map((model) => model.model_id)).toEqual(["test/upcoming"]);
 	});
 });

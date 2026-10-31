@@ -17,7 +17,6 @@ import type {
 	SignInModel,
 	SupportedModelsStats,
 } from "@/lib/fetchers/landing/sign-in/types";
-import type { ExtendedModel } from "@/data/types";
 import type { APIProviderCard } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
 import type { APIProviderModelListItem } from "@/lib/fetchers/api-providers/providerDataTypes";
@@ -26,7 +25,7 @@ import type { AppStats, ModelStats, APIProviderUpdates } from "@/lib/fetchers/ap
 import type { ProviderMetrics } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { ArtificialAnalysisPublicData, BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import type { CountryListSummary, CountrySummary } from "@/lib/fetchers/countries/types";
-import { getComparisonModelsCached } from "@/lib/fetchers/compare/getComparisonModels";
+import type { ComparePeerBoard, CompareView } from "@/components/(data)/compare/view/types";
 import type { FamilyCard, FamilyInfo } from "@/lib/fetchers/families/types";
 import type {
 	MarketplacePreset,
@@ -129,11 +128,6 @@ import type {
 	UpdateCardProps,
 } from "@/lib/fetchers/updates/types";
 type ModelUpdateCardProps = UpdateCardProps;
-import type {
-	MonitorHistoryDbPage,
-	MonitorHistoryInitialData,
-	MonitorHistoryPageFilters,
-} from "@/lib/fetchers/monitor/getMonitorHistory";
 
 export type FrontendLandingStats = {
 	db: DbStats;
@@ -256,22 +250,6 @@ export async function fetchFrontendGatewayShowcase(args: {
 	return fetchPublicWebApi<FrontendGatewayShowcaseData>(
 		`/api/_web/landing/gateway-showcase?hours=${24 * 30}&top_models_limit=${encodeURIComponent(String(topModelsLimit))}&top_apps_limit=${encodeURIComponent(String(topAppsLimit))}`,
 	);
-}
-
-export async function fetchFrontendMonitorHistoryInitialData(): Promise<MonitorHistoryInitialData> {
-	return fetchPublicWebApi<MonitorHistoryInitialData>("/api/_web/monitor/history/initial");
-}
-
-export async function fetchFrontendMonitorHistoryPage(
-	filters: MonitorHistoryPageFilters = {},
-): Promise<MonitorHistoryDbPage> {
-	const query = new URLSearchParams();
-	if (filters.changeType) query.set("change_type", filters.changeType);
-	if (filters.commitLimit != null) query.set("commit_limit", String(filters.commitLimit));
-	if (filters.commitOffset != null) query.set("commit_offset", String(filters.commitOffset));
-	if (filters.model) query.set("model", filters.model);
-	if (filters.provider) query.set("provider", filters.provider);
-	return fetchPublicWebApi<MonitorHistoryDbPage>(`/api/_web/monitor/history?${query.toString()}`);
 }
 
 export async function fetchFrontendModelOverview(
@@ -1127,10 +1105,23 @@ export async function fetchFrontendOrganisationLogoIdsByNames(
 	return (await fetchPublicWebApi<{ organisations: Record<string, string> }>(`/api/_web/rankings/organisation-logo-ids?names=${encodeURIComponent([...new Set(names)].sort().join(","))}`)).organisations;
 }
 
-export async function fetchFrontendComparisonModels(
-	modelIds: string[],
-): Promise<ExtendedModel[]> {
-	return getComparisonModelsCached(modelIds, false);
+/** The compact compare payload; the Worker composes prices, routes and benchmarks. */
+export async function fetchFrontendCompareView(modelIds: string[]): Promise<CompareView> {
+	const ids = [...new Set(modelIds.map((value) => value.trim()).filter(Boolean))].sort();
+	if (ids.length === 0) return { models: [], benchmarks: [] };
+	return fetchPublicWebApi<CompareView>(`/api/_web/compare/view?ids=${encodeURIComponent(ids.join(","))}`);
+}
+
+/** The compared models' places on the capability leaderboards. */
+export async function fetchFrontendComparePeers(modelIds: string[]): Promise<ComparePeerBoard[]> {
+	const ids = [...new Set(modelIds.map((value) => value.trim()).filter(Boolean))].sort();
+	if (ids.length === 0) return [];
+	return (await fetchPublicWebApi<{ boards: ComparePeerBoard[] }>(`/api/_web/compare/peers?ids=${encodeURIComponent(ids.join(","))}`)).boards;
+}
+
+/** The curated comparisons that get their own pages. */
+export async function fetchFrontendComparePairs(): Promise<Array<{ models: [{ id: string; name: string }, { id: string; name: string }] }>> {
+	return (await fetchPublicWebApi<{ pairs: Array<{ models: [{ id: string; name: string }, { id: string; name: string }] }> }>("/api/_web/compare/pairs")).pairs;
 }
 
 export type FrontendCompareUsage = Record<string, {
@@ -1144,6 +1135,9 @@ export type FrontendCompareUsage = Record<string, {
 	throughputP50TokPerSec30m: number | null;
 	cumulativeTokens: number | null;
 	requestPoints24h: Array<{ date: string; value: number }>;
+	latencyWindow?: "30m" | "24h" | "5d" | null;
+	throughputWindow?: "30m" | "24h" | "5d" | null;
+	activity30d?: Array<{ date: string; requests: number; input: number; output: number; reasoning: number }>;
 }>;
 
 export async function fetchFrontendCompareUsage(modelIds: string[]): Promise<FrontendCompareUsage> {

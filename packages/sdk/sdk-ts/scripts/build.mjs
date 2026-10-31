@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,6 +8,15 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const require = createRequire(import.meta.url);
 // TypeScript 7 compiles. `typescript` is the TypeScript 6 API package (see pnpm-workspace.yaml).
 const tsc = path.join(path.dirname(require.resolve("@typescript/native/package.json")), "bin/tsc");
+// The client sends SDK_VERSION as X-Phaseo-Client-Version, so regenerate it from package.json.
+const { version } = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+const versionFile = new URL("../src/version.ts", import.meta.url);
+const versionSource =
+  "// Generated from package.json by scripts/build.mjs and `pnpm changeset:version`. Do not edit by hand.\n" +
+  `export const SDK_VERSION = ${JSON.stringify(version)};\n`;
+if ((await readFile(versionFile, "utf8").catch(() => "")) !== versionSource) {
+  await writeFile(versionFile, versionSource);
+}
 await rm(new URL("../dist", import.meta.url), { recursive: true, force: true });
 for (const config of ["tsconfig.build.json", "tsconfig.cjs.json"]) {
   const result = spawnSync(process.execPath, [tsc, "-p", config], {

@@ -23,6 +23,18 @@ type GuardrailRow = Record<string, unknown> & {
 	name?: string | null;
 };
 
+// While the Slack agent is installed, a database trigger keeps its guardrail
+// from being deleted, loosened or detached from its key.
+function guardrailWriteFailed(scope: string, error: unknown): Response {
+	if (String((error as { message?: unknown } | null)?.message ?? "").includes("slack_agent_guardrail_protected")) {
+		return json({
+			error: "guardrail_protected",
+			message: "This guardrail keeps Slack data out of training and logs. Uninstall the Slack agent to change or remove it.",
+		}, 409, { "Cache-Control": "no-store" });
+	}
+	return internalServerError(scope, error);
+}
+
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 250;
 
@@ -374,7 +386,7 @@ async function handleUpdateGuardrail(req: Request) {
 		await auditGuardrail(auth.value, "guardrail.updated", data as unknown as GuardrailRow, { changed_fields: Object.keys(patch) });
 		return json({ data }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return internalServerError("guardrails.update", error);
+		return guardrailWriteFailed("guardrails.update", error);
 	}
 }
 
@@ -409,7 +421,7 @@ async function handleDeleteGuardrail(req: Request) {
 		await auditGuardrail(auth.value, "guardrail.deleted", guardrail);
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return internalServerError("guardrails.delete", error);
+		return guardrailWriteFailed("guardrails.delete", error);
 	}
 }
 
@@ -442,7 +454,8 @@ async function handleSetGuardrailKeys(req: Request) {
 				return json({ error: "bad_request", message: "One or more keys do not belong to this workspace" }, 400, { "Cache-Control": "no-store" });
 			}
 		}
-		await getSupabaseAdmin().from("key_guardrails").delete().eq("guardrail_id", id);
+		const { error: clearError } = await getSupabaseAdmin().from("key_guardrails").delete().eq("guardrail_id", id);
+		if (clearError) throw new Error(clearError.message || "Failed to clear guardrail key assignments");
 		if (keyIds.length) {
 			const { error } = await getSupabaseAdmin()
 				.from("key_guardrails")
@@ -453,7 +466,7 @@ async function handleSetGuardrailKeys(req: Request) {
 		await auditGuardrail(auth.value, "guardrail.keys.replaced", guardrail, { key_count: keyIds.length });
 		return json({ data: { guardrail_id: id, key_ids: keyIds } }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return internalServerError("guardrails.keys.add", error);
+		return guardrailWriteFailed("guardrails.keys.add", error);
 	}
 }
 
@@ -567,7 +580,7 @@ async function handleRemoveGuardrailKeys(req: Request) {
 		await auditGuardrail(auth.value, "guardrail.keys.removed", guardrail, { key_count: count ?? 0 });
 		return json({ removed_count: count ?? 0 }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return internalServerError("guardrails.keys.remove", error);
+		return guardrailWriteFailed("guardrails.keys.remove", error);
 	}
 }
 

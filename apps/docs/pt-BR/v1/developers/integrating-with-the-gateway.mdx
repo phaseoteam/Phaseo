@@ -20,7 +20,7 @@ Ao final, você terá:
 Antes de começar, verifique se você tem o seguinte:
 
 - Uma conta Phaseo com acesso ao Gateway.
-- Uma chave de API no [painel](https://phaseo.app/settings/keys).
+- Uma chave de API criada com `phaseo keys create` na [CLI da Phaseo](../guides/integrations/phaseo-cli) ou no [painel](https://phaseo.app/settings/keys).
 - Um cliente HTTP, um SDK compatível com OpenAI ou o SDK Phaseo.
 - Um ID de modelo compatível, como `google/gemma-3-27b:free`, para começar sem gastar créditos.
 
@@ -28,8 +28,8 @@ Antes de começar, verifique se você tem o seguinte:
 
 ## 1. Armazene a chave de API
 
-1. Abra **Gateway → Chaves de API** no painel da Phaseo.
-2. Crie uma chave com um nome que identifique o aplicativo e o ambiente.
+1. Execute `phaseo keys create --name <app-and-environment> --json` ou abra **Gateway → Chaves de API** no painel da Phaseo.
+2. Dê à chave um nome que identifique o aplicativo e o ambiente.
 3. Armazene o valor em um gerenciador de segredos ou arquivo de ambiente local:
 
 ```bash

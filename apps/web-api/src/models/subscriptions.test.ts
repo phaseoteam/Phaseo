@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { subscriptionPayload } from "./subscriptions";
+import { describe, expect, it, vi } from "vitest";
+import { fetchSubscriptionPlansForModels, mergeOrderedPlanLists, subscriptionPayload } from "./subscriptions";
 
 describe("structured subscription payload", () => {
 	it("preserves offer identity, composite charges, allowances and model access", () => {
@@ -24,5 +24,30 @@ describe("structured subscription payload", () => {
 			{ offer_uuid: "year", billing_interval: "year", billing_interval_count: 1, components: [] },
 		] });
 		expect(plan.prices.map((price: { frequency: string }) => price.frequency)).toEqual(["quarterly", "yearly"]);
+	});
+});
+
+describe("subscription plans for selected models", () => {
+	const plan = (id: string) => ({ plan_uuid: id });
+
+	it("keeps each model's catalogue order when the lists overlap", () => {
+		// Catalogue order is a, b, c, d. One model has a, c, d; the other b, c.
+		const merged = mergeOrderedPlanLists([[plan("a"), plan("c"), plan("d")], [plan("b"), plan("c")]]).map((row) => row.plan_uuid);
+		expect(merged).toHaveLength(4);
+		expect(merged.indexOf("a")).toBeLessThan(merged.indexOf("c"));
+		expect(merged.indexOf("b")).toBeLessThan(merged.indexOf("c"));
+		expect(merged.indexOf("c")).toBeLessThan(merged.indexOf("d"));
+	});
+
+	it("reads only the selected models' plans", async () => {
+		const rpc = vi.fn(async (_name: string, args: { p_model_slug: string | null }) => ({
+			data: args.p_model_slug === "one"
+				? [{ plan_uuid: "shared", models: [] }, { plan_uuid: "only-one", models: [] }]
+				: [{ plan_uuid: "shared", models: [] }],
+			error: null,
+		}));
+		const plans = await fetchSubscriptionPlansForModels({ rpc } as never, ["one", "two"]);
+		expect(rpc.mock.calls.map(([, args]) => args.p_model_slug)).toEqual(["one", "two"]);
+		expect(plans.map((row) => row.plan_uuid)).toEqual(["shared", "only-one"]);
 	});
 });

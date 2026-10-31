@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { setupSimulatorRuntime } from "./src/env";
+import { loadCatalogue } from "./src/catalogue";
 import { buildClientMatrix } from "./src/client-requests";
 import { listSimProviders } from "./src/providers";
 import { runRequest } from "./src/request-pipeline";
@@ -14,6 +15,7 @@ import { usageProfileFor } from "./src/spec-registry";
 // Ad-hoc trace: SIM_DEBUG=provider:surface:mode[:variant] prints frames and usage at each stage.
 // Variant ids may contain colons themselves (finish:length, error:mid-stream).
 it("debug trace", async () => {
+	await loadCatalogue();
 	setupSimulatorRuntime();
 	const [providerId, surface, mode, ...variantParts] = (process.env.SIM_DEBUG ?? "groq:chat:stream").split(":");
 	const variantId = variantParts.join(":") || undefined;

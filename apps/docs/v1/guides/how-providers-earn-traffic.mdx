@@ -1,0 +1,61 @@
+---
+title: "How Providers Earn Traffic"
+sidebarTitle: "Earning traffic"
+description: "How default routing splits a model's traffic between providers, and which changes win an endpoint a larger share."
+"og:image": "https://phaseo.app/og/dynamic?title=How%20Providers%20Earn%20Traffic&description=How%20default%20routing%20splits%20a%20model%27s%20traffic%20between%20providers%2C%20and%20which%20changes%20win%20an%20endpoint%20a%20larger%20share.&pathname=/docs/v1/guides/how-providers-earn-traffic"
+icon: "chart-no-axes-column-increasing"
+---
+
+import { ProviderTrafficPlayground } from "/snippets/routing-cost.jsx";
+
+When several providers serve the same model, default routing ranks them by
+expected cost per successful answer and shares traffic by that ranking: the
+lowest cost wins the largest share. This page is for providers who want to
+understand that ranking and win more of it.
+
+## What the ranking measures
+
+For each endpoint, Phaseo measures:
+
+- **Effective price.** What a typical request for the model costs on your
+  endpoint, using the model's real prompt and output sizes and the share of
+  prompt tokens you actually serve from cache. A low input price does not help
+  if output or cache reads cost more.
+- **Time to first token**, counted from when Phaseo sends the request.
+- **Output speed**, measured across the whole response, first token included.
+- **Errors you cause**, such as `5xx` responses and streams that fail partway.
+  These carry a heavy penalty.
+- **Rate-limit rejections** (`429`). These carry a smaller penalty.
+
+Waiting time is converted to dollars at the model's typical price per second,
+so a faster endpoint can charge more and still rank first.
+
+## Try it
+
+The sliders set your endpoint against three other providers of the same model.
+The curve shows how traffic falls away as your cost per answer rises above the
+lowest.
+
+<ProviderTrafficPlayground />
+
+## How traffic is shared
+
+- Providers within about 30% of the lowest cost per answer share most of the
+  traffic. Being slightly behind costs only slightly.
+- Beyond that band, share falls quickly.
+- Every routable endpoint keeps a small share, so recoveries and improvements
+  are noticed without any action from you.
+- A conversation that is reading from your prompt cache usually stays on your
+  endpoint while it remains healthy.
+
+Requests that name a provider order, or ask to sort by price, latency or
+throughput, do not use this ranking. See
+[Routing and fallbacks](./routing-and-fallbacks.mdx).
+
+## What earns more traffic
+
+- Lower the price of a typical request, including output and cache reads.
+- Serve repeated prompts from cache.
+- Return the first token sooner and stream faster.
+- Avoid errors and rate-limit rejections, and add capacity before demand
+  reaches your limits.

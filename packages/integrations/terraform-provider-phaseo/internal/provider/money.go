@@ -39,13 +39,6 @@ func stringKeepingCase(prior types.String, value *string) types.String {
 	return types.StringValue(*value)
 }
 
-func nullableInt64(value *int64) types.Int64 {
-	if value == nil {
-		return types.Int64Null()
-	}
-	return types.Int64Value(*value)
-}
-
 func nullableFloat64(value *float64) types.Float64 {
 	if value == nil {
 		return types.Float64Null()
@@ -60,13 +53,6 @@ func optionalString(value types.String) any {
 		return nil
 	}
 	return value.ValueString()
-}
-
-func optionalInt64(value types.Int64) any {
-	if value.IsNull() || value.IsUnknown() {
-		return nil
-	}
-	return value.ValueInt64()
 }
 
 func optionalFloat64(value types.Float64) any {

@@ -78,7 +78,17 @@ function encodeChoice(
 		},
 		...(part.mimeType ? { mime_type: part.mimeType } : {}),
 	}));
-	const audios = audioParts.map((part) => {
+	// OpenAI's documented audio output: one `message.audio` object per message.
+	const messageAudioPart = audioParts.find(isChatMessageAudioPart);
+	const messageAudio = messageAudioPart
+		? {
+			...(messageAudioPart.audioId ? { id: messageAudioPart.audioId } : {}),
+			data: messageAudioPart.data,
+			...(typeof messageAudioPart.expiresAt === "number" ? { expires_at: messageAudioPart.expiresAt } : {}),
+			transcript: messageAudioPart.transcript ?? "",
+		}
+		: undefined;
+	const audios = audioParts.filter((part) => !isChatMessageAudioPart(part)).map((part) => {
 		const mimeType = (() => {
 			if (part.format === "wav") return "audio/wav";
 			if (part.format === "mp3") return "audio/mpeg";
@@ -109,6 +119,7 @@ function encodeChoice(
 			content: text,
 			...(images.length > 0 ? { images } : {}),
 			...(audios.length > 0 ? { audios } : {}),
+			...(messageAudio ? { audio: messageAudio } : {}),
 			...(choice.message.refusal ? { refusal: choice.message.refusal } : {}),
 			...(annotations.length > 0 ? { annotations } : {}),
 			tool_calls: choice.message.toolCalls?.map((tc) => ({
@@ -134,6 +145,10 @@ function encodeChoice(
 		finish_reason: choice.finishReason,
 		logprobs: choice.logprobs as any, // Type compatibility
 	};
+}
+
+function isChatMessageAudioPart(part: Extract<IRContentPart, { type: "audio" }>): boolean {
+	return Boolean(part.audioId) || part.transcript !== undefined;
 }
 
 function splitContentParts(parts: IRContentPart[]): {

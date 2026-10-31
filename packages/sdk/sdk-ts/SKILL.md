@@ -1,7 +1,7 @@
 # Phaseo SDK (`@phaseo/sdk`)
 
 - Use `import Phaseo from "@phaseo/sdk"`.
-- Read credentials from `PHASEO_API_KEY`.
+- Read credentials from `PHASEO_API_KEY`. On GitHub Actions or Vercel, workspaces in the trusted workloads beta can pass `apiKey: githubActionsToken()` or `apiKey: vercelToken()` instead of storing a key.
 - Prefer `generateResponse` for new text and multimodal integrations.
 - Use preset slugs when your application has shared prompt, routing, or parameter defaults.
 - Use `music.generateAndWait`, `videos.generateAndWait`, or `batches.createAndWait` to submit once and wait for success. Use each resource's `wait(id)` to resume a known job and inspect its terminal response.

@@ -46,4 +46,14 @@ describe("calculateOutputPerformanceMetrics", () => {
 			phaseoOverheadMs: 40,
 		});
 	});
+
+	it("counts failed provider attempts as failover, not Phaseo overhead", () => {
+		expect(calculateOutputPerformanceMetrics({
+			outputTokens: 25,
+			providerDurationMs: 1_000,
+			providerTtftMs: null,
+			gatewayE2eMs: 1_640,
+			failoverMs: 600,
+		}).phaseoOverheadMs).toBe(40);
+	});
 });

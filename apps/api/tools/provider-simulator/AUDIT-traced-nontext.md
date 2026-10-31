@@ -2,7 +2,7 @@
 
 Companion to `AUDIT.md`: the parts the simulator does not drive (non-text endpoints, routing and failover, headers). Base: `origin/main` at 6551de1fa3. Read-only review on 2026-10-17. All paths below are relative to `apps/api/src` unless they start with `packages/`. Nothing was run and no live calls were made.
 
-Pricing evidence comes from the archived fixtures in `packages/data/catalog/src/data/pricing/**`. The database owns live catalogue rows, so every finding that depends on a price row needs a database readback (listed in section 4) before it is treated as a production fact.
+Pricing evidence came from the catalogue's archived JSON price rows, which have since been removed; the database is the only source of catalogue rows, and the simulator now reads it directly (`src/catalogue.ts`). Every finding that depends on a price row needs a database readback (listed in section 4) before it is treated as a production fact.
 
 ## 1. Summary
 

@@ -73,7 +73,7 @@ func (p *phaseoProvider) Configure(ctx context.Context, req provider.ConfigureRe
 }
 
 func (p *phaseoProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{NewAPIKeyResource, NewProviderCredentialResource, NewGroupMappingResource, NewObservabilityDestinationResource, NewGuardrailResource, NewSpendRuleResource, NewWorkspaceBudgetResource}
+	return []func() resource.Resource{NewAPIKeyResource, NewProviderCredentialResource, NewGroupMappingResource, NewObservabilityDestinationResource, NewGuardrailResource, NewRateLimitPolicyResource, NewRateLimitAssignmentResource, NewDepartmentBudgetResource, NewTrustedWorkloadResource, NewSpendRuleResource, NewWorkspaceBudgetResource}
 }
 func (p *phaseoProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{NewModelsDataSource, NewProvidersDataSource, NewCreditsDataSource, NewSpendRulesDataSource, NewSpendBlocksDataSource, NewWorkspaceBudgetsDataSource}

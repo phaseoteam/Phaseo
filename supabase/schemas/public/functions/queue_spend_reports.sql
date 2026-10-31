@@ -94,11 +94,15 @@ begin
   )
   select count(*) into v_skipped_quiet from quiet;
 
-  -- 2. The rest, oldest period first.
+  -- 2. The rest, oldest period first, then the workspaces whose last handled period is oldest (or
+  --    that have none). A backlog bigger than one due window starts next time with the workspaces
+  --    it missed, instead of the same lowest workspace ids again.
   for v_candidate in
     select candidate.*
     from private.spend_report_due_workspaces(p_now) candidate
-    order by candidate.period_start, candidate.workspace_id
+    left join public.workspace_spend_report_runs last_run
+      on last_run.workspace_id = candidate.workspace_id and last_run.cadence = candidate.cadence
+    order by candidate.period_start, last_run.period_start nulls first, candidate.workspace_id
     limit p_limit
   loop
     v_due := v_due + 1;

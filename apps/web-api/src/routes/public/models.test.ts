@@ -37,7 +37,7 @@ describe("progressive model catalogue", () => {
 		controller.abort(new DOMException("Enrichment deadline", "TimeoutError"));
 		const response = await pending;
 		expect(response.status).toBe(200);
-		expect(timeout).toHaveBeenCalledWith(2_000);
+		expect(timeout).toHaveBeenCalledWith(6_000);
 		expect(await response.json()).toMatchObject({ gateway_data_complete: false });
 	});
 	it("returns model metadata with incomplete gateway data when monitor enrichment times out", async () => {
@@ -48,8 +48,23 @@ describe("progressive model catalogue", () => {
 		}));
 		const response = await app.request("/api/_web/models?limit=10", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cache-control")).toContain("no-store");
+		// Cached briefly at the edge, never served stale, so a slow database
+		// costs about one miss per minute instead of one per request.
+		expect(response.headers.get("cache-control")).toBe("public, max-age=0");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=60");
+		expect(response.headers.get("cache-tag")).toContain("web-api-models");
 		expect(await response.json()).toMatchObject({ gateway_data_complete: false, total: 1, models: [{ model_id: "public/model", gateway_monitor_rows: [] }] });
+	});
+	it("keeps the normal catalogue cache policy when gateway enrichment succeeds", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([{ model_id: "public/model", provider_api_model_id: "route", provider_id: "provider" }]));
+			if (String(input).includes("v2_models?")) return new Response(JSON.stringify([{ model_slug: "public/model", name: "Public", status: "active" }]), { headers: { "content-range": "0-0/1" } });
+			return new Response("[]");
+		}));
+		const response = await app.request("/api/_web/models?limit=10", {}, env);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
+		expect(await response.json()).toMatchObject({ gateway_data_complete: true, models: [{ model_id: "public/model" }] });
 	});
 	it("returns a usable catalogue and router card without querying usage", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -907,11 +922,11 @@ describe("public model routes", () => {
 		]);
 
 		expect(catalogue.status).toBe(200);
-		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
+		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(catalogue.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models,web-api-models-v2");
 		expect(benchmarks.status).toBe(200);
-		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400");
+		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=21600, stale-while-revalidate=64800, stale-if-error=86400");
 		expect(benchmarks.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(benchmarks.headers.get("cache-tag")).toContain("web-api-model-info-openai2Fgpt-test");
 		await expect(benchmarks.json()).resolves.toMatchObject({ highlights: [{ benchmarkId: "mmlu", score: 85, scoreDisplay: "85%", rank: 2 }] });
@@ -1354,6 +1369,7 @@ describe("public model routes", () => {
 		);
 
 		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		await expect(response.json()).resolves.toMatchObject({
 			providers: [{
 				provider: { routing_status: "active" },
@@ -1426,6 +1442,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-details");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		await expect(response.json()).resolves.toMatchObject({
 			model: {
@@ -1591,6 +1608,7 @@ describe("public model routes", () => {
 		]);
 
 		expect(timeline.status).toBe(200);
+		expect(timeline.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=21600, stale-while-revalidate=64800, stale-if-error=86400");
 		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-timelines");
 		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		expect(await timeline.json()).toMatchObject({

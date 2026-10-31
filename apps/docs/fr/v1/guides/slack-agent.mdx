@@ -1,0 +1,592 @@
+---
+title: "Agent Slack"
+description: "Ajoutez l’agent Phaseo à Slack pour que votre équipe lui pose des questions, auxquelles répond le modèle de votre choix."
+icon: "messages-square"
+---
+
+<Note>
+L’agent Slack est activé progressivement pour les espaces de travail. Si **Paramètres → Slack** n’apparaît pas encore dans vos paramètres, il n’est pas encore disponible pour votre espace de travail.
+</Note>
+
+L’agent Phaseo répond aux questions dans Slack. Mentionnez-le dans un canal ou envoyez-lui un message direct : il répond dans le fil et diffuse sa réponse au fur et à mesure qu’il l’écrit. Il utilise le modèle que vous choisissez dans Phaseo, peut chercher sur le web et lire des pages web, et peut renseigner les membres associés sur les dépenses Phaseo, les crédits, l’utilisation des clés d’API et les modèles de votre espace de travail. Il peut aussi publier les graphiques et images qu’il crée, lire les images et PDF que vous partagez avec lui, et faire des recherches dans votre espace de travail Slack pour vous.
+
+Les propriétaires et les administrateurs l’ajoutent depuis **Paramètres → Slack**, choisissent qui peut l’utiliser et fixent ses limites. Vous payez un prix mensuel pour les personnes qui l’ont utilisé, et les tokens de modèle sont facturés comme toute autre requête du gateway.
+
+## Avant de commencer
+
+- Vous devez être propriétaire ou administrateur de l’espace de travail Phaseo, et autorisé à ajouter des applications à votre espace de travail Slack.
+- Ouvrez **Chat** une fois et vérifiez les réglages de confidentialité de votre espace de travail. Phaseo le demande avant la première installation.
+- Ajoutez des [crédits](https://phaseo.app/settings/credits). La facturation mensuelle et les tokens de modèle de l’agent sont payés avec eux.
+
+## Ajouter l’agent à Slack
+
+<Steps>
+<Step title="Choisissez son fonctionnement">
+
+Ouvrez **Paramètres → Slack**. Sous **Ajouter à Slack**, choisissez le modèle, qui peut utiliser l’agent, où il peut partager les données d’utilisation, et ses limites (voir « Limites » plus bas). Si votre espace de travail a le routage automatique, avec **Automatique**, Phaseo choisit un modèle adapté à chaque question ; sinon, choisissez un modèle précis. Vous pourrez tout modifier plus tard.
+
+</Step>
+
+<Step title="Approuvez-le dans Slack">
+
+Sélectionnez **Ajouter à Slack**. Slack affiche les autorisations demandées par l’agent. Approuvez-les : Slack vous renvoie vers **Paramètres → Slack**, qui affiche désormais l’installation.
+
+</Step>
+
+<Step title="Posez-lui une question">
+
+Dans Slack, ouvrez l’agent depuis vos applications et envoyez-lui un message. Pour l’utiliser dans un canal, invitez-le avec `/invite @Phaseo`, puis mentionnez-le.
+
+</Step>
+</Steps>
+
+L’installation crée deux éléments dans votre espace de travail Phaseo :
+
+- **Une clé d’API pour l’agent.** Phaseo la gère, elle n’apparaît donc pas dans votre liste de clés d’API. Les tokens de modèle de l’agent sont facturés par son intermédiaire.
+- **Un garde-fou nommé Slack agent** sur cette clé, qui tient les messages Slack à l’écart de l’entraînement (voir « Données et confidentialité » plus bas).
+
+Un espace de travail Slack ne peut avoir l’agent que d’un seul espace de travail Phaseo à la fois.
+
+## Utiliser l’agent dans Slack
+
+- **Messages directs :** ouvrez l’agent depuis vos applications dans Slack et écrivez dans son onglet **Messages**. Il répond à chaque message.
+- **Canaux :** invitez l’agent dans un canal public ou privé, puis mentionnez-le, par exemple `@Phaseo which model should we use to summarise call transcripts?`. Il répond dans un fil. Mentionnez-le de nouveau pour chaque question de suivi dans ce fil.
+
+Pendant qu’il répond :
+
+- Il lit la partie la plus récente du fil, jusqu’à votre message, pour suivre la conversation. Slack lui permet de lire 15 messages à la fois, et permet à l’application de Phaseo de lire environ une fois par minute dans chaque espace de travail Slack.
+  - Il voit toujours le premier message du fil.
+  - Dans un message direct, il lit les derniers messages de votre conversation avec lui.
+  - Dans un canal, il lit les derniers messages des 30 dernières minutes au plus.
+  - Quand plus de messages ont été écrits qu’il n’a pu en lire, il est averti qu’il en manque.
+  - Quand Slack ne le laisse pas lire le fil à ce moment-là, il s’appuie sur ses propres réponses précédentes dans le fil.
+- Il répond à un message à la fois dans chaque fil. Jusqu’à 5 messages supplémentaires attendent leur tour ; au-delà, il vous demande d’attendre les réponses précédentes.
+- Le bouton d’arrêt de Slack arrête la réponse en cours.
+- Chaque réponse se termine par le modèle et le coût de la réponse en tokens de modèle, par exemple `Auto → GPT-6 Luna · $0.0031`. Avec **Automatique**, le modèle choisi suit une flèche, et les autres modèles utilisés par la réponse suivent un +. Le nom d’un modèle renvoie vers sa page sur Phaseo, et le coût renvoie vers les requêtes de cette réponse dans **Journaux**, que les membres de l’espace de travail Phaseo peuvent ouvrir.
+
+## Choisir un modèle par message
+
+Les propriétaires et les administrateurs peuvent laisser les personnes choisir le modèle d’un seul message. Dans **Paramètres → Slack**, sous **Choix du modèle**, activez **Permettre de choisir un modèle par message** et ajoutez jusqu’à 10 modèles du catalogue Phaseo. Si votre espace de travail a le routage automatique, **Inclure « Automatique »** ajoute **Automatique** à la liste. Le modèle choisi sous **Agent** répond toujours à tous les autres messages.
+
+Pour choisir un modèle, commencez le message par `with <model>:` et indiquez un modèle autorisé par son nom ou son ID :
+
+```text
+@Phaseo with Claude Opus 5.5: check this incident summary for gaps
+with openai/gpt-6-luna: draft a reply to this customer
+```
+
+- Seuls les modèles autorisés sont comparés, sans tenir compte des majuscules. Le début d’un nom ou d’un ID suffit quand un seul modèle autorisé le possède : `with claude:` fonctionne donc quand un seul modèle Claude figure dans la liste. Un ID fonctionne aussi sans son laboratoire, par exemple `with gpt-6-luna:`.
+- L’agent répond à ce message avec ce modèle, sans la partie `with …:`, et le pied de page indique le modèle qui a répondu.
+- Si vous nommez un modèle du catalogue qui n’est pas dans la liste, ou si le nom correspond à plusieurs modèles, l’agent répond en privé avec les modèles que vous pouvez choisir et ne répond pas au message. Ce message n’est pas compté comme une réponse. Un message qui commence par « With …: » sans nommer de modèle, comme « With regards to the invoice: … », reçoit une réponse normale.
+- Chaque réponse garde les mêmes limites ($0.50 et 12 étapes, voir « Limites de chaque réponse » plus bas), quel que soit le modèle qui répond. Les tokens du modèle sont facturés à son propre prix.
+- Le garde-fou **Slack agent** s’applique toujours. Si aucun fournisseur du modèle choisi ne le respecte, l’agent le dit au lieu de répondre.
+
+### Demander à un autre modèle
+
+Tant que le choix du modèle est activé, l’agent peut aussi demander un second avis à l’un des modèles autorisés pendant qu’il répond, par exemple quand vous demandez ce qu’en pense un autre modèle :
+
+```text
+@Phaseo draft a reply to this customer, then ask Claude Opus 5.5 to check it
+```
+
+- L’autre modèle ne voit que ce que l’agent lui envoie. Il ne voit pas le fil Slack et ne peut ni faire de recherche web ni utiliser d’outils.
+- L’agent peut interroger d’autres modèles jusqu’à 3 fois dans une même réponse. Leur coût compte dans la même limite de $0.50 (voir « Limites de chaque réponse » plus bas), et l’agent arrête de les interroger quand il reste trop peu pour terminer sa réponse.
+- Le pied de page nomme chaque modèle utilisé, par exemple `GPT-6 Luna + Claude Opus 5.5 · $0.0123`, et le coût les inclut.
+- Si un modèle ne peut pas être utilisé, par exemple parce qu’aucun de ses fournisseurs ne respecte le garde-fou **Slack agent**, l’agent en reçoit la raison et répond sans lui.
+
+### Comparer des modèles
+
+Pour voir comment 2 ou 3 modèles autorisés répondent à la même question, commencez le message par `compare`, les modèles séparés par des virgules, puis deux-points :
+
+```text
+@Phaseo compare GPT-6 Luna, Claude Opus 5.5: what are the risks of moving our database to another region?
+compare gpt-6-luna, claude, auto: summarise the EU AI Act in five bullet points
+```
+
+- Les modèles sont reconnus comme avec `with <model>:`, uniquement parmi les modèles autorisés. Si un modèle n’est pas dans la liste, si un nom correspond à plusieurs modèles, si vous en nommez moins de 2 ou plus de 3, ou s’il n’y a pas de question après les deux-points, l’agent répond en privé et ne répond pas au message. Ce message n’est pas compté comme une réponse. Un message qui ne nomme aucun modèle, comme `compare the two plans, then pick one: …`, est un texte ordinaire et l’agent y répond comme d’habitude. Tant que le choix du modèle est désactivé, un message `compare …:` qui nomme des modèles du catalogue reçoit une réponse privée indiquant que la comparaison est désactivée, et n’est pas compté comme une réponse.
+- Chaque modèle reçoit votre question, pas le reste du fil, et peut faire des recherches web et lire des pages web. Ils répondent en même temps.
+- La réponse comporte une section par modèle : son nom, avec un lien vers sa page sur Phaseo, son coût et sa réponse. Chaque modèle est invité à rester bref, et les réponses longues sont coupées pour tenir toutes dans un seul message Slack.
+- Si un modèle échoue, sa section en donne la raison, et les autres réponses restent affichées.
+- Une comparaison compte comme une seule réponse. La limite de $0.50 (voir « Limites de chaque réponse » plus bas) est répartie à parts égales entre les modèles, et le pied de page les nomme tous et affiche le total. La répartition décide seulement si un modèle est interrogé : il ne l’est pas si sa part est inférieure à $0.02. Une réponse n’est pas arrêtée à sa part et peut donc coûter plus ; c’est la longueur de la réponse de chaque modèle qui est limitée.
+
+### Questions avec des boutons
+
+Quand l’agent a besoin que vous choisissiez entre quelques options ou que vous approuviez quelque chose avant de continuer, il vous pose la question dans le fil avec un bouton par option, jusqu’à 5. Il peut aussi proposer **Other…**, qui ouvre un petit formulaire pour répondre avec vos propres mots.
+
+- Seule la personne à qui il répond peut répondre. Toute autre personne qui choisit un bouton reçoit une note privée.
+- Vous pouvez aussi répondre dans le fil (dans un canal, en mentionnant l’agent). Votre message compte alors comme votre réponse.
+- Dès que vous répondez, votre réponse remplace les boutons et l’agent reprend là où il s’était arrêté.
+- Une question attend jusqu’à une heure. Ensuite, la question indique qu’elle a expiré et la réponse s’arrête là. Posez de nouveau votre question quand vous êtes prêt.
+- Le bouton d’arrêt de Slack fonctionne aussi pendant qu’il attend.
+- Pendant qu’il attend, les messages des autres personnes dans le fil attendent leur tour, et elles sont informées en privé de la personne qu’il attend.
+- Une réponse peut poser jusqu’à 3 questions. Le tout compte comme une seule réponse, et les limites de chaque réponse couvrent l’ensemble, avant et après chaque question.
+
+### Onglet Home
+
+Ouvrez l’agent dans Slack et choisissez **Home** pour voir comment l’utiliser, le modèle qu’il utilise et si votre compte Phaseo est connecté. S’il ne l’est pas et que le connecter serait utile (avec **Comptes associés uniquement**, ou là où les **Données d’utilisation** sont autorisées), l’onglet affiche le bouton **Connect your Phaseo account**. Les membres de l’espace de travail Phaseo qui ont connecté leur compte voient aussi combien de réponses l’agent a données dans l’espace de travail Slack ce mois-ci (UTC). L’onglet n’affiche que des paramètres et des chiffres, jamais de messages. Il liste aussi les tâches récurrentes que vous avez créées, avec leur prochaine exécution (voir « Tâches planifiées » plus bas).
+
+Avec votre propre application Slack, l’onglet Home a besoin du dernier manifeste : `home_tab_enabled` à `true` et l’événement de bot `app_home_opened`.
+
+## Graphiques, images et fichiers
+
+L’agent peut publier des graphiques et des images dans le fil, et lire les images et PDF que vous partagez avec lui.
+
+- **Graphiques :** demandez un graphique, par exemple `@Phaseo chart our spend by week this month`. L’agent trace un graphique en barres, en courbes ou en secteurs à partir de ses chiffres, et le publie dans le fil sous forme d’image. Le texte des graphiques utilise les alphabets latin et cyrillique ; le reste figure dans sa réponse.
+- **Images :** demandez-lui d’en créer une, par exemple `@Phaseo make an icon of a paper plane in blue`. Il utilise [GPT Image 2](https://phaseo.app/models/openai/gpt-image-2) avec la clé API de l’agent, facturée comme toute autre requête. Une image coûte quelques centimes et compte dans la limite de $0.50 de la réponse (voir « Limites de chaque réponse » plus bas), et le pied de la réponse l’inclut. Une réponse crée au plus 2 images, et seulement tant qu’il reste au moins $0.15 de sa limite.
+- **Fichiers que vous partagez :** joignez des images (PNG, JPEG, GIF ou WebP, jusqu’à 5 Mo chacune) ou des PDF (jusqu’à 10 Mo) à votre message, ou à des messages précédents du fil que l’agent lit. Il lit jusqu’à 4 fichiers, 12 Mo au total, par réponse, les plus récents d’abord. Les autres types de fichiers ne peuvent pas encore être lus.
+
+Le modèle doit aussi savoir lire les images ou les PDF. Avec **Auto**, l’agent envoie les fichiers, et répond sans eux si le modèle choisi ne sait pas les lire. Avec un modèle précis, l’agent vous indique quand ce modèle ne sait pas lire le type de fichier partagé.
+
+Les fichiers partagés sont téléchargés pour la réponse qui les lit et ne sont jamais conservés. Les graphiques et images publiés par l’agent sont des fichiers de votre espace de travail Slack, comme les autres.
+
+### Mettre à jour les autorisations Slack
+
+Les graphiques et les images nécessitent l’autorisation Slack `files:write`, la lecture de fichiers `files:read`, et la recherche dans Slack (voir « Rechercher dans Slack » plus bas) `search:read.public` et `search:read.files`. Si l’agent a été ajouté avant de pouvoir le faire, il ne les a pas encore : il indique qu’un administrateur doit mettre à jour ses autorisations, et **Paramètres → Slack** affiche **Mettre à jour les autorisations Slack**.
+
+1. Sélectionnez **Mettre à jour les autorisations Slack**. Slack affiche les autorisations demandées par l’agent.
+2. Approuvez-les pour le même espace de travail Slack. Slack vous renvoie vers **Paramètres → Slack**.
+
+La mise à jour conserve les paramètres, la clé API, le garde-fou et l’historique de l’agent. Avec votre propre application Slack, ajoutez d’abord à son manifeste les scopes indiqués dans **Paramètres → Slack** (voir « Utiliser votre propre application Slack » plus bas).
+
+## Rechercher dans Slack
+
+L’agent peut faire des recherches dans votre espace de travail Slack pour la personne qui pose la question, et répondre avec des liens vers les messages et fichiers qu’il a utilisés. Par exemple :
+
+```text
+What did we decide about the launch date?
+@Phaseo find the latest incident review in #ops and summarise it
+Who has been working on the billing migration this month?
+```
+
+- **Il cherche en votre nom.** Il utilise la recherche en temps réel de Slack avec l’autorisation que Slack lui donne pour votre message : il ne trouve donc que ce que vous pouvez voir dans Slack. Il ne cherche que dans les canaux publics, jamais dans les canaux privés, les messages directs ou les messages de groupe.
+- **Il met un lien vers ce qu’il utilise.** Chaque message ou fichier sur lequel il s’appuie a un lien, pour que vous puissiez l’ouvrir dans Slack. Quand une recherche ne trouve rien, il le dit.
+- **Il peut restreindre une recherche** à un canal, une personne ou une période, et fait jusqu’à 4 recherches pour une réponse, 10 résultats à la fois.
+- **Par le sens ou par mot-clé.** Les questions formulées avec vos propres mots sont recherchées par leur sens sur les forfaits Slack qui incluent la recherche par IA (Business+ et Enterprise+) ; les autres forfaits cherchent par mot-clé.
+- **Uniquement des fournisseurs qui ne conservent aucune donnée.** Une fois qu’une réponse a cherché dans Slack, la suite de cette réponse, y compris un autre modèle qu’il interroge ou une image qu’il crée, ne va qu’à des fournisseurs d’IA sans conservation des données (zero data retention), pour que ce qu’il a trouvé ne reste jamais dans les journaux d’un fournisseur. La recherche web et la lecture de pages web sont aussi désactivées pour le reste de cette réponse, pour que rien de ce qu’il a trouvé ne sorte dans une recherche ou un lien : demandez-lui de chercher sur le web d’abord si vous avez besoin des deux.
+
+Choisissez où il cherche sous **Recherche Slack**, dans **Paramètres → Slack**. Le changement s’applique tout de suite.
+
+| Option | Où il cherche |
+| --- | --- |
+| **Désactivée** | Nulle part. |
+| **Messages directs** (par défaut) | Uniquement dans les messages directs avec l’agent, pour que seule la personne qui pose la question lise ce qu’il trouve. |
+| **Messages directs et canaux** | Aussi dans les canaux, quand quelqu’un le mentionne. Tous les membres du canal lisent la réponse, y compris les invités qui ne peuvent pas ouvrir les canaux trouvés : ne choisissez cette option que si cela convient à votre espace de travail. |
+
+Certaines limites viennent de Slack :
+
+- Il ne cherche qu’en répondant à un message : Slack lui donne l’autorisation de chercher avec chaque message qui le mentionne ou qui lui est envoyé directement, et l’agent ne la garde que jusqu’à ce qu’il ait répondu.
+- Slack ne permet pas aux applications de chercher pour les invités, et l’agent ne cherche jamais pour des personnes d’autres entreprises.
+- Slack permet à chaque personne environ 10 recherches par minute. Au-delà, l’agent répond avec ce qu’il a et le signale.
+- Slack ne permet cette recherche qu’aux applications du Slack Marketplace et aux applications propres d’une entreprise. L’application Slack de Phaseo pourra chercher une fois sa fiche sur le Slack Marketplace approuvée ; d’ici là, l’agent indique que la recherche n’est pas disponible. Pour chercher dès maintenant, utilisez votre propre application Slack (voir « Utiliser votre propre application Slack » plus bas).
+- Les installations antérieures à la recherche ont besoin d’autorisations Slack mises à jour (voir « Mettre à jour les autorisations Slack » plus haut).
+
+La recherche demande aussi un modèle qu’un fournisseur sans conservation des données peut servir. Avec **Auto**, l’agent peut chercher : après une recherche, Auto ne choisit que parmi les modèles ayant un fournisseur qui ne conserve aucune donnée. L’agent ne cherche pas avec un modèle dont tous les fournisseurs conservent des données, et le dit quand on le lui demande. Un administrateur peut choisir dans **Paramètres → Slack** un modèle qui ne conserve aucune donnée, ou, quand on peut choisir un modèle par message (voir « Choisir un modèle par message » plus haut), commencez un message par `with <model>:` pour en utiliser un. Si la passerelle indique après une recherche qu’aucun fournisseur sans conservation des données ne peut répondre, l’agent s’arrête là et explique pourquoi (les autres erreurs, comme une clé de fournisseur manquante, gardent leur message habituel) ; ce que la réponse a coûté jusque-là compte quand même.
+
+Ce qu’il trouve ne sert qu’à cette réponse et n’est jamais conservé (voir « Données et confidentialité » plus bas). Pour la même raison, une réponse qui a cherché dans Slack ne peut pas s’interrompre pour vous poser une question, ni enregistrer de notes, d’épingles, de tâches ou de compétences, ni créer de tâche récurrente, ni publier de page partagée.
+
+## Qui peut l’utiliser
+
+Choisissez sous **Qui peut l’utiliser** :
+
+| Option | Qui reçoit des réponses |
+| --- | --- |
+| **Tout le monde dans Slack** (par défaut) | Toute personne de votre espace de travail Slack, dans vos limites. |
+| **Comptes associés uniquement** | Uniquement les personnes qui ont associé leur compte Slack à un membre de cet espace de travail Phaseo. L’agent envoie aux autres un lien pour le faire. |
+
+Sous **Limites**, **Autoriser les invités** (activé par défaut) permet aux invités de votre espace de travail Slack d’utiliser l’agent, et **Autoriser les personnes d’autres entreprises** (désactivé par défaut) le permet aux personnes d’autres organisations dans des canaux Slack Connect partagés. Les personnes d’autres espaces de travail de la même organisation Enterprise Grid comptent comme vos propres collaborateurs. L’agent ne répond jamais aux bots ni aux autres applications.
+
+### Associer un compte Slack
+
+L’agent envoie en privé un bouton **Connect your Phaseo account** aux personnes non associées :
+
+- Avec **Comptes associés uniquement**, quand elles lui écrivent. Il ne répond pas tant qu’elles ne se sont pas connectées.
+- Avec **Tout le monde dans Slack**, quand elles posent une question sur l’utilisation là où les **Données d’utilisation** le permettent (voir « Questions sur l’utilisation » plus bas). Il répond quand même à ce qu’il peut, et envoie le bouton au plus une fois par personne dans chaque fil. Pour obtenir un nouveau bouton, posez la question dans un nouveau fil.
+
+Le bouton fonctionne pendant 15 minutes.
+
+1. Sélectionnez le bouton. Phaseo s’ouvre dans votre navigateur.
+2. Connectez-vous avec un compte membre de l’espace de travail Phaseo qui a installé l’agent.
+3. Sélectionnez **Connecter le compte**.
+
+Un compte associé permet aussi de poser des questions sur l’utilisation.
+
+## Questions sur l’utilisation
+
+Les membres associés peuvent interroger l’agent sur cet espace de travail Phaseo (toute autre personne qui pose la question reçoit le bouton pour associer son compte ; voir « Associer un compte Slack » plus haut) :
+
+- les requêtes et les dépenses sur une période, par jour, semaine ou mois, et par modèle ou fournisseur ;
+- le solde de crédits, les crédits réservés pour les requêtes en cours et les crédits dépensés ce mois-ci ;
+- les requêtes et les dépenses de chaque clé d’API ;
+- les modèles du catalogue Phaseo.
+
+Les dates sont en UTC et les semaines commencent le lundi. Choisissez où l’agent peut répondre à ces questions sous **Données d’utilisation** :
+
+| Option | Où les membres associés peuvent poser leurs questions |
+| --- | --- |
+| **Désactivé** | Nulle part. L’agent ne partage jamais de données d’utilisation. |
+| **Messages directs** (par défaut) | Uniquement dans un message direct avec l’agent. |
+| **Messages directs et canaux choisis** | Dans les messages directs et dans les canaux listés sous **ID des canaux** (jusqu’à 100). |
+
+Tous les membres d’un canal peuvent lire les réponses de l’agent : ne listez donc que des canaux dont les membres peuvent voir les dépenses de votre espace de travail. L’ID d’un canal figure en bas de ses détails dans Slack, par exemple `C0123ABCD`.
+
+## Mémoire et compétences
+
+L’agent peut retenir ce que votre équipe lui demande et suivre des compétences : des instructions enregistrées pour les tâches qui se répètent. Demandez-le-lui dans Slack, par exemple :
+
+- `@Phaseo remember that deploys freeze on Fridays after 3pm`
+- `@Phaseo pin this for everyone: our fiscal year starts on 1 April`
+- `@Phaseo add a to-do: send the Q4 budget to finance`, puis plus tard `@Phaseo the budget to-do is done`
+- `@Phaseo what do you remember about deploys?` ou `@Phaseo forget the note about deploys`
+
+Il enregistre trois types de notes, chacune de 500 caractères au plus, rédigées avec ses propres mots :
+
+| Type | À quoi il sert |
+| --- | --- |
+| **Note** | Quelque chose à retenir. L’agent consulte les notes quand elles sont utiles. |
+| **Épingle** | Quelque chose à garder toujours en tête. L’agent voit jusqu’à 10 épingles de la conversation et 10 épingles de tout l’espace de travail à chaque message. |
+| **Tâche** | Quelque chose à suivre, qu’on peut marquer comme faite. |
+
+Une note appartient au canal ou au message direct où elle a été enregistrée, sauf si quelqu’un demande qu’elle vaille pour tout l’espace de travail. Dans une conversation, l’agent voit les notes de cette conversation et celles de tout l’espace de travail, jamais celles d’un autre canal ou message direct. Les notes de tout l’espace de travail sont accessibles à toutes les personnes de votre organisation auxquelles l’agent répond. Les personnes d’autres entreprises présentes dans des canaux Slack Connect partagés ne voient et n’enregistrent que les notes de la conversation où elles se trouvent, jamais celles de tout l’espace de travail. Elles peuvent utiliser les compétences enregistrées, mais pas en enregistrer de nouvelles, car les compétences s’appliquent à tout l’espace de travail. Une note peut être conservée jusqu’à une date, par exemple avec `remember until Friday that the office is closed`, puis elle est supprimée.
+
+L’agent n’enregistre une note que si quelqu’un lui demande de retenir quelque chose, de l’épingler ou d’en faire une tâche, ou pour un fait durable comme une décision ou une échéance. Il ne copie jamais de messages ni de fils entiers.
+
+### Compétences
+
+Une compétence est un nom, une description d’une ligne et des instructions de 4 000 caractères au plus pour une tâche que votre équipe répète, comme un rapport hebdomadaire. Demandez à l’agent d’en enregistrer une :
+
+`@Phaseo save a skill called Weekly report: list what shipped this week, then what slipped, then next week's priorities`
+
+À chaque message, l’agent voit les noms et les descriptions des 20 compétences modifiées le plus récemment. Il charge les instructions d’une compétence quand une demande y correspond ou quand quelqu’un le demande, par exemple avec `@Phaseo use the Weekly report skill`. Il n’enregistre une compétence que si quelqu’un le demande explicitement, et ne remplace une compétence du même nom que si on le lui demande.
+
+### Ce que contrôlent les administrateurs
+
+- **Permettre à l’agent de garder des notes** (activé par défaut, sous **Mémoire et compétences** dans **Paramètres → Slack**) désactive les notes, épingles et tâches. Tant que c’est désactivé, l’agent n’en enregistre ni n’en voit aucune, et répond à qui lui demande de retenir quelque chose qu’un administrateur a désactivé la mémoire. Les compétences continuent de fonctionner. Les notes déjà enregistrées sont conservées, et les propriétaires et les administrateurs peuvent toujours les voir et les supprimer. Réactivez-le et l’agent les utilise de nouveau.
+- Chaque espace de travail Slack conserve jusqu’à 500 notes et 100 compétences. Quand la mémoire est pleine, l’agent le dit ; supprimez-en pour faire de la place.
+- Les propriétaires et les administrateurs voient tout ce que l’agent a enregistré sous **Mémoire et compétences**, dans **Paramètres → Slack**. Ils peuvent filtrer les notes par type, supprimer n’importe quelle note ou compétence, et modifier le nom, la description et les instructions d’une compétence. Le journal d’activité de l’espace de travail enregistre ces changements sans le texte.
+- La désinstallation de l’agent supprime toutes ses notes et compétences. Si vous l’ajoutez de nouveau, il repart avec une mémoire vide.
+
+## Tâches planifiées
+
+Demandez à l’agent de faire quelque chose régulièrement, et il crée une tâche récurrente dans cette conversation. Par exemple :
+
+- `@Phaseo every weekday at 9:00, summarise yesterday's news about electric vehicles`
+- `@Phaseo every Monday at 8:30, list last week's Phaseo spend by model`
+- `@Phaseo on the 1st of every month at 10:00, list the API keys nobody used last month`
+- `@Phaseo which recurring tasks are set up here?` or `@Phaseo cancel the Monday spend summary`
+
+L’agent confirme ce qu’il a créé : ce que fait la tâche, où elle publie, à quelle fréquence et quand elle s’exécute la prochaine fois.
+
+- **Fréquence :** toutes les heures (à la minute choisie), tous les jours, en semaine (du lundi au vendredi), une fois par semaine le jour choisi ou une fois par mois le jour choisi (les mois plus courts, leur dernier jour). Jamais plus d’une fois par heure.
+- **Quand :** à une heure locale dans le fuseau horaire Slack de la personne qui l’a créée, y compris lors des changements d’heure.
+- **Où :** dans le canal ou le message direct où elle a été créée. Chaque exécution y publie un court message **Scheduled: …** et y répond dans le fil. Les réponses dans ce fil sont des messages ordinaires adressés à l’agent.
+- **Ce qui s’exécute :** l’agent enregistre la demande sous forme d’instruction autonome, si bien que chaque exécution fonctionne sans la conversation où elle a été créée. Les exécutions planifiées ne posent pas de questions avec des boutons, ne cherchent pas dans Slack et ne peuvent pas créer ni modifier de tâches récurrentes.
+
+Chaque exécution est une réponse ordinaire à la personne qui a créé la tâche. L’agent vérifie qu’elle peut encore l’utiliser, l’exécution compte comme une de ses réponses pour votre forfait, le **Plafond de dépenses mensuel** et les **Réponses par personne et par heure**, elle respecte les limites de chaque réponse (voir « Limites de chaque réponse » plus bas) et se termine par le pied de page habituel.
+
+Quand une exécution ne peut pas avoir lieu :
+
+- Si l’agent a été mis en pause dans Phaseo ou qu’une facture Phaseo est impayée (**Paiement en attente**), l’exécution est ignorée et la tâche continue : elle s’exécute de nouveau à son heure suivante dès que l’agent est réactivé, sans rien à reprendre. Ces exécutions ignorées ne comptent pas comme des échecs, et **Paramètres → Slack** indique pourquoi la dernière exécution a été ignorée.
+- Si la personne qui l’a créée ne peut plus utiliser l’agent ou si l’agent ne peut plus publier dans la conversation (par exemple parce qu’il a été retiré du canal), l’exécution est ignorée et la tâche est mise en pause, avec la raison dans **Paramètres → Slack**.
+- Toute autre exécution qui n’aboutit pas, comme une exécution refusée parce que le **Plafond de dépenses mensuel** est atteint, compte comme un échec. Après 3 échecs d’affilée, la tâche est mise en pause et l’agent prévient la personne qui l’a créée par message direct.
+
+Chacun peut annuler les tâches qu’il a créées en le demandant à l’agent. Les propriétaires et administrateurs de l’espace de travail Phaseo qui ont associé leur compte Slack (voir « Associer un compte Slack » plus haut) peuvent annuler celles de tout le monde. Les personnes d’autres entreprises dans des canaux Slack Connect partagés voient les tâches d’une conversation mais ne peuvent pas en créer. L’onglet **Home** de l’agent liste vos propres tâches.
+
+### Paramètres des tâches récurrentes
+
+Les propriétaires et administrateurs les définissent sous **Tâches récurrentes**, dans **Paramètres → Slack** :
+
+| Paramètre | Effet | Par défaut |
+| --- | --- | --- |
+| **Autoriser les tâches récurrentes** | Désactivé, personne ne peut en créer et aucune ne s’exécute. Elles sont conservées et reprennent dès que vous le réactivez. | Activé |
+| **Nombre maximal de tâches récurrentes dans cet espace de travail** | De 1 à 100. Le réduire conserve celles déjà créées. | 20 |
+| **Qui peut les créer** | **Toutes les personnes qui peuvent utiliser l'agent** ou **Seulement les personnes qui ont connecté leur compte Phaseo**. | Tout le monde |
+
+La même section liste chaque tâche : ce qu’elle fait, où elle publie, sa fréquence, sa prochaine exécution, qui l’a créée et le résultat de sa dernière exécution. Vous pouvez mettre en pause, reprendre ou supprimer n’importe laquelle. Une tâche reprise s’exécute à sa prochaine heure, et ses échecs repartent de zéro. Désinstaller l’agent supprime toutes ses tâches récurrentes.
+
+## Pages partagées
+
+Quand une réponse est trop longue ou trop riche pour un message Slack, comme un rapport, un tableau ou un graphique, l’agent peut la publier sous forme de page web et la mettre en lien dans sa réponse. Demandez-la-lui, par exemple :
+
+- `@Phaseo make a page comparing our spend by model this month`
+- `@Phaseo turn the decisions in this thread into a one-page summary`
+
+Une page est un seul fichier HTML écrit par l’agent, avec du texte, des tableaux et des graphiques. Les pages sont statiques : avant de conserver une page, Phaseo en retire les scripts, les liens, les formulaires et tout ce qui se chargerait d’ailleurs, comme des polices ou des images d’autres sites. Une page ne peut donc ni exécuter de scripts ni rien envoyer nulle part, et les adresses web y figurent en texte brut. Les pages s’ouvrent sur `slack.phaseo.app` dans un bac à sable verrouillé, si bien qu’une page ne peut pas atteindre votre connexion à Phaseo ou à Slack.
+
+| Qui peut voir une page | Comment |
+| --- | --- |
+| **Toute personne disposant du lien** (par défaut) | Toute personne qui a le lien, sans se connecter. Le lien est long et aléatoire, il ne peut donc pas être deviné. |
+| **Les personnes de cet espace de travail Slack** | Les membres de votre espace de travail Slack, après s’être connectés avec Slack. Les invités seulement tant que **Autoriser les invités** est activé, et les personnes d’autres entreprises jamais. Une connexion dure 8 heures. |
+
+L’agent applique le choix par défaut de vos administrateurs, sauf si quelqu’un demande l’autre, par exemple `@Phaseo make it a page only our Slack workspace can see`.
+
+### Limites des pages
+
+- Une page est conservée 30 jours par défaut, puis supprimée. Les administrateurs peuvent choisir 7, 30 ou 90 jours pour les nouvelles pages.
+- Chaque réponse peut publier jusqu’à 3 pages, et chaque espace de travail Slack conserve jusqu’à 200 pages à la fois. Une page peut faire jusqu’à 512 Ko.
+- La publication fait partie de la réponse : elle ne coûte rien de plus, et les tokens de modèle utilisés pour écrire la page comptent dans la limite de $0.50 de la réponse.
+- Les personnes d’autres entreprises dans des canaux Slack Connect partagés ne peuvent pas publier de pages.
+- Une réponse qui a cherché dans Slack ne peut pas publier de page, car une page conserve ce que l’agent a écrit (voir « Rechercher dans Slack » plus haut).
+
+### Ce que les administrateurs contrôlent pour les pages
+
+Sous **Pages partagées**, dans **Paramètres → Slack** :
+
+- **Permettre à l’agent de publier des pages** (activé par défaut) désactive la publication. Les pages déjà publiées restent jusqu’à leur expiration ou jusqu’à ce que vous les supprimiez.
+- **Conserver les nouvelles pages pendant** 7, 30 ou 90 jours.
+- **Toute personne disposant du lien peut voir les pages** (activé par défaut). Désactivé, chaque page demande une connexion avec Slack, y compris les pages déjà publiées.
+- **Les nouvelles pages sont ouvertes à** fixe le choix par défaut quand les deux options sont disponibles.
+- La liste affiche le titre de chaque page, qui l’a demandée, quand elle a été publiée et quand elle expire, et combien de fois elle a été ouverte. Les propriétaires et les administrateurs peuvent supprimer n’importe quelle page, et son lien cesse aussitôt de fonctionner. Ils peuvent ouvrir une page quand son accès le permet : une page réservée à l’espace de travail Slack leur demande de se connecter avec Slack en tant que membres. Le journal d’activité de l’espace de travail enregistre les suppressions sans le titre.
+
+**Les personnes de cet espace de travail Slack** demande que la connexion avec Slack soit configurée pour l’application Slack utilisée par l’agent. Tant qu’elle ne l’est pas, **Paramètres → Slack** l’indique, et les pages sont ouvertes à toute personne disposant du lien. Avec votre propre application Slack, son manifeste doit inclure l’URL de redirection `https://slack.phaseo.app/p/signin`, comme le manifeste de Phaseo (voir « Utiliser votre propre application Slack », plus bas).
+## Limites
+
+Les propriétaires et les administrateurs les définissent dans **Paramètres → Slack** :
+
+| Paramètre | Effet | Par défaut |
+| --- | --- | --- |
+| **Forfait** | Combien de personnes par mois l’agent sert : jusqu’à 3, 10, 25, 50 ou 100, ou un nombre de votre choix au-delà de 100. | Jusqu’à 3 personnes |
+| **Quand une nouvelle personne dépasserait le forfait** | **Refuser** indique à la nouvelle personne que le forfait est complet. **Passer automatiquement au forfait supérieur** fait grandir le forfait avec les personnes qui utilisent l’agent, jusqu’au **Nombre maximal de personnes par mois**. | **Refuser** |
+| **Nombre maximal de personnes par mois** | Une limite stricte de personnes par mois, quel que soit le forfait. Elle ne peut pas être inférieure au forfait. | Aucune limite |
+| **Plafond de dépenses mensuel** | Le montant maximal que peut atteindre la facturation mensuelle de l’agent. Quand la réponse suivante le dépasserait, l’agent cesse de répondre jusqu’au mois suivant. Il doit au moins couvrir le prix du forfait. | Défini à l’installation |
+| **Réponses par personne et par heure** | Empêche une seule personne d’épuiser le mois. | 60 |
+| **Limite mensuelle de dépenses en modèles** | Plafonne ce que la clé d’API de l’agent dépense en tokens de modèle chaque mois. | Aucune limite |
+| **Autoriser les invités** | Les invités de votre espace de travail Slack peuvent utiliser l’agent. | Activé |
+| **Autoriser les personnes d’autres entreprises** | Les personnes d’autres organisations dans des canaux Slack Connect partagés peuvent utiliser l’agent. | Désactivé |
+
+La section **Agent** définit le modèle et les **Instructions** : des consignes supplémentaires que l’agent suit dans chaque réponse, comme le ton ou les points sur lesquels se concentrer, jusqu’à 8,000 caractères.
+
+### Limites de chaque réponse
+
+Chaque réponse s’arrête après 12 étapes ou $0.50 de dépenses en modèles, selon ce qui arrive en premier. Une étape correspond à un appel au modèle et aux outils qu’il exécute, comme une recherche web. Les autres modèles interrogés par l’agent et les modèles d’une comparaison comptent dans les mêmes $0.50. Quand une limite arrête une réponse, l’agent le signale, et vous pouvez lui demander de continuer. Ces limites sont les mêmes pour tous les espaces de travail. Les images créées par l’agent comptent aussi dans les $0.50.
+
+## Tarifs
+
+Vous payez selon le nombre de personnes qui ont reçu au moins une réponse dans le mois (UTC). Une personne compte une fois par mois, quel que soit le nombre de réponses qu’elle reçoit, et un mois sans utilisation de l’agent ne coûte rien.
+
+| Personnes ayant utilisé l’agent dans le mois | Prix par mois |
+| --- | --- |
+| 1 à 3 | $0.99 |
+| 4 à 10 | $2.99 |
+| 11 à 25 | $4.99 |
+| 26 à 50 | $7.99 |
+| 51 à 100 | $14.99 |
+| 101 à 1,000 | Augmente régulièrement de $15 à $59, en dollars entiers. Par exemple, 200 personnes coûtent $20 et 500 personnes $35. |
+| Plus de 1,000 | $59, ou $0.045 par personne en dollars entiers dès que c’est plus (à partir d’environ 1,300 personnes). Par exemple, 2,000 personnes coûtent $90. |
+
+Chaque personne inclut 300 réponses par mois, partagées dans tout l’espace de travail. Les réponses au-delà coûtent $0.25 les 1,000.
+
+Par exemple, si 8 personnes reçoivent 3,000 réponses dans un mois, le prix est de $2.99 pour jusqu’à 10 personnes. Elles ont 2,400 réponses incluses, les 600 autres réponses coûtent donc $0.15, et la facturation du mois s’élève à $3.14.
+
+Les tokens de modèle ne font pas partie de ce prix. Ils sont facturés via la clé d’API de l’agent comme des requêtes normales du gateway, au prix de chaque modèle, au fil des réponses. Limitez-les avec **Limite mensuelle de dépenses en modèles**.
+
+### Comment vous êtes facturé
+
+- La facturation du mois est prélevée sur vos crédits dans les premières heures qui suivent la fin du mois et ne dépasse jamais le **Plafond de dépenses mensuel**.
+- **Ce mois-ci**, dans **Paramètres → Slack**, affiche les personnes, les réponses et le montant estimé jusqu’ici. Chaque facturation apparaît sous **Facturations passées** et dans vos transactions de facturation comme **Agent Slack**.
+- Si vos crédits ne couvrent pas la facturation, elle attend des crédits, et le statut de l’agent passe à **Paiement en attente**. Il cesse de répondre jusqu’au paiement. Phaseo réessaie toutes les heures : les réponses reprennent donc dans l’heure environ après l’ajout de crédits. Le montant est fixé lors de la première tentative.
+
+## E-mails aux propriétaires et aux administrateurs
+
+Quand l’agent refuse des personnes pour une raison que seul un propriétaire ou un administrateur peut régler, Phaseo envoie un e-mail à tous les propriétaires et administrateurs de l’espace de travail :
+
+| Raison | Objet de l’e-mail | Que faire |
+| --- | --- | --- |
+| Le forfait est complet | Slack agent: someone new was turned away | Choisissez un forfait supérieur, ou **Passer automatiquement au forfait supérieur**. |
+| Le **Nombre maximal de personnes par mois** est atteint | Slack agent: people limit reached | Augmentez ou supprimez le **Nombre maximal de personnes par mois**. |
+| Le **Plafond de dépenses mensuel** est atteint | Slack agent: monthly spending cap reached | Augmentez le plafond, ou attendez le mois suivant. |
+| Une facturation est impayée | Slack agent: paused until the charge is paid | Ajoutez des crédits. |
+
+Chaque e-mail est envoyé au plus une fois par mois et par raison. Il ne nomme aucun utilisateur Slack et ne cite aucun message.
+
+Les refus d’invités, de personnes d’autres entreprises et liés à la limite horaire ne sont pas envoyés par e-mail. Le journal d’activité de l’espace de travail enregistre chaque mois le premier refus dû à un forfait complet, au **Nombre maximal de personnes par mois** et au **Plafond de dépenses mensuel** et, pour les invités, les personnes d’autres entreprises et la limite horaire, le premier pour chaque personne. La réponse de l’agent dans Slack n’indique jamais qu’un administrateur a été prévenu.
+
+## Données et confidentialité
+
+Les conditions de l’API de Slack n’autorisent ni l’entraînement sur les données Slack ni leur archivage, l’agent est donc configuré ainsi :
+
+- **Aucun contenu de message dans les journaux de Phaseo.** La clé d’API de l’agent ne stocke jamais le contenu des requêtes ni des réponses, ni dans les journaux, ni dans les caches, ni dans la télémétrie, quels que soient les réglages de votre espace de travail. Ses requêtes apparaissent tout de même dans votre utilisation et vos journaux, sans contenu, avec les [libellés de requête](./request-labels.mdx) `app=slack-agent`, `slack_team` et `slack_channel` et le [titre d’application](./app-attribution.mdx) `Phaseo Slack agent`.
+- **Aucun fournisseur qui s’entraîne sur les prompts.** Le [garde-fou](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** désactive l’entraînement sur les modèles payants et gratuits et la publication des prompts : les fournisseurs qui s’entraînent sur les prompts ne sont jamais utilisés. Des fournisseurs qui conservent des journaux sans s’en servir pour l’entraînement peuvent répondre, et peuvent garder le contenu des messages dans ces journaux selon leurs propres règles ; les journaux, caches et la télémétrie de Phaseo ne conservent toujours aucun contenu de message.
+- **Mémoire de travail courte.** Pour chaque fil, l’agent conserve ses réponses récentes, de brèves notes sur les outils utilisés, les messages qui attendent leur tour, les ID (pas le texte) des messages récents du fil pour savoir où reprendre sa lecture, les personnes à qui il a envoyé le bouton de connexion, et les questions qu’il a posées avec leurs réponses. Ils sont supprimés 7 jours après la dernière activité du fil.
+- **Une mémoire que vous pouvez voir et supprimer.** L’agent conserve les notes, épingles, tâches et compétences qu’on lui demande d’enregistrer, rédigées avec ses propres mots et jamais sous forme de copies de messages, avec l’ID Slack de la personne qui l’a demandé. Elles restent jusqu’à ce que quelqu’un les supprime, que la date jusqu’à laquelle elles devaient être conservées soit passée ou que vous désinstalliez l’agent. Les propriétaires et les administrateurs peuvent les voir et les supprimer dans **Paramètres → Slack**, et y désactiver les notes (voir « Mémoire et compétences », plus haut). Les personnes d’autres entreprises ne voient jamais les notes de tout l’espace de travail.
+- **Les fichiers partagés sont lus, pas conservés.** L’agent télécharge les images et PDF qu’il lit pour une réponse et les envoie au modèle avec les requêtes de cette réponse, selon les mêmes règles. Il ne les conserve jamais ; seuls leurs identifiants de fichier Slack et leurs noms restent avec le message jusqu’à la fin de la réponse.
+- **Les résultats de recherche Slack ne sont pas conservés.** Ce que l’agent trouve en cherchant dans Slack est envoyé au modèle avec les requêtes de cette réponse, et nulle part ailleurs : ni dans sa mémoire de travail, ni dans ses journaux, ni dans la base de données de Phaseo, pas même pendant qu’il attend votre réponse à une question. Dès la première recherche d’une réponse, ses requêtes ne vont qu’à des fournisseurs sans conservation des données, si bien que les résultats ne restent pas non plus dans les journaux d’un fournisseur. Pour une réponse qui a cherché, sa mémoire de travail ne garde que les outils qu’il a utilisés et une note indiquant qu’il a répondu, ni ce qu’il a cherché, ni ce qu’il a trouvé, ni ce qu’il a écrit. L’autorisation de Slack de chercher pour vous est conservée avec votre message jusqu’à la fin de la réponse.
+- **Tâches récurrentes.** Pour chaque tâche, l’agent conserve son titre et son instruction, l’endroit où elle publie, sa planification et son fuseau horaire, l’ID Slack de la personne qui l’a créée et le résultat de sa dernière exécution. Elles restent jusqu’à ce que quelqu’un annule ou supprime la tâche, ou que vous désinstalliez l’agent. Les propriétaires et administrateurs peuvent les voir, les mettre en pause et les supprimer dans **Paramètres → Slack**.
+- **Des pages partagées jusqu’à leur expiration.** Une page publiée par l’agent peut reprendre ce qui a été dit dans Slack ou ce qu’il a trouvé, mais jamais des résultats d’une recherche dans Slack. Les pages sont statiques : une page ne peut ni exécuter de scripts ni rien envoyer nulle part. Phaseo conserve la page, son titre, l’ID Slack de la personne qui l’a demandée et le nombre de fois où elle a été ouverte jusqu’à son expiration (après 7, 30 ou 90 jours, selon le choix de vos administrateurs), jusqu’à ce qu’un propriétaire ou un administrateur la supprime ou que vous désinstalliez l’agent. Selon le réglage de la page, toute personne disposant de son lien peut l’ouvrir, ou seulement les membres de votre espace de travail Slack connectés. Les pages n’apparaissent jamais dans les journaux de Phaseo.
+- **Rien n’est archivé.** Phaseo n’archive rien de Slack. Les journaux propres à l’agent ne conservent que des ID et des statuts Slack.
+- **Secrets chiffrés.** Les tokens de bot et les secrets de votre application Slack sont stockés chiffrés et ne sont plus jamais affichés.
+
+La désinstallation supprime la clé d’API de l’agent, ses notes, ses compétences enregistrées et ses tâches récurrentes, et retire son garde-fou. Ses pages partagées sont aussi supprimées, et leurs liens cessent de fonctionner.
+
+## Utiliser votre propre application Slack
+
+Par défaut, l’agent installe l’application Slack de Phaseo. Pour utiliser une application Slack appartenant à votre entreprise, par exemple avec votre propre nom et votre icône, créez-la à partir du manifeste de Phaseo.
+
+<Steps>
+<Step title="Créez l’application à partir du manifeste">
+
+Dans les paramètres d’applications de Slack ([api.slack.com/apps](https://api.slack.com/apps)), choisissez **Create New App**, puis **From a manifest**. Choisissez votre espace de travail Slack et collez le manifeste ci-dessous. Vous pouvez modifier `name`, `description`, `long_description` et `display_name` ; gardez tout le reste. Slack peut indiquer que l’URL de requête n’est pas encore vérifiée. C’est normal jusqu’à l’étape 3.
+
+</Step>
+
+<Step title="Enregistrez l’application dans Phaseo">
+
+Sur la page **Basic Information** de l’application dans Slack, copiez son **App ID**, son **Client ID**, son **Client Secret** et son **Signing Secret**. Dans Phaseo, ouvrez **Paramètres → Slack**, saisissez-les sous **Avancé : utiliser votre propre application Slack** et sélectionnez **Enregistrer l’application Slack**.
+
+</Step>
+
+<Step title="Faites pointer les URL de requête vers votre application">
+
+Dans Slack, ouvrez la page **App Manifest** de l’application. Dans les deux URL de requête, remplacez `YOUR_APP_ID` par l’ID de l’application, par exemple `https://slack.phaseo.app/events/A0123ABCDEF`. Enregistrez, puis vérifiez l’URL de requête quand Slack le demande.
+
+</Step>
+
+<Step title="Installez-la">
+
+Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Application Slack**, puis sélectionnez **Ajouter à Slack**.
+
+</Step>
+</Steps>
+
+```json manifest.json
+{
+  "_metadata": {
+    "major_version": 2,
+    "minor_version": 1
+  },
+  "display_information": {
+    "name": "Phaseo",
+    "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
+    "background_color": "#0069a8",
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. It can also search your Slack workspace's public channels for the person asking, finding only what they can see (searching by meaning needs a Business+ or Enterprise+ Slack plan). Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": true,
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    },
+    "bot_user": {
+      "display_name": "Phaseo",
+      "always_online": true
+    },
+    "agent_view": {
+      "agent_description": "Answers your team's questions with the model your Phaseo workspace chooses. It can search the web, and linked members can ask about Phaseo spend, credits, API key usage and models."
+    }
+  },
+  "oauth_config": {
+    "redirect_urls": [
+      "https://phaseo.app/api/account/settings/slack/oauth/callback",
+      "https://slack.phaseo.app/p/signin"
+    ],
+    "scopes": {
+      "bot": [
+        "app_mentions:read",
+        "assistant:write",
+        "chat:write",
+        "im:history",
+        "channels:history",
+        "groups:history",
+        "users:read",
+        "files:read",
+        "files:write",
+        "search:read.public",
+        "search:read.files"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://slack.phaseo.app/events/YOUR_APP_ID",
+      "bot_events": [
+        "app_mention",
+        "message.im",
+        "agent_session_stopped",
+        "app_uninstalled",
+        "tokens_revoked",
+        "app_home_opened"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://slack.phaseo.app/interactions/YOUR_APP_ID"
+    },
+    "org_deploy_enabled": true,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}
+```
+
+| Paramètre | Valeur |
+| --- | --- |
+| URL de redirection | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
+| URL de requête d’Event Subscriptions | `https://slack.phaseo.app/events/YOUR_APP_ID` |
+| URL de requête d’Interactivity | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
+| Événements de bot | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked`, `app_home_opened` |
+
+Phaseo demande à Slack exactement ces scopes du token de bot lors de l’installation : l’application doit donc tous les avoir.
+
+| Scope | Ce qu’il permet |
+| --- | --- |
+| `app_mentions:read` | Voir les messages qui mentionnent l’agent. |
+| `assistant:write` | Fonctionner comme agent dans Slack, avec un statut et un bouton d’arrêt pendant qu’il répond. |
+| `chat:write` | Publier et diffuser les réponses. |
+| `im:history` | Lire les messages directs envoyés à l’agent. |
+| `channels:history`, `groups:history` | Lire le fil dans lequel il a été mentionné, dans les canaux publics et privés. |
+| `users:read` | Vérifier si une personne est invitée, un bot ou d’une autre organisation. |
+| `files:read` | Lire les images et PDF partagés avec l’agent. |
+| `files:write` | Publier des graphiques et des images dans le fil. |
+| `search:read.public` | Chercher dans les canaux publics pour la personne qui pose la question. |
+| `search:read.files` | Inclure dans ces recherches les fichiers partagés dans les canaux publics. |
+
+Quelques règles pour votre propre application :
+
+- Laissez la rotation des tokens désactivée, comme dans le manifeste. Slack ne peut plus la désactiver une fois activée.
+- Le manifeste utilise l’expérience de messagerie d’agent de Slack (`agent_view`), la seule que Slack propose aux nouvelles applications.
+- Une application Slack peut être connectée à un seul espace de travail Phaseo, et un espace de travail Phaseo peut enregistrer une seule application Slack.
+- Tant que l’agent est installé avec votre application, vous ne pouvez remplacer que ses secrets. Pour passer à une autre application, ou revenir à celle de Phaseo, désinstallez-le d’abord.
+- La deuxième URL de redirection du manifeste, `https://slack.phaseo.app/p/signin`, permet de se connecter avec Slack pour voir les pages partagées avec votre espace de travail Slack. Si vous avez créé votre application à partir d’un manifeste plus ancien, ajoutez-la sur la page **App Manifest** de l’application.
+
+## Mettre en pause ou désinstaller
+
+- **Mettre les réponses en pause**, dans **Paramètres → Slack**, arrête toutes les réponses jusqu’à ce que vous sélectionniez **Reprendre les réponses**. Les personnes qui écrivent à l’agent reçoivent une note privée indiquant qu’il est en pause. Les tâches récurrentes ignorent les exécutions qui arrivent à échéance pendant la pause, puis continuent à leur heure suivante une fois les réponses reprises.
+- **Désinstaller** arrête l’agent immédiatement, supprime sa clé d’API, ses notes, ses compétences enregistrées et ses tâches récurrentes, retire son garde-fou et retire l’application de Slack. Si Slack ne confirme pas le retrait, Phaseo vous le signale, et vous devez aussi retirer l’application dans Slack. Le garde-fou est conservé si vous l’avez ajouté à d’autres clés ou membres.
+- La désinstallation supprime aussi les pages partagées de l’agent, si bien que leurs liens cessent de fonctionner.
+- Retirer l’application dans Slack, ou révoquer son token de bot, la désinstalle de la même façon dans Phaseo.
+
+Les facturations passées restent dans votre historique de facturation. Les personnes qui ont utilisé l’agent pendant le mois où vous le désinstallez sont tout de même facturées à la fin de ce mois. Vous pouvez rajouter l’agent à tout moment.
+
+## Dépannage
+
+Quand l’agent ne peut pas répondre à quelqu’un, il lui répond en privé dans Slack :
+
+| Réponse dans Slack | Pourquoi | Solution |
+| --- | --- | --- |
+| "The Phaseo agent is paused until this workspace's Phaseo bill is paid." | La facturation d’un mois passé attend des crédits (**Paiement en attente**). | Ajoutez des crédits. Les réponses reprennent dans l’heure environ. |
+| "The Phaseo agent is paused in this Slack workspace." | Un administrateur a sélectionné **Mettre les réponses en pause**. | Sélectionnez **Reprendre les réponses**. |
+| "…has answered as many people this month as this workspace's plan covers…" | Le forfait est complet et les nouvelles personnes sont refusées. | Choisissez un forfait supérieur, ou **Passer automatiquement au forfait supérieur**. |
+| "This workspace has reached its Slack agent limit for the month." | Le **Nombre maximal de personnes par mois** est atteint. | Augmentez ou supprimez la limite. |
+| "…has reached this workspace's monthly spending cap…" | La réponse suivante dépasserait le **Plafond de dépenses mensuel**. | Augmentez le plafond, ou attendez le mois suivant. |
+| "You've reached the limit of … answers an hour." | Les **Réponses par personne et par heure** sont atteintes. | Patientez, ou augmentez la limite. |
+| "The Phaseo agent isn't available to guests in this workspace." | **Autoriser les invités** est désactivé. | Activez-le si les invités doivent utiliser l’agent. |
+| "The Phaseo agent only answers people in this organization." | **Autoriser les personnes d’autres entreprises** est désactivé. | Activez-le si ces personnes doivent utiliser l’agent. |
+| "Connect your Phaseo account to use the Phaseo agent here." | L’accès est **Comptes associés uniquement**. | Associez le compte Slack (voir « Associer un compte Slack » plus haut). |
+| "I'm still working through earlier messages in this thread." | 5 messages attendent déjà dans ce fil. | Attendez ces réponses. |
+| "Sorry, I couldn't check your Slack account just now." | Slack n’a pas répondu à une vérification. | Réessayez dans une minute. |
+| "The model chosen for this agent isn't available to the Slack agent." | Le gateway ne peut pas utiliser le modèle de l’agent avec sa clé : **Automatique** sans routage automatique, ou aucun fournisseur du modèle ne respecte le garde-fou **Slack agent**. | Choisissez un autre modèle dans **Paramètres → Slack**. |
+| "…isn't one of the models you can choose here, so I didn't answer." | Le message commençait par `with …:` et nommait un modèle absent de **Choix du modèle**, ou un nom qui correspond à plusieurs modèles autorisés. | Utilisez un modèle de la liste de la réponse, ou retirez `with …:`. |
+| "The model you chose for this message isn't available to the Slack agent." | Le gateway ne peut pas utiliser le modèle choisi avec la clé de l’agent, comme ci-dessus. | Posez la question sans `with …:`, ou remplacez le modèle dans **Choix du modèle**. |
+| "The model this agent uses can't read the files shared here." | Aucun fournisseur du modèle de l’agent ne sait lire les images ou PDF partagés. | Posez la question sans les fichiers, ou choisissez dans **Paramètres → Slack** un modèle qui lit les images. |
+| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | La réponse a cherché dans Slack, et aucun fournisseur du modèle sans conservation des données n’a pu répondre. | Choisissez dans **Paramètres → Slack** un modèle qui ne conserve aucune donnée. Si le message commençait par `with <model>:`, choisissez-y un modèle qui ne conserve aucune donnée, ou retirez-le pour utiliser le modèle de l’agent. |
+| "…so I didn't compare them." ou "Name 2 or 3 different models to compare…" | Le message commençait par `compare …:`, et un modèle n’est pas dans **Choix du modèle**, un nom correspond à plusieurs modèles autorisés, ou il nommait moins de 2 ou plus de 3 modèles différents. | Utilisez 2 ou 3 modèles de la liste de la réponse. |
+| "Comparing models isn't turned on here, so I didn't answer." | Le message commençait par `compare …:` et nommait des modèles du catalogue, mais le choix du modèle est désactivé. | Demandez à un propriétaire ou un administrateur d’activer **Permettre de choisir un modèle par message** sous **Choix du modèle**, ou retirez `compare …:`. |
+
+Si l’agent ne répond pas du tout :
+
+- Dans un canal, vérifiez qu’il en est membre, et mentionnez-le dans chaque message auquel il doit répondre.
+- Il ne répond pas aux messages modifiés, aux bots ni aux autres applications.
+- Avec votre propre application Slack, vérifiez que les deux URL de requête se terminent par l’ID de votre application, que Slack les affiche comme vérifiées et que l’application est enregistrée dans **Paramètres → Slack**.
+
+Si l’installation n’aboutit pas, **Paramètres → Slack** en indique la raison. Les plus fréquentes sont une vérification de confidentialité pas encore faite (ouvrez **Chat** une fois) et un espace de travail Slack qui a déjà l’agent depuis un autre espace de travail Phaseo (désinstallez-le d’abord là-bas).
+
+Si une page partagée ne s’ouvre pas, elle a peut-être expiré ou été supprimée : demandez-en une nouvelle à l’agent. Une page partagée avec votre espace de travail Slack demande une connexion avec Slack ; connectez-vous avec cet espace de travail. Les invités ne peuvent l’ouvrir que tant que **Autoriser les invités** est activé.

@@ -3,9 +3,9 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { liveSessionsRoutes, realtimeSessionsRoutes } from "./realtime-sessions";
 import { LIVE_VOICES } from "@core/live-settings";
 
-const mocks = vi.hoisted(() => ({ auth: {} as any, create: vi.fn(), context: vi.fn(), policy: null as any }));
+const mocks = vi.hoisted(() => ({ auth: {} as any, create: vi.fn(), context: vi.fn(), policy: null as any, cache: undefined as any }));
 vi.mock("../../utils", () => ({ withRuntime: (handler: any) => (c: any) => handler(c.req.raw) }));
-vi.mock("@/runtime/env", () => ({ getBindings: () => ({ CHAT_ROUTE_KEY_SEED: "test-seed" }) }));
+vi.mock("@/runtime/env", () => ({ getBindings: () => ({ CHAT_ROUTE_KEY_SEED: "test-seed", GATEWAY_CACHE: mocks.cache }) }));
 vi.mock("@pipeline/before/guards", () => ({ guardAuth: async () => ({ ok: true, value: mocks.auth }),
 	guardJson: async (req: Request) => ({ ok: true, value: await req.json() }), guardContext: mocks.context }));
 vi.mock("@core/feature-flags", () => ({ isRealtimeVoiceAccessEnabled: async () => true }));
@@ -26,7 +26,7 @@ function post(body: unknown, live = true) {
 	});
 }
 beforeEach(() => {
-	vi.clearAllMocks(); mocks.policy = null;
+	vi.clearAllMocks(); mocks.policy = null; mocks.cache = undefined;
 	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	mocks.auth = { workspaceId, apiKeyId: "key", requestId: "request", authMethod: "api_key",
 		apiKeyKid: Array.from(createHash("sha256").update(`test-seed:kid:${workspaceId}:${userId}:0`).digest())
@@ -41,6 +41,20 @@ it("uses the separate Live route and validates backend availability before reser
 	expect(mocks.context).toHaveBeenCalledWith(expect.objectContaining({ model: "openai/gpt-5.6-luna", capability: "text.generate" }));
 	expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ model: "openai/gpt-live-1", liveBackendModel: "openai/gpt-5.6-luna",
 		source: "chat", relay: true, auth: expect.objectContaining({ userId }) }));
+});
+
+it("creates GPT Live API sessions for an ordinary key, with function tools", async () => {
+	mocks.auth.apiKeyKid = "ordinary-key";
+	const tools = [{ type: "function", name: "get_time", parameters: { type: "object", properties: {} } }];
+	const response = await post({ model: "openai/gpt-live-1", provider: "openai", voice: "cedar", backend_settings: { tools } });
+	expect(response.status).toBe(201);
+	expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ model: "openai/gpt-live-1", source: "api", relay: true,
+		voice: "cedar", liveBackendSettings: expect.objectContaining({ tools }), auth: expect.objectContaining({ userId: null }) }));
+});
+
+it("points GPT Live requests on the Realtime endpoint at the Live endpoint", async () => {
+	const response = await post({ model: "openai/gpt-live-1", provider: "openai" }, false);
+	expect(await response.json()).toMatchObject({ reason: "live_sessions_endpoint_required" });
 });
 
 it("rejects ordinary keys even when they claim to be a playground user", async () => {
@@ -86,4 +100,26 @@ it("passes all built-in voices and validated delegation settings to session crea
 it.each([{ model: "arbitrary" }, { service_tier: "auto" }, { tools: [{ type: "function" }] }, { final_cost_nanos: 0 }])("rejects untrusted nested settings before reserving credit: %j", async (settings) => {
 	expect((await post({ ...request, backend_settings: settings })).status).toBeGreaterThanOrEqual(400);
 	expect(mocks.create).not.toHaveBeenCalled();
+});
+
+it.each([true, false])("refuses new sessions during a realtime maintenance window (live=%s)", async (live) => {
+	const until = new Date(Date.now() + 20 * 60_000).toISOString();
+	mocks.cache = { get: vi.fn(async (key: string) => key === "realtime:maintenance:v1"
+		? { enabled: true, until, message: "Realtime voice is being upgraded." } : null) };
+	const response = await post(live ? request : { model: "openai/gpt-realtime-2.1", provider: "openai" }, live);
+	expect(response.status).toBe(503);
+	const retryAfter = Number(response.headers.get("Retry-After"));
+	expect(retryAfter).toBeGreaterThan(19 * 60);
+	expect(retryAfter).toBeLessThanOrEqual(20 * 60);
+	expect(await response.json()).toMatchObject({ reason: "realtime_maintenance", maintenance_until: until,
+		message: "Realtime voice is being upgraded." });
+	expect(mocks.create).not.toHaveBeenCalled();
+});
+
+it("starts sessions when the maintenance switch is off or can't be read", async () => {
+	mocks.cache = { get: vi.fn(async () => ({ enabled: false })) };
+	expect((await post(request)).status).toBe(201);
+	mocks.cache = { get: vi.fn(async () => { throw new Error("kv unavailable"); }) };
+	const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+	try { expect((await post(request)).status).toBe(201); } finally { error.mockRestore(); }
 });

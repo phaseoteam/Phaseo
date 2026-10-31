@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "mmlu-stem",
-  "benchmark_name": "MMLU-STEM",
-  "category": "chemistry",
-  "ascending_order": null,
-  "type": "numerical",
-  "link": null,
-  "total_models": 1
-}

@@ -4,7 +4,7 @@ description: "Usa claves de API para autenticar cada solicitud a Phaseo Gateway.
 icon: "key-round"
 ---
 
-Crea una clave en el [panel](https://phaseo.app/settings/keys), guárdala en tu servidor y envíala como token de portador en las solicitudes al Gateway.
+Crea una clave con `phaseo keys create --name <name> --json` en la [CLI de Phaseo](../guides/integrations/phaseo-cli) o en el [panel](https://phaseo.app/settings/keys), guárdala en tu servidor y envíala como token de portador en las solicitudes al Gateway. Los agentes deben usar la CLI; consulta [Gestionar Phaseo desde un agente](./manage-from-an-agent).
 
 ---
 
@@ -12,6 +12,7 @@ Crea una clave en el [panel](https://phaseo.app/settings/keys), guárdala en tu 
 
 - **Claves de API de Gateway**: permiten llamar a los endpoints de modelos, proveedores y generaciones disponibles en tu espacio de trabajo.
 - **Claves de API de administración**: permiten llamar a las API de administración. Consulta [Claves de API de administración](./management-api-keys.mdx).
+- **Cargas de trabajo de confianza** (beta): permiten que los despliegues de Vercel y los trabajos de GitHub Actions llamen al Gateway con un token OIDC de corta duración en lugar de una clave guardada. Consulta [Cargas de trabajo de confianza](./trusted-workloads.mdx).
 
 Rota una clave actualizando tu aplicación para usar la nueva antes de invalidar la credencial anterior. Consulta el [endpoint de rotación de claves](../api-reference/endpoint/keys-rotate.mdx).
 

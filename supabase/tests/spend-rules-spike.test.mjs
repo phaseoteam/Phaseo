@@ -30,7 +30,6 @@ const redefined = [
   'private/functions/spend_spike_alert_text.sql',
   'private/functions/evaluate_workspace_spend_rules.sql',
   'public/functions/preview_workspace_spend_rule.sql',
-  'public/functions/sweep_spend_rules.sql',
 ];
 const laterMigrations = migrations.filter((name) => name > migrationName);
 for (const file of redefined) {
@@ -42,7 +41,7 @@ for (const file of redefined) {
   }
   assert(normalize(newest).includes(normalize(await read(`../schemas/${file}`))), `${file} is in the newest migration that defines it`);
 }
-assert.match(migration, /^-- phaseo:allow-destructive-migration reason: /, 'the sweep re-creation is marked as reviewed');
+assert.doesNotMatch(migration, /FUNCTION public.sweep_spend_rules/, 'the sweep is unchanged: spike rules stay in its periodic pass');
 assert.match(await read('../../.github/workflows/declarative-schema.yml'), /node supabase\/tests\/spend-rules-spike\.test\.mjs/, 'CI runs this suite');
 const exported = JSON.parse(await read('../schemas/.pgdelta-export.json'));
 for (const file of ['private/functions/spend_spike_rule_values.sql', 'private/functions/spend_spike_alert_text.sql']) {
@@ -442,7 +441,9 @@ try {
     await assert.rejects(preview(w, gone, NOW), /spend_rule_not_found/);
   }
 
-  // ---- The sweep: spike rules are evaluated on dirty ticks, not in the periodic pass.
+  // ---- The sweep: spike rules are evaluated on dirty ticks and in the periodic pass. Both windows
+  // move with p_now, so a rule can start spiking without new usage (an old baseline window ages
+  // out, or a cooldown ends while spend is still high).
   {
     const w = await workspace('Spike only');
     const S9 = await spikeRule(w, { name: 'Only spike' });
@@ -454,12 +455,10 @@ try {
     const now = new Date((tick + (((slot - (tick % 12)) % 12) + 12) % 12) * 300_000).toISOString();
     assert.equal((await spikeValues(w, now))[0].spiking, true, 'an evaluation would fire');
     await db.exec('delete from public.workspace_spend_rule_dirty');
-    let sweep = (await one('select public.sweep_spend_rules($1::timestamptz, 1000, false) r', [now])).r;
-    assert.equal((await alerts(S9)).length, 0, 'not in the periodic pass: no new usage, no evaluation');
-    await db.query('insert into public.workspace_spend_rule_dirty (workspace_id) values ($1)', [w.ws]);
-    sweep = (await one('select public.sweep_spend_rules($1::timestamptz, 1000, false) r', [now])).r;
-    assert.equal(sweep.dirty, 1, 'marked dirty by new usage');
-    assert.equal((await alerts(S9)).length, 1, 'the dirty pass fires it');
+    const sweep = (await one('select public.sweep_spend_rules($1::timestamptz, 1000, false) r', [now])).r;
+    assert.equal(sweep.dirty, 0, 'no new usage');
+    assert(sweep.periodic >= 1, 'a spike-only workspace is in its periodic slot');
+    assert.equal((await alerts(S9)).length, 1, 'the periodic pass fires it without new usage');
     assert(sweep.events.some((event) => event.rule_id === S9 && event.trigger === 'spike' && event.workspace_id === w.ws));
   }
 

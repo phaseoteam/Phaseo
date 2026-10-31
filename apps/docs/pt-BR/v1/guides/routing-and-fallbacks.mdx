@@ -4,6 +4,8 @@ description: "Como o Gateway seleciona provedores e mantém as solicitações co
 icon: "git-branch"
 ---
 
+import { RoutingCostExplainer } from "/snippets/routing-cost.jsx";
+
 O Phaseo Gateway encaminha cada solicitação para um provedor que pode atender ao modelo escolhido. Quando um provedor está lento, limita a taxa ou retorna erros, o Gateway pode tentar alternativas para que as solicitações sejam concluídas.
 
 ## Escolha um modo de roteamento
@@ -17,7 +19,7 @@ Comece com `balanced`, a menos que um requisito de produção seja claramente ma
 | `latency` | Começar a resposta rapidamente for o principal requisito. |
 | `throughput` | Manter uma alta velocidade de geração de tokens for o mais importante. |
 
-Configure o padrão do espaço de trabalho em **Painel -> Configurações -> Roteamento**. Use predefinições quando um fluxo de trabalho precisar de uma política de provedor ou modelo mais restrita do que o padrão do espaço.
+Configure o padrão do espaço de trabalho em **Painel -> Configurações -> Roteamento**. Use predefinições quando um fluxo de trabalho precisar de uma política de provedor ou modelo mais restrita do que o padrão do espaço. Você também pode configurá-lo com `phaseo settings update --routing-mode <mode>` ou enviando `routing_mode` para `PATCH /v1/settings`.
 
 ### Sufixos de roteamento de modelos
 
@@ -51,6 +53,8 @@ Use `phaseo/auto` quando o modelo precisar se adaptar à carga de trabalho. A Ph
 4. Se quiser, restrinja os modelos elegíveis com padrões como `anthropic/*`, `openai/gpt-5.*` ou um ID de modelo exato.
 5. Escolha se a Phaseo pode tentar os próximos modelos classificados após uma falha que permita nova tentativa.
 6. Salve a configuração.
+
+Para definir as mesmas opções sem o painel, execute `phaseo routing auto update` com `--objective`, `--spend-profile`, `--allowed-patterns` e `--allow-fallbacks`, ou chame `PATCH /v1/routing/auto`. `phaseo routing auto get` mostra a configuração atual.
 
 Assim, os aplicativos podem optar pelo roteador sem copiar a política de roteamento do espaço de trabalho para cada solicitação:
 
@@ -91,6 +95,8 @@ A complexidade do classificador representa a capacidade mínima do modelo provav
 
 Antes da pontuação, todo modelo permitido precisa passar pelas verificações normais de endpoint, modelo do espaço de trabalho, provedor, privacidade, guardrails e disjuntor. Em seguida, o roteador combina benchmarks relevantes do catálogo da Phaseo que não foram informados pelo próprio provedor com os dados atuais de integridade, latência e preços dos provedores Phaseo. A ausência de dados operacionais ou de benchmark é neutra; ela não amplia a lista de permitidos.
 
+Os limites da solicitação sobre para onde os dados podem ir também valem para o Auto. Quando uma solicitação define `provider.require_zero_data_retention: true`, ou o espaço de trabalho ou a guardrail da chave só permite provedores com retenção zero de dados, o roteador só pré-seleciona modelos com um provedor que ofereça isso. As regiões exigidas são verificadas da mesma forma nos provedores de cada candidato. A solicitação do classificador leva os mesmos limites, junto com os provedores de `only` e `ignore`; se o modelo classificador não conseguir cumpri-los, a Phaseo usa o classificador local. Quando os requisitos de residência da solicitação são o que deixa o Auto sem modelo (nenhum modelo que ele considerou os atende), ela falha com `403 model_region_unavailable` e `unmet_requirements`, o mesmo erro que um modelo fixo recebe; se modelos também foram descartados por outros motivos, ela falha com `400 unsupported_model_or_endpoint`.
+
 O campo de resposta `model` identifica o modelo selecionado. Os detalhes da solicitação mostram a carga de trabalho, o objetivo, o modelo selecionado, a ordem das alternativas, as pontuações dos candidatos e dos fatores, os IDs dos benchmarks, as exclusões e a versão do algoritmo. Os rastros de roteamento não incluem o conteúdo da solicitação nem da resposta.
 
 Se as alternativas de modelo estiverem habilitadas no espaço de trabalho, a Phaseo tenta os próximos modelos classificados após respostas `429`, `500`, `502`, `503` ou `504`. Cada alternativa passa novamente por todo o fluxo de políticas e seleção de provedores. Erros do cliente não trocam o modelo.
@@ -115,7 +121,11 @@ O log de solicitações mostra:
 
 Os fatores de pontuação ficam separados do contexto registrado. Um fator de pontuação altera a pontuação final do modo de roteamento ativo. O contexto registrado ajuda a explicar a decisão, mas não necessariamente afeta a pontuação.
 
-No roteamento `balanced`, a Phaseo pontua os provedores elegíveis usando confiabilidade, latência, latência de cauda, throughput, preço e adequação de tokens. O cálculo exibido mostra como cada fator contribuiu para a pontuação final, em vez de apresentar todas as métricas registradas como se fossem igualmente importantes.
+Nas solicitações de texto no modo `balanced` (Chat Completions, Responses e Messages), a Phaseo ordena os provedores elegíveis pelo custo esperado por resposta bem-sucedida. Esse custo soma o que uma solicitação típica do modelo custa no provedor, com base nos tamanhos medidos de prompt e saída do modelo e na taxa medida de acertos de cache do provedor, ao tempo de espera pelo primeiro token e pela resposta completa. Depois, ele é dividido pela taxa de sucesso recente do provedor. Erros do provedor adicionam uma penalidade extra, e limites de taxa uma penalidade menor. Provedores próximos do menor custo dividem a maior parte do tráfego, e cada provedor mantém uma pequena parcela para que a recuperação seja percebida. Para ordenar apenas por preço, envie `provider.sort: "price"`. Os demais endpoints são pontuados por confiabilidade, latência, latência de cauda, throughput, preço e adequação de tokens. O cálculo exibido mostra como cada fator contribuiu para a pontuação final, em vez de apresentar todas as métricas registradas como se fossem igualmente importantes.
+
+Escolha um cenário para ver como o custo por resposta bem-sucedida se divide entre tokens, espera e falhas, e como isso define a parcela de tráfego de cada provedor. Os provedores são exemplos.
+
+<RoutingCostExplainer locale="pt-BR" />
 
 ### Confiabilidade e disponibilidade dos provedores
 
@@ -184,15 +194,17 @@ Em **Painel -> Configurações -> Roteamento**, os espaços de trabalho podem aj
 - `latency`
 - `throughput`
 
+Pela CLI, execute `phaseo settings update --routing-mode <mode>`.
+
 A mesma página também oferece opções dos canais beta e alpha para introduzir tráfego de prévia intencionalmente, em vez de deixá-lo surgir como um efeito colateral de roteamento sem registro.
 
 ### O fallback de BYOK é explícito
 
-Em **Painel -> Configurações -> BYOK**, as equipes podem escolher se uma solicitação <Tooltip tip="Use sua própria chave: a Phaseo roteia a solicitação com sua chave de API do provedor, e o provedor cobra o uso do modelo diretamente.">BYOK</Tooltip> com falha pode usar os créditos da Phaseo como alternativa. Esse é o controle público atual para a dúvida comum: “Minha chave própria falhou; a solicitação ainda deve ser concluída?”
+Em **Painel -> Configurações -> BYOK**, as equipes podem escolher se uma solicitação <Tooltip tip="Use sua própria chave: a Phaseo roteia a solicitação com sua chave de API do provedor, e o provedor cobra o uso do modelo diretamente.">BYOK</Tooltip> com falha pode usar os créditos da Phaseo como alternativa. Esse é o controle público atual para a dúvida comum: “Minha chave própria falhou; a solicitação ainda deve ser concluída?” Agentes podem configurar isso com `byok_fallback_enabled` em `PATCH /v1/settings`, por exemplo `phaseo settings update --body-json '{"byok_fallback_enabled":true}'`, e adicionar chaves de provedor com `phaseo byok create --provider <id> --name <name> --key-stdin`.
 
 ### Rotas dinâmicas associam políticas às chaves de API
 
-Em **Painel -> Configurações -> Roteamento**, crie uma rota dinâmica quando diferentes chaves de API ou classes de solicitação precisarem de comportamentos de provedor distintos. Uma rota pode:
+Em **Painel -> Configurações -> Roteamento**, crie uma rota dinâmica quando diferentes chaves de API ou classes de solicitação precisarem de comportamentos de provedor distintos. Pela CLI, use `phaseo routing dynamic-routes create`, `set-keys` e `deploy`, ou a API `/v1/routing/dynamic-routes`. Uma rota pode:
 
 - ramificar com base em campos aninhados do corpo da solicitação, cabeçalhos, metadados personalizados, endpoint, modelo ou ID da sessão
 - dividir o tráfego por porcentagem para testes A/B e implantações graduais

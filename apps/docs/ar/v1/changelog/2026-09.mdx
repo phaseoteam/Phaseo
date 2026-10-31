@@ -3,253 +3,585 @@ title: "سبتمبر"
 description: "سبتمبر 2026 - Phaseo"
 ---
 
-<Update label="30 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### إصدارات النماذج
+<ChangelogFilters labels={{"product":"المنتج","api":"API وحزم SDK","models":"النماذج"}} clearLabel="مسح" />
+
+<Update label="30 سبتمبر 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 - [Voyage: Rerank 3](https://phaseo.app/models/voyage/rerank-3)
 - [Voyage: Rerank 3 Lite](https://phaseo.app/models/voyage/rerank-3-lite)
 - [Cohere: Embed 5 Pro](https://phaseo.app/models/cohere/embed-v5.0-pro)
 - [Cohere: Embed 5 Fast](https://phaseo.app/models/cohere/embed-v5.0-fast)
 
+</div>
+
 </Update>
 
-<Update label="29 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="29 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- يوجّه `service_tier: "ultrafast"` الطلبات إلى عروض Ultrafast فقط، بدءًا بـ GPT-6 Astra، ويفشل بدلًا من الرجوع إلى مستوى آخر؛ راجع [Service Tiers](../guides/service-tiers.mdx) ([#2624](https://github.com/phaseoteam/Phaseo/pull/2624), [#2663](https://github.com/phaseoteam/Phaseo/pull/2663)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![GPT-6.1 Sol](/images/model-releases/2026-09-29--openai--gpt-6.1-sol.png)
 
-- [OpenAI: GPT-6.1 Sol Pro](https://phaseo.app/models/openai/gpt-6.1-sol-pro)
 - [OpenAI: GPT-6.1 Sol](https://phaseo.app/models/openai/gpt-6.1-sol)
+- [OpenAI: GPT-6.1 Sol Pro](https://phaseo.app/models/openai/gpt-6.1-sol-pro)
 - [Liquid AI: D1 (Free)](https://phaseo.app/models/liquid-ai/d1:free)
 - [Inclusion AI: Ling 3.1 Flash (Free)](https://phaseo.app/models/inclusionai/ling-3.1-flash:free)
 - [Inclusion AI: Ling 3.1 Flash](https://phaseo.app/models/inclusionai/ling-3.1-flash)
 
+</div>
+
 </Update>
 
-<Update label="28 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="28 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تحتاج الطلبات النصية الآن إلى رصيد متاح لا يقل عن $0.10 بدلًا من $1، بينما لا تزال طلبات الفيديو والدُفعات تحتاج إلى $1 ([#2643](https://github.com/phaseoteam/Phaseo/pull/2643)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Claude Sonnet 5.5](/images/model-releases/2026-09-28--anthropic--claude-sonnet-5.5.png)
 
+- [Anthropic: Claude Sonnet 5.5](https://phaseo.app/models/anthropic/claude-sonnet-5.5) أُضيف بمسارات Anthropic وClaude Platform on AWS وAmazon Bedrock وGoogle Vertex. تعرض Anthropic أسعارًا قياسية قدرها $2 لكل مليون رمز إدخال و$10 لكل مليون رمز إخراج.
 - [ElevenLabs: Eleven v4](https://phaseo.app/models/eleven-labs/eleven-v4)
 - [ElevenLabs: Eleven v4 Turbo](https://phaseo.app/models/eleven-labs/eleven-v4-turbo)
-- [Anthropic: Claude Sonnet 5.5](https://phaseo.app/models/anthropic/claude-sonnet-5.5) أُضيف بمسارات Anthropic وClaude Platform on AWS وAmazon Bedrock وGoogle Vertex. تعرض Anthropic أسعارًا قياسية قدرها $2 لكل مليون رمز إدخال و$10 لكل مليون رمز إخراج.
+
+</div>
 
 </Update>
 
-<Update label="23 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="24 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يتسامح البحث العام مع الأخطاء الإملائية ويعرض العناصر الأخيرة، ويبحث مبدّل مساحات العمل في كل مساحاتك مع عرض آخر 50 مساحة استخدمتها أولًا ([#2572](https://github.com/phaseoteam/Phaseo/pull/2572)).
+
+</div>
+
+</Update>
+
+<Update label="23 سبتمبر 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يعثر البحث العام على صفحات التوثيق حسب العنوان والوصف والعناوين الفرعية ويفتحها مباشرة ([#2526](https://github.com/phaseoteam/Phaseo/pull/2526)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Aion 3.5](/images/model-releases/2026-09-23--aion-labs--aion-3.5.png)
 
+- [Aion Labs: Aion 3.5](https://phaseo.app/models/aion-labs/aion-3.5)
 - [Fireworks: Ember-1](https://phaseo.app/models/fireworks/ember-1)
 - [Together: Tev1 4B Experimental](https://phaseo.app/models/together/tev1-4b-experimental)
 - [Google: Gemini 3.8 Flash Lite TTS](https://phaseo.app/models/google/gemini-3.8-flash-lite-tts)
 - [Google: Gemini 3.8 Flash TTS](https://phaseo.app/models/google/gemini-3.8-flash-tts)
 - [Stealth: Space Bunny Alpha](https://phaseo.app/models/stealth/space-bunny-alpha)
-- [Aion Labs: Aion 3.5](https://phaseo.app/models/aion-labs/aion-3.5)
 - [Aion Labs: Aion 3.5 Mini](https://phaseo.app/models/aion-labs/aion-3.5-mini)
+
+</div>
 
 </Update>
 
-<Update label="22 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="22 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- لا تعرض قائمة الاستدلال في Chat إلا مستويات الجهد التي يدعمها النموذج والمزوّد المحددان، وتستبدل الجهد المحفوظ الذي لم يعد صالحًا ([#2496](https://github.com/phaseoteam/Phaseo/pull/2496), [#2503](https://github.com/phaseoteam/Phaseo/pull/2503)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تقبل Responses API القيمة `reasoning.effort: "instant"` للنماذج التي تدعمها ([#2503](https://github.com/phaseoteam/Phaseo/pull/2503)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Claude Opus 5.5](/images/model-releases/2026-09-22--anthropic--claude-opus-5.5.png)
 
+- [Anthropic: Claude Opus 5.5](https://phaseo.app/models/anthropic/claude-opus-5.5)
 - [OpenAI: GPT-6 Sol Pro](https://phaseo.app/models/openai/gpt-6-sol-pro)
 - [OpenAI: GPT-6 Luna Pro](https://phaseo.app/models/openai/gpt-6-luna-pro)
 - [OpenAI: GPT-6 Sol](https://phaseo.app/models/openai/gpt-6-sol)
 - [OpenAI: GPT-6 Luna](https://phaseo.app/models/openai/gpt-6-luna)
-- [Anthropic: Claude Opus 5.5](https://phaseo.app/models/anthropic/claude-opus-5.5)
 - [Upstage: Solar Mini 4](https://phaseo.app/models/upstage/solar-mini-4)
 - [Tencent Hunyuan: Hy Image 3.5 Preview](https://phaseo.app/models/tencent/hy-image-v3.5-preview)
 - [Tencent Hunyuan: Hy Image 3.5 Preview (Free)](https://phaseo.app/models/tencent/hy-image-v3.5-preview:free)
 - [Upstage: Solar Decide](https://phaseo.app/models/upstage/solar-decide)
 
+</div>
+
 </Update>
 
-<Update label="21 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="21 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تضبط **Settings -> Preferences** اللغة وتنسيقات التاريخ والوقت والمنطقة الزمنية وتنسيق الأرقام والكثافة وصفحة البدء وإخفاء البيانات، إضافةً إلى سمات فاتحة وداكنة مخصصة ([#2452](https://github.com/phaseoteam/Phaseo/pull/2452)).
+- يحفظ جدولا Models وAPI Providers ظهور الأعمدة وترتيبها وتثبيتها وكثافتها، ويعرضان مزوّدي كل نموذج في صف واحد ([#2473](https://github.com/phaseoteam/Phaseo/pull/2473)).
+- تضيف أمثلة الشيفرة في Chat الأمر cURL ولغات SDK التسع كلها وقوالب بدء لـ Agent SDK، ويمكنها تبديل الطلبات النصية بين Responses وChat Completions وMessages ([#2468](https://github.com/phaseoteam/Phaseo/pull/2468), [#2469](https://github.com/phaseoteam/Phaseo/pull/2469), [#2487](https://github.com/phaseoteam/Phaseo/pull/2487)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Grok 4.7](/images/model-releases/2026-09-21--spacex-ai--grok-4.7.png)
 
+- [SpaceXAI: Grok 4.7](https://phaseo.app/models/spacex-ai/grok-4.7)
 - [Xiaomi: MiMo V2.6 Flash](https://phaseo.app/models/xiaomi/mimo-v2.6-flash)
 - [Xiaomi: MiMo V2.6 Pro](https://phaseo.app/models/xiaomi/mimo-v2.6-pro)
 - [Jared Palmer: Kev-4B](https://phaseo.app/models/jaredpalmer/kev-4b)
-- [SpaceXAI: Grok 4.7](https://phaseo.app/models/spacex-ai/grok-4.7)
+
+</div>
 
 </Update>
 
-<Update label="20 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="20 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تحتوي كل غرفة في Chat على زر **Code** يحوّل آخر طلب إلى شيفرة TypeScript أو Python، وترتبط تفاصيل كل رد بسجل طلبه ([#2443](https://github.com/phaseoteam/Phaseo/pull/2443), [#2453](https://github.com/phaseoteam/Phaseo/pull/2453)).
+- تعرض روابط النماذج المشتركة في Discord بطاقة باسم النموذج والمختبر ونافذة السياق، مع أزرار للفتح والدردشة والمقارنة واستخدام API ([#2428](https://github.com/phaseoteam/Phaseo/pull/2428), [#2446](https://github.com/phaseoteam/Phaseo/pull/2446)).
+- تعرض جداول مزوّدي النماذج شارات المستويات، وتجمع المسارات الإقليمية والمتخصصة تحت **Additional Routing Options**، وتخفي القوائم الخارجية ما لم تُفعَّل في **Filters** ([#2447](https://github.com/phaseoteam/Phaseo/pull/2447), [#2449](https://github.com/phaseoteam/Phaseo/pull/2449)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 - [StepFun: Step 5 Preview](https://phaseo.app/models/stepfun/step-5-preview)
 - [Qwen: Qwen 3.8 Omni Flash](https://phaseo.app/models/qwen/qwen3.8-omni-flash)
 - [Qwen: Qwen Image 2.1](https://phaseo.app/models/qwen/qwen-image-2.1)
 
+</div>
+
 </Update>
 
-<Update label="18 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="19 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يضيف Chat غرفتي OCR وRerank، وأصبحت غرفتا Video وRealtime متاحتين للجميع ([#2440](https://github.com/phaseoteam/Phaseo/pull/2440), [#2242](https://github.com/phaseoteam/Phaseo/pull/2242)).
+- يضيف Chat غرفة Decisions تختار فيها نوع السؤال لكل رسالة وترى الإجابات مع الاحتمالات والدرجات ([#2429](https://github.com/phaseoteam/Phaseo/pull/2429)).
+- تعرض التصنيفات الاستخدام في جميع علامات تبويب الوسائط الثماني، ويُحمَّل **Weekly Return Rate** مجددًا بدلًا من أن يفشل ([#2439](https://github.com/phaseoteam/Phaseo/pull/2439)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تعيد الاستجابات التي لا تحتوي إلا على الاستدلال الآن `200` مع سبب الانتهاء `length` أو `stop` والاستخدام، بدلًا من الخطأ `502` ([#2432](https://github.com/phaseoteam/Phaseo/pull/2432), [#2435](https://github.com/phaseoteam/Phaseo/pull/2435)).
+
+</div>
+
+</Update>
+
+<Update label="18 سبتمبر 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- **تجريبي:** تجيب `POST /v1/decisions` عن أسئلة مصنّفة من الأنواع `noul` و`choice` و`score` حول حالة التطبيق، بدءًا بـ TypeSafe Jev؛ راجع [Make a decision](../api-reference/endpoint/decisions.mdx) ([#2425](https://github.com/phaseoteam/Phaseo/pull/2425)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 - [SpaceXAI: Grok Voice Transcribe 2.0](https://phaseo.app/models/spacex-ai/grok-voice-transcribe-2.0)
 
+</div>
+
 </Update>
 
-<Update label="17 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="17 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تحفظ جداول السجلات ظهور الأعمدة وترتيبها وتثبيتها وكثافتها، وتعرض تفاصيل الطلب المدة التي استغرقتها Phaseo قبل إرسال الطلب إلى المزوّد ([#2415](https://github.com/phaseoteam/Phaseo/pull/2415)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- **تغيير غير متوافق:** تعيد حزم SDK لـ TypeScript وPython وGo وC# وJava وPHP وRuby `3.0.0` تنسيق كتالوج نماذج Phaseo من نقطة نهاية النماذج؛ حدّث الشيفرة التي تقرأ حقول النماذج ([#1280](https://github.com/phaseoteam/Phaseo/pull/1280)).
+- تضيف حزم SDK `3.0.0` طرق إدارة لمفاتيح API ومفاتيح الإدارة وحواجز الحماية والميزانيات والإعدادات المسبقة والأعضاء وSSO وSCIM والإشعارات وPrivate Models ([#1280](https://github.com/phaseoteam/Phaseo/pull/1280), [#2422](https://github.com/phaseoteam/Phaseo/pull/2422)).
+- يُعدّ Phaseo CLI `0.3.0` وكلاء برمجة مثل OpenCode، ويشغّل Cline وKilo Code وoh-my-pi وMuse Code وMiniMax Code عبر Phaseo؛ راجع [Phaseo CLI](../guides/integrations/phaseo-cli.mdx) ([#2325](https://github.com/phaseoteam/Phaseo/pull/2325), [#2336](https://github.com/phaseoteam/Phaseo/pull/2336), [#1280](https://github.com/phaseoteam/Phaseo/pull/1280)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 - [Unbiased: Pareto 26.9](https://phaseo.app/models/unbiased/pareto)
 - [Google: Antigravity Preview (September 2026)](https://phaseo.app/models/google/antigravity-preview-09-2026)
 
+</div>
+
 </Update>
 
-<Update label="16 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="16 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض صفحات النماذج وصفحة معيار جديدة درجة Capabilities Index من Epoch AI وترتيبه وفترة الثقة وتطوره عبر الزمن ([#2408](https://github.com/phaseoteam/Phaseo/pull/2408)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 - [Stealth: Union Alpha](https://phaseo.app/models/stealth/union-alpha) (متقاعد الآن).
 
+</div>
+
 </Update>
 
-<Update label="15 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="15 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- أصبحت قواعد الخصوصية في Chat والنماذج والمزوّدين تأتي من مساحة العمل النشطة وحدها، بما فيها المساحات الشخصية، وتُحفظ إعدادات الخصوصية مجددًا ([#2400](https://github.com/phaseoteam/Phaseo/pull/2400), [#2403](https://github.com/phaseoteam/Phaseo/pull/2403)).
+- يتطلب تفعيل Auto Top-Up دون مصادقة ثنائية تأكيدًا مكتوبًا، وتعرض الإعدادات الحالية التي تفتقر إليها تحذيرًا ([#2401](https://github.com/phaseoteam/Phaseo/pull/2401)).
+- عاد شراء الرصيد عبر صفحة الدفع في Stripe إلى العمل؛ وكانت عملية الدفع تفشل قبل الوصول إلى Stripe ([#2405](https://github.com/phaseoteam/Phaseo/pull/2405)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- يدير مزوّد Terraform `0.1.0` مفاتيح API وحواجز الحماية وبيانات اعتماد المزوّدين وتعيينات مجموعات SCIM ووجهات المراقبة، ويقرأ النماذج والمزوّدين والرصيد ([#2164](https://github.com/phaseoteam/Phaseo/pull/2164), [#2396](https://github.com/phaseoteam/Phaseo/pull/2396)).
+- تُحتسب حدود مفاتيح API ومفاتيح الإدارة كلٌّ على حدة، ولا تُحتسب إلا المفاتيح النشطة غير المنتهية ([#2399](https://github.com/phaseoteam/Phaseo/pull/2399)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 - [Google: Gemini 3.8 Live](https://phaseo.app/models/google/gemini-3.8-live)
 - [Google: Gemini 3.8 Live Extended Thinking](https://phaseo.app/models/google/gemini-3.8-live-extended-thinking)
 
-</Update>
-
-<Update label="13 سبتمبر 2026" tags={["المنصة"]}>
-
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>المنتج</p>
-
-- تدعم غرف الدردشة الآن اختيار مستوى الخدمة لكل طلب من طلبات Priority وFlex ([#2357](https://github.com/phaseoteam/Phaseo/pull/2357)).
-- تتضمن صفحات النماذج الآن عروضًا تفاعلية لأداء المزوّدين كل ساعة ([#2361](https://github.com/phaseoteam/Phaseo/pull/2361)).
+</div>
 
 </Update>
 
-<Update label="11 سبتمبر 2026" tags={["إصدارات النماذج", "المنصة"]}>
+<Update label="14 سبتمبر 2026">
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>المنتج</p>
+<div data-changelog-category="product">
 
-![GPT Live 1](/images/model-releases/2026-09-14--openai--gpt-live-1.png)
+<p className="changelog-category">المنتج</p>
 
-- [OpenAI: GPT Live 1](https://phaseo.app/models/openai/gpt-live-1) متاح الآن في غرفة دردشة Realtime، مع اختيار صوت مدمج وتفويض Responses قابل للإعداد وبحث ويب اختياري ([#2338](https://github.com/phaseoteam/Phaseo/pull/2338)).
+- يضيف Chat شريط تنقل فيه علامة لكل دورة للانتقال داخل المحادثات الطويلة ([#2385](https://github.com/phaseoteam/Phaseo/pull/2385)).
+- يعطّل منتقي النماذج في Chat النماذج التي تحظرها حواجز الحماية لديك، ويضيف فلتر **Hide Unavailable**، ويضيف النقر مع Ctrl أو ⌘ نماذج إلى المقارنة ([#2389](https://github.com/phaseoteam/Phaseo/pull/2389)).
+- يُحفظ تغيير دولة حسابك مجددًا؛ وكان التغيير يفشل من قبل ([#2392](https://github.com/phaseoteam/Phaseo/pull/2392)).
 
-### إصدارات النماذج
+</div>
+
+</Update>
+
+<Update label="13 سبتمبر 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يتيح Chat اختيار Standard أو Priority أو Flex لكل نموذج ويرسل Priority وFlex بوصفهما `service_tier` ([#2357](https://github.com/phaseoteam/Phaseo/pull/2357)).
+- ترسم بطاقات المزوّدين في صفحات النماذج نسبة التشغيل وزمن الاستجابة والإنتاجية ساعة بساعة لآخر 60 ساعة، مع تمييز الساعات التي لا بيانات فيها ([#2361](https://github.com/phaseoteam/Phaseo/pull/2361)).
+- يعرض Chat الاستدلال أثناء بثّه، وتعرض تفاصيل كل رد الإنتاجية التي قاستها البوابة ورموز الإخراج ومستوى الخدمة ([#2359](https://github.com/phaseoteam/Phaseo/pull/2359), [#2367](https://github.com/phaseoteam/Phaseo/pull/2367)).
+- تصل تنبيهات إهمال النماذج إلى وجهات الإشعارات في مساحة العمل، وتوصي تحذيرات الإهمال بنموذج بديل؛ راجع [Model Deprecation and Retirement](../guides/model-retirement.mdx) ([#2136](https://github.com/phaseoteam/Phaseo/pull/2136)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تستخدم الطلبات التي لا تحدد `service_tier`، أو تحدد `service_tier: "default"`، مسارات Standard، ولا تخدم عروض Flex وحدها إلا الطلبات التي تطلب `flex`؛ راجع [Service Tiers](../guides/service-tiers.mdx) ([#2356](https://github.com/phaseoteam/Phaseo/pull/2356), [#2354](https://github.com/phaseoteam/Phaseo/pull/2354)).
+- تبث الطلبات التي تستخدم أدوات تديرها البوابة نص كل دورة من النموذج واستدعاءات الأدوات فور وصولها بدلًا من إرسالها دفعة واحدة في النهاية ([#2360](https://github.com/phaseoteam/Phaseo/pull/2360), [#2363](https://github.com/phaseoteam/Phaseo/pull/2363)).
+
+</div>
+
+</Update>
+
+<Update label="11 سبتمبر 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تتيح **Settings -> API Keys** البحث باسم المفتاح أو بلصق مفتاح كامل يبقى مخفيًا ([#2344](https://github.com/phaseoteam/Phaseo/pull/2344)).
+- تعرض صفحات النماذج زمن الاستجابة والإنتاجية ونسبة التشغيل للمزوّد منذ أول طلب بدلًا من بعد 20 طلبًا، وترسم معدل التخزين المؤقت لكل مزوّد ([#2339](https://github.com/phaseoteam/Phaseo/pull/2339), [#2341](https://github.com/phaseoteam/Phaseo/pull/2341)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 - [Sakana AI: Fugu Max](https://phaseo.app/models/sakana/fugu-max)
 - [Sakana AI: Fugu Ultra V2](https://phaseo.app/models/sakana/fugu-ultra-v2)
 
+</div>
+
 </Update>
 
-<Update label="10 سبتمبر 2026" tags={["إصدارات النماذج", "المنصة"]}>
+<Update label="10 سبتمبر 2026">
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>المنتج</p>
+<div data-changelog-category="product">
 
-- تتضمن Phaseo CLI الآن تكاملات ومشغّلات لوكلاء البرمجة، بما فيها إعداد OpenCode وإدارته بأمان ([#2325](https://github.com/phaseoteam/Phaseo/pull/2325)).
+<p className="changelog-category">المنتج</p>
 
-### إصدارات النماذج
+- تضيف أقسام معايير النماذج مخططات Artificial Analysis لـ Intelligence وCoding وAgentic وتكلفة التقييم، مع البحث عن النماذج وتعتيم النماذج الأخرى ([#2321](https://github.com/phaseoteam/Phaseo/pull/2321), [#2326](https://github.com/phaseoteam/Phaseo/pull/2326)).
+- تستخدم مخططات سجل الأسعار لون كل مزوّد وترسم مستويات الخدمة بخطوط متصلة أو منقطة أو متقطعة أو شرطة ونقطة، بما يطابق جدول المزوّدين ([#2323](https://github.com/phaseoteam/Phaseo/pull/2323)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Jev 1.13](/images/model-releases/2026-09-10--typesafe--jev-1.13.0.png)
 
 - [TypeSafe: Jev 1.13](https://phaseo.app/models/typesafe/jev-1.13.0)
 - [DeepSeek: DeepSeek V4.1 Flash](https://phaseo.app/models/deepseek/deepseek-v4.1-flash)
 
+</div>
+
 </Update>
 
-<Update label="9 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="9 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تميّز صفحات النماذج المزوّدين الذين يحتاجون إلى مفتاح المزوّد الخاص بك، ويطلب **Use This Model** إضافته أولًا عندما تتطلبه كل المسارات ([#2303](https://github.com/phaseoteam/Phaseo/pull/2303)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Suno V6](/images/model-releases/2026-09-09--suno--suno-v6.png)
 
+- [Suno: Suno V6](https://phaseo.app/models/suno/suno-v6)
 - [Suno: Suno V6 Wild](https://phaseo.app/models/suno/suno-v6-wild)
 - [Suno: Suno V6 Mini](https://phaseo.app/models/suno/suno-v6-mini)
-- [Suno: Suno V6](https://phaseo.app/models/suno/suno-v6)
+
+</div>
 
 </Update>
 
-<Update label="8 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="8 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
 
-- [Nex AGI: Nex N2.5 Max](https://phaseo.app/models/nex-agi/nex-n2.5-max)
+<p className="changelog-category">المنتج</p>
+
+- تبدأ صفحات النماذج وصفحات المعايير والتصنيفات بمؤشرات Intelligence وCoding وAgentic من Artificial Analysis وتكلفة التقييم، مع إظهار الإعداد الذي جرى اختباره ([#2264](https://github.com/phaseoteam/Phaseo/pull/2264)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
+
 ![GPT Image 2.5](/images/model-releases/2026-09-08-08--openai--gpt-image-2.5.png)
 
-- [DeepSeek: DeepSeek V4.1 Flash Preview](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview)
 - [OpenAI: GPT Image 2.5 Flare](https://phaseo.app/models/openai/gpt-image-2.5-flare)
+- [OpenAI: GPT Image 2.5 Sunburst](https://phaseo.app/models/openai/gpt-image-2.5-sunburst)
+- [Nex AGI: Nex N2.5 Max](https://phaseo.app/models/nex-agi/nex-n2.5-max)
+- [DeepSeek: DeepSeek V4.1 Flash Preview](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview)
 - [Nex AGI: Nex N2.5 Mini](https://phaseo.app/models/nex-agi/nex-n2.5-mini)
 - [Nex AGI: Nex N2.5 Pro](https://phaseo.app/models/nex-agi/nex-n2.5-pro)
-- [OpenAI: GPT Image 2.5 Sunburst](https://phaseo.app/models/openai/gpt-image-2.5-sunburst)
+
+</div>
 
 </Update>
 
-<Update label="7 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="7 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض **Settings -> Billing & Credits** اشتراك Enterprise النشط بجانب أرصدة الاستخدام وتتيح إدارته عبر بوابة Stripe ([#2252](https://github.com/phaseoteam/Phaseo/pull/2252)).
+- ترتبط مشتريات الرصيد بإيصال Stripe بدلًا من الفاتورة ([#2256](https://github.com/phaseoteam/Phaseo/pull/2256)).
+- تخفي قائمة مفاتيح API المفاتيح المنتهية افتراضيًا، وتعرض المفاتيح المفعّلة أولًا، وتضيف فلاتر للحالة، وتنقل الإجراءات الجماعية إلى شريط عائم ([#2261](https://github.com/phaseoteam/Phaseo/pull/2261)).
+- يقبل اختبار المفتاح في Settings مفاتيح `phaseo_v1_sk_` الحالية؛ وكانت المفاتيح المنشأة حديثًا تفشل في الاختبار من قبل ([#2251](https://github.com/phaseoteam/Phaseo/pull/2251)).
+- يضم الشريط الجانبي للإعدادات فلترًا يبحث في كل صفحات Account وWorkspace، ويقترح البحث العام صفحات مرتبطة بالصفحة الحالية ([#2259](https://github.com/phaseoteam/Phaseo/pull/2259)).
+- تعرض صفحات النماذج المفتوحة عبر اسم بديل، مثل `openai/gpt-astra-latest`، ذلك الاسم مع التسمية **Alias** بجانب المعرّف الافتراضي ([#2226](https://github.com/phaseoteam/Phaseo/pull/2226)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- يعمل توفير SCIM من Okta الآن؛ إذ تقبل Phaseo السمات `password` و`groups` و`id` و`meta` التي يرسلها Okta ولا تخزّنها ([#2240](https://github.com/phaseoteam/Phaseo/pull/2240)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Mercury 2.5](/images/model-releases/2026-09-07--inception--mercury-2.5.png)
 
 - [Inception: Mercury 2.5](https://phaseo.app/models/inception/mercury-2.5)
 
+</div>
+
 </Update>
 
-<Update label="4 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="4 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- يمكن لمساحات العمل إضافة نقطة نهاية مخصصة أو مستضافة ذاتيًا متوافقة مع OpenAI بوصفها Private Model لا يراها إلا الأعضاء ويستدعونها بمعرّف النموذج؛ راجع [Connect Dedicated Model Deployments](../guides/private-models.mdx) ([#2201](https://github.com/phaseoteam/Phaseo/pull/2201)).
+- تجمع جداول أسعار النماذج مستويات الخدمة لكل مزوّد في صف واحد، وعند الفرز حسب عمود يظهر كل مستوى في صف مستقل ([#2198](https://github.com/phaseoteam/Phaseo/pull/2198)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 - [Microsoft: MAI-Image-2.6-Flash](https://phaseo.app/models/microsoft/mai-image-2.6-flash)
 - [Microsoft: MAI-Image-2.6](https://phaseo.app/models/microsoft/mai-image-2.6)
 
+</div>
+
 </Update>
 
-<Update label="3 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="3 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تُبقي نقطتا النهاية الإقليميتان `eu.api.phaseo.app` و`us.api.phaseo.app` طلبات Chat Completions وResponses وMessages على مسارات مزوّدين في الاتحاد الأوروبي أو الولايات المتحدة؛ راجع [Route text requests by region](../guides/regional-routing.mdx) ([#2165](https://github.com/phaseoteam/Phaseo/pull/2165), [#2171](https://github.com/phaseoteam/Phaseo/pull/2171)).
+- تقبل أدوات الدوال والأدوات المخصصة `async: true` في Chat Completions وResponses وMessages؛ ترسله Phaseo إلى OpenAI وتحذفه مع المزوّدين الآخرين ([#2193](https://github.com/phaseoteam/Phaseo/pull/2193), [#2194](https://github.com/phaseoteam/Phaseo/pull/2194)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![GPT-6 Astra](/images/model-releases/2026-09-03--openai--gpt-6-astra.png)
 
+- [OpenAI: GPT-6 Astra](https://phaseo.app/models/openai/gpt-6-astra)
 - [Inclusion AI: Ling 3.0 Flash Sante](https://phaseo.app/models/inclusionai/ling-3.0-flash-sante)
 - [Inclusion AI: Ling 3.0 Flash VL](https://phaseo.app/models/inclusionai/ling-3.0-flash-vl)
 - [Microsoft: MAI-Transcribe-2](https://phaseo.app/models/microsoft/mai-transcribe-2)
 - [OpenAI: GPT-6 Astra Pro](https://phaseo.app/models/openai/gpt-6-astra-pro)
-- [OpenAI: GPT-6 Astra](https://phaseo.app/models/openai/gpt-6-astra)
+
+</div>
 
 </Update>
 
-<Update label="2 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="2 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Muse Spark 1.3](/images/model-releases/2026-09-02--meta--muse-spark-1.3.png)
 
+- [Meta: Muse Spark 1.3](https://phaseo.app/models/meta/muse-spark-1.3)
 - [Meta: Muse Spark 1.3 Contributor](https://phaseo.app/models/meta/muse-spark-1.3-contributor)
 - [Google: Gemini 3.8 Flash](https://phaseo.app/models/google/gemini-3.8-flash)
-- [Meta: Muse Spark 1.3](https://phaseo.app/models/meta/muse-spark-1.3)
 - [Qwen: Qwen 3.8 Max 0902](https://phaseo.app/models/qwen/qwen3.8-max-0902)
+
+</div>
 
 </Update>
 
-<Update label="1 سبتمبر 2026" tags={["إصدارات النماذج"]}>
+<Update label="1 سبتمبر 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- يقبل `phaseo:web_search` الآن `engine: "tinyfish"` للبحث عبر TinyFish، مع تلميحات اللغة وصفحات النتائج وفلاتر النطاقات المشتركة؛ راجع [Web Search Server Tool](../guides/server-tools/web-search.mdx) ([#2124](https://github.com/phaseoteam/Phaseo/pull/2124)).
+- لم يعد تسجيل الدخول عبر OAuth من التطبيقات الأصلية التي تستخدم رد اتصال loopback على منفذ عشوائي، مثل وكلاء البرمجة المتصلين بخادم MCP، يفشل بالخطأ `invalid_client` ([#2129](https://github.com/phaseoteam/Phaseo/pull/2129)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Claude Fable 5.1](/images/model-releases/2026-09-01--anthropic--claude-fable-5.1.png)
 
-- [Meta: Muse Voice Transcribe 1.0](https://phaseo.app/models/meta/muse-voice-transcribe-1.0)
 - [Anthropic: Claude Fable 5.1](https://phaseo.app/models/anthropic/claude-fable-5.1)
+- [Meta: Muse Voice Transcribe 1.0](https://phaseo.app/models/meta/muse-voice-transcribe-1.0)
+
+</div>
 
 </Update>

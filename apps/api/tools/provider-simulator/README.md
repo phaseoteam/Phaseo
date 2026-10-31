@@ -1,17 +1,39 @@
 # Provider simulator
 
-An offline harness that pushes client requests through the gateway's real code path for every
+A harness that pushes client requests through the gateway's real code path for every
 registered text provider, captures the exact upstream HTTP request, and feeds synthesised provider
 responses back through the real response, usage and pricing path. It shows where fields are
 dropped, renamed, mistranslated or invented, and where usage is lost or billed wrongly.
 
-Nothing here calls a model provider or the Phaseo API. The only networked part is
-`scripts/refresh-specs.ts`, which downloads public API spec documents.
+Nothing here calls a model provider or the Phaseo API. Two parts use the network:
+`scripts/refresh-specs.ts`, which downloads public API spec documents, and `src/catalogue.ts`,
+which reads routes, capability params and price cards from the catalogue database (SELECTs only).
+
+## Catalogue database
+
+The simulator prices and routes with the rows production uses: `v2_model_provider_routes`,
+`v2_route_capabilities`, `v2_pricing_skus` and `v2_pricing_sku_meters`. Every `*.sim.ts` run
+and `simulate:providers:expectations` load them once per process (`loadCatalogue()`) and fail with
+a clear message when credentials are missing. Set, in the environment, `apps/api/.dev.vars`,
+`apps/api/.env.local` or `apps/web/.env.local`:
+
+- `SUPABASE_URL` (or `NEXT_PUBLIC_SUPABASE_URL`), and
+- `SUPABASE_SERVICE_ROLE_KEY`. Without it the public `NEXT_PUBLIC_SUPABASE_ANON_KEY` is used, and
+  row-level security then hides internal and stealth routes and SKUs not in effect now.
+
+Price cards are shaped by the gateway's own code (`buildPriceCardFromSkuRows` in
+`pipeline/pricing/sku-card.ts`, which `loadPriceCard` uses), and the pricing sweep shapes them like the request-context RPC
+(`pricing/catalogue-cards.ts`). Expectations name a price by its database identity: the route
+ids and SKU codes of the card, and rule ids `<sku_code>@v<version>#<meter_key>`.
+
+The simulator's unit tests (`simulate:providers:test`, run in CI) need no credentials: they serve
+a small route and price-card fixture (`__tests__/catalogue-fixture.ts`).
 
 ## Run it
 
 ```sh
-# Every registered text provider, then the expected-outcome gate (about 45 minutes, one process, no network).
+# Every registered text provider, then the expected-outcome gate (about 45 minutes, one process;
+# the only network access is the catalogue read).
 # Exits non-zero when a mismatch is not on expectations/allowlist.json; SIM_NO_GATE=1 only writes the reports.
 pnpm --filter @phaseo/gateway-api simulate:providers
 
@@ -21,11 +43,11 @@ SIM_PROVIDERS=anthropic,openai,groq pnpm --filter @phaseo/gateway-api simulate:p
 # Write somewhere other than results/
 SIM_RESULTS_DIR=/tmp/sim pnpm --filter @phaseo/gateway-api simulate:providers
 
-# The simulator's own tests (also part of the api vitest suite)
+# The simulator's own tests (no credentials needed)
 pnpm --filter @phaseo/gateway-api simulate:providers:test
 
 # Refresh the cached provider specs (network: GETs of public spec documents only), then regenerate
-# the per-provider expectation facts from them
+# the per-provider expectation facts from them (provider ids come from the catalogue database)
 pnpm --filter @phaseo/gateway-api simulate:providers:refresh-specs [provider-id ...]
 pnpm --filter @phaseo/gateway-api simulate:providers:expectations
 
@@ -128,8 +150,8 @@ or its API reference); four finish reasons and a refusal; and HTTP and mid-strea
 clients go through `passthroughWithPricing` with a copy of production's frame rewriter
 (`pipeline/after/stream.ts:247-349`) and its finalisation rules; buffered clients go through
 `consumeTextProtocolStreamToIR`, `encodeProtocol`, `enrichSuccessPayload` and the non-stream
-pricing of `pipeline/after/index.ts:437-486`. Pricing uses the route's real rows from
-`packages/data/catalog/src/data/pricing` and a synthetic card with every meter, so meters that
+pricing of `pipeline/after/index.ts:437-486`. Pricing uses the route's real price card from
+the catalogue database and a synthetic card with every meter, so meters that
 usage normalisation never produced are visible even where the catalogue has no row.
 
 Usage values are distinct sentinels (input 100,003; cached 20,011; cache write 3,019 = 1,013 + 2,006;
@@ -153,8 +175,9 @@ reads and writes; Anthropic input excludes both; Gemini thinking tokens are outp
 
 ## Limits
 
-- Catalogue rows come from the archived fixtures in `packages/data/catalog/src/data`; the database
-  owns live rows, so a route or price fixed in the database since the snapshot can still show here.
+- Catalogue rows are read from the database at run time, so results follow catalogue edits; runs on
+  different days can differ for that reason alone. The sweep clock (`SIM_PRICING_NOW`, default the
+  start of the run) is recorded in each expectations file.
 - Hand-written schemas check top-level keys only.
 - Synthesised responses follow each spec's schemas and documented usage fields, but a provider's
   real behaviour can differ from its documentation. Findings that depend on that are marked

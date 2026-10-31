@@ -84,8 +84,6 @@ const MODEL_API_GLOBAL_TAGS = [
 	"gateway-supported-models",
 	"frontend:monitor-models",
 	"frontend:free-router-overview",
-	"monitor-history",
-	"frontend:monitor-history",
 	"frontend:api-providers",
 	"frontend:api-provider-models",
 	"frontend:api-provider-top-apps",

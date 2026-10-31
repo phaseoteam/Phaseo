@@ -11,7 +11,7 @@ Utilisez ce guide pour conserver votre flux de travail avec le SDK Anthropic tou
 
 | Paramètre | Avant | Après |
 | --- | --- | --- |
-| URL de base | Valeur par défaut d’Anthropic | `https://api.phaseo.app/v1` |
+| URL de base | Valeur par défaut d’Anthropic | `https://api.phaseo.app` |
 | Clé API | Clé Anthropic | `PHASEO_API_KEY` |
 | Modèle | Nom de modèle Anthropic | Identifiant de modèle Phaseo renvoyé par `GET /v1/models` |
 | Appel Messages | Appel SDK existant | Généralement inchangé |
@@ -19,21 +19,22 @@ Utilisez ce guide pour conserver votre flux de travail avec le SDK Anthropic tou
 <Steps>
 <Step title="Créez une clé API Phaseo">
 
-Créez une clé dans [Clés Gateway](https://phaseo.app/settings/keys) et fournissez-la à votre application sous le nom `PHASEO_API_KEY`.
+Créez une clé avec `phaseo keys create` dans la [CLI Phaseo](../guides/integrations/phaseo-cli) ou dans [Clés Gateway](https://phaseo.app/settings/keys) et fournissez-la à votre application sous le nom `PHASEO_API_KEY`.
 
 </Step>
 
 <Step title="Mettez à jour le client Anthropic">
 
-Configurez le SDK avec l’URL de base Phaseo et votre clé Phaseo.
+Configurez le SDK avec l’hôte racine de Phaseo, `https://api.phaseo.app`, et transmettez votre clé Phaseo via `authToken` (`auth_token` en Python). Le SDK ajoute lui-même `/v1/messages` et envoie la clé dans `Authorization: Bearer`. Supprimez `ANTHROPIC_API_KEY` des environnements qui appellent désormais Phaseo, afin que les anciennes versions du SDK n’envoient pas aussi votre clé Anthropic.
 
 <CodeGroup>
 ```typescript TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 
 const response = await client.messages.create({
@@ -48,8 +49,8 @@ import os
 import anthropic
 
 client = anthropic.Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    auth_token=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
 )
 
 response = client.messages.create(
@@ -89,7 +90,7 @@ Comparez un ensemble représentatif de prompts avec les deux configurations. Vé
 ## Liste de contrôle de la migration
 
 - La clé Phaseo est configurée dans chaque environnement de déploiement.
-- Le client Anthropic pointe vers `https://api.phaseo.app/v1`.
+- Le client Anthropic pointe vers `https://api.phaseo.app`.
 - Chaque identifiant de modèle de production a été vérifié avec `GET /v1/models`.
 - Le streaming et les appels d’outils fonctionnent en préproduction.
 - Les en-têtes bêta et paramètres propres à Anthropic ont été examinés.

@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Linking from "expo-linking";
 import { KeyRound } from "lucide-react-native";
-import { Alert, RefreshControl, ScrollView } from "react-native";
-import { Button, EmptyState, ErrorState, Header, LoadingState, ReadableWidth, Row, Screen, Text } from "@/components/ui";
+import { RefreshControl, ScrollView } from "react-native";
+import { Button, confirm, EmptyState, ErrorState, Header, LoadingState, ReadableWidth, Row, Screen, Text, toast, toastError } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { getKeys, revokeKey, type GatewayKey } from "@/lib/api/account";
 import { WEB_ORIGIN } from "@/lib/config";
-import { formatRelativeDay } from "@/lib/format";
+import { formatCalendarDate } from "@/lib/format";
 
 export function KeysScreen({ workspaceId }: { workspaceId: string }) {
   const { split } = useLayout();
@@ -14,14 +14,17 @@ export function KeysScreen({ workspaceId }: { workspaceId: string }) {
   const keys = useQuery({ queryKey: ["account", workspaceId, "keys"], queryFn: () => getKeys(workspaceId) });
   const revoke = useMutation({
     mutationFn: (key: GatewayKey) => revokeKey(workspaceId, key.id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["account", workspaceId, "keys"] }),
-    onError: (error) => Alert.alert("Couldn't revoke the key", error instanceof Error ? error.message : "Try again."),
+    onSuccess: (_, key) => {
+      toast(`${key.name ?? "The key"} was revoked.`, { tone: "success" });
+      void queryClient.invalidateQueries({ queryKey: ["account", workspaceId, "keys"] });
+    },
+    onError: (error) => toastError("Couldn't revoke the key", error),
   });
 
-  const confirm = (key: GatewayKey) => Alert.alert(`Revoke ${key.name ?? "this key"}?`, "Apps using it stop working straight away. This can't be undone.", [
-    { text: "Cancel", style: "cancel" },
-    { text: "Revoke", style: "destructive", onPress: () => revoke.mutate(key) },
-  ]);
+  const askToRevoke = async (key: GatewayKey) => {
+    const ok = await confirm({ title: `Revoke ${key.name ?? "this key"}?`, body: "Apps using it stop working straight away. This can't be undone.", confirmLabel: "Revoke", destructive: true });
+    if (ok) revoke.mutate(key);
+  };
 
   return (
     <Screen>
@@ -38,8 +41,8 @@ export function KeysScreen({ workspaceId }: { workspaceId: string }) {
                   key={key.id}
                   icon={KeyRound}
                   title={key.name ?? "Unnamed key"}
-                  subtitle={[key.prefix ? `${key.prefix}…` : null, key.last_used_at ? `Used ${formatRelativeDay(key.last_used_at).toLowerCase()}` : "Never used", key.status && key.status !== "active" ? key.status : null].filter(Boolean).join(" · ")}
-                  onPress={() => confirm(key)}
+                  subtitle={[key.prefix ? `${key.prefix}…` : null, key.last_used_at ? `Used ${formatCalendarDate(key.last_used_at)}` : "Never used", key.status && key.status !== "active" ? key.status : null].filter(Boolean).join(" · ")}
+                  onPress={() => void askToRevoke(key)}
                   chevron={false}
                   last={index === keys.data.length - 1}
                 />

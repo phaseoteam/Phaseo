@@ -126,7 +126,7 @@ Pour un contexte récurrent, placez la partie stable du prompt dans des blocs po
 }
 ```
 
-`prompt_cache_breakpoint` met en cache tout ce qui précède, son bloc compris. Un `cache_control` sur un bloc, comme `{"type": "ephemeral"}`, fonctionne aussi : Phaseo l’envoie à GPT-5.6 sous la forme `prompt_cache_breakpoint`. Les deux marques atteignent Claude comme point d’arrêt de cache, si bien qu’un repli sur Claude bénéficie toujours du cache. En mode `explicit`, OpenAI ne met en cache que les points d’arrêt que vous placez, et `30m` est le seul `ttl` accepté. Phaseo n’envoie pas `prompt_cache_retention` à GPT-5.6. Voir [Mise en cache des prompts](../guides/prompt-caching.mdx#openai-retention-and-options).
+`prompt_cache_breakpoint` met en cache tout ce qui précède, son bloc compris. Un `cache_control` sur un bloc, comme `{"type": "ephemeral"}`, fonctionne aussi : Phaseo l’envoie à GPT-5.6 sous la forme `prompt_cache_breakpoint`. Les deux marques atteignent Claude comme point d’arrêt de cache, si bien qu’un repli sur Claude bénéficie toujours du cache. En mode `explicit`, OpenAI ne met en cache que les points d’arrêt que vous placez. Le `ttl` vaut `30m` (par défaut) ou `12h` ; OpenAI n’accepte `12h` que sur son API Responses, voir [Cache de 12 heures chez OpenAI](../guides/prompt-caching.mdx#12-hour-cache-on-openai). Phaseo n’envoie pas `prompt_cache_retention` à GPT-5.6. Voir [Mise en cache des prompts](../guides/prompt-caching.mdx#openai-retention-and-options).
 
 ## Points à tester
 

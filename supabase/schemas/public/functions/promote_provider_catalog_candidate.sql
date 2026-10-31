@@ -232,6 +232,26 @@ begin
       metadata = public.v2_route_capabilities.metadata || excluded.metadata, updated_at = now();
   end loop;
 
+  -- Rich provider claims are retained separately; never enable execution or billing from them.
+  update public.v2_model_provider_routes route set metadata=route.metadata || jsonb_build_object(
+    'catalog_declarations',jsonb_build_object('status','stored_for_review',
+      'model',(select snapshot.metadata->'declarations' from public.provider_catalog_sync_models snapshot
+        where snapshot.run_id=candidate.run_id and snapshot.model_slug=candidate.submitted_model_slug),
+      'offer',tier_offer->'declarations','sourceRunId',candidate.run_id))
+  where route.provider_model_id=provider_model_id_value;
+
+  -- Feed-owned declarations are replaceable, including omission and version downgrade.
+  -- Keep the management marker after withdrawal to prevent provider-default Yes fallback.
+  -- Offers that have never declared a policy keep inheriting the provider default.
+  update public.v2_route_capabilities cap set metadata = cap.metadata || jsonb_build_object(
+    'catalog_data_policy', jsonb_build_object('declaration', (
+      select value from jsonb_array_elements(coalesce(nullif(tier_offer->'dataPolicy','null'::jsonb)->'capabilities','[]'::jsonb))
+      where value->>'id'=cap.capability_id limit 1),
+      'sourceRunId',candidate.run_id,'catalogUrl',source.catalog_url,'managementMode',source.management_mode))
+  from public.provider_catalog_sources source
+  where cap.provider_model_id=provider_model_id_value and source.provider_slug=candidate.provider_slug
+    and (nullif(tier_offer->'dataPolicy','null'::jsonb) is not null or cap.metadata ? 'catalog_data_policy');
+
   insert into public.v2_route_variants (
     provider_model_id, variant_key, service_tier_slug, status,
     routing_enabled, endpoint_label, metadata, updated_at

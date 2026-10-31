@@ -37,10 +37,10 @@ describe("notification management validation", () => {
 	});
 
 	it("routes the spend rule notification kinds", () => {
-		for (const kind of ["spend_alert", "spend_blocked", "spend_report", "rate_limit_throttled"]) expect(isNotificationEventKind(kind)).toBe(true);
+		for (const kind of ["spend_alert", "spend_blocked", "spend_report", "rate_limit_throttled", "broadcast_destination_failing"]) expect(isNotificationEventKind(kind)).toBe(true);
 		expect(isNotificationEventKind("notification_test")).toBe(false);
 		expect(isNotificationEventKind("spend_alerts")).toBe(false);
-		expect(EVENT_KINDS).toHaveLength(9);
+		expect(EVENT_KINDS).toHaveLength(10);
 	});
 
 	it("accepts IANA billing time zones only", () => {

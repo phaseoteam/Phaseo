@@ -277,3 +277,63 @@ Useful optional environment:
 Results are written to:
 
 - `apps/api/reports/provider-live/provider-endpoint-matrix-<timestamp>.json`
+
+## Broadcast Destinations
+
+`broadcast-destinations.live.spec.ts` sends four realistic gateway events through the Broadcast queue consumer to each configured destination, then reads back what was stored. Only Supabase and the queue are faked; payload rendering, batching, signing and the HTTP requests are the production code. The four events are:
+
+- a chat completion with trace metadata;
+- a streamed tool call in the same trace;
+- a request too large for one row;
+- a rate-limited request.
+
+Each destination is tested twice: once with every option on, and once with privacy mode on and the cost and identity groups off.
+
+It checks:
+
+- delivery and the health result;
+- the row columns;
+- prompt content, cost and identity fields present or absent per the destination's settings;
+- `metadata.trace_id`, `parent_span_id` and `trace_name`;
+- the error span;
+- the 512 KB row cap and the 64,000-character OTLP attribute cap;
+- webhook signatures, using the verification code from the docs;
+- what a resent batch writes.
+
+A fault server also checks which HTTP statuses are retried, and that `Retry-After` sets the delay.
+
+Run everything that works on one machine:
+
+```bash
+OTELCOL=path/to/otelcol VERSITYGW=path/to/versitygw pnpm --filter @phaseo/gateway-api test:live:broadcast [destinations.json]
+```
+
+- `otelcol` is the [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-releases/releases) core build.
+- `versitygw` is the [Versity S3 gateway](https://github.com/versity/versitygw/releases), which checks request signatures.
+- Either can be left unset to skip its destinations.
+- The report is written to `$BROADCAST_SMOKE_DIR/out/report.txt`.
+
+`destinations.json` adds real destinations. Keep it outside the repo:
+
+```json
+{ "destinations": [
+  { "name": "r2", "type": "r2", "config": { "account_id": "…", "bucket": "phaseo-smoke", "access_key_id": "…", "secret_access_key": "…" } },
+  { "name": "clickhouse", "type": "clickhouse", "config": { "endpoint": "https://….clickhouse.cloud:8443", "username": "default", "password": "…", "table": "phaseo_traces" } },
+  { "name": "langfuse", "type": "langfuse", "config": { "…": "…" } }
+] }
+```
+
+`config` takes the same keys as `POST /observability/destinations` (see the "Config keys by type" table in the docs). Rows written to object storage, ClickHouse and Snowflake are deleted afterwards; set `"cleanup": false` to keep them. BigQuery can't delete streamed rows for up to 90 minutes, so the report names the run ID to delete later.
+
+Readback uses the destination's own credentials, so give the test accounts these permissions on top of what Broadcast needs:
+
+| Type | Readback and cleanup permissions |
+| --- | --- |
+| `s3` | `s3:GetObject`, `s3:ListBucket`, `s3:DeleteObject` |
+| `r2` | An "Object Read & Write" token for the bucket |
+| `gcs` | An HMAC key for a service account with Storage Object Admin on the bucket |
+| `clickhouse` | `SELECT` and `ALTER DELETE` on the table |
+| `bigquery` | BigQuery Job User on the project, as well as Data Editor on the dataset |
+| `snowflake` | `SELECT` and `DELETE` on the table |
+
+OpenTelemetry vendors have no readback. The report names each run's trace (`smoke <run>-<name>-<variant>`) so you can find it in the vendor's UI.

@@ -15,6 +15,10 @@ icon: "bell-ring"
 5. اختر **إرسال اختبار** لكل قناة تم إعدادها.
 6. أنشئ الوجهات بعد نجاح جميع الاختبارات.
 
+من CLI، نفّذ `phaseo notifications destinations create`، واختبر الوجهة باستخدام `phaseo notifications destinations test <id>`، ثم اختر التنبيهات التي تتلقاها باستخدام `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+
+تحصل الـ webhooks المخصصة على سر توقيع عند إنشائها. انسخه من مربع الحوار الذي يظهر؛ فهو يُعرض مرة واحدة فقط.
+
 يدعم Phaseo:
 
 - عناوين البريد الإلكتروني وقوائم التوزيع
@@ -65,3 +69,72 @@ icon: "bell-ring"
 استخدم **إرسال اختبار** بجانب وجهة موجودة بعد تبديل بيانات الاعتماد أو تغيير إعداد القناة. أزل الوجهات التي لم تعد خاضعة للمراقبة حتى لا تبدو التنبيهات وكأنها تُرسل إلى قناة مهجورة.
 
 يجب أن تستخدم webhooks المخصصة HTTPS وأن تتحقق من الطلب قبل معالجته. أعد استجابة نجاح بسرعة وانقل المهام الأبطأ إلى مهمة تعمل في الخلفية.
+
+## التحقق من تواقيع webhook
+
+توقّع Phaseo كل عملية تسليم إلى webhook مخصص، بما في ذلك الاختبارات المرسلة من وجهة محفوظة، بالطريقة نفسها المستخدمة في [webhooks الفيديو والدُفعات](./async-video-and-batch.mdx). يحمل كل طلب هذه الترويسات:
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` هو HMAC-SHA256 بالنظام الست عشري لقيمة `x-phaseo-timestamp` ثم نقطة حرفية (`.`) ثم **نص الطلب دون تعديل**، باستخدام سر توقيع الوجهة (`whsec_…`) مفتاحًا. تكون قيمة `x-phaseo-timestamp` بثواني Unix.
+
+للتحقق من عملية تسليم:
+
+1. اقرأ نص الطلب الخام قبل تحليله بصيغة JSON.
+2. أعد حساب التوقيع وقارنه في زمن ثابت.
+3. ارفض الطوابع الزمنية التي تختلف عن ساعتك بأكثر من خمس دقائق.
+4. أزل التكرار باستخدام `x-phaseo-event-id`. تُعاد محاولة عمليات التسليم الفاشلة، وتُوقَّع كل محاولة من جديد بطابع زمني جديد.
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody هو نص الطلب كما استُلم تمامًا، كسلسلة نصية.
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body هو نص الطلب كما استُلم تمامًا، كبايتات.
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### إنشاء سر أو تدويره
+
+يُعرض السر مرة واحدة فقط عند إنشاء الوجهة. لاستبداله، اختر **تدوير السر** بجانب الوجهة في **الإعدادات ← الإشعارات**، أو استدعِ [`POST /v1/notifications/destinations/{id}/rotate-secret`](/ar/v1/api-reference/endpoint/notifications-destination-rotate-secret). تُوقَّع عملية التسليم التالية بالسر الجديد ويتوقف السر القديم عن العمل، لذا حدّث جهة الاستقبال فورًا.
+
+الـ webhooks المخصصة التي أُنشئت قبل توفر التوقيع ليس لها سر وما زالت تُسلَّم دون توقيع. تظهر في الإعدادات بعلامة **غير موقّع**. اختر **إنشاء سر**، وأضف السر إلى جهة الاستقبال، ثم أرسل اختبارًا للتحقق. الاختبارات المرسلة من لوحة **إضافة وجهة** قبل حفظ الوجهة غير موقّعة لأنه لا يوجد سر بعد.
+
+لا تُوقَّع وجهات البريد الإلكتروني وSlack وDiscord وMicrosoft Teams: فهذه الخدمات تصادق على عنوان webhook أو رمز البوت بنفسها.

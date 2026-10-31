@@ -128,37 +128,36 @@ async function syncAgentRustDependencyVersion(version: string): Promise<void> {
   await syncCargoLockPackageVersion("agent-sdk-rust", "phaseo", version);
 }
 
-async function syncTypeScriptTelemetryVersion(version: string): Promise<void> {
-  const sdkRoot = path.join(ROOT, "packages", "sdk", "sdk-ts", "src");
-  const indexPath = path.join(sdkRoot, "index.ts");
-  const telemetryPath = path.join(sdkRoot, "devtools", "telemetry.ts");
-
-  const indexUpdated = await replaceInFile(
-    indexPath,
-    /new TelemetryCapture\(opts\.devtools,\s*"([^"]+)"\)/m,
-    () => `new TelemetryCapture(opts.devtools, "${version}")`,
+async function syncTypeScriptVersion(version: string): Promise<void> {
+  // src/version.ts is the TypeScript SDK's only version literal (client header and telemetry).
+  const versionPath = path.join(ROOT, "packages", "sdk", "sdk-ts", "src", "version.ts");
+  const updated = await replaceInFile(
+    versionPath,
+    /export const SDK_VERSION = "([^"]+)";/m,
+    () => `export const SDK_VERSION = "${version}";`,
   );
-  const telemetryUpdated = await replaceInFile(
-    telemetryPath,
-    /constructor\(config\?: Partial<DevToolsConfig>, sdkVersion: string = "([^"]+)"\)/m,
-    () => `constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "${version}")`,
-  );
-
-  if (indexUpdated || telemetryUpdated) {
-    console.log(`[sdk-sync] Updated TypeScript telemetry version to ${version}`);
+  if (updated) {
+    console.log(`[sdk-sync] Updated TypeScript SDK version to ${version}`);
   } else {
-    console.log("[sdk-sync] TypeScript telemetry version already up to date");
+    console.log("[sdk-sync] TypeScript SDK version already up to date");
   }
 }
 
 async function syncPythonTelemetryVersion(version: string): Promise<void> {
   const recorderPath = path.join(ROOT, "packages", "sdk", "sdk-py", "src", "phaseo_devtools", "recorder.py");
-  const updated = await replaceInFile(
+  const versionPath = path.join(ROOT, "packages", "sdk", "sdk-py", "src", "phaseo", "_version.py");
+  const recorderUpdated = await replaceInFile(
     recorderPath,
     /^SDK_VERSION\s*=\s*"[^"]+"/m,
     () => `SDK_VERSION = "${version}"`,
   );
-  if (updated) {
+  // phaseo/_version.py feeds the client's User-Agent and X-Phaseo-Client-Version headers.
+  const clientUpdated = await replaceInFile(
+    versionPath,
+    /^__version__\s*=\s*"[^"]+"/m,
+    () => `__version__ = "${version}"`,
+  );
+  if (recorderUpdated || clientUpdated) {
     console.log(`[sdk-sync] Updated Python telemetry version to ${version}`);
   } else {
     console.log("[sdk-sync] Python telemetry version already up to date");
@@ -264,7 +263,7 @@ async function syncAll(): Promise<void> {
   const syncConfigs: NpmPackageVersionConfig[] = [
     {
       packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-ts", "package.json"),
-      apply: syncTypeScriptTelemetryVersion,
+      apply: syncTypeScriptVersion,
     },
     {
       packageJsonPath: path.join(ROOT, "packages", "sdk", "sdk-py", "package.json"),

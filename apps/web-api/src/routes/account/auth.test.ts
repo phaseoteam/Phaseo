@@ -111,6 +111,7 @@ describe("account auth routes", () => {
 				return new Response(JSON.stringify({
 					id: "user-1",
 					email: "user@example.com",
+					created_at: "2026-09-01T12:00:00Z",
 					user_metadata: { avatar_url: "https://example.com/avatar.png" },
 				}), { status: 200 });
 			}
@@ -167,6 +168,7 @@ describe("account auth routes", () => {
 				email: "user@example.com",
 				displayName: "Test User",
 				avatarUrl: "https://example.com/avatar.png",
+				createdAt: "2026-09-01T12:00:00Z",
 			},
 			teams: [{ id: "workspace-1", name: "Personal Workspace" }],
 			displayPreferences: {

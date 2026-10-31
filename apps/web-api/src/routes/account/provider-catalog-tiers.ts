@@ -1,3 +1,5 @@
+import { parseCatalogDeclarations, type CatalogDeclarations } from "./provider-catalog-declarations";
+import { parseCatalogDataPolicy, type CatalogDataPolicy } from "./provider-catalog-data-policy";
 import type { ProviderCatalogPreview, ProviderCatalogModelPreview } from "./provider-catalog";
 import { normalizeProviderRateLimits, upstreamModelSlugs } from "./provider-catalog-rate-limits";
 
@@ -5,6 +7,8 @@ export const CATALOG_SERVICE_TIERS = ["standard", "fast", "ultrafast", "flex", "
 export type CatalogServiceTier = typeof CATALOG_SERVICE_TIERS[number];
 export type ProviderCatalogTier = {
 	serviceTier: CatalogServiceTier;
+	dataPolicy?: CatalogDataPolicy;
+	declarations?: CatalogDeclarations;
 	providerModelSlug: string;
 	upstreamServiceTier: string | null;
 	availability: ProviderCatalogModelPreview["availability"];
@@ -13,6 +17,8 @@ export type ProviderCatalogTier = {
 
 export function normalizeTieredProviderCatalog(payload: Record<string, unknown>, normalizeV1: (payload: unknown) => ProviderCatalogPreview): ProviderCatalogPreview {
 	const issues: ProviderCatalogPreview["issues"] = [];
+	const v12 = payload.schema_version === "1.2";
+	const warnings: ProviderCatalogPreview["issues"] = [];
 	const models: ProviderCatalogModelPreview[] = [];
 	if (Object.keys(payload).some((key) => !["schema_version", "data", "rate_limits"].includes(key))) issues.push({ path: "$", message: "Unknown catalog field." });
 	if (!Array.isArray(payload.data) || payload.data.length > 1000) {
@@ -21,7 +27,11 @@ export function normalizeTieredProviderCatalog(payload: Record<string, unknown>,
 	const seen = new Set<string>();
 	for (const [index, entry] of payload.data.entries()) {
 		if (!entry || typeof entry !== "object" || Array.isArray(entry)) { issues.push({ path: `data[${index}]`, message: "Each model must be an object." }); continue; }
-		const { service_tiers, ...base } = entry as Record<string, unknown>;
+		const { service_tiers, declarations: rawDeclarations, ...base } = entry as Record<string, unknown>;
+		const declaredModel = rawDeclarations === undefined ? null : parseCatalogDeclarations(rawDeclarations);
+		if (!v12 && rawDeclarations !== undefined) issues.push({ path: `data[${index}].declarations`, message: "Declarations require catalog v1.2." });
+		for (const issue of declaredModel?.issues ?? []) issues.push({ path: `data[${index}].declarations.${issue.path}`, message: issue.message });
+		if (declaredModel?.declarations) warnings.push({ path: `data[${index}].declarations`, message: "Stored for review; declarations do not automatically change live capabilities, prices, discounts, capacity or residency." });
 		if ("pricing" in base || "provider_model_slug" in base) issues.push({ path: `data[${index}]`, message: "V1.1 upstream model IDs and prices belong inside service_tiers." });
 		if (!Array.isArray(service_tiers) || !service_tiers.length || service_tiers.length > CATALOG_SERVICE_TIERS.length) {
 			issues.push({ path: `data[${index}].service_tiers`, message: "Provide one to five normalized service tiers, including standard." }); continue;
@@ -38,7 +48,7 @@ export function normalizeTieredProviderCatalog(payload: Record<string, unknown>,
 				issues.push({ path: `${path}.service_tier`, message: "Use a unique normalized tier: standard, fast, ultrafast, flex or batch." }); continue;
 			}
 			seenTiers.add(name);
-			if (Object.keys(tier).some((key) => !["service_tier", "provider_model_slug", "upstream_service_tier", "pricing", "availability"].includes(key))) issues.push({ path, message: "Unknown service tier field." });
+			if (Object.keys(tier).some((key) => !["service_tier", "provider_model_slug", "upstream_service_tier", "pricing", "availability", ...(v12 ? ["data_policy", "declarations"] : [])].includes(key))) issues.push({ path, message: "Unknown service tier field." });
 			if (typeof tier.provider_model_slug !== "string" || !tier.provider_model_slug.trim()) issues.push({ path: `${path}.provider_model_slug`, message: "Provide the upstream model ID for this tier." });
 			if (tier.upstream_service_tier != null && (typeof tier.upstream_service_tier !== "string" || !/^[a-z0-9][a-z0-9._-]{0,63}$/.test(tier.upstream_service_tier))) issues.push({ path: `${path}.upstream_service_tier`, message: "Expected a simple upstream service tier value or null." });
 			if (tier.upstream_service_tier != null) {
@@ -54,8 +64,13 @@ export function normalizeTieredProviderCatalog(payload: Record<string, unknown>,
 			if (name === "batch" && (!model.capabilities.some((capability) => ["batch", "batch.create"].includes(capability.id)) || tier.upstream_service_tier != null)) {
 				issues.push({ path, message: "Batch offers require a batch capability and use the Batch API, without an upstream service tier parameter." });
 			}
+			const declaredTier = v12 && tier.declarations !== undefined ? parseCatalogDeclarations(tier.declarations) : null;
+			for (const issue of declaredTier?.issues ?? []) issues.push({ path: `${path}.declarations.${issue.path}`, message: issue.message });
+			if (declaredTier?.declarations) warnings.push({ path: `${path}.declarations`, message: "Stored for review; existing pricing and capability fields remain authoritative." });
+			const policy = v12 ? parseCatalogDataPolicy(tier.data_policy ?? null, model.capabilities.map((capability) => capability.id), name) : null;
+			for (const issue of policy?.issues ?? []) issues.push({ path: `${path}.data_policy.${issue.path}`, message: issue.message });
 			if (name === "standard") normalizedModel = model;
-			tiers.push({ serviceTier: name as CatalogServiceTier, providerModelSlug: model.providerModelSlug, upstreamServiceTier: tier.upstream_service_tier as string ?? null, availability: model.availability, pricing: model.pricing });
+			tiers.push({ ...(declaredTier?.declarations ? { declarations: declaredTier.declarations } : {}), ...(v12 ? { dataPolicy: policy?.policy ?? null } : {}), serviceTier: name as CatalogServiceTier, providerModelSlug: model.providerModelSlug, upstreamServiceTier: tier.upstream_service_tier as string ?? null, availability: model.availability, pricing: model.pricing });
 		}
 		if (!normalizedModel) { issues.push({ path: `data[${index}].service_tiers`, message: "A valid standard tier is required." }); continue; }
 		for (const tier of tiers) {
@@ -66,10 +81,10 @@ export function normalizeTieredProviderCatalog(payload: Record<string, unknown>,
 		}
 		if (seen.has(normalizedModel.id.toLowerCase())) { issues.push({ path: `data[${index}].id`, message: `Duplicate model id: ${normalizedModel.id}.` }); continue; }
 		seen.add(normalizedModel.id.toLowerCase());
-		models.push({ ...normalizedModel, serviceTiers: tiers });
+		models.push({ ...normalizedModel, ...(declaredModel?.declarations ? { declarations: declaredModel.declarations } : {}), ...(v12 ? { catalogVersion: "1.2" as const } : {}), serviceTiers: tiers });
 	}
 	const declared = payload.rate_limits === undefined ? null : normalizeProviderRateLimits(payload.rate_limits, upstreamModelSlugs(models));
 	if (declared) issues.push(...declared.issues);
 	const rateLimits = declared && !declared.issues.length ? declared.limits : null;
-	return { valid: issues.length === 0, modelCount: payload.data.length, models: models.slice(0, 100), allModels: models, issues: issues.slice(0, 100), truncated: models.length > 100, rateLimits };
+	return { ...(warnings.length ? { warnings } : {}), valid: issues.length === 0, modelCount: payload.data.length, models: models.slice(0, 100), allModels: models, issues: issues.slice(0, 100), truncated: models.length > 100, rateLimits };
 }

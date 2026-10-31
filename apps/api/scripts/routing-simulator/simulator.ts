@@ -158,6 +158,7 @@ export async function simulate(input: unknown) {
             generation_ms: status < 400 ? generation : 0,
             tokens_in: status < 400 ? behavior.inputTokens : 0,
             tokens_out: status < 400 ? behavior.outputTokens : 0,
+            ...(status < 400 ? { prompt_tokens: behavior.inputTokens + (behavior.cachedReadTokens ?? 0), cached_prompt_tokens: behavior.cachedReadTokens ?? 0 } : {}),
           });
           if (admission === "probe" && impact !== "neutral" && !healthUpdate.rateLimited) await health.reportProbeResult(endpoint, provider.id, baseModel, impact === "success");
           else if (impact === "failure" && !healthUpdate.rateLimited) await health.maybeOpenOnRecentErrors(endpoint, provider.id, baseModel);

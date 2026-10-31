@@ -18,9 +18,11 @@ CREATE TABLE "public"."gateway_realtime_billing_reviews" (
   "evidence_complete"    boolean                  NOT NULL DEFAULT false,
   "resolved_at"          timestamp with time zone,
   "summary_synced_at"    timestamp with time zone,
+  "key_id"               uuid,
   CONSTRAINT "gateway_realtime_billing_reviews_confirmed_cost_nanos_check" CHECK ((confirmed_cost_nanos >= 0)),
   CONSTRAINT "gateway_realtime_billing_reviews_pkey" PRIMARY KEY (session_id),
   CONSTRAINT "gateway_realtime_billing_reviews_status_check" CHECK ((status = ANY (ARRAY['open'::text, 'resolved'::text]))),
+  CONSTRAINT "gateway_realtime_billing_reviews_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE SET NULL,
   CONSTRAINT "gateway_realtime_billing_reviews_session_id_fkey" FOREIGN KEY (session_id) REFERENCES public.gateway_realtime_sessions(session_id) ON DELETE CASCADE,
   CONSTRAINT "gateway_realtime_billing_reviews_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
 );
@@ -33,7 +35,7 @@ CREATE INDEX gateway_realtime_billing_reviews_retry_after_idx ON public.gateway_
 
 CREATE INDEX gateway_realtime_billing_reviews_workspace_id_idx1 ON public.gateway_realtime_billing_reviews USING btree (workspace_id);
 
-CREATE INDEX gateway_realtime_billing_reviews_workspace_id_idx ON public.gateway_realtime_billing_reviews USING btree (workspace_id)
+CREATE INDEX gateway_realtime_billing_reviews_blocked_key_idx ON public.gateway_realtime_billing_reviews USING btree (workspace_id, key_id)
   WHERE access_blocked;
 
 REVOKE ALL ON TABLE "public"."gateway_realtime_billing_reviews" FROM "service_role";
@@ -41,3 +43,5 @@ REVOKE ALL ON TABLE "public"."gateway_realtime_billing_reviews" FROM "service_ro
 GRANT SELECT ON TABLE "public"."gateway_realtime_billing_reviews" TO "service_role";
 
 REVOKE ALL ON TABLE "public"."gateway_realtime_billing_reviews" FROM "anon", "authenticated";
+
+COMMENT ON COLUMN "public"."gateway_realtime_billing_reviews"."key_id" IS 'API key of the reviewed session. While access_blocked, only new realtime sessions for this key are refused.';

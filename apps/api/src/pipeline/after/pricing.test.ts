@@ -1,10 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import type { PriceCard, PriceRule } from "../pricing";
 import { calculatePricing, loadProviderPricing } from "./pricing";
 import { shapeUsageForClient } from "../usage";
+import { deepSeekV4ProCard } from "./__fixtures__/deepseek-v4-pro-card";
 
 const loadPriceCardMock = vi.hoisted(() => vi.fn());
 
@@ -50,12 +48,15 @@ it.each([false, true])("resolves pricing for billable admin internal requests wh
     expect(result).toEqual(priced ? card : null);
     expect(ctx.internalPricingAvailable).toBe(priced);
 });
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "../../../../..");
-const deepSeekV4ProPricingPath = path.join(
-	repoRoot,
-	"packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-pro/text.generate/pricing.json",
-);
+
+type CatalogCardFixture = {
+	api_provider_id: string;
+	api_model_id: string;
+	capability_id: string;
+	effective_from?: string | null;
+	effective_to?: string | null;
+	rules: ReadonlyArray<Record<string, unknown>>;
+};
 
 vi.mock("../pricing", async () => {
 	const actual = await vi.importActual<typeof import("../pricing")>("../pricing");
@@ -126,8 +127,7 @@ const TTS_CARD: PriceCard = {
 	],
 };
 
-function loadActiveCatalogPriceCard(pricingPath: string, nowIso = "2026-07-01T00:00:00.000Z"): PriceCard {
-	const raw = JSON.parse(fs.readFileSync(pricingPath, "utf8"));
+function loadActiveCatalogPriceCard(raw: CatalogCardFixture, nowIso = "2026-07-01T00:00:00.000Z"): PriceCard {
 	const nowMs = Date.parse(nowIso);
 	const rules = raw.rules
 		.filter((rule: Record<string, unknown>) => {
@@ -312,16 +312,85 @@ describe("after/pricing calculatePricing", () => {
 		expect(result.pricedUsage?.pricing?.lines?.[0]?.dimension).toBe("output_image");
 	});
 
-	it("does not match image rules when request options disagree", () => {
+	it("bills the meter's base rate, not $0, when request options match none of its rules", () => {
 		const result = calculatePricing(
 			{ output_image: 1 },
 			IMAGE_CARD,
 			{ size: "1536x1024", quality: "high" },
 		);
 
-		expect(result.totalNanos).toBe(0);
-		expect(result.totalCents).toBe(0);
-		expect(result.pricedUsage?.pricing?.lines ?? []).toHaveLength(0);
+		// Before: $0 and no pricing line. The provider had charged for the image.
+		expect(result.totalNanos).toBe(36_000_000);
+		expect(result.pricedUsage?.pricing?.lines?.[0]).toMatchObject({ dimension: "output_image", pricing_fallback: "base_rate" });
+		expect(result.pricedUsage?.pricing?.base_rate_fallback).toEqual([{ meter: "output_image", quantity: 1, rule_id: null }]);
+	});
+
+	describe("Gemini 3 Pro Image (AI Studio) chat output", () => {
+		// Production rows: input unconditional; output_image_tokens only where
+		// image_params.resolution is 1K or 2K ($120 per 1M tokens, the rate Google charges at every size).
+		const tokenRule = (meter: string, price: string, match: PriceRule["match"] = []): PriceRule => ({
+			meter, unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD",
+			pricing_plan: "standard", note: null, match, priority: 100,
+		});
+		const card: PriceCard = {
+			provider: "google-ai-studio", model: "google/gemini-3-pro-image", endpoint: "text.generate",
+			effective_from: null, effective_to: null, currency: "USD", version: null,
+			rules: [
+				tokenRule("input_text_tokens", "2"),
+				tokenRule("output_text_tokens", "12"),
+				tokenRule("output_image_tokens", "120", [
+					{ path: "image_params.resolution", op: "in", value: ["1K", "2K"], or_group: 1, and_index: 1 },
+				]),
+			],
+		};
+		const usage = { input_text_tokens: 100, output_text_tokens: 50, output_image_tokens: 1120 };
+		const body = (imageConfig?: Record<string, unknown>) => ({
+			model: "google/gemini-3-pro-image",
+			messages: [{ role: "user", content: "a cat" }],
+			...(imageConfig ? { image_config: imageConfig } : {}),
+		});
+
+		it.each([
+			["no image_config (Google's 1K default)", undefined, 135_200_000],
+			["image_config.image_size 2K", { image_size: "2K" }, 135_200_000],
+		])("prices %s at the 1K/2K rate", (_label, imageConfig, expectedNanos) => {
+			// Before: pricing_rule_missing:output_image_tokens, a 500 after Google had charged.
+			const result = calculatePricing(usage, card, body(imageConfig));
+			expect(result.totalNanos).toBe(expectedNanos);
+			expect(result.pricedUsage.pricing.lines.find((line: any) => line.dimension === "output_image_tokens")).not.toHaveProperty("pricing_fallback");
+		});
+
+		it("prices a 4K image (2000 tokens) at the base rate instead of failing", () => {
+			const result = calculatePricing({ ...usage, output_image_tokens: 2000 }, card, body({ image_size: "4K" }));
+			// 100 × $2/M + 50 × $12/M + 2000 × $120/M = $0.2408
+			expect(result.totalNanos).toBe(240_800_000);
+			expect(result.pricedUsage.pricing.lines.find((line: any) => line.dimension === "output_image_tokens"))
+				.toMatchObject({ pricing_fallback: "base_rate" });
+		});
+	});
+
+	describe("xAI Grok Imagine Image generation", () => {
+		const imageRule = (resolution: string): PriceRule => ({
+			meter: "output_image", unit: "image", unit_size: 1, price_per_unit: "0.02", currency: "USD",
+			pricing_plan: "standard", note: null, priority: 100,
+			match: [{ path: "image_params.resolution", op: "eq", value: resolution, or_group: 1, and_index: 1 }],
+		});
+		// Production: the v1 generate SKU has only the 1k row.
+		const card: PriceCard = {
+			provider: "spacex-ai", model: "x-ai/grok-imagine-image", endpoint: "image.generate",
+			effective_from: null, effective_to: null, currency: "USD", version: null,
+			rules: [imageRule("1k")],
+		};
+
+		it.each([
+			["no resolution (xAI's 1k default)", {}],
+			["resolution 1k", { resolution: "1k" }],
+			["resolution 2k (no 2k row: base rate)", { resolution: "2k" }],
+		])("bills one image at $0.02 with %s", (_label, extra) => {
+			// Before: $0 without resolution and for 2k.
+			const result = calculatePricing({ output_image: 1, requests: 1 }, card, { model: "x-ai/grok-imagine-image", prompt: "a cat", ...extra });
+			expect(result.totalNanos).toBe(20_000_000);
+		});
 	});
 
 	it("uses the free pricing plan for model ids with a :free suffix", () => {
@@ -530,7 +599,7 @@ describe("after/pricing calculatePricing", () => {
 
 	it("applies DeepSeek V4 Pro peak pricing from gateway upstream-start metadata", () => {
 		const card = activateDeepSeekV4ProPeakWindows(
-			loadActiveCatalogPriceCard(deepSeekV4ProPricingPath),
+			loadActiveCatalogPriceCard(deepSeekV4ProCard),
 		);
 
 		const result = calculatePricing(

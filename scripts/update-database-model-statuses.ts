@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { deriveStatusFromDates, pickStatus } from "./update-model-statuses";
+import { deriveStatusFromDates, pickStatus } from "./model-status-rules";
 import { buildEnumSnapshot } from "../apps/web/scripts/catalogue/enumSnapshot";
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) if (existsSync(file)) loadEnvFile(file);
 async function main() {

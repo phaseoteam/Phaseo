@@ -266,4 +266,28 @@ describe("makeMeta session_id handling", () => {
 
 		expect(meta.labels).toEqual([{ key: "team", value: "support" }]);
 	});
+
+	it("reads body metadata and uses its trace_id only without a traceparent header", () => {
+		const base = {
+			endpoint: "chat.completions" as const,
+			apiKeyId: "key_123",
+			apiKeyRef: "kid_123",
+			apiKeyKid: "kid_123",
+			requestId: "req_123",
+			stream: false,
+			rawBody: { metadata: { trace_id: "4bf92f35-77b3-4da6-a3ce-929d0e0e4736", trace_name: "checkout" } },
+		};
+		const fromMetadata = makeMeta({ ...base, req: new Request("https://gateway.local/v1/chat/completions", { method: "POST" }) });
+		expect(fromMetadata.requestMetadata).toEqual({ trace_id: "4bf92f35-77b3-4da6-a3ce-929d0e0e4736", trace_name: "checkout" });
+		expect(fromMetadata.otelTraceContext?.traceId).toBe("4bf92f3577b34da6a3ce929d0e0e4736");
+
+		const fromHeader = makeMeta({
+			...base,
+			req: new Request("https://gateway.local/v1/chat/completions", {
+				method: "POST",
+				headers: { traceparent: `00-${"1".repeat(32)}-${"2".repeat(16)}-01` },
+			}),
+		});
+		expect(fromHeader.otelTraceContext?.traceId).toBe("1".repeat(32));
+	});
 });

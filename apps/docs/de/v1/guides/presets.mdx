@@ -4,14 +4,14 @@ description: "Speichere wiederverwendbare Gateway-Konfigurationen für dein Team
 icon: "sliders-horizontal"
 ---
 
-Voreinstellungen sind wiederverwendbare Konfigurationen, mit denen Teams Prompts, Modellpräferenzen und Routing-Standards vereinheitlichen können. Sie werden im Phaseo-Dashboard verwaltet und können teamweit geteilt werden.
+Voreinstellungen sind wiederverwendbare Konfigurationen, mit denen Teams Prompts, Modellpräferenzen und Routing-Standards vereinheitlichen können. Sie werden im Phaseo-Dashboard verwaltet und können teamweit geteilt werden. Du kannst sie auch mit den CLI-Befehlen `phaseo presets` oder der API `/v1/presets` verwalten.
 
 ## Schnellstart
 
 <Steps>
 <Step title="Voreinstellung erstellen">
 
-Öffne **Dashboard -> Einstellungen -> Voreinstellungen** und erstelle eine Voreinstellung mit einem eindeutigen Slug, z. B. `release-summary`. Füge nur Standards hinzu, die von allen Aufrufern verwendet werden sollen.
+Öffne **Dashboard -> Einstellungen -> Voreinstellungen** und erstelle eine Voreinstellung mit einem eindeutigen Slug, z. B. `release-summary`. Füge nur Standards hinzu, die von allen Aufrufern verwendet werden sollen. Über die CLI: `phaseo presets create --name @release-summary --model <model-id>`.
 
 </Step>
 
@@ -67,6 +67,7 @@ response = client.generate_response({
 ## Mögliche Inhalte einer Voreinstellung
 
 - Ein System-Prompt, der jeder Anfrage vorangestellt wird.
+- Eine [Prompt-Vorlage](./prompt-templates.mdx): Nachrichten mit `{{variables}}`, die jede Anfrage ausfüllt.
 - Erlaubte Modelle oder Modellfamilien.
 - Zulassungs- und Ignorierlisten für Anbieterpräferenzen beim Routing.
 - Standardparameter wie temperature, top_p, max_tokens und ähnliche Einstellungen.
@@ -74,7 +75,7 @@ response = client.generate_response({
 
 Voreinstellungsnamen beginnen mit `@`, damit sie leicht erkennbar sind.
 
-Rufe eine Voreinstellung ausschließlich über das Feld `model` der Anfrage auf. Phaseo stellt kein separates `preset`-Anfragefeld bereit.
+Rufe eine Voreinstellung über das Feld `model` der Anfrage auf oder, wenn die Voreinstellung eine [Prompt-Vorlage](./prompt-templates.mdx) hat, über `prompt.id`. Phaseo stellt kein separates `preset`-Anfragefeld bereit.
 
 - Private Voreinstellungen und Workspace-Voreinstellungen verwenden `@{slug}` und werden im Workspace des API-Schlüssels aufgelöst.
 - Öffentliche Voreinstellungen verwenden `@{username}/{slug}` und können aus jedem Workspace aufgelöst werden. Beispiel: `@octavia/release-summary`.
@@ -97,6 +98,8 @@ Marketplace-Kopien bleiben an die genaue Upstream-Version gebunden, von der sie 
 
 Phaseo speichert sowohl die direkte Quelle als auch die vollständige Abstammung jedes Forks. Marketplace-Seiten können daher direkte Forks von allen Nachkommen unterscheiden, auch wenn eine Voreinstellung mehrfach kopiert und erneut veröffentlicht wurde.
 
+Anfragen können eine veröffentlichte Version über ihr Label pinnen, etwa `@support-triage@v3`, oder über ein benanntes Label wie `production`, das du auf eine Version richtest. Ein Label auf eine frühere Version zurückzuschieben ist ein Rollback. Siehe [Prompt-Vorlagen](./prompt-templates.mdx).
+
 ## So werden Voreinstellungen zusammengeführt
 
 Wird im Gateway-Kontext eine Anfrage mit einer Voreinstellung aufgelöst, wird die Voreinstellung vor dem Provider-Routing angewendet:
@@ -113,6 +116,7 @@ Voreinstellungen sind damit die zentrale öffentliche Schnittstelle für wiederv
 Der Ablauf für Voreinstellungen im Dashboard ist bewusst auf eine stabile, klar definierte Teilmenge der Anfrageanpassungen beschränkt:
 
 - System-Prompt-Injektion
+- Prompt-Vorlagen mit typisierten Variablen
 - Modell-Zulassungslisten
 - Routing-Einschränkungen mit Zulassungs- oder Ignorierlisten für Anbieter
 - Standardwerte für Decoding und Generierung
@@ -122,7 +126,7 @@ Wenn du komplexere Transformationen pro Aufrufer benötigst, bündle sie in eine
 
 ## Voreinstellungen verwalten
 
-Erstelle und verwalte Voreinstellungen unter **Dashboard -> Einstellungen -> Voreinstellungen**. Nutze verschiedene Slugs, wenn Workflows deutlich unterschiedliche Prompts, Routing- oder Cache-Einstellungen benötigen.
+Erstelle und verwalte Voreinstellungen unter **Dashboard -> Einstellungen -> Voreinstellungen**. Nutze verschiedene Slugs, wenn Workflows deutlich unterschiedliche Prompts, Routing- oder Cache-Einstellungen benötigen. Über die CLI verwendest du `phaseo presets create|update`, `phaseo presets versions create` und `phaseo presets labels set` (die API `/v1/presets`).
 
 ## Wann Voreinstellungen sinnvoll sind
 
@@ -133,6 +137,7 @@ Erstelle und verwalte Voreinstellungen unter **Dashboard -> Einstellungen -> Vor
 
 ## Zugehörige Anleitungen
 
+- [Prompt-Vorlagen](./prompt-templates.mdx)
 - [Feedback zu Voreinstellungen sammeln](./preset-feedback.mdx)
 - [Routing und Fallbacks](./routing-and-fallbacks.mdx)
 - [Inferenzparameter](./inference-parameters.mdx)

@@ -1,0 +1,106 @@
+---
+icon: "phone"
+title: "リアルタイム音声"
+description: "TypeScript SDK で Phaseo のリレーを通してリアルタイム音声通話を行い、通話終了時に最終請求額を受け取ります。"
+---
+
+<Note>
+リアルタイム音声はベータ版で、ワークスペースごとにアクセスが制限されています。
+</Note>
+
+**メソッド**: `client.realtime.connect()` はセッションを作成し（`POST /v1/audio/realtime/sessions`）、リレーの WebSocket を開き、リレーが `relay.connected` を送信した時点で解決されます。API キーを送信するため、サーバー上でのみ呼び出してください。Node.js 22 以降にはグローバルな `WebSocket` があります。それより古いランタイムでは、`ws` パッケージをインストールするか、独自のコンストラクターを `webSocket` として渡します。
+
+ブラウザーで実行する通話では、サーバーでセッションを作成し、ブラウザーで `connectRealtimeSession()` を使ってソケットを開きます。この関数はサーバーが作成したセッションを受け取ります。セッションには、そのセッションでのみ有効な `client_secret` が含まれており、API キーは一切必要ありません。両方の手順は [ブラウザーからの通話](#browser-calls) で説明しています。
+
+リレーのプロトコル、警告、理由コードについては [リアルタイム音声セッション](/ja/v1/guides/realtime-voice) を参照してください。
+
+### 例
+
+```typescript
+import { Phaseo, RealtimeSessionClosedError } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+
+const session = await client.realtime.connect({
+  model: "openai/gpt-realtime-2",
+  voice: "marin",
+  instructions: "Answer in one sentence.",
+});
+
+session.onWarning((warning) => console.warn(warning.code, warning.message));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+
+// PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+session.sendAudio(pcm16Chunk);
+
+try {
+  const ended = await session.end({ reason: "caller hung up" });
+  console.log(ended.reason, ended.duration_seconds, ended.cost.total_usd, ended.billing_status);
+} catch (error) {
+  if (error instanceof RealtimeSessionClosedError) {
+    // The call is still billed. Fetch the final cost later with error.finalBill.path.
+    console.error(error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+代わりにすべてのイベントを読み取るには、セッションを反復処理します。反復処理はソケットが閉じると終了します。
+
+```typescript
+for await (const event of session) {
+  if (event.type === "session.ended") console.log("bill", event.cost);
+}
+```
+
+<span id="browser-calls"></span>
+
+### ブラウザーからの通話
+
+Phaseo の API キーをブラウザーのコードに含めてはいけません。サーバーで `client.realtime.createSession()` を使ってセッションを作成し、レスポンスをページに返します。このメソッドは `connect()` と同じ `model`、`voice`、`instructions`、`provider`、`metadata` オプションを受け取ります。
+
+```typescript
+// Server route, for example POST /api/voice-session
+const info = await client.realtime.createSession({ model: "openai/gpt-realtime-2", voice: "marin" });
+return Response.json(info);
+```
+
+ブラウザーでは `connectRealtimeSession()` でセッションに参加します。この関数はセッションの `client_secret` でリレーを開き、`connect()` と同じセッションオブジェクトを返します。
+
+```typescript
+import { connectRealtimeSession } from "@phaseo/sdk";
+
+const info = await fetch("/api/voice-session", { method: "POST" }).then((response) => response.json());
+const session = await connectRealtimeSession(info);
+session.sendAudio(pcm16Chunk);
+```
+
+`connectRealtimeSession(info, options)` は `connect()` と同様に `webSocket` と `connectTimeoutMs` を受け取ります。さらに、リージョン別のエンドポイントを使う場合は `baseUrl`（デフォルトは `https://api.phaseo.app/v1`）も指定できます。
+
+### 接続オプション
+
+- `model`（必須）: リアルタイムモデルの ID。例: `openai/gpt-realtime-2`。
+- `voice`、`instructions`、`provider`、`metadata`: セッション作成リクエストに渡されます。
+- `webSocket`: グローバルのものの代わりに使う WebSocket コンストラクター。
+- `connectTimeoutMs`: `relay.connected` を待つ時間。デフォルトは 30 秒です。
+
+### セッション
+
+| メンバー | 説明 |
+| --- | --- |
+| `id`, `info` | セッション ID と、`client_secret` を除いたセッション作成レスポンス。 |
+| `sendAudio(pcm16)` | PCM16 音声の `Uint8Array` または `ArrayBuffer` を `client.audio` として送信します。SDK が base64 エンコードします。 |
+| `send(event)` | プロバイダー固有のメッセージ用に、任意のイベントを JSON として送信します。 |
+| `on(type, listener)` | 1 つのイベントタイプ、または `"*"` ですべてのイベントを購読します。購読解除用の関数を返します。プロバイダーのイベントはそのまま届きます。 |
+| `onWarning(listener)`, `onEnded(listener)` | `session.warning` と `session.ended` 用の型付きヘルパー。 |
+| `[Symbol.asyncIterator]` | 反復処理を開始した時点からソケットが閉じるまで、すべてのイベントを返します。 |
+| `end({ reason?, cancelResponse?, timeoutMs? })` | `session.end` を送信し、`session.ended` で解決されます。内容は `reason`、`initiated_by`、`duration_seconds`、`usage`、`cost`、`billing_status`、および請求が確定していない場合は `final_bill` です。デフォルトのタイムアウトは 60 秒です。 |
+| `ended` | 通話がどのように終了しても `session.ended` を返す Promise。プロバイダーやゲートウェイが開始した終了も含みます。 |
+| `close()` | 請求額を待たずにソケットを閉じます。通話は引き続き課金されます。 |
+
+### エラー
+
+`session.ended` を受け取らないままソケットが閉じた場合、または `end()` がタイムアウトした場合、`end()` と `ended` は `RealtimeSessionClosedError` で拒否されます。このエラーには `sessionId`、`closeCode`、`closeReason`、`finalBill` があります。最後の値は、確定後に最終コストを返すリクエスト `GET /v1/generations?id=realtime%3A<session_id>` です。`realtimeFinalBill(sessionId)` は同じリクエストを作成します。
+
+`connect()` は、接続前にリレーがセッションを終了した場合、または `relay.connected` が時間内に届かない場合に拒否されます。

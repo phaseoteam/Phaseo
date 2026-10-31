@@ -48,7 +48,10 @@ import type {
 import * as ops from "./oapi-gen/client/index.js";
 import { PhaseoHttpError, Client, type RawResponse } from "./runtime/client.js";
 import { createTransport, type RequestControls } from "./runtime/transport.js";
+import { withApiKeyProvider, type ApiKeyProvider } from "./runtime/auth.js";
 import { JobHandle } from "./jobHandle.js";
+import { SDK_VERSION } from "./version.js";
+import { openRealtimeSession, type RealtimeConnectOptions, type RealtimeSession, type RealtimeSessionInfo } from "./realtime.js";
 import { paginateItems, paginatePages, type PageOptions } from "./pagination.js";
 import {
   parseOutput,
@@ -62,8 +65,27 @@ import {
   type ParameterSupportReport,
 } from "./helpers.js";
 export { JobHandle } from "./jobHandle.js";
+export { SDK_VERSION } from "./version.js";
+export {
+  RealtimeSession,
+  RealtimeSessionClosedError,
+  connectRealtimeSession,
+  realtimeFinalBill,
+  type RealtimeConnectOptions,
+  type RealtimeEndOptions,
+  type RealtimeEvent,
+  type RealtimeFinalBill,
+  type RealtimeSessionConnectOptions,
+  type RealtimeSessionEndedEvent,
+  type RealtimeSessionInfo,
+  type RealtimeSessionWarningEvent,
+  type RealtimeWebSocket,
+  type RealtimeWebSocketConstructor,
+} from "./realtime.js";
 export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
 export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
+export type { ApiKeyProvider } from "./runtime/auth.js";
+export { DEFAULT_WORKLOAD_AUDIENCE, githubActionsToken, vercelToken, type GitHubActionsTokenOptions, type VercelTokenOptions } from "./runtime/workloadTokens.js";
 export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
 import {
   TelemetryCapture,
@@ -127,7 +149,11 @@ export type AppAttribution = {
 };
 
 export type Options = RequestControls & {
-  apiKey?: string;
+  /**
+   * A Phaseo API key, or a function returning the credential for each request, such as
+   * `() => getVercelOidcToken({ audience: "https://api.phaseo.app" })` for a trusted workload.
+   */
+  apiKey?: string | ApiKeyProvider;
   baseUrl?: string;
   /** Select a Phaseo regional provider-routing endpoint. Cannot be combined with baseUrl. */
   region?: PhaseoRegion;
@@ -136,6 +162,12 @@ export type Options = RequestControls & {
   devtools?: Partial<DevToolsConfig>;
   enableDeprecationWarnings?: boolean;
   warningsAsErrors?: boolean;
+  /**
+   * Look a model up (`GET /models`, once per model per client) before its first request, to refuse
+   * models that are not active and warn about deprecated ones. Defaults to true. Set false to skip the
+   * lookup and let the gateway answer for the model; `models.validate()` still looks it up on demand.
+   */
+  modelLifecycleChecks?: boolean;
   logger?: PhaseoLogger;
   headers?: Record<string, string>;
   /** Optional user-defined application attribution. Phaseo never sets this automatically. */
@@ -215,7 +247,10 @@ export type ChatStreamChunk = Record<string, unknown> & {
   reasoningTokens?: number | null;
 };
 export type ResponseStreamChunk = Record<string, unknown> & {
+  /** Text added by this event. Empty on `.done` and `response.completed` events, which repeat streamed text. */
   text: string;
+  /** Full text carried by a `.done` event such as `response.output_text.done`. */
+  fullText?: string;
   usage?: GatewayStreamUsage | null;
   reasoningTokens?: number | null;
 };
@@ -455,9 +490,11 @@ export class Phaseo {
   private readonly fetchImpl: typeof fetch;
   private readonly enableDeprecationWarnings: boolean;
   private readonly warningsAsErrors: boolean;
+  private readonly modelLifecycleChecks: boolean;
   private readonly logger?: PhaseoLogger;
   private readonly warnedModels = new Set<string>();
-  private readonly modelLifecycleCache = new Map<string, ModelLifecycleInfo | null>();
+  // Holds the lookup itself, so concurrent first requests for a model share one GET /models.
+  private readonly modelLifecycleCache = new Map<string, Promise<ModelLifecycleInfo | null>>();
 
   readonly responses = {
     parse: async <T>(req: ResponsesRequest, schema: OutputSchema<T>): Promise<T> => {
@@ -619,6 +656,22 @@ export class Phaseo {
     ): Promise<unknown> => this.getProviderDerankStatus(providerId, params),
   };
 
+  /** Realtime voice sessions (beta): create a session and talk to it over the relay WebSocket. */
+  readonly realtime = {
+    /**
+     * Server only: creates a session and returns it with its single-session `client_secret`, without opening the socket.
+     * Hand the result to a browser, which joins with `connectRealtimeSession(info)` and never sees your API key.
+     */
+    createSession: (options: Omit<RealtimeConnectOptions, "webSocket" | "connectTimeoutMs">): Promise<RealtimeSessionInfo> =>
+      ops.createRealtimeSession(this.client, { body: options }),
+    /** Server only (it sends your API key): creates the session and opens the relay socket; resolves once the relay sends `relay.connected`. */
+    connect: async (options: RealtimeConnectOptions): Promise<RealtimeSession> => {
+      const { webSocket, connectTimeoutMs, ...body } = options;
+      const info: RealtimeSessionInfo = await ops.createRealtimeSession(this.client, { body });
+      return openRealtimeSession(this.basePath, info, { webSocket, connectTimeoutMs });
+    },
+  };
+
   readonly asyncJobs = {
     websocketUrl: (kind: AsyncJobKind, jobId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl(kind, jobId, options),
@@ -626,11 +679,13 @@ export class Phaseo {
 
   constructor(private readonly opts: Options = {}) {
     const apiKey = resolveApiKey(opts.apiKey);
+    // A credential function sets Authorization on every request instead of once here.
+    const fetchImpl = typeof apiKey === "function" ? withApiKeyProvider(opts.fetchImpl ?? globalThis.fetch, apiKey) : opts.fetchImpl;
     this.basePath = trimTrailingSlashes(resolveBaseUrl(opts));
     this.headers = {
-      Authorization: `Bearer ${apiKey}`,
+      ...(typeof apiKey === "string" ? { Authorization: `Bearer ${apiKey}` } : {}),
       "X-Phaseo-Client": "phaseo-typescript",
-      "X-Phaseo-Client-Version": "2.2.0",
+      "X-Phaseo-Client-Version": SDK_VERSION,
       ...appAttributionHeaders(opts.app),
       ...(opts.headers ?? {}),
     };
@@ -640,14 +695,15 @@ export class Phaseo {
       timeoutMs: opts.timeoutMs,
       signal: opts.signal,
       maxRetries: opts.maxRetries,
-      fetchImpl: opts.fetchImpl
+      fetchImpl
     });
-    this.fetchImpl = createTransport(opts.fetchImpl ?? fetch, opts);
+    this.fetchImpl = createTransport(fetchImpl ?? fetch, opts);
     this.enableDeprecationWarnings = opts.enableDeprecationWarnings ?? true;
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
+    this.modelLifecycleChecks = opts.modelLifecycleChecks ?? true;
     this.logger = opts.logger;
 
-    this.telemetry = new TelemetryCapture(opts.devtools, "3.0.0");
+    this.telemetry = new TelemetryCapture(opts.devtools, SDK_VERSION);
 
   }
 
@@ -800,6 +856,7 @@ export class Phaseo {
   }
 
   private async maybeWarnForPayload(payload: unknown): Promise<void> {
+    if (!this.modelLifecycleChecks) return;
     const modelId = extractModelIdFromPayload(payload);
     if (!modelId) return;
     await this.ensureModelRequestable(modelId);
@@ -842,10 +899,15 @@ export class Phaseo {
   private async resolveModelLifecycle(modelId: string): Promise<ModelLifecycleInfo | null> {
     const normalizedModelId = modelId.trim();
     if (!normalizedModelId) return null;
-    if (this.modelLifecycleCache.has(normalizedModelId)) {
-      return this.modelLifecycleCache.get(normalizedModelId) ?? null;
+    let lookup = this.modelLifecycleCache.get(normalizedModelId);
+    if (!lookup) {
+      lookup = this.lookUpModelLifecycle(normalizedModelId);
+      this.modelLifecycleCache.set(normalizedModelId, lookup);
     }
+    return lookup;
+  }
 
+  private async lookUpModelLifecycle(normalizedModelId: string): Promise<ModelLifecycleInfo | null> {
     try {
       const payload = await this.request("GET", "/models", {
         query: { model_id: normalizedModelId, limit: 1 },
@@ -857,16 +919,9 @@ export class Phaseo {
         const candidateId = asTrimmedString(entry?.model_id) ?? asTrimmedString(entry?.id);
         return candidateId === normalizedModelId;
       });
-      if (!model) {
-        this.modelLifecycleCache.set(normalizedModelId, null);
-        return null;
-      }
-
-      const lifecycle = toModelLifecycleInfo(model, normalizedModelId);
-      this.modelLifecycleCache.set(normalizedModelId, lifecycle);
-      return lifecycle;
+      if (!model) return null;
+      return toModelLifecycleInfo(model, normalizedModelId);
     } catch {
-      this.modelLifecycleCache.set(normalizedModelId, null);
       return null;
     }
   }
@@ -1239,8 +1294,16 @@ export class Phaseo {
   }
 
   async *streamResponses(req: ResponsesRequest, options: PhaseoRequestOptions = {}): AsyncGenerator<ResponseStreamChunk> {
+    // An SSE event is named on its `event:` line; data that does not name itself takes that name.
+    let eventName: string | undefined;
     for await (const line of this.streamResponse(req, options)) {
-      const chunk = parseResponseStreamLine(line);
+      if (line.startsWith("event:")) {
+        eventName = line.slice(6).trim() || undefined;
+        continue;
+      }
+      const isData = line.startsWith("data:");
+      const chunk = parseResponseStreamLine(line, isData ? eventName : undefined);
+      if (isData) eventName = undefined;
       if (!chunk) continue;
       yield chunk;
     }
@@ -1721,7 +1784,7 @@ function parseChatStreamLine(line: string): ChatStreamChunk | null {
   };
 }
 
-function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
+function parseResponseStreamLine(line: string, eventName?: string): ResponseStreamChunk | null {
   const parsed = parseSseJson(line);
   if (parsed === null) return null;
   if (!isRecord(parsed)) {
@@ -1733,10 +1796,13 @@ function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
     };
   }
 
-  const usage = extractUsage(parsed);
+  const event = eventName && typeof parsed.type !== "string" ? { ...parsed, type: eventName } : parsed;
+  const usage = extractUsage(event);
   return {
-    ...parsed,
-    text: extractResponseChunkText(parsed),
+    ...event,
+    // A `.done` event repeats text already streamed as deltas; `text` stays empty and the full text moves to `fullText`.
+    ...(isDoneEvent(event) && typeof event.text === "string" ? { fullText: event.text } : {}),
+    text: extractResponseChunkText(event),
     usage,
     reasoningTokens: extractReasoningTokens(usage)
   };
@@ -1780,7 +1846,11 @@ function appendMultipartFields(form: FormData, fields: object): void {
   }
 }
 
+// SSE field lines that never carry a payload: `event:`, `id:`, `retry:` and `:` comments.
+const SSE_NON_DATA_LINE = /^(?:event|id|retry)?:/;
+
 function parseSseJson(line: string): unknown | null {
+  if (!line.startsWith("data:") && SSE_NON_DATA_LINE.test(line.trimStart())) return null;
   const data = line.startsWith("data:") ? line.slice(5).trim() : line.trim();
   if (!data || data === "[DONE]") return null;
   try {
@@ -1801,8 +1871,19 @@ function extractChatChunkText(chunk: Record<string, unknown>): string {
     .join("");
 }
 
+function isDoneEvent(chunk: Record<string, unknown>): boolean {
+  return typeof chunk.type === "string" && chunk.type.endsWith(".done");
+}
+
+/**
+ * Text streamed by this event. Only delta events add text: `.done`, `response.completed` and
+ * other typed events repeat what the deltas already sent, so summing `text` gives the answer once.
+ */
 function extractResponseChunkText(chunk: Record<string, unknown>): string {
+  // Reasoning and function-call argument deltas are not reply text.
+  if (typeof chunk.type === "string" && chunk.type.endsWith(".delta") && chunk.type !== "response.output_text.delta") return "";
   if (typeof chunk.delta === "string") return chunk.delta;
+  if (typeof chunk.type === "string" && !chunk.type.endsWith(".delta")) return "";
   if (typeof chunk.text === "string") return chunk.text;
   if (typeof chunk.output_text === "string") return chunk.output_text;
   if (isRecord(chunk.response) && typeof chunk.response.output_text === "string") {
@@ -1885,7 +1966,8 @@ export type {
 
 export default Phaseo;
 
-function resolveApiKey(explicit?: string): string {
+function resolveApiKey(explicit?: string | ApiKeyProvider): string | ApiKeyProvider {
+  if (typeof explicit === "function") return explicit;
   const key = explicit ?? readEnv("PHASEO_API_KEY");
   if (!key) {
     throw new Error(

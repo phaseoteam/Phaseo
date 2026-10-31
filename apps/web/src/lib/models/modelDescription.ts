@@ -233,12 +233,6 @@ type ModelMetadataTitleTranslate = (
 	values?: Record<string, string | number>,
 ) => string;
 
-function formatContextLength(value: number): string {
-	if (value >= 1_000_000) return `${Math.round(value / 1_000_000)}M`;
-	if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
-	return String(Math.round(value));
-}
-
 export function countModelMetadataProviders(
 	providers: ReadonlyArray<{ api_provider_id: string }> = [],
 ): number {
@@ -261,9 +255,10 @@ export function buildModelOverviewMetadataTitle(
 		const values = {
 			model: normalizedName,
 			count: providerCount,
-			context: formatContextLength(signals.contextLength ?? 0),
+			context: formatTokenCountShort(signals.contextLength ?? 0),
 		};
-		const fullKey = signals.hasPricing && providerCount > 0
+		// "Compare {count} Providers" only reads right for two or more.
+		const fullKey = signals.hasPricing && providerCount > 1
 			? "pricingWithProviders"
 			: signals.hasPricing
 				? "pricing"
@@ -301,7 +296,7 @@ export function buildModelOverviewMetadataTitle(
 					: benchmarkCount > 0
 						? "Benchmarks"
 						: signals.contextLength && signals.contextLength > 0
-							? `${formatContextLength(signals.contextLength)} Context`
+							? `${formatTokenCountShort(signals.contextLength)} Context`
 							: "AI Model";
 			const title = `${normalizedName} ${descriptor} | Phaseo`;
 			if (title.length <= 60) return title;
@@ -358,4 +353,5 @@ export function buildModelOverviewMetadataDescription(args: {
 		});
 	}
 	return `Compare ${modelName} pricing, providers, benchmark results, latency, and availability. Review specifications and API compatibility${creatorText} on Phaseo.`;
-}
+}import { formatTokenCountShort } from "@phaseo/app-kit/format";
+

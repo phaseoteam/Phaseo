@@ -167,6 +167,28 @@ describe("OAuth client management security", () => {
 		expect(state.insertPayloads[0]?.allowed_scopes).toContain("gateway:access");
 	});
 
+	it("refuses billing:write for third-party OAuth apps on create and update", async () => {
+		state.thirdPartyOAuthEnabled = true;
+		state.metadataRows.push({ client_id: "owned_client" });
+		const { default: oauthClientsRoutes } = await import("./oauth-clients");
+		const created = await oauthClientsRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Partner App", redirect_uris: ["https://partner.example/callback"], allowed_scopes: ["me:read", "billing:write"] }),
+		});
+		expect(created.status).toBe(400);
+		expect((await created.json()).error).toContain("billing:write is only available to the Phaseo CLI");
+		const updated = await oauthClientsRoutes.request("https://example.com/owned_client", {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ allowed_scopes: ["billing:write"] }),
+		});
+		expect(updated.status).toBe(400);
+		expect(state.createClient).not.toHaveBeenCalled();
+		expect(state.updateClient).not.toHaveBeenCalled();
+		expect(state.insertPayloads).toHaveLength(0);
+	});
+
 	it("revokes delegated authorizations before deleting an OAuth client", async () => {
 		state.thirdPartyOAuthEnabled = true;
 		state.metadataRows.push({ client_id: "owned_client" });

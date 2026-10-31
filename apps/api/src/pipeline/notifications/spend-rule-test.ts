@@ -93,11 +93,17 @@ export async function sendSpendRuleTest(input: { workspaceId: string; ruleId: st
 			: "None of the destinations Spend Alerts are routed to is active");
 	}
 
-	const title = `[TEST] ${preview.alert?.title ?? `${rule.name}: test alert`}`;
-	const message = preview.alert
-		? `${preview.alert.message} ${TEST_NOTE}`
+	// A spike rule still learning (too few baseline windows with spend) has alert text in the
+	// preview but cannot fire, so the test explains that instead of sending a normal-looking alert.
+	const learning = Boolean(preview.spike && !preview.spike.history_ready && preview.spike.baseline_windows >= SPIKE_MIN_BASELINE_WINDOWS);
+	const alert = learning ? null : preview.alert;
+	const title = `[TEST] ${alert?.title ?? `${rule.name}: test alert`}`;
+	const message = alert
+		? `${alert.message} ${TEST_NOTE}`
 		: !preview.evaluated
 			? `This is a test of spend rule "${rule.name}". ${rule.metric} rules with these settings are not evaluated, so this rule does not send alerts.`
+			: preview.spike && learning
+				? `This is a test of spend rule "${rule.name}". A spike rule waits until the workspace has spent in at least ${SPIKE_MIN_BASELINE_WINDOWS} of its ${preview.spike.baseline_windows} baseline windows in the previous 7 days, so a new workspace does not alert on its first day. ${preview.spike.active_windows} ${preview.spike.active_windows === 1 ? "has" : "have"} spend so far, so it cannot fire yet. ${TEST_NOTE}`
 			: preview.spike
 				? `This is a test of spend rule "${rule.name}". A spike rule compares its window with the median of ${SPIKE_MIN_BASELINE_WINDOWS} or more windows in the previous 7 days, and a ${preview.spike.window_hours}-hour window leaves only ${preview.spike.baseline_windows}, so it cannot fire. ${TEST_NOTE}`
 				: preview.forecast && !preview.forecast.ready
@@ -152,13 +158,17 @@ export async function sendSpendRuleTest(input: { workspaceId: string; ruleId: st
 	})));
 	const deliveries: SpendRuleTestDelivery[] = destinations.map((destination, index) => {
 		const outcome = settled[index];
+		// 208: an email destination whose recipients are all suppressed, so nothing was sent.
+		const suppressed = outcome.status === "fulfilled" && outcome.value === 208;
 		return {
 			destination_id: destination.id,
 			name: String(destination.name ?? ""),
 			type: destination.type,
-			delivered: outcome.status === "fulfilled",
+			delivered: outcome.status === "fulfilled" && !suppressed,
 			status: outcome.status === "fulfilled" ? outcome.value : null,
-			error: outcome.status === "rejected" ? String(outcome.reason instanceof Error ? outcome.reason.message : outcome.reason).slice(0, 300) : null,
+			error: outcome.status === "rejected"
+				? String(outcome.reason instanceof Error ? outcome.reason.message : outcome.reason).slice(0, 300)
+				: suppressed ? "Every recipient of this email destination is suppressed" : null,
 		};
 	});
 	const delivered = deliveries.filter((delivery) => delivery.delivered).length;

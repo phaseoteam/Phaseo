@@ -64,7 +64,7 @@ function actorUserId(auth: { userId?: string | null }): string | null {
 }
 
 /** Classifiers see request content, so only owners and admins manage or read them. */
-async function authorize(req: Request, capability: string) {
+export async function authorizeClassifiers(req: Request, capability: string) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return { response: (auth as GuardErr).response } as const;
 	const scopeError = requireCapability(auth.value, capability);
@@ -111,7 +111,7 @@ function writeError(error: { code?: string; message?: string }): Response | null
 }
 
 async function handleList(req: Request) {
-	const authorization = await authorize(req, CAPABILITIES.CLASSIFIERS_READ);
+	const authorization = await authorizeClassifiers(req, CAPABILITIES.CLASSIFIERS_READ);
 	if ("response" in authorization) return authorization.response;
 	try {
 		const { data, error } = await getSupabaseAdmin().from("workspace_request_classifiers").select(CLASSIFIER_COLUMNS)
@@ -126,7 +126,7 @@ async function handleList(req: Request) {
 }
 
 async function handleCreate(req: Request) {
-	const authorization = await authorize(req, CAPABILITIES.CLASSIFIERS_WRITE);
+	const authorization = await authorizeClassifiers(req, CAPABILITIES.CLASSIFIERS_WRITE);
 	if ("response" in authorization) return authorization.response;
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;
@@ -155,7 +155,7 @@ async function handleCreate(req: Request) {
 }
 
 async function handleGet(req: Request) {
-	const authorization = await authorize(req, CAPABILITIES.CLASSIFIERS_READ);
+	const authorization = await authorizeClassifiers(req, CAPABILITIES.CLASSIFIERS_READ);
 	if ("response" in authorization) return authorization.response;
 	const id = parseId(req);
 	if (!id) return badRequest("A classifier id is required");
@@ -171,7 +171,7 @@ async function handleGet(req: Request) {
 }
 
 async function handleUpdate(req: Request) {
-	const authorization = await authorize(req, CAPABILITIES.CLASSIFIERS_WRITE);
+	const authorization = await authorizeClassifiers(req, CAPABILITIES.CLASSIFIERS_WRITE);
 	if ("response" in authorization) return authorization.response;
 	const id = parseId(req);
 	if (!id) return badRequest("A classifier id is required");
@@ -198,7 +198,7 @@ async function handleUpdate(req: Request) {
 }
 
 async function handleDelete(req: Request) {
-	const authorization = await authorize(req, CAPABILITIES.CLASSIFIERS_DELETE);
+	const authorization = await authorizeClassifiers(req, CAPABILITIES.CLASSIFIERS_DELETE);
 	if ("response" in authorization) return authorization.response;
 	const id = parseId(req);
 	if (!id) return badRequest("A classifier id is required");

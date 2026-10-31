@@ -233,6 +233,42 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.service_tier).toBe(serviceTier);
 	});
 
+	// GPT-6 Astra needs Responses for tools; GPT-6 Sol and Luna take Chat tools only at
+	// reasoning_effort "none" (https://developers.openai.com/api/docs/guides/latest-model).
+	it.each([
+		["gpt-6-astra", true, "responses"],
+		["gpt-6-sol", true, "responses"],
+		["gpt-6-luna", true, "responses"],
+		["gpt-6-sol", false, "chat/completions"],
+		["gpt-5.4-nano", true, "chat/completions"],
+	] as const)("sends a Chat request for %s (tools: %s) to /v1/%s", async (model, withTools, path) => {
+		const mock = installFetchMock([{
+			match: (url) => url.startsWith("https://api.openai.com/v1/"),
+			response: jsonResponse({
+				id: "resp_gpt6_tools",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model,
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({
+				model: `openai/${model}`,
+				...(withTools ? { tools: [{ name: "get_weather", parameters: { type: "object", properties: {} } }] } : {}),
+			}),
+			providerModelSlug: model,
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		}).catch(() => undefined);
+		mock.restore();
+
+		expect(mock.calls[0]?.url).toBe(`https://api.openai.com/v1/${path}`);
+	});
+
 	// Model pages list Chat Completions as not supported, e.g.
 	// https://developers.openai.com/api/docs/models/gpt-5.5-pro.
 	it.each(["gpt-5-pro", "gpt-5.5-pro", "gpt-5.4-pro-2026-03-05", "o3-pro", "gpt-5.3-codex"])(
@@ -317,6 +353,36 @@ describe("openai text executor HTTP mode", () => {
 			expect(body).not.toHaveProperty(field);
 		}
 		expect(body.include).toContain("message.output_text.logprobs");
+	});
+
+	it.each([
+		["include_usage only", { include_usage: true }, undefined],
+		["include_usage with include_obfuscation", { include_usage: true, include_obfuscation: false }, { include_obfuscation: false }],
+	] as const)("drops Chat's stream_options.include_usage from a request rerouted to Responses (%s)", async (_label, streamOptions, expected) => {
+		// Streaming Chat clients (OpenAI SDK, AI SDK) send include_usage; with reasoning_effort the
+		// request goes to /v1/responses, which rejects it as an unknown parameter.
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_stream_options",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.5",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.5", reasoning: { effort: "low" }, streamOptions } as any),
+			providerModelSlug: "gpt-5.5",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(mock.calls[0]?.bodyJson?.stream_options).toEqual(expected);
 	});
 
 	it.each([

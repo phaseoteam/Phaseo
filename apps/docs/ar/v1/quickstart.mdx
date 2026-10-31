@@ -30,7 +30,8 @@ Rules:
 <Visibility for="agents">
 قائمة التحقق للبدء السريع للوكلاء:
 
-- تُنشأ المفاتيح من لوحة التحكم على https://phaseo.app/settings/keys. لا تولّد مفتاحًا ولا تخمّنه أبدًا. أرسله بصيغة `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` من شيفرة الخادم فقط.
+- أنشئ المفتاح باستخدام CLI: نفّذ `npm install -g @phaseo/cli`، ثم `phaseo login` (أو `phaseo login --device-code` في shell بلا واجهة رسومية؛ يوافق شخص على تسجيل الدخول)، ثم `phaseo keys create --name <name> --json`. لا تولّد مفتاحًا ولا تخمّنه أبدًا. أرسله بصيغة `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` من شيفرة الخادم فقط.
+- للنماذج المدفوعة، نفّذ `phaseo login --scopes billing:write` مرة واحدة، ثم يبدأ `phaseo credits add --amount <usd> --json` عملية شحن رصيد. مع بطاقة محفوظة، يؤكدها مالك مساحة العمل أو أحد مسؤوليها من رابط يصله بالبريد الإلكتروني. ومن دون بطاقة محفوظة، تتضمن الاستجابة `next_action: "open_checkout_url"` ورابط دفع يفتحه المالك أو المسؤول ليدفع، ثم تُحفظ البطاقة لعمليات الشحن اللاحقة. لا ترسل المستخدم إلى لوحة التحكم من أجل المفاتيح أو الرصيد أو الإعدادات؛ راجع https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - أرسل الطلب الأول إلى `POST https://api.phaseo.app/v1/responses` مع `model` و`input`. يعمل `phaseo/free` دون رصيد في المحفظة.
 - اقرأ الرد من `output[].content[]` حيث تكون قيمة `type` هي `output_text`.
 - إذا فشل الطلب، فاعتمد على رمز `error` في JSON كما هو موضح في https://phaseo.app/docs/v1/api-reference/errors.md.
@@ -40,9 +41,15 @@ Rules:
 
 ## 1. أنشئ مفتاح API
 
-1. افتح [لوحة تحكم Phaseo](https://phaseo.app/settings/keys).
-2. أنشئ مفتاحاً ضمن **Gateway -> المفاتيح**.
-3. انسخه مرة واحدة واحفظه في مكان آمن.
+ثبّت [Phaseo CLI](./guides/integrations/phaseo-cli)، وسجّل الدخول، ثم أنشئ مفتاحًا:
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # use --device-code over SSH or in an agent sandbox
+phaseo keys create --name "Quickstart" --json
+```
+
+يظهر المفتاح مرة واحدة فقط. احفظه في مكان آمن، مثلًا باسم `PHASEO_API_KEY`. لاستخدام النماذج المدفوعة، نفّذ `phaseo login --scopes billing:write` مرة واحدة، ثم أضف رصيدًا باستخدام `phaseo credits add --amount 20`. مع بطاقة محفوظة، يؤكد مالك مساحة العمل أو أحد مسؤوليها عملية الدفع من رابط يصله بالبريد الإلكتروني. ومن دون بطاقة محفوظة، يعيد الأمر رابط دفع يفتحه المالك أو المسؤول ليدفع، ثم تُحفظ البطاقة لعمليات الشحن اللاحقة. يمكنك أيضًا إنشاء المفتاح من [لوحة تحكم Phaseo](https://phaseo.app/settings/keys) ضمن **Gateway -> المفاتيح**.
 
 استخدم التنسيق التالي:
 
@@ -59,6 +66,26 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ## 2. أرسل طلباً نصياً
 
 استخدم `POST /v1/responses` في طلبك الأول. هذه هي نقطة النهاية الموصى بها لعمليات إنشاء النصوص الجديدة.
+
+### ثبّت حزمة SDK
+
+لا تحتاج أمثلة cURL وJavaScript إلى تثبيت أي شيء. لاستخدام حزمة TypeScript SDK أو Python SDK، ثبّتها أولاً:
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+راجع صفحتي التثبيت لـ [TypeScript](./sdk-reference/typescript/installation) و[Python](./sdk-reference/python/installation) لمعرفة متطلبات التشغيل وحزم SDK الأخرى.
 
 ### الطلب
 
@@ -320,6 +347,43 @@ console.log(result.text);
 عند استدعاء Responses API مباشرةً، اقرأ رد المساعد من `output[].content[]` حيث تكون قيمة `type` هي `output_text`.
 
 إذا كنت تستخدم Vercel AI SDK، فاقرأ الرد من `result.text`.
+
+### بث الرد
+
+لطباعة الرد أثناء إنشائه، استخدم البث. يحتوي الحقل `text` في كل جزء على النص الجديد فقط، لذلك تطبع هذه الحلقة الإجابة مرة واحدة. أحداث الإغلاق مثل `response.output_text.done` يكون فيها `text` فارغاً، ونصها الكامل موجود في `fullText` (TypeScript) أو `full_text` (Python).
+
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk["text"]:
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
+
+إذا طُبعت الإجابة مرتين، فحدّث حزمة SDK: كانت الإصدارات الأقدم تضع النص الكامل أيضاً في حدث الإغلاق.
 
 ---
 

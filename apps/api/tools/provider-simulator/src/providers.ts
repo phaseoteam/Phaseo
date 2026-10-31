@@ -1,6 +1,6 @@
 // Purpose: Which providers the simulator covers, and which catalogue routes stand in for each.
 // Why: Coverage must follow what executors/index.ts actually registers, not a hand-kept list.
-// How: Enumerates registered text executors, maps each id to its catalogue folder, and picks up to one
+// How: Enumerates registered text executors, maps each id to its catalogue provider slug, and picks up to one
 //      representative route per model family (Claude, Gemini, OpenAI, other).
 
 import { EXECUTORS_BY_PROVIDER, resolveProviderExecutor } from "@executors/index";
@@ -8,8 +8,8 @@ import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { loadCatalogueRoutes, loadCataloguePriceCard, type CatalogueRoute } from "./catalogue";
 import type { RouteUnderTest } from "./request-pipeline";
 
-/** Registered ids whose catalogue folder has a different name. */
-const CATALOGUE_FOLDER: Record<string, string> = {
+/** Registered ids whose catalogue provider slug (v2_model_provider_routes.provider_slug) differs. */
+const CATALOGUE_SLUG: Record<string, string> = {
 	arcee: "arcee-ai",
 	"atlas-cloud": "atlascloud",
 	aionlabs: "aion-labs",
@@ -87,7 +87,7 @@ export function listSimProviders(filter?: (id: string) => boolean): SimProvider[
 	const groups = new Map<string, string[]>();
 	for (const [registeredId, capabilities] of Object.entries(EXECUTORS_BY_PROVIDER)) {
 		if (!capabilities["text.generate"]) continue;
-		const catalogueId = CATALOGUE_FOLDER[registeredId] ?? (catalogue.has(registeredId) ? registeredId : normalizeProviderId(registeredId));
+		const catalogueId = CATALOGUE_SLUG[registeredId] ?? (catalogue.has(registeredId) ? registeredId : normalizeProviderId(registeredId));
 		const key = catalogue.has(catalogueId) ? catalogueId : registeredId;
 		groups.set(key, [...(groups.get(key) ?? []), registeredId]);
 	}
@@ -95,7 +95,7 @@ export function listSimProviders(filter?: (id: string) => boolean): SimProvider[
 		if (filter && !filter(providerId)) continue;
 		const executor = resolveProviderExecutor(providerId, "text.generate");
 		if (!executor) continue;
-		const catalogueId = catalogue.has(providerId) ? providerId : CATALOGUE_FOLDER[providerId] ?? providerId;
+		const catalogueId = catalogue.has(providerId) ? providerId : CATALOGUE_SLUG[providerId] ?? providerId;
 		const routes = catalogue.get(catalogueId) ?? [];
 		const byFamily = new Map<ModelFamily, CatalogueRoute>();
 		for (const route of [...routes].sort((a, b) => routeScore(b) - routeScore(a))) {

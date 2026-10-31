@@ -15,6 +15,10 @@ Usa los destinos de notificación para enviar las alertas habilitadas del espaci
 5. Selecciona **Enviar prueba** para cada canal configurado.
 6. Crea los destinos cuando todas las pruebas se hayan completado correctamente.
 
+Desde la CLI, ejecuta `phaseo notifications destinations create`, pruébalo con `phaseo notifications destinations test <id>` y elige qué alertas recibe con `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+
+Los webhooks personalizados reciben un secreto de firma al crearlos. Cópialo desde el cuadro de diálogo que se abre; solo se muestra una vez.
+
 Phaseo admite:
 
 - direcciones de correo electrónico y listas de distribución
@@ -65,3 +69,72 @@ Usa las menciones con moderación. Las alertas frecuentes del espacio de trabajo
 Usa **Enviar prueba** junto a un destino existente después de rotar las credenciales o cambiar la configuración del canal. Elimina los destinos que ya no se supervisen para que las alertas no parezcan enviarse a un canal abandonado.
 
 Los webhooks personalizados deben usar HTTPS y validar la solicitud antes de procesarla. Devuelve una respuesta correcta sin demora y traslada las tareas más lentas a un proceso en segundo plano.
+
+## Verificar las firmas de los webhooks
+
+Phaseo firma cada entrega de webhook personalizado, incluidas las pruebas enviadas desde un destino guardado, con el mismo esquema que los [webhooks de vídeo y lotes](./async-video-and-batch.mdx). Cada solicitud incluye estos encabezados:
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` es el HMAC-SHA256 en hexadecimal del valor de `x-phaseo-timestamp`, un punto literal (`.`) y el **cuerpo de la solicitud sin modificar**, con el secreto de firma del destino (`whsec_…`) como clave. `x-phaseo-timestamp` está en segundos Unix.
+
+Para verificar una entrega:
+
+1. Lee el cuerpo sin procesar antes de analizarlo como JSON.
+2. Vuelve a calcular la firma y compárala en tiempo constante.
+3. Rechaza marcas de tiempo que difieran más de cinco minutos de tu reloj.
+4. Elimina duplicados por `x-phaseo-event-id`. Las entregas fallidas se reintentan y cada intento se vuelve a firmar con una nueva marca de tiempo.
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody es el cuerpo de la solicitud tal como se recibió, como cadena.
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body es el cuerpo de la solicitud tal como se recibió, en bytes.
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### Generar o rotar un secreto
+
+El secreto se muestra una sola vez, al crear el destino. Para sustituirlo, selecciona **Rotar secreto** junto al destino en **Configuración → Notificaciones**, o llama a [`POST /v1/notifications/destinations/{id}/rotate-secret`](/es/v1/api-reference/endpoint/notifications-destination-rotate-secret). La siguiente entrega se firma con el nuevo secreto y el anterior deja de funcionar, así que actualiza tu receptor enseguida.
+
+Los webhooks personalizados creados antes de que existiera la firma no tienen secreto y se siguen entregando sin firmar. En Configuración aparecen como **Sin firmar**. Selecciona **Generar secreto**, añade el secreto a tu receptor y envía una prueba para comprobar la verificación. Las pruebas enviadas desde el panel **Añadir destino**, antes de guardar el destino, no van firmadas porque aún no existe ningún secreto.
+
+Los destinos de correo electrónico, Slack, Discord y Microsoft Teams no se firman: esos servicios autentican por sí mismos la URL del webhook o el token del bot.

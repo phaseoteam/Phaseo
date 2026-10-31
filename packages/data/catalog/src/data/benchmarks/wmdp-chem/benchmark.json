@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "wmdp-chem",
-  "benchmark_name": "WMDP Chem",
-  "category": "biology",
-  "ascending_order": true,
-  "type": "percentage",
-  "link": "https://research.meta.ai/static/muse-glimmer-methodology",
-  "total_models": 1
-}

@@ -4,7 +4,23 @@ const state = vi.hoisted(() => ({
 	rpc: vi.fn(),
 	dispatched: [] as Array<Promise<unknown>>,
 	adminThrows: false,
+	shadow: vi.fn(),
+	mode: "off" as string,
+	decide: vi.fn(),
 }));
+
+// Mirrors enforcedSpendLimit's contract (spend-limits.test.ts covers the real one): a decision
+// only in enforce mode for non-internal requests with a slot, computed once per slot.
+vi.mock("@core/spend-limits", () => ({
+	shadowSpendLimitOnce: state.shadow,
+	enforcedSpendLimit: (args: { internal?: boolean; slot?: { decision: Promise<unknown> | null } | null }) => {
+		if (!args.slot || args.internal || state.mode !== "enforce") return null;
+		args.slot.decision ??= Promise.resolve(state.decide(args));
+		return args.slot.decision;
+	},
+}));
+
+vi.mock("./retiredModels", () => ({ findRetiredModelNotice: async () => null, describeRetiredModel: () => "" }));
 
 vi.mock("./context", () => ({ fetchGatewayContext: vi.fn() }));
 
@@ -57,6 +73,9 @@ describe("budget alerts from rejected requests", () => {
 		state.rpc.mockReset();
 		state.dispatched = [];
 		state.adminThrows = false;
+		state.shadow.mockReset();
+		state.mode = "off";
+		state.decide.mockReset();
 		resetRememberedSpendLimits();
 	});
 
@@ -112,5 +131,101 @@ describe("budget alerts from rejected requests", () => {
 
 		expect(state.rpc).not.toHaveBeenCalled();
 		expect(state.dispatched).toHaveLength(0);
+	});
+
+	it("hands the legacy decision to the spend-limit shadow for opted-in capped API keys only", async () => {
+		state.rpc.mockResolvedValue({ data: true, error: null });
+		const blocked = blockedContext("daily_request_limit_reached");
+		vi.mocked(fetchGatewayContext).mockResolvedValue(blocked);
+		expect((await request({ shadowSpendLimit: true })).ok).toBe(false);
+		expect(state.shadow).toHaveBeenCalledWith({ workspaceId: "ws_1", keyId: "key_1", requestId: "req_1" }, blocked.keyLimit);
+
+		state.shadow.mockClear();
+		await request({ shadowSpendLimit: true, internal: true });
+		// Batch and realtime callers, and OAuth requests, do not opt in.
+		await request();
+		// An allowed key without limits or budgets has nothing to compare.
+		vi.mocked(fetchGatewayContext).mockResolvedValue({ ...blocked, keyLimit: { ok: true, reason: null, resetAt: null, buckets: null, budgets: [] } });
+		await request({ shadowSpendLimit: true });
+		expect(state.shadow).not.toHaveBeenCalled();
+	});
+
+	describe("enforce mode", () => {
+		const slot = () => ({ attempt: "a1", decision: null as Promise<unknown> | null });
+		const allowedContext = () => ({ ...blockedContext("x"), keyLimit: { ok: true, reason: null, resetAt: null, buckets: null, budgets: [] } });
+		const departmentDenial = {
+			outcome: "denied", admission: null, source: "coordinator", contended: false,
+			keyLimit: {
+				ok: false, reason: "department_daily_cost_budget_reached", resetAt: "2026-10-20T00:00:00.000Z", now: "2026-10-19T12:00:00.000Z",
+				limitWindow: "daily", limitMetric: "cost", currentValue: 11_000_000_000, limitValue: 10_000_000_000,
+				departmentId: "dept_1", departmentName: "Engineering",
+			},
+		};
+
+		beforeEach(() => { state.mode = "enforce"; });
+
+		it("rejects a request the coordinator denies, naming the department", async () => {
+			state.decide.mockReturnValue(departmentDenial);
+			vi.mocked(fetchGatewayContext).mockResolvedValue(allowedContext());
+
+			const result = await request({ spendLimit: slot() });
+
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+			expect(result.response.status).toBe(429);
+			expect(result.response.headers.get("Retry-After")).toBe(String(12 * 3600));
+			expect(await result.response.json()).toMatchObject({
+				code: "key_limit_exceeded",
+				reason: "department_daily_cost_budget_reached",
+				limit_window: "daily",
+				limit_metric: "cost",
+				department_id: "dept_1",
+				department_name: "Engineering",
+				description: "The Engineering department has reached its daily budget ($11.00 of $10.00).",
+			});
+			// The department sweep sends the 100% alert; rejections do not record one.
+			expect(state.rpc).not.toHaveBeenCalled();
+		});
+
+		it("lets an allowed coordinator decision override the legacy denial", async () => {
+			state.decide.mockReturnValue({ outcome: "allowed", keyLimit: { ok: true, reason: null, resetAt: null }, admission: {}, source: "lease" });
+			vi.mocked(fetchGatewayContext).mockResolvedValue(blockedContext("daily_request_limit_reached"));
+
+			const result = await request({ spendLimit: slot() });
+
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+			// Past the key-limit gate: this fixture has no providers.
+			expect((await result.response.json()).code).not.toBe("key_limit_exceeded");
+		});
+
+		it("falls back to the legacy check when the coordinator is unavailable or not asked", async () => {
+			state.rpc.mockResolvedValue({ data: true, error: null });
+			state.decide.mockReturnValue({ outcome: "unavailable", keyLimit: null, admission: null, error: "spend_limit_binding_missing" });
+			vi.mocked(fetchGatewayContext).mockResolvedValue(blockedContext("daily_request_limit_reached"));
+
+			for (const overrides of [{ spendLimit: slot() }, {}]) {
+				const result = await request(overrides);
+				expect(result.ok).toBe(false);
+				if (result.ok) return;
+				expect(await result.response.json()).toMatchObject({ code: "key_limit_exceeded", reason: "daily_request_limit_reached" });
+			}
+			// Off and shadow modes never ask the coordinator.
+			state.mode = "shadow";
+			await request({ spendLimit: slot() });
+			expect(state.decide).toHaveBeenCalledTimes(1);
+		});
+
+		it("decides once per request however many candidate models are checked", async () => {
+			state.decide.mockReturnValue(departmentDenial);
+			vi.mocked(fetchGatewayContext).mockResolvedValue(allowedContext());
+			const shared = slot();
+
+			for (const model of ["openai/gpt-4.1-mini", "anthropic/claude-5", "google/gemini-4"]) {
+				const result = await request({ spendLimit: shared, model });
+				expect(result.ok).toBe(false);
+			}
+			expect(state.decide).toHaveBeenCalledTimes(1);
+		});
 	});
 });

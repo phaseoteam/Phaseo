@@ -35,6 +35,30 @@ var response = await client.CreateResponse(new Dictionary<string, object>
 Console.WriteLine(response?["id"]);
 ```
 
+## Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then pass a credential provider (`Func<CancellationToken, ValueTask<string>>`) instead of `apiKey`. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
+
+`WorkloadTokens` has built-in providers. They cache each token until 60 seconds before it expires.
+
+```csharp
+using PhaseoSdk;
+
+// GitHub Actions: the job needs `permissions: id-token: write`.
+var client = Phaseo.FromApiKeyProvider(WorkloadTokens.GitHubActions());
+```
+
+```csharp
+// Vercel: exchanges the deployment's OIDC token (VERCEL_OIDC_TOKEN_FILE or VERCEL_OIDC_TOKEN).
+var client = Phaseo.FromApiKeyProvider(WorkloadTokens.Vercel());
+
+// Or pass the token from the request's `x-vercel-oidc-token` header.
+var perRequest = Phaseo.FromApiKeyProvider(WorkloadTokens.Vercel(
+    sourceTokenProvider: _ => ValueTask.FromResult(httpContext.Request.Headers["x-vercel-oidc-token"].ToString())));
+```
+
+Any function works as a provider, for example `Phaseo.FromApiKeyProvider(async ct => await myTokenCache.GetAsync(ct))`. A blank result fails the request before it is sent, and a request that sets its own `Authorization` header keeps it.
+
 ## Common methods
 
 - `CreateResponse(...)`
@@ -94,6 +118,19 @@ Console.WriteLine(genericSocketUrl);
 Console.WriteLine(resourceSocketUrl);
 ```
 
+## Realtime voice (beta)
+
+`client.Realtime.ConnectAsync(...)` creates a realtime session and opens the relay WebSocket with `System.Net.WebSockets.ClientWebSocket`; there is no extra dependency. Provider events pass through unchanged as `JsonElement`s.
+
+```csharp
+var session = await client.Realtime.ConnectAsync(new RealtimeConnectOptions { Model = "openai/gpt-realtime-2", Voice = "marin" });
+using var warnings = session.OnWarning(warning => Console.WriteLine(warning.GetProperty("code").GetString()));
+await session.SendAudioAsync(pcm16Chunk); // PCM16 bytes; base64 is handled for you
+var ended = await session.EndAsync(reason: "caller hung up"); // session.ended: reason, usage, cost, billing_status
+```
+
+`await foreach (var item in session.EventsAsync())` reads every event until the socket closes. If the socket closes without `session.ended`, `EndAsync` throws `RealtimeSessionClosedException`, whose `FinalBillPath` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.
@@ -101,7 +138,7 @@ Console.WriteLine(resourceSocketUrl);
 
 ## Environment variables
 
-- `PHASEO_API_KEY` (required unless passed in code)
+- `PHASEO_API_KEY` (required unless passed in code or a credential provider is used)
 - `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
 
 ## Regeneration and local checks

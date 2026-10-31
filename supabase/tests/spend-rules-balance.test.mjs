@@ -486,6 +486,36 @@ try {
     low_balance_email_sweep: { watched: watchedNow, first_ms: Math.round(emailMs), quiet_ms: Math.round(quietMs), quiet_ms_per_workspace: +(quietMs / watchedNow).toFixed(3) } }));
   assert.ok(rulesMs / total < 50, 'a balance evaluation stays cheap');
 
+  // A balance slice with more workspaces than the limit starts further along on each 15-minute
+  // visit instead of always taking the first ones.
+  await db.exec(`
+    create table balance_evaluation_log (workspace_id uuid);
+    alter function private.evaluate_workspace_spend_rules(uuid, timestamptz, boolean) rename to evaluate_workspace_spend_rules_logged;
+    create function private.evaluate_workspace_spend_rules(p_workspace_id uuid, p_now timestamptz, p_blocks boolean default false) returns jsonb language plpgsql as $$
+    begin
+      insert into public.balance_evaluation_log values (p_workspace_id);
+      return private.evaluate_workspace_spend_rules_logged(p_workspace_id, p_now, p_blocks);
+    end $$;
+  `);
+  const visit = (n) => at(26 * 60 + n * 15);
+  const slice = (await one(`select (floor(extract(epoch from $1::timestamptz) / 300)::bigint % 12 % 3)::int s`, [visit(0)])).s;
+  const inSlice = await count(`public.workspaces w where w.name like 'Perf %' and (pg_catalog.hashtextextended(w.id::text, 0) % 3 + 3) % 3 = $1`, [slice]);
+  assert.ok(inSlice >= 20, `the slice has enough workspaces to rotate (${inSlice})`);
+  const limit = Math.ceil(inSlice / 4);
+  const visits = Math.ceil(inSlice / limit);
+  for (let n = 0; n < visits; n += 1) {
+    const result = (await one('select public.sweep_spend_rules($1::timestamptz, $2, false) r', [visit(n), limit])).r;
+    assert.ok(result.balance <= limit);
+  }
+  const reached = await count(`(select distinct l.workspace_id from balance_evaluation_log l join public.workspaces w on w.id = l.workspace_id
+    where w.name like 'Perf %' and (pg_catalog.hashtextextended(w.id::text, 0) % 3 + 3) % 3 = $1) r`, [slice]);
+  assert.equal(reached, inSlice, 'every workspace in an over-full balance slice is reached within ceil(n / limit) visits');
+  await db.exec(`
+    drop function private.evaluate_workspace_spend_rules(uuid, timestamptz, boolean);
+    alter function private.evaluate_workspace_spend_rules_logged(uuid, timestamptz, boolean) rename to evaluate_workspace_spend_rules;
+    drop table balance_evaluation_log;
+  `);
+
   console.log('spend-rules-balance: ok');
 } finally {
   await db.close();

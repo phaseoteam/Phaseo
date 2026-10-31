@@ -1,0 +1,80 @@
+---
+icon: "phone"
+title: "रीयलटाइम वॉइस"
+description: "Python SDK से Phaseo रिले के ज़रिए रीयलटाइम वॉइस कॉल चलाएँ और कॉल खत्म होने पर अंतिम बिल पाएँ।"
+---
+
+<Note>
+रीयलटाइम वॉइस बीटा में है और इसकी पहुँच हर वर्कस्पेस के लिए अलग से दी जाती है।
+</Note>
+
+**मेथड**: `AsyncPhaseo` पर `await client.realtime.connect()` सत्र बनाता है (`POST /v1/audio/realtime/sessions`), रिले का WebSocket खोलता है और रिले के `relay.connected` भेजते ही लौट आता है। रीयलटाइम क्लाइंट केवल एसिंक है और इसके लिए वैकल्पिक `websockets` पैकेज चाहिए:
+
+```bash
+pip install "phaseo[realtime]"
+```
+
+इसके बिना `connect()` उसी इंस्टॉल कमांड के साथ `ImportError` उठाता है। रिले प्रोटोकॉल, चेतावनियाँ और कारण कोड [रीयलटाइम वॉइस सत्र](/hi/v1/guides/realtime-voice) में बताए गए हैं।
+
+### उदाहरण
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo, RealtimeSessionClosedError
+
+async def main(pcm16_chunk: bytes) -> None:
+    client = AsyncPhaseo()  # reads PHASEO_API_KEY
+    session = await client.realtime.connect(
+        "openai/gpt-realtime-2", voice="marin", instructions="Answer in one sentence."
+    )
+    session.on_warning(lambda warning: print("warning", warning["code"]))
+
+    # PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+    await session.send_audio(pcm16_chunk)
+
+    try:
+        ended = await session.end(reason="caller hung up")
+        print(ended["reason"], ended["duration_seconds"], ended["cost"]["total_usd"], ended["billing_status"])
+    except RealtimeSessionClosedError as error:
+        # The call is still billed. Fetch the final cost later with error.final_bill["path"].
+        print(error)
+    finally:
+        await client.close()
+```
+
+इसके बजाय हर इवेंट पढ़ने के लिए, सत्र पर इटरेट करें। पहले इटरेटर को वे इवेंट भी मिलते हैं जो `connect()` के लौटने के बाद से आए हैं, `relay.connected` से शुरू करके, और सॉकेट बंद होने पर इटरेशन रुक जाता है।
+
+```python
+async for event in session:
+    if event["type"] == "response.output_audio.delta":
+        play(event["delta"])
+```
+
+`async with session:` ब्लॉक से बाहर निकलते समय, अगर कॉल पहले ही खत्म नहीं हुई है, तो उसे `end()` से समाप्त करता है।
+
+### कनेक्ट विकल्प
+
+- `model` (आवश्यक): एक रीयलटाइम मॉडल ID, उदाहरण के लिए `openai/gpt-realtime-2`।
+- `voice`, `instructions`, `provider`, `metadata`: सत्र बनाने के अनुरोध को पास किए जाते हैं।
+- `connect_timeout`: `relay.connected` का इंतज़ार करने के सेकंड। डिफ़ॉल्ट 30।
+- `websocket_connect`: एक एसिंक कॉलेबल `(url, subprotocols)` जो कनेक्ट किया हुआ सॉकेट लौटाता है, किसी दूसरी WebSocket लाइब्रेरी का उपयोग करने के लिए।
+
+### सत्र
+
+| सदस्य | विवरण |
+| --- | --- |
+| `id`, `info` | सत्र ID और सत्र बनाने की प्रतिक्रिया, `client_secret` के बिना। |
+| `await send_audio(pcm16)` | PCM16 `bytes` को `client.audio` के रूप में भेजता है। SDK इसे base64 में एन्कोड करता है। |
+| `await send(event)` | प्रदाता-विशिष्ट संदेशों के लिए कोई भी इवेंट JSON के रूप में भेजता है। |
+| `on(type, listener)` | एक इवेंट प्रकार की, या `"*"` से हर इवेंट की सदस्यता लेता है। सदस्यता हटाने वाला फ़ंक्शन लौटाता है। प्रदाता के इवेंट डिक्शनरी के रूप में बिना बदले आते हैं। |
+| `on_warning(listener)`, `on_ended(listener)` | `session.warning` और `session.ended` के लिए हेल्पर। |
+| `async for event in session` | सॉकेट बंद होने तक हर इवेंट देता है। |
+| `await end(reason=None, cancel_response=None, timeout=60)` | `session.end` भेजता है और `session.ended` लौटाता है: `reason`, `initiated_by`, `duration_seconds`, `usage`, `cost`, `billing_status` और, अगर निपटान नहीं हुआ है, तो `final_bill`। |
+| `ended` | कॉल चाहे किसी भी तरह खत्म हो, `session.ended` के लिए एक फ़्यूचर, जिसमें प्रदाता या गेटवे द्वारा शुरू की गई समाप्तियाँ भी शामिल हैं। |
+| `await close()` | बिल का इंतज़ार किए बिना सॉकेट बंद करता है। कॉल का बिल फिर भी बनता है। |
+
+### त्रुटियाँ
+
+अगर `session.ended` के बिना सॉकेट बंद हो जाता है या `end()` का टाइमआउट हो जाता है, तो `end()` और `ended` `RealtimeSessionClosedError` उठाते हैं। इसमें `session_id`, `close_code`, `close_reason` और `final_bill` होते हैं; आखिरी वाला वह अनुरोध है जो निपटान के बाद अंतिम लागत लौटाता है: `GET /v1/generations?id=realtime%3A<session_id>`। `realtime_final_bill(session_id)` यही अनुरोध बनाता है।
+
+अगर रिले कनेक्ट होने से पहले सत्र समाप्त कर देता है तो `connect()` त्रुटि उठाता है, और अगर `relay.connected` समय पर नहीं आता तो `TimeoutError` उठाता है।

@@ -467,6 +467,37 @@
 		},
 		"defaultTitle": "新对话",
 		"branchTitle": "分支：{title}",
+		"logImport": {
+			"title": "继续已记录的请求",
+			"description": "将请求作为一个拥有独立会话的新聊天打开，并保存在此浏览器中。请选择要保留的内容。",
+			"loading": "正在加载请求…",
+			"failed": "无法加载此请求。请确认你已登录该请求所属的工作区。",
+			"unavailable": { "not_stored": "此请求的提示和回复未被存储。请在隐私设置中开启网关 I/O 日志以存储新的请求。", "too_large": "此请求过大，无法存储，因此无法打开。", "deleted": "此请求存储的提示和回复已过期或已被删除。", "unsupported": "只有 Chat Completions、Responses 和 Messages 请求可以在聊天中打开。" },
+			"summary": "{count, plural, other {# 条消息}} · {model}",
+			"modelUnavailable": "{model} 在聊天中不可用，因此聊天将使用 {fallback}。打开后你可以切换模型。",
+			"carryOver": "保留内容",
+			"options": {
+				"pinProvider": "固定提供商（{provider}）",
+				"keepParams": "参数（温度、最大 token 数、推理）",
+				"keepSystemPrompt": "系统提示",
+				"keepServerTools": "服务器工具",
+				"keepFunctionTools": "{count, plural, other {# 个函数工具}}",
+				"keepFunctionToolsHint": "聊天无法运行它们。声明后，之前的工具调用会以调用形式发送；不声明则以文本形式发送。",
+				"includeResponse": "已记录的回复"
+			},
+			"workspaceMismatch": "聊天从你当前的工作区发送，而它并非此请求所属的工作区。",
+			"warnings": {
+				"earlier_history_missing": "此请求通过 ID 延续了之前的回复，因此不包含之前的轮次。",
+				"unsupported_content": "部分内容无法显示，已被省略。",
+				"attachment_reference": "部分附件通过 ID 引用，未随请求一起存储。",
+				"no_response": "已记录的回复缺失或失败，因此聊天以请求结束。",
+				"response_truncated": "已记录的回复被截断了。",
+				"extra_choices": "只包含回复的第一个候选项。",
+				"unanswered_tool_calls": "部分工具调用没有结果。继续时它们会以文本形式发送。"
+			},
+			"cancel": "取消",
+			"continue": "在聊天中打开"
+		},
 		"errors": {
 			"signInToChat": "登录后即可开始聊天。",
 			"selectModelToChat": "请选择一个模型以开始聊天。",
@@ -1122,6 +1153,7 @@
 		"realtimeBillingOpenAI": "OpenAI 使用事件",
 		"realtimeBillingXai": "xAI 时长计量",
 		"realtimeBillingGoogle": "Google 使用元数据",
+		"realtimeBillingProvider": "{provider} 使用量",
 		"selectRealtimeModel": "选择实时模型",
 		"searchRealtimeModels": "搜索实时模型……",
 		"noRealtimeModels": "未找到实时模型。",
@@ -1656,7 +1688,7 @@
 		"hideAllRuns": "隐藏所有运行",
 		"yourGateway": "你的 Gateway",
 		"yourGatewayTtft": "你的 Gateway（TTFT）",
-		"yourGatewayThroughput": "你的 Gateway（token/秒）",
+		"yourGatewayThroughput": "你的 Gateway（tps）",
 		"tie": "平局",
 		"latestProvider": "最新结果：{provider}",
 		"requestFailed": "请求未能完成。请检查端点和凭据后重试。",
@@ -1702,7 +1734,7 @@
 		"throughput": "吞吐量",
 		"responsePlaceholder": "响应将显示在此处……",
 		"gatewayLabel": "网关",
-		"openaiThroughput": "OpenAI API（词元/秒）"
+		"openaiThroughput": "OpenAI API（tps）"
 	},
 	"gatewayBenchmark": {
 		"title": "网关性能对比",
@@ -2000,7 +2032,7 @@
 			"cacheFailure": "无法重新验证模型缓存。",
 			"successorRouting": {
 				"title": "后继模型路由",
-				"description": "批准在没有任何提供商连续 72 小时提供此模型后，将其请求发送到替代模型。工作区也需要开启此功能。",
+				"description": "批准在 72 小时内没有任何提供商提供此模型后，将其请求发送到替代模型。替代模型会被自动批准，除非它没有提供商，或不支持此模型的输出类型。工作区也需要开启此功能。",
 				"replacement": "替代模型",
 				"noReplacement": "未设置",
 				"serving": "提供状态",
@@ -2009,6 +2041,8 @@
 				"approval": "批准",
 				"notApproved": "未批准",
 				"approved": "已于 {date} 批准 {model}",
+				"approvedAutomatically": "已于 {date} 自动批准为 {model}",
+				"autoBlocked": "由于批准已被撤销，此模型的自动批准已关闭。手动批准后会重新开启自动批准。",
 				"approvalStale": "已批准 {model}，但替代模型已更改。请重新审核。",
 				"blocking": "无法批准：{issues}",
 				"warnings": "需要审核：{issues}",
@@ -2019,6 +2053,7 @@
 				"updateApproval": "更新批准",
 				"reapprove": "批准新的替代模型",
 				"revoke": "撤销",
+				"blockAuto": "不要自动批准",
 				"loadFailed": "无法加载后继模型路由。",
 				"saveFailed": "无法保存后继模型路由。",
 				"rejected": "无法批准该替代模型。请检查上方的问题后重试。",
@@ -2394,7 +2429,11 @@
 			"rule": "规则：{keyword}"
 		},
 		"realtimeBillingTitle": "实时账单",
-		"realtimeBillingDescription": "查看缺失的用量、冻结资金以及经过审计的计费决定。"
+		"realtimeBillingDescription": "查看缺失的用量、冻结资金以及经过审计的计费决定。",
+		"keyIncidentsTitle": "密钥存储事件",
+		"keyIncidentsDescription": "撤销或暂停存储在发生数据泄露的平台上的所有 API 密钥。",
+		"slackAgentTitle": "Slack 智能体",
+		"slackAgentDescription": "所有 Slack 智能体安装，以及本月的人数、回答数、费用和模型支出。"
 	},
 	"webhookPage": {
 		"description": "将异步视频和批处理作业的更新发送至应用程序，支持签名和重试。",
