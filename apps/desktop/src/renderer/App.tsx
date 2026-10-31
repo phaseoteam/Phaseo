@@ -11,6 +11,8 @@ import { useWorkspace, WorkspaceProvider } from "./app/workspace";
 import { Titlebar } from "./shell/Titlebar";
 import { typeIntoComposer } from "./chat/composerFocusRedirect";
 import { HistoryNavigation } from "./shell/HistoryNavigation";
+import { moveRegionFocus } from "./shell/focusRegions";
+import { showToast } from "./components/ui/toast";
 import { Sidebar } from "./shell/Sidebar";
 import { RightPanel } from "./shell/RightPanel";
 import { BrowserMiniPlayerHost } from "./components/browser/BrowserMiniPlayer";
@@ -31,7 +33,7 @@ import { FactoryPage } from "./factory/FactoryPage";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
-	const { setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings } = useWorkspace();
+	const { setCommandsOpen, select, openSettings, openUsage, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings } = useWorkspace();
 	const threadActions = useThreadActions();
 	useKeybindings();
 	// Project actions with shortcuts become commands of their own (Settings → Keyboard shortcuts → Project actions).
@@ -43,6 +45,18 @@ function useShortcuts() {
 	useCommand("mode.chat", () => setMode("chat"));
 	useCommand("mode.code", () => setMode("code"));
 	useCommand("sidebar.toggle", () => setSidebarOpen(open => !open));
+	// Code chats always work in a project, so a chat without one is a Chat-mode chat.
+	useCommand("chat.newWithoutProject", () => { setMode("chat"); select(undefined); });
+	useCommand("usage.open", () => openUsage());
+	useCommand("theme.select", () => openSettings("appearance"));
+	useCommand("workspace.focusNext", () => moveRegionFocus(1));
+	useCommand("workspace.focusPrevious", () => moveRegionFocus(-1));
+	const openChat = () => overview.tasks.find(value => value.id === selectedId);
+	useCommand("thread.pin", () => { const task = openChat(); if (!task) return false; void threadActions.pin(task); });
+	useCommand("thread.copyReference", () => {
+		const task = openChat(); if (!task) return false;
+		void navigator.clipboard.writeText(task.id).then(() => showToast("success", "Chat ID copied"), () => showToast("error", "Could not copy the chat ID"));
+	});
 	useCommand("terminal.toggle", () => setRightPanel(rightPanel === "terminal" ? undefined : "terminal"));
 	useCommand("rightPanel.toggle", () => setRightPanel(rightPanel ? undefined : "restore"));
 	// T3: undo the last settle, snooze, unpin or archive; settle the open Code chat and move to the next, or un-settle it.

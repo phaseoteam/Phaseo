@@ -136,5 +136,7 @@ describe("pull request shortcuts", () => {
 		expect(keys).not.toContain("escape");
 		expect(keys).toEqual(expect.arrayContaining(["mod+shift+k", "mod+shift+c"]));
 		expect(keybindingRows([]).filter(row => row.group === "Pull requests").map(row => [row.command, row.key])).toEqual(expect.arrayContaining([["pullRequest.copyNumber", "mod+shift+k"], ["pullRequest.copyLink", "mod+shift+c"], ["pullRequest.back", "escape"], ["pullRequests.focusSearch", "mod+f"]]));
+		// Mod+Shift+C copies the pull request on screen first, and otherwise the open chat's ID.
+		expect(keybindingRows([]).filter(row => row.key === "mod+shift+c").map(row => row.command)).toEqual(["pullRequest.copyLink", "thread.copyReference"]);
 	});
 });

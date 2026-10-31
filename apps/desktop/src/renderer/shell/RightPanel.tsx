@@ -286,7 +286,7 @@ export function RightPanel() {
 		: kind === "pull" ? <PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} />
 		: <AgentThreadsPanel id={selectedId} onOpen={select} />;
 	const finishDrag = () => { drag.current = undefined; setDragging(false); };
-	const pane = <aside aria-label="Tools" data-maximized={state.maximized || undefined}
+	const pane = <aside aria-label="Tools" data-focus-region data-maximized={state.maximized || undefined}
 		style={sheet || state.maximized ? undefined : { ["--pane-width" as string]: `${width}px` }}
 		className={cn("relative flex min-w-0 flex-col border-l border-border bg-background",
 			sheet ? "fixed top-11 right-0 bottom-0 z-40 w-[min(42vw,28rem)] max-w-[28rem] min-w-80 shadow-2xl max-[760px]:w-[min(88vw,24rem)]"

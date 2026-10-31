@@ -50,9 +50,11 @@ Choose System, Light or Dark, and a colour theme. Every theme has a light and a 
 
 Changes are saved in `keybindings.json` in the app's settings folder (the file button opens it). It is a list of `{ "command", "key", "when" }` entries: a command listed there uses those keys instead of its defaults, and an empty key unassigns it. Edits made by hand apply straight away; if the file cannot be read, the defaults stay in use and the page says why. Menus and tooltips show the keys currently bound.
 
+Among the defaults: `F6` and `Shift+F6` (also with `Ctrl`/`⌘`) move focus between the sidebar, the conversation, the message box and the right pane; `Ctrl+Shift+M` opens the model picker; `Ctrl+Shift+P` pins or unpins the open chat; `Ctrl+Shift+C` copies its ID (on a pull request it copies the pull request's link instead); `Ctrl+U` opens Usage; `Ctrl+Alt+A` opens Appearance to choose a theme; and `Ctrl+Alt+N` starts a chat without a project, in Chat. On macOS, `⌘` replaces `Ctrl`.
+
 ## Message box
 
-**Settings → General → Message box → Send with** chooses Enter (Shift+Enter adds a line) or Ctrl+Enter / ⌘Enter (Enter adds a line), as T3 Code's send shortcut does. It is kept on this device. The message box's other keys (send into the running turn, edit the last queued message, send and start a new chat, prompt history and stash) are under **Composer** in Keyboard shortcuts.
+**Settings → General → Message box → Send with** chooses Enter (Shift+Enter adds a line) or Ctrl+Enter / ⌘Enter (Enter adds a line), as T3 Code's send shortcut does. It is kept on this device. With Enter chosen, `Ctrl+Enter` (`⌘Enter`) while a turn runs sends into that turn instead of queueing. The message box's other keys (send into the running turn, edit the last queued message, send and start a new chat, prompt history and stash) are under **Composer** in Keyboard shortcuts.
 
 ## Chat titles
 

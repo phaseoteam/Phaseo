@@ -48,6 +48,7 @@ import { recordPrompt } from "./promptHistory";
 import { showToast } from "../components/ui/toast";
 import { ChatNotices } from "./ChatNotices";
 import { BackgroundWork } from "./BackgroundWork";
+import { useSendKey } from "./sendKey";
 import { addPendingSend, dropDeliveredSends, PendingSends } from "./pendingSends";
 import { attachmentsOnlyText } from "./MessageAttachments";
 
@@ -206,6 +207,9 @@ function ChatComposer({ task }: { task: Task }) {
 		finally { setBusy(false); }
 	}
 	useCommand("composer.steer", () => { void steer(); });
+	// While a turn runs, Enter queues; the other send key steers instead. With Mod+Enter as the send key it just sends.
+	const sendKey = useSendKey();
+	useCommand("composer.sendAlternate", () => { if (!running || sendKey !== "enter") return false; void steer(); });
 	useCommand("composer.editQueued", () => { const last = ownQueue(task).at(-1); return last && !editing ? editQueued(last.id) : false; });
 	useCommand("composer.sendAndNewChat", () => { if (!canSend || editing || answerer) return false; void send().then(sent => { if (sent) select(undefined); }); });
 

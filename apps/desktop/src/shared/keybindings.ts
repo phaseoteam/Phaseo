@@ -12,15 +12,24 @@ export const keybindingCommands = [
 	{ command: "sidebar.toggle", label: "Toggle sidebar", group: "General", keys: ["mod+b"] },
 	{ command: "navigation.back", label: "Back", group: "General", keys: ["mod+["], when: "!terminalFocused && !browserFocused" },
 	{ command: "navigation.forward", label: "Forward", group: "General", keys: ["mod+]"], when: "!terminalFocused && !browserFocused" },
+	{ command: "chat.newWithoutProject", label: "New chat without a project (in Chat)", group: "General", keys: ["mod+alt+n"], when: "!terminalFocused" },
+	{ command: "usage.open", label: "Open usage", group: "General", keys: ["mod+u"], when: "!terminalFocused" },
+	{ command: "theme.select", label: "Choose a theme", group: "General", keys: ["mod+alt+a"], when: "!terminalFocused" },
+	// Mod+F6 too, as some keyboards give F6 to the system.
+	{ command: "workspace.focusNext", label: "Focus the next part of the window", group: "General", keys: ["f6", "mod+f6"] },
+	{ command: "workspace.focusPrevious", label: "Focus the previous part of the window", group: "General", keys: ["shift+f6", "mod+shift+f6"] },
 	...([1, 2, 3, 4, 5, 6, 7, 8, 9] as const).map(index => ({ command: `thread.jump.${index}` as const, label: `Open chat ${index} in the sidebar`, group: "Chats", keys: [`mod+${index}`] })),
 	{ command: "thread.previous", label: "Previous chat", group: "Chats", keys: ["mod+shift+["] },
 	{ command: "thread.next", label: "Next chat", group: "Chats", keys: ["mod+shift+]"] },
 	{ command: "thread.settle", label: "Settle or un-settle chat", group: "Chats", keys: ["mod+shift+s"], when: "codeMode && chatOpen" },
 	{ command: "thread.undo", label: "Undo settle, snooze, unpin, archive or delete", group: "Chats", keys: ["mod+z"], when: "!textFocused" },
 	{ command: "modelSettings.toggle", label: "Model settings", group: "Chats", keys: ["mod+shift+e"] },
+	{ command: "modelPicker.toggle", label: "Choose model", group: "Chats", keys: ["mod+shift+m"], when: "!terminalFocused" },
+	{ command: "thread.pin", label: "Pin or unpin chat", group: "Chats", keys: ["mod+shift+p"], when: "chatOpen && !terminalFocused" },
 	// The message box's own keys (T3's composer.* and thread.*QueuedMessage). They run only while it has focus, before the editor acts on them; stash works anywhere in a chat.
 	{ command: "composer.steer", label: "Send into the running turn", group: "Composer", keys: ["mod+shift+enter"], when: "composerFocused" },
 	{ command: "composer.editQueued", label: "Edit the last queued message", group: "Composer", keys: ["alt+arrowup"], when: "composerFocused" },
+	{ command: "composer.sendAlternate", label: "Send into the running turn instead of queueing (when Enter sends)", group: "Composer", keys: ["mod+enter"], when: "composerFocused" },
 	{ command: "composer.sendAndNewChat", label: "Send and start a new chat", group: "Composer", keys: ["mod+alt+enter"], when: "composerFocused" },
 	{ command: "composer.historyPrevious", label: "Previous prompt (in an empty message box)", group: "Composer", keys: ["arrowup"], when: "composerFocused" },
 	{ command: "composer.historyNext", label: "Next prompt", group: "Composer", keys: ["arrowdown"], when: "composerFocused" },
@@ -52,6 +61,8 @@ export const keybindingCommands = [
 	// T3's pullRequest.copyNumber and thread.copyReference, acting on the pull request on screen; Escape goes back to the list.
 	{ command: "pullRequest.copyNumber", label: "Copy pull request number", group: "Pull requests", keys: ["mod+shift+k"], when: "!terminalFocused" },
 	{ command: "pullRequest.copyLink", label: "Copy pull request link", group: "Pull requests", keys: ["mod+shift+c"], when: "!terminalFocused" },
+	// The same keys as Copy pull request link, which wins while a pull request is on screen.
+	{ command: "thread.copyReference", label: "Copy chat ID", group: "Chats", keys: ["mod+shift+c"], when: "chatOpen && !terminalFocused" },
 	{ command: "pullRequest.back", label: "Back to pull requests", group: "Pull requests", keys: ["escape"], when: "!textFocused && !terminalFocused && !browserFocused" },
 	// T3: Mod+F belongs to the Pull requests page's own search while it is open.
 	{ command: "pullRequests.focusSearch", label: "Search pull requests", group: "Pull requests", keys: ["mod+f"], when: "!terminalFocused && !browserFocused" },

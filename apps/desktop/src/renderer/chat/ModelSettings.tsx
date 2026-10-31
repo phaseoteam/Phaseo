@@ -102,6 +102,7 @@ export function ModelControl({ selections, onChange, onSettings, openEvent, disa
 	const single = selections.length === 1 ? selections[0] : undefined;
 	const { descriptors, label, fast } = useModelSettings(single);
 	useCommand("modelSettings.toggle", () => { window.dispatchEvent(new Event(openEvent)); }, descriptors.length > 0 && !disabled);
+	useCommand("modelPicker.toggle", () => { window.dispatchEvent(new Event(openEvent)); }, !disabled);
 	return <ModelPicker {...picker} selections={selections} onChange={onChange} openEvent={openEvent} disabled={disabled}
 		settings={single && descriptors.length ? { label, fast, panel: <ModelSettingsPanel selection={single} descriptors={descriptors} onChange={onSettings} /> } : undefined} />;
 }
