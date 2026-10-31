@@ -9,6 +9,7 @@ import { isSettled } from "../shared/threadLifecycle";
 import { useAppTheme } from "./lib/appTheme";
 import { useWorkspace, WorkspaceProvider } from "./app/workspace";
 import { Titlebar } from "./shell/Titlebar";
+import { typeIntoComposer } from "./chat/composerFocusRedirect";
 import { HistoryNavigation } from "./shell/HistoryNavigation";
 import { Sidebar } from "./shell/Sidebar";
 import { RightPanel } from "./shell/RightPanel";
@@ -35,7 +36,7 @@ function useShortcuts() {
 	useKeybindings();
 	// Project actions with shortcuts become commands of their own (Settings → Keyboard shortcuts → Project actions).
 	useEffect(() => setDynamicCommands(projectActionCommands(overview.projects)), [overview.projects]);
-	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings) }));
+	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings) }), typeIntoComposer);
 	useCommand("commandPalette.toggle", () => setCommandsOpen(open => !open));
 	useCommand("chat.new", () => select(undefined));
 	useCommand("settings.open", () => openSettings());

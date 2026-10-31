@@ -13,6 +13,7 @@ import { chatDragType, mentionToken, parseMentions, type Mention } from "../lib/
 import { showToast } from "../components/ui/toast";
 import { isMac } from "../lib/shortcuts";
 import { isLargePaste } from "./largePaste";
+import { registerComposer } from "./composerFocusRedirect";
 
 /** The chat a sidebar row carries when dragged, if this drag is one. */
 export function draggedChat(data: DataTransfer | null): Mention | undefined {
@@ -155,6 +156,7 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		editor.commands.focus("end");
 	}, [editor, value]);
 	useEffect(() => { editor?.setEditable(!disabled); }, [editor, disabled]);
+	useEffect(() => editor ? registerComposer(editor) : undefined, [editor]);
 	// Placeholder text is read when the editor redraws; nudge it when the text changes.
 	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta("placeholder", placeholder)); }, [editor, placeholder]);
 
