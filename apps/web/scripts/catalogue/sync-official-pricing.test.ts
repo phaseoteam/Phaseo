@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { anthropicMarkdownCandidates, extractHtmlTableRows, extractOfficialPricing } from "./sync-official-pricing";
 
 describe("official pricing extraction", () => {

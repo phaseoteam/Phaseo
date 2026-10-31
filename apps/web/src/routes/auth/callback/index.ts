@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@/utils/supabase/server";
-import { waitUntil } from "@/compat/wait-until";
+import { waitUntil } from "@/lib/start/wait-until";
 import { serializeCookie, type CookieOptions } from "@/lib/http/cookies";
 import { getTranslations } from "@/i18n/server";
 import {

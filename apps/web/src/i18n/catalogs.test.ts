@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getCatalogMessages, getCatalogOverlay } from "./catalogs";
 import { translationLocales, variantLocales } from "./routing";
 import { assertValidCatalogs, flattenCatalog } from "./validation";

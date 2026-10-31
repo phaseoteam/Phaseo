@@ -3,7 +3,6 @@
 // Why: Shows top models by various metrics with trend indicators
 // How: Client component with state for filtering, server data fetching
 
-"use client";
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";

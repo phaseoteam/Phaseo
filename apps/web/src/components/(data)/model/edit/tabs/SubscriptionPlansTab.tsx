@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "@/i18n/react"
 import { CreditCard } from "lucide-react"

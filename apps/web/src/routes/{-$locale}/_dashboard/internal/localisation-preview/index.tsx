@@ -1,4 +1,3 @@
-// Next: src/app/[locale]/(dashboard)/internal/localisation-preview/page.tsx (a redirect-only page).
 import { createFileRoute } from "@tanstack/react-router";
 import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
 import { defaultLocale } from "@/i18n/locales";

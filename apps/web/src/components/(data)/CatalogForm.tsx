@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 import { UnsavedChangesGuard } from "./UnsavedChangesGuard";

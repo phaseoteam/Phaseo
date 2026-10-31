@@ -23,16 +23,6 @@
       "vite/client"
     ],
     "paths": {
-      "@/app/(auth)/*": [
-        "./src/app/[locale]/(auth)/*"
-      ],
-      "@/app/(dashboard)/*": [
-        "./src/app/[locale]/(dashboard)/*",
-        "./src/app/(dashboard)/*"
-      ],
-      "@/app/(legal)/*": [
-        "./src/app/[locale]/(legal)/*"
-      ],
       "@/*": [
         "./src/*"
       ]
@@ -47,8 +37,6 @@
   "exclude": [
     "node_modules",
     "dist",
-    "src/app/global-not-found.tsx",
-    "src/app/?locale?/layout.tsx",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/__tests__/**"

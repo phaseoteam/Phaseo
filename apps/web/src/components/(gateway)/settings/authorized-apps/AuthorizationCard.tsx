@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React, { useState } from "react";
@@ -23,7 +21,7 @@ import RevokeDialog from "./RevokeDialog";
 import ReauthorizeDialog from "./ReauthorizeDialog";
 import { groupConsentScopes } from "@/components/(gateway)/oauth/consentScopeGroups";
 import { scopePermissionFor, type ScopePermission, type ScopeTone } from "@/components/(gateway)/oauth/scopePermission";
-import { updateAuthorizationScopesAction } from "@/app/(dashboard)/settings/authorized-apps/actions";
+import { updateAuthorizationScopesAction } from "@/features/settings/authorized-apps/actions";
 import { toast } from "sonner";
 import { useTranslations } from "@/i18n/react";
 

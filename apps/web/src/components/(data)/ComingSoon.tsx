@@ -1,6 +1,4 @@
 // components/common/ComingSoon.tsx
-"use client";
-
 import * as React from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Sparkles, Hammer, Clock, Home, Info } from "lucide-react";

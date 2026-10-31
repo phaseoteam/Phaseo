@@ -1,4 +1,4 @@
-/* Phaseo desktop design system. Tokens mirror apps/web/src/app/globals.css so
+/* Phaseo desktop design system. Tokens mirror apps/web/src/styles/globals.css so
    the desktop app and the website share one visual language. */
 @layer theme, base, legacy, components, utilities;
 

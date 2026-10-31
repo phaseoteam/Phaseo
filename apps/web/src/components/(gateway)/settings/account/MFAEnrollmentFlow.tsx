@@ -1,5 +1,3 @@
-'use client'
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from 'react'
@@ -21,7 +19,7 @@ import {
 import {
     enrollMFAAction,
     verifyMFAEnrollmentAction,
-} from '@/app/(dashboard)/settings/account/actions'
+} from '@/features/settings/account/actions'
 import { toast } from 'sonner'
 import { useTranslations } from '@/i18n/react'
 import { localizedSettingsError } from '@/i18n/error-messages'

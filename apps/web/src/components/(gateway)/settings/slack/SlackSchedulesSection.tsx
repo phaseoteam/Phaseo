@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { ChevronRight, Pause, Play, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/react";
@@ -21,7 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { deleteSlackAgentSchedule, loadSlackAgentSchedules, setSlackAgentScheduleStatus, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
+import { deleteSlackAgentSchedule, loadSlackAgentSchedules, setSlackAgentScheduleStatus, updateSlackAgent } from "@/features/settings/slack/actions";
 import { cn } from "@/lib/utils";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Choice, Notice, SlackError, SwitchField } from "./SlackAgentFields";

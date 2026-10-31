@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { Gauge, Plus } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
@@ -12,7 +10,7 @@ import {
 	removeRateLimitAssignment,
 	updateRateLimitPolicy,
 	type RateLimitActionError,
-} from "@/app/(dashboard)/settings/rate-limits/actions";
+} from "@/features/settings/rate-limits/actions";
 import {
 	AlertDialog,
 	AlertDialogAction,

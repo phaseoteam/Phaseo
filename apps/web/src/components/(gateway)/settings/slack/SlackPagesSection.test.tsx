@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../../messages/en-GB/settings-ui.json";
@@ -6,12 +7,12 @@ import { PagesList, SharingFields, SlackPagesSection } from "./SlackPagesSection
 import type { SlackAgentSettings } from "./slackAgentForm";
 import { linkAccessPatch, pageSettings, pageSharing, slackPagesError, type SlackAgentPages } from "./slackAgentPages";
 
-jest.mock("@/app/(dashboard)/settings/slack/actions", () => ({
-	updateSlackAgent: jest.fn(),
-	loadSlackAgentPages: jest.fn(),
-	deleteSlackAgentPage: jest.fn(),
+vi.mock("@/features/settings/slack/actions", () => ({
+	updateSlackAgent: vi.fn(),
+	loadSlackAgentPages: vi.fn(),
+	deleteSlackAgentPage: vi.fn(),
 }));
-jest.mock("../PrivateSettingsQuery", () => ({
+vi.mock("../PrivateSettingsQuery", () => ({
 	useSettingsWrite: () => (operation: Promise<unknown>) => operation,
 }));
 

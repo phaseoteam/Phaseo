@@ -1,5 +1,3 @@
-"use client";
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useLocalizedOAuthScopes } from "@/components/(gateway)/oauth/useLocalizedOAuthScopes";

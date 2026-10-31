@@ -29,7 +29,7 @@ No paid provider calls or production deployments are part of local validation.
 ## Visual design and release checks
 
 The explorer follows Phaseo's default light/dark tokens in
-`apps/web/src/app/globals.css`: neutral surfaces, blue accents, Montserrat,
+`apps/web/src/styles/globals.css`: neutral surfaces, blue accents, Montserrat,
 6px controls and 10px panels. Montserrat's Latin variable WOFF2 is bundled inline
 from @fontsource-variable/montserrat 5.3.0, with its SIL OFL license in ui/assets
 and a readable Font license disclosure in the delivered HTML.

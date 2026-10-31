@@ -1,12 +1,10 @@
-"use client";
-
 import React, { useTransition } from "react";
 import { useTranslations } from "@/i18n/react";
 import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { forkPresetAction } from "@/app/(dashboard)/settings/presets/actions";
+import { forkPresetAction } from "@/features/settings/presets/actions";
 
 export default function CopyPresetButton({
 	sourcePresetId,

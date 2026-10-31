@@ -1,11 +1,9 @@
-"use client";
-
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { CheckCircle2, KeyRound, XCircle } from "lucide-react";
 
-import type { ProviderMetadataEntry } from "@/app/(dashboard)/gateway/usage/server-actions";
+import type { ProviderMetadataEntry } from "@/features/gateway/usage/server-actions";
 
 import ConfigurableLogTable from "./ConfigurableLogTable";
 import { UPSTREAM_COLUMNS } from "./logColumns";

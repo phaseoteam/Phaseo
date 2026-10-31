@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import React, { useMemo, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
@@ -9,7 +7,7 @@ import { toast } from "sonner";
 import {
 	updateApiKeyAction,
 	type KeyLimitPayload,
-} from "@/app/(dashboard)/settings/keys/actions";
+} from "@/features/settings/keys/actions";
 import { Button } from "@/components/ui/button";
 
 import {

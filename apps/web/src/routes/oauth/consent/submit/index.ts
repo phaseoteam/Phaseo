@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
 	approveAuthorizationAction,
 	denyAuthorizationAction,
-} from "@/app/(auth)/oauth/consent/actions";
+} from "@/features/oauth/consent/actions";
 
 async function handlePost(request: Request) {
 	const origin = request.headers.get("origin");

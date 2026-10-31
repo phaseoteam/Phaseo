@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { KeySecurityKey } from "@/lib/fetchers/internal/settingsTypes";
 import { keySecurityRisks, keySecurityStatus, matchesKeySecurityFilter, sameKeySecurityFilter, sortKeySecurityKeys } from "./keySecurityTable";
 

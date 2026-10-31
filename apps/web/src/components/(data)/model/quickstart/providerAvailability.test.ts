@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import type { GatewayProviderModel, ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { groupProviders, resolveProviderState } from "./providerAvailability";
 

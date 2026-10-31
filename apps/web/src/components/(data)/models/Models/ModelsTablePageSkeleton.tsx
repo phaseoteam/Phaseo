@@ -1,5 +1,3 @@
-"use client";
-
 import { MonitorDataTable } from "@/components/monitor/MonitorDataTable";
 import { Skeleton } from "@/components/ui/skeleton";
 

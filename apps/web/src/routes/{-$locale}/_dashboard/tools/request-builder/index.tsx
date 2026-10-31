@@ -1,18 +1,15 @@
-// Next: src/app/[locale]/(dashboard)/tools/request-builder/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/tools/request-builder/page";
+import { RequestBuilderPage, getRequestBuilderMetadata } from "@/features/tools/request-builder/RequestBuilderPage";
 
 const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+	.handler(async () => toSerializableMetadata(await getRequestBuilderMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/tools/request-builder/")({
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: () => metadataLoaderData(routeMetadata()),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextPageComponent(Page),
+	component: RequestBuilderPage,
 });

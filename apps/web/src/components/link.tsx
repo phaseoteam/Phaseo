@@ -1,4 +1,4 @@
-// `next/link` on TanStack Router: a real <a href> that navigates client-side
+// Link on TanStack Router: a real <a href> that navigates client-side
 // for same-origin links and preloads on intent.
 import { useRouter } from "@tanstack/react-router";
 import { forwardRef, type AnchorHTMLAttributes, type MouseEvent, type ReactNode } from "react";

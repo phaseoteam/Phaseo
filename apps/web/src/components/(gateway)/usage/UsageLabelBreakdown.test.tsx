@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
@@ -7,16 +8,16 @@ import { buildLabelKeyOptions, type RequestClassifierSummary } from "./requestCl
 
 const mockQuery: { current: Record<string, unknown> } = { current: {} };
 const mockCalls: Array<{ resource: string; params: Record<string, string>; enabled: boolean }> = [];
-jest.mock("./PrivateUsageQuery", () => ({
+vi.mock("./PrivateUsageQuery", () => ({
 	usePrivateUsageRefresh: () => ({ scope: { userId: "user-1", workspaceId: "workspace-1" } }),
 	usePrivateUsageQuery: (_scope: unknown, resource: string, params: Record<string, string>, _live: boolean, _fetcher: unknown, enabled: boolean) => {
 		mockCalls.push({ resource, params, enabled });
 		return mockQuery.current;
 	},
 }));
-jest.mock("@/lib/query/fetchPrivateUsage", () => ({ fetchPrivateUsage: jest.fn() }));
+vi.mock("@/lib/query/fetchPrivateUsage", () => ({ fetchPrivateUsage: vi.fn() }));
 // The select's popup needs a browser; the trigger is what matters here.
-jest.mock("@/components/ui/select", () => {
+vi.mock("@/components/ui/select", () => {
 	const Pass = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
 	return { Select: Pass, SelectContent: () => null, SelectGroup: Pass, SelectItem: Pass, SelectLabel: Pass, SelectTrigger: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button> };
 });

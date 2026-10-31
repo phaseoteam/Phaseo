@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency } from "@phaseo/app-kit/format";
 import React, { useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -45,7 +43,7 @@ import RedirectUriManager from "./RedirectUriManager";
 import DeleteOAuthAppDialog from "./DeleteOAuthAppDialog";
 import OAuthScopeSelector from "./OAuthScopeSelector";
 import { normalizeOAuthScopes } from "@/lib/oauth/scopes";
-import { updateOAuthAppScopesAction } from "@/app/(dashboard)/settings/oauth-apps/actions";
+import { updateOAuthAppScopesAction } from "@/features/settings/oauth-apps/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface OAuthAppDetailPanelProps {

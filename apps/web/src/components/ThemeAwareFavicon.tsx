@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect } from "react";
 import { useTheme } from "@/components/theme/ThemeProvider";
 

@@ -1,18 +1,18 @@
-// Next: src/app/[locale]/(dashboard)/chat/layout.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextLayoutComponent } from "@/lib/start/nextPage";
-import Layout, * as mod from "@/app/[locale]/(dashboard)/chat/layout";
+import ChatLayout, { getChatLayoutMetadata } from "@/features/chat/ChatLayout";
 
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+const routeMetadata = createServerFn({ method: "GET" }).handler(async () => toSerializableMetadata(await getChatLayoutMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/chat")({
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
-	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextLayoutComponent(Layout),
+	loader: () => metadataLoaderData(routeMetadata()),
+	head: ({ loaderData }) => {
+		const head = metadataToHead(loaderData?.metadata);
+		// The on-screen keyboard resizes the page, so the composer stays above it.
+		return { ...head, meta: [...head.meta, { name: "viewport", content: "width=device-width, initial-scale=1, interactive-widget=resizes-content" }] };
+	},
+	component: ChatLayout,
 });

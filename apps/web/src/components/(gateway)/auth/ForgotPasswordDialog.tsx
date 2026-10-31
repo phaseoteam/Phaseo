@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { CheckCircle2, Loader2, Mail } from "lucide-react";
 import { useTranslations } from "@/i18n/react";

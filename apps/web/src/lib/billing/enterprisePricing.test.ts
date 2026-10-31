@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { enterpriseQuoteOptions, enterpriseTierForMembers, normalizeEnterpriseQuestionnaire } from "./enterprisePricing";
 
 describe("enterprise pricing", () => {

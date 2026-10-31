@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
@@ -33,7 +31,7 @@ import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesP
 import {
 	approveJoinRequest,
 	rejectJoinRequest,
-} from "@/app/(dashboard)/settings/teams/actions";
+} from "@/features/settings/teams/actions";
 
 interface Request {
 	id: string;

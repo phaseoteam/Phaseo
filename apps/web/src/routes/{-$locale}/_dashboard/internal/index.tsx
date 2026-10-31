@@ -1,24 +1,21 @@
-// Next: src/app/[locale]/(dashboard)/internal/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/internal/page";
-import Loading from "@/app/[locale]/(dashboard)/internal/loading";
-import { requireInternalAdminFn } from "@/app/[locale]/(dashboard)/internal/internalAdmin.functions";
+import InternalPage, { getInternalMetadata } from "@/features/internal/InternalPage";
+import InternalLoading from "@/features/internal/InternalLoading";
+import { requireInternalAdminFn } from "@/features/internal/internalAdmin.functions";
 
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+const routeMetadata = createServerFn({ method: "GET" }).handler(async () => toSerializableMetadata(await getInternalMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/internal/")({
-	// Next: requireInternalAdmin in the page. Runs before anything renders.
+	// Internal admins only (requireInternalAdmin), checked before anything renders.
 	beforeLoad: async () => {
 		await requireInternalAdminFn({ data: "/" });
 	},
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: () => metadataLoaderData(routeMetadata()),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: withLoading(nextPageComponent(Page), Loading),
+	component: InternalPage,
+	pendingComponent: InternalLoading,
 });

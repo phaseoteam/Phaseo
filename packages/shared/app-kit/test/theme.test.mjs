@@ -25,11 +25,11 @@ import {
 } from "../src/theme/tokens.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const WEB = "apps/web/src/app/globals.css";
+const WEB = "apps/web/src/styles/globals.css";
 const DESKTOP = "apps/desktop/src/renderer/index.css";
 const MOBILE = "apps/mobile/global.css";
 // Each app's generated token file, then its hand-written CSS.
-const WEB_CSS = ["apps/web/src/app/theme-tokens.generated.css", WEB];
+const WEB_CSS = ["apps/web/src/styles/theme-tokens.generated.css", WEB];
 const DESKTOP_CSS = ["apps/desktop/src/renderer/theme-tokens.generated.css", DESKTOP];
 
 const read = (file) => readFileSync(path.join(root, file), "utf8").replace(/\r\n/g, "\n");

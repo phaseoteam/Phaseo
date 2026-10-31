@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import {
 	getPlanZdrEligibility,
 	getProviderPromptTrainingPolicy,
@@ -29,13 +30,12 @@ const discountLabels = {
 };
 
 // These Node tests exercise exported helpers, not nuqs's ESM browser hooks.
-jest.mock("nuqs", () => ({
+vi.mock("nuqs", () => ({
 	parseAsString: {},
-	useQueryStates: jest.fn(),
+	useQueryStates: vi.fn(),
 }));
 
-jest.mock("@number-flow/react", () => ({
-	__esModule: true,
+vi.mock("@number-flow/react", () => ({
 	default: ({ value }: { value: number }) => String(value),
 }));
 

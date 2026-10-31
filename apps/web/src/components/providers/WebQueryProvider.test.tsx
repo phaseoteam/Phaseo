@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { focusManager } from "@tanstack/react-query";
 import { listenForQueryFocus } from "@/lib/query/browserLifecycle";
 
@@ -9,7 +10,7 @@ describe("WebQueryProvider browser focus behavior", () => {
 	const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
 
 	beforeEach(() => {
-		jest.useFakeTimers({ now: 120_000 });
+		vi.useFakeTimers({ now: 120_000 });
 		browser = new EventTarget();
 		page = new EventTarget();
 		visibility = "visible";
@@ -30,19 +31,19 @@ describe("WebQueryProvider browser focus behavior", () => {
 			if (descriptor) Object.defineProperty(globalThis, key, descriptor);
 			else Reflect.deleteProperty(globalThis, key);
 		}
-		jest.useRealTimers();
-		jest.clearAllMocks();
+		vi.useRealTimers();
+		vi.clearAllMocks();
 	});
 
 	it("notifies queries on every eligible return to the tab", () => {
-		const focused = jest.fn();
+		const focused = vi.fn();
 		const unsubscribe = focusManager.subscribe((value) => { if (value) focused(); });
 		try {
 			browser.dispatchEvent(new Event("focus"));
 			expect(focused).toHaveBeenCalledTimes(1);
 			visibility = "hidden";
 			page.dispatchEvent(new Event("visibilitychange"));
-			jest.advanceTimersByTime(61_000);
+			vi.advanceTimersByTime(61_000);
 			visibility = "visible";
 			page.dispatchEvent(new Event("visibilitychange"));
 			expect(focused).toHaveBeenCalledTimes(2);
@@ -57,7 +58,7 @@ describe("WebQueryProvider browser focus behavior", () => {
 	});
 
 	it("throttles duplicate returns without leaving a visible tab unfocused", () => {
-		const focused = jest.fn();
+		const focused = vi.fn();
 		const unsubscribe = focusManager.subscribe((value) => { if (value) focused(); });
 		try {
 			browser.dispatchEvent(new Event("focus"));
@@ -67,7 +68,7 @@ describe("WebQueryProvider browser focus behavior", () => {
 			page.dispatchEvent(new Event("visibilitychange"));
 			expect(focusManager.isFocused()).toBe(true);
 			expect(focused).toHaveBeenCalledTimes(1);
-			jest.advanceTimersByTime(61_000);
+			vi.advanceTimersByTime(61_000);
 			browser.dispatchEvent(new Event("focus"));
 			expect(focused).toHaveBeenCalledTimes(2);
 		} finally { unsubscribe(); }

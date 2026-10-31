@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useRef } from "react";
 
 // Include unfinished, unnamed inputs as well as submitted fields. Read disabled

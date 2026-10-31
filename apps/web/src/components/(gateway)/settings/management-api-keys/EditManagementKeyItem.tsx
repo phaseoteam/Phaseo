@@ -1,4 +1,3 @@
-"use client";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
@@ -21,7 +20,7 @@ import {
 	updateManagementKeyAction,
 	updateManagementKeyScopesAction,
 	type ManagementKeyTemplate,
-} from "@/app/(dashboard)/settings/management-api-keys/actions";
+} from "@/features/settings/management-api-keys/actions";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { MANAGEMENT_KEY_TEMPLATE_SCOPES } from "@/lib/managementKeyScopes";

@@ -1,5 +1,3 @@
-"use client";
-
 import { Link, useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
@@ -16,7 +14,7 @@ import {
 	createWebhookEndpointAction,
 	sendWebhookEndpointTestAction,
 	updateWebhookEndpointAction,
-} from "@/app/(dashboard)/settings/webhooks/actions";
+} from "@/features/settings/webhooks/actions";
 import type { WebhookEndpoint } from "./WebhooksSettingsClient";
 import {
 	DEFAULT_WEBHOOK_EVENTS,

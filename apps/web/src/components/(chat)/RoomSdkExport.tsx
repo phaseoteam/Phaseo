@@ -1,4 +1,3 @@
-"use client";
 import { useTranslations } from "@/i18n/react";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";

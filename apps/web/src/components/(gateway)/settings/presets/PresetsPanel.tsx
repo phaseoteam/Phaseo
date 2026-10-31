@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
@@ -13,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { MoreVertical, Copy, AtSign, Edit2, GitBranch, Trash2, Upload } from "lucide-react";
 import DeletePresetItem from "./DeletePresetItem";
 import { toast } from "sonner";
-import { applyPresetUpstreamVersionAction, publishPresetVersionAction } from "@/app/(dashboard)/settings/presets/actions";
+import { applyPresetUpstreamVersionAction, publishPresetVersionAction } from "@/features/settings/presets/actions";
 import {
 	Empty,
 	EmptyDescription,

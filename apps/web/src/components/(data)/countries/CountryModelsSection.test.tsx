@@ -1,4 +1,5 @@
-/** @jest-environment jsdom */
+/** @vitest-environment jsdom */
+import { it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,7 +9,7 @@ import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import CountryModelsSection from "./CountryModelsSection";
 import { groupCountryModels, previewCountryModels } from "./countryModelGroups";
 
-jest.mock("@/components/(data)/models/Models/ModelCard", () => ({
+vi.mock("@/components/(data)/models/Models/ModelCard", () => ({
 	ModelCard: ({ model }: { model: { model_id: string } }) => <output>{model.model_id}</output>,
 }));
 
@@ -31,7 +32,7 @@ const originalFetch = global.fetch;
 
 beforeEach(() => {
 	Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-	global.fetch = jest.fn(async () => ({
+	global.fetch = vi.fn(async () => ({
 		ok: true,
 		status: 200,
 		json: async () => ({ country: { organisations: [{ models: allModels }] } }),
@@ -75,14 +76,14 @@ it("renders the preview with full counts and loads the rest on Show all", async 
 	await act(async () => { button!.click(); });
 	await flush();
 
-	expect(String((global.fetch as jest.Mock).mock.calls[0][0])).toContain("/api/_web/countries/US");
+	expect(String((global.fetch as Mock).mock.calls[0][0])).toContain("/api/_web/countries/US");
 	expect(shownIds()).toEqual([...Array.from({ length: 8 }, (_, i) => `big/m${7 - i}`), "small/one"]);
 	expect([...container.querySelectorAll("button")].some((node) => node.textContent?.startsWith("Show all"))).toBe(false);
 });
 
 it("warns that a search is incomplete when the full list fails, and retries", async () => {
 	// 404 isn't retried, so the query fails at once; 5xx ends the same way after its retries.
-	(global.fetch as jest.Mock).mockImplementationOnce(async () => ({ ok: false, status: 404, json: async () => ({}) }));
+	(global.fetch as Mock).mockImplementationOnce(async () => ({ ok: false, status: 404, json: async () => ({}) }));
 	const input = container.querySelector("input")!;
 	await act(async () => {
 		Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "big/m1");

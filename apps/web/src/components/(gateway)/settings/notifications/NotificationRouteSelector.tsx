@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
@@ -11,7 +9,7 @@ import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { NotificationDestinationIcon } from "@/components/(gateway)/settings/notifications/notificationProviders";
 
-import { setNotificationRoute } from "@/app/(dashboard)/settings/credits/actions";
+import { setNotificationRoute } from "@/features/settings/credits/actions";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";

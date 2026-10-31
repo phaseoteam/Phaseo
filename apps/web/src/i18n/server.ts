@@ -1,9 +1,9 @@
-// `next-intl/server` for loaders, server functions, metadata and route
-// handlers. Components use the client hooks instead (see PORTING.md).
+// Server-side i18n for loaders, server functions, metadata and server
+// routes. Components use the hooks in @/i18n/react instead.
 import { createFormatter, createTranslator, type AbstractIntlMessages } from "use-intl/core";
 import { getPublicMessages } from "@/i18n/messages";
 import { defaultLocale, isPublicLocale, type PublicLocale } from "@/i18n/locales";
-import { getCurrentRequestUrl } from "@/compat/request-context";
+import { getCurrentRequestUrl } from "@/lib/start/request-context";
 
 type LocaleArg = { locale?: string; namespace?: string } | string | undefined;
 
@@ -30,7 +30,7 @@ export async function getMessages(arg?: { locale?: string }): Promise<AbstractIn
 
 export async function getTranslations(arg?: LocaleArg) {
 	if (typeof window !== "undefined") {
-		throw new Error("getTranslations from next-intl/server runs on the server only. Use useTranslations in components, or call it inside createServerFn.");
+		throw new Error("getTranslations from @/i18n/server runs on the server only. Use useTranslations in components, or call it inside createServerFn.");
 	}
 	const { locale, namespace } = await resolve(arg);
 	const messages = (await getPublicMessages(locale)) as unknown as AbstractIntlMessages;

@@ -1,5 +1,3 @@
-"use client";
-
 import { usePathname } from "@/i18n/navigation";
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { useTranslations } from "@/i18n/react";

@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { Check, ExternalLink, Infinity, X } from "lucide-react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
@@ -8,7 +6,7 @@ import { toast } from "sonner";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import TeamInviteDialog from "./TeamInviteDialog";
-import { approveJoinRequest, rejectJoinRequest } from "@/app/(dashboard)/settings/teams/actions";
+import { approveJoinRequest, rejectJoinRequest } from "@/features/settings/teams/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

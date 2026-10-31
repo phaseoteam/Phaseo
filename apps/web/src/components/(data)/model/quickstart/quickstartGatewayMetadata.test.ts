@@ -1,3 +1,4 @@
+import { it, expect } from "vitest";
 import { getByokOnlyProviders } from "@/components/(data)/model/quickstart/byokOnly";
 import { toQuickstartGatewayMetadata } from "@/components/(data)/model/quickstart/quickstartGatewayMetadata";
 import type {

@@ -3,7 +3,7 @@ import type {
 	SensitiveInfoRuleId,
 	SensitiveInfoCustomRulePayload,
 	SensitiveInfoRulePayload,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 
 export type SensitiveInfoRuleDefinition = {
 	id: SensitiveInfoRuleId;

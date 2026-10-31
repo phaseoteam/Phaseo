@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
 import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
@@ -6,7 +7,7 @@ import { englishCatalogueMessages } from "@/i18n/default-messages";
 import { MonitorDataTable, type ModelData } from "./MonitorDataTable";
 
 // URL state starts empty, as on a fresh /models/table visit.
-jest.mock("nuqs", () => ({
+vi.mock("nuqs", () => ({
 	useQueryState: (_key: string, options: { defaultValue: unknown }) => [options.defaultValue, () => undefined],
 }));
 

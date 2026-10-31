@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import Link from "@/components/link";
 import { ArrowUpRight, Check, ShieldCheck } from "lucide-react";

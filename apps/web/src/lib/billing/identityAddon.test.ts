@@ -1,8 +1,9 @@
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { isWorkspaceAddonActive } from "./identityAddon";
 
 describe("identity addon", () => {
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it("treats active and trialing subscriptions as entitled", () => {
@@ -11,7 +12,7 @@ describe("identity addon", () => {
 	});
 
 	it("honours a past-due grace period but rejects expired or terminal states", () => {
-		jest.spyOn(Date, "now").mockReturnValue(Date.parse("2026-08-20T12:00:00Z"));
+		vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-08-20T12:00:00Z"));
 		expect(
 			isWorkspaceAddonActive({
 				status: "past_due",

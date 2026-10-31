@@ -1,6 +1,5 @@
-// Build-time compiled blog posts (see phaseo:announcement-mdx in build/phaseo-plugins.ts).
+// Build-time compiled blog posts (see phaseo:announcement-mdx in vite/plugins.ts).
 import type { ComponentType } from "react";
-// eslint-disable-next-line import/no-unresolved -- provided by the phaseo:announcement-mdx Vite plugin.
 import { announcementModules } from "virtual:phaseo-announcement-mdx";
 import type { BlogTocItem } from "@/lib/content/blogToc";
 

@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice } from "./pricing";
 
 const monthly: SubscriptionPrice = { price: 30, currency: "USD", frequency: "monthly", billing_interval: "month", billing_interval_count: 1 };

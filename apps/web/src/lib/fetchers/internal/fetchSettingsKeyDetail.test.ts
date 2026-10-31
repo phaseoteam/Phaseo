@@ -1,17 +1,18 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fetchSettingsKeyDetailByName } from "./fetchSettingsKeyDetail";
 import { fetchSettingsKeysInitialData } from "./fetchSettingsKeysInitialData";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { keyDetailHref } from "@/components/(gateway)/settings/keys/keyDetailHref";
 
-jest.mock("./fetchSettingsKeysInitialData", () => ({ fetchSettingsKeysInitialData: jest.fn() }));
-jest.mock("./serverAccountContext", () => ({ getServerAccountContext: async () => ({ accessToken: "token" }) }));
-jest.mock("@/lib/web-api/client", () => ({ ...jest.requireActual("@/lib/web-api/client"), fetchAccountWebApi: jest.fn() }));
-const initial = jest.mocked(fetchSettingsKeysInitialData);
-const fetchApi = jest.mocked(fetchAccountWebApi);
+vi.mock("./fetchSettingsKeysInitialData", () => ({ fetchSettingsKeysInitialData: vi.fn() }));
+vi.mock("./serverAccountContext", () => ({ getServerAccountContext: async () => ({ accessToken: "token" }) }));
+vi.mock("@/lib/web-api/client", async () => ({ ...(await vi.importActual("@/lib/web-api/client")), fetchAccountWebApi: vi.fn() }));
+const initial = vi.mocked(fetchSettingsKeysInitialData);
+const fetchApi = vi.mocked(fetchAccountWebApi);
 
 describe("name-based key routes", () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		initial.mockResolvedValue({ currentUserId: "user", initialWorkspaceId: "workspace", workspaces: [], teamsWithKeys: [{ id: "workspace", name: "Workspace", keys: [
 			{ id: "key-1", name: "Production / EU", prefix: "first", workspace_id: "workspace" },
 			{ id: "key-2", name: "Production / EU", prefix: "second", workspace_id: "workspace" },

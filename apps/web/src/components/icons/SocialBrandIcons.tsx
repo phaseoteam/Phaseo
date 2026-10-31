@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "@/components/image";
 import { cn } from "@/lib/utils";
 

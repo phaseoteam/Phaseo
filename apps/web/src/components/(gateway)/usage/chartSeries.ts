@@ -1,5 +1,3 @@
-"use client";
-
 export const OTHER_SERIES_KEY = "__other";
 
 export type ChartSeriesRow = {

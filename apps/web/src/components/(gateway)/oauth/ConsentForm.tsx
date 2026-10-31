@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import Image from "@/components/image";

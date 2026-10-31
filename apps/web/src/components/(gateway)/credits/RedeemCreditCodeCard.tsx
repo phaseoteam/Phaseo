@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +14,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { redeemCreditCodeAction } from "@/app/(dashboard)/settings/credits/actions";
+import { redeemCreditCodeAction } from "@/features/settings/credits/actions";
 import { normalizePromoCodeInput } from "@/lib/credits/promoCodes";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

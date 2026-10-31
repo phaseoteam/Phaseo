@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import site from "../../../../messages/en-GB/site.json";
 import catalogue from "../../../../messages/en-GB/catalogue.json";
 import product from "../../../../messages/en-GB/product.json";

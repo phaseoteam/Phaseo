@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
@@ -22,7 +20,7 @@ import {
 	type InvestigateGenerationResult,
 	type ProviderMetadataEntry,
 	type RequestRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

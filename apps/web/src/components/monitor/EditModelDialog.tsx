@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useTransition, useEffect } from "react";
 import { useTranslations } from "@/i18n/react";
 import {
@@ -24,7 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Loader2 } from "lucide-react";
 import type { AuditModelData } from "@/lib/fetchers/models/table-view/getAuditModels";
-import { updateModel } from "@/app/(dashboard)/internal/audit/actions";
+import { updateModel } from "@/features/internal/audit/actions";
 import { useRouter } from "@/lib/navigation";
 
 interface EditModelDialogProps {

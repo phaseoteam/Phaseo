@@ -1,5 +1,3 @@
-"use client";
-
 import dynamic from "@/lib/dynamic";
 import { useEffect, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";

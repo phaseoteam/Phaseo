@@ -1,5 +1,3 @@
-"use client"
-
 import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useLocale, useTranslations } from "@/i18n/react"
 import { DatePickerInput } from "@/components/ui/date-picker-input"

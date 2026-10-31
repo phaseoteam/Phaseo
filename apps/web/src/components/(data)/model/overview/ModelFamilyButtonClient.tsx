@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { Network, ChevronRight, X } from "lucide-react";

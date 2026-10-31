@@ -1,3 +1,4 @@
+import { it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
 import common from "../../../../messages/en-GB/common.json";
@@ -5,7 +6,7 @@ import catalogue from "../../../../messages/en-GB/catalogue.json";
 import { ArtificialAnalysisScoreMatrix } from "./ArtificialAnalysisScoreMatrix";
 import type { DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard";
 
-jest.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
 
 it("keeps configurations separate and preserves negative, zero, missing and precise scores", () => {
 	const base: DashboardRow = { id: "low", modelId: "lab/model", modelName: "Model", sourceName: "Model (Low)", creatorId: "lab", colour: null, effort: "low", intelligence: null, tokensPerTask: null, totalTokens: null, costPerTask: null, totalCost: null, timePerTask: null, benchmarks: { negative: -2.12345, zero: 0 }, capabilities: {} };

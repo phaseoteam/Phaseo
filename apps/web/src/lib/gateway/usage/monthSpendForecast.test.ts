@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { forecastMonthSpend } from "./monthSpendForecast";
 
 const usd = (value: number) => value * 1_000_000_000;

@@ -1,5 +1,3 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

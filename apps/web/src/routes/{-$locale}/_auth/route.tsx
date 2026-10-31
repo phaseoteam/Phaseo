@@ -1,11 +1,7 @@
-// Next: src/app/[locale]/(auth)/layout.tsx
+// Sign-in, sign-up and the other account flows are never indexed.
 import { createFileRoute } from "@tanstack/react-router";
 import { metadataToHead } from "@/lib/start/metadataToHead";
-import { nextLayoutComponent } from "@/lib/start/nextPage";
-import Layout, * as mod from "@/app/[locale]/(auth)/layout";
-
 
 export const Route = createFileRoute("/{-$locale}/_auth")({
-	head: () => metadataToHead((mod as { metadata?: Record<string, unknown> }).metadata),
-	component: nextLayoutComponent(Layout),
+	head: () => metadataToHead({ robots: { index: false, follow: false } }),
 });

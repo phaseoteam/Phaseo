@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import Link from "@/components/link";
 import { useFormStatus } from "react-dom";
@@ -7,7 +5,7 @@ import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { handlePasswordSignIn, forgotPasswordAction } from "@/app/(auth)/sign-in/actions";
+import { handlePasswordSignIn, forgotPasswordAction } from "@/features/sign-in/actions";
 import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
 import { Eye, EyeOff } from "lucide-react";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";

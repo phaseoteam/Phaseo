@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
@@ -35,7 +33,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
-import { createPresetAction, publishPresetDraftAction, updatePresetAction } from "@/app/(dashboard)/settings/presets/actions";
+import { createPresetAction, publishPresetDraftAction, updatePresetAction } from "@/features/settings/presets/actions";
 import {
 	Dialog,
 	DialogContent,

@@ -1,4 +1,3 @@
-"use client";
 import { Globe2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchableSelect } from "@/components/ui/searchable-select";

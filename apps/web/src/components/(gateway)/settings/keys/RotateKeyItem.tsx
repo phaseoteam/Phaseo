@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useMemo, useState } from "react";
@@ -28,7 +27,7 @@ import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useLocale } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { rotateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { rotateApiKeyAction } from "@/features/settings/keys/actions";
 import { SecretRevealActions } from "./SecretRevealActions";
 
 type ExpiryMode = "immediate" | "1h" | "24h" | "7d" | "custom" | "never";

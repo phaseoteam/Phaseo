@@ -1,6 +1,6 @@
 // Server-only model data for the catalogue model components. Hidden-model
 // reads (`includeHidden`) go through the signed-in admin's model source, and
-// the Epoch interval CSV is fetched server-side only (`server-only` module,
+// the Epoch interval CSV is fetched server-side only (server-only code,
 // no browser CORS), so these run in server functions.
 import { createServerFn } from "@tanstack/react-start";
 

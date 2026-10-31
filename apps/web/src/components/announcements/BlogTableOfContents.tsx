@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import Link from "@/components/link";
 import { ChevronDown } from "lucide-react";

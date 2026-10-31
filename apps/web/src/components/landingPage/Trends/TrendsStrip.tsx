@@ -1,5 +1,3 @@
-"use client";
-
 import USvsChinaCard from "./USvsChina";
 import OpenVsClosedCard from "./OpenvsClosed";
 import OrgsOverTimeCard from "./OrgsOverTime";

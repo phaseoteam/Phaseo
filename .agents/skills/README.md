@@ -122,4 +122,4 @@ Run the cases against Haiku, Sonnet and Opus (or the Codex default model) before
 - `phaseo-release-spotlight`: monthly recap and release spotlight writing workflow
 - `phaseo-changelog`: combined, product, SDK and data changelog writing workflow
 - `realtime-maintenance`: announced maintenance windows for deploying the `phaseo-realtime` voice relay without ending live calls
-- `next-cache-components`, `seo-audit`, `supabase-postgres-best-practices`, `vercel-react-best-practices`, `yeet`: general development helpers
+- `seo-audit`, `supabase-postgres-best-practices`, `yeet`: general development helpers

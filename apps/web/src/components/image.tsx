@@ -1,5 +1,5 @@
-// `next/image` as a plain <img> with the same props. Images are served as-is
-// (no optimiser), matching how the vinext preview behaved.
+// Image component: a plain <img> that accepts width/height/fill/priority and
+// static imports. Images are served as-is (no optimiser).
 import { forwardRef, type CSSProperties, type ImgHTMLAttributes } from "react";
 
 type StaticImport = { src: string; width?: number; height?: number; blurDataURL?: string } | { default: { src: string; width?: number; height?: number } };

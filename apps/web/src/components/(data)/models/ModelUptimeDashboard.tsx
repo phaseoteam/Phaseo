@@ -1,5 +1,3 @@
-"use client";
-
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import ModelSuccessChart from "./ModelSuccessChart";
 import { DEFAULT_MODEL_PERCENTILE } from "./ModelPercentileSelect";

@@ -1,9 +1,10 @@
-// Next: app/[locale]/layout.tsx + components/layout/RootDocument.tsx.
-import appCss from "@/app/globals.css?url";
+// The document shell: html, head and the providers every page shares (see RootDocument).
+import appCss from "@/styles/globals.css?url";
 import fontsCss from "@/components/layout/fonts.css?url";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
 import { RootDocument } from "@/components/layout/RootDocument";
+import { GlobalError } from "@/components/layout/GlobalError";
 import { RouteNotFound } from "@/components/layout/RouteBoundaries";
 import { metadataToHead, notFoundMetadata } from "@/lib/start/metadataToHead";
 import { StreamedMetadata } from "@/lib/start/streamedMetadata";
@@ -20,8 +21,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 			{ charSet: "utf-8" },
 			{ name: "viewport", content: "width=device-width, initial-scale=1" },
 			// The root is the not-found boundary for unknown locales and unmatched
-			// paths; Next titled that page from its not-found metadata.
-			...(match.error ? metadataToHead(notFoundMetadata(match) ?? { title: "404: Page not found" }, { root: true }).meta : []),
+			// paths, which are titled from their not-found metadata and never indexed.
+			...(match.error ? metadataToHead(notFoundMetadata(match) ?? { title: "404: Page not found", robots: { index: false, follow: false } }, { root: true }).meta : []),
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },
@@ -30,6 +31,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 	}),
 	component: RootComponent,
 	notFoundComponent: RouteNotFound,
+	// Only failures in the shell itself reach this; pages have their own boundary.
+	errorComponent: GlobalError,
 });
 
 function RootComponent() {

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { addRecentItem, writeRecentItems, readRecentItems, invalidateRecentItemsCache, RECENT_STORAGE_KEY } from "./Search.storage";
 import type { PaletteItem } from "./Search.types";
 

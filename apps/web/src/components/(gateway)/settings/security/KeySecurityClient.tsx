@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
@@ -18,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { DisplayDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
-import { bulkUpdateKeysAction, type BulkKeyActionInput, type BulkKeySelection } from "@/app/(dashboard)/settings/security/actions";
+import { bulkUpdateKeysAction, type BulkKeyActionInput, type BulkKeySelection } from "@/features/settings/security/actions";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import { keyDetailHref } from "../keys/keyDetailHref";
 import {

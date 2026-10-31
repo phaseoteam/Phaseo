@@ -1,4 +1,5 @@
-/** @jest-environment jsdom */
+/** @vitest-environment jsdom */
+import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";

@@ -1,6 +1,4 @@
-	"use client";
-
-import { useState, type SyntheticEvent } from "react";
+	import { useState, type SyntheticEvent } from "react";
 import { useTranslations } from "@/i18n/react";
 import { AuthErrorCard } from "@/components/(gateway)/auth/AuthErrorCard";
 import { ForgotPasswordContent } from "@/components/(gateway)/auth/ForgotPasswordDialog";

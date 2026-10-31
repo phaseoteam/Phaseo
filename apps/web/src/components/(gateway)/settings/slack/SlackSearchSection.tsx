@@ -1,9 +1,7 @@
-"use client";
-
 import { useState, useTransition } from "react";
 import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
-import { updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
+import { updateSlackAgent } from "@/features/settings/slack/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Choice, Section, SlackError } from "./SlackAgentFields";
 import { SLACK_SEARCH_MODES, slackErrorKey, type SlackErrorKey, type SlackSearchMode } from "./slackAgentForm";

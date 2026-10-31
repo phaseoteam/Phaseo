@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useTranslations } from "@/i18n/react";
 import { useQueryState } from "nuqs";
@@ -32,7 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useRouter } from "@/lib/navigation";
-import { revalidateUsage } from "@/app/(dashboard)/gateway/usage/actions";
+import { revalidateUsage } from "@/features/gateway/usage/actions";
 
 type RangeKey = "1h" | "1d" | "1w" | "1m" | "1y";
 type GroupBy = "model" | "key";

@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { usePathname } from "@/lib/navigation";
 import { debounce, useQueryState } from "nuqs";

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../../messages/en-GB/settings-ui.json";
@@ -15,16 +16,16 @@ import {
 	type SlackAgentSchedules,
 } from "./slackAgentSchedules";
 
-jest.mock("@/app/(dashboard)/settings/slack/actions", () => ({
-	updateSlackAgent: jest.fn(),
-	loadSlackAgentSchedules: jest.fn(),
-	setSlackAgentScheduleStatus: jest.fn(),
-	deleteSlackAgentSchedule: jest.fn(),
+vi.mock("@/features/settings/slack/actions", () => ({
+	updateSlackAgent: vi.fn(),
+	loadSlackAgentSchedules: vi.fn(),
+	setSlackAgentScheduleStatus: vi.fn(),
+	deleteSlackAgentSchedule: vi.fn(),
 }));
-jest.mock("../PrivateSettingsQuery", () => ({
+vi.mock("../PrivateSettingsQuery", () => ({
 	useSettingsWrite: () => (operation: Promise<unknown>) => operation,
 }));
-jest.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({
 	Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a>,
 }));
 

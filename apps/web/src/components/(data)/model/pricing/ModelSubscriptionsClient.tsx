@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { CreditCard } from "lucide-react";

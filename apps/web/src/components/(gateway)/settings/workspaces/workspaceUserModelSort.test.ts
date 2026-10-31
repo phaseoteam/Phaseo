@@ -1,3 +1,4 @@
+import { it, expect } from "vitest";
 import { sortWorkspaceUserModels } from "./workspaceUserModelSort";
 import { nextTableSort } from "../../usage/SortableTableHead";
 

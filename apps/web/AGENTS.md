@@ -6,7 +6,8 @@ These instructions apply only to `apps/web` and extend the repository-level `AGE
 
 - TanStack Start (TanStack Router + React Query) with React 19, TypeScript strict mode, Vite 8, Tailwind CSS 4 and ShadCN/Base UI primitives. It runs as the `phaseo-web` Cloudflare Worker (`wrangler.jsonc`) through `@cloudflare/vite-plugin`.
 - `src/routes` holds the file routes; `src/routeTree.gen.ts` is generated from it by every `dev`/`build` run, so never edit it by hand. `src/router.tsx` creates the router and React Query client; `src/start.ts` registers the global request middleware.
-- Page components live in `src/views` or next to their feature in `src/components`; a route file only wires `loader`, `head`, `beforeLoad` and `component`.
+- Pages live in `src/features/<url path>/`, mirroring the URL without the locale prefix: the `models/$organisationId/$modelId` route renders `src/features/models/organisationId/modelId/` (a `$param` segment becomes a folder named after the param). A page is `<Name>Page.tsx` with a named `<Name>Page` export; its siblings are `<Name>Layout.tsx`, `<Name>Loading.tsx`, `<Name>NotFound.tsx` and `<Name>Error.tsx` where needed, plus `*.functions.ts` (server functions), `*.queries.ts` (query options) and private components.
+- A route file in `src/routes` only wires the feature in: `component`, `pendingComponent` (the loading skeleton), `notFoundComponent`, `errorComponent`, `loader`, `beforeLoad` and `head`. Import features with `@/features/...`. Global CSS lives in `src/styles`.
 - Shared components live in `src/components`, with reusable primitives in `src/components/ui`. Shared hooks, domain logic, types, and utilities live in `src/hooks`, `src/lib`, `src/types`, and `src/utils`.
 - Keep feature-specific code close to its route or domain. Promote it to a shared directory only after it has a genuine second consumer.
 - Canonical model, provider, pricing, and benchmark data lives in the database and is managed through `/internal/data`. Public catalog corrections should link to GitHub issues; keep direct editing restricted to admins.
@@ -31,11 +32,12 @@ Run the narrowest relevant checks while iterating. Run a production build when a
 - Pages render on the server (SSR) and hydrate in the browser. There are no React Server Components, so every component must also render in the browser, and components cannot be `async`.
 - Data loads through React Query. Define `queryOptions` next to the fetcher (`*.queries.ts`) and read them with `useSuspenseQuery`/`useSuspenseQueries`. Queries resolved during SSR stream to the browser (`setupRouterSsrQueryIntegration`), so hydration does not refetch. Keep `<Suspense>` boundaries around independent sections.
 - A route `loader` prefetches above-the-fold queries with `context.queryClient.ensureQueryData(...)` and returns the page metadata; `head` turns it into tags with `metadataToHead`.
+- Page metadata comes from an exported `get<Name>Metadata({ params, search })` next to the page (plain strings; the locale is always filled in). The route calls it from a `createServerFn` handler, passes the result through `toSerializableMetadata` and returns `metadataLoaderData(...)` (`@/lib/start/metadata`, `@/lib/start/streamedMetadata`): crawlers get the tags in the first bytes, browsers get them streamed.
 - Server-only work (service-role Supabase, secrets, cookies, billing) goes behind `createServerFn` from `@tanstack/react-start`, in a sibling `*.functions.ts` file. Server functions return JSON-serialisable data (Dates become strings). Public web-API fetchers (`fetchPublicWebApi`, `fetchFrontend*`) run in both places; the browser calls `/api/_web/*` on the same origin.
-- `"use server"` modules are server actions: a Vite plugin replaces their exports in browser bundles with stubs that POST to the actions endpoint. `<form action={fn}>`, `useActionState` and `.bind(null, id)` work as usual. Authenticate and authorize every mutation on the server.
+- Mutations are server functions too (`createServerFn({ method: "POST" })` with the `serverMutation` middleware), usually in an `actions.ts` next to the page. Authenticate and authorize every mutation on the server.
 - Auth gates and redirects that must happen before rendering belong in the route's `beforeLoad` (through a server function), not in a component.
-- Search params are raw strings (repeated keys become arrays); read them with `Route.useSearch()` and params with `Route.useParams()`.
-- API endpoints are server routes: `createFileRoute("/api/x")({ server: { handlers: { GET, POST } } })`.
+- Search params are raw strings (repeated keys become arrays; see `src/lib/start/search.ts`). In a feature component read them with `useSearch({ from: "<route id>" })` and params with `useParams({ from: "<route id>" })` from `@tanstack/react-router`, and the locale with `useLocale()`.
+- API endpoints are server routes: `createFileRoute("/api/x")({ server: { handlers: { GET, POST } } })`. A file or folder in `src/routes` that starts with `-` is not a route, so colocated tests are named `-<name>.test.ts`; call handlers in tests with `serverRouteHandler` from `@/lib/testing/serverRoute`.
 - Minimize data sent to the browser. Lazy-load large client-only charts, editors, 3D, PDF, or media features with `@/lib/dynamic`.
 - Preserve accessibility, keyboard behavior, focus management, and reduced-motion preferences.
 
@@ -56,7 +58,7 @@ Run the narrowest relevant checks while iterating. Run a production build when a
 ## UI and Client State
 
 - Start with existing `src/components/ui` primitives and the configured ShadCN registries before adding a primitive or dependency.
-- Use Tailwind utilities and established tokens; keep `src/app/globals.css` for tokens, resets, and truly global behavior.
+- Use Tailwind utilities and established tokens; keep `src/styles/globals.css` for tokens, resets, and truly global behavior.
 - Keep product copy concise. Add helper text only when it prevents a likely misunderstanding.
 - Prefer URL state for shareable filters, searches, tabs, and pagination, using existing `nuqs` patterns. Use TanStack Query for client revalidation and request deduplication.
 - Use `nuqs` for query-backed sheets and dialogs, with `shallow: true` and `scroll: false` for client-only state. Preserve the intended push/replace history behavior, deep-link hydration, Back/Forward synchronization, and unrelated query parameters. Do not use router navigation or hand-written History API updates for these controls; reserve route navigation for actual page changes and server-backed queries.

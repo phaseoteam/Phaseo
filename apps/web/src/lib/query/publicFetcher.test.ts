@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { WebApiError } from "@/lib/web-api/client";
 import { publicFetcher } from "./publicFetcher";
 
@@ -16,7 +17,7 @@ describe("publicFetcher", () => {
 	});
 
 	it("fetches anonymous JSON from a public query path", async () => {
-		const fetchMock = jest.fn().mockResolvedValue(
+		const fetchMock = vi.fn().mockResolvedValue(
 			new Response(JSON.stringify({ ok: true }), { status: 200 }),
 		);
 		global.fetch = fetchMock;
@@ -32,7 +33,7 @@ describe("publicFetcher", () => {
 	});
 
 	it("exposes the response status to the retry policy", async () => {
-		global.fetch = jest.fn().mockResolvedValue(new Response(null, { status: 404 }));
+		global.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 404 }));
 
 		await expect(publicFetcher("/api/_web/missing")).rejects.toBeInstanceOf(
 			WebApiError,

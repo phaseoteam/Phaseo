@@ -1,5 +1,3 @@
-"use client";
-
 import { CartesianGrid, Cell, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import type { PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { useLocale, useTranslations } from "@/i18n/react";

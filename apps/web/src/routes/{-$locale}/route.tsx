@@ -1,12 +1,12 @@
-// Next: app/[locale] with localePrefix "as-needed". `/models` is the default
-// locale (en-GB); `/fr-FR/models` is French. Unknown first segments fall
+// The optional locale prefix ("as-needed"). `/models` is the default locale
+// (en-GB); `/fr-FR/models` is French. Unknown first segments fall
 // through to the child routes, which 404 if nothing matches.
 import { createFileRoute, notFound, Outlet } from "@tanstack/react-router";
 import { defaultLocale, isPublicLocale } from "@/i18n/locales";
 import { buildLocalizedRootMetadata } from "@/lib/rootMetadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { createServerFn } from "@tanstack/react-start";
-import { toSerializableMetadata } from "@/lib/start/nextPage";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 
 const getRootMetadata = createServerFn({ method: "GET" })
 	.validator((locale: string) => locale)

@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
@@ -7,7 +5,7 @@ import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
 import { useTranslations } from "@/i18n/react";
 
-import { deleteAccount } from "@/app/(dashboard)/settings/account/actions";
+import { deleteAccount } from "@/features/settings/account/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { Button } from "@/components/ui/button";

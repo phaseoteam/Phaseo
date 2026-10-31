@@ -1,6 +1,4 @@
 // components/header/TeamSwitcher.tsx (CLIENT)
-"use client";
-
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,7 +28,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SwapTeam } from "@/app/(dashboard)/actions";
+import { SwapTeam } from "@/lib/workspace/actions";
 import { CurrentUserAvatar } from "../ui/current-user-avatar";
 import { cn } from "@/lib/utils";
 import { getLondonInfo, getSupportAvailability } from "@/lib/support/schedule";

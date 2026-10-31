@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
@@ -16,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { acceptTeamInviteAction } from "@/app/(dashboard)/settings/teams/actions";
+import { acceptTeamInviteAction } from "@/features/settings/teams/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 export default function AcceptInviteDialog({

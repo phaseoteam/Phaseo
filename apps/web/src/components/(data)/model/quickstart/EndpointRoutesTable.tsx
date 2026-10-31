@@ -1,5 +1,3 @@
-"use client";
-
 import { HttpMethodBadge } from "@/components/HttpMethodBadge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";

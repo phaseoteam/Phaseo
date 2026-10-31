@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

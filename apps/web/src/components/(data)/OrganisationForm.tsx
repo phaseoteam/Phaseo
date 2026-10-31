@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { Building2 } from "lucide-react";
 import { CatalogForm } from "./CatalogForm";

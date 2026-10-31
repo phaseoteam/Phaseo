@@ -1,4 +1,4 @@
-import type { Metadata } from "@/lib/seo/metadataTypes";
+import type { PageMetadata } from "@/lib/seo/metadataTypes";
 import {
 	defaultLocale,
 	publicLocales,
@@ -13,7 +13,7 @@ export function buildLocalizedAuthMetadata(input: {
 	pathname: "/sign-in" | "/sign-up" | "/error";
 	title: string;
 	description: string;
-}): Metadata {
+}): PageMetadata {
 	const localizedPath = localizeAuthPath(input.locale, input.pathname);
 	const languageAlternates = Object.fromEntries(
 		publicLocales.map((locale) => [
@@ -59,9 +59,9 @@ export function buildLocalizedPageMetadata(input: {
 	keywords?: string[];
 	imagePath?: string;
 	imageAlt?: string;
-	robots?: Metadata["robots"];
-	openGraph?: Metadata["openGraph"];
-}): Metadata {
+	robots?: PageMetadata["robots"];
+	openGraph?: PageMetadata["openGraph"];
+}): PageMetadata {
 	const localizedPath = localizePublicPath(input.locale, input.pathname);
 	const languageAlternates = Object.fromEntries(
 		publicLocales.map((locale) => [

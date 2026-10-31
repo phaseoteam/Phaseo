@@ -1,5 +1,5 @@
-// Next.js `Metadata` objects → TanStack Router `head()` output. Pages keep
-// their existing generateMetadata logic and pass the result through here.
+// PageMetadata objects → TanStack Router `head()` output. Each page's
+// get<Name>Metadata returns a PageMetadata; route head() passes it through here.
 import { METADATA_BASE, SITE_NAME } from "@/lib/seo";
 
 type Meta = { [key: string]: unknown };
@@ -48,7 +48,7 @@ function asArray<T>(value: T | T[] | undefined | null): T[] {
 }
 
 /**
- * @param metadata  the object a Next `generateMetadata` returned
+ * @param metadata  the PageMetadata a page's get<Name>Metadata returned
  * @param options.root  set for the root layout's metadata (no title template applied)
  */
 export function metadataToHead(metadata: Meta | undefined | null, options: { root?: boolean } = {}): HeadOutput {

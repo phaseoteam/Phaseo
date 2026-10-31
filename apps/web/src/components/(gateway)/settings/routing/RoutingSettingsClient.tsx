@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -16,7 +15,7 @@ import { toast } from "sonner";
 import {
 	updateRoutingSettings,
 	type RoutingMode,
-} from "@/app/(dashboard)/settings/routing/actions";
+} from "@/features/settings/routing/actions";
 import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 

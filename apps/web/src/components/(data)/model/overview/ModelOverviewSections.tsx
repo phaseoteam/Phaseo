@@ -425,8 +425,7 @@ export function ModelAppsSection({
 										</span>
 										<span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/45">
 											{logoUrl ? (
-												// eslint-disable-next-line @next/next/no-img-element
-												<img
+																								<img
 													src={logoUrl}
 													alt={app.title}
 													className="size-full object-contain"

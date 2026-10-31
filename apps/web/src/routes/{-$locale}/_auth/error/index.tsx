@@ -1,18 +1,16 @@
-// Next: src/app/[locale]/(auth)/error/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { routeMetadataInput, toSerializableMetadata, type RouteMetadataInput } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(auth)/error/page";
+import { AuthErrorPage, getAuthErrorMetadata } from "@/features/error/AuthErrorPage";
 
 const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+	.validator((input: RouteMetadataInput) => input)
+	.handler(async ({ data }) => toSerializableMetadata(await getAuthErrorMetadata(data)));
 
 export const Route = createFileRoute("/{-$locale}/_auth/error/")({
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: routeMetadataInput(params, location.search) })),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextPageComponent(Page),
+	component: AuthErrorPage,
 });

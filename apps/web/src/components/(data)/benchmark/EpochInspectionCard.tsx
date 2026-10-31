@@ -1,5 +1,3 @@
-"use client";
-
 import { useLocale, useTranslations } from "@/i18n/react";
 import { ArrowUpRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { describeProviderRoutes, groupModelRows, lowestDisplayedPrice, type ModelData } from "./modelTableGrouping";
 
 function row(overrides: Partial<ModelData>): ModelData {

@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";

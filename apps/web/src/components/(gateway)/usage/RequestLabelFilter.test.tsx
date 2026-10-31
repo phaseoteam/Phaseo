@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
@@ -6,12 +7,12 @@ import RequestLabelFilter, { readActiveLabelFilter } from "./RequestLabelFilter"
 import type { RequestClassifierSummary } from "./requestClassifierLabels";
 
 const mockState: { current: { label_key: string; label_value: string; label_op: string } } = { current: { label_key: "", label_value: "", label_op: "" } };
-jest.mock("nuqs", () => ({
+vi.mock("nuqs", () => ({
 	parseAsString: { withDefault: () => ({}) },
-	useQueryStates: () => [mockState.current, jest.fn()],
+	useQueryStates: () => [mockState.current, vi.fn()],
 }));
 // The popover content is only mounted when open; the trigger carries the state.
-jest.mock("@/components/ui/popover", () => {
+vi.mock("@/components/ui/popover", () => {
 	const Pass = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
 	return { Popover: Pass, PopoverTrigger: Pass, PopoverContent: () => null };
 });

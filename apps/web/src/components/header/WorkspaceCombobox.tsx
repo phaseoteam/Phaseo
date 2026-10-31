@@ -1,5 +1,3 @@
-"use client";
-
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "@/i18n/react";
 import { useEffect, useMemo, useState } from "react";

@@ -1,9 +1,10 @@
+import { it, expect, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ArtificialAnalysisSuiteNavigation from "./ArtificialAnalysisSuiteNavigation";
 import type { ArtificialAnalysisSuite } from "@/lib/fetchers/benchmarks/types";
 
-jest.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({
 	Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children),
 }));
 

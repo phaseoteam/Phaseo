@@ -1,6 +1,4 @@
 // ModelCombobox.tsx
-"use client";
-
 import * as React from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Check, Plus } from "lucide-react";

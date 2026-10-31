@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useTransition } from "react";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,7 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { CopyButton } from "@/components/ui/copy-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { removeSlackCustomApp, saveSlackCustomApp } from "@/app/(dashboard)/settings/slack/actions";
+import { removeSlackCustomApp, saveSlackCustomApp } from "@/features/settings/slack/actions";
 import { cn } from "@/lib/utils";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Notice, SlackError } from "./SlackAgentFields";

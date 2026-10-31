@@ -1,5 +1,3 @@
-"use client";
-
 import { useQueryState } from "nuqs";
 import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { listenForQuerySession } from "./browserLifecycle";
 import { createWebQueryClient } from "./queryClient";
@@ -6,17 +7,17 @@ import { webQueryKeys } from "./queryKeys";
 describe("query session synchronization", () => {
 	let client: ReturnType<typeof createWebQueryClient>;
 	let emit: (event: AuthChangeEvent, session: Session | null) => void;
-	let unsubscribe: jest.Mock;
-	let reload: jest.Mock;
+	let unsubscribe: Mock;
+	let reload: Mock;
 	let stop: () => void;
 	const privateKey = (userId: string) => webQueryKeys.account.workspaceSearch({ userId, workspaceId: "workspace-a" });
 	const session = (userId: string) => ({ user: { id: userId } }) as Session;
 
 	beforeEach(() => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		client = createWebQueryClient();
-		unsubscribe = jest.fn();
-		reload = jest.fn();
+		unsubscribe = vi.fn();
+		reload = vi.fn();
 		stop = listenForQuerySession(client, {
 			onAuthStateChange: (callback) => {
 				emit = callback;
@@ -24,7 +25,7 @@ describe("query session synchronization", () => {
 			},
 		}, reload);
 	});
-	afterEach(() => { stop(); client.clear(); jest.useRealTimers(); });
+	afterEach(() => { stop(); client.clear(); vi.useRealTimers(); });
 
 	it("does not reload on initial session, repeated sign-in, or token refresh for the same user", () => {
 		client.setQueryData(privateKey("a"), ["private-a"]);

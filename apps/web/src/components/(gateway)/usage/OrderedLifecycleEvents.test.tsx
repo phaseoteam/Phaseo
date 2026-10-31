@@ -1,13 +1,15 @@
+import { test, expect, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
+import { nestDottedMessageKeys } from "@/i18n/message-overlays";
 import { OrderedLifecycleEvents, readLifecycleJournal } from "./OrderedLifecycleEvents";
 import messages from "../../../../messages/en-GB/settings-ui.json";
 import { GenerationTraceView } from "./GenerationTraceView";
-import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
+import type { RequestRow } from "@/features/gateway/usage/server-actions";
 
-jest.mock("./RoutingTracePanel", () => ({ RoutingTracePanel: () => null }));
-jest.mock("./DetailDialogPrimitives", () => ({ DetailTimingBar: () => null }));
+vi.mock("./RoutingTracePanel", () => ({ RoutingTracePanel: () => null }));
+vi.mock("./DetailDialogPrimitives", () => ({ DetailTimingBar: () => null }));
 
 test("uses sequence instead of timestamps and interleaves tool execution between model calls", () => {
 	const event = (sequence: number, type: string, fields = {}) => ({ sequence, type, elapsed_ms: sequence, timestamp_ms: 1000 - sequence, ...fields });
@@ -19,11 +21,11 @@ test("uses sequence instead of timestamps and interleaves tool execution between
 		event(4, "tool.completed", { span_id: "tool", tool_call_id: "same-id" }),
 	] });
 	expect(journal?.events.map((event) => event.sequence)).toEqual([1, 2, 3, 4, 5]);
-	const html = renderToStaticMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><OrderedLifecycleEvents journal={journal!} toolResults={new Map([["tool", { output: "Time result", arguments: "{}" }]])} /></AppIntlProvider>);
+	const html = renderToStaticMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: nestDottedMessageKeys(messages) }}><OrderedLifecycleEvents journal={journal!} toolResults={new Map([["tool", { output: "Time result", arguments: "{}" }]])} /></AppIntlProvider>);
 	expect(html.indexOf("Model call started")).toBeLessThan(html.indexOf("Tool started"));
 	expect(html.indexOf("Tool result")).toBeLessThan(html.indexOf("Model continuation started"));
 	expect(html).toContain("Time result");
-	const view = renderToStaticMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "fixture", success: true } as RequestRow} timelineItems={[]} ioLog={{
+	const view = renderToStaticMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: nestDottedMessageKeys(messages) }}><GenerationTraceView request={{ request_id: "fixture", success: true } as RequestRow} timelineItems={[]} ioLog={{
 		status: "stored", storage_provider: "cloudflare_r2", bytes: 100, retention_until: null, error: null,
 		payload: { lifecycle_events: { version: 1, ...journal }, gateway_response: { output_text: "Final answer" }, server_tool_trace: [{ round: 1, calls: [{ id: "same-id", spanId: "tool", name: "datetime", output: "Time result" }] }] },
 	}} /></AppIntlProvider>);
@@ -35,7 +37,7 @@ test("uses sequence instead of timestamps and interleaves tool execution between
 });
 
 test("keeps client-managed tool details alongside the ordered gateway journal", () => {
-	const view = renderToStaticMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "fixture", success: true } as RequestRow} timelineItems={[]} ioLog={{
+	const view = renderToStaticMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: nestDottedMessageKeys(messages) }}><GenerationTraceView request={{ request_id: "fixture", success: true } as RequestRow} timelineItems={[]} ioLog={{
 		status: "stored", storage_provider: "cloudflare_r2", bytes: 100, retention_until: null, error: null,
 		payload: {
 			lifecycle_events: { version: 1, events: [{ sequence: 1, type: "provider.started", elapsed_ms: 0, timestamp_ms: 1000 }] },

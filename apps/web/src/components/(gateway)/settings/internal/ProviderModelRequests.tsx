@@ -1,10 +1,9 @@
-"use client";
 import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { reviewProviderModelRequestAction, refreshProviderModelRequestsAction } from "@/app/(dashboard)/settings/internal/provider-review/actions";
+import { reviewProviderModelRequestAction, refreshProviderModelRequestsAction } from "@/features/settings/internal/provider-review/actions";
 import type { ProviderModelRequest } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
 
 export default function ProviderModelRequests({ initialRequests }: {initialRequests:ProviderModelRequest[]}) {

@@ -1,4 +1,3 @@
-"use client";
 import { useSettingsWrite } from "../settings/PrivateSettingsQuery";
 
 import * as React from "react";
@@ -7,7 +6,7 @@ import { toast } from "sonner";
 import {
 	setBillingNotificationPreference,
 	setLowBalanceEmailAlert,
-} from "@/app/(dashboard)/settings/credits/actions";
+} from "@/features/settings/credits/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";

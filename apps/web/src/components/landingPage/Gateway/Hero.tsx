@@ -1,5 +1,3 @@
-"use client";
-
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";

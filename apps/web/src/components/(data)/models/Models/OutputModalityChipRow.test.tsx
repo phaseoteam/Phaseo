@@ -1,10 +1,11 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { OutputModalityChipRow } from "./OutputModalityChipRow";
 
-jest.mock("motion/react", () => ({ useReducedMotion: () => false }));
-jest.mock("@/components/ui/scroll-area", () => ({
+vi.mock("motion/react", () => ({ useReducedMotion: () => false }));
+vi.mock("@/components/ui/scroll-area", () => ({
 	ScrollArea: ({
 		children,
 		scrollBarClassName,

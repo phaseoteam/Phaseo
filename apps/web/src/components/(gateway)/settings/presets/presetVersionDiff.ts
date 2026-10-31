@@ -4,7 +4,7 @@
 // How: Compares the models (set and order) and the template messages by
 //      position, with a small line diff of each changed message. No dependency.
 
-import type { PresetVersionContent } from "@/app/(dashboard)/settings/presets/actions";
+import type { PresetVersionContent } from "@/features/settings/presets/actions";
 
 export type VersionMessage = { role: string; text: string };
 export type LineChange = { kind: "same" | "added" | "removed"; text: string };

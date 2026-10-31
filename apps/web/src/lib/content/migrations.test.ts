@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getMigrationPost, getMigrationPosts, MIGRATION_POSTS } from "./migrations";
 
 const translatedLocales = [

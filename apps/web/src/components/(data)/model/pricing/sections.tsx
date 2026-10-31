@@ -1,4 +1,3 @@
-"use client";
 import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 
 import React from "react";

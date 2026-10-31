@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { Sparkles, X } from "lucide-react";
 import { useTranslations } from "@/i18n/react";

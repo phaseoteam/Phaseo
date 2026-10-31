@@ -93,7 +93,7 @@ describe("V2 catalogue and analytics cutover", () => {
 			"apps/api/src/routes/v1/control/generations.ts",
 			"apps/api/src/routes/v1/control/logs.ts",
 			"apps/api/src/routes/v1/control/oauth-clients.ts",
-			"apps/web/src/app/api/stripe/refunds/request/route.ts",
+			"apps/web/src/routes/api/stripe/refunds/request/index.ts",
 		];
 
 		for (const repoPath of exactRequestReaders) {

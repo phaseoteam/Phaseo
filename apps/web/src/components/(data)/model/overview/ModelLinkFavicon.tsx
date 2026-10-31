@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
@@ -54,8 +52,7 @@ export default function ModelLinkFavicon({
 	}
 
 	return (
-		// Favicons come from a third-party proxy, so do not route them through next/image's host allowlist.
-		// eslint-disable-next-line @next/next/no-img-element
+		// Favicons come from a third-party proxy, so they load directly.
 		<img
 			src={faviconUrl}
 			alt=""

@@ -1,5 +1,3 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "@/components/link";
 import { createPortal } from "react-dom";

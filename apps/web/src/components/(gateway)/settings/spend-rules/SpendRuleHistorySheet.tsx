@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import {
@@ -13,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { spendRuleHistory } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
+import { spendRuleHistory } from "@/features/settings/notifications/spend-rules-actions";
 import { useSpendPercent, useSpendUsd } from "./spendAlertsUi";
 import type { SpendRule, SpendRuleHistory } from "./spendRules";
 

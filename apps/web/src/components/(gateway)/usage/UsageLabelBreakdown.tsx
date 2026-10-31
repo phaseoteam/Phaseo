@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Sparkles, Tag } from "lucide-react";

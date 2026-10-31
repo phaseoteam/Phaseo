@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
 import { hideDocumentForSessionReset, listenForQueryHistory } from "./historyPrivacy";
 import { createWebQueryClient } from "./queryClient";
 import { webQueryKeys } from "./queryKeys";
@@ -9,8 +10,8 @@ describe("private document history restoration", () => {
 	let client: ReturnType<typeof createWebQueryClient>;
 	let browser: EventTarget;
 	let hidden: boolean;
-	let hide: jest.Mock;
-	let reload: jest.Mock;
+	let hide: Mock;
+	let reload: Mock;
 	let stop: () => void;
 	function show(persisted: boolean) {
 		const event = new Event("pageshow");
@@ -18,13 +19,13 @@ describe("private document history restoration", () => {
 		browser.dispatchEvent(event);
 	}
 	beforeEach(() => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		client = createWebQueryClient();
 		browser = new EventTarget();
 		Object.defineProperty(globalThis, "window", { configurable: true, value: browser });
 		hidden = false;
-		hide = jest.fn(() => { hidden = true; });
-		reload = jest.fn(() => { expect(hidden).toBe(true); });
+		hide = vi.fn(() => { hidden = true; });
+		reload = vi.fn(() => { expect(hidden).toBe(true); });
 		stop = listenForQueryHistory(client, hide, reload);
 		client.setQueryData(privateKey, ["private-a"]);
 		client.setQueryData(webQueryKeys.public.search(), ["public"]);
@@ -32,7 +33,7 @@ describe("private document history restoration", () => {
 	afterEach(() => {
 		stop();
 		client.clear();
-		jest.useRealTimers();
+		vi.useRealTimers();
 		for (const [key, descriptor] of [["window", originalWindow], ["document", originalDocument]] as const) {
 			if (descriptor) Object.defineProperty(globalThis, key, descriptor);
 			else Reflect.deleteProperty(globalThis, key);
@@ -91,7 +92,7 @@ describe("private document history restoration", () => {
 	});
 
 	it("uses synchronous display:none!important so descendants cannot override the mask", () => {
-		const setProperty = jest.fn();
+		const setProperty = vi.fn();
 		Object.defineProperty(globalThis, "document", { configurable: true, value: { documentElement: { style: { setProperty } } } });
 		hideDocumentForSessionReset();
 		expect(setProperty).toHaveBeenCalledWith("display", "none", "important");

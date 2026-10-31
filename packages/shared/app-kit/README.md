@@ -36,7 +36,7 @@ Every app picks it up from there.
 
 | App | Generated | Hand-written, checked by the drift test |
 |---|---|---|
-| Website | `apps/web/src/app/theme-tokens.generated.css` (imported by `globals.css`): `:root`, `.dark` and the palette blocks | `globals.css`: the accent blocks (primary, ring and charts from the user's accent) and the radius scale. The Appearance settings read the presets and swatches from this package. |
+| Website | `apps/web/src/styles/theme-tokens.generated.css` (imported by `globals.css`): `:root`, `.dark` and the palette blocks | `globals.css`: the accent blocks (primary, ring and charts from the user's accent) and the radius scale. The Appearance settings read the presets and swatches from this package. |
 | Desktop app | `apps/desktop/src/renderer/theme-tokens.generated.css` (imported by `index.css`) | `index.css`: the radius scale |
 | Mobile app | The `@layer theme` block of `apps/mobile/global.css`, between "Generated from" and "End of generated tokens" (Uniwind reads that file itself, so it isn't an import) | `@theme`: the radii. At runtime `src/lib/theme/model.ts` applies the chosen theme with `themeVariables`. |
 

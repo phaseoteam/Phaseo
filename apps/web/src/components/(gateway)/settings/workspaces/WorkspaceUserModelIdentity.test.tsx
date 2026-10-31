@@ -1,10 +1,11 @@
+import { it, expect, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { WorkspaceUserModelIdentity } from "./WorkspaceUserModelIdentity";
 
-jest.mock("@/i18n/react", () => ({ useTranslations: () => () => "Unknown model" }));
-jest.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => <a {...props}>{children}</a> }));
-jest.mock("@/components/Logo", () => ({ Logo: ({ id }: { id: string }) => <span data-logo={id} /> }));
+vi.mock("@/i18n/react", () => ({ useTranslations: () => () => "Unknown model" }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => <a {...props}>{children}</a> }));
+vi.mock("@/components/Logo", () => ({ Logo: ({ id }: { id: string }) => <span data-logo={id} /> }));
 
 const metadata = new Map([["gpt-5-alias", { modelName: "GPT-5", organisationId: "openai", organisationName: "OpenAI", canonicalModelId: "openai/gpt-5" }]]);
 

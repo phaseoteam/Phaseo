@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import {
 	useCallback,
@@ -79,7 +77,7 @@ import {
 	qParser,
 	sortParser,
 	type ModelsSortOption,
-} from "@/app/(dashboard)/models/search-params";
+} from "@/features/models/search-params";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Accordion,

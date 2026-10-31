@@ -1,3 +1,4 @@
+import { it, expect, beforeEach, afterEach, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ChatStorageBoundary } from "./ChatStorageBoundary";
@@ -6,27 +7,33 @@ import { initializeChatStorage, observeChatStorageIdentity } from "@/lib/chat/us
 import { hideDocumentForSessionReset } from "@/lib/query/historyPrivacy";
 import { migrateLegacyChatHistory } from "@/lib/chat/legacyMigration";
 
-jest.mock("react", () => ({ ...jest.requireActual("react"), useEffect: jest.fn(), useState: jest.fn() }));
-jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
-jest.mock("@/lib/chat/userStorage", () => ({ assertChatStorageOwner: jest.fn(), initializeChatStorage: jest.fn(), observeChatStorageIdentity: jest.fn() }));
-jest.mock("@/lib/chat/legacyMigration", () => ({ migrateLegacyChatHistory: jest.fn() }));
-jest.mock("@/lib/query/historyPrivacy", () => ({ hideDocumentForSessionReset: jest.fn() }));
+vi.mock("react", async () => {
+	const actual = await vi.importActual<typeof import("react")>("react");
+	const hooks = { useEffect: vi.fn(), useState: vi.fn() };
+	// The test reads `React.useState` through the default import.
+	return { ...actual, ...hooks, default: { ...actual, ...hooks } };
+});
+vi.mock("@/utils/supabase/client", () => ({ createClient: vi.fn() }));
+vi.mock("@/lib/chat/userStorage", () => ({ assertChatStorageOwner: vi.fn(), initializeChatStorage: vi.fn(), observeChatStorageIdentity: vi.fn() }));
+vi.mock("@/lib/chat/legacyMigration", () => ({ migrateLegacyChatHistory: vi.fn() }));
+vi.mock("@/lib/query/historyPrivacy", () => ({ hideDocumentForSessionReset: vi.fn() }));
+vi.mock("@/i18n/react", () => ({ useTranslations: () => (key: string) => key }));
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
-const setState = jest.fn();
-const reload = jest.fn();
-const unsubscribe = jest.fn();
+const setState = vi.fn();
+const reload = vi.fn();
+const unsubscribe = vi.fn();
 let emit: (event: string, session: { user: { id: string } } | null) => void;
 let finish: (value: unknown) => void;
 let cleanup: (() => void) | void;
 
 beforeEach(() => {
-	jest.clearAllMocks();
+	vi.clearAllMocks();
 	Object.defineProperty(globalThis, "window", { configurable: true, value: { location: { reload } } });
-	jest.mocked(React.useState).mockImplementation((initial?: unknown) => [initial, setState] as never);
-	jest.mocked(initializeChatStorage).mockReturnValue(true);
-	jest.mocked(migrateLegacyChatHistory).mockResolvedValue(undefined);
-	jest.mocked(createClient).mockReturnValue({ auth: {
+	vi.mocked(React.useState).mockImplementation((initial?: unknown) => [initial, setState] as never);
+	vi.mocked(initializeChatStorage).mockReturnValue(true);
+	vi.mocked(migrateLegacyChatHistory).mockResolvedValue(undefined);
+	vi.mocked(createClient).mockReturnValue({ auth: {
 		onAuthStateChange: (callback: typeof emit) => { emit = callback; return { data: { subscription: { unsubscribe } } }; },
 		getSession: () => new Promise((resolve) => { finish = resolve; }),
 	} } as never);
@@ -39,7 +46,7 @@ afterEach(() => {
 });
 function mount() {
 	const html = renderToStaticMarkup(<ChatStorageBoundary><p>private history</p></ChatStorageBoundary>);
-	const effect = jest.mocked(React.useEffect).mock.calls[0][0];
+	const effect = vi.mocked(React.useEffect).mock.calls[0][0];
 	cleanup = effect() as (() => void) | undefined;
 	return html;
 }
@@ -55,7 +62,7 @@ it("does not mount history before the browser session resolves", async () => {
 
 it("waits for the automatic migration before mounting history", async () => {
 	let migrated!: () => void;
-	jest.mocked(migrateLegacyChatHistory).mockImplementation(() => new Promise((resolve) => { migrated = resolve; }));
+	vi.mocked(migrateLegacyChatHistory).mockImplementation(() => new Promise((resolve) => { migrated = resolve; }));
 	mount();
 	emit("INITIAL_SESSION", { user: { id: "alice" } });
 	expect(migrateLegacyChatHistory).toHaveBeenCalledWith("alice");
@@ -84,7 +91,7 @@ it("ignores an older getSession response after an auth event", async () => {
 it("hides the document and reloads after sign-out locks storage", () => {
 	mount();
 	emit("INITIAL_SESSION", { user: { id: "alice" } });
-	jest.mocked(initializeChatStorage).mockReturnValue(false);
+	vi.mocked(initializeChatStorage).mockReturnValue(false);
 	emit("SIGNED_OUT", null);
 	expect(observeChatStorageIdentity).toHaveBeenLastCalledWith(null, true);
 	expect(setState).toHaveBeenLastCalledWith(false);

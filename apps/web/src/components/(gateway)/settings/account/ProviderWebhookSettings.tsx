@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
@@ -6,7 +5,7 @@ import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
-import { rotateProviderCatalogWebhookAction } from "@/app/(dashboard)/settings/account/providers/actions";
+import { rotateProviderCatalogWebhookAction } from "@/features/settings/account/providers/actions";
 
 export default function ProviderWebhookSettings({ providerSlug, webhookUrl, configured }: { providerSlug: string; webhookUrl: string; configured: boolean }) {
 	const t = useTranslations("SettingsUI");

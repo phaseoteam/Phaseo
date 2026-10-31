@@ -1,10 +1,11 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { DEFAULT_DISPLAY_PREFERENCES, formatDisplayDateParts, formatDisplayNumber } from "@/lib/displayPreferences";
 import { KeyUsageSummary } from "./KeyUsageSummary";
 
-jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({ useDisplayFormatters: jest.fn() }));
-jest.mock("@/i18n/react", () => ({
+vi.mock("@/components/providers/DisplayPreferencesProvider", () => ({ useDisplayFormatters: vi.fn() }));
+vi.mock("@/i18n/react", () => ({
 	useTranslations: () => (key: string, values?: Record<string, string>) =>
 		values ? `${key}:${Object.values(values).join("|")}` : key,
 }));
@@ -22,7 +23,7 @@ function renderSummary(
 	limits: typeof NO_LIMITS = NO_LIMITS,
 ) {
 	const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale, numberNotation, timeZone: "UTC" };
-	jest.mocked(useDisplayFormatters).mockReturnValue({
+	vi.mocked(useDisplayFormatters).mockReturnValue({
 		number: (value, options) => formatDisplayNumber(value, preferences, options),
 		dateParts: (value, options, fallback) => formatDisplayDateParts(value, preferences, options, fallback),
 	} as ReturnType<typeof useDisplayFormatters>);

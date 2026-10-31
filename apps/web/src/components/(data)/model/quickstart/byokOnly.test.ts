@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getByokOnlyProviders } from "@/components/(data)/model/quickstart/byokOnly";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 

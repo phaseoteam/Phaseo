@@ -1,23 +1,21 @@
-// Next: src/app/[locale]/(dashboard)/blog/[slug]/page.tsx
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { redirect } from "@/i18n/navigation";
 import { defaultLocale } from "@/i18n/locales";
-import { blogPostQuery } from "@/app/[locale]/(dashboard)/blog/[slug]/post.functions";
+import { blogPostQuery } from "@/features/blog/slug/post.functions";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { routeMetadataInput, toSerializableMetadata, type RouteMetadataInput } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/blog/[slug]/page";
+import { BlogPostPage, getBlogPostMetadata } from "@/features/blog/slug/BlogPostPage";
 
 const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+	.validator((input: RouteMetadataInput) => input)
+	.handler(async ({ data }) => toSerializableMetadata(await getBlogPostMetadata(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/blog/$slug/")({
 	loader: async ({ params, location, context }) => {
 		const locale = params.locale ?? defaultLocale;
-		const metadataPromise = routeMetadata({ data: { params, search: location.search as Record<string, unknown> } });
+		const metadataPromise = routeMetadata({ data: routeMetadataInput(params, location.search) });
 		metadataPromise.catch(() => undefined);
 		// The post lookup decides the status (404 / redirect), so it blocks; metadata streams.
 		const resolution = await context.queryClient.ensureQueryData(blogPostQuery(params.slug, locale));
@@ -26,5 +24,5 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/blog/$slug/")({
 		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextPageComponent(Page),
+	component: BlogPostPage,
 });

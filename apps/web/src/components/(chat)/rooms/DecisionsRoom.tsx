@@ -1,5 +1,3 @@
-"use client";
-
 import { MessageScroller } from "@shadcn/react/message-scroller";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "@/i18n/react";

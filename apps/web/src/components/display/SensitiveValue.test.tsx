@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { SensitiveValue } from "./SensitiveValue";
@@ -5,19 +6,21 @@ import { Input } from "@/components/ui/input";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import { obfuscatedPlaceholder } from "@/lib/obfuscation";
 
-jest.mock("react", () => ({
-	...jest.requireActual("react"),
-	useState: jest.fn(jest.requireActual("react").useState),
+vi.mock("react", async () => {
+	const actual = await vi.importActual<typeof import("react")>("react");
+	const useState = vi.fn(actual.useState);
+	// The test reads `React.useState` through the default import.
+	return { ...actual, useState, default: { ...actual, useState } };
+});
+vi.mock("@/components/providers/DisplayPreferencesProvider", () => ({
+	useDisplayPreferences: vi.fn(),
 }));
-jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({
-	useDisplayPreferences: jest.fn(),
-}));
-jest.mock("@/i18n/react", () => ({
+vi.mock("@/i18n/react", () => ({
 	useTranslations: () => (key: string, values?: { label?: string }) => `${key}${values?.label ? ` ${values.label}` : ""}`,
 }));
 
 function setMasking(enabled: boolean, ready = true) {
-	jest.mocked(useDisplayPreferences).mockReturnValue({
+	vi.mocked(useDisplayPreferences).mockReturnValue({
 		isSensitiveDataReady: ready,
 		preferences: { maskSensitiveData: enabled },
 	} as ReturnType<typeof useDisplayPreferences>);
@@ -26,7 +29,7 @@ function setMasking(enabled: boolean, ready = true) {
 describe("SensitiveValue", () => {
 	const email = "person@example.com";
 	beforeEach(() => setMasking(true));
-	afterEach(() => jest.restoreAllMocks());
+	afterEach(() => vi.restoreAllMocks());
 
 	it("keeps server-rendered values scrambled before account preferences load", () => {
 		setMasking(false, false);
@@ -84,9 +87,9 @@ describe("SensitiveValue", () => {
 	});
 
 	it("restores the original editable input and callback when revealed", () => {
-		const onChange = jest.fn();
+		const onChange = vi.fn();
 		const frame = SensitiveValue({ children: <Input value={email} type="email" onChange={onChange} /> });
-		jest.mocked(React.useState).mockReturnValueOnce([true, jest.fn()]);
+		vi.mocked(React.useState).mockReturnValueOnce([true, vi.fn()]);
 		const renderContent = frame.type as (props: typeof frame.props) => React.ReactElement;
 		const content = renderContent(frame.props);
 		const html = renderToStaticMarkup(content);

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";

@@ -1,9 +1,7 @@
-"use client";
-
 import Image from "@/components/image";
 import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
-import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";
+import { handleOAuthRedirect } from "@/features/sign-in/actions";
 import { Logo } from "@/components/Logo";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";

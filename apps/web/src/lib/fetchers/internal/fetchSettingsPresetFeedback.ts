@@ -2,7 +2,7 @@ import { z } from "zod";
 import { requireAuthenticatedUser, requireWorkspaceMembership } from "@/utils/serverActionAuth";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { WebApiError } from "@/lib/web-api/client";
-import type { FeedbackRow, PresetRow } from "@/app/(dashboard)/settings/presets/experiments/PresetFeedbackClient";
+import type { FeedbackRow, PresetRow } from "@/features/settings/presets/experiments/PresetFeedbackClient";
 
 const filtersSchema = z.object({
 	fromIso: z.iso.datetime(), toIso: z.iso.datetime(),

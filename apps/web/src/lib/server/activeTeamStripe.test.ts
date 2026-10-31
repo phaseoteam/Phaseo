@@ -1,34 +1,35 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
 export {};
 
-const createClient = jest.fn();
-const createAdminClient = jest.fn();
-const getWorkspaceIdFromCookie = jest.fn();
-const requireWorkspaceMembership = jest.fn();
-const getStripe = jest.fn();
+const createClient = vi.fn();
+const createAdminClient = vi.fn();
+const getWorkspaceIdFromCookie = vi.fn();
+const requireWorkspaceMembership = vi.fn();
+const getStripe = vi.fn();
 
-jest.mock("@/utils/supabase/server", () => ({
+vi.mock("@/utils/supabase/server", () => ({
 	createClient,
 }));
 
-jest.mock("@/utils/supabase/admin", () => ({
+vi.mock("@/utils/supabase/admin", () => ({
 	createAdminClient,
 }));
 
-jest.mock("@/utils/workspaceCookie", () => ({
+vi.mock("@/utils/workspaceCookie", () => ({
 	getWorkspaceIdFromCookie,
 }));
 
-jest.mock("@/utils/serverActionAuth", () => ({
+vi.mock("@/utils/serverActionAuth", () => ({
 	requireWorkspaceMembership,
 }));
 
-jest.mock("@/lib/stripe", () => ({
+vi.mock("@/lib/stripe", () => ({
 	getStripe,
 }));
 
 describe("requireActiveTeamStripeCustomer", () => {
 	beforeEach(() => {
-		jest.resetModules();
+		vi.resetModules();
 		createClient.mockReset();
 		createAdminClient.mockReset();
 		getWorkspaceIdFromCookie.mockReset();
@@ -44,9 +45,9 @@ describe("requireActiveTeamStripeCustomer", () => {
 		};
 
 		const walletQuery: any = {
-			select: jest.fn(() => walletQuery),
-			eq: jest.fn(() => walletQuery),
-			maybeSingle: jest.fn(async () => ({
+			select: vi.fn(() => walletQuery),
+			eq: vi.fn(() => walletQuery),
+			maybeSingle: vi.fn(async () => ({
 				data: { workspace_id: "ws_1", stripe_customer_id: "cus_stale" },
 				error: null,
 			})),
@@ -54,17 +55,17 @@ describe("requireActiveTeamStripeCustomer", () => {
 
 		createClient.mockResolvedValue({
 			auth: {
-				getUser: jest.fn(async () => ({
+				getUser: vi.fn(async () => ({
 					data: { user },
 					error: null,
 				})),
 			},
-			from: jest.fn(() => walletQuery),
+			from: vi.fn(() => walletQuery),
 		} as any);
 
-		const adminUpsert = jest.fn(async () => ({ error: null }));
+		const adminUpsert = vi.fn(async () => ({ error: null }));
 		createAdminClient.mockReturnValue({
-			from: jest.fn(() => ({
+			from: vi.fn(() => ({
 				upsert: adminUpsert,
 			})),
 		} as any);
@@ -74,17 +75,17 @@ describe("requireActiveTeamStripeCustomer", () => {
 
 		getStripe.mockReturnValue({
 			customers: {
-				retrieve: jest.fn(async () => {
+				retrieve: vi.fn(async () => {
 					const error: any = new Error("No such customer: 'cus_stale'");
 					error.code = "resource_missing";
 					error.param = "id";
 					throw error;
 				}),
-				search: jest.fn(async () => ({
+				search: vi.fn(async () => ({
 					data: [{ id: "cus_test_mode" }],
 				})),
-				list: jest.fn(async () => ({ data: [] })),
-				create: jest.fn(async () => ({ id: "cus_created" })),
+				list: vi.fn(async () => ({ data: [] })),
+				create: vi.fn(async () => ({ id: "cus_created" })),
 			},
 		});
 
@@ -112,7 +113,7 @@ describe("requireActiveTeamStripeCustomer", () => {
 	it("rejects a workspace member who lacks a billing administrator role", async () => {
 		createClient.mockResolvedValue({
 			auth: {
-				getUser: jest.fn(async () => ({
+				getUser: vi.fn(async () => ({
 					data: { user: { id: "member_1", email: "member@example.com" } },
 					error: null,
 				})),
@@ -134,24 +135,24 @@ describe("requireActiveTeamStripeCustomer", () => {
 	it("never adopts a Stripe customer by email when workspace metadata has no match", async () => {
 		const user = { id: "user_1", email: "shared@example.com", user_metadata: {} };
 		const walletQuery: any = {
-			select: jest.fn(() => walletQuery),
-			eq: jest.fn(() => walletQuery),
-			maybeSingle: jest.fn(async () => ({ data: null, error: null })),
+			select: vi.fn(() => walletQuery),
+			eq: vi.fn(() => walletQuery),
+			maybeSingle: vi.fn(async () => ({ data: null, error: null })),
 		};
 		createClient.mockResolvedValue({
-			auth: { getUser: jest.fn(async () => ({ data: { user }, error: null })) },
-			from: jest.fn(() => walletQuery),
+			auth: { getUser: vi.fn(async () => ({ data: { user }, error: null })) },
+			from: vi.fn(() => walletQuery),
 		} as any);
 		createAdminClient.mockReturnValue({
-			from: jest.fn(() => ({ upsert: jest.fn(async () => ({ error: null })) })),
+			from: vi.fn(() => ({ upsert: vi.fn(async () => ({ error: null })) })),
 		} as any);
 		getWorkspaceIdFromCookie.mockResolvedValue("ws_1");
 		requireWorkspaceMembership.mockResolvedValue(undefined);
-		const list = jest.fn(async () => ({ data: [{ id: "cus_other_workspace" }] }));
-		const create = jest.fn(async () => ({ id: "cus_new_workspace" }));
+		const list = vi.fn(async () => ({ data: [{ id: "cus_other_workspace" }] }));
+		const create = vi.fn(async () => ({ id: "cus_new_workspace" }));
 		getStripe.mockReturnValue({
 			customers: {
-				search: jest.fn(async () => ({ data: [] })),
+				search: vi.fn(async () => ({ data: [] })),
 				list,
 				create,
 			},
@@ -169,10 +170,10 @@ describe("requireActiveTeamStripeCustomer", () => {
 	});
 
 	it("uses workspace-stable idempotency for concurrent customer creation", async () => {
-		const create = jest.fn(async () => ({ id: "cus_workspace" }));
-		getStripe.mockReturnValue({ customers: { search: jest.fn(async () => ({ data: [] })), create } });
-		const upsert = jest.fn(async () => ({ error: null }));
-		createAdminClient.mockReturnValue({ from: jest.fn(() => ({ upsert })) } as any);
+		const create = vi.fn(async () => ({ id: "cus_workspace" }));
+		getStripe.mockReturnValue({ customers: { search: vi.fn(async () => ({ data: [] })), create } });
+		const upsert = vi.fn(async () => ({ error: null }));
+		createAdminClient.mockReturnValue({ from: vi.fn(() => ({ upsert })) } as any);
 
 		const { ensureWorkspaceStripeWallet } = await import("./activeTeamStripe");
 		const [first, second] = await Promise.all([
@@ -196,17 +197,17 @@ describe("requireActiveTeamStripeCustomer", () => {
 		conflict.code = "idempotency_error";
 		getStripe.mockReturnValue({
 			customers: {
-				search: jest.fn(async () => ({ data: [] })),
-				create: jest.fn(async () => { throw conflict; }),
+				search: vi.fn(async () => ({ data: [] })),
+				create: vi.fn(async () => { throw conflict; }),
 			},
 		});
 		const adminQuery: any = {
-			select: jest.fn(() => adminQuery),
-			eq: jest.fn(() => adminQuery),
-			maybeSingle: jest.fn(async () => ({ data: { stripe_customer_id: "cus_canonical" }, error: null })),
-			upsert: jest.fn(async () => ({ error: null })),
+			select: vi.fn(() => adminQuery),
+			eq: vi.fn(() => adminQuery),
+			maybeSingle: vi.fn(async () => ({ data: { stripe_customer_id: "cus_canonical" }, error: null })),
+			upsert: vi.fn(async () => ({ error: null })),
 		};
-		createAdminClient.mockReturnValue({ from: jest.fn(() => adminQuery) } as any);
+		createAdminClient.mockReturnValue({ from: vi.fn(() => adminQuery) } as any);
 
 		const { ensureWorkspaceStripeWallet } = await import("./activeTeamStripe");
 		await expect(ensureWorkspaceStripeWallet({ workspaceId: "ws_1", userId: "user_2" }))
@@ -215,25 +216,25 @@ describe("requireActiveTeamStripeCustomer", () => {
 
 	it("allows members to read an existing Stripe summary without repairing bindings", async () => {
 		const walletQuery: any = {
-			select: jest.fn(() => walletQuery),
-			eq: jest.fn(() => walletQuery),
-			maybeSingle: jest.fn(async () => ({
+			select: vi.fn(() => walletQuery),
+			eq: vi.fn(() => walletQuery),
+			maybeSingle: vi.fn(async () => ({
 				data: { workspace_id: "ws_1", stripe_customer_id: "cus_existing" },
 				error: null,
 			})),
 		};
 		createClient.mockResolvedValue({
 			auth: {
-				getUser: jest.fn(async () => ({
+				getUser: vi.fn(async () => ({
 					data: { user: { id: "member_1", email: "member@example.com" } },
 					error: null,
 				})),
 			},
-			from: jest.fn(() => walletQuery),
+			from: vi.fn(() => walletQuery),
 		} as any);
 		getWorkspaceIdFromCookie.mockResolvedValue("ws_1");
 		requireWorkspaceMembership.mockResolvedValue(undefined);
-		const retrieve = jest.fn(async () => ({
+		const retrieve = vi.fn(async () => ({
 			id: "cus_existing",
 			email: "billing@example.com",
 			metadata: { workspace_id: "ws_1" },
@@ -241,7 +242,7 @@ describe("requireActiveTeamStripeCustomer", () => {
 		}));
 		getStripe.mockReturnValue({
 			customers: { retrieve },
-			paymentMethods: { list: jest.fn(async () => ({ data: [] })) },
+			paymentMethods: { list: vi.fn(async () => ({ data: [] })) },
 		});
 
 		const { getActiveTeamStripeSummary } = await import("./activeTeamStripe");
@@ -260,27 +261,27 @@ describe("requireActiveTeamStripeCustomer", () => {
 
 	it("returns a recoverable empty summary for members with an invalid Stripe binding", async () => {
 		const walletQuery: any = {
-			select: jest.fn(() => walletQuery),
-			eq: jest.fn(() => walletQuery),
-			maybeSingle: jest.fn(async () => ({
+			select: vi.fn(() => walletQuery),
+			eq: vi.fn(() => walletQuery),
+			maybeSingle: vi.fn(async () => ({
 				data: { workspace_id: "ws_1", stripe_customer_id: "cus_stale" },
 				error: null,
 			})),
 		};
 		createClient.mockResolvedValue({
 			auth: {
-				getUser: jest.fn(async () => ({
+				getUser: vi.fn(async () => ({
 					data: { user: { id: "member_1", email: "member@example.com" } },
 					error: null,
 				})),
 			},
-			from: jest.fn(() => walletQuery),
+			from: vi.fn(() => walletQuery),
 		} as any);
 		getWorkspaceIdFromCookie.mockResolvedValue("ws_1");
 		requireWorkspaceMembership.mockResolvedValue(undefined);
 		getStripe.mockReturnValue({
 			customers: {
-				retrieve: jest.fn(async () => {
+				retrieve: vi.fn(async () => {
 					const error: any = new Error("No such customer: 'cus_stale'");
 					error.code = "resource_missing";
 					error.param = "id";

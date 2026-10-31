@@ -1,5 +1,3 @@
-"use client";
-
 import {
 	Fragment,
 	type KeyboardEvent,

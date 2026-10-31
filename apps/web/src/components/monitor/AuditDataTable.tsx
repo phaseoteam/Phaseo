@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { useEffect, useMemo, useRef } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import {
@@ -33,7 +31,7 @@ import {
 } from "@/components/(tools)/pricing-calculator/calculatorState";
 import type { CalculatorModelSelection } from "@/components/(tools)/pricing-calculator/calculatorState";
 import type { CalculatorCatalogModel } from "@/components/(tools)/pricing-calculator/calculatorState";
-import { loadPricingCalculatorModels } from "@/app/(dashboard)/tools/pricing-calculator/actions";
+import { loadPricingCalculatorModels } from "@/features/tools/pricing-calculator/actions";
 import {
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";

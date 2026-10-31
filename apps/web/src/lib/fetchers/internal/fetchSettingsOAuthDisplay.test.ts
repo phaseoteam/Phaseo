@@ -1,13 +1,14 @@
+import { it, expect, beforeEach, vi } from "vitest";
 import { fetchSettingsOAuthAppsInitialData } from "./fetchSettingsOAuthAppsInitialData";
 import { fetchSettingsOAuthAppDetailInitialData } from "./fetchSettingsOAuthAppDetailInitialData";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
-jest.mock("./serverAccountContext", () => ({ getServerAccountContext: async () => ({ accessToken: "test-token", workspaceId: "workspace-a" }) }));
-jest.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: jest.fn() }));
-const fetchData = jest.mocked(fetchAccountWebApi);
+vi.mock("./serverAccountContext", () => ({ getServerAccountContext: async () => ({ accessToken: "test-token", workspaceId: "workspace-a" }) }));
+vi.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: vi.fn() }));
+const fetchData = vi.mocked(fetchAccountWebApi);
 const app = { id: "app-a", client_id: "client-a", name: "Example", workspace_id: "workspace-a", redirect_uris: ["https://example.test/callback"], allowed_scopes: ["models:read"], active_authorizations: 2, client_secret: "secret", client_secret_hash: "hash", future_credential: "unknown" };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => vi.clearAllMocks());
 
 it("caches only OAuth app display fields, never credentials or unknown columns", async () => {
 	fetchData.mockResolvedValue({ signedIn: true, initialTeamId: "workspace-a", oauthApps: [app], access_token: "secret" });

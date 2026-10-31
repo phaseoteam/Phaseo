@@ -1,27 +1,25 @@
-// Next: src/app/[locale]/(dashboard)/redeem/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { routeMetadataInput, type RouteMetadataInput, toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/redeem/page";
+import RedeemPage, { getRedeemMetadata } from "@/features/redeem/RedeemPage";
 import { defaultLocale } from "@/i18n/locales";
-import { redeemCodeFromSearch, redeemPageQuery } from "@/app/[locale]/(dashboard)/redeem/redeem.functions";
+import { redeemCodeFromSearch, redeemPageQuery } from "@/features/redeem/redeem.functions";
 
 const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+	.validator((input: RouteMetadataInput) => input)
+	.handler(async ({ data }) => toSerializableMetadata(await getRedeemMetadata(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/redeem/")({
-	// Next: the page redirected signed-out visitors to sign-in before rendering.
+	// Signed-out visitors go to sign-in before rendering.
 	// The query throws that redirect; the page reads the cached data.
 	beforeLoad: async ({ context, params, search }) => {
 		const locale = params.locale ?? defaultLocale;
 		const code = redeemCodeFromSearch((search as Record<string, unknown>).code);
 		await context.queryClient.ensureQueryData(redeemPageQuery(locale, code));
 	},
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: routeMetadataInput(params, location.search) })),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextPageComponent(Page),
+	component: RedeemPage,
 });

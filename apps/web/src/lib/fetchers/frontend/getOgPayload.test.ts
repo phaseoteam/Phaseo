@@ -1,3 +1,4 @@
+import { test, expect } from "vitest";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { PricingRule, ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { buildModelOgStats } from "@/lib/fetchers/frontend/getOgPayload";

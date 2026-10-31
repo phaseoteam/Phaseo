@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getCacheControlHref, getPageCacheTarget } from "./cacheRoute";
 
 describe("developer-menu cache routing", () => {

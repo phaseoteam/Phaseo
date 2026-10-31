@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useTransition, type ReactNode } from "react";
 import { FingerprintPattern, Plus } from "lucide-react";
 import { useFormatter, useTranslations } from "@/i18n/react";
@@ -10,7 +8,7 @@ import {
 	setTrustedWorkloadStatus,
 	updateTrustedWorkload,
 	type TrustedWorkloadActionError,
-} from "@/app/(dashboard)/settings/trusted-workloads/actions";
+} from "@/features/settings/trusted-workloads/actions";
 import {
 	AlertDialog,
 	AlertDialogAction,

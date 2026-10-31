@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { usePathname } from "@/lib/navigation";
 import { useEffect, useState, useTransition } from "react";
@@ -26,7 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { purgeCacheScopeAction } from "@/app/(dashboard)/internal/cache/actions";
+import { purgeCacheScopeAction } from "@/features/internal/cache/actions";
 import {
 	verifyCacheAdmin,
 	type CachePurgeResult,

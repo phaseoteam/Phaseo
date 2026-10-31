@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 

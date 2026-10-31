@@ -1,5 +1,3 @@
-"use client";
-
 import { NavigationGuardProvider, useNavigationGuard } from "@/lib/navigationGuard";
 import { useTranslations } from "@/i18n/react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";

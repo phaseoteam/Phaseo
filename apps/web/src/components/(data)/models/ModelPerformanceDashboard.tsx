@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import ModelPerformanceCards, { selectProviderTrendData } from "@/components/(data)/models/ModelPerformanceCards";

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { getPublicMessages } from "./messages";
 import { createTranslator } from "@/i18n/react";
 import { publicLocales, type PublicLocale } from "./routing";
@@ -26,7 +27,7 @@ describe("runtime locale message loading", () => {
 	});
 	it.each(publicLocales)("loads complete domain trees for %s", async (locale: PublicLocale) => {
 		const messages = await getPublicMessages(locale);
-		const onError = jest.fn();
+		const onError = vi.fn();
 		const translate = createTranslator({ locale, messages, onError } as never);
 		expect(translate("Common.nav.home" as never)).toBe(valueAt(messages.Common, "nav.home"));
 		expect(onError).not.toHaveBeenCalled();
@@ -50,9 +51,9 @@ describe("runtime locale message loading", () => {
 		},
 	);
 
-	it("resolves settings sentences through stable next-intl IDs", async () => {
+	it("resolves settings sentences through stable message IDs", async () => {
 		const messages = await getPublicMessages("es-ES");
-		const onError = jest.fn();
+		const onError = vi.fn();
 		const translate = createTranslator({ locale: "es-ES", messages, onError } as never);
 
 		expect(translate("SettingsUI.strings.phrasePleaseTryAgain" as never)).toBe(

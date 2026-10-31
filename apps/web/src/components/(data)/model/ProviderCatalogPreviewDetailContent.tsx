@@ -1,5 +1,3 @@
-"use client";
-
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "@/i18n/react";
 type CatalogTranslator = ReturnType<typeof useTranslations<"SettingsUI">>;

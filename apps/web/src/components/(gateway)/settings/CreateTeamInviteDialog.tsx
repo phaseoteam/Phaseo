@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import { useSettingsRouter as useRouter } from "./PrivateSettingsQuery";
 import { useTranslations } from "@/i18n/react";
@@ -16,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link } from "lucide-react";
-import { createTeamInviteAction } from "@/app/(dashboard)/settings/teams/actions";
+import { createTeamInviteAction } from "@/features/settings/teams/actions";
 import { toast } from "sonner";
 import {
 	DropdownMenu,

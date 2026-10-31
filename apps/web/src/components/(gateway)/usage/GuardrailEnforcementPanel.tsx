@@ -1,5 +1,3 @@
-"use client";
-
 import { Ban, Flag, Scissors, ShieldAlert } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

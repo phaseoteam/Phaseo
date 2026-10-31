@@ -31,6 +31,7 @@ const providerHintKeys: Record<string, [string, Record<string, string>]> = {
 	novitaai: ["openaiStyleHint", {provider: "NovitaAI"}],
 	openai: ["openaiHint", {}],
 	parasail: ["dashboardHint", {provider: "Parasail"}],
+	scaledown: ["dashboardHint", {provider: "ScaleDown"}],
 	suno: ["accountHint", {provider: "Suno"}],
 	together: ["accountHint", {provider: "Together"}],
 	"weights-and-biases": ["accountHint", {provider: "Weights & Biases Inference"}],

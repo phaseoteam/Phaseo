@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import { CompareSection, GRID_CLASS, gridStyle, useCompareGrid } from "./CompareGrid";

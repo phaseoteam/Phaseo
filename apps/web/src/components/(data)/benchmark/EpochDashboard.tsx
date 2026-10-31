@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { parseAsArrayOf, parseAsString, useQueryStates } from "nuqs";

@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { Eye } from "lucide-react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

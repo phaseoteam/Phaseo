@@ -1,5 +1,3 @@
-"use client";
-
 // components/(rankings)/TrendingModels.tsx
 // Purpose: Display trending models with momentum indicators
 // Why: Shows models gaining traction (accelerating growth)

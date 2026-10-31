@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState, useTransition, type DragEvent as ReactDragEvent } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import {
@@ -79,7 +77,7 @@ import {
 	deployDynamicRouteVersionAction,
 	deleteDynamicRouteAction,
 	updateDynamicRouteAction,
-} from "@/app/(dashboard)/settings/routing/actions";
+} from "@/features/settings/routing/actions";
 import "@xyflow/react/dist/style.css";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
 

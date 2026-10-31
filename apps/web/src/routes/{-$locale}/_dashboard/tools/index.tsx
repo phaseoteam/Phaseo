@@ -1,19 +1,17 @@
-// Next: src/app/[locale]/(dashboard)/tools/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/tools/page";
-import Loading from "@/app/[locale]/(dashboard)/tools/loading";
+import { ToolsPage, getToolsMetadata } from "@/features/tools/ToolsPage";
+import { ToolsLoading } from "@/features/tools/ToolsLoading";
 
 const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+	.handler(async () => toSerializableMetadata(await getToolsMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/tools/")({
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: () => metadataLoaderData(routeMetadata()),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: withLoading(nextPageComponent(Page), Loading),
+	component: ToolsPage,
+	pendingComponent: ToolsLoading,
 });

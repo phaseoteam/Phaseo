@@ -1,4 +1,3 @@
-"use client";
 import { localizedInternalCatalogError } from "@/i18n/internal-catalog-errors";
 import { useTranslations } from "@/i18n/react";
 
@@ -13,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { createAPIProviderAction, updateAPIProviderAction, withTargetId } from "@/app/(dashboard)/internal/data/actions";
+import { createAPIProviderAction, updateAPIProviderAction, withTargetId } from "@/features/internal/data/actions";
 import type { ProviderFormOptions } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import { PROVIDER_PROMPT_TRAINING_POLICY_VALUES } from "@/lib/providers/promptTrainingPolicy";
 import { CatalogCountryField } from "@/components/(data)/CatalogCountryField";

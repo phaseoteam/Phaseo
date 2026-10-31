@@ -1,12 +1,13 @@
-const role = jest.fn();
-const account = jest.fn();
-const api = jest.fn();
-jest.mock("@/lib/auth/getViewerRole", () => ({ isAdminViewer: () => role() }));
-jest.mock("./serverAccountContext", () => ({ getServerAccountContext: () => account() }));
-jest.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: (...args: unknown[]) => api(...args) }));
+import { it, expect, beforeEach, vi } from "vitest";
+const role = vi.fn();
+const account = vi.fn();
+const api = vi.fn();
+vi.mock("@/lib/auth/getViewerRole", () => ({ isAdminViewer: () => role() }));
+vi.mock("./serverAccountContext", () => ({ getServerAccountContext: () => account() }));
+vi.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: (...args: unknown[]) => api(...args) }));
 import { fetchServerAdminChatModels } from "./fetchServerAdminChatModels";
 
-beforeEach(() => { jest.resetAllMocks(); });
+beforeEach(() => { vi.resetAllMocks(); });
 it("never fetches internal records for non-admin viewers", async () => {
 	role.mockResolvedValue(false);
 	expect(await fetchServerAdminChatModels()).toEqual([]);

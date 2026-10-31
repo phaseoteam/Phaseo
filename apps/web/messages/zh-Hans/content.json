@@ -386,9 +386,9 @@
 				"description": "支撑 Phaseo 交互式产品界面的声明式组件和状态模型。",
 				"usedFor": "聊天、模型比较、设置、可观测性以及所有有状态界面均由 React 组件构成。"
 			},
-			"nextjs": {
-				"description": "将服务器渲染、路由、元数据、缓存和客户端交互整合在一起的应用框架。",
-				"usedFor": "公开目录、经过身份验证的工作区、API 桥接和此页面都使用同一个 App Router 应用。"
+			"tanstackStart": {
+				"description": "全栈 React 框架，将服务端渲染、路由、数据加载和服务端函数整合在一起。",
+				"usedFor": "公开目录、登录后的工作区、API 桥接以及本页面，都共享同一个运行在 Cloudflare Workers 上的应用。"
 			},
 			"tailwind": {
 				"description": "基于实用类的样式系统，让视觉决策贴近受影响的组件。",

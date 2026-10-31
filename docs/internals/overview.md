@@ -96,7 +96,7 @@ idempotent per request or reservation, so a repeated finalise path cannot charge
 
 The database is the only source of truth for models, organisations, providers, routes, aliases,
 families, pricing, benchmarks and subscription plans. Admins edit it in the catalogue editor
-(`apps/web/src/app/[locale]/(dashboard)/internal/data`). Provider feeds polled by the Web API queue
+(`apps/web/src/features/internal/data`). Provider feeds polled by the Web API queue
 changes for review. The repository holds no catalogue JSON and nothing exports the database to it;
 tests use small inline fixtures.
 

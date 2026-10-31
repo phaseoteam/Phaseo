@@ -1,5 +1,3 @@
-"use client";
-
 import { useModelsLayoutTracking } from "./useModelsLayoutExperiment";
 
 import Link from "@/components/link";

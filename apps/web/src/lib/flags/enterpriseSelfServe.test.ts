@@ -1,32 +1,31 @@
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 export {};
 
-const mockGate = jest.fn();
-const mockIsAdminViewer = jest.fn();
+const mockGate = vi.fn();
+const mockIsAdminViewer = vi.fn();
 
-jest.mock("server-only", () => ({}));
-jest.mock("@/lib/flags/flag", () => ({
+vi.mock("@/lib/flags/flag", () => ({
 	flag: ({ key }: { key: string }) => () => mockGate(key),
 }));
-jest.mock("@/lib/statsig/server", () => ({
-	getStatsigFlagsAdapter: () => ({ featureGate: jest.fn(), experiment: jest.fn() }),
+vi.mock("@/lib/statsig/server", () => ({
+	getStatsigFlagsAdapter: () => ({ featureGate: vi.fn(), experiment: vi.fn() }),
 }));
-jest.mock("./identify", () => ({ identify: jest.fn() }));
-jest.mock("@/lib/auth/getViewerRole", () => ({ isAdminViewer: mockIsAdminViewer }));
+vi.mock("./identify", () => ({ identify: vi.fn(), identifyWorkspaceOwner: vi.fn() }));
+vi.mock("@/lib/auth/getViewerRole", () => ({ isAdminViewer: mockIsAdminViewer }));
 
 describe("Enterprise self-service rollout", () => {
-	const originalEnvironment = process.env.NODE_ENV;
 	let enabled: () => Promise<boolean>;
 
 	beforeEach(async () => {
-		jest.resetModules();
+		vi.resetModules();
 		mockGate.mockReset();
 		mockIsAdminViewer.mockReset();
-		Object.defineProperty(process.env, "NODE_ENV", { value: "production", configurable: true, writable: true });
+		vi.stubEnv("NODE_ENV", "production");
 		enabled = (await import("./index")).enterpriseSelfServePreviewEnabled;
 	});
 
 	afterAll(() => {
-		Object.defineProperty(process.env, "NODE_ENV", { value: originalEnvironment, configurable: true, writable: true });
+		vi.unstubAllEnvs();
 	});
 
 	it("allows a passing customer without consulting the internal-admin role", async () => {

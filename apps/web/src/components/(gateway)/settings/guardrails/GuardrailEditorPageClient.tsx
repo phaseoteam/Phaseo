@@ -1,4 +1,3 @@
-"use client";
 import { capabilityPrivacyDecision } from "./capabilityPrivacyDecision";
 
 import { settingsStringKey } from "@/i18n/settings-string-keys";
@@ -72,7 +71,7 @@ import {
 	updateGuardrail,
 	type PromptInjectionAction,
 	type ProviderRestrictionMode,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 import {
 	buildGuardrailRestrictionPreview,
 	describeProviderRestrictionMode,

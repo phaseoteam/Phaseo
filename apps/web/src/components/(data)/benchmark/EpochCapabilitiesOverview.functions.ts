@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 
-// The Epoch CSVs are fetched server-side only (`server-only` module, no
+// The Epoch CSVs are fetched server-side only (server-only code, no
 // browser CORS). POST so client navigations can send the page's benchmark,
 // which the dashboard falls back to when Epoch is unavailable.
 const getEpochDashboard = createServerFn({ method: "POST" })

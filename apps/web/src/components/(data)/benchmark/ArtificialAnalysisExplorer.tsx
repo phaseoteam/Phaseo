@@ -1,5 +1,3 @@
-"use client";
-
 import { type ReactNode, useMemo, useState } from "react";
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useLocale, useTranslations } from "@/i18n/react";

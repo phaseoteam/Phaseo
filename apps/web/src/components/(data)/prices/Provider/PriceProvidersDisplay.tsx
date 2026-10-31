@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo } from "react";
 import { useQueryState } from "nuqs";
 import PriceProviderCard from "./PriceProviderCard";

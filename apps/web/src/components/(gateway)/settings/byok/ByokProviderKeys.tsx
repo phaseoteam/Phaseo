@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import Link from "@/components/link";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
@@ -32,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BYOKInputDialog from "@/components/(gateway)/settings/byok/BYOKInputDialog";
 import DeleteKeyButton from "@/components/(gateway)/settings/byok/DeleteKeyButton";
-import { reorderByokKeyAction, updateByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
+import { reorderByokKeyAction, updateByokKeyAction } from "@/features/settings/byok/actions";
 import { MAX_BYOK_KEYS_PER_MODE } from "@/lib/byok/constants";
 import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";

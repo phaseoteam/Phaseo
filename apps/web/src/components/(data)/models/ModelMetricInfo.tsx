@@ -1,5 +1,3 @@
-"use client";
-
 import { CircleHelp } from "lucide-react";
 import {
 	Popover,

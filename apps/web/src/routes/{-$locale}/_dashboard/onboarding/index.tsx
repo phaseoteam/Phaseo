@@ -1,24 +1,20 @@
-// Next: src/app/[locale]/(dashboard)/onboarding/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/onboarding/page";
-import { onboardingPageQuery } from "@/app/[locale]/(dashboard)/onboarding/onboarding.functions";
+import OnboardingPage, { getOnboardingMetadata } from "@/features/onboarding/OnboardingPage";
+import { onboardingPageQuery } from "@/features/onboarding/onboarding.functions";
 
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+const routeMetadata = createServerFn({ method: "GET" }).handler(async () => toSerializableMetadata(await getOnboardingMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/onboarding/")({
-	// Next: the page redirected provider-mode accounts and signed-out visitors
-	// before rendering. The query throws those redirects; the page reads the cached data.
+	// Provider-mode accounts and signed-out visitors are redirected before rendering.
+	// The query throws those redirects; the page reads the cached data.
 	beforeLoad: async ({ context }) => {
 		await context.queryClient.ensureQueryData(onboardingPageQuery());
 	},
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: () => metadataLoaderData(routeMetadata()),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextPageComponent(Page),
+	component: OnboardingPage,
 });

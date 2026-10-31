@@ -1,5 +1,3 @@
-"use client"
-
 import { useTranslations } from "@/i18n/react"
 import { type ReactNode, useEffect, useState } from "react"
 import { Logo } from "@/components/Logo"

@@ -1,3 +1,4 @@
+import { test, expect } from "vitest";
 import { agentSdkSupportReason, convertTextProtocol, protocolSwitchSupportReason, sdkCode, sdkRequestFromChat } from "./sdkExport";
 
 test("exports the submitted body and selected endpoint without proxy credentials", () => {

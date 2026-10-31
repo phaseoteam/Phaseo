@@ -1,5 +1,3 @@
-"use client";
-
 import { useLocale, useTranslations } from "@/i18n/react";
 import { usePathname } from "@/i18n/navigation";
 import { isPublicLocale } from "@/i18n/routing";

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import Image from "@/components/image";
 import { useLocale, useTranslations } from "@/i18n/react";

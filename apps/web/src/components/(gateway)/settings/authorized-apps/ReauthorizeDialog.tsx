@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useState } from "react";
@@ -8,7 +6,7 @@ import { Copy, ExternalLink, RefreshCw, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { reauthorizeCliScopesAction } from "@/app/(dashboard)/settings/authorized-apps/actions";
+import { reauthorizeCliScopesAction } from "@/features/settings/authorized-apps/actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";

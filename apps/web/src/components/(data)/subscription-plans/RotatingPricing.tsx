@@ -1,5 +1,3 @@
-"use client";
-
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 import { useTranslations } from "@/i18n/react";
 

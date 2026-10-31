@@ -2,12 +2,13 @@
 // clicks create the session with the same idempotency key and the same params, so Stripe returns
 // the first session instead of a second one.
 
+import { describe, it, expect, beforeAll, vi } from "vitest";
 const WORKSPACE = "00000000-0000-4000-8000-000000000001";
 const REQUEST = "00000000-0000-4000-8000-0000000000aa";
 
 const sessions = { created: 0, byKey: new Map<string, { params: string; id: string }>() };
 
-jest.mock("@/lib/stripe", () => ({
+vi.mock("@/lib/stripe", () => ({
 	getStripe: () => ({
 		checkout: {
 			sessions: {
@@ -29,17 +30,17 @@ jest.mock("@/lib/stripe", () => ({
 		},
 	}),
 }));
-jest.mock("@/lib/server/activeTeamStripe", () => ({
+vi.mock("@/lib/server/activeTeamStripe", () => ({
 	requireActiveWorkspaceStripeCustomer: async () => ({ workspaceId: WORKSPACE, customerId: "cus_1", userId: "user_1", userEmail: null, userDisplayName: null }),
 }));
-jest.mock("@/utils/supabase/admin", () => ({
+vi.mock("@/utils/supabase/admin", () => ({
 	createAdminClient: () => ({
 		rpc: async () => ({ data: true, error: null }),
 		from: () => ({ update: () => ({ eq: async () => ({ error: null }) }) }),
 	}),
 }));
-jest.mock("@/lib/automations/resend-events", () => ({ deriveFirstName: () => "", sendCheckoutStartedEvent: async () => undefined }));
-jest.mock("@/lib/automations/billingDiscord", () => ({ sendBillingDiscordWebhook: async () => undefined }));
+vi.mock("@/lib/automations/resend-events", () => ({ deriveFirstName: () => "", sendCheckoutStartedEvent: async () => undefined }));
+vi.mock("@/lib/automations/billingDiscord", () => ({ sendBillingDiscordWebhook: async () => undefined }));
 
 import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutResponse";
 
@@ -64,7 +65,7 @@ describe("createStripeCheckoutResponse for API/CLI top-up requests", () => {
 				onSessionCreated: async (sessionId) => { stored.push(sessionId); },
 			},
 		});
-		const now = jest.spyOn(Date, "now");
+		const now = vi.spyOn(Date, "now");
 		now.mockReturnValue(Date.parse("2026-10-28T15:05:00.000Z"));
 		const [first, second] = await Promise.all([call(), call()]);
 		now.mockReturnValue(Date.parse("2026-10-28T15:07:31.000Z"));

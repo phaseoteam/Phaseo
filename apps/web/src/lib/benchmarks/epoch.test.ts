@@ -1,3 +1,4 @@
+import { test, expect } from "vitest";
 import { selectEpochLeaderboardEntries } from "./epoch";
 
 const entries = Array.from({ length: 100 }, (_, index) => ({

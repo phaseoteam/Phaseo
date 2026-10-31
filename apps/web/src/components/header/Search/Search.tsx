@@ -1,5 +1,3 @@
-"use client";
-
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -62,7 +60,7 @@ import {
 import { getTypoMatchScore } from "./Search.matching";
 import type { PaletteItem } from "./Search.types";
 import { fetchWorkspaceSearchItems } from "./Search.workspaces";
-import { SwapTeam } from "@/app/(dashboard)/actions";
+import { SwapTeam } from "@/lib/workspace/actions";
 import type {
 	CompactSearchData,
 	SearchData,

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useTranslations } from "@/i18n/react";
 import { createPortal } from "react-dom";
@@ -47,7 +45,7 @@ import { shortenIdentifier } from "@/lib/gateway/usage/timeFormatting";
 import type {
 	AppMetadata,
 	ProviderMetadataEntry,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 import type { UsageLogsViewKey } from "@/lib/gateway/usage/timeRange";
 

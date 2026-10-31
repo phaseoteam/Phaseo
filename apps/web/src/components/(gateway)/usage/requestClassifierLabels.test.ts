@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { buildLabelKeyOptions, formatUsd, labelValueDisplay, type RequestClassifierSummary } from "./requestClassifierLabels";
 
 const classifiers: RequestClassifierSummary[] = [

@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
@@ -20,7 +18,7 @@ import {
 	fetchSessionRollups,
 	type SessionRequestRow,
 	type SessionRollupRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { Logo } from "@/components/Logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

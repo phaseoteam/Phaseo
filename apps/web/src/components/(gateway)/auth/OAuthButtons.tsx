@@ -1,12 +1,10 @@
-"use client";
-
 import Image from "@/components/image";
 import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";
+import { handleOAuthRedirect } from "@/features/sign-in/actions";
 import { Logo } from "@/components/Logo";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import site from "../../../../../messages/en-GB/site.json";
 import catalogue from "../../../../../messages/en-GB/catalogue.json";
 import product from "../../../../../messages/en-GB/product.json";
@@ -16,13 +17,8 @@ import { artificialAnalysisRankSummaries, summarizeArtificialAnalysisRankings } 
 import { selectEpochLeaderboardEntries } from "@/lib/benchmarks/epoch";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 
-jest.mock("@number-flow/react", () => ({
-	__esModule: true,
+vi.mock("@number-flow/react", () => ({
 	default: ({ value }: { value: number }) => String(value),
-}));
-
-jest.mock("@/i18n/server", () => ({
-	getTranslations: async (namespace: string) => createTranslator({ locale: "en-GB", messages: { Catalogue: catalogue }, namespace } as never),
 }));
 
 const highlight = (benchmarkId: string, score: number): ModelBenchmarkHighlight => ({
@@ -174,7 +170,7 @@ describe("Artificial Analysis benchmark panel", () => {
 		const html = renderLocalized(<ArtificialAnalysisBenchmarks highlights={[progress]} />);
 		expect(html).toContain("214.5");
 		expect(html).not.toContain("Intelligence</span>");
-		const page = renderLocalized(await ModelBenchmarks({ highlightCards: [progress, highlight("mmlu", 89)] }));
+		const page = renderLocalized(React.createElement(ModelBenchmarks, { highlightCards: [progress, highlight("mmlu", 89)] }));
 		expect(page.indexOf("Progress Index")).toBeLessThan(page.indexOf("Other benchmarks"));
 		expect(page.match(/Progress Index v1|aa-progress-index-v1/g) ?? []).toHaveLength(0);
 	});
@@ -183,7 +179,7 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(renderLocalized(<ArtificialAnalysisBenchmarks highlights={[{ ...highlight("aa-intelligence-index-v4", 42), score: null }]} />)).toBe("");
 	});
 	it("features AA first and retains other highlights and the full benchmark table", async () => {
-		const html = renderLocalized(await ModelBenchmarks({ highlightCards: [
+		const html = renderLocalized(React.createElement(ModelBenchmarks, { highlightCards: [
 			highlight("mmlu", 89), highlight("aa-intelligence-index-v4", 42),
 		] }));
 		expect(html.indexOf("Artificial Analysis")).toBeLessThan(html.indexOf("Other benchmarks"));
@@ -192,7 +188,7 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).toContain("Benchmark table");
 	});
 	it("features Epoch beneath Artificial Analysis instead of hiding it under other benchmarks", async () => {
-		const html = renderLocalized(await ModelBenchmarks({ highlightCards: [
+		const html = renderLocalized(React.createElement(ModelBenchmarks, { highlightCards: [
 			{ ...highlight("epoch-capabilities-index", 159.12), benchmarkName: "Epoch Capabilities Index", rank: 8, totalModels: 266, sourceLink: "https://epoch.ai/eci" },
 			highlight("aa-intelligence-index-v4", 42),
 			highlight("mmlu", 89),
@@ -246,7 +242,13 @@ describe("Artificial Analysis benchmark panel", () => {
 		};
 		const modelId = `test/model-${index}`;
 		const highlights = [{ ...highlight(ranking.benchmark_id, 200 - index), rank: index + 1 }];
-		const tree = await ModelBenchmarks({ highlightCards: highlights, epochRanking: ranking, modelId });
+		// Call the component inside a render so its hooks run, and keep the tree it returns.
+		let tree!: React.ReactElement<{ children: ReactNode }>;
+		function Capture() {
+			tree = ModelBenchmarks({ highlightCards: highlights, epochRanking: ranking, modelId }) as React.ReactElement<{ children: ReactNode }>;
+			return null;
+		}
+		renderLocalized(<Capture />);
 		const epoch = React.Children.toArray(tree.props.children).find(child => React.isValidElement(child) && child.type === EpochCapabilitiesIndex) as React.ReactElement<{ ranking: PublicBenchmarkRanking }>;
 		expect(epoch.props.ranking.entries).toEqual(selectEpochLeaderboardEntries(entries, modelId));
 		expect(epoch.props.ranking.entries).toHaveLength(12);

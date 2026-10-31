@@ -1,12 +1,13 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
 import catalogue from "../../../../messages/en-GB/catalogue.json";
 import ModelStickyHeader from "./ModelStickyHeader";
 
-jest.mock("./UseModelSheet", () => ({ UseModelSheet: () => <button>Use API</button> }));
-jest.mock("@/components/Logo", () => ({ Logo: () => null }));
-jest.mock("@/components/link", () => ({
-	__esModule: true, default: ({ href, children, ...props }: any) => <a href={href} {...props}>{children}</a>,
+vi.mock("./UseModelSheet", () => ({ UseModelSheet: () => <button>Use API</button> }));
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/components/link", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/components/link")>()), default: ({ href, children, ...props }: any) => <a href={href} {...props}>{children}</a>,
 }));
 
 function render(endpoints: string[], decisions: boolean) {

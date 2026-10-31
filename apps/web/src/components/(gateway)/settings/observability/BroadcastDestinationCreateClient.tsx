@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import Link from "@/components/link";
@@ -47,7 +45,7 @@ import {
 } from "@/components/ui/select";
 import {
 	createBroadcastDestinationAction,
-} from "@/app/(dashboard)/settings/broadcast/actions";
+} from "@/features/settings/broadcast/actions";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import type { DestinationDefinition } from "@/components/(gateway)/settings/observability/destinationCatalog";

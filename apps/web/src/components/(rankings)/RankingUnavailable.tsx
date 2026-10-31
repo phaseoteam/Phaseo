@@ -1,5 +1,3 @@
-"use client";
-
 import { useRouter } from "@/lib/navigation";
 import { useTransition } from "react";
 import { useTranslations } from "@/i18n/react";

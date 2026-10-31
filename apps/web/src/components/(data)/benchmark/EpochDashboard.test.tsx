@@ -1,4 +1,5 @@
-/** @jest-environment jsdom */
+/** @vitest-environment jsdom */
+import { it, expect, vi } from "vitest";
 import { act, cloneElement, createElement, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { AppIntlProvider } from "@/i18n/react";
@@ -7,19 +8,19 @@ import catalogue from "../../../../messages/en-GB/catalogue.json";
 import { EpochDashboard } from "./EpochDashboard";
 import type { EpochDashboardData } from "@/lib/benchmarks/epochDashboard";
 
-jest.mock("nuqs", () => {
+vi.mock("nuqs", async () => {
+	const React = await vi.importActual<typeof import("react")>("react");
 	const parser = { withDefault: () => parser };
 	return { parseAsString: parser, parseAsArrayOf: () => parser, useQueryStates: () => {
-		const React = jest.requireActual("react");
 		const defaults = { eciMetric: "overall", eciView: "range", eciOrg: "all", eciAccess: "all", eciSince: "2024", eciModels: null, eciSearch: "", eciLabels: "true" };
 		const [state, set] = React.useState(defaults);
 		return [state, (patch: Record<string, unknown>) => set((current: Record<string, unknown>) => ({ ...current, ...Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, v ?? defaults[k as keyof typeof defaults]])) }))];
 	} };
 });
-jest.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children) }));
-jest.mock("@/components/Logo", () => ({ Logo: () => null }));
-jest.mock("@/components/ui/scroll-area", () => ({ ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-jest.mock("recharts", () => ({ ...jest.requireActual("recharts"), ResponsiveContainer: ({ children }: { children: ReactElement }) => cloneElement(children as ReactElement<{ width: number; height: number }>, { width: 900, height: 500 }) }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children) }));
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/components/ui/scroll-area", () => ({ ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+vi.mock("recharts", async () => ({ ...(await vi.importActual("recharts")), ResponsiveContainer: ({ children }: { children: ReactElement }) => cloneElement(children as ReactElement<{ width: number; height: number }>, { width: 900, height: 500 }) }));
 
 const data: EpochDashboardData = { source: "epoch", sourceDate: null, domainsAvailable: true, rows: [
 	{ id: "a", name: "Alpha high", organisation: "Lab A", access: "open", date: "2025-01-01", modelId: "lab/a", scores: { overall: 150, coding: 155, maths: null }, interval: { low: 148, high: 152 }, counts: { coding: 3, maths: 0 } },
@@ -28,7 +29,7 @@ const data: EpochDashboardData = { source: "epoch", sourceDate: null, domainsAva
 
 async function mount(source = data) {
 	Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-	Object.defineProperty(window, "matchMedia", { configurable: true, value: () => ({ matches: false, addEventListener: jest.fn(), removeEventListener: jest.fn() }) });
+	Object.defineProperty(window, "matchMedia", { configurable: true, value: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) });
 	const node = document.createElement("div"); document.body.appendChild(node); const root = createRoot(node);
 	await act(async () => root.render(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><EpochDashboard data={source} /></AppIntlProvider>));
 	return { node, cleanup: () => { act(() => root.unmount()); node.remove(); } };

@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
@@ -13,13 +11,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
-import { investigateGeneration } from "@/app/(dashboard)/gateway/usage/server-actions";
+import { investigateGeneration } from "@/features/gateway/usage/server-actions";
 import RequestDetailDialog from "../RequestDetailDialog";
 import type {
 	InvestigateGenerationResult,
 	ProviderMetadataEntry,
 	RequestRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import type { ModelMetadataMap } from "../model-display";
 
 export default function InvestigateGeneration() {

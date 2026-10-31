@@ -1,3 +1,4 @@
+import { test, expect, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
@@ -6,8 +7,8 @@ import productMessages from "../../../../messages/en-GB/product.json";
 const renderToStaticMarkup = (node: React.ReactNode) => renderMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Product: productMessages }}>{node}</AppIntlProvider>);
 import { RoutingTracePanel } from "./RoutingTracePanel";
 
-jest.mock("@/components/Logo", () => ({ Logo: () => null }));
-jest.mock("@/components/ui/tooltip", () => ({
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/components/ui/tooltip", () => ({
     Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     TooltipContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,

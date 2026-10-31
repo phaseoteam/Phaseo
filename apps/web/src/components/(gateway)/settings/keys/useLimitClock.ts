@@ -1,5 +1,3 @@
-"use client";
-
 import { useSyncExternalStore } from "react";
 
 // A shared minute clock for limit reset countdowns. It is null during server render and

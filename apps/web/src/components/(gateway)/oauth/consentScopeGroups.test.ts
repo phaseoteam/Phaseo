@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { groupConsentScopes } from "./consentScopeGroups";
 
 describe("groupConsentScopes", () => {

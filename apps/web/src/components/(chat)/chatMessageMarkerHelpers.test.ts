@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import {
 	CHAT_TIME_SEPARATOR_GAP_MS,
 	formatChatTimeSeparator,

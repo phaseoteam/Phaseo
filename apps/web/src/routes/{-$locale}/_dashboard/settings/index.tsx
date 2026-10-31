@@ -1,20 +1,16 @@
-// Next: src/app/[locale]/(dashboard)/settings/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 import { redirect } from "@/lib/navigation";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
-import Page, * as mod from "@/app/[locale]/(dashboard)/settings/page";
-import Loading from "@/app/[locale]/(dashboard)/settings/loading";
-import { getSettingsHeaderAccess } from "@/app/[locale]/(dashboard)/settings/settings.functions";
+import SettingsPage, { getSettingsMetadata } from "@/features/settings/SettingsPage";
+import SettingsLoading from "@/features/settings/SettingsLoading";
+import { getSettingsHeaderAccess } from "@/features/settings/settings.functions";
 
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+const routeMetadata = createServerFn({ method: "GET" }).handler(async () => toSerializableMetadata(await getSettingsMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/settings/")({
 	beforeLoad: async ({ params }) => {
@@ -23,7 +19,8 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/settings/")({
 		const locale = params.locale ?? "en-GB";
 		redirect(localizePublicPath((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale, account.providerMode ? "/settings/account/providers" : "/settings/credits"));
 	},
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: () => metadataLoaderData(routeMetadata()),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: withLoading(nextPageComponent(Page), Loading),
+	component: SettingsPage,
+	pendingComponent: SettingsLoading,
 });

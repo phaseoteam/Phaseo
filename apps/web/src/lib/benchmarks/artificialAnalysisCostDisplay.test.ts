@@ -1,4 +1,5 @@
-﻿import { dashboardVisibleValueLabels, formatDashboardCost } from "./artificialAnalysisDashboard";
+﻿import { describe, it, expect } from "vitest";
+import { dashboardVisibleValueLabels, formatDashboardCost } from "./artificialAnalysisDashboard";
 
 describe("AA cost display", () => {
  it("keeps sub-cent costs nonzero and abbreviates large plotted costs", () => {

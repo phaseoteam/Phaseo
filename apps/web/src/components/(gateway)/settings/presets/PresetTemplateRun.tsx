@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { Loader2, Play } from "lucide-react";
 import { useTranslations } from "@/i18n/react";

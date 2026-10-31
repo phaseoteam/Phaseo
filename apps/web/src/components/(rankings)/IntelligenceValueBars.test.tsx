@@ -1,3 +1,4 @@
+import { it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
 import { englishCatalogueMessages, englishCommonMessages } from "@/i18n/default-messages";

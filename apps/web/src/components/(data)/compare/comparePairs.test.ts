@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { pairPath, parsePairSlug, sortPair } from "./comparePairs";
 
 describe("compare pair URLs", () => {

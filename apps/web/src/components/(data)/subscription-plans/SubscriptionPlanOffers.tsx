@@ -5,9 +5,9 @@ import { getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 export default function SubscriptionPlanOffers({ plan }: { plan: SubscriptionPlanSummary }) {
-	if (!plan.offers?.length) return null;
 	const locale = useLocale();
 	const t = useTranslations();
+	if (!plan.offers?.length) return null;
 	const messages = getSubscriptionPlansMessagesFor(locale).detail;
 	const labels = localizedSubscriptionPriceLabels(locale, { custom: messages.customPricing, usage: messages.usageBased, unknown: t("Common.status.unknown"), from: t("Common.ui.subscriptionCatalog.starting_at"), seat: t("Common.ui.subscriptionCatalog.seat"), introductory: t("Common.ui.subscriptionCatalog.introductory"), firstCycle: t("Common.ui.subscriptionCatalog.first_billing_cycle"), cycleCount: t("Common.ui.subscriptionCatalog.number_of_cycles") });
 	const formatAmount = (amount: number, currency: string) => new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency, maximumFractionDigits: 8 }).format(amount);

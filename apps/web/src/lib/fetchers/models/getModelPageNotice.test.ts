@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { parseModelPageNoticeRow } from "./getModelPageNotice";
 
 describe("parseModelPageNoticeRow", () => {

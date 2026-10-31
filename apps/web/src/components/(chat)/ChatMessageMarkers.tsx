@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "@/i18n/react";
 import {

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useTranslations } from "@/i18n/react";
-import { deleteByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
+import { deleteByokKeyAction } from "@/features/settings/byok/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { localizedSettingsError } from "@/i18n/error-messages";
 

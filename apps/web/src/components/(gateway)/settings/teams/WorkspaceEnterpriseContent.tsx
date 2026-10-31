@@ -1,4 +1,3 @@
-"use client";
 import { SettingsResourceQuery } from "../PrivateSettingsQuery";
 import type { TeamsSettingsData } from "@/lib/fetchers/internal/settingsTypes";
 import { Link } from "@/i18n/navigation";

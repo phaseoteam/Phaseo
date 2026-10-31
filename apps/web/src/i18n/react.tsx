@@ -1,4 +1,4 @@
-// `next-intl` (client APIs) on use-intl, the library next-intl wraps.
+// Client i18n APIs: use-intl hooks plus AppIntlProvider.
 import { IntlProvider, useLocale as useIntlLocale, type AbstractIntlMessages, type Locale } from "use-intl";
 import type { ComponentProps, ReactNode } from "react";
 import { defaultLocale, isPublicLocale } from "@/i18n/locales";

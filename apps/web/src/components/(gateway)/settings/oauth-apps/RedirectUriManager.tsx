@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Button } from "@/components/ui/button";
@@ -59,7 +57,7 @@ export default function RedirectUriManager({
 		setRedirectUris(nextRedirectUris);
 		try {
 			const { updateRedirectUrisAction } = await import(
-				"@/app/(dashboard)/settings/oauth-apps/actions"
+				"@/features/settings/oauth-apps/actions"
 			);
 			const result = await write(updateRedirectUrisAction({ data: { clientId, redirectUris: nextRedirectUris } }));
 			if (result.error) {

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { createTranslator } from "@/i18n/react";
 import { getPublicMessages } from "@/i18n/messages";
 import { publicLocales } from "@/i18n/routing";
@@ -15,7 +16,7 @@ describe("trusted workloads copy", () => {
 		const source = await getPublicMessages("en-GB");
 		const keys = leafKeys((source.SettingsUI as Record<string, unknown>).trustedWorkloads, "SettingsUI.trustedWorkloads");
 		expect(keys.length).toBeGreaterThan(50);
-		const onError = jest.fn();
+		const onError = vi.fn();
 		const t = createTranslator({ locale, messages, onError } as never);
 		for (const key of [...keys, "SettingsUI.settingsPageMetadata.trustedWorkloads", "SettingsUI.sidebarNew.trustedWorkloads"]) {
 			expect(t(key as never, { name: "Website", count: 2, max: 12, message: "x" } as never)).toEqual(expect.any(String));

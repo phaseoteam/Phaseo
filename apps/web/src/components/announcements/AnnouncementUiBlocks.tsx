@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/react";

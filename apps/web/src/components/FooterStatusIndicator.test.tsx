@@ -1,22 +1,23 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useQuery } from "@tanstack/react-query";
 import messages from "../../messages/en-GB/common.json";
 import { FooterStatusIndicator } from "./FooterStatusIndicator";
 
-jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn() }), { virtual: true });
-jest.mock("@/i18n/react", () => ({
+vi.mock("@tanstack/react-query", () => ({ useQuery: vi.fn() }), { virtual: true });
+vi.mock("@/i18n/react", () => ({
 	useTranslations: () => (key: string, values?: Record<string, string>) => {
 		const message = key.split(".").reduce((value, part) => value[part], messages.status as any) as string;
 		return message.replace(/\{(\w+)\}/g, (_match, name: string) => values?.[name] ?? name);
 	},
 }), { virtual: true });
-jest.mock("@/components/ui/scroll-area", () => ({
+vi.mock("@/components/ui/scroll-area", () => ({
 	ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 describe("FooterStatusIndicator", () => {
 	it("renders recovery progress, the update and retained component impact", () => {
-		jest.mocked(useQuery).mockReturnValue({ data: {
+		vi.mocked(useQuery).mockReturnValue({ data: {
 			ok: true, state: "monitoring", label: "Monitoring recovery", href: "https://status.phaseo.app",
 			incidents: [{ id: "1", name: "API disruption", status: "monitoring", impact: "raw-impact", impactState: "major_outage", message: "A fix has been applied.", updatedAt: "2026-10-03T09:33:04.331Z" }],
 			components: [
@@ -36,7 +37,7 @@ describe("FooterStatusIndicator", () => {
 	});
 
 	it("handles summaries without incident details", () => {
-		jest.mocked(useQuery).mockReturnValue({ data: {
+		vi.mocked(useQuery).mockReturnValue({ data: {
 			ok: true, state: "operational", label: "All systems operational", href: "https://status.phaseo.app",
 		}, error: undefined } as ReturnType<typeof useQuery>);
 		expect(renderToStaticMarkup(<FooterStatusIndicator />)).toContain("All systems operational");

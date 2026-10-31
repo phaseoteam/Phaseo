@@ -1,12 +1,10 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { setBillingTimeZone, setDepartmentSpendAttribution, setSpendReportSettings } from "@/app/(dashboard)/settings/credits/actions";
+import { setBillingTimeZone, setDepartmentSpendAttribution, setSpendReportSettings } from "@/features/settings/credits/actions";
 import type { SpendReportCadence } from "@/lib/fetchers/internal/settingsTypes";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { OptionTiles } from "./spendAlertsUi";

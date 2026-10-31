@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
@@ -10,7 +8,7 @@ import {
 	updateAccount,
 	changePasswordAction,
 	changeEmailAction,
-} from "@/app/(dashboard)/settings/account/actions";
+} from "@/features/settings/account/actions";
 import {
 	persistAnalyticsConsent,
 	readAnalyticsConsent,

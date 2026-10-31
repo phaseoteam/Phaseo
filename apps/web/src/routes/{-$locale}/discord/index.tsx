@@ -1,4 +1,4 @@
-// Next: src/app/[locale]/discord/page.tsx (a redirect-only page).
+// Redirect-only: sends visitors to Phaseo on Discord.
 import { createFileRoute } from "@tanstack/react-router";
 import { redirectBeforeLoad } from "@/lib/start/redirectRoute";
 

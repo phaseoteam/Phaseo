@@ -1,5 +1,3 @@
-"use client";
-
 import { focusManager, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useLayoutEffect } from "react";
 import { isPublicLocale } from "@/i18n/locales";

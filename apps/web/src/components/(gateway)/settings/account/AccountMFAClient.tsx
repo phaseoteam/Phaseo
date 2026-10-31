@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
@@ -10,7 +8,7 @@ import { useTranslations } from "@/i18n/react";
 import {
 	unenrollMFAAction,
 	cleanupUnverifiedMFAAction,
-} from "@/app/(dashboard)/settings/account/actions";
+} from "@/features/settings/account/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { MFAEnrollmentFlow } from "./MFAEnrollmentFlow";

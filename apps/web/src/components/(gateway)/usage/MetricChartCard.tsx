@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useTranslations } from "@/i18n/react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";

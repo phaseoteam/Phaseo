@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { canUpgradeCookieAuth } from "./cookieAuthRequest"
 
 const APP_ORIGIN = "https://phaseo.app"

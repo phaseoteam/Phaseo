@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import Link from "@/components/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";

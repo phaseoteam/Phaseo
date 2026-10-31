@@ -1,10 +1,11 @@
+import { it, expect, beforeEach, afterEach, vi } from "vitest";
 import type * as StorageModule from "./userStorage";
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
 const values = new Map<string, string>();
-function newDocument(): typeof StorageModule {
-	jest.resetModules();
-	return jest.requireActual<typeof StorageModule>("./userStorage");
+async function newDocument(): Promise<typeof StorageModule> {
+	vi.resetModules();
+	return vi.importActual<typeof StorageModule>("./userStorage");
 }
 beforeEach(() => {
 	values.clear();
@@ -19,8 +20,8 @@ afterEach(() => {
 	else Reflect.deleteProperty(globalThis, "window");
 });
 
-it("does not read or write before session initialization", () => {
-	const storage = newDocument();
+it("does not read or write before session initialization", async () => {
+	const storage = await newDocument();
 	values.set("notes", "legacy private notes");
 	expect(storage.chatLocalStorage.getItem("notes")).toBeNull();
 	storage.chatLocalStorage.setItem("notes", "early write");
@@ -28,8 +29,8 @@ it("does not read or write before session initialization", () => {
 	expect(() => storage.chatStorageKey("phaseo-chat")).toThrow();
 });
 
-it("isolates two users and restores only their own data on a later visit", () => {
-	const alice = newDocument();
+it("isolates two users and restores only their own data on a later visit", async () => {
+	const alice = await newDocument();
 	alice.initializeChatStorage("alice");
 	alice.chatLocalStorage.setItem("notes", "Alice's notes");
 	const aliceDb = alice.chatStorageKey("phaseo-chat");
@@ -39,19 +40,19 @@ it("isolates two users and restores only their own data on a later visit", () =>
 	// A delayed callback cannot write into Bob's scope after sign-out.
 	alice.chatLocalStorage.setItem("notes", "late callback");
 	expect(() => alice.chatStorageKey("phaseo-chat")).toThrow();
-	const bob = newDocument();
+	const bob = await newDocument();
 	bob.initializeChatStorage("bob");
 	expect(bob.chatLocalStorage.getItem("notes")).toBeNull();
 	expect(bob.chatStorageKey("phaseo-chat")).not.toBe(aliceDb);
 	bob.chatLocalStorage.setItem("notes", "Bob's notes");
-	const aliceAgain = newDocument();
+	const aliceAgain = await newDocument();
 	aliceAgain.initializeChatStorage("alice");
 	expect(aliceAgain.chatLocalStorage.getItem("notes")).toBe("Alice's notes");
 	expect(aliceAgain.chatStorageKey("phaseo-chat")).toBe(aliceDb);
 });
 
-it("locks on direct account switches but not same-user token refreshes", () => {
-	const storage = newDocument();
+it("locks on direct account switches but not same-user token refreshes", async () => {
+	const storage = await newDocument();
 	storage.initializeChatStorage("alice");
 	storage.observeChatStorageIdentity("alice");
 	expect(storage.initializeChatStorage("alice")).toBe(true);
@@ -60,16 +61,16 @@ it("locks on direct account switches but not same-user token refreshes", () => {
 	expect(storage.initializeChatStorage("bob")).toBe(false);
 });
 
-it("never assigns unowned legacy data or guest history to a signed-in user", () => {
+it("never assigns unowned legacy data or guest history to a signed-in user", async () => {
 	values.set("notes", "unowned history");
-	const guest = newDocument();
+	const guest = await newDocument();
 	guest.initializeChatStorage(null);
 	guest.chatLocalStorage.setItem("notes", "guest notes");
 	const guestDb = guest.chatStorageKey("phaseo-chat");
-	const secondGuest = newDocument();
+	const secondGuest = await newDocument();
 	secondGuest.initializeChatStorage(null);
 	expect(secondGuest.chatStorageKey("phaseo-chat")).not.toBe(guestDb);
-	const alice = newDocument();
+	const alice = await newDocument();
 	alice.initializeChatStorage("alice");
 	expect(alice.chatLocalStorage.getItem("notes")).toBeNull();
 	expect(values.get("notes")).toBe("unowned history");

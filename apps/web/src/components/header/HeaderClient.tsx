@@ -1,6 +1,4 @@
 // components/header/HeaderClient.tsx  (CLIENT)
-"use client";
-
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { IntentLink } from "@/components/navigation/IntentLink";
 import { useLocale, useTranslations } from "@/i18n/react";
@@ -35,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import TeamSwitcher from "./TeamSwitcher";
-import { SwapTeam } from "@/app/(dashboard)/actions";
+import { SwapTeam } from "@/lib/workspace/actions";
 import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { toast } from "sonner";

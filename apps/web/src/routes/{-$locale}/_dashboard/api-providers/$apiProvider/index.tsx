@@ -1,22 +1,20 @@
-// Next: src/app/[locale]/(dashboard)/api-providers/[apiProvider]/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { routeMetadataInput, toSerializableMetadata, type RouteMetadataInput } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/page";
-import NotFound from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/not-found";
-import { apiProviderModelsQuery, apiProviderPageDataQuery } from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/page.functions";
+import ApiProviderPage, { getApiProviderMetadata } from "@/features/api-providers/apiProvider/ApiProviderPage";
+import ApiProviderNotFound from "@/features/api-providers/apiProvider/ApiProviderNotFound";
+import { apiProviderModelsQuery, apiProviderPageDataQuery } from "@/features/api-providers/apiProvider/page.functions";
 import { notFound } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+	.validator((input: RouteMetadataInput) => input)
+	.handler(async ({ data }) => toSerializableMetadata(await getApiProviderMetadata(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/api-providers/$apiProvider/")({
 	loader: async ({ params, location, context }) => {
-		const metadataPromise = routeMetadata({ data: { params, search: location.search as Record<string, unknown> } });
+		const metadataPromise = routeMetadata({ data: routeMetadataInput(params, location.search) });
 		metadataPromise.catch(() => undefined);
 		void context.queryClient.prefetchQuery(apiProviderModelsQuery(params.apiProvider));
 		const pageData = await context.queryClient.ensureQueryData(apiProviderPageDataQuery(params.apiProvider));
@@ -24,6 +22,6 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/api-providers/$apiP
 		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	notFoundComponent: NotFound,
-	component: nextPageComponent(Page),
+	notFoundComponent: ApiProviderNotFound,
+	component: ApiProviderPage,
 });

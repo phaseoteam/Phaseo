@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import dynamic from "@/lib/dynamic";
 import { useQuery } from "@tanstack/react-query";

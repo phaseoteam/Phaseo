@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState, type RefObject } from "react";
 
 type StickyToolbarOffsets = { toolbarTop: number; tableHeaderTop: number };

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { resolveLogo } from "@/lib/logos";

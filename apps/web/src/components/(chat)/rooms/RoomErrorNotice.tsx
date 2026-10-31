@@ -1,5 +1,3 @@
-"use client";
-
 import { AlertCircle } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
 import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";

@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { projectCreditRunway } from "./creditRunway";
 
 const NOW = Date.parse("2026-10-12T00:00:00Z");

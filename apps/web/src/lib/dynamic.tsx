@@ -1,4 +1,4 @@
-// `next/dynamic` on React.lazy. `ssr: false` renders the loading state on the
+// Lazy-loaded components on React.lazy. `ssr: false` renders the loading state on the
 // server and loads the component after hydration.
 import { lazy, Suspense, useEffect, useState, type ComponentType, type JSX, type ReactNode } from "react";
 

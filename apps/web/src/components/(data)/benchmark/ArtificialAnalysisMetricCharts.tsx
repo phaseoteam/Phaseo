@@ -1,4 +1,3 @@
-"use client";
 import { localizedBenchmarkConfiguration, localizedArtificialAnalysisMetric } from "@/i18n/benchmark-display";
 import { useLocale, useTranslations } from "@/i18n/react";
 

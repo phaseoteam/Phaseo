@@ -1,5 +1,3 @@
-"use client";
-
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { StatsigClient } from "@statsig/js-client";
 import { useReportWebVitals } from "@/lib/analytics/webVitals";

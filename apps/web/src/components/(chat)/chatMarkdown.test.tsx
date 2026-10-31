@@ -1,5 +1,6 @@
-jest.mock("@streamdown/math", () => ({
-	createMathPlugin: jest.fn((options) => options),
+import { describe, it, expect, vi } from "vitest";
+vi.mock("@streamdown/math", () => ({
+	createMathPlugin: vi.fn((options) => options),
 }), { virtual: true });
 
 import { createMathPlugin } from "@streamdown/math";

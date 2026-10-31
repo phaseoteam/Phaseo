@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
@@ -49,7 +47,7 @@ export default function DeleteOAuthAppDialog({
 
 		try {
 			const { deleteOAuthAppAction } = await import(
-				"@/app/(dashboard)/settings/oauth-apps/actions"
+				"@/features/settings/oauth-apps/actions"
 			);
 
 			const result = await write(deleteOAuthAppAction({ data: clientId }));

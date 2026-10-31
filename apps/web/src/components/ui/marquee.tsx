@@ -1,4 +1,3 @@
-"use client";
 import type { HTMLAttributes } from "react";
 import type { MarqueeProps as FastMarqueeProps } from "react-fast-marquee";
 import FastMarqueeModule from "react-fast-marquee";

@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { QueryObserver } from "@tanstack/react-query";
 import { createWebQueryClient } from "./queryClient";
 import { privateSettingsOptions } from "./privateSettings";
@@ -6,16 +7,16 @@ import { clearAccountQueryCache, invalidateAccountQueries } from "./invalidation
 const scope = { userId: "alice", workspaceId: "workspace-a" };
 describe("private settings cache", () => {
 	let client: ReturnType<typeof createWebQueryClient>;
-	beforeEach(() => { jest.useFakeTimers(); client = createWebQueryClient(); });
-	afterEach(() => { client.clear(); jest.useRealTimers(); });
+	beforeEach(() => { vi.useFakeTimers(); client = createWebQueryClient(); });
+	afterEach(() => { client.clear(); vi.useRealTimers(); });
 	it.each(["apps", "keys", "teams", "routing", "guardrails", "privacy", "byok", "presets", "private-models", "transactions", "notifications", "profile", "broadcast", "webhooks", "oauth-apps", "oauth-apps/client-1", "beta", "observability/destinations/new/webhook"])("reuses %s for five minutes and revalidates on return", async (resource) => {
-		const queryFn = jest.fn(async () => ({ name: resource }));
+		const queryFn = vi.fn(async () => ({ name: resource }));
 		const options = { ...privateSettingsOptions(scope, `/api/account/settings/${resource}`), queryFn };
 		await client.fetchQuery(options);
-		jest.advanceTimersByTime(299_999);
+		vi.advanceTimersByTime(299_999);
 		await client.fetchQuery(options);
 		expect(queryFn).toHaveBeenCalledTimes(1);
-		jest.advanceTimersByTime(1);
+		vi.advanceTimersByTime(1);
 		await client.fetchQuery(options);
 		expect(queryFn).toHaveBeenCalledTimes(2);
 	});
@@ -34,7 +35,7 @@ describe("private settings cache", () => {
 		expect(new Set(keys).size).toBe(keys.length);
 	});
 	it("manual refresh and completed writes bypass freshness", async () => {
-		const queryFn = jest.fn(async () => ["metadata"]);
+		const queryFn = vi.fn(async () => ["metadata"]);
 		const options = { ...privateSettingsOptions(scope, "/keys"), queryFn };
 		await client.fetchQuery(options);
 		const observer = new QueryObserver(client, options);
@@ -45,7 +46,7 @@ describe("private settings cache", () => {
 		stop(); observer.destroy();
 	});
 	it("marks inactive views stale after mutations", async () => {
-		const queryFn = jest.fn(async () => ["metadata"]);
+		const queryFn = vi.fn(async () => ["metadata"]);
 		const options = { ...privateSettingsOptions(scope, "/keys"), queryFn };
 		await client.fetchQuery(options);
 		await invalidateAccountQueries(client);

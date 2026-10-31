@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -9,7 +10,7 @@ function readSource(relativePath: string): string {
 
 describe("settings UI contracts", () => {
 	it("uses the sidebar as the single settings navigation hierarchy", () => {
-		const layoutSource = readSource("src/app/[locale]/(dashboard)/settings/layout.tsx");
+		const layoutSource = readSource("src/features/settings/SettingsLayout.tsx");
 		const sidebarSource = readSource(
 			"src/components/(gateway)/settings/Sidebar.tsx",
 		);
@@ -41,7 +42,7 @@ describe("settings UI contracts", () => {
 		const pageHeaderSource = readSource(
 			"src/components/(gateway)/settings/SettingsPageHeader.tsx",
 		);
-		const keysPageSource = readSource("src/app/[locale]/(dashboard)/settings/keys/KeysContent.tsx");
+		const keysPageSource = readSource("src/features/settings/keys/KeysContent.tsx");
 
 		expect(headerSource).toContain("<SettingsSidebarTrigger");
 		expect(headerSource.indexOf("<SettingsSidebarTrigger")).toBeLessThan(
@@ -51,11 +52,6 @@ describe("settings UI contracts", () => {
 		expect(headerSource.indexOf("<SearchWrapper")).toBeLessThan(
 			headerSource.indexOf('<AuthControls variant="mobile"'),
 		);
-		expect(headerSource).toContain("mobileGhost");
-		expect(headerSource).toContain('className="size-9');
-		expect(searchSource).toContain("mobileGhost &&");
-		expect(searchSource).toContain("border-transparent bg-transparent");
-		expect(searchSource).toContain("xl:border-border xl:bg-background");
 		expect(menuSource).toContain("<Sheet");
 		expect(menuSource).toContain('side="left"');
 		expect(menuSource).toContain("<Collapsible");
@@ -65,7 +61,7 @@ describe("settings UI contracts", () => {
 		expect(menuSource).toContain("scopeSelection");
 		expect(menuSource).toContain("group.scope === visibleScope");
 		expect(menuSource).toContain('selectScope("personal")');
-		expect(menuSource).toContain('selectScope("workspace")');
+		expect(menuSource).toContain("selectScope(businessScope)");
 		expect(menuSource).toContain("settingsCopy.settingsSidebar.close");
 		expect(menuSource).toContain("settingsCopy.settingsSidebar.open");
 		expect(menuSource).toContain("<MenuIcon");
@@ -94,7 +90,7 @@ describe("settings UI contracts", () => {
 			"src/components/(gateway)/settings/teams/TeamSettingsPanel.tsx",
 		);
 		const accountWorkspacesSource = readSource(
-			"src/app/[locale]/(dashboard)/settings/account/workspaces/WorkspacesContent.tsx",
+			"src/features/settings/account/workspaces/WorkspacesContent.tsx",
 		);
 
 		expect(containerSource).not.toContain('settings/CreateTeamDialog');

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { BadgeCheck, Boxes, Layers3, Shuffle, Zap } from "lucide-react";
 import { getTierFilterMeta } from "./tierFilterStyles";
 

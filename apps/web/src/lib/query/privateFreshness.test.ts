@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { QueryObserver } from "@tanstack/react-query";
 import { createWebQueryClient } from "./queryClient";
 import { WEB_QUERY_POLICIES } from "./policies";
@@ -10,8 +11,8 @@ const queryKey = webQueryKeys.account.privateModels({ scope, shape: "page" });
 
 describe("private query freshness", () => {
 	let client: ReturnType<typeof createWebQueryClient>;
-	beforeEach(() => { jest.useFakeTimers(); client = createWebQueryClient(); });
-	afterEach(() => { client.clear(); jest.useRealTimers(); });
+	beforeEach(() => { vi.useFakeTimers(); client = createWebQueryClient(); });
+	afterEach(() => { client.clear(); vi.useRealTimers(); });
 
 	it("uses five-minute freshness and visible polling for both private policies", () => {
 		for (const policy of [WEB_QUERY_POLICIES.private, WEB_QUERY_POLICIES.privateNoRetry]) {
@@ -24,25 +25,25 @@ describe("private query freshness", () => {
 	});
 
 	it("reuses private data before five minutes and revalidates at expiry", async () => {
-		const queryFn = jest.fn(async () => ["private"]);
+		const queryFn = vi.fn(async () => ["private"]);
 		await client.fetchQuery({ queryKey, queryFn });
-		jest.advanceTimersByTime(FIVE_MINUTES - 1);
+		vi.advanceTimersByTime(FIVE_MINUTES - 1);
 		await client.fetchQuery({ queryKey, queryFn });
 		expect(queryFn).toHaveBeenCalledTimes(1);
-		jest.advanceTimersByTime(1);
+		vi.advanceTimersByTime(1);
 		await client.fetchQuery({ queryKey, queryFn });
 		expect(queryFn).toHaveBeenCalledTimes(2);
 	});
 
 	it("does not revalidate fresh data on mount or focus, but does after expiry", async () => {
-		const queryFn = jest.fn(async () => ["private"]);
+		const queryFn = vi.fn(async () => ["private"]);
 		await client.fetchQuery({ queryKey, queryFn });
 		const observer = new QueryObserver(client, { queryKey, queryFn });
 		const stop = observer.subscribe(() => undefined);
 		try {
 			client.getQueryCache().onFocus();
 			expect(queryFn).toHaveBeenCalledTimes(1);
-			jest.advanceTimersByTime(FIVE_MINUTES);
+			vi.advanceTimersByTime(FIVE_MINUTES);
 			client.getQueryCache().onFocus();
 			await client.fetchQuery({ queryKey, queryFn });
 			expect(queryFn).toHaveBeenCalledTimes(2);
@@ -50,7 +51,7 @@ describe("private query freshness", () => {
 	});
 
 	it("manual refresh bypasses freshness immediately", async () => {
-		const queryFn = jest.fn(async () => ["private"]);
+		const queryFn = vi.fn(async () => ["private"]);
 		await client.fetchQuery({ queryKey, queryFn });
 		const observer = new QueryObserver(client, { queryKey, queryFn });
 		try {
@@ -60,7 +61,7 @@ describe("private query freshness", () => {
 	});
 
 	it("mutation invalidation refreshes active data and marks inactive data stale immediately", async () => {
-		const queryFn = jest.fn(async () => ["updated"]);
+		const queryFn = vi.fn(async () => ["updated"]);
 		const inactiveKey = webQueryKeys.account.providerPreviews({ scope });
 		const publicKey = webQueryKeys.public.search();
 		client.setQueryData(queryKey, ["old"]);
@@ -90,31 +91,30 @@ describe("private query freshness", () => {
 		let visibility = "visible";
 		Object.defineProperty(globalThis, "window", { configurable: true, value: new EventTarget() });
 		Object.defineProperty(globalThis, "document", { configurable: true, value: { get visibilityState() { return visibility; } } });
-		const queryFn = jest.fn(async () => ["private"]);
+		const queryFn = vi.fn(async () => ["private"]);
 		let dispose = () => {};
 		try {
 			// Load a fresh Query core with browser timers enabled, without a DOM dependency.
-			jest.isolateModules(() => {
-				// eslint-disable-next-line @typescript-eslint/no-require-imports
-				const { QueryObserver: BrowserObserver } = require("@tanstack/react-query") as typeof import("@tanstack/react-query");
-				// eslint-disable-next-line @typescript-eslint/no-require-imports
-				const { createWebQueryClient: createBrowserClient } = require("./queryClient") as typeof import("./queryClient");
+			vi.resetModules();
+			{
+				const { QueryObserver: BrowserObserver } = await import("@tanstack/react-query");
+				const { createWebQueryClient: createBrowserClient } = await import("./queryClient");
 				const browserClient = createBrowserClient();
 				const observer = new BrowserObserver(browserClient, { queryKey, queryFn });
 				const stop = observer.subscribe(() => undefined);
 				dispose = () => { stop(); observer.destroy(); browserClient.clear(); };
-			});
-			await jest.advanceTimersByTimeAsync(0);
+			}
+			await vi.advanceTimersByTimeAsync(0);
 			expect(queryFn).toHaveBeenCalledTimes(1);
-			await jest.advanceTimersByTimeAsync(FIVE_MINUTES - 1);
+			await vi.advanceTimersByTimeAsync(FIVE_MINUTES - 1);
 			expect(queryFn).toHaveBeenCalledTimes(1);
-			await jest.advanceTimersByTimeAsync(1);
+			await vi.advanceTimersByTimeAsync(1);
 			expect(queryFn).toHaveBeenCalledTimes(2);
 			visibility = "hidden";
-			await jest.advanceTimersByTimeAsync(FIVE_MINUTES);
+			await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
 			expect(queryFn).toHaveBeenCalledTimes(2);
 			visibility = "visible";
-			await jest.advanceTimersByTimeAsync(FIVE_MINUTES);
+			await vi.advanceTimersByTimeAsync(FIVE_MINUTES);
 			expect(queryFn).toHaveBeenCalledTimes(3);
 		} finally {
 			dispose();

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { useRouter } from "@/lib/navigation";
@@ -16,7 +14,7 @@ import { toast } from "sonner";
 import {
 	createOnboardingApiKeyAction,
 	saveOnboardingProgressAction,
-} from "@/app/(dashboard)/onboarding/actions";
+} from "@/features/onboarding/actions";
 import { CodeBlock as HighlightedCodeBlock } from "@/components/ai-elements/code-block";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";

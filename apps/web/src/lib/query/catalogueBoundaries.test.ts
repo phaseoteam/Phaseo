@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach, vi, type Mock } from "vitest";
 import { createWebQueryClient } from "./queryClient";
 import { fetchModelsPageData } from "./models";
 import { fetchAuthenticatedPrivateModels } from "./privateModels";
@@ -7,8 +8,8 @@ import { dehydrate, QueryObserver } from "@tanstack/react-query";
 import { getCatalogPricingSummariesCached } from "@/lib/fetchers/models/getCatalogPricingSummaries";
 import { getModelProviderRuntimeStats } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 
-jest.mock("@/lib/fetchers/internal/accountAuthClient", () => ({
-	getBrowserAccessToken: jest.fn(async () => "fixture-token"),
+vi.mock("@/lib/fetchers/internal/accountAuthClient", () => ({
+	getBrowserAccessToken: vi.fn(async () => "fixture-token"),
 }));
 
 const scope = { userId: "user-a", workspaceId: "workspace-a" };
@@ -35,7 +36,7 @@ describe("public and authenticated catalogue boundaries", () => {
 	afterEach(() => { global.fetch = originalFetch; });
 
 	function mockNetwork(accountStatus = 200) {
-		const fetchMock = jest.fn(async (input: string | URL | Request) => {
+		const fetchMock = vi.fn(async (input: string | URL | Request) => {
 			const url = String(input);
 			if (url.includes("/api/_web/")) return Response.json(publicPayload());
 			if (url.includes("previews")) return Response.json({ models: [] }, { status: accountStatus });
@@ -73,7 +74,7 @@ describe("public and authenticated catalogue boundaries", () => {
 
 	it("propagates aborts instead of turning cancellation into an empty private catalogue", async () => {
 		// Keep the exception in Jest's realm, matching Error/DOMException behavior in a browser.
-		global.fetch = jest.fn().mockRejectedValue(Object.assign(new Error("Cancelled"), { name: "AbortError" }));
+		global.fetch = vi.fn().mockRejectedValue(Object.assign(new Error("Cancelled"), { name: "AbortError" }));
 		await expect(fetchAuthenticatedPrivateModels("page", { accessToken: "fixture-token" })).rejects.toMatchObject({ name: "AbortError" });
 	});
 
@@ -100,14 +101,14 @@ describe("public and authenticated catalogue boundaries", () => {
 	it("omits cookies on public pricing and provider-health requests too", async () => {
 		const controller = new AbortController();
 		const signal = controller.signal;
-		const network = jest.fn(async () => Response.json({ rules: [], rows: [] }));
+		const network = vi.fn(async () => Response.json({ rules: [], rows: [] }));
 		global.fetch = network;
 		await Promise.all([
 			getCatalogPricingSummariesCached(signal),
 			getModelProviderRuntimeStats({ modelId: "public/model", providerIds: ["provider"], modelAliases: [], signal }),
 		]);
 		expect(network).toHaveBeenCalledTimes(2);
-		for (const call of (network as jest.Mock).mock.calls) {
+		for (const call of (network as Mock).mock.calls) {
 			expect(call[1].signal.aborted).toBe(false);
 			expect(call[1].cache).toBeUndefined();
 			expect(call[1].next).toEqual({ revalidate: 0 });
@@ -115,7 +116,7 @@ describe("public and authenticated catalogue boundaries", () => {
 		}
 		// Public fetches combine the caller signal with their timeout signal.
 		controller.abort();
-		for (const call of (network as jest.Mock).mock.calls) {
+		for (const call of (network as Mock).mock.calls) {
 			expect(call[1].signal.aborted).toBe(true);
 		}
 	});
@@ -134,7 +135,7 @@ describe("public and authenticated catalogue boundaries", () => {
 	});
 
 	it("retains every endpoint row for a private model in table view", async () => {
-		global.fetch = jest.fn(async () => Response.json({ private_catalogue: true, models: [
+		global.fetch = vi.fn(async () => Response.json({ private_catalogue: true, models: [
 			{ id: "row-chat", modelId: "workspace-a/private", endpoint: "chat.completions" },
 			{ id: "row-messages", modelId: "workspace-a/private", endpoint: "messages" },
 			{ id: "row-responses", modelId: "workspace-a/private", endpoint: "responses" },
@@ -144,7 +145,7 @@ describe("public and authenticated catalogue boundaries", () => {
 	});
 
 	it.each([401, 403, 404])("removes a detail preview seed when reauthorization returns %s", async (status) => {
-		global.fetch = jest.fn(async () => Response.json({ error: "Denied" }, { status }));
+		global.fetch = vi.fn(async () => Response.json({ error: "Denied" }, { status }));
 		const cache = createWebQueryClient();
 		const queryKey = webQueryKeys.account.providerPreviews({ scope });
 		const observer = new QueryObserver(cache, {

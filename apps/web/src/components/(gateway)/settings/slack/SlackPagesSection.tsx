@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { ChevronRight, ExternalLink, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/react";
@@ -19,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { deleteSlackAgentPage, loadSlackAgentPages, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
+import { deleteSlackAgentPage, loadSlackAgentPages, updateSlackAgent } from "@/features/settings/slack/actions";
 import { cn } from "@/lib/utils";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Choice, Notice, SlackError, SwitchField } from "./SlackAgentFields";

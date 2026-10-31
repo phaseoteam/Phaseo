@@ -2,7 +2,7 @@
 // call (create, update, delete and the reads that go with them).
 import { isNotFound, isRedirect } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
-import { refreshServerData } from "@/compat/refresh";
+import { refreshServerData } from "@/lib/start/refresh";
 
 type RouterLike = {
 	navigate(options: unknown): Promise<unknown>;

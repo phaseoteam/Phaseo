@@ -1,5 +1,3 @@
-"use client";
-
 import dynamic from "@/lib/dynamic";
 import { useTranslations } from "@/i18n/react";
 import { Streamdown } from "streamdown";

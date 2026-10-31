@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { RotateCcw, Search } from "lucide-react";

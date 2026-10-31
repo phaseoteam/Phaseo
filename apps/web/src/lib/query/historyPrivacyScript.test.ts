@@ -1,10 +1,11 @@
+import { describe, it, expect, vi } from "vitest";
 import { runInNewContext } from "node:vm";
 import { HISTORY_PRIVACY_SCRIPT } from "./historyPrivacyScript";
 
 describe("pre-paint history response guard", () => {
 	function execute(type?: string) {
-		const setProperty = jest.fn();
-		const reload = jest.fn(() => {
+		const setProperty = vi.fn();
+		const reload = vi.fn(() => {
 			expect(setProperty).toHaveBeenCalledWith("display", "none", "important");
 		});
 		runInNewContext(HISTORY_PRIVACY_SCRIPT, {

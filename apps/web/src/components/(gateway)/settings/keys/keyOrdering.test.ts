@@ -1,3 +1,4 @@
+import { test, expect } from "vitest";
 import { getKeyState, organiseKeys } from "./keyOrdering";
 
 const keys = [

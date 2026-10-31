@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "@/i18n/react";

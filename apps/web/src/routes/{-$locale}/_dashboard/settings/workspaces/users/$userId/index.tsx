@@ -1,18 +1,14 @@
-// Next: src/app/[locale]/(dashboard)/settings/workspaces/users/[userId]/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/settings/workspaces/users/[userId]/page";
+import WorkspaceUserPage, { getWorkspaceUserMetadata } from "@/features/settings/workspaces/users/userId/WorkspaceUserPage";
 import { notFound } from "@/lib/navigation";
 import { redirect } from "@/i18n/navigation";
-import { workspaceUserQuery } from "@/app/[locale]/(dashboard)/settings/workspaces/users/[userId]/workspaceUser.functions";
+import { workspaceUserQuery } from "@/features/settings/workspaces/users/userId/workspaceUser.functions";
 
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+const routeMetadata = createServerFn({ method: "GET" }).handler(async () => toSerializableMetadata(await getWorkspaceUserMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/settings/workspaces/users/$userId/")({
 	beforeLoad: async ({ context, params, search }) => {
@@ -23,7 +19,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/settings/workspaces
 		if (result.kind === "notFound") notFound();
 		if (result.kind === "unauthorized") redirect({ href: "/sign-in", locale });
 	},
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: () => metadataLoaderData(routeMetadata()),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextPageComponent(Page),
+	component: WorkspaceUserPage,
 });

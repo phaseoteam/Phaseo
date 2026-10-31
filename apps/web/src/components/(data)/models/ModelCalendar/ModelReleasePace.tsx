@@ -1,5 +1,3 @@
-"use client";
-
 import * as Recharts from "recharts";
 import { useMemo } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";

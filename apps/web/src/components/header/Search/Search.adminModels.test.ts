@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { mergeAdminSearchModels } from "./Search.adminModels";
 import { addRecentItem, togglePinnedItem } from "./Search.storage";
 import type { SearchData } from "@/lib/fetchers/search/types";

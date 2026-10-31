@@ -1,5 +1,3 @@
-"use client";
-
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { useEffect, useState } from "react";
 import { MessageSquare, Scale } from "lucide-react";

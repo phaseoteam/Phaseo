@@ -1,5 +1,3 @@
-"use client";
-
 // Purpose: Show a preset's published versions and the labels that point at them
 // Why: Requests can pin "@slug@production"; moving the label changes what they
 //      run, so choosing an earlier version for it is the rollback
@@ -33,7 +31,7 @@ import {
 	setPresetVersionLabelAction,
 	type PresetVersionSummary,
 	type PresetVersionsWithLabels,
-} from "@/app/(dashboard)/settings/presets/actions";
+} from "@/features/settings/presets/actions";
 import { cn } from "@/lib/utils";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { buildPromptTemplate, draftFromTemplate, renderPromptPreview } from "./PresetPromptTemplateEditor";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "@/components/link";
 import {

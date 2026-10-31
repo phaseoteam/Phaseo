@@ -1,5 +1,3 @@
-"use client";
-
 import dynamic from "@/lib/dynamic";
 import { useCallback, useEffect, useState } from "react";
 

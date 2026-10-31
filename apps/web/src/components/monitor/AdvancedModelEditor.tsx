@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { useState, useTransition, useEffect } from "react";
 import {
@@ -39,7 +37,7 @@ import {
 	fetchOrganisations,
 	fetchProviders,
 	fetchBenchmarks,
-} from "@/app/(dashboard)/internal/audit/actions-advanced";
+} from "@/features/internal/audit/actions-advanced";
 import { useRouter } from "@/lib/navigation";
 import {
 	AlertDialog,

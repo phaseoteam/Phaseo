@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState, useEffect } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
@@ -31,7 +29,7 @@ import { SensitiveValue } from "@/components/display/SensitiveValue";
 import {
 	SetUpAutoTopUp,
 	DisableAutoTopUpServer,
-} from "@/app/(dashboard)/settings/credits/actions";
+} from "@/features/settings/credits/actions";
 import { toast } from "sonner";
 import { CreditCard, Info, Loader2, ShieldCheck } from "lucide-react";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { reorderByokEntries, type ByokKeyEntry } from "./ByokProviderKeys";
 
 function key(id: string, routingMode: "priority" | "fallback", sortOrder: number): ByokKeyEntry {

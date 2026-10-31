@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import englishCatalogue from "../../messages/en-GB/catalogue.json";
 import germanCatalogue from "../../messages/de-DE/catalogue.json";
 

@@ -1,21 +1,19 @@
-// Next: src/app/[locale]/(dashboard)/models/(list)/page.tsx
+// The models list lives under a pathless `_list` group so model pages don't
+// inherit its loading skeleton.
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/models/(list)/page";
-import Loading from "@/app/[locale]/(dashboard)/models/(list)/loading";
-import { modelsListCatalogueQuery, modelsListContextQuery } from "@/app/[locale]/(dashboard)/models/(list)/page.queries";
+import ModelsPage, { getModelsMetadata } from "@/features/models/ModelsPage";
+import ModelsLoading from "@/features/models/ModelsLoading";
+import { modelsListCatalogueQuery, modelsListContextQuery } from "@/features/models/page.queries";
 
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+const routeMetadata = createServerFn({ method: "GET" }).handler(async () => toSerializableMetadata(await getModelsMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/models/_list/")({
-	loader: async ({ context, params, location }) => {
-		const metadataPromise = routeMetadata({ data: { params, search: location.search as Record<string, unknown> } });
+	loader: async ({ context }) => {
+		const metadataPromise = routeMetadata();
 		metadataPromise.catch(() => undefined);
 		const listContext = await context.queryClient.ensureQueryData(modelsListContextQuery());
 		// Stream the catalogue instead of holding navigation until it completes.
@@ -23,5 +21,6 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/models/_list/")({
 		return metadataLoaderData(metadataPromise);
 	},
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: withLoading(nextPageComponent(Page), Loading),
+	pendingComponent: ModelsLoading,
+	component: ModelsPage,
 });

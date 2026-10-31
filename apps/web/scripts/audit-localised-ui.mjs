@@ -12,34 +12,20 @@ const config = ts.readConfigFile(configPath, ts.sys.readFile);
 if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'));
 const parsedConfig = ts.parseJsonConfigFileContent(config.config, ts.sys, webRoot, undefined, configPath);
 const resolverCache = ts.createModuleResolutionCache(webRoot, (value) => value, parsedConfig.options);
-const routeNames = /^(page|layout|template|loading|error|global-error|global-not-found|not-found|default)\.[cm]?[jt]sx?$/;
 const sources = new Map();
 const seeds = [];
+// The page routes (the locale tree) and the root route are the seeds; the
+// audit follows their imports into the pages. Server-only routes such as the
+// OG images are not localised UI.
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const file = path.join(directory, entry.name);
     if (entry.isDirectory()) walk(file);
-    else if (routeNames.test(entry.name)) seeds.push(file);
+    else if (/\.[cm]?[jt]sx?$/.test(entry.name) && !/\.(test|gen)\./.test(entry.name) && !entry.name.startsWith("-")) seeds.push(file);
   }
 }
-walk(path.join(webRoot, 'src/app/[locale]'));
-// A second page tree bypasses locale providers and can fail prerendering even
-// when the same page is re-exported by a localized wrapper.
-function assertLocalePages(directory) {
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    const file = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      if (relative(file) !== 'src/app/[locale]') assertLocalePages(file);
-    } else if (/^page\.[cm]?[jt]sx?$/.test(entry.name)) {
-      throw new Error(`Page outside the locale tree: ${relative(file)}. Move its implementation under src/app/[locale].`);
-    }
-  }
-}
-assertLocalePages(path.join(webRoot, 'src/app'));
-for (const name of ['layout.tsx', 'global-error.tsx', 'global-not-found.tsx', 'error.tsx', 'not-found.tsx']) {
-  const file = path.join(webRoot, 'src/app', name);
-  if (fs.existsSync(file)) seeds.push(file);
-}
+walk(path.join(webRoot, "src/routes/{-$locale}"));
+seeds.push(path.join(webRoot, "src/routes/__root.tsx"));
 function follow(file) {
 	file = path.resolve(file);
   if (sources.has(file) || !/\.[cm]?[jt]sx?$/.test(file) || /\.(test|stories)\./.test(file) || !file.startsWith(path.join(webRoot, 'src') + path.sep)) return;
@@ -59,7 +45,7 @@ function follow(file) {
 }
 seeds.forEach(follow);
 // In-memory fixtures exercise the same collector and review policy as real routes.
-const fixturePath = path.join(webRoot, 'src/app/[locale]/__audit_fixture__/page.tsx');
+const fixturePath = path.join(webRoot, 'src/features/__audit_fixture__/AuditFixturePage.tsx');
 if (process.argv.includes('--self-test')) {
   sources.set(fixturePath, ts.createSourceFile(fixturePath, `
     export default function Fixture() {

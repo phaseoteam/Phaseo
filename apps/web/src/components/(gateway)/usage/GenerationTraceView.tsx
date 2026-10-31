@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency } from "@phaseo/app-kit/format";
 import * as React from "react";
 import { useTranslations } from "@/i18n/react";
@@ -11,7 +9,7 @@ import { DetailTimingBar } from "./DetailDialogPrimitives";
 import { RoutingTracePanel } from "./RoutingTracePanel";
 import { OrderedLifecycleEvents, readLifecycleJournal } from "./OrderedLifecycleEvents";
 import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
-import type { GatewayIoLog, RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
+import type { GatewayIoLog, RequestRow } from "@/features/gateway/usage/server-actions";
 
 type TraceTimingItem = {
 	key: string;

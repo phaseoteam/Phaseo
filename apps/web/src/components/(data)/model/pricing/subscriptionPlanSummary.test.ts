@@ -1,3 +1,4 @@
+import { it, expect } from "vitest";
 import { toSubscriptionPlanSummaries } from "./subscriptionPlanSummary";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 

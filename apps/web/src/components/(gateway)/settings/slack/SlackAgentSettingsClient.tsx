@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState, useTransition } from "react";
 import { useSearchParams } from "@/lib/navigation";
 import { useLocale, useTranslations } from "@/i18n/react";
@@ -24,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { INCLUDED_ANSWERS_PER_PERSON } from "@/lib/slack-agent/pricing";
-import { startSlackInstall, startSlackPermissionsUpdate, uninstallSlackAgent, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
+import { startSlackInstall, startSlackPermissionsUpdate, uninstallSlackAgent, updateSlackAgent } from "@/features/settings/slack/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { AccessField, Choice, FieldProblem, LimitsFields, ModelChoiceFields, ModelField, Notice, Section, SlackError } from "./SlackAgentFields";
 import { SlackCustomAppSection } from "./SlackCustomAppSection";

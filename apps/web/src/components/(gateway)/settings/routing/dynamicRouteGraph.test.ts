@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { DynamicRouteEdge, DynamicRouteNode } from "@/lib/fetchers/internal/settingsTypes";
 import { branchLabel, orderedRouteNodes } from "./dynamicRouteGraph";
 

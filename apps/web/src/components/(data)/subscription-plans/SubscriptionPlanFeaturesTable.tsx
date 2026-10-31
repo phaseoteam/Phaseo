@@ -9,8 +9,8 @@ interface SubscriptionPlanFeaturesTableProps {
 }
 
 export default function SubscriptionPlanFeaturesTable({ features, messages }: SubscriptionPlanFeaturesTableProps) {
-	if (!features?.length) return null;
 	const t = useTranslations();
+	if (!features?.length) return null;
 	const availability = (value?: string) => value === "included" ? t("Catalogue.models.included") : value === "excluded" ? t("Common.ui.providerCardCopy.excluded") : value === "limited" ? t("Common.ui.subscriptionCatalog.limited") : value === "conditional" ? t("Common.ui.subscriptionCatalog.conditional") : t("Common.status.unknown");
 
 	return (

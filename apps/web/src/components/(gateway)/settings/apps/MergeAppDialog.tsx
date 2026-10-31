@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useMemo, useState } from "react";
@@ -21,7 +20,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { mergeAppsAction } from "@/app/(dashboard)/settings/apps/actions";
+import { mergeAppsAction } from "@/features/settings/apps/actions";
 import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 

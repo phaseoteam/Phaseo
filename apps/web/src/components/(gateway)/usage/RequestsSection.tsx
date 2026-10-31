@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useRef } from "react";
 import { useTranslations } from "@/i18n/react";
 import { createPortal } from "react-dom";
@@ -18,7 +16,7 @@ import { runUsageViewRefresh } from "@/lib/gateway/usage/refreshBus";
 import type {
 	ProviderMetadataEntry,
 	RequestRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { type ModelMetadataMap } from "./model-display";
 import RequestColumnSettings, {
 	useRequestColumns,

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { Info, Plus, Trash2 } from "lucide-react";
@@ -38,7 +36,7 @@ import { localizedProviderCredentialLabel, localizedProviderKeyHint, localizedPr
 import {
 	createByokKeyAction,
 	updateByokKeyAction,
-} from "@/app/(dashboard)/settings/byok/actions";
+} from "@/features/settings/byok/actions";
 
 type Props = {
 	providerId?: string;

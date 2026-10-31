@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { resolveEffectiveProviderModalities } from "./providerModalities";
 
 describe("resolveEffectiveProviderModalities", () => {

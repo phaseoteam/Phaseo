@@ -1,4 +1,3 @@
-"use client";
 import { startOfUTCWeek } from "./time-buckets";
 
 import { useState } from "react";

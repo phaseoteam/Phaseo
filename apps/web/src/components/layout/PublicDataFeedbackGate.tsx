@@ -1,5 +1,3 @@
-"use client";
-
 import { usePathname } from "@/i18n/navigation";
 import { useTranslations } from "@/i18n/react";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";

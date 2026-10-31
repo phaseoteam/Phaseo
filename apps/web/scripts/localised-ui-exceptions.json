@@ -102,7 +102,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(auth)/activate/page.tsx"
+      "src/features/activate/ActivatePage.tsx"
     ],
     "texts": [
       "?user_code=XXXX-XXXX"
@@ -170,7 +170,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/internal/data/models/edit/[...modelId]/ModelLegacyEditor.tsx"
+      "src/features/internal/data/models/edit/modelId/ModelLegacyEditor.tsx"
     ],
     "texts": [
       "openai/model-latest"
@@ -179,7 +179,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/internal/data/models/new/NewModelForm.tsx"
+      "src/features/internal/data/models/new/NewModelForm.tsx"
     ],
     "texts": [
       "starter-monthly",
@@ -193,7 +193,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/internal/credits/page.tsx",
+      "src/features/internal/credits/InternalCreditsPage.tsx",
       "src/components/(gateway)/credits/RedeemCreditCodeCard.tsx"
     ],
     "texts": [
@@ -203,7 +203,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/internal/gateway-benchmark/GatewayBenchmarkClient.tsx"
+      "src/features/internal/gateway-benchmark/GatewayBenchmarkClient.tsx"
     ],
     "texts": [
       "ms |",
@@ -359,7 +359,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/tools/latency-comparison/LatencyComparisonClient.tsx"
+      "src/features/tools/latency-comparison/LatencyComparisonClient.tsx"
     ],
     "texts": [
       "sk-..."

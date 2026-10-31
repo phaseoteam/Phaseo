@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useTranslations } from "@/i18n/react";
 import { Plus, Save, Trash2 } from "lucide-react";
@@ -13,7 +11,7 @@ import {
 	type ProviderManagedCatalogModel,
 	type ProviderRateLimit,
 	type ProviderRateLimits,
-} from "@/app/(dashboard)/settings/account/providers/actions";
+} from "@/features/settings/account/providers/actions";
 
 const FIELDS = [
 	["requests_per_minute", "requestsPerMinute"],

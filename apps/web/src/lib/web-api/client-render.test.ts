@@ -1,123 +1,75 @@
-import { createElement } from "react";
+import { test, expect, afterEach, vi } from "vitest";
 import { fetchPublicWebApi, fetchOptionalPublicWebApi } from "./client";
 
-// Use React's real Server Component cache and Next's installed RSC renderer.
-// The default Node export intentionally does not memoize outside an RSC render.
-jest.mock("react", () => {
-	const path = jest.requireActual<typeof import("node:path")>("node:path");
-	return jest.requireActual(path.join(path.dirname(require.resolve("react/package.json")), "cjs/react.react-server.development.js"));
-});
-
-const { renderToReadableStream } = jest.requireActual<{
-	renderToReadableStream: (model: unknown, manifest: object, options: { onError: (error: unknown) => string }) => Promise<ReadableStream>;
-}>("next/dist/compiled/react-server-dom-webpack/server.node");
-
-async function render(read: () => Promise<unknown>) {
-	async function Component() {
-		await read();
-		return null;
-	}
-	const errors: unknown[] = [];
-	const stream = await renderToReadableStream(createElement(Component), {}, {
-		onError: error => { errors.push(error); return "test-render-error"; },
-	});
-	await new Response(stream).text();
-	if (errors.length) throw errors[0];
-}
+// Server rendering has no per-render memo outside React Server Components:
+// the route's QueryClient shares reads within a request, and Cloudflare owns
+// freshness between requests. These tests pin that nothing is retained
+// across reads at this layer.
 
 afterEach(() => {
-	jest.restoreAllMocks();
+	vi.restoreAllMocks();
 	Reflect.deleteProperty(globalThis, "window");
 });
 
-test("deduplicates concurrent and later public reads, but starts fresh on the next render", async () => {
-	const network = jest.spyOn(global, "fetch").mockImplementation(async () => Response.json({ model: { name: "GPT" } }));
-	const read = async () => {
-		const [metadata, page] = await Promise.all([
-			fetchPublicWebApi("/api/_web/models/openai%2Fgpt"),
-			fetchPublicWebApi("/api/_web/models/openai%2Fgpt", { signal: undefined }),
-		]);
-		expect(metadata).toEqual({ model: { name: "GPT" } });
-		expect(page).toBe(metadata);
-		expect(await fetchOptionalPublicWebApi("/api/_web/models/openai%2Fgpt")).toBe(metadata);
-	};
-	await render(read);
-	expect(network).toHaveBeenCalledTimes(1);
-	await render(read);
+test("never retains a public response for a later read", async () => {
+	const network = vi.spyOn(global, "fetch").mockImplementation(async () => Response.json({ model: { name: "GPT" } }));
+	await expect(fetchPublicWebApi("/api/_web/models/openai%2Fgpt")).resolves.toEqual({ model: { name: "GPT" } });
+	await expect(fetchOptionalPublicWebApi("/api/_web/models/openai%2Fgpt")).resolves.toEqual({ model: { name: "GPT" } });
 	expect(network).toHaveBeenCalledTimes(2);
 });
 
 test("keeps paths and query projections distinct", async () => {
-	const network = jest.spyOn(global, "fetch").mockImplementation(async () => Response.json({ models: [] }));
-	await render(async () => Promise.all([
+	const network = vi.spyOn(global, "fetch").mockImplementation(async () => Response.json({ models: [] }));
+	await Promise.all([
 		fetchPublicWebApi("/api/_web/models?projection=cards"),
 		fetchPublicWebApi("/api/_web/models?projection=detail"),
 		fetchPublicWebApi("/api/_web/benchmarks"),
-	]));
+	]);
 	expect(network).toHaveBeenCalledTimes(3);
+	expect(network.mock.calls.map(([url]) => String(url).replace(/^.*\/api\/_web\//, ""))).toEqual(["models?projection=cards", "models?projection=detail", "benchmarks"]);
 });
 
-test("shares optional 404 reads within the render and retries on a later render", async () => {
-	const network = jest.spyOn(global, "fetch").mockImplementation(async () => new Response(null, { status: 404 }));
-	const read = async () => {
-		expect(await Promise.all([
-			fetchOptionalPublicWebApi("/api/_web/models/missing"),
-			fetchOptionalPublicWebApi("/api/_web/models/missing"),
-		])).toEqual([null, null]);
-	};
-	await render(read);
-	expect(network).toHaveBeenCalledTimes(1);
-	await render(read);
+test("returns null for a missing optional read and retries it next time", async () => {
+	const network = vi.spyOn(global, "fetch").mockImplementation(async () => new Response(null, { status: 404 }));
+	await expect(fetchOptionalPublicWebApi("/api/_web/models/missing")).resolves.toBeNull();
+	await expect(fetchOptionalPublicWebApi("/api/_web/models/missing")).resolves.toBeNull();
 	expect(network).toHaveBeenCalledTimes(2);
 });
 
-test("shares upstream failures within a render without retaining them on the next request", async () => {
-	const network = jest.spyOn(global, "fetch")
+test("does not retain upstream failures for the next request", async () => {
+	const network = vi.spyOn(global, "fetch")
 		.mockResolvedValueOnce(new Response(null, { status: 503 }))
 		.mockResolvedValueOnce(Response.json({ models: [] }));
-	await render(async () => {
-		await expect(fetchPublicWebApi("/api/_web/models")).rejects.toMatchObject({ status: 503 });
-		await expect(fetchPublicWebApi("/api/_web/models")).rejects.toMatchObject({ status: 503 });
-	});
-	expect(network).toHaveBeenCalledTimes(1);
-	await render(async () => {
-		await expect(fetchPublicWebApi("/api/_web/models")).resolves.toEqual({ models: [] });
-	});
+	await expect(fetchPublicWebApi("/api/_web/models")).rejects.toMatchObject({ status: 503 });
+	await expect(fetchPublicWebApi("/api/_web/models")).resolves.toEqual({ models: [] });
 	expect(network).toHaveBeenCalledTimes(2);
 });
 
-test("keeps a caller's aborted request separate from a shared public read", async () => {
-	const network = jest.spyOn(global, "fetch").mockImplementation(async (_url, init) => {
+test("keeps a caller's aborted request separate from other public reads", async () => {
+	const network = vi.spyOn(global, "fetch").mockImplementation(async (_url, init) => {
 		init?.signal?.throwIfAborted();
 		return Response.json({ models: [] });
 	});
 	const controller = new AbortController();
 	controller.abort();
-	await render(async () => {
-		await expect(fetchPublicWebApi("/api/_web/models", { signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
-		await expect(fetchPublicWebApi("/api/_web/models")).resolves.toEqual({ models: [] });
-		await expect(fetchPublicWebApi("/api/_web/models")).resolves.toEqual({ models: [] });
-	});
+	await expect(fetchPublicWebApi("/api/_web/models", { signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
+	await expect(fetchPublicWebApi("/api/_web/models")).resolves.toEqual({ models: [] });
 	expect(network).toHaveBeenCalledTimes(2);
 });
 
-test("does not memoize credentialed reads", async () => {
-	const network = jest.spyOn(global, "fetch").mockImplementation(async () => Response.json({ models: [] }));
-	await render(async () => Promise.all([
-		fetchPublicWebApi("/api/_web/models", { credentials: "same-origin" }),
+test("sends credentialed reads with their credentials", async () => {
+	const network = vi.spyOn(global, "fetch").mockImplementation(async () => Response.json({ models: [] }));
+	await Promise.all([
 		fetchPublicWebApi("/api/_web/models", { credentials: "same-origin" }),
 		fetchPublicWebApi("/api/_web/models"),
-	]));
-	expect(network).toHaveBeenCalledTimes(3);
+	]);
+	expect(network).toHaveBeenCalledTimes(2);
+	expect(network.mock.calls.map(([, init]) => init?.credentials)).toEqual(["same-origin", "omit"]);
 });
 
-test("keeps browser revalidation independent even in a render context", async () => {
+test("uses relative URLs in the browser", async () => {
 	Object.defineProperty(globalThis, "window", { configurable: true, value: {} });
-	const network = jest.spyOn(global, "fetch").mockImplementation(async () => Response.json({ models: [] }));
-	await render(async () => Promise.all([
-		fetchPublicWebApi("/api/_web/models"),
-		fetchPublicWebApi("/api/_web/models"),
-	]));
-	expect(network).toHaveBeenCalledTimes(2);
+	const network = vi.spyOn(global, "fetch").mockImplementation(async () => Response.json({ models: [] }));
+	await fetchPublicWebApi("/api/_web/models");
 	expect(network.mock.calls.every(([url]) => url === "/api/_web/models")).toBe(true);
 });

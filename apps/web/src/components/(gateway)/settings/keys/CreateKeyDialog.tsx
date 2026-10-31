@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import React, { useState } from "react";
 import {
@@ -14,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { createApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { createApiKeyAction } from "@/features/settings/keys/actions";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,

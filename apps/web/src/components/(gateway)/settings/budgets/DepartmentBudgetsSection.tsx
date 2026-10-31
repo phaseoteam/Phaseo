@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type FormEvent } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
@@ -31,7 +29,7 @@ import {
 	deleteDepartmentBudget,
 	updateDepartmentBudget,
 	type DepartmentBudgetActionResult,
-} from "@/app/(dashboard)/settings/budgets/actions";
+} from "@/features/settings/budgets/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useLimitClock } from "../keys/useLimitClock";
 import { BUDGET_WINDOWS, budgetPercentFraction, budgetTone } from "./budgetForecast";

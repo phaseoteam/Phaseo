@@ -1,4 +1,3 @@
-"use client";
 import { notFound } from "@/lib/navigation";
 import { PrivateSettingsQuery } from "../PrivateSettingsQuery";
 import WebhooksSettingsClient, { type WebhookEndpoint } from "./WebhooksSettingsClient";

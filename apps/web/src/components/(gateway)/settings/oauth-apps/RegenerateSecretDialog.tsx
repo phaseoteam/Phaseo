@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
@@ -42,7 +40,7 @@ export default function RegenerateSecretDialog({
 
 		try {
 			const { regenerateClientSecretAction } = await import(
-				"@/app/(dashboard)/settings/oauth-apps/actions"
+				"@/features/settings/oauth-apps/actions"
 			);
 
 			const result = await write(regenerateClientSecretAction({ data: clientId }));

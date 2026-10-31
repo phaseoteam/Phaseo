@@ -1,19 +1,18 @@
-// Next: src/app/[locale]/(dashboard)/subscription-plans/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { routeMetadataInput, toSerializableMetadata, type RouteMetadataInput } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/subscription-plans/page";
-import Loading from "@/app/[locale]/(dashboard)/subscription-plans/loading";
+import SubscriptionPlansPage, { getSubscriptionPlansMetadata } from "@/features/subscription-plans/SubscriptionPlansPage";
+import SubscriptionPlansLoading from "@/features/subscription-plans/SubscriptionPlansLoading";
 
 const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+	.validator((input: RouteMetadataInput) => input)
+	.handler(async ({ data }) => toSerializableMetadata(await getSubscriptionPlansMetadata(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/subscription-plans/")({
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: routeMetadataInput(params, location.search) })),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: withLoading(nextPageComponent(Page), Loading),
+	pendingComponent: SubscriptionPlansLoading,
+	component: SubscriptionPlansPage,
 });

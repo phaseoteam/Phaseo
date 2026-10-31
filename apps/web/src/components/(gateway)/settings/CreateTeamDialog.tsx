@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
 import React, { useState } from "react";
@@ -25,7 +24,7 @@ import {
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import AcceptInviteDialog from "./AcceptInviteDialog";
-import { createTeamAction } from "@/app/(dashboard)/settings/teams/actions";
+import { createTeamAction } from "@/features/settings/teams/actions";
 
 export default function CreateTeamDialog({
 	currentUserId,

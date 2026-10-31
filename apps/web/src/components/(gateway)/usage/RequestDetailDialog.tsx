@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
@@ -44,7 +42,7 @@ import {
 	RequestRow,
 	type GatewayIoLog,
 	type ProviderMetadataEntry,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { cn } from "@/lib/utils";
 import {
 	buildUsageFromNormalizedRequestFields,

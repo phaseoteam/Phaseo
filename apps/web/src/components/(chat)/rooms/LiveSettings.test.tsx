@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";

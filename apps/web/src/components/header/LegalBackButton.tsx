@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslations } from "@/i18n/react";

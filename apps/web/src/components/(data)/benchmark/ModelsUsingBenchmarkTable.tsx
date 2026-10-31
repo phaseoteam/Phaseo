@@ -1,4 +1,3 @@
-"use client";
 import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 
 import React from "react";

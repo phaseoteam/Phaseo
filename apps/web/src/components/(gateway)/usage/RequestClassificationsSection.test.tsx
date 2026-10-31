@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
@@ -5,7 +6,7 @@ import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
 import RequestClassificationsSection, { readRequestClassifications } from "./RequestClassificationsSection";
 import type { RequestClassifierSummary } from "./requestClassifierLabels";
 
-jest.mock("@/lib/navigation", () => ({
+vi.mock("@/lib/navigation", () => ({
 	useSearchParams: () => new URLSearchParams("usage_preset=last_7d"),
 }));
 

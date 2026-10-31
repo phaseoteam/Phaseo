@@ -1,9 +1,11 @@
+import { test, expect, vi } from "vitest";
 import React from "react";
 import { AppIntlProvider } from "@/i18n/react";
+import { nestDottedMessageKeys } from "@/i18n/message-overlays";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GenerationTraceView } from "./GenerationTraceView";
 import { OrderedLifecycleEvents, readLifecycleJournal } from "./OrderedLifecycleEvents";
-import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
+import type { RequestRow } from "@/features/gateway/usage/server-actions";
 
 import messages0 from "../../../../messages/en-GB/settings-ui.json";
 import messages1 from "../../../../messages/es-ES/settings-ui.json";
@@ -16,12 +18,12 @@ import messages7 from "../../../../messages/hi/settings-ui.json";
 import messages8 from "../../../../messages/ar-SA/settings-ui.json";
 const catalogs = { "en-GB": messages0, "es-ES": messages1, "fr-FR": messages2, "de-DE": messages3, "pt-BR": messages4, "ja": messages5, "zh-Hans": messages6, "hi": messages7, "ar-SA": messages8 } as const;
 
-jest.mock("./RoutingTracePanel", () => ({ RoutingTracePanel: () => null }));
-jest.mock("./DetailDialogPrimitives", () => ({ DetailTimingBar: () => null }));
+vi.mock("./RoutingTracePanel", () => ({ RoutingTracePanel: () => null }));
+vi.mock("./DetailDialogPrimitives", () => ({ DetailTimingBar: () => null }));
 
 test.each(Object.keys(catalogs) as Array<keyof typeof catalogs>)("renders retained tools and final gateway text without missing messages in %s", (locale) => {
 	const messages = catalogs[locale];
-	const html = renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
+	const html = renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: nestDottedMessageKeys(messages) }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
 		status: "stored", storage_provider: "cloudflare_r2", bytes: 100, retention_until: null, error: null,
 		payload: {
 			gateway_response: { output_text: "Final gateway answer" },
@@ -44,12 +46,12 @@ test.each(Object.keys(catalogs) as Array<keyof typeof catalogs>)("renders retain
 		{ sequence: 7, type: "provider.started", span_id: "retry", call_kind: "retry", elapsed_ms: 6, timestamp_ms: 1006 },
 		{ sequence: 8, type: "provider.started", span_id: "child", call_kind: "nested", elapsed_ms: 7, timestamp_ms: 1007 },
 	] });
-	expect(() => renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><OrderedLifecycleEvents journal={journal!} toolResults={new Map()} /></AppIntlProvider>)).not.toThrow();
+	expect(() => renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: nestDottedMessageKeys(messages) }}><OrderedLifecycleEvents journal={journal!} toolResults={new Map()} /></AppIntlProvider>)).not.toThrow();
 });
 
 test.each(Object.keys(catalogs) as Array<keyof typeof catalogs>)("says zero data retention skipped the I/O log, in the reader's language, in %s", (locale) => {
 	const messages = catalogs[locale];
-	const html = renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
+	const html = renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: nestDottedMessageKeys(messages) }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
 		status: "not_enabled", storage_provider: null, bytes: null, retention_until: null,
 		error: "Skipped: zero data retention is required for this request", reason: "zero_data_retention", payload: null,
 	}} /></AppIntlProvider>);

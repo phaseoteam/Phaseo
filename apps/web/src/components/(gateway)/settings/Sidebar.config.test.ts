@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getActiveSettingsNav, getSettingsSidebar, isSettingsNavChildActive } from "./Sidebar.config";
 
 describe("settings sidebar navigation", () => {

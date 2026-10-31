@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { formatRelativeToNow } from "@/lib/formatRelative";
 import { useLocale, useTranslations } from "@/i18n/react";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { ForecastMeter } from "@/components/(gateway)/usage/ForecastMeter";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";

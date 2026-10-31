@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import {
 	DEFAULT_DISPLAY_PREFERENCES,
 	formatDisplayCalendarDate,
@@ -103,8 +104,14 @@ describe("display preferences", () => {
 	it("reuses formatters for repeated settings instead of rebuilding them per value", () => {
 		const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale: "en-GB" as const, timeZone: "UTC" };
 		const options = { month: "long", year: "numeric", timeZone: "UTC" } as const;
-		const dateFormat = jest.spyOn(Intl, "DateTimeFormat");
-		const numberFormat = jest.spyOn(Intl, "NumberFormat");
+		// Count constructions but build real formatters (a bare spy's instances lack the prototype).
+		const { DateTimeFormat, NumberFormat } = Intl;
+		const dateFormat = vi.spyOn(Intl, "DateTimeFormat").mockImplementation(function (...args: ConstructorParameters<typeof DateTimeFormat>) {
+			return new DateTimeFormat(...args);
+		} as never);
+		const numberFormat = vi.spyOn(Intl, "NumberFormat").mockImplementation(function (...args: ConstructorParameters<typeof NumberFormat>) {
+			return new NumberFormat(...args);
+		} as never);
 		try {
 			const months = Array.from({ length: 200 }, (_, index) =>
 				formatDisplayDateParts(Date.UTC(2026, index % 12, 15), preferences, options));

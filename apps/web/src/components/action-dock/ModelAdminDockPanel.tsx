@@ -1,10 +1,9 @@
-"use client";
 import { useTranslations } from "@/i18n/react";
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LoaderCircle, RefreshCw, Search } from "lucide-react";
-import { searchAdminModelsForDockAction } from "@/app/(dashboard)/internal/data/modelAdminDockActions";
+import { searchAdminModelsForDockAction } from "@/features/internal/data/modelAdminDockActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";

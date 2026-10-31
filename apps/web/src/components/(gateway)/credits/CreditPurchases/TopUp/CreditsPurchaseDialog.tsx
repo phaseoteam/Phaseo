@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { useRouter, useSearchParams } from "@/lib/navigation";
@@ -22,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import { Spinner } from "@/components/ui/spinner";
-import { ChargeSavedPayment, ReviewPurchaseLocation } from "@/app/(dashboard)/settings/credits/actions";
+import { ChargeSavedPayment, ReviewPurchaseLocation } from "@/features/settings/credits/actions";
 import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { COUNTRY_OPTIONS } from "@/lib/countryCodes";

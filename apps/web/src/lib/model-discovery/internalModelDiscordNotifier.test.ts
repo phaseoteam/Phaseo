@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import {
 	buildWebhookPayload,
 	filterUnannouncedModels,
@@ -108,7 +109,7 @@ describe("internal model discord notifier", () => {
 	});
 
 	it("retries and throws on webhook failure", async () => {
-		const requestMock = jest.fn(async () => {
+		const requestMock = vi.fn(async () => {
 			return {
 				status: 500,
 				body: "temporary upstream issue",
@@ -132,9 +133,9 @@ describe("internal model discord notifier", () => {
 				maxAttempts: 2,
 				retryDelayMs: 0,
 				logger: {
-					info: jest.fn(),
-					warn: jest.fn(),
-					error: jest.fn(),
+					info: vi.fn(),
+					warn: vi.fn(),
+					error: vi.fn(),
 				},
 			})
 		).rejects.toThrow(/Discord webhook request failed/);
@@ -184,7 +185,7 @@ describe("internal model discord notifier", () => {
 	});
 
 	it("normalizes allowed Discord hosts to a canonical request endpoint", async () => {
-		const requestMock = jest.fn(async () => {
+		const requestMock = vi.fn(async () => {
 			return {
 				status: 200,
 				body: JSON.stringify({ id: "message-1", channel_id: "channel-1" }),
@@ -236,7 +237,7 @@ describe("internal model discord notifier", () => {
 				requestImpl: async () => ({ status: 204, body: "" }),
 				maxAttempts: 1,
 				retryDelayMs: 0,
-				logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+				logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 			})
 		).rejects.toThrow(/without a saved message/);
 	});

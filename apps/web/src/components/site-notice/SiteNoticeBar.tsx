@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";

@@ -1,18 +1,14 @@
-// Next: src/app/[locale]/(dashboard)/games/layout.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
+import { toSerializableMetadata } from "@/lib/start/metadata";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextLayoutComponent } from "@/lib/start/nextPage";
-import Layout, * as mod from "@/app/[locale]/(dashboard)/games/layout";
+import GamesLayout, { getGamesLayoutMetadata } from "@/features/games/GamesLayout";
 
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+const routeMetadata = createServerFn({ method: "GET" }).handler(async () => toSerializableMetadata(await getGamesLayoutMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/games")({
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: () => metadataLoaderData(routeMetadata()),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextLayoutComponent(Layout),
+	component: GamesLayout,
 });

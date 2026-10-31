@@ -1,17 +1,19 @@
+import { test, expect, vi } from "vitest";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import OtherInfo from "./OtherInfo";
 
-jest.mock("@/i18n/server", () => ({
-	getLocale: async () => "en-GB",
-	getTranslations: async () => (key: string) => key,
+vi.mock("@/i18n/react", () => ({
+	useLocale: () => "en-GB",
+	useTranslations: () => (key: string) => key,
 }));
 
-jest.mock("@/components/display/DisplayValue", () => ({
+vi.mock("@/components/display/DisplayValue", () => ({
 	DisplayNumber: ({ value, options }: { value: number; options?: Intl.NumberFormatOptions }) => <span>{new Intl.NumberFormat("en-GB", options).format(value)}</span>,
 }));
 
 test("renders total and active parameters alongside training tokens and license", async () => {
-	const html = renderToStaticMarkup(await OtherInfo({
+	const html = renderToStaticMarkup(createElement(OtherInfo, {
 		details: [
 			{ detail_name: "parameter_count", detail_value: 501_000_000_000 },
 			{ detail_name: "active_parameter_count", detail_value: 23_000_000_000 },
@@ -27,7 +29,7 @@ test("renders total and active parameters alongside training tokens and license"
 });
 
 test("omits active parameters when the model does not report them", async () => {
-	const html = renderToStaticMarkup(await OtherInfo({
+	const html = renderToStaticMarkup(createElement(OtherInfo, {
 		details: [{ detail_name: "parameter_count", detail_value: 7_000_000_000 }],
 	}));
 	expect(html).not.toContain("activeParameters");

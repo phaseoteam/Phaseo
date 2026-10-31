@@ -5,7 +5,7 @@ import Statsig, { type DynamicConfig, type StatsigUser as ServerStatsigUser } fr
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { currentRequestCookie } from "@/lib/server/currentRequest";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { waitUntil } from "@/compat/wait-until";
+import { waitUntil } from "@/lib/start/wait-until";
 import { getPhaseoEnv } from "@/lib/deployEnv";
 import type { InternalAuthStatsigData } from "@/lib/fetchers/internal/authTypes";
 

@@ -5,9 +5,9 @@
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { defer, useMatches } from "@tanstack/react-router";
 import { Suspense, use, useEffect } from "react";
-import { getCurrentRequest } from "@/compat/request-context";
+import { getCurrentRequest } from "@/lib/start/request-context";
 import { metadataToHead } from "./metadataToHead";
-import type { SerializableMetadata } from "./nextPage";
+import type { SerializableMetadata } from "./metadata";
 
 // Next's HTML-limited bot list (Googlebot etc. render JS, but still index the
 // first HTML), plus generic crawler words for bots that identify themselves.

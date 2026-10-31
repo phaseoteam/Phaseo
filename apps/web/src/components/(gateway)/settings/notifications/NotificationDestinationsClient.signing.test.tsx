@@ -1,19 +1,20 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import NotificationDestinationsClient from "./NotificationDestinationsClient";
 import type { NotificationDestination } from "@/lib/fetchers/internal/settingsTypes";
 
-jest.mock("@/i18n/react", () => ({ useTranslations: () => Object.assign((key: string) => key, { has: () => false, rich: (key: string) => key }) }));
-jest.mock("sonner", () => ({ toast: { error: jest.fn(), success: jest.fn(), loading: jest.fn(), promise: jest.fn() } }));
-jest.mock("../PrivateSettingsQuery", () => ({ useSettingsWrite: () => (promise: Promise<unknown>) => promise }));
-jest.mock("@/app/(dashboard)/settings/credits/actions", () => ({
-	createNotificationDestination: jest.fn(),
-	deleteNotificationDestination: jest.fn(),
-	rotateNotificationDestinationSecret: jest.fn(),
-	setBillingNotificationPreference: jest.fn(),
-	testNotificationConfiguration: jest.fn(),
-	testNotificationDestination: jest.fn(),
+vi.mock("@/i18n/react", () => ({ useTranslations: () => Object.assign((key: string) => key, { has: () => false, rich: (key: string) => key }) }));
+vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn(), promise: vi.fn() } }));
+vi.mock("../PrivateSettingsQuery", () => ({ useSettingsWrite: () => (promise: Promise<unknown>) => promise }));
+vi.mock("@/features/settings/credits/actions", () => ({
+	createNotificationDestination: vi.fn(),
+	deleteNotificationDestination: vi.fn(),
+	rotateNotificationDestinationSecret: vi.fn(),
+	setBillingNotificationPreference: vi.fn(),
+	testNotificationConfiguration: vi.fn(),
+	testNotificationDestination: vi.fn(),
 }));
-jest.mock("@/components/(gateway)/settings/notifications/NotificationRouteSelector", () => ({ __esModule: true, default: () => null }));
+vi.mock("@/components/(gateway)/settings/notifications/NotificationRouteSelector", () => ({ default: () => null }));
 
 const destination = (overrides: Partial<NotificationDestination>): NotificationDestination => ({ id: "d1", name: "Ops hook", type: "custom_webhook", targetPreview: "hooks.example.com/••••hook", status: "active", createdAt: null, ...overrides });
 const render = (destinations: NotificationDestination[]) => renderToStaticMarkup(<NotificationDestinationsClient initialDestinations={destinations} initialModelDeprecationEnabled={false} initialModelDeprecationIncludeAdmins={false} initialNotificationRoutes={{}} />);

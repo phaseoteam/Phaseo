@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { ShieldOff } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
@@ -18,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { SettingsSpendRuleOptions } from "@/lib/fetchers/internal/settingsTypes";
-import { liftSpendBlock } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
+import { liftSpendBlock } from "@/features/settings/notifications/spend-rules-actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useSpendActionError } from "./SpendRuleEditorSheet";
 import { useScopeLabel, useSpendUsd } from "./spendAlertsUi";

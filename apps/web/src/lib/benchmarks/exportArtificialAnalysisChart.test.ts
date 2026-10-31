@@ -1,8 +1,9 @@
-﻿/** @jest-environment jsdom */
+﻿/** @vitest-environment jsdom */
+import { it, expect, afterEach, vi } from "vitest";
 import { toPng } from "html-to-image";
 import { exportArtificialAnalysisChart } from "./exportArtificialAnalysisChart";
-jest.mock("html-to-image", () => ({ toPng: jest.fn() }));
-const capture = jest.mocked(toPng);
+vi.mock("html-to-image", () => ({ toPng: vi.fn() }));
+const capture = vi.mocked(toPng);
 function chart() {
 	const node = document.createElement("section");
 	node.innerHTML = '<h3>Cost vs intelligence</h3><svg><foreignObject x="20" y="40" width="174" height="24"><button style="color: rgb(200, 100, 50)"><img src="/light.svg" style="display:none" /><img src="/dark.svg" /><span>Model One</span></button></foreignObject></svg>';

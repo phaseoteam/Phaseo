@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";

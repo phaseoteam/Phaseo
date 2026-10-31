@@ -186,7 +186,7 @@ async function exercise(browser, bundle, css, mode) {
 
 (async () => {
 	const bundle = await bundleRoom();
-	const cssFile = path.join(appRoot, "src/app/globals.css");
+	const cssFile = path.join(appRoot, "src/styles/globals.css");
 	const { css } = await require("postcss")([require("@tailwindcss/postcss")()]).process(await fs.readFile(cssFile, "utf8"), { from: cssFile });
 	const browser = await chromium.launch({ channel: "msedge", headless: true });
 	try { for (const mode of ["working", "denied", "blocked", "stalled"]) await exercise(browser, bundle, css, mode); }

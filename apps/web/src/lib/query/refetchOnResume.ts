@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 
 const RESUME_REFETCH_INTERVAL_MS = 60 * 1_000;

@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { forecastPeriod, kpiFooters, periodKpiForecasts, type ForecastPeriod, type KpiCard, type KpiId } from "./periodUsageKpis";
 
 const DAY_MS = 86_400_000;

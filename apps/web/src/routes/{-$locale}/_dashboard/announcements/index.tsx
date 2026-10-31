@@ -1,4 +1,4 @@
-// Next: src/app/[locale]/(dashboard)/announcements/page.tsx (a redirect-only page).
+// Redirect-only: announcements moved to the blog.
 import { createFileRoute } from "@tanstack/react-router";
 import { redirectBeforeLoad, searchString } from "@/lib/start/redirectRoute";
 

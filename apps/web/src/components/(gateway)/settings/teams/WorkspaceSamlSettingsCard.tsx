@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
@@ -6,7 +5,7 @@ import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { CheckCircle2, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { updateTeamSsoSettingsAction } from "@/app/(dashboard)/settings/teams/actions";
+import { updateTeamSsoSettingsAction } from "@/features/settings/teams/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

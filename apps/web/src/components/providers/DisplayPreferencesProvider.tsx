@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";

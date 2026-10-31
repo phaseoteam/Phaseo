@@ -1,10 +1,15 @@
-jest.mock("next/headers", () => ({ cookies: jest.fn() }));
-jest.mock("@/lib/fetchers/internal/serverAccountContext", () => ({
-	getServerAccountContext: jest.fn(),
+import { describe, it, expect, beforeEach, vi } from "vitest";
+vi.mock("@/lib/server/currentRequest", () => ({
+	currentRequestCookie: vi.fn(),
+	setResponseCookie: vi.fn(),
+	deleteResponseCookie: vi.fn(),
 }));
-jest.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: jest.fn() }));
+vi.mock("@/lib/fetchers/internal/serverAccountContext", () => ({
+	getServerAccountContext: vi.fn(),
+}));
+vi.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: vi.fn() }));
 
-import { cookies } from "next/headers";
+import { currentRequestCookie, deleteResponseCookie, setResponseCookie } from "@/lib/server/currentRequest";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import {
@@ -12,20 +17,12 @@ import {
 	resolveAccessibleWorkspaceIdFromCookie,
 } from "./workspaceCookie";
 
-const cookiesMock = jest.mocked(cookies);
-const getServerAccountContextMock = jest.mocked(getServerAccountContext);
-const fetchAccountWebApiMock = jest.mocked(fetchAccountWebApi);
+const getServerAccountContextMock = vi.mocked(getServerAccountContext);
+const fetchAccountWebApiMock = vi.mocked(fetchAccountWebApi);
 
 describe("workspace cookie resolution", () => {
-	const cookieStore = {
-		get: jest.fn(),
-		set: jest.fn(),
-		delete: jest.fn(),
-	};
-
 	beforeEach(() => {
-		jest.clearAllMocks();
-		cookiesMock.mockResolvedValue(cookieStore as never);
+		vi.clearAllMocks();
 		getServerAccountContextMock.mockResolvedValue({
 			accessToken: "access-token",
 			obfuscateInfo: null,
@@ -35,14 +32,14 @@ describe("workspace cookie resolution", () => {
 			signedIn: true,
 			workspaceId: "workspace-1",
 		});
-		cookieStore.get.mockReturnValue(undefined);
+		vi.mocked(currentRequestCookie).mockReturnValue(undefined);
 	});
 
 	it("does not write a cookie while resolving during a read", async () => {
 		expect(await getWorkspaceIdFromCookie()).toBe("workspace-1");
 
-		expect(cookieStore.set).not.toHaveBeenCalled();
-		expect(cookieStore.delete).not.toHaveBeenCalled();
+		expect(setResponseCookie).not.toHaveBeenCalled();
+		expect(deleteResponseCookie).not.toHaveBeenCalled();
 	});
 
 	it("persists the resolved workspace when explicitly requested", async () => {
@@ -50,11 +47,10 @@ describe("workspace cookie resolution", () => {
 			await resolveAccessibleWorkspaceIdFromCookie({ persistCookie: true }),
 		).toBe("workspace-1");
 
-		expect(cookieStore.set).toHaveBeenCalledWith(
-			expect.objectContaining({
-				name: "activeWorkspaceId",
-				value: "workspace-1",
-			}),
+		expect(setResponseCookie).toHaveBeenCalledWith(
+			"activeWorkspaceId",
+			"workspace-1",
+			expect.objectContaining({ httpOnly: true, path: "/" }),
 		);
 	});
 });

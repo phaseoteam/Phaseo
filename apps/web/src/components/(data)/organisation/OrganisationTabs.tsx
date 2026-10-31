@@ -1,6 +1,4 @@
 // components/(data)/organisation/OrganisationTabsNew.tsx
-"use client";
-
 import React from "react";
 import { useTranslations } from "@/i18n/react";
 import Link from "@/components/link";

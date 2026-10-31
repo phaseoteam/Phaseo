@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useMemo, useRef, useState, useTransition } from "react";
@@ -6,7 +5,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronDown, DollarSign, Gauge, Layers3, Loader2, Plus, ShieldCheck, Sparkles, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { updateAutoRoutingSettings } from "@/app/(dashboard)/settings/routing/actions";
+import { updateAutoRoutingSettings } from "@/features/settings/routing/actions";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

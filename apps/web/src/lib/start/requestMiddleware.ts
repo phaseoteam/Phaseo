@@ -8,7 +8,7 @@ import { headerRules, redirects, type HostCondition } from "./siteRules";
 import { readRequestCookie, serializeCookie } from "@/lib/http/cookies";
 import { defaultLocale, isPublicLocale, publicLocales, type PublicLocale } from "@/i18n/locales";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
-import { requestOverride } from "@/compat/request-override";
+import { requestOverride } from "@/lib/start/request-override";
 
 const LOCALE_COOKIE = "PHASEO_LOCALE";
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;

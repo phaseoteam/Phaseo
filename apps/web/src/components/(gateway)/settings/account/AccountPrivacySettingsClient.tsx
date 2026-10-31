@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
@@ -17,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
-import { updateGlobalGuardrailsSettings } from "@/app/(dashboard)/settings/guardrails/actions";
+import { updateGlobalGuardrailsSettings } from "@/features/settings/guardrails/actions";
 import type { AccountPrivacyPolicy, SettingsAccountPrivacyInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { formatProviderOfferDisplayName, formatProviderOfferVariantLabel, resolveProviderLogoId } from "@/lib/providers/providerOffers";
 

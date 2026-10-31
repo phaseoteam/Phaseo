@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import englishUsAuthOverrides from "../../messages/en-US/auth.overrides.json";
 import { englishAuthMessages } from "./default-messages";
 import { mergeMessages, nestDottedMessageKeys } from "./message-overlays";

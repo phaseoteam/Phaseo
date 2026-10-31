@@ -7,7 +7,7 @@ import { PostHog } from "posthog-node";
 import { POSTHOG_API_HOST, POSTHOG_KEY } from "@/lib/analytics";
 import { isAnalyticsBlockedPath, readAnalyticsConsentFromCookieHeader } from "@/lib/cookieConsent";
 import { readPosthogCookieIdentity } from "@/lib/posthogCookie";
-import { waitUntil } from "@/compat/wait-until";
+import { waitUntil } from "@/lib/start/wait-until";
 import { getPhaseoEnv } from "@/lib/deployEnv";
 
 export type ServerErrorContext = {

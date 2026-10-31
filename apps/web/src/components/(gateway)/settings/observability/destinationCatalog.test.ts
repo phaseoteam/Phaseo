@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { AVAILABLE_DESTINATIONS, COMING_SOON_DESTINATIONS } from "./destinationCatalog";
 import { OTLP_PRESETS } from "./broadcastDestinations";
 import { resolveLogo } from "@/lib/logos";

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Check, Loader2, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
@@ -12,7 +10,7 @@ import {
 	type ThemePresetId,
 } from "@phaseo/app-kit/theme";
 
-import { updateDisplayPreferences } from "@/app/(dashboard)/settings/preferences/actions";
+import { updateDisplayPreferences } from "@/features/settings/preferences/actions";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";

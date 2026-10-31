@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { createTranslator } from "@/i18n/react";
 import { getSettingsMessages } from "@/i18n/settings";
 import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messages";
@@ -21,7 +22,7 @@ describe("settings sheet translations", () => {
                 for (const child of item.children ?? []) expect(copy.labels[child.label]).toEqual(expect.any(String));
             }
         }
-        const onError = jest.fn();
+        const onError = vi.fn();
         const t = createTranslator({ locale, messages, onError } as never);
         for (const key of [
             "SettingsUI.credits.Key scope", "SettingsUI.credits.Create Management API Key",

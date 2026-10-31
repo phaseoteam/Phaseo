@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { useState, useTransition, useEffect } from "react";
 import {
@@ -24,8 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { X, Plus, Loader2 } from "lucide-react";
-import { createModel } from "@/app/(dashboard)/internal/audit/actions";
-import { fetchOrganisations } from "@/app/(dashboard)/internal/audit/actions-advanced";
+import { createModel } from "@/features/internal/audit/actions";
+import { fetchOrganisations } from "@/features/internal/audit/actions-advanced";
 import { useRouter } from "@/lib/navigation";
 
 const MODALITY_OPTIONS = [

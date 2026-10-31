@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
@@ -57,7 +55,7 @@ export default function CreateOAuthAppDialog({
 
 		try {
 			// Import the action dynamically to avoid bundling issues
-			const { createOAuthAppAction } = await import("@/app/(dashboard)/settings/oauth-apps/actions");
+			const { createOAuthAppAction } = await import("@/features/settings/oauth-apps/actions");
 
 			const result = await write(createOAuthAppAction({ data: {
 				name: formData.name,

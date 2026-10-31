@@ -9,9 +9,9 @@
    --panel-padding, --radius-card) are still used by the selectors below. The shared values live in
    packages/shared/app-kit/src/theme/tokens.ts; drop the overridden ones when these views move to
    Tailwind. */
-@font-face { font-family: Montserrat; font-style: normal; font-weight: 400; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-Regular.ttf") format("truetype"); }
-@font-face { font-family: Montserrat; font-style: normal; font-weight: 600; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-SemiBold.ttf") format("truetype"); }
-@font-face { font-family: Montserrat; font-style: normal; font-weight: 700; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-Bold.ttf") format("truetype"); }
+@font-face { font-family: Montserrat; font-style: normal; font-weight: 400; font-display: swap; src: url("../../../web/src/lib/og/assets/Montserrat-Regular.ttf") format("truetype"); }
+@font-face { font-family: Montserrat; font-style: normal; font-weight: 600; font-display: swap; src: url("../../../web/src/lib/og/assets/Montserrat-SemiBold.ttf") format("truetype"); }
+@font-face { font-family: Montserrat; font-style: normal; font-weight: 700; font-display: swap; src: url("../../../web/src/lib/og/assets/Montserrat-Bold.ttf") format("truetype"); }
 
 :root {
 	color-scheme: light;

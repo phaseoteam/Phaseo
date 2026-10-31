@@ -1,5 +1,3 @@
-"use client";
-
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Logo } from "@/components/Logo";
 import type { EpochDashboardRow } from "@/lib/benchmarks/epochDashboard";

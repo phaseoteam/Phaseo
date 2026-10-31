@@ -1,5 +1,3 @@
-"use client"
-
 import { IntentLink as Link } from "@/components/navigation/IntentLink"
 import Script from "@/components/script"
 import { useEffect, useState } from "react"

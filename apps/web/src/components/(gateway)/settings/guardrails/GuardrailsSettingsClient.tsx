@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -42,7 +40,7 @@ import {
 	type PromptInjectionAction,
 	type ProviderRestrictionMode,
 	type SensitiveInfoRulePayload,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 import { describeProviderRestrictionMode } from "./guardrailPreview";
 import {
 	getDefaultSensitiveInfoRules,

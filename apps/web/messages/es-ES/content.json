@@ -386,9 +386,9 @@
 				"description": "El modelo declarativo de componentes y estado que sustenta las interfaces interactivas de Phaseo.",
 				"usedFor": "El chat, la comparación de modelos, los ajustes, la observabilidad y todas las interfaces con estado se componen con componentes de React."
 			},
-			"nextjs": {
-				"description": "El framework de aplicaciones que reúne el renderizado en servidor, el enrutamiento, los metadatos, la caché y la interacción en cliente.",
-				"usedFor": "El catálogo público, el espacio de trabajo autenticado, los puentes de API y esta página comparten una aplicación App Router."
+			"tanstackStart": {
+				"description": "El framework de React full-stack que une el renderizado en servidor, el enrutamiento, la carga de datos y las funciones de servidor.",
+				"usedFor": "El catálogo público, el espacio de trabajo autenticado, los puentes de API y esta página comparten una sola aplicación que se ejecuta en Cloudflare Workers."
 			},
 			"tailwind": {
 				"description": "Un sistema de estilos basado en utilidades que mantiene las decisiones visuales cerca de los componentes afectados.",

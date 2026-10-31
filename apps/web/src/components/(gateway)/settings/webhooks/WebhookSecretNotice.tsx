@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import { Check, Copy, KeyRound } from "lucide-react";

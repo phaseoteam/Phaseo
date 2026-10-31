@@ -1,5 +1,3 @@
-"use client";
-
 import { ThinkingOrb, type OrbState } from "thinking-orbs";
 import { useTranslations } from "@/i18n/react";
 

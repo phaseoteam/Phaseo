@@ -1,5 +1,3 @@
-"use client";
-
 import { BarChart3, Loader2 } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";

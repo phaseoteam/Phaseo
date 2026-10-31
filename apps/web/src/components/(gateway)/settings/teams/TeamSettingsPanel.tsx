@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
@@ -26,7 +25,7 @@ import {
 	updateTeamAction,
 	deleteTeamAction,
 	updateWorkspacePublisherHandleAction,
-} from "@/app/(dashboard)/settings/teams/actions";
+} from "@/features/settings/teams/actions";
 import WorkspaceIdentitySettings from "./WorkspaceIdentitySettings";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

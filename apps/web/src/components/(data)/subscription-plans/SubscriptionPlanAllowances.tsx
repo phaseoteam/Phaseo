@@ -3,9 +3,9 @@ import type { SubscriptionAllowance } from "@/lib/fetchers/subscription-plans/ty
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function SubscriptionPlanAllowances({ allowances }: { allowances: SubscriptionAllowance[] }) {
-	if (!allowances.length) return null;
 	const locale = useLocale();
 	const t = useTranslations();
+	if (!allowances.length) return null;
 	const quantity = (value: number) => new Intl.NumberFormat(locale).format(value);
 	const qualifier = (kind: string) => kind === "up_to" ? t("Common.ui.subscriptionCatalog.up_to") : kind === "approximate" ? t("Common.ui.subscriptionCatalog.approximate") : kind === "estimated" ? t("Common.ui.subscriptionCatalog.estimated") : null;
 	const hasWindows = allowances.some((allowance) => allowance.window_kind !== "none");

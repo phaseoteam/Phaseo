@@ -1,9 +1,6 @@
-// Next: src/app/[locale]/(dashboard)/internal/data/api-providers/new/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page, * as mod from "@/app/[locale]/(dashboard)/internal/data/api-providers/new/page";
-
+import NewApiProviderPage from "@/features/internal/data/api-providers/new/NewApiProviderPage";
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/internal/data/api-providers/new/")({
-	component: nextPageComponent(Page),
+	component: NewApiProviderPage,
 });

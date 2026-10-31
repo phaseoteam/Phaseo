@@ -1,9 +1,10 @@
+import { describe, it, expect } from "vitest";
 import germanSettingsUiMessages from "../../messages/de-DE/settings-ui.json";
 import fs from "node:fs";
 import path from "node:path";
 
 function readSettingsSource(): string {
-	const root = path.resolve(__dirname, "../app/[locale]/(dashboard)/settings");
+	const root = path.resolve(__dirname, "../features/settings");
 	const files: string[] = [];
 	const visit = (directory: string) => {
 		for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {

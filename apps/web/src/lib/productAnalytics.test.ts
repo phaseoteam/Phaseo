@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import {
 	PRODUCT_ANALYTICS_EVENT,
 	captureProductEvent,

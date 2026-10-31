@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { groupModelsByReleaseMonth, searchModels } from "./ModelCombobox";
 import type { CompareModelOption } from "./types";
 
@@ -27,7 +28,7 @@ describe("groupModelsByReleaseMonth", () => {
 	});
 
 	it("labels each month once, not once per model", () => {
-		const monthLabel = jest.fn((date: Date) => date.toISOString().slice(0, 7));
+		const monthLabel = vi.fn((date: Date) => date.toISOString().slice(0, 7));
 		groupModelsByReleaseMonth(models, monthLabel, "Unknown");
 		expect(monthLabel).toHaveBeenCalledTimes(2);
 	});

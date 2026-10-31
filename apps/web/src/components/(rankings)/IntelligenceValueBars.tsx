@@ -1,4 +1,3 @@
-"use client";
 import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/Logo";
 import { ScrollArea } from "@/components/ui/scroll-area";

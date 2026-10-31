@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { dehydrate, hydrate, QueryObserver } from "@tanstack/react-query";
 import { createWebQueryClient } from "./queryClient";
 import { clearAccountQueryCache, clearAccountQueryScope } from "./invalidation";
@@ -15,10 +16,10 @@ describe("query cache isolation with the real QueryClient", () => {
 		clients.push(value);
 		return value;
 	}
-	beforeEach(() => jest.useFakeTimers());
+	beforeEach(() => vi.useFakeTimers());
 	afterEach(() => {
 		clients.splice(0).forEach((value) => value.clear());
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("isolates SSR clients and hydrates only the intended account key", async () => {

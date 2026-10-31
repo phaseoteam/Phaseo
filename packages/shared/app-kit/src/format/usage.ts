@@ -1,5 +1,5 @@
 // The website's usage dashboard formats (moved from components/(gateway)/usage/observability/ObservabilityHub.tsx and
-// app/[locale]/(dashboard)/settings/usage/ObservabilityClient.tsx), so the mobile app's usage screen reads the same.
+// apps/web/src/features/settings/usage/ObservabilityClient.tsx), so the mobile app's usage screen reads the same.
 
 /** Requests and tokens on the usage dashboard: "12,345", then compact from 100,000 ("1.2M"). */
 export function formatUsageNumber(value: number): string {

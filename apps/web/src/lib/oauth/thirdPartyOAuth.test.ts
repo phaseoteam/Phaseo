@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { isThirdPartyOAuthEnabled } from "./thirdPartyOAuth";
 
 describe("third-party OAuth rollout", () => {

@@ -1,5 +1,3 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "@/i18n/react";

@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { formatErrorListSummary } from "./errorListSummary";
 
 describe("formatErrorListSummary", () => {

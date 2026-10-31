@@ -1,6 +1,4 @@
 // components/(data)/benchmark/BenchmarkTabs.tsx
-"use client";
-
 import React from "react";
 import Link from "@/components/link";
 import { usePathname } from "@/lib/navigation";

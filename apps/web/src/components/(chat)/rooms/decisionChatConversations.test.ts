@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { listRoomHistory } from "@/lib/indexeddb/chatRoomHistory";
 import { getAllChatTags, getAllChats } from "@/lib/indexeddb/chats";
 import { createDefaultDecisionDraft } from "@/components/(chat)/DecisionComposer";
@@ -7,12 +8,12 @@ import {
 	type DecisionHistoryPayload,
 } from "./decisionChatConversations";
 
-jest.mock("@/lib/indexeddb/chatRoomHistory", () => ({
-	listRoomHistory: jest.fn(),
+vi.mock("@/lib/indexeddb/chatRoomHistory", () => ({
+	listRoomHistory: vi.fn(),
 }));
-jest.mock("@/lib/indexeddb/chats", () => ({
-	getAllChatTags: jest.fn(),
-	getAllChats: jest.fn(),
+vi.mock("@/lib/indexeddb/chats", () => ({
+	getAllChatTags: vi.fn(),
+	getAllChats: vi.fn(),
 }));
 
 const storedRun: DecisionHistoryPayload = {
@@ -30,11 +31,11 @@ const storedRun: DecisionHistoryPayload = {
 
 describe("loadDecisionConversationHistory", () => {
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it("keeps loaded runs when chat metadata cannot be read", async () => {
-		jest.mocked(listRoomHistory).mockResolvedValue([
+		vi.mocked(listRoomHistory).mockResolvedValue([
 			{
 				id: storedRun.id,
 				roomId: "decisions",
@@ -43,8 +44,8 @@ describe("loadDecisionConversationHistory", () => {
 				payload: storedRun,
 			},
 		] as never);
-		jest.mocked(getAllChats).mockRejectedValue(new Error("unavailable"));
-		jest.mocked(getAllChatTags).mockRejectedValue(new Error("unavailable"));
+		vi.mocked(getAllChats).mockRejectedValue(new Error("unavailable"));
+		vi.mocked(getAllChatTags).mockRejectedValue(new Error("unavailable"));
 
 		const result = await loadDecisionConversationHistory(
 			"typesafe/jev-1.13.0",
@@ -63,9 +64,9 @@ describe("loadDecisionConversationHistory", () => {
 			id: "decisions-chat-2",
 			title: "Saved chat",
 		});
-		jest.mocked(listRoomHistory).mockRejectedValue(new Error("unavailable"));
-		jest.mocked(getAllChats).mockResolvedValue([conversation]);
-		jest.mocked(getAllChatTags).mockRejectedValue(new Error("unavailable"));
+		vi.mocked(listRoomHistory).mockRejectedValue(new Error("unavailable"));
+		vi.mocked(getAllChats).mockResolvedValue([conversation]);
+		vi.mocked(getAllChatTags).mockRejectedValue(new Error("unavailable"));
 
 		const result = await loadDecisionConversationHistory(
 			"typesafe/jev-1.13.0",

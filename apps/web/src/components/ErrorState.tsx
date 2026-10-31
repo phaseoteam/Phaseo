@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { ArrowLeft, RotateCw } from "lucide-react";
 import Image from "@/components/image";

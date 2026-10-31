@@ -1,35 +1,35 @@
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 import { buildAnonymousStatsigUser, EMPTY_STATSIG_PROFILE } from "./shared";
 
 const mockStatsig = {
-	initialize: jest.fn().mockResolvedValue(undefined),
-	syncConfigSpecs: jest.fn().mockResolvedValue(undefined),
-	getFeatureGateWithExposureLoggingDisabledSync: jest.fn(),
-	getExperimentWithExposureLoggingDisabledSync: jest.fn(),
-	getClientInitializeResponse: jest.fn(),
+	initialize: vi.fn().mockResolvedValue(undefined),
+	syncConfigSpecs: vi.fn().mockResolvedValue(undefined),
+	getFeatureGateWithExposureLoggingDisabledSync: vi.fn(),
+	getExperimentWithExposureLoggingDisabledSync: vi.fn(),
+	getClientInitializeResponse: vi.fn(),
 };
 
-jest.mock("statsig-node-lite", () => ({ __esModule: true, default: mockStatsig }));
-jest.mock("@/lib/server/currentRequest", () => ({ currentRequestCookie: jest.fn(() => "stable-id") }));
-jest.mock("@/compat/wait-until", () => ({ waitUntil: jest.fn() }));
-jest.mock("@/lib/fetchers/internal/serverAccountContext", () => ({ getServerAccountContext: jest.fn() }));
-jest.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: jest.fn() }));
+vi.mock("statsig-node-lite", () => ({ default: mockStatsig }));
+vi.mock("@/lib/server/currentRequest", () => ({ currentRequestCookie: vi.fn(() => "stable-id"), currentRequestCookies: vi.fn(() => []), setResponseCookie: vi.fn() }));
+vi.mock("@/lib/start/wait-until", () => ({ waitUntil: vi.fn() }));
+vi.mock("@/lib/fetchers/internal/serverAccountContext", () => ({ getServerAccountContext: vi.fn() }));
+vi.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: vi.fn() }));
 
 const ORIGINAL_ENV = { ...process.env };
 
 async function loadServer(env: Record<string, string | undefined> = {}) {
-	jest.resetModules();
+	vi.resetModules();
 	process.env = { ...ORIGINAL_ENV, STATSIG_SERVER_KEY: undefined, STATSIG_SERVER_API_KEY: undefined, STATSIG_ENVIRONMENT_TIER: undefined, PHASEO_ENV: undefined, ...env };
-	const [server, { getServerAccountContext }, { fetchAccountWebApi }] = await Promise.all([
-		import("./server"),
-		import("@/lib/fetchers/internal/serverAccountContext"),
-		import("@/lib/web-api/client"),
-	]);
-	return { ...server, getServerAccountContext: jest.mocked(getServerAccountContext), fetchAccountWebApi: jest.mocked(fetchAccountWebApi) };
+	// Import one at a time: concurrent imports after resetModules can bypass the mocks.
+	const { getServerAccountContext } = await import("@/lib/fetchers/internal/serverAccountContext");
+	const { fetchAccountWebApi } = await import("@/lib/web-api/client");
+	const server = await import("./server");
+	return { ...server, getServerAccountContext: vi.mocked(getServerAccountContext), fetchAccountWebApi: vi.mocked(fetchAccountWebApi) };
 }
 
 describe("server feature flag identity", () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	});
 
 	afterAll(() => {
@@ -56,7 +56,7 @@ describe("server feature flag identity", () => {
 
 describe("server gate checks", () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	});
 
 	afterAll(() => {

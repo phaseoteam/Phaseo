@@ -1,5 +1,3 @@
-"use client";
-
 import { FlaskConical } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
 

@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { Check, Copy, KeyRound } from "lucide-react";
 import { toast } from "sonner";

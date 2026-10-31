@@ -1,5 +1,3 @@
-"use client";
-
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { MediaStudioRoom } from "@/components/(chat)/rooms/MediaStudioRoom";
 

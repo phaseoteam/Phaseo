@@ -2,7 +2,7 @@ import { createRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { createWebQueryClient } from "@/lib/query/queryClient";
 import { RouteErrorBoundary, RouteNotFound } from "@/components/layout/RouteBoundaries";
-import { parseSearchAsStrings, stringifySearchFromStrings } from "@/lib/start/nextPage";
+import { parseSearchAsStrings, stringifySearchFromStrings } from "@/lib/start/search";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {

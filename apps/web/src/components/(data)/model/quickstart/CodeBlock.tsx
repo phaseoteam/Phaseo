@@ -1,5 +1,3 @@
-"use client";
-
 // src/components/code/CodeBlock.tsx
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/i18n/react";

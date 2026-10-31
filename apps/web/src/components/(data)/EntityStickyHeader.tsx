@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "@/components/image";
 import Link from "@/components/link";
 import { useEffect, useState } from "react";

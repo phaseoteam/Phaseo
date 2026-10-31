@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { createTranslator } from "@/i18n/react";
 import { getPublicMessages } from "@/i18n/messages";
 import { formatRoomError } from "./formatRoomError";

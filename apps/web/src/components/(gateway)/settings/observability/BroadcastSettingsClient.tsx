@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useMemo, useState, useTransition } from "react";
@@ -31,7 +29,7 @@ import {
 	enableBroadcastDestinationAction,
 	refreshBroadcastDestinationStatusAction,
 	sendBroadcastSampleTraceAction,
-} from "@/app/(dashboard)/settings/broadcast/actions";
+} from "@/features/settings/broadcast/actions";
 import {
 	AVAILABLE_DESTINATIONS,
 	COMING_SOON_DESTINATIONS,

@@ -6,42 +6,6 @@ import type { Plugin } from "vite";
 const isServerEnv = (name: string | undefined) => name === "ssr";
 
 /**
- * tsconfig maps `@/app/(dashboard)/*` to two folders and TypeScript tries
- * both. Vite's alias only knows one target, so resolve the fallbacks here.
- */
-export function aliasFallbacks(root: string): Plugin {
-	const sourceExtensions = [".tsx", ".ts", ".jsx", ".js", ".mjs"];
-	const fallbacks: Array<[string, string[]]> = [
-		["@/app/(dashboard)/", ["src/app/[locale]/(dashboard)/", "src/app/(dashboard)/"]],
-		["@/app/(auth)/", ["src/app/[locale]/(auth)/"]],
-		["@/app/(legal)/", ["src/app/[locale]/(legal)/"]],
-	];
-	const find = (base: string) => {
-		if (fs.existsSync(base) && fs.statSync(base).isFile()) return base;
-		for (const ext of sourceExtensions) if (fs.existsSync(base + ext)) return base + ext;
-		for (const ext of sourceExtensions) {
-			const index = path.join(base, `index${ext}`);
-			if (fs.existsSync(index)) return index;
-		}
-		return undefined;
-	};
-	return {
-		name: "phaseo:alias-fallbacks",
-		enforce: "pre",
-		resolveId(source) {
-			for (const [prefix, targets] of fallbacks) {
-				if (!source.startsWith(prefix)) continue;
-				for (const target of targets) {
-					const found = find(path.join(root, target, source.slice(prefix.length)));
-					if (found) return found;
-				}
-			}
-			return null;
-		},
-	};
-}
-
-/**
  * @vercel/og's edge build fetches its fallback font with
  * `new URL("./Geist-Regular.ttf", import.meta.url)` at module load, which is
  * not a fetchable URL inside a Worker. Inline the font instead. (Pinned to

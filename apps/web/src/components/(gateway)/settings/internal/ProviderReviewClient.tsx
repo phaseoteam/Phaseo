@@ -1,11 +1,9 @@
-"use client";
-
 import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Check, ChevronLeft, ChevronRight, CircleAlert, Clock3, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import { fetchMoreProviderApplicationsAction, reviewProviderApplicationAction } from "@/app/(dashboard)/settings/internal/provider-review/actions";
+import { fetchMoreProviderApplicationsAction, reviewProviderApplicationAction } from "@/features/settings/internal/provider-review/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

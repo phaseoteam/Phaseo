@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useMemo, useState } from "react";

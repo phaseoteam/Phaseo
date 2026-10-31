@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {

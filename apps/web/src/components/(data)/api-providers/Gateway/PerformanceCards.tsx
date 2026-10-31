@@ -1,4 +1,3 @@
-import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { apiProviderMetricsQuery } from "../apiProvider.queries";
 import PerformanceCardsClient, {
@@ -30,19 +29,8 @@ function calculateDelta(
 	};
 }
 
-export default function PerformanceCards({
-	params,
-}: {
-	params?: Promise<{ apiProvider: string }> | { apiProvider: string };
-}) {
+export default function PerformanceCards({ apiProvider }: { apiProvider: string }) {
 	const t = useTranslations("Catalogue.providers");
-	// Route wrappers pass already-fulfilled thenables, so use() returns synchronously.
-	const resolvedParams = params
-		? "then" in params && typeof params.then === "function"
-			? use(params as Promise<{ apiProvider: string }>)
-			: (params as { apiProvider: string })
-		: undefined;
-	const apiProvider = resolvedParams?.apiProvider ?? "";
 
 	const { data: metrics } = useSuspenseQuery(apiProviderMetricsQuery(apiProvider, 24 * 7));
 

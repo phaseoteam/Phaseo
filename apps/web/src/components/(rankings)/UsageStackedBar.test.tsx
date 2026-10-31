@@ -1,31 +1,32 @@
+import { it, expect, afterEach, vi, type Mock } from "vitest";
 import { isValidElement, useState, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ChartTooltip } from "@/components/ui/chart";
 import { UsageStackedBar } from "./UsageStackedBar";
 import { keyForSeries } from "./chart-colors";
 
-jest.mock("@/i18n/react", () => ({ useLocale: () => "en-GB", useTranslations: () => (key: string) => key === "usageTotal" ? "Total" : key }));
-jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({ useDisplayFormatters: () => ({
+vi.mock("@/i18n/react", () => ({ useLocale: () => "en-GB", useTranslations: () => (key: string) => key === "usageTotal" ? "Total" : key }));
+vi.mock("@/components/providers/DisplayPreferencesProvider", () => ({ useDisplayFormatters: () => ({
     calendarDate: (value: string) => value, number: (value: number) => String(value),
 }) }));
-jest.mock("@/lib/web-api/client", () => ({}));
-jest.mock("@/lib/fetchers/frontend/fetchRankingSections", () => ({}));
-jest.mock("react", () => ({
-	...jest.requireActual("react"),
-	useEffect: jest.fn(),
-	useState: jest.fn((initial) => [typeof initial === "function" ? initial() : initial, jest.fn()]),
+vi.mock("@/lib/web-api/client", () => ({}));
+vi.mock("@/lib/fetchers/frontend/fetchRankingSections", () => ({}));
+vi.mock("react", async () => ({
+	...(await vi.importActual("react")),
+	useEffect: vi.fn(),
+	useState: vi.fn((initial) => [typeof initial === "function" ? initial() : initial, vi.fn()]),
 }));
-jest.mock("@/components/link", () => () => null);
-jest.mock("lucide-react", () => ({ Check: () => null, ChevronDown: () => null }));
-jest.mock("recharts", () => ({ BarChart: () => null, Bar: () => null, XAxis: () => null, YAxis: () => null, CartesianGrid: () => null }));
-jest.mock("@/components/Logo", () => ({ Logo: () => null }));
-jest.mock("@/components/ui/chart", () => ({ ChartContainer: () => null, ChartTooltip: () => null }));
-jest.mock("@/components/ui/button", () => ({ Button: () => null }));
-jest.mock("@/components/ui/dropdown-menu", () => ({
+vi.mock("@/components/link", () => ({ default: () => null }));
+vi.mock("lucide-react", () => ({ Check: () => null, ChevronDown: () => null }));
+vi.mock("recharts", () => ({ BarChart: () => null, Bar: () => null, XAxis: () => null, YAxis: () => null, CartesianGrid: () => null }));
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/components/ui/chart", () => ({ ChartContainer: () => null, ChartTooltip: () => null }));
+vi.mock("@/components/ui/button", () => ({ Button: () => null }));
+vi.mock("@/components/ui/dropdown-menu", () => ({
 	DropdownMenu: () => null, DropdownMenuContent: () => null, DropdownMenuItem: () => null, DropdownMenuTrigger: () => null,
 }));
-jest.mock("@/components/(rankings)/EmptyChartPreview", () => ({ EmptyChartPreview: () => null }));
-jest.mock("@/components/(rankings)/EmptyLeaderboardPreview", () => ({ EmptyLeaderboardPreview: () => null }));
+vi.mock("@/components/(rankings)/EmptyChartPreview", () => ({ EmptyChartPreview: () => null }));
+vi.mock("@/components/(rankings)/EmptyLeaderboardPreview", () => ({ EmptyLeaderboardPreview: () => null }));
 
 function findTooltip(node: ReactNode): ReactElement | undefined {
 	if (Array.isArray(node)) {
@@ -38,11 +39,11 @@ function findTooltip(node: ReactNode): ReactElement | undefined {
 	return node.type === ChartTooltip ? node : findTooltip(node.props.children);
 }
 
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => vi.restoreAllMocks());
 
 it.each([false, true])("includes models outside the visible top ten in chart totals (hover=%s)", (hover) => {
-	jest.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-05T12:00:00Z"));
-	if (hover) (useState as jest.Mock).mockImplementationOnce(() => [keyForSeries("lab/model1"), jest.fn()]);
+	vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-05T12:00:00Z"));
+	if (hover) (useState as Mock).mockImplementationOnce(() => [keyForSeries("lab/model1"), vi.fn()]);
 	const models = Array.from({ length: 12 }, (_, index) => ({
 		bucket: "2026-09-28T00:00:00Z", model_id: `lab/model${index + 1}`, tokens: index + 1, requests: 1,
 	}));

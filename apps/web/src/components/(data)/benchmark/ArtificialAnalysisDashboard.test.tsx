@@ -1,3 +1,4 @@
+import { it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
 import { createElement } from "react";
@@ -8,12 +9,12 @@ import type { DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard"
 
 let mockSection = "comparisons";
 
-jest.mock("nuqs", () => {
+vi.mock("nuqs", () => {
 	const parser = { withDefault: () => parser };
-	return { parseAsString: parser, parseAsArrayOf: () => parser, useQueryStates: () => [{ aaModels: null, aaEffort: "", aaEfforts: null, aaCreator: "", aaLayout: "overview", aaBench: "terminalBench40", aaDomain: "financeAndAccounting", aaSection: mockSection, aaCompare: "cost", aaMeasure: "task", aaChart: "", aaLabels: "true", aaGrouped: "true", aaSort: "asc", aaScatter: "" }, jest.fn()] };
+	return { parseAsString: parser, parseAsArrayOf: () => parser, useQueryStates: () => [{ aaModels: null, aaEffort: "", aaEfforts: null, aaCreator: "", aaLayout: "overview", aaBench: "terminalBench40", aaDomain: "financeAndAccounting", aaSection: mockSection, aaCompare: "cost", aaMeasure: "task", aaChart: "", aaLabels: "true", aaGrouped: "true", aaSort: "asc", aaScatter: "" }, vi.fn()] };
 });
-jest.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children) }));
-jest.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children) }));
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
 
 it.each(["comparisons", "tokenUsage", "cost", "benchmarks", "capabilities"])("keeps the comparison workspace mounted for the legacy %s URL", (section) => {
 	mockSection = section;

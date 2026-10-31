@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "@/lib/navigation";
 import { useTranslations } from "@/i18n/react";

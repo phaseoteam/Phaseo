@@ -1,13 +1,11 @@
 // TeamInviteDialog.tsx (client) — unchanged except for minor tidy comments
-"use client";
-
 import React, { useMemo, useState } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	revealTeamInviteAction,
 	revokeTeamInviteAction,
-} from "@/app/(dashboard)/settings/teams/actions";
+} from "@/features/settings/teams/actions";
 
 import {
 	Dialog,

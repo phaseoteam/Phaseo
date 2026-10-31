@@ -12,7 +12,7 @@ function isMessageObject(value: unknown): value is Record<string, unknown> {
 	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-/** Convert legacy dotted sentence keys to the nested paths next-intl expects. */
+/** Convert legacy dotted sentence keys to the nested paths use-intl expects. */
 export function nestDottedMessageKeys<T>(messages: T): T {
 	return nestDottedMessageObject(messages) as T;
 }

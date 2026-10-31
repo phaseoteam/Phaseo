@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";

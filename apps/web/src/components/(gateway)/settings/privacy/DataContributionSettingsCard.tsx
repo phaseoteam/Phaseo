@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useMemo, useState, useTransition } from "react";
@@ -30,7 +28,7 @@ import {
 	deleteDataContributionClassifier,
 	setDataContributionClassifierEnabled,
 	updateDataContributionConsent,
-} from "@/app/(dashboard)/settings/privacy/actions";
+} from "@/features/settings/privacy/actions";
 
 const DEFAULT_CATEGORIES = JSON.stringify({
 	product: ["support", "sales", "onboarding"],

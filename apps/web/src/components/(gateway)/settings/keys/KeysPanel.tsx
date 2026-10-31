@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
@@ -81,7 +79,7 @@ import {
 	deleteApiKeyAction,
 	lookupApiKeyAction,
 	updateApiKeyAction,
-} from "@/app/(dashboard)/settings/keys/actions";
+} from "@/features/settings/keys/actions";
 import { toast } from "sonner";
 import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

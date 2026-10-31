@@ -1,5 +1,5 @@
-// `next/navigation` on TanStack Router. Components keep their Next imports;
-// Vite aliases `next/navigation` to this module.
+// App navigation helpers on TanStack Router: useRouter, usePathname,
+// useSearchParams, useParams, and throwing notFound/redirect helpers.
 import {
 	notFound as tanstackNotFound,
 	redirect as tanstackRedirect,
@@ -8,7 +8,7 @@ import {
 	useRouter as useTanstackRouter,
 } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { refreshServerData } from "@/compat/refresh";
+import { refreshServerData } from "@/lib/start/refresh";
 
 export class ReadonlyURLSearchParams extends URLSearchParams {}
 

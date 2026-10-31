@@ -1,7 +1,7 @@
 /**
  * A history navigation may replay cached HTML without restoring its JS heap.
  * Run in <head>, before private server-rendered markup can paint or hydrate.
- * Do not defer this through next/script: even beforeInteractive is queued.
+ * Do not defer this through the Script component: even beforeInteractive is queued.
  * This is static source only; never interpolate account data into it.
  */
 export const HISTORY_PRIVACY_SCRIPT = `(() => {

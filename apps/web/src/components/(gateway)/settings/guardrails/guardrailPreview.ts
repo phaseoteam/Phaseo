@@ -1,4 +1,4 @@
-import type { ProviderRestrictionMode } from "@/app/(dashboard)/settings/guardrails/actions";
+import type { ProviderRestrictionMode } from "@/features/settings/guardrails/actions";
 
 export type GuardrailPreviewProvider = {
 	id: string;

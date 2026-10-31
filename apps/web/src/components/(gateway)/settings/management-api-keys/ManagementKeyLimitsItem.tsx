@@ -1,4 +1,3 @@
-"use client";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 import React, { useState } from "react";
@@ -19,7 +18,7 @@ import { toast } from "sonner";
 import {
 	updateManagementKeyLimitsAction,
 	ManagementKeyLimitPayload,
-} from "@/app/(dashboard)/settings/management-api-keys/actions";
+} from "@/features/settings/management-api-keys/actions";
 type KeyLimitPayload = ManagementKeyLimitPayload;
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/i18n/react";

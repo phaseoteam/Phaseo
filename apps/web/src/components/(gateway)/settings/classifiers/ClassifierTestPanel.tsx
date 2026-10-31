@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useTransition } from "react";
 import { FlaskConical, Loader2 } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
@@ -7,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { testClassifier, type ClassifierTestResult } from "@/app/(dashboard)/settings/classifiers/actions";
+import { testClassifier, type ClassifierTestResult } from "@/features/settings/classifiers/actions";
 import { formatUsd } from "./classifierForm";
 
 type Outcome = { kind: "result"; result: ClassifierTestResult } | { kind: "privacy" } | { kind: "error"; message: string | null } | null;

@@ -3,13 +3,13 @@ import { resolve } from "node:path";
 
 const root = process.cwd();
 const files = {
-	index: "apps/web/src/app/[locale]/(dashboard)/trust/page.tsx",
-	security: "apps/web/src/app/[locale]/(dashboard)/trust/security/page.tsx",
-	subprocessors: "apps/web/src/app/[locale]/(dashboard)/trust/subprocessors/page.tsx",
-	dpa: "apps/web/src/app/[locale]/(dashboard)/trust/dpa/page.tsx",
+	index: "apps/web/src/features/trust/TrustPage.tsx",
+	security: "apps/web/src/features/trust/security/SecurityPage.tsx",
+	subprocessors: "apps/web/src/features/trust/subprocessors/SubprocessorsPage.tsx",
+	dpa: "apps/web/src/features/trust/dpa/DpaPage.tsx",
 	claims: "apps/web/src/lib/trust-centre.ts",
-	privacy: "apps/web/src/app/[locale]/(legal)/privacy/page.tsx",
-	terms: "apps/web/src/app/[locale]/(legal)/terms/page.tsx",
+	privacy: "apps/web/src/features/privacy/PrivacyPage.tsx",
+	terms: "apps/web/src/features/terms/TermsPage.tsx",
 };
 
 const content = Object.fromEntries(

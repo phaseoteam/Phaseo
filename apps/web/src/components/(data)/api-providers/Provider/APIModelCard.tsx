@@ -1,6 +1,4 @@
 ﻿// components/providers/APIModelCard.tsx
-"use client";
-
 import React, { useMemo } from "react";
 import { useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";

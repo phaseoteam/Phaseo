@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo } from "react";
 import { useTranslations } from "@/i18n/react";
 import type { TableColumnDefinition } from "./tablePreferences";

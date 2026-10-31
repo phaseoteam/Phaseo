@@ -1,4 +1,3 @@
-"use client";
 import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
@@ -7,7 +6,7 @@ import { invalidateAccountQueries } from "@/lib/query/invalidation";
 import { useState, useTransition, type ReactNode } from "react";
 import { ChevronLeft, KeyRound, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { createPrivateModelAction, deletePrivateModelAction, updatePrivateModelAction } from "@/app/(dashboard)/settings/workspaces/private-models/actions";
+import { createPrivateModelAction, deletePrivateModelAction, updatePrivateModelAction } from "@/features/settings/workspaces/private-models/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

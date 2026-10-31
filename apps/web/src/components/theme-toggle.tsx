@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";

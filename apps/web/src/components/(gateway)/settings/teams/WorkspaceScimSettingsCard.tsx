@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
@@ -16,7 +14,7 @@ import {
 	revokeWorkspaceScimTokenAction,
 	updateWorkspaceScimSettingsAction,
 	type WorkspaceScimSettings,
-} from "@/app/(dashboard)/settings/teams/actions";
+} from "@/features/settings/teams/actions";
 
 const SCIM_BASE_URL = "https://phaseo.app/scim/v2";
 

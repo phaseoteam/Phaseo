@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { Check, ChevronsUpDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -27,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import type { SettingsClassifier, SettingsClassifiersInitialData } from "@/lib/fetchers/internal/settingsTypes";
-import { createClassifier, deleteClassifier, updateClassifier, type ClassifierActionError } from "@/app/(dashboard)/settings/classifiers/actions";
+import { createClassifier, deleteClassifier, updateClassifier, type ClassifierActionError } from "@/features/settings/classifiers/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { GatewayModelCombobox, useGatewayModelOptions } from "../GatewayModelCombobox";
 import { CLASSIFIER_PRESETS, type ClassifierPresetId } from "./classifierPresets";

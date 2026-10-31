@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import Link from "@/components/link";
 import { ExternalLink, ChevronDown, ChevronRight } from "lucide-react";

@@ -7,8 +7,8 @@ interface CountriesGridProps {
 }
 
 export default function CountriesGrid({ countries }: CountriesGridProps) {
+	const t = useTranslations("Catalogue.countries");
 	if (!countries.length) {
-		const t = useTranslations("Catalogue.countries");
 		return (
 			<p className="text-sm text-muted-foreground">
 				{t("noCountryData")}

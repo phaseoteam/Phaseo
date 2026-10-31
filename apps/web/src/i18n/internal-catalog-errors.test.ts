@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { localizedInternalCatalogError } from "./internal-catalog-errors";
 import { WebApiError } from "@/lib/web-api/client";
 
@@ -5,8 +6,8 @@ const translate = Object.assign((key: never) => `localized:${key}`, { has: () =>
 const prefix = "Common.ui.pricingEditorCopy.";
 
 describe("localized internal catalog failures", () => {
-	beforeEach(() => jest.spyOn(console, "error").mockImplementation(() => {}));
-	afterEach(() => jest.restoreAllMocks());
+	beforeEach(() => vi.spyOn(console, "error").mockImplementation(() => {}));
+	afterEach(() => vi.restoreAllMocks());
 	it.each([[401, "signInToContinue"], [403, "noPermission"], [400, "checkRecordValues"]])("translates API status %s without displaying backend prose", (status, key) => {
 		expect(localizedInternalCatalogError(new WebApiError("/catalog", status, "Raw English server detail"), translate, prefix + "saveFailed")).toBe(`localized:${prefix}${key}`);
 	});

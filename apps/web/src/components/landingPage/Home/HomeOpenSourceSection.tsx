@@ -1,5 +1,3 @@
-"use client";
-
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import Image from "@/components/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";

@@ -1,10 +1,7 @@
-// Next: src/app/[locale]/(dashboard)/gateway/marketplace/publishers/[handle]/page.tsx
 import { createFileRoute } from "@tanstack/react-router";
-import { nextPageComponent } from "@/lib/start/nextPage";
-import Page from "@/app/[locale]/(dashboard)/gateway/marketplace/publishers/[handle]/page";
-import { resolveMarketplacePublisher } from "@/app/[locale]/(dashboard)/gateway/marketplace/publishers/[handle]/page.functions";
+import MarketplacePublisherPage from "@/features/gateway/marketplace/publishers/handle/MarketplacePublisherPage";
+import { resolveMarketplacePublisher } from "@/features/gateway/marketplace/publishers/handle/page.functions";
 import { notFound, redirect } from "@/lib/navigation";
-
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/gateway/marketplace/publishers/$handle/")({
 	beforeLoad: async ({ params }) => {
@@ -12,5 +9,5 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/gateway/marketplace
 		if (redirectTo) redirect(redirectTo);
 		if (!found) notFound();
 	},
-	component: nextPageComponent(Page),
+	component: MarketplacePublisherPage,
 });

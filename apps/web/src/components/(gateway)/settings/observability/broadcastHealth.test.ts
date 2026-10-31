@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { broadcastHealthState, type BroadcastDestinationHealth } from "./broadcastHealth";
 
 const health = (overrides: Partial<BroadcastDestinationHealth> = {}): BroadcastDestinationHealth => ({

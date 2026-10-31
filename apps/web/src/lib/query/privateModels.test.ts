@@ -1,13 +1,14 @@
+import { describe, it, expect, vi } from "vitest";
 import { fetchAuthenticatedPrivateModels } from "./privateModels";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
-jest.mock("@/lib/web-api/client", () => ({
-	fetchAccountWebApi: jest.fn(),
+vi.mock("@/lib/web-api/client", () => ({
+	fetchAccountWebApi: vi.fn(),
 }));
 
 describe("fetchAuthenticatedPrivateModels", () => {
 	it("pins the active workspace to server-side account catalogue requests", async () => {
-		const fetchAccountWebApiMock = jest.mocked(fetchAccountWebApi);
+		const fetchAccountWebApiMock = vi.mocked(fetchAccountWebApi);
 		fetchAccountWebApiMock.mockResolvedValue({
 			private_catalogue: true,
 			models: [],

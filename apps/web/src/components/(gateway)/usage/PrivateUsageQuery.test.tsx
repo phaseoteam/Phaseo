@@ -1,13 +1,20 @@
+import { it, expect, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { PrivateUsageQuery } from "./PrivateUsageQuery";
 import { WebApiError } from "@/lib/web-api/client";
+import type { ReactNode } from "react";
+import { AppIntlProvider } from "@/i18n/react";
+import { getPublicMessages } from "@/i18n/messages";
+
+const messages = await getPublicMessages("en-GB");
+const withIntl = (node: ReactNode) => <AppIntlProvider locale="en-GB" timeZone="UTC" messages={messages}>{node}</AppIntlProvider>;
 
 const scope = { userId: "user-a", workspaceId: "workspace-a" };
 function render(error: unknown, data: string[] | undefined = ["private request"]) {
-	const query = { error, data, isFetching: false, dataUpdatedAt: 1, refetch: jest.fn() } as unknown as UseQueryResult<string[], unknown>;
-	return renderToStaticMarkup(<PrivateUsageQuery query={query} scope={scope}>{(rows) => <p>{rows.join(",")}</p>}</PrivateUsageQuery>);
+	const query = { error, data, isFetching: false, dataUpdatedAt: 1, refetch: vi.fn() } as unknown as UseQueryResult<string[], unknown>;
+	return renderToStaticMarkup(withIntl(<PrivateUsageQuery query={query} scope={scope}>{(rows) => <p>{rows.join(",")}</p>}</PrivateUsageQuery>));
 }
 
 it.each([401, 403, 404])("hides previously loaded private content after an HTTP %s", (status) => {

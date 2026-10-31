@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef, useState, useTransition } from "react";
 import { useFormatter, useLocale, useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
@@ -14,7 +12,7 @@ import {
 	saveSuccessorReplacement,
 	updateSuccessorRouting,
 	type SuccessorPricePolicy,
-} from "@/app/(dashboard)/settings/routing/actions";
+} from "@/features/settings/routing/actions";
 import { GatewayModelCombobox, useGatewayModelOptions } from "../GatewayModelCombobox";
 import { useSettingsWrite, withPrivateSettings } from "../PrivateSettingsQuery";
 import {

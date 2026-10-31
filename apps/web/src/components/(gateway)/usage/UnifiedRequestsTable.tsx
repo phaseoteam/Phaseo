@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import React, { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -69,7 +67,7 @@ import {
 	type InvestigateGenerationResult,
 	type ProviderMetadataEntry,
 	RequestRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { exportToCSV, exportToPDF } from "./export-utils";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";

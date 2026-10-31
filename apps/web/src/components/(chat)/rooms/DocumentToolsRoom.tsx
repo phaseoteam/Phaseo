@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { PanelLeft, Copy, Download } from "lucide-react";

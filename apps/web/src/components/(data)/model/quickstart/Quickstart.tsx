@@ -1,5 +1,4 @@
 // src/components/gateway/Quickstart.tsx
-"use client";
 import { Link } from "@/i18n/navigation";
 import {
 	Check,

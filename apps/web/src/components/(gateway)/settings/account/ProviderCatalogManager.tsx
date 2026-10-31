@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedProviderCatalogMessage } from "@/i18n/provider-catalog-messages";
@@ -25,7 +23,7 @@ import {
 	updateProviderCatalogAction,
 	type ProviderManagedCatalog,
 	type ProviderManagedCatalogModel,
-} from "@/app/(dashboard)/settings/account/providers/actions";
+} from "@/features/settings/account/providers/actions";
 
 type ProviderLink = { provider_slug: string; role: string; status: "pending" | "active"; canManageCatalog?: boolean };
 type Price = ProviderManagedCatalogModel["pricing"][number] & { amountDraft?: string; quantityDraft?: string };

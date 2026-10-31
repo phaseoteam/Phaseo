@@ -1,8 +1,9 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { FAQSection } from "./FAQSection";
 
-jest.mock("@/i18n/react", () => ({
+vi.mock("@/i18n/react", () => ({
 	useTranslations: () => {
 		const translate = (key: string) => key;
 		translate.rich = (key: string, values: Record<string, (children: string) => unknown>) =>
@@ -11,7 +12,7 @@ jest.mock("@/i18n/react", () => ({
 	},
 }));
 
-jest.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({
 	Link: ({ children }: { children: unknown }) => children,
 }));
 

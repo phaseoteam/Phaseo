@@ -1,6 +1,6 @@
 // Server-side feature flags: a flag is an async function that decides its
 // value for the current request. `dedupe` memoises a function per request.
-import { getCurrentRequest } from "@/compat/request-context";
+import { getCurrentRequest } from "@/lib/start/request-context";
 
 export type FlagDeclaration<V> = {
 	key: string;

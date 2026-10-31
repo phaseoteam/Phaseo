@@ -386,9 +386,9 @@
 				"description": "Le modèle déclaratif de composants et d’état qui sous-tend les interfaces interactives de Phaseo.",
 				"usedFor": "Le chat, la comparaison de modèles, les paramètres, l’observabilité et toutes les interfaces avec état sont composés de composants React."
 			},
-			"nextjs": {
-				"description": "Le framework d’application qui réunit rendu serveur, routage, métadonnées, mise en cache et interactions côté client.",
-				"usedFor": "Le catalogue public, l’espace de travail authentifié, les passerelles API et cette page partagent une seule application App Router."
+			"tanstackStart": {
+				"description": "Le framework React full-stack qui réunit le rendu côté serveur, le routage, le chargement des données et les fonctions serveur.",
+				"usedFor": "Le catalogue public, l'espace de travail authentifié, les passerelles d'API et cette page partagent une seule application exécutée sur Cloudflare Workers."
 			},
 			"tailwind": {
 				"description": "Un système de styles fondé sur des classes utilitaires qui rapproche les choix visuels des composants concernés.",

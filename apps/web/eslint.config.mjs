@@ -1,5 +1,7 @@
 // apps/web/eslint.config.mjs
 import path from "node:path";
+import react from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 const cachedFetcherRule = (name, cachedName) => ({
@@ -22,11 +24,30 @@ export default [
 		],
 	},
 	...tseslint.configs.recommended,
+	// rules-of-hooks fails the lint; the React Compiler checks (set-state-in-effect,
+	// refs, purity, ...) and exhaustive-deps warn.
+	{
+		...reactHooks.configs.flat.recommended,
+		rules: {
+			...Object.fromEntries(Object.keys(reactHooks.configs.flat.recommended.rules).map((rule) => [rule, "warn"])),
+			"react-hooks/rules-of-hooks": "error",
+		},
+	},
+	{
+		files: ["**/*.{ts,tsx}"],
+		plugins: { react },
+		settings: { react: { version: "detect" } },
+		rules: {
+			"react/jsx-key": "warn",
+			"react/no-unescaped-entities": "warn",
+		},
+	},
 	{
 		files: ["**/*.{ts,tsx}"],
 		languageOptions: {
 			parserOptions: {
-				project: [path.resolve(import.meta.dirname, "./tsconfig.json")],
+				// Includes tests, which the typecheck tsconfig leaves out.
+				project: [path.resolve(import.meta.dirname, "./tsconfig.eslint.json")],
 				tsconfigRootDir: path.resolve(import.meta.dirname),
 				ecmaVersion: "latest",
 				sourceType: "module",
@@ -54,8 +75,8 @@ export default [
 			"src/routes/*/_dashboard/families/**/*.{ts,tsx}",
 			"src/views/**/models/**/*.{ts,tsx}",
 			"src/views/**/families/**/*.{ts,tsx}",
-			"src/app/[locale]/(dashboard)/models/**/*.{ts,tsx}",
-			"src/app/[locale]/(dashboard)/families/**/*.{ts,tsx}",
+			"src/features/models/**/*.{ts,tsx}",
+			"src/features/families/**/*.{ts,tsx}",
 			"src/components/(data)/model/**/*.{ts,tsx}",
 		],
 		rules: {

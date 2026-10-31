@@ -1,8 +1,9 @@
+import { describe, it, expect, vi } from "vitest";
 import { readBoundedTextBody } from "@/lib/server/boundedRequestBody";
 
 describe("readBoundedTextBody", () => {
 	it("rejects a declared oversized body without reading it", async () => {
-		const cancel = jest.fn();
+		const cancel = vi.fn();
 		const body = new ReadableStream<Uint8Array>({ cancel });
 		const request = new Request("https://phaseo.app/webhook", {
 			method: "POST",
@@ -19,7 +20,7 @@ describe("readBoundedTextBody", () => {
 	});
 
 	it("cancels a lengthless stream as soon as it exceeds the limit", async () => {
-		const cancel = jest.fn();
+		const cancel = vi.fn();
 		let index = 0;
 		const chunks = [new TextEncoder().encode("valid"), new Uint8Array(1024)];
 		const body = new ReadableStream<Uint8Array>({

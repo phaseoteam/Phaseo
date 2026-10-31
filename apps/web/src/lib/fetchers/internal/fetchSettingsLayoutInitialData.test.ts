@@ -1,27 +1,28 @@
+import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from "vitest";
 import { fetchSettingsLayoutInitialData } from "./fetchSettingsLayoutInitialData";
 import { getServerAccountContext } from "./serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { resolveAccessibleWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
-jest.mock("./serverAccountContext", () => ({ getServerAccountContext: jest.fn() }));
-jest.mock("@/lib/web-api/client", () => {
-	const actual = jest.requireActual("@/lib/web-api/client");
-	return { ...actual, fetchAccountWebApi: jest.fn() };
+vi.mock("./serverAccountContext", () => ({ getServerAccountContext: vi.fn() }));
+vi.mock("@/lib/web-api/client", async () => {
+	const actual = await vi.importActual("@/lib/web-api/client");
+	return { ...actual, fetchAccountWebApi: vi.fn() };
 });
-jest.mock("@/utils/workspaceCookie", () => ({
-	resolveAccessibleWorkspaceIdFromCookie: jest.fn(),
+vi.mock("@/utils/workspaceCookie", () => ({
+	resolveAccessibleWorkspaceIdFromCookie: vi.fn(),
 }));
 
-const getServerAccountContextMock = jest.mocked(getServerAccountContext);
-const fetchAccountWebApiMock = jest.mocked(fetchAccountWebApi);
-const resolveAccessibleWorkspaceIdMock = jest.mocked(resolveAccessibleWorkspaceIdFromCookie);
+const getServerAccountContextMock = vi.mocked(getServerAccountContext);
+const fetchAccountWebApiMock = vi.mocked(fetchAccountWebApi);
+const resolveAccessibleWorkspaceIdMock = vi.mocked(resolveAccessibleWorkspaceIdFromCookie);
 
 describe("fetchSettingsLayoutInitialData", () => {
-	let warn: jest.SpyInstance;
+	let warn: MockInstance;
 
 	beforeEach(() => {
-		jest.clearAllMocks();
-		warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+		vi.clearAllMocks();
+		warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		getServerAccountContextMock.mockResolvedValue({
 			accessToken: "access-token",
 			obfuscateInfo: false,

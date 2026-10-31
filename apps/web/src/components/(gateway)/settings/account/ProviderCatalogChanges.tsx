@@ -1,8 +1,7 @@
-"use client";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { fetchProviderCatalogEditEventAction, type ProviderManagedCatalog } from "@/app/(dashboard)/settings/account/providers/actions";
+import { fetchProviderCatalogEditEventAction, type ProviderManagedCatalog } from "@/features/settings/account/providers/actions";
 import { nanosToUsd } from "@/lib/providerPricing";
 
 function pathParts(field: string) { return field.startsWith("/") ? field.split("/").slice(1).map((part) => part.replace(/~1/g, "/").replace(/~0/g, "~")) : [field]; }

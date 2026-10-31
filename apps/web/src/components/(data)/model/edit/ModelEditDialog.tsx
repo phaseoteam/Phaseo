@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect, useCallback } from "react"
 import { useTranslations } from "@/i18n/react"
 import { Pencil, Loader2, ChevronDown } from "lucide-react"
@@ -19,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { updateModel } from "@/app/(dashboard)/models/actions"
+import { updateModel } from "@/features/models/actions"
 import { fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 import BasicTab from "./tabs/BasicTab"
 import DetailsTab from "./tabs/DetailsTab"

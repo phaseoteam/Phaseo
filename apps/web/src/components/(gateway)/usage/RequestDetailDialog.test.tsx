@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
 import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
 import { AppIntlProvider } from "@/i18n/react";
@@ -6,21 +7,21 @@ import productMessages from "../../../../messages/en-GB/product.json";
 const renderToStaticMarkup = (node: React.ReactNode) => renderMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Product: productMessages }}><DisplayPreferencesProvider locale="en-GB">{node}</DisplayPreferencesProvider></AppIntlProvider>);
 import React from "react";
 
-import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
+import type { RequestRow } from "@/features/gateway/usage/server-actions";
 import RequestDetailDialog from "./RequestDetailDialog";
 import { RouteRequestDetailErrorDialog } from "./RouteRequestDetailDialog";
 
 const router = {
-	push: jest.fn(),
-	refresh: jest.fn(),
+	push: vi.fn(),
+	refresh: vi.fn(),
 };
 
-jest.mock("@/lib/navigation", () => ({
+vi.mock("@/lib/navigation", () => ({
 	useRouter: () => router,
 	useSearchParams: () => new URLSearchParams(),
 }));
 
-jest.mock("@/components/ui/dialog", () => ({
+vi.mock("@/components/ui/dialog", () => ({
 	Dialog: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 	DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 	DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
@@ -29,7 +30,7 @@ jest.mock("@/components/ui/dialog", () => ({
 	DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }));
 
-jest.mock("@/components/(data)/model/pricing/ProviderInspectorSheet", () => ({
+vi.mock("@/components/(data)/model/pricing/ProviderInspectorSheet", () => ({
 	ProviderInspectorSheet: ({ children, ...props }: { children: React.ReactNode; disablePointerDismissal?: boolean }) => (
 		<div data-disable-pointer-dismissal={String(props.disablePointerDismissal)}>{children}</div>
 	),

@@ -1,5 +1,4 @@
-// Next: app/[locale]/(dashboard)/layout.tsx — header, footer and notices for
-// every public and signed-in page.
+// Header, footer and notices for every public and signed-in page.
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { Suspense } from "react";
 import Header from "@/components/header/header";

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { priceChangePercent, redirectStartsAt, skippedCharges, successorOutcome, type SuccessorOverviewModel, type SuccessorPolicyState } from "./modelSuccessorOutcome";
 
 const base: SuccessorOverviewModel = {

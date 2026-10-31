@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, type ComponentProps } from "react";
 import Image from "@/components/image";
 import { Check, ChevronDown } from "lucide-react";
@@ -48,7 +46,7 @@ function LocaleFlag({ locale }: { locale: PublicLocale }) {
 
 /**
  * A progressively enhanced locale switcher. Explicit locale links keep the
- * control usable without client JavaScript and let next-intl generate the
+ * control usable without client JavaScript and let the locale Link generate the
  * canonical locale-prefixed URL for the supplied locale-independent path.
  */
 export function LocaleSwitcher({

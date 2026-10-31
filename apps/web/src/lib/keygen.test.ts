@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach } from "vitest";
 import crypto from "crypto";
 import { hashOAuthClientSecret, makeManagementKeyV1 } from "./keygen";
 

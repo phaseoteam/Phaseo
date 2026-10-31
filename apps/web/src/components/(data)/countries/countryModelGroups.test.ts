@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import {
 	COUNTRY_MODELS_PREVIEW_PER_ORGANISATION,

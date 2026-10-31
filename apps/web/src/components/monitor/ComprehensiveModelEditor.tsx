@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { useState, useTransition, useEffect } from "react";
 import {
@@ -25,7 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Plus, Trash2, Loader2, ExternalLink, Edit } from "lucide-react";
 import type { AuditModelData } from "@/lib/fetchers/models/table-view/getAuditModels";
-import { updateModel } from "@/app/(dashboard)/internal/audit/actions";
+import { updateModel } from "@/features/internal/audit/actions";
 import {
 	updateModelDetails,
 	updateModelLinks,
@@ -43,7 +41,7 @@ import {
 	fetchBenchmarks,
 	fetchCompleteModelData,
 	type CompleteModelData,
-} from "@/app/(dashboard)/internal/audit/actions-advanced";
+} from "@/features/internal/audit/actions-advanced";
 import { useRouter } from "@/lib/navigation";
 import {
 	AlertDialog,

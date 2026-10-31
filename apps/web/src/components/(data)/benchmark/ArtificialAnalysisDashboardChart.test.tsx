@@ -1,4 +1,5 @@
-﻿/** @jest-environment jsdom */
+﻿/** @vitest-environment jsdom */
+import { it, expect, vi } from "vitest";
 import { act, cloneElement, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { AppIntlProvider } from "@/i18n/react";
@@ -7,10 +8,10 @@ import catalogue from "../../../../messages/en-GB/catalogue.json";
 import { ArtificialAnalysisDashboardChart } from "./ArtificialAnalysisDashboardChart";
 import type { DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard";
 
-jest.mock("@/components/Logo", () => ({ Logo: () => null }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
-jest.mock("@/components/ui/scroll-area", () => ({ ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-jest.mock("recharts", () => ({ ...jest.requireActual("recharts"), ResponsiveContainer: ({ children }: { children: ReactElement }) => cloneElement(children as ReactElement<{ width: number; height: number }>, { width: 900, height: 500 }) }));
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+vi.mock("@/components/ui/scroll-area", () => ({ ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+vi.mock("recharts", async () => ({ ...(await vi.importActual("recharts")), ResponsiveContainer: ({ children }: { children: ReactElement }) => cloneElement(children as ReactElement<{ width: number; height: number }>, { width: 900, height: 500 }) }));
 
 it.each(["bars", "scatter", "cost"] as const)("retains SVG focus through inspection, pinning and dismissal (%s)", async (mode) => {
  const scatter = mode === "scatter", cost = mode === "cost";

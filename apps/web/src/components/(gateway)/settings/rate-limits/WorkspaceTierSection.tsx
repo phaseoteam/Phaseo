@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useTransition } from "react";
 import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
@@ -16,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { SettingsRateLimitTier } from "@/lib/fetchers/internal/settingsTypes";
-import { raiseRateLimitTier } from "@/app/(dashboard)/settings/rate-limits/actions";
+import { raiseRateLimitTier } from "@/features/settings/rate-limits/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 /**

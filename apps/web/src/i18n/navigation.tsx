@@ -1,11 +1,10 @@
-// Locale-aware navigation (next-intl's createNavigation, localePrefix
-// "as-needed") on TanStack Router: the default locale has no URL prefix,
-// every other public locale does.
+// Locale-aware navigation on TanStack Router: the default locale has no URL
+// prefix, every other public locale does.
 import { redirect as tanstackRedirect, useLocation, useRouter as useTanstackRouter } from "@tanstack/react-router";
 import { forwardRef, useMemo } from "react";
 import { useLocale } from "@/i18n/react";
 import NextLink, { formatHref, type LinkProps as NextLinkProps } from "@/components/link";
-import { refreshServerData } from "@/compat/refresh";
+import { refreshServerData } from "@/lib/start/refresh";
 import { defaultLocale, isPublicLocale, publicLocales, type PublicLocale } from "./locales";
 
 type Href = NextLinkProps["href"];
@@ -37,7 +36,7 @@ export function getPathname({ href, locale }: { href: Href; locale: string }): s
 }
 
 /**
- * Remember an explicit locale switch (next-intl syncs its cookie the same
+ * Remember an explicit locale switch (the same cookie the request middleware
  * way). The request middleware negotiates unprefixed paths from this cookie,
  * so without it switching to the default locale would bounce back on reload.
  */

@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "@/i18n/navigation";
@@ -8,7 +6,7 @@ import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { updateApiKeyAction } from "@/features/settings/keys/actions";
 import { keyDetailHref } from "./keyDetailHref";
 import type { KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";
 

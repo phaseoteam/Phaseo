@@ -5,7 +5,7 @@
   font-display: swap;
   src: url("./assets/montserrat-latin-wght-normal.woff2") format("woff2");
 }
-/* Phaseo defaults from apps/web/src/app/globals.css. */
+/* Phaseo defaults from apps/web/src/styles/globals.css. */
 :root {
   color-scheme: light dark;
   --bg: oklch(1 0 0);

@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { useEffect, useState } from "react";
 import { fetchPublicWebApi } from "@/lib/web-api/client";

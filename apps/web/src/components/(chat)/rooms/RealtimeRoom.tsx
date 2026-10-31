@@ -1,5 +1,3 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import NumberFlow from "@number-flow/react";
 import dynamic from "@/lib/dynamic";

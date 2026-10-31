@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { Building2 } from "lucide-react";
 import { useTranslations } from "@/i18n/react";

@@ -4,7 +4,7 @@
 // which means a caller is missing its createServerFn wrapper.
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { deleteCookie, setCookie } from "@tanstack/react-start/server";
-import { getCurrentRequest } from "@/compat/request-context";
+import { getCurrentRequest } from "@/lib/start/request-context";
 import { parseCookieHeader, type CookieOptions, type CookieRecord } from "@/lib/http/cookies";
 
 function requireRequest(): Request {

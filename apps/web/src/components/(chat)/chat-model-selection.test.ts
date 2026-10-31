@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { isChatModelRowDisabled } from "./chat-model-selection";
 
 const activeModel = {

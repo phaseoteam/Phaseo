@@ -1,4 +1,4 @@
-import type { Metadata } from "@/lib/seo/metadataTypes";
+import type { PageMetadata } from "@/lib/seo/metadataTypes";
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 
 type UnknownRecord = Record<string, unknown>;
@@ -213,7 +213,7 @@ export function analyseModelCardIndexability(
 
 export function robotsForModelIndexability(
 	analysis: ModelIndexabilityAnalysis,
-): Metadata["robots"] {
+): PageMetadata["robots"] {
 	return analysis.indexable
 		? { index: true, follow: true }
 		: { index: false, follow: true };

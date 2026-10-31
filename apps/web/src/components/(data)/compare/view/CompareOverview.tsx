@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { useTranslations } from "@/i18n/react";
 import { AudioLines, Binary, CircleCheck, FileText, Image as ImageIcon, Minus, Type, Video, type LucideIcon } from "lucide-react";

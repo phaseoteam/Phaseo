@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -37,7 +35,7 @@ import { DataContributionSettingsCard } from "./DataContributionSettingsCard";
 import {
 	updateGlobalGuardrailsSettings,
 	type ProviderRestrictionMode,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 
 const AUTO_SAVE_DEBOUNCE_MS = 650;
 

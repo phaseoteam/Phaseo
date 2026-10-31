@@ -1,9 +1,10 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import ProviderRateLimitsEditor, { draftsToLimits, parseLimit, toDrafts } from "./ProviderRateLimitsEditor";
-import type { ProviderManagedCatalogModel } from "@/app/(dashboard)/settings/account/providers/actions";
-jest.mock("@/i18n/react", () => ({ useTranslations: () => (key: string, values?: Record<string, string>) => values?.model ? `${key}:${values.model}` : key }));
-jest.mock("@/app/(dashboard)/settings/account/providers/actions", () => ({ updateProviderRateLimitsAction: jest.fn() }));
-jest.mock("sonner", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
+import type { ProviderManagedCatalogModel } from "@/features/settings/account/providers/actions";
+vi.mock("@/i18n/react", () => ({ useTranslations: () => (key: string, values?: Record<string, string>) => values?.model ? `${key}:${values.model}` : key }));
+vi.mock("@/features/settings/account/providers/actions", () => ({ updateProviderRateLimitsAction: vi.fn() }));
+vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 const models = [{
 	id: "acme/atlas", name: "Atlas", provider_model_slug: "atlas", availability: "ready", pricing: [],

@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { anySignal, timeoutSignal } from "./abortSignals";
 
 type MutableAbortSignal = {
@@ -34,21 +35,21 @@ describe("abort signal helpers without native support (older iOS Safari)", () =>
 	afterEach(() => {
 		signalStatics.any = nativeAny;
 		signalStatics.timeout = nativeTimeout;
-		jest.useRealTimers();
+		vi.useRealTimers();
 	});
 
 	it("timeoutSignal aborts with a TimeoutError after the delay", () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		const signal = timeoutSignal(1_000);
 
-		jest.advanceTimersByTime(999);
+		vi.advanceTimersByTime(999);
 		expect(signal.aborted).toBe(false);
 
-		jest.advanceTimersByTime(1);
+		vi.advanceTimersByTime(1);
 		expect(signal.aborted).toBe(true);
 		expect(signal.reason).toBeInstanceOf(DOMException);
 		expect((signal.reason as DOMException).name).toBe("TimeoutError");
-		expect(jest.getTimerCount()).toBe(0);
+		expect(vi.getTimerCount()).toBe(0);
 	});
 
 	it("anySignal follows the first input to abort, with its reason", () => {
@@ -96,23 +97,23 @@ describe("abort signal helpers without native support (older iOS Safari)", () =>
 	});
 
 	it("combines a caller signal with a fallback timeout", () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		const caller = new AbortController();
 		const countCaller = trackListeners(caller.signal);
 		const combined = anySignal([caller.signal, timeoutSignal(15_000)]);
 
-		jest.advanceTimersByTime(15_000);
+		vi.advanceTimersByTime(15_000);
 		expect(combined.aborted).toBe(true);
 		expect((combined.reason as DOMException).name).toBe("TimeoutError");
 		expect(countCaller()).toBe(0);
-		expect(jest.getTimerCount()).toBe(0);
+		expect(vi.getTimerCount()).toBe(0);
 	});
 });
 
 describe("abort signal helpers with native support", () => {
 	it("delegates to the native statics", () => {
-		const anySpy = jest.spyOn(AbortSignal, "any");
-		const timeoutSpy = jest.spyOn(AbortSignal, "timeout");
+		const anySpy = vi.spyOn(AbortSignal, "any");
+		const timeoutSpy = vi.spyOn(AbortSignal, "timeout");
 		try {
 			const controller = new AbortController();
 			anySignal([controller.signal]);

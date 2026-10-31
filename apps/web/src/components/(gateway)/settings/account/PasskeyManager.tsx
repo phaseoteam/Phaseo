@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
@@ -13,7 +11,7 @@ import {
 	deletePasskeyAction,
 	startPasskeyRegistrationAction,
 	verifyPasskeyRegistrationAction,
-} from "@/app/(dashboard)/settings/account/actions";
+} from "@/features/settings/account/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { shouldRedirectToOnboardingAfterLogin } from "./post-login-onboarding";
 import { resolvePostLoginDestination } from "./post-login-landing";
 

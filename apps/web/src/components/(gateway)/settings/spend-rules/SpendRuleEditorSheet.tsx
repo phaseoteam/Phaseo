@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState, type ReactNode } from "react";
 import { Plus, Send, X } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
@@ -31,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Link } from "@/i18n/navigation";
 import type { NotificationDestination, SettingsSpendAlertsData } from "@/lib/fetchers/internal/settingsTypes";
-import { createSpendRule, testSpendRule, updateSpendRule, type SpendRuleActionError } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
+import { createSpendRule, testSpendRule, updateSpendRule, type SpendRuleActionError } from "@/features/settings/notifications/spend-rules-actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { OptionTiles, useBalanceSummary, useForecastSummary, useSpendPercent, useSpendUsd, useSpikeSummary } from "./spendAlertsUi";
 import { SpendRuleDestinationPicker } from "./SpendRuleDestinationPicker";

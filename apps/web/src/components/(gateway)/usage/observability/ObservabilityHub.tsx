@@ -1,5 +1,3 @@
-"use client";
-
 import { SortableTableHead } from "../SortableTableHead";
 // The dashboard's formats are shared with the mobile app's usage screen.
 import {

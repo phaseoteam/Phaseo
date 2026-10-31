@@ -1,3 +1,4 @@
+import { it, expect } from "vitest";
 import { settleWrites } from "./settleWrites";
 
 it("waits for remaining writes even after the first rejection", async () => {

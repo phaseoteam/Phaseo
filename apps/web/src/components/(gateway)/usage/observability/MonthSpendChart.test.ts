@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { buildMonthSpendPoints, formatSpendRange, niceSpendTicks } from "./MonthSpendChart";
 import type { MonthSpendForecast } from "@/lib/gateway/usage/monthSpendForecast";
 

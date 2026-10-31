@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { normalizeTableColumns } from "./tablePreferences";
 import { JOB_COLUMNS, SESSION_COLUMNS, UPSTREAM_COLUMNS, REALTIME_COLUMNS } from "./logColumns";
 import { getSessionPrimary } from "./sessionPrimary";

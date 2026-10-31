@@ -1,5 +1,3 @@
-"use client";
-
 import { Check, ChevronDown, CircleHelp, CircleSlash2 } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Logo } from "@/components/Logo";

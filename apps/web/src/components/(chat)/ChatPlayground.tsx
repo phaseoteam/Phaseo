@@ -1,5 +1,3 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { getOpenUIContext, OPENUI_FORMAT, updateOpenUIState } from "./openui/openuiHelpers";
 import { loadOpenUILibrary } from "./openui/loadOpenUI";

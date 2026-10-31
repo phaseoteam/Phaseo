@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "@/components/image";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "@/components/link";

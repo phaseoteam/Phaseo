@@ -1,5 +1,3 @@
-"use client"
-
 import { CalendarIcon } from "lucide-react"
 import { arSA, de, enGB, enUS, es, fr, hi, ja, ptBR, zhCN } from "date-fns/locale"
 import { useLocale, useTranslations } from "@/i18n/react"

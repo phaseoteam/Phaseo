@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { buildPlaygroundRequest, buildPlaygroundRuns, isExpectedParameterRejection, summarizeErrorPayload } from "./modelTestPlayground";
 
 describe("model test playground", () => {

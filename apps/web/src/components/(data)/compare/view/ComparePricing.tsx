@@ -1,5 +1,3 @@
-"use client";
-
 import { useId, useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import { ChevronDown } from "lucide-react";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslations } from "@/i18n/react";
 import { useState } from "react";
 import { ChartNoAxesColumnIncreasing, Link2 } from "lucide-react";

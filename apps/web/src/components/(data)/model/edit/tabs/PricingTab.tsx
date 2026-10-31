@@ -1,5 +1,3 @@
-"use client"
-
 import { useTranslations } from "@/i18n/react"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Copy, Plus, Trash2 } from "lucide-react"

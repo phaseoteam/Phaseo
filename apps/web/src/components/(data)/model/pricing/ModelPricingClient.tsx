@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";

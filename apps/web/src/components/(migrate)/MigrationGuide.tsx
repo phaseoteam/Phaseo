@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "@/components/link";
 import { Sparkles } from "lucide-react";

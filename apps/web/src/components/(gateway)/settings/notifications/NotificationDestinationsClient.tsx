@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
@@ -9,7 +7,7 @@ import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useTranslations } from "@/i18n/react";
 
-import { createNotificationDestination, deleteNotificationDestination, rotateNotificationDestinationSecret, setBillingNotificationPreference, testNotificationConfiguration, testNotificationDestination } from "@/app/(dashboard)/settings/credits/actions";
+import { createNotificationDestination, deleteNotificationDestination, rotateNotificationDestinationSecret, setBillingNotificationPreference, testNotificationConfiguration, testNotificationDestination } from "@/features/settings/credits/actions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import NotificationSigningSecretDialog, { type RevealedNotificationSecret } from "@/components/(gateway)/settings/notifications/NotificationSigningSecretDialog";
 import {

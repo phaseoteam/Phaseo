@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
 	clearProviderInspector,
 	dispatchProviderInspectorOpen,
@@ -26,7 +27,7 @@ describe("provider inspector state", () => {
 	});
 
 	it("can subscribe without emitting stale state before URL hydration", () => {
-		const listener = jest.fn();
+		const listener = vi.fn();
 		const unsubscribe = subscribeProviderInspectorSelection(listener, false);
 
 		expect(listener).not.toHaveBeenCalled();
@@ -41,7 +42,7 @@ describe("provider inspector state", () => {
 	});
 
 	it("broadcasts when the provider closes", () => {
-		const listener = jest.fn();
+		const listener = vi.fn();
 		window.addEventListener(PROVIDER_INSPECTOR_CHANGE_EVENT, listener);
 		dispatchProviderInspectorOpen("anthropic");
 

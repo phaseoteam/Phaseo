@@ -1,5 +1,3 @@
-"use client";
-
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
@@ -32,7 +30,7 @@ import {
 	rotateWebhookEndpointSecretAction,
 	sendWebhookEndpointTestAction,
 	updateWebhookEndpointStatusAction,
-} from "@/app/(dashboard)/settings/webhooks/actions";
+} from "@/features/settings/webhooks/actions";
 import { getWebhookEventLabel } from "./webhook-events";
 import WebhookSecretNotice from "./WebhookSecretNotice";
 

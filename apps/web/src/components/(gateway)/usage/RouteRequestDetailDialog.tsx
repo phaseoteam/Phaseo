@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "@/components/link";
 import { useRouter } from "@/lib/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -15,7 +13,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import type { InvestigateGenerationResult } from "@/app/(dashboard)/gateway/usage/server-actions";
+import type { InvestigateGenerationResult } from "@/features/gateway/usage/server-actions";
 import RequestDetailDialog from "./RequestDetailDialog";
 import type { RequestClassifierSummary } from "./requestClassifierLabels";
 

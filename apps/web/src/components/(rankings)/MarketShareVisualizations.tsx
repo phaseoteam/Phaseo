@@ -3,7 +3,6 @@
 // Why: Visual representation of organization/provider dominance
 // How: Uses Recharts PieChart with custom colors
 
-"use client";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";

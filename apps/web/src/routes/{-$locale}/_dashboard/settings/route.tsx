@@ -1,22 +1,20 @@
-// Next: src/app/[locale]/(dashboard)/settings/layout.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { routeMetadataInput, type RouteMetadataInput, toSerializableMetadata } from "@/lib/start/metadata";
 import { redirect } from "@/lib/navigation";
-import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { nextLayoutComponent } from "@/lib/start/nextPage";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 import { localizeAuthPath } from "@/lib/auth/localized-paths";
-import Layout, * as mod from "@/app/[locale]/(dashboard)/settings/layout";
-import { settingsLayoutQuery } from "@/app/[locale]/(dashboard)/settings/settings.functions";
+import SettingsLayout, { getSettingsLayoutMetadata } from "@/features/settings/SettingsLayout";
+import { settingsLayoutQuery } from "@/features/settings/settings.functions";
 
 const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: MetadataInput) => input)
-	.handler(({ data }) => runGenerateMetadata((mod as { generateMetadata?: Parameters<typeof runGenerateMetadata>[0] }).generateMetadata, metadataInput(data)));
+	.validator((input: RouteMetadataInput) => input)
+	.handler(async ({ data }) => toSerializableMetadata(await getSettingsLayoutMetadata(data)));
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/settings")({
-	// Next's settings layout redirected signed-out visitors to sign-in before rendering.
+	// Signed-out visitors go to sign-in before anything renders.
 	beforeLoad: async ({ context, params, location }) => {
 		const data = await context.queryClient.ensureQueryData(settingsLayoutQuery());
 		if (!data.signedIn) {
@@ -26,7 +24,7 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/settings")({
 			redirect(`${localizeAuthPath(locale, "/sign-in")}?returnUrl=${encodeURIComponent(safeReturnUrl)}`);
 		}
 	},
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: { params, search: location.search as Record<string, unknown> } })),
+	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: routeMetadataInput(params, location.search) })),
 	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: nextLayoutComponent(Layout),
+	component: SettingsLayout,
 });

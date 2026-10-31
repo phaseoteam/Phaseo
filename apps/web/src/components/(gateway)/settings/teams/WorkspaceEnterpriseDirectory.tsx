@@ -1,4 +1,3 @@
-"use client";
 import { PrivateSettingsQuery, useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";

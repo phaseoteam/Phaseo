@@ -1,5 +1,3 @@
-"use client";
-
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";

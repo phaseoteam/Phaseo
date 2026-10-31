@@ -1,3 +1,4 @@
+import { it, expect, afterEach, vi } from "vitest";
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppIntlProvider } from "@/i18n/react";
@@ -9,13 +10,13 @@ import ArtificialAnalysisExplorer from "./ArtificialAnalysisExplorer";
 let mockView = "cost-intelligence";
 afterEach(() => { mockView = "cost-intelligence"; });
 
-jest.mock("nuqs", () => {
+vi.mock("nuqs", () => {
 	const parser = { withDefault: () => parser };
 	return { parseAsString: parser, parseAsArrayOf: () => parser, parseAsStringLiteral: () => parser,
-		useQueryStates: () => [{ aaView: mockView, aaScale: "log", aaModels: null, aaEffort: "" }, jest.fn()] };
+		useQueryStates: () => [{ aaView: mockView, aaScale: "log", aaModels: null, aaEffort: "" }, vi.fn()] };
 });
-jest.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children) }));
-jest.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children) }));
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
 
 const render = (children: ReactNode) => renderToStaticMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue, Site: site }}>{children}</AppIntlProvider>);
 

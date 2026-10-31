@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ChatPlaygroundCatalog from "./ChatPlaygroundCatalog";
@@ -6,10 +7,10 @@ import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 
-jest.mock("@/i18n/react", () => ({ useTranslations: () => (key: string) => key }));
-jest.mock("./ChatPlayground", () => ({ __esModule: true, default: jest.fn(() => <div>playground</div>) }));
-jest.mock("./ChatPlaygroundShell", () => ({ __esModule: true, default: () => <div>loading catalogue</div> }));
-jest.mock("@/lib/fetchers/frontend/fetchFrontendGatewayModels", () => ({ fetchFrontendGatewayModels: jest.fn() }));
+vi.mock("@/i18n/react", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("./ChatPlayground", () => ({ default: vi.fn(() => <div>playground</div>) }));
+vi.mock("./ChatPlaygroundShell", () => ({ default: () => <div>loading catalogue</div> }));
+vi.mock("@/lib/fetchers/frontend/fetchFrontendGatewayModels", () => ({ fetchFrontendGatewayModels: vi.fn() }));
 
 const model = (modelId: string, providerId = "public"): GatewaySupportedModel => ({
 	modelId, selectorModelId: modelId, internalModelId: modelId, providerId, capabilities: ["text.generate"],
@@ -19,7 +20,7 @@ const model = (modelId: string, providerId = "public"): GatewaySupportedModel =>
 });
 
 describe("browser-loaded chat catalogue", () => {
-	beforeEach(() => jest.clearAllMocks());
+	beforeEach(() => vi.clearAllMocks());
 	it("keeps the public catalogue out of the server response", () => {
 		const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 		const html = renderToStaticMarkup(<QueryClientProvider client={client}><ChatPlaygroundCatalog previewModels={[]} internalModels={[]} effectivePolicy={null} /></QueryClientProvider>);
@@ -37,7 +38,7 @@ describe("browser-loaded chat catalogue", () => {
 			effectivePolicy={{ workspaceId: "workspace", guardrails: [], workspace: { provider: { mode: "blocklist", ids: ["public"] }, model: { mode: "none", ids: [] } } }}
 			modelParam="test/private" promptParam="draft prompt"
 		/></QueryClientProvider>);
-		const props = jest.mocked(ChatPlayground).mock.calls[0][0];
+		const props = vi.mocked(ChatPlayground).mock.calls[0][0];
 		expect(props.models.map((entry) => entry.modelId)).toEqual(["test/public", "test/private", "test/internal"]);
 		expect(props.models[0].chatBlockedReasons).toEqual([expect.objectContaining({ source: "workspace" })]);
 		expect(props.models[1].chatBlockedReasons).toEqual([]);

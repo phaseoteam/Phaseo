@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import Link from "@/components/link";
 import { usePathname } from "@/lib/navigation";

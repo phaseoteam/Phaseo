@@ -1,6 +1,7 @@
-const mockFetchPublicWebApi = jest.fn();
-jest.mock("@/lib/web-api/client", () => ({
-	fetchOptionalPublicWebApi: jest.fn(),
+import { describe, it, test, expect, beforeEach, vi } from "vitest";
+const mockFetchPublicWebApi = vi.fn();
+vi.mock("@/lib/web-api/client", () => ({
+	fetchOptionalPublicWebApi: vi.fn(),
 	fetchPublicWebApi: (...args: unknown[]) => mockFetchPublicWebApi(...args),
 }));
 

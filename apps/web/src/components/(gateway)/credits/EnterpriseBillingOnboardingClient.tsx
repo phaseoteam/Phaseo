@@ -1,11 +1,9 @@
-"use client";
-
 import * as React from "react";
 import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
 import { ArrowRight, Building2, PenLine } from "lucide-react";
 
-import { saveBillingOnboardingSettings } from "@/app/(dashboard)/settings/credits/actions";
+import { saveBillingOnboardingSettings } from "@/features/settings/credits/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {

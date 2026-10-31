@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
@@ -30,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { activateProviderAccountAction, rotateProviderCatalogWebhookAction, startProviderClaimAction, type ProviderCatalogPreview } from "@/app/(dashboard)/settings/account/providers/actions";
+import { activateProviderAccountAction, rotateProviderCatalogWebhookAction, startProviderClaimAction, type ProviderCatalogPreview } from "@/features/settings/account/providers/actions";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import type { SettingsProviderOnboardingInitialData } from "@/lib/fetchers/internal/settingsTypes";

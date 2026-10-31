@@ -1,12 +1,10 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
 import { useTranslations } from "@/i18n/react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { updateByokFallbackAction } from "@/app/(dashboard)/settings/byok/actions";
+import { updateByokFallbackAction } from "@/features/settings/byok/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 

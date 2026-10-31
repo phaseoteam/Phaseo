@@ -1,3 +1,4 @@
+import { it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";

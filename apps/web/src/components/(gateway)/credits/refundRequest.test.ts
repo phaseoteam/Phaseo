@@ -1,3 +1,4 @@
+import { it, expect, afterEach, vi } from "vitest";
 import { requestCreditRefund } from "./refundRequest";
 
 const originalFetch = global.fetch;
@@ -5,7 +6,7 @@ afterEach(() => { global.fetch = originalFetch; });
 
 it("waits for and returns the actual refund status", async () => {
 	let finish!: (response: Response) => void;
-	global.fetch = jest.fn(() => new Promise<Response>((resolve) => { finish = resolve; }));
+	global.fetch = vi.fn(() => new Promise<Response>((resolve) => { finish = resolve; }));
 	let completed = false;
 	const request = requestCreditRefund("pi_fixture", "test reason").then((result) => { completed = true; return result; });
 	await Promise.resolve();
@@ -19,6 +20,6 @@ it("waits for and returns the actual refund status", async () => {
 });
 
 it("rejects failed refunds instead of treating a toast ID as success", async () => {
-	global.fetch = jest.fn(async () => new Response(JSON.stringify({ error: "Not eligible" }), { status: 400 }));
+	global.fetch = vi.fn(async () => new Response(JSON.stringify({ error: "Not eligible" }), { status: 400 }));
 	await expect(requestCreditRefund("pi_fixture", "test reason")).rejects.toThrow("Not eligible");
 });

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { AppIntlProvider, createTranslator } from "@/i18n/react";
 import fs from "node:fs";
 import path from "node:path";

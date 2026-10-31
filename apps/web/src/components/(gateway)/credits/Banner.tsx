@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { faviconResponse as GET } from "@/lib/favicon";
 
 describe("favicon route", () => {

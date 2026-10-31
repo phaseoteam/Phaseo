@@ -1,3 +1,4 @@
+import { it, test, expect } from "vitest";
 import {
 	buildThreadFromLogReplay,
 	defaultChatLogImportOptions,

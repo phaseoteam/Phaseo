@@ -1,5 +1,3 @@
-"use client";
-
 import { Maximize2 } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
 import type {

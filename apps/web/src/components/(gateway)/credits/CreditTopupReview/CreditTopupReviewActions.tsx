@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { loadStripe } from "@stripe/stripe-js";

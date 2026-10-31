@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import {
@@ -39,7 +37,7 @@ export default function RevokeDialog({
 
 		try {
 			const { revokeAuthorizationAction } = await import(
-				"@/app/(dashboard)/settings/authorized-apps/actions"
+				"@/features/settings/authorized-apps/actions"
 			);
 
 			const result = await revokeAuthorizationAction({ data: authorizationId });

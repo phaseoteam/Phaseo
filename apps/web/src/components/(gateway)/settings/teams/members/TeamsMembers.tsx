@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
@@ -61,7 +59,7 @@ import {
 import {
 	removeMember,
 	updateMemberRole,
-} from "@/app/(dashboard)/settings/teams/memberActions";
+} from "@/features/settings/teams/memberActions";
 
 interface Member {
 	user_id: string;

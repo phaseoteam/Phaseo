@@ -1,9 +1,8 @@
-// Router-wide error and not-found screens (Next: app/[locale]/(dashboard)/error.tsx
-// and app/[locale]/not-found.tsx).
+// Router-wide error and not-found screens.
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useMatch, useRouter } from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
-import { getCurrentRequest } from "@/compat/request-context";
+import { getCurrentRequest } from "@/lib/start/request-context";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";

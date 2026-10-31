@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -13,7 +11,7 @@ import {
 	ChartDataResult,
 	fetchModelMetadata,
 	fetchOrganizationColors,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 
 interface MetricsOverviewProps {
 	timeRange: { from: string; to: string };

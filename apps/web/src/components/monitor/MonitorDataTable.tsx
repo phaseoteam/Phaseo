@@ -1,5 +1,3 @@
-"use client";
-
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";

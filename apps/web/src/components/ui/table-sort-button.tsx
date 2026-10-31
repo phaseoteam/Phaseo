@@ -1,5 +1,3 @@
-"use client";
-
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslations } from "@/i18n/react";

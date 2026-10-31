@@ -1,4 +1,4 @@
-import type { Metadata, ResolvingMetadata } from "@/lib/seo/metadataTypes";
+import type { PageMetadata, ResolvingMetadata } from "@/lib/seo/metadataTypes";
 
 const CANONICAL_SITE_URL = "https://phaseo.app";
 const LOCAL_SITE_URL = "http://localhost:3000";
@@ -58,9 +58,9 @@ export interface BuildMetadataOptions {
 	imagePath?: string;
 	imageAlt?: string;
 	type?: "website" | "article" | "profile" | "video.other";
-	openGraph?: Metadata["openGraph"];
-	twitter?: Metadata["twitter"];
-	robots?: Metadata["robots"];
+	openGraph?: PageMetadata["openGraph"];
+	twitter?: PageMetadata["twitter"];
+	robots?: PageMetadata["robots"];
 }
 
 export function absoluteUrl(path: string): string {
@@ -81,7 +81,7 @@ export function buildMetadata({
 	openGraph: openGraphOverrides,
 	twitter: twitterOverrides,
 	robots,
-}: BuildMetadataOptions): Metadata {
+}: BuildMetadataOptions): PageMetadata {
 	const canonical = absoluteUrl(path);
 	const imageUrl = imagePath
 		? absoluteUrl(imagePath)
@@ -130,7 +130,7 @@ export async function resolveMetadata(
 		| BuildMetadataOptions
 		| ((parent: Awaited<ResolvingMetadata> | null) => Promise<BuildMetadataOptions>),
 	parent?: ResolvingMetadata
-): Promise<Metadata> {
+): Promise<PageMetadata> {
 	if (typeof resolver === "function") {
 		const parentMetadata = parent ? await parent : null;
 		const options = await resolver(parentMetadata);

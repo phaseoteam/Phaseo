@@ -1,5 +1,3 @@
-"use client";
-
 import dynamic from "@/lib/dynamic";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";

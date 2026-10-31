@@ -1,9 +1,10 @@
+import { describe, it, expect, vi } from "vitest";
 import type { AnchorHTMLAttributes } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { publicLocales } from "@/i18n/routing";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 
-jest.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({
 	Link: ({
 		locale,
 		href,

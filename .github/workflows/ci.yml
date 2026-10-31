@@ -481,8 +481,9 @@ jobs:
                   # The build generates src/routeTree.gen.ts, which the typecheck needs.
                   pnpm --filter @phaseo/web build
                   pnpm --filter @phaseo/web typecheck
-                  # Vitest file filters: only the rankings tests run in CI for now.
-                  pnpm --filter @phaseo/web test RankingsPageContent.test.tsx UsageStackedBar.test.tsx time-buckets.test.ts
+                  pnpm --filter @phaseo/web lint
+                  # The whole web unit suite (about a minute).
+                  pnpm --filter @phaseo/web test
 
             - name: Web API lint, test & build
               if: matrix.app == 'web-api'

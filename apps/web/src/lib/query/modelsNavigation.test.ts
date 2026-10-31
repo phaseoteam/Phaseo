@@ -1,9 +1,10 @@
+import { it, expect, vi } from "vitest";
 import { defaultShouldDehydrateQuery, dehydrate, hydrate, QueryObserver } from "@tanstack/react-query";
 import { createWebQueryClient } from "./queryClient";
 import { ANONYMOUS_ACCOUNT_QUERY_SCOPE, webQueryKeys } from "./queryKeys";
 
 it.each(["TimeoutError", "Error"])("recovers a failed streamed %s prefetch through the browser query", async (name) => {
-	jest.useFakeTimers();
+	vi.useFakeTimers();
 	const server = createWebQueryClient();
 	const browser = createWebQueryClient();
 	const queryKey = webQueryKeys.account.catalogue({
@@ -17,7 +18,7 @@ it.each(["TimeoutError", "Error"])("recovers a failed streamed %s prefetch throu
 		shouldRedactErrors: () => false,
 	}));
 	const recovered = { models: [{ model_id: "recovered/model" }] };
-	const queryFn = jest.fn(async () => recovered);
+	const queryFn = vi.fn(async () => recovered);
 	const observer = new QueryObserver(browser, { queryKey, queryFn });
 	const unsubscribe = observer.subscribe(() => {});
 	const recovery = browser.getQueryCache().find({ queryKey })!.promise;
@@ -27,17 +28,17 @@ it.each(["TimeoutError", "Error"])("recovers a failed streamed %s prefetch throu
 		expect(browser.getQueryCache().find({ queryKey })!.options.retry).not.toBe(false);
 		rejectServer(Object.assign(new Error("Server request failed"), { name }));
 		await prefetch;
-		await jest.advanceTimersByTimeAsync(1_001);
+		await vi.advanceTimersByTimeAsync(1_001);
 		await expect(recovery).resolves.toEqual(recovered);
 		expect(queryFn).toHaveBeenCalledTimes(1);
 		expect(observer.getCurrentResult().isError).toBe(false);
 	} finally {
-		unsubscribe(); server.clear(); browser.clear(); jest.useRealTimers();
+		unsubscribe(); server.clear(); browser.clear(); vi.useRealTimers();
 	}
 });
 
 it("keeps cached models visible while a streamed navigation prefetch is pending", async () => {
-	jest.useFakeTimers();
+	vi.useFakeTimers();
 	const server = createWebQueryClient();
 	const browser = createWebQueryClient();
 	const queryKey = webQueryKeys.account.catalogue({
@@ -62,5 +63,5 @@ it("keeps cached models visible while a streamed navigation prefetch is pending"
 	expect(observer.getCurrentResult().isPending).toBe(false);
 	server.clear();
 	browser.clear();
-	jest.useRealTimers();
+	vi.useRealTimers();
 });

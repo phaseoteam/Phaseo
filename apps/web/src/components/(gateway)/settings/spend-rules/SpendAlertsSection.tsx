@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { BellRing, History, MoreHorizontal, Pencil, Plus, Send, Trash2 } from "lucide-react";
@@ -21,7 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Switch } from "@/components/ui/switch";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { NotificationDestination, SettingsSpendAlertsData } from "@/lib/fetchers/internal/settingsTypes";
-import { deleteSpendRule, testSpendRule, updateSpendRule } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
+import { deleteSpendRule, testSpendRule, updateSpendRule } from "@/features/settings/notifications/spend-rules-actions";
 import { SettingsResourceQuery, useSettingsWrite } from "../PrivateSettingsQuery";
 import { SpendRuleEditorSheet, useSpendActionError, type SpendRuleEditorTarget } from "./SpendRuleEditorSheet";
 import { SpendBlocksList } from "./SpendBlocksList";

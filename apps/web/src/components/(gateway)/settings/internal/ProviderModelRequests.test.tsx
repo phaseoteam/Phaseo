@@ -1,7 +1,8 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import ProviderModelRequests from "./ProviderModelRequests";
-jest.mock("@/i18n/react",()=>({useTranslations:()=> (key:string)=>key,useLocale:()=>"en-GB"}));
-jest.mock("@/app/(dashboard)/settings/internal/provider-review/actions",()=>({reviewProviderModelRequestAction:jest.fn(),refreshProviderModelRequestsAction:jest.fn()}));
+vi.mock("@/i18n/react",()=>({useTranslations:()=> (key:string)=>key,useLocale:()=>"en-GB"}));
+vi.mock("@/features/settings/internal/provider-review/actions",()=>({reviewProviderModelRequestAction:vi.fn(),refreshProviderModelRequestsAction:vi.fn()}));
 describe("new-model review display",()=>{
  it("shows proposal identity, modalities and limits without rendering provider HTML",()=>{
   const html=renderToStaticMarkup(<ProviderModelRequests initialRequests={[{id:"test",provider_slug:"sample",model_slug:"sample/model",status:"pending",reason:null,updated_at:"2026-10-06T00:00:00Z",model:{name:"<script>bad</script>",description:"<img src=x onerror=bad>",inputModalities:["text","image"],outputModalities:["text"],contextLength:8192,maxOutputTokens:1024}}]}/>);

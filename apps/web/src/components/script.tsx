@@ -1,4 +1,4 @@
-// `next/script`: `beforeInteractive` renders a script tag; everything else is
+// Script component: `beforeInteractive` renders a script tag; everything else is
 // injected once after hydration.
 import { useEffect, type ScriptHTMLAttributes } from "react";
 
@@ -38,7 +38,7 @@ export default function Script({ strategy = "afterInteractive", id, src, childre
 		};
 		if (strategy === "lazyOnload" && "requestIdleCallback" in window) (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(run);
 		else run();
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- inject once per mount, like next/script.
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- inject once per mount.
 	}, []);
 	if (strategy !== "beforeInteractive") return null;
 	return <script id={id} src={src} dangerouslySetInnerHTML={dangerouslySetInnerHTML ?? (typeof children === "string" ? { __html: children } : undefined)} {...rest} />;

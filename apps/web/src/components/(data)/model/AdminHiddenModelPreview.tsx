@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "@/i18n/react";
 import type { AdminModelPreview } from "@/lib/models/adminModelPreview";

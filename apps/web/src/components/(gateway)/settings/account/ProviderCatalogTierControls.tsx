@@ -1,9 +1,8 @@
-"use client";
 import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { ProviderManagedCatalogModel } from "@/app/(dashboard)/settings/account/providers/actions";
+import type { ProviderManagedCatalogModel } from "@/features/settings/account/providers/actions";
 
 type Tier = NonNullable<ProviderManagedCatalogModel["service_tiers"]>[number];
 const names = ["standard", "fast", "ultrafast", "flex", "batch"] as const;

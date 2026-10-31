@@ -1,3 +1,4 @@
+import { test, expect } from "vitest";
 import { readLogReplay } from "@/lib/chat/logReplay";
 
 const IMAGE = "data:image/png;base64,iVBORw0KGgo=";
