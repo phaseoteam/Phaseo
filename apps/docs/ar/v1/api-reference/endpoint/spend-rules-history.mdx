@@ -1,0 +1,9 @@
+---
+title: "عرض سجل قاعدة إنفاق"
+sidebarTitle: "سجل القاعدة"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/history"
+description: "يعرض التنبيهات وأحداث الحظر التي أرسلتها قاعدة الإنفاق."
+---
+
+يتطلب `spend_rules:read`. تنقّل بين الأحداث باستخدام `limit` (من 1 إلى 100) و`offset`. يعرض `periods` الحدود المرسلة بالفعل في كل فترة.

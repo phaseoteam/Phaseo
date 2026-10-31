@@ -215,7 +215,6 @@ export type { GatewayWebFetchToolDefinition } from "./GatewayWebFetchToolDefinit
 export type { GatewayWebSearchToolDefinition } from "./GatewayWebSearchToolDefinition.js";
 export type { GenerationResponse } from "./GenerationResponse.js";
 export type { Guardrail } from "./Guardrail.js";
-export type { GuardrailBudgetInput } from "./GuardrailBudgetInput.js";
 export type { GuardrailCreateRequest } from "./GuardrailCreateRequest.js";
 export type { GuardrailDeleteResponse } from "./GuardrailDeleteResponse.js";
 export type { GuardrailDetailResponse } from "./GuardrailDetailResponse.js";

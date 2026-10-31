@@ -38,6 +38,8 @@ Department budgets are managed through the `/v1/department-budgets` API. A depar
 
 Owners and admins can also manage department budgets with `phaseo department-budgets`, under [Settings → Budgets](https://phaseo.app/settings/budgets), or with the Terraform provider's `phaseo_department_budget` resource.
 
+[Spend alerts](../guides/spend-alerts.mdx) can warn before these limits are reached. A spend rule set to block returns `429` with the `spend_rule_blocked` error code instead; it is best effort and starts a few minutes after spend passes its limit, so use key limits and budgets for exact caps.
+
 ## Rate limit policies
 
 Workspace admins can create named rate limit policies through the `/v1/rate-limits` management API and assign them to API keys, workspace members, departments, guardrails, or as the default for each end user. The gateway enforces a policy's `requests_per_minute` and `tokens_per_minute`, each measured over a rolling minute:
@@ -88,6 +90,7 @@ Rate-limit rules for agents, summarising this page:
 - Gateway quotas return `429` with reason `customer_requests_per_minute` or `free_requests_per_day`; wait `Retry-After` seconds. If quota enforcement is unavailable, the gateway returns `503` with retry guidance.
 - Key limits and budgets return `429` with `key_limit_exceeded` and a `reset_at`. Without `Retry-After` the limit does not reset by itself: raise the limit or use another key instead of retrying.
 - A used-up department budget returns `429` with `key_limit_exceeded`, reason `department_<interval>_cost_budget_reached`, `department_id`, `department_name` and `reset_at`; wait `Retry-After` seconds or raise the budget. Batch, realtime and OAuth requests are not blocked by department budgets. If the budget check is unavailable, the request is allowed.
+- Spend rules that block return `429` with `spend_rule_blocked`; wait for `Retry-After`, or ask an owner or admin to lift the block. `x-phaseo-spend-warning` means a block may follow.
 - Workspace rate limit policies return `429` with `rate_limit_exceeded`, `policy_id` and `limit_scope`. `x-ratelimit-remaining-requests` is approximate.
 - `Retry-After` can be seconds or an HTTP date; validate it before scheduling a retry. Never resubmit an ambiguous video or batch job; check its status instead.
 </Visibility>

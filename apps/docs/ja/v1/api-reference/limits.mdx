@@ -37,6 +37,8 @@ API キーの日次・週次・月次のリクエスト数や支出の上限、�
 
 オーナーと管理者は、部門予算を[設定 → 予算](https://phaseo.app/settings/budgets)で管理することも、Terraform プロバイダーの `phaseo_department_budget` リソースで管理することもできます。CLI からは `phaseo department-budgets` を使います。
 
+[支出アラート](../guides/spend-alerts.mdx)を使うと、これらの上限に達する前に警告を受け取れます。ブロックするように設定した支出ルールは、代わりに `spend_rule_blocked` エラーコードとともに `429` を返します。これはベストエフォートで、支出が上限を超えてから数分後に始まるため、正確な上限にはキーの上限と予算を使ってください。
+
 ## レート制限ポリシー
 
 ワークスペース管理者は `/v1/rate-limits` 管理 API で名前付きのレート制限ポリシーを作成し、API キー、ワークスペースメンバー、部門、ガードレール、またはエンドユーザーごとの既定値として割り当てられます。ゲートウェイは、ポリシーの `requests_per_minute` と `tokens_per_minute` を、それぞれ直近 1 分間のローリングウィンドウで適用します。
@@ -87,6 +89,7 @@ BYOK リクエストには、ご自身のプロバイダーアカウントの制
 - Gateway のクォータは理由 `customer_requests_per_minute` または `free_requests_per_day` とともに `429` を返します。`Retry-After` の秒数だけ待ちます。クォータの適用が利用できない場合、Gateway は再試行の案内とともに `503` を返します。
 - キーの制限と予算は `key_limit_exceeded` と `reset_at` を含む `429` を返します。`Retry-After` がない場合、制限は自動ではリセットされません。再試行せず、制限を引き上げるか別のキーを使います。
 - 使い切った部門予算は `key_limit_exceeded`、理由 `department_<interval>_cost_budget_reached`、`department_id`、`department_name`、`reset_at` を含む `429` を返します。`Retry-After` の秒数だけ待つか、予算を引き上げます。バッチ、リアルタイム、OAuth のリクエストは部門予算でブロックされません。予算のチェックが利用できない場合、リクエストは許可されます。
+- ブロックする支出ルールは `spend_rule_blocked` とともに `429` を返します。`Retry-After` まで待つか、オーナーまたは管理者にブロックの解除を依頼してください。`x-phaseo-spend-warning` はブロックが続く可能性を示します。
 - ワークスペースのレート制限ポリシーは `rate_limit_exceeded`、`policy_id`、`limit_scope` を含む `429` を返します。`x-ratelimit-remaining-requests` は概算値です。
 - `Retry-After` は秒数または HTTP 日付です。再試行を予定する前に値を検証します。結果が不明な動画ジョブやバッチジョブは再送信せず、ステータスを確認します。
 </Visibility>

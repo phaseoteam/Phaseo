@@ -1,0 +1,225 @@
+---
+title: "Alertas de gastos"
+description: "Receba alertas sobre gastos, orçamentos, previsões, picos e saldo baixo, e bloqueie requisições quando os gastos passarem de um limite."
+icon: "badge-dollar-sign"
+---
+
+As regras de gastos acompanham os gastos do seu espaço de trabalho e enviam um alerta quando eles cruzam um limite. Uma regra também pode bloquear requisições quando os gastos passam de uma margem de tolerância. Qualquer plano pode criar até 50 regras por espaço de trabalho.
+
+<Note>Os alertas de gastos, o bloqueio e os relatórios de gastos estão sendo liberados aos poucos. Até serem ativados, as regras e as configurações são salvas, mas nada é avaliado, bloqueado ou enviado.</Note>
+
+## Como uma regra funciona
+
+Uma regra combina:
+
+- uma **métrica**: o que é medido (veja os [tipos de alerta](#alert-types-and-bases));
+- um **escopo**: quais gastos contam, como os do espaço de trabalho, de uma chave de API ou de um departamento;
+- um **período**: um dia, uma semana ou um mês do calendário, ou uma janela contínua de horas;
+- **limites**: o valor em dólares ou as porcentagens que enviam um alerta;
+- uma **ação**: `notify`, ou `block` para também recusar requisições acima de um limite.
+
+A Phaseo avalia as regras a partir do uso registrado, alguns minutos depois que as requisições terminam. Espaços de trabalho com regras também são verificados a cada hora, e as regras de saldo a cada 15 minutos. Os gastos incluem trabalhos de vídeo, lote, música e tempo real.
+
+Para criar uma regra, abra **Gateway → Configurações → Notificações → Alertas de gastos** e selecione **Adicionar alerta**. O editor mostra o valor atual de uma regra salva e pode enviar um alerta de teste. A página de uma chave de API e a página de orçamentos têm atalhos que abrem o editor com o limite da chave ou o orçamento como base. Membros podem ver as regras; proprietários e administradores as criam, alteram, testam e excluem.
+
+<span id="alert-types-and-bases"></span>
+
+## Tipos de alerta e bases
+
+| Métrica | Envia um alerta quando | Períodos |
+| --- | --- | --- |
+| `spend` | os gastos do período atingem `threshold_amount` | qualquer um |
+| `budget_percent` | os gastos atingem uma porcentagem de uma base, com até cinco limites como 50, 80 e 100 | qualquer um |
+| `forecast` | os gastos projetados até o fim do período atingem um valor ou uma porcentagem de uma base | dia, semana, mês |
+| `spike` | os gastos das últimas horas são várias vezes os gastos habituais | contínuo |
+| `balance` | o saldo disponível cai até um valor, ou duraria menos que um número de dias | contínuo, apenas escopo do espaço de trabalho |
+
+As porcentagens são medidas em relação a uma base (`base_kind`):
+
+- `amount`: um valor em dólares definido na regra, usado apenas para alertas.
+- `workspace_budget`: o orçamento do espaço de trabalho com o intervalo correspondente (`base_ref`: `daily` para um período de dia, `weekly` para uma semana, `monthly` para um mês). Um orçamento vitalício não pode ser uma base.
+- `key_limit`: o limite de gastos da chave de API da regra para a janela correspondente. Exige o escopo de chave.
+- `previous_period`: os gastos no mesmo ponto do período anterior, como "ontem a esta hora". Em regras contínuas, é a janela anterior; em previsões, o período anterior inteiro.
+
+Uma regra cuja base não existe, como um orçamento excluído ou uma chave sem limite de gastos, não envia nada até a base existir de novo. As proteções não têm limites de gastos e não podem ser uma base.
+
+## Escopos
+
+| Escopo | `scope_id` | Conta |
+| --- | --- | --- |
+| `workspace` | nenhum | todos os gastos do espaço de trabalho |
+| `key` | ID da chave de API | as requisições feitas com a chave |
+| `member` | o ID de usuário do membro | as requisições feitas com chaves criadas pelo membro, mais as próprias requisições OAuth do membro |
+| `department` | ID do departamento | tudo o que as pessoas do departamento fazem (veja abaixo) |
+| `model` | ID do modelo, como `openai/gpt-5` | as requisições atendidas pelo modelo |
+| `provider` | ID do provedor | as requisições atendidas pelo provedor |
+
+Os gastos de um departamento são atribuídos por requisição:
+
+1. Uma chave atribuída a um departamento conta apenas para esse departamento.
+2. Caso contrário, quem criou a chave decide: os departamentos dessa pessoa ou, em requisições OAuth, os departamentos do usuário conectado.
+3. Quem está em vários departamentos conta para **todos** eles por padrão. Escolha **Somente o departamento principal** em vez de **Todos os departamentos dela** em **Configurações de gastos do espaço de trabalho** (API: `spend.department_attribution: "primary"`) para contar apenas o departamento principal. Sem um departamento marcado como principal, vem primeiro um departamento ao qual a pessoa foi adicionada manualmente e depois o mais antigo.
+
+A participação nos departamentos é lida sempre que a regra é avaliada, então mover alguém para outro departamento leva junto os gastos dessa pessoa no período atual. Como uma pessoa pode contar para vários departamentos, a soma dos departamentos pode passar do total do espaço de trabalho. O uso anterior a setembro de 2026 não é atribuído a membros nem a departamentos.
+
+## Períodos e fusos horários
+
+Dia, semana e mês são períodos do calendário. As semanas vão de segunda a domingo. Cada regra pode definir seu próprio `time_zone` da IANA, como `Europe/London` ou `America/New_York`; caso contrário, usa o fuso horário de faturamento do espaço de trabalho, que por padrão é UTC. Altere o fuso horário de faturamento em **Configurações de gastos do espaço de trabalho** ou com `spend.billing_time_zone` na [API de configurações de notificação](../api-reference/endpoint/notifications-settings-update.mdx). As mudanças de horário de verão são consideradas, e os nomes de fuso diferenciam maiúsculas de minúsculas.
+
+Um período `rolling` cobre as últimas `window_hours` (de 1 a 720) e avança continuamente. Regras de pico o usam como janela do pico, e regras de saldo como o intervalo em que calculam a média dos gastos.
+
+<Note>Os [limites de chave](../api-reference/limits.mdx#key-limits-and-budgets) e os [orçamentos do espaço de trabalho](../api-reference/endpoint/budgets-list.mdx) sempre reiniciam nas fronteiras de UTC. Uma regra com base `workspace_budget` ou `key_limit` em outro fuso horário compara o próprio dia, semana ou mês local com esse limite, então seus gastos podem diferir do que o limite conta.</Note>
+
+## Limites e alertas repetidos
+
+Conforme a métrica, uma regra tem de um a cinco limites percentuais (de 1 a 1000) ou um limite em dólares.
+
+- Em períodos do calendário, cada limite envia no máximo um alerta por período. Quando os gastos cruzam vários limites de uma vez, um único alerta cita o maior e lista os demais.
+- Regras contínuas, de pico e de saldo usam `cooldown_minutes` (de 5 a 43.200, padrão 360). Durante a espera, só um limite maior envia alerta; depois dela, a regra alerta de novo se os gastos ainda estiverem acima.
+- Limites já enviados neste período não são enviados de novo quando você edita a regra.
+
+**Enviar teste** entrega o alerta que a regra enviaria agora, marcado como `[TEST]`, aos destinos da regra. Nada é registrado, e um espaço de trabalho pode enviar cinco testes por minuto. O **Histórico** de cada regra lista os alertas e bloqueios que ela enviou.
+
+<span id="block-requests"></span>
+
+## Bloquear requisições
+
+Uma regra `spend` ou `budget_percent` com `action: "block"` alerta nos seus limites e bloqueia quando os gastos atingem o ponto de bloqueio: `block_at_percent` da base (padrão 110, no mínimo o maior limite), ou `block_at_amount` em uma regra `spend`. Regras com base `previous_period` não podem bloquear. O intervalo entre o último alerta e o ponto de bloqueio é a margem de tolerância: sua equipe é avisada antes que as requisições parem.
+
+<Warning>O bloqueio é feito com o melhor esforço. Ele usa o uso registrado, então um bloqueio começa alguns minutos depois que os gastos passam do ponto de bloqueio, e os gastos podem ultrapassá-lo nesse tempo. Para um teto rígido verificado em cada requisição, use limites de chave ou orçamentos do espaço de trabalho.</Warning>
+
+| | Bloqueio por regra de gastos | Limite de chave | Orçamento do espaço de trabalho |
+| --- | --- | --- | --- |
+| Verificado | a cada poucos minutos, pelo uso registrado | em cada requisição | em cada requisição |
+| Escopo | espaço de trabalho, chave, membro, departamento, modelo ou provedor | uma chave | o espaço de trabalho |
+| Períodos | dia, semana, mês ou contínuo, em qualquer fuso horário | dia, semana ou mês UTC | dia, semana ou mês UTC, ou vitalício |
+| Modelos gratuitos | não são bloqueados, a menos que `block_free_models` seja true | contados | contados |
+| Aviso antes | sim, nos limites da regra | não | não |
+| Remoção | por um proprietário ou administrador, pelo resto do período | aumentar o limite | aumentar o orçamento |
+
+Enquanto um bloqueio está ativo, as requisições no escopo dele recebem `429` com o código de erro `spend_rule_blocked`. O corpo inclui `reason: "spend_rule_block"`, `rule_id`, `rule_name`, `block_id`, `limit_scope`, `limit_value` (USD) e `reset_at`. `Retry-After` indica os segundos até o período reiniciar. Uma regra contínua não tem horário de reinício: o bloqueio dura até os gastos da janela ficarem abaixo do ponto de bloqueio, e a resposta não tem `Retry-After`. Um bloqueio de provedor remove as rotas desse provedor, e a requisição só é recusada quando não sobra outra rota. Sessões em tempo real ainda não são bloqueadas.
+
+Enquanto os gastos estão acima do último limite da regra, mas abaixo do ponto de bloqueio, as respostas às requisições no escopo trazem um cabeçalho `x-phaseo-spend-warning` que lista até três regras, por exemplo `rule_id=…; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Os clientes podem registrá-lo ou desacelerar antes de o bloqueio começar.
+
+Um bloqueio é removido sozinho quando o período reinicia, quando os gastos de uma regra contínua ficam abaixo do ponto de bloqueio, ou quando a regra é desativada, excluída ou alterada. Proprietários e administradores podem removê-lo em **Alertas de gastos → Bloqueios ativos** ou com [`POST /v1/spend-blocks/{id}/lift`](../api-reference/endpoint/spend-blocks-lift.mdx). Um bloqueio removido não recomeça no mesmo período (em regras contínuas, durante uma janela). Notificações de bloqueios por gastos são enviadas quando um bloqueio começa e quando é removido.
+
+## Saldo e autonomia
+
+Uma regra `balance` acompanha o saldo disponível do espaço de trabalho: o saldo de créditos menos os valores reservados para requisições em andamento. Ela usa o escopo do espaço de trabalho e um período contínuo, e alerta quando qualquer condição é atendida:
+
+- `threshold_amount`: o saldo disponível está igual ou abaixo deste valor;
+- `runway_days`: com o gasto diário médio das últimas `window_hours`, o saldo duraria menos que esse número de dias. Sem gastos recentes, não há alerta de autonomia.
+
+Uma regra de saldo alerta uma vez por queda. Ela só alerta de novo depois que o saldo se recupera e cai outra vez, e nunca com mais frequência que a sua espera. Nenhum alerta é enviado enquanto a recarga automática estiver ativada e funcionando.
+
+O e-mail de saldo baixo em **Configurações → Créditos** continua sendo a opção simples padrão. Ele é enviado uma vez cada vez que o saldo cai abaixo do seu limite, no máximo a cada seis horas, e não enquanto a recarga automática estiver funcionando. Use uma regra de saldo para alertas de autonomia, outros destinos ou um limite diferente.
+
+## Previsão
+
+Uma regra `forecast` projeta os gastos em linha reta até o fim do dia, da semana ou do mês atual: os gastos até agora divididos pela parte do período que já passou. Ela espera até passarem 3 horas de um dia, 24 horas de uma semana ou 72 horas de um mês, e até pelo menos US$ 0,01 ter sido gasto, para que um começo tranquilo não dispare um alerta. O alerta informa quando o limite será atingido no ritmo atual.
+
+Defina um `threshold_amount` em dólares, ou uma base com porcentagens. Com uma base `previous_period`, a projeção é comparada ao período anterior inteiro. Cada limite alerta uma vez por período.
+
+## Pico
+
+Uma regra `spike` compara os gastos das últimas `window_hours` (de 1 a 56) com os gastos habituais para esse horário:
+
+- Em janelas de menos de 24 horas, os gastos habituais são a mediana das mesmas horas em cada um dos sete dias anteriores. Em janelas mais longas, são a mediana das janelas anteriores de mesma duração nos sete dias anteriores.
+- Ela alerta quando os gastos chegam a pelo menos `spike_multiplier` vezes o habitual (padrão 3) e a pelo menos `spike_floor` (padrão US$ 5).
+- Ela precisa de gastos do espaço de trabalho em pelo menos três dessas janelas anteriores. Até lá, o editor mostra que ela ainda está aprendendo. Quando os gastos habituais são zero, só o mínimo se aplica.
+- Ela usa uma espera (padrão 6 horas) e nunca bloqueia.
+
+A comparação usa passos exatos de 24 horas, então, após uma mudança de horário de verão, ela compara com uma hora antes ou depois no relógio local. As regras de pico são verificadas quando chega uso novo.
+
+## Relatórios de gastos
+
+Os proprietários recebem por padrão um relatório semanal de gastos, e os administradores podem optar por recebê-lo. Também há relatórios diários e mensais. O [guia de notificações do espaço de trabalho](./workspace-notifications.mdx#spend-reports) explica as configurações e o conteúdo. Além disso:
+
+- Um relatório é enviado entre 09:00 e 21:00 no fuso horário de faturamento, no primeiro dia depois do período. Se não puder ser enviado nesse dia, ele é pulado em vez de ser enviado com atraso.
+- A previsão de um relatório é do mês de faturamento atual.
+- Os totais de membros e departamentos incluem trabalhos assíncronos e seguem a regra de departamentos acima, então podem diferir um pouco do total.
+- Cada pessoa cancela a inscrição apenas da própria cópia do relatório de um espaço de trabalho. Membros que não são proprietários nem administradores nunca o recebem.
+
+## Roteamento e destinos
+
+As regras de gastos enviam três tipos de notificação. Escolha para onde cada um vai em **Configurações → Notificações**:
+
+| Rota | Tipo | Enviado quando |
+| --- | --- | --- |
+| Alertas de gastos | `spend_alert` | um limite de uma regra é cruzado |
+| Bloqueios por gastos | `spend_blocked` | um bloqueio começa ou é removido (`payload.state` é `started` ou `lifted`) |
+| Relatórios de gastos | `spend_report` | um relatório de gastos é devido |
+
+Uma regra pode ter os próprios destinos. Eles substituem as rotas Alertas de gastos e Bloqueios por gastos para essa regra; se estiverem todos pausados, os alertas da regra não são enviados às rotas no lugar deles. Alertas e bloqueios também chegam ao aplicativo móvel de proprietários e administradores, e de quem criou a chave ou do membro de que a regra trata.
+
+Webhooks personalizados recebem o alerta em JSON, com `title`, `message`, `rule_id`, `rule_name`, `metric`, `scope`, `period`, `value_nanos` e, dependendo da métrica, `base_nanos`, `forecast`, `spike` ou os campos de saldo. Verifique cada entrega pela assinatura; veja a seção sobre verificar assinaturas de webhook nas [notificações do espaço de trabalho](./workspace-notifications.mdx).
+
+## Gerenciar regras com a API
+
+A [API de regras de gastos](../api-reference/endpoint/spend-rules-list.mdx) usa uma chave de gerenciamento com `spend_rules:read`, `spend_rules:write` ou `spend_rules:delete`. Os valores podem ser enviados em dólares (`threshold_amount_usd`) ou exatamente em nanodólares (`threshold_amount_nanos`), e as respostas incluem os dois.
+
+```bash
+curl https://api.phaseo.app/v1/spend-rules \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Monthly budget",
+    "metric": "budget_percent",
+    "period": "month",
+    "base_kind": "workspace_budget",
+    "base_ref": "monthly",
+    "threshold_percents": [50, 80, 100],
+    "action": "block",
+    "block_at_percent": 110
+  }'
+```
+
+Use [`GET /v1/spend-rules/{id}/preview`](../api-reference/endpoint/spend-rules-preview.mdx) para ver o valor atual e o próximo limite, e [`POST /v1/spend-rules/{id}/test`](../api-reference/endpoint/spend-rules-test.mdx) para enviar um teste. [`GET /v1/spend-blocks`](../api-reference/endpoint/spend-blocks-list.mdx) lista os bloqueios ativos. O fuso horário de faturamento, a atribuição por departamento e as configurações de relatório ficam no objeto `spend` das [configurações de notificação](../api-reference/endpoint/notifications-settings-update.mdx).
+
+## Gerenciar regras com o Terraform
+
+O [provedor Terraform da Phaseo](https://github.com/phaseoteam/terraform-provider-phaseo) (`phaseoteam/phaseo`) tem os recursos `phaseo_spend_rule` e `phaseo_workspace_budget`, e as fontes de dados `phaseo_spend_rules`, `phaseo_spend_blocks` e `phaseo_workspace_budgets`.
+
+```hcl
+resource "phaseo_workspace_budget" "monthly" {
+  interval = "monthly"
+  limit    = 500
+}
+
+resource "phaseo_spend_rule" "monthly_budget" {
+  name               = "Monthly budget"
+  metric             = "budget_percent"
+  period             = "month"
+  base_kind          = "workspace_budget"
+  base_ref           = "monthly"
+  threshold_percents = [50, 80, 100]
+  action             = "block"
+  block_at_percent   = 110
+
+  depends_on = [phaseo_workspace_budget.monthly]
+}
+
+resource "phaseo_spend_rule" "spike" {
+  name             = "Spend spike"
+  metric           = "spike"
+  period           = "rolling"
+  window_hours     = 3
+  spike_multiplier = 4
+}
+```
+
+Importe uma regra ou um orçamento existente pelo ID:
+
+```bash
+terraform import phaseo_spend_rule.monthly_budget 11111111-1111-4111-8111-111111111111
+```
+
+<Visibility for="agents">
+Regras sobre regras de gastos para agentes, resumindo esta página:
+
+- Os bloqueios das regras de gastos são feitos com o melhor esforço e começam minutos depois do limite; para tetos exatos, use limites de chave ou orçamentos do espaço de trabalho.
+- Uma requisição bloqueada retorna `429` com `spend_rule_blocked`, `rule_id`, `block_id` e `reset_at`. Aguarde `Retry-After`; sem ele, o bloqueio dura até os gastos da janela contínua caírem ou um proprietário ou administrador removê-lo com `POST /v1/spend-blocks/{id}/lift`. Não repita em loop.
+- `x-phaseo-spend-warning` em uma resposta significa que uma regra que bloqueia passou do último limite de alerta; um bloqueio pode vir em seguida.
+- Modelos gratuitos não são bloqueados, a menos que a regra defina `block_free_models`.
+- Os períodos do calendário usam o fuso horário da regra (por padrão, o fuso horário de faturamento do espaço de trabalho, que por padrão é UTC); limites de chave e orçamentos do espaço de trabalho usam UTC.
+</Visibility>

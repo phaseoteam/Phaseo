@@ -1,0 +1,10 @@
+---
+title: "Lift a spend block"
+sidebarTitle: "Lift block"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml POST /spend-blocks/{id}/lift"
+description: "Let requests in a spend block's scope through again."
+"og:image": "https://phaseo.app/og/dynamic?title=Lift%20a%20spend%20block&description=Let%20requests%20in%20a%20spend%20block%27s%20scope%20through%20again.&pathname=/docs/v1/api-reference/endpoint/spend-blocks-lift"
+---
+
+Requires `spend_rules:write`. OAuth callers must be workspace owners or admins. The block does not start again in the same period (for rolling rules, for one window), and a Spend Blocks notification is sent. Requests see the change within about a minute.

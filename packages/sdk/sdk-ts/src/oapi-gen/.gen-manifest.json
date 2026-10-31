@@ -220,7 +220,6 @@
     "models/GatewayWebSearchToolDefinition.ts",
     "models/GenerationResponse.ts",
     "models/Guardrail.ts",
-    "models/GuardrailBudgetInput.ts",
     "models/GuardrailCreateRequest.ts",
     "models/GuardrailDeleteResponse.ts",
     "models/GuardrailDetailResponse.ts",

@@ -1,0 +1,10 @@
+---
+title: "List spend rule history"
+sidebarTitle: "Rule history"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml GET /spend-rules/{id}/history"
+description: "List the alerts and block events a spend rule has sent."
+"og:image": "https://phaseo.app/og/dynamic?title=List%20spend%20rule%20history&description=List%20the%20alerts%20and%20block%20events%20a%20spend%20rule%20has%20sent.&pathname=/docs/v1/api-reference/endpoint/spend-rules-history"
+---
+
+Requires `spend_rules:read`. Page through events with `limit` (1 to 100) and `offset`. `periods` lists the thresholds already sent in each period.

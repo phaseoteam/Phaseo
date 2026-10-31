@@ -5726,10 +5726,9 @@ paths:
       summary: Create a spend rule
       description: >-
         Creates a spend rule and sets its notification destinations. Every
-        metric is accepted; rules returned with evaluated false are saved and
-        fire from a later release. Blocking is best effort and acts minutes
-        after the threshold; use key limits and workspace budgets for exact
-        caps. A workspace can have 50 spend rules.
+        metric is evaluated. Blocking is best effort and acts minutes after the
+        threshold; use key limits and workspace budgets for exact caps. A
+        workspace can have 50 spend rules.
       requestBody:
         required: true
         content:
@@ -27697,44 +27696,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: >-
-        Deprecated. Guardrails do not enforce request or spend limits; use API
-        key limits or workspace budgets instead.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -27804,8 +27765,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -27903,54 +27862,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
         created_at:
           type: string
           format: date-time
@@ -28062,54 +27973,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
             created_at:
               type: string
               format: date-time

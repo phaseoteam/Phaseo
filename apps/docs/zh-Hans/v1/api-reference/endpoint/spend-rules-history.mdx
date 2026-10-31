@@ -1,0 +1,9 @@
+---
+title: "列出支出规则历史"
+sidebarTitle: "规则历史"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/history"
+description: "列出支出规则已发送的提醒和拦截事件。"
+---
+
+需要 `spend_rules:read`。使用 `limit`（1 到 100）和 `offset` 分页浏览事件。`periods` 列出每个周期已发送的阈值。

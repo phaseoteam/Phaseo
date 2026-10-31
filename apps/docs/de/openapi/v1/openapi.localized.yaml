@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: Ausgabenregel erstellen
-      description: Erstellt eine Ausgabenregel und legt ihre Benachrichtigungsziele fest. Jede Metrik wird akzeptiert; Regeln, die mit evaluated false zurückgegeben werden, werden gespeichert und lösen erst ab einer späteren Version aus. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert; für exakte Obergrenzen Schlüssellimits und Workspace-Budgets verwenden. Ein Workspace kann 50 Ausgabenregeln haben.
+      description: Erstellt eine Ausgabenregel und legt ihre Benachrichtigungsziele fest. Jede Metrik wird ausgewertet. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert; für exakte Obergrenzen Schlüssellimits und Workspace-Budgets verwenden. Ein Workspace kann 50 Ausgabenregeln haben.
       requestBody:
         required: true
         content:
@@ -26379,42 +26379,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26484,8 +26448,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26583,42 +26545,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
         created_at:
           type: string
           format: date-time
@@ -26730,42 +26656,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
             created_at:
               type: string
               format: date-time

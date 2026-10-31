@@ -1795,14 +1795,10 @@ pub struct GenerationResponse {
 pub struct Guardrail {
 	pub allowed_api_model_ids: Option<Option<Vec<String>>>,
 	pub created_at: Option<Option<String>>,
-	pub daily_limit_cost_nanos: Option<Option<i64>>,
-	pub daily_limit_requests: Option<Option<i64>>,
 	pub description: Option<Option<String>>,
 	pub enabled: Option<Option<bool>>,
 	pub id: String,
 	pub model_restriction_mode: Option<Option<String>>,
-	pub monthly_limit_cost_nanos: Option<Option<i64>>,
-	pub monthly_limit_requests: Option<Option<i64>>,
 	pub name: String,
 	pub privacy_enable_free_may_publish_prompts: Option<Option<bool>>,
 	pub privacy_enable_free_may_train: Option<Option<bool>>,
@@ -1818,23 +1814,11 @@ pub struct Guardrail {
 	pub sensitive_info_enabled: Option<Option<bool>>,
 	pub sensitive_info_rules: Option<Option<Vec<HashMap<String, String>>>>,
 	pub updated_at: Option<Option<String>>,
-	pub weekly_limit_cost_nanos: Option<Option<i64>>,
-	pub weekly_limit_requests: Option<Option<i64>>,
 	pub workspace_id: String,
-}
-
-pub struct GuardrailBudgetInput {
-	pub dailyCostNanos: Option<Option<i64>>,
-	pub dailyRequests: Option<Option<i64>>,
-	pub monthlyCostNanos: Option<Option<i64>>,
-	pub monthlyRequests: Option<Option<i64>>,
-	pub weeklyCostNanos: Option<Option<i64>>,
-	pub weeklyRequests: Option<Option<i64>>,
 }
 
 pub struct GuardrailCreateRequest {
 	pub allowedApiModelIds: Option<Vec<String>>,
-	pub budgets: Option<HashMap<String, String>>,
 	pub description: Option<Option<String>>,
 	pub enabled: Option<bool>,
 	pub modelRestrictionMode: Option<String>,
@@ -1916,7 +1900,6 @@ pub struct GuardrailMemberListResponse {
 
 pub struct GuardrailPolicyInput {
 	pub allowedApiModelIds: Option<Vec<String>>,
-	pub budgets: Option<HashMap<String, String>>,
 	pub description: Option<Option<String>>,
 	pub enabled: Option<bool>,
 	pub modelRestrictionMode: Option<String>,
@@ -1946,7 +1929,6 @@ pub struct GuardrailResponse {
 
 pub struct GuardrailUpdateRequest {
 	pub allowedApiModelIds: Option<Vec<String>>,
-	pub budgets: Option<HashMap<String, String>>,
 	pub description: Option<Option<String>>,
 	pub enabled: Option<bool>,
 	pub modelRestrictionMode: Option<String>,

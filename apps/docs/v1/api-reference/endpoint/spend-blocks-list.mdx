@@ -1,0 +1,10 @@
+---
+title: "List spend blocks"
+sidebarTitle: "List blocks"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml GET /spend-blocks"
+description: "List the spend rule blocks that are refusing requests."
+"og:image": "https://phaseo.app/og/dynamic?title=List%20spend%20blocks&description=List%20the%20spend%20rule%20blocks%20that%20are%20refusing%20requests.&pathname=/docs/v1/api-reference/endpoint/spend-blocks-list"
+---
+
+Requires `spend_rules:read`. OAuth callers must be workspace owners or admins. Add `include_lifted=true` to include lifted blocks. Blocks are best effort; see [blocking requests](../../guides/spend-alerts.mdx#block-requests).

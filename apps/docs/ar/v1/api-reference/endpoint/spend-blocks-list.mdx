@@ -1,0 +1,9 @@
+---
+title: "عرض حظر الإنفاق"
+sidebarTitle: "عرض الحظر"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml GET /spend-blocks"
+description: "يعرض حالات حظر قواعد الإنفاق التي ترفض الطلبات."
+---
+
+يتطلب `spend_rules:read`. يجب أن يكون مستدعو OAuth مالكين أو مشرفين في مساحة العمل. أضف `include_lifted=true` لتضمين حالات الحظر المرفوعة. الحظر يتم بأفضل جهد؛ راجع [حظر الطلبات](../../guides/spend-alerts.mdx#block-requests).

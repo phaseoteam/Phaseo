@@ -1,0 +1,9 @@
+---
+title: "Atualizar uma regra de gastos"
+sidebarTitle: "Atualizar regra"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml PATCH /spend-rules/{id}"
+description: "Altera os campos, os destinos ou a ação de uma regra de gastos."
+---
+
+Requer `spend_rules:write`. Os campos enviados são mesclados à regra salva, e a regra inteira é verificada novamente. `destination_ids` substitui os destinos da regra; omita-o para mantê-los. Alterar a ação, o escopo, o período ou a base de uma regra que bloqueia remove o bloqueio ativo dela.

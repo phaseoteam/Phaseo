@@ -1,0 +1,10 @@
+---
+title: "Create a spend rule"
+sidebarTitle: "Create rule"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml POST /spend-rules"
+description: "Create a spend alert, optionally one that blocks requests past a limit."
+"og:image": "https://phaseo.app/og/dynamic?title=Create%20a%20spend%20rule&description=Create%20a%20spend%20alert%2C%20optionally%20one%20that%20blocks%20requests%20past%20a%20limit.&pathname=/docs/v1/api-reference/endpoint/spend-rules-create"
+---
+
+Requires `spend_rules:write`. OAuth callers must be workspace owners or admins. Send each amount in USD (`*_usd`) or nanodollars (`*_nanos`), not both. A workspace can have 50 spend rules. See the [spend alerts guide](../../guides/spend-alerts.mdx) for the metrics, bases, scopes and periods.

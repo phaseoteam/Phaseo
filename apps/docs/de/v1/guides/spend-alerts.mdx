@@ -1,0 +1,225 @@
+---
+title: "Ausgabenwarnungen"
+description: "Erhalte Warnungen zu Ausgaben, Budgets, Prognosen, Ausgabenspitzen und niedrigem Guthaben, und sperre Anfragen, sobald die Ausgaben ein Limit überschreiten."
+icon: "badge-dollar-sign"
+---
+
+Ausgabenregeln beobachten die Ausgaben deines Arbeitsbereichs und senden eine Warnung, wenn sie eine Schwelle überschreiten. Eine Regel kann außerdem Anfragen sperren, sobald die Ausgaben über eine Kulanzspanne hinausgehen. Jeder Tarif kann bis zu 50 Regeln pro Arbeitsbereich anlegen.
+
+<Note>Ausgabenwarnungen, Sperren und Ausgabenberichte werden schrittweise eingeführt. Bis sie aktiviert sind, werden Regeln und Einstellungen gespeichert, aber nichts wird ausgewertet, gesperrt oder gesendet.</Note>
+
+## So funktioniert eine Regel
+
+Eine Regel kombiniert:
+
+- eine **Metrik**: was gemessen wird (siehe [Warnungsarten](#alert-types-and-bases));
+- einen **Geltungsbereich**: wessen Ausgaben zählen, etwa der Arbeitsbereich, ein API-Schlüssel oder eine Abteilung;
+- einen **Zeitraum**: ein Kalendertag, eine Woche oder ein Monat, oder ein rollierendes Fenster aus Stunden;
+- **Schwellen**: der Dollarbetrag oder die Prozentsätze, die eine Warnung auslösen;
+- eine **Aktion**: `notify` oder `block`, um zusätzlich Anfragen über einem Limit abzulehnen.
+
+Phaseo wertet Regeln anhand der erfassten Nutzung aus, einige Minuten nachdem Anfragen abgeschlossen sind. Arbeitsbereiche mit Regeln werden zusätzlich stündlich geprüft, Guthabenregeln alle 15 Minuten. Die Ausgaben umfassen Video-, Batch-, Musik- und Echtzeitaufträge.
+
+Um eine Regel zu erstellen, öffne **Gateway → Einstellungen → Benachrichtigungen → Ausgabenwarnungen** und wähle **Warnung hinzufügen**. Der Editor zeigt den aktuellen Wert einer gespeicherten Regel und kann eine Testwarnung senden. Die Seite eines API-Schlüssels und die Budgetseite haben Verknüpfungen, die den Editor mit dem Limit des Schlüssels oder dem Budget als Basis öffnen. Mitglieder können Regeln sehen; Inhaber und Administratoren erstellen, ändern, testen und löschen sie.
+
+<span id="alert-types-and-bases"></span>
+
+## Warnungsarten und Basen
+
+| Metrik | Sendet eine Warnung, wenn | Zeiträume |
+| --- | --- | --- |
+| `spend` | die Ausgaben im Zeitraum `threshold_amount` erreichen | alle |
+| `budget_percent` | die Ausgaben einen Prozentsatz einer Basis erreichen, bis zu fünf Schwellen wie 50, 80 und 100 | alle |
+| `forecast` | die bis zum Ende des Zeitraums hochgerechneten Ausgaben einen Betrag oder einen Prozentsatz einer Basis erreichen | Tag, Woche, Monat |
+| `spike` | die Ausgaben der letzten Stunden ein Vielfaches der üblichen Ausgaben betragen | rollierend |
+| `balance` | das verfügbare Guthaben auf einen Betrag fällt oder weniger als eine Anzahl von Tagen reichen würde | rollierend, nur Geltungsbereich Arbeitsbereich |
+
+Prozentsätze werden an einer Basis (`base_kind`) gemessen:
+
+- `amount`: ein auf der Regel festgelegter Dollarbetrag, nur für Warnungen.
+- `workspace_budget`: das Arbeitsbereichsbudget mit dem passenden Intervall (`base_ref`: `daily` für einen Tag, `weekly` für eine Woche, `monthly` für einen Monat). Ein Budget ohne Ablauf (lifetime) kann keine Basis sein.
+- `key_limit`: das Ausgabenlimit des API-Schlüssels der Regel für das passende Fenster. Erfordert den Geltungsbereich Schlüssel.
+- `previous_period`: die Ausgaben zum gleichen Zeitpunkt im vorherigen Zeitraum, etwa „gestern um diese Zeit“. Bei rollierenden Regeln ist es das vorherige Fenster, bei Prognosen der gesamte vorherige Zeitraum.
+
+Eine Regel, deren Basis fehlt, etwa ein gelöschtes Budget oder ein Schlüssel ohne Ausgabenlimit, sendet nichts, bis die Basis wieder existiert. Guardrails haben keine Ausgabenlimits und können keine Basis sein.
+
+## Geltungsbereiche
+
+| Geltungsbereich | `scope_id` | Zählt |
+| --- | --- | --- |
+| `workspace` | keine | alle Ausgaben des Arbeitsbereichs |
+| `key` | ID des API-Schlüssels | Anfragen mit diesem Schlüssel |
+| `member` | die Benutzer-ID des Mitglieds | Anfragen mit Schlüsseln, die das Mitglied erstellt hat, plus die eigenen OAuth-Anfragen des Mitglieds |
+| `department` | Abteilungs-ID | alles, was Personen in der Abteilung tun (siehe unten) |
+| `model` | Modell-ID, etwa `openai/gpt-5` | Anfragen, die das Modell beantwortet |
+| `provider` | Anbieter-ID | Anfragen, die der Anbieter beantwortet |
+
+Abteilungsausgaben werden pro Anfrage zugeordnet:
+
+1. Ein Schlüssel, der einer Abteilung zugewiesen ist, zählt nur für diese Abteilung.
+2. Andernfalls entscheidet der Ersteller des Schlüssels: seine Abteilungen, bei OAuth-Anfragen die Abteilungen des angemeldeten Benutzers.
+3. Wer zu mehreren Abteilungen gehört, zählt standardmäßig für **alle**. Wähle in den **Ausgabeneinstellungen des Arbeitsbereichs** statt **Alle ihre Abteilungen** die Option **Nur Hauptabteilung** (API: `spend.department_attribution: "primary"`), damit nur die Hauptabteilung zählt. Ist keine Abteilung als Hauptabteilung markiert, kommt zuerst eine Abteilung, zu der die Person von Hand hinzugefügt wurde, dann die älteste.
+
+Die Abteilungszugehörigkeit wird bei jeder Auswertung der Regel gelesen. Wer in eine andere Abteilung wechselt, nimmt seine Ausgaben des laufenden Zeitraums also mit. Da eine Person für mehrere Abteilungen zählen kann, können die Abteilungssummen zusammen mehr als die Summe des Arbeitsbereichs ergeben. Nutzung vor September 2026 ist keinen Mitgliedern oder Abteilungen zugeordnet.
+
+## Zeiträume und Zeitzonen
+
+Tag, Woche und Monat sind Kalenderzeiträume. Wochen gehen von Montag bis Sonntag. Jede Regel kann eine eigene IANA-`time_zone` festlegen, etwa `Europe/London` oder `America/New_York`; sonst gilt die Abrechnungszeitzone des Arbeitsbereichs, standardmäßig UTC. Ändere die Abrechnungszeitzone in den **Ausgabeneinstellungen des Arbeitsbereichs** oder mit `spend.billing_time_zone` in der [API für Benachrichtigungseinstellungen](../api-reference/endpoint/notifications-settings-update.mdx). Zeitumstellungen werden berücksichtigt, und bei Zonennamen wird zwischen Groß- und Kleinschreibung unterschieden.
+
+Ein `rolling`-Zeitraum umfasst die letzten `window_hours` (1 bis 720) und verschiebt sich fortlaufend. Spitzenregeln nutzen ihn als Spitzenfenster, Guthabenregeln als Zeitraum, über den sie die Ausgaben mitteln.
+
+<Note>[Schlüssellimits](../api-reference/limits.mdx#key-limits-and-budgets) und [Arbeitsbereichsbudgets](../api-reference/endpoint/budgets-list.mdx) werden immer an UTC-Grenzen zurückgesetzt. Eine Regel mit einer Basis `workspace_budget` oder `key_limit` in einer anderen Zeitzone vergleicht ihren eigenen lokalen Tag, ihre Woche oder ihren Monat mit diesem Limit, sodass ihre Ausgaben von dem abweichen können, was das Limit zählt.</Note>
+
+## Schwellen und wiederholte Warnungen
+
+Eine Regel hat je nach Metrik eine bis fünf Prozentschwellen (1 bis 1000) oder eine Dollarschwelle.
+
+- In Kalenderzeiträumen sendet jede Schwelle höchstens eine Warnung pro Zeitraum. Überschreiten die Ausgaben mehrere Schwellen gleichzeitig, nennt eine Warnung die höchste und listet die anderen auf.
+- Rollierende, Spitzen- und Guthabenregeln verwenden stattdessen `cooldown_minutes` (5 bis 43.200, Standard 360). Während der Abklingzeit sendet nur eine höhere Schwelle eine Warnung; danach warnt die Regel erneut, wenn die Ausgaben noch darüber liegen.
+- Schwellen, die in diesem Zeitraum schon gesendet wurden, werden nicht erneut gesendet, wenn du die Regel bearbeitest.
+
+**Test senden** schickt die Warnung, die die Regel jetzt senden würde, als `[TEST]` markiert an die Ziele der Regel. Es wird nichts gespeichert, und ein Arbeitsbereich kann fünf Tests pro Minute senden. Der **Verlauf** jeder Regel listet die gesendeten Warnungen und Sperren auf.
+
+<span id="block-requests"></span>
+
+## Anfragen sperren
+
+Eine `spend`- oder `budget_percent`-Regel mit `action: "block"` warnt an ihren Schwellen und sperrt, sobald die Ausgaben den Sperrpunkt erreichen: `block_at_percent` der Basis (Standard 110, mindestens die höchste Schwelle) oder `block_at_amount` bei einer `spend`-Regel. Regeln mit einer Basis `previous_period` können nicht sperren. Der Abstand zwischen der letzten Warnung und dem Sperrpunkt ist die Kulanzspanne: Dein Team wird gewarnt, bevor Anfragen gestoppt werden.
+
+<Warning>Sperren erfolgen nach bestem Bemühen. Sie beruhen auf der erfassten Nutzung, daher beginnt eine Sperre einige Minuten nachdem die Ausgaben den Sperrpunkt überschritten haben, und die Ausgaben können in dieser Zeit darüber hinausgehen. Für eine harte Obergrenze, die bei jeder Anfrage geprüft wird, verwende Schlüssellimits oder Arbeitsbereichsbudgets.</Warning>
+
+| | Sperre durch Ausgabenregel | Schlüssellimit | Arbeitsbereichsbudget |
+| --- | --- | --- | --- |
+| Geprüft | alle paar Minuten, anhand der erfassten Nutzung | bei jeder Anfrage | bei jeder Anfrage |
+| Geltungsbereich | Arbeitsbereich, Schlüssel, Mitglied, Abteilung, Modell oder Anbieter | ein Schlüssel | der Arbeitsbereich |
+| Zeiträume | Tag, Woche, Monat oder rollierend, in jeder Zeitzone | UTC-Tag, -Woche oder -Monat | UTC-Tag, -Woche oder -Monat, oder ohne Ablauf |
+| Kostenlose Modelle | nicht gesperrt, außer `block_free_models` ist true | gezählt | gezählt |
+| Vorher warnen | ja, an den Schwellen der Regel | nein | nein |
+| Aufheben | durch Inhaber oder Administratoren, für den Rest des Zeitraums | Limit erhöhen | Budget erhöhen |
+
+Solange eine Sperre aktiv ist, erhalten Anfragen in ihrem Geltungsbereich `429` mit dem Fehlercode `spend_rule_blocked`. Der Antworttext enthält `reason: "spend_rule_block"`, `rule_id`, `rule_name`, `block_id`, `limit_scope`, `limit_value` (USD) und `reset_at`. `Retry-After` gibt die Sekunden bis zum Zurücksetzen des Zeitraums an. Eine rollierende Regel hat keinen Zeitpunkt zum Zurücksetzen: Ihre Sperre gilt, bis die Ausgaben im Fenster unter den Sperrpunkt fallen, und die Antwort hat kein `Retry-After`. Eine Anbietersperre entfernt die Routen dieses Anbieters, und die Anfrage wird nur abgelehnt, wenn keine andere Route übrig ist. Echtzeitsitzungen werden noch nicht gesperrt.
+
+Solange die Ausgaben über der letzten Schwelle der Regel, aber unter ihrem Sperrpunkt liegen, tragen Antworten auf Anfragen im Geltungsbereich einen Header `x-phaseo-spend-warning`, der bis zu drei Regeln nennt, zum Beispiel `rule_id=…; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Clients können ihn protokollieren oder langsamer werden, bevor die Sperre beginnt.
+
+Eine Sperre wird von selbst aufgehoben, wenn der Zeitraum zurückgesetzt wird, wenn die Ausgaben einer rollierenden Regel unter ihren Sperrpunkt fallen, oder wenn die Regel deaktiviert, gelöscht oder geändert wird. Inhaber und Administratoren können sie unter **Ausgabenwarnungen → Aktive Blockierungen** oder mit [`POST /v1/spend-blocks/{id}/lift`](../api-reference/endpoint/spend-blocks-lift.mdx) aufheben. Eine aufgehobene Sperre beginnt im selben Zeitraum nicht erneut (bei rollierenden Regeln für ein Fenster). Benachrichtigungen zu Ausgabensperren werden gesendet, wenn eine Sperre beginnt und wenn sie aufgehoben wird.
+
+## Guthaben und Reichweite
+
+Eine `balance`-Regel beobachtet das verfügbare Guthaben des Arbeitsbereichs: sein Guthaben abzüglich der Beträge, die für laufende Anfragen reserviert sind. Sie nutzt den Geltungsbereich Arbeitsbereich und einen rollierenden Zeitraum und warnt, sobald eine der Bedingungen erfüllt ist:
+
+- `threshold_amount`: Das verfügbare Guthaben liegt bei oder unter diesem Betrag;
+- `runway_days`: Bei den durchschnittlichen Tagesausgaben der letzten `window_hours` würde das Guthaben weniger als so viele Tage reichen. Ohne aktuelle Ausgaben gibt es keine Warnung zur Reichweite.
+
+Eine Guthabenregel warnt einmal pro Rückgang. Sie warnt erst wieder, nachdem sich das Guthaben erholt hat und erneut gefallen ist, und nicht öfter als ihre Abklingzeit. Solange die automatische Aufladung aktiviert ist und funktioniert, wird keine Warnung gesendet.
+
+Die E-Mail bei niedrigem Guthaben unter **Einstellungen → Guthaben** bleibt die einfache Standardeinstellung. Sie wird einmal gesendet, jedes Mal wenn das Guthaben unter ihren Schwellenwert fällt, höchstens alle sechs Stunden und nicht, solange die automatische Aufladung funktioniert. Verwende eine Guthabenregel für Warnungen zur Reichweite, andere Ziele oder einen anderen Schwellenwert.
+
+## Prognose
+
+Eine `forecast`-Regel rechnet die Ausgaben linear bis zum Ende des aktuellen Tages, der Woche oder des Monats hoch: die bisherigen Ausgaben geteilt durch den bereits vergangenen Anteil des Zeitraums. Sie wartet, bis 3 Stunden eines Tages, 24 Stunden einer Woche oder 72 Stunden eines Monats vergangen sind und mindestens 0,01 $ ausgegeben wurden, damit ein ruhiger Start keine Warnung auslöst. Die Warnung sagt, wann das Limit beim aktuellen Tempo erreicht wird.
+
+Lege einen Dollarbetrag `threshold_amount` fest oder eine Basis mit Prozentsätzen. Bei einer Basis `previous_period` wird die Hochrechnung mit dem gesamten vorherigen Zeitraum verglichen. Jede Schwelle warnt einmal pro Zeitraum.
+
+## Ausgabenspitze
+
+Eine `spike`-Regel vergleicht die Ausgaben der letzten `window_hours` (1 bis 56) mit den üblichen Ausgaben für diese Zeit:
+
+- Bei Fenstern unter 24 Stunden sind die üblichen Ausgaben der Median derselben Stunden an jedem der vorherigen sieben Tage. Bei längeren Fenstern ist es der Median der früheren Fenster gleicher Länge in den vorherigen sieben Tagen.
+- Sie warnt, wenn die Ausgaben mindestens `spike_multiplier` mal so hoch wie üblich sind (Standard 3) und mindestens `spike_floor` betragen (Standard 5 $).
+- Sie benötigt Ausgaben des Arbeitsbereichs in mindestens drei dieser früheren Fenster. Bis dahin zeigt der Editor, dass sie noch lernt. Sind die üblichen Ausgaben null, gilt nur die Untergrenze.
+- Sie verwendet eine Abklingzeit (Standard 6 Stunden) und sperrt nie.
+
+Der Vergleich nutzt exakte Schritte von 24 Stunden, nach einer Zeitumstellung vergleicht er also mit einer Stunde früher oder später auf der lokalen Uhr. Spitzenregeln werden geprüft, wenn neue Nutzung eintrifft.
+
+## Ausgabenberichte
+
+Inhaber erhalten standardmäßig einen wöchentlichen Ausgabenbericht, Administratoren können ihn hinzuschalten. Tägliche und monatliche Berichte sind ebenfalls verfügbar. Der [Leitfaden zu Workspace-Benachrichtigungen](./workspace-notifications.mdx#spend-reports) beschreibt die Einstellungen und Inhalte. Außerdem:
+
+- Ein Bericht wird am ersten Tag nach seinem Zeitraum zwischen 09:00 und 21:00 Uhr in der Abrechnungszeitzone gesendet. Kann er an diesem Tag nicht gesendet werden, wird er übersprungen statt verspätet gesendet.
+- Die Prognose in einem Bericht gilt für den aktuellen Abrechnungsmonat.
+- Die Summen für Mitglieder und Abteilungen enthalten asynchrone Aufträge und folgen der obigen Abteilungsregel, sodass sie leicht von der Gesamtsumme abweichen können.
+- Jede Person meldet sich nur von ihrer eigenen Kopie des Berichts eines Arbeitsbereichs ab. Mitglieder, die weder Inhaber noch Administratoren sind, erhalten ihn nie.
+
+## Routing und Ziele
+
+Ausgabenregeln senden drei Arten von Benachrichtigungen. Lege unter **Einstellungen → Benachrichtigungen** fest, wohin jede geht:
+
+| Route | Art | Gesendet, wenn |
+| --- | --- | --- |
+| Ausgabenwarnungen | `spend_alert` | eine Schwelle einer Regel überschritten wird |
+| Ausgabensperren | `spend_blocked` | eine Sperre beginnt oder aufgehoben wird (`payload.state` ist `started` oder `lifted`) |
+| Ausgabenberichte | `spend_report` | ein Ausgabenbericht fällig ist |
+
+Eine Regel kann eigene Ziele haben. Sie ersetzen für diese Regel die Routen Ausgabenwarnungen und Ausgabensperren; sind sie alle pausiert, werden die Warnungen der Regel nicht stattdessen an die Routen gesendet. Warnungen und Sperren erreichen außerdem die mobile App für Inhaber und Administratoren sowie für den Ersteller des Schlüssels oder das Mitglied, um das es in einer Regel geht.
+
+Benutzerdefinierte Webhooks erhalten die Warnung als JSON mit `title`, `message`, `rule_id`, `rule_name`, `metric`, `scope`, `period`, `value_nanos` und, je nach Metrik, `base_nanos`, `forecast`, `spike` oder den Guthabenfeldern. Prüfe jede Zustellung anhand ihrer Signatur; siehe den Abschnitt zum Prüfen von Webhook-Signaturen in den [Workspace-Benachrichtigungen](./workspace-notifications.mdx).
+
+## Regeln mit der API verwalten
+
+Die [API für Ausgabenregeln](../api-reference/endpoint/spend-rules-list.mdx) verwendet einen Verwaltungsschlüssel mit `spend_rules:read`, `spend_rules:write` oder `spend_rules:delete`. Beträge können in Dollar (`threshold_amount_usd`) oder exakt in Nanodollar (`threshold_amount_nanos`) gesendet werden, und Antworten enthalten beides.
+
+```bash
+curl https://api.phaseo.app/v1/spend-rules \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Monthly budget",
+    "metric": "budget_percent",
+    "period": "month",
+    "base_kind": "workspace_budget",
+    "base_ref": "monthly",
+    "threshold_percents": [50, 80, 100],
+    "action": "block",
+    "block_at_percent": 110
+  }'
+```
+
+Mit [`GET /v1/spend-rules/{id}/preview`](../api-reference/endpoint/spend-rules-preview.mdx) siehst du den aktuellen Wert und die nächste Schwelle, mit [`POST /v1/spend-rules/{id}/test`](../api-reference/endpoint/spend-rules-test.mdx) sendest du einen Test. [`GET /v1/spend-blocks`](../api-reference/endpoint/spend-blocks-list.mdx) listet aktive Sperren auf. Die Abrechnungszeitzone, die Abteilungszuordnung und die Berichtseinstellungen stehen im Objekt `spend` der [Benachrichtigungseinstellungen](../api-reference/endpoint/notifications-settings-update.mdx).
+
+## Regeln mit Terraform verwalten
+
+Der [Phaseo-Terraform-Provider](https://github.com/phaseoteam/terraform-provider-phaseo) (`phaseoteam/phaseo`) hat die Ressourcen `phaseo_spend_rule` und `phaseo_workspace_budget` sowie die Datenquellen `phaseo_spend_rules`, `phaseo_spend_blocks` und `phaseo_workspace_budgets`.
+
+```hcl
+resource "phaseo_workspace_budget" "monthly" {
+  interval = "monthly"
+  limit    = 500
+}
+
+resource "phaseo_spend_rule" "monthly_budget" {
+  name               = "Monthly budget"
+  metric             = "budget_percent"
+  period             = "month"
+  base_kind          = "workspace_budget"
+  base_ref           = "monthly"
+  threshold_percents = [50, 80, 100]
+  action             = "block"
+  block_at_percent   = 110
+
+  depends_on = [phaseo_workspace_budget.monthly]
+}
+
+resource "phaseo_spend_rule" "spike" {
+  name             = "Spend spike"
+  metric           = "spike"
+  period           = "rolling"
+  window_hours     = 3
+  spike_multiplier = 4
+}
+```
+
+Importiere eine bestehende Regel oder ein Budget anhand der ID:
+
+```bash
+terraform import phaseo_spend_rule.monthly_budget 11111111-1111-4111-8111-111111111111
+```
+
+<Visibility for="agents">
+Regeln zu Ausgabenregeln für Agents, als Zusammenfassung dieser Seite:
+
+- Sperren durch Ausgabenregeln erfolgen nach bestem Bemühen und beginnen Minuten nach dem Limit; für exakte Obergrenzen verwende Schlüssellimits oder Arbeitsbereichsbudgets.
+- Eine gesperrte Anfrage gibt `429` mit `spend_rule_blocked`, `rule_id`, `block_id` und `reset_at` zurück. Warte `Retry-After` ab; ohne diesen Header gilt die Sperre, bis die Ausgaben im rollierenden Fenster sinken oder ein Inhaber oder Administrator sie mit `POST /v1/spend-blocks/{id}/lift` aufhebt. Wiederhole die Anfrage nicht in einer Schleife.
+- `x-phaseo-spend-warning` in einer Antwort bedeutet, dass eine sperrende Regel über ihrer letzten Warnschwelle liegt; eine Sperre kann folgen.
+- Kostenlose Modelle werden nicht gesperrt, außer die Regel setzt `block_free_models`.
+- Kalenderzeiträume verwenden die Zeitzone der Regel (Standard: die Abrechnungszeitzone des Arbeitsbereichs, Standard UTC); Schlüssellimits und Arbeitsbereichsbudgets verwenden UTC.
+</Visibility>

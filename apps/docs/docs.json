@@ -149,6 +149,7 @@
                   "v1/guides/broadcast",
                   "v1/guides/open-requests-in-chat",
                   "v1/guides/workspace-notifications",
+                  "v1/guides/spend-alerts",
                   "v1/guides/slack-agent"
                 ]
               },
@@ -730,6 +731,23 @@
                       "v1/api-reference/endpoint/budgets-update",
                       "v1/api-reference/endpoint/budgets-delete",
                       "v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Spend Rules",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "v1/api-reference/endpoint/spend-rules-create",
+                      "v1/api-reference/endpoint/spend-rules-get",
+                      "v1/api-reference/endpoint/spend-rules-update",
+                      "v1/api-reference/endpoint/spend-rules-delete",
+                      "v1/api-reference/endpoint/spend-rules-list",
+                      "v1/api-reference/endpoint/spend-rules-preview",
+                      "v1/api-reference/endpoint/spend-rules-test",
+                      "v1/api-reference/endpoint/spend-rules-history",
+                      "v1/api-reference/endpoint/spend-blocks-list",
+                      "v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -1846,6 +1864,7 @@
                   "es/v1/guides/broadcast",
                   "es/v1/guides/open-requests-in-chat",
                   "es/v1/guides/workspace-notifications",
+                  "es/v1/guides/spend-alerts",
                   "es/v1/guides/slack-agent"
                 ]
               },
@@ -2427,6 +2446,23 @@
                       "es/v1/api-reference/endpoint/budgets-update",
                       "es/v1/api-reference/endpoint/budgets-delete",
                       "es/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Reglas de gasto",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "es/v1/api-reference/endpoint/spend-rules-create",
+                      "es/v1/api-reference/endpoint/spend-rules-get",
+                      "es/v1/api-reference/endpoint/spend-rules-update",
+                      "es/v1/api-reference/endpoint/spend-rules-delete",
+                      "es/v1/api-reference/endpoint/spend-rules-list",
+                      "es/v1/api-reference/endpoint/spend-rules-preview",
+                      "es/v1/api-reference/endpoint/spend-rules-test",
+                      "es/v1/api-reference/endpoint/spend-rules-history",
+                      "es/v1/api-reference/endpoint/spend-blocks-list",
+                      "es/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -3577,6 +3613,7 @@
                   "fr/v1/guides/broadcast",
                   "fr/v1/guides/open-requests-in-chat",
                   "fr/v1/guides/workspace-notifications",
+                  "fr/v1/guides/spend-alerts",
                   "fr/v1/guides/slack-agent"
                 ]
               },
@@ -4158,6 +4195,23 @@
                       "fr/v1/api-reference/endpoint/budgets-update",
                       "fr/v1/api-reference/endpoint/budgets-delete",
                       "fr/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Règles de dépenses",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "fr/v1/api-reference/endpoint/spend-rules-create",
+                      "fr/v1/api-reference/endpoint/spend-rules-get",
+                      "fr/v1/api-reference/endpoint/spend-rules-update",
+                      "fr/v1/api-reference/endpoint/spend-rules-delete",
+                      "fr/v1/api-reference/endpoint/spend-rules-list",
+                      "fr/v1/api-reference/endpoint/spend-rules-preview",
+                      "fr/v1/api-reference/endpoint/spend-rules-test",
+                      "fr/v1/api-reference/endpoint/spend-rules-history",
+                      "fr/v1/api-reference/endpoint/spend-blocks-list",
+                      "fr/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -5308,6 +5362,7 @@
                   "de/v1/guides/broadcast",
                   "de/v1/guides/open-requests-in-chat",
                   "de/v1/guides/workspace-notifications",
+                  "de/v1/guides/spend-alerts",
                   "de/v1/guides/slack-agent"
                 ]
               },
@@ -5889,6 +5944,23 @@
                       "de/v1/api-reference/endpoint/budgets-update",
                       "de/v1/api-reference/endpoint/budgets-delete",
                       "de/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Ausgabenregeln",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "de/v1/api-reference/endpoint/spend-rules-create",
+                      "de/v1/api-reference/endpoint/spend-rules-get",
+                      "de/v1/api-reference/endpoint/spend-rules-update",
+                      "de/v1/api-reference/endpoint/spend-rules-delete",
+                      "de/v1/api-reference/endpoint/spend-rules-list",
+                      "de/v1/api-reference/endpoint/spend-rules-preview",
+                      "de/v1/api-reference/endpoint/spend-rules-test",
+                      "de/v1/api-reference/endpoint/spend-rules-history",
+                      "de/v1/api-reference/endpoint/spend-blocks-list",
+                      "de/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -7039,6 +7111,7 @@
                   "pt-BR/v1/guides/broadcast",
                   "pt-BR/v1/guides/open-requests-in-chat",
                   "pt-BR/v1/guides/workspace-notifications",
+                  "pt-BR/v1/guides/spend-alerts",
                   "pt-BR/v1/guides/slack-agent"
                 ]
               },
@@ -7620,6 +7693,23 @@
                       "pt-BR/v1/api-reference/endpoint/budgets-update",
                       "pt-BR/v1/api-reference/endpoint/budgets-delete",
                       "pt-BR/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Regras de gastos",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-create",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-get",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-update",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-delete",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-list",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-preview",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-test",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-history",
+                      "pt-BR/v1/api-reference/endpoint/spend-blocks-list",
+                      "pt-BR/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -8770,6 +8860,7 @@
                   "ja/v1/guides/broadcast",
                   "ja/v1/guides/open-requests-in-chat",
                   "ja/v1/guides/workspace-notifications",
+                  "ja/v1/guides/spend-alerts",
                   "ja/v1/guides/slack-agent"
                 ]
               },
@@ -9351,6 +9442,23 @@
                       "ja/v1/api-reference/endpoint/budgets-update",
                       "ja/v1/api-reference/endpoint/budgets-delete",
                       "ja/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "支出ルール",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "ja/v1/api-reference/endpoint/spend-rules-create",
+                      "ja/v1/api-reference/endpoint/spend-rules-get",
+                      "ja/v1/api-reference/endpoint/spend-rules-update",
+                      "ja/v1/api-reference/endpoint/spend-rules-delete",
+                      "ja/v1/api-reference/endpoint/spend-rules-list",
+                      "ja/v1/api-reference/endpoint/spend-rules-preview",
+                      "ja/v1/api-reference/endpoint/spend-rules-test",
+                      "ja/v1/api-reference/endpoint/spend-rules-history",
+                      "ja/v1/api-reference/endpoint/spend-blocks-list",
+                      "ja/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -10501,6 +10609,7 @@
                   "zh-Hans/v1/guides/broadcast",
                   "zh-Hans/v1/guides/open-requests-in-chat",
                   "zh-Hans/v1/guides/workspace-notifications",
+                  "zh-Hans/v1/guides/spend-alerts",
                   "zh-Hans/v1/guides/slack-agent"
                 ]
               },
@@ -11082,6 +11191,23 @@
                       "zh-Hans/v1/api-reference/endpoint/budgets-update",
                       "zh-Hans/v1/api-reference/endpoint/budgets-delete",
                       "zh-Hans/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "支出规则",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-create",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-get",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-update",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-delete",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-list",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-preview",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-test",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-history",
+                      "zh-Hans/v1/api-reference/endpoint/spend-blocks-list",
+                      "zh-Hans/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -12232,6 +12358,7 @@
                   "hi/v1/guides/broadcast",
                   "hi/v1/guides/open-requests-in-chat",
                   "hi/v1/guides/workspace-notifications",
+                  "hi/v1/guides/spend-alerts",
                   "hi/v1/guides/slack-agent"
                 ]
               },
@@ -12813,6 +12940,23 @@
                       "hi/v1/api-reference/endpoint/budgets-update",
                       "hi/v1/api-reference/endpoint/budgets-delete",
                       "hi/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "खर्च नियम",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "hi/v1/api-reference/endpoint/spend-rules-create",
+                      "hi/v1/api-reference/endpoint/spend-rules-get",
+                      "hi/v1/api-reference/endpoint/spend-rules-update",
+                      "hi/v1/api-reference/endpoint/spend-rules-delete",
+                      "hi/v1/api-reference/endpoint/spend-rules-list",
+                      "hi/v1/api-reference/endpoint/spend-rules-preview",
+                      "hi/v1/api-reference/endpoint/spend-rules-test",
+                      "hi/v1/api-reference/endpoint/spend-rules-history",
+                      "hi/v1/api-reference/endpoint/spend-blocks-list",
+                      "hi/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -13963,6 +14107,7 @@
                   "ar/v1/guides/broadcast",
                   "ar/v1/guides/open-requests-in-chat",
                   "ar/v1/guides/workspace-notifications",
+                  "ar/v1/guides/spend-alerts",
                   "ar/v1/guides/slack-agent"
                 ]
               },
@@ -14544,6 +14689,23 @@
                       "ar/v1/api-reference/endpoint/budgets-update",
                       "ar/v1/api-reference/endpoint/budgets-delete",
                       "ar/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "قواعد الإنفاق",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "ar/v1/api-reference/endpoint/spend-rules-create",
+                      "ar/v1/api-reference/endpoint/spend-rules-get",
+                      "ar/v1/api-reference/endpoint/spend-rules-update",
+                      "ar/v1/api-reference/endpoint/spend-rules-delete",
+                      "ar/v1/api-reference/endpoint/spend-rules-list",
+                      "ar/v1/api-reference/endpoint/spend-rules-preview",
+                      "ar/v1/api-reference/endpoint/spend-rules-test",
+                      "ar/v1/api-reference/endpoint/spend-rules-history",
+                      "ar/v1/api-reference/endpoint/spend-blocks-list",
+                      "ar/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {

@@ -1,0 +1,9 @@
+---
+title: "Ausgabenregel löschen"
+sidebarTitle: "Regel löschen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml DELETE /spend-rules/{id}"
+description: "Löscht eine Ausgabenregel und hebt eine von ihr gestartete Sperre auf."
+---
+
+Erfordert `spend_rules:delete`. Die Regel wird nicht mehr ausgewertet und zählt nicht mehr zum Limit von 50 Regeln. Eine aktive Sperre wird aufgehoben.

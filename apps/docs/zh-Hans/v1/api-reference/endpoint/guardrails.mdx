@@ -10,7 +10,7 @@ description: "以编程方式管理工作区和密钥的防护规则。"
 
 使用防护规则来应用隐私控制、提供商和模型限制、提示注入处理以及敏感信息策略。防护规则可以分配给 API 密钥、工作区成员或两者。
 
-防护规则不会强制执行请求或支出上限。`budgets` 输入以及 `*_limit_requests` 和 `*_limit_cost_nanos` 字段仅为兼容而接受和返回，不会产生任何效果。请改用 [API 密钥上限](./keys-update.mdx) 或 [工作区预算](./budgets-list.mdx)。
+防护规则不会限制请求或支出。请改用 [API 密钥上限](./keys-update.mdx)、[工作区预算](./budgets-list.mdx) 或 [支出警报](../../guides/spend-alerts.mdx)。防护规则的 `budgets` 输入以及 `*_limit_requests` 和 `*_limit_cost_nanos` 字段已移除；仍发送这些字段的客户端不会被拒绝，这些字段会被忽略。
 
 成功修改后会刷新工作区策略状态，并显示在工作区审计日志中。
 

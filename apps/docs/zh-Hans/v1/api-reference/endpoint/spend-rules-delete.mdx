@@ -1,0 +1,9 @@
+---
+title: "删除支出规则"
+sidebarTitle: "删除规则"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml DELETE /spend-rules/{id}"
+description: "删除支出规则，并解除它发起的拦截。"
+---
+
+需要 `spend_rules:delete`。该规则不再被评估，也不再计入 50 条规则的上限。如有当前拦截，会被解除。

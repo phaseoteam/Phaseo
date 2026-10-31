@@ -1,0 +1,225 @@
+---
+title: "Alertas de gasto"
+description: "Recibe alertas sobre gasto, presupuestos, previsiones, picos y saldo bajo, y bloquea solicitudes cuando el gasto supera un límite."
+icon: "badge-dollar-sign"
+---
+
+Las reglas de gasto vigilan el gasto de tu espacio de trabajo y envían una alerta cuando cruza un umbral. Una regla también puede bloquear solicitudes cuando el gasto supera un margen de gracia. Cualquier plan puede crear hasta 50 reglas por espacio de trabajo.
+
+<Note>Las alertas de gasto, los bloqueos y los informes de gasto se están implantando de forma gradual. Hasta que se activen, las reglas y los ajustes se guardan, pero no se evalúa, bloquea ni envía nada.</Note>
+
+## Cómo funciona una regla
+
+Una regla combina:
+
+- una **métrica**: qué se mide (consulta los [tipos de alerta](#alert-types-and-bases));
+- un **ámbito**: qué gasto cuenta, como el del espacio de trabajo, el de una clave API o el de un departamento;
+- un **periodo**: un día, una semana o un mes naturales, o una ventana continua de horas;
+- **umbrales**: el importe en dólares o los porcentajes que envían una alerta;
+- una **acción**: `notify`, o `block` para rechazar además las solicitudes que superen un límite.
+
+Phaseo evalúa las reglas a partir del uso registrado, unos minutos después de que terminen las solicitudes. Los espacios de trabajo con reglas también se comprueban cada hora, y las reglas de saldo cada 15 minutos. El gasto incluye los trabajos de vídeo, por lotes, música y tiempo real.
+
+Para crear una regla, abre **Gateway → Configuración → Notificaciones → Alertas de gasto** y selecciona **Añadir alerta**. El editor muestra el valor actual de una regla guardada y puede enviar una alerta de prueba. La página de una clave API y la página de presupuestos tienen accesos directos que abren el editor con el límite de la clave o el presupuesto como base. Los miembros pueden ver las reglas; los propietarios y administradores las crean, cambian, prueban y eliminan.
+
+<span id="alert-types-and-bases"></span>
+
+## Tipos de alerta y bases
+
+| Métrica | Envía una alerta cuando | Periodos |
+| --- | --- | --- |
+| `spend` | el gasto del periodo alcanza `threshold_amount` | cualquiera |
+| `budget_percent` | el gasto alcanza un porcentaje de una base, con hasta cinco umbrales como 50, 80 y 100 | cualquiera |
+| `forecast` | el gasto proyectado al final del periodo alcanza un importe o un porcentaje de una base | día, semana, mes |
+| `spike` | el gasto de las últimas horas es varias veces el gasto habitual | continuo |
+| `balance` | el saldo disponible baja hasta un importe, o duraría menos de un número de días | continuo, solo ámbito del espacio de trabajo |
+
+Los porcentajes se miden respecto a una base (`base_kind`):
+
+- `amount`: un importe en dólares fijado en la regla, que solo se usa para las alertas.
+- `workspace_budget`: el presupuesto del espacio de trabajo con el intervalo correspondiente (`base_ref`: `daily` para un periodo de día, `weekly` para una semana, `monthly` para un mes). Un presupuesto de por vida no puede ser una base.
+- `key_limit`: el límite de gasto de la clave API de la regla para la ventana correspondiente. Necesita el ámbito de clave.
+- `previous_period`: el gasto en el mismo punto del periodo anterior, como «ayer a esta hora». En las reglas continuas es la ventana anterior; en las previsiones, todo el periodo anterior.
+
+Una regla cuya base no existe, como un presupuesto eliminado o una clave sin límite de gasto, no envía nada hasta que la base vuelva a existir. Las salvaguardas no tienen límites de gasto y no pueden ser una base.
+
+## Ámbitos
+
+| Ámbito | `scope_id` | Cuenta |
+| --- | --- | --- |
+| `workspace` | ninguno | todo el gasto del espacio de trabajo |
+| `key` | ID de la clave API | las solicitudes hechas con la clave |
+| `member` | el ID de usuario del miembro | las solicitudes hechas con claves que creó el miembro, más sus propias solicitudes OAuth |
+| `department` | ID del departamento | todo lo que hacen las personas del departamento (ver abajo) |
+| `model` | ID del modelo, como `openai/gpt-5` | las solicitudes atendidas por el modelo |
+| `provider` | ID del proveedor | las solicitudes atendidas por el proveedor |
+
+El gasto de un departamento se atribuye por solicitud:
+
+1. Una clave asignada a un departamento cuenta solo para ese departamento.
+2. Si no, decide quien creó la clave: sus departamentos o, en las solicitudes OAuth, los departamentos del usuario que inició sesión.
+3. Quien pertenece a varios departamentos cuenta para **todos** de forma predeterminada. Elige **Solo el departamento principal** en lugar de **Todos sus departamentos** en **Ajustes de gasto del espacio de trabajo** (API: `spend.department_attribution: "primary"`) para contar solo su departamento principal. Si ninguno está marcado como principal, va primero un departamento al que se le añadió a mano y después el más antiguo.
+
+La pertenencia a los departamentos se lee cada vez que se evalúa la regla, así que mover a alguien a otro departamento traslada con él su gasto del periodo actual. Como una persona puede contar para varios departamentos, la suma de los departamentos puede superar el total del espacio de trabajo. El uso anterior a septiembre de 2026 no se atribuye a miembros ni departamentos.
+
+## Periodos y zonas horarias
+
+El día, la semana y el mes son periodos naturales. Las semanas van de lunes a domingo. Cada regla puede tener su propia `time_zone` de IANA, como `Europe/London` o `America/New_York`; si no, usa la zona horaria de facturación del espacio de trabajo, que es UTC de forma predeterminada. Cambia la zona horaria de facturación en **Ajustes de gasto del espacio de trabajo** o con `spend.billing_time_zone` en la [API de ajustes de notificaciones](../api-reference/endpoint/notifications-settings-update.mdx). Los cambios de horario de verano se tienen en cuenta, y los nombres de zona distinguen mayúsculas y minúsculas.
+
+Un periodo `rolling` abarca las últimas `window_hours` (de 1 a 720) y avanza de forma continua. Las reglas de pico lo usan como ventana del pico, y las de saldo como el tiempo sobre el que promedian el gasto.
+
+<Note>Los [límites de clave](../api-reference/limits.mdx#key-limits-and-budgets) y los [presupuestos del espacio de trabajo](../api-reference/endpoint/budgets-list.mdx) siempre se restablecen en los límites de UTC. Una regla con una base `workspace_budget` o `key_limit` en otra zona horaria compara su propio día, semana o mes local con ese límite, así que su gasto puede diferir del que cuenta el límite.</Note>
+
+## Umbrales y alertas repetidas
+
+Según su métrica, una regla tiene de uno a cinco umbrales en porcentaje (de 1 a 1000) o un umbral en dólares.
+
+- En los periodos naturales, cada umbral envía como máximo una alerta por periodo. Cuando el gasto cruza varios umbrales a la vez, una sola alerta nombra el más alto y enumera los demás.
+- Las reglas continuas, de pico y de saldo usan en su lugar `cooldown_minutes` (de 5 a 43.200, 360 de forma predeterminada). Durante el periodo de espera solo un umbral más alto envía una alerta; después, la regla vuelve a avisar si el gasto sigue por encima.
+- Los umbrales ya enviados en este periodo no se vuelven a enviar al editar la regla.
+
+**Enviar prueba** entrega la alerta que la regla enviaría ahora, marcada como `[TEST]`, a los destinos de la regla. No se registra nada, y un espacio de trabajo puede enviar cinco pruebas por minuto. El **Historial** de cada regla enumera las alertas y los bloqueos que ha enviado.
+
+<span id="block-requests"></span>
+
+## Bloquear solicitudes
+
+Una regla `spend` o `budget_percent` con `action: "block"` avisa en sus umbrales y bloquea cuando el gasto alcanza el punto de bloqueo: `block_at_percent` de la base (110 de forma predeterminada, al menos el umbral más alto) o `block_at_amount` en una regla `spend`. Las reglas con una base `previous_period` no pueden bloquear. El espacio entre la última alerta y el punto de bloqueo es el margen de gracia: tu equipo recibe el aviso antes de que se detengan las solicitudes.
+
+<Warning>El bloqueo se aplica en la medida de lo posible. Usa el uso registrado, así que un bloqueo empieza unos minutos después de que el gasto supere el punto de bloqueo, y el gasto puede superarlo en ese tiempo. Para un tope estricto que se compruebe en cada solicitud, usa los límites de clave o los presupuestos del espacio de trabajo.</Warning>
+
+| | Bloqueo por regla de gasto | Límite de clave | Presupuesto del espacio de trabajo |
+| --- | --- | --- | --- |
+| Se comprueba | cada pocos minutos, con el uso registrado | en cada solicitud | en cada solicitud |
+| Ámbito | espacio de trabajo, clave, miembro, departamento, modelo o proveedor | una clave | el espacio de trabajo |
+| Periodos | día, semana, mes o continuo, en cualquier zona horaria | día, semana o mes UTC | día, semana o mes UTC, o de por vida |
+| Modelos gratuitos | no se bloquean salvo que `block_free_models` sea true | se cuentan | se cuentan |
+| Aviso previo | sí, en los umbrales de la regla | no | no |
+| Levantamiento | por un propietario o administrador, para el resto del periodo | subir el límite | subir el presupuesto |
+
+Mientras un bloqueo está activo, las solicitudes de su ámbito reciben `429` con el código de error `spend_rule_blocked`. El cuerpo incluye `reason: "spend_rule_block"`, `rule_id`, `rule_name`, `block_id`, `limit_scope`, `limit_value` (USD) y `reset_at`. `Retry-After` indica los segundos que faltan para que se restablezca el periodo. Una regla continua no tiene hora de restablecimiento: su bloqueo dura hasta que el gasto de la ventana baja del punto de bloqueo, y la respuesta no incluye `Retry-After`. Un bloqueo de proveedor quita las rutas de ese proveedor, y la solicitud solo se rechaza cuando no queda otra ruta. Las sesiones en tiempo real todavía no se bloquean.
+
+Mientras el gasto supera el último umbral de la regla pero no llega a su punto de bloqueo, las respuestas a las solicitudes de su ámbito incluyen un encabezado `x-phaseo-spend-warning` con hasta tres reglas, por ejemplo `rule_id=…; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Los clientes pueden registrarlo o reducir el ritmo antes de que empiece el bloqueo.
+
+Un bloqueo se levanta solo cuando se restablece el periodo, cuando el gasto de una regla continua baja de su punto de bloqueo, o cuando la regla se desactiva, se elimina o se cambia. Los propietarios y administradores pueden levantarlo en **Alertas de gasto → Bloqueos activos** o con [`POST /v1/spend-blocks/{id}/lift`](../api-reference/endpoint/spend-blocks-lift.mdx). Un bloqueo levantado no vuelve a empezar en el mismo periodo (en las reglas continuas, durante una ventana). Se envían notificaciones de bloqueos por gasto cuando un bloqueo empieza y cuando se levanta.
+
+## Saldo y autonomía
+
+Una regla `balance` vigila el saldo disponible del espacio de trabajo: su saldo de créditos menos los importes retenidos para las solicitudes en curso. Usa el ámbito del espacio de trabajo y un periodo continuo, y avisa cuando se cumple cualquiera de estas condiciones:
+
+- `threshold_amount`: el saldo disponible es igual o inferior a este importe;
+- `runway_days`: con el gasto diario medio de las últimas `window_hours`, el saldo duraría menos de estos días. Sin gasto reciente no hay alerta de autonomía.
+
+Una regla de saldo avisa una vez por cada caída. Solo vuelve a avisar cuando el saldo se ha recuperado y ha vuelto a bajar, y nunca con más frecuencia que su periodo de espera. No se envía ninguna alerta mientras la recarga automática esté activada y funcione.
+
+El correo de saldo bajo de **Configuración → Créditos** sigue siendo la opción sencilla predeterminada. Se envía una vez cada vez que el saldo baja de su umbral, como mucho cada seis horas, y no mientras la recarga automática funcione. Usa una regla de saldo para alertas de autonomía, otros destinos o un umbral distinto.
+
+## Previsión
+
+Una regla `forecast` proyecta en línea recta el gasto hasta el final del día, la semana o el mes actuales: el gasto hasta ahora dividido entre la parte del periodo que ya ha pasado. Espera a que hayan pasado 3 horas de un día, 24 horas de una semana o 72 horas de un mes, y a que se hayan gastado al menos 0,01 $, para que un inicio tranquilo no dispare una alerta. La alerta indica cuándo se alcanzará el límite al ritmo actual.
+
+Fija un `threshold_amount` en dólares, o una base con porcentajes. Con una base `previous_period`, la proyección se compara con todo el periodo anterior. Cada umbral avisa una vez por periodo.
+
+## Pico
+
+Una regla `spike` compara el gasto de las últimas `window_hours` (de 1 a 56) con el gasto habitual para ese momento:
+
+- En ventanas de menos de 24 horas, el gasto habitual es la mediana de las mismas horas de cada uno de los siete días anteriores. En ventanas más largas, es la mediana de las ventanas anteriores de la misma duración en los siete días anteriores.
+- Avisa cuando el gasto es al menos `spike_multiplier` veces el habitual (3 de forma predeterminada) y al menos `spike_floor` (5 $ de forma predeterminada).
+- Necesita gasto del espacio de trabajo en al menos tres de esas ventanas anteriores. Hasta entonces, el editor indica que todavía está aprendiendo. Cuando el gasto habitual es cero, solo se aplica el mínimo.
+- Usa un periodo de espera (6 horas de forma predeterminada) y nunca bloquea.
+
+La comparación usa pasos exactos de 24 horas, así que, tras un cambio de horario de verano, compara con una hora antes o después en el reloj local. Las reglas de pico se comprueban cuando llega uso nuevo.
+
+## Informes de gasto
+
+Los propietarios reciben un informe semanal de gasto de forma predeterminada, y los administradores pueden activarlo. También hay informes diarios y mensuales. La [guía de notificaciones del espacio de trabajo](./workspace-notifications.mdx#spend-reports) explica los ajustes y el contenido. Además:
+
+- Un informe se envía entre las 09:00 y las 21:00 en la zona horaria de facturación el primer día después de su periodo. Si no se puede enviar ese día, se omite en lugar de enviarse tarde.
+- La previsión de un informe corresponde al mes de facturación actual.
+- Los totales de miembros y departamentos incluyen los trabajos asíncronos y siguen la regla de departamentos anterior, así que pueden diferir ligeramente del total.
+- Cada persona se da de baja de su propia copia del informe de un espacio de trabajo. Los miembros que no son propietarios ni administradores nunca lo reciben.
+
+## Enrutamiento y destinos
+
+Las reglas de gasto envían tres tipos de notificación. Elige adónde va cada una en **Configuración → Notificaciones**:
+
+| Ruta | Tipo | Se envía cuando |
+| --- | --- | --- |
+| Alertas de gasto | `spend_alert` | se cruza un umbral de una regla |
+| Bloqueos por gasto | `spend_blocked` | un bloqueo empieza o se levanta (`payload.state` es `started` o `lifted`) |
+| Informes de gasto | `spend_report` | toca enviar un informe de gasto |
+
+Una regla puede tener sus propios destinos. Sustituyen las rutas Alertas de gasto y Bloqueos por gasto para esa regla; si están todos en pausa, las alertas de la regla no se envían a las rutas en su lugar. Las alertas y los bloqueos también llegan a la aplicación móvil de los propietarios y administradores, y de quien creó la clave o el miembro al que se refiere la regla.
+
+Los webhooks personalizados reciben la alerta en JSON, con `title`, `message`, `rule_id`, `rule_name`, `metric`, `scope`, `period`, `value_nanos` y, según la métrica, `base_nanos`, `forecast`, `spike` o los campos de saldo. Verifica cada entrega con su firma; consulta la sección sobre cómo verificar las firmas de webhook en las [notificaciones del espacio de trabajo](./workspace-notifications.mdx).
+
+## Gestionar reglas con la API
+
+La [API de reglas de gasto](../api-reference/endpoint/spend-rules-list.mdx) usa una clave de gestión con `spend_rules:read`, `spend_rules:write` o `spend_rules:delete`. Los importes se pueden enviar en dólares (`threshold_amount_usd`) o de forma exacta en nanodólares (`threshold_amount_nanos`), y las respuestas incluyen ambos.
+
+```bash
+curl https://api.phaseo.app/v1/spend-rules \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Monthly budget",
+    "metric": "budget_percent",
+    "period": "month",
+    "base_kind": "workspace_budget",
+    "base_ref": "monthly",
+    "threshold_percents": [50, 80, 100],
+    "action": "block",
+    "block_at_percent": 110
+  }'
+```
+
+Usa [`GET /v1/spend-rules/{id}/preview`](../api-reference/endpoint/spend-rules-preview.mdx) para ver el valor actual y el siguiente umbral, y [`POST /v1/spend-rules/{id}/test`](../api-reference/endpoint/spend-rules-test.mdx) para enviar una prueba. [`GET /v1/spend-blocks`](../api-reference/endpoint/spend-blocks-list.mdx) enumera los bloqueos activos. La zona horaria de facturación, la atribución por departamentos y los ajustes de informes están en el objeto `spend` de los [ajustes de notificaciones](../api-reference/endpoint/notifications-settings-update.mdx).
+
+## Gestionar reglas con Terraform
+
+El [proveedor de Terraform de Phaseo](https://github.com/phaseoteam/terraform-provider-phaseo) (`phaseoteam/phaseo`) tiene los recursos `phaseo_spend_rule` y `phaseo_workspace_budget`, y las fuentes de datos `phaseo_spend_rules`, `phaseo_spend_blocks` y `phaseo_workspace_budgets`.
+
+```hcl
+resource "phaseo_workspace_budget" "monthly" {
+  interval = "monthly"
+  limit    = 500
+}
+
+resource "phaseo_spend_rule" "monthly_budget" {
+  name               = "Monthly budget"
+  metric             = "budget_percent"
+  period             = "month"
+  base_kind          = "workspace_budget"
+  base_ref           = "monthly"
+  threshold_percents = [50, 80, 100]
+  action             = "block"
+  block_at_percent   = 110
+
+  depends_on = [phaseo_workspace_budget.monthly]
+}
+
+resource "phaseo_spend_rule" "spike" {
+  name             = "Spend spike"
+  metric           = "spike"
+  period           = "rolling"
+  window_hours     = 3
+  spike_multiplier = 4
+}
+```
+
+Importa una regla o un presupuesto existentes por su ID:
+
+```bash
+terraform import phaseo_spend_rule.monthly_budget 11111111-1111-4111-8111-111111111111
+```
+
+<Visibility for="agents">
+Reglas sobre reglas de gasto para agentes, como resumen de esta página:
+
+- Los bloqueos de las reglas de gasto se aplican en la medida de lo posible y empiezan minutos después del límite; para topes exactos usa los límites de clave o los presupuestos del espacio de trabajo.
+- Una solicitud bloqueada devuelve `429` con `spend_rule_blocked`, `rule_id`, `block_id` y `reset_at`. Espera `Retry-After`; sin él, el bloqueo dura hasta que baja el gasto de la ventana continua o un propietario o administrador lo levanta con `POST /v1/spend-blocks/{id}/lift`. No reintentes en bucle.
+- `x-phaseo-spend-warning` en una respuesta significa que una regla que bloquea ha superado su último umbral de alerta; puede llegar un bloqueo.
+- Los modelos gratuitos no se bloquean salvo que la regla active `block_free_models`.
+- Los periodos naturales usan la zona horaria de la regla (de forma predeterminada, la zona horaria de facturación del espacio de trabajo, que es UTC de forma predeterminada); los límites de clave y los presupuestos del espacio de trabajo usan UTC.
+</Visibility>

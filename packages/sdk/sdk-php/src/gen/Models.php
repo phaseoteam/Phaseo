@@ -3147,10 +3147,6 @@ class Guardrail
 	public $allowed_api_model_ids;
 	/** @var string|null */
 	public $created_at;
-	/** @var int|null */
-	public $daily_limit_cost_nanos;
-	/** @var int|null */
-	public $daily_limit_requests;
 	/** @var string|null */
 	public $description;
 	/** @var bool|null */
@@ -3159,10 +3155,6 @@ class Guardrail
 	public $id;
 	/** @var string|null */
 	public $model_restriction_mode;
-	/** @var int|null */
-	public $monthly_limit_cost_nanos;
-	/** @var int|null */
-	public $monthly_limit_requests;
 	/** @var string */
 	public $name;
 	/** @var bool|null */
@@ -3193,36 +3185,14 @@ class Guardrail
 	public $sensitive_info_rules;
 	/** @var string|null */
 	public $updated_at;
-	/** @var int|null */
-	public $weekly_limit_cost_nanos;
-	/** @var int|null */
-	public $weekly_limit_requests;
 	/** @var string */
 	public $workspace_id;
-}
-
-class GuardrailBudgetInput
-{
-	/** @var int|null */
-	public $dailyCostNanos;
-	/** @var int|null */
-	public $dailyRequests;
-	/** @var int|null */
-	public $monthlyCostNanos;
-	/** @var int|null */
-	public $monthlyRequests;
-	/** @var int|null */
-	public $weeklyCostNanos;
-	/** @var int|null */
-	public $weeklyRequests;
 }
 
 class GuardrailCreateRequest
 {
 	/** @var array|null */
 	public $allowedApiModelIds;
-	/** @var array<string, mixed>|null */
-	public $budgets;
 	/** @var string|null */
 	public $description;
 	/** @var bool|null */
@@ -3359,8 +3329,6 @@ class GuardrailPolicyInput
 {
 	/** @var array|null */
 	public $allowedApiModelIds;
-	/** @var array<string, mixed>|null */
-	public $budgets;
 	/** @var string|null */
 	public $description;
 	/** @var bool|null */
@@ -3413,8 +3381,6 @@ class GuardrailUpdateRequest
 {
 	/** @var array|null */
 	public $allowedApiModelIds;
-	/** @var array<string, mixed>|null */
-	public $budgets;
 	/** @var string|null */
 	public $description;
 	/** @var bool|null */

@@ -4306,12 +4306,6 @@ public sealed class Guardrail
 	[JsonPropertyName("created_at")]
 	public string? CreatedAt { get; set; }
 
-	[JsonPropertyName("daily_limit_cost_nanos")]
-	public long? DailyLimitCostNanos { get; set; }
-
-	[JsonPropertyName("daily_limit_requests")]
-	public long? DailyLimitRequests { get; set; }
-
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
 
@@ -4323,12 +4317,6 @@ public sealed class Guardrail
 
 	[JsonPropertyName("model_restriction_mode")]
 	public string? ModelRestrictionMode { get; set; }
-
-	[JsonPropertyName("monthly_limit_cost_nanos")]
-	public long? MonthlyLimitCostNanos { get; set; }
-
-	[JsonPropertyName("monthly_limit_requests")]
-	public long? MonthlyLimitRequests { get; set; }
 
 	[JsonPropertyName("name")]
 	public string Name { get; set; }
@@ -4375,36 +4363,8 @@ public sealed class Guardrail
 	[JsonPropertyName("updated_at")]
 	public string? UpdatedAt { get; set; }
 
-	[JsonPropertyName("weekly_limit_cost_nanos")]
-	public long? WeeklyLimitCostNanos { get; set; }
-
-	[JsonPropertyName("weekly_limit_requests")]
-	public long? WeeklyLimitRequests { get; set; }
-
 	[JsonPropertyName("workspace_id")]
 	public string WorkspaceId { get; set; }
-
-}
-
-public sealed class GuardrailBudgetInput
-{
-	[JsonPropertyName("dailyCostNanos")]
-	public long? DailyCostNanos { get; set; }
-
-	[JsonPropertyName("dailyRequests")]
-	public long? DailyRequests { get; set; }
-
-	[JsonPropertyName("monthlyCostNanos")]
-	public long? MonthlyCostNanos { get; set; }
-
-	[JsonPropertyName("monthlyRequests")]
-	public long? MonthlyRequests { get; set; }
-
-	[JsonPropertyName("weeklyCostNanos")]
-	public long? WeeklyCostNanos { get; set; }
-
-	[JsonPropertyName("weeklyRequests")]
-	public long? WeeklyRequests { get; set; }
 
 }
 
@@ -4412,9 +4372,6 @@ public sealed class GuardrailCreateRequest
 {
 	[JsonPropertyName("allowedApiModelIds")]
 	public List<string>? AllowedApiModelIds { get; set; }
-
-	[JsonPropertyName("budgets")]
-	public Dictionary<string, object>? Budgets { get; set; }
 
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
@@ -4594,9 +4551,6 @@ public sealed class GuardrailPolicyInput
 	[JsonPropertyName("allowedApiModelIds")]
 	public List<string>? AllowedApiModelIds { get; set; }
 
-	[JsonPropertyName("budgets")]
-	public Dictionary<string, object>? Budgets { get; set; }
-
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
 
@@ -4668,9 +4622,6 @@ public sealed class GuardrailUpdateRequest
 {
 	[JsonPropertyName("allowedApiModelIds")]
 	public List<string>? AllowedApiModelIds { get; set; }
-
-	[JsonPropertyName("budgets")]
-	public Dictionary<string, object>? Budgets { get; set; }
 
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }

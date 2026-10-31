@@ -1,0 +1,9 @@
+---
+title: "解除支出拦截"
+sidebarTitle: "解除拦截"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /spend-blocks/{id}/lift"
+description: "让支出拦截范围内的请求重新通过。"
+---
+
+需要 `spend_rules:write`。OAuth 调用方必须是工作区所有者或管理员。拦截在同一周期内不会再次开始（滚动规则为一个窗口内），并会发送 **支出拦截** 通知。请求大约一分钟内即可看到变化。

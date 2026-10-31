@@ -37,6 +37,8 @@ Los presupuestos de departamento se gestionan con la API `/v1/department-budgets
 
 Los propietarios y administradores también pueden gestionar los presupuestos de departamento en [Configuración → Presupuestos](https://phaseo.app/settings/budgets), o con el recurso `phaseo_department_budget` del proveedor de Terraform. Desde la CLI, usa `phaseo department-budgets`.
 
+Las [alertas de gasto](../guides/spend-alerts.mdx) pueden avisar antes de que se alcancen estos límites. Una regla de gasto configurada para bloquear devuelve en su lugar `429` con el código de error `spend_rule_blocked`; se aplica en la medida de lo posible y empieza unos minutos después de que el gasto supere su límite, así que usa los límites de clave y los presupuestos para topes exactos.
+
 ## Políticas de límite de frecuencia
 
 Los administradores del espacio de trabajo pueden crear políticas de límite de frecuencia con nombre mediante la API de administración `/v1/rate-limits` y asignarlas a claves API, miembros del espacio de trabajo, departamentos, barreras de seguridad o como valor predeterminado para cada usuario final. El gateway aplica el `requests_per_minute` y el `tokens_per_minute` de una política, cada uno medido en un minuto móvil:
@@ -87,6 +89,7 @@ Reglas de límites de tasa para agentes, resumen de esta página:
 - Las cuotas del Gateway devuelven `429` con el motivo `customer_requests_per_minute` o `free_requests_per_day`; espera los segundos de `Retry-After`. Si la aplicación de cuotas no está disponible, el Gateway devuelve `503` con indicaciones para reintentar.
 - Los límites de clave y los presupuestos devuelven `429` con `key_limit_exceeded` y un `reset_at`. Sin `Retry-After`, el límite no se restablece solo: aumenta el límite o usa otra clave en lugar de reintentar.
 - Un presupuesto de departamento agotado devuelve `429` con `key_limit_exceeded`, el motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` y `reset_at`; espera los segundos de `Retry-After` o aumenta el presupuesto. Los presupuestos de departamento no bloquean las solicitudes por lotes, en tiempo real ni OAuth. Si la comprobación del presupuesto no está disponible, la solicitud se permite.
+- Las reglas de gasto que bloquean devuelven `429` con `spend_rule_blocked`; espera `Retry-After` o pide a un propietario o administrador que levante el bloqueo. `x-phaseo-spend-warning` significa que puede llegar un bloqueo.
 - Las políticas de límite de tasa del espacio de trabajo devuelven `429` con `rate_limit_exceeded`, `policy_id` y `limit_scope`. `x-ratelimit-remaining-requests` es aproximado.
 - `Retry-After` puede ser un número de segundos o una fecha HTTP; valídalo antes de programar un reintento. Nunca reenvíes un trabajo de vídeo o por lotes ambiguo; consulta su estado.
 </Visibility>

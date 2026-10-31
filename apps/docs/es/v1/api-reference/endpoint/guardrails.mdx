@@ -10,7 +10,7 @@ La gestión de barreras de protección requiere una clave de API de gestión. La
 
 Usa las salvaguardas para aplicar controles de privacidad, restricciones de proveedores y modelos, gestión de inyección de prompts y políticas de información sensible. Una salvaguarda puede asignarse a claves API, a miembros del espacio de trabajo o a ambos.
 
-Las salvaguardas no aplican límites de solicitudes ni de gasto. La entrada `budgets` y los campos `*_limit_requests` y `*_limit_cost_nanos` se aceptan y se devuelven por compatibilidad, pero no tienen ningún efecto. Usa en su lugar los [límites de la clave API](./keys-update.mdx) o los [presupuestos del espacio de trabajo](./budgets-list.mdx).
+Las salvaguardas no limitan las solicitudes ni el gasto. Usa en su lugar los [límites de la clave API](./keys-update.mdx), los [presupuestos del espacio de trabajo](./budgets-list.mdx) o las [alertas de gasto](../../guides/spend-alerts.mdx). La entrada `budgets` y los campos `*_limit_requests` y `*_limit_cost_nanos` se han eliminado de las salvaguardas; un cliente que todavía los envíe no se rechaza y se ignoran.
 
 Las modificaciones correctas actualizan el estado de las políticas del espacio de trabajo y aparecen en su registro de auditoría.
 
