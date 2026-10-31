@@ -65,6 +65,8 @@ Tools in every mode. The orchestration MCP server is created for every mode of e
 - ACP and Grok: only the orchestration server, with file and terminal capabilities still off.
 - Pi: `--tools mcp__phaseo__*` in Chat, and the Plan allowlist adds that pattern. Pi's `--tools` filters extension tools and `--no-tools` disables them.
 
+Claude background work. Claude ends its background shells and monitors when its input closes, and Phaseo used to close the input as soon as the prompt was sent, so a turn could not outlive them. For Claude chats with the orchestration server, `background_wait({ taskIds, waiting? })` marks tasks the turn waits for (ids Claude reported with `task_started`; others come back unmatched). The adapter keeps the prompt stream open until a result arrives with no awaited task unfinished, so the chat stays Working. When the last awaited task finishes after a result, Claude is expected to wake and answer; if no result follows within a minute, the input closes and the turn ends. Not verified against a live Claude session: the fixture covers the stream order only. Other harnesses do not get the tool.
+
 Drain now reloads the task after the asynchronous server setup, so prompts queued meanwhile are not overwritten.
 
 Instructions. `orchestrationInstructions` (`shared/orchestration.ts`) covers when to delegate, choosing with `list_agents`, stable request ids, background versus wait, results as messages, and limits. It is added to:

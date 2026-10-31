@@ -113,6 +113,8 @@ export type ThreadTools = {
 	runSchedule?: (id: string) => Promise<ScheduledTask>;
 	/** T3's browser tools, on this chat's own browser tabs; present only while the app has a window. */
 	browser?: BrowserAgentTools;
+	/** background_wait (Claude): keep this turn open until the given background tasks finish. */
+	backgroundWait?: (taskIds: string[], waiting: boolean) => Promise<{ matched: string[]; unmatched: string[] }>;
 	/** move_to_worktree: this chat continues in a new worktree of its project from its next turn. */
 	moveToWorktree?: (request: WorktreeMove) => Promise<{ projectId: string; branch: string; continuation: boolean; message: string }>;
 	/** html_preview and html_render: check a page, then show it inline in this chat above the reply. */

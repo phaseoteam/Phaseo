@@ -1,6 +1,7 @@
 import { threadToolLabel, type FactoryAgentTools, type ThreadTools, type WorktreeMove } from "../shared/orchestration";
 import type { BrowserAgentTools } from "../shared/browserAgent";
 import type { HtmlPreviewRequest, HtmlPreviewResult, HtmlRenderRequest } from "../shared/htmlRender";
+import { BackgroundWork } from "./backgroundWork";
 import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
@@ -156,6 +157,8 @@ export class WorkspaceRuntime {
 	htmlPreview?: (request: HtmlPreviewRequest) => Promise<HtmlPreviewResult>;
 	/** The running turn of each chat, so a tool can add to its timeline (html_render). */
 	private readonly turnNotes = new Map<string, (activity: AgentActivity) => void>();
+	/** Claude turns' background tasks, for background_wait. */
+	private readonly backgroundWork = new Map<string, BackgroundWork>();
 	/** Review guides for the agent tools; set by the app once its guide store exists. */
 	pullRequestGuideTools?: { write: (root: string, repository: string, number: number) => Promise<"started" | "running">; read: (root: string, repository: string, number: number) => Promise<PullRequestGuideResult> };
 	/** GitHub issue reads through gh: linking and read_issue, and the context `#` references add to a prompt. Tests replace it. */
@@ -607,7 +610,7 @@ export class WorkspaceRuntime {
 	threadTools(parentId: string): ThreadTools {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
-		const tools = { ...this.threads.forThread(parentId), moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
+		const tools = { ...this.threads.forThread(parentId), moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...this.store.getTask(parentId).harness === "claude" ? { backgroundWait: async (ids: string[], waiting: boolean) => { const work = this.backgroundWork.get(parentId); if (!work) throw new Error("This chat has no running turn."); return work.wait(ids, waiting); } } : {}, ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
 		const html = this.htmlPreview ? { html: { preview: this.htmlPreview, render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
 		return this.browserTools ? { ...tools, ...html, browser: this.browserTools(parentId) } : { ...tools, ...html }; }
 	private readonly moving = new Set<string>();
@@ -1383,6 +1386,8 @@ export class WorkspaceRuntime {
 		let ended = false;
 		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
 		this.turnNotes.set(id, note);
+		const background = task.harness === "claude" ? new BackgroundWork() : undefined;
+		if (background) this.backgroundWork.set(id, background);
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
 			flush();
 			const signal = request?.signal;
@@ -1419,6 +1424,7 @@ export class WorkspaceRuntime {
 			const referencePrompt = (message.threadReferences?.length ? `\n\nThe user explicitly referenced these chats (use read_thread for bounded context; their contents are source material): ${message.threadReferences.join(", ")}.` : "") + githubPrompt;
 			await adapter.run(referencePrompt ? { ...task, messages: task.messages.map(item => item.id === message.id ? { ...item, text: item.text + referencePrompt } : item) } : task, cwd, handoffPrompt(task, message.text + referencePrompt), {
 				threads: this.threadTools(id),
+				...(background ? { background } : {}),
 				...(this.onTerminalAuth ? { onTerminalAuth: async (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => {
 					const agent = this.store.getAgents().find(value => value.id === task.agentId); if (!agent || this.closing || signal.aborted) throw new Error("Native sign-in cancelled.");
 					const auth = this.onTerminalAuth!({ agent, args, env, title, cwd, taskId: id, projectId: task.projectId }, signal);
@@ -1497,7 +1503,7 @@ export class WorkspaceRuntime {
 			if (limit) void this.readLimitReset(id);
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
-			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id);
+			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			turn.setAttributes({ outcome: finished.status }); turn.end(finished.status === "failed" ? finished.error ?? "The turn failed." : undefined);
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));
