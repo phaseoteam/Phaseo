@@ -1,25 +1,30 @@
 {
   // The Phaseo website (TanStack Start) as a Cloudflare Worker. CI deploys it
-  // from main (.github/workflows/ci.yml, "Deploy Web"). Until the routes below
-  // are enabled it is served on workers.dev only.
+  // from main (.github/workflows/ci.yml, "Deploy Web").
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "phaseo-web",
-  "main": "@tanstack/react-start/server-entry",
+  "main": "./src/server.ts",
   "compatibility_date": "2026-10-20",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": false,
   "upload_source_maps": false,
   "observability": { "enabled": true },
-  "vars": { "WEB_API_ORIGIN": "https://phaseo.app" },
+  "vars": {
+    "WEB_API_ORIGIN": "https://phaseo.app",
+    "PHASEO_ENV": "production",
+    // Rollout canary (src/lib/start/canary.ts): on these hosts, CANARY_PERCENT
+    // of visitors are served here and the rest pass through to the previous
+    // site. 0 = everyone on the previous site (fast rollback); 100 = all here.
+    "CANARY_HOSTS": "phaseo.app,www.phaseo.app",
+    "CANARY_PERCENT": "0"
+  },
   // src/content (blog, help) is read through this binding (phaseo:content-fs).
   "assets": { "binding": "ASSETS" }
-  // Production cutover: uncomment this route (and add a comma after "assets"
-  // above) once the Worker's secrets are set and the workers.dev deploy has
-  // been checked. Deploying with it sends phaseo.app traffic to this Worker
-  // instead of the current origin, so leave it disabled until then. The more
-  // specific phaseo.app/api/_web/* and /api/account/* routes stay with the web
-  // API Worker (apps/web-api/wrangler.toml).
+  // Production route: with the canary at 0 it only passes requests through, so
+  // enabling it is safe to roll back by removing it again. The more specific
+  // phaseo.app/api/_web/* and /api/account/* routes stay with the web API
+  // Worker (apps/web-api/wrangler.toml).
   // "routes": [
   //   { "pattern": "phaseo.app/*", "zone_name": "phaseo.app" }
   // ]
