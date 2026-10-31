@@ -5,6 +5,7 @@ import { validateSchedule } from "../shared/missions";
 import { secretRequestTimeout, validateSecretRequest } from "../shared/secretRequests";
 import { browserAgentActions, browserAgentDefaults, browserAgentModifiers, validateBrowserAct, validateBrowserAppearance, validateBrowserClose, validateBrowserDialog, validateBrowserEvaluate, validateBrowserOpen, validateBrowserResize, validateBrowserSnapshot, validateBrowserTab, validateBrowserTarget, validateBrowserType, validateBrowserWait, type BrowserAgentTools } from "../shared/browserAgent";
 import { browserViewportPresets } from "../shared/browser";
+import { htmlRenderGuide, htmlRenderLimits, validateHtmlPreview, validateHtmlRender } from "../shared/htmlRender";
 
 function object(value: unknown): Record<string, unknown> {
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Expected thread tool arguments.");
@@ -116,6 +117,15 @@ export function browserTools(browser: BrowserAgentTools, options: { images: bool
 	];
 }
 
+/** html_preview checks a page (screenshot, height, console); html_render shows it inline in this chat above the reply. Neither changes the workspace. */
+export function htmlTools(html: NonNullable<ThreadTools["html"]>, options: { images: boolean }) {
+	const page = { type: "string", description: "A complete, self-contained HTML document." };
+	return [
+		({ id: "html_preview", description: `Check an HTML page before html_render: returns its contentHeight, what it logged to the console${options.images ? " and a screenshot" : ""}. Rules are in html_render.`, parameters: { type: "object", properties: { html: page, width: { type: "integer", minimum: htmlRenderLimits.minWidth, maximum: htmlRenderLimits.maxWidth, description: `CSS pixels (default ${htmlRenderLimits.columnWidth}; about 390 for phones).` }, appearance: { type: "string", enum: ["dark", "light"], description: "Default dark." } }, required: ["html"], additionalProperties: false }, execute: async (raw: unknown) => { const result = await html.preview(validateHtmlPreview(raw)); if (options.images) return result; const { image: _image, ...text } = result; return text; } }),
+		({ id: "html_render", description: `Show a finished HTML page (a chart, diagram, table or mockup) inline in this chat, above your reply, in a sandboxed frame the user can open full screen. Do not announce or restate the page. ${htmlRenderGuide}`, parameters: { type: "object", properties: { html: page, title: { type: "string", maxLength: htmlRenderLimits.titleLength }, height: { type: "integer", minimum: htmlRenderLimits.minHeight, maximum: htmlRenderLimits.maxHeight, description: "Frame height in CSS pixels before the page reports its own; use html_preview's contentHeight." } }, required: ["html", "title", "height"], additionalProperties: false }, execute: async (raw: unknown) => html.render(validateHtmlRender(raw)) }),
+	];
+}
+
 const workItemStatuses = ["open", "running", "needs-you", "done", "closed"] as const;
 const workItemStages = ["triage", "reproduce", "fix", "review", "verify"] as const;
 /** Factory's work items (GitHub issues and pull requests it tracks) for agents: list and read them, and run a stage. */
@@ -194,6 +204,7 @@ export function threadTools(service: ThreadTools, options: { images?: boolean } 
 		({ id: "run_scheduled_task_now", description: "Start one run of a scheduled task now, in a fresh chat; its schedule is unchanged. Requires full access outside Plan mode.", requireApproval: true, parameters: { type: "object", properties: { id: { type: "string" } }, required: ["id"], additionalProperties: false }, execute: async (raw: unknown) => { if (!service.runSchedule) throw new Error("Scheduling is unavailable."); return service.runSchedule(text(object(raw), "id", 1000)!); } }),
 		...service.requestSecret ? [({ id: "request_secret", description: `Ask the user to type a secret (an API key, token or password) into a private field in this chat, and wait (default ${secretRequestTimeout.default / 60000} minutes). You never see the value, and it never enters the conversation. Returns a secretRef, which run_command takes as secrets: { NAME: secretRef } to set an environment variable for one command, or with delivery "file" an owner-only file path to read inside a shell command, for example TOKEN="$(cat <file>)". Either lasts 24 hours. Never print the secret. When you need a secret or are asked how to provide one, call this instead of asking for it in the chat. declined means the user chose not to; ask again only if they want to.`, parameters: { type: "object", properties: { label: { type: "string", description: "What to enter, such as 'Stripe test key'." }, reason: { type: "string", description: "What it is for and where to find it." }, placeholder: { type: "string" }, delivery: { type: "string", enum: ["secretRef", "file"], description: "secretRef for run_command (Phaseo chats' default); file for any other shell (the default elsewhere)." }, timeoutMs: { type: "integer", minimum: secretRequestTimeout.minimum, maximum: secretRequestTimeout.maximum } }, required: ["label", "reason"], additionalProperties: false }, execute: async (raw: unknown, context?: unknown) => service.requestSecret!(validateSecretRequest(raw), abortSignal(context)) })] : [],
 		...service.browser ? browserTools(service.browser, { images: options.images ?? true }) : [],
+		...service.html ? htmlTools(service.html, { images: options.images ?? true }) : [],
 		...service.factory ? factoryTools(service.factory) : [],
 	];
 }

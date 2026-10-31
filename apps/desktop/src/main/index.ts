@@ -24,6 +24,8 @@ import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, nativeImage, No
 import path from "node:path";
 import { BrowserHost } from "./browserHost";
 import { BrowserAgent } from "./browserAgent";
+import { htmlPreview, registerHtmlRenderScheme, serveHtmlRenders } from "./htmlRenders";
+import { htmlRenderUrl } from "../shared/htmlRender";
 import { BrowserRecordings } from "./browserRecordings";
 import { localServers, probeAddress } from "./browserLocalServers";
 import { readT3ProjectFile } from "./t3ProjectFile";
@@ -1030,6 +1032,7 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 }
 
 const browserHost = new BrowserHost();
+registerHtmlRenderScheme();
 registerFactoryIpc(ipcMain, () => factoryService, senderWindow, async window => { const picked = await dialog.showOpenDialog(window, { title: "Choose a local clone of the repository", properties: ["openDirectory"] }); return picked.canceled ? undefined : picked.filePaths[0]; });
 // Recording runs in the window (it owns the tab's capture stream), so an agent's start or stop is a request the window answers.
 const agentRecordings = new Map<string, { resolve: (value: BrowserRecording | undefined) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }>();
@@ -1224,6 +1227,8 @@ app.whenReady().then(() => {
 		return limitResetAt(await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.timeout(30000)));
 	};
 	workspaceRuntime.browserTools = chatId => browserAgent.forChat(chatId);
+	serveHtmlRenders();
+	workspaceRuntime.htmlPreview = request => htmlPreview(request, htmlRenderUrl(request.html, request.appearance));
 	browserRecordings = new BrowserRecordings(path.join(app.getPath("userData"), "browser-recordings"));
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {

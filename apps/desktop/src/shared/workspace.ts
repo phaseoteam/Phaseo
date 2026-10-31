@@ -1,3 +1,4 @@
+import type { HtmlRenderActivity } from "./htmlRender";
 import type { Delegation, Launch } from "./orchestration";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
@@ -51,7 +52,8 @@ export type Message = { startedAt?: string; completedAt?: string; /** Working-tr
 export type MessageNotice = { kind: "pull-request" | "issue"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
 export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; githubReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
-export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string } };
+export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string };
+	/** A page an agent showed with html_render (its HTML is the text), shown above the reply. */ htmlRender?: HtmlRenderActivity };
 /** How the person's own answer is typed: text by default, or a typed control with bounds. */
 export type AgentQuestionInput = { kind: "text" | "multiline" | "number" | "integer" | "boolean" | "email" | "uri" | "date" | "date-time"; min?: number; max?: number; minLength?: number; maxLength?: number };
 export type AgentQuestionOption = { label: string; description?: string; preview?: string; /** Sent instead of the label when set; it may be empty. */ value?: string };

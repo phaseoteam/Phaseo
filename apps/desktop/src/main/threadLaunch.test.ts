@@ -6,7 +6,7 @@ import path from "node:path";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { MissionService } from "./missionService";
 import type { AgentAdapter } from "./agentAdapter";
-import { validateDelegate, validateLaunch, validateLaunchBatch } from "./threadTools";
+import { threadTools, validateDelegate, validateLaunch, validateLaunchBatch } from "./threadTools";
 import { defaultPreferences } from "../shared/preferences";
 import { threadToolLabel } from "../shared/orchestration";
 import { IssueIsPullRequestError, type IssueDetails } from "../shared/issueView";
@@ -133,6 +133,22 @@ describe("delegate_task isolation", () => {
 		await expect(noProject.delegate({ requestId: "x", title: "X", prompt: "X", isolation: "worktree" })).rejects.toThrow("no project");
 		expect(() => validateDelegate({ requestId: "x", title: "X", prompt: "X", branch: "a" })).toThrow("branch needs isolation worktree.");
 		expect(() => validateLaunch({ requestId: "x", title: "X", prompt: "X", isolation: "worktree" })).toThrow("isolation applies to delegate_task");
+	}));
+});
+
+describe("html_render", () => {
+	it("puts the page on the running turn and refuses once the turn has ended", async () => withRuntime(async (runtime, _directory, run) => {
+		runtime.htmlPreview = async request => ({ width: request.width, contentHeight: 120, capturedHeight: 120, consoleMessages: [], image: { mimeType: "image/png", data: "QUJD" } });
+		const id = await caller(runtime, "chat");
+		await runtime.command({ type: "send", id, text: "Chart it" });
+		await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+		const html = run.mock.calls[0][3].threads!.html!;
+		expect(await html.render({ html: "<svg></svg>", title: "Sales", height: 200 })).toMatchObject({ shown: true, title: "Sales" });
+		await vi.waitFor(() => expect(runtime.store.getTask(id).activities?.find(activity => activity.htmlRender)).toMatchObject({ type: "tool", text: "<svg></svg>", htmlRender: { title: "Sales", height: 200 } }));
+		const tools = threadTools(runtime.threadTools(id), { images: false });
+		expect(await tools.find(tool => tool.id === "html_preview")!.execute({ html: "<p>x</p>" })).toEqual({ width: 720, contentHeight: 120, capturedHeight: 120, consoleMessages: [] });
+		await runtime.command({ type: "cancel", id });
+		await expect(html.render({ html: "<p>", title: "Late", height: 100 })).rejects.toThrow("only while this chat's turn is running");
 	}));
 });
 

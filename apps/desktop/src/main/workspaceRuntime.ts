@@ -1,5 +1,6 @@
 import { threadToolLabel, type FactoryAgentTools, type ThreadTools } from "../shared/orchestration";
 import type { BrowserAgentTools } from "../shared/browserAgent";
+import type { HtmlPreviewRequest, HtmlPreviewResult, HtmlRenderRequest } from "../shared/htmlRender";
 import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
@@ -151,6 +152,10 @@ export class WorkspaceRuntime {
 	private readonly settledByTurn = new Set<string>();
 	/** T3's browser tools for one chat, on its own browser tabs; set by the app once it has a window. */
 	browserTools?: (chatId: string) => BrowserAgentTools;
+	/** html_preview's hidden-window render; set by the app once it is ready. */
+	htmlPreview?: (request: HtmlPreviewRequest) => Promise<HtmlPreviewResult>;
+	/** The running turn of each chat, so a tool can add to its timeline (html_render). */
+	private readonly turnNotes = new Map<string, (activity: AgentActivity) => void>();
 	/** Review guides for the agent tools; set by the app once its guide store exists. */
 	pullRequestGuideTools?: { write: (root: string, repository: string, number: number) => Promise<"started" | "running">; read: (root: string, repository: string, number: number) => Promise<PullRequestGuideResult> };
 	/** GitHub issue reads through gh: linking and read_issue, and the context `#` references add to a prompt. Tests replace it. */
@@ -603,7 +608,15 @@ export class WorkspaceRuntime {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
 		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
-		return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
+		const html = this.htmlPreview ? { html: { preview: this.htmlPreview, render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
+		return this.browserTools ? { ...tools, ...html, browser: this.browserTools(parentId) } : { ...tools, ...html }; }
+	/** Puts a page on the chat's running turn; the chat shows it above the reply. */
+	private htmlRender(id: string, request: HtmlRenderRequest) {
+		const note = this.turnNotes.get(id);
+		if (!note) throw new Error("html_render works only while this chat's turn is running.");
+		note({ id: `html-render:${randomUUID()}`, type: "tool", title: "html_render", text: request.html, status: "completed", htmlRender: { title: request.title, height: request.height } });
+		return { shown: true as const, title: request.title, height: request.height, message: "Shown to the user above your reply. Do not mention or describe the page; reply with only what it does not already say." };
+	}
 	/** The triage project of a top-level chat working in one; delegated agents report to their parent instead of drafting. */
 	private triageProject(id: string) {
 		const task = this.store.getTask(id);
@@ -1332,7 +1345,7 @@ export class WorkspaceRuntime {
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) priced = true;
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) addUsage(current.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text, existing?.type === "usage" ? existing.text : undefined);
 				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
-				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
+				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}), ...(activity.htmlRender ? { htmlRender: activity.htmlRender } : {}) });
 				// The ledger keeps when each request was billed, for the Usage page; a failed write leaves the chat's own record intact.
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) try { this.store.recordUsage(current, activityId, current.activities.find(value => value.id === activityId)!.text, Boolean(message.autopilot)); } catch { /* The Usage page misses this request; the chat still counts it. */ }
 			}
@@ -1345,6 +1358,7 @@ export class WorkspaceRuntime {
 		// Autopilot can note something after the turn has ended (its answer let the turn finish); that goes on the finished turn.
 		let ended = false;
 		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
+		this.turnNotes.set(id, note);
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
 			flush();
 			const signal = request?.signal;
@@ -1458,7 +1472,7 @@ export class WorkspaceRuntime {
 			if (limit) void this.readLimitReset(id);
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
-			ended = true;
+			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id);
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			turn.setAttributes({ outcome: finished.status }); turn.end(finished.status === "failed" ? finished.error ?? "The turn failed." : undefined);
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));

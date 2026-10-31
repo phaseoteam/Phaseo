@@ -10,6 +10,7 @@ import { formatRoundedCount, formatTime } from "@phaseo/app-kit/format";
 import { formatCost } from "../../shared/usageAmounts";
 import { cn } from "../lib/utils";
 import { MessageContent } from "../components/MessageContent";
+import { HtmlRenderFrame } from "../components/HtmlRenderFrame";
 import { MessageText } from "../components/MessageChips";
 import { ModelLogo } from "../components/ModelLogo";
 import { useTextCopy } from "../components/useTextCopy";
@@ -161,7 +162,9 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const final = isAnswer(latest) ? latest : complete && !live ? entries.findLast(entry => entry.kind === "message" && entry.value.role === "assistant") : undefined;
 	// Proposed plans stand on their own in the turn, as T3 Code's plan card does, rather than inside the work log.
 	const plans = entries.flatMap(entry => entry.kind === "activity" && entry.value.proposed ? [entry.value] : []);
-	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent") && !(entry.kind === "activity" && entry.value.proposed));
+	// Pages an agent showed with html_render stand above the reply, like plans.
+	const pages = entries.flatMap(entry => entry.kind === "activity" && entry.value.htmlRender ? [{ id: entry.value.id, html: entry.value.text, render: entry.value.htmlRender }] : []);
+	const work = entries.filter(entry => entry !== final && !(entry.kind === "message" && entry.value.delivery === "subagent") && !(entry.kind === "activity" && (entry.value.proposed || entry.value.htmlRender)));
 	const delegated = entries.filter(entry => entry.kind === "message" && entry.value.delivery === "subagent");
 	// The timeline omits usage reports, so read them from the turn's activities.
 	const usage = turnUsage(usageActivities), context = contextShare(usageActivities);
@@ -176,6 +179,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 			{plans.map(plan => <ProposedPlan key={plan.id} markdown={plan.text} projectId={task.projectId} status={plan.proposed?.outcome ? planOutcomes[plan.proposed.outcome] : undefined}>
 				{plan.proposed?.feedback && <p data-selectable className="mt-2 border-l-2 border-border pl-3 text-[13px] whitespace-pre-wrap text-muted-foreground">{plan.proposed.feedback}</p>}
 			</ProposedPlan>)}
+			{pages.map(page => <HtmlRenderFrame key={page.id} html={page.html} render={page.render} />)}
 			{live && !final && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
 			{final?.kind === "message" && <div data-selectable data-quote data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={final.value.text} projectId={task.projectId} repairLocalLinks /></div>}

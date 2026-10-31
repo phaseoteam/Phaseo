@@ -23,6 +23,7 @@ export const phaseoToolsets: Record<string, { description: string; match: (id: s
 	issues: { description: "link, read and watch GitHub issues", match: id => /(^|_)issues?(_|$)/.test(id) },
 	scheduling: { description: "create and manage scheduled tasks", match: id => /scheduled_task|^schedule_task$/.test(id) },
 	browser: { description: "open, read and use web pages in this chat's browser", match: id => id.startsWith("browser_") },
+	html: { description: "show an HTML page (a chart, diagram or mockup) inline in this chat", match: id => id.startsWith("html_") },
 };
 
 export type PhaseoReview =
@@ -258,7 +259,7 @@ export async function runPhaseoTurn(turn: PhaseoTurn): Promise<AgentRunResult<un
 export function phaseoOrchestrationPrompt(loaded: string[], full: string) {
 	if (loaded.length) return full;
 	const lines = full.split("\n");
-	return [lines[0], "You can delegate work to other agents with list_agents, delegate_task, wait_thread, list_threads and read_thread.", ...lines.slice(2, 9), "- More tools are available through load_tools: managing and launching chats, pull requests, scheduled tasks and this chat's browser. Load a set only when the task needs it."].join("\n");
+	return [lines[0], "You can delegate work to other agents with list_agents, delegate_task, wait_thread, list_threads and read_thread.", ...lines.slice(2, 9), "- More tools are available through load_tools: managing and launching chats, pull requests, scheduled tasks, this chat's browser and HTML pages shown inline (charts, diagrams). Load a set only when the task needs it."].join("\n");
 }
 
 /** A chat's lasting permission for a tool call, used by "always allow". */
