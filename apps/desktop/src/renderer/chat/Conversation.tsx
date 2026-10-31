@@ -4,6 +4,7 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
+import type { ConversationPage } from "../../shared/conversationPage";
 import { conversationTurns, turnDuration, type TurnEntry } from "../lib/conversationTurns";
 import { elapsedLabel, useNow } from "../lib/elapsed";
 import { contextShare, turnUsage } from "../lib/turnUsage";
@@ -208,11 +209,15 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	&& sameItems(a.entries, b.entries, entry => entry.value) && sameItems(a.usageActivities, b.usageActivities)
 	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness && a.task.mode === b.task.mode);
 
+/** Where each chat was left this session: the message at the top of the view and how far below the top it sat. */
+const scrollPositions = new Map<string, { id: string; offset: number }>();
+
 export function Conversation({ task, onAttachment, onBranch, onRewind, onRegenerate, children, compact, className }: { task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; onRegenerate?: (message: Message) => void; children?: ReactNode; compact?: boolean; className?: string }) {
 	const host = useRef<HTMLDivElement>(null);
 	const content = useRef<HTMLDivElement>(null);
 	const following = useRef(true);
-	const anchor = useRef<{ id?: string; top: number; scroll: number } | undefined>(undefined);
+	// `waiting` keeps a restored position until a page other than this one (the one holding its message) arrives.
+	const anchor = useRef<{ id?: string; top: number; scroll: number; waiting?: ConversationPage } | undefined>(undefined);
 	const [showLatest, setShowLatest] = useState(false);
 	// Find in chat (Mod+F), or a find the palette's message search asked for; `key` restarts the bar for a new request.
 	const [find, setFind] = useState<{ key: number; focus: number; initial?: { query: string; messageId?: string } }>();
@@ -244,7 +249,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 
 	function remember() {
 		const element = host.current;
-		if (!element) return;
+		if (!element || anchor.current?.waiting) return;
 		following.current = false;
 		const top = element.getBoundingClientRect().top;
 		const visible = (selector: string) => Array.from(element.querySelectorAll<HTMLElement>(selector)).find(value => value.getBoundingClientRect().bottom >= top);
@@ -258,18 +263,42 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 		const latest = !messages.page.later && element.scrollHeight - element.clientHeight - element.scrollTop <= 64;
 		following.current = latest; setShowLatest(!latest);
 	}
+	// A chat opens where it was left, unless it was left at the latest message.
+	useLayoutEffect(() => {
+		const element = host.current, saved = compact ? undefined : scrollPositions.get(task.id);
+		if (element && saved) {
+			following.current = false;
+			const top = element.getBoundingClientRect().top + saved.offset;
+			const loaded = Boolean(element.querySelector(`[data-conversation-id="${CSS.escape(saved.id)}"]`)) || !saved.id.startsWith("message:");
+			if (!loaded) messages.jumpTo(saved.id.slice("message:".length));
+			anchor.current = { id: saved.id, top, scroll: 0, ...(loaded ? {} : { waiting: messages.page }) };
+		}
+		return () => {
+			if (!element || compact) return;
+			if (following.current) { scrollPositions.delete(task.id); return; }
+			const view = element.getBoundingClientRect().top;
+			const entry = Array.from(element.querySelectorAll<HTMLElement>('[data-conversation-id^="message:"]')).find(value => value.getBoundingClientRect().bottom >= view);
+			if (entry?.dataset.conversationId) scrollPositions.set(task.id, { id: entry.dataset.conversationId, offset: entry.getBoundingClientRect().top - view });
+		};
+	}, []);
 	useLayoutEffect(() => {
 		const element = host.current;
 		if (!element) return;
 		if (anchor.current) {
 			const saved = anchor.current;
 			const entry = saved.id ? element.querySelector<HTMLElement>(`[data-conversation-id="${CSS.escape(saved.id)}"]`) : null;
+			if (!entry && saved.waiting) {
+				if (saved.waiting === messages.page && !messages.error) return;
+				// The message is gone (a rewind, say): open at the latest instead.
+				anchor.current = undefined; following.current = true; messages.latest(); element.scrollTop = element.scrollHeight; lastScroll.current = element.scrollTop;
+				return;
+			}
 			element.scrollTop = entry ? element.scrollTop + entry.getBoundingClientRect().top - saved.top : saved.scroll;
 			anchor.current = undefined;
 		} else if (following.current) element.scrollTop = element.scrollHeight;
 		// Programmatic scrolling is not the reader's: it must not page further.
 		lastScroll.current = element.scrollTop;
-	}, [task, messages.page]);
+	}, [task, messages.page, messages.error]);
 	// Pages load 50 at a time as the reader nears either end of the window (a screen ahead), in the direction they are
 	// moving. The rows stay as buttons for keyboards, and for a window too short to scroll.
 	useEffect(() => {

@@ -315,6 +315,8 @@ Tag a chat from its header (Add tag, or + next to its tags) or from Tags in its 
 
 A conversation with three or more questions that does not fit on screen shows the same navigation rail as the web chat on its left edge: one mark per question, the current one bright. Hover to preview the question and the start of its answer, and click to jump there.
 
+A chat you scrolled back in reopens where you left it (until the app restarts); one left at the latest message opens at the latest. If that message is gone, as after a rewind, the chat opens at the latest.
+
 Back and Forward (the arrows in the title bar) move between the chats and pages you opened. `Ctrl+[` and `Ctrl+]` (`⌘[`, `⌘]`), the mouse's side buttons and a two-finger sideways swipe on a trackpad do the same; a swipe shows an arrow at the edge that fills in once it is far enough to go. Over a browser page, the side buttons move through that page instead.
 
 Drag the sidebar's right edge to resize it (200–480 pixels; double-click to reset, or focus the edge and use the arrow keys).
