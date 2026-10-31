@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { defineTool } from "@phaseo/agent-sdk";
 import type { AgentMessage, AgentModelRequest, AgentModelResponse, AgentRunResult } from "@phaseo/agent-sdk";
 import type { Message, Task } from "../shared/workspace";
-import { activeToolIds, approvalRule, commandAllowed, runMatchesTranscript, runPhaseoTurn, type PhaseoTurn } from "./phaseoTurn";
+import { activeToolIds, approvalRule, commandAllowed, imageResultsToMessages, runMatchesTranscript, runPhaseoTurn, type PhaseoTurn } from "./phaseoTurn";
 
 const task: Task = { id: "task", title: "Owned", harness: "phaseo", mode: "code", model: "owned", status: "running", pinned: false, archived: false, queue: [], messages: [], createdAt: "", updatedAt: "" };
 const say = (content: string): AgentModelResponse => ({ message: { role: "assistant", content } });
@@ -32,6 +32,18 @@ describe("Phaseo turns", () => {
 		const sent = requests.at(-1)!.messages;
 		expect(sent.some(entry => entry.role === "tool" && entry.content.includes("answer = 42"))).toBe(true);
 		expect(sent.at(-1)).toEqual({ role: "user", content: "And now?" });
+	});
+
+	it("shows a tool's image to the model in the next message instead of as tool text", async () => {
+		const steering: AgentMessage[] = [];
+		const screenshot = { id: "browser_screenshot", execute: async () => ({ tabId: "t", width: 2, height: 1, image: { mimeType: "image/png", data: "QUJD" } }) };
+		const { turn, requests } = setup([call("browser_screenshot", {}), say("I see it.")], { tools: imageResultsToMessages([screenshot], steering), steering });
+		await runPhaseoTurn(turn("Look", null));
+		const sent = requests.at(-1)!.messages;
+		const result = sent.find(entry => entry.role === "tool")!;
+		expect(result.content).toContain("Shown to you in the next message.");
+		expect(result.content).not.toContain("QUJD");
+		expect(sent.some(entry => entry.role === "user" && Array.isArray(entry.content) && entry.content.some(part => part.type === "image_url" && part.image_url.url === "data:image/png;base64,QUJD"))).toBe(true);
 	});
 
 	it("starts afresh when the transcript no longer matches the run", async () => {

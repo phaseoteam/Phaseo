@@ -130,6 +130,20 @@ function loadToolsTool(available: string[]) {
 	});
 }
 
+/**
+ * Tool results reach the model as text, so an image a tool returns (browser_screenshot, html_preview) is shown to it in the next
+ * message instead, as view_image does; the result keeps the image's details.
+ */
+export function imageResultsToMessages(tools: AgentTool[], steering: AgentMessage[]): AgentTool[] {
+	return tools.map(tool => typeof tool.execute !== "function" ? tool : { ...tool, execute: async (input: unknown, context: Parameters<NonNullable<Exclude<AgentTool["execute"], false>>>[1]) => {
+		const result = await (tool.execute as (input: unknown, context: unknown) => Promise<unknown>)(input, context);
+		const image = record(record(result).image);
+		if (typeof image.data !== "string" || (image.mimeType !== "image/png" && image.mimeType !== "image/jpeg")) return result;
+		steering.push({ role: "user", content: [{ type: "text", text: `The image from ${tool.id}, as requested:` }, { type: "image_url", image_url: { url: `data:${image.mimeType};base64,${image.data}` } }] });
+		return { ...record(result), image: "Shown to you in the next message." };
+	} });
+}
+
 export function activeToolIds(tools: AgentTool[], context: unknown) {
 	const loaded = strings(record(context).phaseoToolsets);
 	return tools.filter(tool => !Object.entries(phaseoToolsets).some(([name, set]) => set.match(tool.id) && !coreThreadToolIds.includes(tool.id) && !loaded.includes(name))).map(tool => tool.id);
