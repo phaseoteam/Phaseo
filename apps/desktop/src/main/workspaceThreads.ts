@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { stat } from "node:fs/promises";
+import path from "node:path";
 import type { Account, Harness, ModelOption, Task, WorkspaceCommand } from "../shared/workspace";
 import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type ChildWorktree, type DelegateRequest, type PendingQuestion, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
 import { validateMissionCommand, type Mission, type MissionCommand } from "../shared/missions";
@@ -48,6 +50,8 @@ type Host = {
 	start: (id: string) => void;
 	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;
 	createWorktree?: (projectId: string, branch: string, base: string) => Promise<{ projectId: string }>;
+	/** Clones a repository into parent and returns the checkout folder (projectClone.ts). */
+	cloneRepository?: (url: string, parent: string) => Promise<string>;
 	/** MissionService's command handler, once the scheduler is running. */
 	missions?: (command: MissionCommand) => Mission[];
 	assertHarnessAvailable: (harness: Harness) => void;
@@ -422,6 +426,29 @@ export class WorkspaceThreads {
 				const current = this.host.store.getTask(parentId).projectId, folder = (directory: string) => directory.split(/[\\/]/).filter(Boolean).at(-1) ?? directory;
 				// Folder names only: full paths stay private to the desktop.
 				return this.host.store.getProjects().filter(project => !query || `${project.name} ${folder(project.directory)}`.toLowerCase().includes(query.toLowerCase())).slice(0, 200).map(project => ({ id: project.id, name: project.name, directory: folder(project.directory), ...(project.id === current ? { current: true } : {}), ...(project.worktree ? { worktree: { branch: project.worktree.branch, baseCommit: project.worktree.baseCommit, sourceProjectId: project.worktree.sourceProjectId } } : {}), ...(project.worktree?.removedAt ? { removed: true } : {}) }));
+			},
+			addProject: async directory => {
+				this.launcher(parentId, "Adding a project");
+				if (!path.isAbsolute(directory)) throw new Error("Pass the folder's absolute path.");
+				const resolved = path.resolve(directory);
+				if (!(await stat(resolved).then(value => value.isDirectory(), () => false))) throw new Error(`${resolved} is not a folder on this computer.`);
+				const existing = this.host.store.getProjects().find(project => project.directory === resolved), project = this.host.store.addProject(resolved);
+				this.host.broadcast();
+				return { id: project.id, name: project.name, path: project.directory, ...(existing ? { alreadyAdded: true } : {}) };
+			},
+			cloneProject: async (url, parent) => {
+				const caller = this.launcher(parentId, "Cloning a project");
+				if (!this.host.cloneRepository) throw new Error("Cloning is unavailable.");
+				// By default the clone goes beside this chat's checkout (beside the original for a worktree chat).
+				const projects = this.host.store.getProjects(), current = projects.find(project => project.id === caller.projectId), source = current?.worktree ? projects.find(project => project.id === current.worktree!.sourceProjectId) : current;
+				const folder = parent ?? (source ? path.dirname(source.directory) : undefined);
+				if (!folder) throw new Error("This chat has no project; pass parentPath, the folder to clone into.");
+				if (!path.isAbsolute(folder) || !(await stat(folder).then(value => value.isDirectory(), () => false))) throw new Error("parentPath must be the absolute path of an existing folder.");
+				const directory = await this.host.cloneRepository(url, path.resolve(folder));
+				if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
+				const project = this.host.store.addProject(directory);
+				this.host.broadcast();
+				return { id: project.id, name: project.name, path: project.directory };
 			},
 			organize: async (id, action, title, tags, until) => {
 				const task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);

@@ -20,6 +20,7 @@ import { optionValue, questionAnswerError, questionOptions } from "../shared/age
 import { WorkspaceThreads } from "./workspaceThreads";
 import { git } from "./gitProcess";
 import { githubRepository } from "./projectPullRequests";
+import { cloneRepository } from "./projectClone";
 import { parsePullRequestReference, validatePullRequestLinks, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
 import type { PullRequestStack } from "../shared/pullRequestStacks";
 import type { PullRequestGuideResult } from "../shared/pullRequestGuide";
@@ -165,6 +166,8 @@ export class WorkspaceRuntime {
 	github: { readIssue: (root: string, repository: string, number: number) => Promise<IssueDetails>; referenceContext: (root: string, urls: string[]) => Promise<string> } = { readIssue: (root, repository, number) => readIssue(root, repository, number), referenceContext: (root, urls) => githubReferenceContext(root, urls) };
 	/** Files an issue through gh and returns what gh prints, ending with the issue's URL; the body goes in on stdin, so no file holds it. Tests replace it. */
 	createIssue = (root: string, repository: string, title: string, body: string) => runGh(root, ["issue", "create", "--repo", repository, "--title", title, "--body-file", "-"], body);
+	/** clone_project's git clone. Tests replace it. */
+	cloneRepository = (url: string, parent: string) => cloneRepository(url, parent);
 	private readonly filingIssues = new Set<string>();
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(path.join(directory, "instructions"), { recursive: true });
@@ -175,7 +178,7 @@ export class WorkspaceRuntime {
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
 		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand, guides = () => this.pullRequestGuideTools;
-		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), readIssue: (root, repository, number) => this.github.readIssue(root, repository, number), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
+		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), cloneRepository: (url, parent) => this.cloneRepository(url, parent), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), readIssue: (root, repository, number) => this.github.readIssue(root, repository, number), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
 		// Deliveries recorded while the app was closed wake idle parents as they would at runtime, after the host has wired its hooks.
 		// Children cut off by the app quitting are only reported: waking the parent for them would spend tokens nobody asked for.
 		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };

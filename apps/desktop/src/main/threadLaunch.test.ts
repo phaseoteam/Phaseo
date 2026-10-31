@@ -202,6 +202,25 @@ describe("move_to_worktree", () => {
 	}));
 });
 
+describe("add_project and clone_project", () => {
+	it("adds an existing folder once and clones beside this chat's checkout, with full access outside Plan only", async () => withRuntime(async (runtime, directory) => {
+		const { root } = repository(directory), source = runtime.store.addProject(root);
+		const id = await caller(runtime, "code", "full-access", source.id), tools = runtime.threadTools(id);
+		const folder = path.join(directory, "notes"); mkdirSync(folder);
+		const added = await tools.addProject!(folder);
+		expect(added).toEqual({ id: expect.any(String), name: "notes", path: folder });
+		expect(await tools.addProject!(folder)).toEqual({ ...added, alreadyAdded: true });
+		await expect(tools.addProject!(path.join(directory, "missing"))).rejects.toThrow("not a folder");
+		await expect(tools.addProject!("relative/folder")).rejects.toThrow("absolute path");
+		const clone = vi.fn(async (_url: string, parent: string) => { const target = path.join(parent, "cloned"); mkdirSync(target); return target; }); runtime.cloneRepository = clone;
+		const cloned = await tools.cloneProject!("https://github.com/owner/cloned.git");
+		expect(clone).toHaveBeenCalledWith("https://github.com/owner/cloned.git", directory);
+		expect(runtime.store.getProjects().find(project => project.id === cloned.id)?.directory).toBe(path.join(directory, "cloned"));
+		await expect(runtime.threadTools(await caller(runtime)).cloneProject!("https://github.com/owner/other.git")).rejects.toThrow("pass parentPath");
+		for (const [mode, permission] of [["plan", "full-access"], ["code", "supervised"]] as const) await expect(runtime.threadTools(await caller(runtime, mode, permission, source.id)).addProject!(folder)).rejects.toThrow("full access outside Plan mode");
+	}));
+});
+
 describe("launch_threads", () => {
 	it("validates every entry before creating any, then reports each result", async () => withRuntime(async runtime => {
 		expect(() => validateLaunchBatch({ threads: [{ requestId: "a", title: "A", prompt: "A" }, { requestId: "a", title: "B", prompt: "B" }] })).toThrow("distinct requestId");
