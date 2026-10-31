@@ -1,6 +1,6 @@
 // Public landing-page data. These fetchers call the public web API, so the
 // queries run during SSR and in the browser alike. Where a section swallowed
-// fetch errors in Next, the queryFn does the same so the section keeps its
+// fetch errors, the queryFn does the same so the section keeps its
 // fallback instead of throwing.
 import { queryOptions } from "@tanstack/react-query";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";

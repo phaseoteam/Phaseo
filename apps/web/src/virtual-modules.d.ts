@@ -8,8 +8,7 @@ declare module "cloudflare:workers" {
 	export function waitUntil(promise: Promise<unknown>): void;
 }
 
-// Next's per-request fetch cache options; Workers ignores unknown init fields.
+// Cloudflare's per-request cache options for outgoing fetches.
 interface RequestInit {
-	next?: { revalidate?: number | false; tags?: string[] };
 	cf?: { cacheTtl?: number; cacheEverything?: boolean };
 }

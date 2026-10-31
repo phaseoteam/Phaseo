@@ -7,7 +7,7 @@ export type BlogPostResolution =
 	| { kind: "redirect-to-index" }
 	| { kind: "not-found" };
 
-/** Same decisions as the Next page: previews for permitted viewers, redirect for unpublished posts, 404 otherwise. */
+/** Previews for permitted viewers, redirect for unpublished posts, 404 otherwise. */
 export const resolveBlogPost = createServerFn({ method: "GET" })
 	.validator((input: { slug: string; locale: string }) => input)
 	.handler(async ({ data }): Promise<BlogPostResolution> => {

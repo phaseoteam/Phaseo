@@ -15,7 +15,7 @@ export function getRouter() {
 		defaultPreloadStaleTime: 0,
 		defaultErrorComponent: RouteErrorBoundary,
 		defaultNotFoundComponent: RouteNotFound,
-		// Pages read search params as Next did: raw strings, repeated keys as arrays.
+		// Pages read search params as raw strings, repeated keys as arrays.
 		parseSearch: parseSearchAsStrings,
 		stringifySearch: stringifySearchFromStrings,
 	});
@@ -25,7 +25,7 @@ export function getRouter() {
 	if (typeof window !== "undefined") {
 		// Server actions refresh or redirect through the active router.
 		(globalThis as { __phaseoRouter?: typeof router }).__phaseoRouter = router;
-		// refresh() and server actions re-read server data the way Next re-renders it.
+		// refresh() and server actions re-read server data through the router and query client.
 		(globalThis as { __phaseoQueryClient?: typeof queryClient }).__phaseoQueryClient = queryClient;
 	}
 	return router;

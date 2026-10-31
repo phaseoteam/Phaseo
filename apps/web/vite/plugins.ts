@@ -33,7 +33,7 @@ export function inlineVercelOgFont(): Plugin {
 
 
 // ---------------------------------------------------------------------------
-// Content that Next read from disk at request time. Workers have no
+// Content read from disk at request time (blog, help). Workers have no
 // filesystem, so src/content is served as static assets and the readdir/stat
 // answers come from a manifest captured at build time.
 const CONTENT_FS_MODULE = "\0phaseo-content-fs";
@@ -103,8 +103,8 @@ export function contentFilesystem(contentDir: string): Plugin {
 }
 
 // ---------------------------------------------------------------------------
-// Blog posts: Next compiled MDX per request (compileMDX), which Workers cannot
-// do (no runtime code evaluation). Compile every post at build time instead;
+// Blog posts: MDX cannot be compiled per request on Workers (no runtime code
+// evaluation), so every post is compiled at build time;
 // each module exports the content component and its table of contents.
 const MDX_REGISTRY = "\0phaseo-announcement-mdx";
 

@@ -1,8 +1,7 @@
 // Server data the site shell needs on every page: the signed-in account
 // (header, notices, search) and the capability flags that gate menu items.
-// Next resolved these in several async server components; here one server
-// function loads them once per request and the shell reads it with
-// useSuspenseQuery.
+// One server function loads them once per request and the shell reads it
+// with useSuspenseQuery.
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { defaultLocale, isPublicLocale } from "@/i18n/locales";

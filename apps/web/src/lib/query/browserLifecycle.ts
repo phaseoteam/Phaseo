@@ -26,7 +26,7 @@ export function listenForQueryFocus(handleFocus: () => void) {
 	};
 }
 
-/** A new identity must also discard Next's retained page props, not just query data. */
+/** A new identity must also discard the router's cached route data, not just query data. */
 export function listenForQuerySession(
 	queryClient: QueryClient,
 	auth: Pick<SupabaseClient["auth"], "onAuthStateChange">,

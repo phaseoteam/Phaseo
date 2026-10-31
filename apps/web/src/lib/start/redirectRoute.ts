@@ -1,6 +1,4 @@
-// Redirect-only Next pages called redirect() while rendering, which Next
-// turned into a response. TanStack needs the redirect before render, so these
-// routes redirect in beforeLoad instead.
+// Redirect-only routes redirect in beforeLoad, before anything renders.
 import { redirect } from "@tanstack/react-router";
 
 type RedirectInput = {

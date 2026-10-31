@@ -30,7 +30,7 @@ export function ArtificialAnalysisOverview({
 	const tOther = useTranslations("Catalogue.models.detail.benchmarkGrid");
 	const tBenchmarks = useTranslations("Catalogue.benchmarks");
 	const locale = useLocale();
-	// Accepts resolved rankings; a promise (Next server prop) is still unwrapped.
+	// Accepts resolved rankings or a promise of them.
 	const rankings = Array.isArray(rankingsPromise) ? rankingsPromise : use(rankingsPromise);
 	const versionOf = (info: unknown) => artificialAnalysisVersion(typeof info === "string" ? info : null) ?? "Unspecified";
 	const versions = [...new Set(benchmark.results.map((result) => versionOf(result.other_info)))].sort((a, b) => b.localeCompare(a, "en", { numeric: true }));

@@ -8,7 +8,7 @@ export function matchesKeyRouteName(name: unknown, routeName: string) {
 	if (name === routeName) return true;
 	try {
 		const encoded = encodeURIComponent(name);
-		// Next may decode a segment while keeping path delimiters escaped.
+		// The router may decode a segment while keeping path delimiters escaped.
 		// Build that representation from the stored name so literal percent
 		// characters are never mistaken for malformed route encoding.
 		const escapedDelimiters = name.replace(/([/#?\\]|%(?:2f|23|3f|5c))/gi, (value) => encodeURIComponent(value));

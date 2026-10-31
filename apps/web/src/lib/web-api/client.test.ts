@@ -66,7 +66,7 @@ describe("Cloudflare web API client", () => {
 		else process.env.WEB_API_ORIGIN = originalOrigin;
 	});
 
-	it("uses the configured Worker origin without enabling the Next data cache", async () => {
+	it("uses the configured Worker origin without credentials", async () => {
 		process.env.WEB_API_ORIGIN = "http://127.0.0.1:8788/";
 		const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(
 			new Response(JSON.stringify({ organisations: [] }), {
@@ -84,7 +84,6 @@ describe("Cloudflare web API client", () => {
 			"http://127.0.0.1:8788/api/_web/organisations",
 			{
 				headers: { Accept: "application/json" },
-				next: { revalidate: 0 },
 				credentials: "omit",
 				signal: expect.any(AbortSignal),
 			},

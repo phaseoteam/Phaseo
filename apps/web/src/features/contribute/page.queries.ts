@@ -11,7 +11,7 @@ export type GitHubContributor = {
 
 // Server-side so the edge cache serves every visitor (GitHub allows 60
 // unauthenticated requests an hour per IP and rejects requests without a
-// User-Agent). Next cached this fetch for 24 hours.
+// User-Agent). Cached for 24 hours.
 const fetchGitHubContributors = createServerFn({ method: "GET" }).handler(async (): Promise<GitHubContributor[]> => {
 	try {
 		const response = await fetch("https://api.github.com/repos/phaseoteam/Phaseo/contributors?per_page=100", {

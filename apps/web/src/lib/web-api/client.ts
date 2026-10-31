@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { sdkExportStore, sdkRequestFromChat } from "@/lib/chat/sdkExport";
 import { isPublicLocale } from "@/i18n/locales";
 import { anySignal, timeoutSignal } from "@/lib/abortSignals";
@@ -55,22 +54,18 @@ async function readJsonPayload<T>(
 /**
  * Fetch public website data from the Cloudflare Worker.
  *
- * Next's data cache is deliberately disabled here. Public freshness, stale
- * serving, cache tags, and revalidation are owned by Cloudflare so there is a
- * single cache contract for every web deployment.
+ * Public freshness, stale serving, cache tags, and revalidation are owned by
+ * the web API Worker's Cloudflare cache, so there is a single cache contract.
  */
 async function fetchPublicWebApiUncached<T>(
 	path: `/api/_web/${string}`,
 	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
 ): Promise<T> {
-	// Bound both fetching and reading the body so cached prerenders can reach
-	// their fallback instead of hanging until Next's cache-fill deadline.
+	// Bound both fetching and reading the body so a slow upstream lets the page
+	// reach its fallback instead of hanging.
 	const deadline = timeoutSignal(PUBLIC_WEB_API_TIMEOUT_MS);
 	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		headers: { Accept: "application/json" },
-		// Disable Next's data cache without native fetch's no-cache request
-		// headers, which ask upstream shared caches to revalidate.
-		next: { revalidate: 0 },
 		signal: options.signal
 			? anySignal([options.signal, deadline])
 			: deadline,
@@ -84,26 +79,12 @@ async function fetchPublicWebApiUncached<T>(
 	return (await response.json()) as T;
 }
 
-// The timeout signal above opts out of Next's automatic fetch deduplication.
-// Share the parsed public response across metadata and Server Components in
-// one render only; Cloudflare still owns freshness between incoming requests.
-const fetchPublicWebApiForRender = cache((path: `/api/_web/${string}`) =>
-	fetchPublicWebApiUncached<unknown>(path),
-);
-
 export function fetchPublicWebApi<T>(
 	path: `/api/_web/${string}`,
 	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
 ): Promise<T> {
-	if (
-		typeof window === "undefined" &&
-		!options.signal &&
-		(options.credentials === undefined || options.credentials === "omit")
-	) {
-		return fetchPublicWebApiForRender(path) as Promise<T>;
-	}
-	// Explicit cancellation and credentialed requests keep their own lifetime.
-	// Browser revalidation is owned by the existing query client.
+	// Repeated reads within a request are shared by the react-query client, which
+	// also owns browser revalidation.
 	return fetchPublicWebApiUncached<T>(path, options);
 }
 

@@ -1,5 +1,5 @@
 // Optional provider telemetry and viewer data for ModelPricing. Each raced the
-// 2.5 s timeout with a fallback in Next, and still does inside its queryFn.
+// 2.5 s timeout with a fallback inside its queryFn.
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import {
 	fetchFrontendModelProviderRoutingHealth,

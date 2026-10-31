@@ -1,5 +1,5 @@
 // Section queries for ModelOverviewSections. Every optional section raced its
-// fetch against the 2.5 s timeout in Next and fell back to an empty value; the
+// fetch against a 2.5 s timeout and fell back to an empty value; the
 // race now lives in each queryFn, under a "section" key so a timed-out
 // fallback is never cached where the shell or another page reads real data.
 import { queryOptions, type QueryClient } from "@tanstack/react-query";

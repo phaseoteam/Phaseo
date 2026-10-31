@@ -1,5 +1,5 @@
-// Page metadata without holding the shell. Next streams metadata to browsers
-// and blocks only for bots; this does the same. Crawlers and link-preview bots
+// Page metadata without holding the shell: streamed to browsers, blocking
+// only for bots. Crawlers and link-preview bots
 // get the title, description and Open Graph tags in the first bytes. Browsers
 // get the shell straight away, and the title follows once metadata resolves.
 import { createIsomorphicFn } from "@tanstack/react-start";
@@ -9,7 +9,7 @@ import { getCurrentRequest } from "@/lib/start/request-context";
 import { metadataToHead } from "./metadataToHead";
 import type { SerializableMetadata } from "./metadata";
 
-// Next's HTML-limited bot list (Googlebot etc. render JS, but still index the
+// Bots that read metadata from the first HTML (Googlebot etc. render JS, but still index the
 // first HTML), plus generic crawler words for bots that identify themselves.
 const BOT_USER_AGENT = /Googlebot|Google-|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|TelegramBot|Embedly|Pinterest|bot\b|crawler|spider/i;
 
@@ -51,7 +51,7 @@ function ApplyMetadata({ promise }: { promise: Promise<Metadata> }) {
 /**
  * Applies the deepest route's streamed metadata once it resolves. Rendered
  * once at the root: a page and its layout can both stream metadata, and the
- * page's (the deepest) wins, as with Next's metadata merging.
+ * page's (the deepest) wins.
  */
 export function StreamedMetadata() {
 	const promise = useMatches({

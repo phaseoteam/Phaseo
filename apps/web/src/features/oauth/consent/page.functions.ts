@@ -1,7 +1,7 @@
 // OAuth consent reads the signed-in Supabase session and OAuth server state,
 // so the whole request resolution runs on the server. The route loader turns
 // the "sign-in" and "redirect" outcomes into redirects before rendering; the
-// page renders every other outcome exactly as the Next page did.
+// page renders every other outcome.
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -294,7 +294,7 @@ export const resolveOAuthConsent = createServerFn({ method: "GET" })
 		};
 	});
 
-/** String search params, as Next passed them (the sign-in return URL keeps them all). */
+/** String search params (the sign-in return URL keeps them all). */
 export function toConsentSearchParams(search: Record<string, unknown>): ConsentSearchParams {
 	const out: Record<string, string> = {};
 	for (const [key, value] of Object.entries(search)) {

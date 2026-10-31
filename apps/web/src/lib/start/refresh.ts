@@ -1,5 +1,4 @@
-// Next's router.refresh() re-renders every server component with fresh data.
-// Here that means re-running route loaders and refetching cached queries.
+// Refresh server data: re-run route loaders and refetch active queries.
 type Invalidatable = { invalidate(): Promise<unknown> };
 type QueryClientLike = { invalidateQueries(): Promise<unknown> };
 

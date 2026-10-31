@@ -56,7 +56,7 @@ export function useParams<T extends Record<string, string | string[] | undefined
 	return useMemo(() => {
 		const out: Record<string, unknown> = {};
 		for (const [key, value] of Object.entries(params)) {
-			// Catch-all segments are `_splat` in TanStack and string arrays in Next.
+			// Catch-all segments arrive as `_splat`; callers get the segments as an array.
 			if (key === "_splat") out.slug = typeof value === "string" ? value.split("/").filter(Boolean) : value;
 			else out[key] = value;
 		}
