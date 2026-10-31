@@ -22,7 +22,8 @@ Keep these separate from the broader desktop feature ledger; an exposed tool alo
 - [x] Orchestration tools in Chat, Plan and Code for every MCP-capable harness, with shared orchestration instructions
 - [x] One-call agent catalog (`list_agents`), account auto-pick, workspace agent limit and privilege ceiling
 - [x] Batched result delivery, launch wake and upgrade-to-always-wake for abandoned waits (fixture validation)
-- [ ] OpenCode session isolation and live provider-specific orchestration verification
+- [x] OpenCode orchestration on a service of its own per turn (fixture validation; not run against a live OpenCode 2 service)
+- [ ] Live provider-specific orchestration verification
 - [ ] Native subagent observation
 - [x] Message-boundary forks, child messaging and idempotent conversation-result merge
 - [ ] Full provider handoff and Git worktree merge-back tools
@@ -38,7 +39,7 @@ Orchestration uses the existing model discovery functions. Catalogs are bounded 
 
 Owned child chats have a return-to-parent footer, remain visible through their parent and are excluded from ordinary chat history. Native-provider-owned subagents remain a separate missing capability. This increment does not establish full T3 nightly parity.
 
-OpenCode orchestration injection is deliberately not enabled: its MCP configuration is directory-scoped, so injecting one chat's credential could expose it to another session. OpenCode can still execute delegated work, but cannot yet recursively use the desktop orchestration service.
+OpenCode keeps MCP servers added at runtime per folder, for every session on that service, so adding a chat's orchestration credential to the shared service (or to the person's own, which Phaseo reuses when it runs) would expose it to other sessions in the folder. In Plan and Code, an OpenCode turn with the orchestration server instead starts a service of its own (`OpenCodeService.isolated`: `serve --service` on a random localhost port, with its own state folder), adds the orchestration server and the workspace's MCP connections there, and stops it when the turn ends. Sessions live in OpenCode's shared data folder, so a chat resumes on any service. The shared service never receives an orchestration connection. OpenCode sessions take no system prompt, so a new session gets the orchestration guidance ahead of its first prompt, as Cursor does. Each such turn pays the service's startup (a few seconds). Chat mode denies every OpenCode tool, so it gets no orchestration server. OpenCode also asks its own permission for each tool call, so supervised chats see an OpenCode approval before the server's own for tools that need one.
 
 ## Engine parity: delivery, limits and capabilities
 
@@ -58,7 +59,7 @@ Privilege ceiling. A child, fork or handoff never gets a broader mode (chat < pl
 
 Accounts. When no `accountId` is given, `delegate_task`, `handoff_thread` and `list_models` use the parent's account on the same harness, then the single usable account (configured, not archived, OAuth not expired). For Phaseo and Cursor, which require an account, zero or several usable accounts give an error that names the choices.
 
-Tools in every mode. The orchestration MCP server is created for every mode of every harness except Phaseo, which calls the tools in-process, and OpenCode, which is excluded for the reason above. In Chat the server is the only tool surface:
+Tools in every mode. The orchestration MCP server is created for every mode of every harness except Phaseo, which calls the tools in-process, and OpenCode in Chat (see above). In Chat the server is the only tool surface:
 - Claude: `tools: []`, `strictMcpConfig` and a `canUseTool` that allows only `mcp__<orchestration>__*`. Those calls are approved by the server, so Code no longer double-prompts for them.
 - Codex: a read-only sandbox, other servers disabled, and Codex's own orchestration-call elicitations are routed to the user.
 - Cursor: `tools: ["mcp"]` with only the orchestration server. Plan mode adds `mcp` to its read-only allowlist.

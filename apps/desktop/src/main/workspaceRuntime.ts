@@ -82,7 +82,7 @@ function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: Ope
 	const active = mcp.filter(connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === projectId));
 	if (harness === "codex") return new CodexAdapter(mcp);
 	if (harness === "claude") return new ClaudeAdapter(active);
-	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp);
+	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp, openCode ? signal => openCode.isolated(signal) : undefined);
 	if (harness === "pi") return new PiAdapter(active);
 	if (harness === "grok") return new GrokAdapter(active);
 	if (harness === "acp" && agent) return new AcpAdapter(agent, active);
@@ -1303,8 +1303,9 @@ export class WorkspaceRuntime {
 			if (task.queue[0]?.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("This native action requires a supported native harness.");
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
 			if (task.accountId && this.credentialChanges.has(task.accountId)) throw new Error("Wait for this account's credential change to finish.");
-			// Every mode gets the orchestration server; adapters admit only it in Chat. OpenCode's MCP config is per directory, so it is excluded.
-			if (!["phaseo", "opencode"].includes(task.harness)) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
+			// Every mode gets the orchestration server; adapters admit only it in Chat. OpenCode denies every tool in Chat, and gets it
+			// elsewhere on a service of its own for the turn (see OpenCodeAdapter).
+			if (task.harness !== "phaseo" && !(task.harness === "opencode" && task.mode === "chat")) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
 				const current = this.store.getTask(id);
 				if (this.closing || current.status === "interrupted") { resolve(false); return; }
 				if (current.permissionMode === "full-access") { resolve(true); return; }
