@@ -926,7 +926,7 @@ describe("public model routes", () => {
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(catalogue.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models,web-api-models-v2");
 		expect(benchmarks.status).toBe(200);
-		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400");
+		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=21600, stale-while-revalidate=64800, stale-if-error=86400");
 		expect(benchmarks.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(benchmarks.headers.get("cache-tag")).toContain("web-api-model-info-openai2Fgpt-test");
 		await expect(benchmarks.json()).resolves.toMatchObject({ highlights: [{ benchmarkId: "mmlu", score: 85, scoreDisplay: "85%", rank: 2 }] });
@@ -1608,6 +1608,7 @@ describe("public model routes", () => {
 		]);
 
 		expect(timeline.status).toBe(200);
+		expect(timeline.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=21600, stale-while-revalidate=64800, stale-if-error=86400");
 		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-timelines");
 		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		expect(await timeline.json()).toMatchObject({

@@ -33,3 +33,51 @@ export async function fetchSubscriptionCatalogue(client: SupabaseClient, planId?
 	if (!Array.isArray(data)) throw new Error("Invalid subscription catalogue payload");
 	return data.map((row) => subscriptionPayload(row, modelSlug));
 }
+
+/**
+ * The plans that include any of these models, in the catalogue's own order.
+ * The whole catalogue is about 1 MB, so read each model's plans instead.
+ */
+export async function fetchSubscriptionPlansForModels(client: SupabaseClient, modelSlugs: string[]) {
+	const lists = await Promise.all(modelSlugs.map((modelSlug) => fetchSubscriptionCatalogue(client, undefined, modelSlug)));
+	return mergeOrderedPlanLists(lists);
+}
+
+/**
+ * Merges plan lists that are each in the catalogue's order into one list,
+ * without duplicates, that keeps every input list's order. Callers read one
+ * model's plans at a time, so each model still sees its plans in order.
+ */
+export function mergeOrderedPlanLists(lists: Row[][]): Row[] {
+	const rows = new Map<string, Row>();
+	const next = new Map<string, Set<string>>();
+	const waitingOn = new Map<string, number>();
+	for (const list of lists) {
+		list.forEach((row, index) => {
+			const key = String(row.plan_uuid);
+			if (!rows.has(key)) {
+				rows.set(key, row);
+				next.set(key, new Set());
+				waitingOn.set(key, 0);
+			}
+			if (index === 0) return;
+			const previous = String(list[index - 1].plan_uuid);
+			const followers = next.get(previous)!;
+			if (previous === key || followers.has(key)) return;
+			followers.add(key);
+			waitingOn.set(key, waitingOn.get(key)! + 1);
+		});
+	}
+	const ready = [...rows.keys()].filter((key) => waitingOn.get(key) === 0);
+	const merged: Row[] = [];
+	while (ready.length) {
+		const key = ready.shift()!;
+		merged.push(rows.get(key)!);
+		for (const follower of next.get(key)!) {
+			const remaining = waitingOn.get(follower)! - 1;
+			waitingOn.set(follower, remaining);
+			if (remaining === 0) ready.push(follower);
+		}
+	}
+	return merged;
+}
