@@ -20,12 +20,12 @@
     "CANARY_PERCENT": "0"
   },
   // src/content (blog, help) is read through this binding (phaseo:content-fs).
-  "assets": { "binding": "ASSETS" }
-  // Production route: with the canary at 0 it only passes requests through, so
-  // enabling it is safe to roll back by removing it again. The more specific
-  // phaseo.app/api/_web/* and /api/account/* routes stay with the web API
-  // Worker (apps/web-api/wrangler.toml).
-  // "routes": [
-  //   { "pattern": "phaseo.app/*", "zone_name": "phaseo.app" }
-  // ]
+  "assets": { "binding": "ASSETS" },
+  // Production route. With the canary at 0 the Worker only passes requests
+  // through to the previous site; removing this route rolls back completely.
+  // The more specific phaseo.app/api/_web|account|chat|internal/* and
+  // /scim/v2/* routes stay with the web API Worker (apps/web-api).
+  "routes": [
+    { "pattern": "phaseo.app/*", "zone_name": "phaseo.app" }
+  ]
 }
