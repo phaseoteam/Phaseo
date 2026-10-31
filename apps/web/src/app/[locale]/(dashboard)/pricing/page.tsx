@@ -31,8 +31,10 @@ import {
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import { PricingComparisonShell } from "./PricingComparisonShell";
 import { EnterprisePricingSection } from "./EnterprisePricingSection";
-import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
+import { enterpriseSelfServePreviewQuery } from "./page.functions";
 import type { PublicLocale } from "@/i18n/routing";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
@@ -809,10 +811,10 @@ const FAQ_SECTIONS: FAQSection[] = [
 	{ id: "support-status", items: ["service-status", "contact-support"].map((id) => ({ id })) },
 ];
 
-export default async function PricingPage() {
-	const showEnterprisePreview = await enterpriseSelfServePreviewEnabled();
-	const locale = await getLocale();
-	const t = await getTranslations("Site.pricing");
+export default function PricingPage() {
+	const { data: showEnterprisePreview } = useSuspenseQuery(enterpriseSelfServePreviewQuery());
+	const locale = useLocale();
+	const t = useTranslations("Site.pricing");
 	const translate = t as unknown as (key: string, values?: Record<string, unknown>) => string;
 	const faqMessageValues = {
 		fee: basicTier.feePct,

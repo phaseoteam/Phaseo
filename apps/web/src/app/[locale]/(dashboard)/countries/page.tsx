@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
 import CountriesGrid from "@/components/(data)/countries/CountryGrid";
-import { fetchFrontendCountrySummaries } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { countrySummariesQuery } from "./page.queries";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 
@@ -17,9 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-export default async function CountriesPage() {
-	const countries = await fetchFrontendCountrySummaries();
-	const t = await getTranslations("Catalogue.countries");
+export default function CountriesPage() {
+	const { data: countries } = useSuspenseQuery(countrySummariesQuery());
+	const t = useTranslations("Catalogue.countries");
 
 	return (
 		<main className="flex min-h-screen flex-col">

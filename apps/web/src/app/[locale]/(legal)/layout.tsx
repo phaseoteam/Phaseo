@@ -1,16 +1,16 @@
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import LegalHeaderShell from "@/components/header/LegalHeaderShell";
 import LegalBackButton from "@/components/header/LegalBackButton";
-import { getLocale, getTranslations } from "next-intl/server";
 import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 
-export default async function LegalLayout({
+export default function LegalLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
-	const t = await getTranslations("Common.nav");
-	const locale = await getLocale();
+	const t = useTranslations("Common.nav");
+	const locale = useLocale();
 	return (
 		<div className="min-h-screen bg-background">
 			<header className="sticky top-0 z-50 border-b bg-white/80 dark:bg-zinc-950/80 backdrop-blur">

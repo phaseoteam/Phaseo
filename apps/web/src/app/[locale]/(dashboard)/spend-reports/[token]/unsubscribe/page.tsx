@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { SpendReportSubscriptionButton } from "@/components/spend-reports/SpendReportSubscriptionButton";
 import { getFeedbackMessages } from "@/i18n/feedback";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
-import { isSpendReportToken, spendReportApiPath, type SpendReportSubscriptionView } from "@/lib/spendReports";
-import { fetchOptionalPublicWebApi } from "@/lib/web-api/client";
+import { spendReportSubscriptionQuery } from "./unsubscribe.queries";
 
 // The unsubscribe link in every spend report email. Works signed out: the token in the URL is the
 // only credential, and it only switches that person's report emails for one workspace.
@@ -23,19 +24,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 	};
 }
 
-export default async function SpendReportUnsubscribePage({ params }: { params: Params }) {
-	const { locale, token } = await params;
+export default function SpendReportUnsubscribePage({ params }: { params: Params }) {
+	const { locale, token } = use(params);
 	const messages = getFeedbackMessages(resolveLocale(locale)).spendReports;
 
-	let subscription: SpendReportSubscriptionView | null = null;
-	let unavailable = false;
-	if (isSpendReportToken(token)) {
-		try {
-			subscription = await fetchOptionalPublicWebApi<SpendReportSubscriptionView>(spendReportApiPath(token));
-		} catch {
-			unavailable = true;
-		}
-	}
+	const { data: { subscription, unavailable } } = useSuspenseQuery(spendReportSubscriptionQuery(token));
 
 	return (
 		<div className="container mx-auto flex w-full flex-1 flex-col px-4 py-10 sm:py-16">

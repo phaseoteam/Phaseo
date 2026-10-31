@@ -9,7 +9,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { getLocalizedHelpCategories } from "@/lib/content/helpCenter";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { helpCategoriesQuery } from "./page.functions";
 import { buildMetadata } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
@@ -20,12 +23,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: P
 	return buildMetadata({ title: t("title"), description: t("description"), path: "/help", keywords: ["Phaseo help center", "Phaseo support", "gateway troubleshooting"] });
 }
 
-export default async function HelpCenterPage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
-	const { locale } = await params;
-	const [categories, t] = await Promise.all([
-		getLocalizedHelpCategories(locale),
-		getTranslations({ locale, namespace: "Content.help" }),
-	]);
+export default function HelpCenterPage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
+	const { locale } = use(params);
+	const { data: categories } = useSuspenseQuery(helpCategoriesQuery(locale));
+	const t = useTranslations("Content.help");
 
 	return (
 		<div className="container mx-auto w-full max-w-6xl px-4 py-8 md:py-12">

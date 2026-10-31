@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Suspense, use } from "react";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { buildMetadata } from "@/lib/seo";
 import PricingCalculator from "@/components/(tools)/PricingCalculator";
-import { fetchFrontendModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { fetchFrontendPricingModels } from "@/lib/fetchers/frontend/fetchFrontendPricingModels";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
-import type { PricingModel } from "@/lib/fetchers/pricing/getPricingModels";
+import {
+	pricingCalculatorCatalogueQuery,
+	pricingCalculatorGatewayModelsQuery,
+	pricingCalculatorPricingModelsQuery,
+} from "./page.queries";
 import { loadPricingCalculatorSearchParams } from "./search-params";
 import { sanitizeModelSelections } from "@/components/(tools)/pricing-calculator/calculatorState";
 
@@ -25,7 +28,7 @@ export async function generateMetadata({
 	});
 }
 
-export default async function PricingCalculatorPage({
+export default function PricingCalculatorPage({
 	searchParams,
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -37,19 +40,16 @@ export default async function PricingCalculatorPage({
 	);
 }
 
-async function PricingCalculatorPageContent({
+function PricingCalculatorPageContent({
 	searchParams,
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	const [catalogueResult, cachedModelsResult, resolvedSearchParams] = await Promise.all([
-		// Only names, organisations and dates are read below; prices and
-		// providers come from the gateway and pricing fetchers.
-		fetchFrontendModels({ includeGatewayData: false }).catch(() => []),
-		fetchFrontendGatewayModels().catch(() => []),
-		searchParams,
-	]);
-	const tCountry = await getTranslations("Catalogue.countryDetail");
+	const resolvedSearchParams = use(searchParams);
+	const [{ data: catalogueResult }, { data: cachedModelsResult }] = useSuspenseQueries({
+		queries: [pricingCalculatorCatalogueQuery(), pricingCalculatorGatewayModelsQuery()],
+	});
+	const tCountry = useTranslations("Catalogue.countryDetail");
 	const parsedParams =
 		loadPricingCalculatorSearchParams(resolvedSearchParams);
 	const selectedModelIds = sanitizeModelSelections(parsedParams.selections).map(
@@ -61,9 +61,7 @@ async function PricingCalculatorPageContent({
 	if (selectedModelIds.length === 0 && parsedParams.model) {
 		selectedModelIds.push(parsedParams.model);
 	}
-	const pricingModels: PricingModel[] = selectedModelIds.length > 0
-		? await fetchFrontendPricingModels(selectedModelIds).catch(() => [])
-		: [];
+	const { data: pricingModels } = useSuspenseQuery(pricingCalculatorPricingModelsQuery(selectedModelIds));
 	const catalogModels = catalogueResult.map((model) => ({
 		modelId: model.model_id,
 		displayName: model.name || model.model_id,

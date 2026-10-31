@@ -9,12 +9,14 @@ import {
 	type TopAppData,
 	type TrendingAppData,
 } from "@/lib/fetchers/rankings/getRankingsData";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
-	fetchFrontendAppImageUrls,
-	fetchFrontendPublicAppIds,
-	fetchFrontendTopApps,
-	fetchFrontendTrendingApps,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+	appImageUrlsQuery,
+	publicAppIdsQuery,
+	topAppsQuery,
+	trendingAppsQuery,
+} from "./page.queries";
 import { buildMetadata } from "@/lib/seo";
 import { getPublicAppPath } from "@/lib/apps/publicAppPath";
 import { getTranslations } from "next-intl/server";
@@ -213,16 +215,25 @@ function PopularAppRow({
 	);
 }
 
-export default async function AppsPage() {
-	const t = await getTranslations("Product.apps");
-	const [publicAppIds, top4wResult, topTodayResult, topWeekResult, topMonthResult, trendingResult] = await Promise.all([
-		fetchFrontendPublicAppIds(),
-		fetchFrontendTopApps("4w", TOP_APPS_QUERY_LIMIT),
-		fetchFrontendTopApps("today", TOP_APPS_QUERY_LIMIT),
-		fetchFrontendTopApps("week", TOP_APPS_QUERY_LIMIT),
-		fetchFrontendTopApps("month", TOP_APPS_QUERY_LIMIT),
-		fetchFrontendTrendingApps(TOP_APPS_QUERY_LIMIT),
-	]);
+export default function AppsPage() {
+	const t = useTranslations("Product.apps");
+	const [
+		{ data: publicAppIds },
+		{ data: top4wResult },
+		{ data: topTodayResult },
+		{ data: topWeekResult },
+		{ data: topMonthResult },
+		{ data: trendingResult },
+	] = useSuspenseQueries({
+		queries: [
+			publicAppIdsQuery(),
+			topAppsQuery("4w", TOP_APPS_QUERY_LIMIT),
+			topAppsQuery("today", TOP_APPS_QUERY_LIMIT),
+			topAppsQuery("week", TOP_APPS_QUERY_LIMIT),
+			topAppsQuery("month", TOP_APPS_QUERY_LIMIT),
+			trendingAppsQuery(TOP_APPS_QUERY_LIMIT),
+		],
+	});
 
 	const publicAppSet = new Set(publicAppIds);
 	const topApps = normalizeTopApps(top4wResult.data, publicAppSet);
@@ -260,7 +271,7 @@ export default async function AppsPage() {
 			...trendingApps.map((app) => app.appId),
 		]),
 	);
-	const imageUrlsById = await fetchFrontendAppImageUrls(appIdsForImages);
+	const { data: imageUrlsById } = useSuspenseQuery(appImageUrlsQuery(appIdsForImages));
 
 	return (
 		<div className="container mx-auto w-full max-w-7xl space-y-10 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Rocket } from "lucide-react";
-import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
+import { use } from "react";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { organisationReleaseEventsQuery, requestCalendarContextQuery } from "./page.functions";
 import ModelUpdateCard, { type EventTypeOption } from "@/components/(data)/models/ModelUpdates/ModelUpdateCard";
 import ModelCalendarRouteSwitch from "@/components/updates/ModelCalendarRouteSwitch";
 import type { ModelEvent } from "@/lib/fetchers/updates/types";
-import { fetchFrontendOrganisationReleaseEvents } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 import type { RuntimeLocale } from "@/i18n/locales";
@@ -114,32 +116,20 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function OrganisationCalendarPage({
+export default function OrganisationCalendarPage({
 	params,
 	searchParams,
 }: PageProps) {
-	const [{ locale, organisationId }, { view: rawView }] = await Promise.all([
-		params,
-		searchParams,
-	]);
-	const t = await getTranslations({
-		locale,
-		namespace: "Catalogue.updatesCalendar.organisation",
+	const { locale, organisationId } = use(params);
+	const { view: rawView } = use(searchParams);
+	const t = useTranslations("Catalogue.updatesCalendar.organisation");
+	const eventTypeT = useTranslations("Catalogue.updates.eventTypes");
+	const [{ data: requestContext }, { data: organisationEvents }] = useSuspenseQueries({
+		queries: [requestCalendarContextQuery(), organisationReleaseEventsQuery(organisationId)],
 	});
-	const eventTypeT = await getTranslations({
-		locale,
-		namespace: "Catalogue.updates.eventTypes",
-	});
-	const requestHeaders = await headers();
 	const view = parseViewMode(rawView);
-	const requestTimeZone = resolveValidTimeZone(
-		requestHeaders.get("x-vercel-ip-timezone") ??
-			requestHeaders.get("cf-timezone") ??
-			requestHeaders.get("x-time-zone")
-	);
-	const todayMonthDayKey = getMonthDayKeyForDate(new Date(), requestTimeZone);
-	const organisationEvents =
-		await fetchFrontendOrganisationReleaseEvents(organisationId);
+	const requestTimeZone = resolveValidTimeZone(requestContext.timeZoneHeader);
+	const todayMonthDayKey = getMonthDayKeyForDate(new Date(requestContext.now), requestTimeZone);
 
 	const organisationName =
 		organisationEvents.find((event) => event.model.organisation.name?.trim())

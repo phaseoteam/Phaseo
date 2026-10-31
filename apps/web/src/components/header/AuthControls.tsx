@@ -1,19 +1,19 @@
-// components/header/AuthControls.tsx  (SERVER COMPONENT)
-import { connection } from "next/server";
-import { getHeaderAccountData } from "./getHeaderAccountData";
+// components/header/AuthControls.tsx
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import HeaderClient from "./HeaderClient";
+import { shellDataQuery } from "./shellData";
 
-export default async function AuthControls({
+export default function AuthControls({
 	variant,
 }: {
 	variant?: "mobile" | "desktop";
 }) {
-	// Supabase Auth reads token expiry during initialization. Explicitly defer
-	// that indirect Date.now() access until a request is available.
-	await connection();
-	const data = await getHeaderAccountData();
+	const locale = useLocale();
+	const { data } = useSuspenseQuery(shellDataQuery(locale));
+	const account = data.account;
 
-	if (!data.isLoggedIn) {
+	if (!account.isLoggedIn) {
 		return (
 			<HeaderClient
 				isLoggedIn={false}
@@ -30,12 +30,12 @@ export default async function AuthControls({
 	return (
 		<HeaderClient
 			isLoggedIn={true}
-			user={data.user}
-			teams={data.teams}
-			displayPreferences={data.displayPreferences}
-			currentTeamId={data.currentTeamId}
-			userRole={data.userRole}
-			providerMode={data.providerMode}
+			user={account.user}
+			teams={account.teams}
+			displayPreferences={account.displayPreferences}
+			currentTeamId={account.currentTeamId}
+			userRole={account.userRole}
+			providerMode={account.providerMode}
 			variant={variant}
 		/>
 	);

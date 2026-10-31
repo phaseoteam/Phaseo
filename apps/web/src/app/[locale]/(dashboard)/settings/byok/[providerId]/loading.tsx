@@ -1,7 +1,7 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export default async function ByokProviderLoading() {
-	const t = await getTranslations("SettingsUI.labels");
+export default function ByokProviderLoading() {
+	const t = useTranslations("SettingsUI.labels");
 	return (
 		<div className="mx-auto animate-pulse space-y-8" aria-label={t("loading")}>
 			<div className="space-y-5">

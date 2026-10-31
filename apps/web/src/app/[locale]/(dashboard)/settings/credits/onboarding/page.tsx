@@ -2,17 +2,21 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import EnterpriseBillingOnboardingClient from "@/components/(gateway)/credits/EnterpriseBillingOnboardingClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
-import { fetchSettingsCreditsOnboardingInitialData } from "@/lib/fetchers/internal/fetchSettingsCreditsOnboardingInitialData";
+import { creditsOnboardingInitialDataQuery } from "../credits.functions";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
 	return { title: t("headers.billingOnboarding") + " - " + t("headers.settings") };
 }
 
-export default async function BillingOnboardingPage() {
-	const t = await getTranslations("SettingsUI");
-	const initialData = await fetchSettingsCreditsOnboardingInitialData();
+// The redirect to /settings/credits for accounts without onboarding access
+// runs in the route's beforeLoad (shouldRedirectFromOnboarding below).
+export default function BillingOnboardingPage() {
+	const t = useTranslations("SettingsUI");
+	const { data: initialData } = useSuspenseQuery(creditsOnboardingInitialDataQuery());
 
 	if (!initialData.signedIn) {
 		return (
@@ -53,7 +57,7 @@ export default async function BillingOnboardingPage() {
 		);
 	}
 
-	if (!initialData.canAccessOnboarding) {
+	if (shouldRedirectFromOnboarding(initialData)) {
 		redirect("/settings/credits");
 	}
 
@@ -78,4 +82,9 @@ export default async function BillingOnboardingPage() {
 			)}
 		</div>
 	);
+}
+
+/** Signed-in accounts with a loaded workspace but no onboarding access go back to /settings/credits. */
+export function shouldRedirectFromOnboarding(initialData: { signedIn: boolean; workspaceId: string | null; team: unknown; canAccessOnboarding: boolean }): boolean {
+	return initialData.signedIn && Boolean(initialData.workspaceId) && Boolean(initialData.team) && !initialData.canAccessOnboarding;
 }

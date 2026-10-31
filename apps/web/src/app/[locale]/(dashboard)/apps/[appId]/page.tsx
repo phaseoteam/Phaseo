@@ -11,12 +11,16 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import type { AppUsageRow } from "@/lib/fetchers/apps/types";
+import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
-	fetchFrontendAppDetails,
-	fetchFrontendAppProviderModelMappings,
-	fetchFrontendAppUsage,
-	fetchFrontendModelLeaderboardMetaByIds,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+	appDetailsQuery,
+	appProviderModelMappingsQuery,
+	appUsageQuery,
+	modelLeaderboardMetaQuery,
+} from "./page.queries";
 import { buildMetadata } from "@/lib/seo";
 import { permanentRedirect } from "next/navigation";
 import {
@@ -112,10 +116,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 	});
 }
 
-export default async function Page({ params }: PageProps) {
-	const { appId } = await params;
-	const t = await getTranslations("Product.appsDetail");
-	const app = await fetchFrontendAppDetails(appId);
+export default function Page({ params }: PageProps) {
+	const { appId } = use(params);
+	const t = useTranslations("Product.appsDetail");
+	const { data: app } = useSuspenseQuery(appDetailsQuery(appId));
 
 	if (!app) {
 		return (
@@ -132,12 +136,25 @@ export default async function Page({ params }: PageProps) {
 		);
 	}
 
+	// Non-canonical app ids are redirected (308) by the route loader before rendering.
 	const canonicalAppId = app.slug?.trim() || getPublicAppRouteSegment(app.title);
 	if (canonicalAppId !== appId) {
 		permanentRedirect(getPublicAppPath(app.title, app.slug));
 	}
 
-	const rows4w = await fetchFrontendAppUsage(app.id, "4w");
+	return <AppDetailContent app={app} canonicalAppId={canonicalAppId} t={t} />;
+}
+
+function AppDetailContent({
+	app,
+	canonicalAppId,
+	t,
+}: {
+	canonicalAppId: string;
+	app: NonNullable<Awaited<ReturnType<typeof fetchFrontendAppDetails>>>;
+	t: ReturnType<typeof useTranslations<"Product.appsDetail">>;
+}) {
+	const { data: rows4w } = useSuspenseQuery(appUsageQuery(app.id, "4w"));
 	const successful4w = rows4w.filter(isSuccessful);
 
 	const rawModelIds = Array.from(
@@ -164,12 +181,10 @@ export default async function Page({ params }: PageProps) {
 	const providerToCanonicalByKey = new Map<string, string>();
 	const canonicalByApi = new Map<string, Set<string>>();
 
+	const { data: providerModels } = useSuspenseQuery(
+		appProviderModelMappingsQuery(app.id, apiLookupIds, normalizedProviderIds),
+	);
 	if (apiLookupIds.length > 0) {
-		const providerModels = await fetchFrontendAppProviderModelMappings(
-			app.id,
-			apiLookupIds,
-			normalizedProviderIds,
-		);
 		for (const row of providerModels ?? []) {
 			const providerId = row.provider_id?.trim();
 			const apiModelId = row.api_model_id?.trim();
@@ -197,8 +212,8 @@ export default async function Page({ params }: PageProps) {
 		}
 	}
 
-	const modelMetaById = await fetchFrontendModelLeaderboardMetaByIds(
-		Array.from(candidateModelIds),
+	const { data: modelMetaById } = useSuspenseQuery(
+		modelLeaderboardMetaQuery(Array.from(candidateModelIds)),
 	);
 	const hasMeta = (modelId: string) =>
 		Boolean(modelMetaById[modelId]?.name || modelMetaById[modelId]?.model_id);

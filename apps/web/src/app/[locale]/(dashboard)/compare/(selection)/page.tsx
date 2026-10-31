@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
-import { Suspense } from "react";
+import { Suspense, use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
 import { decodeModelIdFromUrl } from "@/components/(data)/compare/compareUrl";
-import { loadCompareData, loadComparePairs } from "@/components/(data)/compare/loadCompare";
 import { toCompareModelOption } from "@/components/(data)/compare/types";
-import type { CompareView, CompareViewUsageByModel } from "@/components/(data)/compare/view/types";
+import { compareSelectionQuery } from "./page.queries";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const locale = await getLocale();
@@ -35,8 +35,6 @@ const normalizeSelection = (value: string | string[] | undefined): string[] => {
 	return [value];
 };
 
-const EMPTY_VIEW: CompareView = { models: [], benchmarks: [] };
-
 function CompareDashboardFallback() {
 	return (
 		<div className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
@@ -50,15 +48,12 @@ function CompareDashboardFallback() {
 	);
 }
 
-async function ComparePageContent({ searchParams }: PageProps) {
-	const resolvedSearchParams = await searchParams;
+function ComparePageContent({ searchParams }: PageProps) {
+	const resolvedSearchParams = searchParams && "then" in searchParams ? use(searchParams as Promise<Record<string, string | string[] | undefined>>) : searchParams;
 	const ids = [...new Set(normalizeSelection(resolvedSearchParams?.models).map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4);
 
 	// With nothing selected, the page lists the curated head-to-head pages instead.
-	const [{ view, usage }, pairs] = await Promise.all([
-		ids.length ? loadCompareData(ids) : { view: EMPTY_VIEW, usage: {} as CompareViewUsageByModel },
-		ids.length ? [] : loadComparePairs(),
-	]);
+	const { data: { view, usage, pairs } } = useSuspenseQuery(compareSelectionQuery(ids));
 
 	// The pickers load the full model list in the browser when opened, so the
 	// page only carries options for the models it compares.

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { redirect } from "@/i18n/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import { getPrivateUsageScope } from "@/lib/fetchers/internal/getPrivateUsageScope";
+import { privateUsageScopeQuery } from "../usage.functions";
 import { usageSearchParams, type UsageSearchParams } from "@/lib/query/privateUsage";
 import type { UsageLogsViewKey } from "@/lib/gateway/usage/timeRange";
 import UsageLogsClient from "./UsageLogsClient";
@@ -13,13 +13,18 @@ export async function generateMetadata(): Promise<Metadata> {
 	return { title: t("strings.Logs" as never) };
 }
 
-export default async function Page({ searchParams }: { searchParams: Promise<UsageSearchParams> }) {
-	const sp = await searchParams;
+// The route's beforeLoad redirects to usageLogsRedirectHref(search), so this never renders.
+export default function Page(_props: { searchParams: Promise<UsageSearchParams> }) {
+	return null;
+}
+
+/** Where /settings/usage/logs redirects to (unlocalised; the route adds the locale). */
+export function usageLogsRedirectHref(sp: UsageSearchParams): string {
 	const raw = (Array.isArray(sp.view) ? sp.view[0] : sp.view)?.toLowerCase();
 	const segment = ["upstream", "jobs", "sessions"].includes(raw ?? "") ? raw : "requests";
 	const params = usageSearchParams(sp);
 	params.delete("view");
-	redirect({ href: `/settings/usage/logs/${segment}${params.size ? `?${params}` : ""}`, locale: await getLocale() });
+	return `/settings/usage/logs/${segment}${params.size ? `?${params}` : ""}`;
 }
 
 export function UsageLogsRoutePage({ view, searchParams, jobKind }: {
@@ -30,12 +35,12 @@ export function UsageLogsRoutePage({ view, searchParams, jobKind }: {
 	return <Suspense fallback={<SettingsSectionFallback />}><UsageLogsContent searchParams={searchParams} selectedView={view} forcedJobKind={jobKind} /></Suspense>;
 }
 
-export async function UsageLogsContent({ selectedRequestId = null, selectedView, forcedJobKind }: {
+export function UsageLogsContent({ selectedRequestId = null, selectedView, forcedJobKind }: {
 	searchParams: Promise<UsageSearchParams>;
 	selectedRequestId?: string | null;
 	selectedView?: UsageLogsViewKey;
 	forcedJobKind?: "video" | "batch";
 }) {
-	const scope = await getPrivateUsageScope();
+	const { data: scope } = useSuspenseQuery(privateUsageScopeQuery());
 	return <UsageLogsClient key={`${scope.userId}:${scope.workspaceId}`} scope={scope} selectedRequestId={selectedRequestId} selectedView={selectedView} forcedJobKind={forcedJobKind} />;
 }

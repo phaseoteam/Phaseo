@@ -2,8 +2,9 @@ import Link from "next/link";
 import { CatalogIssueButton } from "@/components/(data)/CatalogIssueButton";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
-import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
-import { getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { catalogueInternalAuthStatusQuery } from "@/components/(data)/catalogueViewer.functions";
+import { useTranslations } from "next-intl";
 
 interface ModelEditButtonProps {
 	modelId: string;
@@ -35,21 +36,18 @@ function mapPageTabToEditorTab(tab: string | undefined): string | null {
 	return map[normalized] ?? "basic";
 }
 
-export default async function ModelEditButton({
+export default function ModelEditButton({
 	modelId,
 	tab,
 }: ModelEditButtonProps) {
-	const authStatus = await fetchInternalAuthStatus().catch(() => ({
-		isAdmin: false,
-		signedIn: false,
-	}));
+	const { data: authStatus } = useSuspenseQuery(catalogueInternalAuthStatusQuery());
+	const tEditor = useTranslations("Common.ui.modelEditor");
 
 	if (!authStatus.isAdmin) {
 		return <CatalogIssueButton entity="Model" id={modelId} />;
 	}
 
 	const editorTab = mapPageTabToEditorTab(tab);
-	const tEditor = await getTranslations("Common.ui.modelEditor");
 	const href = editorTab
 		? `/internal/data/models/edit/${modelId}?tab=${encodeURIComponent(editorTab)}`
 		: `/internal/data/models/edit/${modelId}`;

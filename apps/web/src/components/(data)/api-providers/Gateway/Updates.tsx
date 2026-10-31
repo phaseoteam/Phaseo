@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Calendar, Sparkles, TrendingUp, Check } from "lucide-react";
-import { fetchFrontendAPIProviderUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProviderUpdatesQuery } from "../apiProvider.queries";
 import type { APIProviderRecentModel } from "@/lib/fetchers/api-providers/providerDataTypes";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
 import { DisplayCalendarDate, DisplayCount, DisplayNumber } from "@/components/display/DisplayValue";
 import {
 	Empty,
@@ -38,17 +39,15 @@ function getLifecycleDateInfo(model: APIProviderRecentModel): LifecycleDateInfo 
 	return { date: null, label: null };
 }
 
-export default async function Updates({
+export default function Updates({
 	apiProviderId,
 }: {
 	apiProviderId: string;
 }) {
-	const [t, locale] = await Promise.all([
-		getTranslations("Catalogue.providers"),
-		getLocale(),
-	]);
-	const { recentModels, newModels, recentTokens } =
-		await fetchFrontendAPIProviderUpdates(apiProviderId);
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
+	const { data: { recentModels, newModels, recentTokens } } =
+		useSuspenseQuery(apiProviderUpdatesQuery(apiProviderId));
 
 	const latestModelDisplay =
 		recentModels.length > 0

@@ -1,12 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchFrontendRecentAppRequests } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { appRecentRequestsQuery } from "./app.queries";
 import { Clock, Zap } from "lucide-react";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { DisplayDateTime, DisplayNumber } from "@/components/display/DisplayValue";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 
-export default async function RecentRequestsForApp({
+export default function RecentRequestsForApp({
 	appId,
 	range = "1m"
 }: {
@@ -14,11 +15,8 @@ export default async function RecentRequestsForApp({
 	range?: RangeKey;
 }) {
 	void range;
-	const locale = await getLocale();
-	const [rows, t] = await Promise.all([
-		fetchFrontendRecentAppRequests(appId, 25),
-		getTranslations({ locale, namespace: "Catalogue.appDetail" }),
-	]);
+	const t = useTranslations("Catalogue.appDetail");
+	const { data: rows } = useSuspenseQuery(appRecentRequestsQuery(appId, 25));
 
 	// Get recent successful requests
 	const recentRequests = rows

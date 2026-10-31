@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, use, useMemo } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Languages } from "lucide-react";
-import { NextIntlClientProvider } from "next-intl";
+import { createTranslator, NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { AuthLocalisationPreview } from "@/components/internal/localisation/AuthLocalisationPreview";
 import { Spinner } from "@/components/ui/spinner";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
+import { localisationPreviewMessagesQuery } from "../../internalAdmin.functions";
 import { appleAppStoreLocales } from "@/i18n/apple-locales";
 import { getTypedCatalogMessages } from "@/i18n/catalogs";
 import {
@@ -51,15 +52,20 @@ export default function LocalisationPreviewPage(
 	);
 }
 
-async function LocalisationPreviewContent({
+// The admin gate (requireInternalAdmin("/internal")) runs in the route's beforeLoad.
+function LocalisationPreviewContent({
 	params,
 }: LocalisationPreviewPageProps) {
-	await requireInternalAdmin("/internal");
-	const { previewLocale: requestedLocale } = await params;
+	const { previewLocale: requestedLocale } = use(params);
 	if (!isCatalogLocale(requestedLocale)) notFound();
 
 	const locale = requestedLocale;
-	const t = await getTranslations({ locale, namespace: "Product.internalTools.localisationPreview" });
+	// getTranslations({ locale }) in Next: the header copy in the previewed locale.
+	const { data: previewCopy } = useSuspenseQuery(localisationPreviewMessagesQuery(locale));
+	const t = useMemo(
+		() => createTranslator({ locale: previewCopy.locale as never, messages: previewCopy.messages as never, namespace: "Product.internalTools.localisationPreview" as never, timeZone: "UTC" }) as unknown as (key: string, values?: Record<string, unknown>) => string,
+		[previewCopy],
+	);
 	const definition = getLocaleDefinition(locale);
 	const messages = getTypedCatalogMessages(locale);
 	const appleLocaleCount = catalogLocales.filter(

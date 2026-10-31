@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import type { APIProviderCard } from "@/lib/fetchers/api-providers/providerDataTypes";
-import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { apiProvidersQuery } from "./page.queries";
 import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
 import { APIProvidersPageSkeleton } from "@/components/(data)/api-providers/APIProvidersPageSkeleton";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -19,15 +20,14 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-async function APIProvidersSection() {
-	const apiProviders =
-		(await fetchFrontendAPIProviders()) as APIProviderCard[];
+function APIProvidersSection() {
+	const { data: apiProviders } = useSuspenseQuery(apiProvidersQuery());
 
 	return <APIProvidersDisplay providers={apiProviders} />;
 }
 
-export default async function Page() {
-	const t = await getTranslations("Catalogue.providers");
+export default function Page() {
+	const t = useTranslations("Catalogue.providers");
 
 	return (
 		<main className="flex min-h-0 flex-1 flex-col">

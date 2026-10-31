@@ -4,12 +4,15 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 type LazyRenderOnVisibleProps = {
 	children: ReactNode;
+	/** Anchor id for the placeholder, so in-page links can reach an unloaded section. */
+	id?: string;
 	minHeight?: number;
 	rootMargin?: string;
 };
 
 export function LazyRenderOnVisible({
 	children,
+	id,
 	minHeight = 720,
 	rootMargin = "900px 0px",
 }: LazyRenderOnVisibleProps) {
@@ -41,6 +44,8 @@ export function LazyRenderOnVisible({
 	return (
 		<div
 			ref={ref}
+			id={shouldRender ? undefined : id}
+			className={shouldRender ? undefined : "scroll-mt-32"}
 			style={
 				shouldRender
 					? undefined

@@ -1,11 +1,12 @@
+import { use } from "react";
 import { redirect } from "next/navigation";
 
-export default async function RequestLogPage(props: {
+export default function RequestLogPage(props: {
 	params: Promise<{ requestId: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	const { requestId } = await props.params;
-	const searchParams = await props.searchParams;
+	const { requestId } = use(props.params);
+	const searchParams = use(props.searchParams);
 	const params = new URLSearchParams();
 	for (const [key, value] of Object.entries(searchParams)) {
 		if (Array.isArray(value)) value.forEach((item) => params.append(key, item));

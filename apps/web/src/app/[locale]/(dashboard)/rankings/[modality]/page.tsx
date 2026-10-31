@@ -1,3 +1,4 @@
+import { use } from "react";
 import { notFound } from "next/navigation";
 import RankingsPageContent, {
 	generateRankingsMetadata,
@@ -23,10 +24,10 @@ export function generateStaticParams() {
 	];
 }
 
-export default async function RankingsModalityPage({
+export default function RankingsModalityPage({
 	params,
 }: RankingsModalityPageProps) {
-	const { modality } = await params;
+	const { modality } = use(params);
 
 	if (!isRankingModality(modality) || modality === "text") {
 		notFound();

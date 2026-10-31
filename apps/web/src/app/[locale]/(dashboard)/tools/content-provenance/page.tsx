@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { Metadata } from "next";
 import ContentProvenanceTool from "@/components/(tools)/ContentProvenanceTool";
 import { ToolPageHeader } from "@/components/(tools)/ToolPageHeader";
@@ -13,8 +14,8 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-export default async function ContentProvenancePage() {
-	const t = await getTranslations("Product.tools.provenance");
+export default function ContentProvenancePage() {
+	const t = useTranslations("Product.tools.provenance");
 	return (
 		<main className="min-h-screen">
 			<div className="container mx-auto px-4 py-8 sm:py-12">

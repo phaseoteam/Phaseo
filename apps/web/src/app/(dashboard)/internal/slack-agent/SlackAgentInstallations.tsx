@@ -1,4 +1,4 @@
-import { getFormatter, getTranslations } from "next-intl/server";
+import { useTranslations, useFormatter } from "next-intl";
 import { DisplayDateTime } from "@/components/display/DisplayValue";
 import { formatUsd } from "@/components/(gateway)/settings/slack/slackAgentForm";
 import { cn } from "@/lib/utils";
@@ -12,9 +12,9 @@ const STATUS_KEYS = {
 } as const satisfies Record<SlackAgentInstallationStatus, string>;
 
 /** Every Slack agent installation, newest first, for Phaseo staff. */
-export async function SlackAgentInstallations({ installations }: { installations: SlackAgentInstallation[] }) {
-	const t = await getTranslations("SettingsUI");
-	const format = await getFormatter();
+export function SlackAgentInstallations({ installations }: { installations: SlackAgentInstallation[] }) {
+	const t = useTranslations("SettingsUI");
+	const format = useFormatter();
 	if (installations.length === 0) return <p className="text-sm text-muted-foreground">{t("slackAgentInstallations.none")}</p>;
 
 	const header = "px-3 py-2 text-left font-medium";

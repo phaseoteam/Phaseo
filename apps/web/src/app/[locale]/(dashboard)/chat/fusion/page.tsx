@@ -1,8 +1,9 @@
 import { Suspense } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import CouncilClient from "@/components/(experiments)/CouncilClient";
-import { fetchExperimentsCouncilModels } from "@/lib/fetchers/frontend/fetchExperimentsCouncilModels";
+import { chatCouncilModelsQuery } from "@/app/[locale]/(dashboard)/chat/chat.queries";
 import { buildDefaultCouncilPresets } from "@/lib/experiments/councilPresets";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,8 +19,8 @@ export default function FusionPage() {
 	);
 }
 
-async function FusionPageContent() {
-	const models = await fetchExperimentsCouncilModels();
+function FusionPageContent() {
+	const { data: models } = useSuspenseQuery(chatCouncilModelsQuery());
 	const initialPresets = buildDefaultCouncilPresets(models.map((model) => model.modelId));
 	return (
 		<CouncilClient

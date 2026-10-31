@@ -1,9 +1,10 @@
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { fetchFrontendModelUpdateCards } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { LatestModelsCarousel } from "./LatestModelsCarousel";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { landingModelUpdateCardsQuery } from "@/components/landingPage/landing.queries";
 
 const CARD_LIMIT = 10;
 
@@ -27,12 +28,9 @@ export function HomeModelUpdatesSectionFallback() {
 	);
 }
 
-export default async function HomeModelUpdatesSection() {
-	const locale = await getLocale();
-	const [modelCards, t] = await Promise.all([
-		fetchFrontendModelUpdateCards(CARD_LIMIT, false),
-		getTranslations({ locale, namespace: "Site.home" }),
-	]);
+export default function HomeModelUpdatesSection() {
+	const { data: modelCards } = useSuspenseQuery(landingModelUpdateCardsQuery(CARD_LIMIT));
+	const t = useTranslations("Site.home");
 
 	return (
 		<section className="w-full">

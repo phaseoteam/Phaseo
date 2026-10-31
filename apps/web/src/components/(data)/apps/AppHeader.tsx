@@ -1,16 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Activity, Zap } from "lucide-react";
-import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { appDetailsQuery } from "./app.queries";
+import { useTranslations } from "next-intl";
 import { DisplayCount, DisplayDate, DisplayNumber } from "@/components/display/DisplayValue";
 
-export default async function AppHeader({ appId }: { appId: string }) {
-	const locale = await getLocale();
-	const [app, t] = await Promise.all([
-		fetchFrontendAppDetails(appId),
-		getTranslations({ locale, namespace: "Catalogue.appDetail" }),
-	]);
+export default function AppHeader({ appId }: { appId: string }) {
+	const t = useTranslations("Catalogue.appDetail");
+	const { data: app } = useSuspenseQuery(appDetailsQuery(appId));
 
 	if (!app) {
 		return (

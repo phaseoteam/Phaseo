@@ -1,27 +1,24 @@
 import { Pencil } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { CatalogIssueButton } from "@/components/(data)/CatalogIssueButton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { catalogueInternalAuthStatusQuery } from "@/components/(data)/catalogueViewer.functions";
 
 interface OrganisationEditButtonProps {
   organisationId: string;
 }
 
-export default async function OrganisationEditButton({
+export default function OrganisationEditButton({
   organisationId,
 }: OrganisationEditButtonProps) {
-  const authStatus = await fetchInternalAuthStatus().catch(() => ({
-    isAdmin: false,
-    signedIn: false,
-  }));
+  const { data: authStatus } = useSuspenseQuery(catalogueInternalAuthStatusQuery());
+  const t = useTranslations("Catalogue.organisations");
 
   if (!authStatus.isAdmin) {
     return <CatalogIssueButton entity="Organisation" id={organisationId} />;
   }
-
-  const t = await getTranslations("Catalogue.organisations");
 
   return (
     <Button variant="outline" size="sm" asChild>

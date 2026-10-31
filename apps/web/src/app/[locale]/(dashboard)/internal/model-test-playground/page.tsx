@@ -1,7 +1,7 @@
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { getTranslations } from "next-intl/server";
 import ModelTestPlaygroundClient from "./ModelTestPlaygroundClient";
+import { modelTestPlaygroundModelsQuery } from "./models.queries";
 
 export async function generateMetadata() {
 	const t = await getTranslations("Product.internalTools.modelTestPlayground");
@@ -11,8 +11,8 @@ export async function generateMetadata() {
 	};
 }
 
-export default async function ModelTestPlaygroundPage() {
-	await requireInternalAdmin();
-	const models = await fetchFrontendGatewayModels();
+// The admin gate (requireInternalAdmin) runs in the route's beforeLoad.
+export default function ModelTestPlaygroundPage() {
+	const { data: models } = useSuspenseQuery(modelTestPlaygroundModelsQuery());
 	return <ModelTestPlaygroundClient models={models} />;
 }

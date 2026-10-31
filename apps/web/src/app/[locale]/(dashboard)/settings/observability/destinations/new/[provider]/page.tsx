@@ -1,5 +1,6 @@
+import { useTranslations } from "next-intl";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, use } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import BroadcastDestinationContent from "./BroadcastDestinationContent";
 import { getDestinationById } from "@/components/(gateway)/settings/observability/destinationCatalog";
@@ -20,14 +21,14 @@ export async function generateMetadata({
 	};
 }
 
-export default async function NewBroadcastDestinationPage({
+export default function NewBroadcastDestinationPage({
 	params,
 }: {
 	params: Promise<{ provider: string }>;
 }) {
-	const { provider } = await params;
+	const { provider } = use(params);
 	const destination = getDestinationById(provider);
-	const t = await getTranslations("SettingsUI");
+	const t = useTranslations("SettingsUI");
 	if (!destination) notFound();
 
 	return (

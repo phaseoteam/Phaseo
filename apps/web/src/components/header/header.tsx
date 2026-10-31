@@ -3,7 +3,8 @@ import Link from "next/link";
 import { IntentLink } from "@/components/navigation/IntentLink";
 import Image from "next/image";
 import { Suspense } from "react";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import AuthControls from "./AuthControls";
 import MainNav from "./MainNav";
 import { SearchWithCapabilities as SearchWrapper } from "@/components/header/Search/SearchWithCapabilities";
@@ -13,34 +14,21 @@ import { Button } from "@/components/ui/button";
 import HeaderShell from "./HeaderShell";
 import SettingsSidebarTrigger from "@/components/(gateway)/settings/SettingsSidebarTrigger";
 import { BrandMenu } from "./BrandMenu";
-import { autoRoutingFlag, requestClassifiersFlag, slackAgentSettingsEnabled, workloadIdentityFlag } from "@/lib/flags";
 import { getLocalizedDocsHref } from "@/lib/docs";
-import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messages";
-import { getPublicMessages } from "@/i18n/messages";
-import { isPublicLocale } from "@/i18n/routing";
-import { getSettingsNavigationCopy } from "@/components/(gateway)/settings/Sidebar.labels";
-import { getHeaderAccountData } from "./getHeaderAccountData";
-import { connection } from "next/server";
+import { shellDataQuery } from "./shellData";
 
 const showHeaderAnnouncement = false;
 
-async function GatedSettingsSidebarTrigger() {
-	await connection();
-	const locale = await getLocale();
-	const publicLocale = isPublicLocale(locale) ? locale : "en-GB";
-	const [showAutoRouting, showClassifiers, showSlackAgent, showWorkloadIdentity, messages, navigationMessages, account] = await Promise.all([
-		autoRoutingFlag(), requestClassifiersFlag().catch(() => false), slackAgentSettingsEnabled(), workloadIdentityFlag().catch(() => false), getPublicMessages(publicLocale), getSettingsNavigationMessages(publicLocale),
-		getHeaderAccountData(),
-	]);
-	const copy = getSettingsNavigationCopy(navigationMessages, messages.SettingsUI.sidebarNew);
-	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} showClassifiers={showClassifiers} showWorkloadIdentity={showWorkloadIdentity} showSlackAgent={showSlackAgent} copy={copy} providerMode={account.providerMode === true} />;
+function GatedSettingsSidebarTrigger() {
+	const locale = useLocale();
+	const { data } = useSuspenseQuery(shellDataQuery(locale));
+	const { capabilities, settingsNavigationCopy: copy, account } = data;
+	return <SettingsSidebarTrigger showAutoRouting={capabilities.autoRouting} showClassifiers={capabilities.classifiers} showWorkloadIdentity={capabilities.workloadIdentity} showSlackAgent={capabilities.slackAgent} copy={copy} providerMode={account.providerMode === true} />;
 }
 
-export default async function Header() {
-	const [t, locale] = await Promise.all([
-		getTranslations("Common.nav"),
-		getLocale(),
-	]);
+export default function Header() {
+	const t = useTranslations("Common.nav");
+	const locale = useLocale();
 	const docsLink = getLocalizedDocsHref(locale, "/v1");
 	const headerContent = (
 		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:gap-x-1 max-[19.375rem]:gap-x-0 lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">

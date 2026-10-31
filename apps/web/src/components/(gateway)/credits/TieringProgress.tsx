@@ -5,13 +5,14 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowRight, Check, Lock, TrendingUp, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fetchCreditsTierSummary } from "@/lib/fetchers/internal/fetchCreditsTierSummary";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { creditsTierSummaryQuery } from "./creditsTierSummary.functions";
 import {
 	GATEWAY_TIERS,
 	computeTierInfo,
 	type GatewayTier,
 } from "@/components/(gateway)/credits/tiers";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
@@ -35,22 +36,19 @@ interface Props {
 	currency?: string;
 }
 
-export default async function TieringProgress({
+export default function TieringProgress({
 	currency = "USD",
 	teamId,
 }: Props) {
-	const t = await getTranslations("SettingsUI.credits");
+	const t = useTranslations("SettingsUI.credits");
 	let lastMonthCents = 0;
 	let mtdCents = 0;
 
-	if (teamId) {
-		try {
-			const summary = await fetchCreditsTierSummary(teamId);
-			lastMonthCents = summary.lastMonthCents;
-			mtdCents = summary.mtdCents;
-		} catch {
-			// Keep the pricing tier card renderable with empty spend values.
-		}
+	// null without a team or when the summary failed: keep the pricing tier card renderable with empty spend values.
+	const { data: summary } = useSuspenseQuery(creditsTierSummaryQuery(teamId));
+	if (summary) {
+		lastMonthCents = summary.lastMonthCents;
+		mtdCents = summary.mtdCents;
 	}
 
 	const lastMonth = lastMonthCents / 1_000_000_000;

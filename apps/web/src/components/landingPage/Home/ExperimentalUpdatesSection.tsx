@@ -1,9 +1,10 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { localizedUpdateBadge } from "@/i18n/update-card-messages";
 import { Link } from "@/i18n/navigation";
 import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { fetchFrontendModelUpdateCards } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { landingModelUpdateCardsQuery } from "@/components/landingPage/landing.queries";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 export function ExperimentalUpdatesSectionFallback() {
@@ -22,11 +23,11 @@ export function ExperimentalUpdatesSectionFallback() {
 	);
 }
 
-export default async function ExperimentalUpdatesSection() {
-	const tCopy = await getTranslations("Site.landingGaps");
-	const tEvents = await getTranslations("Catalogue.updates.eventTypes");
+export default function ExperimentalUpdatesSection() {
+	const tCopy = useTranslations("Site.landingGaps");
+	const tEvents = useTranslations("Catalogue.updates.eventTypes");
 
-	const updates = await fetchFrontendModelUpdateCards(3, false);
+	const { data: updates } = useSuspenseQuery(landingModelUpdateCardsQuery(3));
 
 	return (
 		<section className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">

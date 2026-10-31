@@ -1,22 +1,24 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
-import { fetchAdminCatalogRecord } from "@/lib/fetchers/internal/fetchAdminCatalog";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { adminCatalogRecordQuery } from "../../../catalog.functions";
 import ModelLegacyEditor from "./ModelLegacyEditor";
 import ModelRevalidationControls from "./ModelRevalidationControls";
 import ModelSuccessorRoutingPanel from "./ModelSuccessorRoutingPanel";
 import SendModelDiscordNotificationButton from "@/app/(dashboard)/internal/data/models/edit/[...modelId]/SendModelDiscordNotificationButton";
 
-export default async function EditModelPage({
+export default function EditModelPage({
 	params,
 	searchParams,
 }: {
 	params: Promise<{ modelId: string[] }>;
 	searchParams: Promise<{ tab?: string; provider?: string }>;
 }) {
-	const t = await getTranslations("Product.internalTools.dataEditor");
-	const { modelId: modelIdParts } = await params;
-	const query = await searchParams;
+	const t = useTranslations("Product.internalTools.dataEditor");
+	const { modelId: modelIdParts } = use(params);
+	const query = use(searchParams);
 	const modelId = modelIdParts.join("/");
 	const initialTab =
 		typeof query.tab === "string" && query.tab.trim()
@@ -26,7 +28,7 @@ export default async function EditModelPage({
 		typeof query.provider === "string" && query.provider.trim()
 			? query.provider.trim()
 			: undefined;
-	const { row } = await fetchAdminCatalogRecord("model", modelId);
+	const { data: { row } } = useSuspenseQuery(adminCatalogRecordQuery("model", modelId));
 	if (!row) return notFound();
 
 	return (

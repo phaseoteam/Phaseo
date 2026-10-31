@@ -8,6 +8,10 @@ import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
+import { useTranslations } from "next-intl";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { subscriptionPlanQuery } from "./page.queries";
 
 async function fetchPlan(baseId: string) {
 	try {
@@ -83,15 +87,16 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function Page({
+export default function Page({
 	params,
 }: {
 	params: Promise<{ locale: string; planId: string }>;
 }) {
-	const { planId, locale } = await params;
+	const { planId, locale } = use(params);
 	const messages = getSubscriptionPlansMessagesFor(locale);
 
-	const [plan, terms] = await Promise.all([fetchFrontendSubscriptionPlan(planId), getTranslations("Common.ui.subscriptionCatalog")]);
+	const { data: plan } = useSuspenseQuery(subscriptionPlanQuery(planId));
+	const terms = useTranslations("Common.ui.subscriptionCatalog");
 
 	if (!plan) {
 		return <SubscriptionPlanDetailShell planId={planId}>{null}</SubscriptionPlanDetailShell>;

@@ -1,3 +1,5 @@
+import { use } from "react";
+import { useTranslations } from "next-intl";
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
@@ -66,13 +68,13 @@ export async function generateMetadata({
 	});
 }
 
-export default async function SubprocessorsPage({
+export default function SubprocessorsPage({
 	params,
 }: {
 	params: Promise<{ locale: PublicLocale }>;
 }) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Site.trust.subprocessorsPage" });
+	const { locale } = use(params);
+	const t = useTranslations("Site.trust.subprocessorsPage");
 	const coreCopy = t.raw("coreProcessors" as never) as Record<CoreProcessorId, CoreProcessorCopy>;
 	const operationalCopy = t.raw("operationalProviders" as never) as Record<OperationalProviderId, OperationalProviderCopy>;
 	const changeDate = new Intl.DateTimeFormat(locale, {

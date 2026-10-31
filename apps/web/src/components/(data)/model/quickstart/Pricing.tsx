@@ -8,8 +8,9 @@ import {
 } from "@/components/ui/card";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { PricingRule } from "@/lib/fetchers/models/getModelPricing";
-import { fetchFrontendModelPricing } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { modelPricingQuery } from "@/components/(data)/model/modelData.queries";
+import { useTranslations } from "next-intl";
 
 interface PricingProps {
 	metadata: ModelGatewayMetadata;
@@ -31,9 +32,9 @@ function parseConditionDescription(conditions: Condition[]): string {
 		switch (cond.path) {
 			case "usage.context.max_tokens":
 				if (cond.op === "lte") {
-					descriptions.push(`up to ${cond.value?.toLocaleString()} tokens`);
+					descriptions.push(`up to ${cond.value?.toLocaleString("en-US")} tokens`);
 				} else if (cond.op === "gt") {
-					descriptions.push(`over ${cond.value?.toLocaleString()} tokens`);
+					descriptions.push(`over ${cond.value?.toLocaleString("en-US")} tokens`);
 				}
 				break;
 			case "usage.cache_hit":
@@ -111,9 +112,9 @@ function formatPricingMeterLabel(meter: string): string {
 	}
 }
 
-export default async function Pricing({ metadata, includeHidden }: PricingProps) {
-	const t = await getTranslations("Catalogue.models.detail.quickstart");
-	const pricingData = await fetchFrontendModelPricing(metadata.modelId);
+export default function Pricing({ metadata, includeHidden }: PricingProps) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
+	const { data: pricingData } = useSuspenseQuery(modelPricingQuery(metadata.modelId));
 
 	if (!pricingData || pricingData.length === 0) {
 		return null;

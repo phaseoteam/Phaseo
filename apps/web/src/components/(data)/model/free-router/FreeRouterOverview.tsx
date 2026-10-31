@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { DisplayNumber, DisplayTimestamp } from "@/components/display/DisplayValue";
-import { fetchFrontendFreeRouterOverview } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { freeRouterOverviewQuery } from "./FreeRouterOverview.queries";
 import { FREE_ROUTER_MODEL_ID } from "@/lib/models/freeRouter";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -81,11 +82,11 @@ function SummaryMetric({
 	);
 }
 
-export default async function FreeRouterOverview() {
-	const t = await getTranslations("Catalogue.models.freeRouter");
-	const tMetadata = await getTranslations("Catalogue.modelDetail.metadata");
-	const locale = await getLocale();
-	const overview = await fetchFrontendFreeRouterOverview();
+export default function FreeRouterOverview() {
+	const t = useTranslations("Catalogue.models.freeRouter");
+	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const locale = useLocale();
+	const { data: overview } = useSuspenseQuery(freeRouterOverviewQuery());
 	const modalityLabels = {
 		text: tMetadata("modalityText"),
 		image: tMetadata("modalityImage"),

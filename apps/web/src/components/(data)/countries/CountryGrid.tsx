@@ -1,14 +1,14 @@
+import { useTranslations } from "next-intl";
 import CountryCard from "./CountryCard";
 import type { CountryListSummary } from "@/lib/fetchers/countries/types";
-import { getTranslations } from "next-intl/server";
 
 interface CountriesGridProps {
 	countries: CountryListSummary[];
 }
 
-export default async function CountriesGrid({ countries }: CountriesGridProps) {
+export default function CountriesGrid({ countries }: CountriesGridProps) {
 	if (!countries.length) {
-		const t = await getTranslations("Catalogue.countries");
+		const t = useTranslations("Catalogue.countries");
 		return (
 			<p className="text-sm text-muted-foreground">
 				{t("noCountryData")}

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { notFound } from "next/navigation";
 import DynamicRoutesStudio from "@/components/(gateway)/settings/routing/DynamicRoutesStudio";
 import { Callout } from "@/components/ui/callout";
@@ -68,9 +69,9 @@ export async function generateMetadata() {
 	return { title: t("dynamicRoutingPreview") };
 }
 
-export default async function DynamicRoutingDemoPage() {
-	const t = await getTranslations("SettingsUI");
-	const routingT = await getTranslations("SettingsUI.routingStudio");
+export default function DynamicRoutingDemoPage() {
+	const t = useTranslations("SettingsUI");
+	const routingT = useTranslations("SettingsUI.routingStudio");
 	if (process.env.NODE_ENV === "production") notFound();
 	const demoNodeLabelKeys: Record<string, string> = {
 		start: "requestReceived",

@@ -1,5 +1,6 @@
+import { useTranslations, useLocale } from "next-intl";
 import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
@@ -76,9 +77,9 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
 	return <Link href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 underline decoration-border underline-offset-4 hover:decoration-foreground">{children}<ArrowUpRight className="size-3.5" /></Link>;
 }
 
-export default async function TrustCentrePage() {
-	const t = await getTranslations("Site.trust");
-	const locale = await getLocale();
+export default function TrustCentrePage() {
+	const t = useTranslations("Site.trust");
+	const locale = useLocale();
 	const copy: TrustOverview = {
 		states: t.raw("overview.states") as TrustOverview["states"],
 		documents: t.raw("overview.documents") as TrustOverview["documents"],

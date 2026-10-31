@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import ProviderCompareDashboard from "@/components/(data)/api-providers/ProviderCompareDashboard";
-import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import type { APIProviderCard } from "@/lib/fetchers/api-providers/providerDataTypes";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProvidersQuery } from "../page.queries";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 
@@ -18,8 +18,8 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-async function ProviderCompareContent() {
-	const providers = await fetchFrontendAPIProviders() as APIProviderCard[];
+function ProviderCompareContent() {
+	const { data: providers } = useSuspenseQuery(apiProvidersQuery());
 	return <ProviderCompareDashboard providers={providers} />;
 }
 

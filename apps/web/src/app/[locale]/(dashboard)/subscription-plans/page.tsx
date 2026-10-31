@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/types";
-import { fetchFrontendSubscriptionPlans } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { subscriptionPlansQuery } from "./page.queries";
 import SubscriptionPlansDisplay from "@/components/(data)/subscription-plans/SubscriptionPlansDisplay";
 import { getSubscriptionPlansMessages } from "@/i18n/subscription-plans";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
@@ -30,11 +31,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 }
 
-export default async function SubscriptionPlansPage({ params }: { params: Promise<{ locale: string }> }) {
-	const { locale } = await params;
+export default function SubscriptionPlansPage({ params }: { params: Promise<{ locale: string }> }) {
+	const { locale } = use(params);
 	const messages = getSubscriptionPlansMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
-	const subscriptionPlans =
-		(await fetchFrontendSubscriptionPlans()) as SubscriptionPlanSummary[];
+	const { data: subscriptionPlans } = useSuspenseQuery(subscriptionPlansQuery());
 
 	console.log("Fetched subscription plans:", subscriptionPlans.length);
 

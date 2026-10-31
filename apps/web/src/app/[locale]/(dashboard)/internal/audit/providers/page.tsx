@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
-import { getProviderAudit } from "@/lib/fetchers/models/table-view/getProviderAudit";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
+import { providerAuditQuery } from "../../internalAdmin.functions";
 
 export async function generateMetadata() {
 	const t = await getTranslations("Product.internalTools.dataAudit");
@@ -47,17 +49,18 @@ function formatStatus(value: string | null, notSetLabel: string): string {
 		.join(" ");
 }
 
-export default async function InternalProviderAuditPage({
+// The admin gate (requireInternalAdmin("/internal")) runs in the route's
+// beforeLoad; the server function re-checks it before returning audit data.
+export default function InternalProviderAuditPage({
 	searchParams,
 }: {
 	searchParams: Promise<SearchParams>;
 }) {
-	const t = await getTranslations("Product.internalTools.dataAudit");
-	const tStates = await getTranslations("Catalogue.models.detail.quickstart.providerStates");
-	const params = await searchParams;
-	await requireInternalAdmin("/internal");
+	const t = useTranslations("Product.internalTools.dataAudit");
+	const tStates = useTranslations("Catalogue.models.detail.quickstart.providerStates");
+	const params = use(searchParams);
 
-	const audit = await getProviderAudit();
+	const { data: audit } = useSuspenseQuery(providerAuditQuery());
 
 	const query = (params.q ?? "").trim().toLowerCase();
 	const selectedProvider = (params.provider ?? "").trim();

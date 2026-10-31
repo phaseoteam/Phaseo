@@ -5,9 +5,10 @@ import { InlineInfoTooltip } from "@/components/(rankings)/InlineInfoTooltip";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { Logo } from "@/components/Logo";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { fetchFrontendModelRetentionRankings } from "@/lib/fetchers/frontend/fetchRankingSections";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { rankingRetentionSectionQuery } from "@/components/(rankings)/rankingSections.queries";
 
 function numeric(value: number | string) {
 	const parsed = Number(value);
@@ -18,9 +19,10 @@ function percent(value: number | string, locale: string) {
 	return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(numeric(value))}%`;
 }
 
-export async function ModelRetentionSection() {
-	const [t, locale] = await Promise.all([getTranslations("Catalogue.rankings"), getLocale()]);
-	const result = await fetchFrontendModelRetentionRankings(20).catch(() => null);
+export function ModelRetentionSection() {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
+	const { data: result } = useSuspenseQuery(rankingRetentionSectionQuery(20));
 	if (!result) return <RankingUnavailable id="retention" title={t("weeklyReturnRate")} />;
 	const rows = result.data;
 	if (!rows.length) {
@@ -81,8 +83,8 @@ export async function ModelRetentionSection() {
 	);
 }
 
-async function SectionHeader() {
-	const t = await getTranslations("Catalogue.rankings");
+function SectionHeader() {
+	const t = useTranslations("Catalogue.rankings");
 	return (
 		<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 			<div className="space-y-0.5">

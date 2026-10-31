@@ -6,11 +6,10 @@ import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import {
-	getHelpArticleParams,
-	getLocalizedHelpArticle,
-	getLocalizedHelpCategory,
-} from "@/lib/content/helpCenter";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { helpArticleQuery } from "../../page.functions";
 import { buildMetadata } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
@@ -63,11 +62,14 @@ const markdownComponents: Components = {
 export async function generateStaticParams(): Promise<
 	Array<{ category: string; slug: string }>
 > {
+	const { getHelpArticleParams } = await import("@/lib/content/helpCenter");
 	return getHelpArticleParams();
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
 	const { locale, category, slug } = await props.params;
+	// helpCenter reads node:fs; import it only where metadata runs (server).
+	const { getLocalizedHelpArticle } = await import("@/lib/content/helpCenter");
 	const article = await getLocalizedHelpArticle(locale, category, slug);
 	const t = await getTranslations({ locale, namespace: "Content.help" });
 	const path = `/help/${category}/${slug}`;
@@ -87,13 +89,11 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 	});
 }
 
-export default async function HelpArticlePage({ params }: PageProps) {
-	const { locale, category, slug } = await params;
-	const [article, categoryData, t] = await Promise.all([
-		getLocalizedHelpArticle(locale, category, slug),
-		getLocalizedHelpCategory(locale, category),
-		getTranslations({ locale, namespace: "Content.help" }),
-	]);
+export default function HelpArticlePage({ params }: PageProps) {
+	const { locale, category, slug } = use(params);
+	// Unknown articles 404 in the route loader before rendering.
+	const { data: { article, categoryData } } = useSuspenseQuery(helpArticleQuery(locale, category, slug));
+	const t = useTranslations("Content.help");
 
 	if (!article || !categoryData) {
 		notFound();

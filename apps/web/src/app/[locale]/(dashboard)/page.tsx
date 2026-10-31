@@ -13,8 +13,6 @@ import {
 import type { Metadata } from "next";
 import { absoluteUrl } from "@/lib/seo";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
-import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
-import { getGatewayHeroVariant } from "@/lib/flags/gatewayHero";
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
 import HomeAnnouncementsSection, {
@@ -26,17 +24,16 @@ import HomeModelUpdatesSection, {
 } from "@/components/landingPage/Home/HomeModelUpdatesSection";
 import HomeOpenSourceSection from "@/components/landingPage/Home/HomeOpenSourceSection";
 import HomeQuickstartSection from "@/components/landingPage/Home/HomeQuickstartSection";
-import {
-	buildHomeModelPrices,
-	HOME_MODEL_ID_LIST,
-	type HomeModelPrices,
-} from "@/components/landingPage/Home/homeModelIntel";
+import { type HomeModelPrices } from "@/components/landingPage/Home/homeModelIntel";
 import HomeReliabilitySection from "@/components/landingPage/Home/HomeReliabilitySection";
 import PartnerLogos from "@/components/landingPage/PartnerLogos/PartnerLogos";
 import { Logo } from "@/components/Logo";
 import { HomepageModelContext } from "@/components/agents/HomepageModelContext";
 import { Button } from "@/components/ui/button";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { homePageFlagsQuery } from "./page.functions";
+import { homeModelPricesQuery } from "./page.queries";
 import Script from "next/script";
 import {
 	PREFERRED_SITE_NAME,
@@ -341,18 +338,11 @@ export default function Page({ params }: ScopedLayoutProps) {
 	return <ScopedMessages params={params} namespaces={["Site.homeOpenSourceMarketing", "Site.homeQuickstart", "SettingsUI.landingGaps.copyApp", "SettingsUI.landingGaps.copyProviders", "Catalogue.updates.models.playLatestModelUpdates", "Catalogue.updates.models.pauseLatestModelUpdates", "Catalogue.updates.models.viewModel", "Catalogue.updates.models.today", "Catalogue.updates.eventTypes", "Site.about.open"]}><HomePageContent /></ScopedMessages>;
 }
 
-async function HomePageContent() {
-	const t = await getTranslations("Site.home");
-	const [heroVariant, modelPrices, showEnterprisePreview] = await Promise.all([
-		getGatewayHeroVariant(),
-		fetchFrontendGatewayModels({ ids: HOME_MODEL_ID_LIST })
-			.then(buildHomeModelPrices)
-			.catch((error) => {
-				console.warn("[Homepage] failed to load gateway model prices", error);
-				return {};
-			}),
-		enterpriseSelfServePreviewEnabled(),
-	]);
+function HomePageContent() {
+	const t = useTranslations("Site.home");
+	const [{ data: { heroVariant, showEnterprisePreview } }, { data: modelPrices }] = useSuspenseQueries({
+		queries: [homePageFlagsQuery(), homeModelPricesQuery()],
+	});
 	const softwareApplicationSchema = {
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",

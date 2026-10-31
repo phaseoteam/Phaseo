@@ -1,7 +1,8 @@
 import ModelUpdatesPage from "@/components/(data)/models/ModelUpdates/ModelUpdates";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { fetchFrontendModelUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { modelUpdatesQuery } from "./page.queries";
 import { getTranslations } from "next-intl/server";
 import type { RuntimeLocale } from "@/i18n/locales";
 
@@ -30,12 +31,9 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function Page() {
-	const { past: pastEvents, future: upcomingEvents } =
-		await fetchFrontendModelUpdates({
-			includeAllPast: true,
-			upcomingLimit: 4,
-		});
+export default function Page() {
+	const { data: { past: pastEvents, future: upcomingEvents } } =
+		useSuspenseQuery(modelUpdatesQuery(4));
 
 	return (
 		<main className="flex min-h-screen flex-col">

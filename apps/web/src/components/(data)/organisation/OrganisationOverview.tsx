@@ -1,5 +1,5 @@
+import { useTranslations } from "next-intl";
 import type { OrganisationOverview as OrganisationOverviewType } from "@/lib/fetchers/organisations/types";
-import { getTranslations } from "next-intl/server";
 import OrganisationLinks from "./OrganisationLinks";
 import ModelsDisplay from "./ModelsDisplay";
 import LabPerformance from "./LabPerformance";
@@ -8,10 +8,10 @@ export interface OrganisationOverviewProps {
 	organisation: OrganisationOverviewType;
 }
 
-export default async function OrganisationOverview({
+export default function OrganisationOverview({
 	organisation,
 }: OrganisationOverviewProps) {
-	const t = await getTranslations("Catalogue.organisations");
+	const t = useTranslations("Catalogue.organisations");
 	return (
 		<div className="mx-auto w-full space-y-10">
 			{/* Header & Description */}

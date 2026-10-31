@@ -1,10 +1,11 @@
 import { Activity, ArrowRight, Bot, Building2, CircleAlert, Database, Gauge, Landmark, Plus, Route, Shapes } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { fetchAdminCatalogCounts, fetchAdminCatalogOverview } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import { CatalogSearch } from "@/app/(dashboard)/internal/data/CatalogSearch";
+import { adminCatalogHomeQuery } from "./catalog.functions";
 
 const resourceMeta = {
 	models: { label: "models", href: "/internal/data/models", newHref: "/internal/data/models/new", icon: Bot, description: "modelDescription" },
@@ -22,9 +23,11 @@ function changeHref(resourceType: string, resourceId: string) {
 }
 
 
-export default async function SettingsInternalPage() {
-	const [t, o, locale] = await Promise.all([getTranslations("Product.internalTools.dataEditor"), getTranslations("Product.internalTools.dataEditor.overview"), getLocale()]);
-	const [counts, overview] = await Promise.all([fetchAdminCatalogCounts(), fetchAdminCatalogOverview()]);
+export default function SettingsInternalPage() {
+	const t = useTranslations("Product.internalTools.dataEditor");
+	const o = useTranslations("Product.internalTools.dataEditor.overview");
+	const locale = useLocale();
+	const { data: { counts, overview } } = useSuspenseQuery(adminCatalogHomeQuery());
 	const items = (Object.keys(resourceMeta) as Array<keyof typeof resourceMeta>).map((key) => ({ key, count: counts[key], ...resourceMeta[key] }));
 	const routeCoverage = overview.routes.total > 0 ? Math.round((overview.routes.routable / overview.routes.total) * 100) : 0;
 
@@ -61,7 +64,7 @@ export default async function SettingsInternalPage() {
 					<div className="divide-y">
 						{overview.recentChanges.length ? overview.recentChanges.map((change) => {
 							const href = changeHref(change.resource_type, change.resource_id);
-							const content = <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{change.resource_id}</span><span className="mt-0.5 block text-xs capitalize text-muted-foreground"><code>{change.action}</code> · <code>{change.resource_type}</code></span></span><time dateTime={change.created_at} className="shrink-0 text-xs text-muted-foreground">{new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(change.created_at))}</time></>;
+							const content = <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{change.resource_id}</span><span className="mt-0.5 block text-xs capitalize text-muted-foreground"><code>{change.action}</code> · <code>{change.resource_type}</code></span></span><time dateTime={change.created_at} className="shrink-0 text-xs text-muted-foreground">{new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }).format(new Date(change.created_at))}</time></>;
 							return href ? <Link key={change.change_id} href={href} className="flex items-center gap-4 px-5 py-3 transition hover:bg-muted/40">{content}</Link> : <div key={change.change_id} className="flex items-center gap-4 px-5 py-3">{content}</div>;
 						}) : <div className="px-5 py-10 text-center text-sm text-muted-foreground">{o("noChanges")}</div>}
 					</div>

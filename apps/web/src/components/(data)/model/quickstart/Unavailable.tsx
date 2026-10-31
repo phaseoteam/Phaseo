@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
 	Card,
 	CardContent,
@@ -8,15 +9,14 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 
 interface UnavailableProps {
 	modelId: string;
 }
 
-export default async function Unavailable({ modelId }: UnavailableProps) {
-	const t = await getTranslations("Catalogue.models.detail.quickstart");
+export default function Unavailable({ modelId }: UnavailableProps) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const friendlyModelId = safeDecodeURIComponent(modelId);
 
 	return (

@@ -1,3 +1,5 @@
+import { use } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -46,9 +48,9 @@ function LogoFallback({ name }: { name: string }) {
 	);
 }
 
-export default async function WorksWithPage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Content.worksWith" });
+export default function WorksWithPage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
+	const { locale } = use(params);
+	const t = useTranslations("Content.worksWith");
 	const formatDate = (date: string) => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${date}T12:00:00.000Z`));
 	const tagLabels: Record<WorksWithApp["tags"][number], string> = {
 		chat: t("tags.chat"), coding: t("tags.coding"), productivity: t("tags.productivity"), creative: t("tags.creative"), research: t("tags.research"), other: t("tags.other"),

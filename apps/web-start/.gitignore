@@ -1,6 +1,0 @@
-/messages
-/dist/
-/.wrangler/
-/.tanstack/
-/src/routeTree.gen.ts
-.env*.local

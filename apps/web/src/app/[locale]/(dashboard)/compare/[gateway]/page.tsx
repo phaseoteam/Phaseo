@@ -1,3 +1,5 @@
+import { use } from "react";
+import { useTranslations } from "next-intl";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Check, ExternalLink, Minus } from "lucide-react";
@@ -76,13 +78,13 @@ export async function generateMetadata({ params }: { params: Promise<{ gateway: 
 	});
 }
 
-export default async function ComparisonPage({ params }: { params: Promise<{ gateway: string; locale: PublicLocale }> }) {
-	const { gateway, locale } = await params;
+export default function ComparisonPage({ params }: { params: Promise<{ gateway: string; locale: PublicLocale }> }) {
+	const { gateway, locale } = use(params);
 	const pair = parsePairSlug(gateway);
 	if (pair) return <ComparePairPage ids={pair} locale={locale} />;
 	const comparison = comparisons[gateway];
 	if (!comparison) notFound();
-	const t = await getTranslations({ locale, namespace: "Site.gatewayComparison" });
+	const t = useTranslations("Site.gatewayComparison");
 	const copy = t.raw(`content.${comparison.contentKey}` as never) as ComparisonCopy;
 	const reviewedDate = new Intl.DateTimeFormat(locale, {
 		dateStyle: "long",

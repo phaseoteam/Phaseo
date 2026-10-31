@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 import CompatibilityClient from "./CompatibilityClient";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -12,8 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 	};
 }
 
-export default async function CompatibilityPage() {
-	await requireInternalAdmin();
-
+// The admin gate (requireInternalAdmin) runs in the route's beforeLoad.
+export default function CompatibilityPage() {
 	return <CompatibilityClient />;
 }

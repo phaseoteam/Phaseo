@@ -1,5 +1,6 @@
 import { CircleAlert } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import {
 	Empty,
 	EmptyContent,
@@ -11,38 +12,11 @@ import {
 import ModelPricingInsightsClient from "@/components/(data)/model/pricing/ModelPricingInsightsClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import {
-	fetchFrontendModelPendingApiReleaseState,
-	fetchFrontendModelPricing,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+	modelPendingApiReleaseSectionQuery,
+	modelPricingInsightsProvidersQuery,
+} from "@/components/(data)/model/modelData.queries";
 
-const OPTIONAL_PRICING_INSIGHTS_TIMEOUT_MS = 2_500;
-
-function withOptionalPricingTimeout<T>(
-	promise: Promise<T>,
-	fallback: T,
-	label: string
-): Promise<T> {
-	let timeout: ReturnType<typeof setTimeout> | null = null;
-	const timeoutPromise = new Promise<T>((resolve) => {
-		timeout = setTimeout(() => {
-			console.warn(`[pricing] ${label} timed out; using fallback.`);
-			resolve(fallback);
-		}, OPTIONAL_PRICING_INSIGHTS_TIMEOUT_MS);
-	});
-
-	return Promise.race([promise, timeoutPromise])
-		.catch((error) => {
-			console.warn(`[pricing] ${label} failed; using fallback.`, {
-				error,
-			});
-			return fallback;
-		})
-		.finally(() => {
-			if (timeout) clearTimeout(timeout);
-		});
-}
-
-export default async function ModelPricingInsightsSection({
+export default function ModelPricingInsightsSection({
 	modelId,
 	includeHidden,
 	showPageHeader = false,
@@ -53,18 +27,15 @@ export default async function ModelPricingInsightsSection({
 	showPageHeader?: boolean;
 	hasSubmittedProviderPrices?: boolean;
 }) {
-	const providers = await withOptionalPricingTimeout(
-		fetchFrontendModelPricing(modelId, undefined, includeHidden),
-		[],
-		"pricing providers"
-	);
-	const pendingApiRelease = await withOptionalPricingTimeout(
-		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
-		null,
-		"pending API release state"
-	);
+	const queryClient = useQueryClient();
+	const [{ data: providers }, { data: pendingApiRelease }] = useSuspenseQueries({
+		queries: [
+			modelPricingInsightsProvidersQuery(queryClient, modelId, includeHidden),
+			modelPendingApiReleaseSectionQuery(modelId, includeHidden),
+		],
+	});
 	const providersForDisplay = providers || [];
-	const tEmpty = await getTranslations("Catalogue.modelDetail.emptyStates");
+	const tEmpty = useTranslations("Catalogue.modelDetail.emptyStates");
 	const providerIds = Array.from(
 		new Set(providersForDisplay.map((provider) => provider.provider.api_provider_id)),
 	).sort((a, b) => a.localeCompare(b));

@@ -1,7 +1,7 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export default async function AppsLoading() {
-	const t = await getTranslations("Product.apps");
+export default function AppsLoading() {
+	const t = useTranslations("Product.apps");
 	return (
 		<div className="container mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 			<span className="sr-only">{t("loading")}</span>

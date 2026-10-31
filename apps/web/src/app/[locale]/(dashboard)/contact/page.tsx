@@ -1,14 +1,12 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { connection } from "next/server";
 import { buildMetadata } from "@/lib/seo";
-import {
-	getSupportWaitParts,
-	getSupportAvailability,
-} from "@/lib/support/schedule";
+import { getSupportWaitParts } from "@/lib/support/schedule";
 import { ContactClient } from "@/components/contact/ContactClient";
-import { fetchContactPersonalization } from "@/lib/fetchers/internal/fetchContactPersonalization";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
+import { contactPersonalizationQuery, contactTawkConfigQuery } from "./page.functions";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
@@ -22,26 +20,12 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
 	});
 }
 
-function getTawkConfig() {
-	return {
-		tawkPropertyId:
-			process.env.TAWK_PROPERTY_ID ?? process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID,
-		tawkWidgetId:
-			process.env.TAWK_WIDGET_ID ??
-			process.env.NEXT_PUBLIC_TAWK_WIDGET_ID ??
-			"default",
-	};
-}
-
-async function ContactPersonalization() {
-	await connection();
-
-	const locale = await getLocale();
-	const t = await getTranslations({
-		locale: locale as PublicLocale,
-		namespace: "Site.contact",
-	});
-	const { isOpen, minutesUntilNextWindow } = getSupportAvailability();
+// Tawk ids (server env), support hours and personalisation load through
+// server functions (page.functions.ts).
+function ContactPersonalization() {
+	const locale = useLocale();
+	const t = useTranslations("Site.contact");
+	const { data: { isOpen, minutesUntilNextWindow, now, personalization } } = useSuspenseQuery(contactPersonalizationQuery());
 	const wait = getSupportWaitParts(minutesUntilNextWindow);
 	const backOnlineLabel = wait
 		? t(
@@ -64,8 +48,7 @@ async function ContactPersonalization() {
 		: backOnlineLabel
 			? t("supportBackInNotice", { time: backOnlineLabel })
 			: t("supportAwayNotice");
-	const personalization = await fetchContactPersonalization();
-	const { tawkPropertyId, tawkWidgetId } = getTawkConfig();
+	const { data: { tawkPropertyId, tawkWidgetId } } = useSuspenseQuery(contactTawkConfigQuery());
 	const londonTimeLabel = new Intl.DateTimeFormat(locale, {
 		weekday: "short",
 		day: "2-digit",
@@ -74,7 +57,7 @@ async function ContactPersonalization() {
 		minute: "2-digit",
 		hour12: false,
 		timeZone: "Europe/London",
-	}).format(new Date());
+	}).format(new Date(now));
 
 	return (
 		<ContactClient
@@ -93,9 +76,9 @@ async function ContactPersonalization() {
 	);
 }
 
-export default async function ContactPage() {
-	const { tawkPropertyId, tawkWidgetId } = getTawkConfig();
-	const t = await getTranslations("Site.contact");
+export default function ContactPage() {
+	const { data: { tawkPropertyId, tawkWidgetId } } = useSuspenseQuery(contactTawkConfigQuery());
+	const t = useTranslations("Site.contact");
 
 	return (
 		<Suspense

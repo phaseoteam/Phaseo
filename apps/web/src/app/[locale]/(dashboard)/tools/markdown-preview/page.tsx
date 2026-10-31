@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import MarkdownPreviewer from "@/components/(tools)/MarkdownPreviewer";
@@ -12,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-export default async function MarkdownPreviewPage() {
-	await getTranslations("Product.tools.markdown");
+export default function MarkdownPreviewPage() {
+	useTranslations("Product.tools.markdown");
 	return <MarkdownPreviewer />;
 }

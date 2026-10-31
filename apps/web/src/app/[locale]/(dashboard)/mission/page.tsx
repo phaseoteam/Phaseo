@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import type { PublicLocale } from "@/i18n/routing";
 import type { Metadata } from "next";
 import {
@@ -49,8 +50,9 @@ function SectionTitle({
 	);
 }
 
-export default async function MissionPage() {
- const [tx, t] = await Promise.all([getTranslations(), getTranslations("Site.mission")]);
+export default function MissionPage() {
+ const tx = useTranslations();
+ const t = useTranslations("Site.mission");
 const principles = [
 	{
 		title: tx("Site.mission.broadAccess" as never),

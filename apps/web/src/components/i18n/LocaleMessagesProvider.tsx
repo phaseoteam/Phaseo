@@ -1,68 +1,40 @@
 "use client";
 
-// Tests and previews that already hold a dictionary pass it straight to the
-// client entry, which avoids next-intl's server wrapper reading request headers.
+// web-start renders every page with the locale's full catalogue (see
+// RootIntlProvider), so scoped dictionaries are no longer fetched: a scope
+// reference passes children through, and explicit messages still merge in.
+import { useMemo, type ReactNode } from "react";
+import { NextIntlClientProvider, useLocale, useMessages, useTimeZone, type AbstractIntlMessages } from "next-intl";
+import type { ClientMessagesSource } from "@/i18n/client-message-source";
+
 export { NextIntlClientProvider as LocaleMessagesProvider } from "next-intl";
 
-import { NextIntlClientProvider, useLocale, useMessages, useTimeZone, type AbstractIntlMessages, type Locale } from "next-intl";
-import { use, useMemo, type ReactNode } from "react";
-import { combineMessages } from "@/i18n/message-scopes";
-import { fetchClientMessages, type ClientMessagesSource } from "@/i18n/client-message-source";
-
-type LoadedMessages = { promise: Promise<AbstractIntlMessages>; value?: AbstractIntlMessages; error?: unknown };
-
-const loaded = new Map<string, LoadedMessages>();
-
-/**
- * Pages carry a reference, never the dictionary. While rendering on the server
- * the provider reads what its server boundary prepared; in the browser it loads
- * the published file once (preloaded by the boundary) and caches it.
- */
-function useClientMessages(source: ClientMessagesSource | undefined): AbstractIntlMessages | undefined {
-	if (!source) return undefined;
-	if (typeof window === "undefined") {
-		const prepared = globalThis.__phaseoClientMessages?.get(source.key);
-		if (prepared) return prepared;
-		const load = globalThis.__phaseoLoadClientMessages;
-		if (!load) throw new Error(`Translations ${source.key} were not prepared on the server`);
-		return use(load(source));
+function combineMessages(parent: AbstractIntlMessages, feature: AbstractIntlMessages): AbstractIntlMessages {
+	const out: Record<string, unknown> = { ...(parent as Record<string, unknown>) };
+	for (const [key, value] of Object.entries(feature as Record<string, unknown>)) {
+		const existing = out[key];
+		out[key] = existing && typeof existing === "object" && value && typeof value === "object" && !Array.isArray(value)
+			? combineMessages(existing as AbstractIntlMessages, value as AbstractIntlMessages)
+			: value;
 	}
-	let entry = loaded.get(source.key);
-	if (!entry) {
-		const created: LoadedMessages = { promise: fetchClientMessages(source) };
-		created.promise.then((value) => { created.value = value; }, (error: unknown) => { created.error = error; });
-		loaded.set(source.key, created);
-		entry = created;
-	}
-	if (entry.error !== undefined) {
-		// Hand the failure to the error boundary; a later render (its retry, or a
-		// navigation) starts a fresh load instead of this render refetching.
-		loaded.delete(source.key);
-		throw entry.error;
-	}
-	return entry.value ?? use(entry.promise);
+	return out as AbstractIntlMessages;
 }
 
-/** The document root: shared shell copy for every page. */
-export function ClientMessagesProvider({ children, locale, source, timeZone }: {
-	children: ReactNode;
-	locale: Locale;
-	source: ClientMessagesSource;
-	timeZone: string;
-}) {
-	const messages = useClientMessages(source);
-	return <NextIntlClientProvider locale={locale} timeZone={timeZone} messages={messages}>{children}</NextIntlClientProvider>;
+/** The document root used to load shell copy here; RootIntlProvider does that now. */
+export function ClientMessagesProvider({ children }: { children: ReactNode; locale?: string; source?: ClientMessagesSource; timeZone?: string }) {
+	return <>{children}</>;
 }
 
-/** A route or feature boundary: adds its copy to the inherited dictionary. */
-export function FeatureMessagesProvider({ children, messages, source }: { children: ReactNode } & (
-	| { messages: AbstractIntlMessages; source?: never }
-	| { messages?: never; source: ClientMessagesSource }
-)) {
-	const parent = useMessages();
+/** A route or feature boundary: explicit messages merge into the inherited catalogue. */
+export function FeatureMessagesProvider({ children, messages }: { children: ReactNode; messages?: AbstractIntlMessages; source?: ClientMessagesSource }) {
+	if (!messages) return <>{children}</>;
+	return <MergedMessages messages={messages}>{children}</MergedMessages>;
+}
+
+function MergedMessages({ children, messages }: { children: ReactNode; messages: AbstractIntlMessages }) {
+	const parent = useMessages() as unknown as AbstractIntlMessages;
 	const locale = useLocale();
 	const timeZone = useTimeZone();
-	const feature = useClientMessages(source) ?? messages;
-	const combined = useMemo(() => combineMessages(parent, feature ?? {}), [parent, feature]);
+	const combined = useMemo(() => combineMessages(parent, messages), [parent, messages]);
 	return <NextIntlClientProvider locale={locale} timeZone={timeZone} messages={combined}>{children}</NextIntlClientProvider>;
 }

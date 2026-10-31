@@ -1,4 +1,5 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { useTranslations, useLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import AppsSettingsContent from "./AppsSettingsContent";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -16,11 +17,9 @@ export async function generateMetadata() {
 	return { title: `${t("headers.apps")} - ${t("headers.settings")}` };
 }
 
-export default async function AppsSettingsPage() {
-	const [t, locale] = await Promise.all([
-		getTranslations("SettingsUI.settingsRouteCopy"),
-		getLocale(),
-	]);
+export default function AppsSettingsPage() {
+	const t = useTranslations("SettingsUI.settingsRouteCopy");
+	const locale = useLocale();
 	return (
 		<div className="space-y-6">
 			<SettingsPageHeader

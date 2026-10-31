@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "next-intl";
 import { Suspense } from "react";
 import type { PublicLocale } from "@/i18n/routing";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { RealtimeRoom } from "@/components/(chat)/rooms/RealtimeRoom";
 import { Badge } from "@/components/ui/badge";
 import { buildMetadata } from "@/lib/seo";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
-import { realtimeVoiceFlag } from "@/lib/flags";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { chatGatewayModelsQuery } from "@/app/[locale]/(dashboard)/chat/chat.queries";
+import { shellDataQuery } from "@/components/header/shellData";
 
 type PageProps = {
 	params: Promise<{ locale: PublicLocale }>;
@@ -71,20 +73,25 @@ function RealtimeRoomLoading({ copy }: { copy: RealtimePageCopy }) {
 	);
 }
 
-async function RealtimeRoomGate({ copy }: { copy: RealtimePageCopy }) {
-	const enabled = await realtimeVoiceFlag();
+function RealtimeRoomGate({ copy }: { copy: RealtimePageCopy }) {
+	// The realtime flag is resolved server-side with the site-shell data.
+	const locale = useLocale();
+	const { data: shellData } = useSuspenseQuery(shellDataQuery(locale));
+	const enabled = shellData.capabilities.realtime;
 	if (!enabled) return <RealtimeFlagDisabled copy={copy} />;
-	const models = await fetchFrontendGatewayModels();
+	return <RealtimeRoomWithModels />;
+}
+
+function RealtimeRoomWithModels() {
+	const { data: models } = useSuspenseQuery(chatGatewayModelsQuery());
 	return <RealtimeRoom models={models} />;
 }
 
-export default async function ChatRealtimePage({ params }: PageProps) {
-	const { locale } = await params;
-	const [tChat, tRooms, tBadges] = await Promise.all([
-		getTranslations({ locale, namespace: "Product.chat" }),
-		getTranslations({ locale, namespace: "Product.chatRooms" }),
-		getTranslations({ locale, namespace: "Common.ui.status" }),
-	]);
+// The locale comes from the intl provider, which follows the route's locale param.
+export default function ChatRealtimePage(_props: PageProps) {
+	const tChat = useTranslations("Product.chat");
+	const tRooms = useTranslations("Product.chatRooms");
+	const tBadges = useTranslations("Common.ui.status");
 	const copy: RealtimePageCopy = {
 		title: tChat("realtime"),
 		beta: tBadges("beta"),

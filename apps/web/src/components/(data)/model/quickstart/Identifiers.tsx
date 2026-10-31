@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
 	Card,
 	CardHeader,
@@ -5,7 +6,6 @@ import {
 	CardDescription,
 	CardContent,
 } from "@/components/ui/card";
-import { getTranslations } from "next-intl/server";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 
 interface IdentifiersProps {
@@ -13,8 +13,8 @@ interface IdentifiersProps {
 	aliases: string[];
 }
 
-export default async function Identifiers({ modelId, aliases }: IdentifiersProps) {
-	const t = await getTranslations("Catalogue.models.detail.quickstart");
+export default function Identifiers({ modelId, aliases }: IdentifiersProps) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const normalizedAliases = Array.from(
 		new Set(
 			aliases

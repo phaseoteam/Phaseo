@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import PresetsContent from "./PresetsContent";
@@ -15,8 +16,8 @@ export async function generateMetadata() {
 	return { title: t("metadataTitle") };
 }
 
-export default async function PresetsPage() {
-	const t = await getTranslations("SettingsUI.presetPage");
+export default function PresetsPage() {
+	const t = useTranslations("SettingsUI.presetPage");
 	return (
 		<div className="space-y-7">
 			<Alert className="border-border/80 bg-muted/25">

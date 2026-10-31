@@ -1,9 +1,11 @@
+import { use } from "react";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import PresetEditorContent from "../PresetEditorContent";
-import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { settingsApiProvidersQuery, settingsPresetModelsQuery } from "../../catalog.queries";
 import { getTranslations } from "next-intl/server";
-import { fetchPresetModels } from "../presetModels";
 export async function generateMetadata() { const t = await getTranslations("SettingsUI"); return { title: t("headers.editPreset") + " - " + t("headers.settings") }; }
-export default async function Page({ params }: { params: Promise<{ presetSlug: string }> }) {
-	const [{ presetSlug }, models, providers] = await Promise.all([params, fetchPresetModels(), fetchFrontendAPIProviders()]);
+export default function Page({ params }: { params: Promise<{ presetSlug: string }> }) {
+	const { presetSlug } = use(params);
+	const [{ data: models }, { data: providers }] = useSuspenseQueries({ queries: [settingsPresetModelsQuery(), settingsApiProvidersQuery()] });
 	return <PresetEditorContent presetSlug={presetSlug} models={models} providers={providers} />;
 }

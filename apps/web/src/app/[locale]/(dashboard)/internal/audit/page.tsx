@@ -1,21 +1,23 @@
 import Link from "next/link";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { AuditFiltersWrapper } from "@/components/monitor/AuditFiltersWrapper";
-import { getAuditModels } from "@/lib/fetchers/models/table-view/getAuditModels";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
+import { auditModelsQuery } from "../internalAdmin.functions";
 
 export async function generateMetadata() {
 	const t = await getTranslations("Product.internalTools");
 	return { title: t("dataAuditTitle") };
 }
 
-export default async function ModelsAuditPage() {
-	const t = await getTranslations("Product.internalTools");
-	const tAudit = await getTranslations("Product.internalTools.dataAudit");
-	const tEditor = await getTranslations("Product.internalTools.dataEditor");
-	await requireInternalAdmin("/internal");
+// The admin gate (requireInternalAdmin("/internal")) runs in the route's
+// beforeLoad; the server function re-checks it before returning audit data.
+export default function ModelsAuditPage() {
+	const t = useTranslations("Product.internalTools");
+	const tAudit = useTranslations("Product.internalTools.dataAudit");
+	const tEditor = useTranslations("Product.internalTools.dataEditor");
 
-	const data = await getAuditModels(true);
+	const { data } = useSuspenseQuery(auditModelsQuery());
 
 	return (
 		<div className="mx-8 py-8 space-y-6">

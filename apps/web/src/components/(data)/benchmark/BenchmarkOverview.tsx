@@ -1,5 +1,5 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
 import { ExternalLink } from "lucide-react";
 import { ArtificialAnalysisOverview } from "./ArtificialAnalysisOverview";
 import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
@@ -122,14 +122,14 @@ function getCategoryColor(category: string): string {
 	return colors[Math.abs(hash) % colors.length];
 }
 
-export default async function BenchmarkOverview({
+export default function BenchmarkOverview({
 	benchmark,
 	artificialAnalysisRankings = [],
 }: {
 	benchmark: BenchmarkPage;
 	artificialAnalysisRankings?: PublicBenchmarkRanking[] | Promise<PublicBenchmarkRanking[]>;
 }) {
-	const t = await getTranslations("Catalogue.benchmarks");
+	const t = useTranslations("Catalogue.benchmarks");
 	if (isArtificialAnalysisBenchmark(benchmark.id)) return <ArtificialAnalysisOverview benchmark={benchmark} rankings={artificialAnalysisRankings} />;
 	if (isEpochCapabilitiesIndex(benchmark.id)) return <EpochCapabilitiesOverview benchmark={benchmark} />;
 	const results = benchmark.results ?? [];

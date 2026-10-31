@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import RequestBuilder from "@/components/(tools)/RequestBuilder";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { requestBuilderModelsQuery } from "./page.queries";
 import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,8 +14,8 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-export default async function RequestBuilderPage() {
-    const models = await fetchFrontendGatewayModels();
+export default function RequestBuilderPage() {
+    const { data: models } = useSuspenseQuery(requestBuilderModelsQuery());
 
     return <RequestBuilder models={models} />;
 }

@@ -8,7 +8,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { getHelpCategoryParams, getLocalizedHelpCategory } from "@/lib/content/helpCenter";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { helpCategoryQuery } from "../page.functions";
 import { buildMetadata } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
@@ -18,11 +21,14 @@ type PageProps = {
 };
 
 export async function generateStaticParams(): Promise<Array<{ category: string }>> {
+	const { getHelpCategoryParams } = await import("@/lib/content/helpCenter");
 	return getHelpCategoryParams();
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
 	const { locale, category } = await props.params;
+	// helpCenter reads node:fs; import it only where metadata runs (server).
+	const { getLocalizedHelpCategory } = await import("@/lib/content/helpCenter");
 	const categoryData = await getLocalizedHelpCategory(locale, category);
 	const t = await getTranslations({ locale, namespace: "Content.help" });
 	const path = `/help/${category}`;
@@ -42,15 +48,16 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 	});
 }
 
-export default async function HelpCategoryPage({ params }: PageProps) {
-	const { locale, category } = await params;
-	const categoryData = await getLocalizedHelpCategory(locale, category);
+export default function HelpCategoryPage({ params }: PageProps) {
+	const { locale, category } = use(params);
+	// Unknown categories 404 in the route loader before rendering.
+	const { data: categoryData } = useSuspenseQuery(helpCategoryQuery(locale, category));
+	const t = useTranslations("Content.help");
 
 	if (!categoryData) {
 		notFound();
 	}
 
-	const t = await getTranslations({ locale, namespace: "Content.help" });
 	return (
 		<div className="container mx-auto w-full max-w-5xl px-4 py-8 md:py-12">
 			<nav className="mb-4 flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-300">

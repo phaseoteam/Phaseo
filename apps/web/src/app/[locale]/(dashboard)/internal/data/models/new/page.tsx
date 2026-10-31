@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
-import { fetchAdminModelFormOptions } from "@/lib/fetchers/internal/fetchAdminCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { createModelAction } from "../../actions";
+import { adminModelFormOptionsQuery } from "../../catalog.functions";
 import NewModelForm from "./NewModelForm";
 
-export default async function NewModelPage() {
-	const t = await getTranslations("Product.internalTools.dataEditor");
-	const { organisations, providers, families, benchmarks, previousModels, subscriptionPlans } = await fetchAdminModelFormOptions();
+export default function NewModelPage() {
+	const t = useTranslations("Product.internalTools.dataEditor");
+	const { data: { organisations, providers, families, benchmarks, previousModels, subscriptionPlans } } = useSuspenseQuery(adminModelFormOptionsQuery());
 
 	return (
 		<div className="container mx-auto space-y-8 py-8">

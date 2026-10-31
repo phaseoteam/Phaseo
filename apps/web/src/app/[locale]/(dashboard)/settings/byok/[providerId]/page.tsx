@@ -1,10 +1,13 @@
+import { use } from "react";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import ByokProviderContent from "./ByokProviderContent";
-import { fetchFrontendAPIProviderHeader, fetchFrontendAPIProviderModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { settingsApiProviderHeaderQuery, settingsApiProviderModelsQuery } from "../../catalog.queries";
 import { getTranslations } from "next-intl/server";
 export async function generateMetadata() { const t = await getTranslations("SettingsUI.byokProviderPageCopy"); return { title: t("pageTitle") + " - BYOK" }; }
-export default async function Page({ params, searchParams }: { params: Promise<{ providerId: string }>; searchParams: Promise<{ sampleKeys?: string }> }) {
-	const [{ providerId: encodedId }, { sampleKeys }] = await Promise.all([params, searchParams]);
+export default function Page({ params, searchParams }: { params: Promise<{ providerId: string }>; searchParams: Promise<{ sampleKeys?: string }> }) {
+	const { providerId: encodedId } = use(params);
+	const { sampleKeys } = use(searchParams);
 	const providerId = decodeURIComponent(encodedId);
-	const [catalogProvider, providerModels] = await Promise.all([fetchFrontendAPIProviderHeader(providerId), fetchFrontendAPIProviderModels(providerId)]);
+	const [{ data: catalogProvider }, { data: providerModels }] = useSuspenseQueries({ queries: [settingsApiProviderHeaderQuery(providerId), settingsApiProviderModelsQuery(providerId)] });
 	return <ByokProviderContent providerId={providerId} sampleKeys={sampleKeys} catalogProvider={catalogProvider} providerModels={providerModels} />;
 }

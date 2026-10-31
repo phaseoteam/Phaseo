@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import BroadcastSettingsContent from "./BroadcastContent";
@@ -9,8 +10,8 @@ export async function generateMetadata() {
 	return { title: t("broadcast") };
 }
 
-export default async function BroadcastSettingsPage() {
-	const t = await getTranslations("SettingsUI");
+export default function BroadcastSettingsPage() {
+	const t = useTranslations("SettingsUI");
 	return (
 		<main className="space-y-6">
 			<section className="space-y-2">

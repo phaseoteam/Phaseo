@@ -1,24 +1,16 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { fetchFrontendSignInSupportedModelsStats } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { DisplayNumber } from "@/components/display/DisplayValue";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { landingSupportedModelsStatsOrNullQuery } from "@/components/landingPage/landing.queries";
 
-export default async function SupportedModelsStats() {
-	// Fetch counts via cached fetcher (falls back to zeros on error)
-	let modelsCount = 0;
-	let orgsCount = 0;
-	let apiCount = 0;
-	let recentCount = 0;
-
-	try {
-		const stats = await fetchFrontendSignInSupportedModelsStats();
-		modelsCount = stats.modelsCount ?? 0;
-		orgsCount = stats.orgsCount ?? 0;
-		apiCount = stats.apiCount ?? 0;
-		recentCount = stats.recentCount ?? 0;
-	} catch {
-		// noop - fallback to defaults
-	}
+export default function SupportedModelsStats() {
+	// Fetch counts via cached query (falls back to zeros on error)
+	const { data: fetchedStats } = useSuspenseQuery(landingSupportedModelsStatsOrNullQuery());
+	const modelsCount = fetchedStats?.modelsCount ?? 0;
+	const orgsCount = fetchedStats?.orgsCount ?? 0;
+	const apiCount = fetchedStats?.apiCount ?? 0;
+	const recentCount = fetchedStats?.recentCount ?? 0;
 
 	const stats = [
 		{

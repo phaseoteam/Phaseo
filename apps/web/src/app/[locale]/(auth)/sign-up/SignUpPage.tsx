@@ -1,5 +1,5 @@
-import { getTranslations } from "next-intl/server";
-import { Suspense } from "react";
+import { useTranslations } from "next-intl";
+import { Suspense, use } from "react";
 import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 import { AnalyticsIdentitySync } from "@/components/analytics/AnalyticsIdentitySync";
 import { AuthWordmark } from "@/components/(gateway)/auth/AuthWordmark";
@@ -26,9 +26,9 @@ export function SignUpPage({ locale, searchParams }: SignUpPageProps) {
 	);
 }
 
-async function SignUpPageContent({ locale, searchParams }: SignUpPageProps) {
-	const shared = await getTranslations({ locale, namespace: "Auth.shared" });
-	const params = (await searchParams) ?? {};
+function SignUpPageContent({ locale, searchParams }: SignUpPageProps) {
+	const shared = useTranslations("Auth.shared");
+	const params = (searchParams ? use(searchParams) : undefined) ?? {};
 	const returnUrlParam = Array.isArray(params.returnUrl)
 		? params.returnUrl[0]
 		: params.returnUrl;

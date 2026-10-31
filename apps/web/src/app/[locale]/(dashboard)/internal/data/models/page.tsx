@@ -1,21 +1,23 @@
 import { Link } from "@/i18n/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
-import { fetchAdminCatalogList } from "@/lib/fetchers/internal/fetchAdminCatalog";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
+import { adminCatalogListQuery } from "../catalog.functions";
 
 const PAGE_SIZE = 100;
 
-export default async function InternalModelsPage({
+export default function InternalModelsPage({
 	searchParams,
 }: {
 	searchParams: Promise<{ q?: string; page?: string; attention?: string }>;
 }) {
-	const t = await getTranslations("Product.internalTools.dataEditor");
-	const locale = await getLocale();
-	const params = await searchParams;
+	const t = useTranslations("Product.internalTools.dataEditor");
+	const locale = useLocale();
+	const params = use(searchParams);
 	const queryText = (params.q ?? "").trim().replace(/[(),]/g, " ");
 	const currentPage = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
 	const attention = ["hidden", "missing-organisation"].includes(params.attention ?? "") ? params.attention : undefined;
-	const { rows, count } = await fetchAdminCatalogList("models", { q: queryText, page: currentPage, pageSize: PAGE_SIZE, attention });
+	const { data: { rows, count } } = useSuspenseQuery(adminCatalogListQuery("models", { q: queryText, page: currentPage, pageSize: PAGE_SIZE, attention }));
 	const totalRows = count;
 	const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
 	const hasPrev = currentPage > 1;

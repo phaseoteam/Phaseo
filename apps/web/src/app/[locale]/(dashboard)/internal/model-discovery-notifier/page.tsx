@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import NotifierClient from "./NotifierClient";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("SettingsUI.internalTools");
@@ -12,8 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 	};
 }
 
-export default async function InternalModelDiscoveryNotifierPage() {
-	await requireInternalAdmin();
-
+// The admin gate (requireInternalAdmin) runs in the route's beforeLoad.
+export default function InternalModelDiscoveryNotifierPage() {
 	return <NotifierClient />;
 }

@@ -1,4 +1,5 @@
-import { Suspense } from "react";
+import { useTranslations } from "next-intl";
+import { Suspense, use } from "react";
 import Link from "next/link";
 import { AppWindow, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,9 +28,9 @@ interface OAuthAppDetailPageProps {
 	}>;
 }
 
-export default async function OAuthAppDetailPage({ params }: OAuthAppDetailPageProps) {
+export default function OAuthAppDetailPage({ params }: OAuthAppDetailPageProps) {
 	const thirdPartyOAuthEnabled = isThirdPartyOAuthEnabled();
-	const t = await getTranslations("SettingsUI");
+	const t = useTranslations("SettingsUI");
 
 	return (
 		<div className="space-y-6">
@@ -67,7 +68,7 @@ export default async function OAuthAppDetailPage({ params }: OAuthAppDetailPageP
 	);
 }
 
-async function OAuthAppDetailLoader({ params }: OAuthAppDetailPageProps) {
-	const { clientId } = await params;
+function OAuthAppDetailLoader({ params }: OAuthAppDetailPageProps) {
+	const { clientId } = use(params);
 	return <OAuthAppDetailContent clientId={clientId} />;
 }

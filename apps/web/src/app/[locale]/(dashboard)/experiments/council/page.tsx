@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import CouncilClient from "@/components/(experiments)/CouncilClient";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
-import { fetchExperimentsCouncilModels } from "@/lib/fetchers/frontend/fetchExperimentsCouncilModels";
+import { experimentsCouncilModelsQuery } from "./council.queries";
 import { buildDefaultCouncilPresets } from "@/lib/experiments/councilPresets";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,8 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
 	};
 }
 
-export default async function CouncilPage() {
-	const t = await getTranslations("Product.experimentsCouncil");
+export default function CouncilPage() {
+	const t = useTranslations("Product.experimentsCouncil");
 	return (
 		<>
 			<NoFooterStyle />
@@ -27,7 +29,7 @@ export default async function CouncilPage() {
 	);
 }
 
-function CouncilPageFallback({ t }: { t: Awaited<ReturnType<typeof getTranslations>> }) {
+function CouncilPageFallback({ t }: { t: ReturnType<typeof useTranslations<"Product.experimentsCouncil">> }) {
 	return (
 		<div className="flex min-h-0 flex-1 bg-white dark:bg-zinc-950">
 			<aside className="hidden w-72 shrink-0 border-r border-zinc-200/80 bg-white dark:border-zinc-800/80 dark:bg-zinc-950 lg:flex lg:flex-col">
@@ -72,8 +74,8 @@ function CouncilPageFallback({ t }: { t: Awaited<ReturnType<typeof getTranslatio
 	);
 }
 
-async function CouncilPageContent() {
-	const models = await fetchExperimentsCouncilModels();
+function CouncilPageContent() {
+	const { data: models } = useSuspenseQuery(experimentsCouncilModelsQuery());
 	const initialPresets = buildDefaultCouncilPresets(models.map((model) => model.modelId));
 	return (
 		<CouncilClient

@@ -1,8 +1,9 @@
+import { useTranslations, useLocale } from "next-intl";
 // app/privacy/page.tsx
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
@@ -11,9 +12,9 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
 	return buildMetadata({ title: t("privacyTitle"), description: t("privacyIntro"), path: "/privacy", keywords: ["Phaseo privacy", "privacy policy", "data processing", "API privacy"] });
 }
 
-export default async function PrivacyPage() {
-	const t = await getTranslations("Site.legal");
-	const locale = await getLocale();
+export default function PrivacyPage() {
+	const t = useTranslations("Site.legal");
+	const locale = useLocale();
 	const lastUpdatedDate = new Intl.DateTimeFormat(locale, {
 		dateStyle: "long",
 		timeZone: "UTC",

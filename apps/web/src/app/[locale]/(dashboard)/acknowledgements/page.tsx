@@ -1,3 +1,5 @@
+import { use } from "react";
+import { useTranslations } from "next-intl";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -201,9 +203,9 @@ function AcknowledgementRow({ item, howUsed, translate }: { item: Acknowledgemen
 	);
 }
 
-export default async function AcknowledgementsPage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Content.acknowledgements" });
+export default function AcknowledgementsPage({ params }: { params: Promise<{ locale: PublicLocale }> }) {
+	const { locale } = use(params);
+	const t = useTranslations("Content.acknowledgements");
 	const translate = t as unknown as AcknowledgementsTranslate;
 	return (
 		<div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">

@@ -7,8 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import CopyPresetButton from "@/components/(gateway)/marketplace/CopyPresetButton";
-import { fetchFrontendMarketplacePresetDetail } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
+import { use } from "react";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
+import { marketplacePresetDetailQuery } from "../page.queries";
+import { marketplaceAuthStatusQuery } from "./page.functions";
 import { buildMetadata } from "@/lib/seo";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
@@ -24,17 +27,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	});
 }
 
-export default async function PresetMarketplaceDetailPage({ params, searchParams }: Props) {
-	const [{ presetId }, query] = await Promise.all([params, searchParams]);
-	const [t, locale] = await Promise.all([
-		getTranslations("Product.gateway"),
-		getLocale(),
-	]);
+export default function PresetMarketplaceDetailPage({ params, searchParams }: Props) {
+	const { presetId } = use(params);
+	const query = use(searchParams);
+	const t = useTranslations("Product.gateway");
+	const locale = useLocale();
 	const requestedVersion = Number(query.version);
-	const detail = await fetchFrontendMarketplacePresetDetail(presetId, Number.isInteger(requestedVersion) && requestedVersion > 0 ? requestedVersion : undefined);
+	const [{ data: detail }, { data: authStatus }] = useSuspenseQueries({
+		queries: [
+			marketplacePresetDetailQuery(presetId, Number.isInteger(requestedVersion) && requestedVersion > 0 ? requestedVersion : undefined),
+			marketplaceAuthStatusQuery(),
+		],
+	});
 	if (!detail) return <main className="mx-auto min-h-[60vh] max-w-6xl px-5 py-12 sm:px-8"><Link href="/gateway/marketplace" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />{t("backToMarketplace")}</Link><div className="mt-8 rounded-lg border border-dashed p-12 text-center"><h1 className="font-heading text-2xl font-semibold">{t("presetNotAvailable")}</h1><p className="mt-2 text-sm text-muted-foreground">{t("privatePresetDescription")}</p></div></main>;
 
-	const authStatus = await fetchInternalAuthStatus();
 	const { preset, sourcePreset, versions } = detail;
 	const resolvedVersion = versions.find((version) => version.version_number === requestedVersion) ?? versions[0];
 	const config = (preset.config ?? {}) as Record<string, any>;

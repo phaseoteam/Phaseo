@@ -3,11 +3,11 @@ import OrganisationDetailShell from "@/components/(data)/organisation/Organisati
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
-import {
-	fetchFrontendOrganisation,
-	fetchFrontendOrganisationModels,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchFrontendOrganisation } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { notFound } from "next/navigation";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { organisationModelsQuery } from "../page.queries";
 
 async function fetchOrganisation(organisationId: string) {
 	try {
@@ -68,14 +68,15 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function Page({
+export default function Page({
 	params,
 }: {
 	params: Promise<{ organisationId: string }>;
 }) {
-	const { organisationId } = await params;
+	const { organisationId } = use(params);
 
-	const models = await fetchFrontendOrganisationModels(organisationId).catch(() => null);
+	// Unknown organisations 404 in the route loader before rendering.
+	const { data: models } = useSuspenseQuery(organisationModelsQuery(organisationId));
 	if (!models) notFound();
 
 	return (

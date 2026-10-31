@@ -1,14 +1,18 @@
 import BenchmarkDetailShell from "@/components/(data)/benchmark/BenchmarkDetailShell";
 import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
-import { applyArtificialAnalysisOrganisationColours, artificialAnalysisMetricsForBenchmark, buildArtificialAnalysisRanking, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
-import { fetchFrontendBenchmark, fetchFrontendOrganisations } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchFrontendBenchmark } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { absoluteUrl } from "@/lib/seo";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { artificialAnalysisRankingsQuery, benchmarkQuery, benchmarkSelection } from "./page.queries";
 
 async function fetchBenchmark(benchmarkId: string) {
 	try {
@@ -70,21 +74,22 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function Page({
+export default function Page({
 	params,
 	searchParams,
 }: {
 	params: Promise<{ benchmarkId: string }>;
 	searchParams: Promise<{ version?: string | string[]; metric?: string | string[] }>;
 }) {
-	const t = await getTranslations("Catalogue.benchmarks");
-	const tNav = await getTranslations("Common.nav");
-	const { benchmarkId } = await params;
-	const selection = benchmarkId === "artificial-analysis" ? await searchParams : {};
-	const benchmark = await fetchFrontendBenchmark(benchmarkId, {
-		version: typeof selection.version === "string" ? selection.version : undefined,
-		metric: typeof selection.metric === "string" ? selection.metric : undefined,
-	});
+	const t = useTranslations("Catalogue.benchmarks");
+	const tNav = useTranslations("Common.nav");
+	const { benchmarkId } = use(params);
+	const selection = benchmarkSelection(benchmarkId, use(searchParams));
+	// Unknown benchmarks 404 in the route loader before rendering.
+	const { data: benchmark } = useSuspenseQuery(benchmarkQuery(benchmarkId, selection));
+	const { data: resolvedArtificialAnalysisRankings } = useSuspenseQuery(
+		artificialAnalysisRankingsQuery(benchmark, `${selection.version ?? ""}:${selection.metric ?? ""}`),
+	);
 
 	if (!benchmark) {
 		notFound();
@@ -93,22 +98,7 @@ export default async function Page({
 	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
 	const displayBenchmark = benchmark;
 	const artificialAnalysisRankings = artificialAnalysis
-		? (async () => {
-			const metricDefinitions = artificialAnalysisMetricsForBenchmark(benchmark.id);
-			const [rankings, organisations] = await Promise.all([
-				Promise.all(metricDefinitions.map(async ({ id }) => {
-					const metricBenchmark = benchmark.comparison_benchmarks?.find((metric) => metric.id === id)
-						?? (id === benchmark.id ? benchmark : await fetchFrontendBenchmark(id).catch(() => null));
-					return metricBenchmark ? buildArtificialAnalysisRanking(metricBenchmark) : null;
-				})),
-				fetchFrontendOrganisations().catch(() => []),
-			]);
-			const colours = new Map(organisations.map((organisation) => [organisation.organisation_id, organisation.colour]));
-			return applyArtificialAnalysisOrganisationColours(
-				rankings.filter((ranking): ranking is NonNullable<typeof ranking> => ranking !== null),
-				colours,
-			);
-		})()
+		? resolvedArtificialAnalysisRankings
 		: [];
 
 	// Generate structured data for the benchmark page.

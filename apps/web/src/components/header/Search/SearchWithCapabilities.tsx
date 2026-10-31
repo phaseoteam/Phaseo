@@ -1,42 +1,19 @@
-import {
-	autoRoutingFlag,
-	requestClassifiersFlag,
-	workloadIdentityFlag,
-	batchApiFlag,
-	enterpriseSelfServePreviewEnabled,
-	realtimeVoiceFlag,
-	slackAgentSettingsEnabled,
-	videoApiFlag,
-} from "@/lib/flags";
-import { catalogueGamesEnabled } from "@/lib/games/preview";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import { SearchWrapper } from "@/components/header/Search/SearchWrapper";
-import { connection } from "next/server";
-import { getHeaderAccountData } from "@/components/header/getHeaderAccountData";
+import { shellDataQuery } from "@/components/header/shellData";
 import { toAccountQueryScope } from "@/lib/query/queryKeys";
 
-export async function SearchWithCapabilities(props: { className?: string }) {
-	// Capability flags can consult request-scoped clients which read the clock.
-	// Explicitly opt this boundary into request time so Cache Components does not
-	// attempt to evaluate those values during prerendering.
-	await connection();
-	const [autoRouting, classifiers, workloadIdentity, slackAgent, enterprise, webhooks, video, realtime, games, authHeader] = await Promise.all([
-		autoRoutingFlag().catch(() => false),
-		requestClassifiersFlag().catch(() => false),
-		workloadIdentityFlag().catch(() => false),
-		slackAgentSettingsEnabled(),
-		enterpriseSelfServePreviewEnabled().catch(() => false),
-		batchApiFlag().catch(() => false),
-		videoApiFlag().catch(() => false),
-		realtimeVoiceFlag().catch(() => false),
-		catalogueGamesEnabled().catch(() => false),
-		getHeaderAccountData(),
-	]);
+export function SearchWithCapabilities(props: { className?: string }) {
+	const locale = useLocale();
+	const { data } = useSuspenseQuery(shellDataQuery(locale));
+	const authHeader = data.account;
 
 	return (
 		<SearchWrapper
 			{...props}
 			isAdmin={Boolean(authHeader?.user?.id) && authHeader?.userRole === "admin"}
-			capabilities={{ autoRouting, classifiers, workloadIdentity, slackAgent, enterprise, webhooks, video, realtime, games }}
+			capabilities={data.capabilities}
 			accountQueryScope={toAccountQueryScope({
 				userId: authHeader?.user?.id,
 				workspaceId: authHeader?.currentTeamId,

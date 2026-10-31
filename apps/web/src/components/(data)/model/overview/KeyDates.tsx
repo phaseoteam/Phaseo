@@ -1,7 +1,7 @@
+import { useTranslations, useLocale } from "next-intl";
 import { Megaphone, Rocket, Archive, Ban } from "lucide-react";
 import RelativeDateBadge from "./RelativeDateBadge";
 import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
-import { getLocale, getTranslations } from "next-intl/server";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 interface KeyDatesProps {
@@ -13,7 +13,7 @@ interface KeyDatesProps {
 	showEmpty?: boolean;
 }
 
-export default async function KeyDates({
+export default function KeyDates({
 	announced,
 	released,
 	deprecated,
@@ -21,8 +21,8 @@ export default async function KeyDates({
 	showHeading = true,
 	showEmpty = false,
 }: KeyDatesProps) {
-	const locale = await getLocale();
-	const t = await getTranslations("Catalogue.modelDetail.metadata");
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.modelDetail.metadata");
 	const entries = [
 		{
 			key: "announced",

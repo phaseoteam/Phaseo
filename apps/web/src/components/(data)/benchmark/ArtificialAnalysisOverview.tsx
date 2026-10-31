@@ -1,7 +1,9 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { use } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { fetchFrontendArtificialAnalysisData, type PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import { artificialAnalysisVersion, artificialAnalysisMetricKey } from "@/lib/benchmarks/artificialAnalysis";
 import { buildArtificialAnalysisExplorer } from "@/lib/benchmarks/artificialAnalysisExplorer";
@@ -11,10 +13,11 @@ import { BenchmarkDisclosure } from "./BenchmarkDisclosure";
 import BenchmarkProgressChart from "./BenchmarkProgressChart";
 import ModelsUsingBenchmark from "./ModelsUsingBenchmark";
 import ArtificialAnalysisDashboard from "./ArtificialAnalysisDashboard";
-import { dashboardRows, loadDashboardData } from "@/lib/benchmarks/artificialAnalysisDashboard";
+import { dashboardRows } from "@/lib/benchmarks/artificialAnalysisDashboard";
+import { artificialAnalysisDashboardDataQuery } from "./ArtificialAnalysisOverview.queries";
 import { ArtificialAnalysisDeferredExplorer } from "./ArtificialAnalysisDeferredExplorer";
 
-export async function ArtificialAnalysisOverview({
+export function ArtificialAnalysisOverview({
 	benchmark,
 	rankings: rankingsPromise,
 }: {
@@ -22,8 +25,13 @@ export async function ArtificialAnalysisOverview({
 	rankings: PublicBenchmarkRanking[] | Promise<PublicBenchmarkRanking[]>;
 }) {
 	const major = Number(benchmark.id.match(/-v(\d+)$/)?.[1]);
-	const dataPromise = Number.isSafeInteger(major) && major > 0 ? loadDashboardData((offset) => fetchFrontendArtificialAnalysisData({ version: major, limit: 200, offset })).catch(() => null) : Promise.resolve(null);
-	const [t, tOther, locale, rankings, publicData] = await Promise.all([getTranslations("Catalogue.benchmarks.current"), getTranslations("Catalogue.models.detail.benchmarkGrid"), getLocale(), rankingsPromise, dataPromise]);
+	const { data: publicData } = useSuspenseQuery(artificialAnalysisDashboardDataQuery(Number.isSafeInteger(major) && major > 0 ? major : null));
+	const t = useTranslations("Catalogue.benchmarks.current");
+	const tOther = useTranslations("Catalogue.models.detail.benchmarkGrid");
+	const tBenchmarks = useTranslations("Catalogue.benchmarks");
+	const locale = useLocale();
+	// Accepts resolved rankings; a promise (Next server prop) is still unwrapped.
+	const rankings = Array.isArray(rankingsPromise) ? rankingsPromise : use(rankingsPromise);
 	const versionOf = (info: unknown) => artificialAnalysisVersion(typeof info === "string" ? info : null) ?? "Unspecified";
 	const versions = [...new Set(benchmark.results.map((result) => versionOf(result.other_info)))].sort((a, b) => b.localeCompare(a, "en", { numeric: true }));
 	const latestVersion = versions.find((version) => version !== "Unspecified") ?? versions[0] ?? "Unspecified";
@@ -54,7 +62,7 @@ export async function ArtificialAnalysisOverview({
 			{benchmark.suite ? <div className="border-b px-4 py-2 lg:px-6"><ArtificialAnalysisSuiteNavigation suite={benchmark.suite} selectedId={benchmark.id} currentLabel={latestVersion === "Unspecified" ? undefined : `v${latestVersion}`} /></div> : null}
 			{richData ? <ArtificialAnalysisDashboard rows={dashboardRows(richData.models)} footer={footer} /> : <ArtificialAnalysisExplorer points={points} footer={footer} initialView={metric === "coding" || metric === "agentic" || metric === "cost" ? metric : comparisonView} />}
 			<div className="border-b px-4 lg:px-6">
-				{richData ? <ArtificialAnalysisDeferredExplorer title={(await getTranslations("Catalogue.benchmarks"))("tocIndexComparisons")} points={points} /> : null}
+				{richData ? <ArtificialAnalysisDeferredExplorer title={tBenchmarks("tocIndexComparisons")} points={points} /> : null}
 				<BenchmarkDisclosure id="progress" title={t("progress")}><BenchmarkProgressChart benchmark={current} /></BenchmarkDisclosure>
 				<BenchmarkDisclosure id="model-results" title={t("modelsResults")}><ModelsUsingBenchmark benchmark={current} /></BenchmarkDisclosure>
 				{otherEvaluations.length ? <BenchmarkDisclosure title={tOther("otherBenchmarks")} count={otherEvaluations.length.toLocaleString(locale)}>

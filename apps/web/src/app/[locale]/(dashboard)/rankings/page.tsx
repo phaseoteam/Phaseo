@@ -4,6 +4,6 @@ import RankingsPageContent, {
 
 export const generateMetadata = generateRankingsMetadata;
 
-export default async function RankingsPage() {
+export default function RankingsPage() {
 	return <RankingsPageContent modality="text" />;
 }

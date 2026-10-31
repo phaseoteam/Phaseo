@@ -1,8 +1,9 @@
 import { getTranslations } from "next-intl/server";
-import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
+import { useTranslations } from "next-intl";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import ProviderReviewClient from "@/components/(gateway)/settings/internal/ProviderReviewClient";
-import { fetchInternalProviderApplications, fetchProviderModelRequests } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
+import { providerReviewQuery } from "./providerReview.functions";
 import ProviderModelRequests from "@/components/(gateway)/settings/internal/ProviderModelRequests";
 
 export async function generateMetadata() {
@@ -10,9 +11,9 @@ export async function generateMetadata() {
 	return { title: t("providerReview") };
 }
 
-export default async function ProviderReviewPage() {
-	await requireInternalAdmin("/settings/account/providers");
-	const t = await getTranslations("SettingsUI.providerReviewCopy");
-	const [applications,requests] = await Promise.all([fetchInternalProviderApplications(),fetchProviderModelRequests()]);
+// requireInternalAdmin("/settings/account/providers") runs in the route's beforeLoad.
+export default function ProviderReviewPage() {
+	const t = useTranslations("SettingsUI.providerReviewCopy");
+	const { data: { applications, requests } } = useSuspenseQuery(providerReviewQuery());
 	return <div className="space-y-6"><SettingsPageHeader title={t("title")} description={t("description")} /><ProviderReviewClient initialApplications={applications} /><ProviderModelRequests initialRequests={requests}/></div>;
 }

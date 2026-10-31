@@ -1,8 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import { Trophy } from "lucide-react";
-import { fetchFrontendAPIProviderTopModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProviderTopModelsQuery } from "../apiProvider.queries";
+import { useLocale, useTranslations } from "next-intl";
 import { DisplayCount } from "@/components/display/DisplayValue";
 import {
 	Empty,
@@ -12,21 +13,19 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 
-export default async function TopModels({
+export default function TopModels({
 	count = 6,
 	apiProviderId,
 }: {
 	count?: number;
 	apiProviderId: string;
 }) {
-	const [t, locale] = await Promise.all([
-		getTranslations("Catalogue.providers"),
-		getLocale(),
-	]);
-	const topModels = await fetchFrontendAPIProviderTopModels(
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
+	const { data: topModels } = useSuspenseQuery(apiProviderTopModelsQuery(
 		apiProviderId,
 		count,
-	);
+	));
 
 	return (
 		<section className="space-y-4">

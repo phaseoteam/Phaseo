@@ -4,18 +4,18 @@ import { Pin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BlogRecentPosts } from "./BlogRecentPosts";
-import {
-	formatAnnouncementDate,
-	getAnnouncementPosts,
-	isAnnouncementPublished,
-	type AnnouncementCategory,
-	type AnnouncementSummary,
+import type {
+	AnnouncementCategory,
+	AnnouncementSummary,
 } from "@/lib/content/announcements";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import { buildMetadata } from "@/lib/seo";
-import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
 import { getTranslations } from "next-intl/server";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { blogIndexPostsQuery } from "./page.functions";
 import type { PublicLocale } from "@/i18n/routing";
 
 type BlogCategoryFilter = AnnouncementCategory | "all";
@@ -77,8 +77,9 @@ function getPinnedPosts(posts: AnnouncementSummary[]): AnnouncementSummary[] {
 	return [...pinnedPosts, ...fallbackPosts].slice(0, 3);
 }
 
+// Computed on the server (page.functions.ts) with isAnnouncementPublished.
 function isPreviewPost(post: AnnouncementSummary): boolean {
-	return !isAnnouncementPublished(post.publishedAt);
+	return (post as AnnouncementSummary & { isPreview?: boolean }).isPreview === true;
 }
 
 function PreviewBadge({ label }: { label: string }) {
@@ -168,18 +169,14 @@ function PinnedPostCard({
 	);
 }
 
-export default async function AnnouncementsPage({
+export default function AnnouncementsPage({
 	searchParams,
 	params,
 }: AnnouncementsPageProps) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "Content.blog" });
-	const [posts, resolvedSearchParams] = await Promise.all([
-		canPreviewFutureBlogPosts().then((canPreviewFuturePosts) =>
-			getAnnouncementPosts({ includeFuture: canPreviewFuturePosts, locale })
-		),
-		searchParams,
-	]);
+	const { locale } = use(params);
+	const t = useTranslations("Content.blog");
+	const { data: posts } = useSuspenseQuery(blogIndexPostsQuery(locale));
+	const resolvedSearchParams = searchParams ? use(searchParams) : undefined;
 	const selectedCategory = normalizeCategory(resolvedSearchParams?.category);
 	const pinnedPosts = getPinnedPosts(posts);
 	const filteredPosts =

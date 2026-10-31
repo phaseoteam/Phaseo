@@ -1,7 +1,7 @@
+import { useLocale } from "next-intl";
 import { permanentRedirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
 
-export default async function GatewayMarketingPageRedirect() {
-	const locale = await getLocale();
+export default function GatewayMarketingPageRedirect() {
+	const locale = useLocale();
 	permanentRedirect(locale === "en-GB" ? "/" : `/${locale}`);
 }

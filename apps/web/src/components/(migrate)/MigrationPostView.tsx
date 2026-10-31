@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
 import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
@@ -9,16 +10,15 @@ import type {
 	MigrationPost,
 } from "@/lib/content/migrations";
 import type { PublicLocale } from "@/i18n/routing";
-import { getTranslations } from "next-intl/server";
 
-export async function MigrationPostView({
+export function MigrationPostView({
 	post,
 	locale,
 }: {
 	post: MigrationPost;
 	locale: PublicLocale;
 }) {
-	const t = await getTranslations({ locale, namespace: "Content.migrate.ui" });
+	const t = useTranslations("Content.migrate.ui");
 	const updatedDate = new Intl.DateTimeFormat(locale, {
 		dateStyle: "medium",
 		timeZone: "UTC",

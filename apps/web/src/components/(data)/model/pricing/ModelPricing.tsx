@@ -2,21 +2,29 @@ import React from "react";
 import Link from "next/link";
 import { CircleAlert, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQueryClient, useSuspenseQueries, type UseSuspenseQueryOptions } from "@tanstack/react-query";
 import {
-	fetchFrontendModelHeader,
-	fetchFrontendModelProviderRoutingHealth,
-	fetchFrontendModelProviderRuntimeStats,
-	fetchFrontendModelPricing,
-	fetchFrontendModelGatewayMetadata,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+	modelHeaderQuery,
+	modelPricingQuery,
+	modelPricingRenderTimeQuery,
+	modelQuickstartGatewayMetadataQuery,
+} from "@/components/(data)/model/modelData.queries";
+import {
+	modelPricingAdminViewerQuery,
+	modelPricingRoutingHealthQuery,
+	modelPricingRuntimeStatsQuery,
+	modelPricingWorkspacePrivacySettingsQuery,
+} from "./ModelPricing.queries";
+import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import type { ModelOverviewHeader } from "@/lib/fetchers/models/getModelOverviewHeader";
+import type { ProviderRuntimeStatsMap } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
+import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import { toPricingRuntimeStats } from "./pricingRuntimeStats";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
-import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWorkspacePrivacySettings";
 import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
-import { isAdminViewer } from "@/lib/auth/getViewerRole";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import {
 	Empty,
@@ -27,7 +35,9 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 
-const OPTIONAL_PROVIDER_TELEMETRY_TIMEOUT_MS = 2_500;
+// Conditional query tuples; each result is read with its own cast.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SuspenseQueryList = UseSuspenseQueryOptions<any, Error, any, any>[];
 
 function mergePreviewOffers(
 	providers: ProviderPricing[],
@@ -109,30 +119,9 @@ function mergePreviewOffers(
 	return [...byProvider.values()];
 }
 
-function withOptionalTimeout<T>(
-	promise: Promise<T>,
-	fallback: T,
-	label: string
-): Promise<T> {
-	let timeout: ReturnType<typeof setTimeout> | null = null;
-	const timeoutPromise = new Promise<T>((resolve) => {
-		timeout = setTimeout(() => {
-			console.warn(`[ModelPricing] ${label} timed out; using fallback.`);
-			resolve(fallback);
-		}, OPTIONAL_PROVIDER_TELEMETRY_TIMEOUT_MS);
-	});
+type AnySuspenseQuery = UseSuspenseQueryOptions<any, Error, any, any>;
 
-	return Promise.race([promise, timeoutPromise])
-		.catch((error) => {
-			console.warn(`[ModelPricing] ${label} failed; using fallback.`, error);
-			return fallback;
-		})
-		.finally(() => {
-			if (timeout) clearTimeout(timeout);
-		});
-}
-
-export default async function ModelPricing({
+export default function ModelPricing({
 	modelId,
 	includeHidden,
 	showHeader = true,
@@ -155,28 +144,43 @@ export default async function ModelPricing({
 	providersOverride?: ProviderPricing[];
 	previewOffers?: AuthenticatedProviderCatalogPreview[];
 }) {
-	const tProvider = await getTranslations("Catalogue.modelDetail.providerTable");
-	const tPricing = await getTranslations("Catalogue.modelDetail.pricing");
-	const tModel = await getTranslations("Catalogue.models.detail");
-	const tActions = await getTranslations("Common.ui.actions");
-	const [providers, identity, showAdminPricingControls, gatewayMetadata] = await Promise.all([
-		providersOverride ? Promise.resolve(providersOverride) : fetchFrontendModelPricing(modelId, undefined, includeHidden),
-		modelStatus !== undefined
-			? Promise.resolve({
-					status: modelStatus,
-					name: modelName ?? null,
-					organisationId: creatorOrganisationId ?? null,
-					organisationName: creatorOrganisationName ?? null,
-				})
-			: fetchFrontendModelHeader(modelId, includeHidden).then((header) => ({
-					status: header?.status ?? null,
-					name: header?.name ?? null,
-					organisationId: header?.organisation_id ?? null,
-					organisationName: header?.organisation?.name ?? null,
-				})),
-		withOptionalTimeout(isAdminViewer(), false, "admin viewer check"),
-		withOptionalTimeout(fetchFrontendModelGatewayMetadata(modelId), null, "gateway metadata"),
-	]);
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
+	const tModel = useTranslations("Catalogue.models.detail");
+	const tActions = useTranslations("Common.ui.actions");
+	const queryClient = useQueryClient();
+	// One hook call loads every first-stage query in parallel; props that
+	// already carry the data skip the matching fetch.
+	const firstStageQueries: AnySuspenseQuery[] = [
+		modelPricingAdminViewerQuery(queryClient),
+		modelQuickstartGatewayMetadataQuery(modelId),
+		modelPricingWorkspacePrivacySettingsQuery(queryClient),
+		modelPricingRenderTimeQuery(modelId),
+	];
+	if (!providersOverride) firstStageQueries.push(modelPricingQuery(modelId, includeHidden));
+	if (modelStatus === undefined) firstStageQueries.push(modelHeaderQuery(modelId, includeHidden));
+	const firstStage = useSuspenseQueries({ queries: firstStageQueries });
+	const showAdminPricingControls = firstStage[0].data as boolean;
+	const gatewayMetadata = firstStage[1].data as ModelGatewayMetadata | null;
+	const workspacePrivacySettings = firstStage[2].data as WorkspacePrivacySettings | null;
+	const pricingTimeMs = firstStage[3].data as number;
+	const providers = providersOverride ?? (firstStage[4].data as ProviderPricing[]);
+	const header = modelStatus === undefined
+		? (firstStage[providersOverride ? 4 : 5].data as ModelOverviewHeader | null)
+		: null;
+	const identity = modelStatus !== undefined
+		? {
+				status: modelStatus,
+				name: modelName ?? null,
+				organisationId: creatorOrganisationId ?? null,
+				organisationName: creatorOrganisationName ?? null,
+			}
+		: {
+				status: header?.status ?? null,
+				name: header?.name ?? null,
+				organisationId: header?.organisation_id ?? null,
+				organisationName: header?.organisation?.name ?? null,
+			};
 	const providersWithPreviews = mergePreviewOffers(providers || [], previewOffers);
 	const credentialModesByProvider = new Map<string, Array<"managed_and_byok" | "byok_only">>();
 	for (const provider of gatewayMetadata?.activeProviders ?? []) {
@@ -200,18 +204,13 @@ export default async function ModelPricing({
 				"managed_and_byok",
 		},
 	}));
-	const workspacePrivacySettings: WorkspacePrivacySettings | null =
-		await withOptionalTimeout(
-			fetchWorkspacePrivacySettings(),
-			null,
-			"workspace privacy settings"
-		);
 
 	// Show providers with model mappings even when pricing rules are missing.
 	const providersForDisplay = providersWithCredentialModes.filter(
 		(p) => Array.isArray(p.provider_models) && p.provider_models.length > 0
 	);
-	const now = new Date();
+	// Request time captured once and shared with hydration (see modelPricingRenderTimeQuery).
+	const now = new Date(pricingTimeMs);
 	const hasActiveApiProviders = providersForDisplay.some((provider) =>
 		provider.provider_models.some((providerModel) => {
 			if (!providerModel.is_active_gateway) return false;
@@ -231,9 +230,9 @@ export default async function ModelPricing({
 	const showPendingApiBanner =
 		identity.status === "Available" && !hasActiveApiProviders;
 
-	const [runtimeStats, routingHealth] = providersOverride ? [{}, {}] : await Promise.all([
-		withOptionalTimeout(
-			fetchFrontendModelProviderRuntimeStats({
+	const telemetry = useSuspenseQueries({
+		queries: (providersOverride ? [] : [
+			modelPricingRuntimeStatsQuery({
 				modelId,
 				providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
 				modelAliases: providersForDisplay.flatMap((p) =>
@@ -243,19 +242,16 @@ export default async function ModelPricing({
 					])
 				),
 			}),
-			{},
-			"provider runtime stats"
-		),
-		withOptionalTimeout(
-			fetchFrontendModelProviderRoutingHealth({
+			modelPricingRoutingHealthQuery({
 				modelId,
 				providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
 				windowHours: 24,
 			}),
-			{},
-			"provider routing health"
-		),
-	]);
+		]) as SuspenseQueryList,
+	});
+	const [runtimeStats, routingHealth]: [ProviderRuntimeStatsMap, ProviderRoutingStatusMap] = providersOverride
+		? [{}, {}]
+		: [telemetry[0].data as ProviderRuntimeStatsMap, telemetry[1].data as ProviderRoutingStatusMap];
 
 	// console.log(
 	// 	"Providers with rules:",

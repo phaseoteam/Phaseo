@@ -1,9 +1,9 @@
-import { Suspense } from "react";
-import { connection } from "next/server";
+import { Suspense, use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { StripePortalButton } from "./StripePortalButton";
 import { PaymentMethodsManager } from "./PaymentMethodsManager";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import { fetchSettingsPaymentMethodsInitialData } from "@/lib/fetchers/internal/fetchSettingsPaymentMethodsInitialData";
+import { paymentMethodsInitialDataQuery } from "./paymentMethods.functions";
 import { getPaymentMethodsMessages } from "@/i18n/payment-methods";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 	return { title: `${messages.title} - ${t("headers.settings" as never)}` };
 }
 
-export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
-	const { locale } = await params;
+export default function Page({ params }: { params: Promise<{ locale: string }> }) {
+	const { locale } = use(params);
 	const messages = getPaymentMethodsMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
   return (
     <div className="space-y-6">
@@ -36,10 +36,9 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
   );
 }
 
-async function PaymentMethodsContent({ messages }: { messages: ReturnType<typeof getPaymentMethodsMessages> }) {
-	await connection();
-  const { customerId, initialData, obfuscateInfo } =
-    await fetchSettingsPaymentMethodsInitialData();
+function PaymentMethodsContent({ messages }: { messages: ReturnType<typeof getPaymentMethodsMessages> }) {
+  const { data: { customerId, initialData, obfuscateInfo } } =
+    useSuspenseQuery(paymentMethodsInitialDataQuery());
 
   return (
     <div

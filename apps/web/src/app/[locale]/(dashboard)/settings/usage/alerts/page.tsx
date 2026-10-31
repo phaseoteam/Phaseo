@@ -1,5 +1,6 @@
-import { getPrivateUsageScope } from "@/lib/fetchers/internal/getPrivateUsageScope";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { privateUsageScopeQuery } from "../usage.functions";
 import UsageAlertsClient from "./UsageAlertsClient";
 import { getTranslations } from "next-intl/server";
 export async function generateMetadata() { const t = await getTranslations("SettingsUI.settingsPageMetadata"); return { title: t("lifecycleAlerts") }; }
-export default async function Page() { return <UsageAlertsClient scope={await getPrivateUsageScope()} />; }
+export default function Page() { const { data: scope } = useSuspenseQuery(privateUsageScopeQuery()); return <UsageAlertsClient scope={scope} />; }

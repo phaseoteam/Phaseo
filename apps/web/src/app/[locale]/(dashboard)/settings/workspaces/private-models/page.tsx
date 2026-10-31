@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -11,8 +12,8 @@ export async function generateMetadata() {
 	return { title: `${t("privateModelsCopy.privateModels")} - ${t("headers.settings")}` };
 }
 
-export default async function PrivateModelsPage() {
-	const t = await getTranslations("SettingsUI");
+export default function PrivateModelsPage() {
+	const t = useTranslations("SettingsUI");
 	return <div className="mx-auto space-y-6">
 		<SettingsPageHeader
 			title={t("privateModelsCopy.privateModels")}

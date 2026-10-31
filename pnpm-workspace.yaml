@@ -73,6 +73,3 @@ minimumReleaseAgeExclude:
   - "react-native-keyboard-controller@1.22.7"
   - "react-native-screens@4.30.0"
   - "react-native-svg@15.16.0"
-  - "@next/*"
-  - "eslint-config-next"
-  - "next"

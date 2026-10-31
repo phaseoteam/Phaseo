@@ -1,7 +1,7 @@
 import APIProviderDetailShell from "@/components/(data)/api-providers/APIProviderDetailShell";
 import ProviderTokenUsageChart from "@/components/(data)/api-providers/Gateway/ProviderTokenUsageChart";
 import PerformanceCards from "@/components/(data)/api-providers/Gateway/PerformanceCards";
-import { Suspense } from "react";
+import { Suspense, use } from "react";
 import {
 	fetchFrontendAPIProviderHeader,
 	fetchFrontendAPIProviderModels,
@@ -14,10 +14,11 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import type { PublicLocale } from "@/i18n/routing";
-import { connection } from "next/server";
 import { fetchServerProviderCatalogPreviews } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
-import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { toAccountQueryScope, type AccountQueryScope } from "@/lib/query/queryKeys";
+import type { AccountQueryScope } from "@/lib/query/queryKeys";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { apiProviderModelsQuery, apiProviderPageDataQuery } from "./page.functions";
 import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
 
 // Provider metadata comes from an uncached API request. Allow this route to
@@ -78,19 +79,17 @@ export async function generateMetadata(props: {
 	});
 }
 
-export default async function Page({
+export default function Page({
 	params,
 }: {
 	params: Promise<{ apiProvider: string }>;
 }) {
-	const resolved = await params;
+	const resolved = use(params);
 	const apiProvider = resolved.apiProvider;
-	const [publicHeader, initialProviderPreviews, accountContext] = await Promise.all([
-		fetchProviderMeta(apiProvider),
-		fetchServerProviderCatalogPreviews(apiProvider),
-		getServerAccountContext(),
-	]);
-	const accountQueryScope = toAccountQueryScope(accountContext);
+	const [{ data: pageData }, { data: models }] = useSuspenseQueries({
+		queries: [apiProviderPageDataQuery(apiProvider), apiProviderModelsQuery(apiProvider)],
+	});
+	const { publicHeader, initialProviderPreviews, accountQueryScope } = pageData;
 	const header: APIProviderHeader | null = publicHeader ?? (initialProviderPreviews[0]
 		? {
 			api_provider_id: apiProvider,
@@ -99,10 +98,10 @@ export default async function Page({
 			subdivision_code: null,
 		}
 		: null);
+	// Unknown providers 404 in the route loader before rendering.
 	if (!header) notFound();
-	const t = await getTranslations("Catalogue.providers");
-	const tNav = await getTranslations("Common.nav");
-	const models = await fetchFrontendAPIProviderModels(apiProvider).catch(() => []);
+	const t = useTranslations("Catalogue.providers");
+	const tNav = useTranslations("Common.nav");
 	const isPreviewOnlyProvider = !publicHeader && initialProviderPreviews.length > 0 && models.length === 0;
 	const providerTocItems = isPreviewOnlyProvider
 		? [{ id: "models", label: t("models") }]
@@ -203,7 +202,7 @@ export default async function Page({
 	);
 }
 
-async function ProviderModelsWithPreview({
+function ProviderModelsWithPreview({
 	apiProvider,
 	models,
 	initialProviderPreviews,
@@ -214,7 +213,6 @@ async function ProviderModelsWithPreview({
 	initialProviderPreviews: Awaited<ReturnType<typeof fetchServerProviderCatalogPreviews>>;
 	accountQueryScope: AccountQueryScope;
 }) {
-	await connection();
 	return (
 		<ProviderModelsClient
 			apiProvider={apiProvider}

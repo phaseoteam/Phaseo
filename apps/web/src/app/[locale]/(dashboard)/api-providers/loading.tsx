@@ -1,7 +1,7 @@
+import { useTranslations } from "next-intl";
 import { APIProvidersPageSkeleton } from "@/components/(data)/api-providers/APIProvidersPageSkeleton";
-import { getTranslations } from "next-intl/server";
 
-export default async function ApiProvidersLoading() {
-	const t = await getTranslations("Catalogue.providers");
+export default function ApiProvidersLoading() {
+	const t = useTranslations("Catalogue.providers");
 	return <APIProvidersPageSkeleton title={t("title")} />;
 }

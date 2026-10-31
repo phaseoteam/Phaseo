@@ -4,15 +4,9 @@ import { Suspense } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { FamilyCard } from "@/lib/fetchers/families/types";
-import {
-	addFamilyRecencyFallbacks,
-	sortFamiliesByRecentAddition,
-} from "@/lib/fetchers/families/sortFamilies";
-import {
-	fetchFrontendFamilies,
-	fetchFrontendFamily,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { familiesQuery } from "./page.queries";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 
@@ -28,14 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
 	});
 }
 
-async function FamiliesSection() {
-	const t = await getTranslations("Catalogue.families");
-	const families = sortFamiliesByRecentAddition(
-		await addFamilyRecencyFallbacks(
-			(await fetchFrontendFamilies()) as FamilyCard[],
-			fetchFrontendFamily,
-		),
-	);
+function FamiliesSection() {
+	const t = useTranslations("Catalogue.families");
+	const { data: families } = useSuspenseQuery(familiesQuery());
 
 	return (
 		<div className="space-y-6">

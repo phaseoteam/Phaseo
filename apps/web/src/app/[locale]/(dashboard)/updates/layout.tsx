@@ -1,19 +1,19 @@
-import { ReactNode } from "react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { ReactNode, use } from "react";
 import { isCatalogLocale, type RuntimeLocale } from "@/i18n/locales";
 
-export default async function UpdatesLayout({
+export default function UpdatesLayout({
 	children,
 	params,
 }: {
 	children: ReactNode;
 	params: Promise<{ locale: string }>;
 }) {
-	const { locale: localeValue } = await params;
+	const { locale: localeValue } = use(params);
 	const locale: RuntimeLocale = isCatalogLocale(localeValue)
 		? localeValue
 		: "en-GB";
-	const t = await getTranslations({ locale, namespace: "Catalogue.updates" });
+	const t = useTranslations("Catalogue.updates");
 
 	return (
 		<main className="flex min-h-screen flex-col">

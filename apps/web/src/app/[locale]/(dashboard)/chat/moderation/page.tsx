@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { chatGatewayModelsQuery } from "@/app/[locale]/(dashboard)/chat/chat.queries";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { ModerationRoom } from "@/components/(chat)/rooms/ModerationRoom";
 
@@ -15,8 +16,8 @@ export default function ChatModerationPage() {
 	return <Suspense fallback={null}><ChatModerationContent /></Suspense>;
 }
 
-async function ChatModerationContent() {
-	const models = await fetchFrontendGatewayModels();
+function ChatModerationContent() {
+	const { data: models } = useSuspenseQuery(chatGatewayModelsQuery());
 	return (
 		<RoomScaffold>
 			<ModerationRoom models={models} />

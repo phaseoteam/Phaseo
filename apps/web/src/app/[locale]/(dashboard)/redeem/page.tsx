@@ -1,11 +1,11 @@
 import { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { use } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import RedeemCreditCodeCard from "@/components/(gateway)/credits/RedeemCreditCodeCard";
-import { fetchRedeemInitialData } from "@/lib/fetchers/internal/fetchRedeemInitialData";
 import { getSettingsMessages } from "@/i18n/settings";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 import { getRedeemMessages } from "@/i18n/redeem";
-import { isPromoCodeFormatValid, normalizePromoCodeInput } from "@/lib/credits/promoCodes";
+import { redeemCodeFromSearch, redeemPageQuery } from "./redeem.functions";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
 	const { locale } = await params;
@@ -13,23 +13,20 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 	return { title: messages.pages.redeem };
 }
 
-export default async function RedeemPage({
+// The signed-out redirect to sign-in runs in the route's beforeLoad (redeemPageQuery).
+export default function RedeemPage({
 	params,
 	searchParams,
 }: {
 	params: Promise<{ locale: string }>;
 	searchParams: Promise<{ code?: string | string[] }>;
 }) {
-	const [{ locale }, { code: rawCode }] = await Promise.all([params, searchParams]);
+	const { locale } = use(params);
+	const { code: rawCode } = use(searchParams);
 	const redeemMessages = getRedeemMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
 	// Links such as the feedback thank-you page prefill the code; anything malformed is ignored.
-	const code = typeof rawCode === "string" && isPromoCodeFormatValid(rawCode) ? normalizePromoCodeInput(rawCode) : "";
-	const initialData = await fetchRedeemInitialData();
-
-	if (!initialData.signedIn) {
-		const redeemPath = `/${locale === "en-GB" ? "" : `${locale}/`}redeem${code ? `?code=${encodeURIComponent(code)}` : ""}`;
-		redirect(`/${locale === "en-GB" ? "" : `${locale}/`}sign-in?returnUrl=${encodeURIComponent(redeemPath)}`);
-	}
+	const code = redeemCodeFromSearch(rawCode);
+	const { data: initialData } = useSuspenseQuery(redeemPageQuery(locale, code));
 
 	return (
 		<div className="container mx-auto flex w-full flex-1 min-h-0 flex-col justify-center px-4 py-4 sm:py-6">

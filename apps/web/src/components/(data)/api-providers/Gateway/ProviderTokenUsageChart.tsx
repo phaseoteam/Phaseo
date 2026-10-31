@@ -7,28 +7,31 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 import ProviderTokenUsageChartClient from "./ProviderTokenUsageChartClient";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import {
-	fetchFrontendAPIProviderAppTokenTimeseries,
-	fetchFrontendAPIProviderModelTokenTimeseries,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { getTranslations } from "next-intl/server";
+	apiProviderAppTokenTimeseriesQuery,
+	apiProviderModelTokenTimeseriesQuery,
+} from "../apiProvider.queries";
+import { useTranslations } from "next-intl";
 
-export default async function ProviderTokenUsageChart({
+export default function ProviderTokenUsageChart({
 	apiProviderId,
 }: {
 	apiProviderId: string;
 }) {
-	const t = await getTranslations("Catalogue.providers");
-	const [{ models, points }, { apps, points: appPoints }] = await Promise.all([
-		fetchFrontendAPIProviderModelTokenTimeseries(apiProviderId, {
-			days: 30,
-			topModels: 8,
-		}),
-		fetchFrontendAPIProviderAppTokenTimeseries(apiProviderId, {
-			days: 30,
-			topApps: 20,
-		}),
-	]);
+	const t = useTranslations("Catalogue.providers");
+	const [{ data: { models, points } }, { data: { apps, points: appPoints } }] = useSuspenseQueries({
+		queries: [
+			apiProviderModelTokenTimeseriesQuery(apiProviderId, {
+				days: 30,
+				topModels: 8,
+			}),
+			apiProviderAppTokenTimeseriesQuery(apiProviderId, {
+				days: 30,
+				topApps: 20,
+			}),
+		],
+	});
 
 	return (
 		<section id="token-usage" className="scroll-mt-36 space-y-3">
