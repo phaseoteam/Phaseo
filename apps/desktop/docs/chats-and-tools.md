@@ -285,6 +285,8 @@ When it is Phaseo's bug, the agent drafts an issue with `draft_issue`, a tool on
 
 ## Replies
 
+Your messages and the agent's answers show when they were sent on hover: the time today, "Yesterday" and the time, or the date and time before that (with the year once it is a different year). Hovering the stamp gives the full date and time to the second.
+
 Replies render Markdown as GitHub does, plus:
 
 - **Images**, from the web or from the chat's project (a relative path, or an absolute one inside the project). Clicking one opens a viewer over the window: the wheel or the buttons zoom (up to 8×), dragging pans, double-click toggles 2×, and the arrow keys step through the message's other images. Web images open in the browser from the viewer.
