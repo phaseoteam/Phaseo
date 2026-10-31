@@ -53,6 +53,18 @@ function suppressSmallPublicPerformanceCohorts(value: Record<string, any>): Reco
 	};
 }
 
+/**
+ * Benchmark scores and release timelines hold no provider, price or policy
+ * facts, and their edits purge these tags. Most model pages are rendered less
+ * often than hourly, so a short TTL meant nearly every render reran the query.
+ * Serve for 6 h, then stale for up to 18 h while refreshing.
+ */
+const PUBLIC_MODEL_INFO_CACHE = {
+	edgeTtlSeconds: 6 * 60 * 60,
+	staleWhileRevalidateSeconds: 18 * 60 * 60,
+	staleIfErrorSeconds: 24 * 60 * 60,
+} as const satisfies PublicCachePolicy;
+
 const CACHE_PROFILES = {
 	catalogue: PUBLIC_MODEL_CATALOGUE_CACHE,
 	overview: {
@@ -60,15 +72,11 @@ const CACHE_PROFILES = {
 		cacheTags: ["web-api-model-details"],
 	},
 	benchmarks: {
-		edgeTtlSeconds: 60 * 60,
-		staleWhileRevalidateSeconds: 60 * 60,
-		staleIfErrorSeconds: 24 * 60 * 60,
+		...PUBLIC_MODEL_INFO_CACHE,
 		cacheTags: ["web-api-model-benchmarks"],
 	},
 	timeline: {
-		edgeTtlSeconds: 60 * 60,
-		staleWhileRevalidateSeconds: 60 * 60,
-		staleIfErrorSeconds: 24 * 60 * 60,
+		...PUBLIC_MODEL_INFO_CACHE,
 		cacheTags: ["web-api-model-timelines"],
 	},
 	subscriptions: {
