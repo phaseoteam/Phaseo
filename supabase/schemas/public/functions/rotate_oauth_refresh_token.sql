@@ -25,6 +25,14 @@ begin
     return 'invalid';
   end if;
 
+  -- A delegated key's refresh token rotates only through rotate_oauth_delegated_refresh_token,
+  -- which keeps it bound to its key. A Worker from before that function (during a deploy or a
+  -- rollback) still calls this one: refuse it, before any lock or write, rather than mint a
+  -- successor with no key that pausing or revoking the key would no longer end.
+  if token_identity.key_id is not null then
+    return 'invalid';
+  end if;
+
   perform 1
   from public.workspace_members member
   where member.user_id = token_identity.user_id
