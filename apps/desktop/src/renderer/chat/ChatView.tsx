@@ -26,8 +26,7 @@ import { ComposerTaskContext, useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionPlainText } from "../lib/mentions";
 import { UsageMeters } from "../settings/UsageMeters";
 import { Conversation } from "./Conversation";
-import { ModelPicker } from "./ModelPicker";
-import { ModelSettings } from "./ModelSettings";
+import { ModelControl } from "./ModelSettings";
 import { PermissionMenu, PlanIndicator } from "./NewChat";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { Requests } from "./Requests";
@@ -293,8 +292,7 @@ function ChatComposer({ task }: { task: Task }) {
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
-				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
-				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
+				<ModelControl selections={[selection]} onChange={values => void changeModel(values[0])} onSettings={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
 				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
 				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}
 				{plan && <PlanIndicator onClear={running ? undefined : () => void command({ type: "update-task", id: task.id, mode: "code" })} />}
