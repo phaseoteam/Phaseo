@@ -13,7 +13,6 @@ import { fullMessageTime, messageTime } from "../lib/messageTime";
 import { formatCost } from "../../shared/usageAmounts";
 import { cn } from "../lib/utils";
 import { MessageContent } from "../components/MessageContent";
-import { MessageText } from "../components/MessageChips";
 import { ModelLogo } from "../components/ModelLogo";
 import { useTextCopy } from "../components/useTextCopy";
 import { mentionPlainText } from "../lib/mentions";
@@ -59,7 +58,7 @@ function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRew
 		<h3 className="sr-only">You said</h3>
 		{message.autopilot && <span title="Autopilot sent this to keep the task going" className="flex items-center gap-1 text-[11px] font-medium text-warning"><Plane className="size-3" />Autopilot</span>}
 		<MessageAttachments taskId={taskId} attachments={attachments} onPreview={onAttachment} />
-		{bubble && <div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"><MessageFold id={message.id} text={message.text}><MessageText text={message.text} projectId={projectId} /></MessageFold></div>}
+		{bubble && <div data-selectable className="message-user max-w-[85%] min-w-0 rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed"><MessageFold id={message.id} text={message.text}><MessageContent text={message.text} projectId={projectId} lineBreaks /></MessageFold></div>}
 		<div className="flex items-center opacity-0 transition-opacity group-hover/message:opacity-100">
 			<time dateTime={message.createdAt} title={fullMessageTime(message.createdAt)} className="mr-1 text-[11px] text-muted-foreground">{messageTime(message.createdAt)}</time>
 			<CopyButton text={mentionPlainText(message.text)} />

@@ -288,7 +288,7 @@ When it is Phaseo's bug, the agent drafts an issue with `draft_issue`, a tool on
 
 Your messages and the agent's answers show when they were sent on hover: the time today, "Yesterday" and the time, or the date and time before that (with the year once it is a different year). Hovering the stamp gives the full date and time to the second.
 
-Replies render Markdown as GitHub does, plus:
+Your own messages render Markdown, keeping each line you typed as its own line. Replies render Markdown as GitHub does, plus:
 
 - **Images**, from the web or from the chat's project (a relative path, or an absolute one inside the project). Clicking one opens a viewer over the window: the wheel or the buttons zoom (up to 8×), dragging pans, double-click toggles 2×, and the arrow keys step through the message's other images. Web images open in the browser from the viewer.
 - **Maths** with KaTeX: `$…$` inline and `$$…$$` on their own lines. Single dollars follow Pandoc's rule (no space just inside them, no digit straight after the closing one), so prices such as "$5 and $10" stay text. A formula KaTeX cannot read shows its TeX.

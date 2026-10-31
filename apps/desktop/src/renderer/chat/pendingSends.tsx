@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { MessageText } from "../components/MessageChips";
+import { MessageContent } from "../components/MessageContent";
 
 export type PendingSend = { id: string; taskId: string; text: string; delivered?: boolean };
 
@@ -38,7 +38,7 @@ export const pendingSendsFor = (taskId: string, values = pending) => values.filt
 export function PendingSends({ taskId, projectId }: { taskId: string; projectId?: string }) {
 	const all = useSyncExternalStore(subscribe, () => pending);
 	return pendingSendsFor(taskId, all).map(value => <div key={value.id} role="status" aria-label="Sending your message" className="flex flex-col items-end gap-1">
-		<div className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap opacity-70"><MessageText text={value.text} projectId={projectId} /></div>
+		<div className="message-user max-w-[85%] min-w-0 rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed opacity-70"><MessageContent text={value.text} projectId={projectId} lineBreaks /></div>
 		<span className="text-[11px] text-muted-foreground">Sending…</span>
 	</div>);
 }
