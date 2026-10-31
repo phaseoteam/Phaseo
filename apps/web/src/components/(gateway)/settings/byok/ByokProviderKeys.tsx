@@ -211,14 +211,14 @@ export default function ByokProviderKeys({ provider, entries, modelOptions, apiK
 		setSaving(true);
 		try {
 			await write((async () => {
-				if (previous.routingMode !== next.routingMode) await updateByokKeyAction(id, { always_use: next.routingMode === "priority" });
+				if (previous.routingMode !== next.routingMode) await updateByokKeyAction({ data: { id, updates: { always_use: next.routingMode === "priority" } } });
 				const targetModeEntries = after.filter((entry) => entry.routingMode === next.routingMode).sort((a, b) => a.sortOrder - b.sortOrder);
 				const targetIndex = targetModeEntries.findIndex((entry) => entry.id === id);
 				const startingIndex = previous.routingMode === next.routingMode
 					? before.filter((entry) => entry.routingMode === previous.routingMode).sort((a, b) => a.sortOrder - b.sortOrder).findIndex((entry) => entry.id === id)
 					: targetModeEntries.length - 1;
 				const direction = targetIndex < startingIndex ? "up" : "down";
-				for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) await reorderByokKeyAction(id, direction);
+				for (let step = 0; step < Math.abs(targetIndex - startingIndex); step += 1) await reorderByokKeyAction({ data: { id, direction } });
 			})());
 		} catch (error) {
 			setEntries(before);

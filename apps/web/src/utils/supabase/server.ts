@@ -1,5 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { currentRequestCookies, setResponseCookie } from '@/lib/server/currentRequest'
 
 type CookieToSet = {
     name: string
@@ -11,7 +11,7 @@ export async function createClient(options?: {
     onSetCookies?: (cookies: CookieToSet[]) => void
     signal?: AbortSignal
 }) {
-    const cookieStore = await cookies()
+    const requestCookies = currentRequestCookies()
 
     return createServerClient(
         process.env.PUBLIC_SUPABASE_URL!,
@@ -30,18 +30,17 @@ export async function createClient(options?: {
             auth: { experimental: { passkey: true } },
             cookies: {
                 getAll() {
-                    return cookieStore.getAll()
+                    return requestCookies
                 },
                 setAll(cookiesToSet: CookieToSet[]) {
                     options?.onSetCookies?.(cookiesToSet)
                     try {
                         cookiesToSet.forEach(({ name, value, options }: CookieToSet) =>
-                            cookieStore.set(name, value, options)
+                            setResponseCookie(name, value, options as never)
                         )
                     } catch {
-                        // The `setAll` method was called from a Server Component.
-                        // This can be ignored if you have middleware refreshing
-                        // user sessions.
+                        // The response has already started streaming. This can be
+                        // ignored: the request middleware refreshes user sessions.
                     }
                 },
             },

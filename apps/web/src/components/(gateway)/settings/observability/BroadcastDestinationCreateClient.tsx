@@ -410,7 +410,7 @@ export default function BroadcastDestinationCreateClient(props: {
 		if (!canSave || isSaving) return;
 		setIsSaving(true);
 		try {
-			await write(createBroadcastDestinationAction({
+			await write(createBroadcastDestinationAction({ data: {
 				destinationId: destination.id,
 				name: destinationName.trim(),
 				config,
@@ -431,7 +431,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						value: rule.value,
 					})),
 				})),
-			}));
+			} }));
 			toast.success(t("credits.Destination saved" as never));
 			router.push("/settings/broadcast");
 			router.refresh();

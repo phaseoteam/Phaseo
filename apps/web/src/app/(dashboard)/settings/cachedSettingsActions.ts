@@ -1,5 +1,5 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction } from "@/lib/serverFn/actionMiddleware";
 import { getLocale } from "@/i18n/server";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import type { AccountQueryScope } from "@/lib/query/queryKeys";
@@ -109,23 +109,33 @@ const readers = {
 export type SettingsResource = keyof typeof readers;
 export type SettingsResourceData<K extends SettingsResource> = Awaited<ReturnType<(typeof readers)[K]>>;
 
+type ReadCachedSettingsInput = { resource: SettingsResource; scope: AccountQueryScope; preferredWorkspaceId?: string; parameters?: string };
+
+const readCachedSettingsFn = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((input: ReadCachedSettingsInput) => input)
+	.handler(async ({ data: { resource, scope, preferredWorkspaceId, parameters } }): Promise<{ data: unknown } | { denied: 401 | 403 }> => {
+		if (!Object.hasOwn(readers, resource)) throw new Error("Unknown settings resource");
+		const context = await getServerAccountContext();
+		if (!context.accessToken || !scope.userId || context.userId !== scope.userId) return { denied: 401 };
+		const accountOnly = resource === "authorized-apps" || resource === "account-details" || resource === "profile" || resource === "beta";
+		if (!accountOnly && (!scope.workspaceId || context.workspaceId !== scope.workspaceId)) return { denied: 403 };
+		// The existing read still enforces workspace membership on the API. No server cache.
+		try {
+			const data = resource === "keys" ? await fetchSettingsKeysInitialData(preferredWorkspaceId)
+				: resource === "teams" ? await fetchSettingsTeamsInitialData(preferredWorkspaceId)
+				: resource === "preset-feedback" ? await fetchSettingsPresetFeedback(parameters)
+				: resource === "oauth-app" ? await readOAuthApp(parameters)
+				: resource === "broadcast-form" ? await readBroadcastForm(parameters)
+				: await readers[resource]();
+			return { data };
+		} catch (error) {
+			if (error instanceof WebApiError && (error.status === 401 || error.status === 403)) return { denied: error.status };
+			throw error;
+		}
+	});
+
+/** Typed entry point: the server function returns the reader result for `resource`. */
 export async function readCachedSettings<K extends SettingsResource>(resource: K, scope: AccountQueryScope, preferredWorkspaceId?: string, parameters?: string): Promise<{ data: SettingsResourceData<K> } | { denied: 401 | 403 }> {
-	if (!Object.hasOwn(readers, resource)) throw new Error("Unknown settings resource");
-	const context = await getServerAccountContext();
-	if (!context.accessToken || !scope.userId || context.userId !== scope.userId) return { denied: 401 };
-	const accountOnly = resource === "authorized-apps" || resource === "account-details" || resource === "profile" || resource === "beta";
-	if (!accountOnly && (!scope.workspaceId || context.workspaceId !== scope.workspaceId)) return { denied: 403 };
-	// The existing read still enforces workspace membership on the API. No server cache.
-	try {
-		const data = resource === "keys" ? await fetchSettingsKeysInitialData(preferredWorkspaceId)
-			: resource === "teams" ? await fetchSettingsTeamsInitialData(preferredWorkspaceId)
-			: resource === "preset-feedback" ? await fetchSettingsPresetFeedback(parameters)
-			: resource === "oauth-app" ? await readOAuthApp(parameters)
-			: resource === "broadcast-form" ? await readBroadcastForm(parameters)
-			: await readers[resource]();
-		return { data: data as SettingsResourceData<K> };
-	} catch (error) {
-		if (error instanceof WebApiError && (error.status === 401 || error.status === 403)) return { denied: error.status };
-		throw error;
-	}
+	return (await readCachedSettingsFn({ data: { resource, scope, preferredWorkspaceId, parameters } })) as { data: SettingsResourceData<K> } | { denied: 401 | 403 };
 }

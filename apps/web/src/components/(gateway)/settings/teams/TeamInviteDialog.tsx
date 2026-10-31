@@ -181,7 +181,7 @@ export default function TeamInviteDialog({
 		setRevealError(null);
 		setRevealing(true);
 		try {
-			const result = await revealTeamInviteAction(invite.id);
+			const result = await revealTeamInviteAction({ data: invite.id });
 			if (!result?.token) {
 				setRevealError(t("teams.revealFailed"));
 				return;
@@ -351,7 +351,7 @@ export default function TeamInviteDialog({
 												(await (async () => {
 													const res =
 														await revealTeamInviteAction(
-															invite.id
+															{ data: invite.id }
 														);
 													if (!res?.token) throw new Error();
 													return res.token;
@@ -454,7 +454,7 @@ export default function TeamInviteDialog({
 														setRevoking(true);
 														try {
 															await revokeTeamInviteAction(
-																invite.id
+																{ data: invite.id }
 															);
 															setConfirmOpen(
 																false

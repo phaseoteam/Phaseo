@@ -39,11 +39,11 @@ export default function UsageChartGrid({
 		const fetchData = async () => {
 			setLoading(true);
 			try {
-				const data = await fetchChartData({
+				const data = await fetchChartData({ data: {
 					timeRange,
 					range,
 					keyFilter: keyFilter || null,
-				});
+				} });
 				setChartData(data as any);
 			} catch (error) {
 				console.error("Error fetching chart data:", error);

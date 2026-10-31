@@ -103,7 +103,7 @@ export default function ModelEditDialog({ modelId, tab, open: controlledOpen, on
     setSaving(true)
     setError(null)
 
-    const savePromise = updateModel({
+    const savePromise = updateModel({ data: {
         modelId,
           name: model.name ?? undefined,
           organisation_id: model.organisation_id,
@@ -133,7 +133,7 @@ export default function ModelEditDialog({ modelId, tab, open: controlledOpen, on
                 url: row.url,
               }))
             : undefined,
-      })
+      } })
 
     toast.promise(savePromise, {
       loading: tEditor("savingModel"),

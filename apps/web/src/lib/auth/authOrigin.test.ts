@@ -2,7 +2,7 @@ import {
 	buildAuthCallbackUrl,
 	configuredAuthOriginsFromEnv,
 	resolveLocalDevAuthOrigin,
-	resolveVercelPreviewAuthOrigin,
+	resolvePreviewAuthOrigin,
 } from "./authOrigin";
 
 describe("auth origin helpers", () => {
@@ -33,22 +33,28 @@ describe("auth origin helpers", () => {
 		).toBe("http://127.0.0.1:3100");
 	});
 
-	it("uses the canonical Vercel preview deployment for preview auth callbacks", () => {
+	it("uses the preview deployment URL for preview auth callbacks", () => {
 		expect(
-			resolveVercelPreviewAuthOrigin({
+			resolvePreviewAuthOrigin({
 				NODE_ENV: "production",
-				VERCEL_ENV: "preview",
-				VERCEL_URL: "preview-branch.vercel.app",
+				PHASEO_ENV: "preview",
+				PUBLIC_DEPLOY_URL: "phaseo-web-preview.example.workers.dev/",
 			} as NodeJS.ProcessEnv),
-		).toBe("https://preview-branch.vercel.app");
+		).toBe("https://phaseo-web-preview.example.workers.dev");
 	});
 
-	it("never uses an arbitrary URL for preview auth callbacks", () => {
+	it("ignores the deploy URL outside previews and over plain http", () => {
 		expect(
-			resolveVercelPreviewAuthOrigin({
+			resolvePreviewAuthOrigin({
 				NODE_ENV: "production",
-				VERCEL_ENV: "preview",
-				VERCEL_URL: "https://example.com",
+				PUBLIC_DEPLOY_URL: "https://phaseo-web-preview.example.workers.dev",
+			} as NodeJS.ProcessEnv),
+		).toBeNull();
+		expect(
+			resolvePreviewAuthOrigin({
+				NODE_ENV: "production",
+				PHASEO_ENV: "preview",
+				PUBLIC_DEPLOY_URL: "http://phaseo-web-preview.example.workers.dev",
 			} as NodeJS.ProcessEnv),
 		).toBeNull();
 	});

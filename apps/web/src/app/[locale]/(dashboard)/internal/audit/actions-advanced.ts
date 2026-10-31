@@ -1,5 +1,5 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
@@ -34,82 +34,124 @@ async function graph(modelId: string, body: Record<string, unknown>) {
 	return result.success ? { success: true } : result;
 }
 
-export async function updateModelDetails(input: any) {
-	return graph(input.modelId, { model_details: (input.details ?? []).map((row: any) => ({ detail_name: row.name, detail_value: row.value })) });
-}
+export const updateModelDetails = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: any) => input)
+	.handler(async ({ data: input }) => {
+		return graph(input.modelId, { model_details: (input.details ?? []).map((row: any) => ({ detail_name: row.name, detail_value: row.value })) });
+	});
 
-export async function updateModelOrganization(input: any) {
-	return graph(input.modelId, { organisation_id: input.organisationId });
-}
+export const updateModelOrganization = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: any) => input)
+	.handler(async ({ data: input }) => {
+		return graph(input.modelId, { organisation_id: input.organisationId });
+	});
 
-export async function updateModelLinks(input: any) {
-	return graph(input.modelId, { links: (input.links ?? []).map((row: any) => ({ platform: row.type, kind: row.type, title: row.title, url: row.url })) });
-}
+export const updateModelLinks = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: any) => input)
+	.handler(async ({ data: input }) => {
+		return graph(input.modelId, { links: (input.links ?? []).map((row: any) => ({ platform: row.type, kind: row.type, title: row.title, url: row.url })) });
+	});
 
-export async function updateModelAliases(input: any) {
-	return graph(input.modelId, { aliases: (input.aliases ?? []).map((row: any) => ({ alias_slug: row.alias, is_enabled: row.enabled })) });
-}
+export const updateModelAliases = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: any) => input)
+	.handler(async ({ data: input }) => {
+		return graph(input.modelId, { aliases: (input.aliases ?? []).map((row: any) => ({ alias_slug: row.alias, is_enabled: row.enabled })) });
+	});
 
-export async function createProviderModel(input: any) {
-	return mutation("/api/account/models/catalog/provider-models", "POST", input);
-}
+export const createProviderModel = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: any) => input)
+	.handler(async ({ data: input }) => {
+		return mutation("/api/account/models/catalog/provider-models", "POST", input);
+	});
 
-export async function updateProviderModel(input: any) {
-	return mutation(`/api/account/models/catalog/provider-models/${encodeURIComponent(input.providerApiModelId)}`, "PATCH", input);
-}
+export const updateProviderModel = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: any) => input)
+	.handler(async ({ data: input }) => {
+		return mutation(`/api/account/models/catalog/provider-models/${encodeURIComponent(input.providerApiModelId)}`, "PATCH", input);
+	});
 
-export async function deleteProviderModel(providerApiModelId: string) {
-	return mutation(`/api/account/models/catalog/provider-models/${encodeURIComponent(providerApiModelId)}`, "DELETE");
-}
+export const deleteProviderModel = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((providerApiModelId: string) => providerApiModelId)
+	.handler(async ({ data: providerApiModelId }) => {
+		return mutation(`/api/account/models/catalog/provider-models/${encodeURIComponent(providerApiModelId)}`, "DELETE");
+	});
 
-export async function createBenchmarkResult(input: any) {
-	return mutation("/api/account/models/catalog/benchmark-results", "POST", input);
-}
+export const createBenchmarkResult = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: any) => input)
+	.handler(async ({ data: input }) => {
+		return mutation("/api/account/models/catalog/benchmark-results", "POST", input);
+	});
 
-export async function updateBenchmarkResult(input: any) {
-	return mutation(`/api/account/models/catalog/benchmark-results/${encodeURIComponent(input.resultId)}`, "PATCH", input);
-}
+export const updateBenchmarkResult = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: any) => input)
+	.handler(async ({ data: input }) => {
+		return mutation(`/api/account/models/catalog/benchmark-results/${encodeURIComponent(input.resultId)}`, "PATCH", input);
+	});
 
-export async function deleteBenchmarkResult(resultId: string) {
-	return mutation(`/api/account/models/catalog/benchmark-results/${encodeURIComponent(resultId)}`, "DELETE");
-}
+export const deleteBenchmarkResult = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((resultId: string) => resultId)
+	.handler(async ({ data: resultId }) => {
+		return mutation(`/api/account/models/catalog/benchmark-results/${encodeURIComponent(resultId)}`, "DELETE");
+	});
 
-export async function deleteModel(modelId: string) {
-	return mutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
-}
+export const deleteModel = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((modelId: string) => modelId)
+	.handler(async ({ data: modelId }) => {
+		return mutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
+	});
 
-export async function fetchCompleteModelData(modelId: string): Promise<Result<CompleteModelData>> {
-	try {
-		const response = await fetchAccountWebApi<{ source: Record<string, any> }>(`/api/account/models/${encodeURIComponent(modelId)}/source`, await token());
-		const source = response.source;
-		const model = source.model;
-		if (!model) return { success: false, error: "Model not found", data: undefined };
-		const data: CompleteModelData = {
-			...model,
-			input_types: Array.isArray(model.input_types) ? model.input_types : String(model.input_types ?? "").split(",").filter(Boolean),
-			output_types: Array.isArray(model.output_types) ? model.output_types : String(model.output_types ?? "").split(",").filter(Boolean),
-			details: (model.model_details ?? []).map((row: any) => ({ detail_name: row.detail_name, detail_value: String(row.detail_value ?? "") })),
-			links: model.model_links ?? [],
-			aliases: (source.aliases ?? []).map((row: any) => ({ alias_slug: row.alias_slug, is_enabled: true })),
-			provider_models: (source.providerRows ?? []).map((row: any) => ({ ...row, input_modalities: Array.isArray(row.input_modalities) ? row.input_modalities : [], output_modalities: Array.isArray(row.output_modalities) ? row.output_modalities : [] })),
-			benchmarks: (model.benchmark_results ?? []).map((row: any) => ({ ...row, benchmark_name: (Array.isArray(row.benchmark) ? row.benchmark[0] : row.benchmark)?.name ?? row.benchmark_id, score: String(row.score ?? "") })),
-		};
-		return { success: true, data };
-	} catch (error) { return { success: false, error: error instanceof Error ? error.message : "Model unavailable", data: undefined }; }
-}
+export const fetchCompleteModelData = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((modelId: string) => modelId)
+	.handler(async ({ data: modelId }): Promise<Result<CompleteModelData>> => {
+		try {
+			const response = await fetchAccountWebApi<{ source: Record<string, any> }>(`/api/account/models/${encodeURIComponent(modelId)}/source`, await token());
+			const source = response.source;
+			const model = source.model;
+			if (!model) return { success: false, error: "Model not found", data: undefined };
+			const data: CompleteModelData = {
+				...model,
+				input_types: Array.isArray(model.input_types) ? model.input_types : String(model.input_types ?? "").split(",").filter(Boolean),
+				output_types: Array.isArray(model.output_types) ? model.output_types : String(model.output_types ?? "").split(",").filter(Boolean),
+				details: (model.model_details ?? []).map((row: any) => ({ detail_name: row.detail_name, detail_value: String(row.detail_value ?? "") })),
+				links: model.model_links ?? [],
+				aliases: (source.aliases ?? []).map((row: any) => ({ alias_slug: row.alias_slug, is_enabled: true })),
+				provider_models: (source.providerRows ?? []).map((row: any) => ({ ...row, input_modalities: Array.isArray(row.input_modalities) ? row.input_modalities : [], output_modalities: Array.isArray(row.output_modalities) ? row.output_modalities : [] })),
+				benchmarks: (model.benchmark_results ?? []).map((row: any) => ({ ...row, benchmark_name: (Array.isArray(row.benchmark) ? row.benchmark[0] : row.benchmark)?.name ?? row.benchmark_id, score: String(row.score ?? "") })),
+			};
+			return { success: true, data };
+		} catch (error) { return { success: false, error: error instanceof Error ? error.message : "Model unavailable", data: undefined }; }
+	});
 
 async function options() {
 	return fetchAccountWebApi<Record<string, any>>("/api/account/models/catalog/model-form-options", await token());
 }
 
-export async function fetchOrganisations() {
-	try { const value = await options(); return { success: true, data: (value.organisations ?? []).map((row: any) => ({ id: row.organisation_id, name: row.name })) }; } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Unavailable", data: [] }; }
-}
+export const fetchOrganisations = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.handler(async () => {
+		try { const value = await options(); return { success: true, data: (value.organisations ?? []).map((row: any) => ({ id: row.organisation_id, name: row.name })) }; } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Unavailable", data: [] }; }
+	});
 
-export async function fetchProviders() {
-	try { const value = await options(); return { success: true, data: (value.providers ?? []).map((row: any) => ({ id: row.api_provider_id, name: row.api_provider_name ?? row.api_provider_id })) }; } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Unavailable", data: [] }; }
-}
+export const fetchProviders = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.handler(async () => {
+		try { const value = await options(); return { success: true, data: (value.providers ?? []).map((row: any) => ({ id: row.api_provider_id, name: row.api_provider_name ?? row.api_provider_id })) }; } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Unavailable", data: [] }; }
+	});
 
-export async function fetchBenchmarks() {
-	try { const value = await options(); return { success: true, data: (value.benchmarks ?? []).map((row: any) => ({ id: row.id, name: row.name ?? row.id })) }; } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Unavailable", data: [] }; }
-}
+export const fetchBenchmarks = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.handler(async () => {
+		try { const value = await options(); return { success: true, data: (value.benchmarks ?? []).map((row: any) => ({ id: row.id, name: row.name ?? row.id })) }; } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Unavailable", data: [] }; }
+	});

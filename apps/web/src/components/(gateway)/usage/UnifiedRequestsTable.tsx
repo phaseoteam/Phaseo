@@ -621,7 +621,7 @@ export default function UnifiedRequestsTable({
 				const result = scope ? await queryClient.fetchQuery({
 					...privateUsageOptions(scope, "request-page", { params: JSON.stringify(params), snapshot: String(snapshotUpdatedAt) }, live),
 					queryFn: ({ signal }) => fetchPrivateUsageOperation<Awaited<ReturnType<typeof fetchPaginatedRequests>>>("paginatedRequests", [params], scope, signal),
-				}) : await fetchPaginatedRequests(params);
+				}) : await fetchPaginatedRequests({ data: params });
 				if (generation !== requestGeneration.current) return null;
 				const pageModelIds = Array.from(
 					new Set(
@@ -640,7 +640,7 @@ export default function UnifiedRequestsTable({
 					(modelId) => !resolvedModelMetadata.has(modelId),
 				);
 				if (missingModelIds.length > 0) {
-					const liveMetadata = await fetchModelMetadata(missingModelIds);
+					const liveMetadata = await fetchModelMetadata({ data: missingModelIds });
 					if (generation !== requestGeneration.current) return null;
 					setResolvedModelMetadata((prev) => {
 						const merged = new Map(prev);
@@ -826,7 +826,7 @@ export default function UnifiedRequestsTable({
 		const detailPromise = scope ? queryClient.fetchQuery({
 			...privateUsageOptions(scope, "request-detail", { request: detailRequestId, snapshot: String(snapshotUpdatedAt) }, live),
 			queryFn: ({ signal }) => fetchPrivateUsageRequest(detailRequestId, scope, signal),
-		}) : fetchGenerationLog(detailRequestId);
+		}) : fetchGenerationLog({ data: detailRequestId });
 		void detailPromise
 			.then((result) => {
 				if (cancelled || !result.success || !result.data) return;

@@ -1,10 +1,11 @@
-// Global request middleware: what Next did with next.config.mjs headers(),
-// redirects() and external rewrites, plus src/proxy.ts (legacy redirects,
-// page-method guard, markdown negotiation, blog gates, next-intl locale
-// negotiation and the Supabase session refresh). Order follows Next:
-// redirects, then middleware, then rewrites/handlers; headers on every response.
+// Global request middleware. In order: site redirects (siteRules.ts), proxied
+// paths (web API, docs, analytics), then the page rules (write-method guard,
+// markdown negotiation, legacy redirects, blog gates, locale negotiation and
+// the Supabase session refresh) before the route runs. Site header rules are
+// added to every response.
 import { createMiddleware } from "@tanstack/react-start";
-import rules from "./nextConfigRules.generated.json";
+import { headerRules, redirects, type HostCondition } from "./siteRules";
+import { readRequestCookie, serializeCookie } from "@/lib/http/cookies";
 import { defaultLocale, isPublicLocale, publicLocales, type PublicLocale } from "@/i18n/locales";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
 import { requestOverride } from "@/compat/request-override";
@@ -19,9 +20,7 @@ const RETIRED_LOCALE_PREFIXES = new Set(["en-us"]);
 const PAGE_WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const MINTLIFY_ORIGIN = "https://aistats.mintlify.site";
 
-// --- Next-style path patterns (":name", ":name*", ":name(a|b)?") -------------
-
-type Rule = { source: string; destination?: string; permanent?: boolean; has?: Array<{ type: string; key?: string; value?: string | string[] }>; headers?: Array<{ key: string; value: string }> };
+// --- Path patterns (":name", ":name*", ":name(a|b)?") -----------------------
 
 function compilePattern(source: string): { regex: RegExp; names: string[] } {
 	const names: string[] = [];
@@ -42,9 +41,9 @@ function compilePattern(source: string): { regex: RegExp; names: string[] } {
 	return { regex: new RegExp(`^${pattern || "/"}/?$`, "i"), names };
 }
 
-function matchRule(rule: Rule, url: URL): Record<string, string> | null {
+function matchRule(rule: { source: string; has?: HostCondition[] }, url: URL): Record<string, string> | null {
 	for (const condition of rule.has ?? []) {
-		if (condition.type === "host" && url.hostname !== [condition.value ?? []].flat().join(".")) return null;
+		if (condition.type === "host" && url.hostname !== condition.value.join(".")) return null;
 	}
 	const { regex, names } = compilePattern(rule.source);
 	const m = url.pathname.match(regex);
@@ -56,10 +55,7 @@ function fillDestination(destination: string, params: Record<string, string>): s
 	return destination.replace(/:([\w]+)\*?/g, (_m, name: string) => params[name] ?? "").replace(/(?<!:)\/{2,}/g, "/").replace(/\/(?=[#?]|$)/, (s, offset, str) => (offset === 0 && str.length === 1 ? s : ""));
 }
 
-const REDIRECTS = (rules.redirects as Rule[]).map((rule) => ({ rule }));
-const HEADER_RULES = rules.headers as Rule[];
-
-// --- Locale negotiation (next-intl, localePrefix "as-needed") -------------
+// --- Locale negotiation (default locale unprefixed, others prefixed) ----------
 
 function matchAcceptLanguage(header: string | null): PublicLocale | null {
 	if (!header) return null;
@@ -82,14 +78,6 @@ function matchAcceptLanguage(header: string | null): PublicLocale | null {
 	return null;
 }
 
-function readCookie(request: Request, name: string): string | undefined {
-	for (const part of (request.headers.get("cookie") ?? "").split(/;\s*/)) {
-		const eq = part.indexOf("=");
-		if (eq > 0 && part.slice(0, eq) === name) return decodeURIComponent(part.slice(eq + 1));
-	}
-	return undefined;
-}
-
 function withoutLocalePrefix(pathname: string): string {
 	const segments = pathname.split("/").filter(Boolean);
 	if (isPublicLocale(segments[0] ?? "")) segments.shift();
@@ -102,7 +90,7 @@ function alternateLinks(url: URL, barePath: string): string {
 	return links.join(", ");
 }
 
-// --- Path classes (same as src/proxy.ts) ---------------------------------------
+// --- Path classes ---------------------------------------------------------------
 
 function isRouteHandlerPath(pathname: string): boolean {
 	if (withoutLocalePrefix(pathname).startsWith("/settings/keys/")) return false;
@@ -110,7 +98,7 @@ function isRouteHandlerPath(pathname: string): boolean {
 		pathname === "/robots.txt" || pathname === "/indexnow-key.txt" || pathname.startsWith("/api/") || pathname.startsWith("/.well-known/") ||
 		pathname.startsWith("/og/") || pathname.startsWith("/__markdown") || pathname === "/auth/callback" || pathname === "/oauth/consent/submit" ||
 		pathname === "/status" || pathname === "/docs" || pathname.startsWith("/docs/") || pathname.startsWith("/ingest/") ||
-		pathname.startsWith("/assets/") || pathname.startsWith("/_content/") || pathname.startsWith("/_i18n/") || pathname.startsWith("/_server") ||
+		pathname.startsWith("/assets/") || pathname.startsWith("/_content/") || pathname.startsWith("/_server") ||
 		STATIC_ASSET_PATH_SUFFIX.test(pathname)
 	);
 }
@@ -164,10 +152,10 @@ async function proxyTo(request: Request, target: string, init: { headers?: Heade
 
 function applyHeaderRules(response: Response, url: URL): Response {
 	let headers: Headers | null = null;
-	for (const rule of HEADER_RULES) {
+	for (const rule of headerRules) {
 		if (!matchRule(rule, url)) continue;
 		headers ??= new Headers(response.headers);
-		for (const { key, value } of rule.headers ?? []) headers.set(key, value);
+		for (const { key, value } of rule.headers) headers.set(key, value);
 	}
 	if (!headers) return response;
 	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
@@ -181,25 +169,14 @@ function withCookies(response: Response, cookies: string[], extraHeaders?: Heade
 	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-function serializeCookie(name: string, value: string, options: { path?: string; maxAge?: number; httpOnly?: boolean; secure?: boolean; sameSite?: string | boolean; domain?: string; expires?: Date } = {}): string {
-	const parts = [`${name}=${encodeURIComponent(value)}`, `Path=${options.path ?? "/"}`];
-	if (options.domain) parts.push(`Domain=${options.domain}`);
-	if (options.maxAge !== undefined) parts.push(`Max-Age=${Math.floor(options.maxAge)}`);
-	if (options.expires) parts.push(`Expires=${new Date(options.expires).toUTCString()}`);
-	if (options.httpOnly) parts.push("HttpOnly");
-	if (options.secure) parts.push("Secure");
-	if (options.sameSite) parts.push(`SameSite=${options.sameSite === true ? "Strict" : String(options.sameSite).replace(/^./, (c) => c.toUpperCase())}`);
-	return parts.join("; ");
-}
-
 async function handle(request: Request, next: () => Promise<Response>): Promise<Response> {
 	const url = new URL(request.url);
 	const { pathname } = url;
 
-	// 1. next.config redirects().
-	for (const { rule } of REDIRECTS) {
+	// 1. Site redirects.
+	for (const rule of redirects) {
 		const params = matchRule(rule, url);
-		if (!params || !rule.destination) continue;
+		if (!params) continue;
 		const destination = fillDestination(rule.destination, params);
 		const location = /^https?:/.test(destination) ? destination : `${destination}${destination.includes("?") ? "" : url.search}`;
 		return redirectResponse(location, rule.permanent ? 308 : 307);
@@ -220,17 +197,16 @@ async function handle(request: Request, next: () => Promise<Response>): Promise<
 
 	const isPage = !isRouteHandlerPath(pathname);
 
-	// 3. src/proxy.ts.
+	// 3. Page rules.
 	if (isPage && PAGE_WRITE_METHODS.has(request.method)) {
 		return new Response(null, { status: 405, headers: { Allow: "GET, HEAD" } });
 	}
 	if (pathname === "/" && request.method === "GET" && (request.headers.get("accept") ?? "").toLowerCase().includes("text/markdown")) {
-		const { GET } = await import("@/app/__markdown/route");
+		const { HOME_MARKDOWN_CACHE_CONTROL, homeMarkdownResponse } = await import("@/lib/http/homeMarkdown");
 		const target = new URL(url);
 		target.pathname = "/__markdown";
 		target.searchParams.set("path", "/");
-		const { NextRequest } = await import("next/server");
-		return GET(NextRequest.from(new Request(target, request)) as never);
+		return homeMarkdownResponse(new Request(target, request), HOME_MARKDOWN_CACHE_CONTROL);
 	}
 	const retired = retiredLocaleRedirect(pathname);
 	const legacyModel = legacyModelPageRedirect(retired ?? pathname);
@@ -251,7 +227,7 @@ async function handle(request: Request, next: () => Promise<Response>): Promise<
 		return next();
 	}
 
-	// next-intl locale negotiation for pages.
+	// Locale negotiation for pages.
 	const segments = pathname.split("/").filter(Boolean);
 	const first = segments[0] ?? "";
 	const exactPrefix = isPublicLocale(first) ? first : null;
@@ -259,7 +235,7 @@ async function handle(request: Request, next: () => Promise<Response>): Promise<
 	if (caseMatch) {
 		return redirectResponse(`/${[caseMatch, ...segments.slice(1)].join("/")}${url.search}`, 307);
 	}
-	const cookieLocale = readCookie(request, LOCALE_COOKIE);
+	const cookieLocale = readRequestCookie(request, LOCALE_COOKIE);
 	let locale: PublicLocale;
 	if (exactPrefix) {
 		if (exactPrefix === defaultLocale) {
@@ -300,8 +276,15 @@ async function runWithSession(request: Request, next: () => Promise<Response>, e
 export const phaseoRequestMiddleware = createMiddleware({ type: "request" }).server(async ({ request, next }) => {
 	const url = new URL(request.url);
 	const response = await handle(request, async () => {
-		const result = await next();
-		return (result as { response?: Response }).response ?? (result as unknown as Response);
+		try {
+			const result = await next();
+			return (result as { response?: Response }).response ?? (result as unknown as Response);
+		} catch (error) {
+			// Unhandled failures in handlers and rendering; reported only with analytics consent.
+			const { captureServerError } = await import("@/lib/analytics/serverErrorCapture");
+			captureServerError(error, request, { source: "request" });
+			throw error;
+		}
 	});
 	return applyHeaderRules(response, url);
 });

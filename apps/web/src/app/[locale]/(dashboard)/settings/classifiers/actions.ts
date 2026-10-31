@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction, serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { requestClassifiersFlag } from "@/lib/flags";
@@ -35,65 +34,70 @@ function failure(error: unknown): ClassifierActionError {
 	return { ok: false, status: null, message: null, code: null };
 }
 
-function refresh(): void {
-	revalidatePath("/settings/classifiers");
-}
+export const createClassifier = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((payload: ClassifierPayload) => payload)
+	.handler(async ({ data: payload }) => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ classifier: SettingsClassifier }>("/api/account/settings/classifiers", context.accessToken, {
+				method: "POST",
+				body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const, id: result.classifier.id };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function createClassifier(payload: ClassifierPayload) {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ classifier: SettingsClassifier }>("/api/account/settings/classifiers", context.accessToken, {
-			method: "POST",
-			body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }),
-		});
-		refresh();
-		return { ok: true as const, id: result.classifier.id };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const updateClassifier = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; payload: ClassifierPayload }) => input)
+	.handler(async ({ data: { id, payload } }) => {
+		try {
+			const context = await account();
+			await fetchAccountWebApi(`/api/account/settings/classifiers/${encodeURIComponent(id)}`, context.accessToken, {
+				method: "PUT",
+				body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const, id };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function updateClassifier(id: string, payload: ClassifierPayload) {
-	try {
-		const context = await account();
-		await fetchAccountWebApi(`/api/account/settings/classifiers/${encodeURIComponent(id)}`, context.accessToken, {
-			method: "PUT",
-			body: JSON.stringify({ ...payload, workspaceId: context.workspaceId }),
-		});
-		refresh();
-		return { ok: true as const, id };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const deleteClassifier = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		try {
+			const context = await account();
+			await fetchAccountWebApi(`/api/account/settings/classifiers/${encodeURIComponent(id)}`, context.accessToken, {
+				method: "DELETE",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function deleteClassifier(id: string) {
-	try {
-		const context = await account();
-		await fetchAccountWebApi(`/api/account/settings/classifiers/${encodeURIComponent(id)}`, context.accessToken, {
-			method: "DELETE",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		refresh();
-		return { ok: true as const };
-	} catch (error) {
-		return failure(error);
-	}
-}
-
-export async function testClassifier(input: {
-	classifierId: string | null;
-	classifier: { model: unknown; instructions: unknown; dimensions: unknown };
-	sample: { prompt: string; response?: string };
-}) {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<ClassifierTestResult>("/api/account/settings/classifiers/test", context.accessToken, {
-			method: "POST",
-			body: JSON.stringify({ ...input, workspaceId: context.workspaceId }),
-		});
-		return { ok: true as const, result };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const testClassifier = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: {
+		classifierId: string | null;
+		classifier: { model: unknown; instructions: unknown; dimensions: unknown };
+		sample: { prompt: string; response?: string };
+	}) => input)
+	.handler(async ({ data: input }) => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<ClassifierTestResult>("/api/account/settings/classifiers/test", context.accessToken, {
+				method: "POST",
+				body: JSON.stringify({ ...input, workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const, result };
+		} catch (error) {
+			return failure(error);
+		}
+	});

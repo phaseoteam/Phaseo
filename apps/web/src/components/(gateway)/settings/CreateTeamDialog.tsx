@@ -49,7 +49,7 @@ export default function CreateTeamDialog({
 		try {
 			setLoading(true);
 			// call server action
-			await createTeamAction(name, currentUserId);
+			await createTeamAction({ data: { name, userId: currentUserId } });
 			void invalidateSettings();
 			setOpen(false);
 			setName("");

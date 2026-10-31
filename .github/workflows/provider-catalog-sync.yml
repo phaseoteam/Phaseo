@@ -61,6 +61,7 @@ jobs:
             - name: Synchronize provider discovery state
               env:
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
                   FASTROUTER_API_KEY: ${{ secrets.FASTROUTER_API_KEY }}
                   NOVITA_API_KEY: ${{ secrets.NOVITA_API_KEY }}

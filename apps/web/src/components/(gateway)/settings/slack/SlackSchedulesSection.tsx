@@ -132,7 +132,7 @@ function ScheduleSettingsForm({ initial }: { initial: SlackScheduleSettingsDraft
 			return;
 		}
 		startSaving(async () => {
-			const result = await write(updateSlackAgent(built.value));
+			const result = await write(updateSlackAgent({ data: built.value }));
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;
@@ -292,7 +292,7 @@ function ScheduleActions({ schedule, onChanged }: { schedule: SlackAgentSchedule
 
 	function setStatus(status: "active" | "paused") {
 		startWorking(async () => {
-			const result = await setSlackAgentScheduleStatus(schedule.id, status);
+			const result = await setSlackAgentScheduleStatus({ data: { id: schedule.id, status } });
 			if (!result.ok) {
 				const failure = toError(result);
 				// Deleted meanwhile: the list catches up.
@@ -308,7 +308,7 @@ function ScheduleActions({ schedule, onChanged }: { schedule: SlackAgentSchedule
 
 	function remove() {
 		startWorking(async () => {
-			const result = await deleteSlackAgentSchedule(schedule.id);
+			const result = await deleteSlackAgentSchedule({ data: schedule.id });
 			if (!result.ok) {
 				const failure = toError(result);
 				if (gone(failure)) onChanged(null, schedule.id);

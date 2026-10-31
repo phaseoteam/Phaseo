@@ -1027,14 +1027,14 @@ export default function SessionsPanel({
 		return (async () => {
 			setIsRefreshing(true);
 			try {
-				const nextSessions = await fetchSessionRollups({
+				const nextSessions = await fetchSessionRollups({ data: {
 					timeRange,
 					limit: refreshLimit,
 					appId: appFilter,
 					modelId: modelFilter,
 					provider: providerFilter,
 					sessionId: sessionFilter,
-				});
+				} });
 				setSessions(nextSessions);
 
 				const missingAppIds = collectSessionAppIds(nextSessions).filter(
@@ -1053,16 +1053,16 @@ export default function SessionsPanel({
 				const [nextAppMetadata, nextModelMetadata, nextProviderNames, nextProviderMetadata] =
 					await Promise.all([
 						missingAppIds.length > 0
-							? fetchAppMetadata(missingAppIds)
+							? fetchAppMetadata({ data: missingAppIds })
 							: Promise.resolve(new Map()),
 						missingModelIds.length > 0
-							? fetchModelMetadata(missingModelIds)
+							? fetchModelMetadata({ data: missingModelIds })
 							: Promise.resolve(new Map()),
 						missingProviderIds.length > 0
-							? fetchProviderNames(missingProviderIds)
+							? fetchProviderNames({ data: missingProviderIds })
 							: Promise.resolve(new Map()),
 						missingProviderMetadataIds.length > 0
-							? fetchProviderMetadata(missingProviderMetadataIds)
+							? fetchProviderMetadata({ data: missingProviderMetadataIds })
 							: Promise.resolve(new Map()),
 					]);
 
@@ -1110,10 +1110,10 @@ export default function SessionsPanel({
 			}
 			setSelectedRequests([]);
 			startLoadingDetail(async () => {
-				const requests = await fetchSessionRequests({
+				const requests = await fetchSessionRequests({ data: {
 					sessionId: session.session_id,
 					timeRange,
-				});
+				} });
 				detailCacheRef.current.set(cacheKey, requests);
 				setSelectedRequests(requests);
 
@@ -1151,20 +1151,20 @@ export default function SessionsPanel({
 				const [nextAppMetadata, nextModelMetadata, nextProviderNames, nextProviderMetadata] =
 					await Promise.all([
 						fetchAppMetadata(
-							requestAppIds.filter((appId) => !appMetadata.has(appId)),
+							{ data: requestAppIds.filter((appId) => !appMetadata.has(appId)) },
 						),
 						fetchModelMetadata(
-							requestModelIds.filter((modelId) => !modelMetadata.has(modelId)),
+							{ data: requestModelIds.filter((modelId) => !modelMetadata.has(modelId)) },
 						),
 						fetchProviderNames(
-							requestProviderIds.filter(
+							{ data: requestProviderIds.filter(
 								(providerId) => !providerNames.has(providerId),
-							),
+							) },
 						),
 						fetchProviderMetadata(
-							requestProviderIds.filter(
+							{ data: requestProviderIds.filter(
 								(providerId) => !providerMetadata.has(providerId),
-							),
+							) },
 						),
 					]);
 

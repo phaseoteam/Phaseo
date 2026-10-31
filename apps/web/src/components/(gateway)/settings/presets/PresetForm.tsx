@@ -670,10 +670,10 @@ export default function PresetForm({
 		setLoading(true);
 		try {
 			if (initialPreset?.id) {
-				await updatePresetAction({ id: initialPreset.id, ...submission });
+				await updatePresetAction({ data: { id: initialPreset.id, ...submission } });
 				toast.success(t("credits.Draft saved" as never));
 			} else {
-				await createPresetAction({ ...submission, creatorUserId: currentUserId!, workspaceId: currentTeamId! });
+				await createPresetAction({ data: { ...submission, creatorUserId: currentUserId!, workspaceId: currentTeamId! } });
 				toast.success(t("credits.Preset created" as never));
 			}
 			router.push("/settings/presets");
@@ -710,10 +710,10 @@ export default function PresetForm({
 		setPublishError(null);
 		try {
 			if (formHasUnsavedChanges) {
-				await updatePresetAction({ id: presetId, ...submission });
+				await updatePresetAction({ data: { id: presetId, ...submission } });
 				markSaved(submission);
 			}
-			const result = await publishPresetDraftAction(presetId, releaseNotes, needsVersionLabel ? publishVersionLabel : undefined);
+			const result = await publishPresetDraftAction({ data: { id: presetId, releaseNotes, versionLabel: needsVersionLabel ? publishVersionLabel : undefined } });
 			if (!result.ok) {
 				setPublishError(publishErrorMessage(result.error));
 				return;

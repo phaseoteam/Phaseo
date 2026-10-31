@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Check, Loader2, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { toast } from "sonner";
 import {
 	PALETTE_SWATCHES,
@@ -475,7 +475,7 @@ export default function DisplayPreferencesClient({
 	function save() {
 		startSaving(async () => {
 			try {
-				const result = await updateDisplayPreferences(preferences);
+				const result = await updateDisplayPreferences({ data: preferences });
 				setPreferences(result.preferences);
 				setSavedPreferences(result.preferences);
 				applyPreferences(result.preferences);

@@ -1,8 +1,15 @@
-// Next: src/app/.well-known/openid-configuration/route.ts
 import { createFileRoute } from "@tanstack/react-router";
-import { nextRouteHandlers } from "@/lib/start/nextRouteHandlers";
-import * as handlers from "@/app/.well-known/openid-configuration/route";
+import { buildOpenIdConfiguration } from "@/lib/agent-discovery";
 
 export const Route = createFileRoute("/.well-known/openid-configuration/")({
-	server: { handlers: nextRouteHandlers(handlers) },
+	server: {
+		handlers: {
+			GET: () =>
+				Response.json(buildOpenIdConfiguration(), {
+					headers: {
+						"Cache-Control": "public, max-age=3600, stale-while-revalidate=3600",
+					},
+				}),
+		},
+	},
 });

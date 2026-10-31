@@ -512,7 +512,7 @@ export default function InteractiveOnboarding({
 		setCompletedSteps(nextCompleted);
 		if (nextStep) setActiveStep(nextStep);
 
-		await saveOnboardingProgressAction({
+		await saveOnboardingProgressAction({ data: {
 			workspaceId,
 			selectedModelId,
 			selectedKeyId:
@@ -525,18 +525,18 @@ export default function InteractiveOnboarding({
 					: createdKeyPrefix || null,
 			completedSteps: [step],
 			status: "started",
-		});
+		} });
 	}
 
 	async function createKey() {
 		try {
 			setIsCreatingKey(true);
 			setKeyError("");
-			const result = await createOnboardingApiKeyAction({
+			const result = await createOnboardingApiKeyAction({ data: {
 				name: keyName,
 				workspaceId,
 				selectedModelId,
-			});
+			} });
 			if (result.workspaceId) setWorkspaceId(result.workspaceId);
 			setCreatedPlaintextKey(result.plaintext ?? "");
 			setCreatedKeyPrefix(result.prefix ?? "");
@@ -578,20 +578,20 @@ export default function InteractiveOnboarding({
 		setCompletedSteps(nextCompleted);
 		setActiveStep("request");
 
-		await saveOnboardingProgressAction({
+		await saveOnboardingProgressAction({ data: {
 			workspaceId,
 			selectedModelId: modelId,
 			selectedKeyId: selectedKeyId || null,
 			keyPrefix: createdKeyPrefix || null,
 			completedSteps: ["models"],
 			status: "started",
-		});
+		} });
 	}
 
 	async function finish(status: "completed" | "skipped") {
 		try {
 			setIsSaving(true);
-			await saveOnboardingProgressAction({
+			await saveOnboardingProgressAction({ data: {
 				workspaceId,
 				selectedModelId,
 				selectedKeyId: selectedKeyId || null,
@@ -601,7 +601,7 @@ export default function InteractiveOnboarding({
 						? ["api-key", "models", "request"]
 						: Array.from(completedSteps),
 				status,
-			});
+			} });
 			captureProductEvent("onboarding_finished", {
 				completed_step_count:
 					status === "completed" ? 3 : completedSteps.size,
@@ -622,11 +622,11 @@ export default function InteractiveOnboarding({
 		if (!countryCode) return;
 		try {
 			setIsSavingCountry(true);
-			await saveOnboardingProgressAction({
+			await saveOnboardingProgressAction({ data: {
 				countryCode,
 				completedSteps: ["country"],
 				status: "started",
-			});
+			} });
 			setDeclaredCountryCode(countryCode);
 			toast.success(t("toasts.countrySaved"));
 		} catch (error) {

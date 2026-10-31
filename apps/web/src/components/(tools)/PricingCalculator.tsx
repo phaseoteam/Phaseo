@@ -358,7 +358,7 @@ export default function PricingCalculator({
 		if (pricingRows.length === 0) {
 			setLoadingModelIds([modelId]);
 			try {
-				pricingRows = await loadPricingCalculatorModels([modelId]);
+				pricingRows = await loadPricingCalculatorModels({ data: [modelId] });
 				if (pricingRows.length > 0) {
 					setModels((current) => mergePricingModels(current, pricingRows));
 				}

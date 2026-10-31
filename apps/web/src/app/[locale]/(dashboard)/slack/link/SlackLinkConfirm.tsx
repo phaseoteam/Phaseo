@@ -36,7 +36,7 @@ export default function SlackLinkConfirm({ token, locale, copy }: { token: strin
 			</div>
 			<p className="text-sm text-muted-foreground">{copy.description}</p>
 			<Callout tone="warning">{copy.warning}</Callout>
-			<Button type="button" disabled={pending} onClick={() => startTransition(async () => setResult(await confirmSlackLink(token, locale)))}>
+			<Button type="button" disabled={pending} onClick={() => startTransition(async () => setResult(await confirmSlackLink({ data: { token, localeValue: locale } })))}>
 				{pending ? copy.confirming : copy.confirm}
 			</Button>
 		</div>

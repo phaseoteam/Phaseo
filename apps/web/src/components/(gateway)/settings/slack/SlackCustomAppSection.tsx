@@ -57,7 +57,7 @@ export function SlackCustomAppSection({ view }: { view: SlackAgentManagerView })
 			return;
 		}
 		startSaving(async () => {
-			const result = await write(saveSlackCustomApp(built.value));
+			const result = await write(saveSlackCustomApp({ data: built.value }));
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;

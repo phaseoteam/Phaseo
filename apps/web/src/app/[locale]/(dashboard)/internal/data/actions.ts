@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverMutation } from "@/lib/serverFn/actionMiddleware";
 import {
 	getIndexNowModelUrls,
 	getIndexNowProviderUrls,
@@ -44,6 +43,23 @@ async function revalidateCloudflare(tags: string[]) {
 	const { accessToken } = await getServerAccountContext();
 	if (!accessToken) throw new Error("Unauthorized");
 	return fetchInternalWebApi<{ revalidated: string[] }>("/api/internal/revalidate", accessToken, { method: "POST", body: JSON.stringify({ tags }) });
+}
+
+// Update actions receive the record id inside the submitted form: a server
+// function input is either FormData or plain data, not both.
+const TARGET_ID_FIELD = "__targetId";
+
+/** Adds the id of the record being edited to its form submission. */
+export function withTargetId(targetId: string, formData: FormData): FormData {
+	formData.set(TARGET_ID_FIELD, targetId);
+	return formData;
+}
+
+function takeTargetId(formData: FormData): string {
+	const targetId = formData.get(TARGET_ID_FIELD);
+	formData.delete(TARGET_ID_FIELD);
+	if (typeof targetId !== "string" || !targetId) throw new Error("Missing record id");
+	return targetId;
 }
 
 function optionalString(v: FormDataEntryValue | null) {
@@ -239,26 +255,33 @@ function normalizeOrganisationLinks(rawLinks: OrganisationLinkPayload[]) {
 }
 
 // react-doctor-disable-next-line
-export async function createOrganisationAction(formData: FormData) {
-	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
-	const name = requiredString(formData.get("name"), "name");
-	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
-	await callCatalogMutation("/api/account/models/catalog/organisations", "POST", { organisation_id: organisationId, name, description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
-	revalidatePath("/internal/data/organisations");
-}
+export const createOrganisationAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
+		const name = requiredString(formData.get("name"), "name");
+		const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
+		await callCatalogMutation("/api/account/models/catalog/organisations", "POST", { organisation_id: organisationId, name, description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
+	});
 
 // react-doctor-disable-next-line
-export async function updateOrganisationAction(organisationId: string, formData: FormData) {
-	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
-	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "PUT", { name: requiredString(formData.get("name"), "name"), description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
-	revalidatePath("/internal/data/organisations");
-}
+export const updateOrganisationAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const organisationId = takeTargetId(formData);
+		const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
+		await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "PUT", { name: requiredString(formData.get("name"), "name"), description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), subdivision_code: optionalString(formData.get("subdivision_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
+	});
 
 // react-doctor-disable-next-line
-export async function deleteOrganisationAction(organisationId: string) {
-	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "DELETE");
-	revalidatePath("/internal/data/organisations");
-}
+export const deleteOrganisationAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((organisationId: string) => organisationId)
+	.handler(async ({ data: organisationId }) => {
+		await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "DELETE");
+	});
 
 function providerOfferFields(formData: FormData) {
   return {
@@ -272,69 +295,29 @@ function providerOfferFields(formData: FormData) {
 }
 
 // react-doctor-disable-next-line
-export async function createAPIProviderAction(formData: FormData) {
-	const apiProviderId = requiredString(formData.get("api_provider_id"), "api_provider_id");
-	const apiProviderName = requiredString(formData.get("api_provider_name"), "api_provider_name");
-	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
-		formData.get("prompt_training_policy"),
-	);
-	const dataPolicyTier = normalizeProviderDataPolicyTier(
-		formData.get("data_policy_tier"),
-	);
-	const dataPolicyConfidence = normalizeProviderDataPolicyConfidence(
-		formData.get("data_policy_confidence"),
-	);
-	const dataPolicyContractMode = normalizeProviderDataPolicyContractMode(
-		formData.get("data_policy_contract_mode"),
-	);
+export const createAPIProviderAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const apiProviderId = requiredString(formData.get("api_provider_id"), "api_provider_id");
+		const apiProviderName = requiredString(formData.get("api_provider_name"), "api_provider_name");
+		const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
+			formData.get("prompt_training_policy"),
+		);
+		const dataPolicyTier = normalizeProviderDataPolicyTier(
+			formData.get("data_policy_tier"),
+		);
+		const dataPolicyConfidence = normalizeProviderDataPolicyConfidence(
+			formData.get("data_policy_confidence"),
+		);
+		const dataPolicyContractMode = normalizeProviderDataPolicyContractMode(
+			formData.get("data_policy_contract_mode"),
+		);
 
-	await callCatalogMutation("/api/account/models/catalog/providers", "POST", {
-		api_provider_id: apiProviderId,
-        ...providerOfferFields(formData),
-		api_provider_name: apiProviderName,
-		description: optionalString(formData.get("description")),
-		link: optionalString(formData.get("link")),
-		country_code: optionalString(formData.get("country_code")),
-		subdivision_code: optionalString(formData.get("subdivision_code")),
-		default_execution_regions: optionalStringArray(formData.get("default_execution_regions")),
-		byok_available: formData.get("byok_available") === "on",
-		credential_mode: formData.get("credential_mode") === "byok_only" ? "byok_only" : "managed_and_byok",
-		prompt_training_policy: promptTrainingPolicy,
-		prompt_training_notes: optionalString(formData.get("prompt_training_notes")),
-		prompt_training_source_url: optionalString(formData.get("prompt_training_source_url")),
-		data_policy_tier: dataPolicyTier,
-		data_policy_confidence: dataPolicyConfidence,
-		data_policy_contract_mode: dataPolicyContractMode,
-		data_policy_contract_notes: optionalString(
-			formData.get("data_policy_contract_notes"),
-		),
-		status: optionalString(formData.get("status")) ?? "active",
-	});
-	await submitIndexNowUrls(
-		getIndexNowProviderUrls(apiProviderId),
-		`create provider ${apiProviderId}`,
-	);
-	revalidatePath("/internal/data/api-providers");
-}
-
-// react-doctor-disable-next-line
-export async function updateAPIProviderAction(apiProviderId: string, formData: FormData) {
-	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
-		formData.get("prompt_training_policy"),
-	);
-	const dataPolicyTier = normalizeProviderDataPolicyTier(
-		formData.get("data_policy_tier"),
-	);
-	const dataPolicyConfidence = normalizeProviderDataPolicyConfidence(
-		formData.get("data_policy_confidence"),
-	);
-	const dataPolicyContractMode = normalizeProviderDataPolicyContractMode(
-		formData.get("data_policy_contract_mode"),
-	);
-	await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "PUT", {
-            ...providerOfferFields(formData),
-            ...(formData.has("status") ? { status: optionalString(formData.get("status")) } : {}),
-			api_provider_name: requiredString(formData.get("api_provider_name"), "api_provider_name"),
+		await callCatalogMutation("/api/account/models/catalog/providers", "POST", {
+			api_provider_id: apiProviderId,
+	        ...providerOfferFields(formData),
+			api_provider_name: apiProviderName,
 			description: optionalString(formData.get("description")),
 			link: optionalString(formData.get("link")),
 			country_code: optionalString(formData.get("country_code")),
@@ -351,47 +334,81 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 			data_policy_contract_notes: optionalString(
 				formData.get("data_policy_contract_notes"),
 			),
+			status: optionalString(formData.get("status")) ?? "active",
+		});
+		await submitIndexNowUrls(
+			getIndexNowProviderUrls(apiProviderId),
+			`create provider ${apiProviderId}`,
+		);
 	});
-	await submitIndexNowUrls(
-		getIndexNowProviderUrls(apiProviderId),
-		`update provider ${apiProviderId}`,
-	);
-	revalidatePath("/internal/data/api-providers");
-}
 
 // react-doctor-disable-next-line
-export async function deleteAPIProviderAction(apiProviderId: string) {
-	await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "DELETE");
-	await submitIndexNowUrls(
-		getIndexNowProviderUrls(apiProviderId),
-		`delete provider ${apiProviderId}`,
-	);
-	revalidatePath("/internal/data/api-providers");
-}
-
-// react-doctor-disable-next-line
-export async function createBenchmarkAction(formData: FormData) {
-	const id = requiredString(formData.get("id"), "id");
-	const name = requiredString(formData.get("name"), "name");
-	await callCatalogMutation("/api/account/models/catalog/benchmarks", "POST", {
-		id,
-		name,
-		category: optionalString(formData.get("category")),
-		link: optionalString(formData.get("link")),
-		ascending_order:
-			optionalString(formData.get("ascending_order")) === "higher"
-				? true
-				: optionalString(formData.get("ascending_order")) === "lower"
-					? false
-					: null,
+export const updateAPIProviderAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const apiProviderId = takeTargetId(formData);
+		const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
+			formData.get("prompt_training_policy"),
+		);
+		const dataPolicyTier = normalizeProviderDataPolicyTier(
+			formData.get("data_policy_tier"),
+		);
+		const dataPolicyConfidence = normalizeProviderDataPolicyConfidence(
+			formData.get("data_policy_confidence"),
+		);
+		const dataPolicyContractMode = normalizeProviderDataPolicyContractMode(
+			formData.get("data_policy_contract_mode"),
+		);
+		await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "PUT", {
+	            ...providerOfferFields(formData),
+	            ...(formData.has("status") ? { status: optionalString(formData.get("status")) } : {}),
+				api_provider_name: requiredString(formData.get("api_provider_name"), "api_provider_name"),
+				description: optionalString(formData.get("description")),
+				link: optionalString(formData.get("link")),
+				country_code: optionalString(formData.get("country_code")),
+				subdivision_code: optionalString(formData.get("subdivision_code")),
+				default_execution_regions: optionalStringArray(formData.get("default_execution_regions")),
+				byok_available: formData.get("byok_available") === "on",
+				credential_mode: formData.get("credential_mode") === "byok_only" ? "byok_only" : "managed_and_byok",
+				prompt_training_policy: promptTrainingPolicy,
+				prompt_training_notes: optionalString(formData.get("prompt_training_notes")),
+				prompt_training_source_url: optionalString(formData.get("prompt_training_source_url")),
+				data_policy_tier: dataPolicyTier,
+				data_policy_confidence: dataPolicyConfidence,
+				data_policy_contract_mode: dataPolicyContractMode,
+				data_policy_contract_notes: optionalString(
+					formData.get("data_policy_contract_notes"),
+				),
+		});
+		await submitIndexNowUrls(
+			getIndexNowProviderUrls(apiProviderId),
+			`update provider ${apiProviderId}`,
+		);
 	});
-	revalidatePath("/internal/data/benchmarks");
-}
 
 // react-doctor-disable-next-line
-export async function updateBenchmarkAction(id: string, formData: FormData) {
-	await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "PUT", {
-			name: requiredString(formData.get("name"), "name"),
+export const deleteAPIProviderAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((apiProviderId: string) => apiProviderId)
+	.handler(async ({ data: apiProviderId }) => {
+		await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "DELETE");
+		await submitIndexNowUrls(
+			getIndexNowProviderUrls(apiProviderId),
+			`delete provider ${apiProviderId}`,
+		);
+	});
+
+// react-doctor-disable-next-line
+export const createBenchmarkAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const id = requiredString(formData.get("id"), "id");
+		const name = requiredString(formData.get("name"), "name");
+		await callCatalogMutation("/api/account/models/catalog/benchmarks", "POST", {
+			id,
+			name,
 			category: optionalString(formData.get("category")),
 			link: optionalString(formData.get("link")),
 			ascending_order:
@@ -400,448 +417,473 @@ export async function updateBenchmarkAction(id: string, formData: FormData) {
 					: optionalString(formData.get("ascending_order")) === "lower"
 						? false
 						: null,
+		});
 	});
-	revalidatePath("/internal/data/benchmarks");
-}
 
 // react-doctor-disable-next-line
-export async function deleteBenchmarkAction(id: string) {
-	await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "DELETE");
-	revalidatePath("/internal/data/benchmarks");
-}
+export const updateBenchmarkAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const id = takeTargetId(formData);
+		await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "PUT", {
+				name: requiredString(formData.get("name"), "name"),
+				category: optionalString(formData.get("category")),
+				link: optionalString(formData.get("link")),
+				ascending_order:
+					optionalString(formData.get("ascending_order")) === "higher"
+						? true
+						: optionalString(formData.get("ascending_order")) === "lower"
+							? false
+							: null,
+		});
+	});
 
 // react-doctor-disable-next-line
-export async function createModelAction(formData: FormData) {
-	const modelId = requiredString(formData.get("model_id"), "model_id");
-	const name = requiredString(formData.get("name"), "name");
-	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
-	const selectedFamilyId = optionalString(formData.get("family_id"));
-	const familyPayload = parseJsonField<{
-		family_id?: string | null;
-		family_name?: string | null;
-		family_description?: string | null;
-	}>(formData.get("family_payload"), "family_payload", {});
+export const deleteBenchmarkAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "DELETE");
+	});
 
-	const providerModels = parseJsonField<
-		Array<{
-			provider_id?: string;
-			api_model_id?: string;
-			provider_model_slug?: string | null;
-			prompt_training_policy_override?: string | null;
-			prompt_training_override_notes?: string | null;
-			prompt_training_override_source_url?: string | null;
-			is_active_gateway?: boolean;
-			input_modalities?: string[] | string | null;
-			output_modalities?: string[] | string | null;
-			quantization_scheme?: string | null;
-			context_length?: number | null;
-			max_output_tokens?: number | null;
-			effective_from?: string | null;
-			effective_to?: string | null;
-		}>
-	>(formData.get("provider_models_payload"), "provider_models_payload", []);
+// react-doctor-disable-next-line
+export const createModelAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const modelId = requiredString(formData.get("model_id"), "model_id");
+		const name = requiredString(formData.get("name"), "name");
+		const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
+		const selectedFamilyId = optionalString(formData.get("family_id"));
+		const familyPayload = parseJsonField<{
+			family_id?: string | null;
+			family_name?: string | null;
+			family_description?: string | null;
+		}>(formData.get("family_payload"), "family_payload", {});
 
-	const providerCapabilities = parseJsonField<
-		Array<{
-			provider_id?: string;
-			api_model_id?: string;
-			capability_id?: string;
-			status?: CapabilityStatusOption | null;
-			max_input_tokens?: number | null;
-			max_output_tokens?: number | null;
-			notes?: string | null;
-			params?: Record<string, unknown> | null;
-		}>
-	>(formData.get("provider_capabilities_payload"), "provider_capabilities_payload", []);
+		const providerModels = parseJsonField<
+			Array<{
+				provider_id?: string;
+				api_model_id?: string;
+				provider_model_slug?: string | null;
+				prompt_training_policy_override?: string | null;
+				prompt_training_override_notes?: string | null;
+				prompt_training_override_source_url?: string | null;
+				is_active_gateway?: boolean;
+				input_modalities?: string[] | string | null;
+				output_modalities?: string[] | string | null;
+				quantization_scheme?: string | null;
+				context_length?: number | null;
+				max_output_tokens?: number | null;
+				effective_from?: string | null;
+				effective_to?: string | null;
+			}>
+		>(formData.get("provider_models_payload"), "provider_models_payload", []);
 
-	const benchmarkResults = parseJsonField<
-		Array<{
-			benchmark_id?: string;
-			score?: string | number | null;
-			is_self_reported?: boolean;
-			other_info?: string | null;
-			source_link?: string | null;
-			variant?: string | null;
-			rank?: number | null;
-		}>
-	>(formData.get("benchmark_results_payload"), "benchmark_results_payload", []);
+		const providerCapabilities = parseJsonField<
+			Array<{
+				provider_id?: string;
+				api_model_id?: string;
+				capability_id?: string;
+				status?: CapabilityStatusOption | null;
+				max_input_tokens?: number | null;
+				max_output_tokens?: number | null;
+				notes?: string | null;
+				params?: Record<string, unknown> | null;
+			}>
+		>(formData.get("provider_capabilities_payload"), "provider_capabilities_payload", []);
 
-	const newBenchmarks = parseJsonField<
-		Array<{
-			id?: string;
-			name?: string;
-			category?: string | null;
-			link?: string | null;
-			ascending_order?: "higher" | "lower" | boolean | null;
-		}>
-	>(formData.get("new_benchmarks_payload"), "new_benchmarks_payload", []);
+		const benchmarkResults = parseJsonField<
+			Array<{
+				benchmark_id?: string;
+				score?: string | number | null;
+				is_self_reported?: boolean;
+				other_info?: string | null;
+				source_link?: string | null;
+				variant?: string | null;
+				rank?: number | null;
+			}>
+		>(formData.get("benchmark_results_payload"), "benchmark_results_payload", []);
 
-	const pricingRules = parseJsonField<
-		Array<{
-			provider_id?: string;
-			api_model_id?: string;
-			capability_id?: string;
-			pricing_plan?: string;
-			meter?: string;
-			unit?: string;
-			unit_size?: number;
-			price_per_unit?: number | string;
-			currency?: string;
-			note?: string | null;
-			priority?: number;
-			effective_from?: string | null;
-			effective_to?: string | null;
-		}>
-	>(formData.get("pricing_rules_payload"), "pricing_rules_payload", []);
-	const subscriptionPlanModels = parseJsonField<
-		Array<{
-			plan_uuid?: string;
-			model_info?: unknown;
-			rate_limit?: unknown;
-			other_info?: unknown;
-		}>
-	>(formData.get("subscription_plan_models_payload"), "subscription_plan_models_payload", []);
-	const newSubscriptionPlans = parseJsonField<
-		Array<{
-			plan_uuid?: string;
-			plan_id?: string;
-			name?: string;
-			frequency?: string | null;
-			price?: number | string | null;
-			currency?: string | null;
-			description?: string | null;
-			link?: string | null;
-			organisation_id?: string | null;
-		}>
-	>(formData.get("new_subscription_plans_payload"), "new_subscription_plans_payload", []);
-	const modelDetails = parseJsonField<
-		Array<{
-			detail_name?: string;
-			detail_value?: string | number | null;
-		}>
-	>(formData.get("model_details_payload"), "model_details_payload", []);
-	const modelLinks = parseJsonField<
-		Array<{
-			platform?: string;
-			kind?: string;
-			title?: string | null;
-			url?: string | null;
-		}>
-	>(formData.get("model_links_payload"), "model_links_payload", []);
+		const newBenchmarks = parseJsonField<
+			Array<{
+				id?: string;
+				name?: string;
+				category?: string | null;
+				link?: string | null;
+				ascending_order?: "higher" | "lower" | boolean | null;
+			}>
+		>(formData.get("new_benchmarks_payload"), "new_benchmarks_payload", []);
 
-	let resolvedFamilyId = selectedFamilyId;
-	const familyName = typeof familyPayload.family_name === "string" ? familyPayload.family_name.trim() : "";
-	if (familyName) {
-		const nextFamilyId = familyPayload.family_id?.trim() || slugifyId(familyName);
-		if (!nextFamilyId) throw new Error("family_id is required");
-		resolvedFamilyId = nextFamilyId;
-	}
+		const pricingRules = parseJsonField<
+			Array<{
+				provider_id?: string;
+				api_model_id?: string;
+				capability_id?: string;
+				pricing_plan?: string;
+				meter?: string;
+				unit?: string;
+				unit_size?: number;
+				price_per_unit?: number | string;
+				currency?: string;
+				note?: string | null;
+				priority?: number;
+				effective_from?: string | null;
+				effective_to?: string | null;
+			}>
+		>(formData.get("pricing_rules_payload"), "pricing_rules_payload", []);
+		const subscriptionPlanModels = parseJsonField<
+			Array<{
+				plan_uuid?: string;
+				model_info?: unknown;
+				rate_limit?: unknown;
+				other_info?: unknown;
+			}>
+		>(formData.get("subscription_plan_models_payload"), "subscription_plan_models_payload", []);
+		const newSubscriptionPlans = parseJsonField<
+			Array<{
+				plan_uuid?: string;
+				plan_id?: string;
+				name?: string;
+				frequency?: string | null;
+				price?: number | string | null;
+				currency?: string | null;
+				description?: string | null;
+				link?: string | null;
+				organisation_id?: string | null;
+			}>
+		>(formData.get("new_subscription_plans_payload"), "new_subscription_plans_payload", []);
+		const modelDetails = parseJsonField<
+			Array<{
+				detail_name?: string;
+				detail_value?: string | number | null;
+			}>
+		>(formData.get("model_details_payload"), "model_details_payload", []);
+		const modelLinks = parseJsonField<
+			Array<{
+				platform?: string;
+				kind?: string;
+				title?: string | null;
+				url?: string | null;
+			}>
+		>(formData.get("model_links_payload"), "model_links_payload", []);
 
-	let insertedModel = false;
-	try {
-		const inferredOrganisationId = inferOrganisationIdFromApiModelId(modelId);
-		const canonicalOrganisationId = organisationId || inferredOrganisationId;
-		if (!canonicalOrganisationId) {
-			throw new Error("organisation_id is required");
+		let resolvedFamilyId = selectedFamilyId;
+		const familyName = typeof familyPayload.family_name === "string" ? familyPayload.family_name.trim() : "";
+		if (familyName) {
+			const nextFamilyId = familyPayload.family_id?.trim() || slugifyId(familyName);
+			if (!nextFamilyId) throw new Error("family_id is required");
+			resolvedFamilyId = nextFamilyId;
 		}
 
-		await callModelMutation("/api/account/models", "POST", { modelId, name, organisationId: canonicalOrganisationId, familyId: resolvedFamilyId, status: normalizeModelStatus(optionalString(formData.get("status"))), previousModelId: optionalString(formData.get("previous_model_id")), replacementModelId: optionalString(formData.get("replacement_model_id")), releaseDate: optionalString(formData.get("release_date")), announcementDate: optionalString(formData.get("announcement_date")), deprecationDate: optionalString(formData.get("deprecation_date")), retirementDate: optionalString(formData.get("retirement_date")), license: optionalString(formData.get("license")), inputTypes: normalizeCoreTypes(formData.get("input_types")), outputTypes: normalizeCoreTypes(formData.get("output_types")), hidden: formData.get("hidden") === "on" });
-		insertedModel = true;
+		let insertedModel = false;
+		try {
+			const inferredOrganisationId = inferOrganisationIdFromApiModelId(modelId);
+			const canonicalOrganisationId = organisationId || inferredOrganisationId;
+			if (!canonicalOrganisationId) {
+				throw new Error("organisation_id is required");
+			}
 
-		if (newBenchmarks.length > 0) {
-			const benchmarkRows = newBenchmarks
-				.filter((benchmark) => benchmark.id && benchmark.name)
-				.map((benchmark) => {
-					let ascendingOrder: boolean | null = null;
-					if (benchmark.ascending_order === "higher" || benchmark.ascending_order === true) ascendingOrder = true;
-					if (benchmark.ascending_order === "lower" || benchmark.ascending_order === false) ascendingOrder = false;
-					return {
-						id: benchmark.id!.trim(),
-						name: benchmark.name!.trim(),
-						category: benchmark.category?.trim() || null,
-						link: benchmark.link?.trim() || null,
-						ascending_order: ascendingOrder,
-					};
-				});
-			if (benchmarkRows.length > 0) await Promise.all(benchmarkRows.map((row) => callCatalogMutation("/api/account/models/catalog/benchmarks", "POST", row)));
-		}
+			await callModelMutation("/api/account/models", "POST", { modelId, name, organisationId: canonicalOrganisationId, familyId: resolvedFamilyId, status: normalizeModelStatus(optionalString(formData.get("status"))), previousModelId: optionalString(formData.get("previous_model_id")), replacementModelId: optionalString(formData.get("replacement_model_id")), releaseDate: optionalString(formData.get("release_date")), announcementDate: optionalString(formData.get("announcement_date")), deprecationDate: optionalString(formData.get("deprecation_date")), retirementDate: optionalString(formData.get("retirement_date")), license: optionalString(formData.get("license")), inputTypes: normalizeCoreTypes(formData.get("input_types")), outputTypes: normalizeCoreTypes(formData.get("output_types")), hidden: formData.get("hidden") === "on" });
+			insertedModel = true;
 
-	const providerModelRows = providerModels
-		.filter((row) => row.provider_id)
-		.map((row) => {
-			const apiModelId = row.api_model_id?.trim() || modelId;
-			const overrideRaw =
-				typeof row.prompt_training_policy_override === "string"
-					? row.prompt_training_policy_override.trim()
-					: "";
-			return {
+			if (newBenchmarks.length > 0) {
+				const benchmarkRows = newBenchmarks
+					.filter((benchmark) => benchmark.id && benchmark.name)
+					.map((benchmark) => {
+						let ascendingOrder: boolean | null = null;
+						if (benchmark.ascending_order === "higher" || benchmark.ascending_order === true) ascendingOrder = true;
+						if (benchmark.ascending_order === "lower" || benchmark.ascending_order === false) ascendingOrder = false;
+						return {
+							id: benchmark.id!.trim(),
+							name: benchmark.name!.trim(),
+							category: benchmark.category?.trim() || null,
+							link: benchmark.link?.trim() || null,
+							ascending_order: ascendingOrder,
+						};
+					});
+				if (benchmarkRows.length > 0) await Promise.all(benchmarkRows.map((row) => callCatalogMutation("/api/account/models/catalog/benchmarks", "POST", row)));
+			}
+
+		const providerModelRows = providerModels
+			.filter((row) => row.provider_id)
+			.map((row) => {
+				const apiModelId = row.api_model_id?.trim() || modelId;
+				const overrideRaw =
+					typeof row.prompt_training_policy_override === "string"
+						? row.prompt_training_policy_override.trim()
+						: "";
+				return {
+					provider_id: row.provider_id!.trim(),
+					api_model_id: apiModelId,
+					provider_model_slug: row.provider_model_slug?.trim() || null,
+					prompt_training_policy_override: overrideRaw
+						? normalizeProviderPromptTrainingPolicy(overrideRaw)
+						: null,
+					prompt_training_override_notes:
+						row.prompt_training_override_notes?.trim() || null,
+					prompt_training_override_source_url:
+						row.prompt_training_override_source_url?.trim() || null,
+					is_active_gateway: Boolean(row.is_active_gateway),
+					input_modalities: Array.isArray(row.input_modalities)
+						? row.input_modalities.join(",")
+						: (typeof row.input_modalities === "string" ? row.input_modalities : null),
+					output_modalities: Array.isArray(row.output_modalities)
+						? row.output_modalities.join(",")
+						: (typeof row.output_modalities === "string" ? row.output_modalities : null),
+					quantization_scheme: row.quantization_scheme?.trim() || null,
+					context_length:
+						typeof row.context_length === "number" && Number.isFinite(row.context_length)
+							? row.context_length
+							: null,
+					max_output_tokens:
+						typeof row.max_output_tokens === "number" && Number.isFinite(row.max_output_tokens)
+							? row.max_output_tokens
+							: null,
+					effective_from: row.effective_from || null,
+					effective_to: row.effective_to || null,
+				};
+			});
+
+		const providerCapabilityRows = providerCapabilities
+			.filter((row) => row.provider_id && row.capability_id)
+			.map((row) => ({
 				provider_id: row.provider_id!.trim(),
-				api_model_id: apiModelId,
-				provider_model_slug: row.provider_model_slug?.trim() || null,
-				prompt_training_policy_override: overrideRaw
-					? normalizeProviderPromptTrainingPolicy(overrideRaw)
-					: null,
-				prompt_training_override_notes:
-					row.prompt_training_override_notes?.trim() || null,
-				prompt_training_override_source_url:
-					row.prompt_training_override_source_url?.trim() || null,
-				is_active_gateway: Boolean(row.is_active_gateway),
-				input_modalities: Array.isArray(row.input_modalities)
-					? row.input_modalities.join(",")
-					: (typeof row.input_modalities === "string" ? row.input_modalities : null),
-				output_modalities: Array.isArray(row.output_modalities)
-					? row.output_modalities.join(",")
-					: (typeof row.output_modalities === "string" ? row.output_modalities : null),
-				quantization_scheme: row.quantization_scheme?.trim() || null,
-				context_length:
-					typeof row.context_length === "number" && Number.isFinite(row.context_length)
-						? row.context_length
-						: null,
-				max_output_tokens:
-					typeof row.max_output_tokens === "number" && Number.isFinite(row.max_output_tokens)
-						? row.max_output_tokens
-						: null,
+				api_model_id: row.api_model_id?.trim() || modelId,
+				capability_id: row.capability_id!.trim(),
+				status: normalizeCapabilityStatus(row.status),
+				max_input_tokens: row.max_input_tokens ?? null,
+				max_output_tokens: row.max_output_tokens ?? null,
+				notes: row.notes?.trim() || null,
+				params: row.params && typeof row.params === "object" ? row.params : {},
+			}));
+
+		const benchmarkRows = benchmarkResults
+			.filter((row) => row.benchmark_id)
+			.map((row) => ({
+				benchmark_id: row.benchmark_id!.trim(),
+				score: row.score ?? "",
+				is_self_reported: Boolean(row.is_self_reported),
+				other_info: row.other_info?.trim() || null,
+				source_link: row.source_link?.trim() || null,
+				variant: row.variant?.trim() || null,
+			}));
+
+		const pricingRuleRows = pricingRules
+			.filter((row) => row.provider_id && row.capability_id && row.meter)
+			.map((row) => ({
+				provider_id: row.provider_id!.trim(),
+				api_model_id: row.api_model_id?.trim() || modelId,
+				capability_id: row.capability_id!.trim(),
+				pricing_plan: row.pricing_plan?.trim() || "standard",
+				meter: row.meter!.trim(),
+				unit: row.unit?.trim() || "token",
+				unit_size: Number(row.unit_size ?? 1),
+				price_per_unit: Number(row.price_per_unit ?? 0),
+				currency: row.currency?.trim() || "USD",
+				note: row.note?.trim() || null,
+				priority: Number(row.priority ?? 100),
 				effective_from: row.effective_from || null,
 				effective_to: row.effective_to || null,
-			};
-		});
+			}));
 
-	const providerCapabilityRows = providerCapabilities
-		.filter((row) => row.provider_id && row.capability_id)
-		.map((row) => ({
-			provider_id: row.provider_id!.trim(),
-			api_model_id: row.api_model_id?.trim() || modelId,
-			capability_id: row.capability_id!.trim(),
-			status: normalizeCapabilityStatus(row.status),
-			max_input_tokens: row.max_input_tokens ?? null,
-			max_output_tokens: row.max_output_tokens ?? null,
-			notes: row.notes?.trim() || null,
-			params: row.params && typeof row.params === "object" ? row.params : {},
-		}));
-
-	const benchmarkRows = benchmarkResults
-		.filter((row) => row.benchmark_id)
-		.map((row) => ({
-			benchmark_id: row.benchmark_id!.trim(),
-			score: row.score ?? "",
-			is_self_reported: Boolean(row.is_self_reported),
-			other_info: row.other_info?.trim() || null,
-			source_link: row.source_link?.trim() || null,
-			variant: row.variant?.trim() || null,
-		}));
-
-	const pricingRuleRows = pricingRules
-		.filter((row) => row.provider_id && row.capability_id && row.meter)
-		.map((row) => ({
-			provider_id: row.provider_id!.trim(),
-			api_model_id: row.api_model_id?.trim() || modelId,
-			capability_id: row.capability_id!.trim(),
-			pricing_plan: row.pricing_plan?.trim() || "standard",
-			meter: row.meter!.trim(),
-			unit: row.unit?.trim() || "token",
-			unit_size: Number(row.unit_size ?? 1),
-			price_per_unit: Number(row.price_per_unit ?? 0),
-			currency: row.currency?.trim() || "USD",
-			note: row.note?.trim() || null,
-			priority: Number(row.priority ?? 100),
-			effective_from: row.effective_from || null,
-			effective_to: row.effective_to || null,
-		}));
-
-	const modelDetailRows = modelDetails
-		.map((row) => {
-			const detailName = normalizeModelDetailName(row.detail_name);
-			const detailValue = detailName ? normalizeModelDetailValue(detailName, row.detail_value) : null;
-			if (!detailName || !detailValue) return null;
-			return {
-				detail_name: detailName,
-				detail_value: detailValue,
-			};
-		})
-		.filter((row): row is { detail_name: (typeof MODEL_DETAIL_NAME_OPTIONS)[number]; detail_value: string } => Boolean(row));
-
-	const modelLinkRows = modelLinks
-		.map((row) => {
-			const kind = normalizeModelLinkKind(row.kind ?? row.platform);
-			const url = typeof row.url === "string" ? row.url.trim() : "";
-			if (!kind || !url) return null;
-			return {
-				platform: kind,
-				kind,
-				title: normalizeModelLinkTitle(row.title, kind),
-				url,
-			};
-		})
-		.filter((row): row is { platform: string; kind: string; title: string; url: string } => Boolean(row));
-
-		const insertedInlinePlanRows = newSubscriptionPlans
+		const modelDetailRows = modelDetails
 			.map((row) => {
-				const planId = row.plan_id?.trim();
-				const planName = row.name?.trim();
-				if (!planId || !planName) return null;
-				const priceValue = Number(row.price ?? 0);
+				const detailName = normalizeModelDetailName(row.detail_name);
+				const detailValue = detailName ? normalizeModelDetailValue(detailName, row.detail_value) : null;
+				if (!detailName || !detailValue) return null;
 				return {
-					plan_uuid: row.plan_uuid?.trim() || crypto.randomUUID(),
-					plan_id: planId,
-					name: planName,
-					organisation_id: row.organisation_id?.trim() || canonicalOrganisationId,
-					description: row.description?.trim() || null,
-					frequency: row.frequency?.trim() || "monthly",
-					price: Number.isFinite(priceValue) ? priceValue : 0,
-					currency: row.currency?.trim() || "USD",
-					link: row.link?.trim() || null,
-					other_info: {},
+					detail_name: detailName,
+					detail_value: detailValue,
 				};
 			})
-			.filter(
-				(
-					row
-				): row is {
-					plan_uuid: string;
-					plan_id: string;
-					name: string;
-					organisation_id: string;
-					description: string | null;
-					frequency: string;
-					price: number;
-					currency: string;
-					link: string | null;
-					other_info: Record<string, never>;
-				} => Boolean(row)
-			);
+			.filter((row): row is { detail_name: (typeof MODEL_DETAIL_NAME_OPTIONS)[number]; detail_value: string } => Boolean(row));
 
-		if (insertedInlinePlanRows.length > 0) await Promise.all(insertedInlinePlanRows.map((row) => callCatalogMutation("/api/account/models/catalog/subscription-plans", "POST", row)));
+		const modelLinkRows = modelLinks
+			.map((row) => {
+				const kind = normalizeModelLinkKind(row.kind ?? row.platform);
+				const url = typeof row.url === "string" ? row.url.trim() : "";
+				if (!kind || !url) return null;
+				return {
+					platform: kind,
+					kind,
+					title: normalizeModelLinkTitle(row.title, kind),
+					url,
+				};
+			})
+			.filter((row): row is { platform: string; kind: string; title: string; url: string } => Boolean(row));
 
-		const mergedSubscriptionPlanModels = [
-			...subscriptionPlanModels
-				.filter((row) => typeof row.plan_uuid === "string" && row.plan_uuid.trim())
-				.map((row) => ({
-					plan_uuid: row.plan_uuid!.trim(),
-					model_info:
-						row.model_info && typeof row.model_info === "object"
-							? row.model_info
-							: {},
-					rate_limit:
-						row.rate_limit && typeof row.rate_limit === "object"
-							? row.rate_limit
-							: {},
-					other_info:
-						row.other_info && typeof row.other_info === "object"
-							? row.other_info
-							: {},
+			const insertedInlinePlanRows = newSubscriptionPlans
+				.map((row) => {
+					const planId = row.plan_id?.trim();
+					const planName = row.name?.trim();
+					if (!planId || !planName) return null;
+					const priceValue = Number(row.price ?? 0);
+					return {
+						plan_uuid: row.plan_uuid?.trim() || crypto.randomUUID(),
+						plan_id: planId,
+						name: planName,
+						organisation_id: row.organisation_id?.trim() || canonicalOrganisationId,
+						description: row.description?.trim() || null,
+						frequency: row.frequency?.trim() || "monthly",
+						price: Number.isFinite(priceValue) ? priceValue : 0,
+						currency: row.currency?.trim() || "USD",
+						link: row.link?.trim() || null,
+						other_info: {},
+					};
+				})
+				.filter(
+					(
+						row
+					): row is {
+						plan_uuid: string;
+						plan_id: string;
+						name: string;
+						organisation_id: string;
+						description: string | null;
+						frequency: string;
+						price: number;
+						currency: string;
+						link: string | null;
+						other_info: Record<string, never>;
+					} => Boolean(row)
+				);
+
+			if (insertedInlinePlanRows.length > 0) await Promise.all(insertedInlinePlanRows.map((row) => callCatalogMutation("/api/account/models/catalog/subscription-plans", "POST", row)));
+
+			const mergedSubscriptionPlanModels = [
+				...subscriptionPlanModels
+					.filter((row) => typeof row.plan_uuid === "string" && row.plan_uuid.trim())
+					.map((row) => ({
+						plan_uuid: row.plan_uuid!.trim(),
+						model_info:
+							row.model_info && typeof row.model_info === "object"
+								? row.model_info
+								: {},
+						rate_limit:
+							row.rate_limit && typeof row.rate_limit === "object"
+								? row.rate_limit
+								: {},
+						other_info:
+							row.other_info && typeof row.other_info === "object"
+								? row.other_info
+								: {},
+					})),
+				...insertedInlinePlanRows.map((row) => ({
+					plan_uuid: row.plan_uuid,
+					model_info: {},
+					rate_limit: {},
+					other_info: {},
 				})),
-			...insertedInlinePlanRows.map((row) => ({
-				plan_uuid: row.plan_uuid,
-				model_info: {},
-				rate_limit: {},
-				other_info: {},
-			})),
-		];
+			];
 
-		if (
-			providerModelRows.length ||
-			providerCapabilityRows.length ||
-			benchmarkRows.length ||
-			pricingRuleRows.length ||
-			modelDetailRows.length ||
-			modelLinkRows.length ||
-			mergedSubscriptionPlanModels.length
-		) {
-			await updateModel({
-				modelId,
-				...(familyName ? { family: { family_id: resolvedFamilyId, family_name: familyName, family_description: familyPayload.family_description?.trim() || null } } : {}),
-				provider_models: providerModelRows,
-				provider_capabilities: providerCapabilityRows,
-				benchmark_results: benchmarkRows,
-				pricing_rules: pricingRuleRows,
-				model_details: modelDetailRows,
-				links: modelLinkRows,
-				subscription_plan_models: mergedSubscriptionPlanModels,
-			});
-		}
-	} catch (error) {
-		if (insertedModel) {
-			try {
-				await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
-			} catch (rollbackError) {
-				console.error("[createModelAction] rollback failed", rollbackError);
+			if (
+				providerModelRows.length ||
+				providerCapabilityRows.length ||
+				benchmarkRows.length ||
+				pricingRuleRows.length ||
+				modelDetailRows.length ||
+				modelLinkRows.length ||
+				mergedSubscriptionPlanModels.length
+			) {
+				await updateModel({ data: {
+					modelId,
+					...(familyName ? { family: { family_id: resolvedFamilyId, family_name: familyName, family_description: familyPayload.family_description?.trim() || null } } : {}),
+					provider_models: providerModelRows,
+					provider_capabilities: providerCapabilityRows,
+					benchmark_results: benchmarkRows,
+					pricing_rules: pricingRuleRows,
+					model_details: modelDetailRows,
+					links: modelLinkRows,
+					subscription_plan_models: mergedSubscriptionPlanModels,
+				} });
 			}
+		} catch (error) {
+			if (insertedModel) {
+				try {
+					await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
+				} catch (rollbackError) {
+					console.error("[createModelAction] rollback failed", rollbackError);
+				}
+			}
+			throw error;
 		}
-		throw error;
-	}
 
-	await refreshSavedModelCaches(modelId);
-	await submitIndexNowUrls(
-		getIndexNowModelUrls(modelId),
-		`create model ${modelId}`,
-	);
-	revalidatePath("/internal/data/models");
-}
+		await refreshSavedModelCaches(modelId);
+		await submitIndexNowUrls(
+			getIndexNowModelUrls(modelId),
+			`create model ${modelId}`,
+		);
+	});
 
 // react-doctor-disable-next-line
-export async function updateModelAction(modelId: string, formData: FormData) {
-	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
-	const name = requiredString(formData.get("name"), "name");
-	const result = await updateModel({ modelId, name, organisation_id: organisationId, status: normalizeModelStatus(optionalString(formData.get("status"))), previous_model_id: optionalString(formData.get("previous_model_id")), replacement_model_id: optionalString(formData.get("replacement_model_id")), release_date: optionalString(formData.get("release_date")), announcement_date: optionalString(formData.get("announcement_date")), deprecation_date: optionalString(formData.get("deprecation_date")), retirement_date: optionalString(formData.get("retirement_date")), license: optionalString(formData.get("license")), input_types: normalizeCoreTypes(formData.get("input_types")), output_types: normalizeCoreTypes(formData.get("output_types")), hidden: formData.get("hidden") === "on" });
-	if (!result.ok) throw new Error(result.error ?? "Model update failed");
-	await refreshSavedModelCaches(modelId);
-	await submitIndexNowUrls(
-		getIndexNowModelUrls(modelId),
-		`update model ${modelId}`,
-	);
-	revalidatePath("/internal/data/models");
-}
+export const updateModelAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const modelId = takeTargetId(formData);
+		const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
+		const name = requiredString(formData.get("name"), "name");
+		const result = await updateModel({ data: { modelId, name, organisation_id: organisationId, status: normalizeModelStatus(optionalString(formData.get("status"))), previous_model_id: optionalString(formData.get("previous_model_id")), replacement_model_id: optionalString(formData.get("replacement_model_id")), release_date: optionalString(formData.get("release_date")), announcement_date: optionalString(formData.get("announcement_date")), deprecation_date: optionalString(formData.get("deprecation_date")), retirement_date: optionalString(formData.get("retirement_date")), license: optionalString(formData.get("license")), input_types: normalizeCoreTypes(formData.get("input_types")), output_types: normalizeCoreTypes(formData.get("output_types")), hidden: formData.get("hidden") === "on" } });
+		if (!result.ok) throw new Error(result.error ?? "Model update failed");
+		await refreshSavedModelCaches(modelId);
+		await submitIndexNowUrls(
+			getIndexNowModelUrls(modelId),
+			`update model ${modelId}`,
+		);
+	});
 
 // react-doctor-disable-next-line
-export async function deleteModelAction(modelId: string) {
-	await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
-	await refreshSavedModelCaches(modelId);
-	await submitIndexNowUrls(
-		getIndexNowModelUrls(modelId),
-		`delete model ${modelId}`,
-	);
-	revalidatePath("/internal/data/models");
-}
+export const deleteModelAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((modelId: string) => modelId)
+	.handler(async ({ data: modelId }) => {
+		await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
+		await refreshSavedModelCaches(modelId);
+		await submitIndexNowUrls(
+			getIndexNowModelUrls(modelId),
+			`delete model ${modelId}`,
+		);
+	});
 
 async function refreshSavedModelCaches(modelId: string) {
 	try {
-		await revalidateSingleModelAllAction(modelId);
+		await revalidateSingleModelAllAction({ data: modelId });
 	} catch (error) {
 		throw new Error(`Model change was saved, but public cache refresh failed for ${modelId}. Retry from Cache controls.`, { cause: error });
 	}
 }
 
 // react-doctor-disable-next-line
-export async function revalidateSingleModelDataAction(modelId: string) {
-	revalidateModelDataOnlyTags({ modelId });
-	revalidatePath(`/internal/data/models/edit/${modelId}`);
-	revalidatePath("/models");
-	revalidatePath(`/models/${modelId}`);
-	await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
+export const revalidateSingleModelDataAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((modelId: string) => modelId)
+	.handler(async ({ data: modelId }) => {
+		revalidateModelDataOnlyTags({ modelId });
+		await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
 
-	return { ok: true as const, message: "Model data cache revalidated." };
-}
-
-// react-doctor-disable-next-line
-export async function revalidateSingleModelApiInfoAction(modelId: string) {
-	await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-pricing", "web-api-model-performance", "web-api-model-provider-health", "web-api-provider-routing-health", "web-api-providers"]);
-	revalidateModelApiInfoTags({ modelId });
-	revalidatePath(`/internal/data/models/edit/${modelId}`);
-	revalidatePath("/models");
-	revalidatePath(`/models/${modelId}`);
-	revalidatePath("/api-providers", "layout");
-
-	return { ok: true as const, message: "Model API info cache revalidated." };
-}
+		return { ok: true as const, message: "Model data cache revalidated." };
+	});
 
 // react-doctor-disable-next-line
-export async function revalidateSingleModelAllAction(modelId: string) {
-	await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-pricing", "web-api-model-performance", "web-api-model-notices", "web-api-providers", "web-api-organisations", "web-api-reference-data", "web-api-search"]);
-	revalidateModelDataTags({ modelId });
-	revalidatePath(`/internal/data/models/edit/${modelId}`);
-	revalidatePath("/models");
-	revalidatePath(`/models/${modelId}`);
-	revalidatePath("/api-providers", "layout");
+export const revalidateSingleModelApiInfoAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((modelId: string) => modelId)
+	.handler(async ({ data: modelId }) => {
+		await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-pricing", "web-api-model-performance", "web-api-model-provider-health", "web-api-provider-routing-health", "web-api-providers"]);
+		revalidateModelApiInfoTags({ modelId });
 
-	return { ok: true as const, message: "All model caches revalidated." };
-}
+		return { ok: true as const, message: "Model API info cache revalidated." };
+	});
+
+// react-doctor-disable-next-line
+export const revalidateSingleModelAllAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((modelId: string) => modelId)
+	.handler(async ({ data: modelId }) => {
+		await revalidateCloudflare(["web-api-models", "web-api-gateway-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-pricing", "web-api-model-performance", "web-api-model-notices", "web-api-providers", "web-api-organisations", "web-api-reference-data", "web-api-search"]);
+		revalidateModelDataTags({ modelId });
+
+		return { ok: true as const, message: "All model caches revalidated." };
+	});

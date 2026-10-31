@@ -25,7 +25,7 @@ export default function ByokFallbackToggle({
 		setEnabled(next);
 		setSaving(true);
 		const previous = enabled;
-		const operation = write(updateByokFallbackAction(next));
+		const operation = write(updateByokFallbackAction({ data: next }));
 		try {
 			toast.promise(operation, {
 				loading: s("phraseSavingFallbackSetting"),

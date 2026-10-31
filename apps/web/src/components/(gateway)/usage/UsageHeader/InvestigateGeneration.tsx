@@ -71,7 +71,7 @@ export default function InvestigateGeneration() {
 			setProviderNames(new Map());
 			setProviderMetadata(new Map());
 
-			const response = await investigateGeneration(trimmedId);
+			const response = await investigateGeneration({ data: trimmedId });
 
 			if (!response.success) {
 				toast.error(response.error || t("strings.Failed to fetch request" as never));

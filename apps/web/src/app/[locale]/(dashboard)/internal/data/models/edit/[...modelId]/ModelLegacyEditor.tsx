@@ -234,7 +234,7 @@ export default function ModelLegacyEditor({
 				});
 			} else if (activeSection === "identity") {
 				await saveAdminModelAliases(modelId, aliases.map(({ draftId: _draftId, saved: _saved, ...alias }) => ({ ...alias, alias_slug: alias.alias_slug.trim().toLowerCase() })).filter((alias) => alias.alias_slug));
-				await revalidateSingleModelDataAction(modelId).catch(() => toast.warning(t("mainCopy.aliasesCacheFailed")));
+				await revalidateSingleModelDataAction({ data: modelId }).catch(() => toast.warning(t("mainCopy.aliasesCacheFailed")));
 			} else if (activeSection === "details") {
 				if (detailRows === null || linkRows === null) {
 					throw new Error(t("mainCopy.sectionStillLoading", { section: t("tabs.details") }));
@@ -272,7 +272,7 @@ export default function ModelLegacyEditor({
 				});
 			} else if (activeSection === "notice") {
 				await saveAdminModelNotice(modelId, notice.markdown.trim() ? { ...notice, markdown: notice.markdown.trim() } : null);
-				await revalidateSingleModelDataAction(modelId).catch(() => toast.warning(t("mainCopy.noticeCacheFailed")));
+				await revalidateSingleModelDataAction({ data: modelId }).catch(() => toast.warning(t("mainCopy.noticeCacheFailed")));
 			} else if (activeSection === "benchmarks") {
 				if (benchmarkRows === null) {
 					throw new Error(t("mainCopy.sectionStillLoading", { section: t("tabs.benchmarks") }));

@@ -34,7 +34,7 @@ If a backup is added later, they need access to every service Phaseo runs on: Gi
    - Upstream providers: `https://phaseo.app/api/_web/status/providers` summarises the public status feeds of the largest providers, then check the provider's own status page.
    - Database: Supabase dashboard for the production project. Check memory, swap and disk IO before blaming a query. Read-only queries only, one at a time, with a `limit`.
 6. **Stop the damage:**
-   - **Bad web deploy:** in Vercel, open the project's Deployments, pick the last good production deployment and use Instant Rollback (or `vercel rollback`). Vercel then stops promoting new production deployments automatically; promote the fixed one when it is ready.
+   - **Bad web deploy:** from `apps/web`, run `pnpm exec wrangler rollback --name phaseo-web` (or roll back in the Cloudflare dashboard under the `phaseo-web` Worker's Deployments). The next green CI run on `main` deploys again, so revert or fix the change at the source too.
    - **Bad Worker deploy:** from `apps/api`, run `pnpm exec wrangler rollback --config wrangler.toml`, then the same with `wrangler.eu.toml` and `wrangler.us.toml`. From `apps/web-api`, `pnpm exec wrangler rollback`. Check the [deploy scripts](../../apps/api/scripts/deploy-global.ps1) for any secret the rolled-back version still needs. Rollback doesn't undo Durable Object migrations: if the bad deploy added a `[[migrations]]` entry in `wrangler.toml`, rolling back past it can fail, so revert at the source instead.
    - **Bad migration:** there is no automatic rollback. Write a forward-fix migration and ship it through a pull request.
    - **Revert at the source:** revert the merge commit in a pull request. Merging it redeploys everything through CI. Running CI on `main` by hand with `deploy_production` set is not a quick redeploy: it does nothing unless the `ENABLE_PRODUCTION_DB_MIGRATIONS` variable is `true`, and when it is, it applies pending production migrations first and then redeploys every service (web, the three gateways, Web API, MCP, Slack agent and docs).
@@ -128,7 +128,7 @@ When Phaseo gives money back:
 | Cache purge | `/internal/cache` |
 | Key leak response | `/internal/key-incidents` |
 | Credit codes | `/internal/credits` |
-| Deploys | [ci.yml](../../.github/workflows/ci.yml) `deploy (…)` jobs; Vercel for the web app; Cloudflare for the Workers |
+| Deploys | [ci.yml](../../.github/workflows/ci.yml) `deploy (…)` jobs; Cloudflare for the web app and the other Workers |
 | Discord webhooks | `DISCORD_SIGNUP_WEBHOOK_URL` (signups, deletions, Slack agent installs) and `DISCORD_BILLING_WEBHOOK_URL` (checkouts, purchases). Neither sends outage alerts; those come from incident.io. |
 | Support | `support@phaseo.app`, `https://phaseo.app/help` |
 

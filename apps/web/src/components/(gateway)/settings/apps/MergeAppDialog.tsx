@@ -77,7 +77,7 @@ export default function MergeAppDialog({
 		if (!targetId) return;
 		setLoading(true);
 		try {
-			const promise = mergeAppsAction(app.id, targetId);
+			const promise = mergeAppsAction({ data: { sourceAppId: app.id, targetAppId: targetId } });
 			toast.promise(promise, {
 				loading: t("strings.phraseMergingApps" as never),
 				success: t("strings.Apps merged" as never),

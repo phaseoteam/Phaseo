@@ -288,24 +288,18 @@ export default function BYOKInputDialog({
 		try {
 			setLoading(true);
 			if (initial && initial.id) {
-				await write(updateByokKeyAction(initial.id, {
+				await write(updateByokKeyAction({ data: { id: initial.id, updates: {
 					name: normalizedName,
 					value: submission.value ?? undefined,
 					enabled,
 					always_use: alwaysUse,
 					allowedModelSlugs,
 					allowedApiKeyIds,
-				}));
+				} } }));
 			toast.success(submission.value ? t("credits.Key updated and replaced" as never) : t("strings.Key updated" as never));
 			} else {
 				await write(createByokKeyAction(
-					normalizedName,
-					providerId as string,
-					submission.value as string,
-					enabled,
-					alwaysUse,
-					allowedModelSlugs,
-					allowedApiKeyIds,
+					{ data: { name: normalizedName, providerId: providerId as string, value: submission.value as string, enabled, always_use: alwaysUse, allowedModelSlugs, allowedApiKeyIds } },
 				));
 		toast.success(t("credits.Key saved" as never));
 			}

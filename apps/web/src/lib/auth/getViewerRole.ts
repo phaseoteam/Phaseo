@@ -1,5 +1,3 @@
-"use server";
-
 import { cache } from "react";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 

@@ -86,7 +86,7 @@ export default function CreditGrantEditDialog(props: Props) {
 		const formData = new FormData(formRef.current);
 		setIsSaving(true);
 		try {
-			await toast.promise(updateCreditGrantAction(formData), {
+			await toast.promise(updateCreditGrantAction({ data: formData }), {
 				loading: t("saving"),
 				success: t("saved"),
 				error: (error) => {
@@ -107,7 +107,7 @@ export default function CreditGrantEditDialog(props: Props) {
 		formData.set("grant_id", grantId);
 		setIsDisabling(true);
 		try {
-			await toast.promise(disableCreditGrantAction(formData), {
+			await toast.promise(disableCreditGrantAction({ data: formData }), {
 				loading: t("disabling"),
 				success: t("disabled"),
 				error: (error) => {
@@ -131,7 +131,7 @@ export default function CreditGrantEditDialog(props: Props) {
 		formData.set("grant_id", grantId);
 		setIsDeleting(true);
 		try {
-			await toast.promise(deleteCreditGrantAction(formData), {
+			await toast.promise(deleteCreditGrantAction({ data: formData }), {
 				loading: t("deleting"),
 				success: t("deleted"),
 				error: (error) => {

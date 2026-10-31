@@ -7,13 +7,13 @@ import { fetchFrontendOrganisationReleaseEvents } from "@/lib/fetchers/frontend/
  * server. `now` is captured there too so SSR and hydration agree on "today".
  */
 export const getRequestCalendarContext = createServerFn({ method: "GET" }).handler(async () => {
-	const { headers } = await import("next/headers");
-	const requestHeaders = await headers();
+	const { getRequest, getRequestHeaders } = await import("@tanstack/react-start/server");
+	const requestHeaders = getRequestHeaders();
+	// Cloudflare exposes the visitor's time zone as request.cf.timezone; the
+	// request middleware does not copy it to a header, so read it from cf too.
+	const cf = (getRequest() as Request & { cf?: { timezone?: string } }).cf;
 	return {
-		timeZoneHeader:
-			requestHeaders.get("x-vercel-ip-timezone") ??
-			requestHeaders.get("cf-timezone") ??
-			requestHeaders.get("x-time-zone"),
+		timeZoneHeader: cf?.timezone ?? requestHeaders.get("cf-timezone") ?? requestHeaders.get("x-time-zone"),
 		now: new Date().toISOString(),
 	};
 });

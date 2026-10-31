@@ -1,7 +1,9 @@
 // Router-wide error and not-found screens (Next: app/[locale]/(dashboard)/error.tsx
 // and app/[locale]/not-found.tsx).
 import type { ErrorComponentProps } from "@tanstack/react-router";
-import { useRouter } from "@tanstack/react-router";
+import { useMatch, useRouter } from "@tanstack/react-router";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getCurrentRequest } from "@/compat/request-context";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
@@ -9,8 +11,21 @@ import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ErrorState";
 import { ErrorReporter } from "@/components/ErrorReporter";
 
+// Errors that reach a boundary while rendering on the server (loader and
+// server function failures) are reported to PostHog with the visitor's consent.
+// In the browser, ErrorReporter covers them.
+const reportServerRenderError = createIsomorphicFn()
+	.server((error: unknown, routePath: string | undefined) => {
+		const request = getCurrentRequest();
+		if (!request) return;
+		void import("@/lib/analytics/serverErrorCapture").then(({ captureServerError }) => captureServerError(error, request, { source: "render", routePath }));
+	})
+	.client((_error: unknown, _routePath: string | undefined) => {});
+
 export function RouteErrorBoundary({ error, reset }: ErrorComponentProps) {
 	const router = useRouter();
+	const routeId = useMatch({ strict: false, select: (match) => match.routeId });
+	if (typeof window === "undefined") reportServerRenderError(error, routeId);
 	return (
 		<div className="flex min-h-dvh flex-none items-center justify-center px-4 py-16 sm:px-6">
 			<ErrorReporter error={error as Error & { digest?: string }} source="dashboard" />

@@ -1,4 +1,4 @@
-// Future-dated blog posts are visible to admins only (src/proxy.ts in Next).
+// Future-dated blog posts are visible to admins only.
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 function requestCookies(request: Request): Array<{ name: string; value: string }> {

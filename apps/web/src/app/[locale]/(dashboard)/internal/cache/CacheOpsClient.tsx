@@ -123,10 +123,10 @@ export default function CacheOpsClient() {
 		const { scope, targetId } = pendingPurge;
 		startTransition(async () => {
 			try {
-				const result = await purgeCacheScopeAction({
-					scope: scope.id as Parameters<typeof purgeCacheScopeAction>[0]["scope"],
+				const result = await purgeCacheScopeAction({ data: {
+					scope: scope.id as Parameters<typeof purgeCacheScopeAction>[0]["data"]["scope"],
 					targetId: targetId || undefined,
-				});
+				} });
 				setLastResult(result);
 				setPendingPurge(null);
 				toast.success(t("purgeSuccess", { scope: scopeLabel(scope.id) }));

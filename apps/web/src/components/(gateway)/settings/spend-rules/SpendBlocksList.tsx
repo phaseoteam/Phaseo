@@ -95,7 +95,7 @@ function LiftSpendBlockDialog({ block, maxRules, onClose }: { block: SpendBlock 
 	async function confirm() {
 		if (!block) return;
 		setLifting(true);
-		const result = await write(liftSpendBlock(block.id));
+		const result = await write(liftSpendBlock({ data: block.id }));
 		setLifting(false);
 		if (result.ok === false) {
 			toast.error(result.code === "spend_block_not_active" ? t("blocks.alreadyLifted") : actionError(result, maxRules));

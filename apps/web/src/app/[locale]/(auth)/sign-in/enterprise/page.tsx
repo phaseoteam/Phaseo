@@ -62,7 +62,7 @@ function EnterpriseSignInPageContent({
 					</p>
 				</div>
 
-				<form action={handleEnterpriseSsoRedirect} className="grid gap-4">
+				<form action={(formData) => handleEnterpriseSsoRedirect({ data: formData })} className="grid gap-4">
 					<input type="hidden" name="locale" value={locale} />
 					{returnUrl ? (
 						<input type="hidden" name="returnUrl" value={returnUrl} />

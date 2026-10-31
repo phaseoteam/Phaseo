@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { revalidateAppDataTags } from "@/lib/cache/revalidateDataTags";
 import { normalizeAppCategoryCsv } from "@/lib/appCategories";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
@@ -64,97 +63,95 @@ type UpdateAppInput = {
 	category?: string | null;
 };
 
-export async function updateAppAction(appId: string, updates: UpdateAppInput) {
-	if (!appId || typeof appId !== "string") {
-		throw new Error("Valid app ID is required");
-	}
-
-	const { accessToken } = await getServerAccountContext();
-	if (!accessToken) throw new Error("Unauthorized");
-
-	const updateObj: Record<string, unknown> = {};
-
-	if (typeof updates.title === "string") {
-		const trimmed = updates.title.trim();
-		if (!trimmed) {
-			throw new Error("Title cannot be empty");
+export const updateAppAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { appId: string; updates: UpdateAppInput }) => input)
+	.handler(async ({ data: { appId, updates } }) => {
+		if (!appId || typeof appId !== "string") {
+			throw new Error("Valid app ID is required");
 		}
-		updateObj.title = trimmed;
-	}
 
-	if (typeof updates.url === "string") {
-		const trimmed = updates.url.trim();
-		updateObj.url = trimmed.length > 0 ? trimmed : "about:blank";
-	}
+		const { accessToken } = await getServerAccountContext();
+		if (!accessToken) throw new Error("Unauthorized");
 
-	if (updates.url === null) {
-		updateObj.url = "about:blank";
-	}
+		const updateObj: Record<string, unknown> = {};
 
-	if (typeof updates.docs_url === "string") {
-		updateObj.docs_url = normalizeOptionalHttpUrl(
-			updates.docs_url,
-			"Docs URL"
-		);
-	}
+		if (typeof updates.title === "string") {
+			const trimmed = updates.title.trim();
+			if (!trimmed) {
+				throw new Error("Title cannot be empty");
+			}
+			updateObj.title = trimmed;
+		}
 
-	if (updates.docs_url === null) {
-		updateObj.docs_url = null;
-	}
+		if (typeof updates.url === "string") {
+			const trimmed = updates.url.trim();
+			updateObj.url = trimmed.length > 0 ? trimmed : "about:blank";
+		}
 
-	if (typeof updates.image_url === "string") {
-		const trimmed = updates.image_url.trim();
-		updateObj.image_url = trimmed.length > 0 ? trimmed : null;
-	}
+		if (updates.url === null) {
+			updateObj.url = "about:blank";
+		}
 
-	if (updates.image_url === null) {
-		updateObj.image_url = null;
-	}
+		if (typeof updates.docs_url === "string") {
+			updateObj.docs_url = normalizeOptionalHttpUrl(
+				updates.docs_url,
+				"Docs URL"
+			);
+		}
 
-	if (typeof updates.is_public === "boolean") {
-		updateObj.is_public = updates.is_public;
-	}
+		if (updates.docs_url === null) {
+			updateObj.docs_url = null;
+		}
 
-	if (typeof updates.is_active === "boolean") {
-		updateObj.is_active = updates.is_active;
-	}
+		if (typeof updates.image_url === "string") {
+			const trimmed = updates.image_url.trim();
+			updateObj.image_url = trimmed.length > 0 ? trimmed : null;
+		}
 
-	if (Object.prototype.hasOwnProperty.call(updates, "category")) {
-		updateObj.category = normalizeAppCategoryCsv(updates.category);
-	}
+		if (updates.image_url === null) {
+			updateObj.image_url = null;
+		}
 
-	if (Object.keys(updateObj).length === 0) {
+		if (typeof updates.is_public === "boolean") {
+			updateObj.is_public = updates.is_public;
+		}
+
+		if (typeof updates.is_active === "boolean") {
+			updateObj.is_active = updates.is_active;
+		}
+
+		if (Object.prototype.hasOwnProperty.call(updates, "category")) {
+			updateObj.category = normalizeAppCategoryCsv(updates.category);
+		}
+
+		if (Object.keys(updateObj).length === 0) {
+			return { success: true };
+		}
+
+		await fetchAccountWebApi(`/api/account/settings/apps/${encodeURIComponent(appId)}`, accessToken, { method: "PUT", body: JSON.stringify(updateObj) });
+
+		revalidateAppDataTags([appId]);
+
 		return { success: true };
-	}
+	});
 
-	await fetchAccountWebApi(`/api/account/settings/apps/${encodeURIComponent(appId)}`, accessToken, { method: "PUT", body: JSON.stringify(updateObj) });
+export const mergeAppsAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { sourceAppId: string; targetAppId: string }) => input)
+	.handler(async ({ data: { sourceAppId, targetAppId } }) => {
+		if (!sourceAppId || !targetAppId) {
+			throw new Error("Source and target apps are required");
+		}
+		if (sourceAppId === targetAppId) {
+			throw new Error("Select a different target app");
+		}
 
-	revalidateAppDataTags([appId]);
-	revalidatePath("/settings/apps");
-	revalidatePath(`/apps/${appId}`);
+		const { accessToken } = await getServerAccountContext();
+		if (!accessToken) throw new Error("Unauthorized");
+		await fetchAccountWebApi(`/api/account/settings/apps/${encodeURIComponent(sourceAppId)}/merge`, accessToken, { method: "POST", body: JSON.stringify({ targetAppId }) });
 
-	return { success: true };
-}
+		revalidateAppDataTags([sourceAppId, targetAppId]);
 
-export async function mergeAppsAction(
-	sourceAppId: string,
-	targetAppId: string
-) {
-	if (!sourceAppId || !targetAppId) {
-		throw new Error("Source and target apps are required");
-	}
-	if (sourceAppId === targetAppId) {
-		throw new Error("Select a different target app");
-	}
-
-	const { accessToken } = await getServerAccountContext();
-	if (!accessToken) throw new Error("Unauthorized");
-	await fetchAccountWebApi(`/api/account/settings/apps/${encodeURIComponent(sourceAppId)}/merge`, accessToken, { method: "POST", body: JSON.stringify({ targetAppId }) });
-
-	revalidateAppDataTags([sourceAppId, targetAppId]);
-	revalidatePath("/settings/apps");
-	revalidatePath(`/apps/${sourceAppId}`);
-	revalidatePath(`/apps/${targetAppId}`);
-
-	return { success: true };
-}
+		return { success: true };
+	});

@@ -48,7 +48,7 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 			monthlyRequests: monthlyRequests ? parseInt(monthlyRequests, 10) : null,
 		};
 
-		const promise = updateManagementKeyLimitsAction(k.id, payload);
+		const promise = updateManagementKeyLimitsAction({ data: { id: k.id, payload } });
 		try {
 			await toast.promise(promise, {
 					loading: t("strings.phraseSavingLimits" as never),

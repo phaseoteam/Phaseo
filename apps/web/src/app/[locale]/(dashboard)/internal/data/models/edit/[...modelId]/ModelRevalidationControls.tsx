@@ -30,16 +30,16 @@ export default function ModelRevalidationControls({ modelId }: Props) {
 		startTransition(async () => {
 			try {
 				if (scope === "data") {
-					await revalidateSingleModelDataAction(modelId);
+					await revalidateSingleModelDataAction({ data: modelId });
 					setMessage(t("cacheRevalidatedData"));
 					return;
 				}
 				if (scope === "api") {
-					await revalidateSingleModelApiInfoAction(modelId);
+					await revalidateSingleModelApiInfoAction({ data: modelId });
 					setMessage(t("cacheRevalidatedApiInfo"));
 					return;
 				}
-				await revalidateSingleModelAllAction(modelId);
+				await revalidateSingleModelAllAction({ data: modelId });
 				setMessage(t("cacheRevalidatedAll"));
 			} catch (actionError) {
 				console.error("Failed to revalidate model cache", actionError);

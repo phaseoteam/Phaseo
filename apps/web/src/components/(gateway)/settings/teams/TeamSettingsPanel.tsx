@@ -148,12 +148,12 @@ export default function TeamSettingsPanel({
 					const initialName = initial.teamName.trim();
 
 					if (!isPersonalTeam && normalizedName !== initialName) {
-						await updateTeamAction(workspaceId, normalizedName);
+						await updateTeamAction({ data: { workspaceId, name: normalizedName } });
 						void invalidateSettings();
 					}
 					const normalizedPublisherHandle = settings.publisherHandle.trim().toLowerCase();
 					if (normalizedPublisherHandle !== initial.publisherHandle.trim()) {
-						await updateWorkspacePublisherHandleAction(workspaceId, normalizedPublisherHandle);
+						await updateWorkspacePublisherHandleAction({ data: { workspaceId, handle: normalizedPublisherHandle } });
 						void invalidateSettings();
 					}
 					const normalized = { teamName: normalizedName, publisherHandle: normalizedPublisherHandle };
@@ -211,7 +211,7 @@ export default function TeamSettingsPanel({
 		}
 		setDeleting(true);
 		try {
-			await toast.promise(deleteTeamAction(workspaceId).then((result) => { void invalidateSettings(); return result; }), {
+			await toast.promise(deleteTeamAction({ data: workspaceId }).then((result) => { void invalidateSettings(); return result; }), {
 				loading: t("workspace.deletingWorkspace"),
 				success: t("workspace.workspaceDeleted"),
 				error: () => t("workspace.deleteError"),

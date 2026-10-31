@@ -14,7 +14,7 @@ are in the [glossary](./glossary.md); setup and deploys are in [operations](../o
 | Component | Path | Runs on | Owns |
 | --- | --- | --- | --- |
 | Gateway API | [`apps/api`](../../apps/api) | Cloudflare Workers: `phaseo-gateway` at `api.phaseo.app`, plus EU and US regional Workers | The public `/v1` API, the Management API, OAuth, scheduled jobs, the Broadcast queue consumer and the gateway Durable Objects |
-| Web app | [`apps/web`](../../apps/web) | Vercel (Next.js App Router) | Public pages, dashboard, playground UI and the admin catalogue editor (`/internal/data`) |
+| Web app | [`apps/web`](../../apps/web) | Cloudflare Worker `phaseo-web` (TanStack Start); `phaseo.app` moves to it at the production cutover | Public pages, dashboard, playground UI and the admin catalogue editor (`/internal/data`) |
 | Web API | [`apps/web-api`](../../apps/web-api) | A Cloudflare Worker on `phaseo.app` routes: `/api/_web/*`, `/api/account/*`, `/api/chat/*`, `/api/internal/*`, `/scim/v2/*` | Cached public data for the web app, account reads and writes, the playground proxy, SCIM, provider catalogue feeds, Slack agent installs, settings and charges |
 | MCP server | [`apps/mcp`](../../apps/mcp) | Cloudflare Worker at `mcp.phaseo.app` | Read-only catalogue and usage tools over Phaseo OAuth, reviewed inference, and opt-in account management |
 | Slack agent | [`apps/slack`](../../apps/slack) | Cloudflare Worker at `slack.phaseo.app` | Slack events and interactions, one agent turn at a time per thread, shared pages and recurring tasks; it answers through the gateway |
@@ -24,10 +24,10 @@ are in the [glossary](./glossary.md); setup and deploys are in [operations](../o
 | Database | [`supabase`](../../supabase) | Supabase Postgres | Schema definitions, forward migrations, `pg_cron` jobs |
 | Other packages | [`packages`](../../packages) | Build time or registries | The `phaseo` CLI, the in-house OpenAPI generator (`openapi`, `openapi-backends`), AI SDK providers, integrations, shared registries and the provider mock |
 
-The web app calls the Web API on its own origin: Cloudflare routes those paths to the Worker before
-Vercel sees them. In local development and on Vercel previews,
-[`next.config.mjs`](../../apps/web/next.config.mjs) rewrites them to `WEB_API_ORIGIN`, or to
-production `https://phaseo.app` when it is unset. A push to `main` applies database migrations,
+The web app calls the Web API on its own origin: on `phaseo.app`, Cloudflare routes those paths to the
+Web API Worker before the web app sees them. In local development and on workers.dev, the web app
+forwards them itself ([`requestMiddleware.ts`](../../apps/web/src/lib/start/requestMiddleware.ts)) to
+`WEB_API_ORIGIN`, or to production `https://phaseo.app` when it is unset. A push to `main` applies database migrations,
 then [CI](../../.github/workflows/ci.yml) deploys every Worker and the web app. A failed migration job blocks all of those deploys.
 
 ## Life of a gateway request

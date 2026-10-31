@@ -23,7 +23,7 @@ I care more about knowing why a change was made and what it actually achieved th
 - The full glossary is `docs/internals/glossary.md`; the architecture overview is `docs/internals/overview.md`.
 
 ## Project Structure & Module Organization
-- Monorepo managed by pnpm + turbo: `apps/web` (Next.js 16 App Router, React 19, Tailwind 4, shared UI in `src/components` and `src/components/ui`), `apps/api` (Cloudflare Workers + Hono), `apps/docs` (Mintlify site).
+- Monorepo managed by pnpm + turbo: `apps/web` (TanStack Start on Cloudflare Workers, React 19, Tailwind 4, shared UI in `src/components` and `src/components/ui`), `apps/api` (Cloudflare Workers + Hono), `apps/docs` (Mintlify site).
 - SDKs: `packages/sdk/sdk-ts` TypeScript client (`src`, generated `src/oapi-gen`, builds to `dist`); `packages/sdk/sdk-py` Python client (`src`, tests in `packages/sdk/sdk-py/tests`).
 - Shared tooling lives in `scripts/`, release metadata in `.changeset/`; the production database owns catalog data; there is no committed catalog JSON.
 
@@ -42,7 +42,7 @@ Each of these has already caused damage here.
 2. **Applying SQL outside migrations.** Production schema changes go only through committed, reviewed migrations. SQL applied directly to production without a matching migration file blocks every later deploy.
 3. **Summing rows in application code.** PostgREST returns at most 1,000 rows by default, so totals computed in TypeScript are silently wrong once data grows. Aggregate in SQL or an RPC.
 4. **Killing processes by name.** The development machine runs several agents and servers at once. Never `taskkill /IM`, `pkill -f`, or kill a PID you found by matching a name or path. Stop only the PIDs you started.
-5. **Leaving processes running.** Stop every long-running process you start before you finish: dev servers (`pnpm dev`, `wrangler dev`, `next dev`), watch-mode test runners, and their child `workerd`/`esbuild` processes. Leftover servers pile up and exhaust memory on the shared machine. Prefer one-shot commands such as `vitest run`.
+5. **Leaving processes running.** Stop every long-running process you start before you finish: dev servers (`pnpm dev`, `wrangler dev`, `vite dev`), watch-mode test runners, and their child `workerd`/`esbuild` processes. Leftover servers pile up and exhaust memory on the shared machine. Prefer one-shot commands such as `vitest run`.
 6. **Trusting a stale checkout.** A local checkout or worktree can be hundreds of commits behind. Before saying what `main` does, `git fetch` and read `origin/main`.
 7. **Mass edits.** Avoid bulk repo-wide search/replace or scripted mass edits; use targeted, file-scoped changes only. Generated files are the exception: regenerate them with their script, never hand-edit them.
 8. **Mismatched names across a boundary.** A database function took `p_team_id` while its callers passed `p_workspace_id`, and deprecation alerts silently never sent. When you rename or add a parameter, check every caller, and use `workspace` naming for new code.
@@ -85,7 +85,7 @@ The most common defect here is a change that works on the path you tested and is
 - Do not run monorepo-wide checks (`pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all`) unless asked; they exhaust the shared machine.
 - Do not rely on CI to run your tests. It runs only a small part of the suites:
   - `apps/api`: CI runs lint, typecheck, a Wrangler dry-run build, the AIMock matrix, the provider simulator tests, and one of about 800 unit-test files. Run the unit tests for the directories you touched yourself: `pnpm --filter @phaseo/gateway-api exec vitest run src/<area>`.
-  - `apps/web`: CI runs the i18n checks, typecheck, three of about 430 Jest files, and a compile-only build, with no ESLint. Run ESLint on the files you changed and the Jest tests for the area you touched.
+  - `apps/web`: CI runs the i18n checks, a full production build, typecheck and the three rankings test files, with no ESLint. Run ESLint on the files you changed and the tests for the area you touched.
   - TypeScript and Python SDKs: CI builds and packs them but does not run their tests. Run `pnpm test:sdk-ts` or `pnpm test:sdk-py`.
   - `apps/web-api`, `apps/mcp`, `apps/slack`, the other seven SDKs' lifecycle tests, all agent SDK tests, and the docs checks do run in full.
 - Some unit tests already fail on `main`, especially on Windows. Before blaming your change for a failure, run the same test against `origin/main`.
@@ -96,7 +96,7 @@ The most common defect here is a change that works on the path you tested and is
 - For UI changes, capture the before and after screenshots in one browser session and close it when done. Ask before driving the maintainer's own browser, desktop, or device simulators.
 
 ## Testing Guidelines
-- Jest for `apps/web` with `*.test.ts(x)` or nearby `__tests__`; Playwright suites live in `apps/web/tests/e2e`. Cover new logic and data validations with deterministic fixtures.
+- Vitest for `apps/web` with `*.test.ts(x)` or nearby `__tests__`; Playwright suites live in `apps/web/tests/e2e`. Cover new logic and data validations with deterministic fixtures.
 - Python SDK tests rely on pytest and `httpx.MockTransport`; keep async cases isolated.
 - TS SDK has local `vitest` compatibility coverage plus optional smoke checks; add targeted unit or smoke tests when changing behavior.
 
@@ -162,7 +162,7 @@ The benefit of the change, shown side by side in a table so it can be read at a 
 
 ### Verification
 - Each command you ran with its result, for example `pnpm --filter @phaseo/gateway-api test -- batch` → 48 passed. Paste the relevant output for failures or anything surprising. A command without a result is not proof.
-- Evidence that fits the area: a real request and response for API/gateway changes (local server, preview, or AIMock test); `pnpm db:schema:check` output and a readback query for database changes; the rendered page (local preview or Vercel preview link) and `pnpm docs:links` for docs.
+- Evidence that fits the area: a real request and response for API/gateway changes (local server, preview, or AIMock test); `pnpm db:schema:check` output and a readback query for database changes; the rendered page (local `pnpm dev` or `pnpm --filter @phaseo/web preview`) and `pnpm docs:links` for docs.
 - What you did not verify and why (missing credentials, needs production traffic, known Windows-only failure, only checkable after deploy). Never claim a check you did not run. Report skipped or failing tests as skipped or failing, with output.
 - Green CI supports the verification but does not replace it; it rarely exercises the changed behaviour directly.
 

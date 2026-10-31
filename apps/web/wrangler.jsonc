@@ -1,8 +1,9 @@
 {
-  // TanStack Start build of the Phaseo website. Preview deploys use
-  // workers.dev only; no routes or custom domains are attached here.
+  // The Phaseo website (TanStack Start) as a Cloudflare Worker. CI deploys it
+  // from main (.github/workflows/ci.yml, "Deploy Web"). Until the routes below
+  // are enabled it is served on workers.dev only.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "phaseo-web-start-preview",
+  "name": "phaseo-web",
   "main": "@tanstack/react-start/server-entry",
   "compatibility_date": "2026-10-20",
   "compatibility_flags": ["nodejs_compat"],
@@ -13,4 +14,13 @@
   "vars": { "WEB_API_ORIGIN": "https://phaseo.app" },
   // src/content (blog, help) is read through this binding (phaseo:content-fs).
   "assets": { "binding": "ASSETS" }
+  // Production cutover: uncomment this route (and add a comma after "assets"
+  // above) once the Worker's secrets are set and the workers.dev deploy has
+  // been checked. Deploying with it sends phaseo.app traffic to this Worker
+  // instead of the current origin, so leave it disabled until then. The more
+  // specific phaseo.app/api/_web/* and /api/account/* routes stay with the web
+  // API Worker (apps/web-api/wrangler.toml).
+  // "routes": [
+  //   { "pattern": "phaseo.app/*", "zone_name": "phaseo.app" }
+  // ]
 }

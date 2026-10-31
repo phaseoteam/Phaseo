@@ -564,7 +564,7 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 			setRoutes((current) => [route, ...current]); setSelectedRouteId(id); setSelectedNodeId("start"); setTab("editor");
 		};
 	if (demoMode) { createLocal(crypto.randomUUID(), 1); toast.success(rs("draftCreated")); return; }
-	startTransition(async () => { try { const config = newConfig(); const created = await createDynamicRouteAction({ name: rs("titleNewRoute", { number: routes.length + 1 }), description: null, config }); createLocal(created.id, created.version); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotCreate"))); } });
+	startTransition(async () => { try { const config = newConfig(); const created = await createDynamicRouteAction({ data: { name: rs("titleNewRoute", { number: routes.length + 1 }), description: null, config } }); createLocal(created.id, created.version); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotCreate"))); } });
 	}
 
 	function saveRoute() {
@@ -574,21 +574,21 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 			return { ...route, version: nextVersion, updated_at: savedAt, versions: [{ version: nextVersion, status: "draft", created_at: savedAt }, ...(route.versions ?? []).filter((version) => version.version !== nextVersion).map((version) => version.status === "draft" ? { ...version, status: "superseded" as const } : version)] };
 		});
 		if (demoMode) { saveLocal(); toast.success(rs("draftSaved")); return; }
-		startTransition(async () => { try { const [saved] = await Promise.all([updateDynamicRouteAction(selectedRoute.id, { name: selectedRoute.name, description: selectedRoute.description, status: selectedRoute.status, config: selectedRoute.config }), attachDynamicRouteKeysAction(selectedRoute.id, selectedRoute.keyIds)]); saveLocal(saved.version); toast.success(rs("draftSaved")); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotSave"))); } });
+		startTransition(async () => { try { const [saved] = await Promise.all([updateDynamicRouteAction({ data: { routeId: selectedRoute.id, input: { name: selectedRoute.name, description: selectedRoute.description, status: selectedRoute.status, config: selectedRoute.config } } }), attachDynamicRouteKeysAction({ data: { routeId: selectedRoute.id, keyIds: selectedRoute.keyIds } })]); saveLocal(saved.version); toast.success(rs("draftSaved")); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotSave"))); } });
 	}
 
 	function deleteRoute() {
 		if (!selectedRoute) return;
 		const remove = () => { const remaining = routes.filter((route) => route.id !== selectedRoute.id); setRoutes(remaining); setSelectedRouteId(remaining[0]?.id ?? null); setSelectedNodeId(remaining[0]?.config.entryNodeId ?? null); };
 		if (demoMode) { remove(); toast.success(rs("routeDeleted")); return; }
-		startTransition(async () => { try { await deleteDynamicRouteAction(selectedRoute.id, selectedRoute.name); remove(); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDelete"))); } });
+		startTransition(async () => { try { await deleteDynamicRouteAction({ data: { routeId: selectedRoute.id, confirmName: selectedRoute.name } }); remove(); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDelete"))); } });
 	}
 
 	function deployVersion(version: number) {
 		if (!selectedRoute) return;
 		const deployLocal = () => replaceSelected((route) => ({ ...route, deployed_version: version, versions: (route.versions ?? []).map((item) => ({ ...item, status: item.version === version ? "deployed" as const : item.status === "deployed" ? "superseded" as const : item.status })) }));
 		if (demoMode) { deployLocal(); toast.success(rs("versionDeployedLocally", { version })); return; }
-		startTransition(async () => { try { await deployDynamicRouteVersionAction(selectedRoute.id, version); deployLocal(); toast.success(rs("versionDeployed", { version })); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDeploy"))); } });
+		startTransition(async () => { try { await deployDynamicRouteVersionAction({ data: { routeId: selectedRoute.id, version } }); deployLocal(); toast.success(rs("versionDeployed", { version })); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDeploy"))); } });
 	}
 
 	function renderEditorSurface() {

@@ -4,7 +4,6 @@ import { AppIntlProvider } from "@/i18n/react";
 import { getPublicMessages } from "@/i18n/messages";
 import { getSettingsMessages } from "@/i18n/settings";
 import { publicLocales } from "@/i18n/routing";
-import { selectMessages, SHELL_MESSAGE_NAMESPACES } from "@/i18n/message-scopes";
 import SettingsSidebarTrigger from "./SettingsSidebarTrigger";
 import { getSettingsNavigationCopy } from "./Sidebar.labels";
 
@@ -26,16 +25,15 @@ jest.mock("@/components/ui/collapsible", () => {
     return { Collapsible: content, CollapsibleContent: content, CollapsibleTrigger: content };
 });
 
-it.each(publicLocales)("renders the settings side sheet with only shared messages in %s", async (locale) => {
+it.each(publicLocales)("renders the settings side sheet without missing messages in %s", async (locale) => {
     const messages = await getPublicMessages(locale);
     const copy = getSettingsNavigationCopy(getSettingsMessages(locale), messages.SettingsUI.sidebarNew);
     const onError = jest.fn();
     const html = renderToStaticMarkup(
-        <AppIntlProvider locale={locale} timeZone="UTC" messages={selectMessages(messages, SHELL_MESSAGE_NAMESPACES)} onError={onError}>
+        <AppIntlProvider locale={locale} timeZone="UTC" messages={messages} onError={onError}>
             <SettingsSidebarTrigger copy={copy} />
         </AppIntlProvider>,
     );
-    // Header sheets cannot rely on the settings page's nested provider.
     expect(html).not.toContain("SettingsUI.");
     expect(onError).not.toHaveBeenCalled();
     expect(html).toContain(copy.labels.Preferences);

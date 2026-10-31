@@ -28,7 +28,7 @@ export function ModelAdminDockPanel({
 
 	const models = useQuery({
 		queryKey: ["actionDockAdminModelSearch", userId, debouncedSearch],
-		queryFn: () => searchAdminModelsForDockAction(debouncedSearch),
+		queryFn: () => searchAdminModelsForDockAction({ data: debouncedSearch }),
 		enabled: debouncedSearch.length >= 2,
 		staleTime: 30_000,
 	});

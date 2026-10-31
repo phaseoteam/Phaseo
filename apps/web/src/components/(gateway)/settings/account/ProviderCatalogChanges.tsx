@@ -33,7 +33,7 @@ function ActivityEvent({ providerSlug, event, label }: { providerSlug: string; e
 	async function load() {
 		if (data || loading) return;
 		setLoading(true); setError(false);
-		try { setData(await fetchProviderCatalogEditEventAction(providerSlug, event.id)); }
+		try { setData(await fetchProviderCatalogEditEventAction({ data: { providerSlug, eventId: event.id } })); }
 		catch { setError(true); }
 		finally { setLoading(false); }
 	}

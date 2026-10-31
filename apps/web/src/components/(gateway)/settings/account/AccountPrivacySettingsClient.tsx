@@ -95,7 +95,7 @@ export default function AccountPrivacySettingsClient({
 		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				await updateGlobalGuardrailsSettings(policy, workspaceId);
+				await updateGlobalGuardrailsSettings({ data: { payload: policy, expectedWorkspaceId: workspaceId } });
 				void invalidateSettings();
 				if (cancelled) return;
 				lastSavedPolicy.current = serialized;
@@ -116,12 +116,12 @@ export default function AccountPrivacySettingsClient({
 		let cancelled = false;
 		const timer = window.setTimeout(async () => {
 			try {
-				await updateGlobalGuardrailsSettings({
+				await updateGlobalGuardrailsSettings({ data: { payload: {
 					ioLoggingEnabled: logStorage.enabled,
 					ioLoggingRetentionDays: logStorage.retentionDays,
 					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
 					ioLoggingContentsAccess: logStorage.contentsAccess ?? undefined,
-				}, workspaceId);
+				}, expectedWorkspaceId: workspaceId } });
 				void invalidateSettings();
 				if (cancelled) return;
 				lastSavedLogStorage.current = serialized;

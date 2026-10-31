@@ -260,7 +260,7 @@ export function ComprehensiveModelEditor({
 			setError(null);
 
 			// Fetch complete model data
-			fetchCompleteModelData(model.modelId).then((result) => {
+			fetchCompleteModelData({ data: model.modelId }).then((result) => {
 				if (result.success && result.data) {
 					const data = result.data;
 					setCompleteData(data);
@@ -329,7 +329,7 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModel({
+			const result = await updateModel({ data: {
 				modelId: model.modelId,
 				name,
 				organisationId: organisationId || null,
@@ -345,7 +345,7 @@ export function ComprehensiveModelEditor({
 				replacementModelId: replacementModelId || null,
 				inputTypes,
 				outputTypes,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -361,10 +361,10 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelDetails({
+			const result = await updateModelDetails({ data: {
 				modelId: model.modelId,
 				details,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -380,10 +380,10 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelLinks({
+			const result = await updateModelLinks({ data: {
 				modelId: model.modelId,
 				links,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -399,10 +399,10 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelAliases({
+			const result = await updateModelAliases({ data: {
 				modelId: model.modelId,
 				aliases,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -418,10 +418,10 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelOrganization({
+			const result = await updateModelOrganization({ data: {
 				modelId: model.modelId,
 				organisationId: organisationId || null,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -440,14 +440,14 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await createProviderModel({
+			const result = await createProviderModel({ data: {
 				providerId: newProviderModelForm.providerId,
 				apiModelId: newProviderModelForm.apiModelId,
 				internalModelId: model.modelId,
 				isActiveGateway: newProviderModelForm.isActiveGateway,
 				inputModalities: newProviderModelForm.inputModalities,
 				outputModalities: newProviderModelForm.outputModalities,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -473,14 +473,14 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await createBenchmarkResult({
+			const result = await createBenchmarkResult({ data: {
 				modelId: model.modelId,
 				benchmarkId: newBenchmarkForm.benchmarkId,
 				score: newBenchmarkForm.score,
 				isSelfReported: newBenchmarkForm.isSelfReported,
 				sourceLink: newBenchmarkForm.sourceLink || undefined,
 				otherInfo: newBenchmarkForm.otherInfo || undefined,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -503,7 +503,7 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await deleteModel(model.modelId);
+			const result = await deleteModel({ data: model.modelId });
 
 			if (result.success) {
 				setShowDeleteConfirm(false);
@@ -581,19 +581,19 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateProviderModel({
+			const result = await updateProviderModel({ data: {
 				providerApiModelId,
 				isActiveGateway: editProviderForm.isActiveGateway,
 				inputModalities: editProviderForm.inputModalities,
 				outputModalities: editProviderForm.outputModalities,
 				effectiveFrom: editProviderForm.effectiveFrom || undefined,
 				effectiveTo: editProviderForm.effectiveTo || undefined,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
 				// Reload data
-				const refreshResult = await fetchCompleteModelData(model.modelId);
+				const refreshResult = await fetchCompleteModelData({ data: model.modelId });
 				if (refreshResult.success && refreshResult.data) {
 					setCompleteData(refreshResult.data);
 				}
@@ -620,18 +620,18 @@ export function ComprehensiveModelEditor({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateBenchmarkResult({
+			const result = await updateBenchmarkResult({ data: {
 				resultId: benchmarkId,
 				score: editBenchmarkForm.score,
 				isSelfReported: editBenchmarkForm.isSelfReported,
 				sourceLink: editBenchmarkForm.sourceLink || undefined,
 				otherInfo: editBenchmarkForm.otherInfo || undefined,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
 				// Reload data
-				const refreshResult = await fetchCompleteModelData(model.modelId);
+				const refreshResult = await fetchCompleteModelData({ data: model.modelId });
 				if (refreshResult.success && refreshResult.data) {
 					setCompleteData(refreshResult.data);
 				}
@@ -1337,10 +1337,10 @@ export function ComprehensiveModelEditor({
 														aria-label={tUi("actions.delete")}
 																				onClick={() => {
 																					startTransition(async () => {
-																						const result = await deleteProviderModel(pm.provider_api_model_id);
+																						const result = await deleteProviderModel({ data: pm.provider_api_model_id });
 																						if (result.success) {
 																							router.refresh();
-																							const refreshResult = await fetchCompleteModelData(model.modelId);
+																							const refreshResult = await fetchCompleteModelData({ data: model.modelId });
 																							if (refreshResult.success && refreshResult.data) {
 																								setCompleteData(refreshResult.data);
 																							}
@@ -1642,10 +1642,10 @@ export function ComprehensiveModelEditor({
 												aria-label={tUi("actions.delete")}
 																				onClick={() => {
 																					startTransition(async () => {
-																						const result = await deleteBenchmarkResult(benchmark.id);
+																						const result = await deleteBenchmarkResult({ data: benchmark.id });
 																						if (result.success) {
 																							router.refresh();
-																							const refreshResult = await fetchCompleteModelData(model.modelId);
+																							const refreshResult = await fetchCompleteModelData({ data: model.modelId });
 																							if (refreshResult.success && refreshResult.data) {
 																								setCompleteData(refreshResult.data);
 																							}

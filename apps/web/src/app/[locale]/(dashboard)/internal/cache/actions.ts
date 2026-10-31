@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath, updateTag } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverMutation } from "@/lib/serverFn/actionMiddleware";
 import {
 	expirePublicModelCatalogueCache,
 	revalidateAppDataTags,
@@ -19,93 +18,6 @@ import {
 	revalidateSingleModelApiInfoAction,
 	revalidateSingleModelDataAction,
 } from "@/app/(dashboard)/internal/data/actions";
-
-const SEARCH_TAGS = [
-	"search:data",
-	"data:models",
-	"data:organisations",
-	"data:benchmarks",
-	"data:api_providers",
-	"data:subscription_plans",
-	"frontend:subscription-plans",
-	"public-model-catalogue",
-] as const;
-
-const LANDING_TAGS = [
-	"landing:db-stats",
-	"frontend:landing-stats",
-	"frontend:gateway-showcase",
-	"data:models",
-	"data:organisations",
-	"data:benchmarks",
-	"data:api_providers",
-	"gateway:marketing-metrics",
-	"data:model-updates",
-	"frontend:model-updates",
-	"frontend:model-update-cards",
-	"frontend:update-cards",
-	"frontend:og-payload",
-	"og:payload",
-] as const;
-
-const SIGN_IN_TAGS = [
-	"data:sign-in:models",
-	"data:sign-in:supported-models-stats",
-	"frontend:sign-in-main-models",
-	"frontend:sign-in-supported-models-stats",
-	"data:models",
-] as const;
-
-const RANKINGS_TAGS = [
-	"public-rankings",
-	"public-performance",
-	"public-market-share",
-	"public-timeseries",
-	"public-market-share-timeseries",
-	"public-reliability",
-	"public-geography",
-	"public-multimodal",
-	"public-unique-users",
-	"public-top-apps",
-	"frontend:rankings",
-	"frontend:rankings-indexability",
-	"frontend:rankings-performance",
-	"frontend:rankings-market-share",
-	"frontend:rankings-market-share-timeseries",
-	"frontend:rankings-timeseries",
-	"frontend:rankings-unique-users",
-	"frontend:model-rankings",
-	"frontend:model-names",
-	"frontend:provider-names",
-	"frontend:provider-meta",
-	"frontend:organisation-logo-ids",
-] as const;
-
-const APP_FRONTEND_TAGS = [
-	"data:public_apps",
-	"data:app_details",
-	"data:app_usage",
-	"data:apps",
-	"frontend:apps",
-	"frontend:app-details",
-	"frontend:app-usage",
-	"frontend:app-images",
-	"frontend:app-rankings",
-	"frontend:app-provider-model-mappings",
-	"frontend:model-leaderboard-meta",
-] as const;
-
-const COUNTRY_FRONTEND_TAGS = [
-	"public-model-catalogue",
-	"frontend:countries",
-	"data:organisations",
-	"data:models",
-] as const;
-
-const PROFILE_FRONTEND_TAGS = [
-	"frontend:profile",
-	"data:profiles",
-] as const;
 
 type CacheOpResult = {
 	ok: boolean;
@@ -147,13 +59,6 @@ type CachePurgeResult = {
 async function requireAdmin() {
 	const status = await fetchInternalAuthStatus();
 	if (!status.signedIn || !status.isAdmin) throw new Error("Unauthorized");
-}
-
-function sanitizeList(input: string): string[] {
-	return input
-		.split(/[,\n]/g)
-		.map((item) => item.trim())
-		.filter(Boolean);
 }
 
 function resolveGatewayInternalBaseUrl(): string {
@@ -236,469 +141,263 @@ async function runAdminAction(
 	}
 }
 
-function expireNextCacheScope(scope: CacheScopeId, targetId: string | null) {
+// Expires the website data caches behind a scope. The page itself re-reads
+// its data in the browser once the action returns (serverMutation).
+function expireWebsiteCacheScope(scope: CacheScopeId, targetId: string | null) {
 	switch (scope) {
 		case "catalogue":
+		case "all-public":
 			expirePublicModelCatalogueCache();
 			break;
 		case "model":
 			expirePublicModelCatalogueCache({ modelId: targetId });
 			break;
-		case "model-info":
-			for (const tag of ["frontend:model-overview", "frontend:model-header", "frontend:model-notice", "frontend:model-timeline", "frontend:model-benchmarks", "frontend:model-subscription-plans"]) updateTag(tag);
-			revalidatePath("/models");
-			if (targetId) revalidatePath(`/models/${targetId}`);
-			break;
-		case "model-providers":
-			for (const tag of ["frontend:model-pricing", "frontend:model-pricing-history", "frontend:model-gateway-metadata", "frontend:model-availability", "frontend:model-routing-health"]) updateTag(tag);
-			revalidatePath("/models");
-			if (targetId) revalidatePath(`/models/${targetId}`);
-			break;
-		case "model-telemetry":
-			for (const tag of ["frontend:model-performance", "frontend:model-activity", "frontend:model-runtime-stats", "frontend:model-usage-daily", "frontend:model-realtime-window", "frontend:model-token-trajectory", "frontend:model-apps"]) updateTag(tag);
-			revalidatePath("/models");
-			if (targetId) revalidatePath(`/models/${targetId}`);
-			break;
 		case "provider":
 			revalidateProviderDataTags(
 				targetId ? { providerId: targetId } : {}
 			);
-			revalidatePath("/api-providers", "layout");
-			revalidatePath("/models", "layout");
-			if (targetId) {
-				revalidatePath(`/api-providers/${targetId}`);
-				revalidatePath(`/api-providers/${targetId}/models`);
-			}
 			break;
 		case "organisation":
 			revalidateOrganisationDataTags(
 				targetId ? { organisationId: targetId } : {}
 			);
-			revalidatePath("/organisations", "layout");
-			revalidatePath("/models", "layout");
-			if (targetId) {
-				revalidatePath(`/organisations/${targetId}`);
-				revalidatePath(`/organisations/${targetId}/models`);
-			}
 			break;
 		case "benchmark":
 			revalidateBenchmarkDataTags(
 				targetId ? { benchmarkId: targetId } : {}
 			);
-			revalidatePath("/benchmarks");
-			revalidatePath("/models", "layout");
-			if (targetId) revalidatePath(`/benchmarks/${targetId}`);
 			break;
 		case "apps":
 			revalidateAppDataTags(targetId ? [targetId] : []);
-			revalidatePath("/apps");
-			revalidatePath("/rankings");
-			if (targetId) revalidatePath(`/apps/${targetId}`);
-			break;
-		case "landing":
-			for (const tag of LANDING_TAGS) {
-				updateTag(tag);
-			}
-			revalidatePath("/");
-			break;
-		case "rankings":
-			for (const tag of RANKINGS_TAGS) {
-				updateTag(tag);
-			}
-			revalidatePath("/rankings");
-			break;
-		case "updates":
-			for (const tag of [
-				"data:model-updates",
-				"frontend:model-updates",
-				"frontend:model-update-cards",
-				"frontend:update-cards",
-				"frontend:web-updates",
-				"frontend:youtube-updates",
-			] as const) {
-				updateTag(tag);
-			}
-			revalidatePath("/updates");
-			revalidatePath("/updates/models");
 			break;
 		case "pricing":
 			revalidateModelDataTags();
-			for (const tag of [
-				"data:subscription_plans",
-				"frontend:subscription-plans",
-			] as const) {
-				updateTag(tag);
-			}
-			revalidatePath("/pricing");
-			revalidatePath("/subscription-plans");
-			revalidatePath("/models", "layout");
-			break;
-		case "all-public":
-			expirePublicModelCatalogueCache();
-			for (const tag of [
-				...APP_FRONTEND_TAGS,
-				...LANDING_TAGS,
-				...RANKINGS_TAGS,
-				...SEARCH_TAGS,
-				...SIGN_IN_TAGS,
-			]) {
-				updateTag(tag);
-			}
-			revalidatePath("/", "layout");
-			break;
-		case "search":
-			for (const tag of SEARCH_TAGS) {
-				updateTag(tag);
-			}
-			revalidatePath("/search");
 			break;
 	}
 }
 
-export async function purgeCacheScopeAction(input: {
-	scope: CacheScopeId;
-	targetId?: string;
-}): Promise<CachePurgeResult> {
-	const { accessToken } = await getServerAccountContext();
-	if (!accessToken) throw new Error("Your admin session is no longer available. Sign in again.");
+export const purgeCacheScopeAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: {
+		scope: CacheScopeId;
+		targetId?: string;
+	}) => input)
+	.handler(async ({ data: input }): Promise<CachePurgeResult> => {
+		const { accessToken } = await getServerAccountContext();
+		if (!accessToken) throw new Error("Your admin session is no longer available. Sign in again.");
 
-	const result = await fetchInternalWebApi<CachePurgeResult>(
-		"/api/internal/cache/purge",
-		accessToken,
-		{
-			method: "POST",
-			body: JSON.stringify(input),
-		}
-	);
+		const result = await fetchInternalWebApi<CachePurgeResult>(
+			"/api/internal/cache/purge",
+			accessToken,
+			{
+				method: "POST",
+				body: JSON.stringify(input),
+			}
+		);
 
-	expireNextCacheScope(input.scope, result.targetId);
-	return result;
-}
+		expireWebsiteCacheScope(input.scope, result.targetId);
+		return result;
+	});
 
-export async function refreshActionDockPageDataAction(pathname: string): Promise<CacheOpResult> {
-	return runAdminAction("Page data", async () => {
-		const target = resolveActionDockPageRefresh(pathname);
-		if (!target) {
-			return { ok: false, message: "This page does not have refreshable data." };
-		}
+export const refreshActionDockPageDataAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((pathname: string) => pathname)
+	.handler(async ({ data: pathname }): Promise<CacheOpResult> => {
+		return runAdminAction("Page data", async () => {
+			const target = resolveActionDockPageRefresh(pathname);
+			if (!target) {
+				return { ok: false, message: "This page does not have refreshable data." };
+			}
 
-		// Revalidate the exact open route even if the upstream cache purge fails.
-		revalidatePath(target.pathname);
+			// The open page re-reads its data in the browser even if the upstream cache purge fails.
+			if (target.scope) {
+				try {
+					await purgeCacheScopeAction({ data: {
+						scope: target.scope,
+						...(target.targetId ? { targetId: target.targetId } : {}),
+					} });
+				} catch (error) {
+					// Keep the website cache fresh when the Worker purge is unavailable.
+					expireWebsiteCacheScope(target.scope, target.targetId ?? null);
+					return {
+						ok: false,
+						message: `This page was refreshed, but its shared data cache could not be purged: ${error instanceof Error ? error.message : "request failed"}`,
+					};
+				}
+			}
 
-		if (target.scope) {
+			return { ok: true, message: "Page data refreshed." };
+		});
+	});
+
+export const revalidateModelsGlobalDataAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.handler(async (): Promise<CacheOpResult> => {
+		return runAdminAction("Models (global data)", async () => {
+			revalidateModelDataOnlyTags();
+		});
+	});
+
+export const revalidatePublicModelCatalogueAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.handler(async (): Promise<CacheOpResult> => {
+		return runAdminAction("Public catalogue", async () => {
+			let webApiPurge: CachePurgeResult | null = null;
+			let webApiPurgeError = "";
 			try {
-				await purgeCacheScopeAction({
-					scope: target.scope,
-					...(target.targetId ? { targetId: target.targetId } : {}),
-				});
+				webApiPurge = await purgeCacheScopeAction({ data: { scope: "catalogue" } });
 			} catch (error) {
-				// Keep the website cache fresh when the Worker purge is unavailable.
-				expireNextCacheScope(target.scope, target.targetId ?? null);
-				return {
-					ok: false,
-					message: `This page was refreshed, but its shared data cache could not be purged: ${error instanceof Error ? error.message : "request failed"}`,
-				};
+				webApiPurgeError = error instanceof Error ? error.message : "request failed";
+				expirePublicModelCatalogueCache();
 			}
+			const gatewayPurge = await purgeGatewayCatalogueCache(["models"]);
+			const webApiMessage = webApiPurge
+				? `Web API cache purged (${webApiPurge.tags.join(", ")}).`
+				: `Web API cache purge failed: ${webApiPurgeError}.`;
+			return {
+				ok: Boolean(webApiPurge) && gatewayPurge.ok,
+				message: gatewayPurge.ok
+					? `Public catalogue cache revalidated. ${webApiMessage} ${gatewayPurge.message}`
+					: `Public catalogue website cache revalidated. ${webApiMessage} ${gatewayPurge.message}`,
+			};
+		});
+	});
+
+export const revalidateProvidersGlobalApiAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.handler(async (): Promise<CacheOpResult> => {
+		return runAdminAction("Providers (global API info)", async () => {
+			revalidateProviderDataTags();
+		});
+	});
+
+export const revalidateProviderScopeAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: {
+		providerId?: string;
+	}) => input)
+	.handler(async ({ data: input }): Promise<CacheOpResult> => {
+		const providerId = input.providerId?.trim();
+		if (input.providerId !== undefined && !providerId) {
+			return { ok: false, message: "Provider ID is required." };
 		}
 
-		return { ok: true, message: "Page data refreshed." };
+		return runAdminAction(
+			providerId ? `Provider (${providerId})` : "Providers (global)",
+			async () => {
+				if (providerId) {
+					revalidateProviderDataTags({ providerId });
+				} else {
+					revalidateProviderDataTags();
+				}
+			}
+		);
 	});
-}
 
-export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult> {
-	return runAdminAction("Models (global data)", async () => {
-		revalidateModelDataOnlyTags();
-		revalidatePath("/models");
+export const revalidateOrganisationScopeAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: {
+		organisationId?: string;
+	}) => input)
+	.handler(async ({ data: input }): Promise<CacheOpResult> => {
+		const organisationId = input.organisationId?.trim();
+		if (input.organisationId !== undefined && !organisationId) {
+			return { ok: false, message: "Organisation ID is required." };
+		}
+
+		return runAdminAction(
+			organisationId ? `Organisation (${organisationId})` : "Organisations (global)",
+			async () => {
+				if (organisationId) {
+					revalidateOrganisationDataTags({ organisationId });
+				} else {
+					revalidateOrganisationDataTags();
+				}
+			}
+		);
 	});
-}
 
-export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpResult> {
-	return runAdminAction("Public catalogue", async () => {
-		let webApiPurge: CachePurgeResult | null = null;
-		let webApiPurgeError = "";
+export const revalidateGlobalModelAndProviderAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.handler(async (): Promise<CacheOpResult> => {
+		return runAdminAction("Models + Providers (global)", async () => {
+			revalidateModelDataTags();
+		});
+	});
+
+export const revalidateAppsDataAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((appId?: string) => appId)
+	.handler(async ({ data: appId }): Promise<CacheOpResult> => {
+		const trimmedAppId = appId?.trim();
+		if (appId !== undefined && !trimmedAppId) {
+			return {
+				ok: false,
+				message: "App ID is required for single-app revalidation.",
+			};
+		}
+
+		return runAdminAction(
+			trimmedAppId ? `Apps (${trimmedAppId})` : "Apps (global)",
+			async () => {
+				revalidateAppDataTags(trimmedAppId ? [trimmedAppId] : []);
+			}
+		);
+	});
+
+export const revalidateModelScopeAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: {
+		modelId: string;
+		scope: "data" | "api" | "all";
+	}) => input)
+	.handler(async ({ data: input }): Promise<CacheOpResult> => {
+		const modelId = input.modelId.trim();
+		if (!modelId) {
+			return { ok: false, message: "Model ID is required." };
+		}
+
 		try {
-			webApiPurge = await purgeCacheScopeAction({ scope: "catalogue" });
+			let result: { ok: true; message: string };
+			if (input.scope === "data") {
+				result = await revalidateSingleModelDataAction({ data: modelId });
+			} else if (input.scope === "api") {
+				result = await revalidateSingleModelApiInfoAction({ data: modelId });
+			} else {
+				result = await revalidateSingleModelAllAction({ data: modelId });
+			}
+			return { ok: result.ok, message: result.message };
 		} catch (error) {
-			webApiPurgeError = error instanceof Error ? error.message : "request failed";
-			expirePublicModelCatalogueCache();
+			return {
+				ok: false,
+				message:
+					error instanceof Error
+						? `Model (${modelId}) failed: ${error.message}`
+						: `Model (${modelId}) failed.`,
+			};
 		}
-		for (const tag of APP_FRONTEND_TAGS) {
-			updateTag(tag);
+	});
+
+export const revalidateBenchmarkScopeAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: {
+		benchmarkId?: string;
+	}) => input)
+	.handler(async ({ data: input }): Promise<CacheOpResult> => {
+		const benchmarkId = input.benchmarkId?.trim();
+		if (input.benchmarkId !== undefined && !benchmarkId) {
+			return { ok: false, message: "Benchmark ID is required." };
 		}
-		const gatewayPurge = await purgeGatewayCatalogueCache(["models"]);
-		const webApiMessage = webApiPurge
-			? `Web API cache purged (${webApiPurge.tags.join(", ")}).`
-			: `Web API cache purge failed: ${webApiPurgeError}.`;
-		return {
-			ok: Boolean(webApiPurge) && gatewayPurge.ok,
-			message: gatewayPurge.ok
-				? `Public catalogue cache revalidated. ${webApiMessage} ${gatewayPurge.message}`
-				: `Public catalogue website cache revalidated. ${webApiMessage} ${gatewayPurge.message}`,
-		};
-	});
-}
 
-export async function revalidateProvidersGlobalApiAction(): Promise<CacheOpResult> {
-	return runAdminAction("Providers (global API info)", async () => {
-		revalidateProviderDataTags();
-		revalidatePath("/api-providers");
-		revalidatePath("/models");
-	});
-}
-
-export async function revalidateProviderScopeAction(input: {
-	providerId?: string;
-}): Promise<CacheOpResult> {
-	const providerId = input.providerId?.trim();
-	if (input.providerId !== undefined && !providerId) {
-		return { ok: false, message: "Provider ID is required." };
-	}
-
-	return runAdminAction(
-		providerId ? `Provider (${providerId})` : "Providers (global)",
-		async () => {
-			if (providerId) {
-				revalidateProviderDataTags({ providerId });
-				revalidatePath(`/api-providers/${providerId}`);
-				revalidatePath(`/api-providers/${providerId}/models`);
-			} else {
-				revalidateProviderDataTags();
+		return runAdminAction(
+			benchmarkId ? `Benchmark (${benchmarkId})` : "Benchmarks (global)",
+			async () => {
+				if (benchmarkId) {
+					revalidateBenchmarkDataTags({ benchmarkId });
+				} else {
+					revalidateBenchmarkDataTags();
+				}
 			}
-			revalidatePath("/api-providers");
-		}
-	);
-}
-
-export async function revalidateOrganisationScopeAction(input: {
-	organisationId?: string;
-}): Promise<CacheOpResult> {
-	const organisationId = input.organisationId?.trim();
-	if (input.organisationId !== undefined && !organisationId) {
-		return { ok: false, message: "Organisation ID is required." };
-	}
-
-	return runAdminAction(
-		organisationId ? `Organisation (${organisationId})` : "Organisations (global)",
-		async () => {
-			if (organisationId) {
-				revalidateOrganisationDataTags({ organisationId });
-				revalidatePath(`/organisations/${organisationId}`);
-				revalidatePath(`/organisations/${organisationId}/models`);
-			} else {
-				revalidateOrganisationDataTags();
-			}
-			revalidatePath("/organisations");
-		}
-	);
-}
-
-export async function revalidateGlobalModelAndProviderAction(): Promise<CacheOpResult> {
-	return runAdminAction("Models + Providers (global)", async () => {
-		revalidateModelDataTags();
-		revalidatePath("/models");
-		revalidatePath("/api-providers");
+		);
 	});
-}
 
-export async function revalidateSearchDataAction(): Promise<CacheOpResult> {
-	return runAdminAction("Search", async () => {
-		for (const tag of SEARCH_TAGS) {
-			updateTag(tag);
-		}
-		revalidatePath("/search");
-	});
-}
-
-export async function revalidateLandingDataAction(): Promise<CacheOpResult> {
-	return runAdminAction("Landing", async () => {
-		for (const tag of LANDING_TAGS) {
-			updateTag(tag);
-		}
-		revalidatePath("/");
-	});
-}
-
-export async function revalidateSignInCatalogAction(): Promise<CacheOpResult> {
-	return runAdminAction("Sign-in catalog", async () => {
-		for (const tag of SIGN_IN_TAGS) {
-			updateTag(tag);
-		}
-		revalidatePath("/sign-in");
-	});
-}
-
-export async function revalidateSubscriptionPlansAction(): Promise<CacheOpResult> {
-	return runAdminAction("Subscription plans", async () => {
-		for (const tag of ["data:subscription_plans", "frontend:subscription-plans"] as const) {
-			updateTag(tag);
-		}
-		updateTag("search:data");
-		revalidatePath("/subscription-plans");
-		revalidatePath("/search");
-	});
-}
-
-export async function revalidateRankingsAction(): Promise<CacheOpResult> {
-	return runAdminAction("Rankings", async () => {
-		for (const tag of RANKINGS_TAGS) {
-			updateTag(tag);
-		}
-		revalidatePath("/rankings");
-	});
-}
-
-export async function revalidateAppsDataAction(
-	appId?: string
-): Promise<CacheOpResult> {
-	const trimmedAppId = appId?.trim();
-	if (appId !== undefined && !trimmedAppId) {
-		return {
-			ok: false,
-			message: "App ID is required for single-app revalidation.",
-		};
-	}
-
-	return runAdminAction(
-		trimmedAppId ? `Apps (${trimmedAppId})` : "Apps (global)",
-		async () => {
-			revalidateAppDataTags(trimmedAppId ? [trimmedAppId] : []);
-			revalidatePath("/settings/apps");
-			revalidatePath("/rankings");
-			if (trimmedAppId) {
-				revalidatePath(`/apps/${trimmedAppId}`);
-			}
-		}
-	);
-}
-
-export async function revalidateCountryDataAction(
-	iso?: string
-): Promise<CacheOpResult> {
-	const trimmedIso = iso?.trim().toUpperCase();
-	if (iso !== undefined && !trimmedIso) {
-		return {
-			ok: false,
-			message: "Country ISO code is required for single-country revalidation.",
-		};
-	}
-
-	return runAdminAction(
-		trimmedIso ? `Country (${trimmedIso})` : "Countries (global)",
-		async () => {
-			for (const tag of COUNTRY_FRONTEND_TAGS) {
-				updateTag(tag);
-			}
-			revalidatePath("/countries");
-			if (trimmedIso) {
-				updateTag(`frontend:countries:${trimmedIso}`);
-				revalidatePath(`/countries/${trimmedIso.toLowerCase()}`);
-				revalidatePath(`/countries/${trimmedIso.toLowerCase()}/models`);
-			}
-		}
-	);
-}
-
-export async function revalidateProfileDataAction(
-	slug?: string
-): Promise<CacheOpResult> {
-	const trimmedSlug = slug?.trim();
-	if (slug !== undefined && !trimmedSlug) {
-		return {
-			ok: false,
-			message: "Profile slug is required for single-profile revalidation.",
-		};
-	}
-
-	return runAdminAction(
-		trimmedSlug ? `Profile (${trimmedSlug})` : "Profiles (global)",
-		async () => {
-			for (const tag of PROFILE_FRONTEND_TAGS) {
-				updateTag(tag);
-			}
-			if (trimmedSlug) {
-				updateTag(`frontend:profile:${trimmedSlug}`);
-				revalidatePath(`/profile/${trimmedSlug}`);
-			}
-		}
-	);
-}
-
-export async function revalidateModelScopeAction(input: {
-	modelId: string;
-	scope: "data" | "api" | "all";
-}): Promise<CacheOpResult> {
-	const modelId = input.modelId.trim();
-	if (!modelId) {
-		return { ok: false, message: "Model ID is required." };
-	}
-
-	try {
-		let result: { ok: true; message: string };
-		if (input.scope === "data") {
-			result = await revalidateSingleModelDataAction(modelId);
-		} else if (input.scope === "api") {
-			result = await revalidateSingleModelApiInfoAction(modelId);
-		} else {
-			result = await revalidateSingleModelAllAction(modelId);
-		}
-		return { ok: result.ok, message: result.message };
-	} catch (error) {
-		return {
-			ok: false,
-			message:
-				error instanceof Error
-					? `Model (${modelId}) failed: ${error.message}`
-					: `Model (${modelId}) failed.`,
-		};
-	}
-}
-
-export async function revalidateBenchmarkScopeAction(input: {
-	benchmarkId?: string;
-}): Promise<CacheOpResult> {
-	const benchmarkId = input.benchmarkId?.trim();
-	if (input.benchmarkId !== undefined && !benchmarkId) {
-		return { ok: false, message: "Benchmark ID is required." };
-	}
-
-	return runAdminAction(
-		benchmarkId ? `Benchmark (${benchmarkId})` : "Benchmarks (global)",
-		async () => {
-			if (benchmarkId) {
-				revalidateBenchmarkDataTags({ benchmarkId });
-				revalidatePath(`/benchmarks/${benchmarkId}`);
-			} else {
-				revalidateBenchmarkDataTags();
-			}
-			revalidatePath("/benchmarks");
-		}
-	);
-}
-
-export async function revalidateCustomScopeAction(input: {
-	tagsText: string;
-	pathsText: string;
-}): Promise<CacheOpResult> {
-	const tags = sanitizeList(input.tagsText);
-	const paths = sanitizeList(input.pathsText);
-
-	if (!tags.length && !paths.length) {
-		return { ok: false, message: "Provide at least one tag or path." };
-	}
-
-	if (tags.length > 100 || paths.length > 100) {
-		return {
-			ok: false,
-			message: "Too many tags/paths (max 100 each).",
-		};
-	}
-
-	return runAdminAction("Custom scope", async () => {
-		for (const tag of tags) {
-			updateTag(tag);
-		}
-		for (const path of paths) {
-			revalidatePath(path);
-		}
-	});
-}

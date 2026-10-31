@@ -1545,7 +1545,7 @@ export default function GuardrailEditorPageClient(props: {
 		try {
 			let guardrailId = props.guardrailId;
 			if (props.mode === "create") {
-				const created = await createGuardrail({
+				const created = await createGuardrail({ data: {
 					enabled: form.enabled,
 					name: form.name,
 					description: form.description || null,
@@ -1565,10 +1565,10 @@ export default function GuardrailEditorPageClient(props: {
 					sensitiveInfoDefaultAction: form.sensitiveInfoDefaultAction,
 					sensitiveInfoRules: form.sensitiveInfoRules,
 					budgets,
-				});
+				} });
 				guardrailId = created.id ?? null;
 			} else if (props.mode === "edit" && props.guardrailId) {
-				await updateGuardrail(props.guardrailId, {
+				await updateGuardrail({ data: { id: props.guardrailId, payload: {
 					enabled: form.enabled,
 					name: form.name,
 					description: form.description || null,
@@ -1588,13 +1588,13 @@ export default function GuardrailEditorPageClient(props: {
 					sensitiveInfoDefaultAction: form.sensitiveInfoDefaultAction,
 					sensitiveInfoRules: form.sensitiveInfoRules,
 					budgets,
-				});
+				} } });
 			}
 
 			if (guardrailId) {
 				await Promise.all([
-					setGuardrailKeys(guardrailId, form.keyIds),
-					setGuardrailMembers(guardrailId, form.memberIds),
+					setGuardrailKeys({ data: { guardrailId, keyIds: form.keyIds } }),
+					setGuardrailMembers({ data: { guardrailId, userIds: form.memberIds } }),
 				]);
 			}
 
@@ -1614,7 +1614,7 @@ export default function GuardrailEditorPageClient(props: {
 		setDeleting(true);
 		const toastId = toast.loading(t("strings.phraseDeletingGuardrail" as never));
 		try {
-			await deleteGuardrail(props.guardrailId);
+			await deleteGuardrail({ data: props.guardrailId });
 			toast.success(t("credits.Guardrail deleted" as never), { id: toastId });
 			router.push(props.backHref);
 			router.refresh();

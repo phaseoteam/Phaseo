@@ -1,7 +1,6 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction, serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import { revalidatePath, revalidateTag } from "next/cache";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
@@ -288,158 +287,152 @@ function normalizeVisibility(value?: PresetVisibility): PresetVisibility {
 	return "team";
 }
 
-function revalidatePresetDataCache(presetId?: string | null): void {
-	revalidateTag("data:presets", "max");
-	revalidateTag("data:presets:public", "max");
-	if (presetId) {
-		revalidateTag(`data:presets:${presetId}`, "max");
-	}
-	revalidatePath("/gateway/marketplace");
-	if (presetId) {
-		revalidatePath(`/gateway/marketplace/${presetId}`);
-	}
-}
+export const createPresetAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: CreatePresetInput) => input)
+	.handler(async ({ data: input }) => {
+		const { name, slug, description, creatorUserId, workspaceId, config, visibility } = input;
 
-export async function createPresetAction(input: CreatePresetInput) {
-	const { name, slug, description, creatorUserId, workspaceId, config, visibility } = input;
+		if (!creatorUserId || typeof creatorUserId !== "string") {
+			throw new Error("Creator user ID is required");
+		}
+		if (!workspaceId || typeof workspaceId !== "string") {
+			throw new Error("Workspace ID is required");
+		}
 
-	if (!creatorUserId || typeof creatorUserId !== "string") {
-		throw new Error("Creator user ID is required");
-	}
-	if (!workspaceId || typeof workspaceId !== "string") {
-		throw new Error("Workspace ID is required");
-	}
-
-	validatePresetName(name);
-	const normalizedSlug = normalizePresetSlug(slug || name);
-	if (!normalizedSlug) throw new Error("Preset slug is required");
-
-	const sanitizedConfig = sanitizeConfig(config);
-	const normalizedVisibility = normalizeVisibility(visibility);
-	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
-	const data = await fetchAccountWebApi<{ id?: string; name: string; createdAt?: string }>("/api/account/settings/presets", accessToken, { method: "POST", body: JSON.stringify({ workspaceId, name: name.trim(), slug: normalizedSlug, description, config: sanitizedConfig, visibility: normalizedVisibility }) });
-
-	revalidatePath("/settings/presets");
-	revalidatePresetDataCache(data.id ?? null);
-	return data;
-}
-
-export async function ensureWorkspacePresetPublisherAction(workspaceId: string, handle: string) {
-	const normalized = normalizePresetSlug(handle).replace(/[.:]/g, "-");
-	if (normalized.length < 3 || normalized.length > 40) throw new Error("Publisher handle must be between 3 and 40 characters");
-	const { accessToken } = await getServerAccountContext();
-	if (!accessToken) throw new Error("Unauthorized");
-	await fetchAccountWebApi("/api/account/settings/presets/publisher", accessToken, {
-		method: "PUT",
-		body: JSON.stringify({ workspaceId, handle: normalized }),
-	});
-	revalidatePath("/settings/presets");
-	return { handle: normalized };
-}
-
-export async function forkPresetAction(sourcePresetId: string, sourceVersionId?: string) {
-	if (!sourcePresetId || typeof sourcePresetId !== "string") {
-		throw new Error("Valid preset ID is required");
-	}
-
-	const context = await getServerAccountContext();
-	const workspaceId = context.workspaceId ?? await getWorkspaceIdFromCookie();
-	if (!workspaceId) {
-		throw new Error("WORKSPACE_REQUIRED");
-	}
-	if (!context.accessToken) throw new Error("AUTH_REQUIRED");
-	let data: { id?: string; name: string; slug?: string };
-	try {
-		data = await fetchAccountWebApi<{ id?: string; name: string; slug?: string }>(`/api/account/settings/presets/${encodeURIComponent(sourcePresetId)}/fork`, context.accessToken, { method: "POST", body: JSON.stringify({ workspaceId, sourceVersionId }) });
-	} catch (error) {
-		const code = error instanceof Error ? error.message : "";
-		if (code === "invalid_source_version" || code === "not_public") throw new Error("That preset version is no longer available to fork.");
-		throw error;
-	}
-
-	revalidatePath("/settings/presets");
-	revalidatePresetDataCache(sourcePresetId);
-	if (data.id) {
-		revalidatePresetDataCache(data.id);
-	}
-	return data;
-}
-
-export async function updatePresetAction(input: UpdatePresetInput) {
-	const { id, name, slug, description, config, visibility } = input;
-
-	if (!id || typeof id !== "string") {
-		throw new Error("Valid preset ID is required");
-	}
-
-	const updateObj: Record<string, unknown> = {};
-
-	if (name) {
 		validatePresetName(name);
-
-		updateObj.name = name.trim();
-	}
-	if (slug !== undefined) {
-		const normalizedSlug = normalizePresetSlug(slug);
+		const normalizedSlug = normalizePresetSlug(slug || name);
 		if (!normalizedSlug) throw new Error("Preset slug is required");
-		updateObj.slug = normalizedSlug;
-	}
 
-	if (description !== undefined) {
-		updateObj.description = description?.trim().substring(0, 500) || null;
-	}
+		const sanitizedConfig = sanitizeConfig(config);
+		const normalizedVisibility = normalizeVisibility(visibility);
+		const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+		const data = await fetchAccountWebApi<{ id?: string; name: string; createdAt?: string }>("/api/account/settings/presets", accessToken, { method: "POST", body: JSON.stringify({ workspaceId, name: name.trim(), slug: normalizedSlug, description, config: sanitizedConfig, visibility: normalizedVisibility }) });
 
-	if (config !== undefined) {
-		updateObj.config = sanitizeConfig(config as PresetConfig);
-		updateObj.replaceConfig = true;
-	}
+		return data;
+	});
 
-	if (visibility) {
-		updateObj.visibility = normalizeVisibility(visibility);
-	}
-	if (input.versioningMethod && ["sequential", "semver", "date"].includes(input.versioningMethod)) updateObj.versioningMethod = input.versioningMethod;
+export const ensureWorkspacePresetPublisherAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { workspaceId: string; handle: string }) => input)
+	.handler(async ({ data: { workspaceId, handle } }) => {
+		const normalized = normalizePresetSlug(handle).replace(/[.:]/g, "-");
+		if (normalized.length < 3 || normalized.length > 40) throw new Error("Publisher handle must be between 3 and 40 characters");
+		const { accessToken } = await getServerAccountContext();
+		if (!accessToken) throw new Error("Unauthorized");
+		await fetchAccountWebApi("/api/account/settings/presets/publisher", accessToken, {
+			method: "PUT",
+			body: JSON.stringify({ workspaceId, handle: normalized }),
+		});
+		return { handle: normalized };
+	});
 
-	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
-	await fetchAccountWebApi(`/api/account/settings/presets/${encodeURIComponent(id)}`, accessToken, { method: "PUT", body: JSON.stringify(updateObj) });
+export const forkPresetAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { sourcePresetId: string; sourceVersionId?: string }) => input)
+	.handler(async ({ data: { sourcePresetId, sourceVersionId } }) => {
+		if (!sourcePresetId || typeof sourcePresetId !== "string") {
+			throw new Error("Valid preset ID is required");
+		}
 
-	revalidatePath("/settings/presets");
-	revalidatePresetDataCache(id);
+		const context = await getServerAccountContext();
+		const workspaceId = context.workspaceId ?? await getWorkspaceIdFromCookie();
+		if (!workspaceId) {
+			throw new Error("WORKSPACE_REQUIRED");
+		}
+		if (!context.accessToken) throw new Error("AUTH_REQUIRED");
+		let data: { id?: string; name: string; slug?: string };
+		try {
+			data = await fetchAccountWebApi<{ id?: string; name: string; slug?: string }>(`/api/account/settings/presets/${encodeURIComponent(sourcePresetId)}/fork`, context.accessToken, { method: "POST", body: JSON.stringify({ workspaceId, sourceVersionId }) });
+		} catch (error) {
+			const code = error instanceof Error ? error.message : "";
+			if (code === "invalid_source_version" || code === "not_public") throw new Error("That preset version is no longer available to fork.");
+			throw error;
+		}
 
-	return { success: true };
-}
+		return data;
+	});
 
-export async function publishPresetVersionAction(id: string, releaseNotes?: string, versionLabel?: string) {
-	if (!id) throw new Error("Valid preset ID is required");
-	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
-	let data: { version?: { version_number?: number; version_label?: string } };
-	try {
-		data = await fetchAccountWebApi<{ version?: { version_number?: number; version_label?: string } }>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken, { method: "POST", body: JSON.stringify({ releaseNotes, versionLabel }) });
-	} catch (error) {
-		if (error instanceof Error && error.message === "no_draft_changes") throw new Error("Save a draft change before publishing a new version.");
-		throw error;
-	}
-	revalidatePath("/settings/presets"); revalidatePath(`/gateway/marketplace/${id}`); revalidatePresetDataCache(id);
-	return data;
-}
+export const updatePresetAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: UpdatePresetInput) => input)
+	.handler(async ({ data: input }) => {
+		const { id, name, slug, description, config, visibility } = input;
+
+		if (!id || typeof id !== "string") {
+			throw new Error("Valid preset ID is required");
+		}
+
+		const updateObj: Record<string, unknown> = {};
+
+		if (name) {
+			validatePresetName(name);
+
+			updateObj.name = name.trim();
+		}
+		if (slug !== undefined) {
+			const normalizedSlug = normalizePresetSlug(slug);
+			if (!normalizedSlug) throw new Error("Preset slug is required");
+			updateObj.slug = normalizedSlug;
+		}
+
+		if (description !== undefined) {
+			updateObj.description = description?.trim().substring(0, 500) || null;
+		}
+
+		if (config !== undefined) {
+			updateObj.config = sanitizeConfig(config as PresetConfig);
+			updateObj.replaceConfig = true;
+		}
+
+		if (visibility) {
+			updateObj.visibility = normalizeVisibility(visibility);
+		}
+		if (input.versioningMethod && ["sequential", "semver", "date"].includes(input.versioningMethod)) updateObj.versioningMethod = input.versioningMethod;
+
+		const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+		await fetchAccountWebApi(`/api/account/settings/presets/${encodeURIComponent(id)}`, accessToken, { method: "PUT", body: JSON.stringify(updateObj) });
+
+
+		return { success: true };
+	});
+
+export const publishPresetVersionAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; releaseNotes?: string; versionLabel?: string }) => input)
+	.handler(async ({ data: { id, releaseNotes, versionLabel } }) => {
+		if (!id) throw new Error("Valid preset ID is required");
+		const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+		let data: { version?: { version_number?: number; version_label?: string } };
+		try {
+			data = await fetchAccountWebApi<{ version?: { version_number?: number; version_label?: string } }>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken, { method: "POST", body: JSON.stringify({ releaseNotes, versionLabel }) });
+		} catch (error) {
+			if (error instanceof Error && error.message === "no_draft_changes") throw new Error("Save a draft change before publishing a new version.");
+			throw error;
+		}
+		return data;
+	});
 
 export type PublishedPresetVersion = { version_number?: number; version_label?: string | null };
 /** The outcome of publishing from the editor. Errors are returned, not thrown, so their codes survive production server actions. */
 export type PresetPublishResult = { ok: true; version: PublishedPresetVersion | null } | { ok: false; error: string };
 
 /** Publishes the saved draft as a new version, returning the gateway's error code (such as no_draft_changes) instead of throwing. */
-export async function publishPresetDraftAction(id: string, releaseNotes?: string, versionLabel?: string): Promise<PresetPublishResult> {
-	if (!id) return { ok: false, error: "bad_request" };
-	const { accessToken } = await getServerAccountContext(); if (!accessToken) return { ok: false, error: "unauthorized" };
-	let data: { version?: PublishedPresetVersion };
-	try {
-		data = await fetchAccountWebApi<{ version?: PublishedPresetVersion }>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken, { method: "POST", body: JSON.stringify({ releaseNotes: releaseNotes?.trim() || undefined, versionLabel: versionLabel?.trim() || undefined }) });
-	} catch (error) {
-		if (error instanceof WebApiError) return { ok: false, error: error.code ?? error.detail ?? "failed" };
-		throw error;
-	}
-	revalidatePath("/settings/presets"); revalidatePath(`/gateway/marketplace/${id}`); revalidatePresetDataCache(id);
-	return { ok: true, version: data.version ?? null };
-}
+export const publishPresetDraftAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; releaseNotes?: string; versionLabel?: string }) => input)
+	.handler(async ({ data: { id, releaseNotes, versionLabel } }): Promise<PresetPublishResult> => {
+		if (!id) return { ok: false, error: "bad_request" };
+		const { accessToken } = await getServerAccountContext(); if (!accessToken) return { ok: false, error: "unauthorized" };
+		let data: { version?: PublishedPresetVersion };
+		try {
+			data = await fetchAccountWebApi<{ version?: PublishedPresetVersion }>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken, { method: "POST", body: JSON.stringify({ releaseNotes: releaseNotes?.trim() || undefined, versionLabel: versionLabel?.trim() || undefined }) });
+		} catch (error) {
+			if (error instanceof WebApiError) return { ok: false, error: error.code ?? error.detail ?? "failed" };
+			throw error;
+		}
+		return { ok: true, version: data.version ?? null };
+	});
 
 /** The parts of a version the editor shows and compares. */
 export type PresetVersionContent = { models: string[]; prompt: unknown };
@@ -462,12 +455,15 @@ export type PresetVersionsWithLabels = {
 	canManageLabels: boolean;
 };
 
-export async function listPresetVersionsAction(id: string): Promise<PresetVersionsWithLabels> {
-	if (!id) throw new Error("Valid preset ID is required");
-	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
-	const data = await fetchAccountWebApi<Partial<PresetVersionsWithLabels>>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken);
-	return { versions: data.versions ?? [], labels: data.labels ?? [], activeVersionId: data.activeVersionId ?? null, canManageLabels: data.canManageLabels === true };
-}
+export const listPresetVersionsAction = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }): Promise<PresetVersionsWithLabels> => {
+		if (!id) throw new Error("Valid preset ID is required");
+		const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+		const data = await fetchAccountWebApi<Partial<PresetVersionsWithLabels>>(`/api/account/settings/presets/${encodeURIComponent(id)}/versions`, accessToken);
+		return { versions: data.versions ?? [], labels: data.labels ?? [], activeVersionId: data.activeVersionId ?? null, canManageLabels: data.canManageLabels === true };
+	});
 
 /** The outcome of a label change. Errors are returned, not thrown, so their codes survive production server actions. */
 export type PresetLabelResult = { ok: true } | { ok: false; error: string };
@@ -480,67 +476,81 @@ async function labelRequest(id: string, path: string, init: RequestInit): Promis
 		if (error instanceof WebApiError) return { ok: false, error: error.detail ?? error.code ?? "failed" };
 		throw error;
 	}
-	revalidatePresetDataCache(id);
 	return { ok: true };
 }
 
 /** Points a label at a version: creates it, moves it, or moves it back (a rollback). */
-export async function setPresetVersionLabelAction(id: string, label: string, versionId: string): Promise<PresetLabelResult> {
-	if (!id || !label || !versionId) return { ok: false, error: "bad_request" };
-	return labelRequest(id, encodeURIComponent(label.trim().toLowerCase()), { method: "PUT", body: JSON.stringify({ versionId }) });
-}
+export const setPresetVersionLabelAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: { id: string; label: string; versionId: string }) => input)
+	.handler(async ({ data: { id, label, versionId } }): Promise<PresetLabelResult> => {
+		if (!id || !label || !versionId) return { ok: false, error: "bad_request" };
+		return labelRequest(id, encodeURIComponent(label.trim().toLowerCase()), { method: "PUT", body: JSON.stringify({ versionId }) });
+	});
 
-export async function removePresetVersionLabelAction(id: string, label: string): Promise<PresetLabelResult> {
-	if (!id || !label) return { ok: false, error: "bad_request" };
-	return labelRequest(id, encodeURIComponent(label), { method: "DELETE" });
-}
+export const removePresetVersionLabelAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: { id: string; label: string }) => input)
+	.handler(async ({ data: { id, label } }): Promise<PresetLabelResult> => {
+		if (!id || !label) return { ok: false, error: "bad_request" };
+		return labelRequest(id, encodeURIComponent(label), { method: "DELETE" });
+	});
 
-export async function applyPresetUpstreamVersionAction(id: string, versionId: string) {
-	if (!id || !versionId) throw new Error("Preset and version are required");
-	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
-	try {
-		await fetchAccountWebApi(`/api/account/settings/presets/${encodeURIComponent(id)}/upstream`, accessToken, { method: "POST", body: JSON.stringify({ versionId }) });
-	} catch (error) {
-		const code = error instanceof Error ? error.message : "";
-		if (code === "preset_has_local_draft_changes") throw new Error("Publish or discard your draft changes before applying the upstream version.");
-		if (code === "upstream_version_unavailable") throw new Error("That upstream version is no longer publicly available.");
-		throw error;
-	}
-	revalidatePath("/settings/presets"); revalidatePresetDataCache(id);
-	return { success: true };
-}
+export const applyPresetUpstreamVersionAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; versionId: string }) => input)
+	.handler(async ({ data: { id, versionId } }) => {
+		if (!id || !versionId) throw new Error("Preset and version are required");
+		const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+		try {
+			await fetchAccountWebApi(`/api/account/settings/presets/${encodeURIComponent(id)}/upstream`, accessToken, { method: "POST", body: JSON.stringify({ versionId }) });
+		} catch (error) {
+			const code = error instanceof Error ? error.message : "";
+			if (code === "preset_has_local_draft_changes") throw new Error("Publish or discard your draft changes before applying the upstream version.");
+			if (code === "upstream_version_unavailable") throw new Error("That upstream version is no longer publicly available.");
+			throw error;
+		}
+		return { success: true };
+	});
 
-export async function deletePresetAction(id: string, confirmName?: string) {
-	if (!id || typeof id !== "string") {
-		throw new Error("Valid preset ID is required");
-	}
+export const deletePresetAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; confirmName?: string }) => input)
+	.handler(async ({ data: { id, confirmName } }) => {
+		if (!id || typeof id !== "string") {
+			throw new Error("Valid preset ID is required");
+		}
 
-	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
-	const query = confirmName ? `?confirmName=${encodeURIComponent(confirmName)}` : "";
-	await fetchAccountWebApi(`/api/account/settings/presets/${encodeURIComponent(id)}${query}`, accessToken, { method: "DELETE" });
+		const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+		const query = confirmName ? `?confirmName=${encodeURIComponent(confirmName)}` : "";
+		await fetchAccountWebApi(`/api/account/settings/presets/${encodeURIComponent(id)}${query}`, accessToken, { method: "DELETE" });
 
-	revalidatePath("/settings/presets");
-	revalidatePresetDataCache(id);
 
-	return { success: true };
-}
+		return { success: true };
+	});
 
-export async function getPresetById(id: string) {
-	if (!id || typeof id !== "string") {
-		throw new Error("Valid preset ID is required");
-	}
+export const getPresetById = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		if (!id || typeof id !== "string") {
+			throw new Error("Valid preset ID is required");
+		}
 
-	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
-	return (await fetchAccountWebApi<{ preset: any }>(`/api/account/settings/presets/${encodeURIComponent(id)}`, accessToken)).preset;
-}
+		const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+		return (await fetchAccountWebApi<{ preset: any }>(`/api/account/settings/presets/${encodeURIComponent(id)}`, accessToken)).preset;
+	});
 
-export async function listPresetsByWorkspace(workspaceId: string) {
-	if (!workspaceId || typeof workspaceId !== "string") {
-		throw new Error("Valid workspace ID is required");
-	}
+export const listPresetsByWorkspace = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((workspaceId: string) => workspaceId)
+	.handler(async ({ data: workspaceId }) => {
+		if (!workspaceId || typeof workspaceId !== "string") {
+			throw new Error("Valid workspace ID is required");
+		}
 
-	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
-	return (await fetchAccountWebApi<{ presets: any[] }>(`/api/account/settings/presets/list?workspaceId=${encodeURIComponent(workspaceId)}`, accessToken)).presets;
-}
+		const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+		return (await fetchAccountWebApi<{ presets: any[] }>(`/api/account/settings/presets/list?workspaceId=${encodeURIComponent(workspaceId)}`, accessToken)).presets;
+	});
 
 export const listPresetsByTeam = listPresetsByWorkspace;

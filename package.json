@@ -94,7 +94,8 @@
 		"devtools:build": "cd packages/devtools/devtools-viewer && pnpm run build",
 		"web:lint": "cd apps/web && pnpm run lint",
 		"web:build": "cd apps/web && pnpm run build",
-		"validate:web": "pnpm run web:lint && pnpm run web:build",
+		"web:typecheck": "cd apps/web && pnpm run typecheck",
+		"validate:web": "pnpm run web:lint && pnpm run web:build && pnpm run web:typecheck",
 		"api:lint": "cd apps/api && pnpm run lint",
 		"api:build": "cd apps/api && pnpm run build",
 		"validate:api": "pnpm run api:lint && pnpm run api:build",
@@ -147,7 +148,7 @@
 		"sdk:sync-language-manifests": "tsx scripts/update-sdk-language-manifest-versions.ts",
 		"sdk:check-version-literals": "tsx scripts/check-sdk-version-literals.ts && node --test scripts/sync-dependent-sdk-releases.test.mjs",
 		"release-from-changelogs": "tsx scripts/changesets/create-github-releases-from-changelogs.ts",
-		"precommit": "pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run openapi:lint && pnpm run validate:docs && pnpm run validate:web && pnpm run validate:api && pnpm run validate:packages && pnpm run sdk:check-version-literals && (cd apps/web && pnpm run test) && pnpm run test"
+		"precommit": "pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run openapi:lint && pnpm run validate:docs && pnpm run validate:web && pnpm run validate:api && pnpm run validate:packages && pnpm run sdk:check-version-literals && pnpm --filter @phaseo/web test && pnpm run test"
 	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^1.0.1",

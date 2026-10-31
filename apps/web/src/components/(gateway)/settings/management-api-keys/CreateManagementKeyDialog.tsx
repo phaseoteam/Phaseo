@@ -119,13 +119,13 @@ export default function CreateManagementKeyDialog({
 		}
 		try {
 			setLoading(true);
-			const res: any = await createManagementKeyAction({
+			const res: any = await createManagementKeyAction({ data: {
 				name,
 				creatorUserId: currentUserId as string,
 				workspaceId: selectedWorkspaceId,
 				template,
 				expiresAt,
-			});
+			} });
 			setPlainKey(res?.plaintext ?? null);
 			void invalidateSettings();
 		} catch (err: unknown) {

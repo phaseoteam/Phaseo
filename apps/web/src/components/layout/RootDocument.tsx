@@ -1,21 +1,13 @@
-import { Suspense, type ReactNode } from "react";
+import { Suspense, useEffect, type ReactNode } from "react";
 import { HeadContent, Scripts } from "@tanstack/react-router";
 import { useMessages } from "@/i18n/react";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
-import {
-	Montserrat,
-	Noto_Sans_Arabic,
-	Noto_Sans_Devanagari,
-	Noto_Sans_JP,
-	Noto_Sans_SC,
-} from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import { fullMessagesUrl, RootIntlProvider } from "@/i18n/RootIntlProvider";
 import {
 	CookieConsentManager,
 	type CookieConsentCopy,
 } from "@/components/analytics/CookieConsentManager";
-import { DeferredVercelAnalytics } from "@/components/analytics/DeferredVercelAnalytics";
 import { ProductAnalyticsGaBridge } from "@/components/analytics/ProductAnalyticsGaBridge";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
@@ -25,55 +17,14 @@ import { CatalogNavigationGuardProvider } from "@/components/(data)/UnsavedChang
 import { HISTORY_PRIVACY_SCRIPT } from "@/lib/query/historyPrivacyScript";
 import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
-import { ThemeProvider } from "@/components/theme-provider";
+import { THEME_INITIALIZATION_SCRIPT, ThemeProvider } from "@/components/theme/ThemeProvider";
 import ThemeAwareFavicon from "@/components/ThemeAwareFavicon";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { FontProfile, LocaleDirection, PublicLocale } from "@/i18n/routing";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
-import { cn } from "@/lib/utils";
 
 const APPEARANCE_INITIALIZATION_SCRIPT = `(()=>{try{const p=JSON.parse(localStorage.getItem("phaseo-display-preferences-v1")||"null");if(!p||typeof p!=="object")return;const r=document.documentElement;const lp=["phaseo","paper","warm"],dp=["phaseo","slate","midnight"],hex=/^#[0-9a-f]{6}$/i;const fg=v=>{const c=[1,3,5].map(i=>parseInt(v.slice(i,i+2),16)/255).map(x=>x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4)),l=.2126*c[0]+.7152*c[1]+.0722*c[2];return 1.05/(l+.05)>=(l+.05)/.052?"#ffffff":"#0b0b0b"};if(lp.includes(p.lightPalette))r.dataset.lightPalette=p.lightPalette;if(dp.includes(p.darkPalette))r.dataset.darkPalette=p.darkPalette;if(["comfortable","compact"].includes(p.density))r.dataset.density=p.density;if(typeof p.maskSensitiveData==="boolean")r.dataset.obfuscatePii=p.maskSensitiveData?"true":"false";if(hex.test(p.lightAccent)){r.style.setProperty("--light-user-accent",p.lightAccent);r.style.setProperty("--light-user-accent-foreground",fg(p.lightAccent))}if(hex.test(p.darkAccent)){r.style.setProperty("--dark-user-accent",p.darkAccent);r.style.setProperty("--dark-user-accent-foreground",fg(p.darkAccent))}}catch{}})();`;
-
-const montserrat = Montserrat({
-	display: "swap",
-	subsets: ["latin", "latin-ext"],
-	variable: "--font-montserrat",
-});
-
-// Script-specific families are exposed as variables and only selected by the
-// locale that needs them. Disabling preload avoids downloading every writing
-// system on an English request.
-const notoSansArabic = Noto_Sans_Arabic({
-	display: "swap",
-	preload: false,
-	subsets: ["arabic"],
-	variable: "--font-noto-sans-arabic",
-});
-const notoSansDevanagari = Noto_Sans_Devanagari({
-	display: "swap",
-	preload: false,
-	subsets: ["devanagari"],
-	variable: "--font-noto-sans-devanagari",
-});
-const notoSansJapanese = Noto_Sans_JP({
-	display: "swap",
-	preload: false,
-	variable: "--font-noto-sans-japanese",
-});
-const notoSansSimplifiedChinese = Noto_Sans_SC({
-	display: "swap",
-	preload: false,
-	variable: "--font-noto-sans-simplified-chinese",
-});
-
-const fontVariables = cn(
-	montserrat.variable,
-	notoSansArabic.variable,
-	notoSansDevanagari.variable,
-	notoSansJapanese.variable,
-	notoSansSimplifiedChinese.variable,
-);
 
 export type RootDocumentProps = {
 	children: ReactNode;
@@ -82,35 +33,41 @@ export type RootDocumentProps = {
 	locale: PublicLocale;
 };
 
-/**
- * The complete document shell shared by Phaseo's independent root layouts.
- * Keeping the document in one component lets the localized and existing route
- * trees use identical providers while still emitting request-correct html
- * language, direction and script font attributes on the server.
- */
 // The consent banner copy comes from the full catalogue loaded by RootIntlProvider.
 function RootCookieConsent() {
 	const messages = useMessages() as { CookieConsent: CookieConsentCopy };
 	return <CookieConsentManager copy={messages.CookieConsent} gaMeasurementId={GA_MEASUREMENT_ID} />;
 }
 
+/** Starts PostHog, GA exception events and client error capture once in the browser (consent rules apply). */
+function useBrowserAnalytics() {
+	useEffect(() => {
+		void import("@/lib/analytics/browserAnalytics").then(({ startBrowserAnalytics }) => startBrowserAnalytics());
+	}, []);
+}
+
+/**
+ * The complete document: html language, direction and script font attributes
+ * come from the request's locale, and every page shares these providers.
+ */
 export function RootDocument({
 	children,
 	direction,
 	fontProfile,
 	locale,
 }: RootDocumentProps) {
+	useBrowserAnalytics();
 	return (
 		<html
 			lang={locale}
 			dir={direction}
 			data-font={fontProfile}
-			className={cn(fontVariables, "h-full")}
+			className="h-full"
 			suppressHydrationWarning
 		>
-			{/* eslint-disable-next-line @next/next/no-head-element -- App Router root document owns this stable, theme-mutated favicon node. */}
 			<head>
 				<script id="history-privacy" dangerouslySetInnerHTML={{ __html: HISTORY_PRIVACY_SCRIPT }} />
+				<script dangerouslySetInnerHTML={{ __html: THEME_INITIALIZATION_SCRIPT }} />
 				<script dangerouslySetInnerHTML={{ __html: APPEARANCE_INITIALIZATION_SCRIPT }} />
 				{/* The theme client mutates this exact link as the colour scheme changes. */}
 				<link
@@ -130,12 +87,7 @@ export function RootDocument({
 				<ProductAnalyticsGaBridge />
 				<ConsoleEasterEgg />
 				<CatalogNavigationGuardProvider>
-				<ThemeProvider
-					attribute="class"
-					defaultTheme="system"
-					enableSystem
-					disableTransitionOnChange
-				>
+				<ThemeProvider>
 					<DisplayPreferencesProvider locale={locale}>
 					<TooltipProvider>
 						<ThemeAwareFavicon />
@@ -156,7 +108,6 @@ export function RootDocument({
 					</DisplayPreferencesProvider>
 				</ThemeProvider>
 				</CatalogNavigationGuardProvider>
-				<DeferredVercelAnalytics />
 				</DirectionProvider>
 				</RootIntlProvider>
 				<Scripts />

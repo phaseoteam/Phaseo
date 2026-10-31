@@ -130,7 +130,7 @@ export default function OAuthButtons({
 					const meta = META[id];
 					return (
 						<form
-							action={handleOAuthRedirect}
+							action={(formData) => handleOAuthRedirect({ data: formData })}
 							key={id}
 							onSubmit={() => {
 								try {

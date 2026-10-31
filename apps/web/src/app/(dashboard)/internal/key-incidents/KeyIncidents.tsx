@@ -45,7 +45,7 @@ export function KeyIncidents({ incidents }: { incidents: KeyIncident[] }) {
 
 	function runPreview() {
 		startTransition(async () => {
-			const result = await previewKeyIncident(scope);
+			const result = await previewKeyIncident({ data: scope });
 			if (result.ok === false) { toast.error(result.message ?? t("keyIncidents.failed")); return; }
 			setPreview({ keys: result.keys, workspaces: result.workspaces, scope: scopeKey });
 		});
@@ -53,7 +53,7 @@ export function KeyIncidents({ incidents }: { incidents: KeyIncident[] }) {
 
 	function apply() {
 		startTransition(async () => {
-			const result = await applyKeyIncident({ ...scope, title: title.trim(), customerMessage: message.trim(), sourceUrl: sourceUrl.trim() || null, confirmLocationId: confirm, requestId });
+			const result = await applyKeyIncident({ data: { ...scope, title: title.trim(), customerMessage: message.trim(), sourceUrl: sourceUrl.trim() || null, confirmLocationId: confirm, requestId } });
 			if (result.ok === false) { toast.error(result.message ?? t("keyIncidents.failed")); return; }
 			setRequestId(crypto.randomUUID());
 			toast.success(t("keyIncidents.applied", { keys: result.keys, workspaces: result.workspaces, emails: result.emails }));

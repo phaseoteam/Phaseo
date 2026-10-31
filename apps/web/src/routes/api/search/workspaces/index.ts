@@ -1,8 +1,30 @@
-// Next: src/app/api/search/workspaces/route.ts
 import { createFileRoute } from "@tanstack/react-router";
-import { nextRouteHandlers } from "@/lib/start/nextRouteHandlers";
-import * as handlers from "@/app/api/search/workspaces/route";
+
+import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
+
+async function handleGet() {
+	try {
+		const data = await fetchInternalAuthHeaderData();
+		const workspaces = data.isLoggedIn
+			? data.teams.map(({ id, name }) => ({ id, name }))
+			: [];
+
+		return Response.json(
+			{ workspaces },
+			{ headers: { "Cache-Control": "private, no-store" } },
+		);
+	} catch {
+		return Response.json(
+			{ workspaces: [] },
+			{ headers: { "Cache-Control": "private, no-store" } },
+		);
+	}
+}
 
 export const Route = createFileRoute("/api/search/workspaces/")({
-	server: { handlers: nextRouteHandlers(handlers) },
+	server: {
+		handlers: {
+			GET: () => handleGet(),
+		},
+	},
 });

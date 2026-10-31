@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { createAPIProviderAction, updateAPIProviderAction } from "@/app/(dashboard)/internal/data/actions";
+import { createAPIProviderAction, updateAPIProviderAction, withTargetId } from "@/app/(dashboard)/internal/data/actions";
 import type { ProviderFormOptions } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import { PROVIDER_PROMPT_TRAINING_POLICY_VALUES } from "@/lib/providers/promptTrainingPolicy";
 import { CatalogCountryField } from "@/components/(data)/CatalogCountryField";
@@ -66,8 +66,8 @@ export function ProviderForm({ provider, options, initialScope = "global", initi
   const save = async (form: FormData) => {
     setBusy(true); setError(null);
     try {
-      if (provider) await updateAPIProviderAction(provider.api_provider_id, form);
-      else await createAPIProviderAction(form);
+      if (provider) await updateAPIProviderAction({ data: withTargetId(provider.api_provider_id, form) });
+      else await createAPIProviderAction({ data: form });
       saved.current = true;
       toast.success(provider ? tx("Common.ui.pricingEditorCopy.providerSaved" as never) : tx("Common.ui.pricingEditorCopy.providerCreatedAddItToAModelFromTheModelSProvidersTab" as never));
       router.push(`/internal/data/api-providers/${encodeURIComponent(slug.trim())}/edit`); router.refresh();

@@ -33,7 +33,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 		e?.preventDefault();
 		if (confirm !== p.name) return;
 		setLoading(true);
-		const promise = write(deletePresetAction(p.id, confirm));
+		const promise = write(deletePresetAction({ data: { id: p.id, confirmName: confirm } }));
 		try {
 			await toast.promise(promise, {
 				loading: t("strings.phraseDeletingPreset" as never),

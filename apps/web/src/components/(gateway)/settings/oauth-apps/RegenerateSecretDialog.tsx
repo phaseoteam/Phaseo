@@ -45,7 +45,7 @@ export default function RegenerateSecretDialog({
 				"@/app/(dashboard)/settings/oauth-apps/actions"
 			);
 
-			const result = await write(regenerateClientSecretAction(clientId));
+			const result = await write(regenerateClientSecretAction({ data: clientId }));
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to regenerate secret"));

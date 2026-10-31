@@ -1,5 +1,5 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
@@ -16,13 +16,16 @@ export interface CreateModelInput {
 	replacementModelId?: string | null;
 }
 
-export async function createModel(input: CreateModelInput): Promise<{ success: boolean; error?: string }> {
-	try {
-		const { accessToken } = await getServerAccountContext();
-		if (!accessToken) return { success: false, error: "Unauthorized" };
-		return await fetchAccountWebApi<{ success: boolean; error?: string }>("/api/account/models", accessToken, { method: "POST", body: JSON.stringify(input) });
-	} catch (error) { return { success: false, error: error instanceof Error ? error.message : "Model creation failed" }; }
-}
+export const createModel = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: CreateModelInput) => input)
+	.handler(async ({ data: input }): Promise<{ success: boolean; error?: string }> => {
+		try {
+			const { accessToken } = await getServerAccountContext();
+			if (!accessToken) return { success: false, error: "Unauthorized" };
+			return await fetchAccountWebApi<{ success: boolean; error?: string }>("/api/account/models", accessToken, { method: "POST", body: JSON.stringify(input) });
+		} catch (error) { return { success: false, error: error instanceof Error ? error.message : "Model creation failed" }; }
+	});
 
 export interface UpdateModelInput {
 	modelId: string;
@@ -42,10 +45,13 @@ export interface UpdateModelInput {
 	outputTypes?: string[];
 }
 
-export async function updateModel(input: UpdateModelInput): Promise<{ success: boolean; error?: string }> {
-	try {
-		const { accessToken } = await getServerAccountContext();
-		if (!accessToken) return { success: false, error: "Unauthorized" };
-		return await fetchAccountWebApi<{ success: boolean; error?: string }>(`/api/account/models/${encodeURIComponent(input.modelId)}`, accessToken, { method: "PATCH", body: JSON.stringify(input) });
-	} catch (error) { return { success: false, error: error instanceof Error ? error.message : "Model update failed" }; }
-}
+export const updateModel = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: UpdateModelInput) => input)
+	.handler(async ({ data: input }): Promise<{ success: boolean; error?: string }> => {
+		try {
+			const { accessToken } = await getServerAccountContext();
+			if (!accessToken) return { success: false, error: "Unauthorized" };
+			return await fetchAccountWebApi<{ success: boolean; error?: string }>(`/api/account/models/${encodeURIComponent(input.modelId)}`, accessToken, { method: "PATCH", body: JSON.stringify(input) });
+		} catch (error) { return { success: false, error: error instanceof Error ? error.message : "Model update failed" }; }
+	});

@@ -349,7 +349,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 	const refreshPageData = useCallback(async () => {
 		setIsRefreshingPageData(true);
 		try {
-			const result = await refreshActionDockPageDataAction(pathname);
+			const result = await refreshActionDockPageDataAction({ data: pathname });
 			if (pageRefreshTarget) {
 				await queryClient.invalidateQueries({
 					predicate: ({ queryKey }) => matchesActionDockPageQueryKey(queryKey, pageRefreshTarget),

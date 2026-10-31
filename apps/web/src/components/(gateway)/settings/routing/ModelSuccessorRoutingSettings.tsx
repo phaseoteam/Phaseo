@@ -93,17 +93,17 @@ function ModelSuccessorRoutingSettings({ initialData }: { initialData: Successor
 	};
 
 	const saveSettings = () => startTransition(async () => {
-		const result = await write(updateSuccessorRouting({
+		const result = await write(updateSuccessorRouting({ data: {
 			enabled,
 			pricePolicy,
 			maxPriceIncreasePercent: pricePolicy === "limit" ? percentValue : 0,
-		}));
+		} }));
 		report(result, t("saved"));
 	});
 
 	const addReplacement = () => startTransition(async () => {
 		const entry = { model: model.trim().toLowerCase(), successor: never ? null : successor.trim().toLowerCase() };
-		const result = await write(saveSuccessorReplacement(entry));
+		const result = await write(saveSuccessorReplacement({ data: entry }));
 		if (!report(result, t("replacementSaved"))) return;
 		setReplacements((rows) => [...rows.filter((row) => row.model !== entry.model), { ...entry, updatedAt: new Date().toISOString() }]
 			.sort((a, b) => a.model.localeCompare(b.model)));
@@ -113,7 +113,7 @@ function ModelSuccessorRoutingSettings({ initialData }: { initialData: Successor
 	});
 
 	const removeReplacement = (slug: string) => startTransition(async () => {
-		const result = await write(removeSuccessorReplacement(slug));
+		const result = await write(removeSuccessorReplacement({ data: slug }));
 		if (report(result, t("replacementRemoved"))) setReplacements((rows) => rows.filter((row) => row.model !== slug));
 	});
 

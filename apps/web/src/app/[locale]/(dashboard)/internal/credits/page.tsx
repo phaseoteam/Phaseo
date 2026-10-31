@@ -97,7 +97,7 @@ export default function InternalCreditsPage() {
 					<CardTitle>{t("createTitle")}</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<form action={createCreditGrantAction} className="grid gap-4 md:grid-cols-2">
+					<form action={(formData) => createCreditGrantAction({ data: formData })} className="grid gap-4 md:grid-cols-2">
 						<div className="space-y-2">
 							<Label htmlFor="promo-code">{t("code")}</Label>
 							<Input

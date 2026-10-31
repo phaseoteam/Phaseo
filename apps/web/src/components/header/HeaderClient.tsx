@@ -4,7 +4,6 @@
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { IntentLink } from "@/components/navigation/IntentLink";
 import { useLocale, useTranslations } from "@/i18n/react";
-import { LazyMessages } from "@/components/i18n/LazyMessages";
 import dynamic from "@/lib/dynamic";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -38,7 +37,7 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import TeamSwitcher from "./TeamSwitcher";
 import { SwapTeam } from "@/app/(dashboard)/actions";
 import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { toast } from "sonner";
 import {
 	DropdownMenu,
@@ -150,7 +149,7 @@ export default function HeaderClient({
 		const previousTeamId = activeWorkspaceId;
 		setActiveTeamId(nextTeamId);
 
-		const result = await SwapTeam(nextTeamId);
+		const result = await SwapTeam({ data: nextTeamId });
 		if (!result?.ok) {
 			setActiveTeamId(previousTeamId);
 			toast.error(tSearch("failedSwitchWorkspace", { workspace: teamName }), {
@@ -583,14 +582,12 @@ export default function HeaderClient({
 						initialActiveTeamId={currentTeamId}
 					/>
 					{user?.id && canUseActionDock ? (
-						<LazyMessages feature="actionDock">
-							<PhaseoActionDock
-								key={user.id}
-								userId={user.id}
-								userRole={userRole}
-								providerMode={providerMode}
-							/>
-						</LazyMessages>
+						<PhaseoActionDock
+							key={user.id}
+							userId={user.id}
+							userRole={userRole}
+							providerMode={providerMode}
+						/>
 					) : null}
 				</>
 			) : (

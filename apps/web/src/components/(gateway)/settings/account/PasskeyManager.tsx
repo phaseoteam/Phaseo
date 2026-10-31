@@ -88,7 +88,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		password?: string,
 	) {
 		if (action.type === "register") {
-			const startResult = await startPasskeyRegistrationAction(password);
+			const startResult = await startPasskeyRegistrationAction({ data: password });
 			if (!startResult.ok) return startResult;
 
 			const publicKey = parsePasskeyCreationOptions(startResult.data.options);
@@ -98,9 +98,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 			}
 
 			const verifyResult = await verifyPasskeyRegistrationAction(
-				startResult.data.challengeId,
-				serializePasskeyRegistrationCredential(credential),
-				password,
+				{ data: { challengeId: startResult.data.challengeId, credential: serializePasskeyRegistrationCredential(credential), currentPassword: password } },
 			);
 			if (!verifyResult.ok) return verifyResult;
 
@@ -110,8 +108,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		}
 
 		const deleteResult = await deletePasskeyAction(
-			action.passkeyId,
-			password,
+			{ data: { passkeyId: action.passkeyId, currentPassword: password } },
 		);
 		if (!deleteResult.ok) return deleteResult;
 		setPasskeys((items) =>

@@ -88,7 +88,7 @@ export function usePresetVersions(presetId: string | null) {
 	const reload = useCallback(async () => {
 		if (!presetId) return;
 		try {
-			setState({ status: "ready", data: await listPresetVersionsAction(presetId) });
+			setState({ status: "ready", data: await listPresetVersionsAction({ data: presetId }) });
 		} catch {
 			setState({ status: "failed" });
 		}
@@ -96,7 +96,7 @@ export function usePresetVersions(presetId: string | null) {
 	useEffect(() => {
 		if (!presetId) return;
 		let cancelled = false;
-		listPresetVersionsAction(presetId).then(
+		listPresetVersionsAction({ data: presetId }).then(
 			(data) => { if (!cancelled) setState({ status: "ready", data }); },
 			() => { if (!cancelled) setState({ status: "failed" }); },
 		);
@@ -148,7 +148,7 @@ export function PresetVersionLabels({
 	async function moveLabel(label: string, version: PresetVersionSummary) {
 		setBusy(`label:${label}`);
 		try {
-			const result = await write(setPresetVersionLabelAction(presetId, label, version.id));
+			const result = await write(setPresetVersionLabelAction({ data: { id: presetId, label, versionId: version.id } }));
 			if (!result.ok) {
 				show({ tone: "error", text: errorMessage(result.error) });
 				return false;
@@ -167,7 +167,7 @@ export function PresetVersionLabels({
 	async function removeLabel(label: string) {
 		setBusy(`remove:${label}`);
 		try {
-			const result = await write(removePresetVersionLabelAction(presetId, label));
+			const result = await write(removePresetVersionLabelAction({ data: { id: presetId, label } }));
 			if (!result.ok && result.error !== "label_not_found") {
 				show({ tone: "error", text: errorMessage(result.error) });
 				return;

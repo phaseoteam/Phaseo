@@ -44,7 +44,7 @@ export function SpendWorkspaceSettings({ billingTimeZone, departmentSpendAttribu
 		if (next === zone) return;
 		const previous = zone;
 		setZone(next);
-		toast.promise(write(setBillingTimeZone(next)).catch((error) => { setZone(previous); throw error; }), {
+		toast.promise(write(setBillingTimeZone({ data: next })).catch((error) => { setZone(previous); throw error; }), {
 			loading: t("saving"),
 			success: t("saved"),
 			error: t("saveFailed"),
@@ -55,7 +55,7 @@ export function SpendWorkspaceSettings({ billingTimeZone, departmentSpendAttribu
 		if (next === attribution) return;
 		const previous = attribution;
 		setAttribution(next);
-		toast.promise(write(setDepartmentSpendAttribution(next)).catch((error) => { setAttribution(previous); throw error; }), {
+		toast.promise(write(setDepartmentSpendAttribution({ data: next })).catch((error) => { setAttribution(previous); throw error; }), {
 			loading: t("saving"),
 			success: t("saved"),
 			error: t("saveFailed"),
@@ -66,7 +66,7 @@ export function SpendWorkspaceSettings({ billingTimeZone, departmentSpendAttribu
 		if (next === cadence) return;
 		const previous = cadence;
 		setCadence(next);
-		toast.promise(write(setSpendReportSettings({ cadence: next })).catch((error) => { setCadence(previous); throw error; }), {
+		toast.promise(write(setSpendReportSettings({ data: { cadence: next } })).catch((error) => { setCadence(previous); throw error; }), {
 			loading: t("saving"),
 			success: t("saved"),
 			error: t("saveFailed"),
@@ -76,7 +76,7 @@ export function SpendWorkspaceSettings({ billingTimeZone, departmentSpendAttribu
 	function saveIncludeAdmins(next: boolean) {
 		if (next === includeAdmins) return;
 		setIncludeAdmins(next);
-		toast.promise(write(setSpendReportSettings({ includeAdmins: next })).catch((error) => { setIncludeAdmins(!next); throw error; }), {
+		toast.promise(write(setSpendReportSettings({ data: { includeAdmins: next } })).catch((error) => { setIncludeAdmins(!next); throw error; }), {
 			loading: t("saving"),
 			success: t("saved"),
 			error: t("saveFailed"),

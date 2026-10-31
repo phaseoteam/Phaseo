@@ -163,7 +163,7 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 		if (!validCustomLimits) { toast.error(s("enterBothPriceLimits")); return; }
 		if (!modelCatalogLoading && !modelCatalogError && !eligibleModels.length) { toast.error(s("noEligibleTextModels")); return; }
 		startTransition(async () => {
-			const result = await updateAutoRoutingSettings(current);
+			const result = await updateAutoRoutingSettings({ data: current });
 			if (!result.ok) {
 				toast.error(
 					result.error.code === "serviceRejected"

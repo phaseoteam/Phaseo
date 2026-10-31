@@ -542,7 +542,7 @@ export default function PrivacySettingsClient(props: {
 			setSavingGlobal(true);
 			try {
 				await toast.promise(
-					updateGlobalGuardrailsSettings({
+					updateGlobalGuardrailsSettings({ data: { payload: {
 						privacyEnablePaidMayTrain: global.privacyEnablePaidMayTrain,
 						privacyEnableFreeMayTrain: global.privacyEnableFreeMayTrain,
 						privacyEnableFreeMayPublishPrompts:
@@ -561,7 +561,7 @@ export default function PrivacySettingsClient(props: {
 							global.providerRestrictionProviderIds,
 						providerRestrictionEnforceAllowed:
 							global.providerRestrictionEnforceAllowed,
-					}),
+					} } }),
 					{
 						loading: s("phraseSavingPrivacySettings"),
 						success: s("Privacy settings updated"),

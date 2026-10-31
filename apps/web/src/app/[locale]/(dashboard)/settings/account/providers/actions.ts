@@ -1,17 +1,19 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction, serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 import type { SettingsProviderOnboardingInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { setActiveWorkspaceCookieOrThrow } from "@/utils/workspaceCookie";
 
-export async function activateProviderAccountAction(): Promise<void> {
-	const account = await fetchInternalAuthHeaderData();
-	if (account.isLoggedIn && account.providerMode && account.currentTeamId) {
-		await setActiveWorkspaceCookieOrThrow(account.currentTeamId);
-	}
-}
+export const activateProviderAccountAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.handler(async (): Promise<void> => {
+		const account = await fetchInternalAuthHeaderData();
+		if (account.isLoggedIn && account.providerMode && account.currentTeamId) {
+			await setActiveWorkspaceCookieOrThrow(account.currentTeamId);
+		}
+	});
 
 async function accessToken(): Promise<string> {
 	const context = await getServerAccountContext();
@@ -19,13 +21,15 @@ async function accessToken(): Promise<string> {
 	return context.accessToken;
 }
 
-export async function fetchProviderCatalogLinksAction() {
-	const { catalogProviders } = await fetchAccountWebApi<Pick<SettingsProviderOnboardingInitialData, "catalogProviders">>(
-		"/api/account/settings/provider-onboarding",
-		await accessToken(),
-	);
-	return catalogProviders.map(({ provider_slug, role, status }) => ({ provider_slug, role, status }));
-}
+export const fetchProviderCatalogLinksAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.handler(async () => {
+		const { catalogProviders } = await fetchAccountWebApi<Pick<SettingsProviderOnboardingInitialData, "catalogProviders">>(
+			"/api/account/settings/provider-onboarding",
+			await accessToken(),
+		);
+		return catalogProviders.map(({ provider_slug, role, status }) => ({ provider_slug, role, status }));
+	});
 
 export type ProviderCatalogPreview = {
 	valid: boolean;
@@ -93,104 +97,131 @@ export type ProviderManagedCatalog = {
 	rate_limits?: ProviderRateLimits;
 };
 
-export async function previewProviderCatalogAction(catalogUrl: string) {
-	return fetchAccountWebApi<{
-		ok: true;
-		catalogUrl: string;
-		sha256: string;
-		preview: ProviderCatalogPreview;
-	}>(
-		"/api/account/settings/provider-onboarding/preview",
-		await accessToken(),
-		{ method: "POST", body: JSON.stringify({ catalogUrl }) },
-	);
-}
-
-export async function fetchProviderCatalogAction(providerSlug: string) {
-	return fetchAccountWebApi<{ ok: true } & ProviderManagedCatalog>(
-		`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}`,
-		await accessToken(),
-		{ method: "GET" },
-	);
-}
-
-export async function fetchProviderCatalogVersionAction(providerSlug: string) {
-	return fetchAccountWebApi<{ ok: true; catalog_version: string }>(
-		`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}/version`,
-		await accessToken(),
-		{ method: "GET" },
-	);
-}
-
-export async function fetchProviderCatalogEditEventAction(providerSlug: string, eventId: string) {
-	return fetchAccountWebApi<{ ok: true; previous_value: unknown; value: unknown }>(
-		`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}/events/${encodeURIComponent(eventId)}`,
-		await accessToken(), { method: "GET" },
-	);
-}
-
-export async function updateProviderCatalogAction(providerSlug: string, catalog: { schema_version?: "1.1"; data: unknown[] } | { mode: "remote" } | { refresh: true } | { revert: { modelId: string; field: string } }, expectedUpdatedAt: string) {
-	try { return await fetchAccountWebApi<{ ok: true; sync_warning?: string | null } & ProviderManagedCatalog>(
-		`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}`,
-		await accessToken(),
-		{ method: "PUT", body: JSON.stringify({ catalog, expectedUpdatedAt }) },
-	);
-	} catch (error) {
-		if (error instanceof WebApiError && error.status === 422) return { ok: false, issues: error.issues ?? [{ path: "catalog", message: error.detail ?? "Invalid catalog" }] } as const;
-		throw error;
-	}
-}
-
-export async function updateProviderRateLimitsAction(providerSlug: string, limits: ProviderRateLimit[], expectedVersion: string | null) {
-	try {
-		const result = await fetchAccountWebApi<{ ok: true; rate_limits: ProviderRateLimits }>(
-			`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}/rate-limits`,
+export const previewProviderCatalogAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((catalogUrl: string) => catalogUrl)
+	.handler(async ({ data: catalogUrl }) => {
+		return fetchAccountWebApi<{
+			ok: true;
+			catalogUrl: string;
+			sha256: string;
+			preview: ProviderCatalogPreview;
+		}>(
+			"/api/account/settings/provider-onboarding/preview",
 			await accessToken(),
-			{ method: "PUT", body: JSON.stringify({ rate_limits: limits, expectedVersion }) },
+			{ method: "POST", body: JSON.stringify({ catalogUrl }) },
 		);
-		return { ok: true, rateLimits: result.rate_limits } as const;
-	} catch (error) {
-		// Returned rather than thrown so the editor can explain them in production builds.
-		if (error instanceof WebApiError && error.status === 422) return { ok: false, conflict: false, issues: error.issues ?? [{ path: "rate_limits", message: error.detail ?? "Invalid rate limits" }] } as const;
-		if (error instanceof WebApiError && error.status === 409 && error.detail !== "provider_application_not_approved") return { ok: false, conflict: true, issues: [] } as const;
-		throw error;
-	}
-}
+	});
 
-export async function submitProviderOnboardingAction(input: {
-	providerSlug: string;
-	providerName: string;
-	websiteUrl: string;
-	logoUrl: string;
-	catalogUrl: string;
-	claimChallengeId?: string;
-}) {
-	return fetchAccountWebApi<{
-		ok: true;
-		message: string;
-		provider: { provider_slug: string; name: string; status: string; routable: boolean; routing_enabled: boolean };
-		submission: { id: string; provider_slug: string; provider_name: string; status: string; model_count: number; submitted_at: string };
-		catalogSync: { deliveryMode: string; webhookUrl: string; webhookSecret: string | null };
-		providerWorkspaceId: string;
-	}>(
-		"/api/account/settings/provider-onboarding/submit",
-		await accessToken(),
-		{ method: "POST", body: JSON.stringify(input) },
-	);
-}
+export const fetchProviderCatalogAction = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((providerSlug: string) => providerSlug)
+	.handler(async ({ data: providerSlug }) => {
+		return fetchAccountWebApi<{ ok: true } & ProviderManagedCatalog>(
+			`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}`,
+			await accessToken(),
+			{ method: "GET" },
+		);
+	});
 
-export async function startProviderClaimAction(providerSlug: string, websiteUrl: string) {
-	return fetchAccountWebApi<{ ok: true; challengeId: string; token: string; verificationUrl: string; expiresAt: string }>(
-		"/api/account/settings/provider-onboarding/claims/start",
-		await accessToken(),
-		{ method: "POST", body: JSON.stringify({ providerSlug, websiteUrl }) },
-	);
-}
+export const fetchProviderCatalogVersionAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((providerSlug: string) => providerSlug)
+	.handler(async ({ data: providerSlug }) => {
+		return fetchAccountWebApi<{ ok: true; catalog_version: string }>(
+			`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}/version`,
+			await accessToken(),
+			{ method: "GET" },
+		);
+	});
 
-export async function rotateProviderCatalogWebhookAction(providerSlug: string) {
-	return fetchAccountWebApi<{ ok: true; webhookUrl: string; webhookSecret: string }>(
-		"/api/account/settings/provider-onboarding/webhook/rotate",
-		await accessToken(),
-		{ method: "POST", body: JSON.stringify({ providerSlug }) },
-	);
-}
+export const fetchProviderCatalogEditEventAction = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((input: { providerSlug: string; eventId: string }) => input)
+	.handler(async ({ data: { providerSlug, eventId } }) => {
+		return fetchAccountWebApi<{ ok: true; previous_value: unknown; value: unknown }>(
+			`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}/events/${encodeURIComponent(eventId)}`,
+			await accessToken(), { method: "GET" },
+		);
+	});
+
+export const updateProviderCatalogAction = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((input: { providerSlug: string; catalog: { schema_version?: "1.1"; data: unknown[] } | { mode: "remote" } | { refresh: true } | { revert: { modelId: string; field: string } }; expectedUpdatedAt: string }) => input)
+	.handler(async ({ data: { providerSlug, catalog, expectedUpdatedAt } }) => {
+		try { return await fetchAccountWebApi<{ ok: true; sync_warning?: string | null } & ProviderManagedCatalog>(
+			`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}`,
+			await accessToken(),
+			{ method: "PUT", body: JSON.stringify({ catalog, expectedUpdatedAt }) },
+		);
+		} catch (error) {
+			if (error instanceof WebApiError && error.status === 422) return { ok: false, issues: error.issues ?? [{ path: "catalog", message: error.detail ?? "Invalid catalog" }] } as const;
+			throw error;
+		}
+	});
+
+export const updateProviderRateLimitsAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: { providerSlug: string; limits: ProviderRateLimit[]; expectedVersion: string | null }) => input)
+	.handler(async ({ data: { providerSlug, limits, expectedVersion } }) => {
+		try {
+			const result = await fetchAccountWebApi<{ ok: true; rate_limits: ProviderRateLimits }>(
+				`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}/rate-limits`,
+				await accessToken(),
+				{ method: "PUT", body: JSON.stringify({ rate_limits: limits, expectedVersion }) },
+			);
+			return { ok: true, rateLimits: result.rate_limits } as const;
+		} catch (error) {
+			// Returned rather than thrown so the editor can explain them in production builds.
+			if (error instanceof WebApiError && error.status === 422) return { ok: false, conflict: false, issues: error.issues ?? [{ path: "rate_limits", message: error.detail ?? "Invalid rate limits" }] } as const;
+			if (error instanceof WebApiError && error.status === 409 && error.detail !== "provider_application_not_approved") return { ok: false, conflict: true, issues: [] } as const;
+			throw error;
+		}
+	});
+
+export const submitProviderOnboardingAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: {
+		providerSlug: string;
+		providerName: string;
+		websiteUrl: string;
+		logoUrl: string;
+		catalogUrl: string;
+		claimChallengeId?: string;
+	}) => input)
+	.handler(async ({ data: input }) => {
+		return fetchAccountWebApi<{
+			ok: true;
+			message: string;
+			provider: { provider_slug: string; name: string; status: string; routable: boolean; routing_enabled: boolean };
+			submission: { id: string; provider_slug: string; provider_name: string; status: string; model_count: number; submitted_at: string };
+			catalogSync: { deliveryMode: string; webhookUrl: string; webhookSecret: string | null };
+			providerWorkspaceId: string;
+		}>(
+			"/api/account/settings/provider-onboarding/submit",
+			await accessToken(),
+			{ method: "POST", body: JSON.stringify(input) },
+		);
+	});
+
+export const startProviderClaimAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: { providerSlug: string; websiteUrl: string }) => input)
+	.handler(async ({ data: { providerSlug, websiteUrl } }) => {
+		return fetchAccountWebApi<{ ok: true; challengeId: string; token: string; verificationUrl: string; expiresAt: string }>(
+			"/api/account/settings/provider-onboarding/claims/start",
+			await accessToken(),
+			{ method: "POST", body: JSON.stringify({ providerSlug, websiteUrl }) },
+		);
+	});
+
+export const rotateProviderCatalogWebhookAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((providerSlug: string) => providerSlug)
+	.handler(async ({ data: providerSlug }) => {
+		return fetchAccountWebApi<{ ok: true; webhookUrl: string; webhookSecret: string }>(
+			"/api/account/settings/provider-onboarding/webhook/rotate",
+			await accessToken(),
+			{ method: "POST", body: JSON.stringify({ providerSlug }) },
+		);
+	});

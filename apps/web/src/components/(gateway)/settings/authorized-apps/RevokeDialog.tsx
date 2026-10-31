@@ -42,7 +42,7 @@ export default function RevokeDialog({
 				"@/app/(dashboard)/settings/authorized-apps/actions"
 			);
 
-			const result = await revokeAuthorizationAction(authorizationId);
+			const result = await revokeAuthorizationAction({ data: authorizationId });
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to revoke access"));

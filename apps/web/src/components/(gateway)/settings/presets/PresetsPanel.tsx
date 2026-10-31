@@ -63,12 +63,12 @@ export default function PresetsPanel({
 		const versionLabel = preset.versioning_method === "semver" ? window.prompt(t("strings.phraseSemanticVersionForExample120Or200Beta1" as never)) ?? undefined : undefined;
 		if (preset.versioning_method === "semver" && !versionLabel) return;
 		setPublishingPresetId(preset.id);
-		try { const result = await publishPresetVersionAction(preset.id, releaseNotes, versionLabel); toast.success(`${t("credits.Published" as never)} ${result.version?.version_label ?? `${t("credits.release" as never)} ${result.version?.version_number ?? t("credits.next" as never)}`}`); window.location.reload(); }
+		try { const result = await publishPresetVersionAction({ data: { id: preset.id, releaseNotes, versionLabel } }); toast.success(`${t("credits.Published" as never)} ${result.version?.version_label ?? `${t("credits.release" as never)} ${result.version?.version_number ?? t("credits.next" as never)}`}`); window.location.reload(); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to publish version")); setPublishingPresetId(null); }
 	}
 
 	async function onApplyUpstream(id: string, versionId: string, versionNumber: number) {
-		try { await applyPresetUpstreamVersionAction(id, versionId); toast.success(`${t("credits.Upstream" as never)} v${versionNumber} ${t("credits.applied to your draft" as never)}`); window.location.reload(); }
+		try { await applyPresetUpstreamVersionAction({ data: { id, versionId } }); toast.success(`${t("credits.Upstream" as never)} v${versionNumber} ${t("credits.applied to your draft" as never)}`); window.location.reload(); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to apply upstream update")); }
 	}
 

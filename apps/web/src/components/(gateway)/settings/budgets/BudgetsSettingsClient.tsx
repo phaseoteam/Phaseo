@@ -276,8 +276,8 @@ function BudgetForm({ editing, onDone }: { editing: Editing; onDone: () => void 
 		setSaving(true);
 		setError(null);
 		const result = await write(editing.budget
-			? updateWorkspaceBudget(editing.budget.id, limit)
-			: createWorkspaceBudget(editing.interval, limit));
+			? updateWorkspaceBudget({ data: { id: editing.budget.id, limitUsd: limit } })
+			: createWorkspaceBudget({ data: { interval: editing.interval, limitUsd: limit } }));
 		setSaving(false);
 		const key = errorKey(result);
 		if (key) {
@@ -327,7 +327,7 @@ function DeleteBudgetDialog({ budget, onClose }: { budget: SettingsWorkspaceBudg
 	async function confirm() {
 		if (!budget) return;
 		setDeleting(true);
-		const result = await write(deleteWorkspaceBudget(budget.id));
+		const result = await write(deleteWorkspaceBudget({ data: budget.id }));
 		setDeleting(false);
 		const key = errorKey(result);
 		if (key) {

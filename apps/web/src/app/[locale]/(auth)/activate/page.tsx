@@ -97,7 +97,7 @@ function ActivateDeviceCard({ userCode }: { userCode: string }) {
 									</div>
 								</div>
 							</div>
-							<form id="approve-device" action={approveDeviceAction} className="space-y-2">
+							<form id="approve-device" action={(formData) => approveDeviceAction({ data: formData })} className="space-y-2">
 								<input type="hidden" name="user_code" value={userCode} />
 								<WorkspaceSelectField workspaces={workspaces} />
 							</form>
@@ -105,7 +105,7 @@ function ActivateDeviceCard({ userCode }: { userCode: string }) {
 					)}
 				</CardContent>
 				<CardFooter className="gap-3">
-					<form action={denyDeviceAction} className="flex-1">
+					<form action={(formData) => denyDeviceAction({ data: formData })} className="flex-1">
 						<input type="hidden" name="user_code" value={userCode} />
 						<Button variant="outline" className="w-full" disabled={!userCode}>
 							{t("deny")}

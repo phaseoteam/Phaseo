@@ -35,30 +35,6 @@
       ],
       "@/*": [
         "./src/*"
-      ],
-      "next/server": [
-        "./src/compat/next-server.ts"
-      ],
-      "next/cache": [
-        "./src/compat/next-cache.ts"
-      ],
-      "next/headers": [
-        "./src/compat/next-headers.ts"
-      ],
-      "next/font/google": [
-        "./src/compat/next-font-google.ts"
-      ],
-      "next/web-vitals": [
-        "./src/compat/next-web-vitals.ts"
-      ],
-      "@vercel/analytics/react": [
-        "./src/compat/noop-modules.tsx"
-      ],
-      "server-only": [
-        "./src/compat/empty.ts"
-      ],
-      "client-only": [
-        "./src/compat/empty.ts"
       ]
     }
   },
@@ -71,8 +47,6 @@
   "exclude": [
     "node_modules",
     "dist",
-    "src/proxy.ts",
-    "src/i18n/request.ts",
     "src/app/global-not-found.tsx",
     "src/app/?locale?/layout.tsx",
     "src/**/*.test.ts",

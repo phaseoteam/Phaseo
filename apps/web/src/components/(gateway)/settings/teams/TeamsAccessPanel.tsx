@@ -131,13 +131,13 @@ export default function TeamsAccessPanel({
 		setBusyRequestId(requestId);
 		try {
 			if (action === "approve") {
-				await toast.promise(approveJoinRequest(requestId).then(() => router.refresh()), {
+				await toast.promise(approveJoinRequest({ data: requestId }).then(() => router.refresh()), {
 					loading: t("teams.approvingRequest"),
 					success: t("teams.requestApproved"),
 					error: () => t("teams.requestActionFailed"),
 				});
 			} else {
-				await toast.promise(rejectJoinRequest(requestId).then(() => router.refresh()), {
+				await toast.promise(rejectJoinRequest({ data: requestId }).then(() => router.refresh()), {
 					loading: t("teams.rejectingRequest"),
 					success: t("teams.requestRejected"),
 					error: () => t("teams.requestActionFailed"),

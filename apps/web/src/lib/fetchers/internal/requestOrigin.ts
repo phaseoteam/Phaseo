@@ -1,10 +1,10 @@
-import { headers } from "next/headers";
+import { currentRequestHeaders } from "@/lib/server/currentRequest";
 
 export async function requestOrigin(): Promise<{
 	cookie: string;
 	origin: string;
 }> {
-	const requestHeaders = await headers();
+	const requestHeaders = currentRequestHeaders();
 	const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
 	const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
 	if (!host) {

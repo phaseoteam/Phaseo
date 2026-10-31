@@ -123,10 +123,10 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 	const handleSaveDetails = () => {
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelDetails({
+			const result = await updateModelDetails({ data: {
 				modelId: model.modelId,
 				details,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -140,10 +140,10 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 	const handleSaveLinks = () => {
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelLinks({
+			const result = await updateModelLinks({ data: {
 				modelId: model.modelId,
 				links,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -157,10 +157,10 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 	const handleSaveAliases = () => {
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelAliases({
+			const result = await updateModelAliases({ data: {
 				modelId: model.modelId,
 				aliases,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -174,10 +174,10 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 	const handleSaveOrganization = () => {
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModelOrganization({
+			const result = await updateModelOrganization({ data: {
 				modelId: model.modelId,
 				organisationId: selectedOrg || null,
-			});
+			} });
 
 			if (result.success) {
 				router.refresh();
@@ -191,7 +191,7 @@ export function AdvancedModelEditor({ model }: AdvancedModelEditorProps) {
 	const handleDeleteModel = () => {
 		setError(null);
 		startTransition(async () => {
-			const result = await deleteModel(model.modelId);
+			const result = await deleteModel({ data: model.modelId });
 
 			if (result.success) {
 				setOpen(false);

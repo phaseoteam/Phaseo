@@ -20,8 +20,8 @@ export default function ProviderIntegrationSummary({ source, canManage }: { sour
 	async function refresh() {
 		setRefreshing(true);
 		try {
-			const catalog = await fetchProviderCatalogAction(source.provider_slug);
-			const result = await updateProviderCatalogAction(source.provider_slug, { refresh: true }, catalog.source.catalog_version);
+			const catalog = await fetchProviderCatalogAction({ data: source.provider_slug });
+			const result = await updateProviderCatalogAction({ data: { providerSlug: source.provider_slug, catalog: { refresh: true }, expectedUpdatedAt: catalog.source.catalog_version } });
 			if (!result.ok) throw new Error(t("refreshFailed"));
 			await invalidateAccountQueries(queryClient);
 			toast.success(t("refreshed"));

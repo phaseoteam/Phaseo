@@ -1,8 +1,15 @@
-// Next: src/app/.well-known/oauth-protected-resource/route.ts
 import { createFileRoute } from "@tanstack/react-router";
-import { nextRouteHandlers } from "@/lib/start/nextRouteHandlers";
-import * as handlers from "@/app/.well-known/oauth-protected-resource/route";
+import { buildOAuthProtectedResourceMetadata } from "@/lib/agent-discovery";
 
 export const Route = createFileRoute("/.well-known/oauth-protected-resource/")({
-	server: { handlers: nextRouteHandlers(handlers) },
+	server: {
+		handlers: {
+			GET: () =>
+				Response.json(buildOAuthProtectedResourceMetadata(), {
+					headers: {
+						"Cache-Control": "public, max-age=3600, stale-while-revalidate=3600",
+					},
+				}),
+		},
+	},
 });

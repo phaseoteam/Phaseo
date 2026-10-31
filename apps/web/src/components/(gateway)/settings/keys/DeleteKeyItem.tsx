@@ -45,7 +45,7 @@ export default function DeleteKeyItem({
 		e?.preventDefault();
 		if (confirm !== k.name) return;
 		setLoading(true);
-		const promise = deleteApiKeyAction(k.id, confirm);
+		const promise = deleteApiKeyAction({ data: { id: k.id, confirmName: confirm } });
 		try {
 			await toast.promise(promise, {
 					loading: t("keys.deletingKey"),

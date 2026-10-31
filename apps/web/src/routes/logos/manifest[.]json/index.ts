@@ -1,8 +1,16 @@
-// Next: src/app/logos/manifest.json/route.ts
 import { createFileRoute } from "@tanstack/react-router";
-import { nextRouteHandlers } from "@/lib/start/nextRouteHandlers";
-import * as handlers from "@/app/logos/manifest.json/route";
+import { builtInLogoData } from "@phaseo/app-kit/logos";
+import { PUBLIC_CDN_CACHE_CONTROL } from "@/lib/cache/publicCacheHeaders";
 
+/**
+ * The logo data (each ID's files under /logos, display names and aliases) for the apps. The mobile app downloads it,
+ * so logos added here show without an app update; the files themselves stay in public/logos.
+ * It reads no request data, so the CDN serves it like robots.txt.
+ */
 export const Route = createFileRoute("/logos/manifest.json/")({
-	server: { handlers: nextRouteHandlers(handlers) },
+	server: {
+		handlers: {
+			GET: () => Response.json(builtInLogoData, { headers: { "Cache-Control": PUBLIC_CDN_CACHE_CONTROL } }),
+		},
+	},
 });

@@ -121,7 +121,7 @@ export default function EmailPassword({
 			</div>
 
 			<form
-				action={handleEmailSignup}
+				action={(formData) => handleEmailSignup({ data: formData })}
 				onSubmit={handleSubmit}
 				className="grid gap-3"
 			>

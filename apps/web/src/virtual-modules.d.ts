@@ -1,8 +1,4 @@
-// Modules the Vite plugins in build/phaseo-plugins.ts and the Workers runtime provide.
-declare module "virtual:phaseo-server-action-registry" {
-	export const actionModules: Record<string, () => Promise<Record<string, unknown>>>;
-}
-
+// Modules the Vite plugins in vite/plugins.ts and the Workers runtime provide.
 declare module "virtual:phaseo-announcement-mdx" {
 	export const announcementModules: Record<string, () => Promise<Record<string, unknown>>>;
 }

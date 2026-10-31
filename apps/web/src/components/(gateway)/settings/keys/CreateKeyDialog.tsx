@@ -81,12 +81,7 @@ export default function CreateKeyDialog({
 			const teamArg =
 				selectedTeamId === null ? "" : (selectedTeamId as string);
 			const res: any = await createApiKeyAction(
-				name,
-				currentUserId as string,
-				teamArg,
-				JSON.stringify([]), // default empty scopes
-				getApiKeyPreset(selectedPresetId).limits,
-				storageLocations
+				{ data: { name, creatorUserId: currentUserId as string, workspaceId: teamArg, scopes: JSON.stringify([]), limits: getApiKeyPreset(selectedPresetId).limits, storageLocations } }
 			);
 			setPlainKey(res?.plaintext ?? null);
 			void invalidateSettings();

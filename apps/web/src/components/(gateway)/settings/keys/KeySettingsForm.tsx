@@ -164,7 +164,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 
 		setSaving(true);
 		try {
-			const promise = updateApiKeyAction(k.id, { ...(enabled !== isKeyEnabled(k) ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ? { ipAllowlist } : {}), ...(JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []) ? { storageLocations } : {}), limits: limitPayload });
+			const promise = updateApiKeyAction({ data: { id: k.id, updates: { ...(enabled !== isKeyEnabled(k) ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ? { ipAllowlist } : {}), ...(JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []) ? { storageLocations } : {}), limits: limitPayload } } });
 			toast.promise(promise, {
 					loading: t("strings.phraseSavingKey"),
 					success: t("strings.Key updated"),

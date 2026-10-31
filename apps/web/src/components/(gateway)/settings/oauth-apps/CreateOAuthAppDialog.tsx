@@ -59,14 +59,14 @@ export default function CreateOAuthAppDialog({
 			// Import the action dynamically to avoid bundling issues
 			const { createOAuthAppAction } = await import("@/app/(dashboard)/settings/oauth-apps/actions");
 
-			const result = await write(createOAuthAppAction({
+			const result = await write(createOAuthAppAction({ data: {
 				name: formData.name,
 				description: formData.description || undefined,
 				homepage_url: formData.homepageUrl || undefined,
 				redirect_uris: formData.redirectUris.split("\n").filter(uri => uri.trim()),
 				workspace_id: currentTeamId!,
 				allowed_scopes: formData.allowedScopes,
-			}));
+			} }));
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to create OAuth app"));

@@ -3,7 +3,6 @@ import { getSettingsMessages } from "@/i18n/settings";
 import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messages";
 import { getPublicMessages } from "@/i18n/messages";
 import { publicLocales } from "@/i18n/routing";
-import { selectMessages, SHELL_MESSAGE_NAMESPACES } from "@/i18n/message-scopes";
 import { getSettingsSidebar } from "./Sidebar.config";
 import { getSettingsNavigationCopy } from "./Sidebar.labels";
 
@@ -34,8 +33,8 @@ describe("settings sheet translations", () => {
             "SettingsUI.observability.noApiKey", "SettingsUI.observability.noApp",
             "SettingsUI.strings.Add notifier", "SettingsUI.strings.phraseConnectOneOrMoreChannelsToWorkspaceAlerts",
         ]) expect(t(key as never)).toEqual(expect.any(String));
-        // The header sheet is outside the settings page provider.
-        const shell = createTranslator({ locale, messages: selectMessages(messages, SHELL_MESSAGE_NAMESPACES), onError } as never);
+        // The header sheet reads its own copy from the same catalogue.
+        const shell = createTranslator({ locale, messages, onError } as never);
         for (const key of ["open", "close", "description", "scope", "settingsTitle", "accountScope", "workspaceScope"])
             expect(shell(`SettingsUI.settingsCopy.settingsSidebar.${key}` as never)).toEqual(expect.any(String));
         expect(onError).not.toHaveBeenCalled();

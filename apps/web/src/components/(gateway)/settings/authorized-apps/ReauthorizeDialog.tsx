@@ -41,7 +41,7 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 	};
 	const reauthorizeOnWeb = async () => {
 		setSaving(true);
-		const result = await reauthorizeCliScopesAction(authorizationId, Array.from(new Set([...currentScopes, ...selectedAdditionalScopes])));
+		const result = await reauthorizeCliScopesAction({ data: { authorizationId, scopes: Array.from(new Set([...currentScopes, ...selectedAdditionalScopes])) } });
 		setSaving(false);
 		if (result.error) {
 			toast.error(localizedSettingsError(result.error, t, "Action failed"));

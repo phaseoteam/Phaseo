@@ -54,7 +54,7 @@ function VerifyMFAContent() {
             const returnUrl = requestedReturnUrl?.startsWith('/') && !requestedReturnUrl.startsWith('//')
                 ? requestedReturnUrl
                 : '/'
-            const result = await verifyMFALoginAction(finalCode, returnUrl)
+            const result = await verifyMFALoginAction({ data: { code: finalCode, returnUrl } })
             toast.success(t('success'))
 
             setTimeout(() => {

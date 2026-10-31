@@ -11,7 +11,7 @@ export function ProviderCatalogDockPanel({ userId, onDirtyChange }: { userId: st
 	const tx = useTranslations();
 	const query = useQuery({
 		queryKey: ["providerCatalogLinks", userId],
-		queryFn: fetchProviderCatalogLinksAction,
+		queryFn: () => fetchProviderCatalogLinksAction(),
 	});
 
 	if (query.isPending) {

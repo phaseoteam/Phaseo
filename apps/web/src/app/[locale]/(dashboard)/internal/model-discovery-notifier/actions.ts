@@ -1,5 +1,5 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction } from "@/lib/serverFn/actionMiddleware";
 import type { InternalModelNotificationModel } from "@/lib/model-discovery/internalModelDiscordNotifier";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import {
@@ -154,114 +154,116 @@ async function parseModelsText(modelsText: string): Promise<InternalModelNotific
 	});
 }
 
-export async function testInternalModelDiscoveryNotifierAction(
-	input: NotifierTestInput
-): Promise<NotifierTestResult> {
-	try {
-		await requireAdmin();
-		const models = await parseModelsText(input.modelsText ?? "");
-		if (models.length === 0) {
+export const testInternalModelDiscoveryNotifierAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: NotifierTestInput) => input)
+	.handler(async ({ data: input }): Promise<NotifierTestResult> => {
+		try {
+			await requireAdmin();
+			const models = await parseModelsText(input.modelsText ?? "");
+			if (models.length === 0) {
+				return {
+					ok: false,
+					messageKey: "modelsRequired",
+					payloadPreview: "",
+					modelCount: 0,
+				};
+			}
+
+			const payload = buildPublicModelAnnouncementPayload(models, trimOrNull(input.roleId), {
+				discordUserId: trimOrNull(input.userId),
+				includeMentions: input.includeDefaultRoleMention !== false,
+				avatarUrl: null,
+				username: "Phaseo Public Model Discovery",
+				latestModelsUrl: "https://phaseo.app/models",
+				maxModelEmbeds: 10,
+			});
+			const payloadPreview = JSON.stringify(payload, null, 2);
+
+			if (!input.send) {
+				return {
+					ok: true,
+					messageKey: "previewGenerated",
+					payloadPreview,
+					modelCount: models.length,
+				};
+			}
+
+			const delivery = await sendAdminModelAnnouncementTest(
+				payload,
+				trimOrNull(input.webhookUrl) ?? undefined,
+				models.map((model) => model.modelId),
+				input.includeDefaultRoleMention !== false,
+			);
+
+			return {
+				ok: true,
+				messageKey: delivery.stateRecorded === false ? "sentStateWarning" : "sent",
+				payloadPreview,
+				modelCount: models.length,
+			};
+		} catch (error) {
+			console.error("Model discovery notifier test failed", error);
 			return {
 				ok: false,
-				messageKey: "modelsRequired",
+				messageKey: "testFailed",
 				payloadPreview: "",
 				modelCount: 0,
 			};
 		}
+	});
 
-		const payload = buildPublicModelAnnouncementPayload(models, trimOrNull(input.roleId), {
-			discordUserId: trimOrNull(input.userId),
-			includeMentions: input.includeDefaultRoleMention !== false,
-			avatarUrl: null,
-			username: "Phaseo Public Model Discovery",
-			latestModelsUrl: "https://phaseo.app/models",
-			maxModelEmbeds: 10,
-		});
-		const payloadPreview = JSON.stringify(payload, null, 2);
+export const sendInternalModelAnnouncementAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((rawModelId: string) => rawModelId)
+	.handler(async ({ data: rawModelId }): Promise<{ ok: boolean; message: string }> => {
+		try {
+			await requireAdmin();
 
-		if (!input.send) {
-			return {
-				ok: true,
-				messageKey: "previewGenerated",
-				payloadPreview,
-				modelCount: models.length,
-			};
+			const modelId = trimOrNull(rawModelId)?.toLowerCase();
+			if (!modelId || !modelId.includes("/") || !/^[a-z0-9][a-z0-9._:/+@-]*$/.test(modelId)) {
+				return { ok: false, message: "Invalid model ID." };
+			}
+
+			const { row } = await fetchAdminCatalogRecord("model", modelId);
+			if (!row) return { ok: false, message: "Model not found in the catalog." };
+
+			const canonicalModelId = trimOrNull(String(row.model_id ?? ""))?.toLowerCase();
+			if (!canonicalModelId) return { ok: false, message: "Model ID is missing from the catalog record." };
+			const labSlug = (
+				trimOrNull(typeof row.lab_slug === "string" ? row.lab_slug : null) ??
+				canonicalModelId.split("/")[0] ??
+				"phaseo"
+			).toLowerCase();
+			const lab = (await loadOrganisationMetaMap([labSlug]))[labSlug];
+			const modelName = trimOrNull(typeof row.name === "string" ? row.name : null) ?? canonicalModelId;
+			const nowIso = new Date().toISOString();
+			const payload = buildPublicModelAnnouncementPayload([{
+				modelId: canonicalModelId,
+				modelName,
+				modelUrl: toModelUrlFromId(canonicalModelId),
+				imageUrl: toPublicModelImageUrl(canonicalModelId),
+				creatorId: labSlug,
+				creatorName: lab?.name ?? titleCaseFromSlug(labSlug),
+				creatorColor: lab?.colour,
+				changeSummaryLines: ["Shared by the Phaseo team."],
+			}], null, {
+				username: "Phaseo Public Model Discovery",
+				avatarUrl: "https://phaseo.app/png_logo_light.png",
+				latestModelsUrl: "https://phaseo.app/models",
+				message: "Model announcement from Phaseo.",
+				includeMentions: false,
+				maxModelEmbeds: 1,
+				nowIso,
+			});
+			const result = await sendAdminModelAnnouncement(canonicalModelId, payload);
+			if (result.stateRecorded === false) {
+				return { ok: true, message: "Sent the Discord announcement, but could not save its state." };
+			}
+
+			return { ok: true, message: "Sent a Discord announcement for " + modelName + "." };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			return { ok: false, message: "Discord announcement failed: " + message };
 		}
-
-		const delivery = await sendAdminModelAnnouncementTest(
-			payload,
-			trimOrNull(input.webhookUrl) ?? undefined,
-			models.map((model) => model.modelId),
-			input.includeDefaultRoleMention !== false,
-		);
-
-		return {
-			ok: true,
-			messageKey: delivery.stateRecorded === false ? "sentStateWarning" : "sent",
-			payloadPreview,
-			modelCount: models.length,
-		};
-	} catch (error) {
-		console.error("Model discovery notifier test failed", error);
-		return {
-			ok: false,
-			messageKey: "testFailed",
-			payloadPreview: "",
-			modelCount: 0,
-		};
-	}
-}
-
-export async function sendInternalModelAnnouncementAction(
-	rawModelId: string,
-): Promise<{ ok: boolean; message: string }> {
-	try {
-		await requireAdmin();
-
-		const modelId = trimOrNull(rawModelId)?.toLowerCase();
-		if (!modelId || !modelId.includes("/") || !/^[a-z0-9][a-z0-9._:/+@-]*$/.test(modelId)) {
-			return { ok: false, message: "Invalid model ID." };
-		}
-
-		const { row } = await fetchAdminCatalogRecord("model", modelId);
-		if (!row) return { ok: false, message: "Model not found in the catalog." };
-
-		const canonicalModelId = trimOrNull(String(row.model_id ?? ""))?.toLowerCase();
-		if (!canonicalModelId) return { ok: false, message: "Model ID is missing from the catalog record." };
-		const labSlug = (
-			trimOrNull(typeof row.lab_slug === "string" ? row.lab_slug : null) ??
-			canonicalModelId.split("/")[0] ??
-			"phaseo"
-		).toLowerCase();
-		const lab = (await loadOrganisationMetaMap([labSlug]))[labSlug];
-		const modelName = trimOrNull(typeof row.name === "string" ? row.name : null) ?? canonicalModelId;
-		const nowIso = new Date().toISOString();
-		const payload = buildPublicModelAnnouncementPayload([{
-			modelId: canonicalModelId,
-			modelName,
-			modelUrl: toModelUrlFromId(canonicalModelId),
-			imageUrl: toPublicModelImageUrl(canonicalModelId),
-			creatorId: labSlug,
-			creatorName: lab?.name ?? titleCaseFromSlug(labSlug),
-			creatorColor: lab?.colour,
-			changeSummaryLines: ["Shared by the Phaseo team."],
-		}], null, {
-			username: "Phaseo Public Model Discovery",
-			avatarUrl: "https://phaseo.app/png_logo_light.png",
-			latestModelsUrl: "https://phaseo.app/models",
-			message: "Model announcement from Phaseo.",
-			includeMentions: false,
-			maxModelEmbeds: 1,
-			nowIso,
-		});
-		const result = await sendAdminModelAnnouncement(canonicalModelId, payload);
-		if (result.stateRecorded === false) {
-			return { ok: true, message: "Sent the Discord announcement, but could not save its state." };
-		}
-
-		return { ok: true, message: "Sent a Discord announcement for " + modelName + "." };
-	} catch (error) {
-		const message = error instanceof Error ? error.message : "Unknown error";
-		return { ok: false, message: "Discord announcement failed: " + message };
-	}
-}
+	});

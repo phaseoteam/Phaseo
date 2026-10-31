@@ -80,7 +80,7 @@ export default function EmailPassword({
 			</div>
 
 			<form
-				action={handlePasswordSignIn}
+				action={(formData) => handlePasswordSignIn({ data: formData })}
 				className="grid gap-3"
 				onSubmit={handleSubmit}
 			>
@@ -164,7 +164,7 @@ export default function EmailPassword({
 			<ForgotPasswordDialog
 				open={forgotPasswordOpen}
 				onOpenChange={setForgotPasswordOpen}
-				onSubmit={(email) => forgotPasswordAction(email, locale)}
+				onSubmit={(email) => forgotPasswordAction({ data: { email, localeInput: locale } })}
 			/>
 		</div>
 	);

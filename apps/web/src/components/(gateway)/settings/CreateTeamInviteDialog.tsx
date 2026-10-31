@@ -95,12 +95,7 @@ export default function CreateTeamInviteDialog({
 			const code = generateCode(10);
 			// call server action to persist hashed token
 			await createTeamInviteAction(
-				selectedTeam,
-				currentUserId,
-				role,
-				code,
-				expiresIn,
-				maxUses ?? null
+				{ data: { workspaceId: selectedTeam, creatorUserId: currentUserId, role, token: code, expiresInDays: expiresIn, maxUses: maxUses ?? null } }
 			).then(() => {
 				setGeneratedCode(code);
 				router.refresh();

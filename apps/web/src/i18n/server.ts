@@ -53,7 +53,3 @@ export async function getTimeZone(): Promise<string> {
 export function setRequestLocale(_locale: string): void {
 	// The locale comes from the URL in web-start; nothing to store.
 }
-
-export function getRequestConfig<T>(factory: T): T {
-	return factory;
-}

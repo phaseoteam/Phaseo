@@ -398,7 +398,7 @@ export default function UsageLogsToolbar({
 						return;
 					}
 					if (showToast) {
-						const result = await revalidateUsage("logs");
+						const result = await revalidateUsage({ data: "logs" });
 						if (!result.ok) {
 							throw new Error(
 								localizedSettingsError(

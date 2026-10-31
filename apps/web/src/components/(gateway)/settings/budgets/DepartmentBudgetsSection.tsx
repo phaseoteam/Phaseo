@@ -248,8 +248,8 @@ function DepartmentBudgetForm({
 		setSaving(true);
 		setError(null);
 		const result = await write(existing
-			? updateDepartmentBudget(existing.id, limit)
-			: createDepartmentBudget(departmentId, interval, limit));
+			? updateDepartmentBudget({ data: { id: existing.id, limitUsd: limit } })
+			: createDepartmentBudget({ data: { departmentId, interval, limitUsd: limit } }));
 		setSaving(false);
 		const key = errorKey(result);
 		if (key) {
@@ -331,7 +331,7 @@ function DeleteDepartmentBudgetDialog({ budget, onClose }: { budget: SettingsDep
 	async function confirm() {
 		if (!budget) return;
 		setDeleting(true);
-		const result = await write(deleteDepartmentBudget(budget.id));
+		const result = await write(deleteDepartmentBudget({ data: budget.id }));
 		setDeleting(false);
 		const key = errorKey(result);
 		if (key) {

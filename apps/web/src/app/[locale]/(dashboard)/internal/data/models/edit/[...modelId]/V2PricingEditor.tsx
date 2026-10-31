@@ -367,7 +367,7 @@ export default function V2PricingEditor({ modelId, focusProviderId }: { modelId:
 				effective_to: draft.effective_to ? new Date(draft.effective_to).toISOString() : null,
 				meters: draft.meters.map((meter) => ({ ...meter, direction: meter.direction || null, unit_quantity: Number(meter.unit_quantity), price_nanos: Math.round(Number(meter.price_usd) * 1_000_000_000), meter_order: Number(meter.meter_order), metadata: meter.metadata })),
 			});
-			await revalidateSingleModelApiInfoAction(modelId);
+			await revalidateSingleModelApiInfoAction({ data: modelId });
 			const saved = result.pricing as { sku?: Record<string, any>; meters?: Array<Record<string, any>> };
 			if (!saved.sku) throw new Error(tx("Common.ui.pricingEditorCopy.theServerDidNotReturnTheSavedPriceReloadToVerifyBeforeRetrying" as never));
 			const savedDraft = buildSkuDraft(saved.sku, saved.meters ?? []);
@@ -391,7 +391,7 @@ export default function V2PricingEditor({ modelId, focusProviderId }: { modelId:
             setDrafts((rows) => rows.map((row, rowIndex) => rowIndex === index ? ended : row));
             setSavedDrafts((rows) => ({ ...rows, [ended.sku_id!]: JSON.stringify(ended) }));
             setSelectedSkuIndex(null); setDeleteIndex(null);
-            await revalidateSingleModelApiInfoAction(modelId);
+            await revalidateSingleModelApiInfoAction({ data: modelId });
             toast.success(tx("Common.ui.pricingEditorCopy.priceGroupEndDated" as never));
         } catch (error) { toast.error(localizedInternalCatalogError(error, tx, "Common.ui.pricingEditorCopy.endDateFailed")); }
 		finally { setBusyKey(null); }

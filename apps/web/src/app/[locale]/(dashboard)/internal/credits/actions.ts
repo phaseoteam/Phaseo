@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverMutation } from "@/lib/serverFn/actionMiddleware";
 import {
 	isPromoCodeFormatValid,
 	normalizePromoCodeInput,
@@ -38,69 +37,77 @@ function parseNonNegativeInt(raw: FormDataEntryValue | null, fallback: number): 
 	return parsed;
 }
 
-export async function createCreditGrantAction(formData: FormData) {
-	const accessToken = await requireAdmin();
+export const createCreditGrantAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const accessToken = await requireAdmin();
 
-	const codeRaw = String(formData.get("code") ?? "");
-	const code = normalizePromoCodeInput(codeRaw);
-	if (!isPromoCodeFormatValid(code)) {
-		throw new Error("Code must use A-Z, 0-9, _ or -, and be at least 2 chars.");
-	}
+		const codeRaw = String(formData.get("code") ?? "");
+		const code = normalizePromoCodeInput(codeRaw);
+		if (!isPromoCodeFormatValid(code)) {
+			throw new Error("Code must use A-Z, 0-9, _ or -, and be at least 2 chars.");
+		}
 
-	const amountNanos = parsePositiveUsdToNanos(formData.get("amount_usd"));
-	const maxRedemptions = parsePositiveInt(formData.get("max_redemptions"), 1);
-	const expiresAt = parseOptionalExpiryInput(formData.get("expires_at"));
-	const noteRaw = String(formData.get("note") ?? "").trim();
-	const note = noteRaw.length > 0 ? noteRaw : null;
+		const amountNanos = parsePositiveUsdToNanos(formData.get("amount_usd"));
+		const maxRedemptions = parsePositiveInt(formData.get("max_redemptions"), 1);
+		const expiresAt = parseOptionalExpiryInput(formData.get("expires_at"));
+		const noteRaw = String(formData.get("note") ?? "").trim();
+		const note = noteRaw.length > 0 ? noteRaw : null;
 
-	const payload = {
-		code,
-		amount_nanos: amountNanos,
-		max_redemptions: maxRedemptions,
-		expires_at: expiresAt,
-		note,
-	};
-	await fetchAccountWebApi("/api/account/credits/admin/grants", accessToken, { method: "POST", body: JSON.stringify(payload) });
+		const payload = {
+			code,
+			amount_nanos: amountNanos,
+			max_redemptions: maxRedemptions,
+			expires_at: expiresAt,
+			note,
+		};
+		await fetchAccountWebApi("/api/account/credits/admin/grants", accessToken, { method: "POST", body: JSON.stringify(payload) });
 
-	revalidatePath("/internal/credits");
-}
+	});
 
-export async function disableCreditGrantAction(formData: FormData) {
-	const accessToken = await requireAdmin();
-	const grantId = String(formData.get("grant_id") ?? "").trim();
-	if (!grantId) throw new Error("Missing grant id");
+export const disableCreditGrantAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const accessToken = await requireAdmin();
+		const grantId = String(formData.get("grant_id") ?? "").trim();
+		if (!grantId) throw new Error("Missing grant id");
 
-	await fetchAccountWebApi(`/api/account/credits/admin/grants/${encodeURIComponent(grantId)}/disable`, accessToken, { method: "POST" });
+		await fetchAccountWebApi(`/api/account/credits/admin/grants/${encodeURIComponent(grantId)}/disable`, accessToken, { method: "POST" });
 
-	revalidatePath("/internal/credits");
-}
+	});
 
-export async function deleteCreditGrantAction(formData: FormData) {
-	const accessToken = await requireAdmin();
-	const grantId = String(formData.get("grant_id") ?? "").trim();
-	if (!grantId) throw new Error("Missing grant id");
+export const deleteCreditGrantAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const accessToken = await requireAdmin();
+		const grantId = String(formData.get("grant_id") ?? "").trim();
+		if (!grantId) throw new Error("Missing grant id");
 
-	await fetchAccountWebApi(`/api/account/credits/admin/grants/${encodeURIComponent(grantId)}`, accessToken, { method: "DELETE" });
+		await fetchAccountWebApi(`/api/account/credits/admin/grants/${encodeURIComponent(grantId)}`, accessToken, { method: "DELETE" });
 
-	revalidatePath("/internal/credits");
-}
+	});
 
-export async function updateCreditGrantAction(formData: FormData) {
-	const accessToken = await requireAdmin();
-	const grantId = String(formData.get("grant_id") ?? "").trim();
-	if (!grantId) throw new Error("Missing grant id");
+export const updateCreditGrantAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const accessToken = await requireAdmin();
+		const grantId = String(formData.get("grant_id") ?? "").trim();
+		if (!grantId) throw new Error("Missing grant id");
 
-	const maxRedemptions = parsePositiveInt(formData.get("max_redemptions"), 1);
-	const rawRedemptionsCount = parseNonNegativeInt(formData.get("redemptions_count"), 0);
-	const redemptionsCount = Math.min(rawRedemptionsCount, maxRedemptions);
-	const expiresAt = parseOptionalExpiryInput(formData.get("expires_at"));
-	const noteRaw = String(formData.get("note") ?? "").trim();
-	const note = noteRaw.length > 0 ? noteRaw : null;
-	const isActive = formData
-		.getAll("is_active")
-		.some((value) => String(value).toLowerCase() === "true");
+		const maxRedemptions = parsePositiveInt(formData.get("max_redemptions"), 1);
+		const rawRedemptionsCount = parseNonNegativeInt(formData.get("redemptions_count"), 0);
+		const redemptionsCount = Math.min(rawRedemptionsCount, maxRedemptions);
+		const expiresAt = parseOptionalExpiryInput(formData.get("expires_at"));
+		const noteRaw = String(formData.get("note") ?? "").trim();
+		const note = noteRaw.length > 0 ? noteRaw : null;
+		const isActive = formData
+			.getAll("is_active")
+			.some((value) => String(value).toLowerCase() === "true");
 
-	await fetchAccountWebApi(`/api/account/credits/admin/grants/${encodeURIComponent(grantId)}`, accessToken, { method: "PUT", body: JSON.stringify({ max_redemptions: maxRedemptions, redemptions_count: redemptionsCount, expires_at: expiresAt, note, is_active: isActive }) });
+		await fetchAccountWebApi(`/api/account/credits/admin/grants/${encodeURIComponent(grantId)}`, accessToken, { method: "PUT", body: JSON.stringify({ max_redemptions: maxRedemptions, redemptions_count: redemptionsCount, expires_at: expiresAt, note, is_active: isActive }) });
 
-	revalidatePath("/internal/credits");
-}
+	});

@@ -42,7 +42,6 @@ import {
 } from "@/lib/seo";
 import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
-import { ScopedMessages, type ScopedLayoutProps } from "@/components/i18n/ScopedMessages";
 
 export async function generateMetadata({
 	params,
@@ -334,11 +333,7 @@ function LandingPage({
 	);
 }
 
-export default function Page({ params }: ScopedLayoutProps) {
-	return <ScopedMessages params={params} namespaces={["Site.homeOpenSourceMarketing", "Site.homeQuickstart", "SettingsUI.landingGaps.copyApp", "SettingsUI.landingGaps.copyProviders", "Catalogue.updates.models.playLatestModelUpdates", "Catalogue.updates.models.pauseLatestModelUpdates", "Catalogue.updates.models.viewModel", "Catalogue.updates.models.today", "Catalogue.updates.eventTypes", "Site.about.open"]}><HomePageContent /></ScopedMessages>;
-}
-
-function HomePageContent() {
+export default function Page() {
 	const t = useTranslations("Site.home");
 	const [{ data: { heroVariant, showEnterprisePreview } }, { data: modelPrices }] = useSuspenseQueries({
 		queries: [homePageFlagsQuery(), homeModelPricesQuery()],

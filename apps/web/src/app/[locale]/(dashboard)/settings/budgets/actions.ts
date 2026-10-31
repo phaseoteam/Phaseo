@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import type { SettingsDepartmentBudget, SettingsWorkspaceBudget } from "@/lib/fetchers/internal/settingsTypes";
@@ -28,96 +27,104 @@ function failure(error: unknown): BudgetActionError {
 	return { ok: false, status: error instanceof WebApiError ? error.status : null };
 }
 
-function refresh(): void {
-	revalidatePath("/settings/budgets");
-}
-
 type WriteResponse = { budget?: SettingsWorkspaceBudget; gatewayCacheInvalidated?: boolean };
 
 /** Amounts are USD; the web API validates and converts them with the control API's rules. */
-export async function createWorkspaceBudget(interval: BudgetInterval, limitUsd: number): Promise<BudgetActionResult> {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<WriteResponse>(PATH, context.accessToken, {
-			method: "POST",
-			body: JSON.stringify({ workspaceId: context.workspaceId, interval, limit: limitUsd }),
-		});
-		refresh();
-		return { ok: true, budget: result.budget ?? null, gatewayCacheInvalidated: result.gatewayCacheInvalidated !== false };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const createWorkspaceBudget = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { interval: BudgetInterval; limitUsd: number }) => input)
+	.handler(async ({ data: { interval, limitUsd } }): Promise<BudgetActionResult> => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<WriteResponse>(PATH, context.accessToken, {
+				method: "POST",
+				body: JSON.stringify({ workspaceId: context.workspaceId, interval, limit: limitUsd }),
+			});
+			return { ok: true, budget: result.budget ?? null, gatewayCacheInvalidated: result.gatewayCacheInvalidated !== false };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function updateWorkspaceBudget(id: string, limitUsd: number): Promise<BudgetActionResult> {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<WriteResponse>(`${PATH}/${encodeURIComponent(id)}`, context.accessToken, {
-			method: "PATCH",
-			body: JSON.stringify({ workspaceId: context.workspaceId, limit: limitUsd }),
-		});
-		refresh();
-		return { ok: true, budget: result.budget ?? null, gatewayCacheInvalidated: result.gatewayCacheInvalidated !== false };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const updateWorkspaceBudget = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; limitUsd: number }) => input)
+	.handler(async ({ data: { id, limitUsd } }): Promise<BudgetActionResult> => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<WriteResponse>(`${PATH}/${encodeURIComponent(id)}`, context.accessToken, {
+				method: "PATCH",
+				body: JSON.stringify({ workspaceId: context.workspaceId, limit: limitUsd }),
+			});
+			return { ok: true, budget: result.budget ?? null, gatewayCacheInvalidated: result.gatewayCacheInvalidated !== false };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function deleteWorkspaceBudget(id: string): Promise<BudgetActionResult> {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<WriteResponse>(`${PATH}/${encodeURIComponent(id)}`, context.accessToken, {
-			method: "DELETE",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		refresh();
-		return { ok: true, budget: null, gatewayCacheInvalidated: result.gatewayCacheInvalidated !== false };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const deleteWorkspaceBudget = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }): Promise<BudgetActionResult> => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<WriteResponse>(`${PATH}/${encodeURIComponent(id)}`, context.accessToken, {
+				method: "DELETE",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			return { ok: true, budget: null, gatewayCacheInvalidated: result.gatewayCacheInvalidated !== false };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
 // The gateway reseeds department budgets about every minute, so changes need no cache invalidation.
 const DEPARTMENT_PATH = `${PATH}/departments`;
 
-export async function createDepartmentBudget(departmentId: string, interval: DepartmentBudgetInterval, limitUsd: number): Promise<DepartmentBudgetActionResult> {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ budget?: SettingsDepartmentBudget }>(DEPARTMENT_PATH, context.accessToken, {
-			method: "POST",
-			body: JSON.stringify({ workspaceId: context.workspaceId, departmentId, interval, limit: limitUsd }),
-		});
-		refresh();
-		return { ok: true, budget: result.budget ?? null };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const createDepartmentBudget = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { departmentId: string; interval: DepartmentBudgetInterval; limitUsd: number }) => input)
+	.handler(async ({ data: { departmentId, interval, limitUsd } }): Promise<DepartmentBudgetActionResult> => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ budget?: SettingsDepartmentBudget }>(DEPARTMENT_PATH, context.accessToken, {
+				method: "POST",
+				body: JSON.stringify({ workspaceId: context.workspaceId, departmentId, interval, limit: limitUsd }),
+			});
+			return { ok: true, budget: result.budget ?? null };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function updateDepartmentBudget(id: string, limitUsd: number): Promise<DepartmentBudgetActionResult> {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ budget?: SettingsDepartmentBudget }>(`${DEPARTMENT_PATH}/${encodeURIComponent(id)}`, context.accessToken, {
-			method: "PATCH",
-			body: JSON.stringify({ workspaceId: context.workspaceId, limit: limitUsd }),
-		});
-		refresh();
-		return { ok: true, budget: result.budget ?? null };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const updateDepartmentBudget = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; limitUsd: number }) => input)
+	.handler(async ({ data: { id, limitUsd } }): Promise<DepartmentBudgetActionResult> => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ budget?: SettingsDepartmentBudget }>(`${DEPARTMENT_PATH}/${encodeURIComponent(id)}`, context.accessToken, {
+				method: "PATCH",
+				body: JSON.stringify({ workspaceId: context.workspaceId, limit: limitUsd }),
+			});
+			return { ok: true, budget: result.budget ?? null };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function deleteDepartmentBudget(id: string): Promise<DepartmentBudgetActionResult> {
-	try {
-		const context = await account();
-		await fetchAccountWebApi(`${DEPARTMENT_PATH}/${encodeURIComponent(id)}`, context.accessToken, {
-			method: "DELETE",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		refresh();
-		return { ok: true, budget: null };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const deleteDepartmentBudget = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }): Promise<DepartmentBudgetActionResult> => {
+		try {
+			const context = await account();
+			await fetchAccountWebApi(`${DEPARTMENT_PATH}/${encodeURIComponent(id)}`, context.accessToken, {
+				method: "DELETE",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			return { ok: true, budget: null };
+		} catch (error) {
+			return failure(error);
+		}
+	});

@@ -1,8 +1,41 @@
-// Next: src/app/api/checkout/create/route.ts
 import { createFileRoute } from "@tanstack/react-router";
-import { nextRouteHandlers } from "@/lib/start/nextRouteHandlers";
-import * as handlers from "@/app/api/checkout/create/route";
+import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutResponse";
+
+async function handlePost(req: Request) {
+	try {
+		const { kind, amount_pence, workspace_id, country_code } =
+			await req.json();
+		const requestedWorkspaceId =
+			typeof workspace_id === "string" && workspace_id.trim().length > 0
+				? workspace_id.trim()
+				: undefined;
+
+		return await createStripeCheckoutResponse({
+			amountPence:
+				typeof amount_pence === "number" ? amount_pence : Number(amount_pence),
+			countryCode: country_code,
+			kind,
+			originHeader: req.headers.get("origin"),
+			refererHeader: req.headers.get("referer"),
+			requestedWorkspaceId,
+		});
+	} catch (e: any) {
+		if (e?.message === "unauthorized") {
+			return Response.json({ error: "Unauthorized" }, { status: 401 });
+		}
+		if (e?.message === "missing_workspace") {
+			return Response.json({ error: "Missing workspace" }, { status: 400 });
+		}
+		// eslint-disable-next-line no-console
+		console.error("checkout.create route error:", e);
+		return Response.json({ error: e.message }, { status: 500 });
+	}
+}
 
 export const Route = createFileRoute("/api/checkout/create/")({
-	server: { handlers: nextRouteHandlers(handlers) },
+	server: {
+		handlers: {
+			POST: ({ request }) => handlePost(request),
+		},
+	},
 });

@@ -143,10 +143,10 @@ export default function RedeemCreditCodeCard(props: Props) {
 
 		const startedAt = Date.now();
 		try {
-			const result = await redeemCreditCodeAction({
+			const result = await redeemCreditCodeAction({ data: {
 				code: normalizedCode,
 				workspaceId: selectedTeamId,
-			});
+			} });
 			const elapsedMs = Date.now() - startedAt;
 			if (elapsedMs < 400) {
 				await new Promise((resolve) => setTimeout(resolve, 400 - elapsedMs));

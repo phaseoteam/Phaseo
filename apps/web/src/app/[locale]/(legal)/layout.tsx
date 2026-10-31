@@ -1,8 +1,7 @@
-import { useTranslations, useLocale } from "@/i18n/react";
+import { useTranslations } from "@/i18n/react";
 import Link from "@/components/link";
 import LegalHeaderShell from "@/components/header/LegalHeaderShell";
 import LegalBackButton from "@/components/header/LegalBackButton";
-import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 
 export default function LegalLayout({
 	children,
@@ -10,15 +9,12 @@ export default function LegalLayout({
 	children: React.ReactNode;
 }) {
 	const t = useTranslations("Common.nav");
-	const locale = useLocale();
 	return (
 		<div className="min-h-screen bg-background">
 			<header className="sticky top-0 z-50 border-b bg-white/80 dark:bg-zinc-950/80 backdrop-blur">
 				<LegalHeaderShell>
 					<div className="flex w-full items-center justify-between gap-3">
-						<ScopedMessages params={Promise.resolve({ locale })} namespaces={["Common.ui.actions.back"]}>
-							<LegalBackButton />
-						</ScopedMessages>
+						<LegalBackButton />
 						<Link
 							href="/"
 							aria-label={`Phaseo ${t("home")}`}

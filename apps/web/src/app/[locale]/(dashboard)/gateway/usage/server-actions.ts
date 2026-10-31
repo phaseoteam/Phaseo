@@ -1,5 +1,5 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
@@ -70,47 +70,95 @@ async function operation<T>(name: string, args: unknown[]): Promise<T> {
 	return response.result;
 }
 
-export async function fetchPaginatedRequests(params: PaginatedRequestsParams) { return operation<{ data: RequestRow[]; hasMore: boolean; nextCursor: { createdAt: string; id: string } | null; pageSize: number }>("paginatedRequests", [params]); }
-export async function fetchOrganizationColors(modelIds: string[]) { return new Map<string, string>(await operation<Array<[string, string]>>("organizationColors", [modelIds])); }
-export async function fetchModelMetadata(modelIds: string[]) { return new Map<string, ModelMetadataEntry>(await operation<Array<[string, ModelMetadataEntry]>>("modelMetadata", [modelIds])); }
-export async function fetchProviderNames(providerIds: string[]) {
-	const entries = await operation<Array<[string, string]>>("providerNames", [providerIds]);
-	return new Map(entries.map(([providerId, providerName]) => [providerId, resolveProviderDisplayName({ providerId, providerName })]));
-}
-export async function fetchProviderMetadata(providerIds: string[]) { return new Map<string, ProviderMetadataEntry>(await operation<Array<[string, ProviderMetadataEntry]>>("providerMetadata", [providerIds])); }
-export async function fetchFunStats(timeRange: { from: string; to: string }) { return operation<any>("funStats", [timeRange]); }
-export async function fetchAppNames(appIds: string[]) { return new Map<string, string>(await operation<Array<[string, string]>>("appNames", [appIds])); }
-export async function fetchAppMetadata(appIds: string[]) { return new Map<string, AppMetadata>(await operation<Array<[string, AppMetadata]>>("appMetadata", [appIds])); }
+export const fetchPaginatedRequests = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((params: PaginatedRequestsParams) => params)
+	.handler(async ({ data: params }) => { return operation<{ data: RequestRow[]; hasMore: boolean; nextCursor: { createdAt: string; id: string } | null; pageSize: number }>("paginatedRequests", [params]); });
+export const fetchOrganizationColors = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((modelIds: string[]) => modelIds)
+	.handler(async ({ data: modelIds }) => { return new Map<string, string>(await operation<Array<[string, string]>>("organizationColors", [modelIds])); });
+export const fetchModelMetadata = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((modelIds: string[]) => modelIds)
+	.handler(async ({ data: modelIds }) => { return new Map<string, ModelMetadataEntry>(await operation<Array<[string, ModelMetadataEntry]>>("modelMetadata", [modelIds])); });
+export const fetchProviderNames = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((providerIds: string[]) => providerIds)
+	.handler(async ({ data: providerIds }) => {
+		const entries = await operation<Array<[string, string]>>("providerNames", [providerIds]);
+		return new Map(entries.map(([providerId, providerName]) => [providerId, resolveProviderDisplayName({ providerId, providerName })]));
+	});
+export const fetchProviderMetadata = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((providerIds: string[]) => providerIds)
+	.handler(async ({ data: providerIds }) => { return new Map<string, ProviderMetadataEntry>(await operation<Array<[string, ProviderMetadataEntry]>>("providerMetadata", [providerIds])); });
+export const fetchFunStats = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((timeRange: { from: string; to: string }) => timeRange)
+	.handler(async ({ data: timeRange }) => { return operation<any>("funStats", [timeRange]); });
+export const fetchAppNames = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((appIds: string[]) => appIds)
+	.handler(async ({ data: appIds }) => { return new Map<string, string>(await operation<Array<[string, string]>>("appNames", [appIds])); });
+export const fetchAppMetadata = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((appIds: string[]) => appIds)
+	.handler(async ({ data: appIds }) => { return new Map<string, AppMetadata>(await operation<Array<[string, AppMetadata]>>("appMetadata", [appIds])); });
 function withProviderDisplayNames(data: InvestigateGenerationResult): InvestigateGenerationResult {
 	return { ...data, providerNames: (data.providerNames ?? []).map(([providerId, providerName]) => [providerId, resolveProviderDisplayName({ providerId, providerName })]) };
 }
 
-export async function fetchGenerationLog(requestId: string): Promise<{ success: boolean; data?: InvestigateGenerationResult; error?: string }> {
-	try {
-		const value = await context();
-		const response = await fetchAccountWebApi<{ data: InvestigateGenerationResult }>(
-			`/api/account/settings/usage/logs/${encodeURIComponent(requestId)}?workspaceId=${encodeURIComponent(value.workspaceId)}`,
-			value.accessToken,
-		);
-		return { success: true, data: withProviderDisplayNames(response.data) };
-	} catch (error) {
-		return { success: false, error: error instanceof Error ? error.message : "usage_log_detail_unavailable" };
-	}
-}
-export async function investigateGeneration(requestId: string): Promise<{ success: boolean; data?: InvestigateGenerationResult; error?: string }> {
-	try {
-		const result = await operation<{ success: boolean; data?: InvestigateGenerationResult; error?: string }>("investigateGeneration", [requestId]);
-		return result.data ? { ...result, data: withProviderDisplayNames(result.data) } : result;
-	} catch (error) {
-		return {
-			success: false,
-			error: error instanceof Error ? error.message : "usage_log_detail_unavailable",
-		};
-	}
-}
-export async function fetchChartData(params: any): Promise<ChartDataResult> { return operation("chartData", [params]); }
-export async function fetchSessionRollups(params: any): Promise<SessionRollupRow[]> { return operation("sessionRollups", [params]); }
-export async function fetchSessionRequests(params: any): Promise<SessionRequestRow[]> { return operation("sessionRequests", [params]); }
-export async function fetchJobsRollups(params: any = {}): Promise<JobsRollupRow[]> { return operation("jobsRollups", [params]); }
-export async function fetchRecentAsyncJobs(params?: any): Promise<AsyncJobRow[]> { return operation("recentAsyncJobs", [params]); }
-export async function fetchAsyncJobDetail(input: { kind: "video" | "batch"; internalId: string }): Promise<AsyncJobDetailRow | null> { return operation("asyncJobDetail", [input]); }
+export const fetchGenerationLog = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((requestId: string) => requestId)
+	.handler(async ({ data: requestId }): Promise<{ success: boolean; data?: InvestigateGenerationResult; error?: string }> => {
+		try {
+			const value = await context();
+			const response = await fetchAccountWebApi<{ data: InvestigateGenerationResult }>(
+				`/api/account/settings/usage/logs/${encodeURIComponent(requestId)}?workspaceId=${encodeURIComponent(value.workspaceId)}`,
+				value.accessToken,
+			);
+			return { success: true, data: withProviderDisplayNames(response.data) };
+		} catch (error) {
+			return { success: false, error: error instanceof Error ? error.message : "usage_log_detail_unavailable" };
+		}
+	});
+export const investigateGeneration = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((requestId: string) => requestId)
+	.handler(async ({ data: requestId }): Promise<{ success: boolean; data?: InvestigateGenerationResult; error?: string }> => {
+		try {
+			const result = await operation<{ success: boolean; data?: InvestigateGenerationResult; error?: string }>("investigateGeneration", [requestId]);
+			return result.data ? { ...result, data: withProviderDisplayNames(result.data) } : result;
+		} catch (error) {
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "usage_log_detail_unavailable",
+			};
+		}
+	});
+export const fetchChartData = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((params: any) => params)
+	.handler(async ({ data: params }): Promise<ChartDataResult> => { return operation("chartData", [params]); });
+export const fetchSessionRollups = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((params: any) => params)
+	.handler(async ({ data: params }): Promise<SessionRollupRow[]> => { return operation("sessionRollups", [params]); });
+export const fetchSessionRequests = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverAction])
+	.validator((params: any) => params)
+	.handler(async ({ data: params }): Promise<SessionRequestRow[]> => { return operation("sessionRequests", [params]); });
+export const fetchJobsRollups = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((params: any = {}) => params)
+	.handler(async ({ data: params }): Promise<JobsRollupRow[]> => { return operation("jobsRollups", [params]); });
+export const fetchRecentAsyncJobs = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((params?: any) => params)
+	.handler(async ({ data: params }): Promise<AsyncJobRow[]> => { return operation("recentAsyncJobs", [params]); });
+export const fetchAsyncJobDetail = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: { kind: "video" | "batch"; internalId: string }) => input)
+	.handler(async ({ data: input }): Promise<AsyncJobDetailRow | null> => { return operation("asyncJobDetail", [input]); });

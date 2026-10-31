@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
@@ -10,26 +9,26 @@ async function account() {
 	return { token: context.accessToken, workspaceId: context.workspaceId };
 }
 
-function refresh() {
-	revalidatePath("/settings/workspaces/private-models");
-	revalidatePath("/models");
-	revalidatePath("/models/table");
-}
+export const createPrivateModelAction = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverMutation])
+	.validator((input: Record<string, unknown>) => input)
+	.handler(async ({ data: input }) => {
+		const value = await account();
+		return await fetchAccountWebApi(`/api/account/private-models?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "POST", body: JSON.stringify(input) });
+	});
 
-export async function createPrivateModelAction(input: Record<string, unknown>) {
-	const value = await account();
-	const result = await fetchAccountWebApi(`/api/account/private-models?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "POST", body: JSON.stringify(input) });
-	refresh(); return result;
-}
+export const updatePrivateModelAction = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverMutation])
+	.validator((input: { id: string; input: Record<string, unknown> }) => input)
+	.handler(async ({ data: { id, input } }) => {
+		const value = await account();
+		return await fetchAccountWebApi(`/api/account/private-models/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "PATCH", body: JSON.stringify(input) });
+	});
 
-export async function updatePrivateModelAction(id: string, input: Record<string, unknown>) {
-	const value = await account();
-	const result = await fetchAccountWebApi(`/api/account/private-models/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "PATCH", body: JSON.stringify(input) });
-	refresh(); return result;
-}
-
-export async function deletePrivateModelAction(id: string) {
-	const value = await account();
-	const result = await fetchAccountWebApi(`/api/account/private-models/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "DELETE" });
-	refresh(); return result;
-}
+export const deletePrivateModelAction = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		const value = await account();
+		return await fetchAccountWebApi(`/api/account/private-models/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(value.workspaceId)}`, value.token, { method: "DELETE" });
+	});

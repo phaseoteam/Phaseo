@@ -23,7 +23,7 @@ async function main() {
           reserved_nanos:5000000000,captured_nanos:0,released_nanos:0,disconnect_reason:'missing_final_usage'}}));
       createRoot(document.getElementById('root')).render(<main style={{padding:24}}><h1>Realtime billing review</h1><BillingReviews reviews={reviews}/></main>);` },
     plugins: [{ name: "offline", setup(build) {
-      build.onResolve({ filter: /^next\/navigation$/ }, () => ({ path: "navigation", namespace: "offline" }));
+      build.onResolve({ filter: /^@\/i18n\/navigation$/ }, () => ({ path: "navigation", namespace: "offline" }));
       build.onResolve({ filter: /^\.\/actions$/ }, args => args.importer.includes("realtime-billing") ? { path: "actions", namespace: "offline" } : undefined);
       build.onLoad({ filter: /.*/, namespace: "offline" }, args => ({ contents: args.path === "actions" ? stub : "export const useRouter=()=>({refresh(){}});", loader: "js" }));
     } }],

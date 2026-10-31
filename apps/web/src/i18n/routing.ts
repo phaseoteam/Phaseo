@@ -1,8 +1,4 @@
-import {
-	defaultLocale,
-	publicLocales,
-	type PublicLocale,
-} from "./locales";
+import { publicLocales } from "./locales";
 
 export {
 	catalogLocales,
@@ -36,20 +32,3 @@ export type {
 if (publicLocales.length === 0) {
 	throw new Error("At least one public locale is required");
 }
-
-const routableLocales = publicLocales as [
-	PublicLocale,
-	...PublicLocale[],
-];
-
-// next-intl defineRouting() only returned this config; web-start reads it directly.
-export const routing = {
-	locales: routableLocales,
-	defaultLocale,
-	localePrefix: "as-needed",
-	localeDetection: true,
-	localeCookie: {
-		name: "PHASEO_LOCALE",
-		maxAge: 60 * 60 * 24 * 365,
-	},
-} as const;

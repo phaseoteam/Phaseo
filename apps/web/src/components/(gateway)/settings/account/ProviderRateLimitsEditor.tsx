@@ -123,7 +123,7 @@ export default function ProviderRateLimitsEditor({ providerSlug, rateLimits, mod
 		if ("error" in prepared) return void toast.error(prepared.error === "emptyModel" ? t("emptyModel", { model: prepared.model }) : t("invalidNumber"));
 		setSaving(true);
 		try {
-			const result = await updateProviderRateLimitsAction(providerSlug, prepared.limits, base.version);
+			const result = await updateProviderRateLimitsAction({ data: { providerSlug, limits: prepared.limits, expectedVersion: base.version } });
 			if (!result.ok) {
 				setIssues(result.issues);
 				if (result.conflict) { setConflict(true); toast.error(t("stale")); }

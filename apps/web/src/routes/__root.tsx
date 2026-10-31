@@ -1,6 +1,6 @@
 // Next: app/[locale]/layout.tsx + components/layout/RootDocument.tsx.
 import appCss from "@/app/globals.css?url";
-import fontsCss from "@/compat/fonts.css?url";
+import fontsCss from "@/components/layout/fonts.css?url";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
 import { RootDocument } from "@/components/layout/RootDocument";

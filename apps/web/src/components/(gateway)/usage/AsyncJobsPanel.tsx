@@ -1829,14 +1829,14 @@ export default function AsyncJobsPanel({
 		return (async () => {
 			setIsRefreshing(true);
 			try {
-				const next = await fetchRecentAsyncJobs({
+				const next = await fetchRecentAsyncJobs({ data: {
 					limit: refreshLimit,
 					includeWithoutWebhook,
 					timeRange,
 					kind: kindFilter,
 					status: statusFilter,
 					provider: providerFilter,
-				});
+				} });
 				setJobs(next);
 
 				const missingProviderIds = collectJobProviderIds(next).filter(
@@ -1850,13 +1850,13 @@ export default function AsyncJobsPanel({
 				);
 				const [nextProviderNames, nextModelMetadata, nextAppMetadata] = await Promise.all([
 					missingProviderIds.length > 0
-						? fetchProviderNames(missingProviderIds)
+						? fetchProviderNames({ data: missingProviderIds })
 						: Promise.resolve(new Map<string, string>()),
 					missingModelIds.length > 0
-						? fetchModelMetadata(missingModelIds)
+						? fetchModelMetadata({ data: missingModelIds })
 						: Promise.resolve(new Map<string, { organisationId: string; organisationName: string; modelName?: string }>()),
 					missingAppIds.length > 0
-						? fetchAppMetadata(missingAppIds)
+						? fetchAppMetadata({ data: missingAppIds })
 						: Promise.resolve(new Map<string, AppMetadata>()),
 				]);
 				if (nextProviderNames.size > 0) {
@@ -1901,10 +1901,10 @@ export default function AsyncJobsPanel({
 		}
 		setSelectedJob(null);
 		startLoadingDetail(async () => {
-			const detail = await fetchAsyncJobDetail({
+			const detail = await fetchAsyncJobDetail({ data: {
 				kind: job.kind,
 				internalId: job.internal_id,
-			});
+			} });
 			if (detail) {
 				detailCacheRef.current.set(cacheKey, detail);
 			}
@@ -1932,7 +1932,7 @@ export default function AsyncJobsPanel({
 		setRequestDetailProviderNames(new Map());
 		setRequestDetailProviderMetadata(new Map());
 		startLoadingRequestDetail(async () => {
-			const response = await investigateGeneration(trimmedRequestId);
+			const response = await investigateGeneration({ data: trimmedRequestId });
 			if (!response.success || !response.data) {
 				setRequestDetailOpen(false);
 				return;

@@ -35,7 +35,7 @@ export default function AccountDangerZoneClient() {
 	async function handleDeleteAccount(confirmation: string, currentPassword: string) {
 		setDeleting(true);
 		try {
-			await toast.promise(deleteAccount(confirmation, currentPassword || undefined), {
+			await toast.promise(deleteAccount({ data: { confirmation, currentPassword: currentPassword || undefined } }), {
 				loading: s("phraseStartingAccountDeletion"),
 				success: s("phraseAccountAccessRemovedDeletionIsInProgress"),
 				error: (error: unknown) =>

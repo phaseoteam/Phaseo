@@ -1,6 +1,5 @@
-// Supabase session refresh for the request middleware. Same behaviour as
-// src/utils/supabase/middleware.ts (Next): refresh auth cookies, keep the
-// active-workspace cookie, forward the refreshed cookies to server rendering,
+// Supabase session refresh for the request middleware: refresh auth cookies,
+// keep the active-workspace cookie, forward the refreshed cookies to server rendering,
 // send private web-API calls with a bearer token, gate /settings and MFA.
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { canUpgradeCookieAuth } from "@/utils/supabase/cookieAuthRequest";

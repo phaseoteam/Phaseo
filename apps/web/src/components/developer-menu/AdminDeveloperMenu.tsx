@@ -143,10 +143,10 @@ function RouteCacheAction({ target }: { target: PageCacheTarget | null }) {
 	function confirmRevalidation() {
 		startTransition(async () => {
 			try {
-				const result = await purgeCacheScopeAction({
+				const result = await purgeCacheScopeAction({ data: {
 					scope: resolvedTarget.scope,
 					targetId: resolvedTarget.targetId,
-				});
+				} });
 				setLastResult(result);
 				setConfirming(false);
 				toast.success(t("cacheRevalidated", { label: t(resolvedTarget.labelKey as never) }));

@@ -110,7 +110,7 @@ export function CreateModelDialog() {
 
 		setError(null);
 		startTransition(async () => {
-			const result = await createModel({
+			const result = await createModel({ data: {
 				modelId,
 				name,
 				organisationId: organisationId || null,
@@ -120,7 +120,7 @@ export function CreateModelDialog() {
 				hidden,
 				inputTypes,
 				outputTypes,
-			});
+			} });
 
 			if (result.success) {
 				setOpen(false);

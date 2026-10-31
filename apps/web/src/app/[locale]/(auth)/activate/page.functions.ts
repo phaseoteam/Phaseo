@@ -27,7 +27,7 @@ export const getActivatePageData = createServerFn({ method: "GET" })
 			import("@/lib/web-api/client"),
 		]);
 		const supabase = await createClient();
-		const request = userCode ? await lookupDeviceRequest(userCode).catch(() => ({ error: true as const })) : null;
+		const request = userCode ? await lookupDeviceRequest({ data: userCode }).catch(() => ({ error: true as const })) : null;
 		const { data: sessionData } = await supabase.auth.getSession();
 		const { workspaces } = await fetchAccountWebApi<{
 			workspaces: Array<{ id: string; name: string; role: string }>;

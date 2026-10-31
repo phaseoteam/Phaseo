@@ -111,11 +111,11 @@ export default function RotateKeyItem({
 		setLoading(true);
 		const toastId = toast.loading(t("keys.rotating"));
 		try {
-			const result = await rotateApiKeyAction({
+			const result = await rotateApiKeyAction({ data: {
 				id: String(k.id),
 				newName: newName.trim(),
 				previousKeyExpiresAt: expiresAtIso,
-			});
+			} });
 			setNewPlaintext(result?.plaintext ?? null);
 			void invalidateSettings();
 			setOldExpiryApplied(result?.previousKeyExpiresAt ?? expiresAtIso);

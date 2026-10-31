@@ -316,17 +316,17 @@ describe("Discord component embed", () => {
 
 	it.each(["preview", "production", "development", undefined])("never publishes deployment credentials (%s)", (environment) => {
 		const previousEnvironment = {
-			VERCEL_ENV: process.env.VERCEL_ENV,
-			VERCEL_URL: process.env.VERCEL_URL,
+			PHASEO_ENV: process.env.PHASEO_ENV,
+			PUBLIC_DEPLOY_URL: process.env.PUBLIC_DEPLOY_URL,
 			VERCEL_AUTOMATION_BYPASS_SECRET:
 				process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
 		};
 		if (environment === undefined) {
-			delete process.env.VERCEL_ENV;
+			delete process.env.PHASEO_ENV;
 		} else {
-			process.env.VERCEL_ENV = environment;
+			process.env.PHASEO_ENV = environment;
 		}
-		process.env.VERCEL_URL = "phaseo-preview.vercel.app";
+		process.env.PUBLIC_DEPLOY_URL = "phaseo-web-preview.workers.dev";
 		const secret = "preview-test-secret/+?&=sensitive";
 		process.env.VERCEL_AUTOMATION_BYPASS_SECRET = secret;
 
@@ -353,7 +353,7 @@ describe("Discord component embed", () => {
 					expect(output).not.toContain(secret);
 					expect(output).not.toContain(encodeURIComponent(secret));
 					expect(output).not.toContain("x-vercel-protection-bypass");
-					expect(output).not.toContain("phaseo-preview.vercel.app");
+					expect(output).not.toContain("phaseo-web-preview.workers.dev");
 				}
 				const payload = JSON.parse(serialized);
 				const labSection = payload.component.components.find(

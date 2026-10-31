@@ -25,10 +25,13 @@ function readLocalWebEnvironment() {
 }
 
 const localWebEnvironment = readLocalWebEnvironment();
+// The website's .env.local uses PUBLIC_*; older copies may still use NEXT_PUBLIC_*.
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+  ?? localWebEnvironment.PUBLIC_SUPABASE_URL
   ?? localWebEnvironment.NEXT_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+  ?? localWebEnvironment.PUBLIC_SUPABASE_ANON_KEY
   ?? localWebEnvironment.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Firebase's Android config, needed for push. It holds public identifiers only, so it is

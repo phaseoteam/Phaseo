@@ -28,7 +28,7 @@ export default function DeleteKeyButton({ id }: { id: string }) {
 	async function onConfirmDelete() {
 		try {
 			setLoading(true);
-			await write(deleteByokKeyAction(id));
+			await write(deleteByokKeyAction({ data: id }));
 		toast.success(t("credits.Key deleted" as never));
 			setOpen(false);
 		} catch (err: any) {

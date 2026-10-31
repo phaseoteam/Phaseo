@@ -61,7 +61,7 @@ export default function RedirectUriManager({
 			const { updateRedirectUrisAction } = await import(
 				"@/app/(dashboard)/settings/oauth-apps/actions"
 			);
-			const result = await write(updateRedirectUrisAction(clientId, nextRedirectUris));
+			const result = await write(updateRedirectUrisAction({ data: { clientId, redirectUris: nextRedirectUris } }));
 			if (result.error) {
 				throw new Error(result.error);
 			}

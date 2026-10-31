@@ -207,7 +207,7 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 	async function toggle(next: boolean) {
 		setEnabled(next);
 		setBusy(true);
-		const result = await write(updateSpendRule(rule.id, { enabled: next }));
+		const result = await write(updateSpendRule({ data: { id: rule.id, payload: { enabled: next } } }));
 		setBusy(false);
 		if (result.ok === false) {
 			setEnabled(!next);
@@ -219,7 +219,7 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 
 	async function sendTest() {
 		setBusy(true);
-		const result = await testSpendRule(rule.id);
+		const result = await testSpendRule({ data: rule.id });
 		setBusy(false);
 		if (result.ok === false) {
 			toast.error(actionError(result, data.maxRules));
@@ -306,7 +306,7 @@ function DeleteSpendRuleDialog({ rule, maxRules, onClose }: { rule: SpendRule | 
 	async function confirm() {
 		if (!rule) return;
 		setDeleting(true);
-		const result = await write(deleteSpendRule(rule.id));
+		const result = await write(deleteSpendRule({ data: rule.id }));
 		setDeleting(false);
 		if (result.ok === false) {
 			toast.error(actionError(result, maxRules));

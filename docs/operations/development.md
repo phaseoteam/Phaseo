@@ -42,7 +42,7 @@ Start only the app you need. `pnpm dev` starts every workspace's dev server at o
 | Slack agent Worker (`apps/slack`) | `pnpm --filter @phaseo/slack-agent dev` | 8789 |
 | Docs (`apps/docs`) | `pnpm --filter @phaseo/docs dev` | 3101 |
 
-- Without `WEB_API_ORIGIN`, local `next dev` proxies `/api/_web`, `/api/account`, `/api/chat` and `/api/internal` to production (`apps/web/next.config.mjs`). Pages show live data, and anything you do while signed in, such as saving settings or sending a chat, happens on production. To use your local Web API Worker, set `WEB_API_ORIGIN=http://127.0.0.1:8788`; `pnpm dev:cloudflare-web` does this for you.
+- Without `WEB_API_ORIGIN`, the local web app forwards `/api/_web`, `/api/account`, `/api/chat` and `/api/internal` to production (`apps/web/src/lib/start/requestMiddleware.ts`). Pages show live data, and anything you do while signed in, such as saving settings or sending a chat, happens on production. To use your local Web API Worker, set `WEB_API_ORIGIN=http://127.0.0.1:8788`; `pnpm dev:cloudflare-web` does this for you.
 - The gateway and MCP Workers share a default port. To pick one, run Wrangler from `apps/api`: `pnpm exec wrangler dev --local --ip 127.0.0.1 --port 8795 --show-interactive-dev-session=false`.
 - If an embedded browser reload-loops on the web app, open `http://localhost:3100` instead of `127.0.0.1`.
 - For the desktop app, including Factory (Code ▸ Factory), see [apps/desktop/README.md](../../apps/desktop/README.md). The mobile app runs with `pnpm --filter @phaseo/mobile dev` (Expo).
@@ -69,7 +69,7 @@ Worktrees share the main clone's object store. Never run `git fetch --depth=<n>`
 
 ## What CI covers
 
-[CI](../../.github/workflows/ci.yml) runs repository checks (shared registry copies, skills, a few catalogue and SQL tests, and type-checks for desktop, mobile and perf-upstream), OpenAPI lint, SDK generation for all nine languages, SDK package builds, lifecycle and Agent SDK tests, the CLI package and the Devtools build. The Apps jobs cover the gateway (`validate:api`, which is ESLint, `tsc` and a Wrangler dry run, plus one Vitest file, the provider simulator tests and the pricing simulator), docs validation, the web app (localisation checks, three Jest files, `pnpm --filter @phaseo/web typecheck` and a compile-only Next build), and the Web API, MCP and Slack agent Workers (lint or type-check, tests and a dry-run build). The gateway AIMock matrix is its own job. Migrations get policy checks and the declarative schema workflow, and desktop changes get the "Desktop workspace" workflow.
+[CI](../../.github/workflows/ci.yml) runs repository checks (shared registry copies, skills, a few catalogue and SQL tests, and type-checks for desktop, mobile and perf-upstream), OpenAPI lint, SDK generation for all nine languages, SDK package builds, lifecycle and Agent SDK tests, the CLI package and the Devtools build. The Apps jobs cover the gateway (`validate:api`, which is ESLint, `tsc` and a Wrangler dry run, plus one Vitest file, the provider simulator tests and the pricing simulator), docs validation, the web app (localisation checks, a full `pnpm --filter @phaseo/web build`, `pnpm --filter @phaseo/web typecheck` and three Vitest files), and the Web API, MCP and Slack agent Workers (lint or type-check, tests and a dry-run build). The gateway AIMock matrix is its own job. Migrations get policy checks and the declarative schema workflow, and desktop changes get the "Desktop workspace" workflow.
 
 CI does not run most gateway or web unit tests: it runs one of 816 gateway `src` test files and three of 429 web Jest files, and it has no web ESLint or Playwright step. The TypeScript and Python SDK test suites (`pnpm test:sdk-ts`, `pnpm test:sdk-py`) do not run in CI either. Run the tests for the code you touched. Do not run the repo-wide `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all` or `pnpm precommit`.
 
@@ -172,6 +172,6 @@ Several agents and people may share one development machine. On Windows the comm
 
 - Prefer one-shot commands such as `vitest run` to watch mode.
 - Run few heavy processes at once: one install, one dev server, one test run.
-- Stop every server you start before you finish, by the PID you started. Stopping the shell does not always stop `next dev` or `wrangler dev` children (`node`, `workerd`, `esbuild`), which keep the port. On Windows, find the owner with `Get-NetTCPConnection -LocalPort <port>` and stop it with `taskkill /PID <pid> /T /F`.
+- Stop every server you start before you finish, by the PID you started. Stopping the shell does not always stop `vite dev` or `wrangler dev` children (`node`, `workerd`, `esbuild`), which keep the port. On Windows, find the owner with `Get-NetTCPConnection -LocalPort <port>` and stop it with `taskkill /PID <pid> /T /F`.
 - Before starting something heavy on Windows, check headroom with `Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory | Select-Object CommitLimit, CommittedBytes`.
 - Do not run monorepo-wide builds or test runs. Run the checks for the packages you changed (see [What CI covers](#what-ci-covers)).

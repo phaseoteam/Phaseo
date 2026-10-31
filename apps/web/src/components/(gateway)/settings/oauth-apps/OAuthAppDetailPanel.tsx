@@ -193,7 +193,7 @@ export default function OAuthAppDetailPanel({
 	const saveScopes = async () => {
 		setSavingScopes(true);
 		try {
-			const result = await write(updateOAuthAppScopesAction(oauthApp.client_id, allowedScopes));
+			const result = await write(updateOAuthAppScopesAction({ data: { clientId: oauthApp.client_id, allowedScopes } }));
 			if (result.error) throw new Error(result.error);
 		toast.success(t("strings.OAuth scopes updated" as never));
 		} catch (error: unknown) {

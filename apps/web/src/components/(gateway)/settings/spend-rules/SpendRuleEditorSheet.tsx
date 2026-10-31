@@ -214,7 +214,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 		}
 		setConfirmingBlock(false);
 		setSaving(true);
-		const result = await write(rule ? updateSpendRule(rule.id, check.payload) : createSpendRule(check.payload));
+		const result = await write(rule ? updateSpendRule({ data: { id: rule.id, payload: check.payload } }) : createSpendRule({ data: check.payload }));
 		setSaving(false);
 		if (result.ok === false) {
 			setFormError(actionError(result, data.maxRules));
@@ -227,7 +227,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 	async function sendTest() {
 		if (!rule) return;
 		setTesting(true);
-		const result = await testSpendRule(rule.id);
+		const result = await testSpendRule({ data: rule.id });
 		setTesting(false);
 		if (result.ok === false) {
 			toast.error(actionError(result, data.maxRules));

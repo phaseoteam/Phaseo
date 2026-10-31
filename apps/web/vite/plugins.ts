@@ -1,89 +1,9 @@
-// Vite plugins that let the copied Next.js source run under TanStack Start.
+// Vite plugins for running the site on Cloudflare Workers.
 import fs from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
 
 const isServerEnv = (name: string | undefined) => name === "ssr";
-
-function walk(dir: string, out: string[] = []): string[] {
-	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-		const full = path.join(dir, entry.name);
-		if (entry.isDirectory()) {
-			if (entry.name === "node_modules" || entry.name === "__tests__") continue;
-			walk(full, out);
-		} else if (/\.(tsx?|jsx?)$/.test(entry.name) && !/\.test\.[tj]sx?$/.test(entry.name)) out.push(full);
-	}
-	return out;
-}
-
-function hasModuleDirective(code: string, directive: string): boolean {
-	// The directive must be the first statement (comments and blank lines allowed).
-	const stripped = code.replace(/^(?:\s|\/\/[^\n]*\n|\/\*[\s\S]*?\*\/)*/, "");
-	return stripped.startsWith(`"${directive}"`) || stripped.startsWith(`'${directive}'`);
-}
-
-/**
- * Next.js server actions without Next: `"use server"` modules keep their code
- * on the server; browser bundles get stubs that POST to `/_actions`.
- */
-export function serverActions(srcDir: string): Plugin {
-	const VIRTUAL = "virtual:phaseo-server-action-registry";
-	const RESOLVED = "\0" + VIRTUAL;
-	let actionModules: string[] = [];
-	const keyFor = (file: string) => path.relative(srcDir, file).replace(/\\/g, "/");
-	return {
-		name: "phaseo:server-actions",
-		enforce: "pre",
-		buildStart() {
-			actionModules = walk(srcDir).filter((file) => hasModuleDirective(fs.readFileSync(file, "utf8"), "use server"));
-		},
-		resolveId(id) {
-			return id === VIRTUAL ? RESOLVED : null;
-		},
-		load(id) {
-			if (id !== RESOLVED) return null;
-			const entries = actionModules.map((file) => `  ${JSON.stringify(keyFor(file))}: () => import(${JSON.stringify(file.replace(/\\/g, "/"))}),`);
-			return `export const actionModules = {\n${entries.join("\n")}\n};\n`;
-		},
-		transform(code, id) {
-			const file = id.split("?")[0];
-			if (!/\.(tsx?|jsx?)$/.test(file) || file.includes("node_modules")) return null;
-			if (!hasModuleDirective(code, "use server")) return null;
-			if (isServerEnv(this.environment?.name)) return null;
-			// Export names come from the source's value `export` statements
-			// (type-only exports are skipped).
-			const names = new Set<string>();
-			for (const match of code.matchAll(/export\s+(?:async\s+)?(?:function\*?|const|let|var)\s+([A-Za-z_$][\w$]*)/g)) names.add(match[1]);
-			for (const match of code.matchAll(/export\s*\{([^}]+)\}/g)) {
-				for (const part of match[1].split(",")) {
-					const name = part.trim().split(/\s+as\s+/).pop()?.trim();
-					if (name && !name.startsWith("type ")) names.add(name);
-				}
-			}
-			if (/export\s+default\s/.test(code)) names.add("default");
-			const key = keyFor(file);
-			const lines = [`import { createServerActionReference } from "@/compat/server-actions-client";`];
-			for (const name of names) {
-				const ref = `createServerActionReference(${JSON.stringify(key)}, ${JSON.stringify(name)})`;
-				lines.push(name === "default" ? `export default ${ref};` : `export const ${name} = ${ref};`);
-			}
-			return { code: lines.join("\n") + "\n", map: null };
-		},
-	};
-}
-
-/** `"use cache"` directives have no meaning outside Next; drop them. */
-export function stripUseCache(): Plugin {
-	return {
-		name: "phaseo:strip-use-cache",
-		enforce: "pre",
-		transform(code, id) {
-			if (id.includes("node_modules") || !/\.(tsx?|jsx?)$/.test(id.split("?")[0])) return null;
-			if (!/["']use cache(?::[^"']*)?["']/.test(code)) return null;
-			return { code: code.replace(/^(\s*)["']use cache(?::[^"']*)?["'];?/gm, "$1"), map: null };
-		},
-	};
-}
 
 /**
  * tsconfig maps `@/app/(dashboard)/*` to two folders and TypeScript tries
@@ -121,27 +41,12 @@ export function aliasFallbacks(root: string): Plugin {
 	};
 }
 
-
-/**
- * `next/headers` and `@tanstack/react-start/server` must never reach browser
- * bundles. Client-reachable modules that import them get a stub that throws
- * if called, mirroring Next's server-only boundary.
- */
-export function serverOnlyInClient(serverPath: string, clientStubPath: string): Plugin {
-	return {
-		name: "phaseo:server-only-in-client",
-		enforce: "pre",
-		resolveId(source) {
-			if (source !== "next/headers") return null;
-			return isServerEnv(this.environment?.name) ? serverPath : clientStubPath;
-		},
-	};
-}
-
 /**
  * @vercel/og's edge build fetches its fallback font with
  * `new URL("./Geist-Regular.ttf", import.meta.url)` at module load, which is
- * not a fetchable URL inside a Worker. Inline the font instead.
+ * not a fetchable URL inside a Worker. Inline the font instead. (Pinned to
+ * 1.0.1: 1.0.2+ bundles an Emscripten loader that reads self.location,
+ * which Workers do not define.)
  */
 export function inlineVercelOgFont(): Plugin {
 	return {

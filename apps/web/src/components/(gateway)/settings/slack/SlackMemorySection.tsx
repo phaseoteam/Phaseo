@@ -70,7 +70,7 @@ export function SlackMemorySection({ memoryEnabled }: { memoryEnabled: boolean }
 
 	const load = useCallback((kind: SlackMemoryFilter) => {
 		startLoading(async () => {
-			const result = await loadSlackAgentMemory(kind);
+			const result = await loadSlackAgentMemory({ data: kind });
 			if (!result.ok) {
 				setError(toError(result));
 				return;
@@ -129,7 +129,7 @@ function MemorySwitch({ initial }: { initial: boolean }) {
 	function change(next: boolean) {
 		setError(null);
 		startSaving(async () => {
-			const result = await write(updateSlackAgent({ memory_enabled: next }));
+			const result = await write(updateSlackAgent({ data: { memory_enabled: next } }));
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;
@@ -238,7 +238,7 @@ function DeleteNote({ note, onDeleted }: { note: SlackAgentNote; onDeleted: (id:
 
 	function remove() {
 		startDeleting(async () => {
-			const result = await deleteSlackAgentNote(note.id);
+			const result = await deleteSlackAgentNote({ data: note.id });
 			if (!result.ok) {
 				const failure = toError(result);
 				// Already gone: the list catches up.
@@ -321,7 +321,7 @@ function SkillItem({ skill, onChanged }: { skill: SlackAgentSkill; onChanged: (s
 			return;
 		}
 		startSaving(async () => {
-			const result = await updateSlackAgentSkill(skill.id, built.value);
+			const result = await updateSlackAgentSkill({ data: { id: skill.id, patch: built.value } });
 			if (!result.ok) {
 				setError(toError(result));
 				return;
@@ -335,7 +335,7 @@ function SkillItem({ skill, onChanged }: { skill: SlackAgentSkill; onChanged: (s
 
 	function remove() {
 		startDeleting(async () => {
-			const result = await deleteSlackAgentSkill(skill.id);
+			const result = await deleteSlackAgentSkill({ data: skill.id });
 			if (!result.ok) {
 				const failure = toError(result);
 				if (failure.scope === "memory" && failure.key === "memoryNotFound") onChanged(null, skill.id);

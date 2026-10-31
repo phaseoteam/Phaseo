@@ -27,7 +27,7 @@ export function SlackSearchSection({ initial, granted }: { initial: SlackSearchM
 	function change(next: SlackSearchMode) {
 		setError(null);
 		startSaving(async () => {
-			const result = await write(updateSlackAgent({ search_mode: next }));
+			const result = await write(updateSlackAgent({ data: { search_mode: next } }));
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;

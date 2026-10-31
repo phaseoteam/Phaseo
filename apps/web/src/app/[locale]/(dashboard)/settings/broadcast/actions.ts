@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction, serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
@@ -30,59 +29,74 @@ async function account(): Promise<{ accessToken: string; workspaceId: string }> 
 	return { accessToken, workspaceId };
 }
 
-function refresh(): void { revalidatePath("/settings/broadcast"); }
-
-export async function createBroadcastDestinationAction(args: CreateBroadcastDestinationInput) {
-	const context = await account();
-	const result = await fetchAccountWebApi<{ ok: true; id: string }>("/api/account/settings/broadcast", context.accessToken, { method: "POST", body: JSON.stringify({ ...args, workspaceId: context.workspaceId }) });
-	refresh();
-	return result;
-}
-
-export async function disableBroadcastDestinationAction(id: string) {
-	if (!id) throw new Error("Missing destination id");
-	const context = await account();
-	const result = await fetchAccountWebApi<{ ok: true }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}/disable`, context.accessToken, { method: "PUT" });
-	refresh();
-	return result;
-}
-
-export async function enableBroadcastDestinationAction(id: string) {
-	if (!id) throw new Error("Missing destination id");
-	const context = await account();
-	const result = await fetchAccountWebApi<{ ok: true }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}/enable`, context.accessToken, { method: "PUT" });
-	refresh();
-	return result;
-}
-
-export async function deleteBroadcastDestinationAction(id: string) {
-	if (!id) throw new Error("Missing destination id");
-	const context = await account();
-	const result = await fetchAccountWebApi<{ ok: true }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}`, context.accessToken, { method: "DELETE" });
-	refresh();
-	return result;
-}
-
-export async function refreshBroadcastDestinationStatusAction(id: string) {
-	if (!id) throw new Error("Missing destination id");
-	const context = await account();
-	return fetchAccountWebApi<{ ok: boolean; status: string }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}/status`, context.accessToken, { method: "POST" });
-}
-
-export async function sendBroadcastSampleTraceAction(id: string) {
-	if (!id) throw new Error("Missing destination id");
-	const context = await account();
-	return fetchAccountWebApi<{ ok: true; status: string; httpStatus: number }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}/sample`, context.accessToken, { method: "POST" });
-}
-
-export async function testBroadcastConnectionFromConfigAction(args: { destinationId: string; config: Record<string, string> }) {
-	try {
+export const createBroadcastDestinationAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((args: CreateBroadcastDestinationInput) => args)
+	.handler(async ({ data: args }) => {
 		const context = await account();
-		return await fetchAccountWebApi<{ ok: true; status: string; httpStatus: number | null; endpoint: string; headerCount: number }>("/api/account/settings/broadcast/test-config", context.accessToken, { method: "POST", body: JSON.stringify({ ...args, workspaceId: context.workspaceId }) });
-	} catch (error) {
-		return {
-			ok: false as const,
-			status: error instanceof Error ? error.message : "Connection check failed",
-		};
-	}
-}
+		const result = await fetchAccountWebApi<{ ok: true; id: string }>("/api/account/settings/broadcast", context.accessToken, { method: "POST", body: JSON.stringify({ ...args, workspaceId: context.workspaceId }) });
+		return result;
+	});
+
+export const disableBroadcastDestinationAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		if (!id) throw new Error("Missing destination id");
+		const context = await account();
+		const result = await fetchAccountWebApi<{ ok: true }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}/disable`, context.accessToken, { method: "PUT" });
+		return result;
+	});
+
+export const enableBroadcastDestinationAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		if (!id) throw new Error("Missing destination id");
+		const context = await account();
+		const result = await fetchAccountWebApi<{ ok: true }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}/enable`, context.accessToken, { method: "PUT" });
+		return result;
+	});
+
+export const deleteBroadcastDestinationAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		if (!id) throw new Error("Missing destination id");
+		const context = await account();
+		const result = await fetchAccountWebApi<{ ok: true }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}`, context.accessToken, { method: "DELETE" });
+		return result;
+	});
+
+export const refreshBroadcastDestinationStatusAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		if (!id) throw new Error("Missing destination id");
+		const context = await account();
+		return fetchAccountWebApi<{ ok: boolean; status: string }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}/status`, context.accessToken, { method: "POST" });
+	});
+
+export const sendBroadcastSampleTraceAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		if (!id) throw new Error("Missing destination id");
+		const context = await account();
+		return fetchAccountWebApi<{ ok: true; status: string; httpStatus: number }>(`/api/account/settings/broadcast/${encodeURIComponent(id)}/sample`, context.accessToken, { method: "POST" });
+	});
+
+export const testBroadcastConnectionFromConfigAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((args: { destinationId: string; config: Record<string, string> }) => args)
+	.handler(async ({ data: args }) => {
+		try {
+			const context = await account();
+			return await fetchAccountWebApi<{ ok: true; status: string; httpStatus: number | null; endpoint: string; headerCount: number }>("/api/account/settings/broadcast/test-config", context.accessToken, { method: "POST", body: JSON.stringify({ ...args, workspaceId: context.workspaceId }) });
+		} catch (error) {
+			return {
+				ok: false as const,
+				status: error instanceof Error ? error.message : "Connection check failed",
+			};
+		}
+	});

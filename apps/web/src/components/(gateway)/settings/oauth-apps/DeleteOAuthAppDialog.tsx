@@ -52,7 +52,7 @@ export default function DeleteOAuthAppDialog({
 				"@/app/(dashboard)/settings/oauth-apps/actions"
 			);
 
-			const result = await write(deleteOAuthAppAction(clientId));
+			const result = await write(deleteOAuthAppAction({ data: clientId }));
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to delete OAuth app"));

@@ -31,11 +31,11 @@ export function ClassifierTestPanel({ classifierId, buildRequest, includeRespons
 		setInvalid(!classifier);
 		if (!classifier || !prompt.trim()) return;
 		startTransition(async () => {
-			const result = await testClassifier({
+			const result = await testClassifier({ data: {
 				classifierId,
 				classifier,
 				sample: { prompt, ...(includeResponse && response.trim() ? { response } : {}) },
-			});
+			} });
 			if (result.ok) setOutcome({ kind: "result", result: result.result });
 			else if (result.code === "chat_privacy_review_required") setOutcome({ kind: "privacy" });
 			else setOutcome({ kind: "error", message: result.message });

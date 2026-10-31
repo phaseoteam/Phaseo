@@ -33,7 +33,7 @@ export function BillingReviews({ reviews }: { reviews: Review[] }) {
 	function open(review: Review) {
 		setSelected(review); setDetails(null); setError(null);
 		startTransition(async () => {
-			try { setDetails(await loadReviewDetails(review.session_id)); }
+			try { setDetails(await loadReviewDetails({ data: review.session_id })); }
 			catch { setError(t("realtimeCopy.evidenceLoadFailed")); }
 		});
 	}
@@ -42,7 +42,7 @@ export function BillingReviews({ reviews }: { reviews: Review[] }) {
 		if (!selected || !action) return;
 		startTransition(async () => {
 			try {
-				const result = await decideReview(selected.session_id, selected.version, operationId, action, reason);
+				const result = await decideReview({ data: { sessionId: selected.session_id, version: selected.version, operationId, action, reason } });
 				if (result.error) { setError(t("realtimeCopy.decisionSaveFailed")); return; }
 				setAction(null); setSelected(null); router.refresh();
 			} catch { setError(t("realtimeCopy.decisionSaveFailed")); }

@@ -141,7 +141,7 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 			return;
 		}
 		startSaving(async () => {
-			const result = classifier ? await write(updateClassifier(classifier.id, built.payload)) : await write(createClassifier(built.payload));
+			const result = classifier ? await write(updateClassifier({ data: { id: classifier.id, payload: built.payload } })) : await write(createClassifier({ data: built.payload }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.saveFailed")));
 				return;
@@ -155,7 +155,7 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 	function remove() {
 		if (!classifier) return;
 		startDeleting(async () => {
-			const result = await write(deleteClassifier(classifier.id));
+			const result = await write(deleteClassifier({ data: classifier.id }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.deleteFailed")));
 				return;

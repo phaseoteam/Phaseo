@@ -58,7 +58,7 @@ export default function LowBalanceEmailAlertsClient(props: {
 		(next: { enabled: boolean; thresholdUsd: number | null }) => {
 			if (debounceRef.current != null) window.clearTimeout(debounceRef.current);
 			debounceRef.current = window.setTimeout(() => {
-				toast.promise(write(setLowBalanceEmailAlert(next)), {
+				toast.promise(write(setLowBalanceEmailAlert({ data: next })), {
 					loading: t("savingAlert"),
 					success: t("saved"),
 					error: (e: unknown) =>
@@ -72,7 +72,7 @@ export default function LowBalanceEmailAlertsClient(props: {
 		const existing = preferenceDebounceRef.current[preference];
 		if (existing != null) window.clearTimeout(existing);
 		preferenceDebounceRef.current[preference] = window.setTimeout(() => {
-			toast.promise(write(setBillingNotificationPreference({ preference, enabled: nextEnabled })), {
+			toast.promise(write(setBillingNotificationPreference({ data: { preference, enabled: nextEnabled } })), {
 				loading: t("savingPreference"),
 				success: t("saved"),
 					error: (error: unknown) =>

@@ -1,50 +1,17 @@
-// `flags/next` (Vercel Flags SDK) without Next: a flag is an async function
-// that identifies the request's entities, then asks its adapter (Statsig) or
-// `decide`. `dedupe` memoises per request, like the SDK does.
+// Server-side feature flags: a flag is an async function that decides its
+// value for the current request. `dedupe` memoises a function per request.
 import { getCurrentRequest } from "@/compat/request-context";
 
-type Entities = unknown;
-type DecideArgs<E> = { entities?: E; headers: Headers; cookies: Map<string, string> };
-// The flags SDK adapters (@flags-sdk/statsig) type their decide() arguments
-// against the SDK's own request types; only the shape below is used here.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Adapter<V, _E> = { decide(args: any): V | Promise<V> };
-type FlagDeclaration<V, E> = {
+export type FlagDeclaration<V> = {
 	key: string;
-	defaultValue?: V;
-	description?: string;
-	options?: unknown;
-	identify?: (args: { headers: Headers; cookies: Map<string, string> }) => E | Promise<E>;
-	decide?: (args: DecideArgs<E>) => V | Promise<V>;
-	adapter?: Adapter<V, E>;
+	decide: () => V | Promise<V>;
 };
 
-function requestBits(): { headers: Headers; cookies: Map<string, string> } {
-	const request = getCurrentRequest();
-	const headers = new Headers(request?.headers);
-	const cookies = new Map<string, string>();
-	for (const part of (headers.get("cookie") ?? "").split(/;\s*/)) {
-		const eq = part.indexOf("=");
-		if (eq > 0) cookies.set(part.slice(0, eq), decodeURIComponent(part.slice(eq + 1)));
-	}
-	return { headers, cookies };
-}
+export type Flag<V> = (() => Promise<V>) & { key: string };
 
-export function flag<V, E = Entities>(declaration: FlagDeclaration<V, E>) {
-	const evaluate = async (): Promise<V> => {
-		const bits = requestBits();
-		try {
-			const entities = declaration.identify ? await declaration.identify(bits) : undefined;
-			if (declaration.adapter) return await declaration.adapter.decide({ ...bits, entities, key: declaration.key });
-			if (declaration.decide) return await declaration.decide({ ...bits, entities });
-		} catch (error) {
-			if (declaration.defaultValue !== undefined) return declaration.defaultValue;
-			throw error;
-		}
-		if (declaration.defaultValue !== undefined) return declaration.defaultValue;
-		throw new Error(`Flag ${declaration.key} has no decide or adapter`);
-	};
-	return Object.assign(evaluate, { key: declaration.key, defaultValue: declaration.defaultValue, description: declaration.description, options: declaration.options });
+export function flag<V>(declaration: FlagDeclaration<V>): Flag<V> {
+	const evaluate = async (): Promise<V> => declaration.decide();
+	return Object.assign(evaluate, { key: declaration.key });
 }
 
 const perRequest = new WeakMap<object, Map<unknown, Promise<unknown>>>();

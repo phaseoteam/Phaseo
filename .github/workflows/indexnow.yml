@@ -76,18 +76,23 @@ jobs:
                   urls: set[str] = set()
 
 
+                  # Page routes are src/routes/{-$locale}/<segments>/index.tsx. Pathless
+                  # layout folders start with "_", dynamic segments contain "$", and
+                  # "[.]" escapes a literal dot.
+                  page_root = "apps/web/src/routes/{-$locale}"
+
                   def build_route(path: str) -> str | None:
-                      if not path.startswith("apps/web/src/app/") or not path.endswith("/page.tsx"):
+                      if not path.startswith(page_root + "/") or not path.endswith("/index.tsx"):
                           return None
-                      route = path[len("apps/web/src/app") : -len("/page.tsx")]
+                      route = path[len(page_root) : -len("/index.tsx")]
                       parts = [p for p in route.split("/") if p]
                       filtered = []
                       for part in parts:
-                          if part.startswith("(") and part.endswith(")"):
+                          if part.startswith("_"):
                               continue
-                          if "[" in part or "]" in part:
+                          if "$" in part or part.startswith("("):
                               return None
-                          filtered.append(part)
+                          filtered.append(part.replace("[.]", "."))
                       return "/" + "/".join(filtered) if filtered else "/"
 
                   with open("changed_files_status.txt", "r", encoding="utf-8") as f:

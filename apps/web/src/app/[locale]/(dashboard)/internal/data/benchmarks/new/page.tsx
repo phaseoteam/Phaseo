@@ -5,5 +5,5 @@ import { createBenchmarkAction } from "../../actions";
 export default function NewBenchmarkPage() {
   const t = useTranslations("Product.internalTools.dataEditor");
 
-  return <div className="container mx-auto space-y-8 py-8"><h1 className="text-2xl font-semibold">{t("benchmarkCreateTitle")}</h1><BenchmarkForm action={createBenchmarkAction} /></div>;
+  return <div className="container mx-auto space-y-8 py-8"><h1 className="text-2xl font-semibold">{t("benchmarkCreateTitle")}</h1><BenchmarkForm action={async (form) => { await createBenchmarkAction({ data: form }); }} /></div>;
 }

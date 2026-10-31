@@ -94,10 +94,10 @@ export default function MetricsOverview({
 				);
 				const [liveColors, liveMetadata] = await Promise.all([
 					missingColorModelIds.length > 0
-						? fetchOrganizationColors(missingColorModelIds)
+						? fetchOrganizationColors({ data: missingColorModelIds })
 						: Promise.resolve(new Map<string, string>()),
 					missingMetadataModelIds.length > 0
-						? fetchModelMetadata(missingMetadataModelIds)
+						? fetchModelMetadata({ data: missingMetadataModelIds })
 						: Promise.resolve(new Map()),
 				]);
 				if (liveColors.size > 0) {
@@ -129,11 +129,11 @@ export default function MetricsOverview({
 
 			setLoading(true);
 			try {
-				const data = await fetchChartData({
+				const data = await fetchChartData({ data: {
 					timeRange,
 					range,
 					keyFilter: normalizedKeyFilter,
-				});
+				} });
 				chartCacheRef.current.set(chartCacheKey, data);
 				setChartData(data);
 				await hydrateChartMetadata(data);

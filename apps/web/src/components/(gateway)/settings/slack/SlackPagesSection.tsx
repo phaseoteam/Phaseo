@@ -82,7 +82,7 @@ export function SlackPagesSection({ settings: saved }: { settings: SlackAgentSet
 	function change(patch: Record<string, unknown>, toastText = t("pages.saved")) {
 		setSaveError(null);
 		startSaving(async () => {
-			const result = await write(updateSlackAgent(patch));
+			const result = await write(updateSlackAgent({ data: patch }));
 			if (!result.ok) {
 				setSaveError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;
@@ -229,7 +229,7 @@ function DeletePage({ page, onDeleted }: { page: SlackAgentPage; onDeleted: (id:
 
 	function remove() {
 		startDeleting(async () => {
-			const result = await deleteSlackAgentPage(page.id);
+			const result = await deleteSlackAgentPage({ data: page.id });
 			if (!result.ok) {
 				const failure = toError(result);
 				// Already gone: the list catches up.

@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction, serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
@@ -22,81 +21,80 @@ interface ActionResult {
  * Marks the authorization as revoked, which will cause subsequent
  * API requests with tokens for this authorization to fail.
  */
-export async function revokeAuthorizationAction(
-	authorizationId: string
-): Promise<ActionResult> {
-	try {
-		const { accessToken } = await getServerAccountContext();
-		if (!accessToken) return { error: "Unauthorized" };
-		await fetchAccountWebApi(`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}`, accessToken, { method: "DELETE" });
+export const revokeAuthorizationAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((authorizationId: string) => authorizationId)
+	.handler(async ({ data: authorizationId }): Promise<ActionResult> => {
+		try {
+			const { accessToken } = await getServerAccountContext();
+			if (!accessToken) return { error: "Unauthorized" };
+			await fetchAccountWebApi(`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}`, accessToken, { method: "DELETE" });
 
-		// Revalidate the page
-		revalidatePath("/settings/authorized-apps");
+			// Revalidate the page
 
-		return { data: { success: true } };
-	} catch (error: any) {
-		console.error("Error revoking authorization:", error);
-		return { error: error.message || "Failed to revoke authorization" };
-	}
-}
+			return { data: { success: true } };
+		} catch (error: any) {
+			console.error("Error revoking authorization:", error);
+			return { error: error.message || "Failed to revoke authorization" };
+		}
+	});
 
-export async function updateAuthorizationScopesAction(
-	authorizationId: string,
-	scopes: string[],
-): Promise<ActionResult> {
-	try {
-		const { accessToken } = await getServerAccountContext();
-		if (!accessToken) return { error: "Unauthorized" };
-		const response = await fetchAccountWebApi<{ success: boolean; scopes: string[] }>(
-			`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}/scopes`,
-			accessToken,
-			{ method: "PATCH", body: JSON.stringify({ scopes }) },
-		);
-		revalidatePath("/settings/authorized-apps");
-		return { data: response };
-	} catch (error: any) {
-		return { error: error.message || "Failed to update permissions" };
-	}
-}
+export const updateAuthorizationScopesAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { authorizationId: string; scopes: string[] }) => input)
+	.handler(async ({ data: { authorizationId, scopes } }): Promise<ActionResult> => {
+		try {
+			const { accessToken } = await getServerAccountContext();
+			if (!accessToken) return { error: "Unauthorized" };
+			const response = await fetchAccountWebApi<{ success: boolean; scopes: string[] }>(
+				`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}/scopes`,
+				accessToken,
+				{ method: "PATCH", body: JSON.stringify({ scopes }) },
+			);
+			return { data: response };
+		} catch (error: any) {
+			return { error: error.message || "Failed to update permissions" };
+		}
+	});
 
-export async function reauthorizeCliScopesAction(
-	authorizationId: string,
-	scopes: string[],
-): Promise<ActionResult> {
-	try {
-		const { accessToken } = await getServerAccountContext();
-		if (!accessToken) return { error: "Unauthorized" };
-		const response = await fetchAccountWebApi<{
-			success: boolean;
-			scopes: string[];
-			applies_on_next_refresh: boolean;
-		}>(
-			`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}/reauthorize`,
-			accessToken,
-			{ method: "POST", body: JSON.stringify({ scopes }) },
-		);
-		revalidatePath("/settings/authorized-apps");
-		return { data: response };
-	} catch (error: any) {
-		return { error: error.message || "Failed to reauthorize CLI permissions" };
-	}
-}
+export const reauthorizeCliScopesAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { authorizationId: string; scopes: string[] }) => input)
+	.handler(async ({ data: { authorizationId, scopes } }): Promise<ActionResult> => {
+		try {
+			const { accessToken } = await getServerAccountContext();
+			if (!accessToken) return { error: "Unauthorized" };
+			const response = await fetchAccountWebApi<{
+				success: boolean;
+				scopes: string[];
+				applies_on_next_refresh: boolean;
+			}>(
+				`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}/reauthorize`,
+				accessToken,
+				{ method: "POST", body: JSON.stringify({ scopes }) },
+			);
+			return { data: response };
+		} catch (error: any) {
+			return { error: error.message || "Failed to reauthorize CLI permissions" };
+		}
+	});
 
 /**
  * Get authorization details
  *
  * Fetches detailed information about a specific authorization.
  */
-export async function getAuthorizationDetailsAction(
-	authorizationId: string
-): Promise<ActionResult> {
-	try {
-		const { accessToken } = await getServerAccountContext();
-		if (!accessToken) return { error: "Unauthorized" };
-		const response = await fetchAccountWebApi<{ authorization: unknown }>(`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}`, accessToken);
-		return { data: response.authorization };
-	} catch (error: any) {
-		console.error("Error fetching authorization details:", error);
-		return { error: error.message || "Failed to fetch authorization details" };
-	}
-}
+export const getAuthorizationDetailsAction = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((authorizationId: string) => authorizationId)
+	.handler(async ({ data: authorizationId }): Promise<ActionResult> => {
+		try {
+			const { accessToken } = await getServerAccountContext();
+			if (!accessToken) return { error: "Unauthorized" };
+			const response = await fetchAccountWebApi<{ authorization: unknown }>(`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}`, accessToken);
+			return { data: response.authorization };
+		} catch (error: any) {
+			console.error("Error fetching authorization details:", error);
+			return { error: error.message || "Failed to fetch authorization details" };
+		}
+	});

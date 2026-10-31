@@ -91,11 +91,11 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 	}
 
 	function sendConfigurationTest(type: DestinationType) {
-		void sendNotificationTest(() => testNotificationConfiguration({ type, target: targetForType(type) }), t("notificationCopy.sendingChannelTest", { channel: providerByType.get(type)?.name ?? s("channel") }));
+		void sendNotificationTest(() => testNotificationConfiguration({ data: { type, target: targetForType(type) } }), t("notificationCopy.sendingChannelTest", { channel: providerByType.get(type)?.name ?? s("channel") }));
 	}
 	function sendDestinationTest(destinationId: string, kind: NotificationTestKind) {
 		const isModelDeprecation = kind === "model_deprecation";
-		void sendNotificationTest(() => testNotificationDestination(destinationId, kind), isModelDeprecation ? t("notificationCopy.sendingDeprecationTest") : t("notificationCopy.sendingTest"));
+		void sendNotificationTest(() => testNotificationDestination({ data: { destinationId, kind } }), isModelDeprecation ? t("notificationCopy.sendingDeprecationTest") : t("notificationCopy.sendingTest"));
 	}
 	function addEmail() {
 		const email = emailDraft.trim().toLowerCase();
@@ -104,7 +104,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 	}
 	async function removeDestination(destinationId: string) {
 		setSaving(true);
-		try { await write(deleteNotificationDestination(destinationId)); setDestinations((current) => current.filter((entry) => entry.id !== destinationId)); toast.success(s("Destination removed")); }
+		try { await write(deleteNotificationDestination({ data: destinationId })); setDestinations((current) => current.filter((entry) => entry.id !== destinationId)); toast.success(s("Destination removed")); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Could not remove destination")); }
 		finally { setSaving(false); }
 	}
@@ -113,7 +113,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 		setSaving(true);
 		try {
 			// Settle each create separately: a destination that was created keeps its one-time secret even if another type fails.
-			const results = await Promise.allSettled(selectedTypes.map((type) => write(createNotificationDestination({ name: name.trim(), type, target: targetForType(type) }))));
+			const results = await Promise.allSettled(selectedTypes.map((type) => write(createNotificationDestination({ data: { name: name.trim(), type, target: targetForType(type) } }))));
 			const created = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
 			const failedTypes = selectedTypes.filter((_, index) => results[index]?.status === "rejected");
 			const firstFailure = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
@@ -133,7 +133,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 		setSecretTarget(null); setSaving(true);
 		const toastId = toast.loading(t("notificationCopy.secretCreating"));
 		try {
-			const result = await write(rotateNotificationDestinationSecret(destination.id));
+			const result = await write(rotateNotificationDestinationSecret({ data: destination.id }));
 			if (!result.ok) { toast.error(localizedSettingsError(result.error, t, "Could not create a signing secret", t("notificationCopy.secretCreateFailed")), { id: toastId }); return; }
 			setDestinations((current) => current.map((entry) => entry.id === destination.id ? { ...entry, hasSigningSecret: true, signingSecretRotatedAt: result.signingSecretRotatedAt } : entry));
 			setRevealedSecrets([{ destinationName: destination.name, secret: result.signingSecret }]);
@@ -151,12 +151,12 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						<div><h3 className="text-sm font-medium">{s("Model Deprecation Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired")}</p></div>
 						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="model_deprecation" initialDestinationIds={initialNotificationRoutes.model_deprecation ?? []} /><Switch checked={modelDeprecationEnabled} aria-label={s("Enable model deprecation alerts")} onCheckedChange={(checked) => {
 							const next = Boolean(checked); setModelDeprecationEnabled(next);
-							toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlerts", enabled: next })), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
+							toast.promise(write(setBillingNotificationPreference({ data: { preference: "modelDeprecationAlerts", enabled: next } })), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
 						}} /></div>
 					</div>
 					{modelDeprecationEnabled ? <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3"><Label htmlFor="model-deprecation-include-admins" className="text-sm font-normal text-muted-foreground">{s("Also email admins")}</Label><Switch id="model-deprecation-include-admins" checked={modelDeprecationIncludeAdmins} onCheckedChange={(checked) => {
 						const next = Boolean(checked); const previous = modelDeprecationIncludeAdmins; setModelDeprecationIncludeAdmins(next);
-						toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlertsIncludeAdmins", enabled: next })).catch((error) => { setModelDeprecationIncludeAdmins(previous); throw error; }), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
+						toast.promise(write(setBillingNotificationPreference({ data: { preference: "modelDeprecationAlertsIncludeAdmins", enabled: next } })).catch((error) => { setModelDeprecationIncludeAdmins(previous); throw error; }), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
 					}} /></div> : null}
 					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
 						<div><h3 className="text-sm font-medium">{t("notificationCopy.replacementNoticesTitle")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{t("notificationCopy.replacementNoticesDescription")}</p></div>

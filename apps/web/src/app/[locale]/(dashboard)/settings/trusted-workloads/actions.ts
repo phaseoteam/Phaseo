@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { workloadIdentityFlag } from "@/lib/flags";
@@ -35,25 +34,36 @@ async function send(path: string, method: "POST" | "PATCH" | "DELETE", body: Rec
 			method,
 			body: JSON.stringify({ ...body, workspaceId: context.workspaceId }),
 		});
-		revalidatePath("/settings/trusted-workloads");
 		return { ok: true as const, id: result.id };
 	} catch (error) {
 		return failure(error);
 	}
 }
 
-export async function createTrustedWorkload(payload: WorkloadCreatePayload) {
-	return send("/policies", "POST", payload);
-}
+export const createTrustedWorkload = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((payload: WorkloadCreatePayload) => payload)
+	.handler(async ({ data: payload }) => {
+		return send("/policies", "POST", payload);
+	});
 
-export async function updateTrustedWorkload(id: string, payload: WorkloadUpdatePayload) {
-	return send(`/policies/${encodeURIComponent(id)}`, "PATCH", payload);
-}
+export const updateTrustedWorkload = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; payload: WorkloadUpdatePayload }) => input)
+	.handler(async ({ data: { id, payload } }) => {
+		return send(`/policies/${encodeURIComponent(id)}`, "PATCH", payload);
+	});
 
-export async function setTrustedWorkloadStatus(id: string, status: "active" | "disabled") {
-	return send(`/policies/${encodeURIComponent(id)}`, "PATCH", { status });
-}
+export const setTrustedWorkloadStatus = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; status: "active" | "disabled" }) => input)
+	.handler(async ({ data: { id, status } }) => {
+		return send(`/policies/${encodeURIComponent(id)}`, "PATCH", { status });
+	});
 
-export async function deleteTrustedWorkload(id: string) {
-	return send(`/policies/${encodeURIComponent(id)}`, "DELETE");
-}
+export const deleteTrustedWorkload = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		return send(`/policies/${encodeURIComponent(id)}`, "DELETE");
+	});

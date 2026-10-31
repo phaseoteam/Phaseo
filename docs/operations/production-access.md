@@ -1,6 +1,6 @@
 # Working safely against production
 
-Production means the live Supabase database, the deployed Cloudflare Workers, the Vercel web app, the Mintlify docs, and the accounts behind them. The default is no production writes of any kind.
+Production means the live Supabase database, the deployed Cloudflare Workers (including the web app), the Mintlify docs, and the accounts behind them. The default is no production writes of any kind.
 
 ## Default rules
 
@@ -69,4 +69,4 @@ Do not run `supabase migration repair --status reverted` for a real schema chang
 - Prefer AIMock tests and the provider mock; see [Development](./development.md#gateway-api).
 - When a live check is needed, use the maintainer's existing `phaseo` CLI login session, for example `phaseo api get /v1/<path> --json`. Print status codes and the fields you need, never the token.
 - `*.live.spec.ts` tests, `test:live:*` scripts, SDK smoke tests and AIMock recording call real providers and spend quota. Run them only when asked.
-- Vercel pull request previews require a Vercel login. Do not create a protection-bypass secret to reach one. Unless the preview sets `WEB_API_ORIGIN`, `apps/web/next.config.mjs` rewrites `/api/_web`, `/api/account`, `/api/chat` and `/api/internal` on a preview to production `https://phaseo.app`. A preview therefore reads the production Web API and does not run Web API changes from the same pull request; check those on production after deploy.
+- The web app has no pull request previews; check changes locally with `pnpm --filter @phaseo/web dev` or `preview`. Unless `WEB_API_ORIGIN` is set, the local app and the workers.dev deploy forward `/api/_web`, `/api/account`, `/api/chat` and `/api/internal` to production `https://phaseo.app`, so they read the production Web API, and anything you do while signed in happens on production.

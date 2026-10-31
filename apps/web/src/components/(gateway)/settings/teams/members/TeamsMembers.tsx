@@ -301,9 +301,7 @@ export default function TeamsMembers({
 				);
 			} else {
 				await updateMemberRole(
-					activeWorkspaceId,
-					selectedMember.user_id,
-					selectedRole
+					{ data: { workspaceId: activeWorkspaceId, userId: selectedMember.user_id, newRole: selectedRole } }
 				);
 			}
 			setRoleDialogOpen(false);
@@ -349,8 +347,7 @@ export default function TeamsMembers({
 				await onRemoveMember(activeWorkspaceId, selectedMember.user_id);
 			} else {
 				const result = await removeMember(
-					activeWorkspaceId,
-					selectedMember.user_id
+					{ data: { workspaceId: activeWorkspaceId, userId: selectedMember.user_id } }
 				);
 				if (result && result.ok === false) {
 					const message = localizedSettingsError(

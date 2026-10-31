@@ -99,7 +99,7 @@ export function EditModelDialog({
 
 		setError(null);
 		startTransition(async () => {
-			const result = await updateModel({
+			const result = await updateModel({ data: {
 				modelId: model.modelId,
 				name,
 				releaseDate: releaseDate || null,
@@ -108,7 +108,7 @@ export function EditModelDialog({
 				hidden,
 				inputTypes,
 				outputTypes,
-			});
+			} });
 
 			if (result.success) {
 				onOpenChange(false);

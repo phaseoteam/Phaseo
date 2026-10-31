@@ -77,7 +77,7 @@ console.log(response.choices[0]?.message?.content);
 
 | Path | Purpose |
 | --- | --- |
-| `apps/web` | Next.js product, dashboard, model catalog, gateway UI, blog, and public site. |
+| `apps/web` | TanStack Start app on Cloudflare Workers: product, dashboard, model catalog, gateway UI, blog, and public site. |
 | `apps/api` | Cloudflare Workers + Hono gateway API. |
 | `apps/docs` | Mintlify documentation and OpenAPI reference. |
 | `apps/desktop` | Phaseo Desktop, the Electron workspace for chats, coding agents, projects, Git and a built-in browser. |

@@ -1,9 +1,9 @@
 // OG image fonts and wordmark, bundled into the server build. Workers have no
 // filesystem, so the files are inlined by Vite (`?inline` gives a data URL)
 // instead of being read with `fs` at request time.
-import montserratRegularUrl from "@/app/og/profile-share/assets/Montserrat-Regular.ttf?inline";
-import montserratSemiboldUrl from "@/app/og/profile-share/assets/Montserrat-SemiBold.ttf?inline";
-import montserratBoldUrl from "@/app/og/profile-share/assets/Montserrat-Bold.ttf?inline";
+import montserratRegularUrl from "@/lib/og/assets/Montserrat-Regular.ttf?inline";
+import montserratSemiboldUrl from "@/lib/og/assets/Montserrat-SemiBold.ttf?inline";
+import montserratBoldUrl from "@/lib/og/assets/Montserrat-Bold.ttf?inline";
 import wordmarkLightSvg from "../../../public/wordmark_light.svg?raw";
 
 function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {

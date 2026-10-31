@@ -203,7 +203,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 		if (!pending || !request) return;
 		setBusy(true);
 		try {
-			const result = await bulkUpdateKeysAction(data.workspaceId, pending.selection, request);
+			const result = await bulkUpdateKeysAction({ data: { workspaceId: data.workspaceId, selection: pending.selection, input: request } });
 			if (result.ok === false) { toast.error(result.message ?? t("keySecurity.actionFailed")); return; }
 			toast.success(t("keySecurity.changed", { count: result.changed.length }));
 			setPending(null);

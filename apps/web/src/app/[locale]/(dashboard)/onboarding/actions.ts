@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { createApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
@@ -41,52 +40,57 @@ async function mergeUserOnboardingState(input: OnboardingProgressInput) {
 	const { accessToken } = await getServerAccountContext();
 	if (!accessToken) throw new Error("Unauthorized");
 	const result = await fetchAccountWebApi<{ state: Record<string, unknown> }>("/api/account/auth/onboarding", accessToken, { method: "PUT", body: JSON.stringify({ ...input, completedSteps: normaliseSteps(input.completedSteps) }) });
-	revalidatePath("/onboarding");
 	return result;
 }
 
-export async function saveOnboardingProgressAction(input: OnboardingProgressInput) {
-	return mergeUserOnboardingState({
-		...input,
-		status: input.status ?? "started",
+export const saveOnboardingProgressAction = createServerFn({ method: "POST", strict: { output: false } })
+	.middleware([serverMutation])
+	.validator((input: OnboardingProgressInput) => input)
+	.handler(async ({ data: input }) => {
+		return mergeUserOnboardingState({
+			...input,
+			status: input.status ?? "started",
+		});
 	});
-}
 
-export async function createOnboardingApiKeyAction(input: {
-	name: string;
-	workspaceId?: string | null;
-	selectedModelId?: string | null;
-}) {
-	const name = String(input.name ?? "").trim() || "Onboarding quickstart";
-	const { accessToken } = await getServerAccountContext();
-	if (!accessToken) throw new Error("Unauthorized");
-	const requested = String(input.workspaceId ?? "").trim();
-	const resolved = await fetchAccountWebApi<{ userId: string; workspaceId: string | null }>(
-		`/api/account/auth/workspace?roles=owner,admin&persist=0${requested ? `&requested=${encodeURIComponent(requested)}` : ""}`,
-		accessToken,
-	);
-	const workspaceId = String(resolved.workspaceId ?? "").trim();
-	if (!workspaceId) throw new Error("No personal workspace found");
+export const createOnboardingApiKeyAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: {
+		name: string;
+		workspaceId?: string | null;
+		selectedModelId?: string | null;
+	}) => input)
+	.handler(async ({ data: input }) => {
+		const name = String(input.name ?? "").trim() || "Onboarding quickstart";
+		const { accessToken } = await getServerAccountContext();
+		if (!accessToken) throw new Error("Unauthorized");
+		const requested = String(input.workspaceId ?? "").trim();
+		const resolved = await fetchAccountWebApi<{ userId: string; workspaceId: string | null }>(
+			`/api/account/auth/workspace?roles=owner,admin&persist=0${requested ? `&requested=${encodeURIComponent(requested)}` : ""}`,
+			accessToken,
+		);
+		const workspaceId = String(resolved.workspaceId ?? "").trim();
+		if (!workspaceId) throw new Error("No personal workspace found");
 
-	const key = await createApiKeyAction(name, resolved.userId, workspaceId, JSON.stringify([]));
-	try {
-		await mergeUserOnboardingState({
-			workspaceId,
-			selectedModelId: input.selectedModelId ?? null,
-			createdKeyId: key.id ?? null,
-			selectedKeyId: key.id ?? null,
-			keyPrefix: key.prefix ?? null,
-			completedSteps: ["api-key"],
-			status: "started",
-		});
-	} catch (error) {
-		console.error("Failed to save onboarding state after API key creation", {
-			userId: resolved.userId,
-			workspaceId,
-			keyId: key.id,
-			error: error instanceof Error ? error.message : String(error),
-		});
-	}
+		const key = await createApiKeyAction({ data: { name, creatorUserId: resolved.userId, workspaceId, scopes: JSON.stringify([]) } });
+		try {
+			await mergeUserOnboardingState({
+				workspaceId,
+				selectedModelId: input.selectedModelId ?? null,
+				createdKeyId: key.id ?? null,
+				selectedKeyId: key.id ?? null,
+				keyPrefix: key.prefix ?? null,
+				completedSteps: ["api-key"],
+				status: "started",
+			});
+		} catch (error) {
+			console.error("Failed to save onboarding state after API key creation", {
+				userId: resolved.userId,
+				workspaceId,
+				keyId: key.id,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
 
-	return { ...key, workspaceId };
-}
+		return { ...key, workspaceId };
+	});

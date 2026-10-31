@@ -1,8 +1,15 @@
-// Next: src/app/.well-known/agent-skills/route.ts
 import { createFileRoute } from "@tanstack/react-router";
-import { nextRouteHandlers } from "@/lib/start/nextRouteHandlers";
-import * as handlers from "@/app/.well-known/agent-skills/route";
+import { getAgentSkillsIndex } from "@/lib/agent-discovery";
 
 export const Route = createFileRoute("/.well-known/agent-skills/")({
-	server: { handlers: nextRouteHandlers(handlers) },
+	server: {
+		handlers: {
+			GET: () =>
+				Response.json(getAgentSkillsIndex(), {
+					headers: {
+						"Cache-Control": "public, max-age=3600, stale-while-revalidate=3600",
+					},
+				}),
+		},
+	},
 });

@@ -10,7 +10,7 @@ import {
 	Moon,
 	Sun,
 } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { useTranslations } from "@/i18n/react";
 import {
 	cloneElement,

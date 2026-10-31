@@ -149,7 +149,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 		setLoading(true);
 		setLoadError(null);
 		try {
-			const result = await fetchProviderCatalogAction(slug);
+			const result = await fetchProviderCatalogAction({ data: slug });
 			if (request !== requestVersion.current) return;
 			setValidationIssues([]);
 			setModels(result.models ?? []);
@@ -182,7 +182,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 		const checkVersion = async () => {
 			if (document.visibilityState !== "visible") return;
 			try {
-				const remote = await fetchProviderCatalogVersionAction(providerSlug);
+				const remote = await fetchProviderCatalogVersionAction({ data: providerSlug });
 				if (!cancelled && remote.catalog_version !== catalogVersion) setStale(true);
 			} catch { /* A failed check leaves the local draft untouched; saving still uses the server-side version guard. */ }
 		};
@@ -262,7 +262,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 			const document = documentModels.some((model) => model.service_tiers?.length) ? { schema_version: "1.1" as const, data: documentModels.map(({ pricing, provider_model_slug, ...model }) => ({
 				...model, service_tiers: model.service_tiers?.length ? model.service_tiers : [{ service_tier: "standard", provider_model_slug, pricing }],
 			})) } : { data: documentModels };
-			const result = await updateProviderCatalogAction(providerSlug, document, source.catalog_version);
+			const result = await updateProviderCatalogAction({ data: { providerSlug, catalog: document, expectedUpdatedAt: source.catalog_version } });
 			if (!result.ok) { setValidationIssues([...result.issues]); return; }
 			setValidationIssues([]);
 			await invalidateAccountQueries(queryClient);
@@ -284,7 +284,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 		if (!source || !modelId || dirty || saving) return;
 		setSaving(true);
 		try {
-			const result = await updateProviderCatalogAction(providerSlug, { revert: { modelId, field } }, source.catalog_version);
+			const result = await updateProviderCatalogAction({ data: { providerSlug, catalog: { revert: { modelId, field } }, expectedUpdatedAt: source.catalog_version } });
 			if (!result.ok) { setValidationIssues(result.issues); return; }
 			await loadCatalog(providerSlug);
 		} catch (error) { toast.error(error instanceof Error ? error.message : td("revertFailed")); }
@@ -295,7 +295,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 		if (!source?.catalog_url || !window.confirm(t("providerCatalogCopy.remoteConfirm"))) return;
 		setSaving(true);
 		try {
-			const result = await updateProviderCatalogAction(providerSlug, { mode: "remote" }, source.catalog_version);
+			const result = await updateProviderCatalogAction({ data: { providerSlug, catalog: { mode: "remote" }, expectedUpdatedAt: source.catalog_version } });
 			if (!result.ok) { setValidationIssues([...result.issues]); return; }
 			await invalidateAccountQueries(queryClient);
 			setValidationIssues([]);

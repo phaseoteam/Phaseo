@@ -292,7 +292,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 	async function startClaim() {
 		if (!providerSlug.trim() || !websiteUrl.trim()) return toast.error(s("phraseEnterTheProviderSlugAndWebsiteFirst"));
 		setStartingClaim(true);
-		try { const result = await startProviderClaimAction(providerSlug, websiteUrl); setClaim(result); toast.success(s("Ownership proof created")); }
+		try { const result = await startProviderClaimAction({ data: { providerSlug, websiteUrl } }); setClaim(result); toast.success(s("Ownership proof created")); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Action failed", s("Could not create ownership proof"))); }
 		finally { setStartingClaim(false); }
 	}
@@ -300,7 +300,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 	async function rotateWebhook() {
 		if (!submitted) return;
 		try {
-			const result = await rotateProviderCatalogWebhookAction(submitted.providerSlug);
+			const result = await rotateProviderCatalogWebhookAction({ data: submitted.providerSlug });
 			setSubmitted({ ...submitted, webhookUrl: result.webhookUrl, webhookSecret: result.webhookSecret });
 			void invalidateAccountQueries(queryClient);
 			toast.success(tx("SettingsUI.strings.Webhook signing secret rotated" as never));

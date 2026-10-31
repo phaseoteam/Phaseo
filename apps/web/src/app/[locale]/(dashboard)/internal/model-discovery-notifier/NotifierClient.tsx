@@ -42,14 +42,14 @@ export default function NotifierClient() {
 	function run(send: boolean) {
 		setResult(null);
 		startTransition(async () => {
-			const response = await testInternalModelDiscoveryNotifierAction({
+			const response = await testInternalModelDiscoveryNotifierAction({ data: {
 				modelsText,
 				roleId,
 				userId,
 				webhookUrl,
 				includeDefaultRoleMention,
 				send,
-			});
+			} });
 			setResult(response);
 		});
 	}

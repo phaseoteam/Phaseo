@@ -42,7 +42,7 @@ export default function AcceptInviteDialog({
 		setMessage(null);
 		try {
 			// call server action to create a join request
-			const res = await acceptTeamInviteAction(code, currentUserId);
+			const res = await acceptTeamInviteAction({ data: { token: code, userId: currentUserId } });
 			void invalidateSettings();
 			if (!res || !res.success)
 				throw new Error(res?.error || s("Failed to submit request"));

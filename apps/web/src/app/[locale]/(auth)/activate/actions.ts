@@ -1,5 +1,5 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction, serverRedirectAction } from "@/lib/serverFn/actionMiddleware";
 import { redirect } from "@/lib/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
@@ -35,29 +35,38 @@ async function callDeviceActivation(body: Record<string, unknown>) {
 	return payload;
 }
 
-export async function approveDeviceAction(formData: FormData) {
-	const userCode = String(formData.get("user_code") ?? "");
-	const workspaceId = String(formData.get("workspace_id") ?? "");
-	await callDeviceActivation({
-		action: "approve",
-		user_code: userCode,
-		workspace_id: workspaceId,
+export const approveDeviceAction = createServerFn({ method: "POST" })
+	.middleware([serverRedirectAction])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const userCode = String(formData.get("user_code") ?? "");
+		const workspaceId = String(formData.get("workspace_id") ?? "");
+		await callDeviceActivation({
+			action: "approve",
+			user_code: userCode,
+			workspace_id: workspaceId,
+		});
+		redirect("/activate?approved=1");
 	});
-	redirect("/activate?approved=1");
-}
 
-export async function denyDeviceAction(formData: FormData) {
-	const userCode = String(formData.get("user_code") ?? "");
-	await callDeviceActivation({
-		action: "deny",
-		user_code: userCode,
+export const denyDeviceAction = createServerFn({ method: "POST" })
+	.middleware([serverRedirectAction])
+	.validator((formData: FormData) => formData)
+	.handler(async ({ data: formData }) => {
+		const userCode = String(formData.get("user_code") ?? "");
+		await callDeviceActivation({
+			action: "deny",
+			user_code: userCode,
+		});
+		redirect("/activate?denied=1");
 	});
-	redirect("/activate?denied=1");
-}
 
-export async function lookupDeviceRequest(userCode: string) {
-	return callDeviceActivation({
-		action: "lookup",
-		user_code: userCode,
+export const lookupDeviceRequest = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((userCode: string) => userCode)
+	.handler(async ({ data: userCode }) => {
+		return callDeviceActivation({
+			action: "lookup",
+			user_code: userCode,
+		});
 	});
-}

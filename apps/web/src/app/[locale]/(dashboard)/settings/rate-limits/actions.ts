@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import type { SettingsRateLimitTargetType } from "@/lib/fetchers/internal/settingsTypes";
@@ -42,42 +41,61 @@ async function send(path: string, method: "POST" | "PATCH" | "DELETE", body: Rec
 			method,
 			body: JSON.stringify({ ...body, workspaceId: context.workspaceId }),
 		});
-		revalidatePath("/settings/rate-limits");
 		return { ok: true as const, id: result.id };
 	} catch (error) {
 		return failure(error);
 	}
 }
 
-export async function createRateLimitPolicy(payload: RateLimitPolicyPayload) {
-	return send("/policies", "POST", payload);
-}
-
-export async function updateRateLimitPolicy(id: string, payload: RateLimitPolicyPayload) {
-	return send(`/policies/${encodeURIComponent(id)}`, "PATCH", payload);
-}
-
-export async function deleteRateLimitPolicy(id: string) {
-	return send(`/policies/${encodeURIComponent(id)}`, "DELETE");
-}
-
-export async function assignRateLimitPolicy(input: { policyId: string; targetType: SettingsRateLimitTargetType; targetId: string | null }) {
-	return send("/assignments", "POST", {
-		policy_id: input.policyId,
-		target_type: input.targetType,
-		...(input.targetType === "end_user_default" ? {} : { target_id: input.targetId }),
+export const createRateLimitPolicy = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((payload: RateLimitPolicyPayload) => payload)
+	.handler(async ({ data: payload }) => {
+		return send("/policies", "POST", payload);
 	});
-}
 
-export async function changeRateLimitAssignment(id: string, policyId: string) {
-	return send(`/assignments/${encodeURIComponent(id)}`, "PATCH", { policy_id: policyId });
-}
+export const updateRateLimitPolicy = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; payload: RateLimitPolicyPayload }) => input)
+	.handler(async ({ data: { id, payload } }) => {
+		return send(`/policies/${encodeURIComponent(id)}`, "PATCH", payload);
+	});
 
-export async function removeRateLimitAssignment(id: string) {
-	return send(`/assignments/${encodeURIComponent(id)}`, "DELETE");
-}
+export const deleteRateLimitPolicy = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		return send(`/policies/${encodeURIComponent(id)}`, "DELETE");
+	});
+
+export const assignRateLimitPolicy = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { policyId: string; targetType: SettingsRateLimitTargetType; targetId: string | null }) => input)
+	.handler(async ({ data: input }) => {
+		return send("/assignments", "POST", {
+			policy_id: input.policyId,
+			target_type: input.targetType,
+			...(input.targetType === "end_user_default" ? {} : { target_id: input.targetId }),
+		});
+	});
+
+export const changeRateLimitAssignment = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { id: string; policyId: string }) => input)
+	.handler(async ({ data: { id, policyId } }) => {
+		return send(`/assignments/${encodeURIComponent(id)}`, "PATCH", { policy_id: policyId });
+	});
+
+export const removeRateLimitAssignment = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		return send(`/assignments/${encodeURIComponent(id)}`, "DELETE");
+	});
 
 /** Raises the workspace one trust-ladder tier; the gateway allows only the owner and checks eligibility. */
-export async function raiseRateLimitTier() {
-	return send("/tier/raise", "POST");
-}
+export const raiseRateLimitTier = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.handler(async () => {
+		return send("/tier/raise", "POST");
+	});

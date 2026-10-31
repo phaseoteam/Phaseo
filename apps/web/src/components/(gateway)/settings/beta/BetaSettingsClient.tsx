@@ -42,9 +42,9 @@ export default function BetaSettingsClient({
 
 	const persistFeatures = React.useCallback(
 		async (nextBetaFeatures: Record<string, boolean>) => {
-			const savePromise = write(updateBetaPreferences({
+			const savePromise = write(updateBetaPreferences({ data: {
 				beta_features: nextBetaFeatures,
-			}));
+			} }));
 
 			toast.promise(savePromise, {
 				loading: t("settingsPageCopy.betaSaving"),

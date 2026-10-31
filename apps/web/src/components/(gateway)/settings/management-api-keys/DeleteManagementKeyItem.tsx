@@ -43,7 +43,7 @@ export default function DeleteManagementKeyItem({
 		e?.preventDefault();
 		if (confirm !== k.name) return;
 		setLoading(true);
-		const promise = deleteManagementKeyAction(k.id, confirm);
+		const promise = deleteManagementKeyAction({ data: { id: k.id, confirmName: confirm } });
 		try {
 			await toast.promise(promise, {
 					loading: t("keys.deletingKey"),

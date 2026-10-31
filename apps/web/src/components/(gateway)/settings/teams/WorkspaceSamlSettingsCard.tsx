@@ -79,7 +79,7 @@ export default function WorkspaceSamlSettingsCard({
 				ssoProviderIdentifier: providerId,
 				ssoDomains: domainList,
 			});
-			await updateTeamSsoSettingsAction(workspaceId, normalized);
+			await updateTeamSsoSettingsAction({ data: { workspaceId, input: normalized } });
 			void invalidateSettings();
 			toast.success(t("saml.saved"));
 		} catch (error) {

@@ -19,7 +19,7 @@ export default function ProviderWebhookSettings({ providerSlug, webhookUrl, conf
 		if (hasSecret && !window.confirm(t("providerWebhookCopy.confirm"))) return;
 		setSaving(true);
 		try {
-			const result = await rotateProviderCatalogWebhookAction(providerSlug);
+			const result = await rotateProviderCatalogWebhookAction({ data: providerSlug });
 			setSecret(result.webhookSecret);
 			void invalidateSettings();
 			setHasSecret(true);

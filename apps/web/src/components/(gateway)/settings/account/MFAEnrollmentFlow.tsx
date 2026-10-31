@@ -70,7 +70,7 @@ export function MFAEnrollmentFlow({
     const startEnrollment = React.useCallback(async () => {
         setLoading(true)
         try {
-            const result = await enrollMFAAction(currentPassword || undefined)
+            const result = await enrollMFAAction({ data: currentPassword || undefined })
             setQrCode(result.qrCode)
             setSecret(result.secret)
             setFactorId(result.factorId)
@@ -103,9 +103,7 @@ export function MFAEnrollmentFlow({
         setLoading(true)
         try {
             await verifyMFAEnrollmentAction(
-                factorId,
-				verificationCode,
-				currentPassword || undefined
+                { data: { factorId, code: verificationCode, currentPassword: currentPassword || undefined } }
             )
             setStep('success')
         } catch (error: unknown) {

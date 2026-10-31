@@ -55,7 +55,7 @@ export default function AccountMFAClient({
 
 		setDisablingMFA(true);
 		try {
-			await toast.promise(unenrollMFAAction(mfaFactorId), {
+			await toast.promise(unenrollMFAAction({ data: mfaFactorId }), {
 				loading: s("phraseDisablingMFA"),
 				success: s("Two-factor authentication disabled"),
 				error: (error: unknown) =>

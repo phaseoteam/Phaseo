@@ -3,7 +3,6 @@ import type {
 	AppUsageRow,
 	RangeKey,
 } from "@/lib/fetchers/apps/types";
-import { connection } from "next/server";
 import { fetchAdminModelBenchmarks } from "@/lib/fetchers/internal/fetchAdminModelBenchmarks";
 import getModelSubscriptionPlans from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
@@ -325,7 +324,6 @@ export async function fetchFrontendModelPendingApiReleaseState(
 			fetchFrontendModelHeader(modelId, false),
 			fetchFrontendModelPricing(modelId).catch(() => null),
 		]);
-		await connection();
 		const now = Date.now();
 		const hasActiveProvider = providers?.some((provider) => provider.provider_models.some((model) => {
 			if (!model.is_active_gateway || model.capability_status === "disabled" || !model.endpoint || model.endpoint === "unmapped") return false;

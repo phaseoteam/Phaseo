@@ -1,6 +1,6 @@
 import "./globals.css";
 import Link from "@/components/link";
-import { headers } from "next/headers";
+import { currentRequestHeaders } from "@/lib/server/currentRequest";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { RootDocument } from "@/components/layout/RootDocument";
 import { getPublicMessages } from "@/i18n/messages";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 export const instant = false;
 
 async function getNotFoundLocale() {
-	const candidate = (await headers()).get("x-next-intl-locale");
+	const candidate = currentRequestHeaders().get("x-next-intl-locale");
 	return isPublicLocale(candidate) ? candidate : defaultLocale;
 }
 

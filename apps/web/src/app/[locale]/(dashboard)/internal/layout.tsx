@@ -1,5 +1,5 @@
 import type { Metadata } from "@/lib/seo/metadataTypes";
-import { ScopedMessages, type ScopedLayoutProps } from "@/components/i18n/ScopedMessages";
+import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
 	title: "Internal",
@@ -9,9 +9,6 @@ export const metadata: Metadata = {
 	},
 };
 
-export default function InternalLayout({
-	children,
-	params,
-}: ScopedLayoutProps) {
-	return <ScopedMessages params={params} namespaces={["Common.ui.subscriptionCatalog", "Auth", "SettingsUI", "Product", "Catalogue", "Common.ui.apiModelConflicts", "Common.ui.select", "Common.ui.status", "Common.ui.filters", "Common.ui.auditDataTable", "Common.ui.actions", "Common.ui.datePicker", "Common.ui.pricingEditorCopy", "Common.ui.versionedPricing", "Common.ui.modelEditor", "Common.ui.modelCreation", "Common.ui.finalSharedCopy", "Common.ui.linkTypes", "Common.ui.chatComposer", "Common.ui.editorTabs", "Common.ui.benchmarkComparison"]}>{children}</ScopedMessages>;
+export default function InternalLayout({ children }: { children: ReactNode }) {
+	return <>{children}</>;
 }

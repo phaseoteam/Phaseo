@@ -218,7 +218,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 														runAction(destination.id, async () => {
 															const result =
 																await refreshBroadcastDestinationStatusAction(
-																	destination.id,
+																	{ data: destination.id },
 																);
 															setStatus(destination.id, result.status);
 															if (result.ok) toast.success(t("broadcastControls.connectionStatusRefreshed"));
@@ -232,7 +232,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 													onClick={() =>
 														runAction(destination.id, async () => {
 															const result = await sendBroadcastSampleTraceAction(
-																destination.id,
+																{ data: destination.id },
 															);
 															setStatus(destination.id, "Connected");
 															toast.success(
@@ -248,11 +248,11 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 													onClick={() =>
 														runAction(destination.id, async () => {
 															if (destination.enabled) {
-																await disableBroadcastDestinationAction(destination.id);
+																await disableBroadcastDestinationAction({ data: destination.id });
 																clearStatus(destination.id);
 										toast.success(t("credits.Connection disabled" as never));
 															} else {
-																await enableBroadcastDestinationAction(destination.id);
+																await enableBroadcastDestinationAction({ data: destination.id });
 																clearStatus(destination.id);
 										toast.success(t("credits.Connection enabled" as never));
 															}
@@ -379,7 +379,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 								const target = deleteTarget;
 								if (!target) return;
 								runAction(target.id, async () => {
-									await deleteBroadcastDestinationAction(target.id);
+									await deleteBroadcastDestinationAction({ data: target.id });
 						toast.success(t("credits.Destination deleted" as never));
 									setDeleteTarget(null);
 								});

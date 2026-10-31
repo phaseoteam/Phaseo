@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction, serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import type {
@@ -22,82 +21,89 @@ type UpdateRoutingSettingsInput = {
 	responseHealingMode?: "safe" | "strict";
 };
 
-export async function updateRoutingSettings({
+export const updateRoutingSettings = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: UpdateRoutingSettingsInput) => input)
+	.handler(async ({ data: {
 	mode,
 	betaChannelEnabled,
 	alphaChannelEnabled,
 	responseHealingEnabled,
 	responseHealingLocked,
 	responseHealingMode,
-}: UpdateRoutingSettingsInput) {
-	try {
-		const context = await getServerAccountContext();
-		if (!context.accessToken || !context.workspaceId) {
-			return { ok: false as const, error: "Select a workspace before changing routing settings." };
-		}
-		const response = await fetchAccountWebApi<{ ok: true; gatewayCacheInvalidated?: boolean }>("/api/account/settings/routing", context.accessToken, {
-			method: "PUT",
-			body: JSON.stringify({ workspaceId: context.workspaceId, mode, betaChannelEnabled, alphaChannelEnabled, responseHealingEnabled, responseHealingLocked, responseHealingMode }),
-		});
+} }) => {
+		try {
+			const context = await getServerAccountContext();
+			if (!context.accessToken || !context.workspaceId) {
+				return { ok: false as const, error: "Select a workspace before changing routing settings." };
+			}
+			const response = await fetchAccountWebApi<{ ok: true; gatewayCacheInvalidated?: boolean }>("/api/account/settings/routing", context.accessToken, {
+				method: "PUT",
+				body: JSON.stringify({ workspaceId: context.workspaceId, mode, betaChannelEnabled, alphaChannelEnabled, responseHealingEnabled, responseHealingLocked, responseHealingMode }),
+			});
 
-		revalidatePath("/settings/routing");
-		return { ok: true as const, gatewayCacheInvalidated: response.gatewayCacheInvalidated !== false };
-	} catch (error) {
-		return {
-			ok: false as const,
-			error: error instanceof WebApiError
-				? `${error.detail ?? "The routing service rejected the update."} (${error.status})`
-				: error instanceof Error
-					? error.message
-					: "The routing settings could not be updated.",
-		};
-	}
-}
-
-export async function updateRoutingMode(mode: RoutingMode) {
-	return updateRoutingSettings({ mode });
-}
-
-export async function updateAutoRoutingSettings(input: {
-	allowedPatterns: string[];
-	spendProfile: AutoRoutingSpendProfile;
-	maxInputPricePerMillion: number | null;
-	maxOutputPricePerMillion: number | null;
-	objective: AutoRoutingObjective;
-	allowFallbacks: boolean;
-}) {
-	try {
-		if (!(await autoRoutingFlag())) {
-			return { ok: false as const, error: { code: "featureDisabled" as const } };
+			return { ok: true as const, gatewayCacheInvalidated: response.gatewayCacheInvalidated !== false };
+		} catch (error) {
+			return {
+				ok: false as const,
+				error: error instanceof WebApiError
+					? `${error.detail ?? "The routing service rejected the update."} (${error.status})`
+					: error instanceof Error
+						? error.message
+						: "The routing settings could not be updated.",
+			};
 		}
-		const context = await getServerAccountContext();
-		if (!context.accessToken || !context.workspaceId) {
-			return { ok: false as const, error: { code: "workspaceRequired" as const } };
+	});
+
+export const updateRoutingMode = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((mode: RoutingMode) => mode)
+	.handler(async ({ data: mode }) => {
+		return updateRoutingSettings({ data: { mode } });
+	});
+
+export const updateAutoRoutingSettings = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: {
+		allowedPatterns: string[];
+		spendProfile: AutoRoutingSpendProfile;
+		maxInputPricePerMillion: number | null;
+		maxOutputPricePerMillion: number | null;
+		objective: AutoRoutingObjective;
+		allowFallbacks: boolean;
+	}) => input)
+	.handler(async ({ data: input }) => {
+		try {
+			if (!(await autoRoutingFlag())) {
+				return { ok: false as const, error: { code: "featureDisabled" as const } };
+			}
+			const context = await getServerAccountContext();
+			if (!context.accessToken || !context.workspaceId) {
+				return { ok: false as const, error: { code: "workspaceRequired" as const } };
+			}
+			const response = await fetchAccountWebApi<{
+				autoRouting: AutoRoutingConfiguration;
+				gatewayCacheInvalidated?: boolean;
+				ok: true;
+			}>("/api/account/settings/routing/auto", context.accessToken, {
+				method: "PUT",
+				body: JSON.stringify({ workspaceId: context.workspaceId, ...input }),
+			});
+			return {
+				ok: true as const,
+				autoRouting: response.autoRouting,
+				gatewayCacheInvalidated: response.gatewayCacheInvalidated !== false,
+			};
+		} catch (error) {
+			return {
+				ok: false as const,
+				error:
+					error instanceof WebApiError
+						? { code: "serviceRejected" as const, status: error.status }
+						: { code: "updateFailed" as const },
+			};
 		}
-		const response = await fetchAccountWebApi<{
-			autoRouting: AutoRoutingConfiguration;
-			gatewayCacheInvalidated?: boolean;
-			ok: true;
-		}>("/api/account/settings/routing/auto", context.accessToken, {
-			method: "PUT",
-			body: JSON.stringify({ workspaceId: context.workspaceId, ...input }),
-		});
-		revalidatePath("/settings/routing/auto");
-		return {
-			ok: true as const,
-			autoRouting: response.autoRouting,
-			gatewayCacheInvalidated: response.gatewayCacheInvalidated !== false,
-		};
-	} catch (error) {
-		return {
-			ok: false as const,
-			error:
-				error instanceof WebApiError
-					? { code: "serviceRejected" as const, status: error.status }
-					: { code: "updateFailed" as const },
-		};
-	}
-}
+	});
 
 async function routingContext() {
 	const context = await getServerAccountContext();
@@ -105,57 +111,67 @@ async function routingContext() {
 	return context;
 }
 
-export async function createDynamicRouteAction(input: {
-	name: string;
-	description?: string | null;
-	config: DynamicRouteConfig;
-}) {
-	const context = await routingContext();
-	const result = await fetchAccountWebApi<{ route: { id: string; version: number } }>("/api/account/settings/dynamic-routes", context.accessToken, {
-		method: "POST",
-		body: JSON.stringify({ ...input, workspaceId: context.workspaceId }),
+export const createDynamicRouteAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: {
+		name: string;
+		description?: string | null;
+		config: DynamicRouteConfig;
+	}) => input)
+	.handler(async ({ data: input }) => {
+		const context = await routingContext();
+		const result = await fetchAccountWebApi<{ route: { id: string; version: number } }>("/api/account/settings/dynamic-routes", context.accessToken, {
+			method: "POST",
+			body: JSON.stringify({ ...input, workspaceId: context.workspaceId }),
+		});
+		return result.route;
 	});
-	revalidatePath("/settings/routing");
-	return result.route;
-}
 
-export async function updateDynamicRouteAction(routeId: string, input: {
-	name?: string;
-	description?: string | null;
-	status?: "active" | "paused";
-	config?: DynamicRouteConfig;
-}) {
-	const context = await routingContext();
-	const result = await fetchAccountWebApi<{ success: true; version: number }>(`/api/account/settings/dynamic-routes/${encodeURIComponent(routeId)}`, context.accessToken, {
-		method: "PUT",
-		body: JSON.stringify(input),
+export const updateDynamicRouteAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { routeId: string; input: {
+		name?: string;
+		description?: string | null;
+		status?: "active" | "paused";
+		config?: DynamicRouteConfig;
+	} }) => input)
+	.handler(async ({ data: { routeId, input } }) => {
+		const context = await routingContext();
+		const result = await fetchAccountWebApi<{ success: true; version: number }>(`/api/account/settings/dynamic-routes/${encodeURIComponent(routeId)}`, context.accessToken, {
+			method: "PUT",
+			body: JSON.stringify(input),
+		});
+		return result;
 	});
-	revalidatePath("/settings/routing");
-	return result;
-}
 
-export async function attachDynamicRouteKeysAction(routeId: string, keyIds: string[]) {
-	const context = await routingContext();
-	await fetchAccountWebApi(`/api/account/settings/dynamic-routes/${encodeURIComponent(routeId)}/keys`, context.accessToken, {
-		method: "PUT",
-		body: JSON.stringify({ keyIds }),
+export const attachDynamicRouteKeysAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { routeId: string; keyIds: string[] }) => input)
+	.handler(async ({ data: { routeId, keyIds } }) => {
+		const context = await routingContext();
+		await fetchAccountWebApi(`/api/account/settings/dynamic-routes/${encodeURIComponent(routeId)}/keys`, context.accessToken, {
+			method: "PUT",
+			body: JSON.stringify({ keyIds }),
+		});
 	});
-	revalidatePath("/settings/routing");
-}
 
-export async function deployDynamicRouteVersionAction(routeId: string, version: number) {
-	const context = await routingContext();
-	await fetchAccountWebApi(`/api/account/settings/dynamic-routes/${encodeURIComponent(routeId)}/versions/${version}/deploy`, context.accessToken, { method: "POST" });
-	revalidatePath("/settings/routing");
-}
-
-export async function deleteDynamicRouteAction(routeId: string, confirmName: string) {
-	const context = await routingContext();
-	await fetchAccountWebApi(`/api/account/settings/dynamic-routes/${encodeURIComponent(routeId)}?confirmName=${encodeURIComponent(confirmName)}`, context.accessToken, {
-		method: "DELETE",
+export const deployDynamicRouteVersionAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { routeId: string; version: number }) => input)
+	.handler(async ({ data: { routeId, version } }) => {
+		const context = await routingContext();
+		await fetchAccountWebApi(`/api/account/settings/dynamic-routes/${encodeURIComponent(routeId)}/versions/${version}/deploy`, context.accessToken, { method: "POST" });
 	});
-	revalidatePath("/settings/routing");
-}
+
+export const deleteDynamicRouteAction = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((input: { routeId: string; confirmName: string }) => input)
+	.handler(async ({ data: { routeId, confirmName } }) => {
+		const context = await routingContext();
+		await fetchAccountWebApi(`/api/account/settings/dynamic-routes/${encodeURIComponent(routeId)}?confirmName=${encodeURIComponent(confirmName)}`, context.accessToken, {
+			method: "DELETE",
+		});
+	});
 
 export type SuccessorPricePolicy = "never" | "limit" | "any";
 
@@ -173,15 +189,24 @@ async function successorRoutingRequest(path: "/routing/successor" | "/routing/su
 	}
 }
 
-export async function updateSuccessorRouting(input: { enabled: boolean; pricePolicy: SuccessorPricePolicy; maxPriceIncreasePercent: number }) {
-	return successorRoutingRequest("/routing/successor", "PUT", input);
-}
+export const updateSuccessorRouting = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: { enabled: boolean; pricePolicy: SuccessorPricePolicy; maxPriceIncreasePercent: number }) => input)
+	.handler(async ({ data: input }) => {
+		return successorRoutingRequest("/routing/successor", "PUT", input);
+	});
 
 /** `successor: null` never redirects `model` for this workspace. */
-export async function saveSuccessorReplacement(input: { model: string; successor: string | null }) {
-	return successorRoutingRequest("/routing/successor/replacements", "PUT", input);
-}
+export const saveSuccessorReplacement = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: { model: string; successor: string | null }) => input)
+	.handler(async ({ data: input }) => {
+		return successorRoutingRequest("/routing/successor/replacements", "PUT", input);
+	});
 
-export async function removeSuccessorReplacement(model: string) {
-	return successorRoutingRequest("/routing/successor/replacements", "DELETE", { model });
-}
+export const removeSuccessorReplacement = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((model: string) => model)
+	.handler(async ({ data: model }) => {
+		return successorRoutingRequest("/routing/successor/replacements", "DELETE", { model });
+	});

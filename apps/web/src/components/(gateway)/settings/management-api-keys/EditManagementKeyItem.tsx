@@ -100,14 +100,14 @@ export default function EditManagementKeyItem({
 		e?.preventDefault();
 		setLoading(true);
 		const updates = [
-			updateManagementKeyAction(k.id, {
+			updateManagementKeyAction({ data: { id: k.id, updates: {
 				name,
 				paused,
 				expiresAt: toIsoFromDateTimeLocalInput(expiresAtLocal),
-			}),
+			} } }),
 		];
 		if (templateChanged && template) {
-			updates.push(updateManagementKeyScopesAction(k.id, template));
+			updates.push(updateManagementKeyScopesAction({ data: { id: k.id, template } }));
 		}
 		const promise = Promise.all(updates);
 		try {

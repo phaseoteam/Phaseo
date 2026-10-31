@@ -293,10 +293,10 @@ export default function CreditsPurchaseDialog({
 		setIsLocationAcknowledged(false);
 		setLocationError(null);
 		try {
-			const data = await ReviewPurchaseLocation({
+			const data = await ReviewPurchaseLocation({ data: {
 				countryCode,
 				workspaceId: workspaceId || null,
-			});
+			} });
 			setLocationPreview(data as LocationPreview);
 			captureProductEvent("credits_purchase_location_reviewed", {
 				country_code: countryCode,
@@ -364,7 +364,7 @@ export default function CreditsPurchaseDialog({
 			const workspaceId = wallet?.workspace_id ?? null;
 
 			if (selectedPm && selectedPm !== "new") {
-				const response = await ChargeSavedPayment({
+				const response = await ChargeSavedPayment({ data: {
 					payment_method_id: selectedPm,
 					amount_pence: Math.round(total * 100),
 					kind: mode,
@@ -372,7 +372,7 @@ export default function CreditsPurchaseDialog({
 					event_type: "top_up",
 					workspace_id: workspaceId,
 					country_code: countryCode,
-				} as any);
+				} as any });
 
 				const { data, status, ok } = response;
 

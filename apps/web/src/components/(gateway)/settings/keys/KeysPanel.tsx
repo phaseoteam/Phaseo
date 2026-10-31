@@ -771,7 +771,7 @@ export default function KeysPanel({ teamsWithKeys, observedAt }: any) {
 		let current = true;
 		const timeout = window.setTimeout(() => {
 			setRawLookupPending(true);
-			lookupApiKeyAction(workspaceId, normalizedSearch)
+			lookupApiKeyAction({ data: { workspaceId, key: normalizedSearch } })
 				.then((result) => { if (current) setMatchedKeyId(result.keyId); })
 				.catch(() => { if (current) setMatchedKeyId(null); })
 				.finally(() => { if (current) setRawLookupPending(false); });
@@ -849,7 +849,7 @@ export default function KeysPanel({ teamsWithKeys, observedAt }: any) {
 		try {
 			const operation = write(settleWrites(
 				selectedKeys.map((key: any) =>
-					updateApiKeyAction(String(key.id), { paused })
+					updateApiKeyAction({ data: { id: String(key.id), updates: { paused } } })
 				)
 			));
 			toast.promise(operation,
@@ -875,7 +875,7 @@ export default function KeysPanel({ teamsWithKeys, observedAt }: any) {
 		try {
 			const operation = write(settleWrites(
 				selectedKeys.map((key: any) =>
-					deleteApiKeyAction(String(key.id), String(key.name ?? ""))
+					deleteApiKeyAction({ data: { id: String(key.id), confirmName: String(key.name ?? "") } })
 				)
 			));
 			toast.promise(operation,

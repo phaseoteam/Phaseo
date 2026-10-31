@@ -1,6 +1,5 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { createServerFn } from "@tanstack/react-start";
+import { serverAction, serverMutation } from "@/lib/serverFn/actionMiddleware";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { slackAgentSettingsEnabled } from "@/lib/flags";
@@ -32,101 +31,108 @@ function failure(error: unknown): SlackActionError {
 	return { ok: false, status: null, code: null, message: null };
 }
 
-function refresh(): void {
-	revalidatePath("/settings/slack");
-}
-
 /** Starts an install: returns Slack's consent page for the browser to open. */
-export async function startSlackInstall(settings: Record<string, unknown>) {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ url: string }>(`${PATH}/install`, context.accessToken, {
-			method: "POST",
-			body: JSON.stringify({ ...settings, workspaceId: context.workspaceId }),
-		});
-		// Only ever send the browser to Slack's own consent page.
-		const url = new URL(result.url);
-		if (url.origin !== SLACK_AUTHORIZE_ORIGIN) throw new WebApiError(`${PATH}/install`, 502);
-		return { ok: true as const, url: url.toString() };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const startSlackInstall = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((settings: Record<string, unknown>) => settings)
+	.handler(async ({ data: settings }) => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ url: string }>(`${PATH}/install`, context.accessToken, {
+				method: "POST",
+				body: JSON.stringify({ ...settings, workspaceId: context.workspaceId }),
+			});
+			// Only ever send the browser to Slack's own consent page.
+			const url = new URL(result.url);
+			if (url.origin !== SLACK_AUTHORIZE_ORIGIN) throw new WebApiError(`${PATH}/install`, 502);
+			return { ok: true as const, url: url.toString() };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
 /**
  * Update Slack permissions: Slack's consent page for the live installation, which
  * asks for the scopes it lacks and keeps its settings, key and data.
  */
-export async function startSlackPermissionsUpdate() {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ url: string }>(`${PATH}/permissions`, context.accessToken, {
-			method: "POST",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		const url = new URL(result.url);
-		if (url.origin !== SLACK_AUTHORIZE_ORIGIN) throw new WebApiError(`${PATH}/permissions`, 502);
-		return { ok: true as const, url: url.toString() };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const startSlackPermissionsUpdate = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.handler(async () => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ url: string }>(`${PATH}/permissions`, context.accessToken, {
+				method: "POST",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			const url = new URL(result.url);
+			if (url.origin !== SLACK_AUTHORIZE_ORIGIN) throw new WebApiError(`${PATH}/permissions`, 502);
+			return { ok: true as const, url: url.toString() };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function updateSlackAgent(patch: Record<string, unknown>) {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ installation: SlackAgentInstallation }>(PATH, context.accessToken, {
-			method: "PATCH",
-			body: JSON.stringify({ ...patch, workspaceId: context.workspaceId }),
-		});
-		refresh();
-		return { ok: true as const, installation: result.installation };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const updateSlackAgent = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((patch: Record<string, unknown>) => patch)
+	.handler(async ({ data: patch }) => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ installation: SlackAgentInstallation }>(PATH, context.accessToken, {
+				method: "PATCH",
+				body: JSON.stringify({ ...patch, workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const, installation: result.installation };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function uninstallSlackAgent() {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ uninstalled: boolean; slack_uninstalled: boolean }>(PATH, context.accessToken, {
-			method: "DELETE",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		refresh();
-		return { ok: true as const, slackUninstalled: result.slack_uninstalled };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const uninstallSlackAgent = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.handler(async () => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ uninstalled: boolean; slack_uninstalled: boolean }>(PATH, context.accessToken, {
+				method: "DELETE",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const, slackUninstalled: result.slack_uninstalled };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function saveSlackCustomApp(app: Record<string, string>) {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ custom_app: SlackCustomApp }>(`${PATH}/custom-app`, context.accessToken, {
-			method: "PUT",
-			body: JSON.stringify({ ...app, workspaceId: context.workspaceId }),
-		});
-		refresh();
-		return { ok: true as const, customApp: result.custom_app };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const saveSlackCustomApp = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.validator((app: Record<string, string>) => app)
+	.handler(async ({ data: app }) => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ custom_app: SlackCustomApp }>(`${PATH}/custom-app`, context.accessToken, {
+				method: "PUT",
+				body: JSON.stringify({ ...app, workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const, customApp: result.custom_app };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function removeSlackCustomApp() {
-	try {
-		const context = await account();
-		await fetchAccountWebApi(`${PATH}/custom-app`, context.accessToken, {
-			method: "DELETE",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		refresh();
-		return { ok: true as const };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const removeSlackCustomApp = createServerFn({ method: "POST" })
+	.middleware([serverMutation])
+	.handler(async () => {
+		try {
+			const context = await account();
+			await fetchAccountWebApi(`${PATH}/custom-app`, context.accessToken, {
+				method: "DELETE",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
 const MEMORY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MEMORY_KINDS = new Set(["note", "pin", "todo"]);
@@ -138,84 +144,101 @@ function memoryPath(collection: "notes" | "skills", id: string): `/api/account/$
 }
 
 /** What the agent remembers: its notes (all, or one kind) and its saved skills. */
-export async function loadSlackAgentMemory(kind: string) {
-	try {
-		const context = await account();
-		const query = new URLSearchParams({ workspaceId: context.workspaceId });
-		if (MEMORY_KINDS.has(kind)) query.set("kind", kind);
-		const memory = await fetchAccountWebApi<SlackAgentMemory>(`${PATH}/memory?${query}`, context.accessToken);
-		return { ok: true as const, memory };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const loadSlackAgentMemory = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((kind: string) => kind)
+	.handler(async ({ data: kind }) => {
+		try {
+			const context = await account();
+			const query = new URLSearchParams({ workspaceId: context.workspaceId });
+			if (MEMORY_KINDS.has(kind)) query.set("kind", kind);
+			const memory = await fetchAccountWebApi<SlackAgentMemory>(`${PATH}/memory?${query}`, context.accessToken);
+			return { ok: true as const, memory };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function deleteSlackAgentNote(id: string) {
-	try {
-		const context = await account();
-		await fetchAccountWebApi(memoryPath("notes", id), context.accessToken, {
-			method: "DELETE",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		return { ok: true as const };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const deleteSlackAgentNote = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		try {
+			const context = await account();
+			await fetchAccountWebApi(memoryPath("notes", id), context.accessToken, {
+				method: "DELETE",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function updateSlackAgentSkill(id: string, patch: Record<string, string>) {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ skill: SlackAgentSkill }>(memoryPath("skills", id), context.accessToken, {
-			method: "PATCH",
-			body: JSON.stringify({ ...patch, workspaceId: context.workspaceId }),
-		});
-		return { ok: true as const, skill: result.skill };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const updateSlackAgentSkill = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: { id: string; patch: Record<string, string> }) => input)
+	.handler(async ({ data: { id, patch } }) => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ skill: SlackAgentSkill }>(memoryPath("skills", id), context.accessToken, {
+				method: "PATCH",
+				body: JSON.stringify({ ...patch, workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const, skill: result.skill };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function deleteSlackAgentSkill(id: string) {
-	try {
-		const context = await account();
-		await fetchAccountWebApi(memoryPath("skills", id), context.accessToken, {
-			method: "DELETE",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		return { ok: true as const };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const deleteSlackAgentSkill = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		try {
+			const context = await account();
+			await fetchAccountWebApi(memoryPath("skills", id), context.accessToken, {
+				method: "DELETE",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
 const PAGE_ID_PATTERN = /^[A-Za-z0-9_-]{22}$/;
 
 /** The agent's shared pages, and whether people can sign in with Slack to view them. */
-export async function loadSlackAgentPages() {
-	try {
-		const context = await account();
-		const pages = await fetchAccountWebApi<SlackAgentPages>(`${PATH}/pages?${new URLSearchParams({ workspaceId: context.workspaceId })}`, context.accessToken);
-		return { ok: true as const, pages };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const loadSlackAgentPages = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.handler(async () => {
+		try {
+			const context = await account();
+			const pages = await fetchAccountWebApi<SlackAgentPages>(`${PATH}/pages?${new URLSearchParams({ workspaceId: context.workspaceId })}`, context.accessToken);
+			return { ok: true as const, pages };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function deleteSlackAgentPage(id: string) {
-	try {
-		const context = await account();
-		// Only a page id goes into the path.
-		if (!PAGE_ID_PATTERN.test(id)) throw new WebApiError(`${PATH}/pages`, 400, "Not a valid id", undefined, "bad_request");
-		await fetchAccountWebApi(`${PATH}/pages/${id}`, context.accessToken, {
-			method: "DELETE",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		return { ok: true as const };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const deleteSlackAgentPage = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		try {
+			const context = await account();
+			// Only a page id goes into the path.
+			if (!PAGE_ID_PATTERN.test(id)) throw new WebApiError(`${PATH}/pages`, 400, "Not a valid id", undefined, "bad_request");
+			await fetchAccountWebApi(`${PATH}/pages/${id}`, context.accessToken, {
+				method: "DELETE",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
 /** A schedule's path; only an id goes into it. */
 function schedulePath(id: string): `/api/account/${string}` {
@@ -224,38 +247,46 @@ function schedulePath(id: string): `/api/account/${string}` {
 }
 
 /** The workspace's recurring tasks, with the admins' settings. */
-export async function loadSlackAgentSchedules() {
-	try {
-		const context = await account();
-		const schedules = await fetchAccountWebApi<SlackAgentSchedules>(`${PATH}/schedules?${new URLSearchParams({ workspaceId: context.workspaceId })}`, context.accessToken);
-		return { ok: true as const, schedules };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const loadSlackAgentSchedules = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.handler(async () => {
+		try {
+			const context = await account();
+			const schedules = await fetchAccountWebApi<SlackAgentSchedules>(`${PATH}/schedules?${new URLSearchParams({ workspaceId: context.workspaceId })}`, context.accessToken);
+			return { ok: true as const, schedules };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function setSlackAgentScheduleStatus(id: string, status: "active" | "paused") {
-	try {
-		const context = await account();
-		const result = await fetchAccountWebApi<{ schedule: SlackAgentSchedule }>(schedulePath(id), context.accessToken, {
-			method: "PATCH",
-			body: JSON.stringify({ status, workspaceId: context.workspaceId }),
-		});
-		return { ok: true as const, schedule: result.schedule };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const setSlackAgentScheduleStatus = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((input: { id: string; status: "active" | "paused" }) => input)
+	.handler(async ({ data: { id, status } }) => {
+		try {
+			const context = await account();
+			const result = await fetchAccountWebApi<{ schedule: SlackAgentSchedule }>(schedulePath(id), context.accessToken, {
+				method: "PATCH",
+				body: JSON.stringify({ status, workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const, schedule: result.schedule };
+		} catch (error) {
+			return failure(error);
+		}
+	});
 
-export async function deleteSlackAgentSchedule(id: string) {
-	try {
-		const context = await account();
-		await fetchAccountWebApi(schedulePath(id), context.accessToken, {
-			method: "DELETE",
-			body: JSON.stringify({ workspaceId: context.workspaceId }),
-		});
-		return { ok: true as const };
-	} catch (error) {
-		return failure(error);
-	}
-}
+export const deleteSlackAgentSchedule = createServerFn({ method: "POST" })
+	.middleware([serverAction])
+	.validator((id: string) => id)
+	.handler(async ({ data: id }) => {
+		try {
+			const context = await account();
+			await fetchAccountWebApi(schedulePath(id), context.accessToken, {
+				method: "DELETE",
+				body: JSON.stringify({ workspaceId: context.workspaceId }),
+			});
+			return { ok: true as const };
+		} catch (error) {
+			return failure(error);
+		}
+	});

@@ -1,5 +1,3 @@
-"use server";
-
 import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 import { isRegisteredOAuthRedirectAllowed } from "@/lib/oauth/registeredRedirect";
 import { createClient } from "@/utils/supabase/server";

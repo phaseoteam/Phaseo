@@ -153,12 +153,12 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 		setSaving(true);
 		try {
 			await toast.promise(
-				saveBillingOnboardingSettings({
+				saveBillingOnboardingSettings({ data: {
 					billingDay,
 					paymentTermsDays,
 					termsAccepted: isInvoiceActive ? true : holdComplete,
 					signedByName: safeSignerName,
-				}),
+				} }),
 				{
 					loading: t("savingBilling"),
 					success: t("billingSaved"),

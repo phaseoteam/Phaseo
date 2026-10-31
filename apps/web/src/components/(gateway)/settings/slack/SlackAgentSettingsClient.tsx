@@ -123,7 +123,7 @@ function InstallView({ view }: { view: SlackAgentManagerView }) {
 			return;
 		}
 		startInstall(async () => {
-			const result = await startSlackInstall(built.value);
+			const result = await startSlackInstall({ data: built.value });
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;
@@ -251,7 +251,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 			return;
 		}
 		startSaving(async () => {
-			const result = await write(updateSlackAgent(built.value));
+			const result = await write(updateSlackAgent({ data: built.value }));
 			if (!result.ok) return failed(result);
 			const next = settingsDraftFrom(result.installation.settings);
 			setSaved(next);
@@ -263,7 +263,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 
 	function changeStatus(next: "active" | "paused") {
 		startStatusChange(async () => {
-			const result = await write(updateSlackAgent({ status: next }));
+			const result = await write(updateSlackAgent({ data: { status: next } }));
 			if (!result.ok) return failed(result);
 			setStatus(result.installation.status);
 			toast.success(next === "paused" ? t("installed.pausedToast") : t("installed.resumedToast"));

@@ -28,7 +28,7 @@ export default function NewModelPage() {
 					price: number | null;
 					currency: string | null;
 				}>}
-				createAction={createModelAction}
+				createAction={async (formData) => { await createModelAction({ data: formData }); }}
 			/>
 			<div className="flex">
 				<Link href="/internal/data/models" className="rounded-md border px-3 py-2 text-sm">

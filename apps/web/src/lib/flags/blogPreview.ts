@@ -1,12 +1,8 @@
-
-import { connection } from "next/server";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import { readPhaseoEnv } from "@/lib/deployEnv";
 
 export async function canPreviewFutureBlogPosts(): Promise<boolean> {
-	await connection();
-
-	const vercelEnv = process.env.VERCEL_ENV ?? process.env.PUBLIC_VERCEL_ENV;
-	if (process.env.NODE_ENV === "development" || vercelEnv === "preview") {
+	if (process.env.NODE_ENV === "development" || readPhaseoEnv() === "preview") {
 		return true;
 	}
 

@@ -44,7 +44,7 @@ function NotificationRouteSelectorState({ destinations, eventKind, initialDestin
 		const next = checked ? [...previous.filter((id) => id !== destinationId), destinationId] : previous.filter((id) => id !== destinationId);
 		setSelectedIds(next);
 		startSaving(async () => {
-			try { await write(setNotificationRoute(eventKind, next)); }
+			try { await write(setNotificationRoute({ data: { eventKind, destinationIds: next } })); }
 			catch (error) { setSelectedIds(previous); toast.error(localizedSettingsError(error, t, "Action failed", s("Could not update destinations"))); }
 		});
 	}

@@ -22,7 +22,7 @@ export default function SendModelDiscordNotificationButton({ modelId }: { modelI
 	function sendNotification() {
 		setResult(null);
 		startTransition(async () => {
-			const response = await sendInternalModelAnnouncementAction(modelId);
+			const response = await sendInternalModelAnnouncementAction({ data: modelId });
 			setResult(response);
 		});
 	}

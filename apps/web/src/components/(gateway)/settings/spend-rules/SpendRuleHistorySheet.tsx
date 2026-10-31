@@ -42,7 +42,7 @@ function HistoryBody({ rule }: { rule: SpendRule }) {
 
 	useEffect(() => {
 		let cancelled = false;
-		void spendRuleHistory(rule.id, { limit: PAGE, offset: 0 }).then((result) => {
+		void spendRuleHistory({ data: { id: rule.id, page: { limit: PAGE, offset: 0 } } }).then((result) => {
 			if (cancelled) return;
 			setState(result.ok ? { status: "ready", history: result.history, loadingMore: false } : { status: "failed" });
 		});
@@ -52,7 +52,7 @@ function HistoryBody({ rule }: { rule: SpendRule }) {
 	async function loadMore() {
 		if (state.status !== "ready") return;
 		setState({ ...state, loadingMore: true });
-		const result = await spendRuleHistory(rule.id, { limit: PAGE, offset: state.history.events.length });
+		const result = await spendRuleHistory({ data: { id: rule.id, page: { limit: PAGE, offset: state.history.events.length } } });
 		if (!result.ok) {
 			setState({ ...state, loadingMore: false });
 			return;

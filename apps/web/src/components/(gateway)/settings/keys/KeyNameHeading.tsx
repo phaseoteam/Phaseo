@@ -27,7 +27,7 @@ export function KeyNameHeading({ k, canManage }: { k: KeyDetailData["key"]; canM
 		if (trimmed === k.name) { setEditing(false); return; }
 		setSaving(true);
 		try {
-			await updateApiKeyAction(k.id, { name: trimmed });
+			await updateApiKeyAction({ data: { id: k.id, updates: { name: trimmed } } });
 			toast.success(t("keyDetail.renamed"));
 			setEditing(false);
 			router.replace(keyDetailHref({ ...k, name: trimmed }));

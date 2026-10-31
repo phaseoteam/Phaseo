@@ -1,5 +1,3 @@
-"use server";
-
 const DEFAULT_API_URL = "http://localhost:8787";
 
 function firstConfiguredEnv(names: string[]): string | null {

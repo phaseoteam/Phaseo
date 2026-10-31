@@ -107,8 +107,7 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 		if (selectedScopes.length === 0) return;
 		setSavingScopes(true);
 		const result = await updateAuthorizationScopesAction(
-			authorization.authorization_id,
-			selectedScopes,
+			{ data: { authorizationId: authorization.authorization_id, scopes: selectedScopes } },
 		);
 		setSavingScopes(false);
 		if (result.error) {

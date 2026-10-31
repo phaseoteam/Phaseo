@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
 	deriveFirstName,
 	sendCheckoutStartedEvent,
@@ -91,7 +90,7 @@ async function sendCheckoutStartedNotifications(args: {
 
 export async function createStripeCheckoutResponse(
 	args: CreateStripeCheckoutResponseArgs,
-): Promise<NextResponse> {
+): Promise<Response> {
 	const {
 		amountPence,
 		countryCode: countryValue,
@@ -104,7 +103,7 @@ export async function createStripeCheckoutResponse(
 	} = args;
 	const configuredBaseUrl = resolveConfiguredStripeCheckoutBaseUrl(process.env);
 	if (process.env.NODE_ENV === "production" && !configuredBaseUrl) {
-		return NextResponse.json({ error: "Checkout redirect base URL is not configured" }, { status: 503 });
+		return Response.json({ error: "Checkout redirect base URL is not configured" }, { status: 503 });
 	}
 	const allowRequestHeaderFallback = process.env.NODE_ENV !== "production";
 	const {
@@ -124,21 +123,21 @@ export async function createStripeCheckoutResponse(
 		p_limit: 10,
 	});
 	if (rateLimit.error) {
-		return NextResponse.json({ error: "Checkout is temporarily unavailable" }, { status: 503 });
+		return Response.json({ error: "Checkout is temporarily unavailable" }, { status: 503 });
 	}
 	if (rateLimit.data !== true) {
-		return NextResponse.json({ error: "Too many checkout attempts" }, {
+		return Response.json({ error: "Too many checkout attempts" }, {
 			status: 429,
 			headers: { "Retry-After": "60" },
 		});
 	}
 	const countryCode = normaliseCountryCode(countryValue);
 	if (kind !== "save_only" && !countryCode) {
-		return NextResponse.json({ error: "Country is required before purchasing credits" }, { status: 400 });
+		return Response.json({ error: "Country is required before purchasing credits" }, { status: 400 });
 	}
 
 	if (requestedWorkspaceId && requestedWorkspaceId !== workspaceId) {
-		return NextResponse.json({ error: "Workspace mismatch" }, { status: 403 });
+		return Response.json({ error: "Workspace mismatch" }, { status: 403 });
 	}
 	if (countryCode) {
 		const { error } = await createAdminClient()
@@ -146,7 +145,7 @@ export async function createStripeCheckoutResponse(
 			.update({ declared_country_code: countryCode, country_declared_at: new Date().toISOString() })
 			.eq("user_id", userId);
 		if (error) {
-			return NextResponse.json({ error: "Could not confirm purchase location" }, { status: 503 });
+			return Response.json({ error: "Could not confirm purchase location" }, { status: 503 });
 		}
 	}
 
@@ -163,12 +162,12 @@ export async function createStripeCheckoutResponse(
 		? { [CREDIT_TOPUP_METADATA.requestId]: topUpRequest.id, [CREDIT_TOPUP_METADATA.flow]: "checkout" }
 		: {};
 	if (topUpRequest && kind !== "pay_and_save") {
-		return NextResponse.json({ error: "Top-up requests use pay_and_save checkout" }, { status: 400 });
+		return Response.json({ error: "Top-up requests use pay_and_save checkout" }, { status: 400 });
 	}
 
 	if (kind === "oneoff") {
 		if (!isValidTopUpAmountPence(amountPence)) {
-			return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+			return Response.json({ error: "Invalid amount" }, { status: 400 });
 		}
 
 		const paymentAttempt = Date.now();
@@ -244,12 +243,12 @@ export async function createStripeCheckoutResponse(
 			},
 		});
 
-		return NextResponse.json({ url: session.url });
+		return Response.json({ url: session.url });
 	}
 
 	if (kind === "pay_and_save") {
 		if (!isValidTopUpAmountPence(amountPence)) {
-			return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+			return Response.json({ error: "Invalid amount" }, { status: 400 });
 		}
 
 		const paymentAttempt = topUpRequest ? Date.parse(topUpRequest.createdAt) : Date.now();
@@ -332,7 +331,7 @@ export async function createStripeCheckoutResponse(
 			},
 		});
 
-		return NextResponse.json({ url: session.url });
+		return Response.json({ url: session.url });
 	}
 
 	if (kind === "save_only") {
@@ -352,8 +351,8 @@ export async function createStripeCheckoutResponse(
 			},
 		});
 
-		return NextResponse.json({ url: session.url });
+		return Response.json({ url: session.url });
 	}
 
-	return NextResponse.json({ error: "Unknown kind" }, { status: 400 });
+	return Response.json({ error: "Unknown kind" }, { status: 400 });
 }

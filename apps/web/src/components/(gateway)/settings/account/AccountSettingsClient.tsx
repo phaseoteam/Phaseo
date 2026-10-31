@@ -253,7 +253,7 @@ export default function AccountSettingsClient({
 
 		setSaving(true);
 		try {
-			const promise = updateAccount(updatePayload);
+			const promise = updateAccount({ data: updatePayload });
 			toast.promise(promise, {
 				loading: s("phraseSavingYourSettings"),
 				success: s("phraseSettingsSaved"),
@@ -329,7 +329,7 @@ export default function AccountSettingsClient({
 		setChangingPassword(true);
 		try {
 			await toast.promise(
-				changePasswordAction(currentPassword, newPassword),
+				changePasswordAction({ data: { currentPassword, newPassword } }),
 				{
 					loading: s("phraseChangingYourPassword"),
 					success: s("Password changed successfully!"),
@@ -364,7 +364,7 @@ export default function AccountSettingsClient({
 		setChangingEmail(true);
 		try {
 			const result = await toast.promise(
-				changeEmailAction(newEmail, emailPassword),
+				changeEmailAction({ data: { newEmail, currentPassword: emailPassword } }),
 				{
 					loading: s("phraseChangingYourEmail"),
 					success: s("phraseEmailChangeInitiatedCheckBothEmailAddressesForConfirmation"),

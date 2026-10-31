@@ -117,7 +117,7 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 								if (!deleteEndpoint) return;
 								const endpointId = deleteEndpoint.id;
 								setDeleteEndpoint(null);
-								runEndpointAction(endpointId, () => deleteWebhookEndpointAction(endpointId), w("endpointDeleted"));
+								runEndpointAction(endpointId, () => deleteWebhookEndpointAction({ data: endpointId }), w("endpointDeleted"));
 							}}
 						>
 							{w("deleteEndpoint")}
@@ -163,15 +163,15 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 													<Copy className="mr-2 size-4" />
 													{t("strings.Copy endpoint ID" as never)}
 												</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => rotateWebhookEndpointSecretAction(endpoint.id), t("strings.Signing secret rotated" as never))}>
+								<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => rotateWebhookEndpointSecretAction({ data: endpoint.id }), t("strings.Signing secret rotated" as never))}>
 													<RotateCw className="mr-2 size-4" />
 													{t("strings.Rotate signing secret" as never)}
 								</DropdownMenuItem>
-								<DropdownMenuItem disabled={endpoint.status !== "active"} onClick={() => runEndpointAction(endpoint.id, () => sendWebhookEndpointTestAction(endpoint.id), w("testDelivered"))}>
+								<DropdownMenuItem disabled={endpoint.status !== "active"} onClick={() => runEndpointAction(endpoint.id, () => sendWebhookEndpointTestAction({ data: endpoint.id }), w("testDelivered"))}>
 									<Send className="mr-2 size-4" />
 									{w("sendTest")}
 								</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => updateWebhookEndpointStatusAction(endpoint.id, endpoint.status === "active" ? "disabled" : "active"), endpoint.status === "active" ? w("endpointPaused") : w("endpointEnabled"))}>
+												<DropdownMenuItem onClick={() => runEndpointAction(endpoint.id, () => updateWebhookEndpointStatusAction({ data: { id: endpoint.id, status: endpoint.status === "active" ? "disabled" : "active" } }), endpoint.status === "active" ? w("endpointPaused") : w("endpointEnabled"))}>
 													{endpoint.status === "active" ? w("pauseEndpoint") : w("enableEndpoint")}
 												</DropdownMenuItem>
 													<DropdownMenuSeparator />

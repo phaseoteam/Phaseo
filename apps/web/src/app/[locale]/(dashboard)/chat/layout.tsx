@@ -8,7 +8,6 @@ import { buildMetadata } from "@/lib/seo";
 import { ChatFeatureFlagsProvider } from "@/components/(chat)/ChatFeatureFlags";
 import { shellDataQuery } from "@/components/header/shellData";
 import { ChatAuthProvider } from "@/components/(chat)/ChatAuthProvider";
-import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.chat");
@@ -24,13 +23,7 @@ export const viewport: Viewport = {
 	interactiveWidget: "resizes-content",
 };
 
-export default function ChatLayout({
-	children,
-	params,
-}: {
-	children: React.ReactNode;
-	params: Promise<{ locale: string }>;
-}) {
+export default function ChatLayout({ children }: { children: React.ReactNode }) {
 	// Shares the header's site-shell query (account + realtime/video flags) instead of fetching them again.
 	const locale = useLocale();
 	const { data: shellData } = useSuspenseQuery(shellDataQuery(locale));
@@ -39,7 +32,6 @@ export default function ChatLayout({
 	const initialAuth = shellData.account;
 
 	return (
-		<ScopedMessages params={params} namespaces={["Common.ui.accessibility", "Product.chat", "Product.privacyReview", "Product.chatRooms", "Product.experimentsCouncil", "Product.tools.request", "Catalogue.common", "Catalogue.models", "Catalogue.modelDetail", "Catalogue.updatesCalendar.weekdayAnalysis.showMore", "SettingsUI.chatGaps", "SettingsUI.strings", "Common.ui.auditCopy", "Common.ui.chatRooms", "Common.ui.status", "Common.ui.select", "Common.ui.actions", "Common.ui.media", "Common.ui.moderation", "Common.ui.requestBuilder", "Common.ui.chatComposer", "Common.ui.chatSettings", "Common.ui.chat", "Common.ui.openui", "Common.ui.responseLayout", "Common.ui.temporaryChat", "Common.ui.modelSettingsDialog", "Common.ui.filters"]}>
 		<ChatAuthProvider initialAuth={initialAuth}>
 			<ChatFeatureFlagsProvider
 				realtimeEnabled={realtimeEnabled}
@@ -56,6 +48,5 @@ export default function ChatLayout({
 				</div>
 			</ChatFeatureFlagsProvider>
 		</ChatAuthProvider>
-		</ScopedMessages>
 	);
 }

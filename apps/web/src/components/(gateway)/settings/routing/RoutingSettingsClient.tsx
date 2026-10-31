@@ -195,14 +195,14 @@ export default function RoutingSettingsClient({
 		setSaving(true);
 		try {
 			const save = async () => {
-				const result = await updateRoutingSettings({
+				const result = await updateRoutingSettings({ data: {
 					mode,
 					betaChannelEnabled,
 					alphaChannelEnabled,
 					responseHealingEnabled,
 					responseHealingLocked,
 					responseHealingMode,
-				});
+				} });
 				if (!result.ok) throw new Error(result.error);
 				void invalidateSettings();
 				return result;

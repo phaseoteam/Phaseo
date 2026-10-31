@@ -30,7 +30,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 	const [label, setLabel] = React.useState("Provisioning token");
 	const [newToken, setNewToken] = React.useState<string | null>(null);
 
-	const loadSettings = React.useCallback(() => getWorkspaceScimSettingsAction(workspaceId), [workspaceId]);
+	const loadSettings = React.useCallback(() => getWorkspaceScimSettingsAction({ data: workspaceId }), [workspaceId]);
 
 	React.useEffect(() => {
 		if (preview) return;
@@ -46,7 +46,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 	async function updateEnabled(enabled: boolean) {
 		setWorking(true);
 		try {
-			await updateWorkspaceScimSettingsAction(workspaceId, enabled);
+			await updateWorkspaceScimSettingsAction({ data: { workspaceId, enabled } });
 			await refresh();
 			toast.success(enabled ? t("scim.enabled") : t("scim.disabled"));
 		} catch (error) {
@@ -57,7 +57,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 	async function createToken() {
 		setWorking(true);
 		try {
-			const created = await createWorkspaceScimTokenAction(workspaceId, label.trim() || "Provisioning token");
+			const created = await createWorkspaceScimTokenAction({ data: { workspaceId, label: label.trim() || "Provisioning token" } });
 			setNewToken(created.token);
 			await refresh();
 			toast.success(t("scim.tokenCreated"));
@@ -69,7 +69,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 	async function revokeToken(tokenId: string) {
 		setWorking(true);
 		try {
-			await revokeWorkspaceScimTokenAction(workspaceId, tokenId);
+			await revokeWorkspaceScimTokenAction({ data: { workspaceId, tokenId } });
 			setNewToken(null);
 			await refresh();
 			toast.success(t("scim.tokenRevoked"));

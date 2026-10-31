@@ -27,7 +27,7 @@ export default function CopyPresetButton({
 			onClick={() => {
 				startTransition(async () => {
 					try {
-						const copied = await forkPresetAction(sourcePresetId, sourceVersionId);
+						const copied = await forkPresetAction({ data: { sourcePresetId, sourceVersionId } });
 						toast.success(t("presetCopied"), {
 							action: copied.slug ? { label: t("openPreset"), onClick: () => router.push(`/settings/presets/${encodeURIComponent(copied.slug!)}`) } : { label: t("viewPresets"), onClick: () => router.push("/settings/presets") },
 						});
