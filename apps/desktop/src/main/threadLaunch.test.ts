@@ -152,6 +152,37 @@ describe("html_render", () => {
 	}));
 });
 
+describe("answering a child's questions", () => {
+	it("ends the parent's wait, reads the question and answers it as the person would, never secrets", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-questions-")), answered: Record<string, string[]>[] = [];
+		const factory = (): AgentAdapter => ({ run: async (task, _cwd, _text, callbacks) => {
+			if (!task.delegation) { await new Promise<void>(() => undefined); return; }
+			answered.push(await callbacks.onQuestion!([{ id: "colour", header: "Colour", question: "Which colour?", options: [{ label: "Red" }, { label: "Blue", value: "blue" }] }]));
+			await callbacks.onQuestion!([{ id: "token", header: "Token", question: "Paste the token", isSecret: true }]);
+		}, cancel: async () => undefined });
+		const runtime = new WorkspaceRuntime(path.join(directory, "workspace"), factory);
+		try {
+			const parentId = await caller(runtime), tools = runtime.threadTools(parentId);
+			const child = await tools.delegate({ requestId: "ask", title: "Ask", prompt: "Ask me" });
+			const waited = await tools.wait(child.id, 60_000);
+			expect(waited.timedOut).toBe(false);
+			expect(waited.pendingQuestions).toHaveLength(1);
+			const requestId = waited.pendingQuestions![0];
+			expect(await tools.pendingQuestions!(child.id, "list")).toEqual({ requestIds: [requestId] });
+			expect(await tools.pendingQuestions!(child.id, "read", requestId)).toEqual({ requestId, questions: [{ id: "colour", header: "Colour", question: "Which colour?", allowsOwnAnswer: false, required: true, options: [{ label: "Red", value: "Red" }, { label: "Blue", value: "blue" }] }] });
+			await expect(tools.pendingQuestions!(child.id, "answer", requestId, { colour: ["green"] })).rejects.toThrow("Choose one of the options.");
+			expect(await tools.pendingQuestions!(child.id, "answer", requestId, { colour: ["blue"] })).toMatchObject({ answered: true });
+			expect(answered).toEqual([{ colour: ["blue"] }]);
+			await vi.waitFor(() => expect(runtime.store.getTask(child.id).questions).toHaveLength(1));
+			const secret = runtime.store.getTask(child.id).questions![0].id;
+			expect(await tools.pendingQuestions!(child.id, "list")).toEqual({ requestIds: [] });
+			await expect(tools.pendingQuestions!(child.id, "answer", secret, { token: ["x"] })).rejects.toThrow("The person answers this question");
+			const other = runtime.threadTools(await caller(runtime));
+			await expect(other.pendingQuestions!(child.id, "list")).rejects.toThrow("outside");
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	});
+});
+
 describe("launch_threads", () => {
 	it("validates every entry before creating any, then reports each result", async () => withRuntime(async runtime => {
 		expect(() => validateLaunchBatch({ threads: [{ requestId: "a", title: "A", prompt: "A" }, { requestId: "a", title: "B", prompt: "B" }] })).toThrow("distinct requestId");

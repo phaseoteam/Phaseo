@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Account, Harness, ModelOption, Task, WorkspaceCommand } from "../shared/workspace";
-import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type ChildWorktree, type DelegateRequest, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
+import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type ChildWorktree, type DelegateRequest, type PendingQuestion, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
 import { validateMissionCommand, type Mission, type MissionCommand } from "../shared/missions";
 import { tagsInUse } from "../shared/tags";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
@@ -17,6 +17,7 @@ import type { IssueRead, IssueToolTarget, ThreadIssueEntry } from "../shared/orc
 import { untrustedBlock, untrustedNotice } from "../shared/untrustedContent";
 import { withoutHtmlComments } from "../shared/htmlText";
 import { generatedBranchName } from "../shared/worktreeChat";
+import { allowsOwnAnswer, optionValue, questionOptions } from "../shared/agentQuestions";
 
 /** An issue tool's target: a URL, or a number with an optional repository. A pull request URL points at the pull request tools. */
 function issueToolReference(target: IssueToolTarget) {
@@ -302,6 +303,8 @@ export class WorkspaceThreads {
 			throw new Error(`No project in this workspace is a checkout of ${repository}, so its pull requests cannot be read here. Add one first.`);
 		};
 		const childWorktree = (task: Pick<Task, "projectId">): { worktree?: ChildWorktree } => { const project = task.projectId ? this.host.store.getProjects().find(value => value.id === task.projectId) : undefined; return project?.worktree ? { worktree: { projectId: project.id, branch: project.worktree.branch } } : {}; };
+		/** Questions a parent may answer: asked live, none of them secret. */
+		const askable = (task: Pick<Task, "questions">) => (task.questions ?? []).filter(request => request.responseMode !== "message" && !request.questions.some(question => question.isSecret));
 		const retry = (requestId: string) => this.host.store.getOverview().tasks.find(task => task.delegation?.parentTaskId === parentId && task.delegation.requestId === requestId);
 		return {
 			handoff: async (id, request) => {
@@ -387,18 +390,30 @@ export class WorkspaceThreads {
 				return new Promise(resolve => {
 					const check = (abandoned = false) => {
 						const child = scoped(id, true, true), parent = this.host.store.getTask(parentId);
-						if (!abandoned && !this.host.isClosing() && parent.status !== "interrupted" && active(child.status)) return;
+						// A question the parent can answer ends the wait, as a finished child would.
+						const asking = askable(child);
+						if (!abandoned && !asking.length && !this.host.isClosing() && parent.status !== "interrupted" && active(child.status)) return;
 						clearTimeout(timer); this.listeners.delete(listener); signal?.removeEventListener("abort", abort);
 						// Mirror T3's upgrade-to-always-wake: nobody is waiting any more, so the result is delivered as a message. Launched chats never deliver.
 						const deliveryQueued = abandoned && active(child.status) && !this.host.isClosing() && Boolean(child.delegation) && child.delegation?.kind !== "stage";
 						if (deliveryQueued && !child.delegation?.background) this.host.store.requestDelegationWake(id);
-						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}), ...child.delegation && child.projectId !== parent.projectId ? childWorktree(child) : {} });
+						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}), ...child.delegation && child.projectId !== parent.projectId ? childWorktree(child) : {}, ...asking.length ? { pendingQuestions: asking.map(request => request.id) } : {} });
 					};
 					const listener = () => check(); const abort = () => check(true);
 					const timer = setTimeout(abort, timeoutMs);
 					this.listeners.add(listener); signal?.addEventListener("abort", abort, { once: true });
 					if (signal?.aborted) abort(); else check();
 				});
+			},
+			pendingQuestions: async (id, action, requestId, answers) => {
+				const child = scoped(id, true, true), pending = askable(child);
+				if (action === "list") return { requestIds: pending.map(request => request.id) };
+				const request = pending.find(value => value.id === requestId);
+				if (!request) throw new Error(child.questions?.some(value => value.id === requestId) ? "The person answers this question in that chat; it asks for a secret or waits for a message." : "That chat has no pending question with this requestId; see action list.");
+				if (action === "read") return { requestId: request.id, ...(request.origin ? { origin: request.origin } : {}), questions: request.questions.map(question => ({ id: question.id, header: question.header, question: question.question, ...(question.multiSelect ? { multiSelect: true } : {}), allowsOwnAnswer: allowsOwnAnswer(question), required: question.required !== false, ...(question.input && question.input.kind !== "text" ? { input: question.input.kind } : {}), ...(questionOptions(question).length ? { options: questionOptions(question).map(option => ({ label: option.label, value: optionValue(option), ...(option.description ? { description: option.description } : {}) })) } : {}) })) } satisfies PendingQuestion;
+				if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work.");
+				await this.host.command({ type: "answer", id, requestId: request.id, answers: answers ?? {} });
+				return { answered: true as const, thread: summary(scoped(id, true, true)) };
 			},
 			interrupt: async id => { scoped(id, true, true); await this.host.command({ type: "cancel", id }); return summary(scoped(id, true, true)); },
 			launch: async request => { const prepared = await this.prepareLaunch(parentId, request); return "existing" in prepared ? prepared.existing : this.commitLaunch(parentId, prepared); },
