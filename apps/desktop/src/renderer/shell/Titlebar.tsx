@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ChatDetails } from "./ChatDetails";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Code2, Ellipsis, Factory, MessageSquare, MessagesSquare, Minus, PanelLeft, PanelRight, Search, Square, X, Copy as Restore } from "lucide-react";
-import type { DesktopAppAction, DesktopUpdateState, DesktopWindowState } from "../../shared/desktop";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleArrowUp, Code2, Ellipsis, Factory, MessageSquare, MessagesSquare, Minus, PanelLeft, PanelRight, Search, Square, X, Copy as Restore } from "lucide-react";
+import type { DesktopAppAction, DesktopWindowState } from "../../shared/desktop";
+import { checkForUpdates, useUpdateState } from "../lib/updateState";
 import { useWorkspace, type WorkspaceMode } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { shortcut } from "../lib/keybindings";
@@ -39,11 +40,18 @@ function ModeSwitch() {
 	</div>;
 }
 
+/** A downloaded update, in sight rather than only in the menu. */
+function UpdateReady() {
+	const update = useUpdateState();
+	if (update?.status !== "ready") return null;
+	return <button type="button" onClick={() => void window.phaseoDesktop?.installUpdate()} title={update.version ? `Restart to update to ${update.version}` : "Restart to update"}
+		className="no-drag mr-1 flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-primary hover:bg-sidebar-accent"><CircleArrowUp className="size-3.5" />Restart to update</button>;
+}
+
 function AppMenu() {
 	const { select, openSettings, theme, setTheme } = useWorkspace();
 	const desktop = window.phaseoDesktop;
-	const [update, setUpdate] = useState<DesktopUpdateState>({ status: "unavailable" });
-	useEffect(() => desktop?.onUpdateStateChange(setUpdate), [desktop]);
+	const update = useUpdateState();
 	const app = (action: DesktopAppAction) => void desktop?.performAppAction(action);
 	return <DropdownMenu>
 		<DropdownMenuTrigger render={<button type="button" aria-label="Application menu" title="Menu" className="no-drag grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground [&_svg]:size-4" />}><Ellipsis /></DropdownMenuTrigger>
@@ -73,9 +81,9 @@ function AppMenu() {
 				</DropdownMenuSubContent>
 			</DropdownMenuSub>
 			<DropdownMenuSeparator />
-			{update.status === "ready"
+			{update?.status === "ready"
 				? <DropdownMenuItem onClick={() => void desktop?.installUpdate()}>Restart to update{update.version ? ` to ${update.version}` : ""}</DropdownMenuItem>
-				: <DropdownMenuItem disabled={update.status === "checking"} onClick={() => void desktop?.checkForUpdates().then(setUpdate)}>{update.status === "checking" ? "Checking for updates…" : update.status === "unsupported" ? "Updates arrive with release builds" : "Check for updates"}</DropdownMenuItem>}
+				: <DropdownMenuItem disabled={update?.status === "checking"} onClick={() => void checkForUpdates()}>{update?.status === "checking" ? "Checking for updates…" : update?.status === "unsupported" ? "Updates arrive with release builds" : "Check for updates"}</DropdownMenuItem>}
 			<DropdownMenuItem onClick={() => void desktop?.openExternal("https://docs.phaseo.app")}>Documentation</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void desktop?.openExternal("https://phaseo.app/settings")}>Phaseo dashboard</DropdownMenuItem>
 			<DropdownMenuSeparator />
@@ -121,6 +129,7 @@ export function Titlebar() {
 		</div>
 		<div className="flex items-center">
 			<ChatDetails />
+			<UpdateReady />
 			{(mode === "code" || rightPanel) && <IconButton label={rightPanel ? "Hide panel" : "Show panel"} active={!!rightPanel} onClick={() => setRightPanel(rightPanel ? undefined : "restore")}><PanelRight /></IconButton>}
 			<AppMenu />
 		</div>

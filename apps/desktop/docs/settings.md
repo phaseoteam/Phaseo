@@ -2,6 +2,10 @@
 
 Settings is a full page. The sidebar becomes its navigation, with a search box that filters pages by name and by what they contain.
 
+## Version and updates
+
+**Settings → General → About** shows the app version, with the commit it was built from when the build knew it, and **Copy** puts `Phaseo <version>` on the clipboard for a bug report. Its **Updates** row says what the last check found (or that nothing has been checked since Phaseo started) and has **Check for updates**. When an update has downloaded, a toast says so, **Restart to update** shows in the title bar beside the menu, and the About row offers it too.
+
 ## Code chats
 
 **Settings → General → Pull requests** has T3 Code's **Open pull requests in Phaseo** (on by default: pull request links in chats open in the pull request pane, and Ctrl-click, ⌘-click or middle-click opens them on GitHub; off, they open like any other link) and **Default merge method** (Last selected, Merge, Squash and merge, or Rebase and merge; a project can choose its own in Project settings). **Settings → General → Panes → Default diff file state** starts the Diff and a pull request's Code tab with files expanded or collapsed.

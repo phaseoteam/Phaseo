@@ -1077,6 +1077,7 @@ ipcMain.handle("desktop:get-runtime-info", (event) => senderWindow(event) ? ({
 		platform: process.platform,
 		version: app.getVersion(),
 		isPackaged: app.isPackaged,
+		...(buildStamp.commit ? { commit: buildStamp.commit } : {}),
 	}) : null);
 
 ipcMain.handle("desktop:get-window-state", (event) => {

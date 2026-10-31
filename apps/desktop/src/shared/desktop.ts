@@ -9,6 +9,8 @@ export type DesktopRuntimeInfo = {
 	platform: NodeJS.Platform;
 	version: string;
 	isPackaged: boolean;
+	/** The commit the app was built from, when the build knew it. */
+	commit?: string;
 };
 
 export type DesktopWindowState = {
