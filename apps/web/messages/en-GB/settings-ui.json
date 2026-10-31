@@ -7696,7 +7696,7 @@
 			"timeZoneHelp": "Daily, weekly and monthly alerts follow this zone unless an alert sets its own.",
 			"utcNote": "Workspace budgets and key limits still reset at midnight UTC.",
 			"attribution": "Department spend",
-			"attributionHelp": "How spend counts when a person belongs to more than one department.",
+			"attributionHelp": "How spend rules, department budgets and department rate limits count a person who belongs to more than one department.",
 			"attributionAll": "All their departments",
 			"attributionAllHelp": "Their spend counts in full toward each department.",
 			"attributionPrimary": "Primary department only",

@@ -7,6 +7,7 @@ import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { deliverNotificationTest, type NotificationTestKind } from "@/pipeline/notifications/notification-delivery";
 import { json, withRuntime } from "@/routes/utils";
 import { parseIanaTimeZone } from "@/lib/time-zones";
+import { publishRateLimitPlan } from "@core/rate-limit-policies";
 import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
 import { encryptNotificationTarget, isSignedNotificationDestinationType, issueNotificationSigningSecret, notificationTargetPreview, NOTIFICATION_DESTINATION_TYPES, toPublicNotificationDestination, validateNotificationTarget, type NotificationDestinationType } from "./notification-target";
 
@@ -103,6 +104,8 @@ async function updateSettings(req: Request) {
 		}
 	}
 	if (Object.keys(settingsUpdate).length > 2) { const result = await client.from("workspace_settings").upsert(settingsUpdate, { onConflict: "workspace_id" }); if (result.error) return result.error.message?.includes("invalid_time_zone") ? json({ error: "bad_request", message: "spend.billing_time_zone must be an IANA time zone such as Europe/London" }, 400, NO_STORE) : json({ error: "notification_settings_update_failed" }, 503, NO_STORE); }
+	// Department rate limits read the attribution from the published plan.
+	if ("department_spend_attribution" in settingsUpdate) await publishRateLimitPlan(access.auth.workspaceId);
 	await audit(access.auth, "notifications.settings.updated", "workspace_notification_settings", access.auth.workspaceId, { sections: changed }); return getSettings(req);
 }
 

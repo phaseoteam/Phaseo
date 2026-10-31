@@ -25323,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'Wie Ausgabenregeln die Ausgaben einer Person Abteilungen zurechnen, wenn ihr Schlüssel keine eigene Abteilung hat: all rechnet sie jeder Abteilung zu, der die Person angehört; primary nur ihrer Hauptabteilung. Die eigene Abteilung eines Schlüssels hat immer Vorrang.'
+      description: 'Wie Ausgabenregeln, Abteilungsbudgets und Abteilungs-Ratenlimits die Anfragen einer Person Abteilungen zurechnen, wenn ihr Schlüssel keine eigene Abteilung hat: all rechnet sie jeder Abteilung zu, der die Person angehört; primary nur ihrer Hauptabteilung. Die eigene Abteilung eines Schlüssels und die Verzeichnisüberschreibung eines Mitglieds haben immer Vorrang.'
       enum:
         - all
         - primary

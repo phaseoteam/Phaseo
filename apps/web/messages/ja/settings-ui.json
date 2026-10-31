@@ -7696,7 +7696,7 @@
 			"timeZoneHelp": "日次・週次・月次のアラートは、アラート側で指定しない限りこのタイムゾーンに従います。",
 			"utcNote": "ワークスペースの予算とキーの上限は引き続き UTC の午前0時にリセットされます。",
 			"attribution": "部署の支出",
-			"attributionHelp": "1人が複数の部署に所属している場合の支出の数え方です。",
+			"attributionHelp": "複数の部署に所属する人を、支出ルール、部署予算、部署のレート制限がどう数えるかです。",
 			"attributionAll": "所属するすべての部署",
 			"attributionAllHelp": "その人の支出を各部署に全額計上します。",
 			"attributionPrimary": "主な部署のみ",

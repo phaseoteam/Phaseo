@@ -154,7 +154,7 @@ COMMENT ON COLUMN "public"."workspace_settings"."auto_top_up_failure_email_enabl
 
 COMMENT ON COLUMN "public"."workspace_settings"."billing_time_zone" IS 'IANA time zone for spend rule calendar periods (rules with a null time_zone) and spend reports. Validated against pg_timezone_names by public.validate_workspace_billing_time_zone. Enforced key limits and workspace budgets stay on UTC.';
 
-COMMENT ON COLUMN "public"."workspace_settings"."department_spend_attribution" IS 'How spend rules count a person''s spend toward departments when their key has no department: all (every department they belong to) or primary (only their primary one). A key''s own department always wins. See private.spend_scope_departments.';
+COMMENT ON COLUMN "public"."workspace_settings"."department_spend_attribution" IS 'How spend rules, department budgets and department rate limits count a person''s requests toward departments when their key has no department: all (every department they belong to) or primary (only their primary one). A key''s own department and a directory override always win. See private.spend_scope_departments and private.department_budget_key_departments.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."data_contribution_classifier_sample_rate_bps" IS 'Independent upstream classifier submission rate in basis points. Platform controlled; initially 1000 (10%).';
 
