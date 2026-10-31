@@ -5,6 +5,7 @@ import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import { conversationTurns, turnDuration, type TurnEntry } from "../lib/conversationTurns";
+import { elapsedLabel, useNow } from "../lib/elapsed";
 import { contextShare, turnUsage } from "../lib/turnUsage";
 import { formatRoundedCount, formatTime } from "@phaseo/app-kit/format";
 import { formatCost } from "../../shared/usageAmounts";
@@ -93,6 +94,13 @@ function PlanSteps({ activity }: { activity: AgentActivity }) {
 	</div>;
 }
 
+/** Time since a start, counting each second; nothing when the start is unknown. */
+function Elapsed({ since, className }: { since?: string; className?: string }) {
+	const start = since ? Date.parse(since) : NaN, now = useNow(Number.isFinite(start));
+	if (!Number.isFinite(start)) return null;
+	return <span className={cn("shrink-0 text-muted-foreground tabular-nums", className)}>{elapsedLabel(now - start)}</span>;
+}
+
 function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolean }) {
 	const [open, setOpen] = useState(false);
 	if (activity.type === "usage") return null;
@@ -100,7 +108,7 @@ function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolea
 	const reasoning = activity.type === "reasoning";
 	const running = activity.status === "running" || (reasoning && live);
 	const Icon = reasoning ? Brain : activity.type === "compaction" ? Layers : activity.type === "plan" ? ListChecks : toolIcon(activity.title);
-	const label = reasoning ? (running ? "Thinking" : "Thought") : activity.type === "compaction" ? "Compacted context" : toolLabels[activity.title] ?? activity.title.replaceAll("_", " ");
+	const label = reasoning ? (running ? "Thinking" : "Thought") : activity.type === "compaction" ? (running ? "Compacting context" : "Compacted context") : toolLabels[activity.title] ?? activity.title.replaceAll("_", " ");
 	const summary = reasoning ? "" : activity.text.split("\n")[0];
 	const expandable = !!activity.text && (reasoning || activity.text.length > summary.length || activity.text.length > 80);
 	return <div className="text-[12.5px]">
@@ -108,6 +116,7 @@ function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolea
 			{running ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <Icon className={cn("size-3.5 shrink-0 text-muted-foreground", activity.status === "failed" && "text-destructive")} />}
 			<span className={cn("shrink-0 font-medium text-foreground/85", running && "animate-pulse")}>{label}</span>
 			{summary && <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{summary}</span>}
+			{running && !reasoning && <Elapsed since={activity.startedAt} className="text-[11.5px]" />}
 			{activity.status === "failed" && <X className="size-3.5 shrink-0 text-destructive" />}
 			{expandable && <ChevronRight className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
 		</button>
@@ -131,6 +140,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 			<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground hover:text-foreground">
 				{live ? <LoaderCircle className="size-3.5 animate-spin text-primary" /> : <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />}
 				<span className={cn("font-medium", live && "animate-pulse")}>{title}</span>
+				{live && <Elapsed since={user?.startedAt} />}
 				{tools > 0 && <span>· {tools} {tools === 1 ? "step" : "steps"}</span>}
 			</button>
 			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
@@ -179,7 +189,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 			{plans.map(plan => <ProposedPlan key={plan.id} markdown={plan.text} projectId={task.projectId} status={plan.proposed?.outcome ? planOutcomes[plan.proposed.outcome] : undefined}>
 				{plan.proposed?.feedback && <p data-selectable className="mt-2 border-l-2 border-border pl-3 text-[13px] whitespace-pre-wrap text-muted-foreground">{plan.proposed.feedback}</p>}
 			</ProposedPlan>)}
-			{live && !final && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span></div>}
+			{live && !final && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span><Elapsed since={user?.startedAt} /></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
 			{final?.kind === "message" && <div data-selectable data-quote data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={final.value.text} projectId={task.projectId} repairLocalLinks /></div>}
 			{final?.kind === "message" && !live && <div className="-ml-1.5 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/turn:opacity-100">

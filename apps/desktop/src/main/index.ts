@@ -899,6 +899,17 @@ ipcMain.handle("workspace:mcp-prompt-attachments", async (event, id: unknown, me
   workspaceRuntime.store.saveAttachments(attachments);
  });
 });
+ipcMain.handle("workspace:background-commands", (event, taskId: unknown) => {
+	if (!senderWindow(event) || typeof taskId !== "string") throw new Error("Invalid background command request.");
+	workspaceRuntime.store.getTask(taskId);
+	const background = backgroundCommands();
+	return background.list(taskId).filter(command => command.running).map(command => ({ ...command, output: background.peek(taskId, command.id) }));
+});
+ipcMain.handle("workspace:stop-background-command", async (event, taskId: unknown, id: unknown) => {
+	if (!senderWindow(event) || typeof taskId !== "string" || typeof id !== "string") throw new Error("Invalid background command request.");
+	workspaceRuntime.store.getTask(taskId);
+	await backgroundCommands().stop(taskId, id);
+});
 ipcMain.handle("workspace:attachment", async (event, taskId: unknown, id: unknown) => {
 	if (!senderWindow(event) || typeof taskId !== "string" || typeof id !== "string") throw new Error("Invalid attachment request.");
 	const task = workspaceRuntime.store.getTask(taskId); const attachment = workspaceRuntime.store.getAttachment(id);
@@ -1162,6 +1173,7 @@ app.whenReady().then(() => {
 	harnessModelCache = new HarnessModelCache(path.join(app.getPath("userData"), "cache", "harness-models.json"), (harness, accountId) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness, accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	workspaceRuntime.phaseo.background = backgroundCommands();
+	workspaceRuntime.phaseo.background.onChange = taskId => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:background-changed", taskId); };
 	// Rows are written by a worker on its own connection, so a first read doesn't hold up the app.
 	transcriptScanner = new TranscriptScanner(workspaceRuntime.store, () => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:usage-changed"); }, { writer: () => new TranscriptWriter(workspaceRuntime.store.filename) });
 	// After the ledger's own start-up work, so a first read of large transcripts doesn't compete with opening the app.

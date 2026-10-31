@@ -48,6 +48,7 @@ import { StashMenu, usePromptHistory, usePromptStash } from "./composerHistory";
 import { recordPrompt } from "./promptHistory";
 import { showToast } from "../components/ui/toast";
 import { ChatNotices } from "./ChatNotices";
+import { BackgroundWork } from "./BackgroundWork";
 import { attachmentsOnlyText } from "./MessageAttachments";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
@@ -353,6 +354,7 @@ export function ChatView({ id }: { id: string }) {
 				<Button size="sm" variant="ghost" className="text-foreground" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>
 			</div>}
 			<AgentThreads taskId={task.id} />
+			<BackgroundWork taskId={task.id} />
 			<Requests task={task} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
 		</Conversation>}
