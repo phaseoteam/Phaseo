@@ -177,17 +177,21 @@ export async function buildRateLimitPlan(workspaceId: string): Promise<RateLimit
  * department counts toward that one only, even when it has no policy. Every
  * other key counts toward its creator's departments, as OAuth requests count
  * toward their user's: the override department when the member has a manual
- * department override, otherwise every department they belong to. Only
+ * department override, otherwise every department they belong to, or only
+ * their primary one when the workspace's department_spend_attribution is
+ * "primary" (ranked as private.spend_scope_departments ranks grants). Only
  * departments with a policy are kept for members.
  */
 async function readDepartmentLinks(workspaceId: string, departments: Record<string, string>) {
 	const limited = Object.keys(departments);
-	const [keys, grants, overrides] = await Promise.all([
+	const primaryOnly = await readPrimaryOnlyAttribution(workspaceId);
+	const [keys, allGrants, overrides] = await Promise.all([
 		readAll<{ id: string; department_id: string }>("keys", "id,department_id", workspaceId, {
 			filter: (query) => query.not("department_id", "is", null),
 		}),
-		readAll<{ user_id: string; department_id: string }>("workspace_department_grants", "user_id,department_id", workspaceId, {
-			filter: (query) => query.in("department_id", limited),
+		// Picking the primary grant needs all of a member's grants, not only those of limited departments.
+		readAll<GrantRow>("workspace_department_grants", "user_id,department_id,source_type,is_primary,created_at", workspaceId, {
+			filter: primaryOnly ? undefined : (query) => query.in("department_id", limited),
 			order: ["user_id", "department_id", "source_type", "source_id"],
 		}),
 		readAll<{ user_id: string; department_id: string | null }>("workspace_member_overrides", "user_id,department_id", workspaceId, {
@@ -195,6 +199,7 @@ async function readDepartmentLinks(workspaceId: string, departments: Record<stri
 			order: ["user_id"],
 		}),
 	]);
+	const grants = primaryOnly ? primaryGrants(allGrants) : allGrants;
 	const keyDepartments: Record<string, string> = {};
 	for (const key of keys) keyDepartments[key.id] = key.department_id;
 	const overridden = new Map(overrides.map((override) => [override.user_id, override.department_id]));
@@ -210,6 +215,29 @@ async function readDepartmentLinks(workspaceId: string, departments: Record<stri
 	const memberDepartments: Record<string, string[]> = {};
 	for (const [userId, joined] of memberships) memberDepartments[userId] = [...joined].sort();
 	return { keyDepartments, memberDepartments };
+}
+
+type GrantRow = { user_id: string; department_id: string; source_type: string; is_primary: boolean; created_at: string };
+
+async function readPrimaryOnlyAttribution(workspaceId: string): Promise<boolean> {
+	const { data, error } = await getSupabaseAdmin().from("workspace_settings").select("department_spend_attribution")
+		.eq("workspace_id", workspaceId).maybeSingle();
+	if (error) throw new Error(error.message || "Failed to read workspace_settings");
+	return (data as { department_spend_attribution?: string } | null)?.department_spend_attribution === "primary";
+}
+
+/** Each member's one grant: the primary one, then manual over SCIM, then the oldest. */
+function primaryGrants(grants: GrantRow[]): GrantRow[] {
+	const rank = (grant: GrantRow) => [grant.is_primary ? 0 : 1, grant.source_type === "manual" ? 0 : 1, Date.parse(grant.created_at)] as const;
+	const best = new Map<string, GrantRow>();
+	for (const grant of grants) {
+		const current = best.get(grant.user_id);
+		if (!current) { best.set(grant.user_id, grant); continue; }
+		const [a, b] = [rank(grant), rank(current)];
+		const order = a[0] - b[0] || a[1] - b[1] || a[2] - b[2] || (grant.department_id < current.department_id ? -1 : 1);
+		if (order < 0) best.set(grant.user_id, grant);
+	}
+	return [...best.values()];
 }
 
 /**

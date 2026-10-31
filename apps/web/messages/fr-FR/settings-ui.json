@@ -7696,7 +7696,7 @@
 			"timeZoneHelp": "Les alertes quotidiennes, hebdomadaires et mensuelles suivent ce fuseau, sauf si une alerte définit le sien.",
 			"utcNote": "Les budgets de l'espace de travail et les limites de clé se réinitialisent toujours à minuit UTC.",
 			"attribution": "Dépenses par département",
-			"attributionHelp": "Comment les dépenses sont comptées lorsqu'une personne appartient à plusieurs départements.",
+			"attributionHelp": "Comment les règles de dépenses, les budgets de département et les limites de débit de département comptent une personne qui appartient à plusieurs départements.",
 			"attributionAll": "Tous ses départements",
 			"attributionAllHelp": "Ses dépenses comptent entièrement pour chaque département.",
 			"attributionPrimary": "Département principal uniquement",

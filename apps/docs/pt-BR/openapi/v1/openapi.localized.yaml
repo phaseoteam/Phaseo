@@ -25323,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'Como as regras de gastos atribuem o gasto de uma pessoa aos departamentos quando a chave dela não tem departamento próprio: all atribui a todos os departamentos dos quais ela faz parte; primary apenas ao departamento principal. O departamento próprio de uma chave sempre prevalece.'
+      description: 'Como as regras de gastos, os orçamentos de departamento e os limites de taxa de departamento atribuem as solicitações de uma pessoa aos departamentos quando a chave dela não tem departamento próprio: all atribui a todos os departamentos dos quais ela faz parte; primary apenas ao departamento principal. O departamento próprio de uma chave e a substituição de diretório de um membro sempre prevalecem.'
       enum:
         - all
         - primary

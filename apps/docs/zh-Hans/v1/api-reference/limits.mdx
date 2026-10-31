@@ -45,7 +45,7 @@ icon: "gauge"
 
 - **密钥：**该密钥自己的配额。
 - **成员：**由该成员的密钥和 OAuth 请求共享的一份配额。
-- **部门：**计入该部门的所有请求共享的一份配额。关联到某个部门的密钥只计入该部门。其他密钥计入其创建者所属的所有部门，OAuth 请求计入其用户所属的所有部门。设置了部门覆盖的成员只计入覆盖指定的部门。
+- **部门：**计入该部门的所有请求共享的一份配额。关联到某个部门的密钥只计入该部门。其他密钥计入其创建者所属的所有部门，OAuth 请求计入其用户所属的所有部门。设置了部门覆盖的成员只计入覆盖指定的部门。若要让这些密钥和 OAuth 请求只计入此人的主要部门，请将工作区的部门归属设置为 primary：可在[设置 → 通知](https://phaseo.app/settings/notifications)中设置，也可在 `PATCH /v1/notifications/settings` 中使用 `spend.department_attribution`，或运行 `phaseo notifications settings update --department-attribution primary`。部门预算和支出规则使用同一设置。
 - **防护规则：**防护规则覆盖的每个密钥（或 OAuth 用户）各有一份独立配额。
 - **最终用户默认值：**每个最终用户各有一份独立配额，通过请求的 `user` 字段或 `X-Phaseo-User-Id` 请求头识别。没有最终用户 ID 的请求不受其限制。
 

@@ -25323,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: キーに部門が設定されていない場合に、支出ルールが個人の支出をどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門が常に優先されます。
+      description: キーに部門が設定されていない場合に、支出ルール、部門予算、部門レート制限が個人のリクエストをどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門とメンバーのディレクトリ上書きが常に優先されます。
       enum:
         - all
         - primary

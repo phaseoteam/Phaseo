@@ -46,7 +46,7 @@ Workspace admins can create named rate limit policies through the `/v1/rate-limi
 
 - **Key:** the key's own allowance.
 - **Member:** one allowance shared by the member's keys and OAuth requests.
-- **Department:** one allowance shared by everything that counts toward the department. A key linked to a department counts toward that department only. Any other key counts toward every department its creator belongs to, and OAuth requests count toward every department of their user. A member with a department override counts toward the override department only.
+- **Department:** one allowance shared by everything that counts toward the department. A key linked to a department counts toward that department only. Any other key counts toward every department its creator belongs to, and OAuth requests count toward every department of their user. A member with a department override counts toward the override department only. To count those keys and OAuth requests toward the person's primary department only, set the workspace's department attribution to primary under [Settings → Notifications](https://phaseo.app/settings/notifications), with `spend.department_attribution` in `PATCH /v1/notifications/settings`, or with `phaseo notifications settings update --department-attribution primary`. Department budgets and spend rules use the same setting.
 - **Guardrail:** a separate allowance for each key (or OAuth user) the guardrail covers.
 - **End-user default:** a separate allowance for each end user, identified by the request's `user` field or `X-Phaseo-User-Id` header. Requests without an end-user ID are not limited by it.
 
