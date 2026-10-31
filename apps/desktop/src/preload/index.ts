@@ -73,6 +73,7 @@ const desktopApi: PhaseoDesktopApi = {
 		exportTask: (id, format) => ipcRenderer.invoke("workspace:export-task", id, format),
 		importTask: configuration => ipcRenderer.invoke("workspace:import-task", configuration),
 		attachment: (taskId, id) => ipcRenderer.invoke("workspace:attachment", taskId, id),
+		saveAttachment: (taskId, id) => ipcRenderer.invoke("workspace:save-attachment", taskId, id),
 		installations: () => ipcRenderer.invoke("workspace:installations"),
 		updateHarness: harness => ipcRenderer.invoke("workspace:update-harness", harness),
 		cancelHarnessUpdate: () => ipcRenderer.invoke("workspace:cancel-harness-update"),

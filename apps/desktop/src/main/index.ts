@@ -10,7 +10,7 @@ import { GlobalInstructions } from "./globalInstructions";
 import { codexNativeActions } from "./codexNativeActions";
 import { claudeNativeActions, claudeNativeModels } from "./claudeNativeActions";
 import { piNativeActions } from "./piNativeActions";
-import { mkdir } from "node:fs/promises";
+import { copyFile, mkdir } from "node:fs/promises";
 import { openCodeNativeActions } from "./openCodeNativeActions";
 import { OpenCode } from "@opencode/client";
 import { Service } from "@opencode/client/service";
@@ -884,7 +884,7 @@ ipcMain.handle("workspace:paste-file", async (event, id: unknown, name: unknown,
 ipcMain.handle("workspace:choose-attachments", async (event, id: unknown) => {
 	const window = senderWindow(event); if (!window || typeof id !== "string") throw new Error("Invalid attachment request.");
 	if (workspaceRuntime.store.getTask(id).archived) throw new Error("Restore this task before adding files.");
-	const result = await dialog.showOpenDialog(window, { properties: ["openFile", "multiSelections"], title: "Attach files", filters: [{ name: "Images and documents", extensions: ["pdf", "png", "jpg", "jpeg", "gif", "webp", "txt", "md", "csv", "json", "ts", "py"] }, { name: "All files", extensions: ["*"] }] });
+	const result = await dialog.showOpenDialog(window, { properties: ["openFile", "multiSelections"], title: "Attach files", filters: [{ name: "Images, media and documents", extensions: ["pdf", "png", "jpg", "jpeg", "gif", "webp", "mp3", "m4a", "wav", "ogg", "opus", "flac", "aac", "mp4", "mov", "webm", "txt", "md", "csv", "json", "ts", "py"] }, { name: "All files", extensions: ["*"] }] });
 	if (result.canceled) return { attachments: [], errors: [] };
 	if (result.filePaths.length > 10) throw new Error("Choose up to 10 attachments.");
 	if (shutdownStarted) throw new Error("The workspace is shutting down.");
@@ -905,6 +905,16 @@ ipcMain.handle("workspace:attachment", async (event, taskId: unknown, id: unknow
 	if (!attachment || (attachment.taskId !== task.id && ![...task.messages, ...task.queue].some(message => message.attachments?.some(value => value.id === id)))) throw new Error("Attachment is unavailable for this task.");
 	const content = await workspaceRuntime.attachments.read(id);
 	return { attachment, text: content.text, dataUrl: content.dataUrl };
+});
+ipcMain.handle("workspace:save-attachment", async (event, taskId: unknown, id: unknown) => {
+	const window = senderWindow(event); if (!window || typeof taskId !== "string" || typeof id !== "string") throw new Error("Invalid attachment request.");
+	const task = workspaceRuntime.store.getTask(taskId); const attachment = workspaceRuntime.store.getAttachment(id);
+	if (!attachment || (attachment.taskId !== task.id && ![...task.messages, ...task.queue].some(message => message.attachments?.some(value => value.id === id)))) throw new Error("Attachment is unavailable for this task.");
+	const content = await workspaceRuntime.attachments.read(id);
+	const result = await dialog.showSaveDialog(window, { title: "Save attachment", defaultPath: path.join(app.getPath("downloads"), attachment.name) });
+	if (result.canceled || !result.filePath) return false;
+	await copyFile(content.filePath, result.filePath);
+	return true;
 });
 function harnessInstallations() {
 	return Promise.all((["codex", "claude", "opencode", "pi", "cursor", "grok"] as const).map(async harness => {

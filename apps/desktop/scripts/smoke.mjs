@@ -203,7 +203,7 @@ app.whenReady().then(async () => {
 			if (steering?.[0]?.id!=='fixture-steering' || steering[0].status!=='unconfirmed') throw new Error('Steering recovery fixture missing');
 			await api.command({type:'steer-discard',id:${JSON.stringify(fixtureTask.id)},messageId:'fixture-steering'});
 			if ((await api.task(${JSON.stringify(fixtureTask.id)})).steering?.length) throw new Error('Steering recovery discard failed');
-			const pdfButton=await window.__auditUntil(()=>Array.from(document.querySelectorAll('main [data-conversation-id^="message:"] button')).find(button=>button.textContent.trim()==='fixture.pdf'),'message attachment');
+			const pdfButton=await window.__auditUntil(()=>document.querySelector('main [data-conversation-id^="message:"] button[aria-label="Preview fixture.pdf"]'),'message attachment');
 			pdfButton.click();
 			await window.__auditUntil(()=>document.querySelector('dialog.attachment-preview[open] pre')?.textContent.includes('Page 1\\nFixture PDF text'),'PDF text preview');
 			document.querySelector('[aria-label="Close attachment preview"]').click();

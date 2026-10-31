@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Paperclip, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
+import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
@@ -21,6 +21,7 @@ import { ProposedPlan } from "./ProposedPlan";
 import { QuoteToolbar } from "./QuoteToolbar";
 import { TurnChanges } from "./TurnChanges";
 import { MessageFold } from "./MessageFold";
+import { attachmentsOnlyText, MessageAttachments } from "./MessageAttachments";
 import { ConversationAnnouncer } from "./ConversationAnnouncer";
 import { ChatFindBar, clearPendingFind, FindTargetContext, useFindTarget, usePendingFind } from "./ChatFind";
 import { useCommand } from "../lib/keybindings";
@@ -47,13 +48,15 @@ function CopyButton({ text }: { text: string }) {
 	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}>{status === "copied" ? <Check /> : <Copy />}</ActionButton>;
 }
 
-function UserMessage({ message, projectId, onAttachment, onBranch, onRewind, canBranch }: { message: Message; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; canBranch: boolean }) {
+function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRewind, canBranch }: { message: Message; taskId: string; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; canBranch: boolean }) {
+	const attachments = message.attachments ?? [];
+	// Attachments sent without words stand on their own, without the text the app sent the agent in their place.
+	const bubble = !attachments.length || message.text.trim() !== attachmentsOnlyText;
 	return <div data-conversation-id={`message:${message.id}`} className="group/message flex flex-col items-end gap-1">
 		<h3 className="sr-only">You said</h3>
 		{message.autopilot && <span title="Autopilot sent this to keep the task going" className="flex items-center gap-1 text-[11px] font-medium text-warning"><Plane className="size-3" />Autopilot</span>}
-		<div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"><MessageFold id={message.id} text={message.text}><MessageText text={message.text} projectId={projectId} /></MessageFold>
-			{!!message.attachments?.length && <div className="mt-2 flex flex-wrap gap-1.5">{message.attachments.map(attachment => <button key={attachment.id} type="button" onClick={() => onAttachment(attachment.id)} className="inline-flex h-6 items-center gap-1 rounded-md bg-background/70 px-2 text-xs hover:bg-background"><Paperclip className="size-3" />{attachment.name}</button>)}</div>}
-		</div>
+		<MessageAttachments taskId={taskId} attachments={attachments} onPreview={onAttachment} />
+		{bubble && <div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"><MessageFold id={message.id} text={message.text}><MessageText text={message.text} projectId={projectId} /></MessageFold></div>}
 		<div className="flex items-center opacity-0 transition-opacity group-hover/message:opacity-100">
 			<span className="mr-1 text-[11px] text-muted-foreground">{formatTime(message.createdAt)}</span>
 			<CopyButton text={mentionPlainText(message.text)} />
@@ -168,7 +171,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
 	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className="flex flex-col gap-4">
-		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} onRewind={onRewind} canBranch={canBranch} />)}
+		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} taskId={task.id} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} onRewind={onRewind} canBranch={canBranch} />)}
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{/* Messages are headings, so a screen reader's heading keys move between them. */}
 			{compact ? <h3 className="sr-only">{task.model === "default" ? harnessNames[task.harness] : modelLabel(task.model)} replied</h3> : <AssistantHeader task={task} />}
