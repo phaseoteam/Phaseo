@@ -9,6 +9,7 @@ import { isSettled } from "../shared/threadLifecycle";
 import { useAppTheme } from "./lib/appTheme";
 import { useWorkspace, WorkspaceProvider } from "./app/workspace";
 import { Titlebar } from "./shell/Titlebar";
+import { HistoryNavigation } from "./shell/HistoryNavigation";
 import { Sidebar } from "./shell/Sidebar";
 import { RightPanel } from "./shell/RightPanel";
 import { BrowserMiniPlayerHost } from "./components/browser/BrowserMiniPlayer";
@@ -101,6 +102,7 @@ function Shell() {
 			<ErrorBanner />
 		</div>
 		<CommandPalette />
+		<HistoryNavigation />
 		<Toaster />
 		<ChatNotifications />
 		<GuideRunNotices />

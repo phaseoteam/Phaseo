@@ -10,6 +10,8 @@ export const keybindingCommands = [
 	{ command: "mode.chat", label: "Switch to Chat", group: "General", keys: ["mod+alt+1"] },
 	{ command: "mode.code", label: "Switch to Code", group: "General", keys: ["mod+alt+2"] },
 	{ command: "sidebar.toggle", label: "Toggle sidebar", group: "General", keys: ["mod+b"] },
+	{ command: "navigation.back", label: "Back", group: "General", keys: ["mod+["], when: "!terminalFocused && !browserFocused" },
+	{ command: "navigation.forward", label: "Forward", group: "General", keys: ["mod+]"], when: "!terminalFocused && !browserFocused" },
 	...([1, 2, 3, 4, 5, 6, 7, 8, 9] as const).map(index => ({ command: `thread.jump.${index}` as const, label: `Open chat ${index} in the sidebar`, group: "Chats", keys: [`mod+${index}`] })),
 	{ command: "thread.previous", label: "Previous chat", group: "Chats", keys: ["mod+shift+["] },
 	{ command: "thread.next", label: "Next chat", group: "Chats", keys: ["mod+shift+]"] },

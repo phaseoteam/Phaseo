@@ -63,6 +63,8 @@ export type PhaseoDesktopApi = {
 	onBrowserAgentTab: (listener: (tab: BrowserAgentTabOpened) => void) => () => void;
 	/** An app shortcut pressed while a page had focus. */
 	onBrowserKey: (listener: (key: BrowserKey) => void) => () => void;
+	/** The mouse's back and forward buttons, or a macOS swipe, outside a browser page. */
+	onNavigate: (listener: (direction: "back" | "forward") => void) => () => void;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;
 	getWindowState: () => Promise<DesktopWindowState>;
 	performWindowAction: (action: DesktopWindowAction) => Promise<void>;

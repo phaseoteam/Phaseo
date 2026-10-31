@@ -20,7 +20,7 @@ import { importMcpPromptAttachments } from "./mcpPromptAttachments";
 import { projectPullRequestContents } from "./projectPullRequestContents";
 import { projectPullRequestFiles, projectPullRequestFilesViewed, projectSetPullRequestFilesViewed } from "./projectPullRequestFiles";
 import { projectPullRequestThreads } from "./projectPullRequestThreads";
-import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, safeStorage, shell } from "electron";
+import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, safeStorage, screen, shell } from "electron";
 import path from "node:path";
 import { BrowserHost } from "./browserHost";
 import { BrowserAgent } from "./browserAgent";
@@ -1026,6 +1026,15 @@ function createWindow(): BrowserWindow {
 	window.on("unmaximize", () => broadcastWindowState(window));
 	window.on("enter-full-screen", () => broadcastWindowState(window));
 	window.on("leave-full-screen", () => broadcastWindowState(window));
+	// The mouse's back and forward buttons (Windows and Linux) and macOS swipe gestures move through the app's own
+	// history; over a browser page they belong to the page (browserHost).
+	window.on("app-command", (_event, name) => {
+		if (name !== "browser-backward" && name !== "browser-forward") return;
+		const point = screen.getCursorScreenPoint(), content = window.getContentBounds(), x = point.x - content.x, y = point.y - content.y;
+		if (window.contentView.children.some(view => view.getVisible() && (({ x: left, y: top, width, height }) => x >= left && y >= top && x < left + width && y < top + height)(view.getBounds()))) return;
+		window.webContents.send("desktop:navigate", name === "browser-backward" ? "back" : "forward");
+	});
+	if (process.platform === "darwin") window.on("swipe", (_event, direction) => { if (direction === "left" || direction === "right") window.webContents.send("desktop:navigate", direction === "left" ? "back" : "forward"); });
 	window.webContents.setWindowOpenHandler(({ url }) => {
 		if (isAllowedExternalUrl(url)) void shell.openExternal(url);
 		return { action: "deny" };
