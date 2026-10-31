@@ -7696,7 +7696,7 @@
 			"timeZoneHelp": "Tägliche, wöchentliche und monatliche Warnungen folgen dieser Zone, sofern eine Warnung keine eigene festlegt.",
 			"utcNote": "Arbeitsbereichsbudgets und Schlüssellimits werden weiterhin um Mitternacht UTC zurückgesetzt.",
 			"attribution": "Abteilungsausgaben",
-			"attributionHelp": "Wie Ausgaben zählen, wenn eine Person mehreren Abteilungen angehört.",
+			"attributionHelp": "Wie Ausgabenregeln, Abteilungsbudgets und Abteilungs-Ratenlimits eine Person zählen, die mehreren Abteilungen angehört.",
 			"attributionAll": "Alle ihre Abteilungen",
 			"attributionAllHelp": "Ihre Ausgaben zählen voll für jede Abteilung.",
 			"attributionPrimary": "Nur Hauptabteilung",
