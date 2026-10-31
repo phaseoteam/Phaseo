@@ -3,7 +3,7 @@
 import React from "react";
 import { Check, ExternalLink, Infinity, X } from "lucide-react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 

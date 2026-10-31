@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useEffect, useMemo, useState } from "react";
 import type { UIEvent } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";

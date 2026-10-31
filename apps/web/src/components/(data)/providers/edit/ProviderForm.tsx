@@ -1,11 +1,11 @@
 "use client";
 import { localizedInternalCatalogError } from "@/i18n/internal-catalog-errors";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { Link, useRouter } from "@/i18n/navigation";
 import { useRef, useState } from "react";
 import { UnsavedChangesGuard } from "@/components/(data)/UnsavedChangesGuard";
-import { useLocale } from "next-intl";
+import { useLocale } from "@/i18n/react";
 import { Globe2, Network, Plus, Plug, FileText, ShieldCheck, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Logo";

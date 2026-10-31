@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { UserUsageChip } from "./UserUsageChip";
 
-jest.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+jest.mock("@/i18n/react", () => ({ useTranslations: () => (key: string) => key }));
 jest.mock("@/i18n/navigation", () => ({ Link: ({ href, children, ...props }: React.ComponentProps<"a">) => <a href={href} {...props}>{children}</a> }));
 
 const props = { userId: "user-2", name: "Alice", avatarUrl: null, workspaceId: "workspace-1", currentUserId: "user-1" };

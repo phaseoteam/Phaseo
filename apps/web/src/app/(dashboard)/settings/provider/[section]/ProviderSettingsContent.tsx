@@ -2,10 +2,10 @@
 import { PrivateSettingsQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import type { SettingsProviderOnboardingInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { redirect } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
-import { notFound } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import { notFound } from "@/lib/navigation";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { useLocale } from "next-intl";
+import { useLocale } from "@/i18n/react";
 import ProviderCatalogManager from "@/components/(gateway)/settings/account/ProviderCatalogManager";
 import ProviderIntegrationSummary from "@/components/(gateway)/settings/account/ProviderIntegrationSummary";
 export default function ProviderSettingsContent({ section }: { section: string }) {

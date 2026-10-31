@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import Image from "next/image";
+import Image from "@/components/image";
 import {
 	CheckCircle2,
 	ChevronDown,
@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 

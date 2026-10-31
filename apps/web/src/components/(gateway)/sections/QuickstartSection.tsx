@@ -7,7 +7,7 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { ChevronDown, Copy, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";

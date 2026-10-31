@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type {
 	CompareSummary,
 	CompareTraceResult,

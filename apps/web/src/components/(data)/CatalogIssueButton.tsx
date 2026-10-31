@@ -1,6 +1,6 @@
 import { MessageSquareWarning } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export function CatalogIssueButton({ entity, id, compactMobile = false }: { entity: string; id: string; compactMobile?: boolean }) {
 	const t = useTranslations("Common");

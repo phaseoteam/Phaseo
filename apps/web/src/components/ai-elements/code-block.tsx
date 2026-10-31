@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
   type ComponentProps,
   createContext,

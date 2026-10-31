@@ -2,7 +2,7 @@ import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { LatestModelsCarousel } from "./LatestModelsCarousel";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { landingModelUpdateCardsQuery } from "@/components/landingPage/landing.queries";
 

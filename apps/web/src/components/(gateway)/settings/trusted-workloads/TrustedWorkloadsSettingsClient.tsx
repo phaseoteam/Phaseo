@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type ReactNode } from "react";
 import { FingerprintPattern, Plus } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	createTrustedWorkload,

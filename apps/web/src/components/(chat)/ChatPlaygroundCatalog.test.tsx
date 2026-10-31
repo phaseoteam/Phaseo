@@ -6,7 +6,7 @@ import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 
-jest.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+jest.mock("@/i18n/react", () => ({ useTranslations: () => (key: string) => key }));
 jest.mock("./ChatPlayground", () => ({ __esModule: true, default: jest.fn(() => <div>playground</div>) }));
 jest.mock("./ChatPlaygroundShell", () => ({ __esModule: true, default: () => <div>loading catalogue</div> }));
 jest.mock("@/lib/fetchers/frontend/fetchFrontendGatewayModels", () => ({ fetchFrontendGatewayModels: jest.fn() }));

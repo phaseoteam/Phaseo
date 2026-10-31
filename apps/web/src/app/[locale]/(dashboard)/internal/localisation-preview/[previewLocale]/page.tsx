@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import Link from "@/components/link";
+import { notFound } from "@/lib/navigation";
 import { Suspense, use, useMemo } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Languages } from "lucide-react";
-import { createTranslator, NextIntlClientProvider } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { createTranslator, AppIntlProvider } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import { AuthLocalisationPreview } from "@/components/internal/localisation/AuthLocalisationPreview";
 import { Spinner } from "@/components/ui/spinner";
 import { localisationPreviewMessagesQuery } from "../../internalAdmin.functions";
@@ -139,9 +139,9 @@ function LocalisationPreviewContent({
 				dir={definition.dir}
 				className="rounded-2xl border bg-muted/20 p-4 sm:p-8"
 			>
-				<NextIntlClientProvider locale={locale} messages={messages}>
+				<AppIntlProvider locale={locale} messages={messages}>
 					<AuthLocalisationPreview />
-				</NextIntlClientProvider>
+				</AppIntlProvider>
 			</section>
 		</div>
 	);

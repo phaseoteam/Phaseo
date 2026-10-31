@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { MessageScroller } from "@shadcn/react/message-scroller";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";

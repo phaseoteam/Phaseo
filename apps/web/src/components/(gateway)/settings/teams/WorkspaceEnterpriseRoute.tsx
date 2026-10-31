@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { settingsFlagQuery } from "@/app/[locale]/(dashboard)/settings/settings.functions";
 import WorkspaceEnterpriseContent, { type Mode } from "./WorkspaceEnterpriseContent";

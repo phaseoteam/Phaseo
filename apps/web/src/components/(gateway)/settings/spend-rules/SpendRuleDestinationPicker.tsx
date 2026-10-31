@@ -1,7 +1,7 @@
 "use client";
 
 import { BellRing, ChevronDown } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NotificationDestinationIcon } from "@/components/(gateway)/settings/notifications/notificationProviders";

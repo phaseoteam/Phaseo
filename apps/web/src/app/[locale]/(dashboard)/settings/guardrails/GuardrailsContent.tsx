@@ -1,6 +1,6 @@
 "use client";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import GuardrailsSettingsClient from "@/components/(gateway)/settings/guardrails/GuardrailsSettingsClient";
 import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";

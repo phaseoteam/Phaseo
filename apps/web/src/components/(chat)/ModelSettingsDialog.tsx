@@ -2,7 +2,7 @@
 
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { Logo } from "@/components/Logo";

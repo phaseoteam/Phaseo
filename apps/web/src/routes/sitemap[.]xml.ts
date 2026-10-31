@@ -1,6 +1,6 @@
 // Next: src/app/sitemap.ts (a metadata route Next serialises to XML).
 import { createFileRoute } from "@tanstack/react-router";
-import type { MetadataRoute } from "next";
+import type { MetadataRoute } from "@/lib/seo/metadataTypes";
 
 function escapeXml(value: string): string {
 	return value

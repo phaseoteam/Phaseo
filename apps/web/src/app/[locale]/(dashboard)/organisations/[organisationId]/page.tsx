@@ -1,16 +1,16 @@
 import OrganisationPageContent from "@/components/(data)/organisation/OrganisationOverview";
 import { fetchFrontendOrganisation } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import Image from "next/image";
+import Image from "@/components/image";
 import OrganisationDetailShell from "@/components/(data)/organisation/OrganisationDetailShell";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { absoluteUrl } from "@/lib/seo";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { organisationQuery } from "./page.queries";
 
 async function fetchOrganisation(organisationId: string) {

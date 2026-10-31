@@ -21,7 +21,7 @@ import {
 import type { RectangleProps } from "recharts";
 
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type {
 	BenchmarkComparisonModel,
 	BenchmarkComparisonScoreDetail,

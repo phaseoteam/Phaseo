@@ -1,6 +1,5 @@
-import "server-only";
 
-import type { AbstractIntlMessages } from "next-intl";
+import type { AbstractIntlMessages } from "@/i18n/react";
 import { preload } from "react-dom";
 import {
 	allClientMessageScopes,

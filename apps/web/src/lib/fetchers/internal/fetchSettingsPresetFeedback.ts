@@ -1,4 +1,3 @@
-import "server-only";
 import { z } from "zod";
 import { requireAuthenticatedUser, requireWorkspaceMembership } from "@/utils/serverActionAuth";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";

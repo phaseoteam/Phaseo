@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useQueryState } from "nuqs";
 import { Activity, Coins, Zap } from "lucide-react";

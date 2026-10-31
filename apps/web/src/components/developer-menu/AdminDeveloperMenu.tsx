@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	ChevronDown,
 	ExternalLink,

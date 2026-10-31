@@ -7,17 +7,17 @@ import {
 	fetchFrontendAPIProviderModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ProviderModelsClient from "./models/ProviderModelsClient";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { absoluteUrl } from "@/lib/seo";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
-import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { notFound } from "@/lib/navigation";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import type { PublicLocale } from "@/i18n/routing";
 import { fetchServerProviderCatalogPreviews } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
 import type { AccountQueryScope } from "@/lib/query/queryKeys";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { apiProviderModelsQuery, apiProviderPageDataQuery } from "./page.functions";
 import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
 

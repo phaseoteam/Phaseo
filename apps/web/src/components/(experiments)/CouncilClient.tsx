@@ -3,8 +3,8 @@
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "@/lib/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	AlertCircle,
 	ChevronDown,

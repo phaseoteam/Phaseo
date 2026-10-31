@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { Logo } from "@/components/Logo";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface CountryModelCardProps {

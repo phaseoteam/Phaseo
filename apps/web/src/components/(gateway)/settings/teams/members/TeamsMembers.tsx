@@ -17,9 +17,9 @@ import {
 	UserRoundX,
 } from "lucide-react";
 import { useSettingsRouter as useRouter } from "../../PrivateSettingsQuery";
-import Link from "next/link";
+import Link from "@/components/link";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { UserUsageChip } from "../../keys/UserUsageChip";

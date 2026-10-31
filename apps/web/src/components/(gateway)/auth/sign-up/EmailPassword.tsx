@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEventHandler } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useFormStatus } from "react-dom";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

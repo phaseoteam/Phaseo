@@ -1,6 +1,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
 import RequestLabelFilter, { readActiveLabelFilter } from "./RequestLabelFilter";
 import type { RequestClassifierSummary } from "./requestClassifierLabels";
@@ -23,9 +23,9 @@ const classifiers: RequestClassifierSummary[] = [
 const render = (state: Partial<typeof mockState.current>, mode: "logs" | "usage" = "logs") => {
 	mockState.current = { label_key: "", label_value: "", label_op: "", ...state };
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
+		<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
 			<RequestLabelFilter facets={[{ key: "team", value: "search" }]} classifiers={classifiers} mode={mode} />
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 };
 

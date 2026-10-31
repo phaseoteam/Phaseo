@@ -1,9 +1,9 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import BroadcastSettingsContent from "./BroadcastContent";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI.settingsPageMetadata");

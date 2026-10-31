@@ -1,12 +1,12 @@
 import { use } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
-import Image from "next/image";
+import Image from "@/components/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: PublicLocale }> }) {

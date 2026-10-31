@@ -1,4 +1,3 @@
-import "server-only";
 
 import { createClient } from "@/utils/supabase/server";
 import { evaluateTeamSsoEnforcementNoop } from "@/lib/auth/ssoEnforcement";

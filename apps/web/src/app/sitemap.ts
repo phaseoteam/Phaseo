@@ -1,4 +1,4 @@
-import { MetadataRoute } from "next";
+import { MetadataRoute } from "@/lib/seo/metadataTypes";
 import { cacheLife } from "next/cache";
 import {
 	getHelpArticleParams,

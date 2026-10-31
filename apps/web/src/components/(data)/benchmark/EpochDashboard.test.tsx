@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 import { act, cloneElement, createElement, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import common from "../../../../messages/en-GB/common.json";
 import catalogue from "../../../../messages/en-GB/catalogue.json";
 import { EpochDashboard } from "./EpochDashboard";
@@ -30,7 +30,7 @@ async function mount(source = data) {
 	Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 	Object.defineProperty(window, "matchMedia", { configurable: true, value: () => ({ matches: false, addEventListener: jest.fn(), removeEventListener: jest.fn() }) });
 	const node = document.createElement("div"); document.body.appendChild(node); const root = createRoot(node);
-	await act(async () => root.render(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><EpochDashboard data={source} /></NextIntlClientProvider>));
+	await act(async () => root.render(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><EpochDashboard data={source} /></AppIntlProvider>));
 	return { node, cleanup: () => { act(() => root.unmount()); node.remove(); } };
 }
 

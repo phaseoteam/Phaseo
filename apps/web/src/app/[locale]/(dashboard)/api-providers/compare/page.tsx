@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Suspense } from "react";
 import ProviderCompareDashboard from "@/components/(data)/api-providers/ProviderCompareDashboard";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { apiProvidersQuery } from "../page.queries";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {

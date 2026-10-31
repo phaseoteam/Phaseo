@@ -1,10 +1,10 @@
 import { use } from "react";
-import { useTranslations } from "next-intl";
-import { Metadata } from "next";
-import Image from "next/image";
+import { useTranslations } from "@/i18n/react";
+import { Metadata } from "@/lib/seo/metadataTypes";
+import Image from "@/components/image";
 import { MigrationGuide } from "@/components/(migrate)/MigrationGuide";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: PublicLocale }> }): Promise<Metadata> {

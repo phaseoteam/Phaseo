@@ -3,7 +3,7 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useState } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations } from "@/i18n/react"
 import { Check, Copy, Download, Share2 } from "lucide-react"
 
 import type { ProfileShareCardPayload } from "@/lib/profileShare"

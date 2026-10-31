@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { Check, Link2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CompareModelOption } from "../types";

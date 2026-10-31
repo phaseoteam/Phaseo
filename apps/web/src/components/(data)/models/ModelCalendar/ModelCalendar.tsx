@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Logo } from "@/components/Logo";
 import ModelCalendarChart from "./ModelCalendarChart";
 import ModelReleasePace from "./ModelReleasePace";
 import ModelReleaseWeekdayAnalysis from "./ModelReleaseWeekdayAnalysis";
-import Link from "next/link";
+import Link from "@/components/link";
 import { cn } from "@/lib/utils";
 import type {
 	EventType,

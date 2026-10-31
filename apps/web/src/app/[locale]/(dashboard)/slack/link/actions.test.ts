@@ -1,4 +1,4 @@
-jest.mock("next-intl/server", () => ({
+jest.mock("@/i18n/server", () => ({
 	getTranslations: jest.fn(async () => (key: string, values?: Record<string, string>) => (values ? `${key} ${JSON.stringify(values)}` : key)),
 }));
 jest.mock("@/lib/fetchers/internal/serverAccountContext", () => ({ getServerAccountContext: jest.fn() }));

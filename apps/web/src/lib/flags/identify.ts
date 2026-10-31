@@ -1,6 +1,5 @@
-import "server-only";
 
-import { dedupe } from "flags/next";
+import { dedupe } from "@/lib/flags/flag";
 import type { Identify } from "flags";
 import type { StatsigUser } from "@flags-sdk/statsig";
 

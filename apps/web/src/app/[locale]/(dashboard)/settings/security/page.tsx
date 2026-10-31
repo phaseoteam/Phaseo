@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import SecurityContent from "./SecurityContent";
 
 export async function generateMetadata() {

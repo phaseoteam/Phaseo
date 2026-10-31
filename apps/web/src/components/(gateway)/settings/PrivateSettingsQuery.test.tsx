@@ -8,8 +8,8 @@ import { createClient } from "@/utils/supabase/client";
 import { settleWrites } from "@/lib/query/settleWrites";
 
 jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn(), useQueryClient: jest.fn() }));
-jest.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
-jest.mock("next-intl", () => {
+jest.mock("@/lib/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+jest.mock("@/i18n/react", () => {
 	const { privateQuery } = jest.requireActual("../../../../messages/en-GB/settings-ui.json");
 	return { useTranslations: () => (key: string) => privateQuery[key] };
 });

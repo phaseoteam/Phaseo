@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import GatewayBenchmarkClient from "./GatewayBenchmarkClient";
 

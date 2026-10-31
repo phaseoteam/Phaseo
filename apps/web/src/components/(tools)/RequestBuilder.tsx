@@ -31,7 +31,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { jsonToPythonLiteral } from "@/components/(data)/model/quickstart/quickstartPayloads";
 import { Switch } from "@/components/ui/switch";

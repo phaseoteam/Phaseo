@@ -1,8 +1,8 @@
 import { Pencil } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { CatalogIssueButton } from "@/components/(data)/CatalogIssueButton";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { catalogueInternalAuthStatusQuery } from "@/components/(data)/catalogueViewer.functions";
 

@@ -1,6 +1,6 @@
 "use client";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ArrowUpRight, Building2 } from "lucide-react";
 
 import CreateTeamDialog from "@/components/(gateway)/settings/CreateTeamDialog";

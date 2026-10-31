@@ -1,4 +1,3 @@
-import "server-only";
 import { cacheLife } from "next/cache";
 import { buildEpochDashboard, epochNumber, type EpochDashboardData } from "./epochDashboard";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";

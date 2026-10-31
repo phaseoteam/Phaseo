@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { DisplayDateTime } from "@/components/display/DisplayValue";
 import { KeyUsageSummary } from "./KeyUsageSummary";
 import { Link } from "@/i18n/navigation";

@@ -1,6 +1,6 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ExternalLink } from "lucide-react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 

@@ -8,7 +8,7 @@ jest.mock("@/utils/supabase/admin", () => ({
 	createAdminClient: jest.fn(),
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
-jest.mock("next/navigation", () => ({ redirect: jest.fn() }));
+jest.mock("@/lib/navigation", () => ({ redirect: jest.fn() }));
 jest.mock("next/headers", () => ({ cookies: jest.fn() }));
 jest.mock("@/lib/auth/accountLifecycleDiscord", () => ({
 	sendAccountLifecycleDiscordWebhook: jest.fn(),

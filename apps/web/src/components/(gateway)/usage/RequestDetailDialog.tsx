@@ -4,11 +4,11 @@ import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
-import dynamic from "next/dynamic";
-import { useLocale, useTranslations } from "next-intl";
+import dynamic from "@/lib/dynamic";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import Link from "@/components/link";
+import { useSearchParams } from "@/lib/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, MessageSquare, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";

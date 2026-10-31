@@ -1,10 +1,10 @@
 "use client";
 
 import { chatLocalStorage } from "@/lib/chat/userStorage";
-import Link from "next/link";
+import Link from "@/components/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";

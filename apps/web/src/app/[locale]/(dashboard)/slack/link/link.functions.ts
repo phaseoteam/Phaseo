@@ -16,7 +16,7 @@ export const requireSlackLinkSession = createServerFn({ method: "GET" })
 	.validator((input: { locale: string; token: string }) => ({ locale: slackLinkLocale(input.locale), token: slackLinkToken(input.token) }))
 	.handler(async ({ data: { locale, token } }) => {
 		const [{ redirect }, { localizeAuthPath }, { getServerAccountContext }] = await Promise.all([
-			import("next/navigation"),
+			import("@/lib/navigation"),
 			import("@/lib/auth/localized-paths"),
 			import("@/lib/fetchers/internal/serverAccountContext"),
 		]);

@@ -1,7 +1,7 @@
 import { use } from "react";
 import ProviderSettingsContent from "@/app/(dashboard)/settings/provider/[section]/ProviderSettingsContent";
-import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { notFound } from "@/lib/navigation";
+import { getTranslations } from "@/i18n/server";
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
 	return { title: `${t("internalMainCopy.providerSettings")} - Phaseo`, robots: { index: false, follow: false } };

@@ -1,8 +1,8 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import SubscriptionPlanAllowances from "./SubscriptionPlanAllowances";
 import SubscriptionPlanOffers from "./SubscriptionPlanOffers";
 import type { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/types";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubscriptionPlanFeaturesTable from "./SubscriptionPlanFeaturesTable";

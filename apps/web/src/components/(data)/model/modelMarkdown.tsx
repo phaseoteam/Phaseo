@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import type { Components } from "react-markdown";
 
 const KNOWN_INTERNAL_ROOTS = new Set([

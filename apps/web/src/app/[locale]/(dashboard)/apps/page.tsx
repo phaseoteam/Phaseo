@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import Link from "@/components/link";
 import { Flame, TrendingUp } from "lucide-react";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import AppCategoryTags from "@/components/(data)/apps/AppCategoryTags";
@@ -10,7 +10,7 @@ import {
 	type TrendingAppData,
 } from "@/lib/fetchers/rankings/getRankingsData";
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	appImageUrlsQuery,
 	publicAppIdsQuery,
@@ -19,7 +19,7 @@ import {
 } from "./page.queries";
 import { buildMetadata } from "@/lib/seo";
 import { getPublicAppPath } from "@/lib/apps/publicAppPath";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { DisplayCount, DisplayNumber } from "@/components/display/DisplayValue";
 
 const TOP_APPS_QUERY_LIMIT = 100;

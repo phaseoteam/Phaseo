@@ -1,6 +1,6 @@
 import { use } from "react";
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { notFound } from "@/lib/navigation";
 import { SignUpPage } from "@/app/(auth)/sign-up/SignUpPage";
 import { getPublicMessages } from "@/i18n/messages";
 import { isPublicLocale } from "@/i18n/routing";

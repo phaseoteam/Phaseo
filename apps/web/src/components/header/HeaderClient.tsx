@@ -3,9 +3,9 @@
 
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { IntentLink } from "@/components/navigation/IntentLink";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { LazyMessages } from "@/components/i18n/LazyMessages";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {

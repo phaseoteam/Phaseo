@@ -1,5 +1,5 @@
 import { use } from "react";
-import { permanentRedirect } from "next/navigation";
+import { permanentRedirect } from "@/lib/navigation";
 
 const COLLECTION_PRESETS: Record<string, string> = {
 	free: "/models?tiers=free",

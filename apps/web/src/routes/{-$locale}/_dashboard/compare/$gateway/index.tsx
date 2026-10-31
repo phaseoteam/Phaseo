@@ -8,7 +8,7 @@ import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/compare/[gateway]/page";
 import { parsePairSlug } from "@/components/(data)/compare/comparePairs";
 import { comparePairDataQuery, comparePairExists } from "@/app/[locale]/(dashboard)/compare/[gateway]/pairPage.queries";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)

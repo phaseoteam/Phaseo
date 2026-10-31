@@ -3,10 +3,10 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { AlertCircle, CheckCircle2, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

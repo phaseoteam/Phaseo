@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { adminCatalogListQuery } from "../catalog.functions";
 
 const PAGE_SIZE = 100;

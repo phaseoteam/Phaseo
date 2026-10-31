@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { Scale } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";

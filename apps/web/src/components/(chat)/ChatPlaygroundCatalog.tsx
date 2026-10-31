@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import ChatPlayground from "./ChatPlayground";
 import ChatPlaygroundShell from "./ChatPlaygroundShell";
 import { Button } from "@/components/ui/button";

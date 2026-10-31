@@ -1,4 +1,4 @@
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/i18n/navigation";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";

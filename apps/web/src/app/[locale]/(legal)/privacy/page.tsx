@@ -1,9 +1,9 @@
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations, useLocale } from "@/i18n/react";
 // app/privacy/page.tsx
 import { Link } from "@/i18n/navigation";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {

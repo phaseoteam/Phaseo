@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import Link from "@/components/link";
+import { notFound } from "@/lib/navigation";
 import {
 	ArrowLeft,
 	ArrowRight,
@@ -17,12 +17,12 @@ import type { FamilyModelItem } from "@/lib/fetchers/families/types";
 import { fetchFrontendFamily } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { cn } from "@/lib/utils";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { familyQuery } from "../page.queries";
 
 const STATUS_STYLES: Record<string, string> = {

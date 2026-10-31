@@ -10,7 +10,7 @@ import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGateway
 import type { PricingRule } from "@/lib/fetchers/models/getModelPricing";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { modelPricingQuery } from "@/components/(data)/model/modelData.queries";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface PricingProps {
 	metadata: ModelGatewayMetadata;

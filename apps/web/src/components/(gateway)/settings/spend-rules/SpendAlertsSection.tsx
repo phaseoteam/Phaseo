@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { BellRing, History, MoreHorizontal, Pencil, Plus, Send, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	AlertDialog,

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/link";
+import { useRouter } from "@/lib/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { Button } from "@/components/ui/button";
 import {

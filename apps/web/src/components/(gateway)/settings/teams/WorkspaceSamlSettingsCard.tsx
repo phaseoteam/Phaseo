@@ -2,7 +2,7 @@
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { CheckCircle2, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";

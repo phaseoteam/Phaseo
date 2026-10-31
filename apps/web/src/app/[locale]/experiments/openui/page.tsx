@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { OpenUIExperiment } from "@/components/(chat)/openui/OpenUIExperiment";
 
 export const metadata: Metadata = {

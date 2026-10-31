@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode, use } from "react";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import ShowFooterStyle from "@/components/layout/ShowFooterStyle";
 import type { ModelRouteParams } from "@/components/(data)/model/model-route-helpers";
 import ScrollToTopOnModelChange from "./ScrollToTopOnModelChange";

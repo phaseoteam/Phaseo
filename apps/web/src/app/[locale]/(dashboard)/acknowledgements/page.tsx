@@ -1,7 +1,7 @@
 import { use } from "react";
-import { useTranslations } from "next-intl";
-import type { Metadata } from "next";
-import Link from "next/link";
+import { useTranslations } from "@/i18n/react";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import Link from "@/components/link";
 import {
 	ArrowRight,
 	ArrowUpRight,
@@ -17,7 +17,7 @@ import { OrbSpecimen } from "@/components/acknowledgements/orbSpecimen";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: PublicLocale }> }): Promise<Metadata> {

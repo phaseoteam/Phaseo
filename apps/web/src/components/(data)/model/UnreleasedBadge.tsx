@@ -1,7 +1,7 @@
 "use client";
 
 import { FlaskConical } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function UnreleasedBadge({ compact = false }: { compact?: boolean }) {
 	const t = useTranslations("Common.ui.localisationGaps");

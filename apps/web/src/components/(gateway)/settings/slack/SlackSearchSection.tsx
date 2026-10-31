@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";

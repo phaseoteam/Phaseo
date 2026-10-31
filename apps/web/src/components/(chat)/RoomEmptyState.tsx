@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ArrowUpRight } from "lucide-react";
 import { useInitialChatAuth } from "@/components/(chat)/ChatAuthProvider";
 

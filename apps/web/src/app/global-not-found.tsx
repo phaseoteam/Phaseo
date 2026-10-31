@@ -1,5 +1,5 @@
 import "./globals.css";
-import Link from "next/link";
+import Link from "@/components/link";
 import { headers } from "next/headers";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { RootDocument } from "@/components/layout/RootDocument";

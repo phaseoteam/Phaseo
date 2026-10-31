@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 
 import { readRequestLabels } from "./RequestClassificationsSection";
 import {

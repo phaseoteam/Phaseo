@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useReducedMotion } from "motion/react";
 import { Pause, Play } from "lucide-react";
 import UpdateCard from "@/components/updates/UpdateCard";

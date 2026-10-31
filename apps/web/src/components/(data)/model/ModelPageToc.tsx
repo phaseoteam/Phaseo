@@ -30,7 +30,7 @@ import {
 	Wrench,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Select,
 	SelectContent,

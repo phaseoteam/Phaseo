@@ -1,6 +1,6 @@
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { englishSettingsUiMessages } from "@/i18n/default-messages";
 import { nestDottedMessageKeys } from "@/i18n/message-overlays";
 import {
@@ -13,7 +13,7 @@ import {
 
 function renderToStaticMarkup(children: ReactNode) {
 	const providerProps = { locale: "en-GB" as const, timeZone: "UTC", messages: { SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }, children };
-	return renderMarkup(createElement(NextIntlClientProvider, providerProps));
+	return renderMarkup(createElement(AppIntlProvider, providerProps));
 }
 
 describe("DecisionComposer draft helpers", () => {

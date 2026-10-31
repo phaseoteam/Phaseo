@@ -1,6 +1,6 @@
 import { use } from "react";
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { notFound } from "@/lib/navigation";
 import { isPublicLocale } from "@/i18n/routing";
 import { ScopedMessages } from "@/components/i18n/ScopedMessages";
 

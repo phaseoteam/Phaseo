@@ -1,17 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Link } from "@/i18n/navigation";
 import { ChevronRight } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { helpArticleQuery } from "../../page.functions";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 

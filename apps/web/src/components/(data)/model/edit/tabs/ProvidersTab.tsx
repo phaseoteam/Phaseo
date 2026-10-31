@@ -1,6 +1,6 @@
 "use client"
 
-import { useLocale, useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "@/i18n/react"
 import { Link } from "@/i18n/navigation"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Plus, ArrowRight } from "lucide-react"

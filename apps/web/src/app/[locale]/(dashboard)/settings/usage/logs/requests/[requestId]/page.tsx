@@ -1,6 +1,6 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { Suspense, use } from "react";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { UsageLogsContent } from "../../page";
 

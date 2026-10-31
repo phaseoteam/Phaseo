@@ -45,7 +45,7 @@ export { englishSettingsUiMessages };
 export type SourceSettingsUiMessages = typeof englishSettingsUiMessages;
 export type SettingsUiMessages = WidenMessages<SourceSettingsUiMessages>;
 
-/** The complete source message tree supplied to NextIntlClientProvider. */
+/** The complete source message tree supplied to AppIntlProvider. */
 export const englishMessages = {
 	...englishAuthMessages,
 	Common: englishCommonMessages,

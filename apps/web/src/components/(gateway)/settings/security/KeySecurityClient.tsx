@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { CircleCheck, CircleDashed, ClipboardCopy, Clock, Hourglass, Network, PauseCircle, ShieldAlert, ShieldOff, Trash2, Wallet, MapPin } from "lucide-react";
 import { Link } from "@/i18n/navigation";

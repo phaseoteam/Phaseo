@@ -1,10 +1,10 @@
 import ModelsDisplay from "@/components/(data)/organisation/ModelsDisplay";
 import OrganisationDetailShell from "@/components/(data)/organisation/OrganisationDetailShell";
-import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { fetchFrontendOrganisation } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { organisationModelsQuery } from "../page.queries";

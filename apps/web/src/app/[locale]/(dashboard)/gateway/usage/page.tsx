@@ -1,8 +1,8 @@
 import { use } from "react";
-import { useLocale } from "next-intl";
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { permanentRedirect } from "next/navigation";
+import { useLocale } from "@/i18n/react";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
+import { permanentRedirect } from "@/lib/navigation";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.gateway");

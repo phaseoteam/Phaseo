@@ -1,5 +1,5 @@
-import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
 import type { PublicLocale } from "@/i18n/routing";

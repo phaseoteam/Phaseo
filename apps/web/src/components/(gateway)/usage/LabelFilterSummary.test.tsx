@@ -1,14 +1,14 @@
 /** @jest-environment jsdom */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
 import LabelFilterSummary, { formatLabelSpend } from "./LabelFilterSummary";
 
 const render = (props: React.ComponentProps<typeof LabelFilterSummary>) => renderToStaticMarkup(
-	<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
+	<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
 		<LabelFilterSummary {...props} />
-	</NextIntlClientProvider>,
+	</AppIntlProvider>,
 );
 
 const textOf = (html: string) => {

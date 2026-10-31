@@ -2,7 +2,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { nextLayoutComponent } from "@/lib/start/nextPage";
 import Layout, * as mod from "@/app/[locale]/(dashboard)/settings/classifiers/layout";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { settingsFlagQuery } from "@/app/[locale]/(dashboard)/settings/settings.functions";
 
 

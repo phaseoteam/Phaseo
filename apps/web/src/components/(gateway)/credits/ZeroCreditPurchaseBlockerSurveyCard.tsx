@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { capturePosthogSurvey, ZERO_BALANCE_BLOCKER_SURVEY } from "@/lib/posthogSurveys";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 // `choice` must match the PostHog survey's choices exactly so results aggregate.
 const REASON_OPTIONS = [

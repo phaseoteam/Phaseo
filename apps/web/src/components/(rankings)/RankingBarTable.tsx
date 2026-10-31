@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { Logo } from "@/components/Logo";
 import type { ModalityLeaderboardEntry } from "@/components/(rankings)/ModalityLeaderboards";
 import { HorizontalRankingChart } from "@/components/(rankings)/HorizontalRankingChart";

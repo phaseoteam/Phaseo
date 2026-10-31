@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "@/i18n/server";
+import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { privateUsageScopeQuery } from "../../usage.functions";
 import RealtimeSessionsClient from "@/app/(dashboard)/settings/usage/logs/realtime/RealtimeSessionsClient";

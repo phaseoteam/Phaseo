@@ -11,7 +11,7 @@ import type { CountrySummary } from "@/lib/fetchers/countries/types";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { getUniqueCountryModels } from "./utils";
 import {
 	COUNTRY_MODELS_PREVIEW_PER_ORGANISATION,

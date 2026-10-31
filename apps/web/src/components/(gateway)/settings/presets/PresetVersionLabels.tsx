@@ -10,7 +10,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Info, Loader2, Play, Plus, Tag, X } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "@/i18n/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";

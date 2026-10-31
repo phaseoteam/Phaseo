@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { OrganisationForm } from "@/components/(data)/OrganisationForm";
 import { updateOrganisationAction } from "../../../actions";
 import { adminCatalogRecordQuery } from "../../../catalog.functions";

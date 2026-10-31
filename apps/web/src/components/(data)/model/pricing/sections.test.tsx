@@ -1,4 +1,4 @@
-import { NextIntlClientProvider, createTranslator } from "next-intl";
+import { AppIntlProvider, createTranslator } from "@/i18n/react";
 import fs from "node:fs";
 import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -18,7 +18,7 @@ describe("CacheWriteSection", () => {
 			{ per1M: 1, label: "1 hour TTL · > 100k input tokens" },
 		].map((row) => ({ ...row, price: row.per1M, isCurrent: true }));
 		const html = renderToStaticMarkup(
-			<NextIntlClientProvider locale={locale} timeZone="UTC" messages={messages}><CacheWriteSection rows={rows} /></NextIntlClientProvider>,
+			<AppIntlProvider locale={locale} timeZone="UTC" messages={messages}><CacheWriteSection rows={rows} /></AppIntlProvider>,
 		);
 		for (const row of rows) {
 			expect(html).toContain(`$${row.per1M.toFixed(3)}`);
@@ -32,7 +32,7 @@ describe("MeterRateRows", () => {
 		const messages = Object.fromEntries([["Common", "common"], ["Catalogue", "catalogue"]].map(([namespace, file]) => [namespace, JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "messages", locale, `${file}.json`), "utf8"))]));
 		const t = createTranslator({ locale, messages });
 		const html = renderToStaticMarkup(
-			<NextIntlClientProvider locale={locale} timeZone="UTC" messages={messages}><MeterRateRows rows={[
+			<AppIntlProvider locale={locale} timeZone="UTC" messages={messages}><MeterRateRows rows={[
 				{
 					meter: "audio_minutes",
 					displayLabel: "Audio minutes",
@@ -49,7 +49,7 @@ describe("MeterRateRows", () => {
 					price: 0.004,
 					conditions: [{ path: "request.quality", op: "eq", value: "high" }],
 				},
-			]} /></NextIntlClientProvider>,
+			]} /></AppIntlProvider>,
 		);
 
 		expect(html).toContain(t("Catalogue.modelDetail.pricing.meters.audio_minutes" as never));

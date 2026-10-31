@@ -6,7 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { toast } from "sonner";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { BarChart3, Database, Percent, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

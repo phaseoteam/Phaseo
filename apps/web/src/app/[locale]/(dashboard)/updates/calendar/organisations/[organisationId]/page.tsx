@@ -1,15 +1,15 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { Rocket } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { use } from "react";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { organisationReleaseEventsQuery, requestCalendarContextQuery } from "./page.functions";
 import ModelUpdateCard, { type EventTypeOption } from "@/components/(data)/models/ModelUpdates/ModelUpdateCard";
 import ModelCalendarRouteSwitch from "@/components/updates/ModelCalendarRouteSwitch";
 import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import { buildMetadata } from "@/lib/seo";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import type { RuntimeLocale } from "@/i18n/locales";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 

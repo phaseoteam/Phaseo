@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { getPublicMessages } from "@/i18n/messages";
 import type { PublicLocale } from "@/i18n/routing";
 import {

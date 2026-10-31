@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Logo } from "@/components/Logo";

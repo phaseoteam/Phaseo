@@ -2,7 +2,7 @@
 
 import { type ReactNode, useMemo, useState } from "react";
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Check, ChevronsUpDown, ListChecks, Search } from "lucide-react";
 import { CartesianGrid, ComposedChart, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from "recharts";
 import { Link } from "@/i18n/navigation";

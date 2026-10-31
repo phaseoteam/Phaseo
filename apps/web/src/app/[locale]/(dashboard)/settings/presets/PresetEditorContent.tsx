@@ -3,8 +3,8 @@ import { SettingsResourceQuery } from "@/components/(gateway)/settings/PrivateSe
 import type { SettingsPresetsInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
-import { notFound } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import { notFound } from "@/lib/navigation";
 import PresetForm from "@/components/(gateway)/settings/presets/PresetForm";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 import { Badge } from "@/components/ui/badge";

@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLocale, useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import { creditGrantsQuery } from "../internalAdmin.functions";
 import { createCreditGrantAction } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

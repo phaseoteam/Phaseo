@@ -1,7 +1,7 @@
 	"use client";
 
 import { useState, type SyntheticEvent } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { AuthErrorCard } from "@/components/(gateway)/auth/AuthErrorCard";
 import { ForgotPasswordContent } from "@/components/(gateway)/auth/ForgotPasswordDialog";
 import { Login } from "@/components/(gateway)/auth/Login";

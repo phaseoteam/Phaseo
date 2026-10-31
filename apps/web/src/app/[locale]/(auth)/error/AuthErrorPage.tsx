@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Suspense, use } from "react";
 import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 import { AuthErrorCard } from "@/components/(gateway)/auth/AuthErrorCard";

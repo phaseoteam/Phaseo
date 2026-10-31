@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sendInternalModelAnnouncementAction } from "@/app/(dashboard)/internal/model-discovery-notifier/actions";

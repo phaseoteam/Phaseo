@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

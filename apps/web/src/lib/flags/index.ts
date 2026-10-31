@@ -1,6 +1,5 @@
-import "server-only";
 
-import { flag } from "flags/next";
+import { flag } from "@/lib/flags/flag";
 import type { StatsigUser } from "@flags-sdk/statsig";
 
 import { getStatsigFlagsAdapter } from "@/lib/statsig/server";

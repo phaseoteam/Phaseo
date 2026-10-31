@@ -1,5 +1,5 @@
 // src/components/gateway/Endpoints.tsx
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Card,
 	CardContent,
@@ -11,7 +11,7 @@ import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import { BASE_URL } from "./config";
 import { Server } from "lucide-react";
 import PathCell from "./PathCell";
-import Link from "next/link";
+import Link from "@/components/link";
 
 export default function Endpoints() {
 	const t = useTranslations("Catalogue.models.detail.quickstart");

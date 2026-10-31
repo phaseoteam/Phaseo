@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Route, Server, Wrench, MessageSquareText } from "lucide-react";
 
 type Event = {

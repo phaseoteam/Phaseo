@@ -1,6 +1,6 @@
 "use client";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { ArrowUpRight } from "lucide-react";
 import CreateKeyDialog from "@/components/(gateway)/settings/keys/CreateKeyDialog";

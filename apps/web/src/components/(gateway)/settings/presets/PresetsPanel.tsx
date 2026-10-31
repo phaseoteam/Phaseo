@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -21,7 +21,7 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface PresetsPanelProps {

@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { createTranslator } from "next-intl";
-import { useTranslations } from "next-intl";
+import { createTranslator } from "@/i18n/react";
+import { useTranslations } from "@/i18n/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { FeatureMessagesProvider, LocaleMessagesProvider } from "@/components/i18n/LocaleMessagesProvider";
 import { getPublicMessages } from "./messages";

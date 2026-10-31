@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ComponentType } from "react";
 import { useQueryState } from "nuqs";
 import {
@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 type ContactMethod = {
 	key: string;

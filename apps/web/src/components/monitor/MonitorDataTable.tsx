@@ -3,7 +3,7 @@
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	Table,
 	TableBody,
@@ -60,7 +60,7 @@ import type {
 	TableDensity,
 } from "@/components/(gateway)/usage/tablePreferences";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useQueryState } from "nuqs";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import {

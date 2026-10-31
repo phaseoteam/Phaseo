@@ -6,7 +6,7 @@ import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/settings/keys/[keyName]/page";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { redirect } from "@/i18n/navigation";
 import { keyDetailQuery } from "@/app/[locale]/(dashboard)/settings/keys/[keyName]/keyDetail.functions";
 import { keyDetailHref, matchesKeyRouteName } from "@/components/(gateway)/settings/keys/keyDetailHref";

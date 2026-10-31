@@ -1,5 +1,5 @@
 import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Suspense, type ReactNode } from "react";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import {
@@ -21,7 +21,7 @@ import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
 import ModelSubscriptions from "@/components/(data)/model/pricing/ModelSubscriptions";
 import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
 import ModelPerformanceDashboard from "@/components/(data)/models/ModelPerformanceDashboard";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ModelUptimeDashboard from "@/components/(data)/models/ModelUptimeDashboard";
 import ModelActivityChart from "@/components/(data)/model/overview/ModelActivityChart";
 import Quickstart from "@/components/(data)/model/quickstart/Quickstart";

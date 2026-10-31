@@ -8,7 +8,7 @@ import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/apps/[appId]/page";
 import { appDetailsQuery } from "@/app/[locale]/(dashboard)/apps/[appId]/page.queries";
 import { getPublicAppPath, getPublicAppRouteSegment } from "@/lib/apps/publicAppPath";
-import { permanentRedirect } from "next/navigation";
+import { permanentRedirect } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)

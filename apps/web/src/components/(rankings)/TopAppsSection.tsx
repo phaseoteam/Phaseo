@@ -1,5 +1,5 @@
 import { AppsUsageList } from "@/components/(rankings)/AppsUsageList";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { rankingTopAppsSectionQuery } from "@/components/(rankings)/rankingSections.queries";

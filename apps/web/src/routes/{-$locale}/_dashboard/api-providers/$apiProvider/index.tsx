@@ -8,7 +8,7 @@ import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/page";
 import NotFound from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/not-found";
 import { apiProviderModelsQuery, apiProviderPageDataQuery } from "@/app/[locale]/(dashboard)/api-providers/[apiProvider]/page.functions";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)

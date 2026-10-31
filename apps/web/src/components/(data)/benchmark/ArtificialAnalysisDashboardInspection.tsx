@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { ReferenceLine, usePlotArea, useXAxisScale, useYAxisScale } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";

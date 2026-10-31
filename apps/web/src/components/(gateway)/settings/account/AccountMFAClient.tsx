@@ -3,9 +3,9 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import {
 	unenrollMFAAction,

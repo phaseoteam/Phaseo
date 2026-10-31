@@ -7,7 +7,7 @@ import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/tools/latency-comparison/page";
 import { getLatencyComparisonAccess } from "@/app/[locale]/(dashboard)/tools/latency-comparison/page.functions";
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)

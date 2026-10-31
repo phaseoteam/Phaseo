@@ -1,6 +1,6 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Suspense, use } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { AppWindow, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OAuthAppDetailContent from "./OAuthAppDetailContent";
@@ -15,7 +15,7 @@ import {
 import {
 	isThirdPartyOAuthEnabled,
 } from "@/lib/oauth/thirdPartyOAuth";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI.settingsPageMetadata");

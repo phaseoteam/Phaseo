@@ -16,7 +16,7 @@ import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Scale } from "lucide-react";
-import { notFound, redirect } from "next/navigation";
+import { notFound, redirect } from "@/lib/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
 import ModelEditButton from "./edit/ModelEditButton";
@@ -37,7 +37,7 @@ import {
 	FREE_ROUTER_ORGANISATION_ID,
 	isFreeRouterModelId,
 } from "@/lib/models/freeRouter";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 interface ModelDetailShellProps {
 	modelId: string;

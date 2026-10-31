@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { XIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 

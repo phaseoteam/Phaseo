@@ -10,10 +10,10 @@ import {
 	formatUsageUsdAxis,
 } from "@phaseo/app-kit/format";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/link";
+import { useRouter } from "@/lib/navigation";
 import React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	Bar,
 	BarChart,

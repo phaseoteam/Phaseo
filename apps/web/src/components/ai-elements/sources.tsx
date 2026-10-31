@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { BookIcon, ChevronDownIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { ComponentProps } from "react";
 
 export type SourcesProps = ComponentProps<"div">;

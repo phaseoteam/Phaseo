@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import SubscriptionPlanAllowances from "./SubscriptionPlanAllowances";
 import type { SubscriptionAllowance } from "@/lib/fetchers/subscription-plans/types";
 
-jest.mock("next-intl/server", () => ({
+jest.mock("@/i18n/server", () => ({
 	getLocale: async () => "en-GB",
 	getTranslations: async () => (key: string) => ({
 		"Common.ui.subscriptionCatalog.up_to": "Up to",

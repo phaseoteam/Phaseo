@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, X } from "lucide-react";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface RevokeDialogProps {
 	authorizationId: string;

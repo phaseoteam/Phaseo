@@ -1,6 +1,6 @@
-import { useTranslations, useLocale } from "next-intl";
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { useTranslations, useLocale } from "@/i18n/react";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";

@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 import { ArrowLeft, RotateCw } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/components/image";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const externalLinks = {
 	github: "https://github.com/phaseoteam/Phaseo",

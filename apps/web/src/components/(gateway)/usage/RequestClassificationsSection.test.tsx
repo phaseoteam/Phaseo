@@ -1,11 +1,11 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
 import RequestClassificationsSection, { readRequestClassifications } from "./RequestClassificationsSection";
 import type { RequestClassifierSummary } from "./requestClassifierLabels";
 
-jest.mock("next/navigation", () => ({
+jest.mock("@/lib/navigation", () => ({
 	useSearchParams: () => new URLSearchParams("usage_preset=last_7d"),
 }));
 
@@ -15,9 +15,9 @@ const classifiers: RequestClassifierSummary[] = [
 ];
 
 const render = (detailMetadata: unknown, list = classifiers) => renderToStaticMarkup(
-	<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
+	<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
 		<RequestClassificationsSection detailMetadata={detailMetadata} classifiers={list} />
-	</NextIntlClientProvider>,
+	</AppIntlProvider>,
 );
 
 describe("RequestClassificationsSection", () => {

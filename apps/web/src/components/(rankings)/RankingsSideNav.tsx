@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
+import { useRouter } from "@/lib/navigation";
 import {
 	ArrowUpDown,
 	Binary,

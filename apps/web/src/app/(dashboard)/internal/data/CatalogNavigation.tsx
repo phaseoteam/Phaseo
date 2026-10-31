@@ -1,7 +1,7 @@
 "use client";
 
 import { Link, usePathname } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Database, Bot, Building2, Route, Gauge } from "lucide-react";
 
 export function CatalogNavigation() {

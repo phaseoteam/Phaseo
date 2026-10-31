@@ -2,7 +2,7 @@
 import { PrivateSettingsQuery, useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { BarChart3, Briefcase, Code2, FlaskConical, Globe2, GraduationCap, Handshake, Headphones, HeartPulse, Landmark, Megaphone, Palette, Scale, ShieldCheck, ShoppingBag, Truck, Users, Wrench } from "lucide-react";
 import { toast } from "sonner";

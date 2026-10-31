@@ -1,12 +1,12 @@
 import { use } from "react";
-import { useTranslations } from "next-intl";
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { notFound } from "@/lib/navigation";
 import { MigrationPostView } from "@/components/(migrate)/MigrationPostView";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { getMigrationPost, getMigrationPosts } from "@/lib/content/migrations";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 type PageProps = {

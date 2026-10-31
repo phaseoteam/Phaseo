@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Settings } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function ModelApiComingSoon() {
 	const t = useTranslations("Catalogue.models");

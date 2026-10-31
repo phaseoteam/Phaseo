@@ -1,7 +1,7 @@
 "use client";
 
 import { Link, useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ChevronRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { MAX_BYOK_KEYS_PER_PROVIDER } from "@/lib/byok/constants";

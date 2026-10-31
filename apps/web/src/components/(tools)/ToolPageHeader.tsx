@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowLeft } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type ToolPageHeaderProps = {
 	title: string;

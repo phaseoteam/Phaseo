@@ -1,6 +1,6 @@
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import { MODEL_CARD_GRID_CLASS_NAME } from "@/components/(data)/models/Models/modelCardGrid";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Badge } from "@/components/ui/badge";
 import {
 	Megaphone,

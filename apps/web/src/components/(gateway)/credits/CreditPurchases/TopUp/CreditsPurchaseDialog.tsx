@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, useRef } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useRouter, useSearchParams } from "@/lib/navigation";
 import { ArrowLeft, Info } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { Button } from "@/components/ui/button";

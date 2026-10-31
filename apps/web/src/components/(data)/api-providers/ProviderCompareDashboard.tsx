@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useRouter, useSearchParams } from "@/lib/navigation";
 import { Check, ChevronsUpDown, Plus, Scale, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";

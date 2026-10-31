@@ -13,7 +13,7 @@ import { BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function Streaming({
         modelId,

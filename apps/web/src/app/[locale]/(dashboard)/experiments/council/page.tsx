@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import CouncilClient from "@/components/(experiments)/CouncilClient";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
 import { experimentsCouncilModelsQuery } from "./council.queries";

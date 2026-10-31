@@ -1,7 +1,7 @@
 "use client";
 import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";
-import { redirect } from "next/navigation"
-import { useLocale } from "next-intl";
+import { redirect } from "@/lib/navigation"
+import { useLocale } from "@/i18n/react";
 import { getProfileMessages } from "@/i18n/profile";
 import type { PublicLocale } from "@/i18n/routing";
 import { localizeAuthPath } from "@/lib/auth/localized-paths";

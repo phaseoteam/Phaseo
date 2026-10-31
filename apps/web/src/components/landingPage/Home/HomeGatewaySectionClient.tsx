@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import {
 	ArrowRight,
 	Check,
@@ -32,7 +32,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 
 const BASE_URL = "https://api.phaseo.app/v1";

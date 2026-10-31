@@ -9,7 +9,7 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 import { useInitialChatAuth } from "@/components/(chat)/ChatAuthProvider";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type DayPeriod = "morning" | "afternoon" | "evening";
 

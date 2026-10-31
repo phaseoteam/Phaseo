@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { shellDataQuery } from "@/components/header/shellData";
 import ModelDeprecationNotice from "./ModelDeprecationNotice";
 

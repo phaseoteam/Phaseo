@@ -1,8 +1,8 @@
-import Link from "next/link";
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import Link from "@/components/link";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
 import { Suspense, use } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
 import { handleEnterpriseSsoRedirect } from "@/app/(auth)/sign-in/actions";
 import { Button } from "@/components/ui/button";

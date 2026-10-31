@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { ArrowUpRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";

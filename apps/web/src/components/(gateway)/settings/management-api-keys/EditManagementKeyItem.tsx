@@ -25,7 +25,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { MANAGEMENT_KEY_TEMPLATE_SCOPES } from "@/lib/managementKeyScopes";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const KEY_TEMPLATES: Array<{ value: ManagementKeyTemplate; label: string; description: string }> = [
 	{ value: "read-only", label: "Read", description: "All control-plane reads." },

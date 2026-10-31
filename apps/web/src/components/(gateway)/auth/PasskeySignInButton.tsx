@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";

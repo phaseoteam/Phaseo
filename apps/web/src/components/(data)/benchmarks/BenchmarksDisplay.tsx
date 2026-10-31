@@ -1,6 +1,6 @@
 "use client";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
 import { ArrowUpRight, Search } from "lucide-react";

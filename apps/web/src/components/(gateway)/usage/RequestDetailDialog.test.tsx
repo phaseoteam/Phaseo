@@ -1,9 +1,9 @@
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
 import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
 import productMessages from "../../../../messages/en-GB/product.json";
-const renderToStaticMarkup = (node: React.ReactNode) => renderMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Product: productMessages }}><DisplayPreferencesProvider locale="en-GB">{node}</DisplayPreferencesProvider></NextIntlClientProvider>);
+const renderToStaticMarkup = (node: React.ReactNode) => renderMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Product: productMessages }}><DisplayPreferencesProvider locale="en-GB">{node}</DisplayPreferencesProvider></AppIntlProvider>);
 import React from "react";
 
 import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
@@ -15,7 +15,7 @@ const router = {
 	refresh: jest.fn(),
 };
 
-jest.mock("next/navigation", () => ({
+jest.mock("@/lib/navigation", () => ({
 	useRouter: () => router,
 	useSearchParams: () => new URLSearchParams(),
 }));

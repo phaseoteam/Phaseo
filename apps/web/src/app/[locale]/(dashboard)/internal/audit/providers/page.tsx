@@ -1,8 +1,8 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import { providerAuditQuery } from "../../internalAdmin.functions";
 
 export async function generateMetadata() {

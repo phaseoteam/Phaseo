@@ -4,7 +4,7 @@ const mockGate = jest.fn();
 const mockIsAdminViewer = jest.fn();
 
 jest.mock("server-only", () => ({}));
-jest.mock("flags/next", () => ({
+jest.mock("@/lib/flags/flag", () => ({
 	flag: ({ key }: { key: string }) => () => mockGate(key),
 }));
 jest.mock("@/lib/statsig/server", () => ({

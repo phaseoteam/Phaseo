@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ChevronsUpDown, KeyRound, Laptop, MapPin, Server, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { AdminModelPreview } from "@/lib/models/adminModelPreview";
 import { fetchInternalWebApi, WebApiError } from "@/lib/web-api/client";
 import CatalogNotFoundState from "@/components/(data)/CatalogNotFoundState";

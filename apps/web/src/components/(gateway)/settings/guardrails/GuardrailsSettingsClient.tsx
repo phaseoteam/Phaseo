@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/Logo";
@@ -36,7 +36,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Shield } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import {
 	type PromptInjectionAction,

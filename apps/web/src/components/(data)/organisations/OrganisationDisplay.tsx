@@ -1,5 +1,5 @@
 import OrganisationCard from "./OrganisationCard";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { OrganisationCard as OrganisationCardType } from "@/lib/fetchers/organisations/getAllOrganisations";
 
 interface OrganisationDisplayProps {

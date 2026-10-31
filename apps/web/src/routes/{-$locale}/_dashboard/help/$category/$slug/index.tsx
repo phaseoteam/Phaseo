@@ -9,7 +9,7 @@ import Page, * as mod from "@/app/[locale]/(dashboard)/help/[category]/[slug]/pa
 import { helpArticleQuery } from "@/app/[locale]/(dashboard)/help/page.functions";
 import { defaultLocale } from "@/i18n/locales";
 import type { PublicLocale } from "@/i18n/routing";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)

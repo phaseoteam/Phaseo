@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { SubscriptionPlanFeature } from "@/lib/fetchers/subscription-plans/types";
 import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

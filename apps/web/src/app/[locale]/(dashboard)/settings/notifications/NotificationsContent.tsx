@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 
 import LowBalanceEmailAlertsClient from "@/components/(gateway)/credits/LowBalanceEmailAlertsClient";

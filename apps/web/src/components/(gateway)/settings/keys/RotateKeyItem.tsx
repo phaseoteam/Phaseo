@@ -24,9 +24,9 @@ import {
 } from "@/components/ui/select";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { useLocale } from "next-intl";
+import { useLocale } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { rotateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
 import { SecretRevealActions } from "./SecretRevealActions";

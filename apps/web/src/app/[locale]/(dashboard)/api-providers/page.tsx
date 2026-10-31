@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { apiProvidersQuery } from "./page.queries";
 import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
 import { APIProvidersPageSkeleton } from "@/components/(data)/api-providers/APIProvidersPageSkeleton";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {

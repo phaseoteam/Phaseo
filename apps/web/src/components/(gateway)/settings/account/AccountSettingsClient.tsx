@@ -4,7 +4,7 @@ import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	updateAccount,

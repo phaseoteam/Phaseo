@@ -1,6 +1,6 @@
-import { useTranslations } from "next-intl";
-import Link from "next/link";
-import Image from "next/image";
+import { useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
+import Image from "@/components/image";
 import { BookText, ExternalLink, FileText, Gamepad2, Globe2 } from "lucide-react";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import { Logo } from "@/components/Logo";

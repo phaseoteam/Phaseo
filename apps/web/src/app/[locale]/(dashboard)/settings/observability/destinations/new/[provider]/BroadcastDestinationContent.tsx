@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { notFound } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import { notFound } from "@/lib/navigation";
 import BroadcastDestinationCreateClient from "@/components/(gateway)/settings/observability/BroadcastDestinationCreateClient";
 import { PrivateSettingsQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import type { DestinationDefinition } from "@/components/(gateway)/settings/observability/destinationCatalog";

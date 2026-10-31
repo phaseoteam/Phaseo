@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useCatalogDraft } from "@/components/(data)/useCatalogDraft";
 import { UnsavedChangesGuard } from "@/components/(data)/UnsavedChangesGuard";
 import { Loader2, Plus, Settings2, Fingerprint, List, Megaphone, Trophy, CreditCard, Network, CircleDollarSign, History } from "lucide-react";

@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import type { CountryOrganisationSummary } from "@/lib/fetchers/countries/types";
 import { Logo } from "@/components/Logo";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface CountryOrganisationCardProps {
 	organisation: CountryOrganisationSummary;

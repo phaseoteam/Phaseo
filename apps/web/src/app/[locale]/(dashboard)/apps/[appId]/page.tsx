@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
 import { Activity, BarChart3 } from "lucide-react";
 import AppUsageChart from "@/components/(data)/apps/AppUsageChart";
 import AppDetailShell from "@/components/(data)/apps/AppDetailShell";
@@ -14,7 +14,7 @@ import type { AppUsageRow } from "@/lib/fetchers/apps/types";
 import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	appDetailsQuery,
 	appProviderModelMappingsQuery,
@@ -22,7 +22,7 @@ import {
 	modelLeaderboardMetaQuery,
 } from "./page.queries";
 import { buildMetadata } from "@/lib/seo";
-import { permanentRedirect } from "next/navigation";
+import { permanentRedirect } from "@/lib/navigation";
 import {
 	getPublicAppPath,
 	getPublicAppRouteSegment,

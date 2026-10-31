@@ -9,7 +9,7 @@ import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Card } from "@/components/ui/card";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import type { MarketShareData } from "@/lib/fetchers/rankings/getRankingsData";
 
 interface MarketShareVisualizationsProps {

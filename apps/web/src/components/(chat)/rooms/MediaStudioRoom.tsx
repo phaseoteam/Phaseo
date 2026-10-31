@@ -2,7 +2,7 @@
 
 import { formatLatency } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";

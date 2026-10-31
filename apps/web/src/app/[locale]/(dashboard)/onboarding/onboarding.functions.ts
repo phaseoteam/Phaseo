@@ -87,7 +87,7 @@ function pickModels(models: GatewaySupportedModel[]) {
 
 const loadOnboardingPage = createServerFn({ method: "GET" }).handler(async () => {
 	const [{ redirect }, { fetchInternalAuthHeaderData }, { fetchOnboardingInitialData }, { fetchFrontendGatewayModels }, { getWorkspaceIdFromCookie }] = await Promise.all([
-		import("next/navigation"),
+		import("@/lib/navigation"),
 		import("@/lib/fetchers/internal/fetchInternalAuthHeaderData"),
 		import("@/lib/fetchers/internal/fetchOnboardingInitialData"),
 		import("@/lib/fetchers/frontend/fetchFrontendGatewayModels"),

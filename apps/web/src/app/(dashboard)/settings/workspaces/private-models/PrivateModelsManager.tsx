@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { useSettingsRouter as useRouter } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import { useQueryClient } from "@tanstack/react-query";

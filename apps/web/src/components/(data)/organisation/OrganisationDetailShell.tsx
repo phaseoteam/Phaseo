@@ -1,12 +1,12 @@
 import { ReactNode } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/components/image";
+import Link from "@/components/link";
 import { List, MapPin, PanelsTopLeft } from "lucide-react";
 
 import { organisationHeaderQuery } from "./OrganisationDetailShell.queries";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { Logo } from "@/components/Logo";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";

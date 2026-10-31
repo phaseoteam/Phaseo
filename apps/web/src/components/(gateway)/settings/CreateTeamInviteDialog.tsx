@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { useSettingsRouter as useRouter } from "./PrivateSettingsQuery";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Dialog,
 	DialogTrigger,

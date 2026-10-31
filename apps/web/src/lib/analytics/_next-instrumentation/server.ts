@@ -1,4 +1,4 @@
-import type { Instrumentation } from "next";
+import type { Instrumentation } from "@/lib/seo/metadataTypes";
 import { PostHog } from "posthog-node";
 
 import { POSTHOG_API_HOST, POSTHOG_KEY } from "@/lib/analytics";

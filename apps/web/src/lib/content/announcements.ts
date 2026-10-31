@@ -1,4 +1,3 @@
-import "server-only";
 
 import { promises as fs } from "node:fs";
 import type { Dirent } from "node:fs";

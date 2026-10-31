@@ -22,7 +22,7 @@ import {
 } from "@/app/(dashboard)/settings/management-api-keys/actions";
 type KeyLimitPayload = ManagementKeyLimitPayload;
 import { Label } from "@/components/ui/label";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function ManagementKeyLimitsItem({ k }: any) {
 	const t = useTranslations("SettingsUI");

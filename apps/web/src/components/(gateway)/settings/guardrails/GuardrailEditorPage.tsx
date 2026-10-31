@@ -1,6 +1,6 @@
 "use client";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { SettingsGuardrailEditorData } from "@/lib/fetchers/internal/settingsTypes";
 import { PrivateSettingsQuery } from "../PrivateSettingsQuery";
 import GuardrailEditorPageClient from "./GuardrailEditorPageClient";

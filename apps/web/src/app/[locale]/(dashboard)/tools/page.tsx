@@ -1,8 +1,8 @@
-import { Metadata } from "next";
+import { Metadata } from "@/lib/seo/metadataTypes";
 import { buildMetadata } from "@/lib/seo";
 import ToolsGrid from "@/components/(tools)/ToolsGrid";
-import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.tools");

@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { notFound } from "@/lib/navigation";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { comparePairDataQuery } from "./pairPage.queries";
 import { ComparePairDashboard } from "@/components/(data)/compare/CompareDashboard";
@@ -20,7 +20,7 @@ export async function comparePairMetadata(ids: [string, string], locale: PublicL
 	if (view.models.length !== 2) return {};
 	const [a, b] = view.models;
 	// Metadata runs on the server only; keep next-intl/server out of the component graph.
-	const { getTranslations } = await import("next-intl/server");
+	const { getTranslations } = await import("@/i18n/server");
 	const t = await getTranslations({ locale, namespace: "Catalogue.comparePair" });
 	return buildLocalizedPageMetadata({
 		locale,

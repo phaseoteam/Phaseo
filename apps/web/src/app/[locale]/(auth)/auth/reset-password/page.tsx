@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/lib/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 import { Loader2, Lock } from 'lucide-react'
 import { PasswordStrengthIndicator } from '@/components/(gateway)/settings/account/PasswordStrengthIndicator'
 import { z } from 'zod'
-import { useTranslations } from 'next-intl'
+import { useTranslations } from '@/i18n/react'
 
 export default function ResetPasswordPage() {
     const router = useRouter()

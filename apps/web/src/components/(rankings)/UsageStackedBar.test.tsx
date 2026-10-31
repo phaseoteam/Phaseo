@@ -4,7 +4,7 @@ import { ChartTooltip } from "@/components/ui/chart";
 import { UsageStackedBar } from "./UsageStackedBar";
 import { keyForSeries } from "./chart-colors";
 
-jest.mock("next-intl", () => ({ useLocale: () => "en-GB", useTranslations: () => (key: string) => key === "usageTotal" ? "Total" : key }));
+jest.mock("@/i18n/react", () => ({ useLocale: () => "en-GB", useTranslations: () => (key: string) => key === "usageTotal" ? "Total" : key }));
 jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({ useDisplayFormatters: () => ({
     calendarDate: (value: string) => value, number: (value: number) => String(value),
 }) }));
@@ -15,7 +15,7 @@ jest.mock("react", () => ({
 	useEffect: jest.fn(),
 	useState: jest.fn((initial) => [typeof initial === "function" ? initial() : initial, jest.fn()]),
 }));
-jest.mock("next/link", () => () => null);
+jest.mock("@/components/link", () => () => null);
 jest.mock("lucide-react", () => ({ Check: () => null, ChevronDown: () => null }));
 jest.mock("recharts", () => ({ BarChart: () => null, Bar: () => null, XAxis: () => null, YAxis: () => null, CartesianGrid: () => null }));
 jest.mock("@/components/Logo", () => ({ Logo: () => null }));

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { EmptyLeaderboardPreview } from "@/components/(rankings)/EmptyLeaderboardPreview";

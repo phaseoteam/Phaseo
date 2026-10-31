@@ -6,11 +6,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { privateUsageOptions } from "@/lib/query/privateUsage";
 import { fetchPrivateUsageOperation, fetchPrivateUsageRequest } from "@/lib/query/fetchPrivateUsage";
 import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useQueryState } from "nuqs";
-import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
+import { useRouter, useSearchParams } from "@/lib/navigation";
 import { buildOpenRequestInChatHref } from "@/components/(chat)/chatMessageMetadata";
 import { normalizeLogReplayEndpoint } from "@/lib/chat/logReplay";
 import {

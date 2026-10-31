@@ -1,5 +1,5 @@
 import { use } from "react";
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 
 export default function RequestLogPage(props: {
 	params: Promise<{ requestId: string }>;

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 
 type UnknownRecord = Record<string, unknown>;

@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { CreditCard, List, PanelsTopLeft, Sparkles } from "lucide-react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -9,7 +9,7 @@ import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
 import { Button } from "@/components/ui/button";
 import RotatingPricing from "@/components/(data)/subscription-plans/RotatingPricing";
-import { useLocale } from "next-intl";
+import { useLocale } from "@/i18n/react";
 import { getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 
 interface SubscriptionPlanDetailShellProps {

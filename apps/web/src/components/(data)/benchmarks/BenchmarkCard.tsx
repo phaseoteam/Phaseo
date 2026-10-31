@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { BenchmarkCard as BenchmarkCardType } from "@/lib/fetchers/benchmarks/types";
 
 export default function BenchmarkCard({

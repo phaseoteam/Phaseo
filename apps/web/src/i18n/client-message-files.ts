@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { AbstractIntlMessages } from "next-intl";
+import type { AbstractIntlMessages } from "@/i18n/react";
 import { selectClientMessages } from "./client-message-selection";
 import generatedScopes from "./generated-client-scopes.json";
 import { selectMessages, SHELL_MESSAGE_NAMESPACES } from "./message-scopes";

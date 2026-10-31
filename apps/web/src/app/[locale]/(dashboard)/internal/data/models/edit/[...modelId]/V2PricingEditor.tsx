@@ -1,7 +1,7 @@
 "use client";
 import { localizedInternalCatalogError } from "@/i18n/internal-catalog-errors";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { RegionSelection, ProviderResidencySummary } from "@/app/(dashboard)/internal/data/models/edit/[...modelId]/RegionalRoutingFields";
 import { useCallback, useEffect, useMemo, useState } from "react";

@@ -43,7 +43,7 @@ type ProviderProps = Omit<ComponentProps<typeof IntlProvider>, "locale" | "messa
 	children?: ReactNode;
 };
 
-export function NextIntlClientProvider({ locale, messages, timeZone, children, ...rest }: ProviderProps) {
+export function AppIntlProvider({ locale, messages, timeZone, children, ...rest }: ProviderProps) {
 	const parentLocale = useOptionalParentLocale();
 	return (
 		<IntlProvider

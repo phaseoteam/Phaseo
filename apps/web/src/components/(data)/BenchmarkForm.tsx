@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useState } from "react";
 import { ChartNoAxesColumnIncreasing, Link2 } from "lucide-react";
 import { CatalogForm } from "./CatalogForm";

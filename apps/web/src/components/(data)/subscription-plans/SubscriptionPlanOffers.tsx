@@ -1,4 +1,4 @@
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations, useLocale } from "@/i18n/react";
 import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/types";
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";

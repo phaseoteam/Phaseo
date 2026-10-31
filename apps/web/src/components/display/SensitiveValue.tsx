@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Eye, EyeOff } from "lucide-react";
 
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";

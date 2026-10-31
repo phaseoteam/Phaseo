@@ -4,10 +4,10 @@
 // RootIntlProvider), so scoped dictionaries are no longer fetched: a scope
 // reference passes children through, and explicit messages still merge in.
 import { useMemo, type ReactNode } from "react";
-import { NextIntlClientProvider, useLocale, useMessages, useTimeZone, type AbstractIntlMessages } from "next-intl";
+import { AppIntlProvider, useLocale, useMessages, useTimeZone, type AbstractIntlMessages } from "@/i18n/react";
 import type { ClientMessagesSource } from "@/i18n/client-message-source";
 
-export { NextIntlClientProvider as LocaleMessagesProvider } from "next-intl";
+export { AppIntlProvider as LocaleMessagesProvider } from "@/i18n/react";
 
 function combineMessages(parent: AbstractIntlMessages, feature: AbstractIntlMessages): AbstractIntlMessages {
 	const out: Record<string, unknown> = { ...(parent as Record<string, unknown>) };
@@ -36,5 +36,5 @@ function MergedMessages({ children, messages }: { children: ReactNode; messages:
 	const locale = useLocale();
 	const timeZone = useTimeZone();
 	const combined = useMemo(() => combineMessages(parent, messages), [parent, messages]);
-	return <NextIntlClientProvider locale={locale} timeZone={timeZone} messages={combined}>{children}</NextIntlClientProvider>;
+	return <AppIntlProvider locale={locale} timeZone={timeZone} messages={combined}>{children}</AppIntlProvider>;
 }

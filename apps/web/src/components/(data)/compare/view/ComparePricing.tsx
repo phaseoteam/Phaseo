@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CompareGrid, CompareRow, CompareSection, GRID_CLASS, MODEL_COLOURS, useCompareGrid, type CompareCell } from "./CompareGrid";

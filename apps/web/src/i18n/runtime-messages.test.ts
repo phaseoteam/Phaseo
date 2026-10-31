@@ -1,5 +1,5 @@
 import { getPublicMessages } from "./messages";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import { publicLocales, type PublicLocale } from "./routing";
 import { getSettingsMessages } from "./settings";
 import { getProfileMessages } from "./profile";

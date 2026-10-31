@@ -1,4 +1,4 @@
-import { getLocale } from "next-intl/server";
+import { getLocale } from "@/i18n/server";
 import { getBetaMessages } from "@/i18n/beta";
 import type { PublicLocale } from "@/i18n/routing";
 export async function generateMetadata() {

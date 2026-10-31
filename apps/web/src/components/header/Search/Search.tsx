@@ -3,7 +3,7 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";

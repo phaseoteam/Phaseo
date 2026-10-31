@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import WorkspacesContent from "./WorkspacesContent";
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");

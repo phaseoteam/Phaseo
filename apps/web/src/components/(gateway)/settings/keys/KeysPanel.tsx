@@ -83,7 +83,7 @@ import {
 	updateApiKeyAction,
 } from "@/app/(dashboard)/settings/keys/actions";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import { ForecastMeter } from "@/components/(gateway)/usage/ForecastMeter";

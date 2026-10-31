@@ -1,7 +1,7 @@
 "use client";
 
-import { NavigationGuardProvider, useNavigationGuard } from "next-navigation-guard";
-import { useTranslations } from "next-intl";
+import { NavigationGuardProvider, useNavigationGuard } from "@/lib/navigationGuard";
+import { useTranslations } from "@/i18n/react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export function CatalogNavigationGuardProvider({ children }: { children: React.ReactNode }) {

@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import Image from "@/components/image";
+import Link from "@/components/link";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Globe2 } from "lucide-react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 

@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { ArrowLeft, ArrowRight, BadgeCheck, GitFork } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 

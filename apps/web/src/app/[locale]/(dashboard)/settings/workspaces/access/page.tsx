@@ -1,5 +1,5 @@
 import AccessContent from "./AccessContent";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI.settingsPageMetadata");
 	return { title: t("workspaceAccess") };

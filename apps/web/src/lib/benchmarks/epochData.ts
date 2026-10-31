@@ -1,4 +1,3 @@
-import "server-only";
 
 const EPOCH_ECI_DATA_URL = "https://epoch.ai/data/eci_scores.csv";
 

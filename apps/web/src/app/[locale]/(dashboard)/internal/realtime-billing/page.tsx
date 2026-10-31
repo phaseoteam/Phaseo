@@ -1,8 +1,8 @@
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import { BillingReviews } from "@/app/(dashboard)/internal/realtime-billing/BillingReviews";
 import { realtimeBillingReviewsQuery } from "../internalAdmin.functions";
 

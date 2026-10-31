@@ -37,7 +37,7 @@ import {
 	getPricingContextTiers,
 	type PricingContextTier,
 } from "./pricingMeterConditions";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ModelPerformanceCards, { selectProviderTrendData } from "@/components/(data)/models/ModelPerformanceCards";
 import { Activity, CalendarDays, CircleAlert, Globe2, Loader2 } from "lucide-react";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";

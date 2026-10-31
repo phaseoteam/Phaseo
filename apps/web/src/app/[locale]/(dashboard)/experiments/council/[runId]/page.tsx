@@ -1,6 +1,6 @@
 import { Suspense, use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import CouncilClient from "@/components/(experiments)/CouncilClient";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
 import { experimentsCouncilModelsQuery } from "../council.queries";

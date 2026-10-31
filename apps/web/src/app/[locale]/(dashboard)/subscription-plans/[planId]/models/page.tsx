@@ -1,11 +1,11 @@
 import SubscriptionPlanDetailShell from "@/components/(data)/subscription-plans/SubscriptionPlanDetailShell";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import Link from "next/link";
-import type { Metadata } from "next";
+import Link from "@/components/link";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { buildMetadata } from "@/lib/seo";
 import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { subscriptionPlanQuery } from "../page.queries";

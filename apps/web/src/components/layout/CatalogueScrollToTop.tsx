@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { usePathname } from "@/i18n/navigation";
 import { ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";

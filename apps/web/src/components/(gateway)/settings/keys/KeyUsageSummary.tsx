@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ForecastMeter } from "@/components/(gateway)/usage/ForecastMeter";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";

@@ -4,7 +4,7 @@
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { use, type ReactNode } from "react";
 import type { AbstractIntlMessages } from "use-intl";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import type { PublicLocale } from "@/i18n/locales";
 
 declare const __PHASEO_BUILD_ID__: string;
@@ -46,8 +46,8 @@ export function getFullMessages(locale: PublicLocale): Promise<AbstractIntlMessa
 export function RootIntlProvider({ locale, children }: { locale: PublicLocale; children: ReactNode }) {
 	const messages = use(getFullMessages(locale));
 	return (
-		<NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
+		<AppIntlProvider locale={locale} messages={messages} timeZone="UTC">
 			{children}
-		</NextIntlClientProvider>
+		</AppIntlProvider>
 	);
 }

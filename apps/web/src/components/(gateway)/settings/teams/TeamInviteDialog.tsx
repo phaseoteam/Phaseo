@@ -3,7 +3,7 @@
 
 import React, { useMemo, useState } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	revealTeamInviteAction,
 	revokeTeamInviteAction,

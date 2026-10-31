@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Streamdown } from "streamdown";
 import { ToolPageHeader } from "@/components/(tools)/ToolPageHeader";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 // turn literal "\n" sequences into real newlines
 function decodeEscapedNewlines(input: string) {

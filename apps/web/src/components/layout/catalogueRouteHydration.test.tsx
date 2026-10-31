@@ -1,23 +1,23 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ComponentProps } from "react";
-import { NextIntlClientProvider } from "next-intl";
-import { usePathname } from "next/navigation";
+import { AppIntlProvider } from "@/i18n/react";
+import { usePathname } from "@/lib/navigation";
 import CatalogueScrollToTop from "./CatalogueScrollToTop";
 import DashboardFooterGate from "./DashboardFooterGate";
 
-jest.mock("next/navigation", () => ({
-	...jest.requireActual("next/navigation"),
+jest.mock("@/lib/navigation", () => ({
+	...jest.requireActual("@/lib/navigation"),
 	usePathname: jest.fn(),
 }));
 
-function renderRoute(pathname: string, locale: NonNullable<ComponentProps<typeof NextIntlClientProvider>["locale"]>, children: React.ReactNode) {
+function renderRoute(pathname: string, locale: NonNullable<ComponentProps<typeof AppIntlProvider>["locale"]>, children: React.ReactNode) {
 	jest.mocked(usePathname).mockReturnValue(pathname);
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale={locale} timeZone="UTC" messages={{
+		<AppIntlProvider locale={locale} timeZone="UTC" messages={{
 			Common: { ui: { accessibility: { scrollToTop: "Scroll to top" } } },
 		}}>
 			{children}
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 }
 

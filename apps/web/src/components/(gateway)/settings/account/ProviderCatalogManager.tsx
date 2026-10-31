@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedProviderCatalogMessage } from "@/i18n/provider-catalog-messages";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateAccountQueries } from "@/lib/query/invalidation";

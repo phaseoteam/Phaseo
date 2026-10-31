@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 

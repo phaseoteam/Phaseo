@@ -1,14 +1,14 @@
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { isPublicLocale } from "@/i18n/routing";
 import SubscriptionPlanDetailShell from "@/components/(data)/subscription-plans/SubscriptionPlanDetailShell";
 import SubscriptionPlanOverview from "@/components/(data)/subscription-plans/SubscriptionPlanOverview";
 import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { buildMetadata } from "@/lib/seo";
 import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { subscriptionPlanQuery } from "./page.queries";

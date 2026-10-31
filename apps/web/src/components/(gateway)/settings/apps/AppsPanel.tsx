@@ -3,8 +3,8 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import Link from "@/components/link";
+import Image from "@/components/image";
 import {
 	BarChart2,
 	Blocks,
@@ -16,7 +16,7 @@ import {
 	Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";

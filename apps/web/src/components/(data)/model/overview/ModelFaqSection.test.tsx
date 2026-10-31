@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createTranslator, NextIntlClientProvider } from "next-intl";
+import { createTranslator, AppIntlProvider } from "@/i18n/react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
@@ -406,7 +406,7 @@ describe("localized model FAQs", () => {
 		const faq = createTranslator({ locale, messages, namespace: "Catalogue.models.detail.faqContent" } as never);
 		const modalities = createTranslator({ locale, messages, namespace: "Common.ui.modelCreation.modalities" } as never);
 		const prices = createTranslator({ locale, messages, namespace: "Catalogue.modelDetail.pricing" } as never);
-		const html = renderToStaticMarkup(<NextIntlClientProvider locale={locale} timeZone="UTC" messages={messages}><ModelFaqSection model={{ ...model, description: null }} benchmarkCount={4} activeProviderCount={2} isGatewayActive pricing={pricing} gatewayMetadata={gatewayMetadata} locale={locale} translate={(key, values) => faq(key as never, values as never)} translateModality={(key) => modalities(key as never)} translatePricing={(key, values) => prices(key as never, values as never)} /></NextIntlClientProvider>);
+		const html = renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" messages={messages}><ModelFaqSection model={{ ...model, description: null }} benchmarkCount={4} activeProviderCount={2} isGatewayActive pricing={pricing} gatewayMetadata={gatewayMetadata} locale={locale} translate={(key, values) => faq(key as never, values as never)} translateModality={(key) => modalities(key as never)} translatePricing={(key, values) => prices(key as never, values as never)} /></AppIntlProvider>);
 		expect(html).not.toContain("MISSING_MESSAGE");
 		expect(html).not.toContain("Catalogue.");
 		expect(html).toContain('href="/organisations/acme"');

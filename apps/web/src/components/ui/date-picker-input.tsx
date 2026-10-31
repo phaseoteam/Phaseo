@@ -2,7 +2,7 @@
 
 import { CalendarIcon } from "lucide-react"
 import { arSA, de, enGB, enUS, es, fr, hi, ja, ptBR, zhCN } from "date-fns/locale"
-import { useLocale, useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "@/i18n/react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {

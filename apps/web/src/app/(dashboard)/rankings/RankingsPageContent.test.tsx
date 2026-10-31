@@ -2,7 +2,7 @@ import { ModalityLeaderboardsServer, type RankingModality } from "@/app/[locale]
 import { fetchFrontendRankingModalityTimeseries } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { fetchFrontendRankingPeriodLeaderboard } from "@/lib/fetchers/frontend/fetchRankingSections";
 
-jest.mock("next-intl/server", () => ({
+jest.mock("@/i18n/server", () => ({
     getLocale: jest.fn(async () => "en-GB"),
     getTranslations: jest.fn(async () => (key: string) => ({ usageTokensUnit: "tokens", usageImagesUnit: "images", usageSecondsUnit: "seconds" }[key] ?? key)),
 }));

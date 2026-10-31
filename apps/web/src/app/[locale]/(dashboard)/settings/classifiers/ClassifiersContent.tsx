@@ -1,6 +1,6 @@
 "use client";
 import { Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";

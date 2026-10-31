@@ -1,7 +1,7 @@
 "use client";
 
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

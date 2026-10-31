@@ -1,7 +1,7 @@
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { UsageStackedBar } from "@/components/(rankings)/UsageStackedBar";
 import { formatModelDisplayName } from "@/lib/models/displayName";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { rankingToolCallsSectionQuery } from "@/components/(rankings)/rankingSections.queries";

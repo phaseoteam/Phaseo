@@ -1,8 +1,8 @@
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/i18n/navigation";
-import { useFormatter, useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useFormatter, useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import { SlackAgentInstallations } from "@/app/(dashboard)/internal/slack-agent/SlackAgentInstallations";
 import { slackAgentInstallationsQuery } from "../internalAdmin.functions";
 

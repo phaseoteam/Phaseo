@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { settingsFlagQuery } from "../../settings.functions";
 import WorkspaceSettingsContent from "./WorkspaceSettingsContent";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI.settingsPageMetadata");
 	return { title: t("teamSettings") };

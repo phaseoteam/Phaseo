@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,7 +27,7 @@ import { featureLabels } from "@/lib/config/featureLabels";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface ModelsTableHeaderProps {
 	allEndpoints: string[];

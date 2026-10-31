@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";

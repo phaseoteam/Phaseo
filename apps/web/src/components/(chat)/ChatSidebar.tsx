@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { useMemo, useState, type ReactElement } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";

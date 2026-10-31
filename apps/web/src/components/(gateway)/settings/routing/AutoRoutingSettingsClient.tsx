@@ -21,7 +21,7 @@ import { fetchJsonQuery } from "@/lib/query/fetchers";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 type ModelOption = { id: string; label: string; organisationId: string; organisationName: string; releaseDate: string | null; releaseTimestamp: number | null; providerCount: number; inputPrice: number | null; outputPrice: number | null };
 const TEXT_CAPABILITIES = new Set(["responses", "chat/completions", "chat.completions", "messages", "text.generate"]);

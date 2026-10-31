@@ -2,7 +2,7 @@
 
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { CheckCircle2, KeyRound, XCircle } from "lucide-react";
 
 import type { ProviderMetadataEntry } from "@/app/(dashboard)/gateway/usage/server-actions";

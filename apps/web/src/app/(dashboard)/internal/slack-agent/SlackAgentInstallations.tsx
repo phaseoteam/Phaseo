@@ -1,4 +1,4 @@
-import { useTranslations, useFormatter } from "next-intl";
+import { useTranslations, useFormatter } from "@/i18n/react";
 import { DisplayDateTime } from "@/components/display/DisplayValue";
 import { formatUsd } from "@/components/(gateway)/settings/slack/slackAgentForm";
 import { cn } from "@/lib/utils";

@@ -1,9 +1,9 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 import { useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "@/lib/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { ChevronLeft, ChevronRight, ChevronsLeft, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

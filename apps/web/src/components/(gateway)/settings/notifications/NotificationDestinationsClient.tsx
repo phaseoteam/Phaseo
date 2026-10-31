@@ -7,7 +7,7 @@ import * as React from "react";
 import { BellRing, ChevronDown, KeyRound, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { createNotificationDestination, deleteNotificationDestination, rotateNotificationDestinationSecret, setBillingNotificationPreference, testNotificationConfiguration, testNotificationDestination } from "@/app/(dashboard)/settings/credits/actions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";

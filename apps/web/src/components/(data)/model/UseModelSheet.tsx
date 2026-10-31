@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { cn } from "@/lib/utils";
 import { captureProductEvent } from "@/lib/productAnalytics";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,

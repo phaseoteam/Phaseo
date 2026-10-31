@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BlogTocItem } from "@/lib/content/blogToc";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type BlogTableOfContentsProps = {
 	items: BlogTocItem[];

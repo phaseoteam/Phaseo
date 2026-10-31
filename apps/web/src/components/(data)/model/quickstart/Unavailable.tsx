@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Card,
 	CardContent,
@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 
 interface UnavailableProps {

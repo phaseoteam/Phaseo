@@ -3,9 +3,9 @@ import EnterpriseSubscriptionCard from "@/components/(gateway)/credits/Enterpris
 import Banner from "@/components/(gateway)/credits/Banner";
 import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/TopUp/BuyCreditsClient";
 import AutoTopUpClient from "@/components/(gateway)/credits/CreditPurchases/AutoTopUp/AutoTopUpClient";
-import { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
+import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, use } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";

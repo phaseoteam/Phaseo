@@ -1,6 +1,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
 import UsageLabelBreakdown, { buildLabelBreakdownRows } from "./UsageLabelBreakdown";
 import { buildLabelKeyOptions, type RequestClassifierSummary } from "./requestClassifierLabels";
@@ -26,9 +26,9 @@ const classifiers: RequestClassifierSummary[] = [
 ];
 
 const render = (props: Partial<React.ComponentProps<typeof UsageLabelBreakdown>> = {}) => renderToStaticMarkup(
-	<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
+	<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
 		<UsageLabelBreakdown facets={[]} classifiers={classifiers} from="2026-10-01T00:00:00.000Z" to="2026-10-08T00:00:00.000Z" {...props} />
-	</NextIntlClientProvider>,
+	</AppIntlProvider>,
 );
 
 beforeEach(() => {

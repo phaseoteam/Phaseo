@@ -1,9 +1,9 @@
-import { useTranslations } from "next-intl";
-import type { Metadata } from "next";
+import { useTranslations } from "@/i18n/react";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import ContentProvenanceTool from "@/components/(tools)/ContentProvenanceTool";
 import { ToolPageHeader } from "@/components/(tools)/ToolPageHeader";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.tools.provenance");

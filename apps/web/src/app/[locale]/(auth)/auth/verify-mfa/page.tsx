@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from '@/lib/navigation'
 import { Button } from '@/components/ui/button'
 import {
     Card,
@@ -21,7 +21,7 @@ import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import { Loader2, ShieldCheck, LogOut } from 'lucide-react'
 import { localizeAuthPath, resolveAuthLocale } from '@/lib/auth/localized-paths'
-import { useTranslations } from 'next-intl'
+import { useTranslations } from '@/i18n/react'
 
 export default function VerifyMFAPage() {
     return (

@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/image";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { debounce, parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import {
 	Activity,

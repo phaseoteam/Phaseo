@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Logo } from "@/components/Logo";
 import { Link } from "@/i18n/navigation";
 import { getModelDisplayName, getModelMetadataEntry, getModelDetailsHref, type ModelMetadataMap } from "../../usage/model-display";

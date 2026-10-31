@@ -2,10 +2,10 @@
 
 import { useModelsLayoutTracking } from "./useModelsLayoutExperiment";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { memo, useState, type CSSProperties, type MouseEvent } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useRouter } from "@/lib/navigation";
 import {
 	ArrowRight,
 	BadgeAlert,

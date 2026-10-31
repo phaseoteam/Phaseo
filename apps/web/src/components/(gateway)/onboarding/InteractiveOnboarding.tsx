@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useRouter } from "@/lib/navigation";
 import {
 	Check,
 	Code2,

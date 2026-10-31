@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import type { ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

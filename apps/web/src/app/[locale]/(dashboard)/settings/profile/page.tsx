@@ -1,4 +1,4 @@
-import { getLocale } from "next-intl/server";
+import { getLocale } from "@/i18n/server";
 import { getSettingsMessages } from "@/i18n/settings";
 import type { PublicLocale } from "@/i18n/routing";
 import ProfileContent from "./ProfileContent";

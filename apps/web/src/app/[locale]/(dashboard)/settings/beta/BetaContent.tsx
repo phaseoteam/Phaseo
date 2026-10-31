@@ -8,7 +8,7 @@ import {
 	type WebBetaFeatureDefinition,
 } from "@/lib/statsig/shared";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getBetaMessages } from "@/i18n/beta";
 import type { PublicLocale } from "@/i18n/routing";
 import { getLocalizedDocsHref } from "@/lib/docs";

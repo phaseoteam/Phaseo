@@ -24,7 +24,7 @@ import {
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import { sanitizeRequestMultiplier } from "./calculatorState";
 import { formatSentenceLabel } from "./PricingTableVisuals";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface UsageInputsProps {
 	meters: PricingMeter[];

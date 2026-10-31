@@ -1,5 +1,5 @@
-import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
 import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
 import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import { AgentMigrationPrompt } from "@/components/(migrate)/AgentMigrationPrompt";

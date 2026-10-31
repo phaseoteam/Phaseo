@@ -1,12 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import settingsMessages from "../../../../../messages/en-GB/settings-ui.json";
 import commonMessages from "../../../../../messages/en-GB/common.json";
 import SlackAgentSettingsClient from "./SlackAgentSettingsClient";
 import type { SlackAgentCharge, SlackAgentInstallation, SlackAgentManagerView } from "./slackAgentForm";
 
-jest.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+jest.mock("@/lib/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
 jest.mock("@/app/(dashboard)/settings/slack/actions", () => ({
 	startSlackInstall: jest.fn(),
 	startSlackPermissionsUpdate: jest.fn(),
@@ -56,9 +56,9 @@ function render(month: SlackAgentInstallation["month"], charges: SlackAgentCharg
 	};
 	return renderToStaticMarkup(
 		<QueryClientProvider client={queryClient}>
-			<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+			<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
 				<SlackAgentSettingsClient view={view} />
-			</NextIntlClientProvider>
+			</AppIntlProvider>
 		</QueryClientProvider>,
 	);
 }

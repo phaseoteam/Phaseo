@@ -2,8 +2,8 @@
 import { SettingsResourceQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import type { SettingsByokInitialData, SettingsKeysInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
-import { notFound } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import { notFound } from "@/lib/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import ByokProviderKeys, { type ByokKeyEntry } from "@/components/(gateway)/settings/byok/ByokProviderKeys";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { TableColumnDefinition } from "./tablePreferences";
 
 export function useLocalizedLogColumns<Id extends string>(definitions: readonly TableColumnDefinition<Id>[]) {

@@ -22,7 +22,7 @@ import {
 } from "@/lib/productFeedback";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 function reasonTranslationKey(reason: ProductFeedbackReason): string {
 	return reason === "missing_capability"

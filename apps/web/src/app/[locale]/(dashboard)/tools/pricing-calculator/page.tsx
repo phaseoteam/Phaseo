@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Suspense, use } from "react";
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { buildMetadata } from "@/lib/seo";
 import PricingCalculator from "@/components/(tools)/PricingCalculator";

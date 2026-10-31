@@ -4,7 +4,7 @@ import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import * as React from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

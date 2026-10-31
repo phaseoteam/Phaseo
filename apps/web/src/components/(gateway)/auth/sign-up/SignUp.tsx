@@ -2,7 +2,7 @@
 
 // components/(gateway)/auth/sign-up/SignUp.tsx
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import OAuthButtons from "./OAuthButtons";
 import EmailPassword from "./EmailPassword";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";

@@ -1,6 +1,6 @@
 // src/components/gateway/Hero.tsx
-import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
 import { CheckCircle2, CircleSlash, Clock3 } from "lucide-react";
 import { DOCS_VERSION } from "./config";
 import {

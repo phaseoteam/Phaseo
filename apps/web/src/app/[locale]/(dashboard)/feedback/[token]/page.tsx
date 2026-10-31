@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { FeedbackRequestForm } from "@/components/feedback/FeedbackRequestForm";
 import { getFeedbackMessages } from "@/i18n/feedback";
 import { Link } from "@/i18n/navigation";

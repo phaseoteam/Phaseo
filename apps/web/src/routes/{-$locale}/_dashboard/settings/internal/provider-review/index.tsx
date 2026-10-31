@@ -6,7 +6,7 @@ import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/settings/internal/provider-review/page";
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 import { getSettingsInternalAdminStatus } from "@/app/[locale]/(dashboard)/settings/settings.functions";
 
 const routeMetadata = createServerFn({ method: "GET" })

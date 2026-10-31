@@ -1,5 +1,5 @@
 "use client";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "@/lib/navigation";
 import TeamsSettingsContainer from "@/components/(gateway)/settings/teams/TeamsSettingsContainer";
 import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 

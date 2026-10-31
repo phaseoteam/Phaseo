@@ -2,13 +2,13 @@ import { Suspense } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import PresetEditorContent from "../PresetEditorContent";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { settingsApiProvidersQuery, settingsPresetModelsQuery } from "../../catalog.queries";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "@/i18n/server";
+import { useTranslations } from "@/i18n/react";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI.settingsPageMetadata");

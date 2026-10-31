@@ -1,8 +1,8 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Suspense, useEffect, useMemo } from "react";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
 	fetchModelsPageData,

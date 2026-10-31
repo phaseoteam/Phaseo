@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import Link from "@/components/link";
 import { FlaskConical, Layers3, Rocket } from "lucide-react";
 import ShowFooterStyle from "@/components/layout/ShowFooterStyle";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 export async function generateMetadata({

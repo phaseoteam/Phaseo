@@ -1,7 +1,7 @@
 "use client";
 
 import { ThinkingOrb, type OrbState } from "thinking-orbs";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const states: Array<{ state: OrbState; messageKey: "orbWorking" | "orbSearching" | "orbSolving" | "orbComposing" }> = [
 	{ state: "working", messageKey: "orbWorking" },

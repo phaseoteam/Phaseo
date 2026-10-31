@@ -1,5 +1,5 @@
 import { use } from "react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import ClassifierEditorPage from "@/components/(gateway)/settings/classifiers/ClassifierEditorPage";
 
 export async function generateMetadata() {

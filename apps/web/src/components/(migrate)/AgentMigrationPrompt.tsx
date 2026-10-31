@@ -4,7 +4,7 @@ import { Check, Copy, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const SKILL_URL =
 	"https://github.com/phaseoteam/Phaseo/blob/main/.agents/skills/openrouter-to-phaseo-migration/SKILL.md";

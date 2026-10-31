@@ -1,7 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useTranslations } from "next-intl";
+import dynamic from "@/lib/dynamic";
+import { useTranslations } from "@/i18n/react";
 import { Streamdown } from "streamdown";
 import { chatMarkdownPlugins, normalizeChatMarkdown } from "../chatMarkdown";
 import { getOpenUISource } from "./openuiHelpers";

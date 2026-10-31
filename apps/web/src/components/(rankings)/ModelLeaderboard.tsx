@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";

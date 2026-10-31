@@ -1,5 +1,5 @@
 jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn() }));
-jest.mock("next-intl/server", () => ({ getTranslations: async () => (key: string) => key }));
+jest.mock("@/i18n/server", () => ({ getTranslations: async () => (key: string) => key }));
 jest.mock("@/components/(gateway)/oauth/ConsentForm", () => ({ __esModule: true, default: jest.fn() }));
 
 import { createClient } from "@/utils/supabase/server";

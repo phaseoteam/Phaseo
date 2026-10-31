@@ -131,7 +131,7 @@ export const creditGrantsQuery = () =>
 const getLocalisationPreviewMessages = createServerFn({ method: "GET" })
 	.validator((locale: string) => locale)
 	.handler(async ({ data: locale }) => {
-		const { getLocale, getMessages } = await import("next-intl/server");
+		const { getLocale, getMessages } = await import("@/i18n/server");
 		const { isPublicLocale } = await import("@/i18n/locales");
 		const resolvedLocale = isPublicLocale(locale) ? locale : await getLocale();
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- a plain JSON message subtree

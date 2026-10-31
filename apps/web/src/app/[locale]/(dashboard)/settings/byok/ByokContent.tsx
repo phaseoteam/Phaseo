@@ -2,7 +2,7 @@
 import { SettingsResourceQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import type { SettingsByokInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { ArrowUpRight } from "lucide-react";
 import ByokProviderRow from "@/components/(gateway)/settings/byok/ByokProviderRow";

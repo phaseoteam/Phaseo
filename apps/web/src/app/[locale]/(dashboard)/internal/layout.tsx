@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { ScopedMessages, type ScopedLayoutProps } from "@/components/i18n/ScopedMessages";
 
 export const metadata: Metadata = {

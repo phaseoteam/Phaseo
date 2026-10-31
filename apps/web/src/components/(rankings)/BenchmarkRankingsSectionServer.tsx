@@ -1,6 +1,6 @@
 import { BenchmarkRankingsSection } from "@/components/(rankings)/BenchmarkRankingsSection";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { rankingBenchmarksSectionQuery } from "@/components/(rankings)/rankingSections.queries";
 

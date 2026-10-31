@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { FAQSection } from "./FAQSection";
 
-jest.mock("next-intl", () => ({
+jest.mock("@/i18n/react", () => ({
 	useTranslations: () => {
 		const translate = (key: string) => key;
 		translate.rich = (key: string, values: Record<string, (children: string) => unknown>) =>

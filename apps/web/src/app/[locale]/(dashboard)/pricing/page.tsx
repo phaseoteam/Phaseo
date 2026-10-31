@@ -1,7 +1,7 @@
 /* eslint-disable max-lines -- pricing, comparison, and FAQ copy are intentionally reviewed together */
 import { Link } from "@/i18n/navigation";
-import Image from "next/image";
-import type { Metadata } from "next";
+import Image from "@/components/image";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Fragment } from "react";
 import {
 	ArrowRight,
@@ -31,9 +31,9 @@ import {
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import { PricingComparisonShell } from "./PricingComparisonShell";
 import { EnterprisePricingSection } from "./EnterprisePricingSection";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { enterpriseSelfServePreviewQuery } from "./page.functions";
 import type { PublicLocale } from "@/i18n/routing";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";

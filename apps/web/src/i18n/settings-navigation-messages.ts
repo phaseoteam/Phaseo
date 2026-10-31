@@ -1,4 +1,3 @@
-import "server-only";
 import { cache } from "react";
 import { mergeCatalogMessages } from "./message-overlays";
 import type { ShippedLocale } from "./routing";

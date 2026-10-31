@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import englishMessages from "../../messages/en-GB/settings-ui.json";
 import { BYOK_PROVIDER_KEY_SPECS, getProviderCredentialLabel, getProviderKeyOnboarding, validateProviderKeyFormat } from "@/lib/byok/providerKeyValidation";
 import { localizedProviderCredentialLabel, localizedProviderKeyHint, localizedProviderKeyInstruction, localizedProviderKeyOnboarding, localizedProviderKeyValidation, localizedProviderSubmissionError } from "./byok-messages";

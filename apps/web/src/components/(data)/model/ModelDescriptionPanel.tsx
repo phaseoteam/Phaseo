@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

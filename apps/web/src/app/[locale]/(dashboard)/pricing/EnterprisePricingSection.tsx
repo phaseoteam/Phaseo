@@ -1,8 +1,8 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EnterpriseSeatCalculator } from "./EnterpriseSeatCalculator";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export function EnterprisePricingSection() {
 	const t = useTranslations("Site.pricing");

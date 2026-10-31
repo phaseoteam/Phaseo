@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { englishAuthMessages } from "@/i18n/default-messages";
 import {
 	type AuthErrorCode,

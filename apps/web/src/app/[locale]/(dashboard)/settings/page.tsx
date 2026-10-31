@@ -1,5 +1,5 @@
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "@/i18n/server";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 
 export async function generateMetadata() {

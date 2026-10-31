@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { FeedbackUnsubscribeButton } from "@/components/feedback/FeedbackUnsubscribeButton";
 import { getFeedbackMessages } from "@/i18n/feedback";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";

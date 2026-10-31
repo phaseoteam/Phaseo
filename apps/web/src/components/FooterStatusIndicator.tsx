@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { publicQueryFetcher } from "@/lib/query/fetchers";
 import { webQueryKeys } from "@/lib/query/queryKeys";

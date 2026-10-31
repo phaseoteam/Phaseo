@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import Image from "@/components/image";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { safelyDecodePathSegments } from "./safePathname";

@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
+import { notFound } from "@/lib/navigation";
 import { Suspense, use } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { GameExperience } from "@/components/(games)/GameExperience";
 import { GAME_INFO, isGameKey } from "@/lib/games/types";
 import type { PublicLocale } from "@/i18n/routing";

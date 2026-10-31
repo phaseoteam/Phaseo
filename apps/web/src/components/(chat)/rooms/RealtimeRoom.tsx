@@ -2,9 +2,9 @@
 
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import NumberFlow from "@number-flow/react";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { ReactNode } from "react";

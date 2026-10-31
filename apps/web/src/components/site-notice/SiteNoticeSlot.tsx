@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLocale } from "next-intl";
+import { useLocale } from "@/i18n/react";
 import SiteNoticeBar from "@/components/site-notice/SiteNoticeBar";
 import { shellDataQuery } from "@/components/header/shellData";
 import {

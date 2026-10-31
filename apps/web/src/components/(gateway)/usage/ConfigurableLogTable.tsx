@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import * as React from "react";
 import { createPortal } from "react-dom";

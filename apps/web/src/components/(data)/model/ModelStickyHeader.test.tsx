@@ -1,20 +1,20 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import catalogue from "../../../../messages/en-GB/catalogue.json";
 import ModelStickyHeader from "./ModelStickyHeader";
 
 jest.mock("./UseModelSheet", () => ({ UseModelSheet: () => <button>Use API</button> }));
 jest.mock("@/components/Logo", () => ({ Logo: () => null }));
-jest.mock("next/link", () => ({
+jest.mock("@/components/link", () => ({
 	__esModule: true, default: ({ href, children, ...props }: any) => <a href={href} {...props}>{children}</a>,
 }));
 
 function render(endpoints: string[], decisions: boolean) {
-	return renderToStaticMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Catalogue: catalogue }}>
+	return renderToStaticMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Catalogue: catalogue }}>
 		<ModelStickyHeader modelId="openai/gpt-6-luna" organisationId="openai" organisationName="OpenAI"
 			modelName="GPT-6 Luna" observeId="header" isDecisionsModel={decisions}
 			gatewayMetadata={{ activeProviders: endpoints.map(endpoint => ({ endpoint })) } as any} />
-	</NextIntlClientProvider>);
+	</AppIntlProvider>);
 }
 describe("model detail playground actions", () => {
 	it("preserves Chat and API actions while adding Decisions for a dual-capability model", () => {

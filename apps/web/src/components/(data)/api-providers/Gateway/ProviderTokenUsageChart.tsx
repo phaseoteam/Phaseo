@@ -12,7 +12,7 @@ import {
 	apiProviderAppTokenTimeseriesQuery,
 	apiProviderModelTokenTimeseriesQuery,
 } from "../apiProvider.queries";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function ProviderTokenUsageChart({
 	apiProviderId,

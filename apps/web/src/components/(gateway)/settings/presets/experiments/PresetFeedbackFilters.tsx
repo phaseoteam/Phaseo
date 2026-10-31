@@ -2,7 +2,7 @@
 
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import * as React from "react";
 import { ArrowUpRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
 	SelectTrigger,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type PresetOption = {
 	id: string;

@@ -1,7 +1,7 @@
 import { BarChart3, Gauge, GitCommit, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CheckItem from "../page/CheckItem";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export function WhyWeWinSection() {
 	const t = useTranslations("Site.gatewayMarketing.why");

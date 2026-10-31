@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { appRecentRequestsQuery } from "./app.queries";
 import { Clock, Zap } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { DisplayDateTime, DisplayNumber } from "@/components/display/DisplayValue";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";

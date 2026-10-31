@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import { CompareSection, GRID_CLASS, gridStyle, useCompareGrid } from "./CompareGrid";
 import { visibleOnPhone } from "./compareViewMath";

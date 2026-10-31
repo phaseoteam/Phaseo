@@ -36,7 +36,7 @@ import {
 	resolveRoutingPreference,
 } from "./quickstartPayloads";
 import { useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import type { QuickstartRequestContext } from "./requestContext";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { getLocalizedDocsHref } from "@/lib/docs";

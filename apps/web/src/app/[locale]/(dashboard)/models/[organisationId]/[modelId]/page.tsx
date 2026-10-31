@@ -17,7 +17,7 @@ import { DiscordComponentEmbed } from "@/components/metadata/DiscordComponentEmb
 import ModelPageToc, {
 	type ModelPageTocItem,
 } from "@/components/(data)/model/ModelPageToc";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import {
 	getModelPath,
@@ -34,10 +34,10 @@ import {
 	analyseModelIndexability,
 	robotsForModelIndexability,
 } from "@/lib/seo/modelIndexability";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect } from "@/lib/navigation";
 import { Suspense, use } from "react";
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { fulfilled } from "@/lib/start/nextPage";
 import {
 	modelPageBodyQueries,
@@ -52,7 +52,7 @@ import ProviderCatalogPreviewDetail from "@/components/(data)/model/ProviderCata
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import ModelFaqSection from "@/components/(data)/model/overview/ModelFaqSection";
 import { supportsProvenanceVerification } from "@/components/(data)/model/overview/ModelVerificationSection";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { fetchPrivateModelPerformance } from "@/lib/fetchers/internal/fetchSettingsPrivateModels";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";

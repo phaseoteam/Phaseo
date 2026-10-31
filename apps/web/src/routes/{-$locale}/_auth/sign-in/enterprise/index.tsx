@@ -7,7 +7,7 @@ import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(auth)/sign-in/enterprise/page";
 import { samlSsoEnabledQuery } from "@/app/[locale]/(auth)/sign-in/SignInPage.functions";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)

@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Users, Activity } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 interface OAuthAppCardProps {
 	app: any;

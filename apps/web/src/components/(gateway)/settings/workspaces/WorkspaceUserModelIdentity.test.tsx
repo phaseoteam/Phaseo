@@ -2,7 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { WorkspaceUserModelIdentity } from "./WorkspaceUserModelIdentity";
 
-jest.mock("next-intl", () => ({ useTranslations: () => () => "Unknown model" }));
+jest.mock("@/i18n/react", () => ({ useTranslations: () => () => "Unknown model" }));
 jest.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => <a {...props}>{children}</a> }));
 jest.mock("@/components/Logo", () => ({ Logo: ({ id }: { id: string }) => <span data-logo={id} /> }));
 

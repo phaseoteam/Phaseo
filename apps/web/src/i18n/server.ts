@@ -3,7 +3,7 @@
 import { createFormatter, createTranslator, type AbstractIntlMessages } from "use-intl/core";
 import { getPublicMessages } from "@/i18n/messages";
 import { defaultLocale, isPublicLocale, type PublicLocale } from "@/i18n/locales";
-import { getCurrentRequestUrl } from "./request-context";
+import { getCurrentRequestUrl } from "@/compat/request-context";
 
 type LocaleArg = { locale?: string; namespace?: string } | string | undefined;
 

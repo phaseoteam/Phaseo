@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Activity, ArrowRightLeft, ShieldCheck, Workflow } from "lucide-react";
 
 const CAPABILITIES = [

@@ -13,12 +13,12 @@ import {
 	type KeyboardEvent,
 	type RefObject,
 } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ThinkingOrb } from "thinking-orbs";
 import { AIGeneratedNotice } from "@/components/(chat)/AIGeneratedNotice";
 import { getChatComposerSendAction } from "@/components/(chat)/chatComposerSendAction";
 import { REASONING_OPTIONS } from "@/components/(chat)/chatConversationHelpers";
-import Image from "next/image";
+import Image from "@/components/image";
 import {
 	ArrowLeft,
 	AudioLines,
@@ -108,7 +108,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type SendGateType = "auth" | null;
 

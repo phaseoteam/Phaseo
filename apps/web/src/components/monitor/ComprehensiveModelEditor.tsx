@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useState, useTransition, useEffect } from "react";
 import {
 	Dialog,
@@ -44,7 +44,7 @@ import {
 	fetchCompleteModelData,
 	type CompleteModelData,
 } from "@/app/(dashboard)/internal/audit/actions-advanced";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -63,7 +63,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import Link from "next/link";
+import Link from "@/components/link";
 
 interface ComprehensiveModelEditorProps {
 	model: AuditModelData | null;

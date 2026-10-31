@@ -6,7 +6,7 @@
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { Suspense } from "react";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
-import { Metadata } from "next";
+import { Metadata } from "@/lib/seo/metadataTypes";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import type { PublicLocale } from "@/i18n/routing";
 import { MarketShareStackedBar } from "@/components/(rankings)/MarketShareStackedBar";
@@ -35,7 +35,7 @@ import type {
 	PerformanceData,
 } from "@/lib/fetchers/rankings/getRankingsData";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	fastestModelsQuery,
 	marketShareOrganizationQuery,
@@ -76,7 +76,7 @@ export function isRankingModality(value: string): value is RankingModality {
 
 export async function generateRankingsMetadata(): Promise<Metadata> {
 	// Metadata runs on the server only; keep next-intl/server out of the component graph.
-	const { getLocale, getTranslations } = await import("next-intl/server");
+	const { getLocale, getTranslations } = await import("@/i18n/server");
 	const locale = await getLocale();
 	const t = await getTranslations("Catalogue.rankings");
 	const indexability = await fetchFrontendRankingsIndexability().catch(() => ({

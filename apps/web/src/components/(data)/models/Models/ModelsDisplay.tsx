@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import {
 	useCallback,
 	useDeferredValue,
@@ -9,8 +9,8 @@ import {
 	useState,
 	type ReactNode,
 } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsList } from "./ModelsList";
 import { ModelsGrid } from "./ModelsGrid";

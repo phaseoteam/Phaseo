@@ -1,4 +1,4 @@
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations, useLocale } from "@/i18n/react";
 
 interface ModelDetail {
 	// Support both new and legacy shapes

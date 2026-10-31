@@ -2,7 +2,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import catalogue from "../../../../../messages/en-GB/catalogue.json";
 import ModelPricingInsightsClient from "./ModelPricingInsightsClient";
 
@@ -48,9 +48,9 @@ async function flush() {
 it("shows the loaded series once a slow one passes the wait, then fills it in", async () => {
 	act(() => root.render(
 		<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-			<NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
+			<AppIntlProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
 				<ModelPricingInsightsClient modelId="lab/model" providers={[]} providerIds={["provider-a"]} />
-			</NextIntlClientProvider>
+			</AppIntlProvider>
 		</QueryClientProvider>,
 	));
 	await flush();

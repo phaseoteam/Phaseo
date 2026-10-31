@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { MethodologyArticlePage } from "@/components/methodology/MethodologyArticlePage";
 import {
 	METHODOLOGY_ENTRY_BY_SLUG,
 	type MethodologyEntry,
 } from "@/lib/content/methodology";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 
 const entry = METHODOLOGY_ENTRY_BY_SLUG[

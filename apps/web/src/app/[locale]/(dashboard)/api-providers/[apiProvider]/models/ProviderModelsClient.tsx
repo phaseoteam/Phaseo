@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, FilePlus, Search, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { debounce, useQueryState } from "nuqs";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import {
 	Empty,

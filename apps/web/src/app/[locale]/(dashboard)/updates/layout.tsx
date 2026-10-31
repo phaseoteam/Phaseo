@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ReactNode, use } from "react";
 import { isCatalogLocale, type RuntimeLocale } from "@/i18n/locales";
 

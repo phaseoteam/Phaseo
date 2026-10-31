@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Loader2, Play } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";

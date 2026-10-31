@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import type { ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";

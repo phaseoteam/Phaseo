@@ -4,7 +4,7 @@ import messages from "../../messages/en-GB/common.json";
 import { FooterStatusIndicator } from "./FooterStatusIndicator";
 
 jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn() }), { virtual: true });
-jest.mock("next-intl", () => ({
+jest.mock("@/i18n/react", () => ({
 	useTranslations: () => (key: string, values?: Record<string, string>) => {
 		const message = key.split(".").reduce((value, part) => value[part], messages.status as any) as string;
 		return message.replace(/\{(\w+)\}/g, (_match, name: string) => values?.[name] ?? name);

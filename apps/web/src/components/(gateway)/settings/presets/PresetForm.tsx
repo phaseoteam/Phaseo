@@ -4,7 +4,7 @@ import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 import React, { useState, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,7 +51,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SortablePresetList } from "./SortablePresetList";
 import { PresetVersionLabels, labelsSummary, usePresetVersions, versionName } from "./PresetVersionLabels";
 import { PresetPromptTemplateEditor, buildPromptTemplate, draftFromTemplate } from "./PresetPromptTemplateEditor";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface APIProviderCard {

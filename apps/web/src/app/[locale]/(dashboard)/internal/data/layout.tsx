@@ -1,5 +1,5 @@
 import { CatalogNavigation } from "@/app/(dashboard)/internal/data/CatalogNavigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Suspense } from "react";
 
 // The admin gate (requireInternalAdmin("/internal")) runs in the route's beforeLoad.

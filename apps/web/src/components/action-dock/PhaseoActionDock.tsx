@@ -1,10 +1,10 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
-import Image from "next/image";
-import dynamic from "next/dynamic";
+import Image from "@/components/image";
+import dynamic from "@/lib/dynamic";
 import { createPortal } from "react-dom";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/lib/navigation";
 import { usePathname as useLocalePathname } from "@/i18n/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {

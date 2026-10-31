@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
-import { getRequestConfig } from "next-intl/server";
+import { notFound } from "@/lib/navigation";
+import { getRequestConfig } from "@/i18n/server";
 import { getPublicMessages } from "./messages";
 import { isPublicLocale } from "./routing";
 

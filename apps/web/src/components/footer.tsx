@@ -1,5 +1,5 @@
-import { useTranslations, useLocale } from "next-intl";
-import Image from "next/image";
+import { useTranslations, useLocale } from "@/i18n/react";
+import Image from "@/components/image";
 import { Link } from "@/i18n/navigation";
 import { IntentLink } from "@/components/navigation/IntentLink";
 import { FooterStatusIndicator } from "@/components/FooterStatusIndicator";

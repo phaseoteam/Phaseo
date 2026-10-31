@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { OrganisationForm } from "@/components/(data)/OrganisationForm";
 import { createOrganisationAction } from "../../actions";
 

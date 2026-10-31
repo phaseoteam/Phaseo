@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import Link from "next/link";
+import Link from "@/components/link";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { landingSupportedModelsStatsOrNullQuery } from "@/components/landingPage/landing.queries";

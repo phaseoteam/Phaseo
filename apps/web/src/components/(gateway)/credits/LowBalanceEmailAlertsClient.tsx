@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import NotificationRouteSelector from "@/components/(gateway)/settings/notifications/NotificationRouteSelector";
 import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 function parseThreshold(value: string): number | null {

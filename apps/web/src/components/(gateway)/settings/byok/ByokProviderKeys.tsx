@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
 	DndContext,
@@ -34,7 +34,7 @@ import BYOKInputDialog from "@/components/(gateway)/settings/byok/BYOKInputDialo
 import DeleteKeyButton from "@/components/(gateway)/settings/byok/DeleteKeyButton";
 import { reorderByokKeyAction, updateByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
 import { MAX_BYOK_KEYS_PER_MODE } from "@/lib/byok/constants";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 export type ByokKeyEntry = {

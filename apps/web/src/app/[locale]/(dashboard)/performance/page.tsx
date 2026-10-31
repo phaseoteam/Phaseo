@@ -1,11 +1,11 @@
-import { useTranslations } from "next-intl";
-import type { Metadata } from "next";
-import Link from "next/link";
+import { useTranslations } from "@/i18n/react";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import Link from "@/components/link";
 import { ArrowRight, BarChart3, Check, Clock3, Gauge, Route, ShieldCheck, Sparkles } from "lucide-react";
 
 import ShowFooterStyle from "@/components/layout/ShowFooterStyle";
 import { Button } from "@/components/ui/button";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import type { PublicLocale } from "@/i18n/routing";
 import TokenSpeedSimulation from "./TokenSpeedSimulation";

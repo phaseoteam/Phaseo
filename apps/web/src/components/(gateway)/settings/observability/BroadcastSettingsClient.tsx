@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useMemo, useState, useTransition } from "react";
 import { MoreHorizontal, Plus, SendHorizontal, Webhook } from "lucide-react";
@@ -42,7 +42,7 @@ import {
 	type BroadcastDestinationHealth,
 	type BroadcastHealthState,
 } from "@/components/(gateway)/settings/observability/broadcastHealth";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 type ConfiguredDestination = {

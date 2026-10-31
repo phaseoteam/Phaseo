@@ -1,7 +1,7 @@
 import "../globals.css";
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { setRequestLocale } from "next-intl/server";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { notFound } from "@/lib/navigation";
+import { setRequestLocale } from "@/i18n/server";
 import { RootDocument } from "@/components/layout/RootDocument";
 import { getPublicMessages } from "@/i18n/messages";
 import {

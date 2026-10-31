@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { dashboardLabelPositions } from "@/lib/benchmarks/artificialAnalysisDashboard";

@@ -2,7 +2,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import catalogue from "../../../../messages/en-GB/catalogue.json";
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import CountryModelsSection from "./CountryModelsSection";
@@ -41,14 +41,14 @@ beforeEach(() => {
 	root = createRoot(container);
 	act(() => root.render(
 		<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-			<NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
+			<AppIntlProvider timeZone="UTC" locale="en-GB" messages={{ Catalogue: catalogue }}>
 				<CountryModelsSection
 					iso="US"
 					previewModels={previewCountryModels(groups)}
 					organisationModelCounts={{ big: 8, small: 1 }}
 					totalModels={9}
 				/>
-			</NextIntlClientProvider>
+			</AppIntlProvider>
 		</QueryClientProvider>,
 	));
 });

@@ -1,7 +1,7 @@
 ﻿/** @jest-environment jsdom */
 import { act, useEffect, useRef } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import common from "../../../../messages/en-GB/common.json";
 import catalogue from "../../../../messages/en-GB/catalogue.json";
 import { DashboardInspectionCard, useDashboardInspection } from "./ArtificialAnalysisDashboardInspection";
@@ -49,7 +49,7 @@ it("keeps details open while crossing into the card and dismisses outside the ch
 it("shows published zero values, omits absent metrics, and links the exact source configuration", () => {
  const row: DashboardRow = { id: "low", modelId: "lab/model", modelName: "Model", sourceName: "Model low", creatorId: "lab", colour: null, effort: "low", intelligence: 0, tokensPerTask: 0, costPerTask: null, totalCost: null, totalTokens: null, timePerTask: null, sourceSlug: "model-low", benchmarks: {}, capabilities: {} };
  const close = jest.fn();
- act(() => root.render(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><DashboardInspectionCard row={row} title="Output tokens per task" metric={0} unit="tokens" pinned keep={() => {}} leave={() => {}} close={close} /></NextIntlClientProvider>));
+ act(() => root.render(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><DashboardInspectionCard row={row} title="Output tokens per task" metric={0} unit="tokens" pinned keep={() => {}} leave={() => {}} close={close} /></AppIntlProvider>));
  expect(container.querySelectorAll("dd")).toHaveLength(2);
  expect([...container.querySelectorAll("dd")].map((node) => node.textContent)).toEqual(["0", "0"]);
  expect(container.textContent).not.toContain("Cost per task");
@@ -60,7 +60,7 @@ it("shows published zero values, omits absent metrics, and links the exact sourc
 it("compares a hovered configuration with a pin without inventing ratios for zero baselines", () => {
  const row: DashboardRow = { id: "high", modelId: "lab/model", modelName: "Model", sourceName: "Model high", creatorId: "lab", colour: null, effort: "high", intelligence: 40, tokensPerTask: 200, costPerTask: 0, totalCost: null, totalTokens: null, timePerTask: null, benchmarks: {}, capabilities: {} };
  const comparison = { ...row, id: "low", sourceName: "Model low", effort: "low", intelligence: 20, tokensPerTask: 100 };
- act(() => root.render(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><DashboardInspectionCard row={row} comparison={comparison} comparisonMetric={100} title="Output tokens per task" metric={200} unit="tokens" pinned={false} keep={() => {}} leave={() => {}} close={() => {}} /></NextIntlClientProvider>));
+ act(() => root.render(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><DashboardInspectionCard row={row} comparison={comparison} comparisonMetric={100} title="Output tokens per task" metric={200} unit="tokens" pinned={false} keep={() => {}} leave={() => {}} close={() => {}} /></AppIntlProvider>));
  const rows = [...container.querySelectorAll("tbody tr")];
  expect(rows).toHaveLength(3);
  expect(rows[0].textContent).toContain("20402×");

@@ -3,8 +3,8 @@
 // every other public locale does.
 import { redirect as tanstackRedirect, useLocation, useRouter as useTanstackRouter } from "@tanstack/react-router";
 import { forwardRef, useMemo } from "react";
-import { useLocale } from "next-intl";
-import NextLink, { formatHref, type LinkProps as NextLinkProps } from "@/compat/next-link";
+import { useLocale } from "@/i18n/react";
+import NextLink, { formatHref, type LinkProps as NextLinkProps } from "@/components/link";
 import { refreshServerData } from "@/compat/refresh";
 import { defaultLocale, isPublicLocale, publicLocales, type PublicLocale } from "./locales";
 

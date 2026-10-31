@@ -1,7 +1,7 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const SALES_HREF = "/sign-up";
 const DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";

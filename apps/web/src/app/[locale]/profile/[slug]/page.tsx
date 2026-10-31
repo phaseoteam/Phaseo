@@ -1,14 +1,14 @@
 import { Suspense, use } from "react"
-import type { Metadata } from "next"
-import { notFound } from "next/navigation"
+import type { Metadata } from "@/lib/seo/metadataTypes"
+import { notFound } from "@/lib/navigation"
 import { useSuspenseQuery } from "@tanstack/react-query"
 
 import ProfileDashboard from "@/components/(gateway)/settings/profile/ProfileDashboard"
 import { publicProfileQuery } from "./page.queries"
 import { getProfileMessages } from "@/i18n/profile"
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing"
-import { useTranslations } from "next-intl"
-import { getTranslations } from "next-intl/server"
+import { useTranslations } from "@/i18n/react"
+import { getTranslations } from "@/i18n/server"
 
 type PageProps = {
 	params: Promise<{ locale: string; slug: string }>

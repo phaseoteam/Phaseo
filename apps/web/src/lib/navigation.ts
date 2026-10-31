@@ -8,7 +8,7 @@ import {
 	useRouter as useTanstackRouter,
 } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { refreshServerData } from "./refresh";
+import { refreshServerData } from "@/compat/refresh";
 
 export class ReadonlyURLSearchParams extends URLSearchParams {}
 

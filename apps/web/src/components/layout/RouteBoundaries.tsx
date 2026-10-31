@@ -3,7 +3,7 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ErrorState";

@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { apiProvidersQuery } from "../page.queries";
 import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Catalogue.providers");

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import { ProviderLogo } from "../ProviderLogo";
 import { CompareSection, MODEL_COLOURS } from "./CompareGrid";

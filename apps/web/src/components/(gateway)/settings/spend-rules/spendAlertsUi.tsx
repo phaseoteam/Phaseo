@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { SettingsSpendRuleOptions } from "@/lib/fetchers/internal/settingsTypes";
 import { cn } from "@/lib/utils";

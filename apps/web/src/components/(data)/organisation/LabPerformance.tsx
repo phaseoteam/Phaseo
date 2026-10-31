@@ -1,6 +1,6 @@
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations, useLocale } from "@/i18n/react";
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ReactNode } from "react";
 import { Activity, ArrowUpRight, Gauge, Timer } from "lucide-react";
 import { DisplayNumber } from "@/components/display/DisplayValue";

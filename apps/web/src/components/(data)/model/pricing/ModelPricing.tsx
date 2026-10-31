@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { CircleAlert, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient, useSuspenseQueries, type UseSuspenseQueryOptions } from "@tanstack/react-query";
@@ -24,7 +24,7 @@ import { toPricingRuntimeStats } from "./pricingRuntimeStats";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import {
 	Empty,

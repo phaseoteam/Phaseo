@@ -2,7 +2,7 @@
 import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
 import React, { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Dialog,
 	DialogTrigger,

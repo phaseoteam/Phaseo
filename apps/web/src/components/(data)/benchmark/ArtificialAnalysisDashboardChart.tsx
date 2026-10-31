@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, type ReactElement, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { CartesianGrid, ComposedChart, ResponsiveContainer, Scatter, XAxis, YAxis, useYAxisScale, useXAxisScale, usePlotArea } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";

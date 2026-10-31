@@ -1,6 +1,6 @@
 "use client";
 import { localizedBenchmarkConfiguration, localizedArtificialAnalysisMetric } from "@/i18n/benchmark-display";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";

@@ -1,10 +1,10 @@
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import EnterpriseBillingOnboardingClient from "@/components/(gateway)/credits/EnterpriseBillingOnboardingClient";
 import { Card, CardContent } from "@/components/ui/card";
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "@/i18n/server";
+import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 import { creditsOnboardingInitialDataQuery } from "../credits.functions";
 
 export async function generateMetadata() {

@@ -1,6 +1,6 @@
 "use client";
 import { localizedInternalCatalogError } from "@/i18n/internal-catalog-errors";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { REGISTRY_MESSAGE_KEYS, REGISTRY_OPTION_MESSAGE_KEYS } from "./registryMessages";
 import { useEffect, useState } from "react";
 import { useQueryState } from "nuqs";

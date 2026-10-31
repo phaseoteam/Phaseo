@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import type {
 	EventType,
@@ -15,7 +15,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Logo } from "@/components/Logo";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 

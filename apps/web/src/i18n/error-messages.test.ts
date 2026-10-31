@@ -1,4 +1,4 @@
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import { getPublicMessages } from "./messages";
 import { localizedSettingsError } from "./error-messages";
 

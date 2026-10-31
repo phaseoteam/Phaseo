@@ -3,15 +3,15 @@ import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
 import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
 import { fetchFrontendBenchmark } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
+import { notFound } from "@/lib/navigation";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { absoluteUrl } from "@/lib/seo";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { artificialAnalysisRankingsQuery, benchmarkQuery, benchmarkSelection } from "./page.queries";
 
 async function fetchBenchmark(benchmarkId: string) {

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import type { PublicLocale } from "@/i18n/routing";
 import CreateOAuthAppDialog from "@/components/(gateway)/settings/oauth-apps/CreateOAuthAppDialog";

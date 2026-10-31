@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { settingsApiProvidersQuery } from "../catalog.queries";
 import ByokContent from "./ByokContent";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");
 	return { title: `${t("headers.byok")} - ${t("headers.settings")}` };

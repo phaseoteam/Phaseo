@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../../messages/en-GB/settings-ui.json";
 import commonMessages from "../../../../../messages/en-GB/common.json";
 import { SchedulesList, SlackSchedulesSection } from "./SlackSchedulesSection";
@@ -54,9 +54,9 @@ const DATA: SlackAgentSchedules = {
 
 function render(children: React.ReactNode) {
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+		<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
 			{children}
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 }
 

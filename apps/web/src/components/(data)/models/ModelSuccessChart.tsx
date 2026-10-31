@@ -14,7 +14,7 @@ import {
 	YAxis,
 } from "recharts";
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 function formatBucketLabel(bucket: string, locale: string) {
 	const date = new Date(bucket);

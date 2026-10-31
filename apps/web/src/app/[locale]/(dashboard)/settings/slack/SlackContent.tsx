@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { PrivateSettingsQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import SlackAgentSettingsClient from "@/components/(gateway)/settings/slack/SlackAgentSettingsClient";

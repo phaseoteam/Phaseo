@@ -1,9 +1,9 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useEffect, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { cn } from "@/lib/utils";
 import { useSearchShortcutLabel } from "./SearchShortcut";

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import ProviderRateLimitsEditor, { draftsToLimits, parseLimit, toDrafts } from "./ProviderRateLimitsEditor";
 import type { ProviderManagedCatalogModel } from "@/app/(dashboard)/settings/account/providers/actions";
-jest.mock("next-intl", () => ({ useTranslations: () => (key: string, values?: Record<string, string>) => values?.model ? `${key}:${values.model}` : key }));
+jest.mock("@/i18n/react", () => ({ useTranslations: () => (key: string, values?: Record<string, string>) => values?.model ? `${key}:${values.model}` : key }));
 jest.mock("@/app/(dashboard)/settings/account/providers/actions", () => ({ updateProviderRateLimitsAction: jest.fn() }));
 jest.mock("sonner", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
 

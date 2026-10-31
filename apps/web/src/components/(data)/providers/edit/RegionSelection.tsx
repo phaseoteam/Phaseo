@@ -2,7 +2,7 @@
 import { Globe2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 export const REGION_NAMES: Record<string, string> = {
   global: "Global", us: "United States", eu: "European Union", apac: "Asia Pacific", ap: "Asia Pacific", au: "Australia", cn: "China", fr: "France", id: "Indonesia", il: "Israel", in: "India", jp: "Japan", my: "Malaysia", nl: "Netherlands", se: "Sweden", sg: "Singapore", gb: "United Kingdom",

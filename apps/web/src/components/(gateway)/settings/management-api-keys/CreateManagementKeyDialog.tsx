@@ -24,7 +24,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { SecretRevealActions } from "../keys/SecretRevealActions";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 const KEY_TEMPLATES = [

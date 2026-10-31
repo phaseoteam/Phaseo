@@ -1,4 +1,3 @@
-import "server-only";
 import { cache } from "react";
 import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 import type { InternalAuthHeaderData } from "@/lib/fetchers/internal/authTypes";

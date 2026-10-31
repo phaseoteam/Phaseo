@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import OAuthScopeSelector from "./OAuthScopeSelector";
 import { DEFAULT_THIRD_PARTY_OAUTH_SCOPES } from "@/lib/oauth/scopes";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface CreateOAuthAppDialogProps {

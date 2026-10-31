@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { localizedInternalCatalogError } from "@/i18n/internal-catalog-errors";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";

@@ -2,7 +2,7 @@
 import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 
 import React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/Logo";

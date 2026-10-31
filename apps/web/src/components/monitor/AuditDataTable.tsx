@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useEffect, useMemo, useRef } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { Logo } from "@/components/Logo";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useQueryState } from "nuqs";
 import type { AuditModelData } from "@/lib/fetchers/models/table-view/getAuditModels";
 

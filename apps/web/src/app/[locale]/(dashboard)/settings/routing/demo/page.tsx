@@ -1,10 +1,10 @@
-import { useTranslations } from "next-intl";
-import { notFound } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import { notFound } from "@/lib/navigation";
 import DynamicRoutesStudio from "@/components/(gateway)/settings/routing/DynamicRoutesStudio";
 import { Callout } from "@/components/ui/callout";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import type { SettingsDynamicRoutesInitialData } from "@/lib/fetchers/internal/settingsTypes";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 const previewData: SettingsDynamicRoutesInitialData = {
 	workspaceId: "00000000-0000-0000-0000-000000000001",

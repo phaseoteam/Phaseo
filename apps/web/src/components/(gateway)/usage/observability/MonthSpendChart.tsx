@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

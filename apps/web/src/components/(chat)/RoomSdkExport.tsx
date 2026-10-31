@@ -1,8 +1,8 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/lib/navigation";
 import { Bot, Check, Code, Copy, Terminal, WrapText } from "lucide-react";
 import type { BundledLanguage } from "shiki";
 import { CodeBlock } from "@/components/ai-elements/code-block";

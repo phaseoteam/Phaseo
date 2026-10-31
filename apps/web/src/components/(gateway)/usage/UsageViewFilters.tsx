@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { createPortal } from "react-dom";
 import { useQueryState } from "nuqs";
 import {

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useEffect, useState } from "react";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { fetchFrontendRankingPeriodLeaderboard } from "@/lib/fetchers/frontend/fetchRankingSections";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Check, ChevronDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";

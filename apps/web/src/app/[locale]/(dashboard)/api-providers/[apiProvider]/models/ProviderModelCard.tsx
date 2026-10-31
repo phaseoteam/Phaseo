@@ -2,7 +2,7 @@
 
 import { useState, type MouseEvent, type ReactNode } from "react";
 import { ArrowUpRight, Ban, ChevronLeft, ChevronRight, CircleCheck, Clock3, Info, PanelRight } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";

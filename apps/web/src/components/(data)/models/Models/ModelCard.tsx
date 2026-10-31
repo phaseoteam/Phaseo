@@ -2,8 +2,8 @@
 
 import { useModelsLayoutTracking } from "./useModelsLayoutExperiment";
 
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import {
 	memo,
@@ -44,7 +44,7 @@ type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 };
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import {
 	Tooltip,
 	TooltipContent,

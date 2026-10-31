@@ -1,20 +1,20 @@
 import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { ReactNode } from "react";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/components/image";
+import Link from "@/components/link";
 import { MapPin, Scale } from "lucide-react";
 
 import { apiProviderHeaderQuery } from "./apiProvider.queries";
 import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { Logo } from "@/components/Logo";
 import APIProviderEditButton from "./edit/APIProviderEditButton";
 import WorkspacePolicyNotice from "../WorkspacePolicyNotice";
 import ModelPageToc, { type ModelPageTocItem } from "../model/ModelPageToc";
 import EntityStickyHeader from "../EntityStickyHeader";
 import { Button } from "@/components/ui/button";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatLocation } from "@/lib/locations";
 
 interface APIProviderDetailShellProps {

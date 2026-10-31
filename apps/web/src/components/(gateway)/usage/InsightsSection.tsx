@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Trophy,
@@ -12,7 +12,7 @@ import {
 	DollarSign,
 	ArrowUpRight,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Logo } from "@/components/Logo";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 

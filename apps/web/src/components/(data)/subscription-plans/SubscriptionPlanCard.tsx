@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/types";
 import { Logo } from "@/components/Logo";

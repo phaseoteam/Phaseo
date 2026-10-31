@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import KeyDates from "./KeyDates";
 import Performance from "./Performance";
 // Pricing temporarily disabled while upgrading

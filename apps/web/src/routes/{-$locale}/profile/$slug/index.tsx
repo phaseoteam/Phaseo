@@ -7,7 +7,7 @@ import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/profile/[slug]/page";
 import { publicProfileQuery } from "@/app/[locale]/profile/[slug]/page.queries";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)

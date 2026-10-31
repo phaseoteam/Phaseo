@@ -1,6 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown, ListChecks, ListX } from "lucide-react";
@@ -8,7 +8,7 @@ import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 import { IntelligenceValueBars } from "./IntelligenceValueBars";
 import { IntelligenceValueTable } from "./IntelligenceValueTable";

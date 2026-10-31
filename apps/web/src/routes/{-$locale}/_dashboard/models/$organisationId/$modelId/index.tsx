@@ -9,7 +9,7 @@ import { nextPageComponent, withLoading } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/models/[organisationId]/[modelId]/page";
 import Loading from "@/app/[locale]/(dashboard)/models/[organisationId]/[modelId]/loading";
 import { modelPageBodyQueries, modelPageQuery } from "@/app/[locale]/(dashboard)/models/[organisationId]/[modelId]/page.queries";
-import { permanentRedirect } from "next/navigation";
+import { permanentRedirect } from "@/lib/navigation";
 import { getModelIdFromParams } from "@/components/(data)/model/model-route-helpers";
 
 const routeMetadata = createServerFn({ method: "GET" })

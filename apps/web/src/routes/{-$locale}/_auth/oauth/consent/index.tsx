@@ -7,7 +7,7 @@ import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(auth)/oauth/consent/page";
 import { oauthConsentQuery, toConsentSearchParams } from "@/app/[locale]/(auth)/oauth/consent/page.functions";
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)

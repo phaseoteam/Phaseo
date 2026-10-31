@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ReactNode } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import {
 	ChevronLeft,

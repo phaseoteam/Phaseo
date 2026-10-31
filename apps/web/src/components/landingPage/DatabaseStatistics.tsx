@@ -1,6 +1,6 @@
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	landingStatsQuery,
 	landingSupportedModelsStatsQuery,

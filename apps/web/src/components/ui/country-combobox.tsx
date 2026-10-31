@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
-import { useLocale, useTranslations } from "next-intl";
+import Image from "@/components/image";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

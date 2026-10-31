@@ -1,9 +1,9 @@
-import { Metadata } from "next";
+import { Metadata } from "@/lib/seo/metadataTypes";
 import { buildMetadata } from "@/lib/seo";
 import RequestBuilder from "@/components/(tools)/RequestBuilder";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { requestBuilderModelsQuery } from "./page.queries";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.tools.request");

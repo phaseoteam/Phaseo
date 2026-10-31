@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { AlertCircle, CheckCircle2, History, RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";

@@ -1,4 +1,4 @@
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import { localizedWorkspacePolicyReason } from "./workspace-policy-messages";
 import { formatRelativeToNow } from "@/lib/formatRelative";
 

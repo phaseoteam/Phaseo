@@ -8,7 +8,7 @@ import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/games/[game]/page";
 import { getCatalogueGamesEnabled } from "@/app/[locale]/(dashboard)/games/page.functions";
 import { isGameKey } from "@/lib/games/types";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 
 const routeMetadata = createServerFn({ method: "GET" })
 	.validator((input: MetadataInput) => input)

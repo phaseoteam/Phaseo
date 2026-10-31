@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ComponentProps } from "react";
-import Image from "next/image";
+import Image from "@/components/image";
 import { Check, ChevronDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "@/i18n/navigation";

@@ -18,7 +18,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2, Sparkles } from "lucide-react";
 import { deletePresetAction } from "@/app/(dashboard)/settings/presets/actions";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange, showTrigger = true }: any) {
 	const write = useSettingsWrite();

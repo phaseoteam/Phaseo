@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";

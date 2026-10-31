@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useState, useTransition, useEffect } from "react";
 import {
 	Dialog,
@@ -33,7 +33,7 @@ import {
 	deleteModel,
 	fetchOrganisations,
 } from "@/app/(dashboard)/internal/audit/actions-advanced";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import {
 	AlertDialog,
 	AlertDialogAction,

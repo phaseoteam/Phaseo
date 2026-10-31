@@ -1,10 +1,10 @@
-import { useTranslations } from "next-intl";
-import { notFound } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import { notFound } from "@/lib/navigation";
 import { Suspense, use } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import BroadcastDestinationContent from "./BroadcastDestinationContent";
 import { getDestinationById } from "@/components/(gateway)/settings/observability/destinationCatalog";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export async function generateMetadata({
 	params,

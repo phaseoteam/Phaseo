@@ -1,5 +1,5 @@
 import type * as React from "react";
-import Image from "next/image";
+import Image from "@/components/image";
 import { Globe2, Mail } from "lucide-react";
 import type { NotificationDestination } from "@/lib/fetchers/internal/settingsTypes";
 

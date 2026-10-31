@@ -3,7 +3,7 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	Card,

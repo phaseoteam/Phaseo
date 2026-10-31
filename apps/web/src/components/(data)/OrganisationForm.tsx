@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Building2 } from "lucide-react";
 import { CatalogForm } from "./CatalogForm";
 import { CatalogCountryField } from "./CatalogCountryField";

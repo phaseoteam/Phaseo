@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/components/image";
+import Link from "@/components/link";
 import { useEffect, useState } from "react";
 import { List, PanelsTopLeft, Sparkles } from "lucide-react";
 import { Logo } from "@/components/Logo";

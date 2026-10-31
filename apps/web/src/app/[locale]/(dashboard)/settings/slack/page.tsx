@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import SlackContent from "./SlackContent";
 
 export async function generateMetadata() {

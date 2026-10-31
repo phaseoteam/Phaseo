@@ -3,14 +3,14 @@ import { capabilityPrivacyDecision } from "./capabilityPrivacyDecision";
 
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Logo } from "@/components/Logo";
 import {
 	formatProviderOfferVariantLabel,

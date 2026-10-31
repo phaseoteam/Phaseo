@@ -1,8 +1,8 @@
-import { useTranslations } from "next-intl";
-import { Metadata } from "next";
+import { useTranslations } from "@/i18n/react";
+import { Metadata } from "@/lib/seo/metadataTypes";
 import { buildMetadata } from "@/lib/seo";
 import MarkdownPreviewer from "@/components/(tools)/MarkdownPreviewer";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.tools.markdown");

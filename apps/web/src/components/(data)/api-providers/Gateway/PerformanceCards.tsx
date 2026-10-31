@@ -5,7 +5,7 @@ import PerformanceCardsClient, {
 	type MetricCardSummary,
 	type Trend,
 } from "./PerformanceCardsClient";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 function calculateDelta(
 	data: Array<{

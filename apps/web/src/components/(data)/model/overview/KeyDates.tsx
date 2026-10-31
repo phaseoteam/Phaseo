@@ -1,4 +1,4 @@
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations, useLocale } from "@/i18n/react";
 import { Megaphone, Rocket, Archive, Ban } from "lucide-react";
 import RelativeDateBadge from "./RelativeDateBadge";
 import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";

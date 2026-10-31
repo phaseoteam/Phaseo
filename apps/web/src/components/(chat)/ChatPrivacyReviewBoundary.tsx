@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";

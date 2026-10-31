@@ -1,5 +1,5 @@
 import { use } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";

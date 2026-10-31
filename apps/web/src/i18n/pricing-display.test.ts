@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import { unitLabel, conciseConditionLabel } from "@/components/(data)/model/pricing/pricingHelpers";
 import { localizedPricingDisplayLabel, PRICING_DISPLAY_LABEL_KEYS } from "./pricing-display";
 

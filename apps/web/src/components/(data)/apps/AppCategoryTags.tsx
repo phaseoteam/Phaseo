@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { parseAppCategories } from "@/lib/appCategories";
 
 export default function AppCategoryTags({

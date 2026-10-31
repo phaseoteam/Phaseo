@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import catalogue from "../../../../../../../messages/en-GB/catalogue.json";
 import common from "../../../../../../../messages/en-GB/common.json";
 import type { APIProviderModelListItem } from "@/lib/fetchers/api-providers/providerDataTypes";
@@ -39,9 +39,9 @@ const model: APIProviderModelListItem = {
 
 function render(item: APIProviderModelListItem) {
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Catalogue: catalogue, Common: common }}>
+		<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Catalogue: catalogue, Common: common }}>
 			<ProviderModelCard model={item} onOpenDetails={() => undefined} />
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 }
 

@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { use } from "react";
-import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 import SlackLinkConfirm from "./SlackLinkConfirm";
 import { slackLinkLocale, slackLinkToken } from "./link.functions";

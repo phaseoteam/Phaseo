@@ -21,7 +21,7 @@ import {
 import type { CompareModelOption } from "./types";
 import { ProviderLogo } from "./ProviderLogo";
 import { useCompareModelOptions, usePrefetchCompareModelOptions } from "./useCompareModelOptions";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface ModelComboboxProps {
 	/** Options the page already has: the selected models. The full list loads when the picker opens. */

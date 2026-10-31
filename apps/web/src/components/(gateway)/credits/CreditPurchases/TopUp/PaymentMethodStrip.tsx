@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { useTranslations } from "next-intl";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
+import { useRouter } from "@/lib/navigation";
 import { ShieldCheck, CreditCard, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCardBrand } from "./cardBrand";

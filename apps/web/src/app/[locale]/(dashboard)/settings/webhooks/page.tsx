@@ -1,5 +1,5 @@
-import { getTranslations } from "next-intl/server";
-import { useLocale, useTranslations } from "next-intl";
+import { getTranslations } from "@/i18n/server";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/i18n/navigation";
 import { getLocalizedDocsHref } from "@/lib/docs";

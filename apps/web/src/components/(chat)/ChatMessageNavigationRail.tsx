@@ -8,7 +8,7 @@ import {
 	useState,
 	type RefObject,
 } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { FileText } from "lucide-react";
 import {
 	type MessageScrollerScrollOptions,

@@ -1,8 +1,8 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight, FileAudio, FileImage, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export function supportsProvenanceVerification(outputTypes: unknown): boolean {
 	const values = Array.isArray(outputTypes)

@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const SUCCESS_BANNER_AUTO_DISMISS_MS = 10_000;
 

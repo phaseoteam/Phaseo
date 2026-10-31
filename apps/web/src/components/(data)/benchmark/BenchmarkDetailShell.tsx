@@ -1,6 +1,6 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ReactNode } from "react";
-import Image from "next/image";
+import Image from "@/components/image";
 import { Trophy } from "lucide-react";
 import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";

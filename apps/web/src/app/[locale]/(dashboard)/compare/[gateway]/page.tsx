@@ -1,10 +1,10 @@
 import { use } from "react";
-import { useTranslations } from "next-intl";
-import type { Metadata } from "next";
-import Link from "next/link";
+import { useTranslations } from "@/i18n/react";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import Link from "@/components/link";
 import { ArrowRight, Check, ExternalLink, Minus } from "lucide-react";
-import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { notFound } from "@/lib/navigation";
+import { getTranslations } from "@/i18n/server";
 
 import { Button } from "@/components/ui/button";
 import { buildMetadata } from "@/lib/seo";

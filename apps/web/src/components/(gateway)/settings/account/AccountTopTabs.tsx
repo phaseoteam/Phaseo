@@ -3,9 +3,9 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 
 import { cn } from "@/lib/utils";
 

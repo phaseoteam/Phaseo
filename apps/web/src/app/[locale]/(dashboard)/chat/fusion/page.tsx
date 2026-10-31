@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
 import CouncilClient from "@/components/(experiments)/CouncilClient";
 import { chatCouncilModelsQuery } from "@/app/[locale]/(dashboard)/chat/chat.queries";
 import { buildDefaultCouncilPresets } from "@/lib/experiments/councilPresets";

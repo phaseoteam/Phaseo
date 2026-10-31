@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { type ReactNode, useState } from "react";
 import { ChevronsUpDown } from "lucide-react";

@@ -1,5 +1,5 @@
 "use client";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { PrivateSettingsQuery } from "../PrivateSettingsQuery";
 import WebhooksSettingsClient, { type WebhookEndpoint } from "./WebhooksSettingsClient";
 import WebhookEndpointForm from "./WebhookEndpointForm";

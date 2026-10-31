@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import {
 	fetchModelsTableData,

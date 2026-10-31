@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { ArrowRight } from "lucide-react";
 
 import CreateTeamInviteDialog from "@/components/(gateway)/settings/CreateTeamInviteDialog";

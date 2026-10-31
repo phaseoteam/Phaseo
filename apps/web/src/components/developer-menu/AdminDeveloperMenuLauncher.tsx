@@ -1,6 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { LazyMessages } from "@/components/i18n/LazyMessages";
 

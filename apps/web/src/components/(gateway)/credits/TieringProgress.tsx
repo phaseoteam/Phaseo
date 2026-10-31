@@ -12,7 +12,7 @@ import {
 	computeTierInfo,
 	type GatewayTier,
 } from "@/components/(gateway)/credits/tiers";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;

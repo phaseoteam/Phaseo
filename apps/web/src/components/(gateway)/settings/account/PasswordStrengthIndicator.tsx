@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations } from '@/i18n/react'
 import { cn } from '@/lib/utils'
 
 type PasswordStrength = 'weak' | 'medium' | 'strong' | 'very-strong'

@@ -1,7 +1,7 @@
 // Next: src/app/[locale]/(dashboard)/settings/layout.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 import { metadataInput, runGenerateMetadata, type MetadataInput } from "@/lib/start/nextPage";
 import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";

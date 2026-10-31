@@ -6,7 +6,7 @@ import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/settings/credits/onboarding/page";
-import { redirect } from "next/navigation";
+import { redirect } from "@/lib/navigation";
 import { shouldRedirectFromOnboarding } from "@/app/[locale]/(dashboard)/settings/credits/onboarding/page";
 import { creditsOnboardingInitialDataQuery } from "@/app/[locale]/(dashboard)/settings/credits/credits.functions";
 

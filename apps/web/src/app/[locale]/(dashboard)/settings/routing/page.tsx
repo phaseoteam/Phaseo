@@ -1,5 +1,5 @@
 import RoutingPageClient from "./RoutingPageClient";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { settingsFlagQuery } from "../settings.functions";
 export async function generateMetadata() {

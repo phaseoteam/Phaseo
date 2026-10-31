@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import { Metadata } from "@/lib/seo/metadataTypes";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import RedeemCreditCodeCard from "@/components/(gateway)/credits/RedeemCreditCodeCard";

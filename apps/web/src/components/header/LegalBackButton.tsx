@@ -1,8 +1,8 @@
 "use client";
 
 import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useRouter } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 
 export default function LegalBackButton() {

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import ProviderCatalogChanges from "./ProviderCatalogChanges";
 import type { ProviderManagedCatalog } from "@/app/(dashboard)/settings/account/providers/actions";
-jest.mock("next-intl", () => ({ useTranslations: () => (key: string) => key, useLocale: () => "en-GB" }));
+jest.mock("@/i18n/react", () => ({ useTranslations: () => (key: string) => key, useLocale: () => "en-GB" }));
 jest.mock("@/app/(dashboard)/settings/account/providers/actions", () => ({ fetchProviderCatalogEditEventAction: jest.fn() }));
 describe("provider catalog override display", () => {
 	it("shows attribution, feed values and effective values without rendering HTML", () => {

@@ -1,4 +1,4 @@
-import type { AbstractIntlMessages } from "next-intl";
+import type { AbstractIntlMessages } from "@/i18n/react";
 
 // Shared chrome, error boundaries and reusable controls remain available on
 // every route. Feature dictionaries are supplied by their route boundaries.

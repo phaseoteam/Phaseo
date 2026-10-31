@@ -1,4 +1,3 @@
-import "server-only";
 
 import { connection } from "next/server";
 

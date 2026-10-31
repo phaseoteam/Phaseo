@@ -4,10 +4,10 @@ import { formatLatency } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ConfigurableLogTable from "./ConfigurableLogTable";
 import { JOB_COLUMNS } from "./logColumns";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import {
         fetchAppMetadata,
 	fetchAsyncJobDetail,
@@ -79,7 +79,7 @@ import {
 	getModelMetadataEntry,
 	type ModelMetadataMap,
 } from "./model-display";
-import Link from "next/link";
+import Link from "@/components/link";
 import {
         DetailKeyValueGrid,
         DetailMetricTile,

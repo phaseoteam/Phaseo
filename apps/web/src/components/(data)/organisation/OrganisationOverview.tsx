@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { OrganisationOverview as OrganisationOverviewType } from "@/lib/fetchers/organisations/types";
 import OrganisationLinks from "./OrganisationLinks";
 import ModelsDisplay from "./ModelsDisplay";

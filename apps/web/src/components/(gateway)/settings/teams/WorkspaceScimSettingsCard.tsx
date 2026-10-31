@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Check, Clipboard, KeyRound, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";

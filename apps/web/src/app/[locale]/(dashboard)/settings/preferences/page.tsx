@@ -2,8 +2,8 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import DisplayPreferencesClient from "@/components/(gateway)/settings/preferences/DisplayPreferencesClient";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { preferencesInitialDataQuery } from "./preferences.functions";
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "@/i18n/server";
+import { useTranslations } from "@/i18n/react";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI");

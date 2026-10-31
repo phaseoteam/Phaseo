@@ -1,6 +1,6 @@
-import Link from "next/link";
-import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
+import Link from "@/components/link";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { ArrowLeft, BadgeCheck, Box, CalendarDays, GitFork, Layers3, Route, ShieldCheck, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import CopyPresetButton from "@/components/(gateway)/marketplace/CopyPresetButton";
 import { use } from "react";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { marketplacePresetDetailQuery } from "../page.queries";
 import { marketplaceAuthStatusQuery } from "./page.functions";
 import { buildMetadata } from "@/lib/seo";

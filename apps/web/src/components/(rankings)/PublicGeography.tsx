@@ -1,5 +1,5 @@
 import { GeographyUsage } from "@/components/(gateway)/usage/GeographyUsage";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { rankingGeographySectionQuery } from "@/components/(rankings)/rankingSections.queries";

@@ -10,7 +10,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type ChatDeleteDialogProps = {
     open: boolean;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Pause, Play, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

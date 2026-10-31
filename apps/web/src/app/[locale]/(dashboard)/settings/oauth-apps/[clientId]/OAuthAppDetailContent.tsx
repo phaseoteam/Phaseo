@@ -1,6 +1,6 @@
 "use client";
 
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import OAuthAppDetailPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppDetailPanel";
 import { PrivateSettingsQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import type { SettingsOAuthAppDetailInitialData } from "@/lib/fetchers/internal/settingsTypes";

@@ -1,9 +1,9 @@
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Trophy } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { apiProviderTopModelsQuery } from "../apiProvider.queries";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { DisplayCount } from "@/components/display/DisplayValue";
 import {
 	Empty,

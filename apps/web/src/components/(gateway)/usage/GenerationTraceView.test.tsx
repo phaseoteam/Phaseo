@@ -1,5 +1,5 @@
 import React from "react";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GenerationTraceView } from "./GenerationTraceView";
 import { OrderedLifecycleEvents, readLifecycleJournal } from "./OrderedLifecycleEvents";
@@ -21,14 +21,14 @@ jest.mock("./DetailDialogPrimitives", () => ({ DetailTimingBar: () => null }));
 
 test.each(Object.keys(catalogs) as Array<keyof typeof catalogs>)("renders retained tools and final gateway text without missing messages in %s", (locale) => {
 	const messages = catalogs[locale];
-	const html = renderToStaticMarkup(<NextIntlClientProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
+	const html = renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
 		status: "stored", storage_provider: "cloudflare_r2", bytes: 100, retention_until: null, error: null,
 		payload: {
 			gateway_response: { output_text: "Final gateway answer" },
 			provider_response: { choices: [{ message: { content: "Intermediate provider answer", tool_calls: [{ id: "tool1", function: { name: "search", arguments: "{}" } }] } }] },
 			server_tool_trace: [{ round: 1, durationMs: 123, calls: [{ id: "tool1", name: "search", arguments: "{}", output: "Search result" }] }],
 		},
-	}} /></NextIntlClientProvider>);
+	}} /></AppIntlProvider>);
 	const completion = html.slice(html.indexOf('id="trace-response"'), html.indexOf('id="trace-capture"'));
 	expect(completion).toContain("Final gateway answer");
 	expect(completion).not.toContain("Intermediate provider answer");
@@ -44,15 +44,15 @@ test.each(Object.keys(catalogs) as Array<keyof typeof catalogs>)("renders retain
 		{ sequence: 7, type: "provider.started", span_id: "retry", call_kind: "retry", elapsed_ms: 6, timestamp_ms: 1006 },
 		{ sequence: 8, type: "provider.started", span_id: "child", call_kind: "nested", elapsed_ms: 7, timestamp_ms: 1007 },
 	] });
-	expect(() => renderToStaticMarkup(<NextIntlClientProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><OrderedLifecycleEvents journal={journal!} toolResults={new Map()} /></NextIntlClientProvider>)).not.toThrow();
+	expect(() => renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><OrderedLifecycleEvents journal={journal!} toolResults={new Map()} /></AppIntlProvider>)).not.toThrow();
 });
 
 test.each(Object.keys(catalogs) as Array<keyof typeof catalogs>)("says zero data retention skipped the I/O log, in the reader's language, in %s", (locale) => {
 	const messages = catalogs[locale];
-	const html = renderToStaticMarkup(<NextIntlClientProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
+	const html = renderToStaticMarkup(<AppIntlProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
 		status: "not_enabled", storage_provider: null, bytes: null, retention_until: null,
 		error: "Skipped: zero data retention is required for this request", reason: "zero_data_retention", payload: null,
-	}} /></NextIntlClientProvider>);
+	}} /></AppIntlProvider>);
 	expect(html).toContain(messages.trace.skippedZeroDataRetention);
 	if (locale !== "en-GB") expect(html).not.toContain("Skipped: zero data retention is required for this request");
 });

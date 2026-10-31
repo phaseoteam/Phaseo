@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "@/lib/navigation";
 import RealtimeSessionsPanel, { type RealtimeSession } from "@/components/(gateway)/usage/RealtimeSessionsPanel";
 import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/usage/PrivateUsageQuery";
 import { fetchPrivateUsage } from "@/lib/query/fetchPrivateUsage";

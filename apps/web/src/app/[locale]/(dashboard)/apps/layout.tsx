@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import type { ReactNode } from "react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 // The public app leaderboard and usage pages are not search landing pages.
 // Curated integration discovery is handled by /works-with instead.

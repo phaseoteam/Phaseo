@@ -23,10 +23,10 @@ import {
     verifyMFAEnrollmentAction,
 } from '@/app/(dashboard)/settings/account/actions'
 import { toast } from 'sonner'
-import { useTranslations } from 'next-intl'
+import { useTranslations } from '@/i18n/react'
 import { localizedSettingsError } from '@/i18n/error-messages'
 import { Loader2, QrCode, Key, CheckCircle2, Copy } from 'lucide-react'
-import Image from 'next/image'
+import Image from '@/components/image'
 
 type EnrollmentStep = 'authenticate' | 'qr-code' | 'verify' | 'success'
 

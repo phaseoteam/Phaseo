@@ -7,12 +7,12 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { githubContributorsQuery } from "./page.queries";
 
 type StaticContributor = {

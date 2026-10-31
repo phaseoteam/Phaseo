@@ -4,9 +4,9 @@ import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { PrivateSettingsQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import type { SettingsResourceData } from "@/app/(dashboard)/settings/cachedSettingsActions";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "@/lib/navigation";
 import {
 	BarChart3,
 	BookOpen,

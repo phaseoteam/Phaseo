@@ -39,7 +39,7 @@ import {
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import RegenerateSecretDialog from "./RegenerateSecretDialog";
 import RedirectUriManager from "./RedirectUriManager";
 import DeleteOAuthAppDialog from "./DeleteOAuthAppDialog";

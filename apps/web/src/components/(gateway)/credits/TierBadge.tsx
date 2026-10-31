@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { Badge } from "@/components/ui/badge";
 import {
 	HoverCard,
@@ -8,7 +8,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ArrowUpRight } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const HIDE_ENTERPRISE_REFERENCES = true;

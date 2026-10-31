@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
+import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { use } from "react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";

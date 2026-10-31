@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useTransition } from "react";
-import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

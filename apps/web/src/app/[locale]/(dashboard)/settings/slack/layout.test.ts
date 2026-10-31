@@ -1,7 +1,7 @@
 jest.mock("@/lib/flags", () => ({ slackAgentSettingsEnabled: jest.fn() }));
-jest.mock("next/navigation", () => ({ notFound: jest.fn(() => { throw new Error("NEXT_NOT_FOUND"); }) }));
+jest.mock("@/lib/navigation", () => ({ notFound: jest.fn(() => { throw new Error("NEXT_NOT_FOUND"); }) }));
 
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { slackAgentSettingsEnabled } from "@/lib/flags";
 import SlackSettingsLayout from "./layout";
 

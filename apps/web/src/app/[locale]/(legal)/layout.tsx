@@ -1,5 +1,5 @@
-import { useTranslations, useLocale } from "next-intl";
-import Link from "next/link";
+import { useTranslations, useLocale } from "@/i18n/react";
+import Link from "@/components/link";
 import LegalHeaderShell from "@/components/header/LegalHeaderShell";
 import LegalBackButton from "@/components/header/LegalBackButton";
 import { ScopedMessages } from "@/components/i18n/ScopedMessages";

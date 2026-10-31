@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import InternalToolsGrid from "@/components/internal/InternalToolsGrid";
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -1,7 +1,7 @@
 import { Suspense, use } from "react";
-import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
-import { useLocale } from "next-intl";
+import { notFound } from "@/lib/navigation";
+import { getTranslations } from "@/i18n/server";
+import { useLocale } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { redirect } from "@/i18n/navigation";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";

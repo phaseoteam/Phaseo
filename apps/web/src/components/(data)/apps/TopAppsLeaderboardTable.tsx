@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
 import { ChevronLeft, ChevronRight, Globe2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

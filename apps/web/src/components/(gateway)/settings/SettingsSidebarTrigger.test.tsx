@@ -1,6 +1,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { getPublicMessages } from "@/i18n/messages";
 import { getSettingsMessages } from "@/i18n/settings";
 import { publicLocales } from "@/i18n/routing";
@@ -31,9 +31,9 @@ it.each(publicLocales)("renders the settings side sheet with only shared message
     const copy = getSettingsNavigationCopy(getSettingsMessages(locale), messages.SettingsUI.sidebarNew);
     const onError = jest.fn();
     const html = renderToStaticMarkup(
-        <NextIntlClientProvider locale={locale} timeZone="UTC" messages={selectMessages(messages, SHELL_MESSAGE_NAMESPACES)} onError={onError}>
+        <AppIntlProvider locale={locale} timeZone="UTC" messages={selectMessages(messages, SHELL_MESSAGE_NAMESPACES)} onError={onError}>
             <SettingsSidebarTrigger copy={copy} />
-        </NextIntlClientProvider>,
+        </AppIntlProvider>,
     );
     // Header sheets cannot rely on the settings page's nested provider.
     expect(html).not.toContain("SettingsUI.");

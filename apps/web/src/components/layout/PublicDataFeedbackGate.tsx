@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 import {
 	PUBLIC_DATA_ROUTE_ROOTS,

@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { englishSettingsUiMessages } from "@/i18n/default-messages";
 import { nestDottedMessageKeys } from "@/i18n/message-overlays";
 import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails } from "./LiveSettings";
 
 function renderToStaticMarkup(children: ReactNode) {
-	return renderMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }}>{children}</NextIntlClientProvider>);
+	return renderMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }}>{children}</AppIntlProvider>);
 }
 
 describe("Live settings and usage", () => {

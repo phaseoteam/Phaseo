@@ -17,7 +17,7 @@ import type {
 	ProviderTokenSeriesModel,
 	ProviderTokenSeriesPoint,
 } from "@/lib/fetchers/api-providers/providerDataTypes";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 // Conditional query tuples; each result is read with its own cast.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

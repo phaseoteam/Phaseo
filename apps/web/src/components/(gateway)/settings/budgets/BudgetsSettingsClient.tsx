@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";

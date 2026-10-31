@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";

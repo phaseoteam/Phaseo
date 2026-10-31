@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import TrustedWorkloadsSettingsClient from "@/components/(gateway)/settings/trusted-workloads/TrustedWorkloadsSettingsClient";

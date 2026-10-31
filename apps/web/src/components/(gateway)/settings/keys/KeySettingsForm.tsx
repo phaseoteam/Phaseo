@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import React, { useMemo, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";

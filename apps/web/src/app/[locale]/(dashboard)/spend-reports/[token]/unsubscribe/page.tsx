@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { SpendReportSubscriptionButton } from "@/components/spend-reports/SpendReportSubscriptionButton";

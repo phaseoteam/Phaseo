@@ -3,7 +3,7 @@
 // Why: Provides title, description, and context for the page
 // How: Simple presentational component
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Trophy } from "lucide-react";
 
 export function RankingsHeader() {

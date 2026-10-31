@@ -2,7 +2,7 @@
 import { localizedInternalCatalogError } from "@/i18n/internal-catalog-errors";
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";

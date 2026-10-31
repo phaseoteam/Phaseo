@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { useEffect, useMemo } from "react";
 import { Label } from "@/components/ui/label";

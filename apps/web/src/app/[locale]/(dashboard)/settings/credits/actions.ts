@@ -7,7 +7,6 @@ import {
 	normalizePromoCodeInput,
 	resolveRedeemMessage,
 } from "@/lib/credits/promoCodes";
-import "server-only";
 import { fetchAccountWebApi, fetchPublicWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import {

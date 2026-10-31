@@ -113,7 +113,7 @@ export const resolveOAuthConsent = createServerFn({ method: "GET" })
 			import("@/lib/oauth/safeUrls"),
 			import("@/lib/oauth/apiBaseUrl"),
 			import("@/lib/oauth/registeredRedirect"),
-			import("next-intl/server"),
+			import("@/i18n/server"),
 		]);
 		const supabase = await createClient();
 		const oauthClient = supabase.auth.oauth as any;

@@ -1,4 +1,3 @@
-import "server-only";
 
 import { cache } from "react";
 import { io } from "next/cache";

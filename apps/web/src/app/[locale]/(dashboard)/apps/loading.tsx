@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function AppsLoading() {
 	const t = useTranslations("Product.apps");

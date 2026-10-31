@@ -10,7 +10,7 @@ import { TrendingUp, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { TrendingModel } from "@/lib/fetchers/rankings/getRankingsData";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface TrendingModelsProps {

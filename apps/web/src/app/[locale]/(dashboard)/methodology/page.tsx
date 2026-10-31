@@ -1,7 +1,7 @@
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
-import type { Metadata } from "next";
-import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { useTranslations } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { ArrowRight } from "lucide-react";
 import { buildMetadata } from "@/lib/seo";

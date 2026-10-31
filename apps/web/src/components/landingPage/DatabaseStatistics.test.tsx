@@ -27,7 +27,7 @@ jest.mock("@/i18n/navigation", () => ({
 	}) => React.createElement("a", { ...props, href }, children),
 }));
 
-jest.mock("next-intl/server", () => ({
+jest.mock("@/i18n/server", () => ({
 	getTranslations: jest.fn(async () => {
 		const labels: Record<string, string> = {
 			"statistics.catalogModels": "Catalog models",

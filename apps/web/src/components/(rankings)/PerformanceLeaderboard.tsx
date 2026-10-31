@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
+import { useLocale, useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { EmptyLeaderboardPreview } from "@/components/(rankings)/EmptyLeaderboardPreview";

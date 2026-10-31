@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "@/components/image";
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { ChevronRight } from "lucide-react";
 import {
@@ -9,7 +9,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { landingAnnouncementPostsQuery } from "@/components/landingPage/landing.functions";
 

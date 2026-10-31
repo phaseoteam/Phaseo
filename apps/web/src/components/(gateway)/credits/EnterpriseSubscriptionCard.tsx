@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { ArrowUpRight, Check, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";

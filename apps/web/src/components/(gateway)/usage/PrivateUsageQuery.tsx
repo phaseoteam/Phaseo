@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { createContext, useContext, type ReactNode } from "react";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";

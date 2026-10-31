@@ -1,4 +1,4 @@
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import { getSettingsMessages } from "@/i18n/settings";
 import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messages";
 import { getPublicMessages } from "@/i18n/messages";

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Activity, Zap } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { appDetailsQuery } from "./app.queries";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { DisplayCount, DisplayDate, DisplayNumber } from "@/components/display/DisplayValue";
 
 export default function AppHeader({ appId }: { appId: string }) {

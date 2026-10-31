@@ -1,9 +1,9 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { Calendar, Sparkles, TrendingUp, Check } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { apiProviderUpdatesQuery } from "../apiProvider.queries";
 import type { APIProviderRecentModel } from "@/lib/fetchers/api-providers/providerDataTypes";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { DisplayCalendarDate, DisplayCount, DisplayNumber } from "@/components/display/DisplayValue";
 import {
 	Empty,

@@ -3,9 +3,9 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React, { useState } from "react";
-import Image from "next/image";
+import Image from "@/components/image";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
-import { useLocale } from "next-intl";
+import { useLocale } from "@/i18n/react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import { groupConsentScopes } from "@/components/(gateway)/oauth/consentScopeGro
 import { scopePermissionFor, type ScopePermission, type ScopeTone } from "@/components/(gateway)/oauth/scopePermission";
 import { updateAuthorizationScopesAction } from "@/app/(dashboard)/settings/authorized-apps/actions";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface AuthorizationCardProps {
 	authorization: any;

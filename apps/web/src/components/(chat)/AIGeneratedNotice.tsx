@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export function AIGeneratedNotice({ className }: { className?: string }) {
 	const t = useTranslations("Product.chatRooms.aiElements");

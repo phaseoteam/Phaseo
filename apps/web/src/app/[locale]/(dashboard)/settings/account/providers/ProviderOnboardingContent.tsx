@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { withPrivateSettings } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import type { SettingsProviderOnboardingInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";

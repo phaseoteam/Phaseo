@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDown,
@@ -25,8 +25,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
-import { useLocale } from "next-intl";
+import { useTranslations } from "@/i18n/react";
+import { useLocale } from "@/i18n/react";
 import { readGameState, writeGameState } from "./gameStorage";
 import { GameModelIdentity } from "./GameModelIdentity";
 import { SprintGame } from "./SprintGame";

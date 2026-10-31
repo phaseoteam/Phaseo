@@ -5,7 +5,7 @@ import { useQueryState } from "nuqs";
 import PriceProviderCard from "./PriceProviderCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface PriceProvider {
 	id: string;

@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import { useTranslations } from "next-intl";
+import Image from "@/components/image";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";
 import { Logo } from "@/components/Logo";

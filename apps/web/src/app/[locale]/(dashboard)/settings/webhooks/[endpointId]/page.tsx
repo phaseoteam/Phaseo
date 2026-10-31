@@ -1,5 +1,5 @@
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "@/i18n/server";
+import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import CachedWebhooks from "@/components/(gateway)/settings/webhooks/CachedWebhooks";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

@@ -1,4 +1,4 @@
-import type { Metadata, ResolvingMetadata } from "next";
+import type { Metadata, ResolvingMetadata } from "@/lib/seo/metadataTypes";
 
 const CANONICAL_SITE_URL = "https://phaseo.app";
 const LOCAL_SITE_URL = "http://localhost:3000";

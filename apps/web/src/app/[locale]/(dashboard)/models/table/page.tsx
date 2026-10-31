@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import ModelsTablePageClient from "@/components/(data)/models/Models/ModelsTablePageClient";
 import { modelsTablePageDataQuery } from "./page.functions";

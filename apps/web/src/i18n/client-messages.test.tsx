@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { prerender } from "react-dom/static";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ClientMessagesProvider, FeatureMessagesProvider } from "@/components/i18n/LocaleMessagesProvider";
 import { allClientMessageScopes, clientMessagesFile, clientMessagesScopeId, selectScopeMessages } from "./client-message-files";
 import { clientMessagesFallbackUrl, clientMessagesUrl, fetchClientMessages } from "./client-message-source";

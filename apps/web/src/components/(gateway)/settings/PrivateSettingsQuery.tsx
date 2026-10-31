@@ -2,8 +2,8 @@
 
 import { Fragment, createContext, useContext, useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "@/i18n/react";
+import { useRouter, useSearchParams } from "@/lib/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { privateSettingsOptions } from "@/lib/query/privateSettings";

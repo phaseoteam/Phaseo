@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import BudgetsContent from "./BudgetsContent";
 
 export async function generateMetadata() {

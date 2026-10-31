@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import OtherInfo from "./OtherInfo";
 
-jest.mock("next-intl/server", () => ({
+jest.mock("@/i18n/server", () => ({
 	getLocale: async () => "en-GB",
 	getTranslations: async () => (key: string) => key,
 }));

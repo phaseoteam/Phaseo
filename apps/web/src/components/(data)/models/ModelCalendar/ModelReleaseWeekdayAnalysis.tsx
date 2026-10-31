@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
+import { useLocale, useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Logo } from "@/components/Logo";
 import type { ModelEvent } from "@/lib/fetchers/updates/types";

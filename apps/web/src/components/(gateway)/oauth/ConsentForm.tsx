@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import Image from "next/image";
+import { useTranslations } from "@/i18n/react";
+import Image from "@/components/image";
 import {
 	AlertCircle,
 	CheckCircle2,

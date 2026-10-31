@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 // Money reads "$0.00003", not "US$0.00003", whatever the page locale.
 const MONEY_LOCALE = "en-US";

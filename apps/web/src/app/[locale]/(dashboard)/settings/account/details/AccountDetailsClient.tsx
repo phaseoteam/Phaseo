@@ -1,6 +1,6 @@
 "use client";
 import { Suspense } from "react";
-import { useLocale } from "next-intl";
+import { useLocale } from "@/i18n/react";
 import { getSettingsMessages } from "@/i18n/settings";
 import type { PublicLocale } from "@/i18n/routing";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";

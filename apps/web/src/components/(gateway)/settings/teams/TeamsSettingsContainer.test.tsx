@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import TeamsSettingsContainer from "./TeamsSettingsContainer";
 
-jest.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+jest.mock("@/i18n/react", () => ({ useTranslations: () => (key: string) => key }));
 jest.mock("@/components/(gateway)/settings/CreateTeamInviteDialog", () => () => null);
 jest.mock("@/components/(gateway)/settings/SettingsPageHeader", () => () => null);
 jest.mock("./TeamSettingsPanel", () => () => null);

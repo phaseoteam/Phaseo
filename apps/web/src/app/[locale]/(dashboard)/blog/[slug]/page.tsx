@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Link } from "@/i18n/navigation";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ArrowLeft } from "lucide-react";
 import { BlogTableOfContents } from "@/components/announcements/BlogTableOfContents";
 import { announcementMdxComponents } from "@/components/announcements/announcementMdxComponents";
@@ -15,7 +15,7 @@ import { blogPostQuery } from "./post.functions";
 import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
 import { buildMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 

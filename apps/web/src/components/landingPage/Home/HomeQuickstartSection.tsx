@@ -7,7 +7,7 @@ import {
 	type ComponentProps,
 	type ReactNode,
 } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import {

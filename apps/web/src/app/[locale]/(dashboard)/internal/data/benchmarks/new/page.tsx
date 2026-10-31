@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { BenchmarkForm } from "@/components/(data)/BenchmarkForm";
 import { createBenchmarkAction } from "../../actions";
 

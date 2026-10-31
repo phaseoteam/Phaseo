@@ -1,6 +1,6 @@
 "use client";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { IntelligenceValueComparison } from "./IntelligenceValueComparison";
 import { useState } from "react";
 import { ArrowUpRight, Search } from "lucide-react";

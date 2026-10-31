@@ -17,7 +17,7 @@ import { checkPuzzle } from "@/lib/games/client";
 import type { ModelCandidate, SprintPuzzle } from "@/lib/games/types";
 import { cn } from "@/lib/utils";
 import { GameModelIdentity } from "./GameModelIdentity";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type SprintState = {
   found: ModelCandidate[];

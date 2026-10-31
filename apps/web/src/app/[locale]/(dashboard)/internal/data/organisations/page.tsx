@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { adminCatalogListQuery } from "../catalog.functions";

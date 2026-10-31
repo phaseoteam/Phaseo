@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "@/lib/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import {

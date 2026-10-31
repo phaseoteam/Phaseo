@@ -20,7 +20,7 @@ import { redeemCreditCodeAction } from "@/app/(dashboard)/settings/credits/actio
 import { normalizePromoCodeInput } from "@/lib/credits/promoCodes";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type TeamOption = {

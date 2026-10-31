@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";

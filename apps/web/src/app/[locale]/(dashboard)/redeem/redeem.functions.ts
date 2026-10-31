@@ -15,7 +15,7 @@ const loadRedeemPage = createServerFn({ method: "GET" })
 	.validator((input: { locale: string; code: string }) => ({ locale: String(input.locale), code: String(input.code) }))
 	.handler(async ({ data: { locale, code } }) => {
 		const [{ redirect }, { fetchRedeemInitialData }] = await Promise.all([
-			import("next/navigation"),
+			import("@/lib/navigation"),
 			import("@/lib/fetchers/internal/fetchRedeemInitialData"),
 		]);
 		const initialData = await fetchRedeemInitialData();

@@ -1,6 +1,6 @@
 "use server";
 
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { isPublicLocale } from "@/i18n/routing";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { Copy, ExternalLink, RefreshCw, Terminal } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { reauthorizeCliScopesAction } from "@/app/(dashboard)/settings/authorized-apps/actions";
 import { Button } from "@/components/ui/button";

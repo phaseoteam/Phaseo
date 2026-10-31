@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatArtificialAnalysisScore, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import {
 	ResponsiveContainer,

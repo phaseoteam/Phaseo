@@ -1,7 +1,7 @@
-import { useTranslations, useLocale } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { useTranslations, useLocale } from "@/i18n/react";
+import { getTranslations } from "@/i18n/server";
 import AppsSettingsContent from "./AppsSettingsContent";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { Suspense } from "react";

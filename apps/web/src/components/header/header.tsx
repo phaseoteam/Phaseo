@@ -1,9 +1,9 @@
 // components/header/Header.tsx  (STATIC)
-import Link from "next/link";
+import Link from "@/components/link";
 import { IntentLink } from "@/components/navigation/IntentLink";
-import Image from "next/image";
+import Image from "@/components/image";
 import { Suspense } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import AuthControls from "./AuthControls";
 import MainNav from "./MainNav";

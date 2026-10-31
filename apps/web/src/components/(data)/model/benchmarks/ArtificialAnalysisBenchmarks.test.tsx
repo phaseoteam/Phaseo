@@ -1,7 +1,7 @@
 import site from "../../../../../messages/en-GB/site.json";
 import catalogue from "../../../../../messages/en-GB/catalogue.json";
 import product from "../../../../../messages/en-GB/product.json";
-import { NextIntlClientProvider, createTranslator } from "next-intl";
+import { AppIntlProvider, createTranslator } from "@/i18n/react";
 import type { ReactNode } from "react";
 import common from "../../../../../messages/en-GB/common.json";
 import React from "react";
@@ -21,7 +21,7 @@ jest.mock("@number-flow/react", () => ({
 	default: ({ value }: { value: number }) => String(value),
 }));
 
-jest.mock("next-intl/server", () => ({
+jest.mock("@/i18n/server", () => ({
 	getTranslations: async (namespace: string) => createTranslator({ locale: "en-GB", messages: { Catalogue: catalogue }, namespace } as never),
 }));
 
@@ -32,7 +32,7 @@ const highlight = (benchmarkId: string, score: number): ModelBenchmarkHighlight 
 });
 
 function renderLocalized(node: ReactNode, client = new QueryClient()) {
-	return renderToStaticMarkup(<QueryClientProvider client={client}><NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Common: common, Catalogue: catalogue, Product: product, Site: site }}>{node}</NextIntlClientProvider></QueryClientProvider>);
+	return renderToStaticMarkup(<QueryClientProvider client={client}><AppIntlProvider timeZone="UTC" locale="en-GB" messages={{ Common: common, Catalogue: catalogue, Product: product, Site: site }}>{node}</AppIntlProvider></QueryClientProvider>);
 }
 
 describe("Artificial Analysis benchmark panel", () => {

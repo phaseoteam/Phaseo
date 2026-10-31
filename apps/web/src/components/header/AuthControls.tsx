@@ -1,6 +1,6 @@
 // components/header/AuthControls.tsx
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLocale } from "next-intl";
+import { useLocale } from "@/i18n/react";
 import HeaderClient from "./HeaderClient";
 import { shellDataQuery } from "./shellData";
 

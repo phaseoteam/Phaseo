@@ -6,8 +6,8 @@ import { TrendingUp, TrendingDown, ExternalLink, Sparkles } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { creditsTierSummaryQuery } from "./creditsTierSummary.functions";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;

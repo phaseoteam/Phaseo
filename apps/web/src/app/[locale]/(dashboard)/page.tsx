@@ -10,7 +10,7 @@ import {
 	ShieldCheck,
 	type LucideIcon,
 } from "lucide-react";
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { absoluteUrl } from "@/lib/seo";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
@@ -31,16 +31,16 @@ import { Logo } from "@/components/Logo";
 import { HomepageModelContext } from "@/components/agents/HomepageModelContext";
 import { Button } from "@/components/ui/button";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { homePageFlagsQuery } from "./page.functions";
 import { homeModelPricesQuery } from "./page.queries";
-import Script from "next/script";
+import Script from "@/components/script";
 import {
 	PREFERRED_SITE_NAME,
 	SITE_ALTERNATE_NAME,
 	SITE_NAME,
 } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { ScopedMessages, type ScopedLayoutProps } from "@/components/i18n/ScopedMessages";
 

@@ -4,7 +4,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { type FormEvent, useMemo, useRef, useState } from "react";
 import { UnsavedChangesGuard } from "@/components/(data)/UnsavedChangesGuard";
 import { useCatalogFormChanges } from "@/components/(data)/useCatalogFormChanges";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Plus, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";

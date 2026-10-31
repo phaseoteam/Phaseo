@@ -2,7 +2,7 @@
 import { startOfUTCWeek } from "./time-buckets";
 
 import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";

@@ -1,7 +1,7 @@
-import { useTranslations, useLocale } from "next-intl";
-import Image from "next/image";
+import { useTranslations, useLocale } from "@/i18n/react";
+import Image from "@/components/image";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ModelAvailabilityItem } from "@/lib/fetchers/models/getModelAvailability";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { Logo } from "@/components/Logo";

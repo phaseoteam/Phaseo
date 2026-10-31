@@ -1,8 +1,8 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
+import { notFound } from "@/lib/navigation";
+import Link from "@/components/link";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { adminCatalogRecordQuery } from "../../../catalog.functions";
 import ModelLegacyEditor from "./ModelLegacyEditor";
 import ModelRevalidationControls from "./ModelRevalidationControls";

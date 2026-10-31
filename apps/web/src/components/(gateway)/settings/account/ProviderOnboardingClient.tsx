@@ -3,7 +3,7 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateAccountQueries } from "@/lib/query/invalidation";
 import {
@@ -21,7 +21,7 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedProviderCatalogMessage, localizedProviderEvent } from "@/i18n/provider-catalog-messages";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Button } from "@/components/ui/button";

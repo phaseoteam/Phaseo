@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import GuardrailEditorPage from "@/components/(gateway)/settings/guardrails/GuardrailEditorPage";

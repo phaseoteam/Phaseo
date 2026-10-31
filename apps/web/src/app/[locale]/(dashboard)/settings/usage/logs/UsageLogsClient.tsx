@@ -1,9 +1,9 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { memo, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { useSearchParams } from "@/lib/navigation";
+import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 
 import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/usage/PrivateUsageQuery";
 import { fetchPrivateUsage, fetchPrivateUsageRequest } from "@/lib/query/fetchPrivateUsage";

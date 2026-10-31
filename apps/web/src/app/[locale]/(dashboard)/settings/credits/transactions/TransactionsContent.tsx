@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import RecentTransactions from "@/components/(gateway)/credits/RecentTransactions";
 import EnterpriseInvoices from "@/components/(gateway)/credits/EnterpriseInvoices";

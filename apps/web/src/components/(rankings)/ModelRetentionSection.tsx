@@ -1,11 +1,11 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowUpRight, Repeat2 } from "lucide-react";
 import { HorizontalRankingChart } from "@/components/(rankings)/HorizontalRankingChart";
 import { InlineInfoTooltip } from "@/components/(rankings)/InlineInfoTooltip";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { Logo } from "@/components/Logo";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { rankingRetentionSectionQuery } from "@/components/(rankings)/rankingSections.queries";

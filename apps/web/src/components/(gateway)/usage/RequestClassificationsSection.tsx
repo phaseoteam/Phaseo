@@ -1,9 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useSearchParams } from "@/lib/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 import { cn } from "@/lib/utils";
 

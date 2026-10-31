@@ -3,12 +3,12 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ConfigurableLogTable from "./ConfigurableLogTable";
 import { SESSION_COLUMNS } from "./logColumns";
 import { getSessionPrimary } from "./sessionPrimary";
-import dynamic from "next/dynamic";
-import Link from "next/link";
+import dynamic from "@/lib/dynamic";
+import Link from "@/components/link";
 import {
 	fetchAppMetadata,
 	fetchModelMetadata,
@@ -25,7 +25,7 @@ import { Logo } from "@/components/Logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "@/lib/navigation";
 import { buildOpenRequestInChatHref } from "@/components/(chat)/chatMessageMetadata";
 import { normalizeLogReplayEndpoint } from "@/lib/chat/logReplay";
 import { CopyButton } from "@/components/ui/copy-button";

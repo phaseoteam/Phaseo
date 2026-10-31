@@ -1,7 +1,7 @@
 // `flags/next` (Vercel Flags SDK) without Next: a flag is an async function
 // that identifies the request's entities, then asks its adapter (Statsig) or
 // `decide`. `dedupe` memoises per request, like the SDK does.
-import { getCurrentRequest } from "./request-context";
+import { getCurrentRequest } from "@/compat/request-context";
 
 type Entities = unknown;
 type DecideArgs<E> = { entities?: E; headers: Headers; cookies: Map<string, string> };

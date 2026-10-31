@@ -1,6 +1,6 @@
 "use client";
 import { Suspense } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import RoutingSettingsClient from "@/components/(gateway)/settings/routing/RoutingSettingsClient";
 import ModelSuccessorRoutingSettings from "@/components/(gateway)/settings/routing/ModelSuccessorRoutingSettings";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";

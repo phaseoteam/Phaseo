@@ -4,7 +4,7 @@ import { WorkspaceSelectField } from "./WorkspaceSelectField";
 
 const mockSelectProps: Array<Record<string, unknown>> = [];
 
-jest.mock("next-intl", () => ({
+jest.mock("@/i18n/react", () => ({
 	useTranslations: () => (key: string) =>
 		({
 			workspace: "Workspace",

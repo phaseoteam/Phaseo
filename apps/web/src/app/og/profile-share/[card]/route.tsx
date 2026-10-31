@@ -1,4 +1,4 @@
-import { ImageResponse } from "next/og"
+import { ImageResponse } from "@/lib/og/imageResponse"
 import { NextRequest } from "next/server"
 
 import {

@@ -17,7 +17,7 @@ import {
 	updateRoutingSettings,
 	type RoutingMode,
 } from "@/app/(dashboard)/settings/routing/actions";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 type RoutingOption = {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";

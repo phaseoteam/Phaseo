@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import NotificationDestinationsClient from "./NotificationDestinationsClient";
 import type { NotificationDestination } from "@/lib/fetchers/internal/settingsTypes";
 
-jest.mock("next-intl", () => ({ useTranslations: () => Object.assign((key: string) => key, { has: () => false, rich: (key: string) => key }) }));
+jest.mock("@/i18n/react", () => ({ useTranslations: () => Object.assign((key: string) => key, { has: () => false, rich: (key: string) => key }) }));
 jest.mock("sonner", () => ({ toast: { error: jest.fn(), success: jest.fn(), loading: jest.fn(), promise: jest.fn() } }));
 jest.mock("../PrivateSettingsQuery", () => ({ useSettingsWrite: () => (promise: Promise<unknown>) => promise }));
 jest.mock("@/app/(dashboard)/settings/credits/actions", () => ({

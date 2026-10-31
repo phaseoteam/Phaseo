@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 export default function CatalogLoading() {
 	const t = useTranslations("SettingsUI.newMainSettingsCopy");
 	return <div role="status" className="space-y-4 py-8" aria-label={t("loadingCatalogRecords")}>

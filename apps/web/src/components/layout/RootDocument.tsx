@@ -1,6 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { HeadContent, Scripts } from "@tanstack/react-router";
-import { useMessages } from "next-intl";
+import { useMessages } from "@/i18n/react";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
 import {
 	Montserrat,
@@ -9,7 +9,7 @@ import {
 	Noto_Sans_JP,
 	Noto_Sans_SC,
 } from "next/font/google";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import { fullMessagesUrl, RootIntlProvider } from "@/i18n/RootIntlProvider";
 import {
 	CookieConsentManager,

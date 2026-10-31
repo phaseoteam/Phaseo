@@ -1,10 +1,10 @@
 "use client";
 import { localizedBenchmarkConfiguration, localizedArtificialAnalysisMetric } from "@/i18n/benchmark-display";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 import { Link } from "@/i18n/navigation";
 import { useState } from "react";
-import Image from "next/image";
+import Image from "@/components/image";
 import { ArrowUpRight, BrainCircuit, Bot, CircleDollarSign, Code2, Gauge, Search } from "lucide-react";
 import { artificialAnalysisChartColour, artificialAnalysisMetricKey, artificialAnalysisMetrics, formatArtificialAnalysisScore } from "@/lib/benchmarks/artificialAnalysis";
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";

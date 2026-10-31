@@ -1,8 +1,8 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { UsageStackedBar } from "@/components/(rankings)/UsageStackedBar";
 import { formatModelDisplayName } from "@/lib/models/displayName";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { rankingImageInputsSectionQuery } from "@/components/(rankings)/rankingSections.queries";

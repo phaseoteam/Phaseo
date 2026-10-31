@@ -3,7 +3,7 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ArrowRight, Gamepad2, Trophy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

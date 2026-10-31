@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations } from "@/i18n/react"
 import { CreditCard } from "lucide-react"
 import { Logo } from "@/components/Logo"
 

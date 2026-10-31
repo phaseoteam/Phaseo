@@ -12,7 +12,7 @@ jest.mock("react", () => ({
 jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({
 	useDisplayPreferences: jest.fn(),
 }));
-jest.mock("next-intl", () => ({
+jest.mock("@/i18n/react", () => ({
 	useTranslations: () => (key: string, values?: { label?: string }) => `${key}${values?.label ? ` ${values.label}` : ""}`,
 }));
 

@@ -1,5 +1,5 @@
 import { use } from "react";
-import { permanentRedirect } from "next/navigation";
+import { permanentRedirect } from "@/lib/navigation";
 
 type AnnouncementRedirectPageProps = {
 	params: Promise<{ slug: string }>;

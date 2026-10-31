@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import NumberFlow from "@number-flow/react";
 import { Check } from "lucide-react";
 import { Input } from "@/components/ui/input";

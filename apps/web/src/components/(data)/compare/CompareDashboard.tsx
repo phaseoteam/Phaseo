@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useRouter, useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import type { ComparePairLink } from "./ComparePairSummary";
 import { decodeModelIdFromUrl, encodeModelIdForUrl } from "./compareUrl";
 import type { CompareModelOption } from "./types";

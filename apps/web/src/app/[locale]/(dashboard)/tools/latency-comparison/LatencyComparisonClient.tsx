@@ -2,7 +2,7 @@
 
 import { formatLatency } from "@phaseo/app-kit/format";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { OAuthScopeOption } from "@/lib/oauth/scopes";
 import { scopePermissionFor } from "./scopePermission";
 

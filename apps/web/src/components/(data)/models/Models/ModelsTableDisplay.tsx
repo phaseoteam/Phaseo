@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import {
 	useMemo,
 	useRef,
@@ -8,8 +8,8 @@ import {
 	type ReactNode,
 } from "react";
 import { OutputModalityChipRow } from "./OutputModalityChipRow";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { debounce, useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import {

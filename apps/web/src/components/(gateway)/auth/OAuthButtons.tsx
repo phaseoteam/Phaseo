@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/image";
 import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";

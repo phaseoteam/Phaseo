@@ -1,6 +1,6 @@
 "use server";
 
-import { getLocale } from "next-intl/server";
+import { getLocale } from "@/i18n/server";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import type { AccountQueryScope } from "@/lib/query/queryKeys";
 import { fetchSettingsAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAppsInitialData";

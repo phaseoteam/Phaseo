@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { Check, ChevronsUpDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
 	AlertDialog,

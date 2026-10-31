@@ -4,7 +4,7 @@ import { DEFAULT_DISPLAY_PREFERENCES, formatDisplayDateParts, formatDisplayNumbe
 import { KeyUsageSummary } from "./KeyUsageSummary";
 
 jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({ useDisplayFormatters: jest.fn() }));
-jest.mock("next-intl", () => ({
+jest.mock("@/i18n/react", () => ({
 	useTranslations: () => (key: string, values?: Record<string, string>) =>
 		values ? `${key}:${Object.values(values).join("|")}` : key,
 }));

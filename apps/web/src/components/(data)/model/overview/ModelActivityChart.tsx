@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";

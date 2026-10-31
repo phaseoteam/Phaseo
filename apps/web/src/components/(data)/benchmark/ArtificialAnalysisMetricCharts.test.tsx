@@ -1,7 +1,7 @@
 import site from "../../../../messages/en-GB/site.json";
 import catalogue from "../../../../messages/en-GB/catalogue.json";
 import product from "../../../../messages/en-GB/product.json";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import type { ReactNode } from "react";
 import common from "../../../../messages/en-GB/common.json";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -23,7 +23,7 @@ const ranking = (benchmarkId: string, label: string): PublicBenchmarkRanking => 
 });
 
 function renderLocalized(node: ReactNode) {
-	return renderToStaticMarkup(<NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Common: common, Catalogue: catalogue, Product: product, Site: site }}>{node}</NextIntlClientProvider>);
+	return renderToStaticMarkup(<AppIntlProvider timeZone="UTC" locale="en-GB" messages={{ Common: common, Catalogue: catalogue, Product: product, Site: site }}>{node}</AppIntlProvider>);
 }
 
 describe("Artificial Analysis metric charts", () => {

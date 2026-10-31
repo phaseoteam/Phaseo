@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Upload, Download } from "lucide-react";
 import { upsertChat } from "@/lib/indexeddb/chats";

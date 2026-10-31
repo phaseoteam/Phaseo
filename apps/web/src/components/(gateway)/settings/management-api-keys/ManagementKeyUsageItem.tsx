@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function ManagementKeyUsageItem({ k }: any) {
 	const [open, setOpen] = useState(false);

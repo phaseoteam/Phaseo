@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { createPortal } from "react-dom";
 import { Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";

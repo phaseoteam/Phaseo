@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";

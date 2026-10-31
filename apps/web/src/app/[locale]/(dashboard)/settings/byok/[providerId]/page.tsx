@@ -2,7 +2,7 @@ import { use } from "react";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import ByokProviderContent from "./ByokProviderContent";
 import { settingsApiProviderHeaderQuery, settingsApiProviderModelsQuery } from "../../catalog.queries";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 export async function generateMetadata() { const t = await getTranslations("SettingsUI.byokProviderPageCopy"); return { title: t("pageTitle") + " - BYOK" }; }
 export default function Page({ params, searchParams }: { params: Promise<{ providerId: string }>; searchParams: Promise<{ sampleKeys?: string }> }) {
 	const { providerId: encodedId } = use(params);

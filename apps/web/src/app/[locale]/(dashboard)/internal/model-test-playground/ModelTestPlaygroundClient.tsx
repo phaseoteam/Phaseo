@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { AlertCircle, AudioLines, Braces, CheckCircle2, ChevronDown, CircleDot, FileAudio, FlaskConical, ImageIcon, MessageSquareText, Play, Search, ShieldCheck, Sparkles, Square, Video, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

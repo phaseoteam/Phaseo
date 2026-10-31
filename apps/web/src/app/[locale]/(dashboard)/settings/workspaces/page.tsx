@@ -1,6 +1,6 @@
 import { use } from "react";
-import { getTranslations } from "next-intl/server";
-import { redirect } from "next/navigation";
+import { getTranslations } from "@/i18n/server";
+import { redirect } from "@/lib/navigation";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 

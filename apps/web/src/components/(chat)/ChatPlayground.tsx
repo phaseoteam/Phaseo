@@ -4,7 +4,7 @@ import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { getOpenUIContext, OPENUI_FORMAT, updateOpenUIState } from "./openui/openuiHelpers";
 import { loadOpenUILibrary } from "./openui/loadOpenUI";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Sidebar,
 	SidebarInset,

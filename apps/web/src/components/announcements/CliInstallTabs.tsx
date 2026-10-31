@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { SquareTerminal } from "lucide-react";
 import { CopyButton } from "@/components/ui/copy-button";
 import { cn } from "@/lib/utils";

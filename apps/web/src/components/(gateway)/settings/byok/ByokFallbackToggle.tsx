@@ -3,7 +3,7 @@
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { updateByokFallbackAction } from "@/app/(dashboard)/settings/byok/actions";

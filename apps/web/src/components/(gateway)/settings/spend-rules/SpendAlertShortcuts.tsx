@@ -1,7 +1,7 @@
 "use client";
 
 import { BellPlus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { KEY_LIMIT_ALERT_PERCENT, budgetAlertPrefill, keyLimitAlertPrefill, spendAlertHref } from "./spendRuleDraft";

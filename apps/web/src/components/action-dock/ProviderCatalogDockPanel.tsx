@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { useQuery } from "@tanstack/react-query";
 import { LoaderCircle, RefreshCw } from "lucide-react";

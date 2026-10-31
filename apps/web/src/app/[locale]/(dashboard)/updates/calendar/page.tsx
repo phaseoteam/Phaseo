@@ -4,8 +4,8 @@ import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { modelUpdatesQuery } from "../models/page.queries";
 import { buildMetadata } from "@/lib/seo";
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
 import type { RuntimeLocale } from "@/i18n/locales";
 
 export async function generateMetadata(props: {

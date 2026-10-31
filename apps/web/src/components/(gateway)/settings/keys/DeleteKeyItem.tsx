@@ -18,7 +18,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
 import { deleteApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function DeleteKeyItem({
 	k,

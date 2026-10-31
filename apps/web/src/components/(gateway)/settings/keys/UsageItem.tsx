@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { BarChart2 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 
 export default function UsageItem({ k }: any) {
 	const tUi = useTranslations("Common.ui");

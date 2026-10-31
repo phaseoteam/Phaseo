@@ -1,7 +1,7 @@
 "use client"
 
 import { type ReactNode, useEffect, useState } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations } from "@/i18n/react"
 import { Plus } from "lucide-react"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Button } from "@/components/ui/button"

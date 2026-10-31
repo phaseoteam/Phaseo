@@ -1,7 +1,7 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { landingAnnouncementPostsQuery } from "@/components/landingPage/landing.functions";
 

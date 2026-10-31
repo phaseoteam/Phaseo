@@ -1,4 +1,4 @@
-import type { AbstractIntlMessages } from "next-intl";
+import type { AbstractIntlMessages } from "@/i18n/react";
 
 /**
  * What a server boundary hands its client provider instead of a dictionary:

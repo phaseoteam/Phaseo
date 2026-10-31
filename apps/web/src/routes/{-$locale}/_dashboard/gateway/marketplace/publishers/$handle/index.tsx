@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page from "@/app/[locale]/(dashboard)/gateway/marketplace/publishers/[handle]/page";
 import { resolveMarketplacePublisher } from "@/app/[locale]/(dashboard)/gateway/marketplace/publishers/[handle]/page.functions";
-import { notFound, redirect } from "next/navigation";
+import { notFound, redirect } from "@/lib/navigation";
 
 
 export const Route = createFileRoute("/{-$locale}/_dashboard/gateway/marketplace/publishers/$handle/")({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Dialog,
 	DialogContent,
@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Loader2 } from "lucide-react";
 import type { AuditModelData } from "@/lib/fetchers/models/table-view/getAuditModels";
 import { updateModel } from "@/app/(dashboard)/internal/audit/actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 
 interface EditModelDialogProps {
 	model: AuditModelData | null;

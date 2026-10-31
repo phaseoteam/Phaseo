@@ -6,7 +6,7 @@ import { metadataToHead } from "@/lib/start/metadataToHead";
 import { metadataLoaderData } from "@/lib/start/streamedMetadata";
 import { nextPageComponent } from "@/lib/start/nextPage";
 import Page, * as mod from "@/app/[locale]/(dashboard)/settings/workspaces/users/[userId]/page";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { redirect } from "@/i18n/navigation";
 import { workspaceUserQuery } from "@/app/[locale]/(dashboard)/settings/workspaces/users/[userId]/workspaceUser.functions";
 

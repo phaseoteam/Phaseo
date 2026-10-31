@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Building2, ChevronRight, ExternalLink, PanelLeftClose, PanelLeftOpen, UserRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";

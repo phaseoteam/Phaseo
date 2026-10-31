@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { SettingsResourceQuery } from "../PrivateSettingsQuery";
 import SettingsPageHeader from "../SettingsPageHeader";
 import PrivateModelEditor from "./PrivateModelEditor";

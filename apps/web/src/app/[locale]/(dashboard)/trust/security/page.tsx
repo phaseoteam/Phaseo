@@ -1,8 +1,8 @@
 import { use } from "react";
-import { useTranslations } from "next-intl";
-import type { Metadata } from "next";
+import { useTranslations } from "@/i18n/react";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Link } from "@/i18n/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { TrustCallout, TrustDocument, TrustSection, TrustTable } from "@/components/trust/TrustDocument";
 import type { PublicLocale } from "@/i18n/routing";
 import { buildMetadata } from "@/lib/seo";

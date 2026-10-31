@@ -4,7 +4,7 @@ import * as React from "react";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTheme } from "next-themes";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

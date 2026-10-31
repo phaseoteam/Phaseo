@@ -2,7 +2,7 @@
 import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 
 import React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { ArrowDownRight, ArrowUpRight, CalendarClock, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {

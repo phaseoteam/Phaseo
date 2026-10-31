@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { LocalizedRequestError, localizedRequestErrorMessage } from "@/i18n/localized-request-error";
 import { Streamdown } from "streamdown";
 import {

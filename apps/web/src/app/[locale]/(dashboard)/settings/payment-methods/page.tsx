@@ -6,7 +6,7 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import { paymentMethodsInitialDataQuery } from "./paymentMethods.functions";
 import { getPaymentMethodsMessages } from "@/i18n/payment-methods";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;

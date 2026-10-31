@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
 import { ShieldBan } from "lucide-react";

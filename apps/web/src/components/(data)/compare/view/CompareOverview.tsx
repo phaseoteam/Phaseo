@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { AudioLines, Binary, CircleCheck, FileText, Image as ImageIcon, Minus, Type, Video, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CompareGrid, CompareNoteRow, CompareRow, CompareSection, MODEL_COLOURS, useCompareGrid, type CompareCell } from "./CompareGrid";

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Link } from "@/i18n/navigation";
 import { Pin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,10 @@ import type {
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import { buildMetadata } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import { use } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { blogIndexPostsQuery } from "./page.functions";
 import type { PublicLocale } from "@/i18n/routing";
 

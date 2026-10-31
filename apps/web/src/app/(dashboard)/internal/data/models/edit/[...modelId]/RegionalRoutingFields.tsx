@@ -1,5 +1,5 @@
 "use client";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { Globe2, ArrowUpRight } from "lucide-react";
 import { regionDisplayName } from "@/components/(data)/providers/edit/RegionSelection";

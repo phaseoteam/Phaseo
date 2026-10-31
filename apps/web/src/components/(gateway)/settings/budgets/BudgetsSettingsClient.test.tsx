@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../../messages/en-GB/settings-ui.json";
 import commonMessages from "../../../../../messages/en-GB/common.json";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -40,12 +40,12 @@ function render(data: Partial<SettingsBudgetsInitialData>, renderBudgetActions?:
 		dateParts: (value, options, fallback) => formatDisplayDateParts(value, preferences, options, fallback),
 	} as ReturnType<typeof useDisplayFormatters>);
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+		<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
 			<BudgetsSettingsClient
 				data={{ workspaceId: "w1", canManageBudgets: true, observedAt: OBSERVED_AT, budgets: [], ...data }}
 				renderBudgetActions={renderBudgetActions}
 			/>
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 }
 

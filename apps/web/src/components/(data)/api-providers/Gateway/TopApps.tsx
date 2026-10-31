@@ -1,9 +1,9 @@
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Users } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { apiProviderTopAppsQuery } from "../apiProvider.queries";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DisplayCount } from "@/components/display/DisplayValue";
 import {

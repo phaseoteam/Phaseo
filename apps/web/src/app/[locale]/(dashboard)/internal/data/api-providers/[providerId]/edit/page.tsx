@@ -1,8 +1,8 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
+import { notFound } from "@/lib/navigation";
+import Link from "@/components/link";
 import { use } from "react";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Globe2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ProviderForm } from "@/components/(data)/providers/edit/ProviderForm";

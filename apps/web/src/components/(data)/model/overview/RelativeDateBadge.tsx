@@ -11,7 +11,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000;

@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import EditManagementKeyItem from "./EditManagementKeyItem";
 import DeleteManagementKeyItem from "./DeleteManagementKeyItem";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type ManagementKeyState = "active" | "paused" | "expired" | "unknown";
 type ManagementKeyDialogType = "edit" | "delete";

@@ -3,8 +3,8 @@
 import { HttpMethodBadge } from "@/components/HttpMethodBadge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import {
 	ENDPOINT_ROUTE_PREVIEW_LIMIT,

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import { resolveLocalizedModelDescription } from "./localized-model-description";
 
 const locales = ["en-GB", "es-ES", "fr-FR", "de-DE", "pt-BR", "ja", "zh-Hans", "hi", "ar-SA"] as const;

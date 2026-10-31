@@ -1,5 +1,5 @@
 import { CircleAlert } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import {
 	Empty,

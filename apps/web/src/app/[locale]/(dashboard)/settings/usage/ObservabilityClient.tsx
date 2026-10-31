@@ -1,12 +1,12 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { usageDeltaPercent as deltaPercent } from "@phaseo/app-kit/format";
 import { Link } from "@/i18n/navigation";
 import { UserUsageChip } from "@/components/(gateway)/settings/keys/UserUsageChip";
 import { memo, useEffect } from "react";
 import { captureProductEventOnce } from "@/lib/productAnalytics";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "@/lib/navigation";
 import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/usage/PrivateUsageQuery";
 import { fetchPrivateUsage } from "@/lib/query/fetchPrivateUsage";
 import type { AccountQueryScope } from "@/lib/query/queryKeys";

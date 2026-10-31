@@ -1,7 +1,7 @@
 import { Activity, ArrowRight, Bot, Building2, CircleAlert, Database, Gauge, Landmark, Plus, Route, Shapes } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CatalogSearch } from "@/app/(dashboard)/internal/data/CatalogSearch";

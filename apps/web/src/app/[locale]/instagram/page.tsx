@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import type { Metadata } from "@/lib/seo/metadataTypes";
+import { redirect } from "@/lib/navigation";
 
 export const metadata: Metadata = {
 	robots: {

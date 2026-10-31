@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { after, NextResponse } from "next/server";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 import {
 	buildAuthErrorCodeRedirectUrl,
 	resolveCallbackErrorCode,

@@ -1,10 +1,10 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroProviderMarquee } from "./HeroProviderMarquee";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import { resolveLogo } from "@/lib/logos";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { DisplayCount, DisplayNumber } from "@/components/display/DisplayValue";
 
 interface HeroSectionProps {

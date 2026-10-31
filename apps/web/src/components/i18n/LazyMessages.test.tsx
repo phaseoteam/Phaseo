@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { LazyMessages } from "./LazyMessages";
 import { LocaleMessagesProvider } from "./LocaleMessagesProvider";
 import { getPublicMessages } from "@/i18n/messages";

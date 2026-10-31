@@ -1,4 +1,4 @@
-import { permanentRedirect } from "next/navigation";
+import { permanentRedirect } from "@/lib/navigation";
 import {
 	getModelPath,
 	resolveModelRouteIds,

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, XCircle } from "lucide-react";
 import { ToolPageHeader } from "@/components/(tools)/ToolPageHeader";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function JsonFormatter() {
 	const t = useTranslations("Product.tools.json");

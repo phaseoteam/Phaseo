@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata } from "@/lib/seo/metadataTypes";
 import { Suspense } from "react";
 import OrganisationsDisplay from "@/components/(data)/organisations/OrganisationDisplay";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { organisationsQuery } from "./page.queries";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "@/i18n/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {

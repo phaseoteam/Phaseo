@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { ProviderModel } from "@/lib/fetchers/models/getModelPricing";
 import { extractSupportedParameters } from "@/lib/fetchers/models/table-view/helpers";

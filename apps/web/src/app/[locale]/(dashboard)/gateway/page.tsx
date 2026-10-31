@@ -1,5 +1,5 @@
-import { useLocale } from "next-intl";
-import { permanentRedirect } from "next/navigation";
+import { useLocale } from "@/i18n/react";
+import { permanentRedirect } from "@/lib/navigation";
 
 export default function GatewayMarketingPageRedirect() {
 	const locale = useLocale();

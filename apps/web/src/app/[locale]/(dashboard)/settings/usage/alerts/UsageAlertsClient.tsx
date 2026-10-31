@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/usage/PrivateUsageQuery";
 import { fetchPrivateUsage } from "@/lib/query/fetchPrivateUsage";
 import type { AccountQueryScope } from "@/lib/query/queryKeys";

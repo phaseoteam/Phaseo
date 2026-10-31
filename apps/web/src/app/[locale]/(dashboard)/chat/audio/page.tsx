@@ -1,5 +1,5 @@
-import { useLocale } from "next-intl";
-import { redirect } from "next/navigation";
+import { useLocale } from "@/i18n/react";
+import { redirect } from "@/lib/navigation";
 
 export default function ChatAudioPage() {
 	const locale = useLocale();

@@ -1,6 +1,6 @@
-import type { Metadata, Viewport } from "next";
-import { getTranslations } from "next-intl/server";
-import { useLocale } from "next-intl";
+import type { Metadata, Viewport } from "@/lib/seo/metadataTypes";
+import { getTranslations } from "@/i18n/server";
+import { useLocale } from "@/i18n/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ChatViewportLock } from "./ChatViewportLock";
 import { ReplayMaskBody } from "@/components/analytics/ReplayMaskBody";

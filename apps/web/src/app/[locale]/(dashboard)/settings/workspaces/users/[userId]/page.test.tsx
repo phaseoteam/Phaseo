@@ -3,8 +3,8 @@ import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountCo
 import { fetchWorkspaceUser } from "@/lib/fetchers/internal/fetchWorkspaceUser";
 import { redirect } from "@/i18n/navigation";
 
-jest.mock("next-intl/server", () => ({ getLocale: async () => "en-GB", getTranslations: async () => (key: string) => key }));
-jest.mock("next/navigation", () => ({ notFound: () => { throw new Error("not-found"); } }));
+jest.mock("@/i18n/server", () => ({ getLocale: async () => "en-GB", getTranslations: async () => (key: string) => key }));
+jest.mock("@/lib/navigation", () => ({ notFound: () => { throw new Error("not-found"); } }));
 jest.mock("@/i18n/navigation", () => ({ redirect: jest.fn(() => { throw new Error("redirect"); }) }));
 jest.mock("@/lib/fetchers/internal/serverAccountContext", () => ({ getServerAccountContext: jest.fn() }));
 jest.mock("@/lib/fetchers/internal/fetchWorkspaceUser", () => ({ fetchWorkspaceUser: jest.fn() }));
