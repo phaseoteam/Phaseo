@@ -36,7 +36,7 @@ function formatUpdateRelativeTime(publishedAt: string): string {
     if (Number.isNaN(parsed.getTime())) return publishedAt;
 
     const now = new Date(
-        process.env.NEXT_PUBLIC_DEPLOY_TIME ??
+        process.env.PUBLIC_DEPLOY_TIME ??
             process.env.DEPLOY_TIME ??
             "1970-01-01T00:00:00.000Z"
     );

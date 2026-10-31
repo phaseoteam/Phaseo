@@ -10,7 +10,7 @@ import { enterpriseSelfServePreviewEnabled } from "@/lib/flags";
 const SETTINGS_PATH = "/settings/workspaces/enterprise";
 
 function settingsUrl(request: Request, workspaceId: string, result?: string) {
-	const base = process.env.NEXT_PUBLIC_BASE_URL || new URL(request.url).origin;
+	const base = process.env.PUBLIC_BASE_URL || new URL(request.url).origin;
 	const url = new URL(SETTINGS_PATH, base);
 	url.searchParams.set("workspaceId", workspaceId);
 	if (result) url.searchParams.set("identity", result);

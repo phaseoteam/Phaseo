@@ -48,7 +48,7 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 		window.addEventListener(ANALYTICS_CONSENT_EVENT, syncConsent);
 		window.addEventListener("storage", syncConsent);
 		void (async () => {
-			const key = process.env.NEXT_PUBLIC_STATSIG_CLIENT_KEY;
+			const key = process.env.PUBLIC_STATSIG_CLIENT_KEY;
 			if (!key) { settle({ variant: "cards" }); return; }
 			const { StatsigClient } = await import("@statsig/js-client");
 			if (!active || settled) return;

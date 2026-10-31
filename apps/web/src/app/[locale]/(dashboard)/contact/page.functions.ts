@@ -4,10 +4,10 @@ import { createServerFn } from "@tanstack/react-start";
 function getTawkConfig() {
 	return {
 		tawkPropertyId:
-			process.env.TAWK_PROPERTY_ID ?? process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID,
+			process.env.TAWK_PROPERTY_ID ?? process.env.PUBLIC_TAWK_PROPERTY_ID,
 		tawkWidgetId:
 			process.env.TAWK_WIDGET_ID ??
-			process.env.NEXT_PUBLIC_TAWK_WIDGET_ID ??
+			process.env.PUBLIC_TAWK_WIDGET_ID ??
 			"default",
 	};
 }

@@ -8,7 +8,7 @@ import {
 describe("auth origin helpers", () => {
 	it("normalizes configured origins from env and removes duplicates", () => {
 		const origins = configuredAuthOriginsFromEnv({
-			NEXT_PUBLIC_WEBSITE_URL: "https://example.com/",
+			PUBLIC_WEBSITE_URL: "https://example.com/",
 			WEBSITE_URL: "https://example.com",
 			NODE_ENV: "test",
 		} as unknown as NodeJS.ProcessEnv);

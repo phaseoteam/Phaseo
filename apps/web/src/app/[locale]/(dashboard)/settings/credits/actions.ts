@@ -297,7 +297,7 @@ function resolveInternalBaseUrl(): string {
 		process.env.INTERNAL_APP_URL ||
 		process.env.APP_URL ||
 		process.env.WEBSITE_URL ||
-		process.env.NEXT_PUBLIC_APP_URL ||
+		process.env.PUBLIC_APP_URL ||
 		(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
 
 	return (envUrl || "http://localhost:3000").replace(/\/$/, "");

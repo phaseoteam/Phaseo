@@ -18,7 +18,7 @@ export async function invalidateWorkspacePolicyCache(workspaceId: string): Promi
 		return;
 	}
 
-	const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL;
+	const baseUrl = process.env.PUBLIC_API_URL ?? DEFAULT_API_URL;
 	const url = `${baseUrl}/v1/workspaces/${encodeURIComponent(workspaceId)}/invalidate`;
 
 	try {

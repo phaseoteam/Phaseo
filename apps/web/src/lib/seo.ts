@@ -11,11 +11,11 @@ const LEGACY_SITE_HOSTS = new Set([
 ]);
 
 const configuredSiteUrl =
-	process.env.NEXT_PUBLIC_WEBSITE_URL ?? process.env.WEBSITE_URL;
+	process.env.PUBLIC_WEBSITE_URL ?? process.env.WEBSITE_URL;
 
 if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
 	console.warn(
-		"[seo] NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) is not set; falling back to http://localhost:3000 during this build.",
+		"[seo] PUBLIC_WEBSITE_URL (or WEBSITE_URL) is not set; falling back to http://localhost:3000 during this build.",
 	);
 }
 

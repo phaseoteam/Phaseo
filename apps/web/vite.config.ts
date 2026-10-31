@@ -12,8 +12,8 @@ const src = path.join(root, "src");
 const compat = path.join(src, "compat");
 
 export default defineConfig(({ mode }) => {
-	// Expose NEXT_PUBLIC_* the way Next inlines them (process.env.NEXT_PUBLIC_X).
-	const env = loadEnv(mode, root, "NEXT_PUBLIC_");
+	// Inline PUBLIC_* settings (process.env.PUBLIC_X) into client and server code at build time.
+	const env = loadEnv(mode, root, "PUBLIC_");
 	const define: Record<string, string> = Object.fromEntries(Object.entries(env).map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)]));
 	define.__PHASEO_BUILD_ID__ = JSON.stringify(process.env.PHASEO_BUILD_ID ?? new Date().toISOString().replace(/[^0-9]/g, ""));
 

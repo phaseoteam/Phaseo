@@ -47,7 +47,7 @@ const faviconStyles: Record<
 
 function resolveFaviconEnvironment(request: Request): FaviconEnvironment {
 	const vercelEnvironment =
-		process.env.VERCEL_ENV ?? process.env.NEXT_PUBLIC_VERCEL_ENV;
+		process.env.VERCEL_ENV ?? process.env.PUBLIC_VERCEL_ENV;
 	if (vercelEnvironment === "production") return "production";
 	if (vercelEnvironment === "preview") return "preview";
 	if (vercelEnvironment === "development") return "development";

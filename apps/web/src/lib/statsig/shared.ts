@@ -11,35 +11,35 @@ const LEGACY_BETA_OPT_IN_CHANGED_EVENT = "ai-stats-beta-opt-in-changed";
 export const BETA_PROFILE_CHANGED_EVENT = "phaseo-beta-profile-changed";
 const LEGACY_BETA_PROFILE_CHANGED_EVENT = "ai-stats-beta-profile-changed";
 export const NEW_LANDING_PAGE_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_LANDING_PAGE_GATE ??
-	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_GATE ??
+	process.env.PUBLIC_STATSIG_LANDING_PAGE_GATE ??
+	process.env.PUBLIC_STATSIG_GATEWAY_HERO_GATE ??
 	"gateway_new_hero";
 export const NEW_LANDING_PAGE_EXPERIMENT =
-	process.env.NEXT_PUBLIC_STATSIG_LANDING_PAGE_EXPERIMENT ??
-	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_EXPERIMENT ??
+	process.env.PUBLIC_STATSIG_LANDING_PAGE_EXPERIMENT ??
+	process.env.PUBLIC_STATSIG_GATEWAY_HERO_EXPERIMENT ??
 	"gateway_hero_experiment";
 export const BATCH_API_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_BATCH_API_GATE ?? "gateway_batch_api";
+	process.env.PUBLIC_STATSIG_BATCH_API_GATE ?? "gateway_batch_api";
 export const VIDEO_API_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_VIDEO_API_GATE?.trim() || "gateway_video_api";
+	process.env.PUBLIC_STATSIG_VIDEO_API_GATE?.trim() || "gateway_video_api";
 export const REALTIME_VOICE_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_REALTIME_VOICE_GATE ?? "gateway_realtime_voice";
+	process.env.PUBLIC_STATSIG_REALTIME_VOICE_GATE ?? "gateway_realtime_voice";
 export const GATEWAY_IO_LOGGING_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_IO_LOGGING_GATE ?? "gateway_io_logging";
+	process.env.PUBLIC_STATSIG_GATEWAY_IO_LOGGING_GATE ?? "gateway_io_logging";
 export const AUTO_ROUTING_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_AUTO_ROUTING_GATE ?? "gateway_auto_routing";
+	process.env.PUBLIC_STATSIG_AUTO_ROUTING_GATE ?? "gateway_auto_routing";
 export const REQUEST_CLASSIFIERS_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_REQUEST_CLASSIFIERS_GATE ?? "gateway_request_classifiers";
+	process.env.PUBLIC_STATSIG_REQUEST_CLASSIFIERS_GATE ?? "gateway_request_classifiers";
 export const MODEL_SUCCESSOR_REDIRECT_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE ?? "gateway_model_successor_redirect";
+	process.env.PUBLIC_STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE ?? "gateway_model_successor_redirect";
 export const WORKLOAD_IDENTITY_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_WORKLOAD_IDENTITY_GATE ?? "gateway_workload_identity";
+	process.env.PUBLIC_STATSIG_WORKLOAD_IDENTITY_GATE ?? "gateway_workload_identity";
 export const SLACK_AGENT_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_SLACK_AGENT_GATE ?? "slack_agent";
+	process.env.PUBLIC_STATSIG_SLACK_AGENT_GATE ?? "slack_agent";
 export const PRESET_EXPERIMENTS_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_PRESET_EXPERIMENTS_GATE ?? "preset_experiments";
+	process.env.PUBLIC_STATSIG_PRESET_EXPERIMENTS_GATE ?? "preset_experiments";
 export const SAML_SSO_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_SAML_SSO_GATE ?? "workspace_saml_sso";
+	process.env.PUBLIC_STATSIG_SAML_SSO_GATE ?? "workspace_saml_sso";
 export const CATALOGUE_GAMES_PREVIEW_GATE = "catalogue_games_preview";
 export const ENTERPRISE_SELF_SERVE_PREVIEW_GATE = "enterprise_self_serve_preview";
 export const NEW_GATEWAY_HERO_GATE = NEW_LANDING_PAGE_GATE;

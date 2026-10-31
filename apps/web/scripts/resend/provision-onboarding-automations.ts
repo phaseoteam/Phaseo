@@ -784,7 +784,7 @@ async function main(): Promise<void> {
 	const replyToEmail = env("RESEND_ONBOARDING_REPLY_TO_EMAIL", "daniel@phaseo.app");
 	const dashboardUrl = env(
 		"RESEND_ONBOARDING_DASHBOARD_URL",
-		env("NEXT_PUBLIC_WEBSITE_URL", "https://phaseo.app"),
+		env("PUBLIC_WEBSITE_URL", "https://phaseo.app"),
 	);
 	const purchaseWindow = env("RESEND_ONBOARDING_PURCHASE_WINDOW", "3 days");
 	const checkoutTimeout = env("RESEND_CHECKOUT_ABANDONED_TIMEOUT", "24 hours");

@@ -99,7 +99,7 @@ function deliver(type: string) {
 
 beforeAll(() => {
 	process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
-	process.env.NEXT_PUBLIC_SUPABASE_URL = "https://supabase.test";
+	process.env.PUBLIC_SUPABASE_URL = "https://supabase.test";
 	process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role";
 	jest.spyOn(console, "log").mockImplementation(() => undefined);
 	jest.spyOn(console, "warn").mockImplementation(() => undefined);

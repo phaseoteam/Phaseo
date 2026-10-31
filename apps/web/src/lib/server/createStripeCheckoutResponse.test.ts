@@ -45,7 +45,7 @@ import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutR
 
 describe("createStripeCheckoutResponse for API/CLI top-up requests", () => {
 	beforeAll(() => {
-		process.env.NEXT_PUBLIC_WEBSITE_URL = "https://phaseo.app";
+		process.env.PUBLIC_WEBSITE_URL = "https://phaseo.app";
 	});
 
 	it("returns one session for repeated and concurrent clicks on the same request", async () => {

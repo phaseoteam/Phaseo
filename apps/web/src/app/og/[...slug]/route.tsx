@@ -25,7 +25,7 @@ const OG_ENTITIES = new Set<OgEntity>([
 	"subscription-plans",
 ]);
 const ASSET_BASE_URL =
-	process.env.NEXT_PUBLIC_WEBSITE_URL ??
+	process.env.PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??
 	"http://localhost:3100";
 

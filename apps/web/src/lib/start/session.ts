@@ -55,7 +55,7 @@ export async function refreshSession(request: Request): Promise<SessionResult> {
 	const requestCookies = parseCookies(request.headers.get("cookie"));
 	const pathname = withoutLocalePrefix(url.pathname);
 
-	const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+	const supabase = createServerClient(process.env.PUBLIC_SUPABASE_URL!, process.env.PUBLIC_SUPABASE_ANON_KEY!, {
 		cookies: {
 			getAll: () => [...requestCookies].map(([name, value]) => ({ name, value })),
 			setAll: (cookiesToSet: CookieToSet[], headers: Record<string, string> = {}) => {

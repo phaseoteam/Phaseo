@@ -134,8 +134,8 @@ async function requirePasskeyStepUp(
             }
         }
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        const supabaseUrl = process.env.PUBLIC_SUPABASE_URL
+        const supabaseAnonKey = process.env.PUBLIC_SUPABASE_ANON_KEY
         if (!supabaseUrl || !supabaseAnonKey) {
             return {
                 ok: false,

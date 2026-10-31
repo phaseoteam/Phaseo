@@ -10,7 +10,7 @@ export function configuredAuthOriginsFromEnv(
 	env: NodeJS.ProcessEnv = process.env,
 ): string[] {
 	const candidates = [
-		String(env.NEXT_PUBLIC_WEBSITE_URL ?? "").trim(),
+		String(env.PUBLIC_WEBSITE_URL ?? "").trim(),
 		String(env.WEBSITE_URL ?? "").trim(),
 	]
 		.map((value) => stripTrailingSlash(value))
@@ -24,7 +24,7 @@ export function resolveVercelPreviewAuthOrigin(
 	if (env.VERCEL_ENV !== "preview") return null;
 
 	const deploymentUrl = String(
-		env.NEXT_PUBLIC_VERCEL_URL ?? env.VERCEL_URL ?? "",
+		env.PUBLIC_VERCEL_URL ?? env.VERCEL_URL ?? "",
 	).trim();
 	if (!deploymentUrl) return null;
 
@@ -80,7 +80,7 @@ export async function resolveAuthOrigin(
 	if (!isDev) {
 		if (configuredOrigins.length > 0) return configuredOrigins[0]!;
 		throw new Error(
-			"NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) must be set for auth redirects in production.",
+			"PUBLIC_WEBSITE_URL (or WEBSITE_URL) must be set for auth redirects in production.",
 		);
 	}
 

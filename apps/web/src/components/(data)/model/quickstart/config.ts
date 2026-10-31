@@ -6,4 +6,4 @@ export const DOCS_VERSION = "v1";
 
 // Toggle via env at build time to keep the page static:
 export const SHOW_COMING_SOON =
-    process.env.NEXT_PUBLIC_GATEWAY_COMING_SOON === "1";
+    process.env.PUBLIC_GATEWAY_COMING_SOON === "1";

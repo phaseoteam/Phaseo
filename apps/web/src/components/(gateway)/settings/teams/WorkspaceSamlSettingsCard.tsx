@@ -58,7 +58,7 @@ export default function WorkspaceSamlSettingsCard({
 		providerId.trim() !== initialProviderId.trim() ||
 		domains.trim() !== initialDomains.trim();
 
-	const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+	const supabaseUrl = process.env.PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
 	const metadataUrl = supabaseUrl
 		? `${supabaseUrl}/auth/v1/sso/saml/metadata`
 		: null;

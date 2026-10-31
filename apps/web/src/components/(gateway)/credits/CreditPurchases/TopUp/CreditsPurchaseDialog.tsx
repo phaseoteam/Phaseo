@@ -383,7 +383,7 @@ export default function CreditsPurchaseDialog({
 						data?.payment_intent?.clientSecret;
 					if (piClientSecret) {
 						const stripe = await loadStripe(
-							process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+							process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY!
 						);
 						if (!stripe) throw new Error("stripe_unavailable");
 						const { error } = await stripe.handleNextAction({

@@ -97,7 +97,7 @@ export const getServerStatsigUser = cache(async () => {
 });
 
 export const getServerStatsigBootstrap = cache(async () => {
-	const clientKey = process.env.NEXT_PUBLIC_STATSIG_CLIENT_KEY ?? null;
+	const clientKey = process.env.PUBLIC_STATSIG_CLIENT_KEY ?? null;
 	if (!clientKey || !statsigFlagsAdapter) {
 		return null;
 	}

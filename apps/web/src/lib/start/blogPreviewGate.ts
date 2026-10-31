@@ -12,7 +12,7 @@ function requestCookies(request: Request): Array<{ name: string; value: string }
 
 export async function canPreviewFutureBlogPost(request: Request): Promise<boolean> {
 	if (process.env.NODE_ENV === "development") return true;
-	const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+	const supabase = createServerClient(process.env.PUBLIC_SUPABASE_URL!, process.env.PUBLIC_SUPABASE_ANON_KEY!, {
 		cookies: {
 			getAll: () => requestCookies(request),
 			setAll: (_cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) => {

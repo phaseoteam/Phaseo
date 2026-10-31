@@ -34,14 +34,14 @@ export const onRequestError: Instrumentation.onRequestError = async (error, requ
 			...(visitor?.sessionId ? { $session_id: visitor.sessionId } : {}),
 			// Matches the browser's identified_only mode: no profiles for anonymous visitors.
 			...(visitor?.identified ? {} : { $process_person_profile: false }),
-			deploy_time: process.env.NEXT_PUBLIC_DEPLOY_TIME,
+			deploy_time: process.env.PUBLIC_DEPLOY_TIME,
 			digest: (error as Error & { digest?: string }).digest,
 			environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
 			method: request.method,
 			// Feedback links carry a credential in the path; report the route instead.
 			path: isAnalyticsBlockedPath(request.path.split("?")[0]) ? context.routePath : request.path,
 			release:
-				process.env.NEXT_PUBLIC_RELEASE ??
+				process.env.PUBLIC_RELEASE ??
 				process.env.VERCEL_GIT_COMMIT_SHA ??
 				process.env.CF_PAGES_COMMIT_SHA,
 			render_source: context.renderSource,

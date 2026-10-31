@@ -160,7 +160,7 @@ function resolveGatewayInternalBaseUrl(): string {
 	const raw =
 		process.env.GATEWAY_INTERNAL_BASE_URL ??
 		process.env.GATEWAY_PUBLIC_BASE_URL ??
-		process.env.NEXT_PUBLIC_GATEWAY_BASE_URL ??
+		process.env.PUBLIC_GATEWAY_BASE_URL ??
 		"https://api.phaseo.app";
 	return raw.replace(/\/v1\/?$/, "").replace(/\/+$/, "");
 }
