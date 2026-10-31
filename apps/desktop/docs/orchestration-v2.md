@@ -89,6 +89,8 @@ Delegate or launch. A delegated child belongs to its parent: it stops and is arc
 - `{ strategy: "worktree", projectId?, branch, baseRef? }`: `WorkspaceRuntime.createWorktree` on a new branch from `baseRef` (default `HEAD`) of `projectId` (default the caller's project), registered as a worktree project.
 - `{ strategy: "existing_worktree", projectId }`: the project must be a desktop worktree.
 
+Worktree children. `delegate_task` takes `isolation: "shared" | "worktree"` (default shared) and, with worktree, an optional `branch`. A worktree child gets a new worktree project from the parent project's `HEAD` (uncommitted edits stay behind) on `branch`, by default `phaseo/<title>-<6 hex of parent and requestId>`, so a retry names the same branch. Concurrent retries share one in-flight creation. The project's setup actions run as for any worktree. `delegate_task` and `wait_thread` return `worktree: { projectId, branch }`, and a delivered result says which branch the child worked on. A chat without a project cannot isolate. The worktree stays after the child finishes; the parent or the person merges or removes it.
+
 Launch guards:
 - The caller must be `permissionMode: "full-access"` and not in Plan mode (T3 requires full access and the default interaction mode).
 - Mode and permissions default to the caller's and can only be narrower (`childPrivileges`).

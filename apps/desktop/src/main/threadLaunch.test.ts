@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { MissionService } from "./missionService";
 import type { AgentAdapter } from "./agentAdapter";
-import { validateLaunchBatch } from "./threadTools";
+import { validateDelegate, validateLaunch, validateLaunchBatch } from "./threadTools";
 import { defaultPreferences } from "../shared/preferences";
 import { threadToolLabel } from "../shared/orchestration";
 import { IssueIsPullRequestError, type IssueDetails } from "../shared/issueView";
@@ -106,6 +106,33 @@ describe("launch_thread", () => {
 		expect(tools.projects!()).toEqual(expect.arrayContaining([expect.objectContaining({ id: source.id, current: true, directory: "repository" }), expect.objectContaining({ id: project.id, worktree: expect.objectContaining({ branch: "feature/launched", sourceProjectId: source.id }) })]));
 		expect(tools.projects!("repository").map(value => value.id)).toContain(source.id);
 		await expect(runtime.threadTools(await caller(runtime)).launch!({ requestId: "w", title: "W", prompt: "Work", workspace: { strategy: "worktree", branch: "feature/x" } })).rejects.toThrow("no project");
+	}));
+});
+
+describe("delegate_task isolation", () => {
+	it("gives each worktree child its own checkout and branch from the parent's commit, once per requestId", async () => withRuntime(async (runtime, directory, run) => {
+		const { root, git } = repository(directory), source = runtime.store.addProject(root);
+		writeFileSync(path.join(root, "file.txt"), "Uncommitted\n");
+		const parentId = await caller(runtime, "code", "full-access", source.id), tools = runtime.threadTools(parentId);
+		const [first, again] = await Promise.all([tools.delegate({ requestId: "fix", title: "Fix the parser", prompt: "Fix it", isolation: "worktree" }), tools.delegate({ requestId: "fix", title: "Fix the parser", prompt: "Fix it", isolation: "worktree" })]);
+		expect(again.id).toBe(first.id);
+		expect(first.worktree?.branch).toMatch(/^phaseo\/fix-the-parser-[0-9a-f]{6}$/);
+		const project = runtime.store.getProjects().find(value => value.id === first.worktree!.projectId)!;
+		expect(project.worktree).toMatchObject({ sourceProjectId: source.id, branch: first.worktree!.branch, baseCommit: git(["rev-parse", "HEAD"]) });
+		expect(readFileSync(path.join(project.directory, "file.txt"), "utf8").replace(/\r\n/g, "\n")).toBe("Committed\n");
+		expect(runtime.store.getTask(first.id)).toMatchObject({ projectId: project.id, delegation: { parentTaskId: parentId, requestId: "fix" } });
+		expect((await tools.delegate({ requestId: "fix", title: "Fix the parser", prompt: "Fix it", isolation: "worktree" })).worktree).toEqual(first.worktree);
+		const named = await tools.delegate({ requestId: "docs", title: "Docs", prompt: "Write", isolation: "worktree", branch: "feature/docs" });
+		expect(named.worktree?.branch).toBe("feature/docs");
+		const shared = await tools.delegate({ requestId: "shared", title: "Shared", prompt: "Look" });
+		expect(shared).not.toHaveProperty("worktree"); expect(runtime.store.getTask(shared.id).projectId).toBe(source.id);
+		expect(await tools.wait(first.id, 0)).toMatchObject({ timedOut: true, worktree: first.worktree });
+		expect(await tools.wait(shared.id, 0)).not.toHaveProperty("worktree");
+		await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(3));
+		const noProject = runtime.threadTools(await caller(runtime));
+		await expect(noProject.delegate({ requestId: "x", title: "X", prompt: "X", isolation: "worktree" })).rejects.toThrow("no project");
+		expect(() => validateDelegate({ requestId: "x", title: "X", prompt: "X", branch: "a" })).toThrow("branch needs isolation worktree.");
+		expect(() => validateLaunch({ requestId: "x", title: "X", prompt: "X", isolation: "worktree" })).toThrow("isolation applies to delegate_task");
 	}));
 });
 

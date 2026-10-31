@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import type { Account, Harness, ModelOption, Task, WorkspaceCommand } from "../shared/workspace";
-import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type DelegateRequest, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
+import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type ChildWorktree, type DelegateRequest, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
 import { validateMissionCommand, type Mission, type MissionCommand } from "../shared/missions";
 import { tagsInUse } from "../shared/tags";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
@@ -15,6 +16,7 @@ import { isPullRequestUrl, issueUrl, parseIssueReference, sameIssue, validateIss
 import type { IssueRead, IssueToolTarget, ThreadIssueEntry } from "../shared/orchestration";
 import { untrustedBlock, untrustedNotice } from "../shared/untrustedContent";
 import { withoutHtmlComments } from "../shared/htmlText";
+import { generatedBranchName } from "../shared/worktreeChat";
 
 /** An issue tool's target: a URL, or a number with an optional repository. A pull request URL points at the pull request tools. */
 function issueToolReference(target: IssueToolTarget) {
@@ -83,6 +85,8 @@ export class WorkspaceThreads {
 	private readonly modelCache = new Map<string, { models?: ModelOption[]; checkedAt: number; pending?: Promise<ModelOption[]> }>();
 	/** In-flight launches by caller and requestId, so concurrent retries share one chat and one worktree. */
 	private readonly launching = new Map<string, Promise<LaunchResult>>();
+	/** In-flight delegations that create a worktree, so a concurrent retry gets the same child instead of a second checkout. */
+	private readonly delegating = new Map<string, Promise<Task>>();
 	private installations?: { checkedAt: number; value: Promise<{ harness: Harness; installed: boolean; error?: string }[]> };
 	constructor(private readonly host: Host, private readonly maxActiveAgents: () => number = () => 32) {}
 	changed() { for (const listener of [...this.listeners]) listener(); }
@@ -297,6 +301,7 @@ export class WorkspaceThreads {
 			for (const project of ordered) if ((await origin(project.directory))?.toLowerCase() === repository.toLowerCase()) return { root: project.directory, identity: { repository, number: parsed.number, url: pullRequestUrl(repository, parsed.number) } };
 			throw new Error(`No project in this workspace is a checkout of ${repository}, so its pull requests cannot be read here. Add one first.`);
 		};
+		const childWorktree = (task: Pick<Task, "projectId">): { worktree?: ChildWorktree } => { const project = task.projectId ? this.host.store.getProjects().find(value => value.id === task.projectId) : undefined; return project?.worktree ? { worktree: { projectId: project.id, branch: project.worktree.branch } } : {}; };
 		const retry = (requestId: string) => this.host.store.getOverview().tasks.find(task => task.delegation?.parentTaskId === parentId && task.delegation.requestId === requestId);
 		return {
 			handoff: async (id, request) => {
@@ -343,14 +348,38 @@ export class WorkspaceThreads {
 				let parent = scoped(parentId);
 				if (parent.archived || parent.status === "interrupted") throw new Error("This parent chat is not accepting delegated work.");
 				const existing = retry(request.requestId);
-				if (existing) return summary(this.host.store.getTask(existing.id));
+				if (existing) { const task = this.host.store.getTask(existing.id); return { ...summary(task), ...request.isolation === "worktree" ? childWorktree(task) : {} }; }
 				const { mode, permissionMode } = childPrivileges(parent, request);
+				if (request.isolation === "worktree") {
+					if (!parent.projectId) throw new Error("This chat has no project, so there is no checkout to isolate from; delegate without isolation.");
+					if (!this.host.createWorktree) throw new Error("Worktrees are unavailable.");
+				}
 				const settings = await this.agentSettings(parent, request);
 				parent = scoped(parentId);
 				if (this.host.isClosing() || parent.archived || parent.status === "interrupted") throw new Error("This parent chat is no longer accepting delegated work.");
 				if (parent.projectId) this.host.assertProjectAvailable(parent.projectId);
-				const child = this.host.store.createDelegatedTask({ type: "create-task", ...settings, projectId: parent.projectId, mode, permissionMode }, { parentTaskId: parentId, requestId: request.requestId, background: request.background, role: request.role }, request.role ? `Role: ${request.role}\n\n${request.prompt}` : request.prompt, request.title, this.maxActiveAgents());
-				this.host.broadcast(); this.host.start(child.id); return summary(child);
+				const create = (projectId: string | undefined) => this.host.store.createDelegatedTask({ type: "create-task", ...settings, projectId, mode, permissionMode }, { parentTaskId: parentId, requestId: request.requestId, background: request.background, role: request.role }, request.role ? `Role: ${request.role}\n\n${request.prompt}` : request.prompt, request.title, this.maxActiveAgents());
+				let child: Task;
+				if (request.isolation === "worktree") {
+					const key = `${parentId}\n${request.requestId}`;
+					let pending = this.delegating.get(key);
+					if (pending) { const task = await pending; return { ...summary(task), ...childWorktree(task) }; }
+					{
+						const sourceId = parent.projectId!;
+						// The suffix keeps children with the same title apart, and stays the same when the request is retried.
+						const branch = request.branch ?? `${generatedBranchName(request.title)}-${createHash("sha256").update(key).digest("hex").slice(0, 6)}`;
+						pending = (async () => {
+							this.assertCapacity();
+							const { projectId } = await this.host.createWorktree!(sourceId, branch, "HEAD");
+							const again = retry(request.requestId); if (again) return this.host.store.getTask(again.id);
+							try { return create(projectId); }
+							catch (error) { throw new Error(`${message(error, "The child could not be created.")} Its worktree was created as project ${projectId} on branch ${branch}; launch_thread can use it with {strategy:"existing_worktree",projectId:"${projectId}"}.`, { cause: error }); }
+						})().finally(() => this.delegating.delete(key));
+						this.delegating.set(key, pending);
+					}
+					child = await pending;
+				} else child = create(parent.projectId);
+				this.host.broadcast(); this.host.start(child.id); return { ...summary(child), ...request.isolation === "worktree" ? childWorktree(child) : {} };
 			},
 			wait: async (id, timeoutMs = waitDefaultMs, signal) => {
 				if (!Number.isInteger(timeoutMs) || timeoutMs < 0 || timeoutMs > waitMaximumMs) throw new Error("Invalid wait timeout.");
@@ -363,7 +392,7 @@ export class WorkspaceThreads {
 						// Mirror T3's upgrade-to-always-wake: nobody is waiting any more, so the result is delivered as a message. Launched chats never deliver.
 						const deliveryQueued = abandoned && active(child.status) && !this.host.isClosing() && Boolean(child.delegation) && child.delegation?.kind !== "stage";
 						if (deliveryQueued && !child.delegation?.background) this.host.store.requestDelegationWake(id);
-						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}) });
+						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}), ...child.delegation && child.projectId !== parent.projectId ? childWorktree(child) : {} });
 					};
 					const listener = () => check(); const abort = () => check(true);
 					const timer = setTimeout(abort, timeoutMs);

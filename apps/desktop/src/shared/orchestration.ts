@@ -16,10 +16,10 @@ export type Delegation = { parentTaskId: string; requestId: string; background?:
 export type Launch = { byTaskId: string; requestId: string };
 export const isOrchestrationChild = (task: { delegation?: Delegation }) => Boolean(task.delegation?.parentTaskId);
 export type ThreadSummary = { id: string; title: string; harness: Harness; model: string; status: TaskStatus; parentId?: string; error?: string };
-export type DelegateRequest = { requestId: string; prompt: string; title: string; harness?: Harness; model?: string; accountId?: string; background?: boolean; role?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; modelOptions?: ModelOptionValues };
+export type DelegateRequest = { requestId: string; prompt: string; title: string; harness?: Harness; model?: string; accountId?: string; background?: boolean; role?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; modelOptions?: ModelOptionValues; isolation?: "shared" | "worktree"; branch?: string };
 /** Where a launched chat runs: the caller's project (default), no project, a project, a new worktree of a project, or an existing worktree. */
 export type LaunchWorkspace = { strategy: "same" | "none" } | { strategy: "project" | "existing_worktree"; projectId: string } | { strategy: "worktree"; projectId?: string; branch: string; baseRef?: string };
-export type LaunchRequest = Omit<DelegateRequest, "background" | "role"> & { workspace?: LaunchWorkspace };
+export type LaunchRequest = Omit<DelegateRequest, "background" | "role" | "isolation" | "branch"> & { workspace?: LaunchWorkspace };
 export type LaunchResult = { id: string; title: string; projectId?: string; worktree?: { branch: string; directory: string } };
 export type ProjectSummary = { id: string; name: string; directory: string; current?: boolean; worktree?: { branch: string; baseCommit: string; sourceProjectId: string }; removed?: boolean };
 export const organizeActions = ["pin", "unpin", "archive", "unarchive", "rename", "tag", "settle", "unsettle", "snooze", "wake"] as const;
@@ -60,7 +60,9 @@ export type FactoryAgentTools = {
 	read: (itemId: string) => Promise<WorkItemRead>;
 	runStage: (itemId: string, stage: string, agentId?: string) => Promise<{ runId: string; itemId: string; stage: string; agentId: string; threadId: string | null }>;
 };
-export type WaitResult ={ thread: ThreadSummary; timedOut: boolean; result?: string; deliveryQueued?: boolean };
+/** A child working in its own worktree reports its branch, so the parent can review, merge or open a pull request from it. */
+export type ChildWorktree = { projectId: string; branch: string };
+export type WaitResult ={ thread: ThreadSummary; timedOut: boolean; result?: string; deliveryQueued?: boolean; worktree?: ChildWorktree };
 export type ThreadTools = {
 	handoff?: (id: string, request: { requestId: string; harness: Harness; model: string; accountId?: string }) => Promise<ThreadSummary>;
 	rename?: (id: string, title: string) => Promise<ThreadSummary>;
@@ -74,7 +76,7 @@ export type ThreadTools = {
 	agents?: (filter?: { harness?: Harness; query?: string }) => Promise<AgentCatalog>;
 	list: (query?: string) => ThreadSummary[];
 	read: (id: string) => { thread: ThreadSummary; messages: { role: string; text: string; createdAt: string }[]; truncated: boolean };
-	delegate: (request: DelegateRequest) => Promise<ThreadSummary>;
+	delegate: (request: DelegateRequest) => Promise<ThreadSummary & { worktree?: ChildWorktree }>;
 	/** An abandoned wait (timeout or aborted signal) upgrades a still-running child so its result is delivered to the parent. */
 	wait: (id: string, timeoutMs?: number, signal?: AbortSignal) => Promise<WaitResult>;
 	interrupt: (id: string) => Promise<ThreadSummary>;
