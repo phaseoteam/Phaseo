@@ -1,0 +1,63 @@
+---
+title: "eve"
+icon: "bot"
+description: "شغّل وكلاء eve على نماذج Phaseo باستخدام مزوّد AI SDK من Phaseo."
+---
+
+يقبل وكلاء [eve](https://eve.dev) أي نموذج لغوي من AI SDK. مرّر نموذجًا من [مزوّد AI SDK من Phaseo](./ai-sdk.mdx)، فتمر كل استدعاءات النموذج عبر Phaseo مع التوجيه والمفاتيح والميزانيات والسجلات الخاصة بك.
+
+## التثبيت
+
+ثبّت المزوّد في مشروع eve. يستخدم eve الإصدار 7 من AI SDK، لذا استخدم الإصدار 2.0.1 أو أحدث:
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+اضبط `PHASEO_API_KEY` في `.env.local` من أجل `eve dev`، وفي بيئة الخادم لكل عملية نشر.
+
+## إعداد الوكيل
+
+```ts title="agent/agent.ts"
+import { defineAgent } from "eve";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: phaseo("openai/gpt-6-luna"),
+	modelContextWindowTokens: 1_050_000,
+	reasoning: "low",
+});
+```
+
+استخدم معرّفات النماذج من [نقطة نهاية Models](../../api-reference/endpoint/models.mdx)، واضبط `modelContextWindowTokens` على قيمة `limits.input_tokens` للنموذج من نقطة النهاية نفسها. لا يستطيع eve معرفة نافذة السياق لكائن نموذج، ويعتمد على هذا الرقم ليقرر متى يضغط المحادثة.
+
+## اختيار نموذج في كل دور
+
+تعمل `defineDynamic` قبل كل استدعاء للنموذج. أعِد كائن اختيار حتى يحتفظ كل نموذج بنافذة السياق الخاصة به:
+
+```ts title="agent/agent.ts"
+import { defineAgent } from "eve";
+import { defineDynamic } from "eve/models";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: defineDynamic((ctx) =>
+		ctx.session.auth.initiator?.attributes.plan === "enterprise"
+			? { model: phaseo("openai/gpt-6-sol"), modelContextWindowTokens: 1_050_000 }
+			: { model: phaseo("openai/gpt-6-luna"), modelContextWindowTokens: 1_050_000 },
+	),
+});
+```
+
+## ملاحظات
+
+- مرّر كائن نموذج مثل `phaseo("openai/gpt-6-luna")`. لا يُرسَل معرّف النموذج النصي وحده إلى Phaseo.
+- تعمل الأدوات والبث والاستدلال والضغط والتخزين المؤقت للمطالبات عبر Phaseo. تظهر قراءات ذاكرة التخزين المؤقت في أحداث الاستخدام في eve وفي سجلات Phaseo.
+- يترك eve تكلفة كل تشغيل فارغة لكائنات النماذج. اطّلع على التكلفة في صفحة Usage في Phaseo أو في Logs.
+- اتصال `/login` في eve يعمل على جهازك فقط. تحتاج عمليات النشر إلى `PHASEO_API_KEY`.
+
+## ذو صلة
+
+- [AI SDK](./ai-sdk.mdx)
+- [Presets](../presets.mdx)
+- [استدعاء الأدوات](../tool-calling.mdx)

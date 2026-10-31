@@ -356,6 +356,36 @@ describe("openai text executor HTTP mode", () => {
 	});
 
 	it.each([
+		["include_usage only", { include_usage: true }, undefined],
+		["include_usage with include_obfuscation", { include_usage: true, include_obfuscation: false }, { include_obfuscation: false }],
+	] as const)("drops Chat's stream_options.include_usage from a request rerouted to Responses (%s)", async (_label, streamOptions, expected) => {
+		// Streaming Chat clients (OpenAI SDK, AI SDK) send include_usage; with reasoning_effort the
+		// request goes to /v1/responses, which rejects it as an unknown parameter.
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_stream_options",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.5",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.5", reasoning: { effort: "low" }, streamOptions } as any),
+			providerModelSlug: "gpt-5.5",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(mock.calls[0]?.bodyJson?.stream_options).toEqual(expected);
+	});
+
+	it.each([
 		["request level", { promptCacheOptions: { ttl: "12h" } }],
 		["a breakpoint", {
 			messages: [{ role: "user", content: [{ type: "text", text: "Shared manual", cacheControl: { type: "prompt_cache_breakpoint", mode: "explicit", ttl: "12h" } }] }],

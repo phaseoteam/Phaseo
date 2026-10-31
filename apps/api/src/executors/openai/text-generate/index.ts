@@ -876,6 +876,13 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 			requestPayload.include = include;
 		}
 		delete requestPayload.logprobs;
+		// CreateResponse's stream_options only defines include_obfuscation; Chat's include_usage
+		// is rejected as an unknown parameter. Responses streams always report usage.
+		if (requestPayload.stream_options && typeof requestPayload.stream_options === "object") {
+			const { include_usage: _includeUsage, ...responsesStreamOptions } = requestPayload.stream_options;
+			if (Object.keys(responsesStreamOptions).length > 0) requestPayload.stream_options = responsesStreamOptions;
+			else delete requestPayload.stream_options;
+		}
 	}
 
 	// Chat audio output streams only as pcm16, and some audio models do not stream at all
