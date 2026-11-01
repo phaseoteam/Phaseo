@@ -13,7 +13,7 @@ import type { Account, ModelFacts, QueuedMessage, Task } from "../shared/workspa
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { WorkspaceStore } from "./workspaceStore";
 import { threadTools } from "./threadTools";
-import { orchestrationInstructions, threadToolLabel, threadToolLabels } from "../shared/orchestration";
+import { alwaysAskThreadTools, orchestrationInstructions, threadToolLabel, threadToolLabels } from "../shared/orchestration";
 import type { AttachmentContent } from "./attachments";
 import { phaseoConversationMessages } from "./attachmentPrompt";
 import { connectPhaseoMcp } from "./phaseoMcp";
@@ -185,7 +185,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 		// Outside Code mode, full access does not cover tools that act on the world: MCP servers and the browser always ask.
 		const outsideCode = turn.task.mode !== "code" || !turn.live.writable;
 		if (turn.labels[call.name]) return rules.has(`tool:${call.name}`) ? { approve: true } : { title: turn.labels[call.name], details: details(call.input), always: approvalRule(call, "tool"), ask: outsideCode };
-		if (threadToolLabels[call.name]) return { title: threadToolLabel(call.name, call.input), details: details(call.input), ask: outsideCode && call.name.startsWith("browser_") };
+		if (threadToolLabels[call.name]) return { title: threadToolLabel(call.name, call.input), details: details(call.input), ask: (outsideCode && call.name.startsWith("browser_")) || alwaysAskThreadTools.has(call.name) };
 		return { title: call.name, details: details(call.input), ask: outsideCode };
 	}
 

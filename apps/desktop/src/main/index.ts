@@ -1203,6 +1203,7 @@ app.whenReady().then(() => {
 	workspaceRuntime.factoryTools = threadId => factoryService!.agentTools(threadId);
 	void factoryService.start().catch(() => {});
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
+	workspaceRuntime.globalInstructions = globalInstructions;
 	browserHost.downloads.configure(workspaceRuntime.store.browserDownloads);
 	taskNotifications = new TaskNotifications({
 		focused: () => Boolean(BrowserWindow.getFocusedWindow()), supported: () => Notification.isSupported(),

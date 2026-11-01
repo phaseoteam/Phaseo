@@ -1,5 +1,5 @@
 import { threadTools } from "./threadTools";
-import { orchestrationInstructions, threadToolLabel } from "../shared/orchestration";
+import { alwaysAskThreadTools, orchestrationInstructions, threadToolLabel } from "../shared/orchestration";
 import { phaseoQuestionTools, answerPhaseoQuestion } from "./phaseoQuestionTools";
 import { phaseoPlanTools } from "./phaseoPlanTools";
 import path from "node:path";
@@ -92,7 +92,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
    }
    try {
     if (call.name === "load_skill" && toolkit) return await toolkit.review(call);
-    if (orchestrationTools.some(tool => tool.id === call.name)) return { title: threadToolLabel(call.name, call.input), details: JSON.stringify(call.input, null, 2), ask: call.name.startsWith("browser_") };
+    if (orchestrationTools.some(tool => tool.id === call.name)) return { title: threadToolLabel(call.name, call.input), details: JSON.stringify(call.input, null, 2), ask: call.name.startsWith("browser_") || alwaysAskThreadTools.has(call.name) };
     // Chat is for conversation: tools that act on the world ask every time, even with full access, unless the person allowed this one.
     if (mcp.labels[call.name]) return rules.has(`tool:${call.name}`) ? { approve: true } : { title: mcp.labels[call.name], details: JSON.stringify(call.input, null, 2), always: approvalRule(call, "tool"), ask: true };
     throw new Error("This tool is unavailable in Chat.");

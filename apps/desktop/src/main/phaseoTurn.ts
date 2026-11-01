@@ -24,6 +24,7 @@ export const phaseoToolsets: Record<string, { description: string; match: (id: s
 	scheduling: { description: "create and manage scheduled tasks", match: id => /scheduled_task|^schedule_task$/.test(id) },
 	browser: { description: "open, read and use web pages in this chat's browser", match: id => id.startsWith("browser_") },
 	html: { description: "show an HTML page (a chart, diagram or mockup) inline in this chat", match: id => id.startsWith("html_") },
+	instructions: { description: "read or change the user's instructions for every chat", match: id => id.endsWith("_global_instructions") },
 };
 
 export type PhaseoReview =

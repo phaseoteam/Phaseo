@@ -1,7 +1,8 @@
-import { threadToolLabel, type FactoryAgentTools, type ThreadTools, type WorktreeMove } from "../shared/orchestration";
+import { alwaysAskThreadTools, threadToolLabel, type FactoryAgentTools, type ThreadTools, type WorktreeMove } from "../shared/orchestration";
 import type { BrowserAgentTools } from "../shared/browserAgent";
 import type { HtmlPreviewRequest, HtmlPreviewResult, HtmlRenderRequest } from "../shared/htmlRender";
 import { BackgroundWork } from "./backgroundWork";
+import type { InstructionDocument } from "../shared/instructions";
 import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
@@ -166,6 +167,8 @@ export class WorkspaceRuntime {
 	github: { readIssue: (root: string, repository: string, number: number) => Promise<IssueDetails>; referenceContext: (root: string, urls: string[]) => Promise<string> } = { readIssue: (root, repository, number) => readIssue(root, repository, number), referenceContext: (root, urls) => githubReferenceContext(root, urls) };
 	/** Files an issue through gh and returns what gh prints, ending with the issue's URL; the body goes in on stdin, so no file holds it. Tests replace it. */
 	createIssue = (root: string, repository: string, title: string, body: string) => runGh(root, ["issue", "create", "--repo", repository, "--title", title, "--body-file", "-"], body);
+	/** The person's instructions for every chat, set by the app once loaded; read_global_instructions and update_global_instructions. */
+	globalInstructions?: { read: () => Promise<InstructionDocument>; save: (edit: unknown) => Promise<InstructionDocument> };
 	/** clone_project's git clone. Tests replace it. */
 	cloneRepository = (url: string, parent: string) => cloneRepository(url, parent);
 	private readonly filingIssues = new Set<string>();
@@ -614,8 +617,9 @@ export class WorkspaceRuntime {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
 		const tools = { ...this.threads.forThread(parentId), moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...this.store.getTask(parentId).harness === "claude" ? { backgroundWait: async (ids: string[], waiting: boolean) => { const work = this.backgroundWork.get(parentId); if (!work) throw new Error("This chat has no running turn."); return work.wait(ids, waiting); } } : {}, ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
+		const global = this.globalInstructions, instructions = global ? { globalInstructions: { read: () => global.read(), save: (content: string, expectedHash: string) => global.save({ content, expectedHash }) } } : {};
 		const html = this.htmlPreview ? { html: { preview: this.htmlPreview, render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
-		return this.browserTools ? { ...tools, ...html, browser: this.browserTools(parentId) } : { ...tools, ...html }; }
+		return this.browserTools ? { ...tools, ...html, ...instructions, browser: this.browserTools(parentId) } : { ...tools, ...html, ...instructions }; }
 	private readonly moving = new Set<string>();
 	/**
 	 * Moves a chat into a new worktree of its project. The running turn ends where it started; the next one runs in the worktree
@@ -1319,7 +1323,7 @@ export class WorkspaceRuntime {
 			if (task.harness !== "phaseo" && !(task.harness === "opencode" && task.mode === "chat")) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
 				const current = this.store.getTask(id);
 				if (this.closing || current.status === "interrupted") { resolve(false); return; }
-				if (current.permissionMode === "full-access") { resolve(true); return; }
+				if (current.permissionMode === "full-access" && !alwaysAskThreadTools.has(name)) { resolve(true); return; }
 				const approvalId = randomUUID();
 				this.approvals.set(approvalId, { taskId: id, resolve: decision => resolve(decision === "accept") });
 				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name, args), description: `${name.startsWith("browser_") ? "Allow the agent to use this chat's browser?" : "Allow this thread action with this chat's project and permissions?"}\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });

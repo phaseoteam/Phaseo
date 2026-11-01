@@ -6,6 +6,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { WorkspaceStore } from "./workspaceStore";
+import { GlobalInstructions } from "./globalInstructions";
 import type { AgentAdapter } from "./agentAdapter";
 import type { McpConnection } from "../shared/mcp";
 import { defaultPreferences } from "../shared/preferences";
@@ -189,6 +190,23 @@ describe("orchestration parity", () => {
 			expect(runtime.store.getTask(parentId).approvals![0].method).toBe("Rename agent chat");
 			await runtime.command({ type: "approval", id: parentId, approvalId: runtime.store.getTask(parentId).approvals![0].id, decision: "decline" });
 			await vi.waitFor(() => expect(runtime.store.getTask(parentId).status).toBe("completed"));
+		});
+	});
+	it("asks the person before an agent changes the instructions for every chat, even with full access", async () => {
+		let result: unknown;
+		await withRuntime("instructions", (_harness, _agent, _openCode, connections = []) => ({ run: async () => {
+			const client = new Client({ name: "instructions", version: "1" }), connection = connections.find(server => server.orchestration)!; if (connection.transport !== "http") throw new Error("Expected HTTP");
+			try { await client.connect(new StreamableHTTPClientTransport(new URL(connection.url), { requestInit: { headers: connection.headers } })); result = await client.callTool({ name: "update_global_instructions", arguments: { content: "Answer in French.", expectedHash: "new" } }); } finally { await client.close(); }
+		}, cancel: async () => {} }), async (runtime, directory) => {
+			runtime.globalInstructions = new GlobalInstructions(path.join(directory, "instructions"));
+			const parentId = await parentOf(runtime, "code", "full-access");
+			await runtime.command({ type: "send", id: parentId, text: "Change my instructions" });
+			await vi.waitFor(() => expect(runtime.store.getTask(parentId).approvals).toHaveLength(1));
+			expect(runtime.store.getTask(parentId).approvals![0].method).toBe("Change instructions for every chat");
+			await runtime.command({ type: "approval", id: parentId, approvalId: runtime.store.getTask(parentId).approvals![0].id, decision: "accept" });
+			await vi.waitFor(() => expect(runtime.store.getTask(parentId).status).toBe("completed"));
+			expect(JSON.stringify(result)).toContain("Answer in French.");
+			expect((await runtime.globalInstructions.read()).content).toBe("Answer in French.");
 		});
 	});
 	it("lists usable harnesses with accounts and models in one bounded call", async () => {
