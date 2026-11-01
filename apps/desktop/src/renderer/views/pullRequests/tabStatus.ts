@@ -5,7 +5,7 @@ const statuses = new Map<string, PullRequestTabStatus>(), listeners = new Set<()
 const key = (projectId: string, number: number) => `${projectId}#${number}`;
 
 /**
- * T3's PullRequestTabStatusSeed: what the row that opened a pull request (or its last read) said about its state, so
+ * What the row that opened a pull request (or its last read) said about its state, so
  * its pane tab wears the state colour even when the chat does not link it.
  */
 export function seedPullRequestTabStatus(projectId: string, number: number, status: PullRequestTabStatus) {

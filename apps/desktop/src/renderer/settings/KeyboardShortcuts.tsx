@@ -46,7 +46,7 @@ function ConditionRow({ item, onChange, onRemove }: { item: WhenCondition; onCha
 	</div>;
 }
 
-/** A group: all of / any of its items, which can be conditions or nested groups (T3's builder). */
+/** A group: all of / any of its items, which can be conditions or nested groups. */
 function GroupEditor({ group, onChange, onRemove, depth = 0 }: { group: WhenGroup; onChange: (group: WhenGroup) => void; onRemove?: () => void; depth?: number }) {
 	const setItem = (index: number, item: Item | undefined) => onChange({ ...group, items: item ? group.items.map((value, position) => position === index ? item : value) : group.items.filter((_, position) => position !== index) });
 	return <div className={cn("flex flex-col gap-2", depth > 0 && "rounded-md border border-dashed border-border/80 bg-muted/15 p-2")}>
@@ -67,7 +67,7 @@ function GroupEditor({ group, onChange, onRemove, depth = 0 }: { group: WhenGrou
 	</div>;
 }
 
-/** The when clause, shown quietly; opens T3's builder, which stays in step with the expression text. */
+/** The when clause, shown quietly; opens the builder, which stays in step with the expression text. */
 function WhenControl({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
 	const [draft, setDraft] = useState(value);
 	const problem = whenError(draft);

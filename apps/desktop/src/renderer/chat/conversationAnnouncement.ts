@@ -13,7 +13,7 @@ const busy = (status: TaskStatus) => status === "running" || status === "waiting
 const endings: Partial<Record<TaskStatus, string>> = { completed: "Done", idle: "Done", failed: "Failed", interrupted: "Stopped", limited: "Usage limit reached" };
 
 /**
- * T3's announcer: one short phrase when a turn starts, needs the person or ends, never the streamed text. The first
+ * The announcer: one short phrase when a turn starts, needs the person or ends, never the streamed text. The first
  * snapshot of a chat is a silent baseline, so opening or switching chats replays nothing.
  */
 export function nextAnnouncement(previous: AnnouncementSnapshot | undefined, next: AnnouncementSnapshot): string | undefined {

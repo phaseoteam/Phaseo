@@ -36,9 +36,9 @@ function FileRow({ file, busy, onOpen, onCommand }: { file: GitFile; busy: boole
 }
 
 /**
- * Branch, staging, commit and push for a project, kept out of the diff as T3 does.
+ * Branch, staging, commit and push for a project, kept out of the diff.
  * Flat rows meant for a chat's details; `onProjectCreated` follows a new worktree. With `taskId`, a pull request
- * created here is linked to that chat (T3's create_pr).
+ * created here is linked to that chat.
  */
 export function GitActions({ projectId, taskId, onProjectCreated }: { projectId: string; taskId?: string; onProjectCreated?: (projectId: string) => void }) {
 	const { api, overview, setOverview } = useWorkspace();
@@ -99,7 +99,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 			toastManager.update(id, { type: "success", title: result.status === "created" ? `Created pull request #${result.number}` : `Pull request #${result.number} is already open`, description: [result.writtenBy && `${knownModel(result.writtenBy)?.name ?? modelLabel(result.writtenBy)} wrote the title and description.`, taskId && "Linked to this chat."].filter(Boolean).join(" ") || undefined, timeout: 6000, actionProps: { children: "Open", onClick: () => openPullRequest({ number: result.number }) } });
 		} catch (reason) { toastManager.update(id, { type: "error", title: "Could not create the pull request", description: ipcError(reason), timeout: 8000 }); }
 	});
-	/** T3: the title model writes the message from the changes; an empty message is written this way on commit. */
+	/** The title model writes the message from the changes; an empty message is written this way on commit. */
 	const generateMessage = async () => {
 		setGenerating(true);
 		try { return await api!.gitCommitMessage(projectId); } finally { setGenerating(false); }
@@ -122,7 +122,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 	const ahead = review?.upstream?.ahead ?? 0;
 	const canPush = Boolean(review?.branch) && (review?.upstream ? ahead > 0 : Boolean(review?.hasRemote));
 	const pushLabel = review?.upstream ? `Push ${ahead} ${ahead === 1 ? "commit" : "commits"}` : "Publish branch";
-	// T3 offers Create PR on a feature branch with no open pull request; an open one shows as its own row instead.
+	// Create PR is offered on a feature branch with no open pull request; an open one shows as its own row instead.
 	const openPull = branchPull?.branch === review?.branch && branchPull?.pullRequest?.state === "OPEN" ? branchPull.pullRequest : undefined;
 	const canCreatePull = Boolean(review?.branch) && Boolean(review?.hasRemote || review?.upstream) && !openPull && branchPull?.branch === review?.branch && branchPull?.defaultBranch !== review?.branch;
 	const onDefault = pushesToDefaultBranch(review?.branch, branchPull);
@@ -139,7 +139,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 		<button type="button" disabled={busy} onClick={() => void initialise()} className="ml-auto h-7 shrink-0 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50">Initialise Git</button>
 		{error && <p role="alert" className="w-full text-destructive">{error}</p>}
 	</section>;
-	// T3 offers Publish repository when nothing tells the branch where to go.
+	// Publish repository is offered when nothing tells the branch where to go.
 	const canPublish = Boolean(review) && !review?.hasRemote && !review?.upstream;
 	const canCommitPush = Boolean(review?.branch) && Boolean(review?.hasRemote || review?.upstream);
 	const commitCount = staged.length || changed.length;

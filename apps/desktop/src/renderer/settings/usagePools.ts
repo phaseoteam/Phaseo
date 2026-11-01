@@ -29,7 +29,7 @@ export function uniqueAccounts(accounts: UsageAccount[]) {
 /**
  * Accounts pooled per provider, one window per kind: the provider's own windows by length (5-hour, Weekly),
  * per-model buckets by name (Opus weekly). The pool's figure is the average left across its accounts, each
- * counting equally, as T3 Code does.
+ * counting equally.
  */
 export function usagePools(accounts: UsageAccount[]): ProviderPool[] {
 	const byProvider = new Map<UsageProvider, Map<string, PoolWindow>>();

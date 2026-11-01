@@ -51,7 +51,7 @@ export class TerminalService {
 		});
 		return entry;
 	}
-	/** A shell in a project (and chat), running a project script when one is given, as T3's script terminals do. */
+	/** A shell in a project (and chat), running a project script when one is given. */
 	private open(projectId: string | undefined, taskId: string | undefined, script?: ProjectScript, asProcess = false) {
 		if (this.running.size >= 10 || this.store.getTerminals().length >= 50) throw new Error("Close a terminal or delete an old transcript first.");
 		const project = projectId ? this.store.getProjects().find(project => project.id === projectId) : undefined;
@@ -66,7 +66,7 @@ export class TerminalService {
 		if (script && !asProcess) entry.pty.write(`${script.command}\r`);
 		return session;
 	}
-	/** T3's setup script terminal: runs a worktree's setup action to completion in a terminal of the chat. */
+	/** The setup script terminal: runs a worktree's setup action to completion in a terminal of the chat. */
 	runSetup(projectId: string, script: ProjectScript, taskId: string): { terminalId: string; exited: Promise<number | undefined> } {
 		if (this.closed) throw new Error("Terminals are shutting down.");
 		const session = this.open(projectId, taskId, script, true), entry = this.running.get(session.id);
@@ -105,7 +105,7 @@ export class TerminalService {
 		return command.type === "write" || command.type === "resize" ? [] : this.get();
 	}
 	/**
-	 * T3's settle cleanup: closes a chat's terminals that sit at an idle shell prompt. One running a command
+	 * Settle cleanup: closes a chat's terminals that sit at an idle shell prompt. One running a command
 	 * (a dev server, an editor) stays, and so does every terminal when the process table cannot be read.
 	 */
 	async closeIdle(taskId: string): Promise<number> {
@@ -123,7 +123,7 @@ export class TerminalService {
 		}
 		return closed;
 	}
-	/** T3's numbering: "Terminal N", one above the highest number in use for the same chat or project. */
+	/** Numbering: "Terminal N", one above the highest number in use for the same chat or project. */
 	private nextTitle(projectId?: string, taskId?: string) {
 		const used = this.get().filter(session => !session.ephemeral && session.projectId === projectId && session.taskId === taskId).map(session => /^Terminal (\d+)$/.exec(session.title)?.[1]).filter(Boolean).map(Number);
 		return `Terminal ${used.length ? Math.max(...used) + 1 : 1}`;

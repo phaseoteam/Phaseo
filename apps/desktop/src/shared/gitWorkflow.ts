@@ -1,4 +1,4 @@
-/** T3's Publish repository: a new GitHub repository for a project that has no remote yet. */
+/** Publish repository: a new GitHub repository for a project that has no remote yet. */
 export type PublishRepositoryRequest = { name: string; owner?: string; visibility: "private" | "public"; description?: string };
 export type PublishRepositoryResult = { repository: string; url: string; pushed: boolean };
 

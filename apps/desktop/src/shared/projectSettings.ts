@@ -4,17 +4,17 @@ import type { PullRequestMergeMethod } from "./pullRequestView";
 import { autoSettleDays, type AutoSettleRules } from "./threadLifecycle";
 import { harnesses, type Harness, type ModelOptionValues, type Task } from "./workspace";
 
-/** T3 Code's script icons. */
+/** The icons a project script can show. */
 export const projectScriptIcons = ["play", "test", "lint", "configure", "build", "debug"] as const;
 export type ProjectScriptIcon = typeof projectScriptIcons[number];
-/** A named command for a project, after T3 Code's project scripts: run from the chat header, when a worktree is made, or when a chat settles. */
+/** A named command for a project: run from the chat header, when a worktree is made, or when a chat settles. */
 export type ProjectScript = {
 	id: string; name: string; command: string; icon: ProjectScriptIcon; runOnWorktreeCreate: boolean; runOnSettle?: boolean;
-	/** T3's preview URL: the page the action serves, opened in the chat's browser when autoOpenPreview is on. */
+	/** The page the action serves, opened in the chat's browser when autoOpenPreview is on. */
 	previewUrl?: string; autoOpenPreview?: boolean;
 };
 /**
- * One project's own settings, after T3's project overrides. An absent auto-settle key follows Settings → General;
+ * One project's own settings, overriding the workspace's. An absent auto-settle key follows Settings → General;
  * autoSettleAfterDays null means never. Worktrees use their source project's settings.
  */
 export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon; /** The project's default merge method; absent follows Settings → General. */ pullRequestMergeMethod?: PullRequestMergeMethod;
@@ -24,10 +24,10 @@ export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleO
 	disabledHarnesses?: Harness[] };
 /** A model and its settings, as the model picker chooses them. */
 export type ProjectModelDefault = { harness: Harness; model: string; accountId?: string; reasoningEffort?: string; serviceTier?: string; options?: ModelOptionValues };
-/** T3's project icon colours. */
+/** The colours a project icon can take. */
 export const projectIconColors = ["gray", "red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"] as const;
 export type ProjectIconColor = typeof projectIconColors[number];
-/** T3's project icon choices: a Lucide icon with a colour, an emoji, or a coloured monogram of one or two letters. */
+/** A project icon: a Lucide icon with a colour, an emoji, or a coloured monogram of one or two letters. */
 export type ProjectIcon = { kind: "lucide"; name: string; color: ProjectIconColor } | { kind: "emoji"; emoji: string } | { kind: "monogram"; text: string; color: ProjectIconColor };
 export type ProjectUpdate = { id: string; name?: string; settings?: ProjectSettings };
 export const maximumProjectScripts = 30;
@@ -49,7 +49,7 @@ export function validateProjectScript(value: unknown): ProjectScript {
 	return { id, name: name.trim(), command: command.trim(), icon: icon as ProjectScriptIcon, runOnWorktreeCreate, ...(runOnSettle ? { runOnSettle: true } : {}), ...(preview ? { previewUrl: preview, ...(autoOpenPreview ? { autoOpenPreview: true } : {}) } : {}) };
 }
 
-/** A preview URL as typed: "localhost:5173" gets http://, as T3's preview does; anything but a web address is refused. */
+/** A preview URL as typed: "localhost:5173" gets http://; anything but a web address is refused. */
 export function normalisePreviewUrl(value: unknown, name = "the action"): string {
 	if (typeof value !== "string" || value.trim().length > 2000 || hasControl(value)) throw new Error(`Give “${name}” a preview URL of up to 2,000 characters.`);
 	const text = value.trim();
@@ -61,7 +61,7 @@ export function normalisePreviewUrl(value: unknown, name = "the action"): string
 
 const graphemes = (value: string) => [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value)].length;
 
-/** Checks a project icon as T3's contracts do; a monogram is one or two letters or numbers. */
+/** Checks a project icon; a monogram is one or two letters or numbers. */
 export function validateProjectIcon(value: unknown): ProjectIcon {
 	if (!plain(value)) throw new Error("Invalid project icon.");
 	const color = value.color;
@@ -76,7 +76,7 @@ export function validateProjectIcon(value: unknown): ProjectIcon {
 	throw new Error("Invalid project icon.");
 }
 
-/** T3's automatic project badge: two letters from the name and a colour that always comes out the same for it. */
+/** The automatic project badge: two letters from the name and a colour that always comes out the same for it. */
 export function projectIdentity(name: string): { monogram: string; color: ProjectIconColor } {
 	const normalised = name.normalize("NFKC").trim();
 	const words = normalised.match(/[\p{L}\p{N}]+/gu) ?? [];
@@ -91,18 +91,19 @@ export function projectIdentity(name: string): { monogram: string; color: Projec
 	return { monogram, color: projectIconColors[index] ?? "blue" };
 }
 
-/** A script declared in a checkout's t3.json, T3's checked-in project file, offered for import. */
-export type T3ProjectScript = { name: string; command: string; icon?: ProjectScriptIcon; runOnWorktreeCreate?: boolean; runOnSettle?: boolean; previewUrl?: string; autoOpenPreview?: boolean };
-export type T3ProjectFileState = { status: "missing" | "invalid" | "ok"; scripts: T3ProjectScript[] };
-export const t3ProjectFileName = "t3.json";
+/** A script declared in a checkout's checked-in project file, offered for import. */
+export type ProjectFileScript = { name: string; command: string; icon?: ProjectScriptIcon; runOnWorktreeCreate?: boolean; runOnSettle?: boolean; previewUrl?: string; autoOpenPreview?: boolean };
+export type ProjectFileState = { status: "missing" | "invalid" | "ok"; scripts: ProjectFileScript[] };
+/** The checked-in project file's name, as other tools write it. */
+export const projectFileName = "t3.json";
 
-/** Reads t3.json as T3's schema does: one bad entry makes the whole file invalid, so nothing in it is offered. */
-export function parseT3ProjectFile(text: string): T3ProjectScript[] {
+/** Reads the project file strictly: one bad entry makes the whole file invalid, so nothing in it is offered. */
+export function parseProjectFile(text: string): ProjectFileScript[] {
 	const value: unknown = JSON.parse(text);
 	if (!plain(value)) throw new Error("t3.json must be an object.");
 	if (value.scripts === undefined) return [];
 	if (!Array.isArray(value.scripts) || value.scripts.length > 50) throw new Error("scripts must be a list of up to 50 scripts.");
-	return value.scripts.map((raw, index): T3ProjectScript => {
+	return value.scripts.map((raw, index): ProjectFileScript => {
 		if (!plain(raw)) throw new Error(`Script ${index + 1} must be an object.`);
 		const text = (key: string, maximum: number) => { const field = raw[key]; if (typeof field !== "string" || !field.trim() || field.length > maximum) throw new Error(`Script ${index + 1} needs a ${key}.`); return field.trim(); };
 		const flag = (key: string) => { const field = raw[key]; if (field !== undefined && typeof field !== "boolean") throw new Error(`Script ${index + 1} has an invalid ${key}.`); return field === true; };
@@ -112,12 +113,12 @@ export function parseT3ProjectFile(text: string): T3ProjectScript[] {
 	});
 }
 
-/** T3's import list: t3.json scripts not already saved under the same command or name. */
-export const importableScripts = (fileScripts: readonly T3ProjectScript[], scripts: readonly ProjectScript[]) =>
+/** The import list: project file scripts not already saved under the same command or name. */
+export const importableScripts = (fileScripts: readonly ProjectFileScript[], scripts: readonly ProjectScript[]) =>
 	fileScripts.filter(file => !scripts.some(script => script.command === file.command || script.name.toLowerCase() === file.name.toLowerCase()));
 
-/** A t3.json script as a new action, with T3's defaults. */
-export const scriptFromProjectFile = (file: T3ProjectScript): Omit<ProjectScript, "id"> => ({
+/** A project file script as a new action, with the file format's defaults. */
+export const scriptFromProjectFile = (file: ProjectFileScript): Omit<ProjectScript, "id"> => ({
 	name: file.name, command: file.command, icon: file.icon ?? "play", runOnWorktreeCreate: file.runOnWorktreeCreate ?? false,
 	...(file.runOnSettle ? { runOnSettle: true } : {}), ...(file.previewUrl ? { previewUrl: file.previewUrl, ...(file.autoOpenPreview ? { autoOpenPreview: true } : {}) } : {}),
 });
@@ -180,7 +181,7 @@ export function validateProjectUpdate(value: unknown): ProjectUpdate {
 	return update;
 }
 
-/** The project whose settings apply: a worktree uses its source project's, as a T3 worktree uses its project's. */
+/** The project whose settings apply: a worktree uses its source project's. */
 export function settingsProject<T extends ProjectLike>(projects: readonly T[], id: string | undefined): T | undefined {
 	let project = projects.find(value => value.id === id);
 	for (let hops = 0; project?.worktree && hops < 20; hops++) {
@@ -203,7 +204,7 @@ export function autoSettleRules(preferences: Pick<WorkspacePreferences, "autoSet
 type ChatLike = { id: string; projectId?: string; archived: boolean; settledOverride?: "settled" | "active"; delegation?: { parentTaskId?: string } };
 
 /**
- * Where a settled chat's settle scripts run, after T3's cleanUpSettledThread: only in the chat's own worktree.
+ * Where a settled chat's settle scripts run: only in the chat's own worktree.
  * A project's main checkout, or a worktree another open chat still uses, is shared, so nothing runs there.
  */
 export function settleScriptTarget(chat: ChatLike, projects: readonly ProjectLike[], chats: readonly ChatLike[]): { directory: string; script: ProjectScript } | undefined {
@@ -214,11 +215,11 @@ export function settleScriptTarget(chat: ChatLike, projects: readonly ProjectLik
 	return script ? { directory: project.directory, script } : undefined;
 }
 
-/** T3's settle script: the one that runs in a chat's worktree when the chat settles. */
+/** The settle script: the one that runs in a chat's worktree when the chat settles. */
 export const settleScript = (scripts: readonly ProjectScript[]) => scripts.find(script => script.runOnSettle);
-/** T3's one-click script in the chat header: the first that is neither setup nor settle, else the first that is not settle. */
+/** The one-click script in the chat header: the first that is neither setup nor settle, else the first that is not settle. */
 export const primaryScript = (scripts: readonly ProjectScript[]) => scripts.find(script => !script.runOnWorktreeCreate && !script.runOnSettle) ?? scripts.find(script => !script.runOnSettle);
-/** A script's name with its roles, as T3's script menu shows it. */
+/** A script's name with its roles, as the script menu shows it. */
 export function scriptMenuLabel(script: ProjectScript) {
 	const roles = [...script.runOnWorktreeCreate ? ["setup"] : [], ...script.runOnSettle ? ["on settle"] : []];
 	return roles.length ? `${script.name} (${roles.join(", ")})` : script.name;
@@ -236,7 +237,7 @@ export function newScriptId(name: string, scripts: readonly ProjectScript[]) {
 }
 
 /**
- * Each project action as a keyboard shortcut command (T3 binds `script.<id>.run`). Worktrees share their project's
+ * Each project action as a keyboard shortcut command. Worktrees share their project's
  * actions, so only projects have commands; a chat in a worktree runs its project's.
  */
 export function projectActionCommands(projects: readonly ProjectLike[]): CommandInfo[] {

@@ -1,5 +1,5 @@
 /**
- * T3's secret requests: the agent asks for a secret with `request_secret`, the person types it into a masked field in
+ * Secret requests: the agent asks for a secret with `request_secret`, the person types it into a masked field in
  * the chat, and the value goes into the app's credential vault. The agent gets a reference (or, for shell tools of
  * other harnesses, an owner-only file), never the value; the chat keeps only the request and its outcome.
  */

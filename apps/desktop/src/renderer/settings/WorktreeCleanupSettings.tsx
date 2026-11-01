@@ -22,7 +22,7 @@ export function cleanupSummary(report: WorktreeCleanupReport) {
 }
 
 /**
- * T3's worktree cleanup in Settings → General: the rules, whether they run on their own (off by default), and Clean up
+ * Worktree cleanup in Settings → General: the rules, whether they run on their own (off by default), and Clean up
  * now, which lists what it will remove and asks first.
  */
 export function WorktreeCleanupSettings({ preferences, save, disabled }: { preferences: WorkspacePreferences; save: (value: WorkspacePreferences) => Promise<void>; disabled: boolean }) {
@@ -55,7 +55,7 @@ export function WorktreeCleanupSettings({ preferences, save, disabled }: { prefe
 		} catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
 	};
 	const removing = plan?.filter(entry => entry.outcome === "remove") ?? [], kept = plan?.filter(entry => entry.outcome === "keep") ?? [];
-	return <SettingsSection title="Worktrees" description="Remove the worktrees chats no longer need, as T3 Code does. A worktree with uncommitted changes, untracked files or commits that are not pushed is always kept, as is one a chat or terminal is using." label="Worktrees">
+	return <SettingsSection title="Worktrees" description="Remove the worktrees chats no longer need. A worktree with uncommitted changes, untracked files or commits that are not pushed is always kept, as is one a chat or terminal is using." label="Worktrees">
 		<SettingsRow title="Clean up automatically" description="Check every six hours and remove the worktrees these rules pick. Branches and chats are kept."
 			control={<Switch aria-label="Clean up worktrees automatically" disabled={disabled} checked={rules.enabled} onCheckedChange={value => set({ enabled: value })} />} />
 		<SettingsRow title="When its pull request merges" description="GitHub merged the branch at the worktree's current commit."

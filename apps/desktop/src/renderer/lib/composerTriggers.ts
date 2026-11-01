@@ -1,7 +1,7 @@
 import { nativeActionPrefix, type NativeAction, type NativeActionEntry } from "../../shared/nativeActions";
 import type { PromptCommand } from "../../shared/promptCommands";
 
-/** `/` only opens at the start of a message; `@` and `#` (pull requests, T3's composer) open after a space or at the start. */
+/** `/` only opens at the start of a message; `@` and `#` (pull requests) open after a space or at the start. */
 export type Trigger = { kind: "slash" | "mention" | "pull-request"; query: string; start: number; end: number };
 export function findTrigger(value: string, caret: number): Trigger | undefined {
 	const before = value.slice(0, caret);

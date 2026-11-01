@@ -27,7 +27,7 @@ export function usePullRequestStack(projectId: string, number: number, enabled =
 	const entry = useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => entries.get(key) ?? empty);
 	useEffect(() => { if (enabled && projectId && !entries.get(key)?.data && !entries.get(key)?.pending) load(projectId, number, false); }, [enabled, key, projectId, number]);
 	const refresh = useCallback(() => load(projectId, number, true), [projectId, number]);
-	// T3's pullRequestStackView: a failed refresh keeps what was read before and says it may be stale.
+	// A failed refresh keeps what was read before and says it may be stale.
 	const notice = entry.data?.stack ? entry.error ? "Stack data may be stale. We couldn’t refresh it." : entry.pending ? "Refreshing stack… Showing saved data." : null : null;
 	return { stack: entry.data?.stack ?? null, defaultBranch: entry.data?.defaultBranch, loaded: Boolean(entry.data), pending: entry.pending, error: entry.error, notice, refresh };
 }

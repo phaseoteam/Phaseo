@@ -1,7 +1,7 @@
 /**
- * T3's guided review: a tour of a pull request for the maintainer deciding whether it should land. Stops come in
+ * Guided review: a tour of a pull request for the maintainer deciding whether it should land. Stops come in
  * reading order, each showing only the code that carries its idea and naming the one call a maintainer should make
- * there, if any. A model writes the tour from the diff; the app holds it to the change, as T3's server does: excerpts
+ * there, if any. A model writes the tour from the diff; the app holds it to the change: excerpts
  * and notes are clamped to changed lines, and any changed file the tour leaves out lands in a closing stop.
  */
 export const guideAttentionKinds = ["tradeoff", "contract", "product", "risk", "accessibility"] as const;
@@ -65,7 +65,7 @@ export function guideDiffText(files: DiffFile[], budget = 120_000) {
 	return { text: parts.join("\n\n"), shown, truncated: shown.size < files.filter(file => !file.binary && file.hunks.length).length };
 }
 
-/** T3's guide prompt, adapted for a diff given inline rather than read from a checkout. */
+/** The guide prompt, for a diff given inline rather than read from a checkout. */
 export function guidePrompt(input: { number: number; title: string; body: string; base: string; head: string; diff: string; truncated: boolean }) {
 	const system = [
 		`You prepare a guided tour of pull request #${input.number} for a maintainer deciding whether it should land.`,
@@ -109,7 +109,7 @@ export function parseGuideReply(reply: string): unknown {
 }
 
 /**
- * Holds a written guide to the change, after T3's normaliser: excerpts are narrowed to the changed lines they cover
+ * Holds a written guide to the change: excerpts are narrowed to the changed lines they cover
  * (dropped when they cover none), merged when they touch and capped at 25 lines; notes must sit inside what is left;
  * a file is listed once and only if no stop shows it; every changed file the tour skipped lands in "Other files".
  */

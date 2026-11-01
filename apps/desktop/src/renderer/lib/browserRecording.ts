@@ -13,7 +13,7 @@ const subscribe = (listener: () => void) => { listeners.add(listener); return ()
 export function useBrowserRecording(tabId: string | undefined) { return useSyncExternalStore(subscribe, () => Boolean(tabId && active.has(tabId))); }
 export const isBrowserRecording = (tabId: string) => active.has(tabId);
 
-/** Bits per second scaled with the captured pixels, within T3 Code's bounds. */
+/** Bits per second scaled with the captured pixels, within fixed bounds. */
 export function recordingBitrate(width = 1920, height = 1080, frameRate = 30) { return Math.round(Math.min(50_000_000, Math.max(2_500_000, width * height * frameRate * 0.05))); }
 
 /** Records a tab's page, not the window around it, through the tab's own capture stream. */

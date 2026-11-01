@@ -242,7 +242,7 @@ export class BrowserHost {
 		contents.on("page-favicon-updated", (_event, favicons) => { void this.favicon(contents, favicons).then(value => { page.favicon = value; emit(); }); });
 		contents.on("render-process-gone", (_event, details) => { if (details.reason === "clean-exit") return; page.crashed = true; page.emulated = false; emit(); });
 		contents.on("zoom-changed", (_event, direction) => { page.zoom = stepBrowserZoom(page.zoom, direction === "in" ? 1 : -1); contents.setZoomFactor(page.zoom); this.showZoom(view); emit(); });
-		// The person's clicks, scrolls and keys make the page theirs for a moment (T3 Code); the agent's own input does not.
+		// The person's clicks, scrolls and keys make the page theirs for a moment; the agent's own input does not.
 		contents.on("before-mouse-event", (_event, mouse) => { if (!page.acting && (mouse.type === "mouseDown" || mouse.type === "mouseWheel")) this.control(view, "human"); });
 		contents.on("before-input-event", (event, input) => {
 			if (input.type !== "keyDown" || input.isComposing) return;
@@ -278,13 +278,13 @@ export class BrowserHost {
 		page.controllerTimer = setTimeout(() => { page.controller = "none"; tell(); page.emit(); }, controller === "agent" ? browserAgentIdleMs : browserHumanInputMs);
 		if (changed) { tell(); page.emit(); }
 	}
-	/** T3 Code's zoom pill, drawn inside the page so it shows above the native view. */
+	/** The zoom pill, drawn inside the page so it shows above the native view. */
 	private showZoom(view: WebContentsView) {
 		const contents = view.webContents;
 		if (contents.isDestroyed() || !contents.getURL() || contents.isLoading()) return;
 		void contents.executeJavaScriptInIsolatedWorld(overlayWorld, [{ code: overlayZoomScript(this.page(view).zoom) }]).catch(() => undefined);
 	}
-	/** Moves the page into its own small window that stays on top, as T3 Code's separate preview window; closing it brings the page back. */
+	/** Moves the page into its own small window that stays on top, a separate preview window; closing it brings the page back. */
 	private popOut(owner: BrowserWindow, view: WebContentsView) {
 		const page = this.page(view), contents = view.webContents;
 		if (page.popout && !page.popout.isDestroyed()) { page.popout.show(); page.popout.focus(); return; }

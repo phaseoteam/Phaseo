@@ -112,7 +112,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 		return () => { current = false; clearTimeout(timer); };
 	}, [mentionQuery, projectId, api]);
 
-	// T3's `#`: the project's open pull requests load when the menu opens, and a number not among them is read on its own.
+	// `#`: the project's open pull requests load when the menu opens, and a number not among them is read on its own.
 	const pullOpen = open && trigger?.kind === "pull-request" && Boolean(projectId);
 	const pullQuery = pullOpen ? trigger!.query : undefined;
 	useEffect(() => {

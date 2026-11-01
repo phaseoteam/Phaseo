@@ -43,7 +43,7 @@ function elapsed(from: string | undefined, now: number) {
 	return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
 
-/** T3's status slot: what needs the person first, then work in progress, then unread results, else when they last wrote. */
+/** The status slot: what needs the person first, then work in progress, then unread results, else when they last wrote. */
 function StatusLabel({ task, now, onDismissWake }: { task: TaskOverview; now: number; onDismissWake: () => void }) {
 	const label = (icon: ReactNode, text: ReactNode, className: string) => <span className={cn("flex shrink-0 items-center gap-1 text-[11px] font-medium", className)}>{icon}{text}</span>;
 	if (task.approvalsCount) return label(<ShieldQuestion className="size-3.5" />, "Approval", "text-warning");
@@ -131,7 +131,7 @@ function SlimRow({ task, now, kind, scope, onScope }: { task: TaskOverview; now:
 	</ContextMenu.Root>;
 }
 
-/** T3's collapsible section heading: label, a rule, and a chevron. Collapsed headings show the count. */
+/** A collapsible section heading: label, a rule, and a chevron. Collapsed headings show the count. */
 function SectionHeader({ label, count, open, onToggle, tone, drop }: { label: string; count: number; open: boolean; onToggle: () => void; tone?: "info"; drop?: { active: boolean; onDragOver: (event: DragEvent) => void; onDragLeave: () => void; onDrop: (event: DragEvent) => void } }) {
 	return <button type="button" aria-expanded={open} onClick={onToggle} onDragOver={drop?.onDragOver} onDragLeave={drop?.onDragLeave} onDrop={drop?.onDrop} className={cn("mx-2 flex h-8 w-[calc(100%-1rem)] items-center gap-2 rounded-md px-2.5 text-xs font-medium", drop?.active ? "bg-primary/10 text-primary" : tone === "info" ? "text-info" : "text-muted-foreground/70 hover:text-muted-foreground")}>
 		<span>{open ? label : `${label} (${count})`}</span><span className="h-px flex-1 bg-sidebar-border/60" /><ChevronDown className={cn("size-3 transition-transform", !open && "rotate-180")} />
@@ -160,7 +160,7 @@ export function CodeThreadList() {
 	const { command } = useWorkspace();
 	const actions = useThreadActions();
 	const removeProject = useRemoveProject();
-	// Ctrl/⌘-click picks chats, Shift-click picks a range; right-click a picked chat for the bulk menu (T3).
+	// Ctrl/⌘-click picks chats, Shift-click picks a range; right-click a picked chat for the bulk menu.
 	const [picked, setPicked] = useState<string[]>([]);
 	const anchor = useRef<string | undefined>(undefined);
 	const [dropAt, setDropAt] = useState<{ id: string; after: boolean } | "settled">();
@@ -205,7 +205,7 @@ export function CodeThreadList() {
 		setPicked([]); anchor.current = task.id; return false;
 	};
 	// Dropping on a card moves the chat there, pinning or unpinning it to match the section it lands in.
-	// With the Working section on, the active list is ordered by time, so a drop there only pins or unpins (T3).
+	// With the Working section on, the active list is ordered by time, so a drop there only pins or unpins.
 	const dropOn = async (target: TaskOverview, after: boolean, id: string) => {
 		const moved = overview.tasks.find(task => task.id === id);
 		if (!moved || moved.id === target.id) return;
@@ -222,7 +222,7 @@ export function CodeThreadList() {
 			picked: isPicked,
 			bulk: chosen && <BulkMenuItems tasks={chosen} scope={scope} onDone={() => setPicked([])} />,
 			onPick: event => pick(task, event),
-			// T3's Working section follows live status, so its rows are neither dragged nor dropped on.
+			// The Working section follows live status, so its rows are neither dragged nor dropped on.
 			drag: fixed ? undefined : {
 				onDragStart: event => { event.dataTransfer.setData(codeRowType, task.id); event.dataTransfer.setData(chatDragType, JSON.stringify({ id: task.id, title: task.title })); event.dataTransfer.setData("text/plain", task.title); event.dataTransfer.effectAllowed = "copyMove"; },
 				onDragOver: event => { if (!draggedId(event)) return; event.preventDefault(); const box = event.currentTarget.getBoundingClientRect(); const after = event.clientY > box.top + box.height / 2; if (typeof dropAt !== "object" || dropAt.id !== task.id || dropAt.after !== after) setDropAt({ id: task.id, after }); },
@@ -238,7 +238,7 @@ export function CodeThreadList() {
 		onDragLeave: () => setDropAt(undefined),
 		onDrop: (event: DragEvent) => { const id = draggedId(event); setDropAt(undefined); const task = overview.tasks.find(value => value.id === id); if (!task) return; event.preventDefault(); void actions.settle(task, scope); },
 	};
-	// T3's motion: rows that move slide from their old place (at most 40px) over 150 ms, unless motion is reduced.
+	// Rows that move slide from their old place (at most 40px) over 150 ms, unless motion is reduced.
 	useLayoutEffect(() => {
 		const rows = [...cards.current?.querySelectorAll<HTMLElement>("[data-row-id]") ?? []];
 		const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

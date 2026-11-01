@@ -29,7 +29,7 @@ const FileSurface = lazy(() => import("../panels/FileSurface").then(module => ({
 const FileBrowserSurface = lazy(() => import("../panels/FileBrowserSurface").then(module => ({ default: module.FileBrowserSurface })));
 const TerminalSurface = lazy(() => import("../views/Terminals").then(module => ({ default: module.TerminalSurface })));
 
-/** T3's "+" menu and empty-pane launcher, in its order, with the letter that opens each and why it may be unavailable. */
+/** The "+" menu and empty-pane launcher, in order, with the letter that opens each and why it may be unavailable. */
 const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pull" | "pulls" | "agents"; label: string; icon: ReactNode; letter: string; needsProject?: boolean; reason?: string }[] = [
 	{ kind: "browser", label: "Browser", icon: <Globe />, letter: "B" },
 	{ kind: "terminal", label: "Terminal", icon: <SquareTerminal />, letter: "T" },
@@ -94,7 +94,7 @@ function SurfaceTab({ paneKey, context, projectId, active, dirty, onSelect, onCl
 			onDragLeave={() => setOver(false)}
 			onDrop={(event: DragEvent) => { setOver(false); const moved = event.dataTransfer.getData(paneTabType); if (moved) { event.preventDefault(); onDropBefore(moved); } }} />}
 			className={cn("group/tab relative flex h-6 max-w-36 shrink-0 cursor-pointer items-center gap-0.5 rounded-md pr-2 pl-1.5 text-xs outline-none [-webkit-app-region:no-drag] focus-visible:ring-2 focus-visible:ring-ring/40", active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground", over && "ring-1 ring-primary/50")}>
-			{/* The icon is the close button: it turns into an X on hover (T3). */}
+			{/* The icon is the close button: it turns into an X on hover. */}
 			<button type="button" aria-label={`Close ${title}`} onClick={event => { event.stopPropagation(); onClose(); }} className="group/close relative flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-muted">
 				<span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden [&_svg]:size-3"><TabFace paneKey={paneKey} context={context} projectId={projectId} dirty={dirty} /></span>
 				<X className="hidden size-3 group-hover/tab:block group-focus-visible/close:block" />
@@ -115,7 +115,7 @@ function SurfaceTab({ paneKey, context, projectId, active, dirty, onSelect, onCl
 	</ContextMenu.Root>;
 }
 
-/** T3's empty pane: the surfaces as rows, each opened by its letter; an unavailable one says why. */
+/** The empty pane: the surfaces as rows, each opened by its letter; an unavailable one says why. */
 function Launcher({ onOpen, unavailable: reason }: { onOpen: (kind: typeof launchers[number]["kind"]) => void; unavailable: (kind: typeof launchers[number]["kind"]) => string | undefined }) {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -146,7 +146,7 @@ function Launcher({ onOpen, unavailable: reason }: { onOpen: (kind: typeof launc
 
 export function RightPanel() {
 	const { rightPanel, setRightPanel, selectedId, overview, newChatProjectId, select, commandsOpen, settings, sidebarOpen, api, setError, mode, command } = useWorkspace();
-	// Tabs, the active one, width and maximise are remembered per chat, as in T3.
+	// Tabs, the active one, width and maximise are remembered per chat.
 	const [states, setStates] = usePersistedState<Record<string, PaneState>>("phaseo.desktop.rightPanelState", {});
 	const [lastWidth, setLastWidth] = usePersistedState("phaseo.desktop.rightPanelWidth", paneWidths.default);
 	const [autoOpen] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
@@ -164,7 +164,7 @@ export function RightPanel() {
 	const projectId = task?.projectId ?? (selectedId ? undefined : newChatProjectId || undefined) ?? "";
 	const sessions = useTerminalSessions();
 	const browserTabs = useBrowserTabs(context);
-	// T3's "Pull request" surface: the chat's current linked pull request in its own repository, or else the pull
+	// The "Pull request" surface: the chat's current linked pull request in its own repository, or else the pull
 	// request for the branch its checkout is on, linked or not. Asked again each time the "+" menu opens.
 	const [launchRead, setLaunchRead] = useState(0);
 	const branchPull = useBranchPullRequest(projectId || undefined, launchRead), ownRepository = useProjectRepository(projectId || undefined);
@@ -193,7 +193,7 @@ export function RightPanel() {
 	};
 	const show = (key: PaneKey, background = false) => { touched.current = Date.now(); const next = openPaneTab({ ...state, tabs }, key, background); update(next); announce(next.active); };
 	const close = (keys: PaneKey[]) => {
-		// T3 asks before closing a browser an agent is driving.
+		// Closing a browser an agent is driving asks first.
 		if (!confirmCloseBrowserTabs(context, keys.filter(key => paneKind(key) === "browser").map(paneValue))) return;
 		touched.current = Date.now();
 		for (const key of keys) {
@@ -246,7 +246,7 @@ export function RightPanel() {
 		window.addEventListener(OPEN_TURN_DIFF_EVENT, open);
 		return () => window.removeEventListener(OPEN_TURN_DIFF_EVENT, open);
 	});
-	// T3 opens panes by itself: the Diff when a turn finishes with changes, a pull request when one is linked. It holds back if you used the pane during the turn.
+	// Panes open by themselves: the Diff when a turn finishes with changes, a pull request when one is linked. It holds back if you used the pane during the turn.
 	// Layers a stack read finds are not new work, so they do not open the pane.
 	const opened = task?.pullRequests?.filter(link => link.source !== "stack" && link.source !== "stack-dismissed") ?? [];
 	const status = task?.status, linked = opened.length;
@@ -309,7 +309,7 @@ export function RightPanel() {
 			className="group absolute inset-y-0 -left-1 z-20 w-2 cursor-col-resize outline-none select-none">
 			<span aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors duration-150 group-hover:bg-border group-focus-visible:bg-ring group-active:bg-primary/60" />
 		</div>}
-		{/* The inner column keeps its width while the pane slides, so nothing reflows mid-animation (T3). */}
+		{/* The inner column keeps its width while the pane slides, so nothing reflows mid-animation. */}
 		<div className={cn("flex min-h-0 flex-1 flex-col", !sheet && !state.maximized && "w-[calc(var(--pane-width)-1px)]")}>
 			<div className="flex h-10 shrink-0 items-center gap-1 border-b border-border/60 pr-2 pl-1" data-right-panel-tabbar>
 				{overflow.left && <button type="button" aria-label="Scroll tabs left" onClick={() => strip.current?.scrollBy({ left: -160, behavior: "smooth" })} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><ChevronLeft className="size-3.5" /></button>}
@@ -334,7 +334,7 @@ export function RightPanel() {
 				: <ScrollArea className="chat-tools-content legacy-panel min-h-0 flex-1">{content}</ScrollArea>}
 		</div>
 	</aside>;
-	// Below 980 px the pane slides over the chat as a sheet (T3).
+	// Below 980 px the pane slides over the chat as a sheet.
 	return sheet ? <>{<button type="button" aria-label="Close panel" tabIndex={-1} onClick={() => { requested.current = undefined; setRightPanel(undefined); }} className="fixed inset-0 top-11 z-30 bg-black/20" />}{pane}</> : pane;
 }
 

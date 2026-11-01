@@ -70,6 +70,8 @@ function About() {
 	return <SettingsSection title="About" label="About Phaseo">
 		<SettingsRow title="Version" description={info ? `Phaseo ${versionText(info)}` : "Loading…"}
 			control={<SettingsButton disabled={!info} onClick={() => void copy()} title="Copy the version">{copied ? <Check /> : <Copy />}{copied ? "Copied" : "Copy"}</SettingsButton>} />
+		<SettingsRow title="Acknowledgements" description="Many of Phaseo's desktop features were inspired by T3 Code, and some code is adapted from it under the MIT licence. Copyright (c) 2026 T3 Tools Inc."
+			control={<SettingsButton onClick={() => void window.phaseoDesktop?.openExternal("https://github.com/pingdotgg/t3code")}>Open on GitHub</SettingsButton>} />
 		<SettingsRow title="Updates" description={!update ? "Not checked since Phaseo started." : update.status === "error" && update.message ? `${updateText.error} ${update.message}` : updateText[update.status]}
 			control={update?.status === "ready"
 				? <SettingsButton variant="primary" onClick={() => void window.phaseoDesktop?.installUpdate()}>Restart to update{update.version ? ` to ${update.version}` : ""}</SettingsButton>
@@ -106,7 +108,7 @@ function GlobalInstructions() {
 	</SettingsSection>;
 }
 
-/** T3 names chats with a model; here it is a choice, because each title is a small request on the Phaseo account. */
+/** Chats can be named by a model; it is a choice, because each title is a small request on the Phaseo account. */
 function ChatTitles({ preferences, save, disabled }: { preferences: WorkspacePreferences; save: (value: WorkspacePreferences) => Promise<void>; disabled: boolean }) {
 	const [byModel, setByModel] = useState(preferences.titleModel !== null);
 	const [error, setError] = useState("");
@@ -143,7 +145,7 @@ export function ExperimentalSettings() {
 	</SettingsPageLayout>;
 }
 
-/** T3's send shortcut. The other key adds a new line; the rest of the message box's keys are in Keyboard shortcuts. */
+/** The send shortcut. The other key adds a new line; the rest of the message box's keys are in Keyboard shortcuts. */
 function MessageBox() {
 	const sendKey = useSendKey(), mod = isMac() ? "⌘" : "Ctrl";
 	const sendAndNew = shortcut("composer.sendAndNewChat");

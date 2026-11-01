@@ -10,7 +10,7 @@ import { FileTreeLoading, ipcError, RefreshIcon, SURFACE_HEADER_CLASS, ToolbarBu
 const parentOf = (path: string) => path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
 
 /**
- * T3's file explorer: the project as a lazily loaded tree (Git-ignored files hidden), a search field
+ * The file explorer: the project as a lazily loaded tree (Git-ignored files hidden), a search field
  * and Expand all. Choosing a file calls `onOpenFile`.
  */
 export function FileBrowserSurface({ projectId, onOpenFile, selectedPath, className }: { projectId: string; onOpenFile: (path: string) => void; selectedPath?: string; className?: string }) {

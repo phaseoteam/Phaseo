@@ -10,7 +10,7 @@ const loopbackHost = /^(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1?\])$/i;
 const bareHostPort = /^[^/?#:@]+:\d+(?:[/?#]|$)/;
 
 /**
- * What was typed in the address bar as the address to open, after T3 Code: a scheme is kept; text without spaces whose
+ * What was typed in the address bar as the address to open: a scheme is kept; text without spaces whose
  * host has a dot, a port, or is localhost or an IP address gets http:// for loopback hosts and https:// otherwise;
  * anything else is a DuckDuckGo search.
  */

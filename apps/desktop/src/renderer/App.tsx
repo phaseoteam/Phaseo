@@ -61,7 +61,7 @@ function useShortcuts() {
 	});
 	useCommand("terminal.toggle", () => setRightPanel(rightPanel === "terminal" ? undefined : "terminal"));
 	useCommand("rightPanel.toggle", () => setRightPanel(rightPanel ? undefined : "restore"));
-	// T3: undo the last settle, snooze, unpin or archive; settle the open Code chat and move to the next, or un-settle it.
+	// Undo the last settle, snooze, unpin or archive; settle the open Code chat and move to the next, or un-settle it.
 	useCommand("thread.undo", () => runUndo());
 	useCommand("thread.settle", () => {
 		const task = overview.tasks.find(value => value.id === selectedId);
@@ -69,7 +69,7 @@ function useShortcuts() {
 		let scope: string[] = []; try { scope = projectScopes(JSON.parse(localStorage.getItem(projectScopeKey) ?? "[]")); } catch { /* All projects. */ }
 		void (isSettled(task) ? threadActions.unsettle(task) : threadActions.settle(task, scope));
 	});
-	// T3: Ctrl+1–9 open the chats shown in the sidebar; Ctrl+Shift+[ and ] step through them.
+	// Ctrl+1–9 open the chats shown in the sidebar; Ctrl+Shift+[ and ] step through them.
 	const jump = (index: number) => { const id = sidebarOrder()[index]; if (!id) return false; select(id); };
 	const step = (direction: number) => { const order = sidebarOrder(); if (!order.length) return false; const index = selectedId ? order.indexOf(selectedId) : -1; select(order[index < 0 ? (direction > 0 ? 0 : order.length - 1) : (index + direction + order.length) % order.length]); };
 	useCommand("thread.jump.1", () => jump(0)); useCommand("thread.jump.2", () => jump(1)); useCommand("thread.jump.3", () => jump(2));

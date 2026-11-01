@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-/** The question panel lets the composer answer its current question, as T3 Code's composer does. answer is false when the text did not answer it (the panel shows why). */
+/** The question panel lets the composer answer its current question. answer is false when the text did not answer it (the panel shows why). */
 export type QuestionAnswerer = { answer: (text: string) => boolean };
 const answerers = new Map<string, QuestionAnswerer>();
 const listeners = new Set<() => void>();

@@ -25,7 +25,7 @@ const commandName = (name: string) => name.trim().replace(/^.*[\\/]/, "").replac
 const consoleHosts = new Set(["conhost", "openconsole"]);
 
 /**
- * Whether a terminal's shell is running a command, after T3's terminal manager: any child of the shell counts,
+ * Whether a terminal's shell is running a command: any child of the shell counts,
  * except a copy of the shell with no children of its own (async prompt themes fork one) and console hosts.
  */
 export function shellIsBusy(rows: readonly ProcessRow[], shellPid: number) {

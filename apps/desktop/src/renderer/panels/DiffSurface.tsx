@@ -45,7 +45,7 @@ function CopyPathButton({ path }: { path: string }) {
 	</ToolbarButton>;
 }
 
-/** T3's comparison picker: Automatic, then local and remote branches, searchable. */
+/** The comparison picker: Automatic, then local and remote branches, searchable. */
 function BaseRefPicker({ projectId, value, resolved, onChange }: { projectId: string; value?: string; resolved?: string; onChange: (ref?: string) => void }) {
 	const api = window.phaseoDesktop?.workspace;
 	const [open, setOpen] = useState(false);
@@ -82,7 +82,7 @@ function BaseRefPicker({ projectId, value, resolved, onChange }: { projectId: st
 }
 
 /**
- * T3's diff panel: the branch against its base, uncommitted work, or one turn, as one scrolling list of
+ * The diff panel: the branch against its base, uncommitted work, or one turn, as one scrolling list of
  * files with sticky headers, a file tree, and line comments that go to the chat as review context.
  */
 export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: string; taskId?: string; onOpenFile?: (path: string) => void }) {

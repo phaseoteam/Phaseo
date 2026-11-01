@@ -60,7 +60,7 @@ function ConversationGroup({ events, onOpen }: { events: TimelineEvent[]; onOpen
 		</Collapsible>
 	</div>;
 }
-/** T3: a commit row is a button that opens the Code tab scoped to that commit. */
+/** A commit row is a button that opens the Code tab scoped to that commit. */
 function CommitRow({ event, onView }: { event: TimelineEvent; onView?: (oid: string) => void }) {
 	return <button type="button" disabled={!onView} aria-label={`View commit ${event.id.slice(0, 7)}`} onClick={() => onView?.(event.id)} className="group relative mb-5 block w-full cursor-pointer rounded-sm pl-12 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:cursor-default">
 		<ActorMarker actors={event.commitAuthors} fallback={<GitCommitHorizontal className="size-3.5" />} />
@@ -88,7 +88,7 @@ function VerdictRow({ event, outcome, stale, onOpen }: { event: TimelineEvent; o
 	</div>;
 }
 
-/** T3's vertical rail: lifecycle, commits, verdicts and folded runs of comments. */
+/** The vertical rail: lifecycle, commits, verdicts and folded runs of comments. */
 export function TimelineTab({ view, projectId, order, onOpen, onScrollerRef, onAction, onViewCommit }: { view: PullRequestView; projectId: string; order: "newest" | "oldest"; onOpen: (url: string) => void; onScrollerRef?: (node: HTMLDivElement | null) => void; onAction?: (action: PullRequestAction) => Promise<boolean>; pending?: PullRequestAction["type"]; onViewCommit?: (oid: string) => void }) {
 	const editor = useCommentEditor({ view, onAction });
 	const events = buildTimeline(view), newest = newestCommitAt(view.commits);

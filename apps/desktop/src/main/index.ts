@@ -29,7 +29,7 @@ import { htmlPreview, registerHtmlRenderScheme, serveHtmlRenders } from "./htmlR
 import { htmlRenderUrl } from "../shared/htmlRender";
 import { BrowserRecordings } from "./browserRecordings";
 import { localServers, probeAddress } from "./browserLocalServers";
-import { readT3ProjectFile } from "./t3ProjectFile";
+import { readProjectScriptsFile } from "./projectScriptsFile";
 import { browserId, probeUrl, type BrowserRecording } from "../shared/browser";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -159,7 +159,7 @@ let taskNotifications: TaskNotifications;
 let missionService: MissionService;
 let settleTimer: ReturnType<typeof setInterval> | undefined;
 let worktreeCleanupTimer: ReturnType<typeof setInterval> | undefined;
-/** T3's automatic worktree cleanup, when turned on in Settings → General. */
+/** Automatic worktree cleanup, when turned on in Settings → General. */
 const autoCleanWorktrees = () => { if (!shutdownStarted && workspaceRuntime.store.getPreferences().worktreeCleanup.enabled) void workspaceRuntime.cleanWorktrees("auto").catch(() => {}); };
 let phaseoSignInTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
@@ -654,7 +654,7 @@ ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskI
 	};
 	const result = await workspaceRuntime.mutateProject(id, () => createPullRequest(root, undefined, writer));
 	forgetBranchPullRequest(root);
-	// T3 links the pull request a Git action creates to the chat it ran beside, as "Created from this chat".
+	// The pull request a Git action creates is linked to the chat it ran beside, as "Created from this chat".
 	const task = typeof taskId === "string" ? workspaceRuntime.store.getOverview().tasks.find(value => value.id === taskId) : undefined;
 	if (task) await workspaceRuntime.command({ type: "link-pull-request", id: task.id, reference: result.url, source: "created" }).catch(() => undefined);
 	return { ...result, workspace: workspaceRuntime.store.getOverview() };
@@ -897,7 +897,7 @@ ipcMain.handle("workspace:choose-project", async event => {
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
 });
-// T3's Clone from a remote URL: asks where to put the checkout, clones it and adds it as a project.
+// Clone from a remote URL: asks where to put the checkout, clones it and adds it as a project.
 ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
 	const window = senderWindow(event);
 	if (!window || shutdownStarted) throw new Error("Untrusted workspace request.");
@@ -946,7 +946,7 @@ ipcMain.handle("workspace:issue-draft", async (event, taskId: unknown, action: u
 ipcMain.handle("workspace:project-file", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid project request.");
 	const project = workspaceRuntime.store.getProjects().find(value => value.id === id);
-	return project && !project.worktree?.removedAt ? readT3ProjectFile(project.directory) : { status: "missing", scripts: [] };
+	return project && !project.worktree?.removedAt ? readProjectScriptsFile(project.directory) : { status: "missing", scripts: [] };
 });
 ipcMain.handle("workspace:update-project", (event, value: unknown) => {
 	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid project request.");

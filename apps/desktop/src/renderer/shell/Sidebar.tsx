@@ -218,7 +218,7 @@ function AccountFooter() {
 	</div></div>;
 }
 
-/** T3's undo notice: the last settle, snooze, unpin or archive, for five seconds. */
+/** The undo notice: the last settle, snooze, unpin or archive, for five seconds. */
 function UndoNotice() {
 	const action = useThreadUndo();
 	if (!action) return null;
@@ -242,7 +242,7 @@ function InboxLink() {
 	</button>;
 }
 
-/** T3 puts Pull requests among the sidebar's page links. Chat mode has no projects, so only Code shows it. */
+/** Pull requests sits among the sidebar's page links. Chat mode has no projects, so only Code shows it. */
 function PullRequestsLink() {
 	const { pullRequestsPage, openPullRequests } = useWorkspace();
 	return <button type="button" aria-current={pullRequestsPage ? "page" : undefined} onClick={openPullRequests}

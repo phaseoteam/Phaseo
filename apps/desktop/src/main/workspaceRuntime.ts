@@ -155,7 +155,7 @@ export class WorkspaceRuntime {
 	private readonly settleAbort = new AbortController();
 	/** Chats their own agent settled mid-turn; cleanup waits until the turn's execution has ended. */
 	private readonly settledByTurn = new Set<string>();
-	/** T3's browser tools for one chat, on its own browser tabs; set by the app once it has a window. */
+	/** The browser tools for one chat, on its own browser tabs; set by the app once it has a window. */
 	browserTools?: (chatId: string) => BrowserAgentTools;
 	/** html_preview's hidden-window render; set by the app once it is ready. */
 	htmlPreview?: (request: HtmlPreviewRequest) => Promise<HtmlPreviewResult>;
@@ -357,7 +357,7 @@ export class WorkspaceRuntime {
 		const stop = tasks.filter(value => busy(value) && autopilotOwner(tasks, value.id)?.id === owner.id).map(value => value.id);
 		setTimeout(() => { for (const value of stop) void this.command({ type: "cancel", id: value }).catch(() => {}); }, 0);
 	}
-	/** Names a chat with the title model (Settings → General), as T3 does; without one, the first message stays its title. A rename in the meantime wins. */
+	/** Names a chat with the title model (Settings → General); without one, the first message stays its title. A rename in the meantime wins. */
 	/** The title model (Settings → General) and the Phaseo account it runs through, or which of the two is missing. */
 	titleModelAccount(): { model: string; endpoint: string; secretId: string } | { missing: "model" | "account" } {
 		const model = this.store.getPreferences().titleModel;
@@ -408,7 +408,7 @@ export class WorkspaceRuntime {
 		return this.store.getOverview();
 	}
 	/**
-	 * T3's Remove project: deletes the project entry, its worktree entries and all their chats and terminal
+	 * Remove project: deletes the project entry, its worktree entries and all their chats and terminal
 	 * transcripts. Files on disk, worktree checkouts included, are never touched. Nothing in it may be running.
 	 */
 	private async removeProject(id: string) {
@@ -430,7 +430,7 @@ export class WorkspaceRuntime {
 		this.broadcast();
 		return this.store.getOverview();
 	}
-	/** Auto-settle, after T3 Code: Code chats idle for the configured days settle, dated to their last activity. */
+	/** Auto-settle: Code chats idle for the configured days settle, dated to their last activity. */
 	settleIdleThreads(now = Date.now()) {
 		if (this.closing) return;
 		const preferences = this.store.getPreferences();
@@ -461,7 +461,7 @@ export class WorkspaceRuntime {
 		if (update.settings !== undefined) this.settleIdleThreads();
 		return this.store.getOverview();
 	}
-	/** After a chat settles, by the person, its agent or auto-settle: T3's cleanUpSettledThread, in the background. */
+	/** After a chat settles, by the person, its agent or auto-settle: clean up after it in the background. */
 	private settled(id: string) {
 		if (this.closing) return;
 		const work = this.cleanUpSettled(id).catch(() => undefined);
@@ -763,7 +763,7 @@ export class WorkspaceRuntime {
 		if (task.status !== "limited" || !task.usageLimit) return;
 		task.usageLimit.resetsAt = new Date(resetsAt).toISOString(); this.store.saveTask(task, true); this.broadcast();
 	}
-	/** T3's Resume at reset: resumes a limited chat a minute after its limit resets; `cancel` drops that. */
+	/** Resume at reset: resumes a limited chat a minute after its limit resets; `cancel` drops that. */
 	private async resumeAtReset(id: string, cancel: boolean) {
 		const task = this.store.getTask(id);
 		if (cancel) { clearTimeout(this.limitTimers.get(id)); this.limitTimers.delete(id); if (task.usageLimit) { task.usageLimit.resumeAt = undefined; this.store.saveTask(task, true); this.broadcast(); } return this.store.getOverview(); }
@@ -797,7 +797,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	/**
-	 * T3's request_secret: a masked field in the chat, then the value in the vault behind a reference for this chat, or
+	 * request_secret: a masked field in the chat, then the value in the vault behind a reference for this chat, or
 	 * (delivery "file") also in an owner-only file for another harness's shell. The chat records only the outcome.
 	 */
 	async requestSecret(taskId: string, input: SecretRequestInput, signal?: AbortSignal): Promise<SecretRequestResult> {
@@ -871,7 +871,7 @@ export class WorkspaceRuntime {
 	lastWorktreeCleanup?: WorktreeCleanupReport;
 	private worktreeCleanupRun?: Promise<WorktreeCleanupReport>;
 	/**
-	 * T3's worktree cleanup. "plan" lists what the rules would remove; "remove" removes those of `projectIds` the rules
+	 * Worktree cleanup. "plan" lists what the rules would remove; "remove" removes those of `projectIds` the rules
 	 * still pick when checked again; "auto" removes everything they pick (the setting, off by default).
 	 */
 	async cleanWorktrees(mode: "plan" | "auto" | { remove: string[] }): Promise<WorktreeCleanupReport> {
@@ -897,12 +897,12 @@ export class WorkspaceRuntime {
 		this.worktreeCleanupRun = run;
 		try { return await run; } finally { this.worktreeCleanupRun = undefined; }
 	}
-	/** T3's "run on worktree creation": each such script starts in a terminal of its own in the new worktree. */
+	/** "Run on worktree creation": each such script starts in a terminal of its own in the new worktree. */
 	private startWorktreeScripts(projectId: string) {
 		for (const script of worktreeCreateScripts(this.store.getProjects(), projectId)) try { this.runProjectScript?.(projectId, script); } catch { /* Terminal limits reached; the person can run it from the chat header. */ }
 	}
 	/**
-	 * T3's New worktree workspace: a worktree from `base` on a temporary branch, and a chat in it. The branch is then
+	 * New worktree workspace: a worktree from `base` on a temporary branch, and a chat in it. The branch is then
 	 * renamed from the first message and the setup actions run; the chat's first turn waits for both.
 	 */
 	async startWorktreeChat(request: WorktreeChatRequest, create: Extract<WorkspaceCommand, { type: "create-task" }>) {
@@ -1150,7 +1150,7 @@ export class WorkspaceRuntime {
 			if ((command.decision === "always" && !request?.always) || (command.decision === "never" && !request?.never)) throw new Error("The agent does not offer this choice.");
 			if (command.feedback !== undefined && (request?.kind !== "plan" || command.decision !== "decline")) throw new Error("Only a plan revision takes feedback.");
 			task.approvals = task.approvals?.filter(value => value.id !== command.approvalId); task.status = hasRequests(task) ? "waiting" : "running";
-			// Implementing a proposed plan leaves plan mode, as T3 Code's Implement does.
+			// Implementing a proposed plan leaves plan mode.
 			if (request?.kind === "plan" && command.decision === "accept" && task.mode === "plan") task.mode = "code";
 			this.store.saveTask(task); this.broadcast();
 			this.approvals.delete(command.approvalId); pending.resolve(command.decision, command.feedback?.trim() || undefined);
@@ -1176,7 +1176,7 @@ export class WorkspaceRuntime {
 		}
 		if (command.type === "cancel") {
 			if (this.executions.has(command.id) && !this.running.has(command.id)) this.stoppedDuringSetup.add(command.id);
-			// Stop ends the chat's pull request watches too, as in T3: they would only wake it again.
+			// Stop ends the chat's pull request watches too: they would only wake it again.
 			this.store.apply(command); this.store.endPullRequestWatches(command.id); this.store.endIssueWatches(command.id); this.orchestrationSessions.get(command.id)?.(); this.broadcast();
 			// Side chats are the person's own, so stopping the main chat leaves them running.
 			for (const child of this.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === command.id && !isSideChat(task) && ["idle", "running", "waiting"].includes(task.status))) if (this.store.getTask(child.id).delegation?.parentTaskId === command.id) await this.command({ type: "cancel", id: child.id });
@@ -1444,7 +1444,7 @@ export class WorkspaceRuntime {
 				current.questions.push({ id: requestId, questions, responseMode: "message", ...(origin ? { origin } : {}) });
 				this.store.saveTask(current); this.broadcast(); resolve({}); return;
 			}
-			// The answered (or dismissed) question stays in the transcript, as in T3; secret answers are masked.
+			// The answered (or dismissed) question stays in the transcript; secret answers are masked.
 			// A withdrawn question (the server cancelled its request) leaves the panel without a record.
 			const abort = () => {
 				if (!this.questions.delete(requestId)) return;
@@ -1495,7 +1495,7 @@ export class WorkspaceRuntime {
 					this.store.saveTask(current); this.broadcast();
 					void this.autopilotRespond(id, { kind: "approval", approvalId, title: method, details: description }, note);
 				}),
-				// Plans wait for the person even with full access: implementing is their call, as in T3 Code.
+				// Plans wait for the person even with full access: implementing is their call.
 				onPlan: plan => new Promise(resolve => {
 					flush();
 					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve({ decision: "decline" }); return; }
@@ -1531,7 +1531,7 @@ export class WorkspaceRuntime {
 			flush(); ended = true; if (streamError) throw streamError;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "completed";
-			// T3: an agent that settled its own chat mid-turn settles it now, but only when the turn completed.
+			// An agent that settled its own chat mid-turn settles it now, but only when the turn completed.
 			if (current.settleWhenTurnEnds) { if (current.status === "completed" && !current.queue.length) { current.settledOverride = "settled"; current.settledAt = new Date().toISOString(); current.unsettledAt = undefined; current.pinned = false; this.settledByTurn.add(id); } current.settleWhenTurnEnds = undefined; }
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = [];
 			this.store.saveTask(current);
@@ -1540,7 +1540,7 @@ export class WorkspaceRuntime {
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "failed";
 			current.error = error instanceof Error ? error.message : "Agent execution failed.";
-			// T3's usage-limit recovery: a plan limit leaves the chat limited, to resume when the limit resets.
+			// Usage-limit recovery: a plan limit leaves the chat limited, to resume when the limit resets.
 			const limit = (current.harness === "claude" || current.harness === "codex") && current.status === "failed" ? usageLimitError(current.error) : undefined;
 			if (limit) { current.status = "limited"; current.usageLimit = { at: new Date().toISOString(), ...limit.resetsAt ? { resetsAt: new Date(limit.resetsAt).toISOString() } : {} }; }
 			// A message the agent never answered goes back to the queue, so Resume sends it again.

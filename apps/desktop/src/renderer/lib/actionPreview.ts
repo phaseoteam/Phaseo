@@ -25,9 +25,9 @@ const waiting = new Map<string, Waiting>();
 export const previewWait = { interval: 1000, timeout: 120_000 };
 
 /**
- * T3's auto-open preview, made to wait for the server: once the action's terminal prints a local address on the
+ * The auto-open preview, made to wait for the server: once the action's terminal prints a local address on the
  * preview URL's port, or the address answers, the page opens in the chat's browser. A preview URL that is not on
- * this computer opens straight away, as T3 opens every preview. If the terminal exits first nothing opens; after two
+ * this computer opens straight away. If the terminal exits first nothing opens; after two
  * minutes the page opens anyway and shows whatever the address says.
  */
 export function openPreviewWhenReady(input: { taskId: string; sessionId: string; url: string; command: string }, report: (error: string) => void = () => undefined) {

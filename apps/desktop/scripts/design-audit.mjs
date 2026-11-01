@@ -12,7 +12,7 @@ let activeTaskFixture,taskActionCalls=0;
 let holdProposals=false,pendingProposals,proposalCalls=0,emptyProposals=false,failProposalLink=false,proposalLinks=[],proposalCursors=[],passingProposals=false;
 const proposalFixture={repository:'phaseoteam/Phaseo',fetchedAt:'2026-10-04T00:00:00Z',limitReached:false,requests:[{number:2702,title:'Keep <untrusted> 世界 and review the desktop changes',url:'https://github.com/phaseoteam/Phaseo/pull/2702',author:'fixture',draft:true,head:'feature/desktop',base:'main',updatedAt:'2026-10-04T00:00:00Z',review:'required',checks:'pending'},{number:2703,title:'Ready for review',url:'https://github.com/phaseoteam/Phaseo/pull/2703',author:'fixture',draft:false,head:'feature/next',base:'main',updatedAt:'2026-10-04T00:00:00Z',review:'approved',checks:'passing'}]};
 async function auditProposals(window,output,width,theme){
- // The surface is the T3-style pull request list (views/pullRequests); it reads the project of the chat it sits beside.
+ // The surface is the pull request list (views/pullRequests); it reads the project of the chat it sits beside.
  const js=code=>window.webContents.executeJavaScript(code);
  const until=async(code,message)=>{for(let attempt=0;!await js(code);attempt++){if(attempt>50)throw Error(message);await new Promise(resolve=>setTimeout(resolve,20));}};
  const list='section[aria-label="Pull requests"]';
@@ -459,7 +459,7 @@ try {
           if(!await window.webContents.executeJavaScript(`document.querySelector('select[aria-label="Initial reasoning effort"]').value===''`))throw Error('Changing harness must clear prior effort');
         }
         if(page==="Terminals"){
-          // Saved transcripts are not listed any more: as in T3 Code a terminal closes when its process exits.
+          // Saved transcripts are not listed any more: a terminal closes when its process exits.
           // The surface opens empty with a New terminal action, and one terminal fills it with a floating action cluster.
           for(let attempt=0;;attempt++){if(await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.terminal-surface button')).some(button=>button.textContent.startsWith('New terminal'))`))break;if(attempt>50)throw new Error("Terminal empty state did not render.");await new Promise(resolve=>setTimeout(resolve,100));}
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.terminal-surface button')).find(button=>button.textContent.startsWith('New terminal')).click()`);

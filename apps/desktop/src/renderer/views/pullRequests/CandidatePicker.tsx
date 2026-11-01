@@ -15,8 +15,8 @@ const words = {
 } as const;
 
 /**
- * T3's label and reviewer pickers: an icon button that opens a searchable list, read from GitHub only when it opens.
- * Like T3's, it is a combobox rather than a menu, so typing stays in the search box: arrow keys, Home and End move
+ * The label and reviewer pickers: an icon button that opens a searchable list, read from GitHub only when it opens.
+ * It is a combobox rather than a menu, so typing stays in the search box: arrow keys, Home and End move
  * the highlight (the first row is highlighted as you type), Enter toggles it and Escape closes. It stays open after
  * a pick, since a second label or reviewer usually follows; every row locks while one change is in flight.
  */
@@ -63,7 +63,7 @@ export function CandidatePicker({ projectId, number, kind, allowed, icon, onTogg
 				{!list && !error ? <p role="status" className="flex items-center gap-2 p-2 text-xs text-muted-foreground"><LoaderCircle aria-hidden className="size-3.5 animate-spin" />Loading…</p>
 					: error ? <p role="alert" className="p-2 text-xs text-muted-foreground">{text.error} {error}</p>
 					: !shown.length ? <p className="p-2 text-xs text-muted-foreground">{query ? text.noMatch : text.empty}</p>
-					// Rows take no focus, so the search box keeps it; the pointer moves the highlight as T3's does.
+					// Rows take no focus, so the search box keeps it; the pointer moves the highlight.
 					: shown.map((candidate, index) => <div key={candidate.key} id={optionId(index)} role="option" aria-selected={candidate.applied} aria-disabled={pending !== undefined || undefined} data-highlighted={index === active || undefined}
 						onPointerMove={() => { if (index !== active) setHighlight(index); }} onMouseDown={event => event.preventDefault()} onClick={() => void toggle(candidate)}
 						className={cn("flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs outline-none select-none data-[highlighted]:bg-accent", pending !== undefined && "opacity-60")}>

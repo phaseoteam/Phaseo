@@ -79,7 +79,7 @@ function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRew
 }
 
 const noticeTones = { failed: "text-destructive", completed: "text-emerald-600 dark:text-emerald-300/90", updated: "text-muted-foreground" } as const;
-/** A wake the app sent the agent (T3 shows these as a notification row): the one-line summary, with the full update on demand. */
+/** A wake the app sent the agent, shown as a notification row: the one-line summary, with the full update on demand. */
 function WatchNotice({ message }: { message: Message }) {
 	const [open, setOpen] = useState(false), notice = message.notice!;
 	return <div data-conversation-id={`message:${message.id}`} data-notice={notice.kind} className="text-[12.5px]">
@@ -200,7 +200,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
 	const final = isAnswer(latest) ? latest : complete && !live ? entries.findLast(entry => entry.kind === "message" && entry.value.role === "assistant") : undefined;
-	// Proposed plans stand on their own in the turn, as T3 Code's plan card does, rather than inside the work log.
+	// Proposed plans stand on their own in the turn rather than inside the work log.
 	const plans = entries.flatMap(entry => entry.kind === "activity" && entry.value.proposed ? [entry.value] : []);
 	// Pages an agent showed with html_render stand above the reply, like plans.
 	const pages = entries.flatMap(entry => entry.kind === "activity" && entry.value.htmlRender ? [{ id: entry.value.id, html: entry.value.text, render: entry.value.htmlRender }] : []);

@@ -15,7 +15,7 @@ import { offerUndo } from "./threadUndo";
 
 export const snoozeTime = (date: Date) => formatDateParts(date, { weekday: date.getDate() === new Date().getDate() ? undefined : "short", hour: "2-digit", minute: "2-digit" });
 
-/** Settle, snooze, pin and read actions for Code chats, with undo and "open the next chat" as in T3 Code. */
+/** Settle, snooze, pin and read actions for Code chats, with undo and "open the next chat". */
 /** The sidebar's project filter: one id, a list of ids, or empty for all projects. */
 type Scope = string | readonly string[];
 export function useThreadActions() {
@@ -72,7 +72,7 @@ export function SnoozeItems({ onSnooze, onCustom }: { onSnooze: (until: Date) =>
 	</>;
 }
 
-/** T3's custom snooze: a date and time, or a duration from now. */
+/** A custom snooze: a date and time, or a duration from now. */
 export function CustomSnoozeDialog({ open, onOpenChange, onSnooze }: { open: boolean; onOpenChange: (open: boolean) => void; onSnooze: (until: Date) => void }) {
 	const [mode, setMode] = useState<"date" | "duration">("date");
 	const local = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
@@ -94,7 +94,7 @@ export function CustomSnoozeDialog({ open, onOpenChange, onSnooze }: { open: boo
 	</Dialog>;
 }
 
-/** T3's chat menu, in its order: pin, settle, snooze; rename, tags, unread, project filter, auto-settle; copy; archive. */
+/** The chat menu, in order: pin, settle, snooze; rename, tags, unread, project filter, auto-settle; copy; archive. */
 export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCustomSnooze }: { task: TaskOverview; scope?: Scope; onScope?: (id: string) => void; onRename?: () => void; onDelete?: () => void; onCustomSnooze: () => void }) {
 	const actions = useThreadActions();
 	const { overview, select, setNewChatProjectId, openProjectSettings } = useWorkspace();
@@ -163,7 +163,7 @@ export function RenameInput({ task, onDone, className }: { task: TaskOverview; o
 		className={cn("h-6 min-w-0 flex-1 rounded border border-ring bg-background px-1.5 text-[13px] outline-none", className)} />;
 }
 
-/** T3's menu for several picked chats: each action says how many chats it applies to. */
+/** The menu for several picked chats: each action says how many chats it applies to. */
 export function BulkMenuItems({ tasks, scope, onDone }: { tasks: TaskOverview[]; scope?: Scope; onDone: () => void }) {
 	const actions = useThreadActions();
 	const [deleting, setDeleting] = useState(false);

@@ -10,7 +10,7 @@ import { segmentedGroup } from "./segmented";
 const Bar = ({ className }: { className?: string }) => <span aria-hidden className={cn("block h-3 rounded bg-muted-foreground/15", className)} />;
 const tabs = ["Summary", "Guide", "Timeline", "Code"];
 
-/** T3's people and comment rows while a conversation loads. */
+/** Placeholder people and comment rows while a conversation loads. */
 export function ConversationGhost({ rows = 3 }: { rows?: number }) {
 	return <div aria-hidden className="space-y-4 px-4 py-3 motion-safe:animate-pulse">
 		{Array.from({ length: rows }, (_, index) => <div key={index} className="space-y-2 border-l-2 border-border/60 pl-3">
@@ -26,7 +26,7 @@ export function PeopleGhost() {
 }
 
 /**
- * T3's PullRequestDetailGhost: the header in its own shape while the pull request loads, filled in from what the chat
+ * The header in its own shape while the pull request loads, filled in from what the chat
  * last saw of it when it is linked, so the title and state do not flash in.
  */
 export function PullRequestDetailGhost({ number, seed, repository, onBack, onOpen }: { number: number; seed?: PullRequestLinkSnapshot; repository?: string; onBack?: ReactNode; onOpen?: () => void }) {
@@ -54,7 +54,7 @@ export function PullRequestDetailGhost({ number, seed, repository, onBack, onOpe
 /** GitHub's "Could not resolve to a PullRequest" is a missing pull request rather than a failed read. */
 export const isNotFound = (error: string) => /could not resolve to a pullrequest|not found \(http 404\)|http 404/i.test(error);
 
-/** T3's PullRequestsUnavailableState: what went wrong, with Retry and Open on GitHub side by side. */
+/** Pull requests unavailable: what went wrong, with Retry and Open on GitHub side by side. */
 export function UnavailableState({ number, error, refreshing, onRetry, onOpen }: { number: number; error: string; refreshing: boolean; onRetry: () => void; onOpen?: () => void }) {
 	const missing = isNotFound(error);
 	return <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">

@@ -36,7 +36,7 @@ function useRowView(projectId: string, number: number, enabled: boolean) {
 	return { view, refresh: useCallback(() => setGeneration(value => value + 1), []) };
 }
 
-/** Everything GitHub reported, at a glance (T3's row tooltip): title over state, branches, checks, conflicts and size. */
+/** Everything GitHub reported, at a glance (the row tooltip): title over state, branches, checks, conflicts and size. */
 function RowTooltip({ view }: { view: PullRequestView }) {
 	const state = pullRequestStatePresentation(view.state, view.draft), checks = checksState(view.checkRuns);
 	const line = (icon: ReactNode, text: ReactNode, className?: string) => <div className={cn("flex min-w-0 items-center gap-2", className)}>{icon}<div className="min-w-0 truncate">{text}</div></div>;
@@ -113,7 +113,7 @@ function ChatPullRequestRow({ projectId, target, openable, onStopWatching }: { p
 }
 
 /**
- * A chat's pull requests in its details card (T3's ThreadDetailsPrRows): the current one, then "Show N more" for the
+ * A chat's pull requests in its details card: the current one, then "Show N more" for the
  * rest in the linked list's order. Without links, the pull request for the checkout's branch stands in.
  */
 export function ChatPullRequestRows({ projectId, taskId }: { projectId: string; taskId: string }) {

@@ -8,7 +8,7 @@ import { CHECKS_ROLLUP_PRESENTATION, errorMessage } from "./presentation";
 import { checksCountLabel } from "./checksLogic";
 import { summarizeChecks, type ChecksRollup } from "./pullRequestLogic";
 
-/** Mounted by the popup, so a page of rows costs no reads until somebody opens one (T3's LazyChecksBody). */
+/** Mounted by the popup, so a page of rows costs no reads until somebody opens one. */
 function LazyChecks({ projectId, number, onOpen }: { projectId: string; number: number; onOpen: (url: string) => void }) {
 	const [state, setState] = useState<{ checks?: PullRequestCheck[]; error?: string }>({});
 	useEffect(() => {
@@ -24,7 +24,7 @@ function LazyChecks({ projectId, number, onOpen }: { projectId: string; number: 
 }
 
 /**
- * A row's checks (T3's PullRequestChecksPopover outside the detail header). The icon form sits on a list row that
+ * A row's checks, outside the detail header. The icon form sits on a list row that
  * knows only the rollup and reads the checks when opened; the count form ("2/5" running, "1 failed") is given them.
  */
 export function RowChecksPopover({ rollup, projectId, number, checks, variant = "icon", render, className }: { rollup: ChecksRollup; projectId: string; number: number; checks?: readonly PullRequestCheck[]; variant?: "icon" | "count"; render?: ReactElement; className?: string }) {

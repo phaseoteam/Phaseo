@@ -9,7 +9,7 @@ import { ContinueOfferLinks, useContinueOffers, type ContinueOffer } from "./Con
 import { continueElsewhere } from "./continueElsewhere";
 
 /**
- * T3's usage-limit recovery under a limited chat: when the plan limit resets, Resume when the limit resets (scheduled
+ * Usage-limit recovery under a limited chat: when the plan limit resets, Resume when the limit resets (scheduled
  * a minute after the reset the account's limits give) and Continue now. Beside them, the agent's other signed-in logins
  * and Phaseo at its price; nothing moves until one is clicked.
  */
@@ -34,7 +34,7 @@ export function UsageLimitNotice({ task }: { task: Task }) {
 	</section>;
 }
 
-/** After a restart, T3 offers to continue the chats the app's quit interrupted; this asks once per start. */
+/** After a restart, the app offers to continue the chats the app's quit interrupted; this asks once per start. */
 export function QuitRecoveryOffer() {
 	const { api, command, select } = useWorkspace();
 	const asked = useRef(false);

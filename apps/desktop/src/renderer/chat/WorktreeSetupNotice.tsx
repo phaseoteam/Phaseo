@@ -7,7 +7,7 @@ import { cn } from "../lib/utils";
 const stageIcon: Record<WorktreeSetupStatus, typeof Check> = { pending: Circle, running: LoaderCircle, done: Check, skipped: Minus, failed: X };
 
 /**
- * T3's worktree setup progress in the chat: creating the worktree, naming its branch and running the setup action,
+ * Worktree setup progress in the chat: creating the worktree, naming its branch and running the setup action,
  * until the agent starts. A failed setup stays, beside the chat's Resume.
  */
 export function WorktreeSetupNotice({ task }: { task: Task }) {

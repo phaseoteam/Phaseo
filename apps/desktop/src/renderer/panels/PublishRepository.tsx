@@ -8,7 +8,7 @@ import { cn } from "../lib/utils";
 import { ipcError } from "./surfaceChrome";
 
 /**
- * T3's Publish repository, inline in Git actions: a name (from the folder), the account or organisation, and private
+ * Publish repository, inline in Git actions: a name (from the folder), the account or organisation, and private
  * or public. GitHub CLI creates it; the app adds it as origin and pushes the branch.
  */
 export function PublishRepositoryForm({ projectId, folder, onDone, onCancel }: { projectId: string; folder: string; onDone: (review: GitReview) => void; onCancel: () => void }) {

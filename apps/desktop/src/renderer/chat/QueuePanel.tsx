@@ -15,7 +15,7 @@ export function steerBlocker(task: Pick<Task, "harness" | "status">) {
 	if (!live(task)) return "The turn has finished; queued messages send by themselves.";
 	return steerable.has(task.harness) ? undefined : `${harnessNames[task.harness]} can't take messages mid-turn, so queued messages send when the turn finishes.`;
 }
-/** The person's own queued messages; pull request updates and agent results are the app's, as in T3. */
+/** The person's own queued messages; pull request updates and agent results are the app's. */
 export const ownQueue = (task: Pick<Task, "queue">) => task.queue.filter(message => !message.notice && !message.sourceTaskId);
 /** Who a queued message is from when it is not the person: Autopilot, a watched pull request or issue, or another chat's agent. */
 export function queueSender(message: Pick<QueuedMessage, "autopilot" | "notice" | "sourceTaskId" | "sourceTaskIds">, chatTitle: (id: string) => string | undefined = () => undefined) {
@@ -29,7 +29,7 @@ function RowButton({ label, onClick, disabled, children }: { label: string; onCl
 }
 
 /**
- * T3's queue above the composer: queued follow-ups can be edited in the composer, reordered, removed, or sent into
+ * The queue above the composer: queued follow-ups can be edited in the composer, reordered, removed, or sent into
  * the running turn now. Instructions sent mid-turn that the agent refused or never confirmed wait here for a decision.
  */
 export function QueuePanel({ task, editingId, onEdit, onSteer }: { task: Task; editingId?: string; onEdit: (id: string) => void; onSteer: (id: string) => void }) {

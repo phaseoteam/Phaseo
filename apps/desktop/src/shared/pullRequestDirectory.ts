@@ -2,7 +2,7 @@ import type { PullRequest } from "./pullRequests";
 import type { PullRequestActor } from "./pullRequestView";
 
 /**
- * The Pull requests page (T3 Code's `/pull-requests`): every project's pull requests in one list, read with one
+ * The Pull requests page: every project's pull requests in one list, read with one
  * GitHub search per handful of repositories. The narrowings a row's own fields can answer run again in the
  * renderer, so switching between them never waits on GitHub.
  */
@@ -10,7 +10,7 @@ export type PullRequestListState = "open" | "closed" | "merged" | "all";
 export type PullRequestInvolvement = "all" | "reviewing" | "authored";
 export type PullRequestReviewFilter = "approved" | "changes-requested" | "review-required" | "none";
 export type PullRequestChecksFilter = "passing" | "failing";
-/** T3's PullRequestListFilters: `labels` is a list of OR-groups that must all match; `author` may be "me". */
+/** List filters: `labels` is a list of OR-groups that must all match; `author` may be "me". */
 export type PullRequestListFilters = { labels?: string[][]; excludedLabels?: string[]; author?: string; draft?: "only" | "hide"; review?: PullRequestReviewFilter; checks?: PullRequestChecksFilter };
 export type PullRequestDirectoryQuery = { state: PullRequestListState; text: string; filters: PullRequestListFilters; projectId?: string; limit: number };
 export type PullRequestLabel = { name: string; color?: string };

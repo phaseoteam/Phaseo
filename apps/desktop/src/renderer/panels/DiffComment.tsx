@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import { MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 
-/** T3's inline comment: a saved comment is a left-ruled row; a draft is a small form under the lines. */
+/** An inline comment: a saved comment is a left-ruled row; a draft is a small form under the lines. */
 export function DiffComment({ kind, rangeLabel, text, onTextChange, onCancel, onComment, onDelete }: { kind: "draft" | "comment"; rangeLabel: string; text: string; onTextChange?: (text: string) => void; onCancel: () => void; onComment: (text: string) => void; onDelete?: () => void }) {
 	const input = useRef<HTMLTextAreaElement>(null);
 	const trimmed = text.trim();

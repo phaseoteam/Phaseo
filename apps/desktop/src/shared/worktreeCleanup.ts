@@ -1,4 +1,4 @@
-/** One worktree in a cleanup run: removed (or to remove, when planning) or kept, and why, in T3's words. */
+/** One worktree in a cleanup run: removed (or to remove, when planning) or kept, and why. */
 export type WorktreeCleanupEntry = { projectId: string; name: string; branch: string; outcome: "remove" | "keep" | "removed"; reason: string };
 export type WorktreeCleanupReport = { checkedAt: string; entries: WorktreeCleanupEntry[]; automatic?: boolean };
 /** A worktree's size on disk, with what its dependencies and build output take; `partial` when the count stopped early. */

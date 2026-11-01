@@ -6,7 +6,7 @@ import path from "node:path";
 import { format } from "node:util";
 
 /**
- * A small tracer for the main process, after T3 Code's local trace file: each span is one NDJSON line in
+ * A small tracer for the main process, writing a local trace file: each span is one NDJSON line in
  * `<userData>/logs/traces.ndjson`, rotated by size. Lines are buffered and appended in batches off the hot path.
  */
 

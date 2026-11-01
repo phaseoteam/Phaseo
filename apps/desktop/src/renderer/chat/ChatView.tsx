@@ -139,7 +139,7 @@ function ChatComposer({ task }: { task: Task }) {
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
 	const preferences = useWorkspacePreferences();
-	// While the agent waits on a question, the composer is its own-answer field, as in T3 Code.
+	// While the agent waits on a question, the composer is its own-answer field.
 	const answerer = useQuestionAnswerer(task.id);
 	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
 		placeholder: task.archived ? "This chat is archived" : answerer ? "Type your own answer, or leave this blank to use the selected option" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
@@ -196,7 +196,7 @@ function ChatComposer({ task }: { task: Task }) {
 	const canSend = !busy && !uploading && !task.archived && (!!answerer || !!message.text || message.attachments.length > 0);
 	usePromptHistory(task, draft);
 	const stash = usePromptStash(task.id, draft);
-	// A queued message being edited in the composer, and the draft it set aside (T3's "Editing in the composer").
+	// A queued message being edited in the composer, and the draft it set aside ("Editing in the composer").
 	const [editing, setEditing] = useState<{ id: string; saved: string }>();
 	useEffect(() => { setEditing(undefined); }, [task.id]);
 	const editQueued = (id: string) => {
@@ -333,7 +333,7 @@ function ChatComposer({ task }: { task: Task }) {
 	</div>;
 }
 
-/** T3's quiet line after the last message: settled, snoozed or woke, with the way back. */
+/** The quiet line after the last message: settled, snoozed or woke, with the way back. */
 function ThreadStatusLine({ task }: { task: TaskOverview }) {
 	const actions = useThreadActions();
 	const now = Date.now();
@@ -355,10 +355,10 @@ function DelayedStatus({ children }: { children: ReactNode }) {
 export function ChatView({ id }: { id: string }) {
 	const { api, overview, command, select, setOverview } = useWorkspace();
 	const snapshot = overview.tasks.find(task => task.id === id);
-	// T3: Ctrl+J opens a terminal drawer under the chat, remembered per chat.
+	// Ctrl+J opens a terminal drawer under the chat, remembered per chat.
 	const [drawers, setDrawers] = usePersistedState<Record<string, boolean>>("phaseo.desktop.terminalDrawers", {});
 	useCommand("terminal.toggle", () => setDrawers(current => ({ ...current, [id]: !current[id] })));
-	// Having the chat open marks its finished turns read, as T3's visit does. It bypasses command() so it never clears an error on screen.
+	// Having the chat open marks its finished turns read. It bypasses command() so it never clears an error on screen.
 	useEffect(() => {
 		if (api && snapshot && (!snapshot.lastVisitedAt || (snapshot.lastCompletedAt && Date.parse(snapshot.lastCompletedAt) > Date.parse(snapshot.lastVisitedAt)))) void api.command({ type: "visit", id, at: new Date().toISOString() }).then(setOverview, () => undefined);
 	}, [id, snapshot?.lastCompletedAt, snapshot?.lastVisitedAt]);

@@ -9,7 +9,7 @@ import { cn } from "../lib/utils";
 const tokens = (count: number) => formatRoundedCount(count, "en-US");
 
 /**
- * T3's context meter beside the send button: how full the model's window was after the latest turn, with what that
+ * The context meter beside the send button: how full the model's window was after the latest turn, with what that
  * turn processed and cost, and Compact where the harness can compact. Hidden when the harness does not report its window.
  */
 export function ContextMeter({ task, onCompact }: { task: Pick<Task, "messages" | "activities">; onCompact?: () => void }) {

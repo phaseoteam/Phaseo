@@ -1,5 +1,5 @@
 /**
- * Keyboard shortcuts, after T3 Code: every command has default keys and an optional "when" condition, and
+ * Keyboard shortcuts: every command has default keys and an optional "when" condition, and
  * keybindings.json holds the person's own bindings. A command with any entry in the file uses those entries
  * instead of its defaults; an entry with an empty key unassigns it.
  */
@@ -26,7 +26,7 @@ export const keybindingCommands = [
 	{ command: "modelSettings.toggle", label: "Model settings", group: "Chats", keys: ["mod+shift+e"] },
 	{ command: "modelPicker.toggle", label: "Choose model", group: "Chats", keys: ["mod+shift+m"], when: "!terminalFocused" },
 	{ command: "thread.pin", label: "Pin or unpin chat", group: "Chats", keys: ["mod+shift+p"], when: "chatOpen && !terminalFocused" },
-	// The message box's own keys (T3's composer.* and thread.*QueuedMessage). They run only while it has focus, before the editor acts on them; stash works anywhere in a chat.
+	// The message box's own keys (composer.* and thread.*QueuedMessage). They run only while it has focus, before the editor acts on them; stash works anywhere in a chat.
 	{ command: "composer.steer", label: "Send into the running turn", group: "Composer", keys: ["mod+shift+enter"], when: "composerFocused" },
 	{ command: "composer.editQueued", label: "Edit the last queued message", group: "Composer", keys: ["alt+arrowup"], when: "composerFocused" },
 	{ command: "composer.sendAlternate", label: "Send into the running turn instead of queueing (when Enter sends)", group: "Composer", keys: ["mod+enter"], when: "composerFocused" },
@@ -55,23 +55,23 @@ export const keybindingCommands = [
 	{ command: "browser.zoomIn", label: "Zoom page in", group: "Browser", keys: ["mod+=", "mod++"], when: "browserFocused" },
 	{ command: "browser.zoomOut", label: "Zoom page out", group: "Browser", keys: ["mod+-"], when: "browserFocused" },
 	{ command: "browser.zoomReset", label: "Reset page zoom", group: "Browser", keys: ["mod+0"], when: "browserFocused" },
-	// T3's J and K step through a review guide while its tab is on screen, unless you are typing.
+	// J and K step through a review guide while its tab is on screen, unless you are typing.
 	{ command: "guide.next", label: "Next stop in a review guide", group: "Pull requests", keys: ["j"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
 	{ command: "guide.previous", label: "Previous stop in a review guide", group: "Pull requests", keys: ["k"], when: "paneOpen && !textFocused && !terminalFocused && !browserFocused" },
-	// T3's pullRequest.copyNumber and thread.copyReference, acting on the pull request on screen; Escape goes back to the list.
+	// pullRequest.copyNumber and thread.copyReference act on the pull request on screen; Escape goes back to the list.
 	{ command: "pullRequest.copyNumber", label: "Copy pull request number", group: "Pull requests", keys: ["mod+shift+k"], when: "!terminalFocused" },
 	{ command: "pullRequest.copyLink", label: "Copy pull request link", group: "Pull requests", keys: ["mod+shift+c"], when: "!terminalFocused" },
 	// The same keys as Copy pull request link, which wins while a pull request is on screen.
 	{ command: "thread.copyReference", label: "Copy chat ID", group: "Chats", keys: ["mod+shift+c"], when: "chatOpen && !terminalFocused" },
 	{ command: "pullRequest.back", label: "Back to pull requests", group: "Pull requests", keys: ["escape"], when: "!textFocused && !terminalFocused && !browserFocused" },
-	// T3: Mod+F belongs to the Pull requests page's own search while it is open.
+	// Mod+F belongs to the Pull requests page's own search while it is open.
 	{ command: "pullRequests.focusSearch", label: "Search pull requests", group: "Pull requests", keys: ["mod+f"], when: "!terminalFocused && !browserFocused" },
 	{ command: "view.zoomIn", label: "Zoom in", group: "View", keys: ["mod+=", "mod++"] },
 	{ command: "view.zoomOut", label: "Zoom out", group: "View", keys: ["mod+-"] },
 	{ command: "view.zoomReset", label: "Actual size", group: "View", keys: ["mod+0"] },
 ] as const satisfies readonly { command: string; label: string; group: string; keys: readonly string[]; when?: string }[];
 
-/** A project action's own command, after T3's `script.<id>.run`, scoped to its project: `script.<projectId>.<actionId>.run`. */
+/** A project action's own command, scoped to its project: `script.<projectId>.<actionId>.run`. */
 export type ScriptCommand = `script.${string}.${string}.run`;
 export type KeybindingCommand = typeof keybindingCommands[number]["command"] | ScriptCommand;
 export type CommandInfo = { command: KeybindingCommand; label: string; group: string; keys: readonly string[]; when?: string };
@@ -167,7 +167,7 @@ export const keyLabel = (value: string, mac: boolean) => keyParts(value, mac).jo
 
 export type WhenNode = { type: "var"; name: string } | { type: "not"; node: WhenNode } | { type: "and" | "or"; left: WhenNode; right: WhenNode };
 
-/** The visual builder's shape (T3): groups of conditions joined by all-of or any-of, each of which can be negated. */
+/** The visual builder's shape: groups of conditions joined by all-of or any-of, each of which can be negated. */
 export type WhenCondition = { kind: "condition"; name: string; negated: boolean };
 export type WhenGroup = { kind: "group"; operator: "and" | "or"; negated: boolean; items: (WhenCondition | WhenGroup)[] };
 
