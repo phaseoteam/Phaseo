@@ -1,8 +1,26 @@
+import { desktopChatHref } from "@/features/desktops/routes";
 import type { ModelCard } from "@/lib/api/models";
 import { DEFAULT_FILTERS, organisationName, type CatalogueFilters } from "@/lib/catalogue";
 
-/** Where a tapped notification opens. The app has no lab page, so a lab opens Models filtered to it. */
-export type NotificationTarget = { kind: "model"; id: string } | { kind: "lab"; slug: string } | { kind: "provider"; id: string } | { kind: "home" } | { kind: "desktop-chat"; desktopId: string; chatId: string };
+/**
+ * Where a tapped notification opens. The app has no lab page, so a lab opens Models filtered to it; anything else opens
+ * Models, where the newest releases are.
+ */
+export type NotificationTarget = { kind: "model"; id: string } | { kind: "lab"; slug: string } | { kind: "provider"; id: string } | { kind: "models" } | { kind: "desktop-chat"; desktopId: string; chatId: string };
+
+/**
+ * The screen a target opens, and how: model and provider pages are pushed over whatever is showing; Models and a
+ * computer's chat open as the sidebar opens them, so a chat lands in Chat rather than in a second one.
+ */
+export function notificationRoute(target: NotificationTarget): { href: string; open: "push" | "screen" } {
+  switch (target.kind) {
+    case "model": return { href: `/models/${target.id}`, open: "push" };
+    case "provider": return { href: `/providers/${encodeURIComponent(target.id)}`, open: "push" };
+    case "lab":
+    case "models": return { href: "/models", open: "screen" };
+    case "desktop-chat": return { href: desktopChatHref(target.desktopId, target.chatId) as string, open: "screen" };
+  }
+}
 
 // The push contract's paths, plus the website's own, in case the server sends those instead.
 const LAB_ROOTS = new Set(["labs", "organisations"]);
@@ -14,14 +32,14 @@ function segments(path: string) {
   });
 }
 
-/** Maps a push's website-style `href` (/models/<lab>/<model>, /labs/<lab>, /providers/<provider>) to a screen; anything else is Home. */
+/** Maps a push's website-style `href` (/models/<lab>/<model>, /labs/<lab>, /providers/<provider>) to a screen; anything else is Models. */
 export function targetForHref(href: string): NotificationTarget {
   const [root, first, second] = segments(href);
   // Model pages can have sub-paths on the website; the model ID is always the first two parts.
   if (root === "models" && first && second) return { kind: "model", id: `${first}/${second}` };
   if (root && LAB_ROOTS.has(root) && first) return { kind: "lab", slug: first };
   if (root && PROVIDER_ROOTS.has(root) && first) return { kind: "provider", id: first };
-  return { kind: "home" };
+  return { kind: "models" };
 }
 
 /** A summary push ("DeepSeek released 12 models") opens the whole group: the lab's models, the provider, or the repriced model. */
