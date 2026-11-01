@@ -26,6 +26,7 @@ export type LaunchResult = { id: string; title: string; projectId?: string; work
 export type ProjectSummary = { id: string; name: string; directory: string; current?: boolean; worktree?: { branch: string; baseCommit: string; sourceProjectId: string }; removed?: boolean };
 export type ThreadSettingsChange = { model?: string; modelOptions?: ModelOptionValues; mode?: Task["mode"]; permissionMode?: Task["permissionMode"] };
 export type ThreadSettings = ThreadSummary & { harness: Harness; model: string; accountId?: string; modelOptions: ModelOptionValues; mode: Task["mode"]; permissionMode: NonNullable<Task["permissionMode"]> };
+export type ThreadSearchResult = { id: string; title: string; status: TaskStatus; project?: string; branch?: string; pullRequests?: string[]; updatedAt: string; readable: boolean };
 export type AddedProject = { id: string; name: string; path: string; alreadyAdded?: boolean };
 export const organizeActions = ["pin", "unpin", "archive", "unarchive", "rename", "regenerate_title", "tag", "settle", "unsettle", "snooze", "wake", "mark_unread"] as const;
 export type OrganizeAction = typeof organizeActions[number];
@@ -99,6 +100,8 @@ export type ThreadTools = {
 	launch?: (request: LaunchRequest) => Promise<LaunchResult>;
 	launchBatch?: (requests: LaunchRequest[]) => Promise<{ results: (LaunchResult | { requestId: string; error: string })[] }>;
 	projects?: (query?: string) => ProjectSummary[];
+	/** Finds chats by title, branch or pull request across the workspace; reading one still needs it to be this chat's or referenced. */
+	search?: (query: string) => ThreadSearchResult[];
 	/** add_project registers a local folder; clone_project clones a repository and registers the checkout. Never deletes. */
 	addProject?: (directory: string) => Promise<AddedProject>;
 	cloneProject?: (url: string, parent?: string) => Promise<AddedProject>;

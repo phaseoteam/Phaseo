@@ -240,6 +240,20 @@ describe("attachments on delegate_task, launch_thread and send_thread", () => {
 	}));
 });
 
+describe("search_threads", () => {
+	it("finds chats by title across the workspace without their messages, and says which ones this chat can read", async () => withRuntime(async runtime => {
+		const parentId = await caller(runtime), tools = runtime.threadTools(parentId);
+		const other = await caller(runtime); await runtime.command({ type: "update-task", id: other, title: "Billing refactor" });
+		const stored = runtime.store.getTask(other); stored.messages.push({ id: "secret", role: "user", text: "Private billing notes", createdAt: new Date().toISOString() }); runtime.store.saveTask(stored);
+		const launched = await tools.launch!({ requestId: "b", title: "Billing tests", prompt: "Work" });
+		const found = tools.search!("billing");
+		expect(found.map(entry => [entry.id, entry.readable])).toEqual(expect.arrayContaining([[other, false], [launched.id, true]]));
+		expect(JSON.stringify(found)).not.toContain("Private billing notes");
+		expect(tools.search!("private notes")).toEqual([]);
+		expect(() => tools.read(other)).toThrow("outside");
+	}));
+});
+
 describe("configure_thread", () => {
 	it("reads a child's settings and changes its model and mode only while stopped and never beyond this chat", async () => withRuntime(async (runtime, _directory, run) => {
 		runtime.discoverThreadModels = async () => [{ id: "owned", name: "Owned" }, { id: "stronger", name: "Stronger", options: [{ id: "effort", label: "Effort", type: "select", options: [{ id: "high", label: "High" }] }] }];

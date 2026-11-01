@@ -502,6 +502,15 @@ export class WorkspaceThreads {
 			interrupt: async id => { scoped(id, true, true); await this.host.command({ type: "cancel", id }); return summary(scoped(id, true, true)); },
 			launch: async request => { const prepared = await this.prepareLaunch(parentId, request); return "existing" in prepared ? prepared.existing : this.commitLaunch(parentId, prepared); },
 			launchBatch: requests => this.launchBatch(parentId, requests),
+			search: query => {
+				const needle = query.trim().toLowerCase(); if (!needle) throw new Error("Pass words to search for.");
+				const projects = new Map(this.host.store.getProjects().map(project => [project.id, project])), referenced = new Set(this.host.store.getTask(parentId).messages.flatMap(message => message.role === "user" ? message.threadReferences ?? [] : []));
+				// Titles, branches and pull requests only: message text stays private, and so does other chats' delegated work.
+				return this.host.store.getOverview().tasks.filter(task => !task.archived && !task.delegation?.parentTaskId).map(task => {
+					const project = task.projectId ? projects.get(task.projectId) : undefined, pullRequests = (task.pullRequests ?? []).map(link => `${link.repository}#${link.number}`);
+					return { task, project, pullRequests, text: [task.title, project?.name, project?.worktree?.branch, ...pullRequests].filter(Boolean).join(" ").toLowerCase() };
+				}).filter(entry => entry.text.includes(needle)).slice(0, 20).map(({ task, project, pullRequests }) => ({ id: task.id, title: task.title, status: task.status, ...(project ? { project: project.name } : {}), ...(project?.worktree ? { branch: project.worktree.branch } : {}), ...(pullRequests.length ? { pullRequests } : {}), updatedAt: task.updatedAt, readable: task.id === parentId || task.launch?.byTaskId === parentId || referenced.has(task.id) }));
+			},
 			projects: query => {
 				const current = this.host.store.getTask(parentId).projectId, folder = (directory: string) => directory.split(/[\\/]/).filter(Boolean).at(-1) ?? directory;
 				// Folder names only: full paths stay private to the desktop.
