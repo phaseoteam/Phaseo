@@ -17,7 +17,8 @@ import { buildItems, focusedAnswerPick, focusIndex, reconcileItems, type Convers
 import { newestMatch } from "./db";
 import { getLive, liveShapes } from "./live";
 import { ConversationContext, ConversationRow, selectedAnswers } from "./Messages";
-import { ModelChipRow, useOpenModelPicker } from "./ModelChips";
+import { ChatModelSheet } from "./ChatModelSheet";
+import { ModelChipRow } from "./ModelChips";
 import { useChatModelOptions, useModelLabels } from "./models";
 import { onAnswerText, onChatError, onChatSettled, sendMessage, startChat, stopChat } from "./runner";
 import { chatModelStore, draftSettingsStore, useChat, useChatRunning } from "./state";
@@ -65,7 +66,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
   const { session } = useAuth();
   const { workspaceId } = useWorkspace();
   const labels = useModelLabels();
-  const openPicker = useOpenModelPicker(chatId);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const moreRef = useRef<ViewRef>(null);
   const listRef = useRef<LegendListRef>(null);
   const { chat } = useChat(chatId);
@@ -172,7 +173,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
         <Composer
           models={chat.models}
           settings={settings}
-          onModelPress={openPicker}
+          onModelPress={() => setSheetOpen(true)}
           running={running}
           disabledReason={session || perf?.chatOrigin() ? null : "Sign in to send messages"}
           onSend={(text, attachments) => {
@@ -184,6 +185,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
           onStop={() => stopChat(chatId)}
         />
       </KeyboardAvoidingView>
+      <ChatModelSheet chatId={chatId} models={chat.models} settings={settings} open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </Screen>
   );
 }
@@ -235,7 +237,7 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
   const { options } = useChatModelOptions();
   const models = chatModelStore.use();
   const settings = draftSettingsStore.use();
-  const openPicker = useOpenModelPicker(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [period] = useState(() => dayPeriod(new Date().getHours()));
   const [seed, setSeed] = useState<{ key: number; text: string } | null>(null);
   useChatErrors(null);
@@ -281,7 +283,7 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
           seed={seed}
           models={models}
           settings={settings}
-          onModelPress={openPicker}
+          onModelPress={() => setSheetOpen(true)}
           running={false}
           disabledReason={!session && !perf?.chatOrigin() ? "Sign in to send messages" : !models.length ? "Choose a model first" : null}
           onSend={(text, attachments) => {
@@ -292,6 +294,7 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
           onStop={() => undefined}
         />
       </KeyboardAvoidingView>
+      <ChatModelSheet chatId={null} models={models} settings={settings} open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </Screen>
   );
 }
