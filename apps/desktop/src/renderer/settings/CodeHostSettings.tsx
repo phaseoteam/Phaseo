@@ -23,7 +23,7 @@ export function CodeHostSettings() {
 	const apply = async (work: Promise<Settings>, done: string) => {
 		try { setSettings(await work); setError(undefined); showToast("success", done); return true; } catch (reason) { setError(errorText(reason)); return false; }
 	};
-	return <SettingsPageLayout title="Code hosts" description="Pull and merge requests from projects whose origin is on GitLab, Forgejo or Gitea, Bitbucket or Azure DevOps. GitHub projects use GitHub CLI, as before.">
+	return <SettingsPageLayout title="Code hosts" description="Pull and merge requests from projects whose origin is on GitLab, Forgejo or Gitea, Bitbucket or Azure DevOps. GitHub projects use GitHub CLI.">
 		{error && <SettingsNote role="alert" tone="error" className="px-0.5 py-0">{error}</SettingsNote>}
 		{hosts.map(host => <HostSection key={host.kind} {...host} settings={settings} onSave={request => api ? apply(api.saveCodeHostToken(request), "Token saved") : Promise.resolve(false)} onRemove={name => api && void apply(api.removeCodeHostToken(host.kind, name), "Token removed")} />)}
 		<Servers settings={settings} onSave={servers => api ? apply(api.saveCodeHostServers(servers), "Servers saved") : Promise.resolve(false)} />

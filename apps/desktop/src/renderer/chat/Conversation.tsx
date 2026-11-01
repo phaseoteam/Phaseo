@@ -1,3 +1,4 @@
+import { activitySummary } from "../lib/activitySummary";
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, Plane, Bot, Brain, Check, ChevronRight, Circle, CircleDot, CornerDownRight, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -125,7 +126,7 @@ function ActivityRow({ activity, live, openDiff }: { activity: AgentActivity; li
 	const running = activity.status === "running" || (reasoning && live);
 	const Icon = reasoning ? Brain : activity.type === "compaction" ? Layers : activity.type === "plan" ? ListChecks : toolIcon(activity.title);
 	const label = reasoning ? (running ? "Thinking" : "Thought") : activity.type === "compaction" ? (running ? "Compacting context" : "Compacted context") : toolLabels[activity.title] ?? activity.title.replaceAll("_", " ");
-	const summary = reasoning ? "" : activity.text.split("\n")[0];
+	const summary = reasoning ? "" : activitySummary(activity.text);
 	const expandable = !!activity.text && (reasoning || activity.text.length > summary.length || activity.text.length > 80);
 	// An edit shows the file it changed and opens the turn's diff there; a recorded patch (Codex) shows as a diff, not JSON.
 	const files = edits?.files ?? [], file = files[0];

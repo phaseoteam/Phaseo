@@ -7,7 +7,7 @@ import { visiblePullRequestLinks } from "../../shared/pullRequestStacks";
 import { ChatPullRequestRows } from "../views/pullRequests/ChatPullRequestRows";
 import { ThreadServers } from "./ThreadServers";
 
-/** T3's details card in the title bar: the project's branch and Git actions, the chat's pull requests and its servers. */
+/** The details card in the title bar: the project's branch and Git actions, the chat's pull requests and its servers. */
 export function ChatDetails() {
 	const { overview, selectedId, newChatProjectId, setNewChatProjectId, setRightPanel, settings, select } = useWorkspace();
 	const task = overview.tasks.find(value => value.id === selectedId);

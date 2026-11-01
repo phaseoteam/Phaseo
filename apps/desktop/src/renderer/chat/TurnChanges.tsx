@@ -15,7 +15,7 @@ function Counts({ node }: { node: Pick<ChangedNode, "additions" | "deletions" | 
 }
 
 /**
- * T3's changed files under a Code turn: one quiet row with what changed, the line counts and Open diff, which opens
+ * The changed files under a Code turn: one quiet row with what changed, the line counts and Open diff, which opens
  * into the files as a tree (folders with their totals, Expand all). A file opens the turn's diff at that file.
  */
 export function TurnChanges({ taskId, projectId, message }: { taskId: string; projectId: string; message: Message }) {

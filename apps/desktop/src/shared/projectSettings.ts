@@ -17,7 +17,7 @@ export type ProjectScript = {
  * One project's own settings, after T3's project overrides. An absent auto-settle key follows Settings → General;
  * autoSettleAfterDays null means never. Worktrees use their source project's settings.
  */
-export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon; /** T3's per-project default merge method; absent follows Settings → General. */ pullRequestMergeMethod?: PullRequestMergeMethod;
+export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon; /** The project's default merge method; absent follows Settings → General. */ pullRequestMergeMethod?: PullRequestMergeMethod;
 	/** What new Code chats in the project start with; each absent one follows the person's own choice. */
 	defaultModel?: ProjectModelDefault; defaultPermissionMode?: NonNullable<Task["permissionMode"]>; defaultWorkspace?: "local" | "worktree";
 	/** Agents turned off for this project: they leave its model pickers and its chats cannot start on them. */
