@@ -432,7 +432,7 @@ app.whenReady().then(async () => {
 			const option=Array.from(panel?.querySelectorAll('[role="radio"]')??[]).find(row=>row.textContent.includes('Review before implementation'));if(!option)throw new Error('Native question option missing');
 			option.click(); await new Promise(resolve=>setTimeout(resolve,100)); if(option.getAttribute('aria-checked')!=='true')throw new Error('Native option was not chosen');
 			if(!panel.textContent.includes('Owned proposal preview'))throw new Error('Native question preview missing');
-			const submit=Array.from(panel.querySelectorAll('button')).find(button=>/^Submit answer/.test(button.textContent)); if(!submit||submit.disabled)throw new Error('Native answer remained disabled'); submit.click();
+			const submit=Array.from((panel.closest('form')??panel).querySelectorAll('button')).find(button=>/^Submit answer/.test(button.textContent)); if(!submit||submit.disabled)throw new Error('Native answer remained disabled'); submit.click();
 			let current;for(let attempt=0;attempt<50;attempt++){current=(await api.get()).tasks.find(value=>value.id===task.id);if(current.status==='completed'||current.status==='failed')break;await new Promise(resolve=>setTimeout(resolve,100));}
 			if(current.status!=='completed'||current.questions?.length||current.approvals?.length||!current.activities?.some(value=>value.type==='plan'&&value.text==='Review the proposal and wait for implementation approval.'))throw new Error('Native plan/question workflow failed: '+current.error);
 			if(!current.nativeModels?.find(value=>value.id==='grok-fixture-b')?.default)throw new Error('Session-specific Grok model catalog was lost');
