@@ -184,6 +184,18 @@ describe("ConnectRoom", () => {
 		expect(h.frames(phone).at(-1)).toMatchObject({ error: "invalid_envelope" });
 	});
 
+	it("forwards a public key only from a phone pairing over Connect", async () => {
+		const h = await paired();
+		const key = "k".repeat(43);
+		await h.message(h.desktop, { id: 2, type: "register_device", deviceId: "pair-0123456789abcdef01234567", relayTokenHash: await sha256Hex("pairing-token") });
+		const pairing = (await h.connect("phone", { authorization: "Bearer pairing-token" })).socket!;
+		await h.message(pairing, envelope("desktop", 1, { senderPublicKey: key }));
+		expect(h.frames(h.desktop).at(-1)).toEqual({ to: "desktop", from: "pair-0123456789abcdef01234567", seq: 1, nonce: "n".repeat(32), ciphertext: "cipher-1", senderPublicKey: key });
+		const phone = (await h.connect("phone", { authorization: `Bearer ${PHONE_TOKEN}` })).socket!;
+		await h.message(phone, envelope("desktop", 2, { senderPublicKey: key }));
+		expect(h.frames(h.desktop).at(-1)).not.toHaveProperty("senderPublicKey");
+	});
+
 	it("holds envelopes marked hold for an offline phone and delivers them in order", async () => {
 		const h = await paired();
 		await h.message(h.desktop, envelope("phone-one", 1, { hold: true }));

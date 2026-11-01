@@ -1,21 +1,24 @@
 // Phaseo Connect: one ConnectRoom per paired desktop relays end-to-end
 // encrypted envelopes between the desktop and its phones. The relay sees only
-// routing fields (to, from, seq, nonce, hold) and opaque ciphertext, and never
-// logs either. Sockets use the Hibernation API so an idle room costs nothing,
-// and ping/pong is answered by the runtime without waking it.
+// routing fields (to, from, seq, nonce, hold, a pairing phone's public key) and
+// opaque ciphertext, and never logs either. Sockets use the Hibernation API so
+// an idle room costs nothing, and ping/pong is answered by the runtime without
+// waking it.
 //
-// Wire protocol (JSON text frames):
-// - Envelope, either way: { to, seq, nonce, ciphertext, hold? }. `to` is a
-//   deviceId from the desktop and "desktop" from a phone; the relay adds `from`.
-//   `hold: true` keeps it for an offline recipient (attention, send, answer_*);
-//   anything else is dropped while the other side is away.
-// - Desktop only: { id?, type: "register_device", deviceId, relayTokenHash }
-//   (hex SHA-256 of the phone's relay token) and { id?, type: "remove_device",
-//   deviceId }; replies { id, ok } or { id, ok: false, error }.
-// - From the relay: desktop_online / desktop_offline to phones;
-//   devices_online { deviceIds } / device_online / device_offline { deviceId }
-//   to the desktop; { type: "error", error, seq? }.
-// - { "type": "ping" } is answered with { "type": "pong" }.
+// The wire protocol is @phaseo/phone-protocol/relay, shared with the desktop
+// and the phone; its header describes every frame. The relay never sees a
+// pairing code: a phone pairing over Connect signs in with a token derived from
+// it one way, registered by the desktop as an ordinary "pair-…" device.
+import {
+	readRelayOutbound,
+	relayCloseCodes,
+	relayDesktopAddress,
+	relayDeviceIdPattern,
+	relayLimits,
+	relayPairingPrefix,
+	relayTokenHashPattern,
+	type RelayRefusal,
+} from "@phaseo/phone-protocol/relay";
 
 export type ConnectEnv = {
 	SUPABASE_URL: string;
@@ -30,25 +33,20 @@ export const CONNECT_ROLE_HEADER = "x-connect-role";
 export const CONNECT_WORKSPACE_HEADER = "x-connect-workspace";
 export const CONNECT_KEY_HASH_HEADER = "x-connect-key-hash";
 
-export const HOLD_MAX_MESSAGES = 500;
-export const HOLD_MAX_BYTES = 5 * 1024 * 1024;
-export const HOLD_TTL_MS = 24 * 60 * 60 * 1000;
+export const HOLD_MAX_MESSAGES = relayLimits.holdMessages;
+export const HOLD_MAX_BYTES = relayLimits.holdBytes;
+export const HOLD_TTL_MS = relayLimits.holdMs;
 export const ENTITLEMENT_TTL_MS = 5 * 60 * 1000;
-// A 1 MiB frame grows by a third as base64 ciphertext, plus the envelope fields.
-export const MAX_MESSAGE_CHARS = 1_500_000;
+export const MAX_MESSAGE_CHARS = relayLimits.messageChars;
 const MAX_DEVICES = 20;
 // Per socket: a phone sends at most 50 requests a second; the desktop serves up to 20 phones.
 const MESSAGES_PER_SECOND = { phone: 100, desktop: 500 } as const;
-const DESKTOP = "desktop";
+const DESKTOP = relayDesktopAddress;
 const OPEN = 1;
-const DEVICE_ID = /^[A-Za-z0-9_-]{8,64}$/;
-const TOKEN_HASH = /^[0-9a-f]{64}$/;
-const NONCE = /^[A-Za-z0-9_-]{16,64}$/;
 
-// Close codes the desktop and phone act on.
-export const CLOSE_REPLACED = 4000;
-export const CLOSE_DEVICE_REMOVED = 4001;
-export const CLOSE_NOT_ENTITLED = 4402;
+export const CLOSE_REPLACED = relayCloseCodes.replaced;
+export const CLOSE_DEVICE_REMOVED = relayCloseCodes.deviceRemoved;
+export const CLOSE_NOT_ENTITLED = relayCloseCodes.notEntitled;
 
 export async function sha256Hex(value: string): Promise<string> {
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -73,7 +71,7 @@ export async function fetchConnectEntitlement(env: ConnectEnv, workspaceId: stri
 	}
 }
 
-const json = (status: number, error: string) =>
+const json = (status: number, error: RelayRefusal | "not_found") =>
 	new Response(JSON.stringify({ error }), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 
 export class ConnectRoom {
@@ -195,10 +193,10 @@ export class ConnectRoom {
 	private control(socket: WebSocket, frame: Record<string, unknown>) {
 		const id = typeof frame.id === "string" || typeof frame.id === "number" ? frame.id : undefined;
 		const reply = (error?: string) => this.send(socket, error ? { id, ok: false, error } : { id, ok: true });
-		const deviceId = typeof frame.deviceId === "string" && DEVICE_ID.test(frame.deviceId) ? frame.deviceId : null;
+		const deviceId = typeof frame.deviceId === "string" && relayDeviceIdPattern.test(frame.deviceId) ? frame.deviceId : null;
 		if (frame.type === "register_device") {
 			const hash = typeof frame.relayTokenHash === "string" ? frame.relayTokenHash.toLowerCase() : "";
-			if (!deviceId || !TOKEN_HASH.test(hash)) return reply("invalid_device");
+			if (!deviceId || !relayTokenHashPattern.test(hash)) return reply("invalid_device");
 			const count = this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM devices WHERE device_id <> ?", deviceId).one().n;
 			if (count >= MAX_DEVICES) return reply("too_many_devices");
 			const taken = this.sql.exec<{ device_id: string }>("SELECT device_id FROM devices WHERE token_hash = ?", hash).toArray()[0];
@@ -222,11 +220,9 @@ export class ConnectRoom {
 	}
 
 	private async route(socket: WebSocket, attachment: Attachment, frame: Record<string, unknown>) {
-		const { to, seq, nonce, ciphertext, hold } = frame;
-		if (typeof to !== "string" || !Number.isSafeInteger(seq) || (seq as number) < 0 || typeof nonce !== "string" || !NONCE.test(nonce)
-			|| typeof ciphertext !== "string" || !ciphertext || (hold !== undefined && typeof hold !== "boolean")) {
-			return this.send(socket, { type: "error", error: "invalid_envelope", seq: Number.isSafeInteger(seq) ? seq : undefined });
-		}
+		const envelope = readRelayOutbound(frame);
+		if (!envelope) return this.send(socket, { type: "error", error: "invalid_envelope", seq: Number.isSafeInteger(frame.seq) ? frame.seq : undefined });
+		const { to, seq, nonce, ciphertext, hold } = envelope;
 		// The relay sets `from` itself, so a phone can't pretend to be the desktop or another phone.
 		let from: string;
 		let deviceId: string;
@@ -240,7 +236,9 @@ export class ConnectRoom {
 			from = DESKTOP;
 			deviceId = to;
 		}
-		const body = JSON.stringify({ to, from, seq, nonce, ciphertext });
+		// Only a pairing phone may introduce its key; the desktop knows every paired phone's already.
+		const senderPublicKey = attachment.role === "phone" && from.startsWith(relayPairingPrefix) ? envelope.senderPublicKey : undefined;
+		const body = JSON.stringify({ to, from, seq, nonce, ciphertext, ...senderPublicKey ? { senderPublicKey } : {} });
 		const recipient = to === DESKTOP ? this.desktop() : this.open(`device:${to}`)[0];
 		if (recipient) {
 			recipient.send(body);
