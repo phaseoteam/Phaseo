@@ -1,7 +1,7 @@
 import { formatDateParts } from "@phaseo/app-kit/format";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, Star } from "lucide-react";
+import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, Star, Zap } from "lucide-react";
 import type { Harness, ModelOption } from "../../shared/workspace";
 import { usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
@@ -105,7 +105,7 @@ type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: n
 type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
 const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
-export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent }: {
+export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, settings }: {
 	selections: ModelSelection[];
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
@@ -116,6 +116,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	className?: string;
 	/** A window event that opens this picker, sent by the composer's / menu. */
 	openEvent?: string;
+	/** The chosen model's effort and other settings: named after the model on the button, and set below the list. */
+	settings?: { label: string; fast: boolean; panel: ReactNode };
 }) {
 	const { overview } = useWorkspace();
 	const [open, setOpen] = useState(false);
@@ -235,7 +237,9 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" className={cn("flex h-8 max-w-64 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
 			{selections.length > 1
 				? <><ModelStack models={selections} /><span className="truncate">{selections.length} models</span></>
-				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{label(first)}</span></>
+				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{label(first)}</span>
+					{settings?.label && <span data-model-settings className="shrink-0 font-medium text-muted-foreground">{settings.label}</span>}
+					{settings?.fast && <Zap aria-label="Fast" className={cn("size-3.5 shrink-0 fill-current", first.harness === "claude" ? "text-[#d97757]" : "text-amber-500")} />}</>
 				: <span className="text-muted-foreground">Choose a model</span>}
 			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
@@ -296,6 +300,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				: "No models found."}</p>}
 			{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
 			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
+			{settings?.panel}
 	</PopoverContent>
 	</Popover>;
 }

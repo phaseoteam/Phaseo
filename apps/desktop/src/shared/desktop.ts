@@ -9,6 +9,8 @@ export type DesktopRuntimeInfo = {
 	platform: NodeJS.Platform;
 	version: string;
 	isPackaged: boolean;
+	/** The commit the app was built from, when the build knew it. */
+	commit?: string;
 };
 
 export type DesktopWindowState = {
@@ -63,6 +65,8 @@ export type PhaseoDesktopApi = {
 	onBrowserAgentTab: (listener: (tab: BrowserAgentTabOpened) => void) => () => void;
 	/** An app shortcut pressed while a page had focus. */
 	onBrowserKey: (listener: (key: BrowserKey) => void) => () => void;
+	/** The mouse's back and forward buttons, or a macOS swipe, outside a browser page. */
+	onNavigate: (listener: (direction: "back" | "forward") => void) => () => void;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;
 	getWindowState: () => Promise<DesktopWindowState>;
 	performWindowAction: (action: DesktopWindowAction) => Promise<void>;

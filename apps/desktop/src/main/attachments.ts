@@ -14,6 +14,27 @@ export function imageMime(bytes: Buffer): string | undefined {
 	if (bytes.subarray(0, 4).toString("ascii") === "RIFF" && bytes.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
 	return undefined;
 }
+/**
+ * Audio and video by their leading bytes. Agents get these files by path (see attachmentPrompt); the chat plays them.
+ * A WebM or Matroska file counts as audio only when its name says so, since both hold either.
+ */
+export function mediaMime(bytes: Buffer, name = ""): { kind: "audio" | "video"; mimeType: string } | undefined {
+	const ascii = (from: number, to: number) => bytes.subarray(from, to).toString("ascii");
+	if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WAVE") return { kind: "audio", mimeType: "audio/wav" };
+	if (ascii(0, 4) === "OggS") return { kind: "audio", mimeType: "audio/ogg" };
+	if (ascii(0, 4) === "fLaC") return { kind: "audio", mimeType: "audio/flac" };
+	if (ascii(4, 8) === "ftyp") {
+		const brand = ascii(8, 12);
+		if (brand === "M4A " || brand === "M4B ") return { kind: "audio", mimeType: "audio/mp4" };
+		return brand === "qt  " ? { kind: "video", mimeType: "video/quicktime" } : { kind: "video", mimeType: "video/mp4" };
+	}
+	if (bytes.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]))) return /\.(weba|mka|opus)$/i.test(name) ? { kind: "audio", mimeType: "audio/webm" } : { kind: "video", mimeType: "video/webm" };
+	if (ascii(0, 3) === "ID3") return { kind: "audio", mimeType: "audio/mpeg" };
+	// Frame sync: ADTS (AAC) sets layer bits 00, MPEG audio does not. FF FE is a UTF-16 text file's byte order mark,
+	// and a real header never has an all-ones bitrate or sample rate index in its third byte.
+	if (bytes[0] === 0xff && bytes.length > 2 && bytes[1] !== 0xfe && (bytes[1] & 0xe0) === 0xe0 && (bytes[2] & 0xf0) !== 0xf0 && (bytes[2] & 0x0c) !== 0x0c) return (bytes[1] & 0x06) === 0 ? { kind: "audio", mimeType: "audio/aac" } : { kind: "audio", mimeType: "audio/mpeg" };
+	return undefined;
+}
 export class AttachmentService {
 	constructor(private readonly directory: string, private readonly repository: AttachmentRepository) {}
 	async import(taskId: string, filename: string): Promise<Attachment> {
@@ -34,13 +55,13 @@ export class AttachmentService {
 	}
 	async prepare(taskId: string, name: string, bytes: Buffer): Promise<Attachment> {
 		if (bytes.length > 10 * 1024 * 1024) throw new Error("Attachments must be files up to 10 MB.");
-		const mimeType = imageMime(bytes);
-		const pdf = bytes.subarray(0, 5).toString() === "%PDF-" ? await extractPdfText(bytes) : undefined;
-		if (!mimeType && !pdf) {
-			if (bytes.length > 2 * 1024 * 1024 || bytes.includes(0)) throw new Error("Choose a supported image or a UTF-8 text document up to 2 MB.");
+		const mimeType = imageMime(bytes), media = mimeType ? undefined : mediaMime(bytes, name);
+		const pdf = !mimeType && !media && bytes.subarray(0, 5).toString() === "%PDF-" ? await extractPdfText(bytes) : undefined;
+		if (!mimeType && !media && !pdf) {
+			if (bytes.length > 2 * 1024 * 1024 || bytes.includes(0)) throw new Error("Choose an image, audio, video, PDF or UTF-8 text file (text up to 2 MB).");
 			try { new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { throw new Error("This document is not UTF-8 text."); }
 		}
-		const attachment: Attachment = { id: randomUUID(), taskId, name: path.basename(name), kind: mimeType ? "image" : "text", mimeType: mimeType ?? (pdf ? "application/pdf" : "text/plain"), size: bytes.length, ...(pdf ? { pages: pdf.pages } : {}) };
+		const attachment: Attachment = { id: randomUUID(), taskId, name: path.basename(name), kind: mimeType ? "image" : media?.kind ?? "text", mimeType: mimeType ?? media?.mimeType ?? (pdf ? "application/pdf" : "text/plain"), size: bytes.length, ...(pdf ? { pages: pdf.pages } : {}) };
 		await mkdir(this.directory, { recursive: true });
 		const destination = path.join(this.directory, attachment.id); const temporary = `${destination}.tmp`;
 		try { await writeFile(temporary, bytes, { flag: "wx" }); if (pdf) await writeFile(`${destination}.txt`, pdf.text, { flag: "wx" }); await rename(temporary, destination); }

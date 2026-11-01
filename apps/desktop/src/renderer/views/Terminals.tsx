@@ -26,7 +26,7 @@ export { createTerminal, closeTerminal, terminalsFor, terminalTitle, useTerminal
 export const TERMINAL_DRAWER_HEIGHT = { default: 280, minimum: 180, maximumRatio: 0.75 };
 const maxDrawerHeight = () => Math.max(TERMINAL_DRAWER_HEIGHT.minimum, Math.floor(window.innerHeight * TERMINAL_DRAWER_HEIGHT.maximumRatio));
 export const clampDrawerHeight = (height: number, maximum = maxDrawerHeight()) => Math.min(Math.max(Math.round(Number.isFinite(height) ? height : TERMINAL_DRAWER_HEIGHT.default), TERMINAL_DRAWER_HEIGHT.minimum), maximum);
-const terminalKeys = ["terminal.split", "terminal.splitVertical", "terminal.new", "terminal.close", "terminal.toggle"] as const;
+const terminalKeys = ["terminal.split", "terminal.splitVertical", "terminal.new", "terminal.close", "terminal.toggle", "workspace.focusNext", "workspace.focusPrevious"] as const;
 
 function readColours() {
 	const style = getComputedStyle(document.documentElement);

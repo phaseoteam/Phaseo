@@ -21,6 +21,7 @@ const desktopApi: PhaseoDesktopApi = {
 	browserRecordingSave: (mimeType, data) => ipcRenderer.invoke("desktop:browser-recording-save", mimeType, data),
 	browserRecordingReveal: path => ipcRenderer.invoke("desktop:browser-recording-reveal", path),
 	onBrowserAgentTab: listener => { const subscription = (_event: Electron.IpcRendererEvent, tab: Parameters<typeof listener>[0]) => listener(tab); ipcRenderer.on("desktop:browser-agent-tab", subscription); return () => ipcRenderer.removeListener("desktop:browser-agent-tab", subscription); },
+	onNavigate: listener => { const subscription = (_event: Electron.IpcRendererEvent, direction: "back" | "forward") => listener(direction); ipcRenderer.on("desktop:navigate", subscription); return () => ipcRenderer.removeListener("desktop:navigate", subscription); },
 	onBrowserKey: listener => { const subscription = (_event: Electron.IpcRendererEvent, key: Parameters<typeof listener>[0]) => listener(key); ipcRenderer.on("desktop:browser-key", subscription); return () => ipcRenderer.removeListener("desktop:browser-key", subscription); },
 	workspace: {
 		missions: () => ipcRenderer.invoke("workspace:missions"),
@@ -73,6 +74,10 @@ const desktopApi: PhaseoDesktopApi = {
 		exportTask: (id, format) => ipcRenderer.invoke("workspace:export-task", id, format),
 		importTask: configuration => ipcRenderer.invoke("workspace:import-task", configuration),
 		attachment: (taskId, id) => ipcRenderer.invoke("workspace:attachment", taskId, id),
+		backgroundCommands: taskId => ipcRenderer.invoke("workspace:background-commands", taskId),
+		stopBackgroundCommand: (taskId, id) => ipcRenderer.invoke("workspace:stop-background-command", taskId, id),
+		onBackgroundChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, taskId: string) => listener(taskId); ipcRenderer.on("workspace:background-changed", subscription); return () => ipcRenderer.removeListener("workspace:background-changed", subscription); },
+		saveAttachment: (taskId, id) => ipcRenderer.invoke("workspace:save-attachment", taskId, id),
 		installations: () => ipcRenderer.invoke("workspace:installations"),
 		updateHarness: harness => ipcRenderer.invoke("workspace:update-harness", harness),
 		cancelHarnessUpdate: () => ipcRenderer.invoke("workspace:cancel-harness-update"),

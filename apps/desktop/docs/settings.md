@@ -2,6 +2,10 @@
 
 Settings is a full page. The sidebar becomes its navigation, with a search box that filters pages by name and by what they contain.
 
+## Version and updates
+
+**Settings → General → About** shows the app version, with the commit it was built from when the build knew it, and **Copy** puts `Phaseo <version>` on the clipboard for a bug report. Its **Updates** row says what the last check found (or that nothing has been checked since Phaseo started) and has **Check for updates**. When an update has downloaded, a toast says so, **Restart to update** shows in the title bar beside the menu, and the About row offers it too.
+
 ## Code chats
 
 **Settings → General → Pull requests** has T3 Code's **Open pull requests in Phaseo** (on by default: pull request links in chats open in the pull request pane, and Ctrl-click, ⌘-click or middle-click opens them on GitHub; off, they open like any other link) and **Default merge method** (Last selected, Merge, Squash and merge, or Rebase and merge; a project can choose its own in Project settings). **Settings → General → Panes → Default diff file state** starts the Diff and a pull request's Code tab with files expanded or collapsed.
@@ -46,9 +50,11 @@ Choose System, Light or Dark, and a colour theme. Every theme has a light and a 
 
 Changes are saved in `keybindings.json` in the app's settings folder (the file button opens it). It is a list of `{ "command", "key", "when" }` entries: a command listed there uses those keys instead of its defaults, and an empty key unassigns it. Edits made by hand apply straight away; if the file cannot be read, the defaults stay in use and the page says why. Menus and tooltips show the keys currently bound.
 
+Among the defaults: `F6` and `Shift+F6` (also with `Ctrl`/`⌘`) move focus between the sidebar, the conversation, the message box and the right pane; `Ctrl+Shift+M` opens the model picker; `Ctrl+Shift+P` pins or unpins the open chat; `Ctrl+Shift+C` copies its ID (on a pull request it copies the pull request's link instead); `Ctrl+U` opens Usage; `Ctrl+Alt+A` opens Appearance to choose a theme; and `Ctrl+Alt+N` starts a chat without a project, in Chat. On macOS, `⌘` replaces `Ctrl`.
+
 ## Message box
 
-**Settings → General → Message box → Send with** chooses Enter (Shift+Enter adds a line) or Ctrl+Enter / ⌘Enter (Enter adds a line), as T3 Code's send shortcut does. It is kept on this device. The message box's other keys (send into the running turn, edit the last queued message, send and start a new chat, prompt history and stash) are under **Composer** in Keyboard shortcuts.
+**Settings → General → Message box → Send with** chooses Enter (Shift+Enter adds a line) or Ctrl+Enter / ⌘Enter (Enter adds a line), as T3 Code's send shortcut does. It is kept on this device. With Enter chosen, `Ctrl+Enter` (`⌘Enter`) while a turn runs sends into that turn instead of queueing. The message box's other keys (send into the running turn, edit the last queued message, send and start a new chat, prompt history and stash) are under **Composer** in Keyboard shortcuts.
 
 ## Chat titles
 

@@ -126,6 +126,10 @@
 		font-family: var(--font-mono);
 		font-size: 0.86em;
 	}
+	/* Your messages sit on the muted colour already. */
+	.message-user .message-markdown :not(pre) > code {
+		background: var(--background);
+	}
 	.message-markdown a {
 		color: var(--primary);
 		text-decoration: underline;

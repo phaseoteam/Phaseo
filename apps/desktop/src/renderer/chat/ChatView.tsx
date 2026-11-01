@@ -7,7 +7,7 @@ import { IssueDraftPanel } from "./IssueDraftPanel";
 import { useQuestionAnswerer } from "./questionComposer";
 import { shortcut, useCommand } from "../lib/keybindings";
 import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/threadActions";
-import { hasWoken, isSettled, isSnoozed, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
+import { hasWoken, isSettled, isSnoozed, isUnread, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { TagEditor } from "../components/Tags";
 import type { AccountStatus, Attachment, Message, Task } from "../../shared/workspace";
@@ -22,12 +22,11 @@ import { AttachmentPreview } from "../components/AttachmentPreview";
 import { StatusDot } from "../shell/Sidebar";
 import { Composer, ToolButton } from "./Composer";
 import { useComposerMenu } from "./ComposerMenu";
-import { useComposerEditor } from "./composerEditor";
+import { ComposerTaskContext, useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionPlainText } from "../lib/mentions";
 import { UsageMeters } from "../settings/UsageMeters";
 import { Conversation } from "./Conversation";
-import { ModelPicker } from "./ModelPicker";
-import { ModelSettings } from "./ModelSettings";
+import { ModelControl } from "./ModelSettings";
 import { PermissionMenu, PlanIndicator } from "./NewChat";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { Requests } from "./Requests";
@@ -48,6 +47,10 @@ import { StashMenu, usePromptHistory, usePromptStash } from "./composerHistory";
 import { recordPrompt } from "./promptHistory";
 import { showToast } from "../components/ui/toast";
 import { ChatNotices } from "./ChatNotices";
+import { BackgroundWork } from "./BackgroundWork";
+import { useSendKey } from "./sendKey";
+import { addPendingSend, dropDeliveredSends, PendingSends } from "./pendingSends";
+import { attachmentsOnlyText } from "./MessageAttachments";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
 	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
@@ -204,6 +207,9 @@ function ChatComposer({ task }: { task: Task }) {
 		finally { setBusy(false); }
 	}
 	useCommand("composer.steer", () => { void steer(); });
+	// While a turn runs, Enter queues; the other send key steers instead. With Mod+Enter as the send key it just sends.
+	const sendKey = useSendKey();
+	useCommand("composer.sendAlternate", () => { if (!running || sendKey !== "enter") return false; void steer(); });
 	useCommand("composer.editQueued", () => { const last = ownQueue(task).at(-1); return last && !editing ? editQueued(last.id) : false; });
 	useCommand("composer.sendAndNewChat", () => { if (!canSend || editing || answerer) return false; void send().then(sent => { if (sent) select(undefined); }); });
 
@@ -216,13 +222,19 @@ function ChatComposer({ task }: { task: Task }) {
 			return false;
 		}
 		setBusy(true);
+		// The message shows as sent at once; a refused send puts it back in the box, unless something new was typed there.
+		const typed = draft.text, settle = addPendingSend(task.id, message.text || mentionPlainText(typed));
+		draft.clear();
+		const restore = () => { if (!draft.text.trim()) draft.setText(typed); };
+		let delivered = false;
 		try {
 			const prepared = await menu.prepare(message.text);
-			if (await command({ type: "send", id: task.id, text: prepared.text || "Please review the attached files.", attachments: message.attachments,
+			if (await command({ type: "send", id: task.id, text: prepared.text || attachmentsOnlyText, attachments: message.attachments,
 				...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}), ...(prepared.nativeAction ? { nativeAction: prepared.nativeAction } : {}) })) {
-				rememberModel(selection); recordPrompt(draft.text); draft.clear(); return true;
+				delivered = true; rememberModel(selection); recordPrompt(typed); return true;
 			}
-		} catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
+			restore();
+		} catch (reason) { restore(); setError(errorText(reason)); } finally { settle(delivered); setBusy(false); }
 		return false;
 	}
 	const attachmentChips = (attachments: Attachment[]) => editor.insert(attachments.map(attachment => ({ kind: "attachment" as const, ref: attachment.id, label: attachment.name })));
@@ -270,7 +282,7 @@ function ChatComposer({ task }: { task: Task }) {
 			<div className="flex items-center gap-2 text-[13px] font-semibold"><Gauge className="size-4 text-muted-foreground" />Usage limits<button type="button" aria-label="Hide usage limits" onClick={() => setLimits(undefined)} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>
 			{limits === "loading" ? <p className="text-xs text-muted-foreground">Checking…</p> : "error" in limits ? <p className="text-xs text-destructive">{limits.error}</p> : <UsageMeters status={limits} />}
 		</div>}
-		<Composer editor={editor} onSubmit={() => void send()} canSend={canSend || Boolean(editing)} disabled={task.archived}
+		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={() => void send()} canSend={canSend || Boolean(editing)} disabled={task.archived}
 			chips={editing && <span className="flex w-full items-center gap-2 text-xs text-muted-foreground"><Pencil className="size-3.5" />Editing a queued message<button type="button" onClick={() => stopEditing()} className="ml-auto rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Cancel</button></span>}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
 			menu={task.archived ? undefined : menu}
@@ -284,12 +296,11 @@ function ChatComposer({ task }: { task: Task }) {
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
-				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
-				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
+				<ModelControl selections={[selection]} onChange={values => void changeModel(values[0])} onSettings={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
 				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
 				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}
 				{plan && <PlanIndicator onClear={running ? undefined : () => void command({ type: "update-task", id: task.id, mode: "code" })} />}
-			</>} />
+			</>} /></ComposerTaskContext>
 	</div>;
 }
 
@@ -322,8 +333,12 @@ export function ChatView({ id }: { id: string }) {
 	useEffect(() => {
 		if (api && snapshot && (!snapshot.lastVisitedAt || (snapshot.lastCompletedAt && Date.parse(snapshot.lastCompletedAt) > Date.parse(snapshot.lastVisitedAt)))) void api.command({ type: "visit", id, at: new Date().toISOString() }).then(setOverview, () => undefined);
 	}, [id, snapshot?.lastCompletedAt, snapshot?.lastVisitedAt]);
+	// When you last looked, read as the chat opens (before the visit above moves it on), for "New since your last visit".
+	const [arrival, setArrival] = useState<{ id: string; since?: string }>();
+	if (snapshot && arrival?.id !== id) setArrival({ id, since: isUnread(snapshot) ? snapshot.lastVisitedAt : undefined });
 	const detail = useSelectedTask(api?.task, id, snapshot ? JSON.stringify([snapshot.revision, snapshot.updatedAt]) : undefined);
 	const loaded = detail.task?.id === id ? detail.task : undefined;
+	useEffect(() => { if (loaded) dropDeliveredSends(loaded.id); }, [loaded]);
 	const [preview, setPreview] = useState<string>();
 	const [rewinding, setRewinding] = useState<Message>();
 	// A rewind can remove the messages the conversation's window starts at, so the window starts over.
@@ -343,8 +358,9 @@ export function ChatView({ id }: { id: string }) {
 	};
 	return <div className="flex h-full min-w-0 flex-col">
 		<ChatHeader task={task} onOpenTerminal={() => setDrawers(current => ({ ...current, [task.id]: true }))} />
-		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={`${task.id}:${epoch}`} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)} onRewind={setRewinding}
+		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={`${task.id}:${epoch}`} task={task} unreadSince={arrival?.id === task.id ? arrival.since : undefined} onAttachment={setPreview} onBranch={messageId => void branch(messageId)} onRewind={setRewinding}
 				onRegenerate={task.mode === "chat" ? message => void command({ type: "rewind", id: task.id, messageId: message.id, resend: true }).then(state => { if (state) setEpoch(value => value + 1); }) : undefined}>
+			<PendingSends taskId={task.id} projectId={task.projectId} />
 			{snapshot && <ThreadStatusLine task={snapshot} />}
 			<ChatNotices task={task} />
 			{task.error && <div role="alert" className={cn("flex items-center gap-2 text-[13px]", task.status === "interrupted" ? "text-muted-foreground" : "text-destructive")}>
@@ -352,6 +368,7 @@ export function ChatView({ id }: { id: string }) {
 				<Button size="sm" variant="ghost" className="text-foreground" onClick={() => void command({ type: "resume", id: task.id })}><RotateCcw />Resume</Button>
 			</div>}
 			<AgentThreads taskId={task.id} />
+			<BackgroundWork taskId={task.id} />
 			<Requests task={task} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
 		</Conversation>}

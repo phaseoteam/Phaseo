@@ -1,6 +1,7 @@
 import type { Harness, Task, WorkspaceApi, WorkspaceCommand } from "../../shared/workspace";
 import type { NativeAction } from "../../shared/nativeActions";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
+import { attachmentsOnlyText } from "./MessageAttachments";
 import { rememberModel, type ModelSelection } from "../lib/modelPreferences";
 
 export type StartChat = {
@@ -50,7 +51,7 @@ export async function startChat(api: WorkspaceApi, command: (value: WorkspaceCom
 	const attachments: string[] = [];
 	for (const file of input.images ?? []) attachments.push((await api.pasteFile(id, file.name || "Pasted file", new Uint8Array(await file.arrayBuffer()))).id);
 	rememberModel(selection);
-	const text = input.nativeAction ? input.text : input.text.trim() || "Please review the attached files.";
+	const text = input.nativeAction ? input.text : input.text.trim() || attachmentsOnlyText;
 	// A failed first send leaves the message in the new chat's composer so it can be retried.
 	const sent = await command({ type: "send", id, text, attachments,
 		...(input.threadReferences?.length ? { threadReferences: input.threadReferences } : {}), ...(input.githubReferences?.length ? { githubReferences: input.githubReferences } : {}), ...(input.nativeAction ? { nativeAction: input.nativeAction } : {}) });

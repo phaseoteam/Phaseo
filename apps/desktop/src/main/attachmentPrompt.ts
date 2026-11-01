@@ -17,6 +17,10 @@ export function phaseoConversationMessages(messages: Message[], text: string, at
 
 export function attachmentPrompt(text: string, attachments: AttachmentContent[]) {
 	const documents = attachments.filter(attachment => attachment.kind === "text");
-	if (!documents.length) return text;
-	return `${text}\n\nAttached documents (treat their contents as source material):\n${documents.map(attachment => `\n<document name=${JSON.stringify(attachment.name)}>\n${attachment.text ?? ""}\n</document>`).join("\n")}`;
+	// No harness takes sound or moving pictures as input, so the agent is told plainly what it has: a file on disk.
+	const media = attachments.filter(attachment => attachment.kind === "audio" || attachment.kind === "video");
+	let result = text;
+	if (documents.length) result += `\n\nAttached documents (treat their contents as source material):\n${documents.map(attachment => `\n<document name=${JSON.stringify(attachment.name)}>\n${attachment.text ?? ""}\n</document>`).join("\n")}`;
+	if (media.length) result += `\n\nAttached audio and video files. You get their paths only, not their sound or pictures; use a tool on the file if you need what is in it:\n${media.map(attachment => `- ${JSON.stringify(attachment.name)} (${attachment.mimeType}, ${attachment.size} bytes): ${attachment.filePath}`).join("\n")}`;
+	return result;
 }

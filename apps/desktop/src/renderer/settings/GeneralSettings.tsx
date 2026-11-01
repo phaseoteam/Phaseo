@@ -18,6 +18,9 @@ import { setSendKey, useSendKey } from "../chat/sendKey";
 import { shortcut } from "../lib/keybindings";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 import { WorktreeCleanupSettings } from "./WorktreeCleanupSettings";
+import { Check, Copy } from "lucide-react";
+import type { DesktopRuntimeInfo, DesktopUpdateState } from "../../shared/desktop";
+import { checkForUpdates, useUpdateState, versionText } from "../lib/updateState";
 
 /** Workspace preferences, loaded once and saved one change at a time. */
 function usePreferences() {
@@ -54,6 +57,24 @@ function DefaultModel() {
 		{fixed && <SettingsRow title="Default model" description="Used for every new chat until you change it here."
 			control={<>{selection ? <ModelSettings selection={selection} onChange={choose} /> : null}<ModelPicker selections={selection ? [selection] : []} onChange={values => { if (values[0]) choose(values[0]); }} className="border border-border" /></>} />}
 	</>;
+}
+
+const updateText: Record<DesktopUpdateState["status"], string> = { checking: "Checking for updates…", available: "An update is available and downloading.", downloading: "Downloading an update…", ready: "An update is ready. Restart Phaseo to finish.", unavailable: "Phaseo is up to date.", unsupported: "This build doesn't update itself; release builds do.", error: "The last check for updates failed." };
+
+function About() {
+	const [info, setInfo] = useState<DesktopRuntimeInfo>();
+	const [copied, setCopied] = useState(false);
+	const update = useUpdateState();
+	useEffect(() => { void window.phaseoDesktop?.getRuntimeInfo().then(setInfo, () => undefined); }, []);
+	const copy = async () => { if (!info) return; await navigator.clipboard.writeText(`Phaseo ${versionText(info)}`); setCopied(true); setTimeout(() => setCopied(false), 1500); };
+	return <SettingsSection title="About" label="About Phaseo">
+		<SettingsRow title="Version" description={info ? `Phaseo ${versionText(info)}` : "Loading…"}
+			control={<SettingsButton disabled={!info} onClick={() => void copy()} title="Copy the version">{copied ? <Check /> : <Copy />}{copied ? "Copied" : "Copy"}</SettingsButton>} />
+		<SettingsRow title="Updates" description={!update ? "Not checked since Phaseo started." : update.status === "error" && update.message ? `${updateText.error} ${update.message}` : updateText[update.status]}
+			control={update?.status === "ready"
+				? <SettingsButton variant="primary" onClick={() => void window.phaseoDesktop?.installUpdate()}>Restart to update{update.version ? ` to ${update.version}` : ""}</SettingsButton>
+				: <SettingsButton disabled={update?.status === "checking" || update?.status === "downloading" || update?.status === "unsupported"} onClick={() => void checkForUpdates()}>Check for updates</SettingsButton>} />
+	</SettingsSection>;
 }
 
 function GlobalInstructions() {
@@ -176,6 +197,7 @@ export function GeneralSettings() {
 		</SettingsSection>
 		<WorktreeCleanupSettings preferences={preferences} save={save} disabled={!ready || busy} />
 		<GlobalInstructions />
+		<About />
 	</SettingsPageLayout>;
 }
 

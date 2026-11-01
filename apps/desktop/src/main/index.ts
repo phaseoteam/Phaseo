@@ -10,7 +10,7 @@ import { GlobalInstructions } from "./globalInstructions";
 import { codexNativeActions } from "./codexNativeActions";
 import { claudeNativeActions, claudeNativeModels } from "./claudeNativeActions";
 import { piNativeActions } from "./piNativeActions";
-import { mkdir } from "node:fs/promises";
+import { copyFile, mkdir } from "node:fs/promises";
 import { openCodeNativeActions } from "./openCodeNativeActions";
 import { OpenCode } from "@opencode/client";
 import { Service } from "@opencode/client/service";
@@ -20,7 +20,7 @@ import { importMcpPromptAttachments } from "./mcpPromptAttachments";
 import { projectPullRequestContents } from "./projectPullRequestContents";
 import { projectPullRequestFiles, projectPullRequestFilesViewed, projectSetPullRequestFilesViewed } from "./projectPullRequestFiles";
 import { projectPullRequestThreads } from "./projectPullRequestThreads";
-import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, safeStorage, shell } from "electron";
+import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, safeStorage, screen, shell } from "electron";
 import path from "node:path";
 import { BrowserHost } from "./browserHost";
 import { BrowserAgent } from "./browserAgent";
@@ -884,7 +884,7 @@ ipcMain.handle("workspace:paste-file", async (event, id: unknown, name: unknown,
 ipcMain.handle("workspace:choose-attachments", async (event, id: unknown) => {
 	const window = senderWindow(event); if (!window || typeof id !== "string") throw new Error("Invalid attachment request.");
 	if (workspaceRuntime.store.getTask(id).archived) throw new Error("Restore this task before adding files.");
-	const result = await dialog.showOpenDialog(window, { properties: ["openFile", "multiSelections"], title: "Attach files", filters: [{ name: "Images and documents", extensions: ["pdf", "png", "jpg", "jpeg", "gif", "webp", "txt", "md", "csv", "json", "ts", "py"] }, { name: "All files", extensions: ["*"] }] });
+	const result = await dialog.showOpenDialog(window, { properties: ["openFile", "multiSelections"], title: "Attach files", filters: [{ name: "Images, media and documents", extensions: ["pdf", "png", "jpg", "jpeg", "gif", "webp", "mp3", "m4a", "wav", "ogg", "opus", "flac", "aac", "mp4", "mov", "webm", "txt", "md", "csv", "json", "ts", "py"] }, { name: "All files", extensions: ["*"] }] });
 	if (result.canceled) return { attachments: [], errors: [] };
 	if (result.filePaths.length > 10) throw new Error("Choose up to 10 attachments.");
 	if (shutdownStarted) throw new Error("The workspace is shutting down.");
@@ -899,12 +899,33 @@ ipcMain.handle("workspace:mcp-prompt-attachments", async (event, id: unknown, me
   workspaceRuntime.store.saveAttachments(attachments);
  });
 });
+ipcMain.handle("workspace:background-commands", (event, taskId: unknown) => {
+	if (!senderWindow(event) || typeof taskId !== "string") throw new Error("Invalid background command request.");
+	workspaceRuntime.store.getTask(taskId);
+	const background = backgroundCommands();
+	return background.list(taskId).filter(command => command.running).map(command => ({ ...command, output: background.peek(taskId, command.id) }));
+});
+ipcMain.handle("workspace:stop-background-command", async (event, taskId: unknown, id: unknown) => {
+	if (!senderWindow(event) || typeof taskId !== "string" || typeof id !== "string") throw new Error("Invalid background command request.");
+	workspaceRuntime.store.getTask(taskId);
+	await backgroundCommands().stop(taskId, id);
+});
 ipcMain.handle("workspace:attachment", async (event, taskId: unknown, id: unknown) => {
 	if (!senderWindow(event) || typeof taskId !== "string" || typeof id !== "string") throw new Error("Invalid attachment request.");
 	const task = workspaceRuntime.store.getTask(taskId); const attachment = workspaceRuntime.store.getAttachment(id);
 	if (!attachment || (attachment.taskId !== task.id && ![...task.messages, ...task.queue].some(message => message.attachments?.some(value => value.id === id)))) throw new Error("Attachment is unavailable for this task.");
 	const content = await workspaceRuntime.attachments.read(id);
 	return { attachment, text: content.text, dataUrl: content.dataUrl };
+});
+ipcMain.handle("workspace:save-attachment", async (event, taskId: unknown, id: unknown) => {
+	const window = senderWindow(event); if (!window || typeof taskId !== "string" || typeof id !== "string") throw new Error("Invalid attachment request.");
+	const task = workspaceRuntime.store.getTask(taskId); const attachment = workspaceRuntime.store.getAttachment(id);
+	if (!attachment || (attachment.taskId !== task.id && ![...task.messages, ...task.queue].some(message => message.attachments?.some(value => value.id === id)))) throw new Error("Attachment is unavailable for this task.");
+	const content = await workspaceRuntime.attachments.read(id);
+	const result = await dialog.showSaveDialog(window, { title: "Save attachment", defaultPath: path.join(app.getPath("downloads"), attachment.name) });
+	if (result.canceled || !result.filePath) return false;
+	await copyFile(content.filePath, result.filePath);
+	return true;
 });
 function harnessInstallations() {
 	return Promise.all((["codex", "claude", "opencode", "pi", "cursor", "grok"] as const).map(async harness => {
@@ -1005,6 +1026,15 @@ function createWindow(): BrowserWindow {
 	window.on("unmaximize", () => broadcastWindowState(window));
 	window.on("enter-full-screen", () => broadcastWindowState(window));
 	window.on("leave-full-screen", () => broadcastWindowState(window));
+	// The mouse's back and forward buttons (Windows and Linux) and macOS swipe gestures move through the app's own
+	// history; over a browser page they belong to the page (browserHost).
+	window.on("app-command", (_event, name) => {
+		if (name !== "browser-backward" && name !== "browser-forward") return;
+		const point = screen.getCursorScreenPoint(), content = window.getContentBounds(), x = point.x - content.x, y = point.y - content.y;
+		if (window.contentView.children.some(view => view.getVisible() && (({ x: left, y: top, width, height }) => x >= left && y >= top && x < left + width && y < top + height)(view.getBounds()))) return;
+		window.webContents.send("desktop:navigate", name === "browser-backward" ? "back" : "forward");
+	});
+	if (process.platform === "darwin") window.on("swipe", (_event, direction) => { if (direction === "left" || direction === "right") window.webContents.send("desktop:navigate", direction === "left" ? "back" : "forward"); });
 	window.webContents.setWindowOpenHandler(({ url }) => {
 		if (isAllowedExternalUrl(url)) void shell.openExternal(url);
 		return { action: "deny" };
@@ -1047,6 +1077,7 @@ ipcMain.handle("desktop:get-runtime-info", (event) => senderWindow(event) ? ({
 		platform: process.platform,
 		version: app.getVersion(),
 		isPackaged: app.isPackaged,
+		...(buildStamp.commit ? { commit: buildStamp.commit } : {}),
 	}) : null);
 
 ipcMain.handle("desktop:get-window-state", (event) => {
@@ -1152,6 +1183,7 @@ app.whenReady().then(() => {
 	harnessModelCache = new HarnessModelCache(path.join(app.getPath("userData"), "cache", "harness-models.json"), (harness, accountId) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness, accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	workspaceRuntime.phaseo.background = backgroundCommands();
+	workspaceRuntime.phaseo.background.onChange = taskId => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:background-changed", taskId); };
 	// Rows are written by a worker on its own connection, so a first read doesn't hold up the app.
 	transcriptScanner = new TranscriptScanner(workspaceRuntime.store, () => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:usage-changed"); }, { writer: () => new TranscriptWriter(workspaceRuntime.store.filename) });
 	// After the ledger's own start-up work, so a first read of large transcripts doesn't compete with opening the app.
