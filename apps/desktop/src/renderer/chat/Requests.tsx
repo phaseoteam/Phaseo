@@ -102,7 +102,7 @@ export function Requests({ task, inlineQuestions = false }: { task: Task; inline
 				: <ApprovalCard key={approval.id} title={approval.method} description={approval.description} always={approval.always} never={approval.never} onDecision={onDecision} />;
 		})}
 		{/* Questions sit above the composer (QuestionPanel); compare panes, which have no composer, show them here. */}
-		{inlineQuestions && <QuestionPanel task={task} />}
+		{inlineQuestions && <QuestionPanel task={task} inline />}
 		{task.forms?.map(request => <div key={request.id} className="legacy-request rounded-xl border border-border bg-card p-3"><AgentForm form={request.form} onAnswer={async (answer, declined) => !!await command({ type: "form-answer", id: task.id, requestId: request.id, answer, ...(declined ? { declined: true } : {}) })} /></div>)}
 	</div>;
 }

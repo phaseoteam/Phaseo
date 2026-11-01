@@ -84,6 +84,10 @@ export type ComposerEditor = {
 	focus: (position?: "start" | "end") => void;
 	/** Inserts chips at the caret, or at the end when the composer is not focused. */
 	insert: (mentions: Mention[]) => void;
+	/** Removes every chip for this attachment or image, as removing its thumbnail does. */
+	remove: (ref: string) => void;
+	/** Attaches files dropped on the box outside the text, as a drop on the text does; false when this box takes none. */
+	addFiles: (files: File[]) => boolean;
 };
 
 export function useComposerEditor({ value, onChange, placeholder, disabled, onFiles, label = "Message" }: {
@@ -200,5 +204,14 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		chain.insertContent([...before && !/\s/.test(before) ? [{ type: "text", text: " " }] : [], ...mentions.flatMap(mentionContent)]).run();
 	};
 	insertRef.current = insert;
-	return { editor, keys, focus: position => { editor?.commands.focus(position ?? "end"); }, insert };
+	const remove = (ref: string) => {
+		if (!editor || editor.isDestroyed) return;
+		const ranges: { from: number; to: number }[] = [];
+		editor.state.doc.descendants((node, pos) => { if (node.type.name === "mention" && node.attrs.ref === ref) ranges.push({ from: pos, to: pos + node.nodeSize }); });
+		if (!ranges.length) return;
+		const transaction = editor.state.tr;
+		for (const range of ranges.reverse()) transaction.delete(range.from, range.to);
+		editor.view.dispatch(transaction);
+	};
+	return { editor, keys, focus: position => { editor?.commands.focus(position ?? "end"); }, insert, remove, addFiles: files => { if (!latest.current.onFiles || !files.length) return false; latest.current.onFiles(files); return true; } };
 }

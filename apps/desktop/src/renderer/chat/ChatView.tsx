@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
 import { IssueDraftPanel } from "./IssueDraftPanel";
@@ -20,7 +20,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Button } from "../components/ui/button";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { StatusDot } from "../shell/Sidebar";
-import { Composer, ToolButton } from "./Composer";
+import { Composer } from "./Composer";
+import { ComposerNotice } from "./ComposerBanner";
+import { ComposerOverflowMenu, ModeBlock, PermissionMenu, PermissionsFooterMenu, PlanIndicator, type PermissionMode } from "./ComposerControls";
+import { ComposerPrimaryActions } from "./ComposerPrimaryActions";
+import { StashBadge, StashDrawer } from "./ComposerStash";
+import { useTypingGuard } from "./composerTypingGuard";
 import { useComposerMenu } from "./ComposerMenu";
 import { ComposerTaskContext, useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionPlainText } from "../lib/mentions";
@@ -30,7 +35,6 @@ import { harnessNames } from "./ModelPicker";
 import { ModelControl } from "./ModelSettings";
 import { silenceLabel, silentFor } from "../../shared/inbox";
 import { useNow } from "../lib/useNow";
-import { PermissionMenu, PlanIndicator } from "./NewChat";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { Requests } from "./Requests";
 import { AgentThreads } from "./AgentThreads";
@@ -46,7 +50,7 @@ import { RewindDialog } from "./RewindDialog";
 import { ContextMeter } from "./ContextMeter";
 import { restoreDraft, restoreDraftEvent, rewoundDraft } from "./rewind";
 import { QueuePanel, ownQueue, steerBlocker } from "./QueuePanel";
-import { StashMenu, usePromptHistory, usePromptStash } from "./composerHistory";
+import { usePromptHistory, usePromptStash } from "./composerHistory";
 import { recordPrompt } from "./promptHistory";
 import { showToast } from "../components/ui/toast";
 import { ChatNotices } from "./ChatNotices";
@@ -139,16 +143,29 @@ function ChatComposer({ task }: { task: Task }) {
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
 	const preferences = useWorkspacePreferences();
+	// Questions and approvals that arrive mid-sentence wait until the person pauses, so Enter never answers one unseen.
+	const guard = useTypingGuard(task.id, [...(task.questions ?? []).map(request => request.id), ...(task.approvals ?? []).map(approval => approval.id)]);
 	// While the agent waits on a question, the composer is its own-answer field.
 	const answerer = useQuestionAnswerer(task.id);
-	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
-		placeholder: task.archived ? "This chat is archived" : answerer ? "Type your own answer, or leave this blank to use the selected option" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
+	// A proposed plan waits: a blank send implements it, text asks for changes. Other approvals are declined by a message, which redirects the agent.
+	const plan = !answerer ? task.approvals?.find(approval => approval.kind === "plan" && !guard.held.has(approval.id)) : undefined;
+	const redirect = (task.approvals ?? []).filter(approval => approval.kind !== "plan" && !guard.held.has(approval.id));
+	const editor = useComposerEditor({ value: draft.text, onChange: value => { draft.setText(value); guard.typed(); }, disabled: task.archived, onFiles: files => void upload(files),
+		placeholder: task.archived ? "This chat is archived" : answerer ? (answerer.choiceOnly ? "Choose an option above" : "Type your own answer, or leave this blank to use the selected option") : plan ? "Add feedback to refine the plan, or leave this blank to implement it" : redirect.length ? "Send a message to decline and redirect the agent" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
+	useEffect(() => {
+		const instance = editor.editor;
+		if (!instance) return;
+		instance.on("focus", guard.focus); instance.on("blur", guard.blur);
+		return () => { instance.off("focus", guard.focus); instance.off("blur", guard.blur); };
+	}, [editor.editor, guard.focus, guard.blur]);
 	const selection: ModelSelection = { harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions };
 	const settingActions = useModelSettingActions(task.archived || running ? undefined : selection, next => void changeSettings(next));
 	const canCompact = ["opencode", "codex", "claude", "pi", "phaseo"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !running;
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
-	const plan = task.mode === "plan", full = task.permissionMode === "full-access", edits = task.permissionMode === "accept-edits";
+	const planMode = task.mode === "plan", full = task.permissionMode === "full-access", edits = task.permissionMode === "accept-edits";
 	const sideChats = !isSideChat(task) && !task.archived;
+	const setPermission = (permissionMode: PermissionMode) => void command({ type: "update-task", id: task.id, permissionMode });
+	const setPlanMode = (on: boolean) => void command({ type: "update-task", id: task.id, mode: on ? "plan" : "code" });
 	/** /side and /btw: a side chat beside this one, shown in the right pane, that leaves this chat's turn alone. */
 	async function startSideChat(text: string) {
 		const known = new Set(overview.tasks.map(value => value.id));
@@ -172,11 +189,11 @@ function ChatComposer({ task }: { task: Task }) {
 		{ id: "new", label: "New chat", description: "Start a new chat", icon: <SquarePen />, run: () => select(undefined) },
 		{ id: "pin", label: task.pinned ? "Unpin chat" : "Pin chat", description: task.pinned ? "Remove this chat from Pinned" : "Keep this chat at the top of the sidebar", icon: task.pinned ? <PinOff /> : <Pin />, run: () => void command({ type: "update-task", id: task.id, pinned: !task.pinned }) },
 		...code && !running ? [
-			{ id: "plan", label: "Plan mode", description: plan ? "Turn plan mode off" : "Turn plan mode on: the agent proposes a plan before changing anything", icon: <ListChecks />, checked: plan, run: () => void command({ type: "update-task", id: task.id, mode: plan ? "code" as const : "plan" as const }) },
+			{ id: "plan", label: "Plan mode", description: planMode ? "Turn plan mode off" : "Turn plan mode on: the agent proposes a plan before changing anything", icon: <ListChecks />, checked: planMode, run: () => setPlanMode(!planMode) },
 			{ id: "permissions", label: "Permissions", hint: full ? "Full access" : edits ? "Accept edits" : "Ask first", icon: <ShieldCheck />, options: [
-				{ id: "permissions:supervised", label: "Ask first", description: "Approve commands and file changes before they run", icon: null, checked: !full && !edits, run: () => void command({ type: "update-task", id: task.id, permissionMode: "supervised" }) },
-				{ id: "permissions:accept-edits", label: "Accept edits", description: "File changes apply without asking; commands still ask first", icon: null, checked: edits, run: () => void command({ type: "update-task", id: task.id, permissionMode: "accept-edits" }) },
-				{ id: "permissions:full-access", label: "Full access", description: "The agent runs commands and edits files without asking", icon: null, checked: full, run: () => void command({ type: "update-task", id: task.id, permissionMode: "full-access" }) },
+				{ id: "permissions:supervised", label: "Ask first", description: "Approve commands and file changes before they run", icon: null, checked: !full && !edits, run: () => setPermission("supervised") },
+				{ id: "permissions:accept-edits", label: "Accept edits", description: "File changes apply without asking; commands still ask first", icon: null, checked: edits, run: () => setPermission("accept-edits") },
+				{ id: "permissions:full-access", label: "Full access", description: "The agent runs commands and edits files without asking", icon: null, checked: full, run: () => setPermission("full-access") },
 			] },
 		] : [],
 		{ id: "usage", label: "Usage", description: limitHarness ? "Show this agent's plan limits" : "Open usage and limits", icon: <Gauge />, run: () => void showLimits() },
@@ -193,9 +210,11 @@ function ChatComposer({ task }: { task: Task }) {
 		return () => window.removeEventListener(restoreDraftEvent, restore);
 	});
 	const message = composeMessage(draft.text);
-	const canSend = !busy && !uploading && !task.archived && (!!answerer || !!message.text || message.attachments.length > 0);
-	usePromptHistory(task, draft);
+	const hasContent = !!message.text || message.attachments.length > 0;
+	const canSend = !busy && !uploading && !task.archived && (!!answerer || !!plan || hasContent);
+	usePromptHistory(task, draft, editor);
 	const stash = usePromptStash(task.id, draft);
+	const stashKeys = useRef<(event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "preventDefault">) => boolean>(undefined);
 	// A queued message being edited in the composer, and the draft it set aside ("Editing in the composer").
 	const [editing, setEditing] = useState<{ id: string; saved: string }>();
 	useEffect(() => { setEditing(undefined); }, [task.id]);
@@ -224,7 +243,7 @@ function ChatComposer({ task }: { task: Task }) {
 		if (!message.text && !message.attachments.length) { const first = ownQueue(task)[0]; if (first) steerQueued(first.id); return; }
 		if (editing || answerer || busy) return;
 		setBusy(true);
-		try { if (await command({ type: "steer", id: task.id, text: message.text, ...(message.attachments.length ? { attachments: message.attachments } : {}) })) { recordPrompt(draft.text); draft.clear(); } }
+		try { if (await command({ type: "steer", id: task.id, text: message.text, ...(message.attachments.length ? { attachments: message.attachments } : {}) })) { recordPrompt(draft.text); draft.clear(); guard.sent(); } }
 		finally { setBusy(false); }
 	}
 	useCommand("composer.steer", () => { void steer(); });
@@ -232,9 +251,11 @@ function ChatComposer({ task }: { task: Task }) {
 	const sendKey = useSendKey();
 	useCommand("composer.sendAlternate", () => { if (!running || sendKey !== "enter") return false; void steer(); });
 	useCommand("composer.editQueued", () => { const last = ownQueue(task).at(-1); return last && !editing ? editQueued(last.id) : false; });
-	useCommand("composer.sendAndNewChat", () => { if (!canSend || editing || answerer) return false; void send().then(sent => { if (sent) select(undefined); }); });
+	useCommand("composer.sendAndNewChat", () => { if (!canSend || editing || answerer || plan) return false; void send().then(sent => { if (sent) select(undefined); }); });
 
-	async function send(): Promise<boolean> {
+	/** `alternate` is a Ctrl/⌘-click on the send button while a turn runs: into the turn rather than the queue. */
+	async function send(alternate = false): Promise<boolean> {
+		if (alternate && running && !editing && !answerer && !plan) { await steer(); return false; }
 		if (editing) { await saveEdit(); return false; }
 		if (!canSend) return false;
 		// /side comes before an open question, which would otherwise take the text as its answer.
@@ -247,13 +268,23 @@ function ChatComposer({ task }: { task: Task }) {
 		}
 		if (answerer) {
 			if (message.attachments.length) { setError("Answers cannot carry attachments. Remove them, or dismiss the question first."); return false; }
-			if (answerer.answer(mentionPlainText(message.text))) draft.clear();
+			if (answerer.answer(mentionPlainText(message.text))) { draft.clear(); guard.sent(); }
+			return false;
+		}
+		if (plan) {
+			if (message.attachments.length) { setError("A plan revision takes text only. Remove the attachments, or implement the plan first."); return false; }
+			const feedback = mentionPlainText(message.text).trim();
+			setBusy(true);
+			try { if (await command({ type: "approval", id: task.id, approvalId: plan.id, decision: feedback ? "decline" : "accept", ...(feedback ? { feedback } : {}) })) { draft.clear(); guard.sent(); } }
+			finally { setBusy(false); }
 			return false;
 		}
 		setBusy(true);
+		// Sending over a waiting approval declines it, so the agent reads the message instead of running what it asked for.
+		for (const approval of redirect) if (!await command({ type: "approval", id: task.id, approvalId: approval.id, decision: "decline" })) { setBusy(false); return false; }
 		// The message shows as sent at once; a refused send puts it back in the box, unless something new was typed there.
 		const typed = draft.text, settle = addPendingSend(task.id, message.text || mentionPlainText(typed));
-		draft.clear();
+		draft.clear(); guard.sent();
 		const restore = () => { if (!draft.text.trim()) draft.setText(typed); };
 		let delivered = false;
 		try {
@@ -305,32 +336,55 @@ function ChatComposer({ task }: { task: Task }) {
 		if (id) select(id);
 	}
 
+	const links = overview.tasks.find(value => value.id === task.id);
+	const blocker = steerBlocker(task);
+	const limitsLabel = limits && limits !== "loading" && !("error" in limits) ? harnessNames[task.harness] : undefined;
 	return <div className="mx-auto w-full max-w-[760px] px-6 pb-4">
-		<QueuePanel task={task} editingId={editing?.id} onEdit={editQueued} onSteer={steerQueued} />
-		{limits && <div className="mb-2 flex flex-col gap-2 rounded-xl border border-border bg-card/60 px-4 py-3">
-			<div className="flex items-center gap-2 text-[13px] font-semibold"><Gauge className="size-4 text-muted-foreground" />Usage limits<button type="button" aria-label="Hide usage limits" onClick={() => setLimits(undefined)} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button></div>
-			{limits === "loading" ? <p className="text-xs text-muted-foreground">Checking…</p> : "error" in limits ? <p className="text-xs text-destructive">{limits.error}</p> : <UsageMeters status={limits} />}
-		</div>}
-		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={() => void send()} canSend={canSend || Boolean(editing)} disabled={task.archived}
-			chips={editing && <span className="flex w-full items-center gap-2 text-xs text-muted-foreground"><Pencil className="size-3.5" />Editing a queued message<button type="button" onClick={() => stopEditing()} className="ml-auto rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Cancel</button></span>}
-			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
+		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={alternate => void send(alternate)} canSend={canSend || Boolean(editing)} disabled={task.archived}
+			running={running} onStop={() => void command({ type: "cancel", id: task.id })} placeholder={running ? "Queue a follow-up…" : "Reply…"}
+			collapsible={!task.questions?.length && !plan && !editing}
 			menu={task.archived ? undefined : menu}
-			footer={<ChatSpend taskId={task.id} />}
-			model={<>
-				{task.projectId && <PullRequestBadge taskId={task.id} projectId={task.projectId} links={overview.tasks.find(value => value.id === task.id)?.pullRequests} branch className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
-				{task.projectId && <IssueBadge taskId={task.id} links={overview.tasks.find(value => value.id === task.id)?.issues} className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
-				{/* Only Phaseo's harness reports its window, and /compact is its own. */}
-				<ContextMeter task={task} onCompact={canCompact && task.harness === "phaseo" ? () => void command({ type: "send", id: task.id, text: "/compact" }) : undefined} />
+			keys={event => stash.open && !menu.expanded ? stashKeys.current?.(event) ?? false : false}
+			attach={{ onClick: () => void attach(), disabled: uploading || task.archived }}
+			banners={<>
+				<QueuePanel task={task} editingId={editing?.id} onEdit={editQueued} onSteer={steerQueued} />
+				{limits && <ComposerNotice icon={<Gauge />} title="Usage limits" description={limitsLabel} dismissLabel="Hide usage limits" onDismiss={() => setLimits(undefined)}>
+					{limits === "loading" ? <p className="text-xs text-muted-foreground">Checking…</p> : "error" in limits ? <p className="text-xs text-destructive">{limits.error}</p> : <UsageMeters status={limits} />}
+				</ComposerNotice>}
 			</>}
-			tools={<>
-				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
-				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
-				<ModelControl selections={[selection]} onChange={values => void changeModel(values[0])} onSettings={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} hidden={settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses} />
-				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
-				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}
-				{plan && <PlanIndicator onClear={running ? undefined : () => void command({ type: "update-task", id: task.id, mode: "code" })} />}
+			drawer={<>
+				<QuestionPanel task={task} held={guard.held} />
+				{plan && <ComposerNotice icon={<ListChecks />} title="Plan ready" description={planTitle(plan.description)} />}
+				{editing && <ComposerNotice icon={<Pencil />} title="Editing a queued message" description="Enter saves it in its place." actions={<button type="button" onClick={() => stopEditing()} className="h-6 rounded-md px-1.5 text-xs font-medium text-foreground hover:bg-muted">Cancel</button>} />}
+			</>}
+			aside={!task.archived && <StashBadge count={stash.items.length} open={stash.open} pulse={stash.pulse} onToggle={() => stash.setOpen(!stash.open)} />}
+			overlay={stash.open && !task.archived ? <StashDrawer items={stash.items} shortcut={stash.shortcut} keys={stashKeys} onRestore={id => { stash.restore(id); editor.focus("end"); }} onDelete={stash.remove} onClose={() => stash.setOpen(false)} /> : undefined}
+			controls={<>
+				<ModelControl selections={[selection]} onChange={values => void changeModel(values[0])} onSettings={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} hidden={settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses}
+					footer={code && !task.archived ? <PermissionsFooterMenu value={task.permissionMode} onChange={setPermission} /> : undefined} />
+				{code && <ModeBlock menu={!task.archived && <ComposerOverflowMenu plan={planMode} onPlan={running ? undefined : setPlanMode} permission={task.permissionMode} onPermission={setPermission} />}>
+					<PermissionMenu always={false} value={task.permissionMode} onChange={setPermission} />
+					{planMode && <PlanIndicator onClear={running ? undefined : () => setPlanMode(false)} />}
+					{(preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}
+				</ModeBlock>}
+			</>}
+			/* Only Phaseo's harness reports its window, and /compact is its own. */
+			meter={<ContextMeter task={task} onCompact={canCompact && task.harness === "phaseo" ? () => void command({ type: "send", id: task.id, text: "/compact" }) : undefined} />}
+			primary={<ComposerPrimaryActions running={running} hasContent={hasContent} canSend={canSend || Boolean(editing)} busy={busy} onSubmit={alternate => void send(alternate)} onStop={() => void command({ type: "cancel", id: task.id })}
+				editing={Boolean(editing)} plan={Boolean(plan)} canSteer={!blocker} steerBlocker={blocker}
+				question={answerer ? { step: answerer.step, count: answerer.count, ready: answerer.ready || (!answerer.choiceOnly && Boolean(message.text)), busy: answerer.busy, onPrevious: answerer.previous } : undefined} />}
+			context={(task.projectId || links) && <>
+				{task.projectId && <PullRequestBadge taskId={task.id} projectId={task.projectId} links={links?.pullRequests} branch className="h-6 px-1.5 hover:bg-accent/60" />}
+				{task.projectId && <IssueBadge taskId={task.id} links={links?.issues} className="h-6 px-1.5 hover:bg-accent/60" />}
+				<ChatSpend taskId={task.id} />
 			</>} /></ComposerTaskContext>
 	</div>;
+}
+
+/** A proposed plan's title: its first heading, or else its first line. */
+function planTitle(markdown: string) {
+	const lines = markdown.split("\n").map(line => line.trim()).filter(Boolean);
+	return (lines.find(line => line.startsWith("#")) ?? lines[0] ?? "").replace(/^#+\s*/, "").slice(0, 120) || undefined;
 }
 
 /** The quiet line after the last message: settled, snoozed or woke, with the way back. */
@@ -401,7 +455,6 @@ export function ChatView({ id }: { id: string }) {
 			<Requests task={task} />
 			{removed && <p className="text-xs text-muted-foreground">This checkout has been removed. Switch model to continue in another project.</p>}
 		</Conversation>}
-		<QuestionPanel task={task} />
 		<IssueDraftPanel task={task} />
 		<ChatComposer task={task} />
 		{drawers[task.id] && <TerminalDrawer projectId={task.projectId} taskId={task.id} />}
