@@ -73,9 +73,10 @@ export type ThreadTools = {
 	rename?: (id: string, title: string) => Promise<ThreadSummary>;
 	steer?: (id: string, text: string) => Promise<ThreadSummary>;
 	queue?: (id: string) => { id: string; text: string; createdAt: string }[];
-	editQueue?: (id: string, messageId: string, text?: string) => Promise<ThreadSummary>;
+	/** Edits (text), removes (neither), moves (up or down) or steers a queued prompt into the running turn. */
+	editQueue?: (id: string, messageId: string, text?: string, action?: "up" | "down" | "steer") => Promise<ThreadSummary & { queue: string[] }>;
 	fork?: (id: string, requestId: string, messageId?: string) => Promise<ThreadSummary>;
-	send?: (id: string, text: string, attachments?: string[]) => Promise<ThreadSummary>;
+	send?: (id: string, text: string, attachments?: string[], restart?: boolean) => Promise<ThreadSummary>;
 	merge?: (id: string, requestId: string) => Promise<ThreadSummary>;
 	models?: (harness: Harness, accountId?: string, query?: string) => Promise<{ models: ModelOption[]; total: number; accounts: { id: string; name: string }[] }>;
 	agents?: (filter?: { harness?: Harness; query?: string }) => Promise<AgentCatalog>;

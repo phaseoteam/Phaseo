@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import type { Account, Attachment, Harness, ModelOption, Task, WorkspaceCommand } from "../shared/workspace";
@@ -54,6 +54,8 @@ type Host = {
 	/** Clones a repository into parent and returns the checkout folder (projectClone.ts). */
 	cloneRepository?: (url: string, parent: string) => Promise<string>;
 	attachments?: Pick<AttachmentService, "import" | "discard">;
+	/** Resolves once a chat's running turn has fully ended. */
+	stopped?: (id: string) => Promise<void>;
 	/** MissionService's command handler, once the scheduler is running. */
 	missions?: (command: MissionCommand) => Mission[];
 	assertHarnessAvailable: (harness: Harness) => void;
@@ -363,8 +365,19 @@ export class WorkspaceThreads {
 			},
 			rename: async (id, title) => { scoped(id, true); if (!title.trim() || title.length > 100) throw new Error("Invalid chat title."); await this.host.command({ type: "update-task", id, title }); return summary(scoped(id, true)); },
 			steer: async (id, text) => { scoped(id, true, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt."); await this.host.command({ type: "steer", id, text }); return summary(scoped(id, true, true)); },
-			queue: id => scoped(id, true).queue.map(({ id, text, createdAt }) => ({ id, text: text.slice(0, 8000), createdAt })),
-			editQueue: async (id, messageId, text) => { const child = scoped(id, true); if (!child.queue.some(message => message.id === messageId)) throw new Error("Queued message was not found."); if (text !== undefined && (!text.trim() || text.length > 100000)) throw new Error("Invalid queued prompt."); await this.host.command(text === undefined ? { type: "queue-remove", id, messageId } : { type: "queue-edit", id, messageId, text }); return summary(scoped(id, true)); },
+			// This chat's own queue is readable (what the person queued next); only chats it started can be changed.
+			queue: id => (id === parentId ? this.host.store.getTask(id) : scoped(id, true, true)).queue.map(({ id, text, createdAt }) => ({ id, text: text.slice(0, 8000), createdAt })),
+			editQueue: async (id, messageId, text, action) => {
+				const child = scoped(id, true, true), queued = child.queue.find(message => message.id === messageId);
+				if (!queued) throw new Error("Queued message was not found.");
+				if (text !== undefined && (action || !text.trim() || text.length > 100000)) throw new Error(action ? "Pass text only to edit; omit it to move or steer." : "Invalid queued prompt.");
+				if (action === "steer") {
+					if (!["running", "waiting"].includes(child.status)) throw new Error("That chat is not running, so there is no turn to steer; the prompt stays queued.");
+					await this.host.command({ type: "steer", id, text: queued.text, queuedId: messageId });
+				} else if (action === "up" || action === "down") await this.host.command({ type: "queue-move", id, messageId, direction: action });
+				else await this.host.command(text === undefined ? { type: "queue-remove", id, messageId } : { type: "queue-edit", id, messageId, text });
+				return { ...summary(scoped(id, true, true)), queue: this.host.store.getTask(id).queue.map(message => message.id) };
+			},
 			fork: async (id, requestId, messageId) => {
 				scoped(id); if (this.host.isClosing()) throw new Error("Workspace is shutting down.");
 				const parent = this.host.store.getTask(parentId); if (parent.delegation) throw new Error("Fork from the parent chat to keep ownership explicit.");
@@ -372,12 +385,18 @@ export class WorkspaceThreads {
 				// The store copies this parent's mode and permission mode onto the fork.
 				const child = this.host.store.forkDelegatedTask(parentId, id, requestId, messageId, this.maxActiveAgents()); this.host.broadcast(); return summary(child);
 			},
-			send: async (id, text, paths) => {
-				const child = scoped(id, true, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt.");
+			send: async (id, text, paths, restart) => {
+				let child = scoped(id, true, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt.");
+				// Restart stops the current turn and waits for it to end, then puts the prompt ahead of the queue to start the next turn.
+				if (restart && ["running", "waiting"].includes(child.status)) { await this.host.command({ type: "cancel", id }); await this.host.stopped?.(id); child = scoped(id, true, true); }
 				// Sending to a stopped child starts it, so it needs a free slot.
 				if (!["running", "waiting"].includes(child.status) && !child.queue.length) this.assertCapacity();
 				const files = (await this.readFiles(parentId, paths)).map(file => ({ ...file, taskId: id }));
-				try { if (files.length) this.host.store.saveAttachments(files); await this.host.command({ type: "send", id, text, ...(files.length ? { attachments: files.map(file => file.id) } : {}) }); }
+				try {
+					if (files.length) this.host.store.saveAttachments(files);
+					if (restart) { const task = this.host.store.getTask(id); task.queue.unshift({ id: randomUUID(), text, ...(files.length ? { attachments: files } : {}), createdAt: new Date().toISOString() }); this.host.store.saveTask(task); await this.host.command({ type: "resume", id }); }
+					else await this.host.command({ type: "send", id, text, ...(files.length ? { attachments: files.map(file => file.id) } : {}) });
+				}
 				catch (error) { await this.discardFiles(files); throw error; }
 				return summary(scoped(id, true, true));
 			},

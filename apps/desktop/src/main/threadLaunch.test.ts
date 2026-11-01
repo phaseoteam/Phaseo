@@ -240,6 +240,25 @@ describe("attachments on delegate_task, launch_thread and send_thread", () => {
 	}));
 });
 
+describe("queue controls", () => {
+	it("reorders a launched chat's queue, refuses steering an idle chat, and restarts a running one with a new prompt", async () => withRuntime(async (runtime, _directory, run) => {
+		const parentId = await caller(runtime), tools = runtime.threadTools(parentId);
+		const launched = await tools.launch!({ requestId: "q", title: "Queue", prompt: "First" });
+		await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+		await tools.send!(launched.id, "Second"); await tools.send!(launched.id, "Third");
+		const [second, third] = tools.queue!(launched.id);
+		expect((await tools.editQueue!(launched.id, third.id, undefined, "up")).queue).toEqual([third.id, second.id]);
+		await expect(tools.editQueue!(launched.id, second.id, "Text", "down")).rejects.toThrow("Pass text only to edit");
+		await tools.send!(launched.id, "Start over", undefined, true);
+		// The stopped turn has ended, the new prompt starts the next turn and the queued prompts keep their order behind it.
+		await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(2));
+		expect(run.mock.calls[1][2]).toBe("Start over");
+		expect(tools.queue!(launched.id).map(item => item.text)).toEqual(["Third", "Second"]);
+		await tools.interrupt(launched.id);
+		await expect(tools.editQueue!(launched.id, tools.queue!(launched.id)[0].id, undefined, "steer")).rejects.toThrow("not running");
+	}));
+});
+
 describe("launch_threads", () => {
 	it("validates every entry before creating any, then reports each result", async () => withRuntime(async runtime => {
 		expect(() => validateLaunchBatch({ threads: [{ requestId: "a", title: "A", prompt: "A" }, { requestId: "a", title: "B", prompt: "B" }] })).toThrow("distinct requestId");
