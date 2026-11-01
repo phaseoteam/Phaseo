@@ -17,6 +17,7 @@ import { requestFind } from "../chat/ChatFind";
 import { CloneProjectDialog, openCloneProject, OpenProjectItems } from "./PaletteExtras";
 import { showToast } from "../components/ui/toast";
 import { startTriage } from "./Triage";
+import { ProjectShelfItems } from "./ProjectShelfItems";
 
 export function CommandPalette() {
 	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, openSettings, openScheduled, openPullRequests, openInbox, openUsage, selectedId, setRightPanel, setSidebarOpen, resolvedTheme, setTheme, api, setOverview, setError, setNewChatProjectId } = useWorkspace();
@@ -66,6 +67,7 @@ export function CommandPalette() {
 				<CommandItem value="Diagnostics processes cpu memory traces logs slow failures" onSelect={() => run(() => openSettings("diagnostics"))}><Activity />Diagnostics</CommandItem>
 			</CommandGroup>
 			{current?.projectId && <OpenProjectItems projectId={current.projectId} open={commandsOpen} run={run} />}
+			<ProjectShelfItems project={overview.projects.find(project => project.id === current?.projectId)} projects={overview.projects} run={run} />
 			{compareGroups.length > 0 && <CommandGroup heading="Comparisons">
 				{compareGroups.map(group => {
 					const members = group.taskIds.map(taskById).filter((task): task is NonNullable<typeof task> => !!task);

@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { projectScopeKey } from "./shell/codeThreads";
+import { projectScopes } from "../shared/projectShelf";
 import { setDynamicCommands, useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
 import { projectActionCommands } from "../shared/projectSettings";
 import { sidebarOrder } from "./lib/sidebarOrder";
@@ -48,7 +50,7 @@ function useShortcuts() {
 	useCommand("thread.settle", () => {
 		const task = overview.tasks.find(value => value.id === selectedId);
 		if (!task?.projectId) return false;
-		let scope = ""; try { scope = JSON.parse(localStorage.getItem("phaseo.desktop.codeProjectScope") ?? "\"\"") as string; } catch { /* All projects. */ }
+		let scope: string[] = []; try { scope = projectScopes(JSON.parse(localStorage.getItem(projectScopeKey) ?? "[]")); } catch { /* All projects. */ }
 		void (isSettled(task) ? threadActions.unsettle(task) : threadActions.settle(task, scope));
 	});
 	// T3: Ctrl+1–9 open the chats shown in the sidebar; Ctrl+Shift+[ and ] step through them.

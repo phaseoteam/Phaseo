@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { pickerProjects } from "../../shared/projectShelf";
 import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { ProjectIcon } from "../components/ProjectIcon";
@@ -82,7 +83,7 @@ export function NewChat() {
 	const [selections, setSelections] = useState<ModelSelection[]>(remembered ? [remembered] : []);
 	const code = mode === "code";
 	// Factory's per-item worktrees stay out of the picker; their threads still list.
-	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
+	const projects = pickerProjects(overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project)), newChatProjectId);
 	const project = projects.find(value => value.id === newChatProjectId);
 	const worktree = useWorktreeTarget(api, code ? project?.id : undefined, setOverview);
 	// Triage (from the command palette) runs in the build's own source, which the main process fetches first.

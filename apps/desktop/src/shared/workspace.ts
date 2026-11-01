@@ -43,7 +43,7 @@ import type { SecretRequest } from "./secretRequests";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
-export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject };
+export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject; /** Pinned projects lead the project picker; archived ones, and their chats, leave the sidebar and pickers until unarchived. */ pinned?: boolean; archived?: boolean };
 export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
 export type PhaseoSignInResult = { workspace: WorkspaceOverview; accountId: string } | { secondFactor: true };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo login (not an older OAuth sign-in): the vault entry holding the login, and the Phaseo workspace its key is for. */ sessionSecretId?: string; phaseoWorkspaceId?: string; /** For a Phaseo sign-in, who it belongs to, from its Phaseo profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
@@ -169,6 +169,8 @@ export type WorkspaceCommand =
 	| { type: "delete-task"; id: string }
 	/** Removes a project entry, its worktree entries and their chats. Files on disk are not touched. */
 	| { type: "remove-project"; id: string }
+	/** Pins or archives a project (not a worktree); its chats are untouched. */
+	| { type: "organize-project"; id: string; pinned?: boolean; archived?: boolean }
 	| { type: "regenerate-title"; id: string }
 	/** The chats of one sidebar section in the order the person dragged them into. */
 	| { type: "reorder"; ids: string[] }
@@ -507,6 +509,9 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "snooze": string("until", true, 100); if (Number.isNaN(Date.parse(command.until as string))) throw new Error("Invalid snooze time."); break;
 			case "visit": string("at", true, 100); if (Number.isNaN(Date.parse(command.at as string))) throw new Error("Invalid visit time."); break;
 			case "auto-settle": if (typeof command.enabled !== "boolean") throw new Error("Invalid auto-settle setting."); break;
+			case "organize-project":
+				if ((command.pinned === undefined && command.archived === undefined) || (command.pinned !== undefined && typeof command.pinned !== "boolean") || (command.archived !== undefined && typeof command.archived !== "boolean")) throw new Error("Invalid project change.");
+				break;
 			case "link-pull-request":
 				if (typeof command.reference !== "string" || command.reference.length > 500 || !parsePullRequestReference(command.reference)) throw new Error("Paste a GitHub pull request URL or a number like #42.");
 				// The main process fills these in from the reference.

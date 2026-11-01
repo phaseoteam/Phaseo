@@ -991,6 +991,16 @@ export class WorkspaceRuntime {
 		if (command.type === "resume-at-reset") return this.resumeAtReset(command.id, command.cancel === true);
 		const firstMessage = command.type === "send" && this.store.getTask(command.id).title === "New task";
 		if (command.type === "reorder") { this.store.reorder(command.ids); this.broadcast(); return this.store.getOverview(); }
+		if (command.type === "organize-project") {
+			const project = this.store.getProjects().find(value => value.id === command.id);
+			if (!project || project.worktree) throw new Error("Choose a project, not a worktree.");
+			const next = { ...project, ...command.pinned !== undefined ? { pinned: command.pinned } : {}, ...command.archived !== undefined ? { archived: command.archived } : {} };
+			// An archived project leaves the pinned list too, so unarchiving it does not bring back a stale pin.
+			if (next.archived) delete next.pinned;
+			if (!next.pinned) delete next.pinned;
+			if (!next.archived) delete next.archived;
+			this.store.saveProject(next); this.broadcast(); return this.store.getOverview();
+		}
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
 		if (command.type === "send") for (const id of command.threadReferences ?? []) this.store.getTaskView(id);
 		if (command.type === "send" && command.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("This action requires a supported harness.");
