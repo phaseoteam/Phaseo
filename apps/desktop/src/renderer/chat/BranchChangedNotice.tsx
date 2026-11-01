@@ -17,13 +17,15 @@ export function BranchChangedNotice({ task }: { task: Task }) {
 	const [refresh, setRefresh] = useState(0);
 	const [busy, setBusy] = useState(false);
 	const turnEnded = overview.tasks.find(value => value.id === task.id)?.lastCompletedAt;
-	useEffect(() => project ? onProjectChange(project.id, () => setRefresh(value => value + 1)) : undefined, [project]);
+	// Keyed by id: the project object changes with every overview update, and each read runs git.
+	const projectId = project?.id;
+	useEffect(() => projectId ? onProjectChange(projectId, () => setRefresh(value => value + 1)) : undefined, [projectId]);
 	useEffect(() => {
-		if (!api || !project || !expected) return;
+		if (!api || !projectId || !expected) return;
 		let active = true;
-		void api.gitRefs(project.id).then(refs => { if (active) setCurrent(refs.current || "detached HEAD"); }, () => undefined);
+		void api.gitRefs(projectId).then(refs => { if (active) setCurrent(refs.current || "detached HEAD"); }, () => undefined);
 		return () => { active = false; };
-	}, [api, project, expected, refresh, turnEnded, task.status]);
+	}, [api, projectId, expected, refresh, turnEnded, task.status]);
 	// While setup renames the temporary branch the two briefly differ, so the notice waits for setup to finish.
 	if (!project || !expected || !current || current === expected || task.status === "running" || (task.worktreeSetup && !task.worktreeSetup.finishedAt)) return null;
 	const restore = async () => {
