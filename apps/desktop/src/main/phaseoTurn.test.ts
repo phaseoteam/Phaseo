@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { defineTool } from "@phaseo/agent-sdk";
 import type { AgentMessage, AgentModelRequest, AgentModelResponse, AgentRunResult } from "@phaseo/agent-sdk";
 import type { Message, Task } from "../shared/workspace";
-import { activeToolIds, approvalRule, commandAllowed, imageResultsToMessages, runMatchesTranscript, runPhaseoTurn, type PhaseoTurn } from "./phaseoTurn";
+import { activeToolIds, approvalRule, commandAllowed, coreThreadToolIds, imageResultsToMessages, phaseoToolsets, runMatchesTranscript, runPhaseoTurn, type PhaseoTurn } from "./phaseoTurn";
+import { threadTools } from "./threadTools";
+import type { ThreadTools } from "../shared/orchestration";
 
 const task: Task = { id: "task", title: "Owned", harness: "phaseo", mode: "code", model: "owned", status: "running", pinned: false, archived: false, queue: [], messages: [], createdAt: "", updatedAt: "" };
 const say = (content: string): AgentModelResponse => ({ message: { role: "assistant", content } });
@@ -112,6 +114,15 @@ describe("Phaseo turns", () => {
 		const tools = ["read_file", "delegate_task", "watch_pull_request", "browser_open", "schedule_task", "send_thread"].map(id => defineTool({ id, execute: async () => id }));
 		expect(activeToolIds(tools, {})).toEqual(["read_file", "delegate_task"]);
 		expect(activeToolIds(tools, { phaseoToolsets: ["browser", "threads"] })).toEqual(["read_file", "delegate_task", "browser_open", "send_thread"]);
+	});
+
+	it("puts every orchestration tool in the core set or a load_tools set, apart from the few always offered", () => {
+		const present = () => async () => ({});
+		const service = new Proxy({ browser: {}, html: {}, factory: {}, globalInstructions: {} }, { get: (target, key) => key in target ? target[key as keyof typeof target] : present() }) as unknown as ThreadTools;
+		const ids = threadTools(service).map(tool => tool.id);
+		expect(ids).toEqual(expect.arrayContaining(["configure_thread", "search_threads", "add_project", "clone_project", "update_global_instructions", "browser_evaluate", "html_render", "move_to_worktree", "answer_question"]));
+		const outside = ids.filter(id => !coreThreadToolIds.includes(id) && !Object.values(phaseoToolsets).some(set => set.match(id)));
+		expect(outside).toEqual(["request_secret", "background_wait", "list_work_items", "read_work_item", "run_stage"]);
 	});
 
 	it("only lets allowed command prefixes through when nothing is chained", () => {
