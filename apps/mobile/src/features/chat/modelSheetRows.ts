@@ -83,3 +83,13 @@ export function effortSummary(efforts: Effort[], defaultId: string | null | unde
 export function modelControlLabel(model: string, effort: string | null, others = 0) {
   return `${model}${effort ? ` · ${effort}` : ""}${others > 0 ? ` +${others}` : ""}`;
 }
+
+/** The control's parts: the model's name in full colour, then the effort word and "+2" muted after it. */
+export type ModelLabel = { model: string; effort: string | null; others: number };
+
+export const modelLabel = (model: string, effort: string | null, others = 0): ModelLabel => ({ model, effort, others: Math.max(0, others) });
+
+export const modelLabelText = (label: ModelLabel) => modelControlLabel(label.model, label.effort, label.others);
+
+/** What follows the name: "High +2", "High", "+2" or nothing. */
+export const modelLabelSuffix = (label: ModelLabel) => [label.effort, label.others > 0 ? `+${label.others}` : null].filter(Boolean).join(" ") || null;
