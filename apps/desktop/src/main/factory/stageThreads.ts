@@ -56,6 +56,8 @@ interface Watch {
 	queuedAt: number;
 	stopping: boolean;
 	ending: boolean;
+	/** What the agent had done at the last look (see RunHandlers.progress). */
+	progress?: string;
 	/** The thread's usage when the run started, so a thread carried on counts only this run's. */
 	baseUsage: { tokens: number; costNanos: number };
 }
@@ -258,6 +260,10 @@ export class StageThreads implements FactoryThreads {
 			...messages.filter((message) => message.role === "assistant").map((message) => ({ order: message.timelineOrder ?? 0, message })),
 			...(task.activities ?? []).map((activity) => ({ order: activity.timelineOrder ?? 0, activity })),
 		].sort((a, b) => a.order - b.order);
+		// Tools starting and ending, and answers growing, are the agent at work; a message steered into the thread isn't.
+		const progress = entries.map((entry) => ("message" in entry ? `m${entry.message.text.length}` : `a${entry.activity.status}`)).join(",");
+		if (watch.progress !== undefined && progress !== watch.progress) watch.handlers.progress?.();
+		watch.progress = progress;
 		entries.forEach((entry, index) => {
 			const key = "message" in entry ? `m:${entry.message.id}` : `a:${entry.activity.id}`;
 			if (watch.logged.has(key)) return;

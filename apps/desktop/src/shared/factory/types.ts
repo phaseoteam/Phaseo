@@ -247,6 +247,12 @@ export interface Run {
 	carriedOnBy?: string;
 	/** The desktop thread the stage ran in: a child of the item's thread. */
 	threadId?: string;
+	/** GitHub activity already passed on to the agent, or held back, by id (see activity.ts). */
+	heard?: string[];
+	/** When GitHub was last read for activity on this run's item. */
+	heardAt?: number;
+	/** When Factory told the agent it seemed stalled. */
+	nudgedAt?: number;
 }
 
 /** A note is about one repository, or about this computer and given to every run. */

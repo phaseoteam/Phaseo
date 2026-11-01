@@ -2,6 +2,7 @@ import { execFile, spawn } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import type { GithubActivity } from "../../shared/factory/activity";
 import { emptyStages } from "../../shared/factory/stages";
 import { githubRepoOf } from "./clones";
 import type { CheckRun, CiStatus, CloseReason, IssueComment, Mentionable, PullFile, PullFiles, RepoLabel, Reviewer, MergeMethod, MergeState, ReviewState, ReviewVerdict, TimelineComment, TimelineEntry, TimelineEventIcon, WorkItem } from "../../shared/factory/types";
@@ -390,6 +391,38 @@ export async function allComments(repo: string, number: number): Promise<IssueCo
 	return out.split("\n").filter(Boolean)
 		.map((line) => JSON.parse(line) as { author: string; body: string | null; at: string; url: string; avatar?: string })
 		.map((entry) => ({ author: entry.author, body: entry.body ?? "", at: Date.parse(entry.at), url: entry.url, avatar: entry.avatar || undefined, factory: FACTORY_SIGNATURE.test((entry.body ?? "").trim()) || undefined }));
+}
+
+const WHO_JQ = "author: .user.login, bot: (.user.type == \"Bot\"), association: .author_association, body: .body, url: .html_url";
+
+/**
+ * Comments, reviews and line comments on an issue or pull request since a moment, oldest first, with who wrote each
+ * and what access they have, so only some go to agents (activity.ts). Factory's own comments are left out.
+ */
+export async function activitySince(repo: string, kind: WorkItem["kind"], number: number, since: number): Promise<GithubActivity[]> {
+	const iso = new Date(since).toISOString();
+	const read = (kindOf: GithubActivity["kind"], endpoint: string, fields: string) => gh(["api", "--paginate", endpoint, "--jq", `.[] | {id: .id, ${WHO_JQ}, ${fields}}`]).then((out) => activityFrom(kindOf, out));
+	const reads = [read("comment", `repos/${repo}/issues/${number}/comments?since=${iso}&per_page=100`, "at: .created_at")];
+	if (kind === "pull") {
+		reads.push(read("review", `repos/${repo}/pulls/${number}/reviews?per_page=100`, "at: .submitted_at, state: .state"));
+		reads.push(read("line", `repos/${repo}/pulls/${number}/comments?since=${iso}&per_page=100`, "at: .created_at, path: .path, line: (.line // .original_line)"));
+	}
+	return (await Promise.all(reads)).flat().filter((entry) => entry.at > since).map((entry) => ({ ...entry, number })).sort((a, b) => a.at - b.at);
+}
+
+/** gh's JSON lines as activity. Reviews still being written, and reviews that are only replies in a thread, say nothing here. */
+export function activityFrom(kind: GithubActivity["kind"], out: string): GithubActivity[] {
+	return out.split("\n").filter(Boolean).map((line) => JSON.parse(line) as Json).flatMap((entry): GithubActivity[] => {
+		const raw = (entry.body as string | null) ?? "";
+		if (FACTORY_SIGNATURE.test(raw.trim())) return [];
+		// Hidden HTML comments (review bots keep their state in them) don't show on GitHub, so the agent doesn't need them.
+		const body = raw.replace(/<!--[\s\S]*?-->/g, "").trim();
+		if (!body && kind !== "review") return [];
+		if (kind === "review" && (entry.state === "PENDING" || (entry.state === "COMMENTED" && !body.trim()))) return [];
+		const at = Date.parse(entry.at ?? "");
+		if (!Number.isFinite(at)) return [];
+		return [{ id: `${kind}:${entry.id}`, kind, author: entry.author ?? "ghost", bot: entry.bot || undefined, association: entry.association ?? undefined, body, at, url: entry.url ?? undefined, state: entry.state ?? undefined, path: entry.path ?? undefined, line: entry.line ?? undefined }];
+	});
 }
 
 /** Who gh is signed in as, and their photo. */
