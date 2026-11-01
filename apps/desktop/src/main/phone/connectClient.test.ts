@@ -59,7 +59,7 @@ describe("Phaseo Connect client", () => {
 		pairing.onCodeExpired = id => client.removeDevice(id);
 		cleanup.push(() => client.stop());
 		const phoneChannel = new EnvelopeChannel(sharedKey(phone.privateKey, desktop.publicKey), paired.device.id, relayDesktopAddress);
-		return { relay, app, client, states, reaches, pairing, paired, desktop, phone, phoneChannel };
+		return { relay, app, client, states, reaches, pairing, hub, paired, desktop, phone, phoneChannel };
 	}
 
 	it("signs in with the gateway key, registers phones, and answers a phone's frames end to end", async () => {
