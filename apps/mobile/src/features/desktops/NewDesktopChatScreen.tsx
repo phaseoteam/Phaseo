@@ -35,6 +35,7 @@ export function NewDesktopChatScreen({ desktopId }: { desktopId: string }) {
     return [...seen].map(([value, label]) => ({ value, label }));
   }, [chats]);
 
+  if (desktop === undefined) return <Screen><Header back title="New chat" /></Screen>;
   if (!client || !desktop) {
     return (
       <Screen>

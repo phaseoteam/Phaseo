@@ -32,6 +32,7 @@ export function ConnectionNotice({ client }: { client: DesktopClient }) {
 export function DesktopChatsScreen({ desktopId }: { desktopId: string }) {
   const desktop = useDesktop(desktopId);
   const client = desktop ? clientFor(desktop) : null;
+  if (desktop === undefined) return <Screen><Header back title="Desktop" /><SkeletonRows count={6} /></Screen>;
   if (!desktop || !client) {
     return (
       <Screen>

@@ -33,6 +33,7 @@ export function DesktopChatScreen({ desktopId, chatId }: { desktopId: string; ch
     openDesktopChat.set({ desktopId, chatId });
     return () => openDesktopChat.set((current) => (current?.chatId === chatId && current.desktopId === desktopId ? null : current));
   }, [desktopId, chatId]);
+  if (desktop === undefined) return <Screen><Header back title="Chat" /><SkeletonRows count={5} /></Screen>;
   if (!client) {
     return (
       <Screen>

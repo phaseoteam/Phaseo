@@ -70,7 +70,7 @@ export function DesktopConnections() {
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") for (const [, client] of allClients()) client.retryNow();
+      if (state === "active") for (const client of allClients()) client.retryNow();
     });
     return () => subscription.remove();
   }, []);
