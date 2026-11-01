@@ -7,7 +7,7 @@ import { mentionPlainText } from "../shared/mentions";
 import { DatabaseSync, type StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
-import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, UsageTotals, Workspace, WorkspaceCommand } from "../shared/workspace";
+import type { Account, AgentConnection, Attachment, MessageNotice, Project, Task, TerminalSession, UsageTotals, Workspace, WorkspaceCommand } from "../shared/workspace";
 import { usageAmounts, usageTokens, usageTotalsOf } from "../shared/usageAmounts";
 import type { ThreadRoots, TranscriptFile, TranscriptFolder, TranscriptUsage } from "./usageTranscripts";
 import { harnessMerge, staleHour, TranscriptLedger } from "./usageLedgerWrites";
@@ -300,14 +300,14 @@ export class WorkspaceStore {
 		return row ? this.getTask(row.id as string) : undefined;
 	}
 	/** An ordinary top-level chat started by an agent: no `delegation` or `parentId`, so it is listed, stopped and archived like any user chat. */
-	createLaunchedTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, launch: NonNullable<Task["launch"]>, prompt: string, title: string, maxActive?: number): Task {
+	createLaunchedTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, launch: NonNullable<Task["launch"]>, prompt: string, title: string, maxActive?: number, notice?: MessageNotice): Task {
 		this.db.exec("BEGIN IMMEDIATE");
 		try {
 			const existing = this.findLaunchedTask(launch.byTaskId, launch.requestId);
 			if (existing) { this.db.exec("COMMIT"); return existing; }
 			this.assertAgentCapacity(maxActive);
 			const task = this.apply(command); task.launch = launch; task.title = title;
-			task.queue.push({ id: randomUUID(), text: prompt, createdAt: new Date().toISOString() });
+			task.queue.push({ id: randomUUID(), text: prompt, ...(notice ? { notice } : {}), createdAt: new Date().toISOString() });
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
@@ -429,6 +429,12 @@ export class WorkspaceStore {
 		if (!update || inactive) { this.saveTask(task, true); return false; }
 		task.queue.push({ id: randomUUID(), text: update.text, notice: { kind: "pull-request", summary: update.summary, outcome: update.outcome, url: links[index].url }, createdAt: new Date().toISOString() });
 		this.saveTask(task); return true;
+	}
+	/** Queues a prompt shown as a notice rather than as the person's message, after any running turn. */
+	queueNotice(taskId: string, text: string, notice: MessageNotice) {
+		const task = this.getTask(taskId);
+		task.queue.push({ id: randomUUID(), text, notice, createdAt: new Date().toISOString() });
+		this.saveTask(task);
 	}
 	/** Ends every watch on a chat, as T3 does when the person stops it. */
 	endPullRequestWatches(taskId: string): boolean {

@@ -1,6 +1,7 @@
 import type { Delegation, Launch } from "./orchestration";
 import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
 import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
+import type { CreatedOutsideAgentToken, OutsideAgentAccess, OutsideAgentSettings } from "./outsideAgents";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
@@ -50,7 +51,8 @@ export type AgentConnection = { id: string; name: string; executable: string; ar
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
 export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; /** Issue and pull request URLs the person referenced with `#`. */ githubReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Sent by Autopilot to keep the task going, not by the person. */ autopilot?: true; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
-export type MessageNotice = { kind: "pull-request" | "issue"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
+/** `outside-agent` is a prompt an agent outside Phaseo sent through its MCP server; the summary names the agent. */
+export type MessageNotice = { kind: "pull-request" | "issue" | "outside-agent"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
 export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; githubReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string } };
@@ -345,6 +347,12 @@ export type WorkspaceApi = {
 	projectRepository: (projectId: string) => Promise<string | null>;
 	/** Settings ▸ Code hosts: saved self-hosted servers, which hosts have a token, and which host CLIs are installed. */
 	codeHosts: () => Promise<CodeHostSettings>;
+	/** Settings ▸ Outside agents: the local MCP server for agents Phaseo did not start, and its tokens. */
+	outsideAgents: () => Promise<OutsideAgentSettings>;
+	setOutsideAgentsEnabled: (enabled: boolean, port?: number) => Promise<OutsideAgentSettings>;
+	createOutsideAgentToken: (request: { name: string; access: OutsideAgentAccess }) => Promise<CreatedOutsideAgentToken>;
+	revokeOutsideAgentToken: (id: string) => Promise<OutsideAgentSettings>;
+	onOutsideAgentsChanged: (listener: (settings: OutsideAgentSettings) => void) => () => void;
 	saveCodeHostToken: (request: CodeHostTokenRequest) => Promise<CodeHostSettings>;
 	removeCodeHostToken: (kind: CodeHostKind, host: string) => Promise<CodeHostSettings>;
 	saveCodeHostServers: (servers: CustomCodeHost[]) => Promise<CodeHostSettings>;

@@ -36,6 +36,12 @@ Settings ▸ Code hosts saves tokens for GitLab, Forgejo or Gitea, Bitbucket and
 and az are installed, and names self-hosted servers whose address doesn't say what they run. Saved tokens can't be
 viewed again; save a new one to replace it or Remove to delete it. See [Other code hosts](pull-requests.md#other-code-hosts).
 
+## Outside agents
+
+Settings ▸ Outside agents turns on the local MCP server for agents you run yourself, sets its port, and makes and
+revokes tokens. A new token is shown once, with a command that adds it to Claude Code. See
+[Outside agents](orchestration-v2.md#outside-agents).
+
 ## Notifications
 
 **Settings → Notifications → Desktop alerts** sends a system notification when a chat needs you (Needs attention) or for every update, while Phaseo is in the background; **Show chat titles** names the chat in them. Under **In the app**, **In-app notices** (on by default) shows a toast while Phaseo has focus when a chat other than the open one finishes or needs you, with **Open**; several at once become one toast. **Unread count on the app icon** (on by default) counts chats with an unread reply or a request waiting on you on the dock (macOS), the launcher (Linux) or the taskbar button (Windows, as a small badge).

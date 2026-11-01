@@ -599,6 +599,8 @@ export class WorkspaceRuntime {
 			if (!task.archived && ["idle", "completed"].includes(task.status)) this.start(id);
 		}, 250));
 	}
+	/** Thread tools for an agent outside Phaseo, reached through the local MCP server with a token. */
+	outsideThreadTools(agent: Parameters<WorkspaceThreads["forOutside"]>[0]) { return this.threads.forOutside(agent); }
 	threadTools(parentId: string): ThreadTools {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
