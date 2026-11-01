@@ -1,6 +1,6 @@
 import { createStore } from "@/lib/store";
 import { phoneProtocolVersion, relayHolds, type DesktopEvent, type DesktopFrame, type PhoneErrorCode, type PhoneRequest, type PhoneResults } from "./protocol";
-import { LinkRefused, type DesktopTransport, type Link, type LinkClosed, type TransportKind } from "./transport";
+import { LinkRefused, LinkUnavailable, type DesktopTransport, type Link, type LinkClosed, type TransportKind } from "./transport";
 
 export type ConnectionState =
   | { status: "connecting" }
@@ -168,7 +168,7 @@ export class DesktopClient {
       });
     } catch (error) {
       if (generation !== this.generation) return;
-      if (error instanceof LinkRefused) this.refuse(error.message); else this.retryLater(unreachable);
+      if (error instanceof LinkRefused) this.refuse(error.message); else this.retryLater(error instanceof LinkUnavailable ? error.message : unreachable);
       return;
     }
     if (generation !== this.generation) { link.close(); return; }
@@ -230,7 +230,7 @@ export class DesktopClient {
     }
     if (this.stopped) return;
     if (reason.refused) { this.refuse(reason.refused); return; }
-    this.retryLater("Connection lost. Trying again…");
+    this.retryLater(reason.retrying ?? "Connection lost. Trying again…");
   }
 
   private refuse(message: string) {

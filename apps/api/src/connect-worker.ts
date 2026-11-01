@@ -56,9 +56,9 @@ export function createConnectWorker(auth: typeof authenticateGatewayKey = authen
 				headers.set(CONNECT_WORKSPACE_HEADER, result.workspaceId);
 				headers.set(CONNECT_KEY_HASH_HEADER, await sha256Hex(result.apiKeyId));
 			} else {
+				// The room refuses a phone without a token by closing its socket with a reason the phone can read.
 				const authorization = request.headers.get("authorization");
-				if (!authorization) return json(401, "unauthorized");
-				headers.set("authorization", authorization);
+				if (authorization) headers.set("authorization", authorization);
 			}
 			const room = env.CONNECT_ROOM.get(env.CONNECT_ROOM.idFromName(desktopId));
 			return room.fetch(new Request(`https://connect.internal/${role}`, { headers }));

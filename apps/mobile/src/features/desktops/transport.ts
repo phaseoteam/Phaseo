@@ -17,13 +17,16 @@ export type OpenSocket = (url: string, token?: string) => SocketLike;
 
 export type TransportKind = "direct" | "connect";
 /** Why a link closed. `refused` means trying again won't help until something changes (the phone was removed, Connect is off). */
-export type LinkClosed = { refused?: string };
+/** refused: trying again won't help. retrying: a reason to show while trying again. */
+export type LinkClosed = { refused?: string; retrying?: string };
 export type LinkEvents = { frame(frame: DesktopFrame): void; closed(reason: LinkClosed): void };
 export type Link = { send(frame: PhoneFrame): void; close(): void };
 /** One way to reach a desktop. The client and the screens don't know which one they have. */
 export type DesktopTransport = { kind: TransportKind; open(events: LinkEvents): Promise<Link> };
 /** A link the desktop or the relay turned away before it was ready; the client stops retrying. */
 export class LinkRefused extends Error {}
+/** The other end is there but can't serve the phone just now; the client keeps trying and shows why. */
+export class LinkUnavailable extends Error {}
 
 /** What a phone proves it is with, on either transport: its paired key pair and the desktop's public key. */
 export type PairedKeys = { deviceId: string; privateKey: string; desktopPublicKey: string };
@@ -37,7 +40,7 @@ export const directSocketUrl = (url: string) => `${url.replace(/\/+$/, "").repla
  * Runs a socket until `ready` is called, then resolves with the link. A socket that closes first rejects, with
  * LinkRefused when `refusal` says why trying again won't help.
  */
-function linkOver(socket: SocketLike, events: LinkEvents, handlers: { readyOnOpen?: boolean; receive(text: string, ready: () => void): void; send(frame: PhoneFrame): void; refusal(event: { code?: number; reason?: string }): string | undefined }) {
+function linkOver(socket: SocketLike, events: LinkEvents, handlers: { readyOnOpen?: boolean; receive(text: string, ready: () => void): void; send(frame: PhoneFrame): void; refusal(event: { code?: number; reason?: string }): string | undefined; unavailable?(event: { code?: number; reason?: string }): string | undefined }) {
   return new Promise<Link>((resolve, reject) => {
     let ready = false, done = false;
     const finish = (reason: LinkClosed) => { if (done) return; done = true; events.closed(reason); };
@@ -51,8 +54,9 @@ function linkOver(socket: SocketLike, events: LinkEvents, handlers: { readyOnOpe
     socket.onerror = () => { /* onclose follows */ };
     socket.onclose = (event) => {
       const refused = handlers.refusal(event);
-      if (!ready) { done = true; reject(refused ? new LinkRefused(refused) : new Error("Couldn't connect.")); return; }
-      finish(refused ? { refused } : {});
+      const retrying = refused ? undefined : handlers.unavailable?.(event);
+      if (!ready) { done = true; reject(refused ? new LinkRefused(refused) : retrying ? new LinkUnavailable(retrying) : new Error("Couldn't connect.")); return; }
+      finish(refused ? { refused } : retrying ? { retrying } : {});
     };
   });
 }
@@ -140,6 +144,7 @@ export function relayTransport({ credentials, openSocket }: { credentials: Relay
           if (event.code === relayCloseCodes.notEntitled) return notEntitled[event.reason ?? ""] ?? notEntitled.payment_required;
           return undefined;
         },
+        unavailable: (event) => (event.code === relayCloseCodes.unavailable ? "Phaseo Connect can't check this computer's workspace right now. Trying again…" : undefined),
       });
     },
   };

@@ -144,6 +144,14 @@ export async function startRelay(handle: (request: Request, room: RoomFetch) => 
 			pending.set(response, socket);
 			return { response, socket: socket as unknown as WebSocket };
 		}
+		protected override refuse(code: number, reason: string) {
+			// Opened, then closed with the reason, like the real refusal; never accepted into the room.
+			const socket = new RoomSocket();
+			socket.close(code, reason);
+			const response = new Response(null, { status: 200 });
+			pending.set(response, socket);
+			return response;
+		}
 	}
 	const room = new TestRoom(ctx as unknown as DurableObjectState, { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "service" });
 

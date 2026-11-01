@@ -169,7 +169,9 @@ describe("Phaseo Connect end to end: relay, desktop client and phone", () => {
 		expect(await device.connect()).toBe("open");
 		context.pairing.remove(result.deviceId);
 		expect(await device.closes.until(() => true)).toEqual({ code: relayCloseCodes.deviceRemoved, reason: "device_removed" });
-		expect(await device.connect()).toBe(401);
+		// The phone can't read an HTTP status, so the relay opens its socket and closes it with the reason.
+		expect(await device.connect()).toBe("open");
+		expect(await device.closes.until(close => close.reason === "unauthorized")).toEqual({ code: relayCloseCodes.deviceRemoved, reason: "unauthorized" });
 	});
 
 	it("closes with 4402 when the month is unpaid, and the desktop shows Payment due and stops", async () => {
@@ -187,7 +189,9 @@ describe("Phaseo Connect end to end: relay, desktop client and phone", () => {
 		expect(refused.message).toMatch(/^Payment due\./);
 		expect(await device.closes.until(() => true)).toEqual({ code: relayCloseCodes.notEntitled, reason: "payment_required" });
 		// A phone signing in now is refused too, and by then a retrying desktop would have reconnected.
-		expect(await device.connect()).toBe(402);
+		expect(await device.connect()).toBe("open");
+		const unpaid = () => device.closes.items.filter(close => close.reason === "payment_required").length;
+		await device.closes.until(close => close.reason === "payment_required" && unpaid() === 2);
 		expect(context.relay.upgrades.filter(url => url.includes("/v1/desktop/"))).toHaveLength(attempts);
 		expect(context.client.state.status).toBe("refused");
 	});

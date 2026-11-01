@@ -4,6 +4,7 @@ import {
 	CLOSE_DEVICE_REMOVED,
 	CLOSE_NOT_ENTITLED,
 	CLOSE_REPLACED,
+	CLOSE_UNAVAILABLE,
 	ConnectRoom,
 	ENTITLEMENT_TTL_MS,
 	HOLD_MAX_BYTES,
@@ -57,6 +58,10 @@ function harness() {
 			socket.serializeAttachment(attachment);
 			// Node can't build a 101 response; the status stands in for it.
 			return { response: new Response(null, { status: 200 }), socket: socket as unknown as WebSocket };
+		}
+		protected override refuse(code: number, reason: string) {
+			// The real refusal opens the socket and closes it; the header stands in for that close.
+			return new Response(null, { status: 299, headers: { "x-test-close": `${code} ${reason}` } });
 		}
 	}
 	const room = new TestRoom(ctx as unknown as DurableObjectState, { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "service" });
@@ -118,6 +123,21 @@ describe("ConnectRoom", () => {
 		expect(fetchMock).toHaveBeenLastCalledWith("https://db.example/rest/v1/rpc/get_connect_entitlement", expect.objectContaining({ body: JSON.stringify({ p_workspace_id: "ws-1" }) }));
 	});
 
+	it("tells a refused phone why, in a close it can read, since a phone can't see an HTTP status", async () => {
+		const h = await paired();
+		const phone = async () => (await h.connect("phone", { authorization: `Bearer ${PHONE_TOKEN}` })).response.headers.get("x-test-close");
+		vi.useFakeTimers({ toFake: ["Date"] });
+		const expire = () => vi.setSystemTime(Date.now() + ENTITLEMENT_TTL_MS + 1);
+		entitlement = { enabled: false, paid_up: true }; expire();
+		expect(await phone()).toBe(`${CLOSE_NOT_ENTITLED} connect_off`);
+		entitlement = { enabled: true, paid_up: false }; expire();
+		expect(await phone()).toBe(`${CLOSE_NOT_ENTITLED} payment_required`);
+		fetchMock.mockResolvedValueOnce(new Response("down", { status: 500 })); expire();
+		expect(await phone()).toBe(`${CLOSE_UNAVAILABLE} entitlement_unavailable`);
+		entitlement = { enabled: true, paid_up: true }; expire();
+		expect(await phone()).toBeNull();
+	});
+
 	it("keeps the workspace that first connected and refuses another", async () => {
 		const h = harness();
 		expect((await h.connect("desktop")).response.status).toBe(200);
@@ -139,8 +159,8 @@ describe("ConnectRoom", () => {
 
 	it("lets in only phones with a registered relay token", async () => {
 		const h = await paired();
-		expect((await h.connect("phone", { authorization: "Bearer wrong-token" })).response.status).toBe(401);
-		expect((await h.connect("phone")).response.status).toBe(401);
+		expect((await h.connect("phone", { authorization: "Bearer wrong-token" })).response.headers.get("x-test-close")).toBe(`${CLOSE_DEVICE_REMOVED} unauthorized`);
+		expect((await h.connect("phone")).response.headers.get("x-test-close")).toBe(`${CLOSE_DEVICE_REMOVED} unauthorized`);
 		const phone = await h.connect("phone", { authorization: `Bearer ${PHONE_TOKEN}` });
 		expect(phone.response.status).toBe(200);
 		expect(h.frames(phone.socket)).toEqual([{ type: "desktop_online" }]);
@@ -254,7 +274,7 @@ describe("ConnectRoom", () => {
 		expect(h.frames(h.desktop).at(-1)).toEqual({ id: "r", ok: true });
 		expect(current.closed).toEqual({ code: CLOSE_DEVICE_REMOVED, reason: "device_removed" });
 		expect(h.sql.db.prepare("SELECT COUNT(*) AS n FROM held").get()).toEqual({ n: 0 });
-		expect((await h.connect("phone", { authorization: `Bearer ${PHONE_TOKEN}` })).response.status).toBe(401);
+		expect((await h.connect("phone", { authorization: `Bearer ${PHONE_TOKEN}` })).response.headers.get("x-test-close")).toBe(`${CLOSE_DEVICE_REMOVED} unauthorized`);
 	});
 
 	it("re-registering a device rotates its token", async () => {
@@ -262,7 +282,7 @@ describe("ConnectRoom", () => {
 		const phone = (await h.connect("phone", { authorization: `Bearer ${PHONE_TOKEN}` })).socket!;
 		await h.message(h.desktop, { id: 2, type: "register_device", deviceId: "phone-one", relayTokenHash: await sha256Hex("new-token") });
 		expect(phone.closed?.code).toBe(CLOSE_DEVICE_REMOVED);
-		expect((await h.connect("phone", { authorization: `Bearer ${PHONE_TOKEN}` })).response.status).toBe(401);
+		expect((await h.connect("phone", { authorization: `Bearer ${PHONE_TOKEN}` })).response.headers.get("x-test-close")).toBe(`${CLOSE_DEVICE_REMOVED} unauthorized`);
 		expect((await h.connect("phone", { authorization: "Bearer new-token" })).response.status).toBe(200);
 		await h.message(h.desktop, { id: 3, type: "register_device", deviceId: "bad id", relayTokenHash: "nope" });
 		expect(h.frames(h.desktop).at(-1)).toEqual({ id: 3, ok: false, error: "invalid_device" });
