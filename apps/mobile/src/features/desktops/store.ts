@@ -42,4 +42,5 @@ export async function forgetDesktop(desktopId: string) {
 }
 
 export const useDesktops = () => desktopsStore.use();
-export const useDesktop = (desktopId: string) => desktopsStore.use((desktops) => desktops?.find((entry) => entry.desktopId === desktopId) ?? null);
+/** A paired desktop; undefined while secure storage is still being read (a notification can open a chat at launch). */
+export const useDesktop = (desktopId: string) => desktopsStore.use((desktops) => (desktops == null ? undefined : desktops.find((entry) => entry.desktopId === desktopId) ?? null));
