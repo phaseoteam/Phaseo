@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Activity, ArrowLeft, Bell, Bot, CircleDot, FlaskConical, FolderGit2, GitPullRequest, Keyboard, Gauge, NotebookPen, Palette, Plug, RefreshCw, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { Activity, ArrowLeft, Bell, Bot, CircleDot, FlaskConical, FolderGit2, GitMerge, GitPullRequest, Keyboard, Gauge, NotebookPen, Palette, Plug, RefreshCw, Search, SlidersHorizontal, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useWorkspace, type SettingsPage as Page } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { ExperimentalSettings, GeneralSettings, NotificationSettings } from "./GeneralSettings";
+import { CodeHostSettings } from "./CodeHostSettings";
 import { UsageSettings } from "./UsageSettings";
 import { DiagnosticsSettings } from "./DiagnosticsSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
@@ -31,6 +32,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 	{ label: "Integrations", pages: [
 		{ id: "agents", label: "Agents", icon: <Bot />, keywords: "codex claude code opencode pi cursor grok acp install update version" },
 		{ id: "mcp", label: "MCP servers", icon: <Plug />, keywords: "tools model context protocol connections" },
+		{ id: "code-hosts", label: "Code hosts", icon: <GitMerge />, keywords: "gitlab forgejo gitea codeberg bitbucket azure devops glab tea az token merge requests pull requests self-hosted server" },
 	] },
 	// Code ▸ Factory's settings. Its agents are the desktop's own accounts and models.
 	{ label: "Factory", pages: [
@@ -103,6 +105,7 @@ export function SettingsPage() {
 		{settings === "agents" && <Agents />}
 		{settings === "project" && <ProjectSettingsPage />}
 		{settings === "mcp" && <McpConnections />}
+		{settings === "code-hosts" && <CodeHostSettings />}
 		{settings === "diagnostics" && <DiagnosticsSettings />}
 		{settings === "experimental" && <ExperimentalSettings />}
 		{settings?.startsWith("factory-") && <FactorySettingsPage key={settings} page={settings as Parameters<typeof FactorySettingsPage>[0]["page"]} />}

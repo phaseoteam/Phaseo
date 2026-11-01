@@ -8,7 +8,7 @@ const page = (nodes: unknown[], next?: string) => JSON.stringify({ data: { viewe
 const projectFor = (repository: string) => repository.toLowerCase() === "team/app" ? "project-1" : undefined;
 
 describe("pull request directory", () => {
-	beforeEach(() => { vi.clearAllMocks(); ports.git.mockImplementation(async (directory: string) => directory === "/app" || directory === "/app-copy" ? "git@github.com:team/app.git\n" : directory === "/lib" ? "https://github.com/team/lib\n" : "https://gitlab.com/team/other\n"); });
+	beforeEach(() => { vi.clearAllMocks(); ports.git.mockImplementation(async (directory: string) => directory === "/app" || directory === "/app-copy" ? "git@github.com:team/app.git\n" : directory === "/lib" ? "https://github.com/team/lib\n" : "https://git.example.com/team/other\n"); });
 
 	it("parses a search result into a row with a canonical link and the viewer's review request", () => {
 		expect(parseDirectoryEntry(node(), projectFor, "me")).toMatchObject({ projectId: "project-1", repository: "team/app", number: 7, url: "https://github.com/team/app/pull/7", state: "open", review: "approved", checks: "passing", mergeable: "MERGEABLE", viewerReviewRequested: true, labels: [{ name: "bug", color: "d73a4a" }, { name: "bad" }], author: { login: "octo" } });

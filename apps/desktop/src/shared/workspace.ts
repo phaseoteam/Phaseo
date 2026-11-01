@@ -1,4 +1,6 @@
 import type { Delegation, Launch } from "./orchestration";
+import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
+import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
@@ -341,6 +343,11 @@ export type WorkspaceApi = {
 	createPullRequest: (projectId: string, taskId?: string) => Promise<CreatedPullRequestResult & { workspace: WorkspaceOverview }>;
 	/** The project's GitHub repository (owner/repo) from its origin remote, or null when it has none. */
 	projectRepository: (projectId: string) => Promise<string | null>;
+	/** Settings ▸ Code hosts: saved self-hosted servers, which hosts have a token, and which host CLIs are installed. */
+	codeHosts: () => Promise<CodeHostSettings>;
+	saveCodeHostToken: (request: CodeHostTokenRequest) => Promise<CodeHostSettings>;
+	removeCodeHostToken: (kind: CodeHostKind, host: string) => Promise<CodeHostSettings>;
+	saveCodeHostServers: (servers: CustomCodeHost[]) => Promise<CodeHostSettings>;
 	/** The native GitHub stack a pull request is in, cached for a minute unless `fresh`; linked chats pick up its layers. */
 	pullRequestStack: (projectId: string, number: number, fresh?: boolean) => Promise<PullRequestStackRead>;
 	/** Merge stack (through this layer) or Rebase stack (from the top), refused if any expected head moved. */

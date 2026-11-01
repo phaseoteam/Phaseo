@@ -4,6 +4,7 @@ import { ghFailure, parseActor, runGh } from "./projectPullRequestView";
 import { pullRequestSearchQuery, validatePullRequestDirectoryQuery, type PullRequestDirectoryEntry, type PullRequestDirectoryQuery, type PullRequestDirectoryResult } from "../shared/pullRequestDirectory";
 import { validRepository } from "../shared/pullRequestView";
 import type { PullRequest } from "../shared/pullRequests";
+import { codeHostProvider, otherCodeHost } from "./codeHosts";
 
 const searchQuery = `query PhaseoPullRequestDirectory($q:String!,$first:Int!,$after:String){viewer{login}search(query:$q,type:ISSUE,first:$first,after:$after){issueCount pageInfo{hasNextPage endCursor}nodes{... on PullRequest{number title url state isDraft createdAt updatedAt author{login avatarUrl __typename} headRefName baseRefName headRefOid additions deletions reviewDecision mergeable repository{nameWithOwner} labels(first:10){nodes{name color}} reviewRequests(first:10){nodes{requestedReviewer{__typename ... on User{login}}}} commits(last:1){nodes{commit{statusCheckRollup{state}}}}}}}}`;
 /** Repositories per search: GitHub caps what one query may carry, and a smaller one fails alone. */
@@ -53,14 +54,19 @@ type DirectoryProject = { id: string; directory: string; worktree?: { removedAt?
 async function projectRepositories(candidates: readonly DirectoryProject[]) {
 	const errors: PullRequestDirectoryResult["errors"] = [];
 	const owners = new Map<string, { projectId: string; directory: string; repository: string }>();
+	const others: { projectId: string; directory: string; remote: string }[] = [];
 	await Promise.all(candidates.map(async project => {
-		try { const repository = githubRepository(await git(project.directory, ["remote", "get-url", "origin"])); if (!owners.has(repository.toLowerCase())) owners.set(repository.toLowerCase(), { projectId: project.id, directory: project.directory, repository }); }
+		try {
+			const remote = await git(project.directory, ["remote", "get-url", "origin"]);
+			if (otherCodeHost(remote)) { others.push({ projectId: project.id, directory: project.directory, remote }); return; }
+			const repository = githubRepository(remote); if (!owners.has(repository.toLowerCase())) owners.set(repository.toLowerCase(), { projectId: project.id, directory: project.directory, repository });
+		}
 		catch (reason) { errors.push({ projectId: project.id, message: reason instanceof Error && reason.message.startsWith("Choose") ? "This project has no github.com origin remote." : "This project's origin remote could not be read." }); }
 	}));
 	// Keep the order projects were added in, so the same repository is always filed under the same project.
 	const order = new Map(candidates.map((project, index) => [project.id, index]));
 	const repositories = [...owners.values()].sort((left, right) => (order.get(left.projectId) ?? 0) - (order.get(right.projectId) ?? 0));
-	return { owners, repositories, errors };
+	return { owners, repositories, errors, others };
 }
 
 const countQuery = `query PhaseoPullRequestCounts($opened:String!,$merged:String!){opened:search(query:$opened,type:ISSUE,first:0){issueCount}merged:search(query:$merged,type:ISSUE,first:0){issueCount}}`;
@@ -91,7 +97,7 @@ export async function listPullRequestDirectory(projects: readonly DirectoryProje
 	const readOnce = (root: string, args: string[]) => read(root, args).catch(reason => { if (/HTTP 50[234]/.test(String((reason as { stderr?: unknown }).stderr ?? ""))) return read(root, args); throw reason; });
 	const query: PullRequestDirectoryQuery = validatePullRequestDirectoryQuery(value);
 	const candidates = projects.filter(project => !project.worktree && (query.projectId === undefined || project.id === query.projectId));
-	const { owners, repositories, errors } = await projectRepositories(candidates);
+	const { owners, repositories, errors, others } = await projectRepositories(candidates);
 	const projectFor = (repository: string) => owners.get(repository.toLowerCase())?.projectId;
 	const chunks: (typeof repositories)[] = [];
 	for (let index = 0; index < repositories.length; index += repositoriesPerSearch) chunks.push(repositories.slice(index, index + repositoriesPerSearch));
@@ -116,7 +122,38 @@ export async function listPullRequestDirectory(projects: readonly DirectoryProje
 			for (const owner of chunk) errors.push({ projectId: owner.projectId, message });
 		}
 	}));
+	for (const other of await Promise.all(others.map(project => otherHostEntries(project, query)))) { entries.push(...other.entries); errors.push(...other.errors); truncated ||= other.truncated; }
 	const seen = new Set<string>();
 	const unique = entries.filter(entry => { const key = `${entry.repository.toLowerCase()}#${entry.number}`; if (seen.has(key)) return false; seen.add(key); return true; });
 	return { ...(viewer ? { viewer } : {}), entries: unique.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)), errors, truncated, fetchedAt: new Date().toISOString() };
+}
+
+/**
+ * A project on GitLab, Forgejo, Bitbucket or Azure DevOps: its open requests from the host's own list, narrowed here by
+ * the filters a row can answer. Those hosts are only asked for open ones, so other states show none from them; "me" and label
+ * filters need what the list does not say, so they show none either.
+ */
+async function otherHostEntries(project: { projectId: string; directory: string; remote: string }, query: PullRequestDirectoryQuery) {
+	const entries: PullRequestDirectoryEntry[] = [], errors: PullRequestDirectoryResult["errors"] = [];
+	if (query.state !== "open" && query.state !== "all") return { entries, errors, truncated: false };
+	let truncated = false;
+	try {
+		const host = await codeHostProvider(project.directory, project.remote);
+		if (!host) return { entries, errors, truncated };
+		const page = await host.list();
+		truncated = page.limitReached;
+		const words = query.text.toLowerCase().split(/\s+/).filter(Boolean), { filters } = query;
+		for (const row of page.requests) {
+			if (words.some(word => !`${row.title} #${row.number} ${row.author} ${row.head}`.toLowerCase().includes(word))) continue;
+			if ((filters.draft === "only" && !row.draft) || (filters.draft === "hide" && row.draft) || (filters.author && filters.author.toLowerCase() !== row.author.toLowerCase()) || filters.labels?.length) continue;
+			entries.push({
+				projectId: project.projectId, repository: page.repository, number: row.number, title: row.title, url: row.url, state: "open", draft: row.draft,
+				author: { login: row.author, ...(row.authorAvatarUrl ? { avatarUrl: row.authorAvatarUrl } : {}) }, head: row.head, base: row.base,
+				// A row without its full head commit still lists; writes that act on the code read the request again first.
+				headOid: row.headOid ?? "0".repeat(40), createdAt: row.createdAt ?? row.updatedAt, updatedAt: row.updatedAt, additions: 0, deletions: 0, labels: [],
+				review: row.review, checks: row.checks, mergeable: "UNKNOWN", viewerReviewRequested: false,
+			});
+		}
+	} catch (reason) { errors.push({ projectId: project.projectId, message: reason instanceof Error ? reason.message : "This project's pull requests could not be read." }); }
+	return { entries, errors, truncated };
 }

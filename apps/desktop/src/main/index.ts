@@ -98,6 +98,9 @@ import { readPullRequestStack, runPullRequestStackAction } from "./pullRequestSt
 import { git } from "./gitProcess";
 import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest";
 import { createPullRequest } from "./createPullRequest";
+import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHostToken, saveCustomCodeHosts } from "./codeHosts";
+import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
+import { validateCodeHostTokenRequest } from "../shared/codeHostSettings";
 import { githubRepository } from "./projectPullRequests";
 import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
@@ -629,6 +632,19 @@ ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskI
 	if (task) await workspaceRuntime.command({ type: "link-pull-request", id: task.id, reference: result.url, source: "created" }).catch(() => undefined);
 	return { ...result, workspace: workspaceRuntime.store.getOverview() };
 });
+ipcMain.handle("workspace:code-hosts", event => { if (!senderWindow(event)) throw new Error("Invalid request."); return codeHostSettings(); });
+ipcMain.handle("workspace:code-host-token", async (event, value: unknown) => {
+	if (!senderWindow(event)) throw new Error("Invalid request.");
+	const request = validateCodeHostTokenRequest(value);
+	await saveCodeHostToken(request.kind, request.host, request.kind === "bitbucket" ? JSON.stringify({ token: request.token, ...(request.email ? { email: request.email } : {}) }) : request.token);
+	return codeHostSettings();
+});
+ipcMain.handle("workspace:code-host-token-remove", (event, kind: unknown, host: unknown) => {
+	if (!senderWindow(event) || typeof kind !== "string" || !codeHostKinds.includes(kind as CodeHostKind) || !validHostName(host)) throw new Error("Invalid request.");
+	removeCodeHostToken(kind as CodeHostKind, host);
+	return codeHostSettings();
+});
+ipcMain.handle("workspace:code-host-servers", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid request."); saveCustomCodeHosts(value); return codeHostSettings(); });
 ipcMain.handle("workspace:project-repository", async (event, id: unknown) => {
 	const root = projectRoot(event, id);
 	try { return githubRepository(await git(root, ["remote", "get-url", "origin"])); } catch { return null; }
@@ -1148,6 +1164,7 @@ app.whenReady().then(() => {
 	}));
 	credentialVault = vault;
 	usageHubs = new UsageHubs(usageHubFile(workspaceDirectory), { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
+	configureCodeHosts(workspaceDirectory, { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	harnessModelCache = new HarnessModelCache(path.join(app.getPath("userData"), "cache", "harness-models.json"), (harness, accountId) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness, accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
