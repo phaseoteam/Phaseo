@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CornerDownRight, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
@@ -27,10 +27,14 @@ import { attachmentsOnlyText, MessageAttachments } from "./MessageAttachments";
 import { ConversationAnnouncer } from "./ConversationAnnouncer";
 import { ChatFindBar, clearPendingFind, FindTargetContext, useFindTarget, usePendingFind } from "./ChatFind";
 import { useCommand } from "../lib/keybindings";
+import { useOptionalWorkspace } from "../app/workspace";
+import { DiffView } from "../components/DiffView";
+import { openTurnDiff } from "../panels/events";
+import { toolCallEdits } from "./toolCallDiff";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
-const toolLabels: Record<string, string> = { run_command: "Ran", start_background_command: "Started", read_background_output: "Read output", stop_background_command: "Stopped", list_background_commands: "Listed commands", read_file: "Read", view_image: "Viewed", edit_file: "Edited", write_file: "Wrote", delete_file: "Deleted", list_files: "Listed", search_files: "Searched", find_files: "Found files", propose_plan: "Proposed plan", load_tools: "Loaded tools", load_skill: "Loaded skill", ask_user: "Asked" };
+const toolLabels: Record<string, string> = { run_command: "Ran", start_background_command: "Started", read_background_output: "Read output", stop_background_command: "Stopped", list_background_commands: "Listed commands", read_file: "Read", view_image: "Viewed", edit_file: "Edited", fileChange: "Edited", write_file: "Wrote", delete_file: "Deleted", list_files: "Listed", search_files: "Searched", find_files: "Found files", propose_plan: "Proposed plan", load_tools: "Loaded tools", load_skill: "Loaded skill", ask_user: "Asked" };
 function toolIcon(title: string) {
 	if (/command|terminal|bash|shell|run/i.test(title)) return SquareTerminal;
 	if (/write|edit|patch|apply/i.test(title)) return FilePen;
@@ -106,8 +110,14 @@ function Elapsed({ since, className }: { since?: string; className?: string }) {
 	return <span className={cn("shrink-0 text-muted-foreground tabular-nums", className)}>{elapsedLabel(now - start)}</span>;
 }
 
-function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolean }) {
+/** The chat's project folder, so a tool call's absolute paths can be matched to the project's files. */
+const ProjectDirectoryContext = createContext<string | undefined>(undefined);
+
+/** `openDiff` opens the turn's diff at a file, once the turn has finished in a project that keeps snapshots. */
+function ActivityRow({ activity, live, openDiff }: { activity: AgentActivity; live: boolean; openDiff?: (path: string) => void }) {
 	const [open, setOpen] = useState(false);
+	const directory = useContext(ProjectDirectoryContext);
+	const edits = useMemo(() => toolCallEdits(activity, directory), [activity, directory]);
 	if (activity.type === "usage") return null;
 	if (activity.type === "plan" && activity.steps?.length) return <PlanSteps activity={activity} />;
 	const reasoning = activity.type === "reasoning";
@@ -116,21 +126,29 @@ function ActivityRow({ activity, live }: { activity: AgentActivity; live: boolea
 	const label = reasoning ? (running ? "Thinking" : "Thought") : activity.type === "compaction" ? (running ? "Compacting context" : "Compacted context") : toolLabels[activity.title] ?? activity.title.replaceAll("_", " ");
 	const summary = reasoning ? "" : activity.text.split("\n")[0];
 	const expandable = !!activity.text && (reasoning || activity.text.length > summary.length || activity.text.length > 80);
-	return <div className="text-[12.5px]">
-		<button type="button" disabled={!expandable} onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/activity flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground">
-			{running ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <Icon className={cn("size-3.5 shrink-0 text-muted-foreground", activity.status === "failed" && "text-destructive")} />}
-			<span className={cn("shrink-0 font-medium text-foreground/85", running && "animate-pulse")}>{label}</span>
-			{summary && <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{summary}</span>}
-			{running && !reasoning && <Elapsed since={activity.startedAt} className="text-[11.5px]" />}
-			{activity.status === "failed" && <X className="size-3.5 shrink-0 text-destructive" />}
-			{expandable && <ChevronRight className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
-		</button>
-		{open && <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-72 border-l border-border" viewportClassName="max-h-72"><div data-selectable className={cn("py-0.5 pl-4", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{reasoning ? <MessageContent text={activity.text} /> : activity.text}</div></ScrollArea>}
+	// An edit shows the file it changed and opens the turn's diff there; a recorded patch (Codex) shows as a diff, not JSON.
+	const files = edits?.files ?? [], file = files[0];
+	return <div className="group/edit text-[12.5px]">
+		<div className="flex min-w-0 items-center">
+			<button type="button" disabled={!expandable} onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/activity flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-left text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground">
+				{running ? <LoaderCircle className="size-3.5 shrink-0 animate-spin text-primary" /> : <Icon className={cn("size-3.5 shrink-0 text-muted-foreground", activity.status === "failed" && "text-destructive")} />}
+				<span className={cn("shrink-0 font-medium text-foreground/85", running && "animate-pulse")}>{label}</span>
+				{file && !summary.includes(file) ? <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{files.length > 1 ? `${file} and ${files.length - 1} more` : file}</span>
+					: summary && <span className="min-w-0 truncate font-mono text-[11.5px] text-muted-foreground">{summary}</span>}
+				{running && !reasoning && <Elapsed since={activity.startedAt} className="text-[11.5px]" />}
+				{activity.status === "failed" && <X className="size-3.5 shrink-0 text-destructive" />}
+				{expandable && <ChevronRight className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/activity:opacity-100", open && "rotate-90 opacity-100")} />}
+			</button>
+			{file && openDiff && <button type="button" onClick={() => openDiff(file)} title={`Open ${file} in the turn's diff`} className="shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground opacity-0 group-hover/edit:opacity-100 focus-visible:opacity-100 hover:bg-muted hover:text-foreground">Open diff</button>}
+		</div>
+		{open && edits?.patch ? <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-96 border-l border-border pl-2" viewportClassName="max-h-96"><DiffView patch={edits.patch} layout="unified" hideActions /></ScrollArea>
+			: open && <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-72 border-l border-border" viewportClassName="max-h-72"><div data-selectable className={cn("py-0.5 pl-4", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{reasoning ? <MessageContent text={activity.text} /> : activity.text}</div></ScrollArea>}
 	</div>;
 }
 
 function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]; user?: Message; live: boolean; complete: boolean; task: Task }) {
 	const [opened, setOpen] = useState(live);
+	const openDiff = user?.checkpoint?.after && !live && task.mode !== "chat" && task.projectId ? (path: string) => openTurnDiff({ taskId: task.id, messageId: user.id, path }) : undefined;
 	useEffect(() => { setOpen(live); }, [live]);
 	const steps = entries.filter(entry => entry.kind === "activity" ? entry.value.type !== "usage" : true);
 	// Find in chat opens the log around its match.
@@ -149,7 +167,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 				{tools > 0 && <span>· {tools} {tools === 1 ? "step" : "steps"}</span>}
 			</button>
 			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
-				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} />
+				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} openDiff={openDiff} />
 				: <div key={entry.value.id} data-conversation-id={`message:${entry.value.id}`} data-selectable data-quote className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
 		</div>
 		{!open && plan?.kind === "activity" && <PlanSteps activity={plan.value} />}
@@ -242,6 +260,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	const activityEntries = useMemo(() => messages.page.activities ?? [], [messages.page.activities]);
 	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activityEntries), [messages.page.entries, activityEntries]);
 	const bursts = useMemo(() => userBursts(turns), [turns]);
+	const directory = useOptionalWorkspace()?.overview.projects.find(project => project.id === task.projectId)?.directory;
 	const unread = useMemo(() => firstUnread(turns, unreadSince), [turns, unreadSince]);
 	const earlierRow = useRef<HTMLButtonElement>(null), newerRow = useRef<HTMLButtonElement>(null), lastScroll = useRef(0);
 	// Turns are memoised, so they get stable callbacks that always call the latest ones.
@@ -337,7 +356,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	}, []);
 
 	return <div className={cn("relative min-h-0 flex-1", className)}>
-		<FindTargetContext value={findTarget}><ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, ...{ "data-conversation-viewport": "" }, ...compact ? {} : { "data-focus-region": "", tabIndex: -1 } }}>
+		<ProjectDirectoryContext value={directory}><FindTargetContext value={findTarget}><ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, ...{ "data-conversation-viewport": "" }, ...compact ? {} : { "data-focus-region": "", tabIndex: -1 } }}>
 			<div ref={content} className={cn("mx-auto flex w-full flex-col gap-7 py-6", compact ? "px-4" : "max-w-[760px] px-6")}>
 				{messages.page.earlier > 0 && <button ref={earlierRow} type="button" disabled={messages.loading} onClick={messages.older} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading earlier messages…</> : `Load ${messages.page.earlier} earlier messages`}</button>}
 				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
@@ -349,7 +368,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 				{messages.page.later > 0 && <button ref={newerRow} type="button" disabled={messages.loading} onClick={messages.newer} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading newer messages…</> : "Load newer messages"}</button>}
 				{children}
 			</div>
-		</ScrollArea></FindTargetContext>
+		</ScrollArea></FindTargetContext></ProjectDirectoryContext>
 		{find && <ChatFindBar key={find.key} taskId={task.id} revision={task.revision ?? 0} host={host} page={messages.page} target={findTarget} onTarget={setFindTarget} initial={find.initial} focusSignal={find.focus} onClose={() => setFind(undefined)}
 			loaded={id => messages.page.entries.some(entry => entry.id === id)} jump={(id, turnId) => messages.jumpTo(turnId ?? id)}
 			onScrolled={() => { following.current = false; if (host.current) lastScroll.current = host.current.scrollTop; }} />}
