@@ -7,7 +7,7 @@ import { IssueDraftPanel } from "./IssueDraftPanel";
 import { useQuestionAnswerer } from "./questionComposer";
 import { shortcut, useCommand } from "../lib/keybindings";
 import { CustomSnoozeDialog, SnoozeItems, useThreadActions } from "../shell/threadActions";
-import { hasWoken, isSettled, isSnoozed, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
+import { hasWoken, isSettled, isSnoozed, isUnread, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { TagEditor } from "../components/Tags";
 import type { AccountStatus, Attachment, Message, Task } from "../../shared/workspace";
@@ -333,6 +333,9 @@ export function ChatView({ id }: { id: string }) {
 	useEffect(() => {
 		if (api && snapshot && (!snapshot.lastVisitedAt || (snapshot.lastCompletedAt && Date.parse(snapshot.lastCompletedAt) > Date.parse(snapshot.lastVisitedAt)))) void api.command({ type: "visit", id, at: new Date().toISOString() }).then(setOverview, () => undefined);
 	}, [id, snapshot?.lastCompletedAt, snapshot?.lastVisitedAt]);
+	// When you last looked, read as the chat opens (before the visit above moves it on), for "New since your last visit".
+	const [arrival, setArrival] = useState<{ id: string; since?: string }>();
+	if (snapshot && arrival?.id !== id) setArrival({ id, since: isUnread(snapshot) ? snapshot.lastVisitedAt : undefined });
 	const detail = useSelectedTask(api?.task, id, snapshot ? JSON.stringify([snapshot.revision, snapshot.updatedAt]) : undefined);
 	const loaded = detail.task?.id === id ? detail.task : undefined;
 	useEffect(() => { if (loaded) dropDeliveredSends(loaded.id); }, [loaded]);
@@ -355,7 +358,7 @@ export function ChatView({ id }: { id: string }) {
 	};
 	return <div className="flex h-full min-w-0 flex-col">
 		<ChatHeader task={task} onOpenTerminal={() => setDrawers(current => ({ ...current, [task.id]: true }))} />
-		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={`${task.id}:${epoch}`} task={task} onAttachment={setPreview} onBranch={messageId => void branch(messageId)} onRewind={setRewinding}
+		{!loaded ? <DelayedStatus>Loading chat…</DelayedStatus> : <Conversation key={`${task.id}:${epoch}`} task={task} unreadSince={arrival?.id === task.id ? arrival.since : undefined} onAttachment={setPreview} onBranch={messageId => void branch(messageId)} onRewind={setRewinding}
 				onRegenerate={task.mode === "chat" ? message => void command({ type: "rewind", id: task.id, messageId: message.id, resend: true }).then(state => { if (state) setEpoch(value => value + 1); }) : undefined}>
 			<PendingSends taskId={task.id} projectId={task.projectId} />
 			{snapshot && <ThreadStatusLine task={snapshot} />}

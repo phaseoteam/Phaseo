@@ -310,7 +310,7 @@ With a chat open, the palette's **This chat** group starts a new chat in its pro
 
 ## Chat sidebar
 
-Chat mode's rows mark a reply you have not read with a bold title and a dot. Each row's menu has rename, regenerate title, pin, tags, **Mark unread**, **Copy chat ID**, archive and **Delete**. Archive, unpin and delete can be undone for five seconds from the notice above the account bar or with `Ctrl+Z`; a deleted chat disappears at once but is deleted only when that notice goes, so quitting before then keeps it. **Archived chats**, at the bottom of the list (and in the command palette), searches every archived chat and restores or deletes it.
+Chat mode's rows mark a reply you have not read with a bold title and a dot. Opening such a chat, in either mode, draws a **New since your last visit** line above what arrived since you last looked; it stays until you open another chat. Each row's menu has rename, regenerate title, pin, tags, **Mark unread**, **Copy chat ID**, archive and **Delete**. Archive, unpin and delete can be undone for five seconds from the notice above the account bar or with `Ctrl+Z`; a deleted chat disappears at once but is deleted only when that notice goes, so quitting before then keeps it. **Archived chats**, at the bottom of the list (and in the command palette), searches every archived chat and restores or deletes it.
 
 ## Tags and navigation
 

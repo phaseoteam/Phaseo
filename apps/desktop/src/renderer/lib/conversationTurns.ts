@@ -31,3 +31,17 @@ export function turnDuration(user?: Message) {
 	if (!Number.isFinite(milliseconds) || milliseconds < 0) return "Worked";
 	return `Worked for ${formatDuration(milliseconds)}`;
 }
+/**
+ * Where "New since your last visit" goes: above the first turn you sent after `since`, or above the answer of the
+ * first turn that was answered or finished after it. Activities carry no time of their own, so the answer marks the turn.
+ */
+export function firstUnread(turns: ReturnType<typeof conversationTurns>, since?: string): { turnId: string; at: "start" | "answer" } | undefined {
+	const mark = since ? Date.parse(since) : NaN;
+	if (!Number.isFinite(mark)) return;
+	const after = (iso?: string) => iso !== undefined && Date.parse(iso) > mark;
+	for (const turn of turns) {
+		if (turn.user && after(turn.user.createdAt)) return { turnId: turn.id, at: "start" };
+		// A streamed answer is stamped when it starts, so a turn finished after the visit counts too (Mark unread).
+		if (after(turn.user?.completedAt) || turn.entries.some(entry => entry.kind === "message" && after(entry.value.createdAt))) return { turnId: turn.id, at: turn.user ? "answer" : "start" };
+	}
+}

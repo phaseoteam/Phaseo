@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import type { Message, AgentActivity } from "../../shared/workspace";
-import { conversationTurns, turnDuration, userBursts } from "./conversationTurns";
+import { conversationTurns, firstUnread, turnDuration, userBursts } from "./conversationTurns";
 it("groups complete turns while preserving commentary and tool order", () => {
 	const messages = [{id:"u",role:"user",text:"Inspect",timelineOrder:1},{id:"comment",role:"assistant",text:"Checking",timelineOrder:2},{id:"final",role:"assistant",text:"Done",timelineOrder:4},{id:"next",role:"user",text:"Again",timelineOrder:5}] as Message[];
 	const activities = [{id:"u:tool",type:"tool",timelineOrder:3}] as AgentActivity[];
@@ -26,4 +26,17 @@ it("stacks your back-to-back messages as one burst with one steer label", () => 
 		{ previous: true, next: false, continuesSteer: false },
 		undefined,
 	]);
+});
+it("puts the new-since-your-visit line above what arrived after the visit", () => {
+	const at = (minute: number) => `2026-10-31T10:${String(minute).padStart(2, "0")}:00.000Z`;
+	const messages = [
+		{ id: "a", role: "user", text: "Fix it", createdAt: at(0), timelineOrder: 1 }, { id: "a1", role: "assistant", text: "Done", createdAt: at(1), timelineOrder: 2 },
+		{ id: "b", role: "user", text: "And this", createdAt: at(2), timelineOrder: 3 }, { id: "b1", role: "assistant", text: "Done too", createdAt: at(9), timelineOrder: 4 },
+		{ id: "c", role: "user", text: "Next", createdAt: at(10), timelineOrder: 5 },
+	] as Message[];
+	const turns = conversationTurns(messages, []);
+	expect(firstUnread(turns, at(5))).toEqual({ turnId: "b", at: "answer" });
+	expect(firstUnread(turns, at(9))).toEqual({ turnId: "c", at: "start" });
+	expect(firstUnread(turns, at(30))).toBeUndefined();
+	expect(firstUnread(turns, undefined)).toBeUndefined();
 });
