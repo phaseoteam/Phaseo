@@ -240,6 +240,25 @@ describe("attachments on delegate_task, launch_thread and send_thread", () => {
 	}));
 });
 
+describe("configure_thread", () => {
+	it("reads a child's settings and changes its model and mode only while stopped and never beyond this chat", async () => withRuntime(async (runtime, _directory, run) => {
+		runtime.discoverThreadModels = async () => [{ id: "owned", name: "Owned" }, { id: "stronger", name: "Stronger", options: [{ id: "effort", label: "Effort", type: "select", options: [{ id: "high", label: "High" }] }] }];
+		const parentId = await caller(runtime, "code", "supervised"), tools = runtime.threadTools(parentId);
+		const child = await tools.delegate({ requestId: "c", title: "Child", prompt: "Work", mode: "plan" });
+		expect(await tools.configure!(child.id)).toMatchObject({ harness: "codex", model: "owned", mode: "plan", permissionMode: "supervised", modelOptions: {} });
+		await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+		await expect(tools.configure!(child.id, { model: "stronger" })).rejects.toThrow("is working");
+		await tools.interrupt(child.id);
+		await expect(tools.configure!(child.id, { permissionMode: "full-access" })).rejects.toThrow("broader permissions");
+		await expect(tools.configure!(child.id, { model: "invented" })).rejects.toThrow("not available");
+		await expect(tools.configure!(child.id, { model: "stronger", modelOptions: { effort: "max" } })).rejects.toThrow("does not offer effort=max");
+		expect(await tools.configure!(child.id, { model: "stronger", modelOptions: { effort: "high" }, mode: "code" })).toMatchObject({ model: "stronger", modelOptions: { effort: "high" }, mode: "code" });
+		const approval = (threadTools(tools).find(value => value.id === "configure_thread") as unknown as { requireApproval: (raw: unknown) => boolean }).requireApproval;
+		expect([approval({ id: child.id }), approval({ id: child.id, model: "owned" })]).toEqual([false, true]);
+		await expect(runtime.threadTools(await caller(runtime)).configure!(child.id)).rejects.toThrow("outside");
+	}));
+});
+
 describe("queue controls", () => {
 	it("reorders a launched chat's queue, refuses steering an idle chat, and restarts a running one with a new prompt", async () => withRuntime(async (runtime, _directory, run) => {
 		const parentId = await caller(runtime), tools = runtime.threadTools(parentId);

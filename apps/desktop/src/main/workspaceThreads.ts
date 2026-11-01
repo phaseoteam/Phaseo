@@ -365,6 +365,26 @@ export class WorkspaceThreads {
 			},
 			rename: async (id, title) => { scoped(id, true); if (!title.trim() || title.length > 100) throw new Error("Invalid chat title."); await this.host.command({ type: "update-task", id, title }); return summary(scoped(id, true)); },
 			steer: async (id, text) => { scoped(id, true, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt."); await this.host.command({ type: "steer", id, text }); return summary(scoped(id, true, true)); },
+			configure: async (id, change) => {
+				const target = scoped(id, true, true);
+				const settings = () => { const task = this.host.store.getTask(id); return { ...summary(task), harness: task.harness, model: task.model, ...(task.accountId ? { accountId: task.accountId } : {}), modelOptions: task.modelOptions ?? {}, mode: task.mode, permissionMode: task.permissionMode ?? "supervised" as const }; };
+				if (!change || !Object.values(change).some(value => value !== undefined)) return settings();
+				if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work.");
+				if (["running", "waiting"].includes(target.status)) throw new Error("That chat is working. Wait for it or interrupt it, then change its settings.");
+				childPrivileges(this.host.store.getTask(parentId), change);
+				const model = change.model ?? target.model;
+				if (change.model !== undefined || change.modelOptions !== undefined) {
+					if (model === "default") throw new Error("Choose an explicit model (see list_agents).");
+					const selected = (await this.discover(target, target.harness, target.accountId, model)).models.find(value => value.id === model);
+					if (!selected) throw new Error("This model is not available for that chat's account; see list_agents.");
+					for (const [option, value] of Object.entries(change.modelOptions ?? {})) {
+						const offered = selected.options?.find(item => item.id === option);
+						if (!offered || (offered.type === "boolean" ? typeof value !== "boolean" : typeof value !== "string" || !offered.options.some(choice => choice.id === value))) throw new Error(`This model does not offer ${option}=${String(value)}. Use the settings list_agents returns.`);
+					}
+				}
+				await this.host.command({ type: "update-task", id, ...(change.model !== undefined ? { model: change.model } : {}), ...(change.modelOptions !== undefined ? { modelOptions: change.modelOptions } : {}), ...(change.mode !== undefined ? { mode: change.mode } : {}), ...(change.permissionMode !== undefined ? { permissionMode: change.permissionMode } : {}) });
+				return settings();
+			},
 			// This chat's own queue is readable (what the person queued next); only chats it started can be changed.
 			queue: id => (id === parentId ? this.host.store.getTask(id) : scoped(id, true, true)).queue.map(({ id, text, createdAt }) => ({ id, text: text.slice(0, 8000), createdAt })),
 			editQueue: async (id, messageId, text, action) => {

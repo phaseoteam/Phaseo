@@ -23,6 +23,8 @@ export type LaunchWorkspace = { strategy: "same" | "none" } | { strategy: "proje
 export type LaunchRequest = Omit<DelegateRequest, "background" | "role" | "isolation" | "branch"> & { workspace?: LaunchWorkspace };
 export type LaunchResult = { id: string; title: string; projectId?: string; worktree?: { branch: string; directory: string } };
 export type ProjectSummary = { id: string; name: string; directory: string; current?: boolean; worktree?: { branch: string; baseCommit: string; sourceProjectId: string }; removed?: boolean };
+export type ThreadSettingsChange = { model?: string; modelOptions?: ModelOptionValues; mode?: Task["mode"]; permissionMode?: Task["permissionMode"] };
+export type ThreadSettings = ThreadSummary & { harness: Harness; model: string; accountId?: string; modelOptions: ModelOptionValues; mode: Task["mode"]; permissionMode: NonNullable<Task["permissionMode"]> };
 export type AddedProject = { id: string; name: string; path: string; alreadyAdded?: boolean };
 export const organizeActions = ["pin", "unpin", "archive", "unarchive", "rename", "tag", "settle", "unsettle", "snooze", "wake"] as const;
 export type OrganizeAction = typeof organizeActions[number];
@@ -73,6 +75,8 @@ export type ThreadTools = {
 	rename?: (id: string, title: string) => Promise<ThreadSummary>;
 	steer?: (id: string, text: string) => Promise<ThreadSummary>;
 	queue?: (id: string) => { id: string; text: string; createdAt: string }[];
+	/** Reads a child's or launched chat's model and settings, or changes them while it is stopped (never broader than this chat). */
+	configure?: (id: string, change?: ThreadSettingsChange) => Promise<ThreadSettings>;
 	/** Edits (text), removes (neither), moves (up or down) or steers a queued prompt into the running turn. */
 	editQueue?: (id: string, messageId: string, text?: string, action?: "up" | "down" | "steer") => Promise<ThreadSummary & { queue: string[] }>;
 	fork?: (id: string, requestId: string, messageId?: string) => Promise<ThreadSummary>;
@@ -134,7 +138,7 @@ export const waitDefaultMs = 10 * 60 * 1000, waitMaximumMs = 60 * 60 * 1000;
 export const activeAgentsLimit = { default: 32, minimum: 1, maximum: 256 } as const;
 export const agentLimitMessage = (active: number, maximum: number) => `${active} of ${maximum} delegated agents are already active in this workspace. Wait for some to finish (wait_thread or a delivered result), or ask the user to raise "Agents running at once" in Settings → General.`;
 /** Approval card titles for orchestration tools that need approval. */
-export const threadToolLabels: Record<string, string> = { delegate_task: "Delegate task", handoff_thread: "Hand off chat", fork_thread: "Fork chat", send_thread: "Send agent prompt", steer_thread: "Steer agent", rename_thread: "Rename agent chat", edit_thread_queue: "Edit agent queue", merge_thread_context: "Merge agent result", launch_thread: "Launch chat", launch_threads: "Launch chats", organize_thread: "Organise chat", schedule_task: "Schedule task", update_scheduled_task: "Update schedule", delete_scheduled_task: "Delete schedule", run_scheduled_task_now: "Run schedule now", run_stage: "Run Factory stage", add_project: "Add project", clone_project: "Clone project", answer_question: "Answer agent question", move_to_worktree: "Move chat to a worktree", browser_open: "Open page in browser", browser_click: "Click in browser", browser_type: "Type in browser", browser_act: "Act in browser", browser_evaluate: "Run JavaScript in browser", browser_dialog: "Answer browser dialog" };
+export const threadToolLabels: Record<string, string> = { delegate_task: "Delegate task", handoff_thread: "Hand off chat", fork_thread: "Fork chat", send_thread: "Send agent prompt", steer_thread: "Steer agent", rename_thread: "Rename agent chat", edit_thread_queue: "Edit agent queue", merge_thread_context: "Merge agent result", launch_thread: "Launch chat", launch_threads: "Launch chats", organize_thread: "Organise chat", schedule_task: "Schedule task", update_scheduled_task: "Update schedule", delete_scheduled_task: "Delete schedule", run_scheduled_task_now: "Run schedule now", run_stage: "Run Factory stage", configure_thread: "Change agent model or settings", add_project: "Add project", clone_project: "Clone project", answer_question: "Answer agent question", move_to_worktree: "Move chat to a worktree", browser_open: "Open page in browser", browser_click: "Click in browser", browser_type: "Type in browser", browser_act: "Act in browser", browser_evaluate: "Run JavaScript in browser", browser_dialog: "Answer browser dialog" };
 /** organize_thread only asks before archiving, so its approval card names that action. */
 export const threadToolLabel = (name: string, args?: unknown) => name === "organize_thread" && (args as { action?: unknown } | undefined)?.action === "archive" ? "Archive chat" : threadToolLabels[name] ?? "Orchestration action";
 
