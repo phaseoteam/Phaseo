@@ -41,7 +41,7 @@ export function PageSection({ id, title, description, action, first, onLayoutSec
 
 /** A sub-heading inside a section ("Effective pricing", "Related models"). */
 export function SubHeading({ children, className }: { children: ReactNode; className?: string }) {
-  return <Text className={cn("text-[15px] font-semibold leading-[22px] text-foreground", className)}>{children}</Text>;
+  return <Text variant="body" className={cn("font-semibold", className)}>{children}</Text>;
 }
 
 /** The website's dashed empty state: an icon tile, a title and a hint. */

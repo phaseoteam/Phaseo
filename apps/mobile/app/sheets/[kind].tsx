@@ -13,6 +13,7 @@ import { getChat, getMessage, updateChat } from "@/features/chat/db";
 import { ModelSettingsSheet } from "@/features/chat/ModelSettingsSheet";
 import { editAndResend } from "@/features/chat/runner";
 import { notifyChat, useChats } from "@/features/chat/state";
+import { desktopsStore, renameDesktop } from "@/features/desktops/store";
 import { ModelPicker } from "@/features/models/ModelPicker";
 import { draftRuleStore, useRuleNames } from "@/features/notifications/state";
 import { useProviders } from "@/features/providers/ProviderBrowser";
@@ -35,6 +36,7 @@ export default function SheetRoute() {
         : kind === "model-settings" ? <ModelSettingsRoute />
         : kind === "workspace" ? <WorkspaceSheet />
         : kind === "rename-chat" ? <RenameChatSheet />
+        : kind === "rename-desktop" ? <RenameDesktopSheet />
         : kind === "edit-message" ? <EditMessageSheet />
         : kind === "privacy" ? <PrivacySheet />
         : kind === "pick" ? <PickSheet />
@@ -105,6 +107,27 @@ function RenameChatSheet() {
       <View className="flex-row justify-end gap-2 pt-1">
         <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
         <Button label="Save" size="sm" disabled={!title.trim()} onPress={save} />
+      </View>
+    </View>
+  );
+}
+
+function RenameDesktopSheet() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [name, setName] = useState(() => desktopsStore.get()?.find((desktop) => desktop.desktopId === id)?.desktopName ?? "");
+  const save = () => {
+    if (!name.trim()) return;
+    void renameDesktop(id, name.trim().slice(0, 80)).then(() => router.back());
+  };
+  return (
+    <View className="gap-3 px-4 pb-4 pt-5">
+      <Text variant="heading">Rename computer</Text>
+      <TextField value={name} onChangeText={setName} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={save} accessibilityLabel="Computer name" />
+      <Text variant="caption">Only on this phone. Pairing the computer again brings back its own name.</Text>
+      <View className="flex-row justify-end gap-2 pt-1">
+        <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
+        <Button label="Save" size="sm" disabled={!name.trim()} onPress={save} />
       </View>
     </View>
   );

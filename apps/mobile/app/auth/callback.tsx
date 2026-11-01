@@ -16,7 +16,8 @@ export default function AuthCallback() {
     if (!url) return;
     let cancelled = false;
     void completeSignIn(url)
-      .then(() => { if (!cancelled) router.replace("/account"); })
+      // Signing in opens a new chat (the app layout does that), so this only steps out of the way.
+      .then(() => { if (!cancelled) { if (router.canGoBack()) router.back(); else router.replace("/"); } })
       .catch((cause) => { if (!cancelled) setError(authErrorMessage(cause)); });
     return () => { cancelled = true; };
   }, [url, completeSignIn, router]);

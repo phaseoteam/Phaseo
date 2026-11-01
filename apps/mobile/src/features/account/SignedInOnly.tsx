@@ -17,7 +17,7 @@ export function SignedInOnly({ title, children }: { title: string; children: (wo
   if (!session) {
     return (
       <Screen>
-        <Header back={!split} title={title} />
+        <Header sidebar back={!split} title={title} />
         <EmptyState className="flex-1" icon={LogIn} title="Sign in to see this" body="Your usage, keys and workspace live in your Phaseo account." action="Sign in" onAction={() => router.push("/sign-in")} />
       </Screen>
     );
@@ -25,7 +25,7 @@ export function SignedInOnly({ title, children }: { title: string; children: (wo
   if (!workspaceId) {
     return (
       <Screen>
-        <Header back={!split} title={title} />
+        <Header sidebar back={!split} title={title} />
         {loading ? <LoadingState /> : (
           // New accounts get their workspace when they first sign in on phaseo.app.
           <EmptyState className="flex-1" title="Finish setting up" body="Sign in once on phaseo.app to create your workspace, then come back." action="Open phaseo.app" onAction={() => void WebBrowser.openBrowserAsync(`${WEB_ORIGIN}/sign-in`)} />

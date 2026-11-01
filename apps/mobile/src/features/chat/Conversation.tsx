@@ -4,6 +4,7 @@ import { ArrowDown, BookOpenText, Code2, Lightbulb, MessageSquareOff, MoreHorizo
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useSidebarButton } from "@/components/shell/sidebarDrawer";
 import { Button, EmptyState, Header, Icon, IconButton, measureAnchor, Screen, showActions, Text, useToneColor, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { haptic, streamTick } from "@/lib/haptics";
@@ -11,12 +12,13 @@ import { useAuth } from "@/providers/AuthProvider";
 import { perf } from "@/perf";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { chatActions } from "./chatActions";
-import { Composer } from "./Composer";
+import { ChatComposer } from "./ChatComposer";
 import { buildItems, focusedAnswerPick, focusIndex, reconcileItems, type ConversationItem } from "./conversationItems";
 import { newestMatch } from "./db";
 import { getLive, liveShapes } from "./live";
 import { ConversationContext, ConversationRow, selectedAnswers } from "./Messages";
-import { ModelChipRow, useOpenModelPicker } from "./ModelChips";
+import { ChatModelSheet } from "./ChatModelSheet";
+import { ModelChipRow } from "./ModelChips";
 import { useChatModelOptions, useModelLabels } from "./models";
 import { onAnswerText, onChatError, onChatSettled, sendMessage, startChat, stopChat } from "./runner";
 import { chatModelStore, draftSettingsStore, useChat, useChatRunning } from "./state";
@@ -59,11 +61,12 @@ const EMPTY: string[] = [];
 
 export function Conversation({ chatId, focusMessage, search }: { chatId: string; focusMessage?: string | null; search?: string | null }) {
   const router = useRouter();
-  const { split, wide } = useLayout();
+  const { wide } = useLayout();
+  const sidebarButton = useSidebarButton();
   const { session } = useAuth();
   const { workspaceId } = useWorkspace();
   const labels = useModelLabels();
-  const openPicker = useOpenModelPicker(chatId);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const moreRef = useRef<ViewRef>(null);
   const listRef = useRef<LegendListRef>(null);
   const { chat } = useChat(chatId);
@@ -107,7 +110,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
     setAway((current) => (current === next ? current : next));
   }, []);
 
-  if (!chat) return <Screen><Header back={!split} /><EmptyState className="flex-1" icon={MessageSquareOff} title="Chat not found" body="It may have been deleted on this device." action="New chat" onAction={() => router.replace("/chat/new")} /></Screen>;
+  if (!chat) return <Screen><Header leading={sidebarButton} /><EmptyState className="flex-1" icon={MessageSquareOff} title="Chat not found" body="It may have been deleted on this device." action="New chat" onAction={() => router.replace("/chat/new")} /></Screen>;
 
   const openMenu = async () => {
     const anchor = await measureAnchor(moreRef);
@@ -122,7 +125,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
   return (
     <Screen>
       <Header
-        back={!split}
+        leading={sidebarButton}
         title={chat.title}
         right={<View ref={moreRef} collapsable={false}><IconButton icon={MoreHorizontal} label="Chat actions" onPress={() => void openMenu()} /></View>}
       />
@@ -167,10 +170,12 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
           </View>
         ) : null}
         </View>
-        <Composer
+        <ChatComposer
+          chatId={chatId}
           models={chat.models}
           settings={settings}
-          onModelPress={openPicker}
+          workspaceId={workspaceId}
+          onModelPress={() => setSheetOpen(true)}
           running={running}
           disabledReason={session || perf?.chatOrigin() ? null : "Sign in to send messages"}
           onSend={(text, attachments) => {
@@ -182,6 +187,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
           onStop={() => stopChat(chatId)}
         />
       </KeyboardAvoidingView>
+      <ChatModelSheet chatId={chatId} models={chat.models} settings={settings} open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </Screen>
   );
 }
@@ -227,13 +233,13 @@ const STARTERS: Record<DayPeriod, { label: string; prompt: string; icon: LucideI
 
 export function NewChat({ initialModel }: { initialModel?: string }) {
   const router = useRouter();
-  const { split } = useLayout();
+  const sidebarButton = useSidebarButton();
   const { session } = useAuth();
   const { workspaceId } = useWorkspace();
   const { options } = useChatModelOptions();
   const models = chatModelStore.use();
   const settings = draftSettingsStore.use();
-  const openPicker = useOpenModelPicker(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [period] = useState(() => dayPeriod(new Date().getHours()));
   const [seed, setSeed] = useState<{ key: number; text: string } | null>(null);
   useChatErrors(null);
@@ -251,13 +257,13 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
 
   return (
     <Screen>
-      <Header back={!split} title="New chat" />
+      <Header leading={sidebarButton} title="New chat" />
       <ModelChipRow chatId={null} models={models} settings={settings} className="pb-2" />
       <View className="h-px bg-border" />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="flex-grow justify-center px-5 py-8">
           <View className="w-full max-w-[560px] self-center">
-            <Text variant="display" className="text-center text-[26px]">{`Good ${period}`}</Text>
+            <Text variant="display" className="text-center text-[24px] leading-[30px]">{`Good ${period}`}</Text>
             <Text variant="muted" className="mt-1.5 text-center">{models.length > 1 ? `${models.length} models will answer side by side.` : "What can I help you think through?"}</Text>
             {session ? (
               <View className="mt-7 gap-2">
@@ -274,12 +280,14 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
             <Text variant="caption" className="mt-6 text-center">Chats are saved only on this device. Messages go through your Phaseo workspace.</Text>
           </View>
         </ScrollView>
-        <Composer
+        <ChatComposer
+          chatId={null}
           autoFocus={false}
           seed={seed}
           models={models}
           settings={settings}
-          onModelPress={openPicker}
+          workspaceId={workspaceId}
+          onModelPress={() => setSheetOpen(true)}
           running={false}
           disabledReason={!session && !perf?.chatOrigin() ? "Sign in to send messages" : !models.length ? "Choose a model first" : null}
           onSend={(text, attachments) => {
@@ -290,6 +298,7 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
           onStop={() => undefined}
         />
       </KeyboardAvoidingView>
+      <ChatModelSheet chatId={null} models={models} settings={settings} open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </Screen>
   );
 }

@@ -3,6 +3,7 @@ import type { ComponentRef, Ref } from "react";
 import { Pressable, TextInput, type TextInputProps, View } from "react-native";
 import { cn } from "@/lib/cn";
 import { Icon } from "./icon";
+import { INPUT_TEXT } from "./text";
 
 type InputRef = Ref<ComponentRef<typeof TextInput>>;
 
@@ -20,7 +21,7 @@ export function SearchField({ value, onChangeText, className, placeholder = "Sea
         returnKeyType="search"
         clearButtonMode="never"
         {...props}
-        className="h-11 flex-1 font-sans text-[15px] text-foreground"
+        className={cn("h-11 flex-1", INPUT_TEXT)}
         placeholderTextColorClassName="accent-muted-foreground"
         cursorColorClassName="accent-primary"
       />
@@ -38,7 +39,7 @@ export function TextField({ className, ref, ...props }: TextInputProps & { class
     <TextInput
       ref={ref}
       {...props}
-      className={cn("min-h-11 rounded-md border border-input bg-background px-3 py-2.5 font-sans text-[15px] text-foreground", className)}
+      className={cn("min-h-11 rounded-md border border-input bg-background px-3 py-2.5", INPUT_TEXT, className)}
       placeholderTextColorClassName="accent-muted-foreground"
       cursorColorClassName="accent-primary"
     />

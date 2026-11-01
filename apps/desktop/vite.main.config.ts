@@ -19,6 +19,8 @@ function buildStamp() {
 
 export default defineConfig({
 	define: { __PHASEO_BUILD__: JSON.stringify(buildStamp()) },
+	// The main process is Node: without this, packages with a browser build (ws) bundle their browser stub.
+	resolve: { conditions: ["node"], mainFields: ["module", "main"] },
 	build: {
 		outDir: "dist/main",
 		emptyOutDir: true,
@@ -29,6 +31,7 @@ export default defineConfig({
 			fileName: (_format, name) => `${name}.mjs`,
 		},
 		rollupOptions: {
+			platform: "node",
 			external: ["electron", "node-pty", "@cursor/sdk", /^@modelcontextprotocol\/sdk(?:\/|$)/, ...builtinModules, ...builtinModules.map(name => `node:${name}`)],
 		},
 	},

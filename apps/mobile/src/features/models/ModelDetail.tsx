@@ -6,6 +6,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { type NativeScrollEvent, type NativeSyntheticEvent, Pressable, ScrollView, type ScrollViewInstance, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
+import { useOpenScreen } from "@/components/shell/useOpenScreen";
 import { Button, EmptyState, Icon, IconButton, LoadingState, OptionSheet, ReadableWidth, Screen, Text, useMenu, type SelectOption, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import {
@@ -41,6 +42,7 @@ const PINNED_MENU_HEIGHT = 56;
  */
 export function ModelDetail({ id }: { id: string }) {
   const router = useRouter();
+  const openScreen = useOpenScreen();
   const { split } = useLayout();
   const { index } = useCatalogueIndex();
   const card = index.get(id);
@@ -90,7 +92,8 @@ export function ModelDetail({ id }: { id: string }) {
   }), [timeline.data, data?.previous_model_id, index]);
   // The website offers Chat whenever the API can be used; the app's chat also needs a live chat route.
   const canChat = layout.canUseApi && data?.status !== "Retired" && (card ? isChatModel(card) : (gateway.data?.activeProviders.length ?? 0) > 0);
-  const openChat = () => router.push({ pathname: "/chat/new", params: { model: id } });
+  // Back in Chat with this model, rather than a second Chat over Models.
+  const openChat = () => openScreen(`/chat/new?model=${encodeURIComponent(id)}`);
   const description = data?.description ?? card?.description ?? null;
 
   const onLayoutSection = useCallback((section: string, y: number) => {
@@ -122,7 +125,7 @@ export function ModelDetail({ id }: { id: string }) {
   };
   const showLab = () => {
     updateFilters({ organisations: [organisation] });
-    router.push("/models");
+    openScreen("/models");
   };
 
   if (model.isLoading && !card) return <Screen><TopBar back={!split} /><LoadingState /></Screen>;
@@ -201,7 +204,7 @@ export function ModelDetail({ id }: { id: string }) {
       <Logo id={organisationId} label={organisation} colour={card?.organisation_colour} size={32} />
       <Text variant="label" numberOfLines={1} className="flex-1">{organisation}: {name}</Text>
       {canChat ? <IconButton icon={MessageSquare} label="Chat about this model" tone="primary-foreground" size={18} className="h-9 w-9 bg-primary active:opacity-85" onPress={openChat} /> : null}
-      <IconButton icon={Scale} label="Compare this model" tone={canChat ? "foreground" : "primary-foreground"} size={18} className={cn("h-9 w-9", canChat ? "border border-border" : "bg-primary active:opacity-85")} onPress={compare} />
+      <IconButton icon={Scale} label="Compare with…"tone={canChat ? "foreground" : "primary-foreground"} size={18} className={cn("h-9 w-9", canChat ? "border border-border" : "bg-primary active:opacity-85")} onPress={compare} />
     </View>
   ) : null;
 
@@ -273,7 +276,7 @@ function HeaderActions({ canChat, onChat, onCompare }: { canChat: boolean; onCha
   return (
     <View className="mt-4 flex-row gap-2 px-4">
       {canChat ? <Button label="Chat" icon={MessageSquare} className="flex-1" onPress={onChat} /> : null}
-      <Button label="Compare" icon={Scale} variant={canChat ? "outline" : "primary"} className="flex-1" onPress={onCompare} />
+      <Button label="Compare with…" icon={Scale}variant={canChat ? "outline" : "primary"} className="flex-1" onPress={onCompare} />
     </View>
   );
 }
@@ -304,7 +307,7 @@ function ModelIdentifier({ modelId, aliases, variants }: { modelId: string; alia
           onPress={() => (identifiers.length > 1 || otherVariants.length ? void menu.show(triggerRef) : copy(modelId))}
           className="flex-row items-center gap-1"
         >
-          <Text variant="mono" numberOfLines={1} className="shrink text-[13px] text-foreground/80">{modelId}</Text>
+          <Text variant="mono" numberOfLines={1} className="shrink text-foreground/80">{modelId}</Text>
           <Icon icon={copied ? Check : ChevronDown} tone="muted" size={14} />
         </Pressable>
       </View>

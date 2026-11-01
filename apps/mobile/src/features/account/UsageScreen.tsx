@@ -54,7 +54,7 @@ export function UsageScreen({ workspaceId }: { workspaceId: string }) {
 
   return (
     <Screen>
-      <Header back={!split} title="Usage" subtitle={workspace?.name} />
+      <Header sidebar back={!split} title="Usage" subtitle={workspace?.name} />
       <ScrollView contentContainerClassName="pb-16" refreshControl={<RefreshControl refreshing={overview.isFetching && !overview.isLoading} onRefresh={() => setNow(Math.floor(Date.now() / 60_000) * 60_000)} />}>
         <ReadableWidth>
           <View className="px-4 pb-2">
