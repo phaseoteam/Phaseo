@@ -3,7 +3,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { useFocusEffect, usePathname, useRouter, type Href } from "expo-router";
 import {
-  Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Palette, Plus, Scale,
+  Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Monitor, Palette, Plus, Scale,
   Shield, ShieldAlert, ShieldCheck, Sparkles, UserX, Users, Wallet, type LucideIcon,
 } from "lucide-react-native";
 import { useCallback, useRef, useState, type ReactNode } from "react";
@@ -159,7 +159,9 @@ export function AccountMenu() {
         <Section title="This device">
           {item("notifications")}
           {item("appearance")}
-          {item("chats", { value: storage ? `${formatNumber(storage.chats)} · ${formatBytes(storage.bytes)}` : null, last: true })}
+          {item("chats", { value: storage ? `${formatNumber(storage.chats)} · ${formatBytes(storage.bytes)}` : null })}
+          {/* A full-screen flow of its own (pairing, a computer's chats), so it opens above the tabs on tablets too. */}
+          <Row icon={Monitor} title="Desktops" subtitle="Use Phaseo on your computer from this phone" onPress={() => router.push("/desktops")} last />
         </Section>
         <Section title="Help">
           {item("status", { trailing: status.data ? <View className="max-w-[55%] flex-row items-center gap-1.5"><StatusDot state={status.data.state} /><Text variant="muted" numberOfLines={1}>{status.data.label}</Text></View> : null })}

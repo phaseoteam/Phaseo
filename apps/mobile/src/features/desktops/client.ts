@@ -38,7 +38,7 @@ const unreachable = "Can't reach this computer. Check it's on and Phaseo is open
 
 /**
  * One paired desktop, over whichever transport reaches it. Sends hello first, matches responses to requests by id,
- * reconnects with backoff, and subscribes again to the chats the screens follow. A request made while offline waits
+ * reconnects with backoff, and subscribes again to the chats the screens watch. A request made while offline waits
  * for the connection until it times out.
  */
 export class DesktopClient {
@@ -55,7 +55,7 @@ export class DesktopClient {
   /** Requests made before the connection was ready, sent once it is. */
   private waiting: PhoneRequest[] = [];
   private readonly listeners = new Set<(event: ClientEvent) => void>();
-  private chatIds: string[] = [];
+  private readonly watched = new Map<string, number>();
   private via: TransportKind | undefined;
 
   constructor(private readonly options: ClientOptions) {}
@@ -92,10 +92,25 @@ export class DesktopClient {
     return () => { this.listeners.delete(listener); };
   }
 
-  /** The chats whose changes the desktop should stream; sent again after every reconnect. */
-  follow(chatIds: string[]) {
-    this.chatIds = [...new Set(chatIds)];
-    if (this.ready) this.request("subscribe", { chatIds: this.chatIds }).catch(() => undefined);
+  /**
+   * Streams a chat's changes until the returned function is called. Screens stacked on each other may watch the same
+   * or different chats; the desktop gets them all in one subscribe, sent again after every reconnect.
+   */
+  watch(chatId: string) {
+    this.watched.set(chatId, (this.watched.get(chatId) ?? 0) + 1);
+    this.subscribe();
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      const count = (this.watched.get(chatId) ?? 1) - 1;
+      if (count > 0) this.watched.set(chatId, count); else this.watched.delete(chatId);
+      this.subscribe();
+    };
+  }
+
+  private subscribe() {
+    if (this.ready) this.request("subscribe", { chatIds: [...this.watched.keys()] }).catch(() => undefined);
   }
 
   request<T extends RequestType>(type: T, body: RequestBody<T>): Promise<PhoneResults[T]> {
@@ -177,7 +192,7 @@ export class DesktopClient {
     this.ready = true;
     this.attempt = 0;
     this.state.set({ status: "connected", via: transport.kind, desktopName: result.desktopName });
-    if (this.chatIds.length) link.send({ id: `r${++this.nextId}`, type: "subscribe", chatIds: this.chatIds });
+    if (this.watched.size) link.send({ id: `r${++this.nextId}`, type: "subscribe", chatIds: [...this.watched.keys()] });
     const waiting = this.waiting;
     this.waiting = [];
     for (const frame of waiting) {

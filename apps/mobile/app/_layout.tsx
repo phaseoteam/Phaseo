@@ -13,6 +13,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useCSSVariable } from "uniwind";
 import { OverlayHost, routeSheetOptions } from "@/components/ui";
 import { ThemeSync } from "@/features/account/ThemeSync";
+import { DesktopConnections } from "@/features/desktops/DesktopConnections";
 import { NotificationObserver } from "@/features/notifications/NotificationObserver";
 import { LogoDataLoader } from "@/lib/logos";
 import { useLayout } from "@/hooks/useLayout";
@@ -77,6 +78,7 @@ function RootNavigator() {
       <NavigationBar style={resolved === "dark" ? "dark" : "light"} />
       <ThemeSync />
       <NotificationObserver />
+      <DesktopConnections />
       <LogoDataLoader />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(app)" />

@@ -136,7 +136,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
 
   test("streams entries into the open chat and passes on attention", async () => {
     const { desktop, client } = await connected();
-    client.follow(["c1"]);
+    client.watch("c1");
     const read = await client.request("read_chat", { chatId: "c1" });
     let entries = read.entries;
     const streamed = nextEvent(client, "entries");
@@ -155,9 +155,24 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
     client.stop();
   });
 
+  test("follows every chat a screen watches until each lets go", async () => {
+    const { desktop, client } = await connected();
+    const first = client.watch("c1");
+    client.watch("c2");
+    const again = client.watch("c1");
+    first();
+    // Requests arrive in order, so once this answers the subscribes before it have too.
+    await client.request("list_chats", {});
+    expect(desktop.received.filter((frame) => frame.type === "subscribe").at(-1)).toMatchObject({ chatIds: ["c1", "c2"] });
+    again();
+    await client.request("list_chats", {});
+    expect(desktop.received.filter((frame) => frame.type === "subscribe").at(-1)).toMatchObject({ chatIds: ["c2"] });
+    client.stop();
+  });
+
   test("reconnects after the link drops, subscribes again, and fails what was in flight", async () => {
     const { desktop, client, clock } = await connected();
-    client.follow(["c1"]);
+    client.watch("c1");
     await stateReached(client, "connected");
     const offline = stateReached(client, "offline");
     const inFlight = client.request("list_chats", {});
