@@ -30,6 +30,19 @@ export function takeStashed(id?: string) {
 	return item;
 }
 export const clearStash = () => update([]);
+export const deleteStashed = (id: string) => update(current().filter(item => item.id !== id));
+
+/** What the stash shortcut does: park a draft, bring back the only stashed one, or open the list to choose. */
+export function stashKeyAction(draft: string, count: number): "stash" | "restore" | "open" | "none" {
+	if (draft.trim()) return "stash";
+	return count === 0 ? "none" : count === 1 ? "restore" : "open";
+}
+
+/** A stashed draft's text on one line, cut short for the list. */
+export function stashSnippet(text: string, max = 90) {
+	const line = text.replace(/\s+/g, " ").trim();
+	return line.length > max ? `${line.slice(0, max)}…` : line || "(empty)";
+}
 
 /** A stashed draft for this chat. Attachments belong to the chat they were added in, so elsewhere their chips are left out. */
 export function stashedDraft(item: StashedPrompt, taskId?: string) {
