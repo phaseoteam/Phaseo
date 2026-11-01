@@ -5,9 +5,11 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Button, EmptyState, Header, Screen, Section, Segmented, Select, Text, TextField, toast } from "@/components/ui";
 import { haptic } from "@/lib/haptics";
 import { clientFor, connectionLabel, useConnection } from "./connections";
-import { ConnectionNotice } from "./DesktopChatsScreen";
+import { useSidebarButton } from "@/features/chat/ChatDrawer";
+import { ConnectionNotice } from "./DesktopChatList";
 import { useDesktopChats } from "./hooks";
 import type { PhoneChatMode } from "./protocol";
+import { desktopChatHref } from "./routes";
 import { useDesktop } from "./store";
 
 const MODES: { value: PhoneChatMode; label: string }[] = [
@@ -23,6 +25,7 @@ export function NewDesktopChatScreen({ desktopId }: { desktopId: string }) {
   const desktop = useDesktop(desktopId);
   const client = desktop ? clientFor(desktop) : null;
   const connection = useConnection(client);
+  const sidebarButton = useSidebarButton();
   const { chats } = useDesktopChats(client);
   const [mode, setMode] = useState<PhoneChatMode>("code");
   const [project, setProject] = useState(NO_PROJECT);
@@ -35,12 +38,12 @@ export function NewDesktopChatScreen({ desktopId }: { desktopId: string }) {
     return [...seen].map(([value, label]) => ({ value, label }));
   }, [chats]);
 
-  if (desktop === undefined) return <Screen><Header back title="New chat" /></Screen>;
+  if (desktop === undefined) return <Screen><Header leading={sidebarButton} title="New chat" /></Screen>;
   if (!client || !desktop) {
     return (
       <Screen>
-        <Header back title="New chat" />
-        <EmptyState className="flex-1" title="This computer isn't paired" body="Pair it again from Desktops." />
+        <Header leading={sidebarButton} title="New chat" />
+        <EmptyState className="flex-1" title="This computer isn't paired" body="Pair it again from Account → Desktops." />
       </Screen>
     );
   }
@@ -50,7 +53,7 @@ export function NewDesktopChatScreen({ desktopId }: { desktopId: string }) {
     haptic("press");
     try {
       const { chat } = await client.request("new_chat", { text: text.trim(), mode, ...(project !== NO_PROJECT ? { projectId: project } : {}) });
-      router.replace({ pathname: "/desktops/[desktopId]/[chatId]", params: { desktopId, chatId: chat.id } });
+      router.replace(desktopChatHref(desktopId, chat.id));
     } catch (problem) {
       haptic("error");
       toast(problem instanceof Error ? problem.message : "Couldn't start the chat.", { title: "Couldn't start the chat", tone: "error" });
@@ -60,7 +63,7 @@ export function NewDesktopChatScreen({ desktopId }: { desktopId: string }) {
 
   return (
     <Screen>
-      <Header back title="New chat" subtitle={`${desktop.desktopName} · ${connectionLabel(connection)}`} />
+      <Header leading={sidebarButton} title="New chat" subtitle={`${desktop.desktopName} · ${connectionLabel(connection)}`} />
       <ConnectionNotice client={client} />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-16">

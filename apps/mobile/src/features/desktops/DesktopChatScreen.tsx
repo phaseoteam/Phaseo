@@ -1,6 +1,6 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { ArrowUp, Check, ChevronDown, ChevronRight, CircleAlert, Square, Wrench, X } from "lucide-react-native";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,7 +11,8 @@ import { haptic } from "@/lib/haptics";
 import { chatItems, chatStatusLabel, type ChatItem } from "./chatState";
 import { DesktopRequestError, type DesktopClient } from "./client";
 import { clientFor, connectionLabel, useConnection } from "./connections";
-import { ConnectionNotice } from "./DesktopChatsScreen";
+import { useSidebarButton } from "@/features/chat/ChatDrawer";
+import { ConnectionNotice } from "./DesktopChatList";
 import { openDesktopChat } from "./DesktopConnections";
 import { useDesktopChat } from "./hooks";
 import type { PhoneActivity, PhoneApproval, PhoneMessage, PhoneQuestionRequest } from "./protocol";
@@ -29,23 +30,24 @@ function reportFailure(title: string, error: unknown) {
 export function DesktopChatScreen({ desktopId, chatId }: { desktopId: string; chatId: string }) {
   const desktop = useDesktop(desktopId);
   const client = desktop ? clientFor(desktop) : null;
+  const sidebarButton = useSidebarButton();
   useEffect(() => {
     openDesktopChat.set({ desktopId, chatId });
     return () => openDesktopChat.set((current) => (current?.chatId === chatId && current.desktopId === desktopId ? null : current));
   }, [desktopId, chatId]);
-  if (desktop === undefined) return <Screen><Header back title="Chat" /><SkeletonRows count={5} /></Screen>;
+  if (desktop === undefined) return <Screen><Header leading={sidebarButton} title="Chat" /><SkeletonRows count={5} /></Screen>;
   if (!client) {
     return (
       <Screen>
-        <Header back title="Chat" />
-        <EmptyState className="flex-1" title="This computer isn't paired" body="It may have been removed from this phone. Pair it again from Desktops." />
+        <Header leading={sidebarButton} title="Chat" />
+        <EmptyState className="flex-1" title="This computer isn't paired" body="It may have been removed from this phone. Pair it again from Account → Desktops." />
       </Screen>
     );
   }
-  return <ChatView client={client} chatId={chatId} />;
+  return <ChatView client={client} chatId={chatId} sidebarButton={sidebarButton} />;
 }
 
-function ChatView({ client, chatId }: { client: DesktopClient; chatId: string }) {
+function ChatView({ client, chatId, sidebarButton }: { client: DesktopClient; chatId: string; sidebarButton: ReactNode }) {
   const connection = useConnection(client);
   const { view, error, reload, loadEarlier, loadingEarlier, settle } = useDesktopChat(client, chatId);
   const items = useMemo(() => (view ? chatItems(view.entries) : []), [view]);
@@ -65,7 +67,7 @@ function ChatView({ client, chatId }: { client: DesktopClient; chatId: string })
   return (
     <Screen>
       <Header
-        back
+        leading={sidebarButton}
         title={chat?.title ?? "Chat"}
         subtitle={chat ? [chatStatusLabel(chat), chat.project].filter(Boolean).join(" · ") : connectionLabel(connection)}
         right={running ? <IconButton icon={Square} label="Stop" onPress={() => void stop()} size={18} /> : null}

@@ -22,15 +22,18 @@ export function SplitStack({ list }: { list: ReactNode }) {
   );
 }
 
-/** Opens a detail route: pushed on phones, swapped in place in the split detail pane. */
-export function useOpenDetail(sectionRoot: string) {
+/**
+ * Opens a detail route: pushed on phones, swapped in place in the split detail pane. `swap` swaps on phones too, for
+ * lists that sit beside the detail there as well (Chat's sidebar), so back still leads to the section's root.
+ */
+export function useOpenDetail(sectionRoot: string, { swap = false }: { swap?: boolean } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { split } = useLayout();
   return useCallback((href: Href) => {
-    if (split && pathname !== sectionRoot) router.replace(href);
+    if ((split || swap) && pathname !== sectionRoot) router.replace(href);
     else router.push(href);
-  }, [router, pathname, sectionRoot, split]);
+  }, [router, pathname, sectionRoot, split, swap]);
 }
 
 /** The split layout's detail pane before anything is chosen. */

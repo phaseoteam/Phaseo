@@ -35,6 +35,12 @@ export async function saveDesktop(desktop: SavedDesktop) {
   await write([...desktops.filter((entry) => entry.desktopId !== desktop.desktopId), desktop]);
 }
 
+/** Renames a desktop on this phone only; pairing it again brings back the computer's own name. */
+export async function renameDesktop(desktopId: string, desktopName: string) {
+  const desktops = await loadDesktops();
+  await write(desktops.map((entry) => (entry.desktopId === desktopId ? { ...entry, desktopName } : entry)));
+}
+
 /** Forgets a desktop on this phone. The desktop keeps listing the phone until it's removed there too. */
 export async function forgetDesktop(desktopId: string) {
   const desktops = await loadDesktops();
