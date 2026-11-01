@@ -72,7 +72,7 @@ ${claudeBackgroundGuide}` } : {}),
 			...(tuning.effort ? { effort: tuning.effort } : {}),
 			...(tuning.settings ? { settings: tuning.settings } : {}),
 			...(task.nativeSessionId ? { resume: task.nativeSessionId } : task.nativeForkFrom ? { resume: task.nativeForkFrom, forkSession: true } : {}),
-			// Plan mode wins over full access, as in T3 Code, so ExitPlanMode still reaches the person; implementing then switches to full access.
+			// Plan mode wins over full access, so ExitPlanMode still reaches the person; implementing then switches to full access.
 			permissionMode: task.mode === "plan" ? "plan" : task.permissionMode === "full-access" ? "bypassPermissions" : task.permissionMode === "accept-edits" ? "acceptEdits" : "default",
 			...(task.permissionMode === "full-access" ? { allowDangerouslySkipPermissions: true } : {}),
 			...(task.mode === "chat" ? { tools: ["AskUserQuestion"] } : {}),

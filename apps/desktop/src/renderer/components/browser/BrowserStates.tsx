@@ -87,7 +87,7 @@ export function BrowserUnreachable({ failure, onReload }: { failure: BrowserFail
 	</ScrollArea>;
 }
 
-/** The page is in its own window (T3 Code's separate preview window); the slot offers to bring it back. */
+/** The page is in its own window (a separate preview window); the slot offers to bring it back. */
 export function BrowserPoppedOut({ onBringBack, compact = false }: { onBringBack: () => void; compact?: boolean }) {
 	return <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
 		<PictureInPicture2 aria-hidden className="size-4.5 text-muted-foreground" />
@@ -96,7 +96,7 @@ export function BrowserPoppedOut({ onBringBack, compact = false }: { onBringBack
 	</div>;
 }
 
-/** T3 Code's "Recording saved" notice as a flat row: reveal the file, copy its path, or add it to the message. */
+/** The "Recording saved" notice as a flat row: reveal the file, copy its path, or add it to the message. */
 export function BrowserRecordingNotice({ path, revealLabel, onReveal, onAttach, onDismiss }: { path: string; revealLabel: string; onReveal: () => void; onAttach: () => void; onDismiss: () => void }) {
 	const [copied, setCopied] = useState(false);
 	useEffect(() => { if (!copied) return; const timer = window.setTimeout(() => setCopied(false), 2000); return () => window.clearTimeout(timer); }, [copied]);

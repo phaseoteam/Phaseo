@@ -11,7 +11,7 @@ import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { BrowserPoppedOut } from "./BrowserStates";
 
-// Grab zones just outside each edge; the cursor is the only affordance (T3 Code). The native page covers the inside.
+// Grab zones just outside each edge; the cursor is the only affordance. The native page covers the inside.
 const resizeHandles: { direction: MiniPlayerResizeDirection; className: string }[] = [
 	{ direction: "north", className: "inset-x-2 -top-2 h-2 cursor-ns-resize" },
 	{ direction: "south", className: "inset-x-2 -bottom-2 h-2 cursor-ns-resize" },
@@ -26,7 +26,7 @@ const resizeHandles: { direction: MiniPlayerResizeDirection; className: string }
 const tapSlop = 6;
 type Gesture = { pointerId: number; pointerType: string; x: number; y: number; frame: MiniPlayerFrame; direction: MiniPlayerResizeDirection | null; moved: boolean };
 
-/** T3 Code's floating player over the chat, for the chat's floated browser tab. Render it inside the chat column (position: relative). */
+/** The floating player over the chat, for the chat's floated browser tab. Render it inside the chat column (position: relative). */
 export function BrowserMiniPlayerHost() {
 	const { selectedId, settings, scheduled, pullRequestsPage, compareId, compareGroups, commandsOpen } = useWorkspace();
 	const context = selectedId ?? "draft";

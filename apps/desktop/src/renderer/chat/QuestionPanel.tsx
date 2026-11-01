@@ -27,7 +27,7 @@ function OwnAnswer({ question, value, disabled, placeholder, label, inputRef, on
 }
 
 /**
- * The agent's questions, above the composer as in T3 Code: one question at a time, options as flat numbered rows,
+ * The agent's questions, above the composer: one question at a time, options as flat numbered rows,
  * the person's own answer as the last row (or typed in the composer). 1–9 pick, arrows move, Space toggles, Enter goes on, Esc folds the panel.
  */
 function QuestionRequestPanel({ task, request }: { task: Task; request: QuestionRequest }) {
@@ -77,7 +77,7 @@ function QuestionRequestPanel({ task, request }: { task: Task; request: Question
 		const value = optionValue(option);
 		setHighlight(index); setTouched(false);
 		if (question.multiSelect) { set({ picked: draft.picked.includes(value) ? draft.picked.filter(item => item !== value) : [...draft.picked, value] }); return; }
-		// A single choice moves on by itself after a moment, as in T3; starting text the person edited stays.
+		// A single choice moves on by itself after a moment; starting text the person edited stays.
 		set({ picked: [value], otherOn: false, other: draft.otherOn && question.initialAnswer === undefined ? "" : draft.other });
 		clearTimeout(advance.current);
 		advance.current = setTimeout(() => { if (!last) { setStep(current => current + 1); setHighlight(0); } }, 200);

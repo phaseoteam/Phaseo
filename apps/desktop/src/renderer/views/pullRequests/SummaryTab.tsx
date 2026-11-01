@@ -51,7 +51,7 @@ export const ReactContext = createContext<((subjectId: string, content: PullRequ
 const pill = "inline-flex h-5 shrink-0 items-center gap-1 rounded-full border px-1.5 text-2xs tabular-nums outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
 const reactionSignature = (reactions: readonly PullRequestReaction[]) => reactions.map(reaction => `${reaction.content}:${reaction.count}:${reaction.viewerHasReacted ? 1 : 0}`).join(" ");
 
-/** T3's reaction bar: pills you can press to add or take back your own reaction, and a picker for the rest. */
+/** The reaction bar: reactions you can press to add or take back your own reaction, and a picker for the rest. */
 export function Reactions({ reactions, subjectId, canReact = false }: { reactions: PullRequestComment["reactions"]; subjectId?: string; canReact?: boolean }) {
 	const react = useContext(ReactContext), active = Boolean(react && subjectId && canReact);
 	const [pending, setPending] = useState<{ signature: string; values: Map<string, boolean> }>({ signature: "", values: new Map() });
@@ -116,7 +116,7 @@ function FixButton({ finding, view, handoff, label }: { finding: PullRequestFind
 	return <Button size="xs" variant="ghost" className="shrink-0 text-muted-foreground" disabled={handoff.pendingFinding !== undefined || handoff.pending !== undefined} onClick={() => void handoff.fix(view, finding)}><Hammer aria-hidden className="size-3" />{preparing ? "Preparing…" : label ?? handoff.labels.fixFinding}</Button>;
 }
 
-/** Flat rows with a left rule rather than T3's bordered cards. */
+/** Flat rows with a left rule rather than bordered cards. */
 function CommentRow({ comment, actions, onOpen, editor }: { comment: PullRequestComment; actions: CommentActions; onOpen: (url: string) => void; editor: ReturnType<typeof useCommentEditor> }) {
 	const { view, projectId } = actions;
 	const outcome = reviewOutcome(comment.reviewState), body = visibleBody(comment.body);

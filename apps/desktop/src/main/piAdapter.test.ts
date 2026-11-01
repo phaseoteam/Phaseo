@@ -17,7 +17,7 @@ function fixture(handle: (packet: PiRecord, send: (value: PiRecord) => void) => 
 }
 const task: Task = { id: "task", title: "Task", harness: "pi", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Pi native harness", () => {
-	it("maps extension dialogs like T3 Code: choices, empty text and editor prefill", () => {
+	it("maps extension dialogs to questions: choices, empty text and editor prefill", () => {
 		expect(piQuestion("s", "select", "Pick", { options: ["A", "", 3] })).toEqual({ id: "s", header: "Pick", question: "Pick", options: [{ label: "A", value: "A" }, { label: "Empty value", value: "" }] });
 		expect(piQuestion("i", "input", "Name", { placeholder: "Your name" })).toEqual({ id: "i", header: "Name", question: "Your name", options: [{ label: "Submit empty value", description: "Send empty text to the extension.", value: "" }], isOther: true, required: false });
 		expect(piQuestion("e", "editor", "Edit", { message: "Edit the commit message", prefill: "feat: x\n" })).toEqual({ id: "e", header: "Edit", question: "Edit the commit message", options: [], isOther: true, required: false, initialAnswer: "feat: x\n", input: { kind: "multiline" } });

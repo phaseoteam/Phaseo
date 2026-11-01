@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * The last sidebar action that can be undone, shown for five seconds as in T3 Code. Repeats group: "Settled 2 chats".
+ * The last sidebar action that can be undone, shown for five seconds. Repeats group: "Settled 2 chats".
  * A deletion waits for its notice: `commit` runs when the notice goes without Undo (it times out, is dismissed or a
  * different action replaces it), so until then the chat is only hidden.
  */

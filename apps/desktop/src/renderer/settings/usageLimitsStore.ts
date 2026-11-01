@@ -10,7 +10,7 @@ export type UsageLimitsState = {
 	statuses: Record<string, UsageResult>;
 	hubs: UsageHub[];
 	snapshots: Record<string, UsageHubSnapshot | "checking">;
-	t3Hubs: ImportableHub[];
+	importableHubs: ImportableHub[];
 	error: string;
 	/** When every source was last asked, in ms; the sidebar's rings use it to decide when to ask again. */
 	checkedAt?: number;
@@ -23,13 +23,13 @@ const listeners = new Set<() => void>();
 
 /** The last readings survive a restart, so the rings show something before the first check finishes. */
 function restore(): UsageLimitsState {
-	const empty: UsageLimitsState = { statuses: {}, hubs: [], snapshots: {}, t3Hubs: [], error: "", kept: { statuses: {}, snapshots: {} } };
+	const empty: UsageLimitsState = { statuses: {}, hubs: [], snapshots: {}, importableHubs: [], error: "", kept: { statuses: {}, snapshots: {} } };
 	try {
 		const saved = JSON.parse(window.localStorage.getItem(storageKey) ?? "null") as Partial<UsageLimitsState> | null;
 		return saved ? { ...empty, statuses: saved.statuses ?? {}, hubs: saved.hubs ?? [], snapshots: saved.snapshots ?? {}, kept: { statuses: (saved.statuses ?? {}) as UsageLimitsState["kept"]["statuses"], snapshots: (saved.snapshots ?? {}) as Record<string, UsageHubSnapshot> }, ...saved.checkedAt ? { checkedAt: saved.checkedAt } : {} } : empty;
 	} catch { return empty; }
 }
-let state: UsageLimitsState = typeof window === "undefined" ? { statuses: {}, hubs: [], snapshots: {}, t3Hubs: [], error: "", kept: { statuses: {}, snapshots: {} } } : restore();
+let state: UsageLimitsState = typeof window === "undefined" ? { statuses: {}, hubs: [], snapshots: {}, importableHubs: [], error: "", kept: { statuses: {}, snapshots: {} } } : restore();
 
 function update(change: (current: UsageLimitsState) => Partial<UsageLimitsState>) {
 	const next = { ...state, ...change(state) };
@@ -82,7 +82,7 @@ export async function checkAllUsage(api: WorkspaceApi, locals: UsageLocal[]) {
 	update(() => ({ checkedAt: Date.now(), error: "" }));
 	for (const local of locals) void checkUsageLocal(api, local);
 	try { const list = await api.usageHubs({ type: "list" }); setUsageHubs(list); for (const hub of list) void checkUsageHub(api, hub); } catch (reason) { setUsageError(errorText(reason)); }
-	void api.usageHubs({ type: "t3-hubs" }).then(setT3Hubs, () => {});
+	void api.usageHubs({ type: "importable-hubs" }).then(setImportableHubs, () => {});
 }
 
 /** Checks again only when the last full check is older than `maxAgeMs` and nothing is being checked now. */
@@ -95,5 +95,5 @@ export function refreshUsageIfStale(api: WorkspaceApi, locals: UsageLocal[], max
 export function setUsageHubs(hubs: UsageHub[]) {
 	update(current => ({ hubs, snapshots: Object.fromEntries(Object.entries(current.snapshots).filter(([id]) => hubs.some(hub => hub.id === id))) }));
 }
-export const setT3Hubs = (t3Hubs: ImportableHub[]) => update(() => ({ t3Hubs }));
+export const setImportableHubs = (importableHubs: ImportableHub[]) => update(() => ({ importableHubs }));
 export const setUsageError = (error: string) => update(() => ({ error }));

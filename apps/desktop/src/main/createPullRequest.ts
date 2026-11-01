@@ -23,7 +23,7 @@ const parseUrl = (text: string) => {
 };
 
 /**
- * T3's create_pr Git action: publishes the branch if it has unpushed commits, then opens a pull request for it with
+ * The create_pr Git action: publishes the branch if it has unpushed commits, then opens a pull request for it with
  * GitHub CLI, titled and described from its commits. A branch that already has an open pull request gets that one
  * back instead ("opened_existing"), so the caller links it either way.
  */

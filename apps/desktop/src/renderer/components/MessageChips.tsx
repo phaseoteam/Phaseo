@@ -38,7 +38,7 @@ function useLinkTitle(href: string) {
 }
 
 /**
- * A GitHub pull request link (T3's ChatMarkdown with PullRequestLinkPreview): hovering shows the pull request, and a
+ * A GitHub pull request link: hovering shows the pull request, and a
  * click opens it in the pane when it is in the chat's repository and "Open pull requests in Phaseo" is on.
  */
 function PullRequestLinkChip({ href, children }: { href: string; children?: ReactNode }) {

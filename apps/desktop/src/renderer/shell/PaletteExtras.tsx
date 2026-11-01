@@ -12,13 +12,13 @@ import { cn } from "../lib/utils";
 const editorKey = "phaseo.desktop.editor";
 const preferredEditor = () => { try { return JSON.parse(localStorage.getItem(editorKey) ?? "null") as string | null; } catch { return null; } };
 
-/** Installed editors, favourite first, as T3's Open in picker lists them. */
+/** Installed editors, favourite first, as the Open in picker lists them. */
 export function editorChoices(editors: readonly EditorInstallation[], preferred: string | null) {
 	const available = editors.filter(editor => editor.available);
 	return [...available.filter(editor => editor.id === preferred), ...available.filter(editor => editor.id !== preferred)];
 }
 
-/** T3's Open in…: the chat's project in any installed editor, or its folder; the choice becomes the favourite. */
+/** Open in…: the chat's project in any installed editor, or its folder; the choice becomes the favourite. */
 export function OpenProjectItems({ projectId, open, run }: { projectId: string; open: boolean; run: (action: () => void) => void }) {
 	const [editors, setEditors] = useState<EditorInstallation[]>([]);
 	useEffect(() => {
@@ -43,7 +43,7 @@ const listeners = new Set<() => void>();
 export function openCloneProject(value = true) { cloneOpen = value; for (const listener of listeners) listener(); }
 const useCloneOpen = () => useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, () => cloneOpen);
 
-/** T3's Clone from a remote URL: paste an address, choose a folder, and the checkout opens as a project in Code. */
+/** Clone from a remote URL: paste an address, choose a folder, and the checkout opens as a project in Code. */
 export function CloneProjectDialog() {
 	const open = useCloneOpen();
 	const { setOverview, setMode, setNewChatProjectId, select } = useWorkspace();

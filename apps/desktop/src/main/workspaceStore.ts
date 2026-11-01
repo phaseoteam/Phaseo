@@ -393,7 +393,7 @@ export class WorkspaceStore {
 	}
 	/**
 	 * Records the native stack a pull request was read in on every chat linking one of its layers, and links the layers
-	 * a chat lacks with source "stack", as T3's sync does. A layer the person dismissed stays dismissed; a settled or
+	 * a chat lacks with source "stack". A layer the person dismissed stays dismissed; a settled or
 	 * archived chat takes the stack but gains no links. `stack` null clears the stack from that one pull request.
 	 */
 	syncPullRequestStack(repository: string, number: number, stack: PullRequestStack | null): boolean {
@@ -421,7 +421,7 @@ export class WorkspaceStore {
 		return changed;
 	}
 	/**
-	 * Records what a watch pass saw (null ends the watch) and queues its update for the agent, after T3's watch sync.
+	 * Records what a watch pass saw (null ends the watch) and queues its update for the agent.
 	 * Applies only while the same watch is on, so a stop or restart that lands during the GitHub read wins. A chat that
 	 * takes no wakes (archived, settled or delegated) only has its watch ended. True when an update was queued.
 	 */
@@ -443,7 +443,7 @@ export class WorkspaceStore {
 		task.queue.push({ id: randomUUID(), text, notice, createdAt: new Date().toISOString() });
 		this.saveTask(task);
 	}
-	/** Ends every watch on a chat, as T3 does when the person stops it. */
+	/** Ends every watch on a chat, for when the person stops it. */
 	endPullRequestWatches(taskId: string): boolean {
 		const task = this.getTask(taskId), links = validatePullRequestLinks(task.pullRequests) ?? [];
 		if (!links.some(link => link.watching)) return false;
@@ -1007,7 +1007,7 @@ function applyPullRequestLink(task: Task, command: PullRequestLinkCommand) {
 		if (command.type === "unlink-pull-request") { if (links[index].source === "stack") links[index] = { ...unwatched(links[index]), source: "stack-dismissed" }; else links.splice(index, 1); }
 		else if (!command.watching) links[index] = unwatched(links[index]);
 		else if (!links[index].watching) {
-			// As in T3: a watch wakes the chat's agent, so a chat that takes no wakes cannot start one.
+			// A watch wakes the chat's agent, so a chat that takes no wakes cannot start one.
 			if (task.delegation?.parentTaskId) throw new Error("This chat is a delegated agent; its parent chat watches pull requests.");
 			if (task.archived || task.settledOverride === "settled") throw new Error("Restore this chat before watching a pull request.");
 			const state = links[index].snapshot?.state;
@@ -1020,7 +1020,7 @@ function applyPullRequestLink(task: Task, command: PullRequestLinkCommand) {
 
 type LifecycleCommand = Extract<WorkspaceCommand, { type: "settle" | "unsettle" | "wake" | "mark-unread" | "snooze" | "visit" | "auto-settle" }>;
 
-/** Settle, snooze and read state, after T3 Code. None of it counts as activity, so the chat keeps its place and time. */
+/** Settle, snooze and read state. None of it counts as activity, so the chat keeps its place and time. */
 function applyLifecycle(task: Task, command: LifecycleCommand) {
 	const now = new Date().toISOString();
 	const counts = { status: task.status, approvalsCount: task.approvals?.length ?? 0, answersCount: (task.questions?.length ?? 0) + (task.forms?.length ?? 0), queueCount: task.queue.length };

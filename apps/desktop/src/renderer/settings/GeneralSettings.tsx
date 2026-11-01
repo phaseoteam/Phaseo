@@ -106,7 +106,7 @@ function GlobalInstructions() {
 	</SettingsSection>;
 }
 
-/** T3 names chats with a model; here it is a choice, because each title is a small request on the Phaseo account. */
+/** Chats can be named by a model; it is a choice, because each title is a small request on the Phaseo account. */
 function ChatTitles({ preferences, save, disabled }: { preferences: WorkspacePreferences; save: (value: WorkspacePreferences) => Promise<void>; disabled: boolean }) {
 	const [byModel, setByModel] = useState(preferences.titleModel !== null);
 	const [error, setError] = useState("");
@@ -143,7 +143,7 @@ export function ExperimentalSettings() {
 	</SettingsPageLayout>;
 }
 
-/** T3's send shortcut. The other key adds a new line; the rest of the message box's keys are in Keyboard shortcuts. */
+/** The send shortcut. The other key adds a new line; the rest of the message box's keys are in Keyboard shortcuts. */
 function MessageBox() {
 	const sendKey = useSendKey(), mod = isMac() ? "⌘" : "Ctrl";
 	const sendAndNew = shortcut("composer.sendAndNewChat");

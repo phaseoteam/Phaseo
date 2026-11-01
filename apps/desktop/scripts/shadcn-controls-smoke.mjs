@@ -96,7 +96,7 @@ app.whenReady().then(async () => {
     for (const [width, height] of [[1440, 920], [1180, 800], [1040, 680]]) for (const theme of ["light", "dark"]) {
       owner.setSize(width, height); await run(`window.__auditTheme(${JSON.stringify(theme)})`);
       if (!await run("(()=>{const nav=document.querySelector('aside[aria-label=\"Settings\"]').getBoundingClientRect(),main=document.querySelector('main').getBoundingClientRect();return nav.right<=main.left+1&&main.right<=innerWidth&&main.width>=500;})()")) throw Error("Settings columns overlap");
-      await capture("t3-layout", `settings-${width}-${theme}`);
+      await capture("settings-layout", `settings-${width}-${theme}`);
     }
     await run("window.__auditButton('Appearance',document.querySelector('nav[aria-label=\"Settings sections\"]')).click()");
     await wait("Boolean(document.querySelector('[role=radiogroup][aria-label=Theme]'))");
@@ -104,7 +104,7 @@ app.whenReady().then(async () => {
     await wait("document.documentElement.dataset.theme==='light'&&document.querySelector('[role=radiogroup][aria-label=Theme] [aria-checked=true]')?.textContent==='Light'");
     key("Escape");
     await wait(`!document.querySelector('nav[aria-label="Settings sections"]')&&document.querySelector('main [aria-label=Message]')?.value==='Keep this draft'&&window.__auditChatTitle()===${JSON.stringify(secondChat)}`);
-    console.log('T3_LAYOUT_SMOKE',JSON.stringify({chatList:60,modeSwitch:true,collapsibleSettled:true,surfaceBack:true,appearance:true,draftPreserved:true,escapeCloses:true,settingsCaptures:6}));
+    console.log('SETTINGS_LAYOUT_SMOKE',JSON.stringify({chatList:60,modeSwitch:true,collapsibleSettled:true,surfaceBack:true,appearance:true,draftPreserved:true,escapeCloses:true,settingsCaptures:6}));
     // The tools panel resizes from its keyboard-focusable separator and by dragging, and remembers its width.
     owner.setSize(1440, 920);
     await run("window.__auditPaletteRun('Show files and changes')");

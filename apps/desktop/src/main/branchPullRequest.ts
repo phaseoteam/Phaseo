@@ -21,7 +21,7 @@ export function parseBranchPullRequest(branch: string, output: string): BranchPu
 }
 
 /**
- * The pull request for the checkout's current branch, linked or not (T3's branchPullRequest), so the pane can offer it
+ * The pull request for the checkout's current branch, linked or not, so the pane can offer it
  * and Git actions can offer to create one only when there is none. Reads are cached briefly per branch.
  */
 export async function branchPullRequest(root: string, fresh = false, gh: Gh = runGh): Promise<BranchPullRequest> {

@@ -71,7 +71,7 @@ export class CodexAdapter implements AgentAdapter {
 				const request = params as { threadId: string; serverName: string; message: string; mode: string; requestedSchema?: unknown; url?: string; _meta?: unknown };
 				if (request.threadId !== this.threadId) throw new Error("MCP request belongs to another task.");
 				const declined = task.mode === "chat" && request.serverName !== (orchestration && nativeMcpName(orchestration));
-				// Tool-call approvals sent as elicitations go on the approval card, as in T3 Code.
+				// Tool-call approvals sent as elicitations go on the approval card.
 				const approval = declined ? undefined : mcpApprovalRequest(request);
 				if (approval) {
 					const decision = await callbacks.onApproval(approval.title, approval.description, approval.always ? { always: approval.always } : undefined);

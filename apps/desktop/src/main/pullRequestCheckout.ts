@@ -12,7 +12,7 @@ export async function pullRequestBranch(root: string, view: Pick<PullRequestView
 }
 
 /**
- * T3's "Check out in a separate worktree": fetches the pull request's head from GitHub (forks included, through
+ * "Check out in a separate worktree": fetches the pull request's head from GitHub (forks included, through
  * refs/pull/N/head), then makes a managed worktree on a new local branch at exactly that commit, so nothing open moves.
  * A same-repository branch tracks its remote branch so pushes go back to the pull request.
  */
@@ -44,7 +44,7 @@ async function branchesInOtherWorktrees(root: string) {
 }
 
 /**
- * T3's "Check out in this repository" (like `gh pr checkout`): switches the project's own checkout to the pull
+ * "Check out in this repository" (like `gh pr checkout`): switches the project's own checkout to the pull
  * request's branch at its head. Unlike `gh pr checkout --force` it never discards work: it refuses while the working
  * tree has changes, and moves an existing local branch only forward. Forks come through refs/pull/N/head.
  */

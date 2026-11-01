@@ -3,7 +3,7 @@ import type { Project } from "../../shared/workspace";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { isProjectArchived, projectScopes } from "../../shared/projectShelf";
 
-/** The Working section's setting (Settings → General), kept per window and off by default, as T3's beta is. */
+/** The Working section's setting (Settings → General), kept per window and off by default while it is in beta. */
 export const workingSectionKey = "phaseo.desktop.sidebar.workingSection";
 /** Settings → General: group the sidebar's active chats into project folders, off by default. */
 export const projectFoldersKey = "phaseo.desktop.sidebar.projectFolders";
@@ -13,7 +13,7 @@ export type CodeSections = Record<SidebarSection | "working", TaskOverview[]>;
 const time = (value?: string) => value ? Date.parse(value) || 0 : 0;
 
 /**
- * T3's Working section (beta): a chat busy with work that needs nothing from the person. It is running (or about to,
+ * The Working section (beta): a chat busy with work that needs nothing from the person. It is running (or about to,
  * with a queued message), or it stopped with background work that will wake it: agents it started still working.
  * Approvals, questions, failures and stops stay in the list.
  */
@@ -27,15 +27,15 @@ export function isWorking(task: TaskOverview, background: ReadonlySet<string>) {
 /** Chats with agents still working for them. */
 export const withBackgroundWork = (tasks: readonly TaskOverview[]) => new Set(tasks.filter(child => child.delegation?.parentTaskId && !child.archived && (child.status === "running" || child.status === "waiting" || (child.status === "idle" && Boolean(child.queueCount)))).map(child => child.delegation!.parentTaskId!));
 
-/** Working chats newest first by the last message the person sent: finishing and waking do not move a row (T3's sortWorkingThreadsBySend). */
+/** Working chats newest first by the last message the person sent: finishing and waking do not move a row. */
 export const workingOrder = (task: TaskOverview) => Math.max(time(task.createdAt), time(task.lastUserMessageAt));
-/** With the Working section on, the list sorts by when each chat last came back to the person, so one leaving Working lands on top (T3's sortInboxThreadsByReturn). */
+/** With the Working section on, the list sorts by when each chat last came back to the person, so one leaving Working lands on top. */
 export const returnOrder = (task: TaskOverview, returnedAt?: number) => Math.max(time(task.createdAt), time(task.unsettledAt), time(task.lastUserMessageAt), time(task.lastCompletedAt), returnedAt ?? 0);
 
 export type CodeSectionOptions = { working?: boolean; returnedAt?: (id: string) => number | undefined };
 
 /**
- * Code chats in T3's sidebar order: pinned, active (newest start or return first), then Working when it is on,
+ * Code chats in sidebar order: pinned, active (newest start or return first), then Working when it is on,
  * snoozed (soonest wake) and settled (latest first).
  */
 export function codeSections(tasks: TaskOverview[], projects: Project[], scope: string | readonly string[], now = Date.now(), options: CodeSectionOptions = {}): CodeSections {
@@ -51,7 +51,7 @@ export function codeSections(tasks: TaskOverview[], projects: Project[], scope: 
 		// Only the active list folds away: pins stay where the person put them, and snoozed and settled keep their shelves.
 		sections[section === "active" && options.working && isWorking(task, background) ? "working" : section].push(task);
 	}
-	// T3: dragged pinned chats first in their order, then the rest newest first; in the active list, chats never dragged come first.
+	// Dragged pinned chats first in their order, then the rest newest first; in the active list, chats never dragged come first.
 	const keyed = (a: TaskOverview, b: TaskOverview) => (a.orderKey ?? 0) - (b.orderKey ?? 0);
 	sections.pinned.sort((a, b) => Number(a.orderKey === undefined) - Number(b.orderKey === undefined) || keyed(a, b) || b.createdAt.localeCompare(a.createdAt));
 	// With the Working section on, the list is ordered by time, so dragged places are ignored (and kept).
@@ -85,7 +85,7 @@ export function codeFolders(tasks: readonly TaskOverview[], projects: readonly P
 }
 
 /**
- * T3's createInboxReturnTracker: remembers when this window saw each chat leave Working, a return nothing stamps
+ * Remembers when this window saw each chat leave Working, a return nothing stamps
  * (an approval asked mid-turn, background work ending). The first observation only takes a baseline; null resets.
  */
 export function createReturnTracker(clock = () => Date.now()) {
@@ -105,7 +105,7 @@ export function createReturnTracker(clock = () => Date.now()) {
 	};
 }
 
-/** After parking the open chat, T3 opens the next one still in the list, else the one before it. */
+/** After parking the open chat, the next one still in the list opens, else the one before it. */
 export function nextAfterParking(sections: Pick<CodeSections, "pinned" | "active">, id: string) {
 	const visible = [...sections.pinned, ...sections.active];
 	const index = visible.findIndex(task => task.id === id);

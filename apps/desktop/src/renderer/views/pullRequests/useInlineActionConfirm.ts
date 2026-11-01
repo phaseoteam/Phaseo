@@ -1,7 +1,7 @@
 import { useEffect, useState, type KeyboardEvent, type MouseEvent } from "react";
 
 /**
- * Click twice to act (after T3 Code): the first click arms one control, the second confirms.
+ * Click twice to act: the first click arms one control, the second confirms.
  * It disarms after 3 seconds, on a click elsewhere, on Escape, on blur and when the window loses focus.
  */
 export function useInlineActionConfirm(scopeKey: string) {

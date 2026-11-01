@@ -1,4 +1,4 @@
-/** T3's terminal links (terminal-links.ts): web addresses and file paths in terminal output, with `file:line:col`. */
+/** Terminal links: web addresses and file paths in terminal output, with `file:line:col`. */
 export type TerminalLink = { kind: "url" | "path"; text: string; start: number; end: number };
 
 const urlPattern = /https?:\/\/[^\s"'`<>]+/giu;
@@ -59,7 +59,7 @@ export function projectPath(text: string, cwd: string, projectDirectory: string,
 	return target.slice(prefix.length);
 }
 
-/** Terminal output handed to the composer as a fenced block, as T3's terminal context does. */
+/** Terminal output handed to the composer as a fenced block. */
 export function terminalContext(title: string, selection: string) {
 	const text = selection.replace(/\s+$/g, "").replace(/^\n+/, "");
 	const fence = text.includes("```") ? "````" : "```";

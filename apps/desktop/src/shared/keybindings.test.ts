@@ -46,7 +46,7 @@ describe("keyboard shortcuts", () => {
 		expect(evaluateWhen("unknownThing", {})).toBe(false);
 	});
 
-	it("turns when clauses into T3's builder groups and back", () => {
+	it("turns when clauses into builder groups and back", () => {
 		for (const value of ["codeMode && chatOpen", "!textFocused", "(chatMode || codeMode) && paneOpen", "codeMode && !(textFocused || terminalFocused)", "settingsOpen || chatOpen && !paneOpen"]) {
 			const round = formatWhen(whenGroup(value));
 			for (const context of [{}, { codeMode: true, chatOpen: true }, { chatMode: true, paneOpen: true }, { codeMode: true, terminalFocused: true }, { settingsOpen: true }, { chatOpen: true, paneOpen: true }]) expect(evaluateWhen(round, context)).toBe(evaluateWhen(value, context));

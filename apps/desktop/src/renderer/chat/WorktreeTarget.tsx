@@ -14,8 +14,8 @@ type CreateTask = Extract<WorkspaceCommand, { type: "create-task" }>;
 export type WorktreeTarget = ReturnType<typeof useWorktreeTarget>;
 
 /**
- * T3's Workspace choice in the new-chat composer: Local runs in the project's own checkout; New worktree makes a
- * worktree from a base branch for the chat. Kept per project folder, as T3 keeps its default per project.
+ * The Workspace choice in the new-chat composer: Local runs in the project's own checkout; New worktree makes a
+ * worktree from a base branch for the chat. Kept per project folder.
  */
 export function useWorktreeTarget(api: WorkspaceApi | undefined, projectId: string | undefined, setOverview: (workspace: WorkspaceOverview) => void) {
 	const [modes, setModes] = usePersistedState<Record<string, "local" | "worktree">>("phaseo.desktop.draftWorkspace", {});
@@ -65,7 +65,7 @@ export function WorktreeTargetControls({ target, disabled }: { target: WorktreeT
 	</>;
 }
 
-/** T3's base branch picker: local branches first, then remote ones, filtered as you type. */
+/** The base branch picker: local branches first, then remote ones, filtered as you type. */
 function BaseBranchPicker({ refs, value, onChange, disabled }: { refs: GitRefs; value: string; onChange: (value: string) => void; disabled?: boolean }) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");

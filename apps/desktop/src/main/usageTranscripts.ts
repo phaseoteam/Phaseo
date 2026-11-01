@@ -26,7 +26,7 @@ export type TranscriptFile = { size: number; mtimeMs: number; offset: number; st
 
 /**
  * Where Claude Code and Codex keep transcripts on this computer: their default folders, the folders the environment
- * points them at, each account's own folder, and any the person added. Like T3 Code's Usage page, history comes from
+ * points them at, each account's own folder, and any the person added. History comes from
  * these files, so it covers sessions run anywhere, not only in Phaseo.
  */
 export function transcriptFolders(accounts: readonly Account[], added: readonly TranscriptFolder[], env: NodeJS.ProcessEnv = process.env, home = os.homedir()): TranscriptFolder[] {

@@ -4,7 +4,7 @@ import { defaultPreferences, type WorkspacePreferences } from "../../shared/pref
 import { importableScripts, settingsProject, type ProjectSettings as Settings } from "../../shared/projectSettings";
 import { errorText, useWorkspace } from "../app/workspace";
 import { Select } from "../components/Select";
-import { ProjectScriptDialog, ScriptIcon, useImportScript, useProjectScripts, useT3ProjectFile, type ScriptEditorRequest } from "../components/ProjectScripts";
+import { ProjectScriptDialog, ScriptIcon, useImportScript, useProjectScripts, useProjectScriptsFile, type ScriptEditorRequest } from "../components/ProjectScripts";
 import { ProjectIconGlyph, ProjectIconPickerDialog } from "../components/ProjectIcon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { useRemoveProject } from "./removeProject";
@@ -42,8 +42,8 @@ function IconButton({ label, onClick, disabled, children }: { label: string; onC
 }
 
 /**
- * T3's Project settings page: the project's name and icon, its own auto-settle settings (each one follows General
- * until changed), its actions (with t3.json imports), and Remove project. Worktrees share their project's page.
+ * The Project settings page: the project's name and icon, its own auto-settle settings (each one follows General
+ * until changed), its actions (with project file imports), and Remove project. Worktrees share their project's page.
  */
 export function ProjectSettingsPage() {
 	const { api, overview, setOverview, settingsProjectId, command } = useWorkspace();
@@ -55,7 +55,7 @@ export function ProjectSettingsPage() {
 	const keybindings = useKeybindings();
 	const [busy, setBusy] = useState(false), [error, setError] = useState("");
 	const [picking, setPicking] = useState(false);
-	const file = useT3ProjectFile(project?.id);
+	const file = useProjectScriptsFile(project?.id);
 	const importScript = useImportScript(upsert, setEditor);
 	const removeProject = useRemoveProject();
 	const connected = useConnectedHarnesses();

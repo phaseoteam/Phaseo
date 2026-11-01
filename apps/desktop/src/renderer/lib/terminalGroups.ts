@@ -1,4 +1,4 @@
-/** T3's terminal layout: groups of up to four terminals split side by side or stacked, one group shown at a time. */
+/** The terminal layout: groups of up to four terminals split side by side or stacked, one group shown at a time. */
 export const MAX_TERMINALS_PER_GROUP = 4;
 export type SplitDirection = "horizontal" | "vertical";
 export type TerminalGroup = { id: string; terminalIds: string[]; splitDirection: SplitDirection };
@@ -15,7 +15,7 @@ export function addGroup(layout: TerminalLayout, terminalId: string): TerminalLa
 }
 
 export const canSplit = (layout: TerminalLayout) => (activeGroup(layout)?.terminalIds.length ?? 0) < MAX_TERMINALS_PER_GROUP;
-/** A new terminal next to the active one. A group keeps the direction it was first split in, as in T3. */
+/** A new terminal next to the active one. A group keeps the direction it was first split in. */
 export function split(layout: TerminalLayout, terminalId: string, direction: SplitDirection): TerminalLayout {
 	const group = activeGroup(layout);
 	if (!group) return addGroup(layout, terminalId);

@@ -14,7 +14,7 @@ const day = 86_400_000;
 const time = (value?: string) => { const parsed = value ? Date.parse(value) : Number.NaN; return Number.isFinite(parsed) ? parsed : 0; };
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
-/** Whether the branch's pull request merged at exactly this head commit (T3's storageCleanupPullRequestMerged). */
+/** Whether the branch's pull request merged at exactly this head commit. */
 export type MergedCheck = (sourceDirectory: string, branch: string, head: string) => Promise<boolean>;
 export const pullRequestMergedAtHead: MergedCheck = async (sourceDirectory, branch, head) => {
 	const repo = `github.com/${githubRepository(await git(sourceDirectory, ["remote", "get-url", "origin"]))}`;
@@ -32,7 +32,7 @@ async function defaultBranch(sourceDirectory: string) {
 }
 
 /**
- * T3's worktree cleanup rules for Phaseo's managed worktrees. A worktree is removed when a rule applies: its chats were
+ * Worktree cleanup rules for Phaseo's managed worktrees. A worktree is removed when a rule applies: its chats were
  * all deleted, it has been inactive or every chat settled for long enough, it has no commits beyond the default
  * branch, or its pull request merged at its current commit. It is always kept while a chat runs or has queued
  * messages, a terminal or Git action holds it, its branch changed, it has any uncommitted or untracked file, or it has
@@ -64,7 +64,7 @@ export async function planWorktreeCleanup(input: { projects: readonly Project[];
 			const settledAt = chats.map(task => task.archived ? time(task.updatedAt) : task.settledOverride === "settled" ? time(task.settledAt) || time(task.updatedAt) : undefined);
 			const settledFor = chats.length && settledAt.every(value => value !== undefined) ? now - Math.max(activity, ...settledAt as number[]) : undefined;
 			let reason: string | undefined;
-			// A worktree made by hand gets a day to gain its chat, as T3 waits for a checkout's thread to appear.
+			// A worktree made by hand gets a day to gain its chat before it counts as abandoned.
 			if (rules.orphaned && !chats.length && now - activity >= day) reason = "No chat uses it any more";
 			else if (rules.afterDays !== null && now - activity >= rules.afterDays * day) reason = `Inactive for ${plural(Math.floor((now - activity) / day), "day")}`;
 			else if (rules.settledAfterDays !== null && settledFor !== undefined && settledFor >= rules.settledAfterDays * day) reason = `Settled for ${plural(Math.floor(settledFor / day), "day")}`;

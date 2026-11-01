@@ -15,7 +15,7 @@ export function excerptPatch(excerpt: GuideExcerpt): string | undefined {
 }
 
 export type LetteredNote = GuideNote & { letter: string };
-/** T3's lettered notes: A, B, C… across the stop, and which of them sit inside each excerpt. */
+/** Lettered notes: A, B, C… across the stop, and which of them sit inside each excerpt. */
 export function letterStopNotes(stop: Pick<GuideStop, "notes" | "excerpts">) {
 	const lettered: LetteredNote[] = stop.notes.map((note, index) => ({ ...note, letter: index < 26 ? String.fromCharCode(65 + index) : String(index + 1) }));
 	const byExcerpt = stop.excerpts.map(excerpt => lettered.filter(note => note.path === excerpt.path && note.line >= excerpt.start && note.line <= excerpt.end));

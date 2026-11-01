@@ -4,12 +4,12 @@ import { MessageContent } from "../components/MessageContent";
 import { useTextCopy } from "../components/useTextCopy";
 import { cn } from "../lib/utils";
 
-/** The plan's own first heading, as T3 Code titles its plan card. */
+/** The plan's own first heading, as the plan's title. */
 export function proposedPlanTitle(markdown: string) {
 	return markdown.match(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/m)?.[1]?.trim() || "Proposed plan";
 }
 
-/** Long plans start folded to their first lines, as in T3 Code. */
+/** Long plans start folded to their first lines. */
 export const planFolds = (markdown: string) => markdown.length > 900 || markdown.split("\n").length > 20;
 
 /** A proposed plan rendered as Markdown under a left rule, with copy and fold controls; actions or its outcome go underneath. */

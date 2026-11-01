@@ -41,7 +41,7 @@ export type PullRequestToolAction = typeof pullRequestToolActions[number];
 /** A pull request by URL, by repository and number, or by number alone in the chat's project. */
 export type PullRequestToolTarget = { url?: string; repository?: string; number?: number };
 export type PullRequestToolResult = { repository: string; number: number; url: string; alreadyLinked?: boolean; wasLinked?: boolean; watching?: boolean; wasWatching?: boolean };
-/** One linked pull request as list_thread_pull_requests reports it (T3's ThreadPullRequestEntry). */
+/** One linked pull request as list_thread_pull_requests reports it. */
 export type ThreadPullRequestEntry = { repository: string; number: number; url: string; source: string; watching: boolean; state: "open" | "closed" | "merged" | null; title: string | null; headBranch: string | null; baseBranch: string | null; isDraft: boolean | null; stack: { kind: "native" | "derived"; position: number; size: number } | null };
 export type ThreadPullRequestList = { pullRequests: ThreadPullRequestEntry[]; chains: { kind: "native" | "derived"; numbers: number[] }[] };
 export type PullRequestGuideOutcome = { repository: string; number: number; url: string; outcome: "started" | "running" | "failed"; detail: string | null };
@@ -96,7 +96,7 @@ export type ThreadTools = {
 	interrupt: (id: string) => Promise<ThreadSummary>;
 	/** A child's pending questions: list their ids, read one, or answer one as the person would. Never approvals. */
 	pendingQuestions?: (id: string, action: "list" | "read" | "answer", requestId?: string, answers?: Record<string, string[]>) => Promise<{ requestIds: string[] } | PendingQuestion | { answered: true; thread: ThreadSummary }>;
-	/** T3's top-level thread launch, project, organise and scheduled-task tools. */
+	/** The top-level thread launch, project, organise and scheduled-task tools. */
 	launch?: (request: LaunchRequest) => Promise<LaunchResult>;
 	launchBatch?: (requests: LaunchRequest[]) => Promise<{ results: (LaunchResult | { requestId: string; error: string })[] }>;
 	projects?: (query?: string) => ProjectSummary[];
@@ -106,11 +106,11 @@ export type ThreadTools = {
 	addProject?: (directory: string) => Promise<AddedProject>;
 	cloneProject?: (url: string, parent?: string) => Promise<AddedProject>;
 	organize?: (id: string, action: OrganizeAction, title?: string, tags?: string[], until?: string) => Promise<ThreadSummary & { pinned: boolean; archived: boolean; tags: string[]; tagsInUse?: string[]; settled?: boolean; settlesWhenTurnEnds?: boolean; snoozedUntil?: string }>;
-	/** T3's link_pull_request, unlink_pull_request, watch_pull_request and unwatch_pull_request, on this chat or one it delegated or launched. */
+	/** link_pull_request, unlink_pull_request, watch_pull_request and unwatch_pull_request, on this chat or one it delegated or launched. */
 	pullRequest?: (id: string | undefined, action: PullRequestToolAction, target: PullRequestToolTarget) => Promise<PullRequestToolResult>;
-	/** T3's list_thread_pull_requests: the chat's links with their last known state and how they chain into stacks. */
+	/** list_thread_pull_requests: the chat's links with their last known state and how they chain into stacks. */
 	pullRequestList?: (id: string | undefined) => Promise<ThreadPullRequestList>;
-	/** T3's write_pull_request_guides and read_pull_request_guide, through the project whose checkout has the repository. */
+	/** write_pull_request_guides and read_pull_request_guide, through the project whose checkout has the repository. */
 	writePullRequestGuides?: (targets: PullRequestToolTarget[]) => Promise<{ guides: PullRequestGuideOutcome[] }>;
 	readPullRequestGuide?: (target: PullRequestToolTarget) => Promise<PullRequestGuideRead>;
 	/** link_issue, unlink_issue, watch_issue and unwatch_issue, on this chat or one it delegated or launched. */
@@ -126,7 +126,7 @@ export type ThreadTools = {
 	updateSchedule?: (id: string, update: ScheduleUpdate) => Promise<ScheduledTask>;
 	deleteSchedule?: (id: string) => Promise<{ id: string; deleted: true }>;
 	runSchedule?: (id: string) => Promise<ScheduledTask>;
-	/** T3's browser tools, on this chat's own browser tabs; present only while the app has a window. */
+	/** The browser tools, on this chat's own browser tabs; present only while the app has a window. */
 	browser?: BrowserAgentTools;
 	/** background_wait (Claude): keep this turn open until the given background tasks finish. */
 	backgroundWait?: (taskIds: string[], waiting: boolean) => Promise<{ matched: string[]; unmatched: string[] }>;
@@ -134,7 +134,7 @@ export type ThreadTools = {
 	moveToWorktree?: (request: WorktreeMove) => Promise<{ projectId: string; branch: string; continuation: boolean; message: string }>;
 	/** html_preview and html_render: check a page, then show it inline in this chat above the reply. */
 	html?: { preview: (request: HtmlPreviewRequest) => Promise<HtmlPreviewResult>; render: (request: HtmlRenderRequest) => Promise<{ shown: true; title: string; height: number; message: string }> };
-	/** T3's request_secret: the person types the secret into this chat; the agent gets a reference or a file. */
+	/** request_secret: the person types the secret into this chat; the agent gets a reference or a file. */
 	requestSecret?: (input: SecretRequestInput, signal?: AbortSignal) => Promise<SecretRequestResult>;
 	/** Factory's work items: list_work_items, read_work_item and run_stage. */
 	factory?: FactoryAgentTools;

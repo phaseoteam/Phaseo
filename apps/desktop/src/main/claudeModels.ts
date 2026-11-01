@@ -1,7 +1,7 @@
 import type { ModelOption, ModelOptionDescriptor, ModelOptionValues } from "../shared/workspace";
 
 type Effort = "low" | "medium" | "high" | "xhigh" | "max" | "ultracode" | "ultrathink";
-/** Per-model settings, as T3 Code's model manifest describes them (2026-10-02). */
+/** Per-model settings for each Claude model (as of 2026-10-02). */
 type Profile = { effort: Effort[]; defaultEffort?: Effort; fastMode?: boolean; contextWindow?: "200k" | "1m"; thinking?: boolean; effortMap?: Partial<Record<Effort, string | null>> };
 
 const all: Effort[] = ["low", "medium", "high", "xhigh", "max", "ultracode", "ultrathink"];
@@ -20,8 +20,7 @@ const profiles: Record<string, Profile> = {
 
 /**
  * Claude models Claude Code can run by exact ID, with the first Claude Code
- * release that accepts each one and its settings profile. Seeded from T3
- * Code's model manifest; the current generation is read from Claude Code itself.
+ * release that accepts each one and its settings profile. The current generation is read from Claude Code itself.
  */
 export const claudeModelManifest: { id: string; name: string; minVersion?: string; profile: string }[] = [
 	{ id: "claude-opus-5-5", name: "Claude Opus 5.5", minVersion: "2.1.280", profile: "opus-5-5" },

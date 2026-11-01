@@ -90,7 +90,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 				}
 			};
 			try {
-				// Text and multiple-choice forms are what OpenCode's question tool asks; they go to the answer panel, as in T3 Code.
+				// Text and multiple-choice forms are what OpenCode's question tool asks; they go to the answer panel.
 				const questions = callbacks.onQuestion ? formQuestions(form, ["string", "multiselect"]) : undefined;
 				if (questions) {
 					const answers = await callbacks.onQuestion!(questions, { signal });

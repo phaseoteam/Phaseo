@@ -55,7 +55,7 @@ describe("native model discovery", () => {
 		expect(standard.options).toEqual([{ id: "thinking", label: "Thinking", type: "select", options: [{ id: "off", label: "Off" }, { id: "minimal", label: "Minimal" }, { id: "low", label: "Low" }, { id: "medium", label: "Medium" }, { id: "high", label: "High", isDefault: true }] }]);
 		expect(mapped.options).toEqual([{ id: "thinking", label: "Thinking", type: "select", options: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium" }, { id: "high", label: "High" }, { id: "xhigh", label: "Extra High", isDefault: true }] }]);
 	});
-	it("offers OpenCode reasoning variants with T3's provider defaults and nothing for variant-less models", async () => {
+	it("offers OpenCode reasoning variants with each provider's defaults and nothing for variant-less models", async () => {
 		mocks.discover.mockResolvedValue({ url: "http://localhost:4096" });
 		const model = (providerID: string, id: string, variants: string[]) => ({ id, providerID, name: id, enabled: true, status: "active", limit: { context: 1 }, variants: variants.map(variant => ({ id: variant })) });
 		mocks.make.mockReturnValue({ model: { list: async () => ({ data: [model("openai", "gpt", ["low", "medium", "high", "x_high"]), model("anthropic", "claude", ["high", "max"]), model("other", "solo", ["thinking"]), model("other", "many", ["low", "high"]), model("other", "none", [])] }) } });

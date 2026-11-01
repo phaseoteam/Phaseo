@@ -168,5 +168,5 @@ export function validateBrowserClose(value: unknown): { tabId: string } { const 
 
 /** How long an agent keeps a page after its last action before the page counts as idle again. */
 export const browserAgentIdleMs = 10_000;
-/** How long a person's input marks a page as theirs, as in T3 Code. */
+/** How long a person's input marks a page as theirs. */
 export const browserHumanInputMs = 750;

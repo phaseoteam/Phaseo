@@ -141,7 +141,7 @@ app.whenReady().then(async () => {
 			editor.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'UI edit', bubbles: true, composed: true, cancelable: true }));
 			for (let attempt = 0; attempt < 50 && (await api.readFile('fixture','hello.txt')) !== 'UI edit'; attempt++) await new Promise(resolve => setTimeout(resolve,100));
 			if ((await api.readFile('fixture','hello.txt')) !== 'UI edit') throw new Error('Editor save failed');
-			// Staging and committing are in the details card in the title bar (T3).
+			// Staging and committing are in the details card in the title bar.
 			const git = await window.__auditDetails();
 			const stage = await window.__auditUntil(() => git.querySelector('button[aria-label="Stage hello.txt"]'), 'git file staging control');
 			stage.click();
@@ -470,7 +470,7 @@ app.whenReady().then(async () => {
 		})()`);
 		if (existsSync(cancelledMarker)) throw new Error("Cancelled terminal authentication unexpectedly completed");
 		const managedProject = await window.webContents.executeJavaScript(`(async () => {
-			// Branches and worktrees are in the details card in the title bar (T3).
+			// Branches and worktrees are in the details card in the title bar.
 			const api=window.phaseoDesktop.workspace; await window.__auditUseProject('Fixture project'); const files=await window.__auditDetails();
 			if(files.querySelector('[aria-label="New branch name"]'))throw new Error('Worktree form should start collapsed');
 			const branchMenu=await window.__auditUntil(()=>Array.from(files.querySelectorAll('button[aria-haspopup="menu"]')).find(button=>button.textContent.trim()==='fixture'&&!button.disabled),'branch menu');

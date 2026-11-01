@@ -59,10 +59,10 @@ async function limited<T, R>(items: T[], size: number, run: (item: T) => Promise
 }
 
 /**
- * Hubs T3 Code is set up with: its settings name each CLIProxyAPI source, and its secret store keeps the
- * management key in a file named after the source id.
+ * Hubs another desktop app on this computer is set up with: its settings in ~/.t3/userdata name each CLIProxyAPI
+ * source, and its secret store keeps the management key in a file named after the source id.
  */
-export function t3CodeHubs(userData = path.join(homedir(), ".t3", "userdata")): (ImportableHub & { key: string })[] {
+export function importableHubs(userData = path.join(homedir(), ".t3", "userdata")): (ImportableHub & { key: string })[] {
 	let settings: Record<string, unknown>;
 	try { settings = object(JSON.parse(readFileSync(path.join(userData, "settings.json"), "utf8"))); } catch { return []; }
 	return Object.entries(object(settings.usageLimitSources)).flatMap(([id, value]) => {
@@ -79,12 +79,12 @@ export function t3CodeHubs(userData = path.join(homedir(), ".t3", "userdata")): 
 
 export class UsageHubs {
 	private hubs: UsageHub[];
-	/** Hubs from T3 Code that were removed here, by address, so they aren't connected again on their own. */
+	/** Imported hubs that were removed here, by address, so they aren't connected again on their own. */
 	private declined: string[];
-	private t3Connected?: Promise<void>;
+	private importedConnected?: Promise<void>;
 	/** Plans rarely change, so each account's profile is read once per launch. */
 	private readonly plans = new Map<string, string | null>();
-	constructor(private readonly file: string, private readonly secrets: HubSecrets, private readonly fetcher: Fetch = fetch, private readonly t3Hubs: () => ReturnType<typeof t3CodeHubs> = () => t3CodeHubs()) {
+	constructor(private readonly file: string, private readonly secrets: HubSecrets, private readonly fetcher: Fetch = fetch, private readonly found: () => ReturnType<typeof importableHubs> = () => importableHubs()) {
 		// The file was a bare list of hubs before it remembered removed ones.
 		let stored: unknown;
 		try { stored = JSON.parse(readFileSync(file, "utf8")) as unknown; } catch { stored = []; }
@@ -95,23 +95,23 @@ export class UsageHubs {
 	private save() { writeFileSync(`${this.file}.tmp`, JSON.stringify({ hubs: this.hubs, declined: this.declined }, null, 2)); renameSync(`${this.file}.tmp`, this.file); }
 
 	/**
-	 * T3 Code's hubs are connected on their own, once a launch: they're on this computer under keys T3 Code already
-	 * keeps, and when T3 Code runs Claude Code through one, that hub is the only place its subscriptions' limits are.
+	 * Importable hubs are connected on their own, once a launch: they're on this computer under keys the other app
+	 * already keeps, and when it runs Claude Code through one, that hub is the only place its subscriptions' limits are.
 	 * A hub removed here stays removed; one that refuses is left for Settings to offer, with the reason.
 	 */
-	private connectT3() {
-		return this.t3Connected ??= (async () => {
-			for (const hub of this.t3Hubs().filter(hub => !this.hubs.some(existing => existing.url === hub.url) && !this.declined.includes(hub.url))) {
+	private connectImportable() {
+		return this.importedConnected ??= (async () => {
+			for (const hub of this.found().filter(hub => !this.hubs.some(existing => existing.url === hub.url) && !this.declined.includes(hub.url))) {
 				try { await this.request({ type: "add", url: hub.url, key: hub.key, label: hub.label }); } catch { /* Offered in Settings instead. */ }
 			}
 		})();
 	}
 
 	async request(request: UsageHubRequest): Promise<UsageHub[] | UsageHubSnapshot | ImportableHub[]> {
-		if (request.type === "list") { await this.connectT3(); return this.hubs; }
-		const missing = () => this.t3Hubs().filter(hub => !this.hubs.some(existing => existing.url === hub.url));
-		if (request.type === "t3-hubs") return missing().map(({ label, url }) => ({ label, url }));
-		if (request.type === "import-t3") {
+		if (request.type === "list") { await this.connectImportable(); return this.hubs; }
+		const missing = () => this.found().filter(hub => !this.hubs.some(existing => existing.url === hub.url));
+		if (request.type === "importable-hubs") return missing().map(({ label, url }) => ({ label, url }));
+		if (request.type === "import-hubs") {
 			for (const hub of missing()) await this.request({ type: "add", url: hub.url, key: hub.key, label: hub.label });
 			return this.hubs;
 		}

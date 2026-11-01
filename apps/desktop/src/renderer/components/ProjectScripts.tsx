@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bug, ChevronDown, Download, FlaskConical, Hammer, ListChecks, Play, Plus, Settings, Wrench } from "lucide-react";
-import { importableScripts, newScriptId, normalisePreviewUrl, primaryScript, projectScriptIcons, scriptFromProjectFile, scriptMenuLabel, settingsProject, type ProjectScript, type ProjectScriptIcon, type T3ProjectFileState, type T3ProjectScript } from "../../shared/projectSettings";
+import { importableScripts, newScriptId, normalisePreviewUrl, primaryScript, projectScriptIcons, scriptFromProjectFile, scriptMenuLabel, settingsProject, type ProjectScript, type ProjectFileScript, type ProjectFileState, type ProjectScriptIcon } from "../../shared/projectSettings";
 import type { Project } from "../../shared/workspace";
 import { keybindingConflicts, keyLabel, replaceCommandBindings, scriptCommand, type KeybindingEntry } from "../../shared/keybindings";
 import { saveKeybindings, useCommands, useKeybindings } from "../lib/keybindings";
@@ -19,7 +19,7 @@ import { SettingsButton, SettingsNote, settingsInput } from "../settings/Setting
 
 const iconLabels: Record<ProjectScriptIcon, string> = { play: "Play", test: "Test", lint: "Lint", configure: "Configure", build: "Build", debug: "Debug" };
 
-/** T3's script icons. */
+/** The icon for each script kind. */
 export function ScriptIcon({ icon, className = "size-3.5" }: { icon: ProjectScriptIcon; className?: string }) {
 	if (icon === "test") return <FlaskConical className={className} />;
 	if (icon === "lint") return <ListChecks className={className} />;
@@ -36,7 +36,7 @@ export function useProjectScripts(projectId?: string) {
 	const scripts = project?.settings?.scripts ?? [];
 	const save = async (next: ProjectScript[]) => {
 		if (!api || !project) throw new Error("Open the desktop app to change project scripts.");
-		// Only one script runs on settle, as in T3: choosing a new one hands the role over.
+		// Only one script runs on settle: choosing a new one hands the role over.
 		setOverview(await api.updateProject({ id: project.id, settings: { ...project.settings, scripts: next } }));
 	};
 	return {
@@ -57,12 +57,12 @@ export function useProjectScripts(projectId?: string) {
 	};
 }
 
-/** Which action to edit; `initial` and `error` reopen an import that failed, filled in, as T3 does. */
+/** Which action to edit; `initial` and `error` reopen an import that failed, filled in. */
 export type ScriptEditorRequest = { script?: ProjectScript; initial?: Omit<ProjectScript, "id">; error?: string } | undefined;
 
-/** The scripts in a checkout's t3.json, read when the project changes and whenever `refresh` changes. */
-export function useT3ProjectFile(projectId: string | undefined, refresh: unknown = 0) {
-	const [state, setState] = useState<T3ProjectFileState>({ status: "missing", scripts: [] });
+/** The scripts in a checkout's project file (t3.json), read when the project changes and whenever `refresh` changes. */
+export function useProjectScriptsFile(projectId: string | undefined, refresh: unknown = 0) {
+	const [state, setState] = useState<ProjectFileState>({ status: "missing", scripts: [] });
 	useEffect(() => {
 		let active = true;
 		const api = window.phaseoDesktop?.workspace;
@@ -73,16 +73,16 @@ export function useT3ProjectFile(projectId: string | undefined, refresh: unknown
 	return state;
 }
 
-/** T3's import: adds a t3.json script as it is, or opens it in the editor with the reason when it cannot be saved. */
+/** Adds a project file script as it is, or opens it in the editor with the reason when it cannot be saved. */
 export function useImportScript(upsert: (input: Omit<ProjectScript, "id">) => Promise<string>, setEditor: (request: ScriptEditorRequest) => void) {
-	return async (file: T3ProjectScript) => {
+	return async (file: ProjectFileScript) => {
 		const input = scriptFromProjectFile(file);
 		try { await upsert(input); } catch (reason) { setEditor({ initial: input, error: errorText(reason) }); }
 	};
 }
 
 /**
- * T3's Add action / Edit action dialog: an icon and name, a shortcut, the command, and when it runs on its own.
+ * The Add action / Edit action dialog: an icon and name, a shortcut, the command, and when it runs on its own.
  * The shortcut is saved in keybindings.json as the action's own command, so Keyboard shortcuts lists it too.
  */
 export function ProjectScriptDialog({ request, projectId, onClose, onSave, onDelete }: { request: ScriptEditorRequest; projectId?: string; onClose: () => void; onSave: (script: Omit<ProjectScript, "id">, id?: string) => Promise<string>; onDelete?: (id: string, entries?: KeybindingEntry[]) => Promise<void> }) {
@@ -173,7 +173,7 @@ export function ProjectScriptDialog({ request, projectId, onClose, onSave, onDel
 }
 
 /**
- * T3's header actions: run the project's main script in one click (it opens in a terminal in this chat's drawer), or
+ * The header actions: run the project's main script in one click (it opens in a terminal in this chat's drawer), or
  * pick another, edit one, or add one from the menu. A project with no scripts shows Add action.
  */
 export function ProjectScriptsControl({ project, taskId, onRun }: { project: Project; taskId?: string; onRun?: (sessionId: string) => void }) {
@@ -182,8 +182,8 @@ export function ProjectScriptsControl({ project, taskId, onRun }: { project: Pro
 	const keybindings = useKeybindings();
 	const [editor, setEditor] = useState<ScriptEditorRequest>();
 	const [menuOpens, setMenuOpens] = useState(0);
-	// t3.json is read from this chat's checkout, and again each time the menu opens.
-	const file = useT3ProjectFile(project.id, menuOpens);
+	// The project file is read from this chat's checkout, and again each time the menu opens.
+	const file = useProjectScriptsFile(project.id, menuOpens);
 	const imports = importableScripts(file.scripts, scripts);
 	const importScript = useImportScript(upsert, setEditor);
 	const primary = primaryScript(scripts);
@@ -208,7 +208,7 @@ export function ProjectScriptsControl({ project, taskId, onRun }: { project: Pro
 					<DropdownMenuContent align="end" className="w-64">
 						{scripts.map(script => <DropdownMenuItem key={script.id} onClick={() => run(script)} className="group/script">
 							<ScriptIcon icon={script.icon} className="size-4" /><span className="min-w-0 flex-1 truncate">{scriptMenuLabel(script)}</span>
-							{/* T3: the shortcut yields its place to the edit button on hover. */}
+							{/* The shortcut yields its place to the edit button on hover. */}
 							<span className="relative ms-auto flex h-6 min-w-6 shrink-0 items-center justify-end">
 								{shortcutOf(script) && <DropdownMenuShortcut className="ml-0 tracking-normal transition-opacity group-hover/script:opacity-0 group-focus-visible/script:opacity-0">{shortcutOf(script)}</DropdownMenuShortcut>}
 								<button type="button" aria-label={`Edit ${script.name}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); setEditor({ script }); }}

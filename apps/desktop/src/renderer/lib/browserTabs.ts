@@ -175,7 +175,7 @@ export function revealBrowserTab(context: string, id: string) {
 	selectBrowserTab(context, id);
 	for (const listener of openedListeners) listener({ context, id, background: false });
 }
-/** Asks before closing tabs an agent is driving, with T3 Code's question; true to go ahead. */
+/** Asks before closing tabs an agent is driving; true to go ahead. */
 export function confirmCloseBrowserTabs(context: string, ids: string[]): boolean {
 	const message = agentBrowserCloseConfirmation(listBrowserTabs(context).filter(tab => ids.includes(tab.id) && tab.controller === "agent").length);
 	return !message || window.confirm(message);

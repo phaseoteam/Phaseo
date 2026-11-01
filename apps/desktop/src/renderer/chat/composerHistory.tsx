@@ -24,7 +24,7 @@ export function usePromptHistory(task: Pick<Task, "id" | "messages">, draft: Dra
 	useCommand("composer.historyNext", () => step("forward"));
 }
 
-/** Mod+S parks the draft, or brings back the newest stashed one when the box is empty (T3's composer.stash). */
+/** Mod+S parks the draft, or brings back the newest stashed one when the box is empty (composer.stash). */
 export function usePromptStash(taskId: string, draft: Draft) {
 	const restore = (id?: string) => {
 		const item = takeStashed(id);

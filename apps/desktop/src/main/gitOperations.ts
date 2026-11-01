@@ -65,7 +65,7 @@ export async function gitCommand(root: string, value: unknown) {
 		} else if (command.type === "commit") {
 			if (typeof command.message !== "string" || !command.message.trim() || command.message.length > 10000 || command.message.includes("\0")) throw new Error("Enter a commit message.");
 			if ((command.all !== undefined && typeof command.all !== "boolean") || (command.push !== undefined && typeof command.push !== "boolean")) throw new Error("Invalid Git action.");
-			// T3 commits every change when nothing is staged.
+			// Every change is committed when nothing is staged.
 			if (command.all && !(await git(root, ["diff", "--cached", "--name-only"])).trim()) await git(root, ["add", "-A"]);
 			if (!(await git(root, ["diff", "--cached", "--name-only"])).trim()) throw new Error("Stage changes before committing.");
 			await git(root, ["commit", "-m", command.message]);

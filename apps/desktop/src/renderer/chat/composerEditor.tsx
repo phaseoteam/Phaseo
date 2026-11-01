@@ -107,7 +107,7 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		editorProps: {
 			attributes: { "aria-label": label, "aria-multiline": "true", role: "textbox", spellcheck: "true", class: "composer-editor" },
 			handleKeyDown: (_view, event) => {
-				// Mod+Shift+V pastes as plain text in Chromium; here it also keeps a long paste inline (T3).
+				// Mod+Shift+V pastes as plain text in Chromium; here it also keeps a long paste inline.
 				pasteInline.current = event.key.toLowerCase() === "v" && event.shiftKey && (event.ctrlKey || event.metaKey);
 				return keys.current?.(event) ?? false;
 			},
@@ -117,7 +117,7 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 				if (files.length && latest.current.onFiles) { event.preventDefault(); latest.current.onFiles(files); return true; }
 				const text = event.clipboardData?.getData("text/plain");
 				if (!text) return false;
-				// A long paste becomes a text attachment, as T3 folds large pastes, so the message stays readable.
+				// A long paste becomes a text attachment, so the message stays readable.
 				if (latest.current.onFiles && !pasteInline.current && isLargePaste(text)) {
 					event.preventDefault(); latest.current.onFiles([new File([text], "pasted-text.txt", { type: "text/plain" })]);
 					showToast("info", "Long paste attached as pasted-text.txt", `${isMac() ? "⌘⇧V" : "Ctrl+Shift+V"} keeps a long paste in the message.`);

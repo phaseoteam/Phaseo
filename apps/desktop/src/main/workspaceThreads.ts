@@ -76,7 +76,7 @@ const failure = (error: unknown) => error instanceof Error ? error.message.slice
 const active = (status: Task["status"]) => status === "idle" || status === "running" || status === "waiting";
 const modeRank: Record<Task["mode"], number> = { chat: 0, plan: 1, code: 2 };
 const permissionRank = (value?: Task["permissionMode"]) => value === "full-access" ? 2 : value === "accept-edits" ? 1 : 0;
-/** T3's privilege ceiling: a child can be narrower than its parent, never broader. Chat has no tools, plan reads, code writes. */
+/** The privilege ceiling: a child can be narrower than its parent, never broader. Chat has no tools, plan reads, code writes. */
 export function childPrivileges(parent: Pick<Task, "mode" | "permissionMode">, request: { mode?: Task["mode"]; permissionMode?: Task["permissionMode"] } = {}) {
 	if (request.mode && modeRank[request.mode] > modeRank[parent.mode]) throw new Error(`A child of a ${parent.mode} chat cannot use ${request.mode} mode.`);
 	if (request.permissionMode && permissionRank(request.permissionMode) > permissionRank(parent.permissionMode)) throw new Error("A child cannot have broader permissions than this chat.");
@@ -207,7 +207,7 @@ export class WorkspaceThreads {
 		} else if (request.modelOptions) throw new Error("Model settings cannot be checked right now; omit modelOptions.");
 		return { harness, model, accountId, modelOptions, agentId: inherited ? parent.agentId : undefined, reasoningEffort: inherited ? parent.reasoningEffort : undefined };
 	}
-	/** T3 lets an agent launch top-level threads and change schedules only with full access in its default (non-plan) interaction mode. */
+	/** An agent may launch top-level threads and change schedules only with full access in its default (non-plan) interaction mode. */
 	private launcher(callerId: string, action: string) {
 		if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
 		const caller = this.host.store.getTask(callerId);
@@ -573,7 +573,7 @@ export class WorkspaceThreads {
 						const asking = askable(child);
 						if (!abandoned && !asking.length && !this.host.isClosing() && parent.status !== "interrupted" && active(child.status)) return;
 						clearTimeout(timer); this.listeners.delete(listener); signal?.removeEventListener("abort", abort);
-						// Mirror T3's upgrade-to-always-wake: nobody is waiting any more, so the result is delivered as a message. Launched chats never deliver.
+						// Upgrade to always-wake: nobody is waiting any more, so the result is delivered as a message. Launched chats never deliver.
 						const deliveryQueued = abandoned && active(child.status) && !this.host.isClosing() && Boolean(child.delegation) && child.delegation?.kind !== "stage";
 						if (deliveryQueued && !child.delegation?.background) this.host.store.requestDelegationWake(id);
 						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}), ...child.delegation && child.projectId !== parent.projectId ? childWorktree(child) : {}, ...asking.length ? { pendingQuestions: asking.map(request => request.id) } : {} });
@@ -661,7 +661,7 @@ export class WorkspaceThreads {
 				const before = find(parsed.repository);
 				const result = (link: TaskPullRequestLink) => ({ repository: link.repository, number: link.number, url: link.url });
 				if (action === "unlink" || action === "unwatch") {
-					// Idempotent, as in T3: a pull request that is not linked (or not watched) is already in the asked-for state.
+					// Idempotent: a pull request that is not linked (or not watched) is already in the asked-for state.
 					if (before.length > 1) throw new Error("Several linked pull requests have this number. Pass repository or url.");
 					const link = before[0];
 					if (!link) return { repository: parsed.repository ?? "", number: parsed.number, url: parsed.repository ? pullRequestUrl(parsed.repository, parsed.number) : "", ...(action === "unlink" ? { wasLinked: false } : { watching: false, wasWatching: false }) };
@@ -755,7 +755,7 @@ export class WorkspaceThreads {
 				const before = new Set(this.host.store.missions.list().map(mission => mission.id));
 				const saved = command(validateMissionCommand({ type: "save", title: request.title, prompt: request.prompt, templateTaskId, ...(request.postInThisChat ? { threadTaskId: parentId } : {}), schedule: request.schedule })).find(mission => !before.has(mission.id));
 				if (!saved) throw new Error("The schedule could not be saved.");
-				// Missions start paused in the app; an agent asking for a schedule wants it running, as T3's schedule_task does by default.
+				// Missions start paused in the app; an agent asking for a schedule wants it running, as schedule_task does by default.
 				if (request.enabled !== false) command({ type: "enable", id: saved.id, enabled: true });
 				return scheduledTask(this.host.store.missions.get(saved.id));
 			},

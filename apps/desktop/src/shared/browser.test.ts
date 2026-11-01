@@ -7,7 +7,7 @@ describe("browser navigation boundary", () => {
 });
 
 describe("browser viewports", () => {
-	it("has T3 Code's seventeen device presets", () => { expect(browserViewportPresets).toHaveLength(17); expect(new Set(browserViewportPresets.map(preset => preset.id)).size).toBe(17); });
+	it("has seventeen device presets", () => { expect(browserViewportPresets).toHaveLength(17); expect(new Set(browserViewportPresets.map(preset => preset.id)).size).toBe(17); });
 	it.each([[{ mode: "fill" }, { mode: "fill" }], [{ mode: "device", width: 390, height: 844, preset: "iphone-12-pro" }, { mode: "device", width: 390, height: 844, preset: "iphone-12-pro" }], [{ mode: "device", width: 1200, height: 700, extra: true }, { mode: "device", width: 1200, height: 700 }], ["desktop", { mode: "fill" }], ["tablet-landscape", { mode: "device", width: 1024, height: 768, preset: "ipad-mini" }]])("accepts %j", (value, expected) => expect(browserViewport(value)).toEqual(expected));
 	it.each([undefined, null, {}, "unknown", "", 42, { mode: "device", width: 100, height: 800 }, { mode: "device", width: 390.5, height: 800 }, { mode: "device", width: 3840, height: 3840 }, { mode: "device", width: 390, height: 844, preset: "nokia" }])("rejects malformed viewport %j", value => expect(() => browserViewport(value)).toThrow("Invalid browser viewport"));
 	it("fits a device inside the area and centres it", () => {
@@ -23,7 +23,7 @@ describe("browser viewports", () => {
 });
 
 describe("browser zoom", () => {
-	it("steps through T3 Code's levels and stops at the ends", () => {
+	it("steps through the zoom levels and stops at the ends", () => {
 		expect(stepBrowserZoom(1, 1)).toBe(1.1); expect(stepBrowserZoom(1, -1)).toBe(0.9); expect(stepBrowserZoom(1.2, 1)).toBe(1.25); expect(stepBrowserZoom(1.2, -1)).toBe(1.1);
 		expect(stepBrowserZoom(5, 1)).toBe(5); expect(stepBrowserZoom(0.25, -1)).toBe(0.25); expect(browserZoomLevels[0]).toBe(0.25); expect(browserZoomLevels.at(-1)).toBe(5);
 	});
@@ -76,7 +76,7 @@ describe("browser slots, separate windows and recordings", () => {
 		expect(agentCursorOpacity(false, "none")).toBe(0.35);
 		expect(agentCursorOpacity(false, "human")).toBe(0.18);
 	});
-	it("asks before closing browsers an agent is driving, in T3 Code's words", () => {
+	it("asks before closing browsers an agent is driving", () => {
 		expect(agentBrowserCloseConfirmation(0)).toBeUndefined();
 		expect(agentBrowserCloseConfirmation(1)?.split("\n")[0]).toBe("Close browser while the agent is using it?");
 		expect(agentBrowserCloseConfirmation(3)?.split("\n")[0]).toBe("Close 3 browsers while the agent is using them?");

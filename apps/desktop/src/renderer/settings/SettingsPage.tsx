@@ -44,7 +44,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 		{ id: "factory-notes", label: "Notes", icon: <NotebookPen />, keywords: "factory notes memory remember learnt agents repository tests setup" },
 		{ id: "factory-checking", label: "Checking for new work", icon: <RefreshCw />, keywords: "factory github gh cli images poll schedule check new work api requests" },
 	] },
-	// Listed after the projects, at the bottom, like T3's.
+	// Listed after the projects, at the bottom.
 	{ label: "Advanced", pages: [
 		{ id: "diagnostics", label: "Diagnostics", icon: <Activity />, keywords: "processes cpu memory performance slow traces spans logs failures errors debug kill stop" },
 		{ id: "experimental", label: "Experimental", icon: <FlaskConical />, keywords: "autopilot beta labs experimental preview yolo" },
@@ -58,7 +58,7 @@ export function SettingsNav() {
 	const [query, setQuery] = useState("");
 	const needle = query.trim().toLowerCase();
 	const shown = groups.map(group => ({ ...group, pages: group.pages.filter(page => !needle || `${page.label} ${page.keywords}`.toLowerCase().includes(needle)) })).filter(group => group.pages.length);
-	// T3 lists each project's settings with the other pages; worktrees share their project's.
+	// Each project's settings are listed with the other pages; worktrees share their project's.
 	const current = settings === "project" ? settingsProject(overview.projects, settingsProjectId)?.id : undefined;
 	const projects = overview.projects.filter(project => !project.worktree && (!needle || `${project.name} project settings actions scripts auto-settle`.toLowerCase().includes(needle)));
 	const renderGroup = (group: (typeof groups)[number]) => <div key={group.label} className="flex flex-col gap-0.5 pb-2">

@@ -9,7 +9,7 @@ const FLUSH_DELAY = 400;
 const NONE: FileViewedOverlay = new Map();
 
 /**
- * Which files this reader has cleared, as GitHub records it (T3's usePullRequestFilesViewed), so a review carried on
+ * Which files this reader has cleared, as GitHub records it, so a review carried on
  * from github.com or another machine picks up where it was left. Presses show at once and are held over GitHub's
  * answer until a read that could have seen them comes back. When GitHub's record cannot be read, ticks are kept on
  * this computer instead and the count says so.

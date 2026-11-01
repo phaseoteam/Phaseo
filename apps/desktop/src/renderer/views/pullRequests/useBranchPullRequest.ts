@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { BranchPullRequest } from "../../../shared/pullRequests";
 
 /**
- * The pull request for a project checkout's current branch, linked or not (T3's branchPullRequest). The main process
+ * The pull request for a project checkout's current branch, linked or not. The main process
  * caches the read briefly; `refreshKey` asks again, for example when the pane's "+" menu opens.
  */
 export function useBranchPullRequest(projectId: string | undefined, refreshKey: unknown = 0) {

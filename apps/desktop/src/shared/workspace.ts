@@ -33,7 +33,7 @@ import { normalizeTags } from "./tags";
 import type { CheckpointChange, TurnFileChange, GitCommitSummary, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
 import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
-import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
+import type { ProjectFileState, ProjectSettings, ProjectUpdate } from "./projectSettings";
 import type { PullRequestGuideResult } from "./pullRequestGuide";
 import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pullRequestStacks";
 import type { WorktreeChatRequest, WorktreeSetup } from "./worktreeChat";
@@ -109,7 +109,7 @@ export type Task = {
 	/** What the chat's Phaseo turns have used, kept as they stream; filled in from its history for older chats. */
 	usageTotals?: UsageTotals;
 	autopilot?: AutopilotState;
-	/** Code-mode lifecycle after T3 Code (see shared/threadLifecycle.ts). */
+	/** Code-mode lifecycle (see shared/threadLifecycle.ts). */
 	settledOverride?: "settled" | "active"; settledAt?: string; unsettledAt?: string;
 	snoozedUntil?: string; snoozedAt?: string; lastSnoozeWakeAt?: string;
 	/** The person last had this chat open; turns finished after it are unread. */
@@ -130,7 +130,7 @@ export type Task = {
 	activities?: AgentActivity[];
 	inboxReadAt?: string;
 	missionId?: string;
-	/** Pull requests linked to this chat, after T3 Code's thread pull requests. */
+	/** Pull requests linked to this chat. */
 	pullRequests?: TaskPullRequestLink[];
 	/** GitHub issues linked to this chat, beside its pull requests. */
 	issues?: TaskIssueLink[];
@@ -204,7 +204,7 @@ export type WorkspaceCommand =
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
 	| { type: "cancel"; id: string }
 	| { type: "resume"; id: string }
-	/** T3's Resume at reset for a limited chat; cancel drops the scheduled resume. */
+	/** Resume at reset for a limited chat; cancel drops the scheduled resume. */
 	| { type: "resume-at-reset"; id: string; cancel?: boolean }
 	| { type: "fork"; id: string; messageId?: string }
 	/** Edit from here: removes this message of the person's and everything after it; restoreFiles puts the project back to the turn's snapshot, resend sends the message again (Regenerate). */
@@ -265,25 +265,25 @@ export type WorkspaceApi = {
 	issueDraft: (taskId: string, action: "file" | "discard", edit?: { title: string; body: string }) => Promise<void>;
 	/** Renames a project or replaces its settings (Project settings). */
 	updateProject: (update: ProjectUpdate) => Promise<WorkspaceOverview>;
-	/** The scripts in a project checkout's t3.json, T3 Code's checked-in project file. */
-	projectFile: (projectId: string) => Promise<T3ProjectFileState>;
+	/** The scripts in a project checkout's checked-in project file (t3.json). */
+	projectFile: (projectId: string) => Promise<ProjectFileState>;
 	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: WorkspaceOverview; projectId: string }>;
 	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
 	/** Chats the app's last quit interrupted, for the offer to continue them (cleared once they run again). */
 	quitInterrupted: () => Promise<string[]>;
 	/** Answers a secret request with the secret, or declines it with null. The value goes to the vault only. */
 	answerSecret: (taskId: string, requestId: string, value: string | null) => Promise<WorkspaceOverview>;
-	/** T3's worktree cleanup: list what the rules would remove, or remove the chosen ones after checking again. */
+	/** Worktree cleanup: list what the rules would remove, or remove the chosen ones after checking again. */
 	worktreeCleanup: (request: WorktreeCleanupRequest) => Promise<{ report: WorktreeCleanupReport; last?: WorktreeCleanupReport; workspace: WorkspaceOverview }>;
 	/** Measures worktrees on disk, one at a time, for the clean-up dialog. */
 	worktreeSizes: (projectIds: string[]) => Promise<Record<string, WorktreeSize>>;
-	/** T3's New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */
+	/** New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */
 	startWorktreeChat: (request: WorktreeChatRequest & { create: Extract<WorkspaceCommand, { type: "create-task" }> }) => Promise<{ workspace: WorkspaceOverview; taskId: string }>;
-	/** Fetches a pull request's head and makes a managed worktree on a new branch at it (T3's "Check out in a separate worktree"). */
+	/** Fetches a pull request's head and makes a managed worktree on a new branch at it ("Check out in a separate worktree"). */
 	pullRequestWorktree: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
 	/** Switches the project's own checkout to the pull request's branch; refuses while it has uncommitted changes. */
 	pullRequestCheckoutHere: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
-	/** A pull request's stored review guide; with write, writes one for the current head first (T3's Guide tab). */
+	/** A pull request's stored review guide; with write, writes one for the current head first (the Guide tab). */
 	pullRequestGuide: (projectId: string, number: number, write?: boolean) => Promise<PullRequestGuideResult>;
 	pasteImage: (taskId: string, name: string, bytes: Uint8Array) => Promise<Attachment>;
 	/** A dropped or pasted file, or a long paste: an image, audio, video, a PDF or UTF-8 text, as Attach files accepts. */
@@ -326,7 +326,7 @@ export type WorkspaceApi = {
 	signIn: (accountId: string) => Promise<WorkspaceOverview>;
 	accountStatus: (harness: "codex" | "claude" | "cursor" | "grok", accountId?: string) => Promise<AccountStatus>;
 	/** CLIProxyAPI hubs: list, add (checks the key first), remove, or read every account's limits. */
-	usageHubs: <R extends UsageHubRequest>(request: R) => Promise<R extends { type: "check" } ? UsageHubSnapshot : R extends { type: "t3-hubs" } ? ImportableHub[] : UsageHub[]>;
+	usageHubs: <R extends UsageHubRequest>(request: R) => Promise<R extends { type: "check" } ? UsageHubSnapshot : R extends { type: "importable-hubs" } ? ImportableHub[] : UsageHub[]>;
 	cancelSignIn: (accountId: string) => Promise<void>;
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
 	/** Files and folders matching a query, best first, for `@` mentions. */
@@ -386,13 +386,13 @@ export type WorkspaceApi = {
 	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;
 	gitBranches: (projectId: string) => Promise<string[]>;
-	/** T3's generated commit message: the title model reads the staged changes (or all of them) and writes one. */
+	/** A generated commit message: the title model reads the staged changes (or all of them) and writes one. */
 	gitCommitMessage: (projectId: string) => Promise<string>;
-	/** T3's Initialise Git, for a project folder that is not a repository. */
+	/** Initialise Git, for a project folder that is not a repository. */
 	gitInit: (projectId: string) => Promise<GitReview>;
 	/** The GitHub accounts a repository can be published to: the signed-in user first, then their organisations. */
 	publishOwners: (projectId: string) => Promise<string[]>;
-	/** T3's Publish repository: creates it on GitHub, adds it as origin and pushes the branch. */
+	/** Publish repository: creates it on GitHub, adds it as origin and pushes the branch. */
 	publishRepository: (projectId: string, request: PublishRepositoryRequest) => Promise<PublishRepositoryResult & { review: GitReview }>;
 	/** The branch against its base, uncommitted work, or one turn's snapshots. */
 	gitDiff: (projectId: string, request: GitDiffRequest) => Promise<GitDiffResult>;

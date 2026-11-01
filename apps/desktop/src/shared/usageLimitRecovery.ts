@@ -2,7 +2,7 @@ import { formatDateParts, formatTime } from "@phaseo/app-kit/format";
 import type { AccountStatus } from "./workspace";
 
 /**
- * T3's usage-limit recovery. A Claude or Codex turn that stops on a plan limit leaves the chat "limited" with when it
+ * Usage-limit recovery. A Claude or Codex turn that stops on a plan limit leaves the chat "limited" with when it
  * stopped, when the limit resets (from the account's limits, else the error text) and, once asked, when it resumes.
  */
 export type UsageLimitState = { at: string; resetsAt?: string; resumeAt?: string };

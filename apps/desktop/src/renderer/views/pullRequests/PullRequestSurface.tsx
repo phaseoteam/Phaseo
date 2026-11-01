@@ -35,11 +35,11 @@ import { lastMergeMethodKey, resolvePullRequestMergeMethod, useDefaultMergeMetho
 type Tab = "summary" | "guide" | "timeline" | "code";
 const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
 
-/** Copies, then says so in a toast; a refused clipboard says that instead (T3's copy feedback). */
+/** Copies, then says so in a toast; a refused clipboard says that instead. */
 export function copyWithToast(text: string, what: string) {
 	void navigator.clipboard.writeText(text).then(() => showToast("success", `${what} copied`), () => showToast("error", `Could not copy the ${what.toLowerCase()}`));
 }
-/** T3's PullRequestCopyableCode: no icon, the text fades to "Copied" in place on a hover pill. */
+/** Copyable code: no icon, the text fades to "Copied" in place on a hover pill. */
 export function CopyableCode({ value, label, className }: { value: string; label: string; className?: string }) {
 	const [copied, setCopied] = useState(false);
 	const timer = useRef<number>(undefined);
@@ -52,7 +52,7 @@ export function CopyableCode({ value, label, className }: { value: string; label
 }
 
 /**
- * One pull request, laid out like T3 Code's detail panel: a header that condenses to `#N title` on
+ * One pull request, as a detail panel: a header that condenses to `#N title` on
  * scroll, one primary control chosen by state with click-twice confirmation, a More menu, and the
  * Summary, Timeline and Code tabs. Meant to fill its own pane tab titled `#N`.
  */
@@ -283,7 +283,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 }
 
 /**
- * T3's PullRequestBaseFreshnessWarning, beside the base branch it is about: "out of date … by N commits" (read when it
+ * The base freshness warning, beside the base branch it is about: "out of date … by N commits" (read when it
  * opens), "Changes can be cleanly merged." when GitHub says so, and one button per way the branch can be brought up.
  */
 function BaseFreshnessWarning({ view, projectId, small, freshness, pending, updating, onUpdate }: { view: PullRequestView; projectId: string; small: boolean; freshness: NonNullable<ReturnType<typeof baseFreshness>>; pending: boolean; updating: boolean; onUpdate: (method: PullRequestUpdateMethod) => void }) {

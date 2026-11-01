@@ -17,7 +17,7 @@ function elapsed(task: TaskOverview, now: number) {
 	return seconds < 60 ? `${seconds}s` : seconds < 3600 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${Math.floor(seconds / 3600)}h ${Math.floor(seconds / 60) % 60}m`;
 }
 
-/** Agents this chat started, live: open one, or stop the ones still working. Mirrors T3 Code's subagent cards. */
+/** Agents this chat started, live: open one, or stop the ones still working. */
 export function AgentThreads({ taskId }: { taskId: string }) {
 	const { overview, select, command } = useWorkspace();
 	const sorted = overview.tasks.filter(task => task.delegation?.parentTaskId === taskId || task.launch?.byTaskId === taskId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));

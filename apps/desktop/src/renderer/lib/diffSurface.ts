@@ -6,7 +6,7 @@ import type { Message } from "../../shared/workspace";
 export type DiffSelection = { kind: "branch"; baseRef?: string } | { kind: "uncommitted" } | { kind: "turn"; messageId?: string } | { kind: "commit"; sha: string; subject?: string };
 export type DiffTurn = { messageId: string; number: number; completedAt?: string; from: string; to: string };
 
-/** Turns with both snapshots, newest first. Numbers count every turn the chat has run, as T3 does. */
+/** Turns with both snapshots, newest first. Numbers count every turn the chat has run. */
 export function diffTurns(messages: readonly Pick<Message, "id" | "role" | "startedAt" | "completedAt" | "checkpoint" | "delivery">[]): DiffTurn[] {
 	const turns: DiffTurn[] = [];
 	let number = 0;
@@ -45,7 +45,7 @@ export function diffLineStat(files: readonly Pick<FileDiffMetadata, "hunks">[]) 
 	return { additions, deletions };
 }
 
-/** T3's chevron colour per change type. */
+/** The chevron colour per change type. */
 export function changeTone(type: FileDiffMetadata["type"]) {
 	return type === "new" ? "text-success" : type === "deleted" ? "text-destructive" : type === "change" || type === "rename-pure" || type === "rename-changed" ? "text-warning" : "text-muted-foreground/80";
 }
