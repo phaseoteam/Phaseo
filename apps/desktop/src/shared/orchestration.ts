@@ -27,7 +27,7 @@ export type ProjectSummary = { id: string; name: string; directory: string; curr
 export type ThreadSettingsChange = { model?: string; modelOptions?: ModelOptionValues; mode?: Task["mode"]; permissionMode?: Task["permissionMode"] };
 export type ThreadSettings = ThreadSummary & { harness: Harness; model: string; accountId?: string; modelOptions: ModelOptionValues; mode: Task["mode"]; permissionMode: NonNullable<Task["permissionMode"]> };
 export type AddedProject = { id: string; name: string; path: string; alreadyAdded?: boolean };
-export const organizeActions = ["pin", "unpin", "archive", "unarchive", "rename", "tag", "settle", "unsettle", "snooze", "wake"] as const;
+export const organizeActions = ["pin", "unpin", "archive", "unarchive", "rename", "regenerate_title", "tag", "settle", "unsettle", "snooze", "wake", "mark_unread"] as const;
 export type OrganizeAction = typeof organizeActions[number];
 export type ScheduleRequest = { title: string; prompt: string; schedule: MissionSchedule; templateTaskId?: string; enabled?: boolean; postInThisChat?: boolean };
 export type ScheduleUpdate = { enabled?: boolean; title?: string; prompt?: string; schedule?: MissionSchedule };
@@ -144,8 +144,8 @@ export const agentLimitMessage = (active: number, maximum: number) => `${active}
 export const threadToolLabels: Record<string, string> = { delegate_task: "Delegate task", handoff_thread: "Hand off chat", fork_thread: "Fork chat", send_thread: "Send agent prompt", steer_thread: "Steer agent", rename_thread: "Rename agent chat", edit_thread_queue: "Edit agent queue", merge_thread_context: "Merge agent result", launch_thread: "Launch chat", launch_threads: "Launch chats", organize_thread: "Organise chat", schedule_task: "Schedule task", update_scheduled_task: "Update schedule", delete_scheduled_task: "Delete schedule", run_scheduled_task_now: "Run schedule now", run_stage: "Run Factory stage", configure_thread: "Change agent model or settings", update_global_instructions: "Change instructions for every chat", add_project: "Add project", clone_project: "Clone project", answer_question: "Answer agent question", move_to_worktree: "Move chat to a worktree", browser_open: "Open page in browser", browser_click: "Click in browser", browser_type: "Type in browser", browser_act: "Act in browser", browser_evaluate: "Run JavaScript in browser", browser_dialog: "Answer browser dialog" };
 /** Tools that ask the person even in full access: they change what every chat is told. */
 export const alwaysAskThreadTools: ReadonlySet<string> = new Set(["update_global_instructions"]);
-/** organize_thread only asks before archiving, so its approval card names that action. */
-export const threadToolLabel = (name: string, args?: unknown) => name === "organize_thread" && (args as { action?: unknown } | undefined)?.action === "archive" ? "Archive chat" : threadToolLabels[name] ?? "Orchestration action";
+/** organize_thread asks only before archiving and before naming a chat with the title model (which is paid), so its approval card names that action. */
+export const threadToolLabel = (name: string, args?: unknown) => { const action = name === "organize_thread" ? (args as { action?: unknown } | undefined)?.action : undefined; return action === "archive" ? "Archive chat" : action === "regenerate_title" ? "Name chat with a model" : threadToolLabels[name] ?? "Orchestration action"; };
 
 /** Appended to the system prompt of every harness that receives the orchestration tools. */
 export const orchestrationInstructions = `# Phaseo orchestration

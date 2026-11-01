@@ -301,6 +301,12 @@ describe("organize_thread", () => {
 		const launched = await tools.launch!({ requestId: "l", title: "Launched", prompt: "Work" });
 		expect(await tools.organize!(launched.id, "rename", "Renamed")).toMatchObject({ title: "Renamed" });
 		await expect(tools.organize!(launched.id, "rename")).rejects.toThrow("Invalid chat title");
+		// The store refuses unread before a finished turn, and naming needs a title model; both reach the agent as errors.
+		await expect(tools.organize!(launched.id, "mark_unread")).rejects.toThrow("no finished turn");
+		await expect(tools.organize!(launched.id, "regenerate_title")).rejects.toThrow(/title|Sign in/);
+		const organize = threadTools(tools).find(value => value.id === "organize_thread") as unknown as { requireApproval: (raw: unknown) => boolean };
+		expect(["pin", "mark_unread", "regenerate_title", "archive"].map(action => organize.requireApproval({ id: launched.id, action }))).toEqual([false, false, true, true]);
+		expect(threadToolLabel("organize_thread", { action: "regenerate_title" })).toBe("Name chat with a model");
 		await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
 		const grandchild = await runtime.threadTools(launched.id).delegate({ requestId: "g", title: "Grandchild", prompt: "Work" });
 		await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(2));

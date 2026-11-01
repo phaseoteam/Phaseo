@@ -538,6 +538,8 @@ export class WorkspaceThreads {
 				else if (action === "tag") await this.host.command({ type: "update-task", id, tags: tags ?? [] });
 				else if (action === "settle" && id === parentId && ["running", "waiting"].includes(task.status)) { const current = this.host.store.getTask(id); current.settleWhenTurnEnds = true; this.host.store.saveTask(current, true); }
 				else if (action === "settle" || action === "unsettle" || action === "wake") await this.host.command({ type: action, id });
+				else if (action === "mark_unread") await this.host.command({ type: "mark-unread", id });
+				else if (action === "regenerate_title") await this.host.command({ type: "regenerate-title", id });
 				else if (action === "snooze") { if (!until || Number.isNaN(Date.parse(until))) throw new Error("snooze needs until, an ISO date-time."); await this.host.command({ type: "snooze", id, until }); }
 				else if (action === "unarchive") await this.host.command({ type: "update-task", id, archived: false });
 				else {
