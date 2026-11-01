@@ -2,7 +2,7 @@
 
 ## Change brief
 
-Build T3 Code-style orchestration inside the existing Phaseo desktop shell, preserving Phaseo branding, connected accounts and gateway model selection. Reference: T3 Code nightly `v0.0.46-nightly.20261005.2676`, commit `7812230572f2d7e042d8d14ada2381fc71377560`, especially its orchestration V2 MCP and thread lineage documents. Its MIT licence permits reuse with attribution; this implementation initially uses the documented behaviour rather than copying source.
+Build agent orchestration inside the existing Phaseo desktop shell, preserving Phaseo branding, connected accounts and gateway model selection. Agents delegate to child chats, launch top-level chats and wait for results through an MCP server and in-process tools.
 
 Implement a shared, scoped thread service over the existing SQLite store and provider runtime. A delegated child has its own prompt, model, account and durable history. It inherits the parent's project and permission ceiling. Agents cannot approve permissions or inspect unrelated conversations. Retry identifiers prevent duplicate children. Waiting is bounded and cancellation and shutdown release waits. Completion delivery must be durable and idempotent before background parent wake-up is enabled.
 
@@ -34,11 +34,9 @@ Keep these separate from the broader desktop feature ledger; an exposed tool alo
 
 ## Validation and limits
 
-The reference clone lives in ignored `.tmp/t3code-orchestrator-reference`. Source and licence were inspected; no T3 implementation code or branding was copied into this increment.
-
 Orchestration uses the existing model discovery functions. Catalogs are bounded in tool responses and cached for ten minutes with stale results returned during background revalidation. Delegation validates the selected model when the desktop discovery service is available. Account secrets and invocation bearer tokens are never saved as workspace MCP connections.
 
-Owned child chats have a return-to-parent footer, remain visible through their parent and are excluded from ordinary chat history. Native-provider-owned subagents remain a separate missing capability. This increment does not establish full T3 nightly parity.
+Owned child chats have a return-to-parent footer, remain visible through their parent and are excluded from ordinary chat history. Native-provider-owned subagents remain a separate missing capability.
 
 OpenCode keeps MCP servers added at runtime per folder, for every session on that service, so adding a chat's orchestration credential to the shared service (or to the person's own, which Phaseo reuses when it runs) would expose it to other sessions in the folder. In Plan and Code, an OpenCode turn with the orchestration server instead starts a service of its own (`OpenCodeService.isolated`: `serve --service` on a random localhost port, with its own state folder), adds the orchestration server and the workspace's MCP connections there, and stops it when the turn ends. Sessions live in OpenCode's shared data folder, so a chat resumes on any service. The shared service never receives an orchestration connection. OpenCode sessions take no system prompt, so a new session gets the orchestration guidance ahead of its first prompt, as Cursor does. Each such turn pays the service's startup (a few seconds). Chat mode denies every OpenCode tool, so it gets no orchestration server. OpenCode also asks its own permission for each tool call, so supervised chats see an OpenCode approval before the server's own for tools that need one.
 
@@ -50,7 +48,7 @@ Delivery. When a child reaches completed, failed or interrupted, a SQLite trigge
 
 Collection groups pending rows by parent into one queued message. Each result section starts "Delegated agent …"; `sourceTaskId` is the first child and `sourceTaskIds` lists every child. If the parent's last queued item is still an undelivered result batch, new results are appended to it. The runtime starts an idle or completed parent 250 ms after a delivery, so children finishing together cause one wake. Results arriving while the parent runs share one follow-up turn. A stopped parent is not sent "interrupted" results for children it stopped. At launch, both outbox rows and already-queued deliveries or merges wake idle parents in the same way. A child interrupted by app shutdown therefore wakes an idle parent on the next launch.
 
-Waiting. `wait_thread` defaults to 10 minutes and accepts up to 60. Following T3's upgrade-to-always-wake, the child is marked for delivery in three cases: the wait times out, the caller disconnects (MCP request closed or the Phaseo tool signal aborted), or the parent's turn ends while a foreground child is still active. The child's next result then arrives as a message. Such a wake covers one result; later runs follow the child's own `background` setting. Codex gets `tool_timeout_sec = 3660` for the orchestration server, and the Pi bridge allows 61 minutes per call.
+Waiting. `wait_thread` defaults to 10 minutes and accepts up to 60. Under upgrade-to-always-wake, the child is marked for delivery in three cases: the wait times out, the caller disconnects (MCP request closed or the Phaseo tool signal aborted), or the parent's turn ends while a foreground child is still active. The child's next result then arrives as a message. Such a wake covers one result; later runs follow the child's own `background` setting. Codex gets `tool_timeout_sec = 3660` for the orchestration server, and the Pi bridge allows 61 minutes per call.
 
 Questions. A child waiting on a question ends its parent's `wait_thread`, which returns `pendingQuestions` (request ids). `read_pending_questions` lists or reads them (header, question, options with the value to send, whether the agent's own text is allowed) for an owned child or a launched chat, and `answer_question` (approval: Answer agent question) answers through the same `answer` command and checks as the person's panel. Approvals, secret questions and questions answered by message are never listed or answerable: they stay with the person.
 
@@ -78,15 +76,15 @@ Instructions. `orchestrationInstructions` (`shared/orchestration.ts`) covers whe
 - Pi: the `before_agent_start` prompt.
 - ACP and Cursor: a leading prompt block on new sessions only. ACP has no system prompt, and Cursor's `systemPrompt` would replace its harness prompt.
 
-Capabilities. `list_agents` (T3's `orchestrator_capabilities`) returns `{ harnesses: [{ harness, accountRequired, accounts: [{ id?, name, total, models: [{ id, name, legacy?, default?, options? }], error? }] }], unavailable: [{ harness, reason }], limits: { activeAgents, maxActiveAgents }, truncated? }`. It uses the composer's `discoverDesktopModels` and installation check (cached 5 minutes) and the 10-minute model cache. Native discovery runs two at a time. Non-legacy models come first. Output is capped at 60,000 characters by trimming option lists, then options, then models per account. Optional `harness` and `query` narrow it. `delegate_task` accepts `modelOptions` and validates them against the chosen model's descriptors.
+Capabilities. `list_agents` returns `{ harnesses: [{ harness, accountRequired, accounts: [{ id?, name, total, models: [{ id, name, legacy?, default?, options? }], error? }] }], unavailable: [{ harness, reason }], limits: { activeAgents, maxActiveAgents }, truncated? }`. It uses the composer's `discoverDesktopModels` and installation check (cached 5 minutes) and the 10-minute model cache. Native discovery runs two at a time. Non-legacy models come first. Output is capped at 60,000 characters by trimming option lists, then options, then models per account. Optional `harness` and `query` narrow it. `delegate_task` accepts `modelOptions` and validates them against the chosen model's descriptors.
 
 Approvals carry per-tool labels (`threadToolLabels`): Delegate task, Hand off chat, Fork chat, Send agent prompt, Steer agent, Rename agent chat, Edit agent queue, Merge agent result, Launch chat, Launch chats, Organise chat (Archive chat when archiving), Add project, Clone project, Schedule task, Update schedule, Delete schedule, Run schedule now.
 
 ## Top-level launches, projects, organisation and schedules
 
-These follow T3 Code's `t3_thread_launch`, `create_threads`, `t3_project_list`, `t3_thread_organize` and scheduled-task tools. They are registered in `threadTools()`, so Phaseo calls them in-process and every other MCP-capable harness gets them from the per-turn orchestration server and the Pi bridge.
+These are `launch_thread`, `launch_threads`, `list_projects`, `organize_thread` and the scheduled-task tools. They are registered in `threadTools()`, so Phaseo calls them in-process and every other MCP-capable harness gets them from the per-turn orchestration server and the Pi bridge.
 
-Delegate or launch. A delegated child belongs to its parent: it stops and is archived with the parent and reports back. A launched chat is an ordinary top-level chat. It has no `delegation` or `parentId`, so it appears in the sidebar and chat history like a user-created chat. It carries `Task.launch = { byTaskId, requestId }` (also on `TaskOverview`, persisted in the task JSON, with a SQLite index on both fields). The launcher may use `read_thread`, `wait_thread`, `send_thread`, `steer_thread`, `interrupt_thread`, `list_threads` and `organize_thread` on chats it launched. Results are never delivered back: `wait_thread` on a launched chat does not request a wake, so the launcher waits again or reads. Cancelling or archiving the launcher does not stop launched chats; only its orchestration children are cascaded, as in T3. Forks of a launched chat drop `launch`.
+Delegate or launch. A delegated child belongs to its parent: it stops and is archived with the parent and reports back. A launched chat is an ordinary top-level chat. It has no `delegation` or `parentId`, so it appears in the sidebar and chat history like a user-created chat. It carries `Task.launch = { byTaskId, requestId }` (also on `TaskOverview`, persisted in the task JSON, with a SQLite index on both fields). The launcher may use `read_thread`, `wait_thread`, `send_thread`, `steer_thread`, `interrupt_thread`, `list_threads` and `organize_thread` on chats it launched. Results are never delivered back: `wait_thread` on a launched chat does not request a wake, so the launcher waits again or reads. Cancelling or archiving the launcher does not stop launched chats; only its orchestration children are cascaded. Forks of a launched chat drop `launch`.
 
 `launch_thread` takes `{ requestId, title, prompt, harness?, model?, accountId?, modelOptions?, mode?, permissionMode?, workspace? }` and returns `{ id, title, projectId?, worktree?: { branch, directory } }`. `launch_threads` takes `{ threads: [...] }`, 1 to 20 entries with distinct requestIds, and returns `{ results: [launch result | { requestId, error }] }`. Workspace strategies:
 - `{ strategy: "same" }` (default): the caller's project, or none.
@@ -106,11 +104,11 @@ Instructions for every chat. `read_global_instructions` returns the person's Set
 Queues. `read_thread_queue` reads the queue of the caller itself (what the person queued next), a delegated child or a launched chat. `edit_thread_queue` (`{ id, messageId, text?, action? }`) changes only children and launched chats: `text` edits, neither removes, `action: "up" | "down"` moves one place (`queue-move`) and `action: "steer"` sends the prompt into the running turn through the composer's steer path (`steer` with `queuedId`, so a refused prompt returns to the queue). It returns the new order. `send_thread` with `restart: true` cancels a running turn, waits for it to end, puts the prompt ahead of the queue and resumes, so the prompt starts the next turn.
 
 Launch guards:
-- The caller must be `permissionMode: "full-access"` and not in Plan mode (T3 requires full access and the default interaction mode).
+- The caller must be `permissionMode: "full-access"` and not in Plan mode.
 - Mode and permissions default to the caller's and can only be narrower (`childPrivileges`).
 - Model, account auto-pick and `modelOptions` validation share `agentSettings` with `delegate_task`.
 - A launched chat counts toward `maxActiveAgents` while it is running or has queued work. `activeAgentCount` counts `delegation.parentTaskId` or `launch.byTaskId`.
-- A repeated requestId from the same caller returns the existing chat. Concurrent identical calls share one in-flight launch, and the store re-checks inside its transaction. T3 has no retry key.
+- A repeated requestId from the same caller returns the existing chat. Concurrent identical calls share one in-flight launch, and the store re-checks inside its transaction.
 - `launch_threads` runs every check first: structure, privileges, workspaces, models, distinct worktree branches and capacity for all new entries. If any check fails, nothing is created. Creation then runs serially. A later failure, for example Git refusing a branch, is reported for that entry only.
 - A worktree is created only after validation. If the chat then fails to register, the error names the new worktree project so a retry can use `existing_worktree`.
 
@@ -164,7 +162,7 @@ as above with descriptions worded for an agent that has no chat, served by `Work
 
 ## Follow-up: child controls
 
-Extend the existing shared service with owned-child rename, steering and queue inspection/edit/removal. Reference the pinned T3 thread management contract. Reuse desktop commands rather than a second execution path. Acceptance: fixtures cover successful durable mutations, queue ordering and rejection of mutations to referenced/unrelated chats. Local-only validation; no paid inference or deployment. Full parity remains pending in the ledger.
+Extend the existing shared service with owned-child rename, steering and queue inspection/edit/removal. Reuse desktop commands rather than a second execution path. Acceptance: fixtures cover successful durable mutations, queue ordering and rejection of mutations to referenced/unrelated chats. Local-only validation; no paid inference or deployment. Full parity remains pending in the ledger.
 
 Credential lifecycle: bound invocation tokens to an eight-hour maximum and thirty-minute idle lifetime, checked at request and tool execution boundaries. Validate expiry with an injected clock and local HTTP fixtures. Tokens remain memory-only.
 
@@ -202,7 +200,7 @@ Sidebar alignment fix: shared title-span rules were also giving span-based logos
 
 Sidebar logo correction: use model-lab logos rather than harness logos on chat rows. Resolve organisation-prefixed gateway IDs and known native model families; unknown labs keep a neutral icon. Model hover row likewise avoids harness fallback. Preserve harness identity as text metadata. No extra catalog fetches.
 
-Disclosure/shimmer cleanup: unify reasoning and tool-group row padding, typography and trailing chevrons. Follow the pinned T3 live-activity text shimmer pattern for thinking, running tools and Working status; retain readable response text and disable animation for reduced motion. Renderer-only change, validate Electron transition and builds.
+Disclosure/shimmer cleanup: unify reasoning and tool-group row padding, typography and trailing chevrons. Use a live-activity text shimmer for thinking, running tools and Working status; retain readable response text and disable animation for reduced motion. Renderer-only change, validate Electron transition and builds.
 
 Composer paste/focus brief: accept clipboard image files through the existing signature-validated attachment storage and display draft chips, including the new-chat composer. Route unmodified printable typing from the chat background to the composer, excluding inputs, editable surfaces, menus, dialogs, terminals and IME composition. Preserve normal text paste and shortcuts. Validate typecheck and Electron fixture behaviour without inference.
 

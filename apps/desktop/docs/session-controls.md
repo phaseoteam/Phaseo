@@ -1,7 +1,6 @@
 # Native session controls: evidence and remaining work
 
-Baseline: T3 Code `737993303d36e10674c54b95e5bd3826682c99c7` and installed
-`@opencode/client` 2.0.22. This is an implementation audit, not completed parity.
+Baseline: installed `@opencode/client` 2.0.22. This is an implementation audit, not completed parity.
 
 ## Implemented OpenCode controls
 
@@ -9,14 +8,14 @@ An attachment-free, trimmed `/compact` now uses the native `session.compact` end
 
 Manual and automatic lifecycle events produce compaction activities. Confirmed summaries preserve exact native text; structured failures and streams ending without completion retain explicit failure feedback. Foreign-session and duplicate lifecycle events are ignored. Local messages remain intact; summaries do not fabricate assistant messages.
 
-The pinned T3 OpenCode adapter routes an attachment-free `/compact` to
+The OpenCode adapter routes an attachment-free `/compact` to
 `session.compact({ sessionID, id })`. It handles automatic and manual
 `session.compaction.started`, `.ended` and `.failed` events separately from text
 and ordinary tool results. The installed client declares these events and the
 compact endpoint. The ended event carries the native summary in `data.text`;
 started/failed events can carry `inputID`, while all three identify the session.
 
-The pinned T3 OpenAI adapter requests `thread/compact/start` for the native thread
+The OpenAI adapter requests `thread/compact/start` for the native thread
 and tracks the operation as a turn. The installed OpenAI CLI 0.154.0 generated
 its standard TypeScript schema into the owned ignored directory
 `.tmp/desktop-references/codex-protocol-0.154.0-20261004`. Its request union
@@ -24,11 +23,6 @@ includes `thread/compact/start`, with `{ threadId: string }` parameters and an
 empty response. `ThreadItem` includes `contextCompaction`; the old
 `ContextCompactedNotification` is explicitly deprecated. Schema presence proves
 the declared interface, not successful signed-in execution or event ordering.
-
-Reference implementations:
-
-- [OpenCode adapter](https://github.com/pingdotgg/t3code/blob/737993303d36e10674c54b95e5bd3826682c99c7/apps/server/src/orchestration-v2/Adapters/OpenCode2AdapterV2.ts)
-- [OpenAI adapter](https://github.com/pingdotgg/t3code/blob/737993303d36e10674c54b95e5bd3826682c99c7/apps/server/src/orchestration-v2/Adapters/CodexAdapterV2.ts)
 
 ## Implemented OpenAI controls
 
@@ -44,11 +38,11 @@ Initialized Claude tasks share Compact context in the task menu. Bare manual com
 
 A successful command without a boundary is shown as Compaction result. The adapter retains native result text, local command output or native assistant output, including the installed CLI's empty-history explanation. An empty native result with no output retains an explicit lack-of-confirmation message. No local history is replaced.
 
-Reference: [Claude SDK command contract](https://code.claude.com/docs/en/agent-sdk/slash-commands#compact-history-with-compact), installed SDK 0.3.276 declarations and the pinned [T3 Claude adapter](https://github.com/pingdotgg/t3code/blob/737993303d36e10674c54b95e5bd3826682c99c7/apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts).
+Reference: [Claude SDK command contract](https://code.claude.com/docs/en/agent-sdk/slash-commands#compact-history-with-compact) and installed SDK 0.3.276 declarations.
 
 ## Usage limits and restarts
 
-After T3 Code's usage-limit recovery: when a Claude or Codex turn stops because the plan's limit was reached (the error says a usage or rate limit was hit), the chat becomes **Limited** instead of Failed, and a message the agent had not answered goes back to the queue. The app reads when the limit resets from the same account limits Settings → Usage shows (the latest reset among the exhausted windows), falling back to a time in the error text (Claude's `|<epoch>` suffix, Codex's "try again in 2 hours 13 minutes"). Under the chat, **Resume when the limit resets** schedules the chat to resume a minute after that time (shown with **Cancel**), and **Continue now** resumes it straight away. A scheduled resume survives restarts; sending a message, Resume or Stop ends the pause.
+When a Claude or Codex turn stops because the plan's limit was reached (the error says a usage or rate limit was hit), the chat becomes **Limited** instead of Failed, and a message the agent had not answered goes back to the queue. The app reads when the limit resets from the same account limits Settings → Usage shows (the latest reset among the exhausted windows), falling back to a time in the error text (Claude's `|<epoch>` suffix, Codex's "try again in 2 hours 13 minutes"). Under the chat, **Resume when the limit resets** schedules the chat to resume a minute after that time (shown with **Cancel**), and **Continue now** resumes it straight away. A scheduled resume survives restarts; sending a message, Resume or Stop ends the pause.
 
 Beside those, the notice offers somewhere else to continue: **Continue on <login>** for each other signed-in login of the same agent whose last reading has usage left (logins not read yet are left out), and **Continue on Phaseo <model> at $X/$Y per million tokens** when a Phaseo account is signed in. The Phaseo model is the same model when the catalogue lists it under the same name, else the person's last Phaseo model, else the catalogue default, and the price comes from the catalogue ("price not listed" when it has none). Nothing switches until one is clicked. A click hands the chat off to a new chat, sends the queued message there (or "Continue where you left off."), takes it out of the original chat's queue and cancels its scheduled resume, so the work is not run twice. Queued messages with files stay in the original chat. The new-chat composer shows the same offers ("Claude Code is out of usage until 3:40 PM. Use Work · Use Phaseo …") when the chosen login is out of usage by its last reading; choosing one only changes the selection.
 
