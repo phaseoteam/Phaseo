@@ -54,6 +54,8 @@ Beside those, the notice offers somewhere else to continue: **Continue on <login
 
 When Phaseo quits during a turn, the chat stops with "Phaseo quit during this turn. Resume to continue." At the next start, a notice offers to continue those chats (**Continue** or **Continue all**); each chat also keeps its own **Resume**. Agents started by other chats are left to their parents.
 
+When a running turn has produced nothing for two minutes (nothing it streams has changed the chat), the chat header's **Working** becomes "No response from Claude Code · 2m", counting up, and the Inbox lists the chat once as "No response for 2m". Both clear as soon as output resumes. Time waiting for the person's approval or answer does not count, and the turn is never stopped on its own; a long command with no output shows the same way.
+
 ## Verification and remaining work
 
 OpenCode has nine deterministic protocol/runtime cases. OpenAI adds thirteen cases covering request/event ordering, manual/automatic dispatch, turn matching, duplicates, admission rejection, native failure, Stop/disconnection, steering, unchanged prompts and SQLite reopening/export history. Source and Windows-archive UI fixtures verify exact OpenCode summary copying and OpenAI status-only layout, delivered menu commands and retained drafts across themes/window sizes.

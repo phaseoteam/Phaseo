@@ -26,7 +26,9 @@ import { useComposerEditor } from "./composerEditor";
 import { composeMessage, mentionPlainText } from "../lib/mentions";
 import { UsageMeters } from "../settings/UsageMeters";
 import { Conversation } from "./Conversation";
-import { ModelPicker } from "./ModelPicker";
+import { ModelPicker, harnessNames } from "./ModelPicker";
+import { silenceLabel, silentFor } from "../../shared/inbox";
+import { useNow } from "../lib/useNow";
 import { ModelSettings } from "./ModelSettings";
 import { PermissionMenu, PlanIndicator } from "./NewChat";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
@@ -54,6 +56,8 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
 	const project = overview.projects.find(value => value.id === task.projectId);
 	const snapshot = overview.tasks.find(value => value.id === task.id);
+	const now = useNow();
+	const silent = snapshot ? silentFor(snapshot, now) : undefined;
 	const [renaming, setRenaming] = useState(false);
 	const [customSnooze, setCustomSnooze] = useState(false);
 	const threadActions = useThreadActions();
@@ -76,7 +80,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 		{project && <span className="flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><ProjectIcon project={project} className="size-3.5" />{project.name}{project.worktree && <span className="font-mono">⎇ {project.worktree.branch}</span>}</span>}
 		<div className="ml-auto flex items-center gap-1.5">
 			{project && !project.worktree?.removedAt && <ProjectScriptsControl project={project} taskId={task.id} onRun={onOpenTerminal} />}
-			{snapshot && (snapshot.status !== "completed" && snapshot.status !== "idle" || snapshot.approvalsCount > 0) && <span className="flex h-6 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><StatusDot task={snapshot} />{snapshot.approvalsCount || snapshot.answersCount ? "Needs your input" : snapshot.status === "running" ? "Working" : snapshot.status === "waiting" ? "Waiting" : snapshot.status === "limited" ? "Usage limit reached" : snapshot.status === "interrupted" ? "Interrupted" : snapshot.status === "failed" ? "Failed" : ""}</span>}
+			{snapshot && (snapshot.status !== "completed" && snapshot.status !== "idle" || snapshot.approvalsCount > 0) && <span className="flex h-6 items-center gap-1.5 rounded-full border border-border px-2.5 text-[11.5px] text-muted-foreground"><StatusDot task={snapshot} />{snapshot.approvalsCount || snapshot.answersCount ? "Needs your input" : snapshot.status === "running" ? (silent !== undefined ? `No response from ${harnessNames[snapshot.harness]} · ${silenceLabel(silent)}` : "Working") : snapshot.status === "waiting" ? "Waiting" : snapshot.status === "limited" ? "Usage limit reached" : snapshot.status === "interrupted" ? "Interrupted" : snapshot.status === "failed" ? "Failed" : ""}</span>}
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" aria-label="Chat actions" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-52">
