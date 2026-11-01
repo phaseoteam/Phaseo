@@ -1,5 +1,5 @@
 import type { ChatModelOption } from "./modelOptions";
-import { chatSheetSections, effortRows, effortSummary, modelControlLabel, modelSheetRows } from "./modelSheetRows";
+import { chatSheetSections, effortRows, effortSummary, modelControlLabel, modelLabel, modelLabelSuffix, modelLabelText, modelSheetRows } from "./modelSheetRows";
 
 const option = (modelId: string, releaseDate: string, more: Partial<ChatModelOption> = {}): ChatModelOption => ({
   modelId, label: modelId.split("/")[1]!, orgId: modelId.split("/")[0]!, orgName: modelId.split("/")[0]!, releaseDate, status: "active", free: false,
@@ -74,5 +74,13 @@ describe("the composer's model control", () => {
     expect(modelControlLabel("Claude Opus 5.5", effortSummary([{ id: "high", label: "High" }], undefined, null))).toBe("Claude Opus 5.5 · Default");
     expect(modelControlLabel("Phaseo Free", effortSummary([], undefined, null))).toBe("Phaseo Free");
     expect(modelControlLabel("GPT-6 Astra", "Medium", 2)).toBe("GPT-6 Astra · Medium +2");
+  });
+
+  it("sets the effort word and the side-by-side count after the name, muted", () => {
+    expect(modelLabelSuffix(modelLabel("GPT-6 Astra", "Medium", 2))).toBe("Medium +2");
+    expect(modelLabelSuffix(modelLabel("Claude Opus 5.5", "High"))).toBe("High");
+    expect(modelLabelSuffix(modelLabel("Phaseo Free", null, 1))).toBe("+1");
+    expect(modelLabelSuffix(modelLabel("Phaseo Free", null))).toBeNull();
+    expect(modelLabelText(modelLabel("GPT-6 Astra", "Medium", 2))).toBe("GPT-6 Astra · Medium +2");
   });
 });

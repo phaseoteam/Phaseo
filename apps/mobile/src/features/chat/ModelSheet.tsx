@@ -1,5 +1,5 @@
 import { LegendList } from "@legendapp/list/react-native";
-import { Check, ChevronDown, Search } from "lucide-react-native";
+import { Check, Search } from "lucide-react-native";
 import { useCallback, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { Logo } from "@/components/Logo";
@@ -10,23 +10,6 @@ import type { EffortRow, SheetRow } from "./modelSheetRows";
 
 /** How a sheet row shows its model. */
 export type SheetModel = { id: string; label: string; detail?: string | null; orgId?: string | null; orgName?: string | null; badge?: ReactNode; disabled?: boolean };
-
-/**
- * The composer's model control: the model and its effort in one button ("Claude Opus 5.5 · High"). Without `onPress`
- * it only shows them, for a computer thread whose model can't change from the phone.
- */
-export function ModelControl({ label, logos, onPress, disabledReason }: { label: string; logos?: ReactNode; onPress?(): void; disabledReason?: string }) {
-  const content = (
-    <>
-      {logos}
-      <Text variant="small" numberOfLines={1} className={cn("shrink font-semibold", !onPress && "text-muted-foreground")}>{label}</Text>
-      {onPress ? <Icon icon={ChevronDown} tone="muted" size={14} /> : null}
-    </>
-  );
-  const className = "h-9 max-w-[72%] flex-row items-center gap-2 rounded-md pl-1.5 pr-2";
-  if (!onPress) return <View accessible accessibilityLabel={`Model: ${label}${disabledReason ? `. ${disabledReason}` : ""}`} className={className}>{content}</View>;
-  return <Pressable accessibilityRole="button" accessibilityLabel={`Model: ${label}`} accessibilityHint="Choose the model and its effort" onPress={onPress} className={cn(className, "active:bg-accent")}>{content}</Pressable>;
-}
 
 /**
  * Picks one model and its effort, for Phaseo chats and new computer threads. It opens at its full height and stays

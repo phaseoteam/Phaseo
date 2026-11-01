@@ -7,7 +7,7 @@ import { modelReasoningSupport, REASONING_LABELS, resolveReasoningEffort } from 
 import { useFavourites } from "./favourites";
 import { isNewModel, isSelectable, type ChatModelOption, type PickerFilters } from "./modelOptions";
 import { useChatModelOptions, useModelLabels } from "./models";
-import { chatSheetSections, effortRows, effortSummary, modelControlLabel, modelSheetRows, type Effort } from "./modelSheetRows";
+import { chatSheetSections, effortRows, effortSummary, modelLabel, modelSheetRows, type Effort, type ModelLabel } from "./modelSheetRows";
 import { ModelSheet, type SheetModel } from "./ModelSheet";
 import { rememberModel, useRecentModels } from "./recentModels";
 import type { ModelSettings } from "./settings";
@@ -25,13 +25,13 @@ export function chatEffort(option: ChatModelOption | null | undefined, settings:
 }
 
 /** The composer's control for a Phaseo chat: the first model and its effort, and how many more answer beside it. */
-export function useChatModelLabel(models: string[], settings: Record<string, ModelSettings>) {
+export function useChatModelLabel(models: string[], settings: Record<string, ModelSettings>): ModelLabel {
   const labels = useModelLabels();
   const first = models[0];
-  if (!first) return "Choose a model";
+  if (!first) return modelLabel("Choose a model", null);
   const { label, option } = labels(first, settings[first]);
   const { efforts, defaultId, selected } = chatEffort(option, settings[first]);
-  return modelControlLabel(label, effortSummary(efforts, defaultId, selected), models.length - 1);
+  return modelLabel(label, effortSummary(efforts, defaultId, selected), models.length - 1);
 }
 
 function facts(option: ChatModelOption) {
