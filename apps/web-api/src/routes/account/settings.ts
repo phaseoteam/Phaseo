@@ -28,6 +28,7 @@ import { accountSettingsRateLimitsRouter } from "./settings-rate-limits";
 import { accountSettingsWorkloadIdentityRouter } from "./settings-workload-identity";
 import { accountSettingsBudgetsRouter } from "./settings-budgets";
 import { accountSettingsSlackRouter } from "./settings-slack";
+import { accountSettingsConnectRouter } from "./settings-connect";
 import { accountSettingsSlackMemoryRouter } from "./settings-slack-memory";
 import { accountSettingsSlackPagesRouter } from "./settings-slack-pages";
 import { accountSettingsSlackSchedulesRouter } from "./settings-slack-schedules";
@@ -162,6 +163,7 @@ accountSettingsRouter.route("/", accountSettingsRateLimitsRouter);
 accountSettingsRouter.route("/", accountSettingsWorkloadIdentityRouter);
 accountSettingsRouter.route("/", accountSettingsBudgetsRouter);
 accountSettingsRouter.route("/", accountSettingsSlackRouter);
+accountSettingsRouter.route("/", accountSettingsConnectRouter);
 accountSettingsRouter.route("/", accountSettingsSlackMemoryRouter);
 accountSettingsRouter.route("/", accountSettingsSlackPagesRouter);
 accountSettingsRouter.route("/", accountSettingsSlackSchedulesRouter);
@@ -1316,8 +1318,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 		context.client.from("credit_ledger")
 			.select("id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at")
 			// Usage debits belong in usage logs; filter before the billing history limit.
-			// The Slack agent's month-end charge is a bill, so it stays.
-			.or("kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month")
+			// The Slack agent's and Phaseo Connect's month-end charges are bills, so they stay.
+			.or("kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month,ref_type.eq.connect_month")
 			.eq("workspace_id", workspaceId).order("event_time", { ascending: false }).limit(250),
 	]);
 	if (walletResult.error || transactionsResult.error) {
