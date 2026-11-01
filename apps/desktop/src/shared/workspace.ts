@@ -3,6 +3,7 @@ import type { Delegation, Launch } from "./orchestration";
 import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
 import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
 import type { CreatedOutsideAgentToken, OutsideAgentAccess, OutsideAgentSettings } from "./outsideAgents";
+import type { PhonePairingView, PhoneSettingsUpdate, PhoneState } from "./phone";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
@@ -380,6 +381,16 @@ export type WorkspaceApi = {
 	createOutsideAgentToken: (request: { name: string; access: OutsideAgentAccess }) => Promise<CreatedOutsideAgentToken>;
 	revokeOutsideAgentToken: (id: string) => Promise<OutsideAgentSettings>;
 	onOutsideAgentsChanged: (listener: (settings: OutsideAgentSettings) => void) => () => void;
+	/** Settings → Phone: phone access, its addresses, paired phones and Phaseo Connect. */
+	phone: () => Promise<PhoneState>;
+	updatePhone: (update: PhoneSettingsUpdate) => Promise<PhoneState>;
+	pairPhone: () => Promise<PhonePairingView>;
+	removePhone: (id: string) => Promise<PhoneState>;
+	setupPhoneHttps: () => Promise<PhoneState>;
+	/** Starts or stops Phaseo Connect's monthly charge, then connects or disconnects. */
+	setPhaseoConnect: (enabled: boolean) => Promise<PhoneState>;
+	refreshPhaseoConnect: () => Promise<PhoneState>;
+	onPhoneChanged: (listener: (state: PhoneState) => void) => () => void;
 	saveCodeHostToken: (request: CodeHostTokenRequest) => Promise<CodeHostSettings>;
 	removeCodeHostToken: (kind: CodeHostKind, host: string) => Promise<CodeHostSettings>;
 	saveCodeHostServers: (servers: CustomCodeHost[]) => Promise<CodeHostSettings>;
