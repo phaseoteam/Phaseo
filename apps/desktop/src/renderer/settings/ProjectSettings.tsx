@@ -19,7 +19,7 @@ import { Switch } from "../components/ui/switch";
 import { ModelPicker, harnessNames } from "../chat/ModelPicker";
 import { ModelSettings } from "../chat/ModelSettings";
 import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
-import type { Harness } from "../../shared/workspace";
+import { runnableHarnesses, type Harness } from "../../shared/workspace";
 
 const dayChoices = [1, 2, 3, 5, 7, 14, 30];
 const days = (value: number) => value === 1 ? "After 1 day" : `After ${value} days`;
@@ -34,8 +34,7 @@ function useWorkspacePreferences() {
 
 /** Signed-in agents, and any turned off here that are no longer signed in, so they can be turned back on. */
 function agentChoices(connected: Set<Harness>, disabled: readonly Harness[] = []) {
-	const order = Object.keys(harnessNames) as Harness[];
-	return order.filter(harness => connected.has(harness) || disabled.includes(harness));
+	return runnableHarnesses.filter(harness => connected.has(harness) || disabled.includes(harness));
 }
 
 function IconButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {

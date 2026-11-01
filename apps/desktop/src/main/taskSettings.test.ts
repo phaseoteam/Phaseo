@@ -92,3 +92,10 @@ describe("project agents", () => {
 		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 });
+
+describe("Antigravity", () => {
+	it("is not offered for chats until it has an adapter", () => {
+		expect(() => validateCommand({ type: "create-task", harness: "antigravity", model: "default", mode: "code" })).toThrow("not available yet");
+		expect(() => validateCommand({ type: "handoff", id: "source", harness: "antigravity", model: "default", mode: "code" })).toThrow("not available yet");
+	});
+});
