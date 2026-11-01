@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popove
 import { ScrollArea } from "../components/ui/scroll-area";
 import { DiffCodeView, type DiffViewFile, type DiffViewHandle } from "./DiffCodeView";
 import { DiffFileTree } from "./DiffFileTree";
-import { DIFF_SELECTION_KEY, OPEN_TURN_DIFF_EVENT, onProjectChange, openProjectFile, type OpenTurnDiffDetail } from "./events";
+import { DIFF_SELECTION_KEY, OPEN_TURN_DIFF_EVENT, onProjectChange, openProjectFile, pendingTurnDiffPaths, type OpenTurnDiffDetail } from "./events";
 import { DiffLoadingState, ipcError, RefreshIcon, SURFACE_HEADER_CLASS, SurfaceMessage, SurfaceNotice, ToolbarButton, useThemeType } from "./surfaceChrome";
 
 type Loaded = { key: string; result: GitDiffResult };
@@ -92,9 +92,10 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	const [selections, setSelections] = usePersistedState<Record<string, DiffSelection>>(DIFF_SELECTION_KEY, {});
 	const selection: DiffSelection = selections[scopeKey] ?? { kind: "branch" };
 	const select = (next: DiffSelection) => setSelections(current => Object.fromEntries(Object.entries({ ...current, [scopeKey]: next }).slice(-200)));
-	// Open diff under a turn in the chat picks that turn.
+	// Open diff under a turn in the chat picks that turn, and a file chosen there is shown once the diff has it.
+	const [revealPath, setRevealPath] = useState(() => taskId ? pendingTurnDiffPaths.get(taskId) : undefined);
 	useEffect(() => {
-		const open = (event: Event) => { const detail = (event as CustomEvent<OpenTurnDiffDetail>).detail; if (detail?.taskId === taskId) select({ kind: "turn", messageId: detail.messageId }); };
+		const open = (event: Event) => { const detail = (event as CustomEvent<OpenTurnDiffDetail>).detail; if (detail?.taskId === taskId) { select({ kind: "turn", messageId: detail.messageId }); setRevealPath(detail.path); } };
 		window.addEventListener(OPEN_TURN_DIFF_EVENT, open);
 		return () => window.removeEventListener(OPEN_TURN_DIFF_EVENT, open);
 	});
@@ -176,6 +177,13 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 		if (collapsedKeys.has(file.fileKey)) setKeys(toggleOne(collapsedKeys, file.fileKey));
 		requestAnimationFrame(() => viewer.current?.scrollTo({ type: "item", id: file.fileKey, align: "start" }));
 	};
+
+	useEffect(() => {
+		if (!revealPath || !files.some(file => file.filePath === revealPath)) return;
+		if (taskId) pendingTurnDiffPaths.delete(taskId);
+		setRevealPath(undefined); reveal(revealPath);
+		// reveal is rebuilt every render; the files arriving is what matters.
+	}, [revealPath, files]);
 
 	const label = scopeLabel(selection, turns);
 	const scopeValue = selection.kind === "turn" ? (selectedTurn(selection, turns) === turns[0] ? "latest" : `turn:${selectedTurn(selection, turns)?.messageId}`) : selection.kind;
