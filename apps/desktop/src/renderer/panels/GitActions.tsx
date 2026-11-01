@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { announceProjectChange, onProjectChange, openProjectFile } from "./events";
 import { ipcError, ToolbarButton } from "./surfaceChrome";
 import { PublishRepositoryForm } from "./PublishRepository";
+import { knownModel, modelLabel } from "../chat/ModelPicker";
 
 const statusTone: Record<string, string> = { M: "text-warning", A: "text-success", "?": "text-success", D: "text-destructive", R: "text-info", U: "text-destructive" };
 const statusLabel = (file: GitFile) => (file.indexStatus === "?" ? "U" : [file.indexStatus, file.worktreeStatus].find(value => value.trim()) ?? "M");
@@ -90,7 +91,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 		try {
 			const result = await api!.createPullRequest(projectId, taskId);
 			setOverview(result.workspace); setRefresh(value => value + 1); announceProjectChange(projectId);
-			toastManager.update(id, { type: "success", title: result.status === "created" ? `Created pull request #${result.number}` : `Pull request #${result.number} is already open`, description: taskId ? "Linked to this chat." : undefined, timeout: 6000, actionProps: { children: "Open", onClick: () => openPullRequest({ number: result.number }) } });
+			toastManager.update(id, { type: "success", title: result.status === "created" ? `Created pull request #${result.number}` : `Pull request #${result.number} is already open`, description: [result.writtenBy && `${knownModel(result.writtenBy)?.name ?? modelLabel(result.writtenBy)} wrote the title and description.`, taskId && "Linked to this chat."].filter(Boolean).join(" ") || undefined, timeout: 6000, actionProps: { children: "Open", onClick: () => openPullRequest({ number: result.number }) } });
 		} catch (reason) { toastManager.update(id, { type: "error", title: "Could not create the pull request", description: ipcError(reason), timeout: 8000 }); }
 	});
 	/** T3: the title model writes the message from the changes; an empty message is written this way on commit. */

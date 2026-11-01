@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { branchPullRequest, parseBranchPullRequest } from "./branchPullRequest";
-import { createPullRequest } from "./createPullRequest";
+import { createPullRequest, parsePullRequestText, pullRequestPrompt, pullRequestTemplate, threadWorkLog, type PullRequestContext } from "./createPullRequest";
 
 function fixture() {
 	const directory = mkdtempSync(path.join(tmpdir(), "phaseo-create-pr-")), git = (cwd: string, args: string[]) => execFileSync("git", args, { cwd, windowsHide: true, stdio: "pipe" }).toString().trim();
@@ -57,4 +57,74 @@ describe("the current branch's pull request", () => {
 			expect(await branchPullRequest(root, true, fakeGh({}).gh)).toEqual({ branch: "feature/z", defaultBranch: "main", pullRequest: null });
 		} finally { rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
 	}, 30000);
+});
+
+describe("writing the pull request", () => {
+	it("passes the writer's title and description to GitHub CLI, with the commits, changes and the repository's template", async () => {
+		const { directory, root, git } = fixture();
+		try {
+			mkdirSync(path.join(root, ".github")); writeFileSync(path.join(root, ".github", "pull_request_template.md"), "## What changed\n\n## Why\n");
+			git(root, ["add", "."]); git(root, ["commit", "-m", "Template"]); git(root, ["push"]);
+			git(root, ["switch", "-c", "feature/w"]); writeFileSync(path.join(root, "w.txt"), "w\n"); git(root, ["add", "."]); git(root, ["commit", "-m", "Add w", "-m", "Because w was missing."]);
+			let seen: PullRequestContext | undefined, body = "";
+			const calls: string[][] = [];
+			const gh = async (_root: string, args: string[]) => {
+				calls.push(args);
+				if (args[1] === "view") throw Object.assign(new Error("gh failed"), { stderr: "no pull requests found" });
+				body = (await import("node:fs")).readFileSync(args[args.indexOf("--body-file") + 1], "utf8");
+				return "https://github.com/owned/repo/pull/14\n";
+			};
+			const result = await createPullRequest(root, gh, async context => { seen = context; return { title: "Add w", body: "## What changed\n\nAdds w.", model: "openai/gpt-6-mini" }; });
+			expect(result).toMatchObject({ number: 14, status: "created", writtenBy: "openai/gpt-6-mini" });
+			expect(seen).toMatchObject({ branch: "feature/w", base: "main", template: "## What changed\n\n## Why\n" });
+			expect(seen!.commits).toContain("Add w\nBecause w was missing.");
+			expect(seen!.commits).not.toContain("Template");
+			expect(seen!.summary).toContain("w.txt");
+			expect(seen!.patch).toContain("+w");
+			expect(calls.at(-1)!.slice(0, 5)).toEqual(["pr", "create", "--repo", "github.com/owned/repo", "--title"]);
+			expect(calls.at(-1)).toContain("Add w");
+			expect(calls.at(-1)).not.toContain("--fill");
+			expect(body).toBe("## What changed\n\nAdds w.");
+		} finally { rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 30000);
+
+	it("falls back to the commits when the writer fails or has nothing", async () => {
+		const { directory, root, git } = fixture();
+		try {
+			git(root, ["switch", "-c", "feature/f"]); writeFileSync(path.join(root, "f.txt"), "f\n"); git(root, ["add", "."]); git(root, ["commit", "-m", "Add f"]);
+			const { gh, calls } = fakeGh({ create: "https://github.com/owned/repo/pull/15\n" });
+			expect(await createPullRequest(root, gh, async () => { throw new Error("offline"); })).not.toHaveProperty("writtenBy");
+			expect(calls.at(-1)).toContain("--fill");
+		} finally { rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 30000);
+
+	it("finds templates where GitHub does, including the first in a template folder", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-pr-template-"));
+		try {
+			expect(await pullRequestTemplate(directory)).toBeUndefined();
+			mkdirSync(path.join(directory, ".github", "PULL_REQUEST_TEMPLATE"), { recursive: true });
+			writeFileSync(path.join(directory, ".github", "PULL_REQUEST_TEMPLATE", "b.md"), "B"); writeFileSync(path.join(directory, ".github", "PULL_REQUEST_TEMPLATE", "a.md"), "A");
+			expect(await pullRequestTemplate(directory)).toBe("A");
+			writeFileSync(path.join(directory, "PULL_REQUEST_TEMPLATE.md"), "Root");
+			expect(await pullRequestTemplate(directory)).toBe("Root");
+		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+
+	it("tells the model about the template and the chat's work, and reads its reply", () => {
+		const prompt = pullRequestPrompt({ branch: "feature/w", base: "main", commits: "Add w", summary: " w.txt | 1 +", patch: "+w", template: "## Why" }, "Tool calls:\n- pnpm test");
+		expect(prompt.user).toContain("Pull request template:\n## Why");
+		expect(prompt.user).toContain("Work log from the chat that made the changes:\nTool calls:\n- pnpm test");
+		expect(prompt.system).toContain("never invent results");
+		expect(pullRequestPrompt({ branch: "b", commits: "", summary: "", patch: "" }).user).not.toContain("template");
+		expect(parsePullRequestText("```markdown\nTitle: Add w.\n\n## Why\nIt was missing.\n```")).toEqual({ title: "Add w", body: "## Why\nIt was missing." });
+		expect(parsePullRequestText("\n\n")).toBeUndefined();
+	});
+
+	it("summarises the chat's work without notices or agent-sent messages", () => {
+		const log = threadWorkLog({
+			messages: [{ role: "user", text: "Fix the build" }, { role: "user", text: "PR #3 changed", notice: {} }, { role: "user", text: "keep going", autopilot: true }, { role: "assistant", text: "Fixed; tests pass." }],
+			activities: [{ type: "tool", title: "pnpm test", status: "completed" }, { type: "reasoning", title: "Thinking" }, { type: "tool", title: "pnpm lint", status: "failed" }],
+		});
+		expect(log).toBe("Asked:\n- Fix the build\n\nTool calls:\n- pnpm test\n- pnpm lint (failed)\n\nLast reply:\nFixed; tests pass.");
+	});
 });

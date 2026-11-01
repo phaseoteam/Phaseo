@@ -97,7 +97,7 @@ import { checkoutPullRequestHere, checkoutPullRequestWorktree } from "./pullRequ
 import { readPullRequestStack, runPullRequestStackAction } from "./pullRequestStacks";
 import { git } from "./gitProcess";
 import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest";
-import { createPullRequest } from "./createPullRequest";
+import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkLog, type PullRequestContext } from "./createPullRequest";
 import { githubRepository } from "./projectPullRequests";
 import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
@@ -622,7 +622,14 @@ ipcMain.handle("workspace:branch-pull-request", (event, id: unknown, fresh: unkn
 ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskId: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof id !== "string" || (taskId !== undefined && typeof taskId !== "string") || shutdownStarted) throw new Error("Invalid pull request request.");
-	const result = await workspaceRuntime.mutateProject(id, () => createPullRequest(root));
+	// The title model writes the title and description from the branch, the repository's template and the chat's work; without one, the commits do.
+	const writer = "missing" in workspaceRuntime.titleModelAccount() ? undefined : async (context: PullRequestContext) => {
+		const thread = typeof taskId === "string" ? (() => { try { return threadWorkLog(workspaceRuntime.store.getTask(taskId)); } catch { return undefined; } })() : undefined;
+		const { reply, model } = await workspaceRuntime.completeWithTitleModel({ ...pullRequestPrompt(context, thread), maxTokens: 1_500, timeoutMs: 90_000, label: "The title model" });
+		const text = parsePullRequestText(reply ?? "");
+		return text && { ...text, model };
+	};
+	const result = await workspaceRuntime.mutateProject(id, () => createPullRequest(root, undefined, writer));
 	forgetBranchPullRequest(root);
 	// T3 links the pull request a Git action creates to the chat it ran beside, as "Created from this chat".
 	const task = typeof taskId === "string" ? workspaceRuntime.store.getOverview().tasks.find(value => value.id === taskId) : undefined;
