@@ -29,6 +29,7 @@ import { AutopilotControl, type AutopilotSetting } from "./Autopilot";
 import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { newChatDraftEvent, newChatDraftKey } from "../lib/newChatDraft";
 import { useWorktreeTarget, WorktreeTargetControls } from "./WorktreeTarget";
+import { OutOfUsageOffer } from "./OutOfUsageOffer";
 
 const suggestions = [
 	{ icon: PenLine, label: "Write", prompt: "Help me write " },
@@ -221,7 +222,7 @@ export function NewChat() {
 					{code && project && !triaging && <WorktreeTargetControls target={worktree} disabled={busy} />}
 					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
 				</>}
-				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />
+				footer={compare ? <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p> : selections.length === 1 && <OutOfUsageOffer selection={selections[0]} onChoose={next => setSelections([next])} />} />
 			{!code && <div className="flex flex-wrap justify-center gap-2">
 				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => editor.focus("end")); }}
 					className="flex h-8 items-center gap-2 rounded-full border border-border px-3.5 text-[13px] text-foreground/85 transition-colors hover:bg-muted"><Icon className="size-3.5 text-muted-foreground" />{label}</button>)}

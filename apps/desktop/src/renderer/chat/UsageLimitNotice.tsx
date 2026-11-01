@@ -4,17 +4,23 @@ import type { Task } from "../../shared/workspace";
 import { resetLabel } from "../../shared/usageLimitRecovery";
 import { errorText, useWorkspace } from "../app/workspace";
 import { showToast } from "../components/ui/toast";
+import { ContinueOfferLinks, useContinueOffers, type ContinueOffer } from "./ContinueOffers";
+import { continueElsewhere } from "./continueElsewhere";
 
 /**
  * T3's usage-limit recovery under a limited chat: when the plan limit resets, Resume when the limit resets (scheduled
- * a minute after the reset the account's limits give) and Continue now.
+ * a minute after the reset the account's limits give) and Continue now. Beside them, the agent's other signed-in logins
+ * and Phaseo at its price; nothing moves until one is clicked.
  */
 export function UsageLimitNotice({ task }: { task: Task }) {
-	const { command } = useWorkspace();
+	const { command, overview, select } = useWorkspace();
 	const [busy, setBusy] = useState(false);
 	const limit = task.usageLimit;
-	if (task.status !== "limited" || !limit) return null;
-	const run = async (action: () => Promise<unknown>) => { setBusy(true); try { await action(); } finally { setBusy(false); } };
+	const limited = task.status === "limited" && !!limit;
+	const { offers } = useContinueOffers({ harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions }, limited);
+	if (!limited) return null;
+	const run = async (action: () => Promise<unknown>) => { setBusy(true); try { await action(); } catch (reason) { showToast("error", "Could not continue the chat", errorText(reason)); } finally { setBusy(false); } };
+	const moveTo = (offer: ContinueOffer) => run(async () => { const moved = await continueElsewhere(command, task, offer.selection, new Set(overview.tasks.map(value => value.id))); if (!moved) return; select(moved.id); if (moved.filesLeft) showToast("info", "Queued files stayed behind", "Files attached to queued messages belong to the original chat. Attach them again if the agent needs them."); });
 	const button = (label: string, onClick: () => void, disabled = false) => <button type="button" disabled={busy || disabled} onClick={onClick} className="font-medium text-foreground hover:underline disabled:text-muted-foreground disabled:no-underline">{label}</button>;
 	return <section aria-label="Usage limit" className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-muted-foreground">
 		<Gauge className="size-4 shrink-0 text-warning" />
@@ -23,6 +29,7 @@ export function UsageLimitNotice({ task }: { task: Task }) {
 			? <><span>Resumes at {resetLabel(limit.resumeAt)}.</span><span aria-hidden>·</span>{button("Cancel", () => void run(() => command({ type: "resume-at-reset", id: task.id, cancel: true })))}</>
 			: <>{button("Resume when the limit resets", () => void run(() => command({ type: "resume-at-reset", id: task.id })))}</>}
 		<span aria-hidden>·</span>{button("Continue now", () => void run(() => command({ type: "resume", id: task.id })))}
+		<ContinueOfferLinks offers={offers} verb="Continue on" busy={busy} onChoose={offer => void moveTo(offer)} />
 	</section>;
 }
 
