@@ -46,6 +46,29 @@ Settings ▸ Outside agents turns on the local MCP server for agents you run you
 revokes tokens. A new token is shown once, with a command that adds it to Claude Code. See
 [Outside agents](orchestration-v2.md#outside-agents).
 
+## Phone
+
+Settings ▸ Phone lets the Phaseo phone app use this computer. It is off by default; with it off nothing listens and
+Phaseo Connect is disconnected.
+
+- **Addresses.** The phone server listens on port 47917, only on the addresses turned on: this Wi-Fi (off by default),
+  the Tailscale IP and Tailscale HTTPS (both on). It never listens on every network. A 100.64.0.0/10 address counts as
+  Tailscale only when its adapter is Tailscale's or `tailscale status` lists it, since other VPNs share that range.
+  Set up HTTPS runs `tailscale serve --bg --https=443 http://127.0.0.1:47917`, so the server also listens on loopback
+  while it serves; turning off phone access or the HTTPS address runs `tailscale serve --https=443 off`.
+- **Pairing.** Pair a phone shows a QR code and the same `phaseo://pair` link. Its code works once, for ten minutes. A
+  paired phone gets a device token (direct) and a relay token (Phaseo Connect); `phone.json` keeps only their hashes,
+  and the desktop's X25519 key stays in the credential vault. Remove revokes both and closes the phone's connections.
+- **What a phone can do.** Read and answer chats, approve or decline (never "always" or "never"), answer questions,
+  stop, and start chats. Every action goes through the same commands as the window. A new chat uses the project's
+  default model and permissions, else the latest chat's model; with neither it is refused.
+- **Phaseo Connect.** $1 a month from Phaseo credits, charged for the days it's on, billed to the first Phaseo
+  sign-in. The switch starts or stops the charge on phaseo.app first, then the desktop keeps one WebSocket to the relay,
+  signed in with that sign-in's gateway key. Frames are end-to-end encrypted; changed entries go out at most every
+  250 ms, and attention for a phone that isn't connected is held by the relay. An unpaid month pauses it.
+
+The frames and envelopes are in `packages/shared/phone-protocol`; the server is `src/main/phone`.
+
 ## Notifications
 
 **Settings → Notifications → Desktop alerts** sends a system notification when a chat needs you (Needs attention) or for every update, while Phaseo is in the background; **Show chat titles** names the chat in them. Under **In the app**, **In-app notices** (on by default) shows a toast while Phaseo has focus when a chat other than the open one finishes or needs you, with **Open**; several at once become one toast. **Unread count on the app icon** (on by default) counts chats with an unread reply or a request waiting on you on the dock (macOS), the launcher (Linux) or the taskbar button (Windows, as a small badge).

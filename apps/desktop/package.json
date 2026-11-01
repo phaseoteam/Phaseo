@@ -40,6 +40,7 @@
 		"@types/node": "^26.1.2",
 		"@types/react": "19.3.0",
 		"@types/react-dom": "19.3.0",
+		"@types/ws": "8.18.1",
 		"@typescript/native": "catalog:",
 		"@vitejs/plugin-react": "6.1.1",
 		"class-variance-authority": "^0.7.1",
@@ -69,6 +70,7 @@
 		"@opencode/client": "2.0.22",
 		"@phaseo/agent-sdk": "workspace:*",
 		"@phaseo/app-kit": "workspace:*",
+		"@phaseo/phone-protocol": "workspace:*",
 		"@phaseo/ui": "workspace:*",
 		"@pierre/diffs": "1.5.1",
 		"@statsig/js-client": "3.33.5",
@@ -94,8 +96,10 @@
 		"remark-parse": "11.0.0",
 		"shiki": "4.4.3",
 		"swr": "^2.5.1",
+		"toqr": "0.1.1",
 		"unified": "11.0.5",
 		"unpdf": "1.8.1",
+		"ws": "8.21.3",
 		"yaml": "^2.9.0"
 	}
 }

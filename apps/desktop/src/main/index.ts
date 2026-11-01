@@ -64,7 +64,7 @@ import { extractPdfText } from "./pdfText";
 import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
 import { searchProjectContents } from "./projectContentSearch";
 import { cloneRepository, cloneSource } from "./projectClone";
-import { homedir, release } from "node:os";
+import { homedir, hostname, release } from "node:os";
 import { buildStamp } from "./buildInfo";
 import { prepareTriageCheckout, writeTriagePlaybook } from "./triage";
 import { diagnosticsSection, triagePlaybook, triagePlaybookName, triageSourceRepository, type TriageBuild, type TriagePreparation } from "../shared/triage";
@@ -106,6 +106,8 @@ import { git } from "./gitProcess";
 import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest";
 import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkLog, type PullRequestContext } from "./createPullRequest";
 import { OutsideAgentsMcp } from "./outsideAgentsMcp";
+import { PhoneService, type PhaseoSignIn } from "./phone/phoneService";
+import { startPhoneChat } from "./phone/phoneHost";
 import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHostToken, saveCustomCodeHosts } from "./codeHosts";
 import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
 import { validateCodeHostTokenRequest } from "../shared/codeHostSettings";
@@ -154,6 +156,7 @@ const accountStatusRuns = new Map<string, Promise<AccountStatus>>();
 const agentChecks = new Map<string, AbortController>();
 let credentialVault: SecretVault;
 let outsideAgents: OutsideAgentsMcp | undefined;
+let phoneService: PhoneService | undefined;
 let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
 let missionService: MissionService;
@@ -491,7 +494,7 @@ app.on("before-quit", event => {
 	const deadline = setTimeout(() => { console.error("Shutdown timed out; quitting anyway."); stopTracing(); shutdownComplete = true; app.exit(0); }, 10_000);
 	// Factory saves its running stages as interrupted before the runtime stops their threads.
 	const factoryClosed = (factoryService?.shutdown() ?? Promise.resolve()).catch(() => { console.error("Factory shutdown failed."); });
-	void Promise.allSettled([factoryClosed.then(() => outsideAgents?.stop()).then(() => workspaceRuntime.close()).catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
+	void Promise.allSettled([factoryClosed.then(() => Promise.allSettled([outsideAgents?.stop(), phoneService?.stop()])).then(() => workspaceRuntime.close()).catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
 });
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
@@ -662,6 +665,22 @@ ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskI
 ipcMain.handle("workspace:outside-agents", event => { if (!senderWindow(event) || !outsideAgents) throw new Error("Invalid request."); return outsideAgents.settings(); });
 ipcMain.handle("workspace:outside-agents-enable", (event, enabled: unknown, port: unknown) => { if (!senderWindow(event) || !outsideAgents || typeof enabled !== "boolean" || (port !== undefined && typeof port !== "number") || shutdownStarted) throw new Error("Invalid request."); return outsideAgents.setEnabled(enabled, port as number | undefined); });
 ipcMain.handle("workspace:outside-agent-token", (event, request: unknown) => { if (!senderWindow(event) || !outsideAgents) throw new Error("Invalid request."); return outsideAgents.createToken(request); });
+ipcMain.handle("workspace:phone", event => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.refreshedState(); });
+ipcMain.handle("workspace:phone-update", (event, value: unknown) => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.update(value); });
+ipcMain.handle("workspace:phone-pair", event => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.pair(); });
+ipcMain.handle("workspace:phone-remove", (event, id: unknown) => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.removeDevice(id); });
+ipcMain.handle("workspace:phone-https", event => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.setupHttps(); });
+ipcMain.handle("workspace:phone-connect", (event, enabled: unknown) => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.setConnect(enabled); });
+ipcMain.handle("workspace:phone-connect-refresh", event => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.refreshConnect(); });
+/** The Phaseo sign-in Phaseo Connect bills: the first one made by signing in (not a pasted key). */
+function phoneSignIn(): PhaseoSignIn | undefined {
+	const account = workspaceRuntime.store.getAccounts().find(value => value.harness === "phaseo" && !value.archived && value.sessionSecretId && value.oauthExpiresAt);
+	if (!account) return undefined;
+	return {
+		label: account.profile?.email ?? account.profile?.name ?? account.name, ...account.phaseoWorkspaceId ? { workspaceId: account.phaseoWorkspaceId } : {},
+		gatewayKey: () => credentialVault.get(account.secretId ?? account.id), accessToken: async () => (await phaseoSession(account)).accessToken,
+	};
+}
 ipcMain.handle("workspace:outside-agent-revoke", (event, id: unknown) => { if (!senderWindow(event) || !outsideAgents) throw new Error("Invalid request."); return outsideAgents.revokeToken(id); });
 ipcMain.handle("workspace:code-hosts", event => { if (!senderWindow(event)) throw new Error("Invalid request."); return codeHostSettings(); });
 ipcMain.handle("workspace:code-host-token", async (event, value: unknown) => {
@@ -1291,6 +1310,18 @@ app.whenReady().then(() => {
 	workspaceRuntime.phaseo.background.onChange = taskId => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:background-changed", taskId); };
 	outsideAgents = new OutsideAgentsMcp(workspaceDirectory, { tools: agent => workspaceRuntime.outsideThreadTools(agent), changed: settings => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:outside-agents-changed", settings); } });
 	void outsideAgents.start();
+	// Phones use the same reads and commands as the window, so each action is checked the same way.
+	phoneService = new PhoneService({
+		directory: workspaceDirectory, vault: { get: id => vault.get(id), set: (id, value) => vault.set(id, value) }, phaseo: phoneSignIn,
+		changed: state => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:phone-changed", state); },
+		host: {
+			desktopName: () => hostname(), appVersion: app.getVersion(),
+			overview: () => workspaceRuntime.store.getOverview(), task: id => workspaceRuntime.store.getTask(id), page: query => workspaceRuntime.store.conversationPage(query),
+			command: command => workspaceRuntime.command(command),
+			newChat: input => startPhoneChat(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), input),
+		},
+	});
+	void phoneService.start().catch(() => {});
 	// Rows are written by a worker on its own connection, so a first read doesn't hold up the app.
 	transcriptScanner = new TranscriptScanner(workspaceRuntime.store, () => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:usage-changed"); }, { writer: () => new TranscriptWriter(workspaceRuntime.store.filename) });
 	// After the ledger's own start-up work, so a first read of large transcripts doesn't compete with opening the app.
@@ -1354,6 +1385,7 @@ app.whenReady().then(() => {
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {
 		missionService.observe(state);
+		phoneService?.overviewChanged(state);
 		taskNotifications.update(state);
 		const overview = state;
 		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:overview-changed", overview);
