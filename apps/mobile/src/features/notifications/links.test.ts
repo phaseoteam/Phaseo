@@ -13,13 +13,16 @@ describe("notificationRoute", () => {
     expect(notificationRoute(notificationTarget({ href: "/", kind: "test" })!)).toEqual({ href: "/models", open: "screen" });
   });
 
-  it("lands an approval or needs-you tap in Chat, going back to it from another screen", () => {
+  it("opens an approval or needs-you tap on its thread in Code, with the Code list and Chat behind it", () => {
     const route = notificationRoute(notificationTarget({ desktopId: "desk-1", chatId: "c2" })!);
-    expect(route).toEqual({ href: "/chat/code/desk-1/c2", open: "screen" });
-    expect(sidebarMove("/models/openai/gpt-6-astra", route.href, true)).toBe("back");
-    expect(sidebarMove("/chat/abc", route.href, true)).toBe("replace");
+    expect(route).toEqual({ href: "/code/desk-1/c2", open: "screen" });
+    // Pushed over Chat (the thread opens with `withAnchor`, so the Code list is under it).
+    expect(sidebarMove("/chat/abc", route.href, true, ["/chat"])).toBe("push");
     // A tap that launched the app arrives before `/` has redirected to Chat.
-    expect(sidebarMove("/", route.href, true)).toBe("replace");
+    expect(sidebarMove("/", route.href, true, ["/"])).toBe("push");
+    // From another thread it takes that one's place over the same list; from Models, Code takes Models' place.
+    expect(sidebarMove("/code/desk-1/c1", route.href, true, ["/chat", "/code"])).toBe("replace");
+    expect(sidebarMove("/models/openai/gpt-6-astra", route.href, true, ["/chat", "/models"])).toBe("replace");
   });
 });
 
