@@ -4,17 +4,22 @@ import { defaultPreferences, type WorkspacePreferences } from "../../shared/pref
 import { importableScripts, settingsProject, type ProjectSettings as Settings } from "../../shared/projectSettings";
 import { errorText, useWorkspace } from "../app/workspace";
 import { Select } from "../components/Select";
-import { ProjectScriptDialog, ScriptIcon, useImportScript, useProjectScripts, useT3ProjectFile, type ScriptEditorRequest } from "../components/ProjectScripts";
+import { ProjectScriptDialog, ScriptIcon, useImportScript, useProjectScripts, useProjectScriptsFile, type ScriptEditorRequest } from "../components/ProjectScripts";
 import { ProjectIconGlyph, ProjectIconPickerDialog } from "../components/ProjectIcon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { useRemoveProject } from "./removeProject";
 import { Tip } from "../components/ui/tooltip";
+import { Switch } from "../components/ui/switch";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 import { cn } from "../lib/utils";
 import { keyLabel, scriptCommand } from "../../shared/keybindings";
 import { useKeybindings } from "../lib/keybindings";
 import { isMac } from "../lib/shortcuts";
 import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
+import { ModelPicker, harnessNames } from "../chat/ModelPicker";
+import { ModelSettings } from "../chat/ModelSettings";
+import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
+import { runnableHarnesses, type Harness } from "../../shared/workspace";
 
 const dayChoices = [1, 2, 3, 5, 7, 14, 30];
 const days = (value: number) => value === 1 ? "After 1 day" : `After ${value} days`;
@@ -27,16 +32,21 @@ function useWorkspacePreferences() {
 	return preferences;
 }
 
+/** Signed-in agents, and any turned off here that are no longer signed in, so they can be turned back on. */
+function agentChoices(connected: Set<Harness>, disabled: readonly Harness[] = []) {
+	return runnableHarnesses.filter(harness => connected.has(harness) || disabled.includes(harness));
+}
+
 function IconButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
 	return <Tip label={label}><button type="button" aria-label={label} disabled={disabled} onClick={onClick} className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground disabled:opacity-40 [&_svg]:size-3.5">{children}</button></Tip>;
 }
 
 /**
- * T3's Project settings page: the project's name and icon, its own auto-settle settings (each one follows General
- * until changed), its actions (with t3.json imports), and Remove project. Worktrees share their project's page.
+ * The Project settings page: the project's name and icon, its own auto-settle settings (each one follows General
+ * until changed), its actions (with project file imports), and Remove project. Worktrees share their project's page.
  */
 export function ProjectSettingsPage() {
-	const { api, overview, setOverview, settingsProjectId } = useWorkspace();
+	const { api, overview, setOverview, settingsProjectId, command } = useWorkspace();
 	const preferences = useWorkspacePreferences();
 	const opened = overview.projects.find(value => value.id === settingsProjectId);
 	const project = settingsProject(overview.projects, settingsProjectId);
@@ -45,9 +55,10 @@ export function ProjectSettingsPage() {
 	const keybindings = useKeybindings();
 	const [busy, setBusy] = useState(false), [error, setError] = useState("");
 	const [picking, setPicking] = useState(false);
-	const file = useT3ProjectFile(project?.id);
+	const file = useProjectScriptsFile(project?.id);
 	const importScript = useImportScript(upsert, setEditor);
 	const removeProject = useRemoveProject();
+	const connected = useConnectedHarnesses();
 	if (!project) return <SettingsPageLayout title="Project settings"><p className="text-sm text-muted-foreground">This project is no longer in your workspace.</p></SettingsPageLayout>;
 	const settings: Settings = project.settings ?? {};
 	const save = async (update: { name?: string; settings?: Settings }) => {
@@ -77,6 +88,10 @@ export function ProjectSettingsPage() {
 					<SettingsButton disabled={busy} onClick={() => setPicking(true)}>Choose icon</SettingsButton>
 				</div>} />
 			<SettingsRow title="Folder" description={<span className="font-mono break-all">{project.directory}</span>} />
+			<SettingsRow title="Pin to the top" description="Pinned projects come first in the sidebar's project menu and the new chat picker."
+				control={<Switch aria-label="Pin project" disabled={busy || project.archived} checked={Boolean(project.pinned)} onCheckedChange={(pinned: boolean) => void command({ type: "organize-project", id: project.id, pinned })} />} />
+			<SettingsRow title="Archive" description="Archived projects and their chats leave the sidebar and the pickers. Nothing is deleted; turn this off to bring them back."
+				control={<Switch aria-label="Archive project" disabled={busy} checked={Boolean(project.archived)} onCheckedChange={(archived: boolean) => void command({ type: "organize-project", id: project.id, archived })} />} />
 		</SettingsSection>
 		<SettingsSection title="Code chats" description="When chats in this project settle on their own." label="Project auto-settle">
 			{toggle("autoSettleOnMerge", "Auto-settle merged chats", "Settle a chat when its pull request merges. Closed pull requests still settle it.")}
@@ -85,6 +100,24 @@ export function ProjectSettingsPage() {
 				control={<Select label="Auto-settle inactive chats" disabled={busy} value={settings.autoSettleAfterDays === undefined ? "inherit" : String(settings.autoSettleAfterDays ?? "never")}
 					onValueChange={value => override("autoSettleAfterDays", value === "inherit" ? "inherit" : value === "never" ? null : Number(value))}
 					options={[{ value: "inherit", label: `Same as General (${inheritedDays === null ? "never" : days(inheritedDays).toLowerCase()})` }, { value: "never", label: "Never" }, ...shownDays.map(value => ({ value: String(value), label: days(value) }))]} />} />
+		</SettingsSection>
+		<SettingsSection title="New chats" description="What new Code chats in this project start with. Each can still be changed before sending." label="Project new chat defaults">
+			<SettingsRow title="Model" description={settings.defaultModel ? "New chats start with this model and its settings." : "New chats start with the model you chose last."}
+				control={<>
+					{settings.defaultModel && <><SettingsButton variant="ghost" disabled={busy} onClick={() => override("defaultModel", "inherit")}>Reset</SettingsButton><ModelSettings selection={settings.defaultModel} onChange={next => override("defaultModel", next)} disabled={busy} /></>}
+					<ModelPicker selections={settings.defaultModel ? [settings.defaultModel] : []} onChange={values => { if (values[0]) override("defaultModel", values[0]); }} agents disabled={busy} hidden={settings.disabledHarnesses} className="border border-border" />
+				</>} />
+			<SettingsRow title="Permissions" description="How much the agent may do without asking."
+				control={<Select label="Project default permissions" disabled={busy} value={settings.defaultPermissionMode ?? "inherit"} onValueChange={value => override("defaultPermissionMode", value === "supervised" || value === "accept-edits" || value === "full-access" ? value : "inherit")}
+					options={[{ value: "inherit", label: "Last used" }, { value: "supervised", label: "Ask first" }, { value: "accept-edits", label: "Accept edits" }, { value: "full-access", label: "Full access" }]} />} />
+			<SettingsRow title="Workspace" description="Where new chats work: the project's own checkout, or a new worktree on its own branch."
+				control={<Select label="Project default workspace" disabled={busy} value={settings.defaultWorkspace ?? "inherit"} onValueChange={value => override("defaultWorkspace", value === "local" || value === "worktree" ? value : "inherit")}
+					options={[{ value: "inherit", label: "Last used" }, { value: "local", label: "Local" }, { value: "worktree", label: "New worktree" }]} />} />
+		</SettingsSection>
+		<SettingsSection title="Agents" description="Turn an agent off to keep it out of this project's model pickers. Chats in the project can't start on it." label="Project agents">
+			{agentChoices(connected, settings.disabledHarnesses).map(harness => { const off = settings.disabledHarnesses?.includes(harness) ?? false; return <SettingsRow key={harness} title={harnessNames[harness]} description={off ? "Turned off for this project." : settings.defaultModel?.harness === harness ? "Runs the project's default model. Reset the model to turn it off." : undefined}
+				control={<Switch aria-label={`Use ${harnessNames[harness]} in this project`} disabled={busy || (!off && settings.defaultModel?.harness === harness)} checked={!off}
+					onCheckedChange={on => { const rest = (settings.disabledHarnesses ?? []).filter(value => value !== harness); override("disabledHarnesses", on ? (rest.length ? rest : "inherit") : [...rest, harness]); }} />} />; })}
 		</SettingsSection>
 		<SettingsSection title="Pull requests" label="Project pull requests">
 			<SettingsRow title="Default merge method" description="Pull requests in this project start with this method."

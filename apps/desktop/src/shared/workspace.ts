@@ -1,4 +1,8 @@
+import type { HtmlRenderActivity } from "./htmlRender";
 import type { Delegation, Launch } from "./orchestration";
+import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
+import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
+import type { CreatedOutsideAgentToken, OutsideAgentAccess, OutsideAgentSettings } from "./outsideAgents";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
@@ -26,32 +30,39 @@ import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
 import type { PlanStep } from "./planSteps";
 import { normalizeTags } from "./tags";
-import type { CheckpointChange, TurnFileChange, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
+import type { CheckpointChange, TurnFileChange, GitCommitSummary, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
 import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
-import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
+import type { ProjectFileState, ProjectSettings, ProjectUpdate } from "./projectSettings";
 import type { PullRequestGuideResult } from "./pullRequestGuide";
 import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pullRequestStacks";
 import type { WorktreeChatRequest, WorktreeSetup } from "./worktreeChat";
 import type { PublishRepositoryRequest, PublishRepositoryResult } from "./gitWorkflow";
-import type { WorktreeCleanupReport, WorktreeCleanupRequest } from "./worktreeCleanup";
+import type { WorktreeCleanupReport, WorktreeCleanupRequest, WorktreeSize } from "./worktreeCleanup";
 import type { UsageLimitState } from "./usageLimitRecovery";
 import type { SecretRequest } from "./secretRequests";
+import type { ThreadServer } from "./threadServers";
+import type { NativeSession, NativeSessionImport } from "./sessionImport";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
+/** Harnesses a chat can run on. Antigravity stays a harness so usage history keeps its name, but it has no adapter yet, so it is offered nowhere. */
+export const runnableHarnesses: readonly Harness[] = harnesses.filter(harness => harness !== "antigravity");
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
-export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject };
+export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject; /** Pinned projects lead the project picker; archived ones, and their chats, leave the sidebar and pickers until unarchived. */ pinned?: boolean; archived?: boolean };
 export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
 export type PhaseoSignInResult = { workspace: WorkspaceOverview; accountId: string } | { secondFactor: true };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo login (not an older OAuth sign-in): the vault entry holding the login, and the Phaseo workspace its key is for. */ sessionSecretId?: string; phaseoWorkspaceId?: string; /** For a Phaseo sign-in, who it belongs to, from its Phaseo profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
-export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
+export type BackgroundCommandView = { id: string; command: string; directory: string; running: boolean; durationMs: number; output: string };
+export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image" | "audio" | "video"; mimeType: string; size: number; pages?: number };
 export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; /** Issue and pull request URLs the person referenced with `#`. */ githubReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Sent by Autopilot to keep the task going, not by the person. */ autopilot?: true; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
-export type MessageNotice = { kind: "pull-request" | "issue"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
+/** `outside-agent` is a prompt an agent outside Phaseo sent through its MCP server; the summary names the agent. `side-chat` is what the person brought back from a side chat. */
+export type MessageNotice = { kind: "pull-request" | "issue" | "outside-agent" | "side-chat"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string; /** The side chat it came from. */ taskId?: string };
 export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; githubReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
-export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string } };
+export type AgentActivity = { timelineOrder?: number; /** When the app first saw it running, for a live timer. */ startedAt?: string; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string };
+	/** A page an agent showed with html_render (its HTML is the text), shown above the reply. */ htmlRender?: HtmlRenderActivity };
 /** How the person's own answer is typed: text by default, or a typed control with bounds. */
 export type AgentQuestionInput = { kind: "text" | "multiline" | "number" | "integer" | "boolean" | "email" | "uri" | "date" | "date-time"; min?: number; max?: number; minLength?: number; maxLength?: number };
 export type AgentQuestionOption = { label: string; description?: string; preview?: string; /** Sent instead of the label when set; it may be empty. */ value?: string };
@@ -98,7 +109,7 @@ export type Task = {
 	/** What the chat's Phaseo turns have used, kept as they stream; filled in from its history for older chats. */
 	usageTotals?: UsageTotals;
 	autopilot?: AutopilotState;
-	/** Code-mode lifecycle after T3 Code (see shared/threadLifecycle.ts). */
+	/** Code-mode lifecycle (see shared/threadLifecycle.ts). */
 	settledOverride?: "settled" | "active"; settledAt?: string; unsettledAt?: string;
 	snoozedUntil?: string; snoozedAt?: string; lastSnoozeWakeAt?: string;
 	/** The person last had this chat open; turns finished after it are unread. */
@@ -119,7 +130,7 @@ export type Task = {
 	activities?: AgentActivity[];
 	inboxReadAt?: string;
 	missionId?: string;
-	/** Pull requests linked to this chat, after T3 Code's thread pull requests. */
+	/** Pull requests linked to this chat. */
 	pullRequests?: TaskPullRequestLink[];
 	/** GitHub issues linked to this chat, beside its pull requests. */
 	issues?: TaskIssueLink[];
@@ -162,9 +173,16 @@ export type TerminalEvent = { sessionId: string; data?: string; session?: Termin
 export type WorkspaceCommand =
 	| { type: "inbox-read"; id: string; revision: string }
 	| { type: "settle" | "unsettle" | "wake" | "mark-unread"; id: string }
-	| { type: "delete-task"; id: string }
+	/** onlyIfUnused deletes a side chat only if nothing was ever sent in it (closing its tab). */
+	| { type: "delete-task"; id: string; onlyIfUnused?: boolean }
+	/** Opens a side chat beside the chat `id`, copied from its conversation, and sends it `text` when there is one. */
+	| { type: "side-chat"; id: string; text: string }
+	/** Queues the side chat `id`'s questions and replies in its main chat, which runs them when it is free. */
+	| { type: "bring-back"; id: string }
 	/** Removes a project entry, its worktree entries and their chats. Files on disk are not touched. */
 	| { type: "remove-project"; id: string }
+	/** Pins or archives a project (not a worktree); its chats are untouched. */
+	| { type: "organize-project"; id: string; pinned?: boolean; archived?: boolean }
 	| { type: "regenerate-title"; id: string }
 	/** The chats of one sidebar section in the order the person dragged them into. */
 	| { type: "reorder"; ids: string[] }
@@ -191,7 +209,7 @@ export type WorkspaceCommand =
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
 	| { type: "cancel"; id: string }
 	| { type: "resume"; id: string }
-	/** T3's Resume at reset for a limited chat; cancel drops the scheduled resume. */
+	/** Resume at reset for a limited chat; cancel drops the scheduled resume. */
 	| { type: "resume-at-reset"; id: string; cancel?: boolean }
 	| { type: "fork"; id: string; messageId?: string }
 	/** Edit from here: removes this message of the person's and everything after it; restoreFiles puts the project back to the turn's snapshot, resend sends the message again (Regenerate). */
@@ -252,31 +270,44 @@ export type WorkspaceApi = {
 	issueDraft: (taskId: string, action: "file" | "discard", edit?: { title: string; body: string }) => Promise<void>;
 	/** Renames a project or replaces its settings (Project settings). */
 	updateProject: (update: ProjectUpdate) => Promise<WorkspaceOverview>;
-	/** The scripts in a project checkout's t3.json, T3 Code's checked-in project file. */
-	projectFile: (projectId: string) => Promise<T3ProjectFileState>;
+	/** The scripts in a project checkout's checked-in project file (t3.json). */
+	projectFile: (projectId: string) => Promise<ProjectFileState>;
 	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: WorkspaceOverview; projectId: string }>;
 	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
 	/** Chats the app's last quit interrupted, for the offer to continue them (cleared once they run again). */
 	quitInterrupted: () => Promise<string[]>;
 	/** Answers a secret request with the secret, or declines it with null. The value goes to the vault only. */
 	answerSecret: (taskId: string, requestId: string, value: string | null) => Promise<WorkspaceOverview>;
-	/** T3's worktree cleanup: list what the rules would remove, or remove the chosen ones after checking again. */
+	/** Worktree cleanup: list what the rules would remove, or remove the chosen ones after checking again. */
 	worktreeCleanup: (request: WorktreeCleanupRequest) => Promise<{ report: WorktreeCleanupReport; last?: WorktreeCleanupReport; workspace: WorkspaceOverview }>;
-	/** T3's New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */
+	/** Measures worktrees on disk, one at a time, for the clean-up dialog. */
+	worktreeSizes: (projectIds: string[]) => Promise<Record<string, WorktreeSize>>;
+	/** New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */
 	startWorktreeChat: (request: WorktreeChatRequest & { create: Extract<WorkspaceCommand, { type: "create-task" }> }) => Promise<{ workspace: WorkspaceOverview; taskId: string }>;
-	/** Fetches a pull request's head and makes a managed worktree on a new branch at it (T3's "Check out in a separate worktree"). */
+	/** Fetches a pull request's head and makes a managed worktree on a new branch at it ("Check out in a separate worktree"). */
 	pullRequestWorktree: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
 	/** Switches the project's own checkout to the pull request's branch; refuses while it has uncommitted changes. */
 	pullRequestCheckoutHere: (projectId: string, number: number) => Promise<{ workspace: WorkspaceOverview; projectId: string; branch: string }>;
-	/** A pull request's stored review guide; with write, writes one for the current head first (T3's Guide tab). */
+	/** A pull request's stored review guide; with write, writes one for the current head first (the Guide tab). */
 	pullRequestGuide: (projectId: string, number: number, write?: boolean) => Promise<PullRequestGuideResult>;
 	pasteImage: (taskId: string, name: string, bytes: Uint8Array) => Promise<Attachment>;
-	/** A dropped or pasted file, or a long paste: an image, a PDF or UTF-8 text, as Attach files accepts. */
+	/** A dropped or pasted file, or a long paste: an image, audio, video, a PDF or UTF-8 text, as Attach files accepts. */
 	pasteFile: (taskId: string, name: string, bytes: Uint8Array) => Promise<Attachment>;
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
 	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: WorkspaceOverview; taskId: string } | undefined>;
+	/** Claude Code and Codex conversations from the last 30 days on this computer. */
+	nativeSessions: () => Promise<NativeSession[]>;
+	/** Imports listed conversations as chats that resume them; returns what failed and why. */
+	importNativeSessions: (sessions: NativeSessionImport[]) => Promise<{ workspace: WorkspaceOverview; imported: number; failed: string[] }>;
 	attachment: (taskId: string, id: string) => Promise<{ attachment: Attachment; text?: string; dataUrl?: string }>;
+	/** A chat's running background commands (dev servers, watchers), with the end of their output. */
+	backgroundCommands: (taskId: string) => Promise<BackgroundCommandView[]>;
+	stopBackgroundCommand: (taskId: string, id: string) => Promise<void>;
+	/** Fires with the chat's id when one of its background commands starts or ends. */
+	onBackgroundChange: (listener: (taskId: string) => void) => () => void;
+	/** Saves a copy of an attachment where the person chooses; false when they cancel. */
+	saveAttachment: (taskId: string, id: string) => Promise<boolean>;
 	installations: () => Promise<HarnessInstallation[]>;
 	updateHarness: (harness: "codex" | "claude" | "pi") => Promise<void>;
 	cancelHarnessUpdate: () => Promise<void>;
@@ -300,7 +331,7 @@ export type WorkspaceApi = {
 	signIn: (accountId: string) => Promise<WorkspaceOverview>;
 	accountStatus: (harness: "codex" | "claude" | "cursor" | "grok", accountId?: string) => Promise<AccountStatus>;
 	/** CLIProxyAPI hubs: list, add (checks the key first), remove, or read every account's limits. */
-	usageHubs: <R extends UsageHubRequest>(request: R) => Promise<R extends { type: "check" } ? UsageHubSnapshot : R extends { type: "t3-hubs" } ? ImportableHub[] : UsageHub[]>;
+	usageHubs: <R extends UsageHubRequest>(request: R) => Promise<R extends { type: "check" } ? UsageHubSnapshot : R extends { type: "importable-hubs" } ? ImportableHub[] : UsageHub[]>;
 	cancelSignIn: (accountId: string) => Promise<void>;
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
 	/** Files and folders matching a query, best first, for `@` mentions. */
@@ -341,6 +372,17 @@ export type WorkspaceApi = {
 	createPullRequest: (projectId: string, taskId?: string) => Promise<CreatedPullRequestResult & { workspace: WorkspaceOverview }>;
 	/** The project's GitHub repository (owner/repo) from its origin remote, or null when it has none. */
 	projectRepository: (projectId: string) => Promise<string | null>;
+	/** Settings ▸ Code hosts: saved self-hosted servers, which hosts have a token, and which host CLIs are installed. */
+	codeHosts: () => Promise<CodeHostSettings>;
+	/** Settings ▸ Outside agents: the local MCP server for agents Phaseo did not start, and its tokens. */
+	outsideAgents: () => Promise<OutsideAgentSettings>;
+	setOutsideAgentsEnabled: (enabled: boolean, port?: number) => Promise<OutsideAgentSettings>;
+	createOutsideAgentToken: (request: { name: string; access: OutsideAgentAccess }) => Promise<CreatedOutsideAgentToken>;
+	revokeOutsideAgentToken: (id: string) => Promise<OutsideAgentSettings>;
+	onOutsideAgentsChanged: (listener: (settings: OutsideAgentSettings) => void) => () => void;
+	saveCodeHostToken: (request: CodeHostTokenRequest) => Promise<CodeHostSettings>;
+	removeCodeHostToken: (kind: CodeHostKind, host: string) => Promise<CodeHostSettings>;
+	saveCodeHostServers: (servers: CustomCodeHost[]) => Promise<CodeHostSettings>;
 	/** The native GitHub stack a pull request is in, cached for a minute unless `fresh`; linked chats pick up its layers. */
 	pullRequestStack: (projectId: string, number: number, fresh?: boolean) => Promise<PullRequestStackRead>;
 	/** Merge stack (through this layer) or Rebase stack (from the top), refused if any expected head moved. */
@@ -349,19 +391,25 @@ export type WorkspaceApi = {
 	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;
 	gitBranches: (projectId: string) => Promise<string[]>;
-	/** T3's generated commit message: the title model reads the staged changes (or all of them) and writes one. */
+	/** A generated commit message: the title model reads the staged changes (or all of them) and writes one. */
 	gitCommitMessage: (projectId: string) => Promise<string>;
-	/** T3's Initialise Git, for a project folder that is not a repository. */
+	/** Initialise Git, for a project folder that is not a repository. */
 	gitInit: (projectId: string) => Promise<GitReview>;
 	/** The GitHub accounts a repository can be published to: the signed-in user first, then their organisations. */
 	publishOwners: (projectId: string) => Promise<string[]>;
-	/** T3's Publish repository: creates it on GitHub, adds it as origin and pushes the branch. */
+	/** Publish repository: creates it on GitHub, adds it as origin and pushes the branch. */
 	publishRepository: (projectId: string, request: PublishRepositoryRequest) => Promise<PublishRepositoryResult & { review: GitReview }>;
 	/** The branch against its base, uncommitted work, or one turn's snapshots. */
 	gitDiff: (projectId: string, request: GitDiffRequest) => Promise<GitDiffResult>;
 	/** Both sides of one file in a scoped diff, checked against the diff's hash. */
 	gitDiffFile: (projectId: string, request: { diff: GitDiffRequest; filename: string; oldFilename?: string; hash: string }) => Promise<GitDiffContents>;
 	gitRefs: (projectId: string) => Promise<GitRefs>;
+	/** Local web servers this chat's terminals and background commands started. */
+	threadServers: (taskId: string) => Promise<ThreadServer[]>;
+	/** Stops one of them (the listening process and its children), checked against the chat again first. */
+	stopThreadServer: (taskId: string, port: number) => Promise<ThreadServer>;
+	/** The newest commits since the branch left `baseRef` (or its automatic base), for the Diff pane's Commits. */
+	gitCommits: (projectId: string, baseRef?: string) => Promise<GitCommitSummary[]>;
 	/** Folder listings and search that skip Git-ignored files; `refresh` re-reads the project. */
 	projectTree: (projectId: string, request: ProjectTreeRequest, refresh?: boolean) => Promise<ProjectTreeResult>;
 	filePreview: (projectId: string, filename: string) => Promise<FilePreview>;
@@ -414,6 +462,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		if (!Array.isArray(command.ids) || !command.ids.length || command.ids.length > 500 || command.ids.some(id => typeof id !== "string" || !id || id.length > 100) || new Set(command.ids).size !== command.ids.length) throw new Error("Invalid chat order.");
 	} else if (command.type === "create-task" || command.type === "handoff") {
 		if (command.type === "handoff") string("id");
+		if (command.harness === "antigravity") throw new Error("Antigravity chats are not available yet.");
 		if (!harnesses.includes(command.harness as Harness)) throw new Error("Unknown harness.");
 		if (command.permissionMode !== undefined && !["supervised", "accept-edits", "full-access"].includes(command.permissionMode as string)) throw new Error("Invalid permissions.");
 		if (!["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
@@ -488,10 +537,15 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			}
 			case "inbox-read": string("revision", true, 100); break;
-			case "settle": case "unsettle": case "wake": case "mark-unread": case "delete-task": case "remove-project": case "regenerate-title": break;
+			case "settle": case "unsettle": case "wake": case "mark-unread": case "remove-project": case "regenerate-title": case "bring-back": break;
+			case "delete-task": if (command.onlyIfUnused !== undefined && typeof command.onlyIfUnused !== "boolean") throw new Error("Invalid delete setting."); break;
+			case "side-chat": if (typeof command.text !== "string" || command.text.length > 100000) throw new Error("Invalid text."); break;
 			case "snooze": string("until", true, 100); if (Number.isNaN(Date.parse(command.until as string))) throw new Error("Invalid snooze time."); break;
 			case "visit": string("at", true, 100); if (Number.isNaN(Date.parse(command.at as string))) throw new Error("Invalid visit time."); break;
 			case "auto-settle": if (typeof command.enabled !== "boolean") throw new Error("Invalid auto-settle setting."); break;
+			case "organize-project":
+				if ((command.pinned === undefined && command.archived === undefined) || (command.pinned !== undefined && typeof command.pinned !== "boolean") || (command.archived !== undefined && typeof command.archived !== "boolean")) throw new Error("Invalid project change.");
+				break;
 			case "link-pull-request":
 				if (typeof command.reference !== "string" || command.reference.length > 500 || !parsePullRequestReference(command.reference)) throw new Error("Paste a GitHub pull request URL or a number like #42.");
 				// The main process fills these in from the reference.

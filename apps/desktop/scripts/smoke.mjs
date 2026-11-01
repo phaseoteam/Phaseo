@@ -141,7 +141,7 @@ app.whenReady().then(async () => {
 			editor.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'UI edit', bubbles: true, composed: true, cancelable: true }));
 			for (let attempt = 0; attempt < 50 && (await api.readFile('fixture','hello.txt')) !== 'UI edit'; attempt++) await new Promise(resolve => setTimeout(resolve,100));
 			if ((await api.readFile('fixture','hello.txt')) !== 'UI edit') throw new Error('Editor save failed');
-			// Staging and committing are in the details card in the title bar (T3).
+			// Staging and committing are in the details card in the title bar.
 			const git = await window.__auditDetails();
 			const stage = await window.__auditUntil(() => git.querySelector('button[aria-label="Stage hello.txt"]'), 'git file staging control');
 			stage.click();
@@ -203,7 +203,7 @@ app.whenReady().then(async () => {
 			if (steering?.[0]?.id!=='fixture-steering' || steering[0].status!=='unconfirmed') throw new Error('Steering recovery fixture missing');
 			await api.command({type:'steer-discard',id:${JSON.stringify(fixtureTask.id)},messageId:'fixture-steering'});
 			if ((await api.task(${JSON.stringify(fixtureTask.id)})).steering?.length) throw new Error('Steering recovery discard failed');
-			const pdfButton=await window.__auditUntil(()=>Array.from(document.querySelectorAll('main [data-conversation-id^="message:"] button')).find(button=>button.textContent.trim()==='fixture.pdf'),'message attachment');
+			const pdfButton=await window.__auditUntil(()=>document.querySelector('main [data-conversation-id^="message:"] button[aria-label="Preview fixture.pdf"]'),'message attachment');
 			pdfButton.click();
 			await window.__auditUntil(()=>document.querySelector('dialog.attachment-preview[open] pre')?.textContent.includes('Page 1\\nFixture PDF text'),'PDF text preview');
 			document.querySelector('[aria-label="Close attachment preview"]').click();
@@ -401,10 +401,10 @@ app.whenReady().then(async () => {
 			// The composer's model picker lists only connected harnesses, so pick the fixture model and plan mode through the bridge,
 			// then change reasoning through the composer's model settings menu.
 			await window.phaseoDesktop.workspace.command({type:'update-task',id:task.id,model:'fixture-model',mode:'plan'});
-			await window.__auditUntil(()=>document.querySelector('main form button[aria-label="Choose model"]')?.textContent.trim()==='Fixture Model'&&document.querySelector('main form button[aria-label="Model settings: Low"]'),'fixture model settings');
-			await window.__auditMenu('main form button[aria-label^="Model settings:"]',item=>item.textContent.trim().startsWith('High'));
+			await window.__auditUntil(()=>window.__auditModelName()==='Fixture Model'&&window.__auditModelSettings()==='Low','fixture model settings');
+			await window.__auditModelSetting('Reasoning','High');
 			for(let attempt=0;attempt<30 && (await window.phaseoDesktop.workspace.task(task.id)).reasoningEffort!=='high';attempt++) await new Promise(resolve=>setTimeout(resolve,100));
-			await window.__auditUntil(()=>document.querySelector('main form button[aria-label="Model settings: High"]'),'model settings label');
+			await window.__auditUntil(()=>window.__auditModelSettings()==='High','model settings label');
 			const updated=(await window.phaseoDesktop.workspace.get()).tasks.find(value=>value.id===task.id); if(updated.model!=='fixture-model' || updated.mode!=='plan' || updated.reasoningEffort!=='high' || updated.messages[0].text!=='Export conversation fixture' || updated.status!=='idle') throw new Error('Conversation settings changed history or started execution');
 		})()`);
 		result.taskSettings = true;
@@ -470,7 +470,7 @@ app.whenReady().then(async () => {
 		})()`);
 		if (existsSync(cancelledMarker)) throw new Error("Cancelled terminal authentication unexpectedly completed");
 		const managedProject = await window.webContents.executeJavaScript(`(async () => {
-			// Branches and worktrees are in the details card in the title bar (T3).
+			// Branches and worktrees are in the details card in the title bar.
 			const api=window.phaseoDesktop.workspace; await window.__auditUseProject('Fixture project'); const files=await window.__auditDetails();
 			if(files.querySelector('[aria-label="New branch name"]'))throw new Error('Worktree form should start collapsed');
 			const branchMenu=await window.__auditUntil(()=>Array.from(files.querySelectorAll('button[aria-haspopup="menu"]')).find(button=>button.textContent.trim()==='fixture'&&!button.disabled),'branch menu');

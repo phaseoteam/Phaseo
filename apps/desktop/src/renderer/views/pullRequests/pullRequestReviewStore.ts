@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import type { PullRequestReviewCommentDraft } from "../../../shared/pullRequestView";
 
 /**
- * A review being written, held until it is sent (T3's pullRequestReviewStore). Nothing reaches GitHub until the review
+ * A review being written, held until it is sent. Nothing reaches GitHub until the review
  * is submitted with every line comment and the verdict together, so a half-written one is invisible to everyone else.
  * Drafts live per pull request for as long as the app is open: closing a pane or switching tabs keeps them.
  */

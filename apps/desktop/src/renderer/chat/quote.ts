@@ -1,4 +1,4 @@
-/** Longest passage Quote takes, after T3's "Selection is too long to cite". */
+/** Longest passage Quote takes before "Selection is too long to cite". */
 export const quoteLimit = 4000;
 
 /** A selected passage as Markdown quote lines; blank lines stay inside the quote and runs of them collapse. */

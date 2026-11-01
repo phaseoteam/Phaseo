@@ -275,7 +275,7 @@ Source and fresh Windows archive forced-process audits exercise all three Phaseo
 
 ## Chat references
 
-Chat actions includes Copy chat ID, following the pinned T3 thread-reference behavior. The menu stays open for copied/failed/retry feedback and prevents another activation while a copy is pending. Pin, fork and archive labels consistently say chat. The copied value is the stable local chat identity.
+Chat actions includes Copy chat ID. The menu stays open for copied/failed/retry feedback and prevents another activation while a copy is pending. Pin, fork and archive labels consistently say chat. The copied value is the stable local chat identity.
 
 Source/archive native keyboard, failure/retry, pending guard and chat-switch checks pass with eight light/dark large/compact captures. Clipboard writes use an owned renderer fixture; the system clipboard is preserved. Existing native workspace workflows pass in both builds, including fork/pin/archive, exports and native compaction.
 
@@ -334,23 +334,23 @@ Source verification passes 923 tests/114 files, typecheck/lint, history paging/b
 
 ### Composer surface follow-up — 5 October
 
-The product direction is T3 Code for chat/project/tool workflows and Phaseo Web for typography, semantic colours and shared controls. The human comparison identified the nested textarea focus ring, disconnected toolbar and dominant labelled send button. The composer now uses one rounded muted surface, a seamless auto-sizing writing area, integrated model/settings control and circular send/queue action. Model settings use the existing account-aware settings flow; no unsupported microphone or access controls were added.
+The product direction is a dense desktop coding app for chat/project/tool workflows and Phaseo Web for typography, semantic colours and shared controls. The human comparison identified the nested textarea focus ring, disconnected toolbar and dominant labelled send button. The composer now uses one rounded muted surface, a seamless auto-sizing writing area, integrated model/settings control and circular send/queue action. Model settings use the existing account-aware settings flow; no unsupported microphone or access controls were added.
 
 Validation: desktop typecheck, lint and renderer build passed. Source native shared-controls audit passed (including narrow pane separation, model discovery and six conversation screenshots); prompt-command audit passed 19 captures with draft, focus and no-submission checks. Packaged validation remains outstanding.
 
-### T3 layout alignment contract — 5 October
+### Layout alignment contract — 5 October
 
-Reference: pingdotgg/t3code at efecd3cf8bcec3d1891b5f5a27dc2f6d797c6448, AppSidebarLayout, SidebarThreadHeader, RightPanelSheet, SettingsSidebarNav and settings route. Adapt the compact search/new-chat row, project grouping, single-line chat list, aligned conversation/tool headers, and settings navigation replacing the chat sidebar. Keep Phaseo semantic tokens and typography. Preserve bounded history, persisted selection/drafts, account-aware model discovery, browser coverage, approvals and resizable non-overlapping tools. Settings only exposes implemented categories; source T3 settings capabilities are not implied. Verify wide/intermediate/minimum layouts, settings navigation/search/return, draft preservation and tool resize.
+Adapt the compact search/new-chat row, project grouping, single-line chat list, aligned conversation/tool headers, and settings navigation replacing the chat sidebar. Keep Phaseo semantic tokens and typography. Preserve bounded history, persisted selection/drafts, account-aware model discovery, browser coverage, approvals and resizable non-overlapping tools. Settings only exposes implemented categories. Verify wide/intermediate/minimum layouts, settings navigation/search/return, draft preservation and tool resize.
 
 Implemented: compact search/scope/new-chat controls; collapsible project groups and single-line chat rows with status/date; coordinated conversation and icon-tab tool headers; settings sidebar with search, Appearance and shared ScrollArea; inert underlying chat and focus restoration while preserving drafts. Project scope is validated at IPC and applied in SQLite before pagination, with bound parameters and personal/all distinction.
 
 Verification: typecheck, lint, full desktop build and Forge package passed; five durable-history tests passed including project/personal pagination, search/archive combinations and malformed requests. Source prompt-command audit passed 19 captures. Source and fresh packaged shared-controls/layout audits passed across 1440/1180/1040 light/dark, with settings navigation/search/theme/draft/focus checks, six settings captures, six conversation captures and tool separation/resize checks. No provider inference. Full browser regression and broad product feature parity remain unverified.
 
-![Chat layout](screenshots/t3-chat-layout.png)
+![Chat layout](screenshots/chat-layout.png)
 
-![Settings layout](screenshots/t3-settings-layout.png)
+![Settings layout](screenshots/settings-layout.png)
 
-![Tools at minimum width](screenshots/t3-tools-minimum.png)
+![Tools at minimum width](screenshots/tools-minimum.png)
 
 ### Development and production icons — 5 October
 
@@ -360,7 +360,7 @@ Typecheck, lint, main/renderer builds and ICO/ICNS header validation passed. Res
 
 ### Composer-led new chat — 5 October
 
-Reference: T3 ChatView at efecd3cf8bcec3d1891b5f5a27dc2f6d797c6448, centred empty-draft composer and headline. The landing page now puts an auto-sizing persisted draft in the same Phaseo composer surface as active chats, with live harness/account/model selectors and project/mode/reasoning options. Submit or Ctrl/Cmd+Enter creates the chat and sends its first message. Once creation succeeds, the draft transfers to the new chat before send; a failed send retains it for retry. Secondary creation/import actions are in More actions, and Phaseo account connection remains visible when required. Blank creation also transfers an existing draft without sending it.
+The landing page now puts an auto-sizing persisted draft in the same Phaseo composer surface as active chats, with live harness/account/model selectors and project/mode/reasoning options. Submit or Ctrl/Cmd+Enter creates the chat and sends its first message. Once creation succeeds, the draft transfers to the new chat before send; a failed send retains it for retry. Secondary creation/import actions are in More actions, and Phaseo account connection remains visible when required. Blank creation also transfers an existing draft without sending it.
 
 Typecheck, lint and renderer build passed. Source native control audit passed at three widths in light/dark (six landing captures), real chat creation with controlled send success/failure, retry, and empty creation draft transfer. Send transport was intercepted; no provider inference occurred. Prompt-command regression passed 19 captures. Packaged landing verification has not been rerun.
 

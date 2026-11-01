@@ -23,11 +23,11 @@ import { RowChecksPopover } from "./RowChecksPopover";
 import { StackGlyph, StackPopover } from "./StackMenu";
 import { useProjectRepository } from "./useProjectRepository";
 
-/** T3's shared row shape (PullRequestListRow): a status column, then number and title over author and branches. */
+/** The shared row shape: a status column, then number and title over author and branches. */
 export const PULL_REQUEST_ROW_CLASS = "group/pr-row flex w-full items-center gap-2 rounded-md py-1 pr-1 text-left";
 const NUMBER_CLASS = "shrink-0 font-mono text-xs tabular-nums text-muted-foreground";
 export type OpenPullRequest = { number: number; title: string; state: "OPEN" | "CLOSED" | "MERGED"; draft: boolean };
-/** Who made each link, as the number's tooltip says it (T3's SOURCE_LABELS). */
+/** Who made each link, as the number's tooltip says it. */
 export const PULL_REQUEST_SOURCE_LABELS: Record<PullRequestLinkSource, string> = { manual: "Linked by you", created: "Created from this chat", agent: "Linked by the agent", stack: "Found in the stack", "stack-dismissed": "Dismissed" };
 export const WATCHING_LABEL = "Watching: the agent wakes when checks finish, someone comments, or the branch conflicts";
 
@@ -38,7 +38,7 @@ function RowLines({ number, title, signals, status, meta, updatedAt }: { number:
 	</span>;
 }
 const Branches = ({ head, base }: { head: string; base: string }) => <span className="flex min-w-0 items-center gap-1 font-mono"><MiddleTruncate value={head} limit={28} /><span className="shrink-0">→</span><MiddleTruncate value={base} limit={16} className="shrink-0" /></span>;
-/** T3's PullRequestRowAuthor: avatar and login. */
+/** A row's author: avatar and login. */
 function RowAuthor({ login, avatarUrl }: { login: string; avatarUrl?: string }) {
 	return <Tip label={login}><span className="inline-flex min-w-0 shrink-0 items-center gap-1"><ActorAvatar actor={{ login, avatarUrl }} className="size-3.5" /><span className="max-w-28 truncate">{login}</span></span></Tip>;
 }
@@ -53,7 +53,7 @@ function RowMenu({ label, children }: { label: string; children: ReactNode }) {
 		</DropdownMenu>
 	</span>;
 }
-/** A row whose menu also opens where it is right-clicked (T3). */
+/** A row whose menu also opens where it is right-clicked. */
 function ContextRow({ className, style, data, menu, children }: { className: string; style?: CSSProperties; data: Record<string, string | number | undefined>; menu: ReactNode; children: ReactNode }) {
 	return <ContextMenu.Root>
 		<ContextMenu.Trigger render={<div className={className} style={style} {...data} />}>{children}</ContextMenu.Trigger>
@@ -70,7 +70,7 @@ function LinkRow({ projectId, line, openable, onOpen, onExternal, onCopy, onUnli
 		{open && <DropdownMenuItem onClick={() => onWatch(!link.watching)}>{link.watching ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}{link.watching ? "Stop watching" : "Watch for changes"}</DropdownMenuItem>}
 		<DropdownMenuItem onClick={onUnlink}><PullRequestGlyph.unlink className="size-3.5" />{link.source === "stack" ? "Dismiss from chat" : "Unlink from chat"}</DropdownMenuItem>
 	</>;
-	// Each layer steps in under the one it targets, capped so a tall stack does not stair-step off the edge (T3).
+	// Each layer steps in under the one it targets, capped so a tall stack does not stair-step off the edge.
 	return <ContextRow className={cn(PULL_REQUEST_ROW_CLASS, "relative hover:bg-accent/60")} style={{ paddingLeft: `${0.5 + Math.min(depth, 3) * 1.25}rem` }} data={{ "data-pull-request-row": `${link.repository}#${link.number}`, "data-stack-depth": depth || undefined }} menu={items}>
 		{depth > 0 && <span aria-hidden className="-ml-2 h-6 w-px shrink-0 bg-border/70" />}
 		{snapshot ? <PullRequestRowGlyph state={snapshot.state} draft={snapshot.draft} mergeable={snapshot.mergeable} base={snapshot.base} /> : <PullRequestGlyph.pullRequest aria-label="Waiting for GitHub" className="size-4 shrink-0 text-muted-foreground" />}
@@ -113,7 +113,7 @@ function ProjectRow({ projectId, request, linked, onOpen, onExternal, onCopy, on
 }
 
 /**
- * T3's link dialog: a GitHub URL, `owner/repo#42`, or `#42` for the chat's repository, checked as you type with the
+ * The link dialog: a GitHub URL, `owner/repo#42`, or `#42` for the chat's repository, checked as you type with the
  * pull request it names shown under the input. It cannot be closed while a link is being made.
  */
 export function LinkPullRequestDialog({ open, onOpenChange, onLink, repository }: { open: boolean; onOpenChange: (open: boolean) => void; onLink: (reference: string) => Promise<string | undefined>; repository?: string | null }) {
@@ -143,7 +143,7 @@ export function LinkPullRequestDialog({ open, onOpenChange, onLink, repository }
 }
 
 /**
- * The pull requests linked to a chat (T3's ThreadPullRequestsPanel: rows start at the top, a footer counts them) and
+ * The pull requests linked to a chat (rows start at the top, a footer counts them) and
  * the project's open pull requests, a step away. Without `onOpen` a row opens in place with a back button; with it,
  * the caller can give each pull request its own pane tab.
  */
@@ -175,7 +175,7 @@ export function PullRequestListSurface({ projectId, taskId, onOpen }: { projectI
 	const linkedKey = links.filter(link => repository && link.repository.toLowerCase() === repository.toLowerCase()).slice(0, 20).map(link => link.number).join(",");
 	const refreshLinks = useCallback(() => { if (!api || !linkedKey) return; for (const number of linkedKey.split(",").map(Number)) void api.pullRequest(projectId, number).catch(() => {}); }, [api, projectId, linkedKey]);
 	useEffect(() => { refreshLinks(); }, [refreshLinks]);
-	// As T3's sync does, a linked pull request whose stack GitHub reports differently from the saved one has its stack
+	// When syncing, a linked pull request whose stack GitHub reports differently from the saved one has its stack
 	// read, so the stack's other layers join the chat and a layer that left drops its stack.
 	const stackKey = project?.projectId === projectId ? links.filter(link => link.repository.toLowerCase() === project.value.repository.toLowerCase()).flatMap(link => { const row = project.requests.find(request => request.number === link.number); return row && (row.stack?.number ?? null) !== (link.stack?.number ?? null) ? [link.number] : []; }).slice(0, 10).join(",") : "";
 	useEffect(() => { if (api && stackKey) for (const number of stackKey.split(",").map(Number)) void api.pullRequestStack(projectId, number).catch(() => {}); }, [api, projectId, stackKey]);

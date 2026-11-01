@@ -3,7 +3,7 @@ import { createInterface } from "node:readline";
 import type { TraceDiagnostics, TraceFailureSummary, TraceLogEvent, TraceRecentFailure, TraceSpanOccurrence, TraceSpanSummary } from "../../shared/diagnostics";
 import { rotatedTracePaths } from "./tracer";
 
-/** Spans at least this long count as slow, as in T3 Code. */
+/** Spans at least this long count as slow. */
 export const SLOW_SPAN_THRESHOLD_MS = 1_000;
 const TOP_LIMIT = 10, RECENT_LIMIT = 20;
 /** A line longer than this is counted as unreadable rather than parsed. */

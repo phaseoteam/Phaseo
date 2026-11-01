@@ -57,7 +57,7 @@ function ViewerButton({ label, onClick, disabled, children }: { label: string; o
 	return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={onClick} className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 [&_svg]:size-4">{children}</button>;
 }
 
-/** T3's expanded image: the whole window, arrow keys step through the message's images, Escape closes. */
+/** The expanded image: the whole window, arrow keys step through the message's images, Escape closes. */
 export function ImageViewer({ images, index: initial, onClose }: { images: GalleryImage[]; index: number; onClose: () => void }) {
 	const dialog = useRef<HTMLDialogElement>(null);
 	const [index, setIndex] = useState(Math.min(Math.max(0, initial), images.length - 1));

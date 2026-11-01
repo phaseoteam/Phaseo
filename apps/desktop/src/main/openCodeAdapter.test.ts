@@ -164,6 +164,25 @@ describe("OpenCode 2 integration", () => {
 		await expect(new OpenCodeAdapter().run(task, ".", "Hello", { onSession: () => {}, onDelta: () => {}, onApproval: async () => "decline" })).rejects.toThrow("Start an OpenCode 2 service");
 		expect(sdk.discover.mock.calls.at(-1)?.[0].version("1.18.31")).toBe(false);
 	});
+	it("gives the orchestration server only to a service started for the turn, and stops it afterwards", async () => {
+		const user = { id: "user", name: "Docs", enabled: true, transport: "http" as const, url: "http://127.0.0.1:9/mcp" };
+		const orchestration = { id: "orchestration", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http" as const, url: "http://127.0.0.1:8/mcp", headers: { Authorization: "Bearer fixture-turn-token" } };
+		const fixture = () => { let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; }); const submit = vi.fn(async () => { prompted(); }); sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), prompt: submit, wait: async () => {} }, event: { subscribe: async function* (options: { onActivity: () => void }) { options.onActivity(); await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } }; } } }); return submit; };
+		const synchronize = vi.fn(async () => {}); const shared = { synchronize } as never;
+		const isolatedSync = vi.spyOn((await import("./openCodeMcp")).OpenCodeMcp.prototype, "synchronize").mockResolvedValue(undefined);
+		const connect = vi.fn(async () => ({ url: "http://localhost:4096" })); const close = vi.fn(async () => {}); const isolate = vi.fn(async () => ({ endpoint: { url: "http://localhost:5000" }, close }));
+		const callbacks = { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" as const };
+		try {
+			const submit = fixture();
+			await new OpenCodeAdapter(connect, [user, orchestration], shared, isolate).run(task, ".", "Hello", callbacks);
+			expect(connect).not.toHaveBeenCalled(); expect(synchronize).not.toHaveBeenCalled(); expect(close).toHaveBeenCalledOnce();
+			expect(isolatedSync.mock.lastCall?.slice(1, 5)).toEqual(["http://localhost:5000", ".", undefined, [user, orchestration]]);
+			expect((submit.mock.lastCall as unknown as [{ text: string }])[0].text).toMatch(/orchestration tools[\s\S]*---\n\nHello$/);
+			// Chat mode, or no way to start a private service: the shared service never sees the credential.
+			fixture(); await new OpenCodeAdapter(connect, [user, orchestration], shared).run(task, ".", "Hello", callbacks);
+			expect((synchronize.mock.lastCall as unknown[] | undefined)?.[4]).toEqual([user]); expect(isolate).toHaveBeenCalledOnce();
+		} finally { isolatedSync.mockRestore(); }
+	});
 	it("subscribes before prompting and handles explicit permissions", async () => {
 		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" });
 		let prompted = false;

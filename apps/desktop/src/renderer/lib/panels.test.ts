@@ -111,3 +111,11 @@ describe("review comments", () => {
 		addReviewComment(comment); expect(takeReviewComments("chat")).toEqual([comment]); expect(reviewComments("chat")).toEqual([]);
 	});
 });
+
+describe("commit diffs", () => {
+	it("labels a commit by its short id and keeps its comments to that commit", () => {
+		const selection = { kind: "commit" as const, sha: "0123456789abcdef0123456789abcdef01234567", subject: "Fix it" };
+		expect(scopeLabel(selection, [])).toBe("Commit 0123456");
+		expect(sectionOf(selection, [])).toEqual({ id: "commit:0123456789abcdef0123456789abcdef01234567", title: "Commit 0123456" });
+	});
+});

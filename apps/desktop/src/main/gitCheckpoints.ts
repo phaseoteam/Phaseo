@@ -51,7 +51,7 @@ export async function checkpointChanges(root: string, tree: string): Promise<Che
 }
 
 /**
- * Puts the working tree back to `tree` (T3's restore): changed and removed files come back, files added since go.
+ * Puts the working tree back to `tree`: changed and removed files come back, files added since go.
  * Only the working tree changes, never the index, HEAD or ignored files, so staged work and commits stay as they are.
  */
 export async function restoreCheckpoint(root: string, tree: string): Promise<CheckpointChange[]> {

@@ -1,7 +1,7 @@
 /**
  * Colour themes. A theme sets a background ("canvas") and an accent for light and dark; every other
  * colour is derived from those two, and any token can be overridden. Themes travel as JSON files or
- * as a short share code, and T3 Code or VS Code theme files can be imported.
+ * as a short share code, and VS Code theme files or other apps' canvas and accent themes can be imported.
  */
 export const themeTokens = ["background", "foreground", "card", "card-foreground", "popover", "popover-foreground", "primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground", "border", "input", "ring", "sidebar", "sidebar-foreground", "sidebar-accent", "sidebar-accent-foreground", "sidebar-border", "destructive", "success", "warning", "info"] as const;
 export type ThemeToken = (typeof themeTokens)[number];
@@ -65,7 +65,7 @@ function validHalf(value: unknown): ThemeHalf | undefined {
 }
 const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "theme";
 
-/** Reads a Phaseo theme, a T3 Code theme or a VS Code colour theme. Throws with a readable reason. */
+/** Reads a Phaseo theme, a canvas and accent theme or a VS Code colour theme. Throws with a readable reason. */
 export function parseTheme(input: unknown): Theme {
 	const value = typeof input === "string" ? JSON.parse(input) as unknown : input;
 	if (!value || typeof value !== "object") throw new Error("This isn't a theme file.");
@@ -77,7 +77,7 @@ export function parseTheme(input: unknown): Theme {
 		if (!light && !dark) throw new Error("This theme has no usable colours.");
 		return { version: 1, id: slug(name), name, ...light ? { light } : {}, ...dark ? { dark } : {} };
 	}
-	// T3 Code: { appearance, colors: { canvas, accent, text, … }, variants? }
+	// Canvas and accent: { appearance, colors: { canvas, accent, text, … }, variants? }
 	const colors = record.colors as Record<string, unknown> | undefined;
 	if (colors && typeof colors === "object" && validColour(colors.canvas) && validColour(colors.accent)) {
 		const mode: ThemeMode = record.appearance === "light" ? "light" : "dark";
@@ -91,7 +91,7 @@ export function parseTheme(input: unknown): Theme {
 		const tokens = Object.fromEntries(([["foreground", colors["editor.foreground"]], ["sidebar", colors["sideBar.background"]], ["border", colors["panel.border"] ?? colors["editorGroup.border"]]] as const).filter(([, entry]) => validColour(entry)));
 		return { version: 1, id: slug(name), name, [mode]: { canvas: colors["editor.background"] as string, accent, ...Object.keys(tokens).length ? { tokens } : {} } };
 	}
-	throw new Error("This isn't a Phaseo, T3 Code or VS Code theme.");
+	throw new Error("This isn't a Phaseo theme, a VS Code colour theme or a theme with a canvas and accent colour.");
 }
 
 export function serializeTheme(theme: Theme) {

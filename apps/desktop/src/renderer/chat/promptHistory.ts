@@ -1,6 +1,6 @@
 import type { Message } from "../../shared/workspace";
 
-/** T3's prompt history: Up in an empty message box recalls what the person sent, this chat first, then other chats. */
+/** Prompt history: Up in an empty message box recalls what the person sent, this chat first, then other chats. */
 const storageKey = "phaseo.desktop.promptHistory", limit = 100;
 export type HistoryPosition = { index: number; recalled: string };
 

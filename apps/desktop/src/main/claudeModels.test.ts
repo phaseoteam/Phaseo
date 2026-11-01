@@ -44,7 +44,7 @@ describe("claude run options", () => {
 		expect(claudeRunOptions("claude-opus-5-5", { effort: "high", fastMode: true, contextWindow: "200k" })).toEqual({ model: "claude-opus-5-5", effort: "high", settings: { fastMode: true }, promptPrefix: "" });
 	});
 
-	it("maps Ultracode and Ultrathink like T3 Code", () => {
+	it("maps Ultracode and Ultrathink to their model settings", () => {
 		expect(claudeRunOptions("claude-fable-5-1", { effort: "ultracode" })).toMatchObject({ effort: "xhigh", settings: { ultracode: true } });
 		expect(claudeRunOptions("claude-fable-5-1", { effort: "ultrathink" })).toMatchObject({ effort: undefined, promptPrefix: "Ultrathink:\n" });
 		expect(claudeRunOptions("claude-opus-4-7", { effort: "xhigh" })).toMatchObject({ effort: "max" });

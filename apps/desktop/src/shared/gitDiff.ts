@@ -1,8 +1,12 @@
-/** What the diff surface compares: the branch against its base, uncommitted work, or one agent turn. */
+/** What the diff surface compares: the branch against its base, uncommitted work, one agent turn, or one commit. */
 export type GitDiffRequest =
 	| { scope: "branch"; baseRef?: string; ignoreWhitespace?: boolean }
 	| { scope: "uncommitted"; ignoreWhitespace?: boolean }
-	| { scope: "turn"; from: string; to: string; ignoreWhitespace?: boolean };
+	| { scope: "turn"; from: string; to: string; ignoreWhitespace?: boolean }
+	/** One commit against its first parent, so a merge shows what it brought in. */
+	| { scope: "commit"; commit: string; ignoreWhitespace?: boolean };
+/** A commit in the branch comparison, newest first. */
+export type GitCommitSummary = { sha: string; subject: string; author: string; date: string; merge: boolean };
 export type GitDiffResult = { patch: string; hash: string; truncated: boolean; headRef?: string; baseRef?: string; repository: boolean };
 export type GitRefs = { local: string[]; remote: string[]; current: string };
 /** Working-tree snapshots taken before and after a turn, as Git tree ids. */
@@ -33,6 +37,10 @@ export function validateGitDiffRequest(value: unknown): GitDiffRequest {
 	if (request.scope === "turn") {
 		if (!isTreeId(request.from) || !isTreeId(request.to)) throw new Error("This turn has no saved snapshot.");
 		return { scope: "turn", from: request.from, to: request.to, ignoreWhitespace };
+	}
+	if (request.scope === "commit") {
+		if (!isTreeId(request.commit)) throw new Error("Choose a commit.");
+		return { scope: "commit", commit: request.commit, ignoreWhitespace };
 	}
 	throw new Error("Invalid diff request.");
 }

@@ -83,3 +83,17 @@ describe("removing a project", () => {
 	});
 });
 
+
+describe("pinning and archiving a project", () => {
+	it("pins and archives projects, not worktrees; archiving drops the pin and unarchiving brings the project back", async () => {
+		const { directory, runtime, root, tree } = setup({});
+		try {
+			expect((await runtime.command({ type: "organize-project", id: root.id, pinned: true })).projects.find(project => project.id === root.id)).toMatchObject({ pinned: true });
+			const archived = (await runtime.command({ type: "organize-project", id: root.id, archived: true })).projects.find(project => project.id === root.id)!;
+			expect(archived.archived).toBe(true); expect(archived.pinned).toBeUndefined();
+			const back = (await runtime.command({ type: "organize-project", id: root.id, archived: false })).projects.find(project => project.id === root.id)!;
+			expect(back.archived).toBeUndefined();
+			await expect(runtime.command({ type: "organize-project", id: tree.id, pinned: true })).rejects.toThrow("not a worktree");
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+});

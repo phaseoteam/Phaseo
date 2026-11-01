@@ -14,8 +14,8 @@ type CreateTask = Extract<WorkspaceCommand, { type: "create-task" }>;
 export type WorktreeTarget = ReturnType<typeof useWorktreeTarget>;
 
 /**
- * T3's Workspace choice in the new-chat composer: Local runs in the project's own checkout; New worktree makes a
- * worktree from a base branch for the chat. Kept per project folder, as T3 keeps its default per project.
+ * The Workspace choice in the new-chat composer: Local runs in the project's own checkout; New worktree makes a
+ * worktree from a base branch for the chat. Kept per project folder.
  */
 export function useWorktreeTarget(api: WorkspaceApi | undefined, projectId: string | undefined, setOverview: (workspace: WorkspaceOverview) => void) {
 	const [modes, setModes] = usePersistedState<Record<string, "local" | "worktree">>("phaseo.desktop.draftWorkspace", {});
@@ -32,15 +32,18 @@ export function useWorktreeTarget(api: WorkspaceApi | undefined, projectId: stri
 	const repository = Boolean(refs && (refs.current || refs.local.length));
 	const mode = projectId && repository ? modes[projectId] ?? "local" : "local";
 	const chosenBase = base ?? (refs?.current || refs?.local[0] || "HEAD");
+	const inWorktree = api && projectId ? async (command: CreateTask, text: string) => {
+		const result = await api.startWorktreeChat({ projectId, base: chosenBase, text: mentionPlainText(text), create: command });
+		setOverview(result.workspace); return result.taskId;
+	} : undefined;
 	return {
 		mode, refs, repository, base: chosenBase,
 		setMode: (value: "local" | "worktree") => { if (projectId) setModes(current => ({ ...current, [projectId]: value })); },
 		setBase,
 		/** For startChat: makes the worktree and the chat in it when New worktree is chosen. */
-		create: mode === "worktree" && api && projectId ? async (command: CreateTask, text: string) => {
-			const result = await api.startWorktreeChat({ projectId, base: chosenBase, text: mentionPlainText(text), create: command });
-			setOverview(result.workspace); return result.taskId;
-		} : undefined,
+		create: mode === "worktree" ? inWorktree : undefined,
+		/** The same, whatever is chosen: each model of a fan-out gets its own worktree. */
+		createInWorktree: repository ? inWorktree : undefined,
 	};
 }
 
@@ -62,7 +65,7 @@ export function WorktreeTargetControls({ target, disabled }: { target: WorktreeT
 	</>;
 }
 
-/** T3's base branch picker: local branches first, then remote ones, filtered as you type. */
+/** The base branch picker: local branches first, then remote ones, filtered as you type. */
 function BaseBranchPicker({ refs, value, onChange, disabled }: { refs: GitRefs; value: string; onChange: (value: string) => void; disabled?: boolean }) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");

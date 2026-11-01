@@ -37,7 +37,7 @@ app.whenReady().then(async () => {
 		if (Object.values(result).some(value => !value) || readFileSync(target, "utf8") !== edited) throw new Error("Hunk workflow failed: " + JSON.stringify(result));
 		const full = await run(`(async()=>{const api=window.phaseoDesktop.workspace,review=await api.gitReview('fixture');return api.gitDiffContents('fixture',{filename:${javascriptLiteral(filename)},staged:false,hash:review.diffHash})})()`);
 		if (full.oldFile.contents !== original || full.newFile.contents !== edited) throw Error('Bridge returned incorrect full file versions');
-		// The Diff is its own pane tab (T3).
+		// The Diff is its own pane tab.
 		const surface = `document.querySelector('aside[aria-label="Tools"] .diff-surface')`;
 		const viewer = `${surface}?.querySelector('diffs-container')`;
 		// A chat in the Fixture project gives the pane its Diff tab.
@@ -97,7 +97,7 @@ app.whenReady().then(async () => {
 		const details = `(document.querySelector('.git-actions')||document.querySelector('[aria-label="Chat details"]')?.click(),true)`;
 		const stage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Stage ' + filename)}]:not(:disabled)'))`;
 		const unstage = `(${details}&&document.querySelector('.git-actions button[aria-label=${JSON.stringify('Unstage ' + filename)}]:not(:disabled)'))`;
-		// Git actions live in the details card in the title bar (T3).
+		// Git actions live in the details card in the title bar.
 		await run(`document.querySelector('.git-actions')||document.querySelector('[aria-label="Chat details"]').click()`);
 		await wait(`Boolean(${stage})`);
 		await run(`${stage}.click()`);

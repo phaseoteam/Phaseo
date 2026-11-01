@@ -34,6 +34,8 @@ export function claudeQuestions(raw: unknown[]): AgentQuestion[] {
 	});
 }
 
+const claudeBackgroundGuide = "- To wait for a background command or Monitor you started (a build, a test run), call background_wait with its task id before you end your turn; you are woken when it finishes.";
+
 export class ClaudeAdapter implements AgentAdapter {
 	private controller = new AbortController();
 	constructor(private readonly mcp: McpConnection[] = []) {}
@@ -50,13 +52,19 @@ export class ClaudeAdapter implements AgentAdapter {
 		const managedMcp = task.mode === "chat" ? this.mcp.filter(server => server.orchestration) : this.mcp; const gated = !!nativeAction || !!managedMcp.length; let promptAllowed = !gated; let releasePrompt!: () => void;
 		const gate = gated ? new Promise<void>(resolve => { releasePrompt = resolve; }) : Promise.resolve(); const signal = this.controller.signal;
 		const orchestration = managedMcp.find(server => server.orchestration), orchestrationTool = orchestration ? `mcp__${nativeMcpName(orchestration)}__` : undefined;
-		async function* prompt(): AsyncGenerator<SDKUserMessage> { await gate; if (promptAllowed && !signal.aborted) yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; }
+		// Claude ends its background shells when its input closes, so a turn waiting on one (background_wait) keeps the input open until they finish.
+		const background = orchestrationTool ? callbacks.background : undefined;
+		let release!: () => void; const held = background ? new Promise<void>(resolve => { release = resolve; }) : Promise.resolve();
+		if (!background) release = () => undefined;
+		let cleanup: (() => void) | undefined;
+		async function* prompt(): AsyncGenerator<SDKUserMessage> { await gate; if (promptAllowed && !signal.aborted) { yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; await Promise.race([held, new Promise(resolve => signal.addEventListener("abort", resolve, { once: true }))]); } }
 		const execution = query({ prompt: images.length || gated ? prompt() : attachmentPrompt(text, attachments), options: {
 			cwd,
 			mcpServers: Object.fromEntries(managedMcp.map(server => [nativeMcpName(server), server.transport === "stdio" ? { command: server.executable, args: server.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "http" as const, url: server.url, ...(server.headers ? { headers: server.headers } : {}) }])),
 			...(task.mode === "chat" ? { strictMcpConfig: true } : {}),
 			// The SDK otherwise sends an empty system prompt, so this adds only the shared orchestration guidance.
-			...(orchestration ? { systemPrompt: orchestrationInstructions } : {}),
+			...(orchestration ? { systemPrompt: `${orchestrationInstructions}
+${claudeBackgroundGuide}` } : {}),
 			...(account?.configDirectory ? { env: { ...process.env, ...nativeAccountEnvironment(account) } } : {}),
 			pathToClaudeCodeExecutable: command.executable,
 			abortController: this.controller,
@@ -64,7 +72,7 @@ export class ClaudeAdapter implements AgentAdapter {
 			...(tuning.effort ? { effort: tuning.effort } : {}),
 			...(tuning.settings ? { settings: tuning.settings } : {}),
 			...(task.nativeSessionId ? { resume: task.nativeSessionId } : task.nativeForkFrom ? { resume: task.nativeForkFrom, forkSession: true } : {}),
-			// Plan mode wins over full access, as in T3 Code, so ExitPlanMode still reaches the person; implementing then switches to full access.
+			// Plan mode wins over full access, so ExitPlanMode still reaches the person; implementing then switches to full access.
 			permissionMode: task.mode === "plan" ? "plan" : task.permissionMode === "full-access" ? "bypassPermissions" : task.permissionMode === "accept-edits" ? "acceptEdits" : "default",
 			...(task.permissionMode === "full-access" ? { allowDangerouslySkipPermissions: true } : {}),
 			...(task.mode === "chat" ? { tools: ["AskUserQuestion"] } : {}),
@@ -116,7 +124,12 @@ export class ClaudeAdapter implements AgentAdapter {
 			if (managedMcp.length) { try { await waitClaudeMcp(execution, managedMcp, signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } }
 			if (gated) { promptAllowed = true; releasePrompt(); }
 			const nativeAgents = new Set<string>();
+			// After a result, awaited work finishing wakes Claude for one more answer; if it does not within a minute, the turn ends.
+			let answered = false, grace: ReturnType<typeof setTimeout> | undefined;
+			const unsubscribe = background?.onChange(() => { if (answered && !background.pending && !grace) grace = setTimeout(release, 60_000); });
+			cleanup = () => { unsubscribe?.(); clearTimeout(grace); release(); };
 			for await (const message of execution) {
+				if (background && message.type === "system" && (message.subtype === "task_started" || message.subtype === "task_notification")) { if (message.subtype === "task_started") background.start(message.task_id); else background.finish(message.task_id); }
 				const nativeAgent = claudeSubagent(message);
 				if (nativeAgent && message.type === "system" && message.subtype === "task_started" && message.task_type === "local_agent") nativeAgents.add(nativeAgent.nativeAgent!.id);
 				if (nativeAgent && nativeAgents.has(nativeAgent.nativeAgent!.id)) callbacks.onActivity?.(nativeAgent);
@@ -185,12 +198,13 @@ export class ClaudeAdapter implements AgentAdapter {
 						callbacks.onActivity?.({ id: compaction?.id ?? `compaction-result:${message.uuid}`, type: "compaction", title: "Compaction result", text: message.result || compactCommandOutput || compactOutput.join("") || "The native command finished without confirming a compaction boundary.", status: "completed" });
 						compaction = undefined;
 					}
-					completed = true;
+					completed = true; answered = true;
+					if (!background?.pending) release();
 				}
 			}
 			if (!completed) throw new Error("Claude stopped before completing the turn.");
 		} finally {
-			execution.close(); releasePrompt?.();
+			cleanup?.(); execution.close(); releasePrompt?.();
 			if (compaction) callbacks.onActivity?.({ ...compaction, type: "compaction", title: "Compaction completion unconfirmed", text: "The native stream ended without confirming compaction completion.", status: "failed" });
 		}
 	}

@@ -18,11 +18,13 @@ const fallbackContextTokens = 128_000;
 // draft_issue exists only in triage chats, where drafting the issue is the job, so it is never behind load_tools.
 export const coreThreadToolIds = ["list_agents", "delegate_task", "wait_thread", "list_threads", "read_thread", "draft_issue"];
 export const phaseoToolsets: Record<string, { description: string; match: (id: string) => boolean }> = {
-	threads: { description: "manage chats: send, steer, fork, hand off, rename, queue, merge, interrupt, organise, launch separate chats, list projects and models", match: id => /^(handoff|rename|steer|read|edit|fork|send|merge|interrupt|organize)_thread(_queue|_context)?$|^launch_threads?$|^list_(projects|models)$|^edit_thread_queue$|^read_thread_queue$/.test(id) },
+	threads: { description: "manage chats: search, send, steer, fork, hand off, rename, queue, change their model or settings, merge, interrupt, organise, answer their questions, move this chat to a worktree, launch separate chats, list, add and clone projects, list models", match: id => /^(handoff|rename|steer|read|edit|fork|send|merge|interrupt|organize)_thread(_queue|_context)?$|^launch_threads?$|^list_(projects|models)$|^(add|clone)_project$|^edit_thread_queue$|^read_thread_queue$|^read_pending_questions$|^answer_question$|^move_to_worktree$|^configure_thread$|^search_threads$/.test(id) },
 	pull_requests: { description: "link, watch and review pull requests", match: id => /pull_request/.test(id) },
 	issues: { description: "link, read and watch GitHub issues", match: id => /(^|_)issues?(_|$)/.test(id) },
 	scheduling: { description: "create and manage scheduled tasks", match: id => /scheduled_task|^schedule_task$/.test(id) },
 	browser: { description: "open, read and use web pages in this chat's browser", match: id => id.startsWith("browser_") },
+	html: { description: "show an HTML page (a chart, diagram or mockup) inline in this chat", match: id => id.startsWith("html_") },
+	instructions: { description: "read or change the user's instructions for every chat", match: id => id.endsWith("_global_instructions") },
 };
 
 export type PhaseoReview =
@@ -128,6 +130,20 @@ function loadToolsTool(available: string[]) {
 			return `Loaded: ${sets.join(", ")}. Their tools are available from your next step.`;
 		},
 	});
+}
+
+/**
+ * Tool results reach the model as text, so an image a tool returns (browser_screenshot, html_preview) is shown to it in the next
+ * message instead, as view_image does; the result keeps the image's details.
+ */
+export function imageResultsToMessages(tools: AgentTool[], steering: AgentMessage[]): AgentTool[] {
+	return tools.map(tool => typeof tool.execute !== "function" ? tool : { ...tool, execute: async (input: unknown, context: Parameters<NonNullable<Exclude<AgentTool["execute"], false>>>[1]) => {
+		const result = await (tool.execute as (input: unknown, context: unknown) => Promise<unknown>)(input, context);
+		const image = record(record(result).image);
+		if (typeof image.data !== "string" || (image.mimeType !== "image/png" && image.mimeType !== "image/jpeg")) return result;
+		steering.push({ role: "user", content: [{ type: "text", text: `The image from ${tool.id}, as requested:` }, { type: "image_url", image_url: { url: `data:${image.mimeType};base64,${image.data}` } }] });
+		return { ...record(result), image: "Shown to you in the next message." };
+	} });
 }
 
 export function activeToolIds(tools: AgentTool[], context: unknown) {
@@ -244,7 +260,7 @@ export async function runPhaseoTurn(turn: PhaseoTurn): Promise<AgentRunResult<un
 export function phaseoOrchestrationPrompt(loaded: string[], full: string) {
 	if (loaded.length) return full;
 	const lines = full.split("\n");
-	return [lines[0], "You can delegate work to other agents with list_agents, delegate_task, wait_thread, list_threads and read_thread.", ...lines.slice(2, 9), "- More tools are available through load_tools: managing and launching chats, pull requests, scheduled tasks and this chat's browser. Load a set only when the task needs it."].join("\n");
+	return [lines[0], "You can delegate work to other agents with list_agents, delegate_task, wait_thread, list_threads and read_thread.", ...lines.slice(2, 9), "- More tools are available through load_tools: managing and launching chats, pull requests, scheduled tasks, this chat's browser and HTML pages shown inline (charts, diagrams). Load a set only when the task needs it."].join("\n");
 }
 
 /** A chat's lasting permission for a tool call, used by "always allow". */

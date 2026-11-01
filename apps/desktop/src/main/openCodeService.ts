@@ -1,7 +1,8 @@
 import { execFile, spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdir } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { Service } from "@opencode/client/service";
@@ -36,6 +37,7 @@ export class OpenCodeService {
 	private child?: ChildProcessWithoutNullStreams;
 	private childClosed = true;
 	private closing?: Promise<void>;
+	private readonly isolatedServices = new Set<() => Promise<void>>();
 	constructor(private readonly directory: string, private readonly resolveCommand = resolveOpenCodeCommand) {
 		this.state = path.join(directory, "native", "opencode", "state"); this.file = path.join(this.state, "opencode", "service.json");
 	}
@@ -53,23 +55,50 @@ export class OpenCodeService {
 		await mkdir(path.dirname(this.file), { recursive: true });
 		const existing = await Service.discover({ file: this.file, version: compatible });
 		if (existing) { this.managed = true; return existing; }
-		const command = await this.resolveCommand(this.directory, this.controller.signal);
-		if (this.controller.signal.aborted) throw new Error("OpenCode startup cancelled.");
-		const child = this.child = spawn(command.executable, [...command.prefix, "serve", "--service"], { cwd: this.directory, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", XDG_STATE_HOME: this.state } });
-		this.childClosed = false; child.once("close", () => { if (this.child === child) this.childClosed = true; });
+		const endpoint = await this.spawnService(this.state, this.file, this.controller.signal, child => { this.child = child; this.childClosed = false; child.once("close", () => { if (this.child === child) this.childClosed = true; }); });
+		this.managed = true; return endpoint;
+	}
+	/**
+	 * A service of its own for one turn, never the shared or an external one: MCP servers added to it at runtime (the turn's
+	 * orchestration credential) exist only in this process, so no other session can reach them. Sessions are kept in OpenCode's
+	 * shared data folder, so a chat resumes on any service.
+	 */
+	async isolated(signal: AbortSignal): Promise<{ endpoint: Endpoint; close: () => Promise<void> }> {
+		if (this.controller.signal.aborted || signal.aborted) throw new Error("OpenCode startup cancelled.");
+		const state = path.join(this.directory, "native", "opencode", "turns", randomUUID()), file = path.join(state, "opencode", "service.json");
+		let child: ChildProcessWithoutNullStreams | undefined;
+		const close = async () => {
+			this.isolatedServices.delete(close);
+			await Service.stop({ file }).catch(() => {});
+			const running = child;
+			if (running && running.exitCode === null) await new Promise<void>(resolve => { const timeout = setTimeout(resolve, 5000); running.once("close", () => { clearTimeout(timeout); resolve(); }); running.kill(); });
+			await rm(state, { recursive: true, force: true }).catch(() => {});
+		};
+		this.isolatedServices.add(close);
+		try {
+			await mkdir(path.dirname(file), { recursive: true });
+			// A service otherwise listens on its fixed default port, which the shared one may hold.
+			return { endpoint: await span("opencode.start-isolated", undefined, () => this.spawnService(state, file, AbortSignal.any([this.controller.signal, signal]), value => { child = value; }, ["--hostname", "127.0.0.1", "--port", "0"])), close };
+		} catch (error) { await close(); throw error; }
+	}
+	private async spawnService(state: string, file: string, signal: AbortSignal, onSpawn: (child: ChildProcessWithoutNullStreams) => void, flags: string[] = []): Promise<Endpoint> {
+		const command = await this.resolveCommand(this.directory, signal);
+		if (signal.aborted) throw new Error("OpenCode startup cancelled.");
+		const child = spawn(command.executable, [...command.prefix, "serve", "--service", ...flags], { cwd: this.directory, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", XDG_STATE_HOME: state } });
+		onSpawn(child);
 		child.stdout.resume(); child.stderr.resume(); child.stdin.end();
 		let failure: Error | undefined; child.on("error", error => { failure = error; });
 		const deadline = Date.now() + 30000;
 		try {
-			while (!this.controller.signal.aborted && Date.now() < deadline) {
+			while (!signal.aborted && Date.now() < deadline) {
 				if (failure) throw new Error("OpenCode service could not start.", { cause: failure });
 				if (child.exitCode !== null && child.exitCode !== 0) throw new Error(`OpenCode service exited with code ${child.exitCode}. Check its native configuration.`);
-				const endpoint = await Service.discover({ file: this.file, version: compatible });
-				if (endpoint) { this.managed = true; return endpoint; }
-				await delay(200, undefined, { signal: this.controller.signal });
+				const endpoint = await Service.discover({ file, version: compatible });
+				if (endpoint) return endpoint;
+				await delay(200, undefined, { signal });
 			}
-			throw new Error(this.controller.signal.aborted ? "OpenCode startup cancelled." : "OpenCode service startup timed out.");
-		} catch (error) { child.kill(); await Service.stop({ file: this.file }).catch(() => {}); throw error; }
+			throw new Error(signal.aborted ? "OpenCode startup cancelled." : "OpenCode service startup timed out.");
+		} catch (error) { child.kill(); await Service.stop({ file }).catch(() => {}); throw error; }
 	}
 	close() { return this.closing ??= this.shutdown(); }
 	async releaseMcp(cwd: string, projectId: string, connections: McpConnection[]) {
@@ -83,6 +112,7 @@ export class OpenCodeService {
 	}
 	private async shutdown() {
 		this.controller.abort();
+		await Promise.all([...this.isolatedServices].map(close => close()));
 		await this.starting?.catch(() => {});
 		if (this.managed) await Service.stop({ file: this.file }).catch(() => {});
 		const child = this.child;

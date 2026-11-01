@@ -12,8 +12,8 @@ describe("Pi orchestration extension", () => {
 			const source = piOrchestrationExtensionSource.replace('import { Type } from "typebox";', "").replace("export default async function", "async function");
 			const load = new Function("Type", "fetch", "process", source + "; return phaseoOrchestration;")({ Unsafe: (schema: unknown) => schema }, fetch, { env: { PHASEO_ORCHESTRATOR_URL: session.connection.url, PHASEO_ORCHESTRATOR_AUTH: session.connection.headers!.Authorization } });
 			await load({ registerTool: (tool: typeof tools[number]) => tools.push(tool), on: () => {} });
-			expect(tools).toHaveLength(37);
-			expect(tools.map(tool => tool.name)).toEqual(expect.arrayContaining(["mcp__phaseo__link_issue", "mcp__phaseo__read_issue", "mcp__phaseo__watch_issue"]));
+			expect(tools).toHaveLength(44);
+			expect(tools.map(tool => tool.name)).toEqual(expect.arrayContaining(["mcp__phaseo__link_issue", "mcp__phaseo__read_issue", "mcp__phaseo__watch_issue", "mcp__phaseo__search_threads", "mcp__phaseo__configure_thread", "mcp__phaseo__answer_question", "mcp__phaseo__move_to_worktree"]));
 			expect(piOrchestrationExtensionSource).toContain("list_agents"); expect(piOrchestrationExtensionSource).toContain("AbortSignal.timeout(3660000)");
 			expect(await tools.find(tool => tool.name === "mcp__phaseo__list_threads")!.execute("owned", {}, new AbortController().signal)).toMatchObject({ content: [{ type: "text", text: "[]" }] });
 			expect(await tools.find(tool => tool.name === "mcp__phaseo__read_thread")!.execute("owned", { id: "unrelated" }, new AbortController().signal)).toMatchObject({ isError: true });

@@ -3,7 +3,7 @@ import http from "node:http";
 import https from "node:https";
 import type { BrowserLocalServer } from "../shared/browser";
 
-type Listener = { host: string; port: number; pid?: number; process?: string };
+export type Listener = { host: string; port: number; pid?: number; process?: string };
 const loopback = new Set(["127.0.0.1", "0.0.0.0", "::", "::1", "*", "localhost"]);
 // Windows and macOS services that listen locally but are never a web page.
 const ignoredPorts = new Set([135, 139, 445, 5040, 5357, 7680]);
@@ -70,18 +70,20 @@ function probe(port: number, host: string): Promise<boolean> {
 	});
 }
 
+/** Loopback TCP listeners with the process that owns each. */
+export async function listeningPorts(): Promise<Listener[]> {
+	if (process.platform !== "win32") return parseLsof(await run("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-F", "pcn"]));
+	const [netstat, tasks] = await Promise.all([run("netstat", ["-ano", "-p", "TCP"]), run("tasklist", ["/fo", "csv", "/nh"])]);
+	const names = parseTasklist(tasks);
+	return parseNetstat(netstat).map(listener => ({ ...listener, process: listener.pid ? names.get(listener.pid) : undefined }));
+}
+
 let cache: { at: number; servers: Promise<BrowserLocalServer[]> } | undefined;
 /** Local web servers a browser tab can open, scanned at most every few seconds. */
 export function localServers(): Promise<BrowserLocalServer[]> {
 	if (cache && Date.now() - cache.at < 4000) return cache.servers;
 	const servers = (async () => {
-		let listeners: Listener[];
-		if (process.platform === "win32") {
-			const [netstat, tasks] = await Promise.all([run("netstat", ["-ano", "-p", "TCP"]), run("tasklist", ["/fo", "csv", "/nh"])]);
-			const names = parseTasklist(tasks);
-			listeners = parseNetstat(netstat).map(listener => ({ ...listener, process: listener.pid ? names.get(listener.pid) : undefined }));
-		} else listeners = parseLsof(await run("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-F", "pcn"]));
-		const candidates = candidatePorts(listeners);
+		const candidates = candidatePorts(await listeningPorts());
 		const ready = await Promise.all(candidates.map(candidate => probe(candidate.port, candidate.host)));
 		return candidates.filter((_, index) => ready[index]).map(candidate => ({ url: `http://localhost:${candidate.port}/`, host: "localhost", port: candidate.port, ...(candidate.process ? { process: candidate.process } : {}) }));
 	})();

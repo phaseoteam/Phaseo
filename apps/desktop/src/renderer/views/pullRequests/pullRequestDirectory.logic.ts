@@ -1,6 +1,6 @@
 import { maximumQualifierLength, maximumQualifierValues, type PullRequestDirectoryEntry, type PullRequestInvolvement, type PullRequestListFilters, type PullRequestListState } from "../../../shared/pullRequestDirectory";
 
-/** T3 Code's Pull requests page logic (pullRequestList.logic.ts, pullRequestListPreferences.ts), for one machine and one host. */
+/** The Pull requests page logic, for one machine and one host. */
 export type PullRequestListSort = "ready" | "blocked" | "updated" | "newest" | "oldest" | "largest" | "smallest";
 export const pullRequestListSorts: PullRequestListSort[] = ["ready", "blocked", "updated", "newest", "oldest", "largest", "smallest"];
 export type PullRequestGroupKey = "authored" | "reviewRequested" | "others";
@@ -168,7 +168,7 @@ const size = (entry: PullRequestDirectoryEntry) => entry.additions + entry.delet
 const measured = (entry: PullRequestDirectoryEntry) => size(entry) > 0;
 
 /**
- * T3's default review queue: green and approved, then green and waiting, then everything else open (drafts too), then
+ * The default review queue: green and approved, then green and waiting, then everything else open (drafts too), then
  * finished work; a known conflict is never ready and goes last. Smaller measured diffs first in each tier.
  */
 export function rankPullRequestsByMergeReadiness<Entry extends PullRequestDirectoryEntry>(entries: readonly Entry[]): Entry[] {
@@ -200,7 +200,7 @@ export function sortPullRequestGroups<Entry extends PullRequestDirectoryEntry>(g
 	}));
 }
 
-/** The Shift-held row actions: what the state allows, in T3's order. */
+/** The Shift-held row actions: what the state allows, in a fixed order. */
 export function pullRequestQuickActions(entry: Pick<PullRequestDirectoryEntry, "state" | "draft">): PullRequestQuickAction[] {
 	return entry.state === "merged" ? [] : entry.state === "closed" ? ["reopen"] : entry.draft ? ["close", "ready"] : ["close", "merge"];
 }

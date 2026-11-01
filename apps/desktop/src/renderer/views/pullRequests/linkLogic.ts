@@ -2,7 +2,7 @@ import { parsePullRequestReference, pullRequestUrl } from "../../../shared/pullR
 
 export type ResolvedLink = { host: string; repository: string; number: number; url: string };
 /**
- * Which pull request the link dialog's text names, or why it cannot (T3's resolveLinkPullRequestInput): a URL or
+ * Which pull request the link dialog's text names, or why it cannot: a URL or
  * `owner/repo#N` carries its repository, a bare `#N` or `N` means the chat's own. Null when it is not a reference yet.
  */
 export function resolveLinkInput(reference: string, repository: string | null | undefined): { link: ResolvedLink } | { error: string } | null {
@@ -20,7 +20,7 @@ export function linkValidation(reference: string, resolved: ReturnType<typeof re
 }
 
 /**
- * What the checkout dialog accepts (T3's parsePullRequestReference): a pull request URL, a `gh pr checkout` command
+ * What the checkout dialog accepts: a pull request URL, a `gh pr checkout` command
  * (its flags ignored), or 123 / #123. Pull requests in another repository than the project's are refused, since the
  * checkout happens in the project.
  */

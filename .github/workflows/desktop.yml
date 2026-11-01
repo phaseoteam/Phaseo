@@ -256,7 +256,7 @@ jobs:
                       output/playwright/chat-shell/
                       output/playwright/shadcn-controls/
                       output/playwright/chat-design/
-                      output/playwright/t3-layout/
+                      output/playwright/settings-layout/
                       output/playwright/new-chat/
                       output/playwright/harness-maintenance/
                       output/playwright/prompt-commands/

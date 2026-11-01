@@ -16,6 +16,7 @@ import { openCodeForm } from "./openCodeForms";
 import { AgentInputRejectedError } from "./agentAdapter";
 import type { McpConnection } from "../shared/mcp";
 import { OpenCodeMcp } from "./openCodeMcp";
+import { orchestrationInstructions } from "../shared/orchestration";
 
 export class OpenCodeAdapter implements AgentAdapter {
 	private controller = new AbortController();
@@ -24,10 +25,25 @@ export class OpenCodeAdapter implements AgentAdapter {
 	private acceptingInput = false;
 	private inputGeneration = 0;
 	private readonly inputs = new Set<Promise<unknown>>();
-	constructor(private readonly connect?: (signal: AbortSignal) => Promise<Endpoint>, private readonly mcp: McpConnection[] = [], private readonly mcpManager = new OpenCodeMcp()) {}
+	private isolatedRun = false;
+	constructor(private readonly connect?: (signal: AbortSignal) => Promise<Endpoint>, private readonly mcp: McpConnection[] = [], private readonly mcpManager = new OpenCodeMcp(), private readonly isolate?: (signal: AbortSignal) => Promise<{ endpoint: Endpoint; close: () => Promise<void> }>) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = [], nativeAction?: NativeAction): Promise<void> {
-		const endpoint = this.connect ? await this.connect(this.controller.signal) : await Service.discover({ version: version => version.startsWith("2.") });
-		if (!endpoint) throw new Error("Start an OpenCode 2 service before using this harness. OpenCode 1 is not supported by this adapter.");
+		// OpenCode keeps runtime MCP servers per folder for every session on a service, so the orchestration server (this turn's
+		// credential) goes only to a service started for this turn, and never to the shared or an external one.
+		const orchestration = task.mode !== "chat" && this.isolate ? this.mcp.find(connection => connection.orchestration) : undefined;
+		if (!orchestration) {
+			const endpoint = this.connect ? await this.connect(this.controller.signal) : await Service.discover({ version: version => version.startsWith("2.") });
+			if (!endpoint) throw new Error("Start an OpenCode 2 service before using this harness. OpenCode 1 is not supported by this adapter.");
+			return this.turn(endpoint, this.mcp.filter(connection => !connection.orchestration), this.mcpManager, task, cwd, text, callbacks, attachments, nativeAction);
+		}
+		const isolated = await this.isolate!(this.controller.signal);
+		this.isolatedRun = true;
+		// OpenCode sessions take no system prompt, so a new session gets the orchestration guidance ahead of its first prompt.
+		const guided = !task.nativeSessionId && !task.nativeForkFrom && !nativeAction && text.trim() !== "/compact" ? `${orchestrationInstructions}\n\n---\n\n${text}` : text;
+		try { await this.turn(isolated.endpoint, this.mcp, new OpenCodeMcp(), task, cwd, guided, callbacks, attachments, nativeAction); }
+		finally { await isolated.close(); }
+	}
+	private async turn(endpoint: Endpoint, connections: McpConnection[], mcpManager: OpenCodeMcp, task: Task, cwd: string, text: string, callbacks: AgentCallbacks, attachments: AttachmentContent[], nativeAction?: NativeAction): Promise<void> {
 		if (this.controller.signal.aborted) throw new Error("Task stopped.");
 		const client = this.client = OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) });
 		const selected = task.model === "default" ? undefined : (() => {
@@ -51,7 +67,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 			if (this.controller.signal.aborted) throw new AgentInputRejectedError("Native command cancelled before submission.");
 			await confirmAction();
 		}
-		if (task.mode !== "chat") { try { await this.mcpManager.synchronize(client, endpoint.url, cwd, task.projectId, this.mcp, this.controller.signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } }
+		if (task.mode !== "chat") { try { await mcpManager.synchronize(client, endpoint.url, cwd, task.projectId, connections, this.controller.signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } }
 		const forms = new Map<string, AbortController>(); const seenForms = new Set<string>();
 		const formJobs = new Map<string, Promise<void>>();
 		const handleForm = async (form: AgentForm) => {
@@ -74,7 +90,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 				}
 			};
 			try {
-				// Text and multiple-choice forms are what OpenCode's question tool asks; they go to the answer panel, as in T3 Code.
+				// Text and multiple-choice forms are what OpenCode's question tool asks; they go to the answer panel.
 				const questions = callbacks.onQuestion ? formQuestions(form, ["string", "multiselect"]) : undefined;
 				if (questions) {
 					const answers = await callbacks.onQuestion!(questions, { signal });
@@ -213,6 +229,9 @@ export class OpenCodeAdapter implements AgentAdapter {
 	}
 	async cancel() {
 		this.controller.abort();
-		if (this.client && this.sessionId) await this.client.session.interrupt({ sessionID: this.sessionId }, { signal: AbortSignal.timeout(5000) });
+		if (!this.client || !this.sessionId) return;
+		const interrupted = this.client.session.interrupt({ sessionID: this.sessionId }, { signal: AbortSignal.timeout(5000) });
+		// A turn's own service stops as the run ends, which stops its session too.
+		if (this.isolatedRun) await interrupted.catch(() => {}); else await interrupted;
 	}
 }

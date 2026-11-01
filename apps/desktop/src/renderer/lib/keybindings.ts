@@ -110,16 +110,19 @@ export function dispatchComposerKey(event: KeyInput) {
 	return false;
 }
 
-/** The single key listener: the first binding whose keys and condition match, and that something handles, wins. */
-export function useKeybindingDispatcher(context: () => WhenContext) {
-	const latest = useRef(context);
-	latest.current = context;
+/**
+ * The single key listener: the first binding whose keys and condition match, and that something handles, wins. A key
+ * no binding takes goes to `unbound` (typing that should start a message).
+ */
+export function useKeybindingDispatcher(context: () => WhenContext, unbound?: (event: KeyboardEvent) => boolean) {
+	const latest = useRef(context), unboundLatest = useRef(unbound);
+	latest.current = context; unboundLatest.current = unbound;
 	useEffect(() => {
 		whenContext = () => latest.current();
 		const onKeyDown = (event: KeyboardEvent) => {
 			// A shortcut field records keys instead of running them.
 			if (event.isComposing || event.defaultPrevented || (document.activeElement as HTMLElement | null)?.dataset.keybindingCapture !== undefined) return;
-			if (dispatchKeybinding(event)) event.preventDefault();
+			if (dispatchKeybinding(event) || unboundLatest.current?.(event)) event.preventDefault();
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);

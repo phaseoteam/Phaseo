@@ -1,4 +1,4 @@
-/** Device presets in Chrome DevTools' default order, as in T3 Code; sizes are CSS pixels. */
+/** Device presets in Chrome DevTools' default order; sizes are CSS pixels. */
 export const browserViewportPresets = [
 	{ id: "iphone-se", label: "iPhone SE", width: 375, height: 667 },
 	{ id: "iphone-xr", label: "iPhone XR", width: 414, height: 896 },
@@ -56,12 +56,12 @@ export function browserColorScheme(value: unknown): BrowserColorScheme { if (val
 
 export type BrowserOpenTab = { sourceId: string; url: string; background: boolean };
 /** A page an agent opened in one of a chat's tabs, for the window to list among them. */
-export type BrowserAgentTabOpened = { context: string; id: string; url: string };
+export type BrowserAgentTabOpened = { context: string; id: string; url: string; closed?: boolean };
 /** Browser tabs per chat. */
 export const browserTabLimit = 20;
 /** A main-frame load that failed, for the "This site can't be reached" page. */
 export type BrowserFailure = { url: string; code: number; description: string };
-/** Who is driving a page right now, as in T3 Code: an agent through its browser tools, or the person. */
+/** Who is driving a page right now: an agent through its browser tools, or the person. */
 export type BrowserController = "agent" | "human" | "none";
 export type BrowserState = { id: string; url: string; title: string; favicon?: string; loading: boolean; canGoBack: boolean; canGoForward: boolean; devToolsOpen: boolean; viewport: BrowserViewport; zoom: number; colorScheme: BrowserColorScheme; audible: boolean; muted: boolean; configured: boolean; failure?: BrowserFailure; crashed?: boolean; error?: string; controller?: Exclude<BrowserController, "none">; poppedOut?: boolean };
 export type BrowserBounds = { x: number; y: number; width: number; height: number };
@@ -136,7 +136,7 @@ export function probeUrl(value: unknown): string {
 }
 
 const terminalEscapes = new RegExp(String.raw`\u001b\[[0-9;?]*[ -/]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)|\u001b[()][0-9A-Za-z]`, "g");
-/** Local web addresses a terminal printed, oldest first, without repeats, after T3's terminal links. */
+/** Local web addresses a terminal printed, oldest first, without repeats. */
 export function localUrlsIn(text: string): string[] {
 	const urls: string[] = [];
 	for (const raw of text.replace(terminalEscapes, "").match(/https?:\/\/[^\s"'<>`|]+/g) ?? []) {
@@ -160,7 +160,7 @@ export function previewPrinted(output: string, previewUrl: string, command = "")
 
 /** A screen recording of a page, saved on this computer. */
 export type BrowserRecording = { path: string; mimeType: string; size: number };
-/** MediaRecorder formats in T3 Code's order of preference: MP4 first, WebM when MP4 cannot be recorded. */
+/** MediaRecorder formats in order of preference: MP4 first, WebM when MP4 cannot be recorded. */
 export const browserRecordingMimeTypes = ["video/mp4;codecs=avc1", "video/mp4;codecs=avc1.640028", "video/mp4;codecs=avc1.42e01e", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"] as const;
 export const browserRecordingLimit = 1024 * 1024 * 1024;
 export function chooseBrowserRecordingMimeType(isSupported: (type: string) => boolean): string | undefined { return browserRecordingMimeTypes.find(type => isSupported(type)); }
@@ -173,10 +173,10 @@ export function browserRecordingExtension(mimeType: unknown): "mp4" | "webm" {
 	throw new Error("Invalid recording format.");
 }
 
-/** The agent cursor's opacity, as in T3 Code: full just after an action, then faint, fainter while the person drives. */
+/** The agent cursor's opacity: full just after an action, then faint, fainter while the person drives. */
 export const agentCursorActiveMs = 700;
 export function agentCursorOpacity(active: boolean, controller: BrowserController): number { if (active) return 1; return controller === "human" ? 0.18 : 0.35; }
-/** T3 Code's question before closing browser tabs an agent is driving; undefined when none is. */
+/** The question before closing browser tabs an agent is driving; undefined when none is. */
 export function agentBrowserCloseConfirmation(count: number): string | undefined {
 	if (count <= 0) return;
 	if (count === 1) return "Close browser while the agent is using it?\nThe agent is actively controlling this browser. Closing it may interrupt the current browser action.";
@@ -190,7 +190,7 @@ export function browserUrl(value: string): string {
 	return url.href;
 }
 
-/** Device toolbar height and resize rail width around the device, as in T3 Code. */
+/** Device toolbar height and resize rail width around the device. */
 export const browserDeviceToolbarHeight = 38;
 export const browserResizeRail = 10;
 /** Where a device viewport sits inside the area below the device toolbar: scaled down to fit and centred. Page zoom then changes its CSS width, as browser zoom does on a phone. */
@@ -216,7 +216,7 @@ export function resizeBrowserViewport(start: { width: number; height: number }, 
 	return { width, height };
 }
 
-/** Chromium network errors in plain words, after T3 Code. */
+/** Chromium network errors in plain words. */
 const errorMessages: Record<string, string> = {
 	ERR_NAME_NOT_RESOLVED: "DNS address could not be found",
 	ERR_NAME_RESOLUTION_FAILED: "DNS address could not be found",

@@ -96,7 +96,7 @@ app.whenReady().then(async () => {
     for (const [width, height] of [[1440, 920], [1180, 800], [1040, 680]]) for (const theme of ["light", "dark"]) {
       owner.setSize(width, height); await run(`window.__auditTheme(${JSON.stringify(theme)})`);
       if (!await run("(()=>{const nav=document.querySelector('aside[aria-label=\"Settings\"]').getBoundingClientRect(),main=document.querySelector('main').getBoundingClientRect();return nav.right<=main.left+1&&main.right<=innerWidth&&main.width>=500;})()")) throw Error("Settings columns overlap");
-      await capture("t3-layout", `settings-${width}-${theme}`);
+      await capture("settings-layout", `settings-${width}-${theme}`);
     }
     await run("window.__auditButton('Appearance',document.querySelector('nav[aria-label=\"Settings sections\"]')).click()");
     await wait("Boolean(document.querySelector('[role=radiogroup][aria-label=Theme]'))");
@@ -104,7 +104,7 @@ app.whenReady().then(async () => {
     await wait("document.documentElement.dataset.theme==='light'&&document.querySelector('[role=radiogroup][aria-label=Theme] [aria-checked=true]')?.textContent==='Light'");
     key("Escape");
     await wait(`!document.querySelector('nav[aria-label="Settings sections"]')&&document.querySelector('main [aria-label=Message]')?.value==='Keep this draft'&&window.__auditChatTitle()===${JSON.stringify(secondChat)}`);
-    console.log('T3_LAYOUT_SMOKE',JSON.stringify({chatList:60,modeSwitch:true,collapsibleSettled:true,surfaceBack:true,appearance:true,draftPreserved:true,escapeCloses:true,settingsCaptures:6}));
+    console.log('SETTINGS_LAYOUT_SMOKE',JSON.stringify({chatList:60,modeSwitch:true,collapsibleSettled:true,surfaceBack:true,appearance:true,draftPreserved:true,escapeCloses:true,settingsCaptures:6}));
     // The tools panel resizes from its keyboard-focusable separator and by dragging, and remembers its width.
     owner.setSize(1440, 920);
     await run("window.__auditPaletteRun('Show files and changes')");
@@ -189,9 +189,9 @@ app.whenReady().then(async () => {
     await wait(`${items}[0]?.textContent.includes('Owned model 999')`);
     await run(`${items}[0].click()`);
     await wait(`!${popup}&&document.querySelector('main form [aria-label="Choose model"]').textContent.includes('Owned model 999')`);
-    await run("window.__auditMenu('main form button[aria-label^=\"Model settings:\"]',item=>item.textContent.trim().startsWith('High'))");
-    await run("window.__auditMenu('main form button[aria-label^=\"Model settings:\"]','On')");
-    await wait("Boolean(document.querySelector('main form button[aria-label=\"Model settings: High, fast\"]'))");
+    await run("window.__auditModelSetting('Reasoning','High')");
+    await run("window.__auditModelSetting('Fast mode','On')");
+    await wait("window.__auditModelSettings()==='High'&&Boolean(document.querySelector('main form button[aria-label=\"Choose model\"] [aria-label=\"Fast\"]'))");
     if (modelReads !== cachedReads) throw Error('Reopening the picker refetched a cached catalog');
     console.log('UNIFIED_PICKER_SMOKE',JSON.stringify({modelReasoningSpeed:true,cachedCatalog:true}));
     // Background refreshes keep the cached catalog on failure and report the error until a later refresh succeeds.
@@ -252,12 +252,12 @@ app.whenReady().then(async () => {
     await wait("JSON.parse(localStorage.getItem('phaseo.desktop.modelPreferences')).defaultSelection?.model==='owned-model-999'");
     await run("window.__auditCloseSettings()");
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'n',ctrlKey:true,bubbles:true}))");
-    await wait("window.__auditChatTitle()===undefined&&document.querySelector('main form [aria-label=\"Choose model\"]')?.textContent.trim()==='Owned model 999'");
+    await wait("window.__auditChatTitle()===undefined&&window.__auditModelName()==='Owned model 999'");
     await run("window.__auditSettings('General')");
     await wait("Boolean(document.querySelector('[aria-label=\"New chat model selection\"]'))");
     await run("window.__auditChoose('New chat model selection','recent')");
     await run("window.__auditCloseSettings()");
-    await wait("window.__auditChatTitle()===undefined&&document.querySelector('main form [aria-label=\"Choose model\"]')?.textContent.trim()==='Owned model 0'");
+    await wait("window.__auditChatTitle()===undefined&&window.__auditModelName()==='Owned model 0'");
     console.log('MODEL_PREFERENCES_SMOKE',JSON.stringify({remembered:true,specificDefault:true,clearDefault:true,inferenceCalls:0}));
     console.log("PHASEO_CONNECT_SMOKE",JSON.stringify({settingsConnection:true,encryptedAccount:true,modelDiscovery:true,existingAccountSelected:true,inferenceCalls:0}));
     console.log("SHADCN_CONTROLS_SMOKE", JSON.stringify({ chatBackForward: true, surfaceBack: true, sidebarToggle: true, toolsKeyboardResize: true, toolsPointerResize: true, toolsWidthPersistence: true, paneSeparation: true, minimumConversationWidth: 320, select: true, focusRestoration: true, selection: true, searchableModels: 1000, captures: 31, packaged: Boolean(entry), inferenceCalls: 0 }));

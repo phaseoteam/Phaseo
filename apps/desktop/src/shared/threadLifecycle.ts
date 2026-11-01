@@ -1,5 +1,5 @@
 /**
- * Code-mode chat lifecycle, after T3 Code: settle parks a chat once you are done with it, snooze hides it until a time,
+ * Code-mode chat lifecycle: settle parks a chat once you are done with it, snooze hides it until a time,
  * and chats left alone settle on their own. "active" means the person un-settled the chat, which holds off auto-settle
  * until something new happens in it.
  */
@@ -22,7 +22,7 @@ export const autoSettleDays = { default: 3, minimum: 1, maximum: 90 };
 
 const time = (value?: string) => value ? Date.parse(value) : 0;
 
-/** Why a chat cannot settle yet, in T3's words, or nothing when it can. */
+/** Why a chat cannot settle yet, or nothing when it can. */
 export function settleBlocker(thread: Pick<ThreadLifecycle, "status" | "approvalsCount" | "answersCount" | "queueCount">) {
 	if (thread.approvalsCount || thread.answersCount) return "This chat is waiting on an approval or question. Answer it before settling.";
 	if (thread.status === "running" || thread.status === "waiting") return "This chat is still running. Stop it before settling.";
@@ -78,7 +78,7 @@ export function autoSettleAt(thread: ThreadLifecycle, rules: AutoSettleRules | n
 	if (thread.archived || thread.settledOverride || thread.pinned || thread.autoSettle === false) return;
 	if (thread.approvalsCount || thread.answersCount || thread.queueCount || ["running", "waiting"].includes(thread.status)) return;
 	if (isSnoozed(thread, now)) return;
-	// T3's pull request rule: any open (or never read) linked pull request holds the chat; one closed, or merged
+	// The pull request rule: any open (or never read) linked pull request holds the chat; one closed, or merged
 	// with onMerge, settles it, but only if that happened after the person last wrote.
 	const linked = (thread.pullRequests ?? []).filter(link => link.source !== "stack-dismissed");
 	if (linked.length) {
@@ -97,7 +97,7 @@ export function autoSettleAt(thread: ThreadLifecycle, rules: AutoSettleRules | n
 export const activeOrder = (thread: ThreadLifecycle) => Math.max(time(thread.createdAt), time(thread.unsettledAt));
 
 export type SnoozePreset = { label: string; until: Date };
-/** T3's snooze choices: an hour, three hours, this evening (if over an hour away), tomorrow 9:00, next Monday 9:00. */
+/** Snooze choices: an hour, three hours, this evening (if over an hour away), tomorrow 9:00, next Monday 9:00. */
 export function snoozePresets(now = new Date()): SnoozePreset[] {
 	const at = (days: number, hour: number) => { const value = new Date(now); value.setDate(value.getDate() + days); value.setHours(hour, 0, 0, 0); return value; };
 	const presets: SnoozePreset[] = [{ label: "In 1 hour", until: new Date(now.getTime() + 3_600_000) }, { label: "In 3 hours", until: new Date(now.getTime() + 3 * 3_600_000) }];

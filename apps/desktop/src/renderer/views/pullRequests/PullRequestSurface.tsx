@@ -35,11 +35,11 @@ import { lastMergeMethodKey, resolvePullRequestMergeMethod, useDefaultMergeMetho
 type Tab = "summary" | "guide" | "timeline" | "code";
 const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
 
-/** Copies, then says so in a toast; a refused clipboard says that instead (T3's copy feedback). */
+/** Copies, then says so in a toast; a refused clipboard says that instead. */
 export function copyWithToast(text: string, what: string) {
 	void navigator.clipboard.writeText(text).then(() => showToast("success", `${what} copied`), () => showToast("error", `Could not copy the ${what.toLowerCase()}`));
 }
-/** T3's PullRequestCopyableCode: no icon, the text fades to "Copied" in place on a hover pill. */
+/** Copyable code: no icon, the text fades to "Copied" in place on a hover pill. */
 export function CopyableCode({ value, label, className }: { value: string; label: string; className?: string }) {
 	const [copied, setCopied] = useState(false);
 	const timer = useRef<number>(undefined);
@@ -52,7 +52,7 @@ export function CopyableCode({ value, label, className }: { value: string; label
 }
 
 /**
- * One pull request, laid out like T3 Code's detail panel: a header that condenses to `#N title` on
+ * One pull request, as a detail panel: a header that condenses to `#N title` on
  * scroll, one primary control chosen by state with click-twice confirmation, a More menu, and the
  * Summary, Timeline and Code tabs. Meant to fill its own pane tab titled `#N`.
  */
@@ -116,7 +116,9 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const armedBadge = <Tip label={`${armedLabel}: GitHub will merge this on its own once its requirements are met${view.autoMerge?.enabledBy ? ` (turned on by ${view.autoMerge.enabledBy})` : ""}`}><Badge variant="outline" role="img" aria-label={armedLabel} data-auto-merge="" className="h-6 px-2 text-sky-700 dark:text-sky-300"><PullRequestGlyph.merged aria-hidden className="size-3.5" /><span className="@max-[30rem]/pr-header:hidden">{armedLabel}</span></Badge></Tip>;
 	const pending = pull.pending, busy = pending !== undefined;
 	const rollup = checksRollup(view.checkRuns), approvals = approvalCount(view);
-	const repositoryUrl = `https://github.com/${view.repository}`;
+	const repositoryUrl = view.codeHost?.repositoryUrl ?? `https://github.com/${view.repository}`, hostName = view.codeHost?.name ?? "GitHub";
+	// Azure DevOps reports no totals at all; GitLab reports files but not lines.
+	const filesKnown = !view.statsUnknown || view.changedFiles > 0;
 	const freshness = baseFreshness(view), staleChecks = checksStale(view);
 	const workflowApprovals = view.checkRuns.filter(isWorkflowApproval).length, canApproveWorkflows = view.state === "OPEN" && workflowApprovals > 0 && view.viewer.canMerge && !staleChecks;
 	const linked = Boolean(chat?.pullRequests?.some(link => samePullRequest(link, view))), canRevert = view.state === "MERGED" && view.viewer.canMerge;
@@ -125,7 +127,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const canEnableAutoMerge = view.state === "OPEN" && !autoMergeArmed && primary !== "enable-auto-merge" && !view.draft && !conflicting && view.autoMergeAllowed && view.viewer.canEnableAutoMerge && view.mergeMethods.length > 0;
 	const canDeleteBranch = view.state !== "OPEN" && view.headRefExists && view.viewer.canDeleteBranch && view.headRepository?.toLowerCase() === view.repository.toLowerCase();
 	const saveTitle = async () => { if (titleDraft === null || !titleDraft.trim()) return; if (titleDraft.trim() === view.title || await pull.perform({ type: "title", title: titleDraft })) setTitleDraft(null); };
-	const number$ = (tabIndex?: number) => <PullRequestNumberMenu url={view.url} onCopy={url => copyWithToast(url, "Link")} onNotice={(message, failed) => { if (failed) showToast("error", message); }} className="shrink-0"><Tip label="Open on GitHub"><button type="button" tabIndex={tabIndex} onClick={() => open(view.url)} onAuxClick={event => { if (event.button === 1) open(view.url); }} aria-label={`Open pull request #${view.number} on GitHub`} className={cn("inline-flex shrink-0 cursor-pointer items-center gap-0.5 font-medium underline-offset-2 hover:underline", presentation.toneClassName)}>#{view.number}<ExternalLink aria-hidden className="size-2.5" /></button></Tip></PullRequestNumberMenu>;
+	const number$ = (tabIndex?: number) => <PullRequestNumberMenu url={view.url} onCopy={url => copyWithToast(url, "Link")} onNotice={(message, failed) => { if (failed) showToast("error", message); }} className="shrink-0"><Tip label={`Open on ${hostName}`}><button type="button" tabIndex={tabIndex} onClick={() => open(view.url)} onAuxClick={event => { if (event.button === 1) open(view.url); }} aria-label={`Open pull request #${view.number} on ${hostName}`} className={cn("inline-flex shrink-0 cursor-pointer items-center gap-0.5 font-medium underline-offset-2 hover:underline", presentation.toneClassName)}>#{view.number}<ExternalLink aria-hidden className="size-2.5" /></button></Tip></PullRequestNumberMenu>;
 	const branchLine = (small: boolean) => <span className={cn("flex min-w-0 flex-1 items-center gap-1.5 font-mono", small ? "text-2xs text-muted-foreground/65" : "text-xs text-muted-foreground/70")}>
 		<StackedBaseGlyph projectId={projectId} view={view} />
 		{freshness ? <BaseFreshnessWarning view={view} projectId={projectId} small={small} freshness={freshness} pending={busy} updating={pending === "update-branch"} onUpdate={method => void pull.perform({ type: "update-branch", ...(method === "rebase" ? { method } : {}) })} /> : <Tip label={view.base}><span className="inline-flex max-w-[40%] min-w-0 shrink-0 items-center gap-1"><code className="flex min-w-0"><MiddleTruncate value={view.base} /></code></span></Tip>}
@@ -161,7 +163,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			<DropdownMenuItem disabled={handoff.pending !== undefined} onClick={() => void handoff.run("explain", view)}><BookOpen className="mt-1 size-3.5 shrink-0 self-start" /><span className="flex min-w-0 flex-col"><span>Explain this PR</span><span className="text-xs text-muted-foreground">A walk through the diff and what to read closely.</span></span></DropdownMenuItem>
 			<DropdownMenuItem disabled={handoff.pending !== undefined || view.state !== "OPEN"} onClick={() => void handoff.run("fix", view)}><Hammer className="size-3.5" />{handoff.pending === "fix" ? "Preparing…" : "Fix findings in a chat"}</DropdownMenuItem>
 				<DropdownMenuItem onClick={() => { setGuideRequest(value => value + 1); selectTab("guide"); }}><Sparkles className="size-3.5" />{guideWritten ? "Rewrite guide" : "Write guide"}</DropdownMenuItem>
-				{conflicting && <DropdownMenuItem onClick={() => open(`${view.url}/conflicts`)}><TriangleAlert className="size-3.5" />Resolve conflicts on GitHub</DropdownMenuItem>}
+				{conflicting && !view.codeHost && <DropdownMenuItem onClick={() => open(`${view.url}/conflicts`)}><TriangleAlert className="size-3.5" />Resolve conflicts on GitHub</DropdownMenuItem>}
 			{view.state === "OPEN" && view.viewer.canUpdate && primary !== "ready" && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: view.draft ? "ready" : "draft" })}>{view.draft ? <PullRequestGlyph.pullRequest className="size-3.5" /> : <PullRequestGlyph.draft className="size-3.5" />}{view.draft ? "Ready for review" : "Convert to draft"}</DropdownMenuItem>}
 			{canDisableAutoMerge && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "disable-auto-merge" })}><X className="size-3.5" />Disable auto-merge</DropdownMenuItem>}
 			{canEnableAutoMerge && <DropdownMenuItem closeOnClick={confirm.isArmed("enable-auto-merge-menu")} disabled={busy} aria-label={confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"} {...confirm.props("enable-auto-merge-menu", () => void pull.perform({ type: "enable-auto-merge", method }))}><PullRequestGlyph.merged className="size-3.5" />{confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"}</DropdownMenuItem>}
@@ -170,7 +172,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 				{view.mergeMethods.map(value => <DropdownMenuRadioItem key={value} value={value} disabled={busy} closeOnClick><PullRequestGlyph.merged className="size-3.5" />{mergeMethodLabels[value]}</DropdownMenuRadioItem>)}
 			</DropdownMenuRadioGroup></>}
 			<DropdownMenuSeparator />
-			<DropdownMenuItem onClick={() => open(view.url)}><ArrowUpRight className="size-3.5" />Open on GitHub</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => open(view.url)}><ArrowUpRight className="size-3.5" />Open on {hostName}</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => copyWithToast(view.url, "Link")}><LinkIcon className="size-3.5" />Copy link{shortcut("pullRequest.copyLink") && <DropdownMenuShortcut>{shortcut("pullRequest.copyLink")}</DropdownMenuShortcut>}</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => copyWithToast(`#${view.number}`, "Pull request number")}><Copy className="size-3.5" />Copy PR number{shortcut("pullRequest.copyNumber") && <DropdownMenuShortcut>{shortcut("pullRequest.copyNumber")}</DropdownMenuShortcut>}</DropdownMenuItem>
 				{chat && <><DropdownMenuSeparator /><DropdownMenuItem onClick={() => void linkCommand(linked, view)}>{linked ? <Unlink className="size-3.5" /> : <LinkIcon className="size-3.5" />}{linked ? "Unlink from this chat" : "Link to this chat"}</DropdownMenuItem></>}
@@ -190,7 +192,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			<div className="grid h-7 min-w-0 items-center overflow-hidden pl-4">
 				<div aria-hidden={condensed} inert={condensed} className={cn("col-start-1 row-start-1 flex min-w-0 items-center gap-1 text-sm text-muted-foreground sm:text-xs transition-[opacity,transform] ease-out motion-reduce:transition-none", condensed ? "pointer-events-none -translate-y-1 opacity-0 duration-100" : "translate-y-0 opacity-100 delay-50 duration-150")}>
 					{onBack && <BackButton onBack={onBack} />}
-					<Tip label={`Open ${view.repository} on GitHub`}><button type="button" onClick={() => open(repositoryUrl)} className="min-w-0 cursor-pointer truncate text-left font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">{view.repository}</button></Tip>
+					<Tip label={`Open ${view.repository} on ${hostName}`}><button type="button" onClick={() => open(repositoryUrl)} className="min-w-0 cursor-pointer truncate text-left font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">{view.repository}</button></Tip>
 					{number$()}
 				</div>
 				<div aria-hidden={!condensed} inert={!condensed} className={cn("col-start-1 row-start-1 flex min-w-0 items-center gap-1 text-sm text-muted-foreground sm:text-xs transition-[opacity,transform] ease-out motion-reduce:transition-none", condensed ? "translate-y-0 opacity-100 delay-50 duration-150" : "pointer-events-none translate-y-1 opacity-0 duration-100")}>
@@ -211,7 +213,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 						<span className="flex min-w-0 shrink items-center gap-1.5 overflow-hidden"><ActorLabel actor={view.authorActor} variant="avatar" className="shrink-0" /><span className="shrink-0">{formatRelativeTime(view.updatedAt)}</span></span>
 						<span aria-hidden className="h-3 w-px shrink-0 bg-border/70" />
 						{branchLine(true)}
-						<span className="ml-auto inline-flex shrink-0 items-center justify-end gap-2 text-2xs"><span className="inline-flex items-center gap-1 tabular-nums" aria-label={`${view.changedFiles} changed ${view.changedFiles === 1 ? "file" : "files"}`}><FileDiff aria-hidden className="size-3" />{view.changedFiles}</span><DiffStat additions={view.additions} deletions={view.deletions} className="shrink-0 font-mono text-2xs" /></span>
+						<span className="ml-auto inline-flex shrink-0 items-center justify-end gap-2 text-2xs">{filesKnown && <span className="inline-flex items-center gap-1 tabular-nums" aria-label={`${view.changedFiles} changed ${view.changedFiles === 1 ? "file" : "files"}`}><FileDiff aria-hidden className="size-3" />{view.changedFiles}</span>}{!view.statsUnknown && <DiffStat additions={view.additions} deletions={view.deletions} className="shrink-0 font-mono text-2xs" />}</span>
 					</div>
 				</div>
 			</div>
@@ -240,14 +242,15 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 						</div>
 						<div className="mt-4 flex min-h-5 min-w-0 items-center gap-2 text-xs text-muted-foreground">
 							{branchLine(false)}
-							<span className="ml-auto inline-flex shrink-0 items-center justify-end gap-2"><span className="inline-flex min-w-16 items-center justify-end gap-1.5 tabular-nums"><FileDiff aria-hidden className="size-3.5" />{view.changedFiles} {view.changedFiles === 1 ? "file" : "files"}</span><DiffStat additions={view.additions} deletions={view.deletions} className="shrink-0 font-mono text-xs" /></span>
+							<span className="ml-auto inline-flex shrink-0 items-center justify-end gap-2">{filesKnown && <span className="inline-flex min-w-16 items-center justify-end gap-1.5 tabular-nums"><FileDiff aria-hidden className="size-3.5" />{view.changedFiles} {view.changedFiles === 1 ? "file" : "files"}</span>}{!view.statsUnknown && <DiffStat additions={view.additions} deletions={view.deletions} className="shrink-0 font-mono text-xs" />}</span>
 						</div>
 					</div>
 				</div>
 			</div>
 			<nav className="col-span-2 flex min-w-0 flex-wrap items-center gap-2 border-t border-border/60 px-4 py-2" aria-label="Pull request tabs">
 				<ToggleGroup aria-label="Pull request tabs" value={tab} onValueChange={(value: string) => { const next = tabs.find(item => item.value === value)?.value; if (next) selectTab(next); }} spacing={0.5} className={cn("shrink-0", segmentedGroup)}>
-					{tabs.map(item => <ToggleGroupItem key={item.value} value={item.value} className={segmentedItem}>{item.label}</ToggleGroupItem>)}
+					{/* Guide and Code read the diff through GitHub; other hosts get Summary and Timeline. */}
+					{tabs.filter(item => !view.codeHost || item.value === "summary" || item.value === "timeline").map(item => <ToggleGroupItem key={item.value} value={item.value} className={segmentedItem}>{item.label}</ToggleGroupItem>)}
 				</ToggleGroup>
 				{canApproveWorkflows && <Tip label="GitHub is holding these workflows until someone with write access lets them run, as it does for pull requests from forks."><Button size="xs" variant="outline" className="shrink-0 border-warning/40 text-warning hover:text-warning" disabled={busy} onClick={() => void pull.perform({ type: "approve-workflows" })}><PlayCircle aria-hidden className="size-3.5" />{pending === "approve-workflows" ? "Approving…" : "Approve workflows to run"}</Button></Tip>}
 				{tab === "summary" && <span className="ml-auto flex h-4 min-w-0 flex-1 items-center justify-end gap-x-1.5 overflow-hidden text-xs text-muted-foreground" aria-label={`Checks: ${staleChecks ? "Check details are out of date" : summarizeChecks(view.checkRuns)}`}>
@@ -280,7 +283,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 }
 
 /**
- * T3's PullRequestBaseFreshnessWarning, beside the base branch it is about: "out of date … by N commits" (read when it
+ * The base freshness warning, beside the base branch it is about: "out of date … by N commits" (read when it
  * opens), "Changes can be cleanly merged." when GitHub says so, and one button per way the branch can be brought up.
  */
 function BaseFreshnessWarning({ view, projectId, small, freshness, pending, updating, onUpdate }: { view: PullRequestView; projectId: string; small: boolean; freshness: NonNullable<ReturnType<typeof baseFreshness>>; pending: boolean; updating: boolean; onUpdate: (method: PullRequestUpdateMethod) => void }) {

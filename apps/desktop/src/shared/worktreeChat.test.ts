@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { branchFromMessage, generatedBranchName, isTemporaryWorktreeBranch, sanitizeBranchFragment, temporaryWorktreeBranch, uniqueBranchName, validateWorktreeChatRequest } from "./worktreeChat";
 
 describe("worktree chat branches", () => {
-	it("sanitises fragments as T3 does", () => {
+	it("sanitises branch name fragments", () => {
 		expect(sanitizeBranchFragment("  Fix the Login error!! ")).toBe("fix-the-login-error");
 		expect(sanitizeBranchFragment("'feat/Add search'")).toBe("feat/add-search");
 		expect(sanitizeBranchFragment("...")).toBe("update");

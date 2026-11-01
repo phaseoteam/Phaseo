@@ -1,6 +1,7 @@
 import { git } from "./gitProcess";
 import { githubRepository } from "./projectPullRequests";
 import { runGh } from "./projectPullRequestView";
+import { codeHostProvider } from "./codeHosts";
 import { parsePullRequestReference, pullRequestUrl } from "../shared/pullRequestView";
 import type { BranchPullRequest } from "../shared/pullRequests";
 
@@ -20,7 +21,7 @@ export function parseBranchPullRequest(branch: string, output: string): BranchPu
 }
 
 /**
- * The pull request for the checkout's current branch, linked or not (T3's branchPullRequest), so the pane can offer it
+ * The pull request for the checkout's current branch, linked or not, so the pane can offer it
  * and Git actions can offer to create one only when there is none. Reads are cached briefly per branch.
  */
 export async function branchPullRequest(root: string, fresh = false, gh: Gh = runGh): Promise<BranchPullRequest> {
@@ -31,7 +32,11 @@ export async function branchPullRequest(root: string, fresh = false, gh: Gh = ru
 	const key = `${root.toLowerCase()}\n${branch}`, cached = cache.get(key);
 	if (!fresh && cached && Date.now() - cached.at < cacheMs) return cached.read;
 	// Pinned to github.com like every other pull request read; a checkout without a github.com origin has no pull request here.
-	const read = git(root, ["remote", "get-url", "origin"]).then(remote => gh(root, ["pr", "view", branch, "--repo", `github.com/${githubRepository(remote)}`, "--json", "number,url,state,title,isDraft,headRefName"])).then(output => parseBranchPullRequest(branch, output), () => null)
+	const read = git(root, ["remote", "get-url", "origin"]).then(async remote => {
+		const other = await codeHostProvider(root, remote);
+		if (other) return other.forBranch(branch);
+		return parseBranchPullRequest(branch, await gh(root, ["pr", "view", branch, "--repo", `github.com/${githubRepository(remote)}`, "--json", "number,url,state,title,isDraft,headRefName"]));
+	}).catch(() => null)
 		.then(pullRequest => ({ branch, ...(defaultBranch ? { defaultBranch } : {}), pullRequest }));
 	cache.set(key, { at: Date.now(), read });
 	return read;

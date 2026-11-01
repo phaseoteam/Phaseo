@@ -10,7 +10,7 @@ import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
 import { ModelPicker } from "../chat/ModelPicker";
 import { ModelSettings } from "../chat/ModelSettings";
-import { workingSectionKey } from "../shell/codeThreads";
+import { projectFoldersKey, workingSectionKey } from "../shell/codeThreads";
 import { publishWorkspacePreferences } from "../lib/workspacePreferences";
 import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
 import { isMac } from "../lib/shortcuts";
@@ -18,6 +18,9 @@ import { setSendKey, useSendKey } from "../chat/sendKey";
 import { shortcut } from "../lib/keybindings";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 import { WorktreeCleanupSettings } from "./WorktreeCleanupSettings";
+import { Check, Copy } from "lucide-react";
+import type { DesktopRuntimeInfo, DesktopUpdateState } from "../../shared/desktop";
+import { checkForUpdates, useUpdateState, versionText } from "../lib/updateState";
 
 /** Workspace preferences, loaded once and saved one change at a time. */
 function usePreferences() {
@@ -56,6 +59,26 @@ function DefaultModel() {
 	</>;
 }
 
+const updateText: Record<DesktopUpdateState["status"], string> = { checking: "Checking for updates…", available: "An update is available and downloading.", downloading: "Downloading an update…", ready: "An update is ready. Restart Phaseo to finish.", unavailable: "Phaseo is up to date.", unsupported: "This build doesn't update itself; release builds do.", error: "The last check for updates failed." };
+
+function About() {
+	const [info, setInfo] = useState<DesktopRuntimeInfo>();
+	const [copied, setCopied] = useState(false);
+	const update = useUpdateState();
+	useEffect(() => { void window.phaseoDesktop?.getRuntimeInfo().then(setInfo, () => undefined); }, []);
+	const copy = async () => { if (!info) return; await navigator.clipboard.writeText(`Phaseo ${versionText(info)}`); setCopied(true); setTimeout(() => setCopied(false), 1500); };
+	return <SettingsSection title="About" label="About Phaseo">
+		<SettingsRow title="Version" description={info ? `Phaseo ${versionText(info)}` : "Loading…"}
+			control={<SettingsButton disabled={!info} onClick={() => void copy()} title="Copy the version">{copied ? <Check /> : <Copy />}{copied ? "Copied" : "Copy"}</SettingsButton>} />
+		<SettingsRow title="Acknowledgements" description="Many of Phaseo's desktop features were inspired by T3 Code, and some code is adapted from it under the MIT licence. Copyright (c) 2026 T3 Tools Inc."
+			control={<SettingsButton onClick={() => void window.phaseoDesktop?.openExternal("https://github.com/pingdotgg/t3code")}>Open on GitHub</SettingsButton>} />
+		<SettingsRow title="Updates" description={!update ? "Not checked since Phaseo started." : update.status === "error" && update.message ? `${updateText.error} ${update.message}` : updateText[update.status]}
+			control={update?.status === "ready"
+				? <SettingsButton variant="primary" onClick={() => void window.phaseoDesktop?.installUpdate()}>Restart to update{update.version ? ` to ${update.version}` : ""}</SettingsButton>
+				: <SettingsButton disabled={update?.status === "checking" || update?.status === "downloading" || update?.status === "unsupported"} onClick={() => void checkForUpdates()}>Check for updates</SettingsButton>} />
+	</SettingsSection>;
+}
+
 function GlobalInstructions() {
 	const api = window.phaseoDesktop?.workspace;
 	const [document, setDocument] = useState<InstructionDocument>(); const [content, setContent] = useState("");
@@ -85,7 +108,7 @@ function GlobalInstructions() {
 	</SettingsSection>;
 }
 
-/** T3 names chats with a model; here it is a choice, because each title is a small request on the Phaseo account. */
+/** Chats can be named by a model; it is a choice, because each title is a small request on the Phaseo account. */
 function ChatTitles({ preferences, save, disabled }: { preferences: WorkspacePreferences; save: (value: WorkspacePreferences) => Promise<void>; disabled: boolean }) {
 	const [byModel, setByModel] = useState(preferences.titleModel !== null);
 	const [error, setError] = useState("");
@@ -122,7 +145,7 @@ export function ExperimentalSettings() {
 	</SettingsPageLayout>;
 }
 
-/** T3's send shortcut. The other key adds a new line; the rest of the message box's keys are in Keyboard shortcuts. */
+/** The send shortcut. The other key adds a new line; the rest of the message box's keys are in Keyboard shortcuts. */
 function MessageBox() {
 	const sendKey = useSendKey(), mod = isMac() ? "⌘" : "Ctrl";
 	const sendAndNew = shortcut("composer.sendAndNewChat");
@@ -136,6 +159,7 @@ function MessageBox() {
 export function GeneralSettings() {
 	const [autoOpenPanes, setAutoOpenPanes] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
 	const [workingSection, setWorkingSection] = usePersistedState(workingSectionKey, false);
+	const [projectFolders, setProjectFolders] = usePersistedState(projectFoldersKey, false);
 	const { preferences, loading, busy, error, save, ready } = usePreferences();
 	return <SettingsPageLayout title="General">
 		<SettingsSection title="New chats"><DefaultModel /><ChatTitles preferences={preferences} save={save} disabled={!ready || busy} /></SettingsSection>
@@ -165,6 +189,8 @@ export function GeneralSettings() {
 		<SettingsSection title="Code chats" description="Settle a chat when you are done with it; it moves to Settled at the bottom of the sidebar. Each project can change these in its Project settings." label="Code chats">
 			<SettingsRow title="Show a Working section" description="Fold chats that are working and need nothing from you into a Working section above Snoozed. They return to the top of the list when they need you. Your list is then ordered by time."
 				control={<Switch aria-label="Show a Working section" checked={workingSection} onCheckedChange={setWorkingSection} />} />
+			<SettingsRow title="Group chats by project" description="Put active chats in a folder per project, on two lines each, with the project you wrote to last on top. Folders collapse, and projects with no active chats have none. Pinned chats stay above them."
+				control={<Switch aria-label="Group chats by project" checked={projectFolders} onCheckedChange={setProjectFolders} />} />
 			<SettingsRow title="Auto-settle merged chats" description="Settle a chat when its pull request merges. Closed pull requests still settle it."
 				control={<Switch aria-label="Auto-settle merged chats" disabled={!ready || busy} checked={preferences.autoSettleOnMerge} onCheckedChange={value => void save({ ...preferences, autoSettleOnMerge: value })} />} />
 			<SettingsRow title="Keep chats with a pull request" description="Inactivity does not settle chats with a pull request. Merging and closing still do."
@@ -176,6 +202,7 @@ export function GeneralSettings() {
 		</SettingsSection>
 		<WorktreeCleanupSettings preferences={preferences} save={save} disabled={!ready || busy} />
 		<GlobalInstructions />
+		<About />
 	</SettingsPageLayout>;
 }
 

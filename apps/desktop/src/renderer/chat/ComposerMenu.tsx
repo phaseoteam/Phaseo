@@ -112,7 +112,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 		return () => { current = false; clearTimeout(timer); };
 	}, [mentionQuery, projectId, api]);
 
-	// T3's `#`: the project's open pull requests load when the menu opens, and a number not among them is read on its own.
+	// `#`: the project's open pull requests load when the menu opens, and a number not among them is read on its own.
 	const pullOpen = open && trigger?.kind === "pull-request" && Boolean(projectId);
 	const pullQuery = pullOpen ? trigger!.query : undefined;
 	useEffect(() => {
@@ -154,6 +154,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 	/** Actions clear the typed `/name` before they run, so it never lingers in the draft. */
 	const runAction = (action: ComposerAction) => {
 		if (action.options) { setSubmenu(action); setActive(0); return; }
+		if (action.insert !== undefined) { setSubmenu(undefined); replace(action.insert); return; }
 		if (editor && trigger) editor.chain().focus().deleteRange({ from: trigger.from, to: trigger.to }).run();
 		setSubmenu(undefined);
 		if (action.run) void guard(action.run)();

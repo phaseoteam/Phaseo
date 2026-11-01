@@ -74,7 +74,7 @@ async function scanFiles(root: string, query: string): Promise<ProjectContentSea
 	return { matches, truncated: false };
 }
 
-/** Search in files: every line containing `query`, case-insensitively, as T3's project content search lists them. */
+/** Search in files: every line containing `query`, case-insensitively. */
 export async function searchProjectContents(root: string, query: unknown): Promise<ProjectContentSearch> {
 	if (typeof query !== "string" || !query.trim() || query.length > 200 || query.includes("\0")) throw new Error("Invalid content search.");
 	return await gitGrep(root, query) ?? scanFiles(root, query);

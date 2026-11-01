@@ -17,7 +17,7 @@ export type PullRequestWatcherPorts = {
 const failureText = (reason: unknown) => { const error = reason as { message?: unknown; cause?: { stderr?: unknown } }; return `${String(error?.message ?? "")}\n${String(error?.cause?.stderr ?? "")}`; };
 
 /**
- * T3's PullRequestWatchReactor for the desktop: every two minutes each watched pull request is read once for all the chats
+ * Pull request watches: every two minutes each watched pull request is read once for all the chats
  * watching it. Each chat hears about failed checks, required checks passing, other people's comments and reviews, and a new
  * conflict with its base. A merged pull request ends the watch quietly; a closed one, or one GitHub failed to return eight
  * times in a row, ends it with one last update. A rate limit pauses the passes, doubling up to 30 minutes, without counting.

@@ -1,6 +1,6 @@
 import { formatTime } from "@phaseo/app-kit/format";
 import { useEffect, useState } from "react";
-import { ChevronRight, LoaderCircle, Network, Square, SquareArrowOutUpRight } from "lucide-react";
+import { ChevronRight, LoaderCircle, MessagesSquare, Network, Square, SquareArrowOutUpRight } from "lucide-react";
 import type { Message } from "../../shared/workspace";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { useWorkspace } from "../app/workspace";
@@ -8,6 +8,8 @@ import { cn } from "../lib/utils";
 import { MessageContent } from "../components/MessageContent";
 import { StatusDot } from "../shell/Sidebar";
 import { ModelStack, modelName } from "./ModelPicker";
+import { isSideChat } from "../../shared/sideChats";
+import { openSideChat } from "../panels/events";
 
 const working = (task: TaskOverview) => task.status === "running" || task.status === "waiting" || !!task.approvalsCount || !!task.answersCount;
 const statusLabel = (task: TaskOverview) => task.approvalsCount || task.answersCount ? "Needs input" : task.status === "running" ? "Working" : task.status === "waiting" ? "Waiting" : task.status === "completed" ? "Done" : task.status === "failed" ? "Failed" : task.status === "interrupted" ? "Stopped" : task.status === "limited" ? "Usage limit" : "Idle";
@@ -17,17 +19,20 @@ function elapsed(task: TaskOverview, now: number) {
 	return seconds < 60 ? `${seconds}s` : seconds < 3600 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${Math.floor(seconds / 3600)}h ${Math.floor(seconds / 60) % 60}m`;
 }
 
-/** Agents this chat started, live: open one, or stop the ones still working. Mirrors T3 Code's subagent cards. */
+/** Agents this chat started, live: open one, or stop the ones still working. */
 export function AgentThreads({ taskId }: { taskId: string }) {
 	const { overview, select, command } = useWorkspace();
 	const sorted = overview.tasks.filter(task => task.delegation?.parentTaskId === taskId || task.launch?.byTaskId === taskId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 	// Agents report back to this chat; launched chats are independent top-level chats it started.
-	const children = sorted.filter(task => task.delegation?.parentTaskId === taskId), launched = sorted.filter(task => task.launch?.byTaskId === taskId);
+	const children = sorted.filter(task => task.delegation?.parentTaskId === taskId && !isSideChat(task)), launched = sorted.filter(task => task.launch?.byTaskId === taskId);
+	// Side chats open beside the chat, in the right pane, rather than in its place.
+	const sides = sorted.filter(task => task.delegation?.parentTaskId === taskId && isSideChat(task) && !task.archived);
 	const active = children.filter(working).length, live = active + launched.filter(working).length;
 	const [now, setNow] = useState(Date.now());
 	useEffect(() => { if (!live) return; const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, [live]);
-	if (!children.length && !launched.length) return null;
-	const row = (child: TaskOverview) => <div key={child.id} role="button" tabIndex={0} onClick={() => select(child.id)} onKeyDown={event => { if (event.key === "Enter") select(child.id); }}
+	if (!children.length && !launched.length && !sides.length) return null;
+	const open = (child: TaskOverview) => isSideChat(child) ? openSideChat({ parentId: taskId, id: child.id }) : select(child.id);
+	const row = (child: TaskOverview) => <div key={child.id} role="button" tabIndex={0} onClick={() => open(child)} onKeyDown={event => { if (event.key === "Enter") open(child); }}
 		className="group/agent flex h-8 min-w-0 items-center gap-2 rounded-md px-2 text-[13px] hover:bg-muted/60">
 		<ModelStack models={[child]} size="sm" ringClassName="ring-transparent" />
 		<span className="min-w-0 truncate font-medium">{child.title}</span>
@@ -52,6 +57,10 @@ export function AgentThreads({ taskId }: { taskId: string }) {
 		{launched.length > 0 && <div className="flex flex-col gap-0.5">
 			<div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><SquareArrowOutUpRight className="size-3.5" /><span className="font-medium">{launched.length === 1 ? "Launched 1 chat" : `Launched ${launched.length} chats`}</span></div>
 			<div className="ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{launched.map(row)}</div>
+		</div>}
+		{sides.length > 0 && <div className="flex flex-col gap-0.5">
+			<div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><MessagesSquare className="size-3.5" /><span className="font-medium">{sides.length === 1 ? "1 side chat" : `${sides.length} side chats`}</span></div>
+			<div className="ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{sides.map(row)}</div>
 		</div>}
 	</section>;
 }

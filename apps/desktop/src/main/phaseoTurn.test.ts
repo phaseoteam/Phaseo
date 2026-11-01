@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { defineTool } from "@phaseo/agent-sdk";
 import type { AgentMessage, AgentModelRequest, AgentModelResponse, AgentRunResult } from "@phaseo/agent-sdk";
 import type { Message, Task } from "../shared/workspace";
-import { activeToolIds, approvalRule, commandAllowed, runMatchesTranscript, runPhaseoTurn, type PhaseoTurn } from "./phaseoTurn";
+import { activeToolIds, approvalRule, commandAllowed, coreThreadToolIds, imageResultsToMessages, phaseoToolsets, runMatchesTranscript, runPhaseoTurn, type PhaseoTurn } from "./phaseoTurn";
+import { threadTools } from "./threadTools";
+import type { ThreadTools } from "../shared/orchestration";
 
 const task: Task = { id: "task", title: "Owned", harness: "phaseo", mode: "code", model: "owned", status: "running", pinned: false, archived: false, queue: [], messages: [], createdAt: "", updatedAt: "" };
 const say = (content: string): AgentModelResponse => ({ message: { role: "assistant", content } });
@@ -32,6 +34,18 @@ describe("Phaseo turns", () => {
 		const sent = requests.at(-1)!.messages;
 		expect(sent.some(entry => entry.role === "tool" && entry.content.includes("answer = 42"))).toBe(true);
 		expect(sent.at(-1)).toEqual({ role: "user", content: "And now?" });
+	});
+
+	it("shows a tool's image to the model in the next message instead of as tool text", async () => {
+		const steering: AgentMessage[] = [];
+		const screenshot = { id: "browser_screenshot", execute: async () => ({ tabId: "t", width: 2, height: 1, image: { mimeType: "image/png", data: "QUJD" } }) };
+		const { turn, requests } = setup([call("browser_screenshot", {}), say("I see it.")], { tools: imageResultsToMessages([screenshot], steering), steering });
+		await runPhaseoTurn(turn("Look", null));
+		const sent = requests.at(-1)!.messages;
+		const result = sent.find(entry => entry.role === "tool")!;
+		expect(result.content).toContain("Shown to you in the next message.");
+		expect(result.content).not.toContain("QUJD");
+		expect(sent.some(entry => entry.role === "user" && Array.isArray(entry.content) && entry.content.some(part => part.type === "image_url" && part.image_url.url === "data:image/png;base64,QUJD"))).toBe(true);
 	});
 
 	it("starts afresh when the transcript no longer matches the run", async () => {
@@ -100,6 +114,15 @@ describe("Phaseo turns", () => {
 		const tools = ["read_file", "delegate_task", "watch_pull_request", "browser_open", "schedule_task", "send_thread"].map(id => defineTool({ id, execute: async () => id }));
 		expect(activeToolIds(tools, {})).toEqual(["read_file", "delegate_task"]);
 		expect(activeToolIds(tools, { phaseoToolsets: ["browser", "threads"] })).toEqual(["read_file", "delegate_task", "browser_open", "send_thread"]);
+	});
+
+	it("puts every orchestration tool in the core set or a load_tools set, apart from the few always offered", () => {
+		const present = () => async () => ({});
+		const service = new Proxy({ browser: {}, html: {}, factory: {}, globalInstructions: {} }, { get: (target, key) => key in target ? target[key as keyof typeof target] : present() }) as unknown as ThreadTools;
+		const ids = threadTools(service).map(tool => tool.id);
+		expect(ids).toEqual(expect.arrayContaining(["configure_thread", "search_threads", "add_project", "clone_project", "update_global_instructions", "browser_evaluate", "html_render", "move_to_worktree", "answer_question"]));
+		const outside = ids.filter(id => !coreThreadToolIds.includes(id) && !Object.values(phaseoToolsets).some(set => set.match(id)));
+		expect(outside).toEqual(["request_secret", "background_wait", "list_work_items", "read_work_item", "run_stage"]);
 	});
 
 	it("only lets allowed command prefixes through when nothing is chained", () => {
