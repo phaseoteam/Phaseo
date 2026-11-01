@@ -2,8 +2,10 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
-import { Button, EmptyState, Header, Screen, Section, Segmented, Select, Text, TextField, toast } from "@/components/ui";
-import { ModelControl } from "@/features/chat/ModelSheet";
+import { Logo } from "@/components/Logo";
+import { EmptyState, Header, Screen, Section, Segmented, Select, toast } from "@/components/ui";
+import { Composer, ComposerFootnote } from "@/features/composer/Composer";
+import { resolveSendPresentation } from "@/features/composer/sendPresentation";
 import { haptic } from "@/lib/haptics";
 import { CodeModelSheet, codeModelLabel } from "./CodeModelSheet";
 import { ConnectionNotice } from "./CodeThreadList";
@@ -48,6 +50,7 @@ export function NewDesktopChatScreen({ desktopId, projectId }: { desktopId: stri
     return [...seen].map(([value, label]) => ({ value, label }));
   }, [chats, projectId]);
 
+  const label = list && choice ? codeModelLabel(list, choice) : null;
   if (desktop === undefined) return <Screen><Header back title="New thread" /></Screen>;
   if (!client || !desktop) {
     return (
@@ -77,7 +80,7 @@ export function NewDesktopChatScreen({ desktopId, projectId }: { desktopId: stri
       <Header back title="New thread" subtitle={`${desktop.desktopName} · ${connectionLabel(connection)}`} />
       <ConnectionNotice client={client} />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-16">
+        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" className="flex-1" contentContainerClassName="pb-6">
           <Section title="Mode">
             <View className="px-4"><Segmented<PhoneChatMode> value={mode} options={MODES} onChange={setMode} /></View>
           </Section>
@@ -86,18 +89,19 @@ export function NewDesktopChatScreen({ desktopId, projectId }: { desktopId: stri
               <Select title="Project" value={project} onChange={setProject} options={[{ value: NO_PROJECT, label: "No project" }, ...projects]} />
             </View>
           </Section>
-          <Section title="Message">
-            <View className="gap-3 px-4">
-              <TextField value={text} onChangeText={setText} placeholder="What should it do?" multiline className="min-h-28" textAlignVertical="top" accessibilityLabel="Message" autoFocus />
-              <View className="flex-row items-center gap-2">
-                {list && choice ? <ModelControl label={codeModelLabel(list, choice)} onPress={() => setSheetOpen(true)} /> : <Text variant="caption" className="flex-1">{unavailable ? "The computer picks the model." : "Loading the computer's models…"}</Text>}
-                <View className="flex-1" />
-                <Button label="Start" loading={starting} disabled={!text.trim()} onPress={() => void start()} />
-              </View>
-              <Text variant="caption">{"Permissions and other settings are the computer's. Change them there."}</Text>
-            </View>
-          </Section>
         </ScrollView>
+        <Composer
+          text={text}
+          onChangeText={setText}
+          placeholder="What should it do?"
+          autoFocus
+          onAttach={null}
+          model={label ? { label, logos: <Logo id={choice?.model.includes("/") ? choice.model.split("/")[0] : null} label={label.model} size={18} />, onPress: () => setSheetOpen(true) } : null}
+          send={{ ...resolveSendPresentation({ editingQueuedMessage: false, running: false, canSteer: false, followUpBehavior: "steer", deliveryDeferred: false }), label: "Start thread" }}
+          sendBlockedReason={starting ? "Starting the thread…" : null}
+          onSend={() => void start()}
+          below={<ComposerFootnote>{`${list ? "" : unavailable ? "The computer picks the model. " : "Loading the computer's models… "}Permissions and other settings are the computer's. Change them there.`}</ComposerFootnote>}
+        />
       </KeyboardAvoidingView>
       {list && choice ? <CodeModelSheet desktopId={desktopId} list={list} choice={choice} onChoose={(next) => setPicked({ list, choice: next })} open={sheetOpen} onClose={() => setSheetOpen(false)} /> : null}
     </Screen>

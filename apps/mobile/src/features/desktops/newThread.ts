@@ -1,3 +1,4 @@
+import { modelLabel, modelLabelText, type ModelLabel } from "@/features/chat/modelSheetRows";
 import { effortLabel, type PhoneChatDetail, type PhoneModel, type PhoneResults } from "./protocol";
 
 export type ModelList = PhoneResults["list_models"];
@@ -27,8 +28,14 @@ export const modelName = (models: readonly PhoneModel[] | undefined, id: string)
 
 /** An existing thread's model and effort for its read-only control: "GPT-6.1 · High", or the model alone. */
 export function threadModelLabel(chat: Pick<PhoneChatDetail, "model" | "reasoningEffort">, models?: readonly PhoneModel[]) {
+  const parts = threadModel(chat, models);
+  return parts ? modelLabelText(parts) : null;
+}
+
+/** The same, in parts, for the composer's control. */
+export function threadModel(chat: Pick<PhoneChatDetail, "model" | "reasoningEffort">, models?: readonly PhoneModel[]): ModelLabel | null {
   if (!chat.model) return null;
   const model = models?.find((entry) => entry.id === chat.model);
   const effort = chat.reasoningEffort ? model?.efforts?.find((entry) => entry.id === chat.reasoningEffort)?.label ?? effortLabel(chat.reasoningEffort) : null;
-  return `${model?.name ?? chat.model}${effort ? ` · ${effort}` : ""}`;
+  return modelLabel(model?.name ?? chat.model, effort);
 }

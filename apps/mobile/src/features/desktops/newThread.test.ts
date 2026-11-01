@@ -1,4 +1,4 @@
-import { initialChoice, newThreadModel, threadModelLabel, type ModelList } from "./newThread";
+import { initialChoice, newThreadModel, threadModel, threadModelLabel, type ModelList } from "./newThread";
 
 const list: ModelList = {
   models: [
@@ -33,5 +33,6 @@ describe("an existing thread's model", () => {
     expect(threadModelLabel({ model: "claude-opus-5-5", reasoningEffort: "high" })).toBe("claude-opus-5-5 · High");
     expect(threadModelLabel({ model: "gpt-6.1-mini" }, list.models)).toBe("GPT-6.1 mini");
     expect(threadModelLabel({})).toBeNull();
+    expect(threadModel({ model: "gpt-6.1", reasoningEffort: "xhigh" }, list.models)).toEqual({ model: "GPT-6.1", effort: "Extra high", others: 0 });
   });
 });
