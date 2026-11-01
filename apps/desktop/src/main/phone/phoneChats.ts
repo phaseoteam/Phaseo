@@ -1,5 +1,5 @@
 import type { AttentionKind, PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry, PhoneMessage } from "@phaseo/phone-protocol";
-import { isUnread } from "../../shared/threadLifecycle";
+import { isSettled, isUnread } from "../../shared/threadLifecycle";
 import type { AgentActivity, Message, Project, Task } from "../../shared/workspace";
 import { overviewOrder, type TaskOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 
@@ -10,12 +10,23 @@ const cut = (text: string, max: number) => text.length > max ? { text: `${text.s
 /** The chats a phone lists: top-level and not archived. Agents' and side chats stay with their parent. */
 export const phoneChats = (overview: WorkspaceOverview) => overview.tasks.filter(task => !task.archived && !task.delegation).sort(overviewOrder);
 
+/** The effort a chat set: a field for Codex and Grok, a model option for the rest (see phoneHost's modelEfforts). */
+export const effortOptionIds = ["effort", "reasoning", "thinking"];
+export function taskEffort(task: Pick<Task, "reasoningEffort" | "modelOptions">) {
+	if (task.reasoningEffort) return task.reasoningEffort;
+	const option = effortOptionIds.map(id => task.modelOptions?.[id]).find(value => typeof value === "string");
+	return typeof option === "string" ? option : undefined;
+}
+
 export function phoneChat(task: TaskOverview, projects: readonly Project[]): PhoneChat {
-	const project = task.projectId ? projects.find(value => value.id === task.projectId) : undefined;
+	const own = task.projectId ? projects.find(value => value.id === task.projectId) : undefined;
+	// A worktree's chats sit under the project it came from, as in the window's project folders, with its branch.
+	const project = own?.worktree ? projects.find(value => value.id === own.worktree!.sourceProjectId) ?? own : own;
 	const needsYou = Boolean(task.attentionReason) && task.attentionReason !== "Task completed";
 	return {
 		id: task.id, title: task.title, mode: task.mode, status: task.status, updatedAt: task.updatedAt, unread: isUnread(task), needsYou,
 		...needsYou ? { attention: task.attentionReason } : {}, ...project ? { projectId: project.id, project: project.name } : {},
+		...task.model ? { model: task.model } : {}, ...own?.worktree ? { branch: own.worktree.branch } : {}, ...isSettled(task) ? { settled: true as const } : {},
 	};
 }
 
@@ -34,8 +45,9 @@ export function chatListPage(overview: WorkspaceOverview, cursor: string | undef
 }
 
 export function phoneDetail(task: Task, overview: TaskOverview, projects: readonly Project[]): PhoneChatDetail {
+	const effort = taskEffort(task);
 	return {
-		...phoneChat(overview, projects),
+		...phoneChat(overview, projects), ...effort ? { reasoningEffort: effort } : {},
 		approvals: (task.approvals ?? []).map(approval => ({ id: approval.id, title: approval.method, description: cut(approval.description, requestChars).text, ...approval.kind === "plan" ? { plan: true as const } : {} })),
 		questions: (task.questions ?? []).map(request => ({ id: request.id, questions: request.questions.map(question => ({
 			id: question.id, header: question.header, question: question.question, ...question.multiSelect ? { multiSelect: true as const } : {}, ...question.isOther ? { isOther: true as const } : {}, ...question.isSecret ? { isSecret: true as const } : {},
