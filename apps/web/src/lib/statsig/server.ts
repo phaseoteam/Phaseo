@@ -29,28 +29,47 @@ const statsigEnvironmentTier =
 // requests, so a request at least this long after the last sync starts a new one.
 const CONFIG_SYNC_INTERVAL_MS = 5000;
 
-let statsigInitialization: Promise<void> | null = null;
+// The SDK is a per-isolate singleton. Only the request that starts
+// initialisation awaits it: on Workers, a request awaiting I/O started by
+// another request can hang until the client gives up. Requests arriving while
+// it is still in flight poll the settled flag instead.
+let initState: "idle" | "initializing" | "ready" | "failed" = "idle";
 let syncingConfig = false;
 let nextConfigSyncAt = 0;
+const CONCURRENT_INIT_WAIT_MS = 2000;
 
 export function getStatsigServerKey(): string | null {
 	return statsigServerKey;
 }
 
-/** Initialises the server SDK once per isolate. Resolves to false when no server key is configured. */
+/**
+ * Initialises the server SDK once per isolate. Resolves to false when no server
+ * key is configured or initialisation is not ready (callers treat gates as off).
+ */
 export async function initializeStatsigServer(): Promise<boolean> {
 	if (!statsigServerKey) return false;
-	if (!statsigInitialization) {
+	if (initState === "idle" || initState === "failed") {
+		initState = "initializing";
 		nextConfigSyncAt = Date.now() + CONFIG_SYNC_INTERVAL_MS;
-		statsigInitialization = Statsig.initialize(statsigServerKey, {
-			environment: { tier: statsigEnvironmentTier },
-			// Only gates and experiments are evaluated here; ID lists are not used.
-			initStrategyForIDLists: "none",
-			disableIdListsSync: true,
-			rulesetsSyncIntervalMs: process.env.NODE_ENV === "development" ? 5000 : undefined,
-		});
+		try {
+			await Statsig.initialize(statsigServerKey, {
+				environment: { tier: statsigEnvironmentTier },
+				// Only gates and experiments are evaluated here; ID lists are not used.
+				initStrategyForIDLists: "none",
+				disableIdListsSync: true,
+				rulesetsSyncIntervalMs: process.env.NODE_ENV === "development" ? 5000 : undefined,
+			});
+			initState = "ready";
+		} catch (error) {
+			initState = "failed";
+			throw error;
+		}
+	} else if (initState === "initializing") {
+		const deadline = Date.now() + CONCURRENT_INIT_WAIT_MS;
+		const current = () => initState as typeof initState;
+		while (current() === "initializing" && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 25));
+		if (current() !== "ready") return false;
 	}
-	await statsigInitialization;
 	syncConfigSpecsIfDue();
 	return true;
 }
@@ -137,7 +156,7 @@ export const getServerStatsigBootstrap = cache(async () => {
 	}
 
 	const user = (await getServerStatsigUser()) as ServerStatsigUser;
-	await initializeStatsigServer();
+	if (!(await initializeStatsigServer())) return null;
 
 	return {
 		clientKey,

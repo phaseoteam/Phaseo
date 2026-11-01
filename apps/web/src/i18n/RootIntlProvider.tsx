@@ -6,6 +6,7 @@ import { use, type ReactNode } from "react";
 import type { AbstractIntlMessages } from "use-intl";
 import { AppIntlProvider } from "@/i18n/react";
 import type { PublicLocale } from "@/i18n/locales";
+import { getCurrentRequest } from "@/lib/start/request-context";
 
 declare const __PHASEO_BUILD_ID__: string;
 
@@ -33,12 +34,25 @@ const loadMessages = createIsomorphicFn()
 		}
 	});
 
+// On the server each request gets its own promise (Workers must not await
+// another request's I/O); the catalogue itself is cached settled by
+// getPublicMessages.
+const perRequest = new WeakMap<object, Map<string, Promise<AbstractIntlMessages>>>();
+
+/** A stable promise per locale (per request on the server) for React's use(). */
 export function getFullMessages(locale: PublicLocale): Promise<AbstractIntlMessages> {
-	let promise = pending.get(locale);
+	const request = typeof window === "undefined" ? getCurrentRequest() : undefined;
+	let cache = pending;
+	if (request) {
+		cache = perRequest.get(request) ?? new Map();
+		perRequest.set(request, cache);
+	}
+	let promise = cache.get(locale);
 	if (!promise) {
 		promise = loadMessages(locale);
-		pending.set(locale, promise);
-		promise.catch(() => pending.delete(locale));
+		cache.set(locale, promise);
+		const owner = cache;
+		promise.catch(() => owner.delete(locale));
 	}
 	return promise;
 }

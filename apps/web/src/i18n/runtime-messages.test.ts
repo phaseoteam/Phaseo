@@ -17,9 +17,9 @@ function valueAt(value: unknown, path: string): string {
 
 describe("runtime locale message loading", () => {
 	it("reuses assembled dictionaries across requests without mixing locales", async () => {
-		const sourceRequest = getPublicMessages("en-GB");
-		expect(getPublicMessages("en-GB")).toBe(sourceRequest);
-		const source = await sourceRequest;
+		// Settled dictionaries are shared; in-flight loads are not (Workers must not
+		// await another request's I/O).
+		const source = await getPublicMessages("en-GB");
 		expect(await getPublicMessages("en-GB")).toBe(source);
 		const localized = await getPublicMessages("es-ES");
 		expect(localized).not.toBe(source);

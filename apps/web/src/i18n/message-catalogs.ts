@@ -11,6 +11,7 @@ import {
 } from "./default-messages";
 import { mergeCatalogMessages, mergeMessages, nestDottedMessageKeys } from "./message-overlays";
 import type { PublicLocale, ShippedLocale } from "./routing";
+import { settledCache } from "@/lib/start/settledCache";
 
 type PublicMessageLoader = () => Promise<AuthMessages>;
 type MessageTree = Record<string, unknown>;
@@ -107,10 +108,8 @@ const publicMessageLoaders: Record<ShippedLocale, PublicMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/auth.json")).default,
 };
 
-// These bundled dictionaries change only on deployment. Keep one assembled
-// tree per locale instead of merging and normalizing it on every RSC request.
-const loadedMessages = new Map<PublicLocale, Promise<SourceMessages>>();
-
+// These dictionaries change only on deployment. Keep one assembled tree per
+// locale instead of merging and normalizing it on every request.
 async function loadPublicMessages(locale: PublicLocale): Promise<SourceMessages> {
 	const [messages, common, site, catalogue, content, product, settingsUI] = await Promise.all([
 		publicMessageLoaders[locale](), commonMessageLoaders[locale](), siteMessageLoaders[locale](),
@@ -119,13 +118,4 @@ async function loadPublicMessages(locale: PublicLocale): Promise<SourceMessages>
 	return { ...messages, Common: common, Site: site, Catalogue: catalogue, Content: content, Product: product, SettingsUI: nestDottedMessageKeys(settingsUI) } as SourceMessages;
 }
 
-export function getPublicMessages(locale: PublicLocale): Promise<SourceMessages> {
-	const existing = loadedMessages.get(locale);
-	if (existing) return existing;
-	const pending = loadPublicMessages(locale).catch((error: unknown) => {
-		loadedMessages.delete(locale);
-		throw error;
-	});
-	loadedMessages.set(locale, pending);
-	return pending;
-}
+export const getPublicMessages: (locale: PublicLocale) => Promise<SourceMessages> = settledCache(loadPublicMessages);

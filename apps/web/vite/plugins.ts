@@ -72,7 +72,8 @@ export function contentFilesystem(contentDir: string): Plugin {
 				'function enoent(p, op) { const e = new Error(`ENOENT: no such file or directory, ${op} \'${p}\'`); e.code = "ENOENT"; return e; }',
 				'function dirent(name, isDir) { return { name, isFile: () => !isDir, isDirectory: () => isDir, isSymbolicLink: () => false }; }',
 				'const cache = new Map();',
-				'function readText(rel) { let pending = cache.get(rel); if (!pending) { pending = env.ASSETS.fetch(new Request("https://assets.invalid/_content/" + rel.split("/").map(encodeURIComponent).join("/"))).then((r) => { if (!r.ok) throw enoent(rel, "open"); return r.text(); }); cache.set(rel, pending); pending.catch(() => cache.delete(rel)); } return pending; }',
+				// Cache settled text only; never share an in-flight fetch across requests.
+				'async function readText(rel) { if (cache.has(rel)) return cache.get(rel); const r = await env.ASSETS.fetch(new Request("https://assets.invalid/_content/" + rel.split("/").map(encodeURIComponent).join("/"))); if (!r.ok) throw enoent(rel, "open"); const text = await r.text(); cache.set(rel, text); return text; }',
 				'export const promises = {',
 				'  async readdir(p, options) { const rel = relOf(p); if (rel === null || !DIRS.has(rel)) throw enoent(p, "scandir"); const prefix = rel ? rel + "/" : ""; const names = new Map(); for (const f of FILES.keys()) if (f.startsWith(prefix)) { const rest = f.slice(prefix.length); names.set(rest.split("/")[0], names.get(rest.split("/")[0]) || rest.includes("/")); } const sorted = [...names].sort((a, b) => a[0].localeCompare(b[0])); return options && options.withFileTypes ? sorted.map(([n, d]) => dirent(n, d)) : sorted.map(([n]) => n); },',
 				'  async readFile(p, options) { const rel = relOf(p); if (rel === null || !FILES.has(rel)) throw enoent(p, "open"); const text = await readText(rel); const enc = typeof options === "string" ? options : options && options.encoding; return enc ? text : new TextEncoder().encode(text); },',
@@ -166,18 +167,16 @@ export function workersMemoryTrim(messagesDir: string): Plugin {
 			if (id === MESSAGE_ASSETS_MODULE) {
 				return [
 					'import { env } from "cloudflare:workers";',
+					// Only settled values are shared between requests: a Worker request
+					// that awaits I/O started by another request can hang forever.
 					"const loaded = new Map();",
-					"export function loadMessageAsset(name) {",
-					"  let pending = loaded.get(name);",
-					"  if (!pending) {",
-					"    pending = env.ASSETS.fetch(new Request(`https://assets.invalid/_messages/${name}.json`)).then(async (response) => {",
-					"      if (!response.ok) throw new Error(`Message catalogue ${name} returned ${response.status}`);",
-					"      return { default: await response.json() };",
-					"    });",
-					"    loaded.set(name, pending);",
-					"    pending.catch(() => loaded.delete(name));",
-					"  }",
-					"  return pending;",
+					"export async function loadMessageAsset(name) {",
+					"  if (loaded.has(name)) return loaded.get(name);",
+					"  const response = await env.ASSETS.fetch(new Request(`https://assets.invalid/_messages/${name}.json`));",
+					"  if (!response.ok) throw new Error(`Message catalogue ${name} returned ${response.status}`);",
+					"  const module = { default: await response.json() };",
+					"  loaded.set(name, module);",
+					"  return module;",
 					"}",
 				].join("\n");
 			}
