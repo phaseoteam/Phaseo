@@ -51,7 +51,7 @@ export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: s
 export type PhoneResults = {
 	hello: { desktopName: string; appVersion: string; protocol: number };
 	list_chats: { chats: PhoneChat[]; cursor?: string };
-	read_chat: { chat: PhoneChatDetail; entries: PhoneEntry[]; /** Entries before these; pass the first entry's id as `before` to read them. */ earlier: number };
+	read_chat: { chat: PhoneChatDetail; entries: PhoneEntry[]; /** Messages before these; pass the first message's id (not an activity's) as `before` to read them. */ earlier: number };
 	send: { chatId: string };
 	answer_approval: { chatId: string };
 	answer_question: { chatId: string };
