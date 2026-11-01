@@ -30,6 +30,10 @@ describe("targetForHref", () => {
 });
 
 describe("notificationTarget", () => {
+  it("opens the chat a computer's notification is about", () => {
+    expect(notificationTarget({ desktopId: "desk-1", chatId: "c2" })).toEqual({ kind: "desktop-chat", desktopId: "desk-1", chatId: "c2" });
+  });
+
   it("follows href, as single pushes do", () => {
     expect(notificationTarget({ href: "/models/openai/gpt-6-astra", kind: "model_released", category: "new-models", modelId: "openai/gpt-6-astra", group: null }))
       .toEqual({ kind: "model", id: "openai/gpt-6-astra" });

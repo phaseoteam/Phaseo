@@ -2,7 +2,7 @@ import type { ModelCard } from "@/lib/api/models";
 import { DEFAULT_FILTERS, organisationName, type CatalogueFilters } from "@/lib/catalogue";
 
 /** Where a tapped notification opens. The app has no lab page, so a lab opens Models filtered to it. */
-export type NotificationTarget = { kind: "model"; id: string } | { kind: "lab"; slug: string } | { kind: "provider"; id: string } | { kind: "home" };
+export type NotificationTarget = { kind: "model"; id: string } | { kind: "lab"; slug: string } | { kind: "provider"; id: string } | { kind: "home" } | { kind: "desktop-chat"; desktopId: string; chatId: string };
 
 // The push contract's paths, plus the website's own, in case the server sends those instead.
 const LAB_ROOTS = new Set(["labs", "organisations"]);
@@ -44,6 +44,8 @@ function targetForGroup(group: unknown): NotificationTarget | null {
 /** Where a notification's `data` points. Null when it names nothing, so the tap just opens the app. */
 export function notificationTarget(data: Record<string, unknown> | null | undefined): NotificationTarget | null {
   if (!data) return null;
+  // A local notification for a chat on a paired computer (see DesktopConnections).
+  if (typeof data.desktopId === "string" && typeof data.chatId === "string") return { kind: "desktop-chat", desktopId: data.desktopId, chatId: data.chatId };
   const group = targetForGroup(data.group);
   if (group) return group;
   if (typeof data.href === "string" && data.href.startsWith("/")) return targetForHref(data.href);
