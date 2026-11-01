@@ -63,6 +63,9 @@ export type PhaseoDesktopApi = {
 	browserRecordingReveal: (path: string) => Promise<void>;
 	/** A page an agent opened in one of a chat's browser tabs. */
 	onBrowserAgentTab: (listener: (tab: BrowserAgentTabOpened) => void) => () => void;
+	/** An agent asks the window to start or stop recording a tab; the window answers with browserAgentRecorded. */
+	onBrowserAgentRecord: (listener: (request: { requestId: string; action: "start" | "stop"; tabId: string; url: string }) => void) => () => void;
+	browserAgentRecorded: (requestId: string, recording?: BrowserRecording, error?: string) => Promise<void>;
 	/** An app shortcut pressed while a page had focus. */
 	onBrowserKey: (listener: (key: BrowserKey) => void) => () => void;
 	/** The mouse's back and forward buttons, or a macOS swipe, outside a browser page. */

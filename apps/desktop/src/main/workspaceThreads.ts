@@ -1,9 +1,13 @@
-import type { Account, Harness, ModelOption, Task, WorkspaceCommand } from "../shared/workspace";
-import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type DelegateRequest, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
+import { createHash, randomUUID } from "node:crypto";
+import { stat } from "node:fs/promises";
+import path from "node:path";
+import type { Account, Attachment, Harness, ModelOption, Task, WorkspaceCommand } from "../shared/workspace";
+import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type ChildWorktree, type DelegateRequest, type PendingQuestion, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
 import { validateMissionCommand, type Mission, type MissionCommand } from "../shared/missions";
 import { tagsInUse } from "../shared/tags";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
 import type { WorkspaceStore } from "./workspaceStore";
+import type { AttachmentService } from "./attachments";
 import { validateDelegate } from "./threadTools";
 import { parsePullRequestReference, pullRequestUrl, samePullRequest, validatePullRequestLinks, type TaskPullRequestLink } from "../shared/pullRequestView";
 import { pullRequestChains, visiblePullRequestLinks } from "../shared/pullRequestStacks";
@@ -15,6 +19,8 @@ import { isPullRequestUrl, issueUrl, parseIssueReference, sameIssue, validateIss
 import type { IssueRead, IssueToolTarget, ThreadIssueEntry } from "../shared/orchestration";
 import { untrustedBlock, untrustedNotice } from "../shared/untrustedContent";
 import { withoutHtmlComments } from "../shared/htmlText";
+import { generatedBranchName } from "../shared/worktreeChat";
+import { allowsOwnAnswer, optionValue, questionOptions } from "../shared/agentQuestions";
 
 /** An issue tool's target: a URL, or a number with an optional repository. A pull request URL points at the pull request tools. */
 function issueToolReference(target: IssueToolTarget) {
@@ -45,6 +51,11 @@ type Host = {
 	start: (id: string) => void;
 	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;
 	createWorktree?: (projectId: string, branch: string, base: string) => Promise<{ projectId: string }>;
+	/** Clones a repository into parent and returns the checkout folder (projectClone.ts). */
+	cloneRepository?: (url: string, parent: string) => Promise<string>;
+	attachments?: Pick<AttachmentService, "import" | "discard">;
+	/** Resolves once a chat's running turn has fully ended. */
+	stopped?: (id: string) => Promise<void>;
 	/** MissionService's command handler, once the scheduler is running. */
 	missions?: (command: MissionCommand) => Mission[];
 	assertHarnessAvailable: (harness: Harness) => void;
@@ -76,13 +87,15 @@ const harnessName: Partial<Record<Harness, string>> = { phaseo: "Phaseo", cursor
 const catalogBytes = 60000;
 type PreparedLaunch = { request: LaunchRequest; worktree?: { sourceId: string; branch: string; baseRef: string }; command: Extract<WorkspaceCommand, { type: "create-task" }> };
 const message = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
-const scheduledTask = ({ id, title, prompt, templateTaskId, schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error }: Mission): ScheduledTask => ({ id, title, prompt: prompt.slice(0, 8000), templateTaskId, schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error });
+const scheduledTask = ({ id, title, prompt, templateTaskId, threadTaskId, schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error }: Mission): ScheduledTask => ({ id, title, prompt: prompt.slice(0, 8000), templateTaskId, ...(threadTaskId ? { threadTaskId } : {}), schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error });
 
 export class WorkspaceThreads {
 	private readonly listeners = new Set<() => void>();
 	private readonly modelCache = new Map<string, { models?: ModelOption[]; checkedAt: number; pending?: Promise<ModelOption[]> }>();
 	/** In-flight launches by caller and requestId, so concurrent retries share one chat and one worktree. */
 	private readonly launching = new Map<string, Promise<LaunchResult>>();
+	/** In-flight delegations that create a worktree, so a concurrent retry gets the same child instead of a second checkout. */
+	private readonly delegating = new Map<string, Promise<Task>>();
 	private installations?: { checkedAt: number; value: Promise<{ harness: Harness; installed: boolean; error?: string }[]> };
 	constructor(private readonly host: Host, private readonly maxActiveAgents: () => number = () => 32) {}
 	changed() { for (const listener of [...this.listeners]) listener(); }
@@ -200,6 +213,36 @@ export class WorkspaceThreads {
 		if (caller.permissionMode !== "full-access" || caller.mode === "plan") throw new Error(`${action} needs this chat to have full access outside Plan mode. Ask the user to change its permissions.`);
 		return caller;
 	}
+	/**
+	 * Copies the files an agent sends with a prompt into the attachment store, not yet recorded against any chat. Relative paths
+	 * are from the caller's checkout. Chat mode has no file access, so it cannot send files either.
+	 */
+	private async readFiles(callerId: string, paths: string[] | undefined): Promise<Attachment[]> {
+		if (!paths?.length) return [];
+		const caller = this.host.store.getTask(callerId), attachments = this.host.attachments;
+		if (caller.mode === "chat") throw new Error("Chat mode has no file access, so it cannot send attachments.");
+		if (!attachments) throw new Error("Attachments are unavailable.");
+		const root = caller.projectId ? this.host.store.getProjects().find(project => project.id === caller.projectId && !project.worktree?.removedAt)?.directory : undefined;
+		const read: Attachment[] = [];
+		try {
+			for (const file of paths) {
+				if (!path.isAbsolute(file) && !root) throw new Error(`${file}: this chat has no project, so pass an absolute path.`);
+				try { read.push(await attachments.import("", path.resolve(root ?? "", file), false)); }
+				catch (error) { throw new Error(`${file}: ${message(error, "could not be attached.")}`, { cause: error }); }
+			}
+			return read;
+		} catch (error) { await this.discardFiles(read); throw error; }
+	}
+	private async discardFiles(files: Attachment[]) { await Promise.all(files.map(file => this.host.attachments?.discard(file).catch(() => {}))); }
+	/** Records read files against the new chat and puts them on its first prompt, before it starts. */
+	private attachToFirstPrompt(taskId: string, files: Attachment[]) {
+		if (!files.length) return;
+		const task = this.host.store.getTask(taskId), first = task.queue[0];
+		// A concurrent retry may have returned a chat that already has its files.
+		if (!first || first.attachments?.length || task.messages.length) { void this.discardFiles(files); return; }
+		first.attachments = files.map(file => ({ ...file, taskId }));
+		this.host.store.saveAttachments(first.attachments); this.host.store.saveTask(task);
+	}
 	private launchResult(task: Pick<Task, "id" | "title" | "projectId">): LaunchResult {
 		const project = task.projectId ? this.host.store.getProjects().find(value => value.id === task.projectId) : undefined;
 		return { id: task.id, title: task.title, ...(task.projectId ? { projectId: task.projectId } : {}), ...(project?.worktree ? { worktree: { branch: project.worktree.branch, directory: project.directory } } : {}) };
@@ -240,8 +283,10 @@ export class WorkspaceThreads {
 			let projectId = prepared.command.projectId;
 			if (prepared.worktree) { this.assertCapacity(); ({ projectId } = await this.host.createWorktree!(prepared.worktree.sourceId, prepared.worktree.branch, prepared.worktree.baseRef)); }
 			let task: Task;
+			const files = await this.readFiles(callerId, prepared.request.attachments);
 			try { this.launcher(callerId, "Launching a chat"); task = this.host.store.createLaunchedTask({ ...prepared.command, projectId }, { byTaskId: callerId, requestId: prepared.request.requestId }, prepared.request.prompt, prepared.request.title, this.maxActiveAgents()); }
-			catch (error) { if (prepared.worktree) throw new Error(`${message(error, "The chat could not be created.")} Its worktree was created as project ${projectId}; retry with {strategy:"existing_worktree",projectId:"${projectId}"}.`, { cause: error }); throw error; }
+			catch (error) { await this.discardFiles(files); if (prepared.worktree) throw new Error(`${message(error, "The chat could not be created.")} Its worktree was created as project ${projectId}; retry with {strategy:"existing_worktree",projectId:"${projectId}"}.`, { cause: error }); throw error; }
+			this.attachToFirstPrompt(task.id, files);
 			this.host.broadcast(); this.host.start(task.id); return this.launchResult(task);
 		})().finally(() => this.launching.delete(key));
 		this.launching.set(key, operation); return operation;
@@ -297,6 +342,9 @@ export class WorkspaceThreads {
 			for (const project of ordered) if ((await origin(project.directory))?.toLowerCase() === repository.toLowerCase()) return { root: project.directory, identity: { repository, number: parsed.number, url: pullRequestUrl(repository, parsed.number) } };
 			throw new Error(`No project in this workspace is a checkout of ${repository}, so its pull requests cannot be read here. Add one first.`);
 		};
+		const childWorktree = (task: Pick<Task, "projectId">): { worktree?: ChildWorktree } => { const project = task.projectId ? this.host.store.getProjects().find(value => value.id === task.projectId) : undefined; return project?.worktree ? { worktree: { projectId: project.id, branch: project.worktree.branch } } : {}; };
+		/** Questions a parent may answer: asked live, none of them secret. */
+		const askable = (task: Pick<Task, "questions">) => (task.questions ?? []).filter(request => request.responseMode !== "message" && !request.questions.some(question => question.isSecret));
 		const retry = (requestId: string) => this.host.store.getOverview().tasks.find(task => task.delegation?.parentTaskId === parentId && task.delegation.requestId === requestId);
 		return {
 			handoff: async (id, request) => {
@@ -317,8 +365,39 @@ export class WorkspaceThreads {
 			},
 			rename: async (id, title) => { scoped(id, true); if (!title.trim() || title.length > 100) throw new Error("Invalid chat title."); await this.host.command({ type: "update-task", id, title }); return summary(scoped(id, true)); },
 			steer: async (id, text) => { scoped(id, true, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt."); await this.host.command({ type: "steer", id, text }); return summary(scoped(id, true, true)); },
-			queue: id => scoped(id, true).queue.map(({ id, text, createdAt }) => ({ id, text: text.slice(0, 8000), createdAt })),
-			editQueue: async (id, messageId, text) => { const child = scoped(id, true); if (!child.queue.some(message => message.id === messageId)) throw new Error("Queued message was not found."); if (text !== undefined && (!text.trim() || text.length > 100000)) throw new Error("Invalid queued prompt."); await this.host.command(text === undefined ? { type: "queue-remove", id, messageId } : { type: "queue-edit", id, messageId, text }); return summary(scoped(id, true)); },
+			configure: async (id, change) => {
+				const target = scoped(id, true, true);
+				const settings = () => { const task = this.host.store.getTask(id); return { ...summary(task), harness: task.harness, model: task.model, ...(task.accountId ? { accountId: task.accountId } : {}), modelOptions: task.modelOptions ?? {}, mode: task.mode, permissionMode: task.permissionMode ?? "supervised" as const }; };
+				if (!change || !Object.values(change).some(value => value !== undefined)) return settings();
+				if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work.");
+				if (["running", "waiting"].includes(target.status)) throw new Error("That chat is working. Wait for it or interrupt it, then change its settings.");
+				childPrivileges(this.host.store.getTask(parentId), change);
+				const model = change.model ?? target.model;
+				if (change.model !== undefined || change.modelOptions !== undefined) {
+					if (model === "default") throw new Error("Choose an explicit model (see list_agents).");
+					const selected = (await this.discover(target, target.harness, target.accountId, model)).models.find(value => value.id === model);
+					if (!selected) throw new Error("This model is not available for that chat's account; see list_agents.");
+					for (const [option, value] of Object.entries(change.modelOptions ?? {})) {
+						const offered = selected.options?.find(item => item.id === option);
+						if (!offered || (offered.type === "boolean" ? typeof value !== "boolean" : typeof value !== "string" || !offered.options.some(choice => choice.id === value))) throw new Error(`This model does not offer ${option}=${String(value)}. Use the settings list_agents returns.`);
+					}
+				}
+				await this.host.command({ type: "update-task", id, ...(change.model !== undefined ? { model: change.model } : {}), ...(change.modelOptions !== undefined ? { modelOptions: change.modelOptions } : {}), ...(change.mode !== undefined ? { mode: change.mode } : {}), ...(change.permissionMode !== undefined ? { permissionMode: change.permissionMode } : {}) });
+				return settings();
+			},
+			// This chat's own queue is readable (what the person queued next); only chats it started can be changed.
+			queue: id => (id === parentId ? this.host.store.getTask(id) : scoped(id, true, true)).queue.map(({ id, text, createdAt }) => ({ id, text: text.slice(0, 8000), createdAt })),
+			editQueue: async (id, messageId, text, action) => {
+				const child = scoped(id, true, true), queued = child.queue.find(message => message.id === messageId);
+				if (!queued) throw new Error("Queued message was not found.");
+				if (text !== undefined && (action || !text.trim() || text.length > 100000)) throw new Error(action ? "Pass text only to edit; omit it to move or steer." : "Invalid queued prompt.");
+				if (action === "steer") {
+					if (!["running", "waiting"].includes(child.status)) throw new Error("That chat is not running, so there is no turn to steer; the prompt stays queued.");
+					await this.host.command({ type: "steer", id, text: queued.text, queuedId: messageId });
+				} else if (action === "up" || action === "down") await this.host.command({ type: "queue-move", id, messageId, direction: action });
+				else await this.host.command(text === undefined ? { type: "queue-remove", id, messageId } : { type: "queue-edit", id, messageId, text });
+				return { ...summary(scoped(id, true, true)), queue: this.host.store.getTask(id).queue.map(message => message.id) };
+			},
 			fork: async (id, requestId, messageId) => {
 				scoped(id); if (this.host.isClosing()) throw new Error("Workspace is shutting down.");
 				const parent = this.host.store.getTask(parentId); if (parent.delegation) throw new Error("Fork from the parent chat to keep ownership explicit.");
@@ -326,11 +405,20 @@ export class WorkspaceThreads {
 				// The store copies this parent's mode and permission mode onto the fork.
 				const child = this.host.store.forkDelegatedTask(parentId, id, requestId, messageId, this.maxActiveAgents()); this.host.broadcast(); return summary(child);
 			},
-			send: async (id, text) => {
-				const child = scoped(id, true, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt.");
+			send: async (id, text, paths, restart) => {
+				let child = scoped(id, true, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work."); if (!text.trim() || text.length > 100000) throw new Error("Invalid child prompt.");
+				// Restart stops the current turn and waits for it to end, then puts the prompt ahead of the queue to start the next turn.
+				if (restart && ["running", "waiting"].includes(child.status)) { await this.host.command({ type: "cancel", id }); await this.host.stopped?.(id); child = scoped(id, true, true); }
 				// Sending to a stopped child starts it, so it needs a free slot.
 				if (!["running", "waiting"].includes(child.status) && !child.queue.length) this.assertCapacity();
-				await this.host.command({ type: "send", id, text }); return summary(scoped(id, true, true));
+				const files = (await this.readFiles(parentId, paths)).map(file => ({ ...file, taskId: id }));
+				try {
+					if (files.length) this.host.store.saveAttachments(files);
+					if (restart) { const task = this.host.store.getTask(id); task.queue.unshift({ id: randomUUID(), text, ...(files.length ? { attachments: files } : {}), createdAt: new Date().toISOString() }); this.host.store.saveTask(task); await this.host.command({ type: "resume", id }); }
+					else await this.host.command({ type: "send", id, text, ...(files.length ? { attachments: files.map(file => file.id) } : {}) });
+				}
+				catch (error) { await this.discardFiles(files); throw error; }
+				return summary(scoped(id, true, true));
 			},
 			merge: async (id, requestId) => { scoped(id, true); if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting results."); const parent = this.host.store.mergeThreadContext(parentId, id, requestId); this.host.broadcast(); if (!parent.archived && ["idle", "completed"].includes(parent.status)) this.host.start(parentId); return summary(parent); },
 			models: async (harness, accountId, query) => { const { models, total, accounts } = await this.discover(this.host.store.getTask(parentId), harness, accountId, query); return { models, total, accounts }; },
@@ -343,14 +431,42 @@ export class WorkspaceThreads {
 				let parent = scoped(parentId);
 				if (parent.archived || parent.status === "interrupted") throw new Error("This parent chat is not accepting delegated work.");
 				const existing = retry(request.requestId);
-				if (existing) return summary(this.host.store.getTask(existing.id));
+				if (existing) { const task = this.host.store.getTask(existing.id); return { ...summary(task), ...request.isolation === "worktree" ? childWorktree(task) : {} }; }
 				const { mode, permissionMode } = childPrivileges(parent, request);
+				if (request.isolation === "worktree") {
+					if (!parent.projectId) throw new Error("This chat has no project, so there is no checkout to isolate from; delegate without isolation.");
+					if (!this.host.createWorktree) throw new Error("Worktrees are unavailable.");
+				}
 				const settings = await this.agentSettings(parent, request);
-				parent = scoped(parentId);
-				if (this.host.isClosing() || parent.archived || parent.status === "interrupted") throw new Error("This parent chat is no longer accepting delegated work.");
-				if (parent.projectId) this.host.assertProjectAvailable(parent.projectId);
-				const child = this.host.store.createDelegatedTask({ type: "create-task", ...settings, projectId: parent.projectId, mode, permissionMode }, { parentTaskId: parentId, requestId: request.requestId, background: request.background, role: request.role }, request.role ? `Role: ${request.role}\n\n${request.prompt}` : request.prompt, request.title, this.maxActiveAgents());
-				this.host.broadcast(); this.host.start(child.id); return summary(child);
+				const files = await this.readFiles(parentId, request.attachments);
+				try {
+					parent = scoped(parentId);
+					if (this.host.isClosing() || parent.archived || parent.status === "interrupted") throw new Error("This parent chat is no longer accepting delegated work.");
+					if (parent.projectId) this.host.assertProjectAvailable(parent.projectId);
+					const create = (projectId: string | undefined) => this.host.store.createDelegatedTask({ type: "create-task", ...settings, projectId, mode, permissionMode }, { parentTaskId: parentId, requestId: request.requestId, background: request.background, role: request.role }, request.role ? `Role: ${request.role}\n\n${request.prompt}` : request.prompt, request.title, this.maxActiveAgents());
+					let child: Task;
+					if (request.isolation === "worktree") {
+						const key = `${parentId}\n${request.requestId}`;
+						let pending = this.delegating.get(key);
+						if (pending) { const task = await pending; void this.discardFiles(files); return { ...summary(task), ...childWorktree(task) }; }
+						{
+							const sourceId = parent.projectId!;
+							// The suffix keeps children with the same title apart, and stays the same when the request is retried.
+							const branch = request.branch ?? `${generatedBranchName(request.title)}-${createHash("sha256").update(key).digest("hex").slice(0, 6)}`;
+							pending = (async () => {
+								this.assertCapacity();
+								const { projectId } = await this.host.createWorktree!(sourceId, branch, "HEAD");
+								const again = retry(request.requestId); if (again) return this.host.store.getTask(again.id);
+								try { return create(projectId); }
+								catch (error) { throw new Error(`${message(error, "The child could not be created.")} Its worktree was created as project ${projectId} on branch ${branch}; launch_thread can use it with {strategy:"existing_worktree",projectId:"${projectId}"}.`, { cause: error }); }
+							})().finally(() => this.delegating.delete(key));
+							this.delegating.set(key, pending);
+						}
+						child = await pending;
+					} else child = create(parent.projectId);
+					this.attachToFirstPrompt(child.id, files);
+					this.host.broadcast(); this.host.start(child.id); return { ...summary(child), ...request.isolation === "worktree" ? childWorktree(child) : {} };
+				} catch (error) { await this.discardFiles(files); throw error; }
 			},
 			wait: async (id, timeoutMs = waitDefaultMs, signal) => {
 				if (!Number.isInteger(timeoutMs) || timeoutMs < 0 || timeoutMs > waitMaximumMs) throw new Error("Invalid wait timeout.");
@@ -358,12 +474,14 @@ export class WorkspaceThreads {
 				return new Promise(resolve => {
 					const check = (abandoned = false) => {
 						const child = scoped(id, true, true), parent = this.host.store.getTask(parentId);
-						if (!abandoned && !this.host.isClosing() && parent.status !== "interrupted" && active(child.status)) return;
+						// A question the parent can answer ends the wait, as a finished child would.
+						const asking = askable(child);
+						if (!abandoned && !asking.length && !this.host.isClosing() && parent.status !== "interrupted" && active(child.status)) return;
 						clearTimeout(timer); this.listeners.delete(listener); signal?.removeEventListener("abort", abort);
 						// Mirror T3's upgrade-to-always-wake: nobody is waiting any more, so the result is delivered as a message. Launched chats never deliver.
 						const deliveryQueued = abandoned && active(child.status) && !this.host.isClosing() && Boolean(child.delegation) && child.delegation?.kind !== "stage";
 						if (deliveryQueued && !child.delegation?.background) this.host.store.requestDelegationWake(id);
-						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}) });
+						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}), ...child.delegation && child.projectId !== parent.projectId ? childWorktree(child) : {}, ...asking.length ? { pendingQuestions: asking.map(request => request.id) } : {} });
 					};
 					const listener = () => check(); const abort = () => check(true);
 					const timer = setTimeout(abort, timeoutMs);
@@ -371,13 +489,55 @@ export class WorkspaceThreads {
 					if (signal?.aborted) abort(); else check();
 				});
 			},
+			pendingQuestions: async (id, action, requestId, answers) => {
+				const child = scoped(id, true, true), pending = askable(child);
+				if (action === "list") return { requestIds: pending.map(request => request.id) };
+				const request = pending.find(value => value.id === requestId);
+				if (!request) throw new Error(child.questions?.some(value => value.id === requestId) ? "The person answers this question in that chat; it asks for a secret or waits for a message." : "That chat has no pending question with this requestId; see action list.");
+				if (action === "read") return { requestId: request.id, ...(request.origin ? { origin: request.origin } : {}), questions: request.questions.map(question => ({ id: question.id, header: question.header, question: question.question, ...(question.multiSelect ? { multiSelect: true } : {}), allowsOwnAnswer: allowsOwnAnswer(question), required: question.required !== false, ...(question.input && question.input.kind !== "text" ? { input: question.input.kind } : {}), ...(questionOptions(question).length ? { options: questionOptions(question).map(option => ({ label: option.label, value: optionValue(option), ...(option.description ? { description: option.description } : {}) })) } : {}) })) } satisfies PendingQuestion;
+				if (this.host.isClosing() || this.host.store.getTask(parentId).status === "interrupted") throw new Error("This parent is no longer accepting work.");
+				await this.host.command({ type: "answer", id, requestId: request.id, answers: answers ?? {} });
+				return { answered: true as const, thread: summary(scoped(id, true, true)) };
+			},
 			interrupt: async id => { scoped(id, true, true); await this.host.command({ type: "cancel", id }); return summary(scoped(id, true, true)); },
 			launch: async request => { const prepared = await this.prepareLaunch(parentId, request); return "existing" in prepared ? prepared.existing : this.commitLaunch(parentId, prepared); },
 			launchBatch: requests => this.launchBatch(parentId, requests),
+			search: query => {
+				const needle = query.trim().toLowerCase(); if (!needle) throw new Error("Pass words to search for.");
+				const projects = new Map(this.host.store.getProjects().map(project => [project.id, project])), referenced = new Set(this.host.store.getTask(parentId).messages.flatMap(message => message.role === "user" ? message.threadReferences ?? [] : []));
+				// Titles, branches and pull requests only: message text stays private, and so does other chats' delegated work.
+				return this.host.store.getOverview().tasks.filter(task => !task.archived && !task.delegation?.parentTaskId).map(task => {
+					const project = task.projectId ? projects.get(task.projectId) : undefined, pullRequests = (task.pullRequests ?? []).map(link => `${link.repository}#${link.number}`);
+					return { task, project, pullRequests, text: [task.title, project?.name, project?.worktree?.branch, ...pullRequests].filter(Boolean).join(" ").toLowerCase() };
+				}).filter(entry => entry.text.includes(needle)).slice(0, 20).map(({ task, project, pullRequests }) => ({ id: task.id, title: task.title, status: task.status, ...(project ? { project: project.name } : {}), ...(project?.worktree ? { branch: project.worktree.branch } : {}), ...(pullRequests.length ? { pullRequests } : {}), updatedAt: task.updatedAt, readable: task.id === parentId || task.launch?.byTaskId === parentId || referenced.has(task.id) }));
+			},
 			projects: query => {
 				const current = this.host.store.getTask(parentId).projectId, folder = (directory: string) => directory.split(/[\\/]/).filter(Boolean).at(-1) ?? directory;
 				// Folder names only: full paths stay private to the desktop.
 				return this.host.store.getProjects().filter(project => !query || `${project.name} ${folder(project.directory)}`.toLowerCase().includes(query.toLowerCase())).slice(0, 200).map(project => ({ id: project.id, name: project.name, directory: folder(project.directory), ...(project.id === current ? { current: true } : {}), ...(project.worktree ? { worktree: { branch: project.worktree.branch, baseCommit: project.worktree.baseCommit, sourceProjectId: project.worktree.sourceProjectId } } : {}), ...(project.worktree?.removedAt ? { removed: true } : {}) }));
+			},
+			addProject: async directory => {
+				this.launcher(parentId, "Adding a project");
+				if (!path.isAbsolute(directory)) throw new Error("Pass the folder's absolute path.");
+				const resolved = path.resolve(directory);
+				if (!(await stat(resolved).then(value => value.isDirectory(), () => false))) throw new Error(`${resolved} is not a folder on this computer.`);
+				const existing = this.host.store.getProjects().find(project => project.directory === resolved), project = this.host.store.addProject(resolved);
+				this.host.broadcast();
+				return { id: project.id, name: project.name, path: project.directory, ...(existing ? { alreadyAdded: true } : {}) };
+			},
+			cloneProject: async (url, parent) => {
+				const caller = this.launcher(parentId, "Cloning a project");
+				if (!this.host.cloneRepository) throw new Error("Cloning is unavailable.");
+				// By default the clone goes beside this chat's checkout (beside the original for a worktree chat).
+				const projects = this.host.store.getProjects(), current = projects.find(project => project.id === caller.projectId), source = current?.worktree ? projects.find(project => project.id === current.worktree!.sourceProjectId) : current;
+				const folder = parent ?? (source ? path.dirname(source.directory) : undefined);
+				if (!folder) throw new Error("This chat has no project; pass parentPath, the folder to clone into.");
+				if (!path.isAbsolute(folder) || !(await stat(folder).then(value => value.isDirectory(), () => false))) throw new Error("parentPath must be the absolute path of an existing folder.");
+				const directory = await this.host.cloneRepository(url, path.resolve(folder));
+				if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
+				const project = this.host.store.addProject(directory);
+				this.host.broadcast();
+				return { id: project.id, name: project.name, path: project.directory };
 			},
 			organize: async (id, action, title, tags, until) => {
 				const task = id === parentId ? this.host.store.getTask(id) : scoped(id, true, true);
@@ -387,6 +547,8 @@ export class WorkspaceThreads {
 				else if (action === "tag") await this.host.command({ type: "update-task", id, tags: tags ?? [] });
 				else if (action === "settle" && id === parentId && ["running", "waiting"].includes(task.status)) { const current = this.host.store.getTask(id); current.settleWhenTurnEnds = true; this.host.store.saveTask(current, true); }
 				else if (action === "settle" || action === "unsettle" || action === "wake") await this.host.command({ type: action, id });
+				else if (action === "mark_unread") await this.host.command({ type: "mark-unread", id });
+				else if (action === "regenerate_title") await this.host.command({ type: "regenerate-title", id });
 				else if (action === "snooze") { if (!until || Number.isNaN(Date.parse(until))) throw new Error("snooze needs until, an ISO date-time."); await this.host.command({ type: "snooze", id, until }); }
 				else if (action === "unarchive") await this.host.command({ type: "update-task", id, archived: false });
 				else {
@@ -498,9 +660,10 @@ export class WorkspaceThreads {
 			scheduled: () => this.host.store.missions.list().slice(0, 100).map(scheduledTask),
 			schedule: async request => {
 				const { caller, command } = this.scheduler(parentId, "Scheduling a task"), templateTaskId = request.templateTaskId ?? parentId;
+				if (request.postInThisChat && templateTaskId !== parentId) throw new Error("A schedule that posts in this chat runs like this chat; omit templateTaskId.");
 				this.assertTemplate(caller, templateTaskId);
 				const before = new Set(this.host.store.missions.list().map(mission => mission.id));
-				const saved = command(validateMissionCommand({ type: "save", title: request.title, prompt: request.prompt, templateTaskId, schedule: request.schedule })).find(mission => !before.has(mission.id));
+				const saved = command(validateMissionCommand({ type: "save", title: request.title, prompt: request.prompt, templateTaskId, ...(request.postInThisChat ? { threadTaskId: parentId } : {}), schedule: request.schedule })).find(mission => !before.has(mission.id));
 				if (!saved) throw new Error("The schedule could not be saved.");
 				// Missions start paused in the app; an agent asking for a schedule wants it running, as T3's schedule_task does by default.
 				if (request.enabled !== false) command({ type: "enable", id: saved.id, enabled: true });

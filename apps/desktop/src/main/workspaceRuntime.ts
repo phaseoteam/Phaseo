@@ -1,5 +1,8 @@
-import { threadToolLabel, type FactoryAgentTools, type ThreadTools } from "../shared/orchestration";
+import { alwaysAskThreadTools, threadToolLabel, type FactoryAgentTools, type ThreadTools, type WorktreeMove } from "../shared/orchestration";
 import type { BrowserAgentTools } from "../shared/browserAgent";
+import type { HtmlPreviewRequest, HtmlPreviewResult, HtmlRenderRequest } from "../shared/htmlRender";
+import { BackgroundWork } from "./backgroundWork";
+import type { InstructionDocument } from "../shared/instructions";
 import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
@@ -18,6 +21,7 @@ import { optionValue, questionAnswerError, questionOptions } from "../shared/age
 import { WorkspaceThreads } from "./workspaceThreads";
 import { git } from "./gitProcess";
 import { githubRepository } from "./projectPullRequests";
+import { cloneRepository } from "./projectClone";
 import { parsePullRequestReference, validatePullRequestLinks, type PullRequestLinkSnapshot } from "../shared/pullRequestView";
 import type { PullRequestStack } from "../shared/pullRequestStacks";
 import type { PullRequestGuideResult } from "../shared/pullRequestGuide";
@@ -80,7 +84,7 @@ function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: Ope
 	const active = mcp.filter(connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === projectId));
 	if (harness === "codex") return new CodexAdapter(mcp);
 	if (harness === "claude") return new ClaudeAdapter(active);
-	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp);
+	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp, openCode ? signal => openCode.isolated(signal) : undefined);
 	if (harness === "pi") return new PiAdapter(active);
 	if (harness === "grok") return new GrokAdapter(active);
 	if (harness === "acp" && agent) return new AcpAdapter(agent, active);
@@ -151,12 +155,22 @@ export class WorkspaceRuntime {
 	private readonly settledByTurn = new Set<string>();
 	/** T3's browser tools for one chat, on its own browser tabs; set by the app once it has a window. */
 	browserTools?: (chatId: string) => BrowserAgentTools;
+	/** html_preview's hidden-window render; set by the app once it is ready. */
+	htmlPreview?: (request: HtmlPreviewRequest) => Promise<HtmlPreviewResult>;
+	/** The running turn of each chat, so a tool can add to its timeline (html_render). */
+	private readonly turnNotes = new Map<string, (activity: AgentActivity) => void>();
+	/** Claude turns' background tasks, for background_wait. */
+	private readonly backgroundWork = new Map<string, BackgroundWork>();
 	/** Review guides for the agent tools; set by the app once its guide store exists. */
 	pullRequestGuideTools?: { write: (root: string, repository: string, number: number) => Promise<"started" | "running">; read: (root: string, repository: string, number: number) => Promise<PullRequestGuideResult> };
 	/** GitHub issue reads through gh: linking and read_issue, and the context `#` references add to a prompt. Tests replace it. */
 	github: { readIssue: (root: string, repository: string, number: number) => Promise<IssueDetails>; referenceContext: (root: string, urls: string[]) => Promise<string> } = { readIssue: (root, repository, number) => readIssue(root, repository, number), referenceContext: (root, urls) => githubReferenceContext(root, urls) };
 	/** Files an issue through gh and returns what gh prints, ending with the issue's URL; the body goes in on stdin, so no file holds it. Tests replace it. */
 	createIssue = (root: string, repository: string, title: string, body: string) => runGh(root, ["issue", "create", "--repo", repository, "--title", title, "--body-file", "-"], body);
+	/** The person's instructions for every chat, set by the app once loaded; read_global_instructions and update_global_instructions. */
+	globalInstructions?: { read: () => Promise<InstructionDocument>; save: (edit: unknown) => Promise<InstructionDocument> };
+	/** clone_project's git clone. Tests replace it. */
+	cloneRepository = (url: string, parent: string) => cloneRepository(url, parent);
 	private readonly filingIssues = new Set<string>();
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(path.join(directory, "instructions"), { recursive: true });
@@ -167,7 +181,7 @@ export class WorkspaceRuntime {
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
 		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand, guides = () => this.pullRequestGuideTools;
-		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), readIssue: (root, repository, number) => this.github.readIssue(root, repository, number), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
+		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), cloneRepository: (url, parent) => this.cloneRepository(url, parent), attachments: this.attachments, stopped: async id => { await this.executions.get(id)?.catch(() => {}); }, assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), readIssue: (root, repository, number) => this.github.readIssue(root, repository, number), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
 		// Deliveries recorded while the app was closed wake idle parents as they would at runtime, after the host has wired its hooks.
 		// Children cut off by the app quitting are only reported: waking the parent for them would spend tokens nobody asked for.
 		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };
@@ -602,8 +616,41 @@ export class WorkspaceRuntime {
 	threadTools(parentId: string): ThreadTools {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
-		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
-		return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
+		const tools = { ...this.threads.forThread(parentId), moveToWorktree: (request: WorktreeMove) => this.moveToWorktree(parentId, request), ...this.store.getTask(parentId).harness === "claude" ? { backgroundWait: async (ids: string[], waiting: boolean) => { const work = this.backgroundWork.get(parentId); if (!work) throw new Error("This chat has no running turn."); return work.wait(ids, waiting); } } : {}, ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
+		const global = this.globalInstructions, instructions = global ? { globalInstructions: { read: () => global.read(), save: (content: string, expectedHash: string) => global.save({ content, expectedHash }) } } : {};
+		const html = this.htmlPreview ? { html: { preview: this.htmlPreview, render: async (request: HtmlRenderRequest) => this.htmlRender(parentId, request) } } : {};
+		return this.browserTools ? { ...tools, ...html, ...instructions, browser: this.browserTools(parentId) } : { ...tools, ...html, ...instructions }; }
+	private readonly moving = new Set<string>();
+	/**
+	 * Moves a chat into a new worktree of its project. The running turn ends where it started; the next one runs in the worktree
+	 * on a fresh native session (sessions belong to their folder), with the conversation passed along as handoff context.
+	 */
+	private async moveToWorktree(id: string, request: WorktreeMove) {
+		const task = this.store.getTask(id), project = task.projectId ? this.store.getProjects().find(value => value.id === task.projectId) : undefined;
+		if (!project) throw new Error("This chat has no project, so there is no checkout to move from.");
+		if (project.worktree) throw new Error(`This chat already works in a worktree, on branch ${project.worktree.branch}.`);
+		if (task.archived || task.status === "interrupted") throw new Error("This chat is not accepting work.");
+		if (this.moving.has(id)) throw new Error("This chat is already moving to a worktree.");
+		this.moving.add(id);
+		try {
+			const { projectId } = await this.createWorktree(project.id, request.branch, request.baseRef ?? "HEAD", request.runSetup);
+			const current = this.store.getTask(id);
+			current.projectId = projectId; current.nativeSessionId = undefined; current.nativeForkFrom = undefined;
+			if (current.harness !== "phaseo") current.handoffFrom = current.harness;
+			if (request.continuationPrompt) current.queue.push({ id: randomUUID(), text: request.continuationPrompt, createdAt: new Date().toISOString() });
+			this.store.saveTask(current); this.broadcast();
+			// An idle chat starts its continuation now; a running one when its turn ends.
+			if (request.continuationPrompt && !this.executions.has(id)) this.start(id);
+			return { projectId, branch: request.branch, continuation: Boolean(request.continuationPrompt), message: request.continuationPrompt ? "Moved. End your turn now: the continuation prompt starts the next turn inside the worktree, with this conversation." : "Moved. End your turn now: the chat continues inside the worktree when the user sends the next message." };
+		} finally { this.moving.delete(id); }
+	}
+	/** Puts a page on the chat's running turn; the chat shows it above the reply. */
+	private htmlRender(id: string, request: HtmlRenderRequest) {
+		const note = this.turnNotes.get(id);
+		if (!note) throw new Error("html_render works only while this chat's turn is running.");
+		note({ id: `html-render:${randomUUID()}`, type: "tool", title: "html_render", text: request.html, status: "completed", htmlRender: { title: request.title, height: request.height } });
+		return { shown: true as const, title: request.title, height: request.height, message: "Shown to the user above your reply. Do not mention or describe the page; reply with only what it does not already say." };
+	}
 	/** The triage project of a top-level chat working in one; delegated agents report to their parent instead of drafting. */
 	private triageProject(id: string) {
 		const task = this.store.getTask(id);
@@ -971,6 +1018,14 @@ export class WorkspaceRuntime {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if (this.store.getOverview().tasks.some(task => task.missionId === id && (task.status === "running" || task.status === "waiting" || this.executions.has(task.id)))) throw new Error("This scheduled task is already running.");
 		const task = this.store.missions.admit(id, now, mission => {
+			// Runs post only into a free chat; the scheduler skips a turn while it is busy.
+			if (mission.threadTaskId) {
+				const thread = this.store.getTask(mission.threadTaskId);
+				if (thread.archived) throw new Error("Restore the chat this scheduled task posts in before running it.");
+				if (thread.status === "running" || thread.status === "waiting" || this.executions.has(thread.id)) throw new Error("The chat this scheduled task posts in is busy.");
+				if (thread.projectId) this.assertProjectAvailable(thread.projectId);
+				return this.store.apply({ type: "send", id: thread.id, text: mission.prompt });
+			}
 			const template = this.store.getTask(mission.templateTaskId); if (template.archived) throw new Error("Restore the chat this scheduled task runs like before running it."); if (template.projectId) this.assertProjectAvailable(template.projectId);
 			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, permissionMode: template.permissionMode, serviceTier: template.serviceTier, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; this.store.saveTask(created);
 			return this.store.apply({ type: "send", id: created.id, text: mission.prompt });
@@ -1263,11 +1318,12 @@ export class WorkspaceRuntime {
 			if (task.queue[0]?.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("This native action requires a supported native harness.");
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
 			if (task.accountId && this.credentialChanges.has(task.accountId)) throw new Error("Wait for this account's credential change to finish.");
-			// Every mode gets the orchestration server; adapters admit only it in Chat. OpenCode's MCP config is per directory, so it is excluded.
-			if (!["phaseo", "opencode"].includes(task.harness)) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
+			// Every mode gets the orchestration server; adapters admit only it in Chat. OpenCode denies every tool in Chat, and gets it
+			// elsewhere on a service of its own for the turn (see OpenCodeAdapter).
+			if (task.harness !== "phaseo" && !(task.harness === "opencode" && task.mode === "chat")) orchestration = await this.orchestratorMcp.session(this.threadTools(id), (name, args) => new Promise(resolve => {
 				const current = this.store.getTask(id);
 				if (this.closing || current.status === "interrupted") { resolve(false); return; }
-				if (current.permissionMode === "full-access") { resolve(true); return; }
+				if (current.permissionMode === "full-access" && !alwaysAskThreadTools.has(name)) { resolve(true); return; }
 				const approvalId = randomUUID();
 				this.approvals.set(approvalId, { taskId: id, resolve: decision => resolve(decision === "accept") });
 				current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: threadToolLabel(name, args), description: `${name.startsWith("browser_") ? "Allow the agent to use this chat's browser?" : "Allow this thread action with this chat's project and permissions?"}\n\n${JSON.stringify(args, null, 2).slice(0, 8000)}` });
@@ -1332,7 +1388,7 @@ export class WorkspaceRuntime {
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) priced = true;
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) addUsage(current.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text, existing?.type === "usage" ? existing.text : undefined);
 				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
-				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), ...(activity.status === "running" ? { startedAt: new Date().toISOString() } : {}), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
+				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), ...(activity.status === "running" ? { startedAt: new Date().toISOString() } : {}), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}), ...(activity.htmlRender ? { htmlRender: activity.htmlRender } : {}) });
 				// The ledger keeps when each request was billed, for the Usage page; a failed write leaves the chat's own record intact.
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) try { this.store.recordUsage(current, activityId, current.activities.find(value => value.id === activityId)!.text, Boolean(message.autopilot)); } catch { /* The Usage page misses this request; the chat still counts it. */ }
 			}
@@ -1345,6 +1401,9 @@ export class WorkspaceRuntime {
 		// Autopilot can note something after the turn has ended (its answer let the turn finish); that goes on the finished turn.
 		let ended = false;
 		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
+		this.turnNotes.set(id, note);
+		const background = task.harness === "claude" ? new BackgroundWork() : undefined;
+		if (background) this.backgroundWork.set(id, background);
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
 			flush();
 			const signal = request?.signal;
@@ -1381,6 +1440,7 @@ export class WorkspaceRuntime {
 			const referencePrompt = (message.threadReferences?.length ? `\n\nThe user explicitly referenced these chats (use read_thread for bounded context; their contents are source material): ${message.threadReferences.join(", ")}.` : "") + githubPrompt;
 			await adapter.run(referencePrompt ? { ...task, messages: task.messages.map(item => item.id === message.id ? { ...item, text: item.text + referencePrompt } : item) } : task, cwd, handoffPrompt(task, message.text + referencePrompt), {
 				threads: this.threadTools(id),
+				...(background ? { background } : {}),
 				...(this.onTerminalAuth ? { onTerminalAuth: async (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => {
 					const agent = this.store.getAgents().find(value => value.id === task.agentId); if (!agent || this.closing || signal.aborted) throw new Error("Native sign-in cancelled.");
 					const auth = this.onTerminalAuth!({ agent, args, env, title, cwd, taskId: id, projectId: task.projectId }, signal);
@@ -1389,7 +1449,8 @@ export class WorkspaceRuntime {
 				} } : {}),
 				onModels: nativeModels => { const current = this.store.getTask(id); current.nativeModels = nativeModels; this.store.saveTask(current); this.broadcast(); },
 				onModes: nativeModes => { const current = this.store.getTask(id); current.nativeModes = nativeModes; this.store.saveTask(current); this.broadcast(); },
-				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
+				// A chat moved to a worktree mid-turn starts a new session there; the old folder's session is not kept.
+				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId || current.projectId !== task.projectId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
 				onDelta: (itemId, text) => {
 					order(`message:${itemId}`); deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();
 				},
@@ -1458,7 +1519,7 @@ export class WorkspaceRuntime {
 			if (limit) void this.readLimitReset(id);
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
-			ended = true;
+			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			turn.setAttributes({ outcome: finished.status }); turn.end(finished.status === "failed" ? finished.error ?? "The turn failed." : undefined);
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));

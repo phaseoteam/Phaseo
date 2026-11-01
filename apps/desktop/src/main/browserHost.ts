@@ -171,6 +171,17 @@ export class BrowserHost {
 		try { return await fn(); }
 		finally { setTimeout(() => { page.acting = Math.max(0, page.acting - 1); }, 100); this.control(view, "agent"); }
 	}
+	/** A page setting an agent changed (viewport, colour scheme), reported to the window so the tab's controls show it. */
+	agentCommand(owner: BrowserWindow, command: { id: string; type: "viewport"; viewport: BrowserViewport } | { id: string; type: "colorScheme"; colorScheme: BrowserColorScheme }) {
+		this.command(owner, command);
+		const view = this.owners.get(owner)?.get(command.id);
+		if (view) this.page(view).emit();
+	}
+	/** Closes a page an agent opened and drops it from the chat's tabs in the window. */
+	agentClose(owner: BrowserWindow, chatId: string, id: string) {
+		this.command(owner, { id, type: "close" });
+		if (!owner.isDestroyed()) owner.webContents.send("desktop:browser-agent-tab", { context: chatId, id, url: "", closed: true });
+	}
 	/** Asks the person's window to list a page an agent opened among the chat's tabs. */
 	announce(owner: BrowserWindow, chatId: string, id: string, url: string) { if (!owner.isDestroyed()) owner.webContents.send("desktop:browser-agent-tab", { context: chatId, id, url }); }
 

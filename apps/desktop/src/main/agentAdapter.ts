@@ -4,6 +4,7 @@ import type { Account, AgentActivity, AgentQuestion, ApprovalDecision, ModelOpti
 import type { AttachmentContent } from "./attachments";
 import type { AgentForm, FormAnswer } from "../shared/agentForms";
 import type { HarnessUsage } from "../shared/usageLedger";
+import type { BackgroundWork } from "./backgroundWork";
 
 export type AgentCallbacks = {
 	threads?: ThreadTools;
@@ -24,6 +25,8 @@ export type AgentCallbacks = {
 	onForm?: (form: AgentForm, signal?: AbortSignal) => Promise<FormAnswer | null | "decline">;
 	/** "always" and "never" come back only when offered, with the agent's own labels for those choices. ask holds the request for the person even with full access. */
 	onApproval: (method: string, description: string, choices?: { always?: string; never?: string }, options?: { ask?: boolean }) => Promise<ApprovalDecision>;
+	/** Background tasks of this turn that background_wait keeps it open for (Claude). */
+	background?: BackgroundWork;
 	/** A proposed plan (Markdown): implement it, or revise it with the person's feedback. */
 	onPlan?: (plan: string) => Promise<PlanDecision>;
 };

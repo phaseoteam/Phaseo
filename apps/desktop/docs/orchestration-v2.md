@@ -18,16 +18,18 @@ Keep these separate from the broader desktop feature ledger; an exposed tool alo
 - [x] Durable background result delivery and parent wake-up
 - [x] Composer thread references and sidebar drag references
 - [x] Child status and result UI
-- [x] Phaseo direct tools, Codex/Claude/Cursor/ACP/Grok MCP configuration and Pi extension bridge (fixture validation)
+- [x] Phaseo direct tools, Codex/Claude/Cursor/ACP/Grok/OpenCode MCP configuration and Pi extension bridge (fixture validation)
 - [x] Orchestration tools in Chat, Plan and Code for every MCP-capable harness, with shared orchestration instructions
 - [x] One-call agent catalog (`list_agents`), account auto-pick, workspace agent limit and privilege ceiling
 - [x] Batched result delivery, launch wake and upgrade-to-always-wake for abandoned waits (fixture validation)
-- [ ] OpenCode session isolation and live provider-specific orchestration verification
+- [x] OpenCode orchestration on a service of its own per turn (fixture validation; not run against a live OpenCode 2 service)
+- [ ] Live provider-specific orchestration verification
 - [ ] Native subagent observation
 - [x] Message-boundary forks, child messaging and idempotent conversation-result merge
 - [ ] Full provider handoff and Git worktree merge-back tools
 - [x] Top-level chat launch (single and batch) with workspace strategies including new Git worktrees, project listing, chat organisation and scheduled-task tools (fixture validation)
-- [ ] Preview tools
+- [x] Browser tools for agents: open, read, click, type, act (hover, select, key press, scroll, drag, upload), evaluate, wait, resize, colour scheme, dialogs, recording, close and screenshots (fixture validation)
+- [x] Chat search by title, child settings, queue reorder, steer and restart, attachments, adding and cloning projects, schedules that post in their chat, and instructions for every chat (fixture validation)
 - [ ] Full latest-nightly parity audit
 
 ## Validation and limits
@@ -38,7 +40,7 @@ Orchestration uses the existing model discovery functions. Catalogs are bounded 
 
 Owned child chats have a return-to-parent footer, remain visible through their parent and are excluded from ordinary chat history. Native-provider-owned subagents remain a separate missing capability. This increment does not establish full T3 nightly parity.
 
-OpenCode orchestration injection is deliberately not enabled: its MCP configuration is directory-scoped, so injecting one chat's credential could expose it to another session. OpenCode can still execute delegated work, but cannot yet recursively use the desktop orchestration service.
+OpenCode keeps MCP servers added at runtime per folder, for every session on that service, so adding a chat's orchestration credential to the shared service (or to the person's own, which Phaseo reuses when it runs) would expose it to other sessions in the folder. In Plan and Code, an OpenCode turn with the orchestration server instead starts a service of its own (`OpenCodeService.isolated`: `serve --service` on a random localhost port, with its own state folder), adds the orchestration server and the workspace's MCP connections there, and stops it when the turn ends. Sessions live in OpenCode's shared data folder, so a chat resumes on any service. The shared service never receives an orchestration connection. OpenCode sessions take no system prompt, so a new session gets the orchestration guidance ahead of its first prompt, as Cursor does. Each such turn pays the service's startup (a few seconds). Chat mode denies every OpenCode tool, so it gets no orchestration server. OpenCode also asks its own permission for each tool call, so supervised chats see an OpenCode approval before the server's own for tools that need one.
 
 ## Engine parity: delivery, limits and capabilities
 
@@ -50,18 +52,22 @@ Collection groups pending rows by parent into one queued message. Each result se
 
 Waiting. `wait_thread` defaults to 10 minutes and accepts up to 60. Following T3's upgrade-to-always-wake, the child is marked for delivery in three cases: the wait times out, the caller disconnects (MCP request closed or the Phaseo tool signal aborted), or the parent's turn ends while a foreground child is still active. The child's next result then arrives as a message. Such a wake covers one result; later runs follow the child's own `background` setting. Codex gets `tool_timeout_sec = 3660` for the orchestration server, and the Pi bridge allows 61 minutes per call.
 
+Questions. A child waiting on a question ends its parent's `wait_thread`, which returns `pendingQuestions` (request ids). `read_pending_questions` lists or reads them (header, question, options with the value to send, whether the agent's own text is allowed) for an owned child or a launched chat, and `answer_question` (approval: Answer agent question) answers through the same `answer` command and checks as the person's panel. Approvals, secret questions and questions answered by message are never listed or answerable: they stay with the person.
+
 Limits. There is no depth limit and no per-parent limit. One workspace-wide limit caps active orchestration children: running or waiting, or idle with queued work. It is set by `WorkspacePreferences.maxActiveAgents` (default 32, whole numbers 1–256, "Agents running at once" in Settings → General). Preferences saved before the limit existed read as 32. `delegate_task`, `fork_thread` and `handoff_thread` check the limit inside their creating transaction, and `send_thread` checks it before starting a stopped child. The error names the setting.
 
 Privilege ceiling. A child, fork or handoff never gets a broader mode (chat < plan < code) or `permissionMode` (supervised < full-access) than its parent. `delegate_task` accepts optional narrower `mode` and `permissionMode` and rejects broader ones. Forks and handoffs always take the parent's mode and permissions, whatever the source had. Children of a Chat parent run in Chat.
 
 Accounts. When no `accountId` is given, `delegate_task`, `handoff_thread` and `list_models` use the parent's account on the same harness, then the single usable account (configured, not archived, OAuth not expired). For Phaseo and Cursor, which require an account, zero or several usable accounts give an error that names the choices.
 
-Tools in every mode. The orchestration MCP server is created for every mode of every harness except Phaseo, which calls the tools in-process, and OpenCode, which is excluded for the reason above. In Chat the server is the only tool surface:
+Tools in every mode. The orchestration MCP server is created for every mode of every harness except Phaseo, which calls the tools in-process, and OpenCode in Chat (see above). In Chat the server is the only tool surface:
 - Claude: `tools: []`, `strictMcpConfig` and a `canUseTool` that allows only `mcp__<orchestration>__*`. Those calls are approved by the server, so Code no longer double-prompts for them.
 - Codex: a read-only sandbox, other servers disabled, and Codex's own orchestration-call elicitations are routed to the user.
 - Cursor: `tools: ["mcp"]` with only the orchestration server. Plan mode adds `mcp` to its read-only allowlist.
 - ACP and Grok: only the orchestration server, with file and terminal capabilities still off.
 - Pi: `--tools mcp__phaseo__*` in Chat, and the Plan allowlist adds that pattern. Pi's `--tools` filters extension tools and `--no-tools` disables them.
+
+Claude background work. Claude ends its background shells and monitors when its input closes, and Phaseo used to close the input as soon as the prompt was sent, so a turn could not outlive them. For Claude chats with the orchestration server, `background_wait({ taskIds, waiting? })` marks tasks the turn waits for (ids Claude reported with `task_started`; others come back unmatched). The adapter keeps the prompt stream open until a result arrives with no awaited task unfinished, so the chat stays Working. When the last awaited task finishes after a result, Claude is expected to wake and answer; if no result follows within a minute, the input closes and the turn ends. Not verified against a live Claude session: the fixture covers the stream order only. Other harnesses do not get the tool.
 
 Drain now reloads the task after the asynchronous server setup, so prompts queued meanwhile are not overwritten.
 
@@ -74,7 +80,7 @@ Instructions. `orchestrationInstructions` (`shared/orchestration.ts`) covers whe
 
 Capabilities. `list_agents` (T3's `orchestrator_capabilities`) returns `{ harnesses: [{ harness, accountRequired, accounts: [{ id?, name, total, models: [{ id, name, legacy?, default?, options? }], error? }] }], unavailable: [{ harness, reason }], limits: { activeAgents, maxActiveAgents }, truncated? }`. It uses the composer's `discoverDesktopModels` and installation check (cached 5 minutes) and the 10-minute model cache. Native discovery runs two at a time. Non-legacy models come first. Output is capped at 60,000 characters by trimming option lists, then options, then models per account. Optional `harness` and `query` narrow it. `delegate_task` accepts `modelOptions` and validates them against the chosen model's descriptors.
 
-Approvals carry per-tool labels (`threadToolLabels`): Delegate task, Hand off chat, Fork chat, Send agent prompt, Steer agent, Rename agent chat, Edit agent queue, Merge agent result, Launch chat, Launch chats, Organise chat (Archive chat when archiving), Schedule task, Update schedule, Delete schedule, Run schedule now.
+Approvals carry per-tool labels (`threadToolLabels`): Delegate task, Hand off chat, Fork chat, Send agent prompt, Steer agent, Rename agent chat, Edit agent queue, Merge agent result, Launch chat, Launch chats, Organise chat (Archive chat when archiving), Add project, Clone project, Schedule task, Update schedule, Delete schedule, Run schedule now.
 
 ## Top-level launches, projects, organisation and schedules
 
@@ -89,6 +95,16 @@ Delegate or launch. A delegated child belongs to its parent: it stops and is arc
 - `{ strategy: "worktree", projectId?, branch, baseRef? }`: `WorkspaceRuntime.createWorktree` on a new branch from `baseRef` (default `HEAD`) of `projectId` (default the caller's project), registered as a worktree project.
 - `{ strategy: "existing_worktree", projectId }`: the project must be a desktop worktree.
 
+Worktree children. `delegate_task` takes `isolation: "shared" | "worktree"` (default shared) and, with worktree, an optional `branch`. A worktree child gets a new worktree project from the parent project's `HEAD` (uncommitted edits stay behind) on `branch`, by default `phaseo/<title>-<6 hex of parent and requestId>`, so a retry names the same branch. Concurrent retries share one in-flight creation. The project's setup actions run as for any worktree. `delegate_task` and `wait_thread` return `worktree: { projectId, branch }`, and a delivered result says which branch the child worked on. A chat without a project cannot isolate. The worktree stays after the child finishes; the parent or the person merges or removes it.
+
+Moving a chat. `move_to_worktree` (approval: Move chat to a worktree) takes `{ branch, baseRef?, runSetup?, continuationPrompt? }` and moves the calling chat into a new worktree of its project, from `baseRef` (default `HEAD`; uncommitted edits stay behind), running setup actions unless `runSetup` is false. It refuses a chat without a project or already in a worktree, and one move at a time. The chat's `projectId` changes at once, but the running turn finishes in the old folder: each turn's drain resolves its folder and MCP servers when it starts. Native sessions belong to their folder, so the move clears `nativeSessionId` and sets `handoffFrom` to the chat's own harness; the next turn starts a fresh session with the conversation as handoff context, and a session id the old turn reports after the move is ignored. `continuationPrompt` is queued and starts that turn (at once if the chat is idle); without it the chat waits for the person.
+
+Settings. `configure_thread` (`{ id, model?, modelOptions?, mode?, permissionMode? }`) reads a delegated child's or launched chat's harness, model, settings, mode and permissions, or (approval: Change agent model or settings, asked only when something changes) changes them for its next turn. The chat must be stopped; mode and permissions follow the privilege ceiling; the model and options are checked against that chat's account with the same discovery as `delegate_task`. The harness stays: `handoff_thread` moves a chat to another one.
+
+Instructions for every chat. `read_global_instructions` returns the person's Settings → Instructions text and its revision hash; `update_global_instructions` (`{ content, expectedHash }`, 16 KiB) replaces it through the same `GlobalInstructions.save` as the settings page, so a stale hash is refused. Because the text reaches every later chat, it is in `alwaysAskThreadTools`: its approval (Change instructions for every chat) is asked even in full access, by the MCP server and by the Phaseo harness (`ask`). Phaseo's own agent loads both with `load_tools` set `instructions`. Other app preferences are not exposed to agents.
+
+Queues. `read_thread_queue` reads the queue of the caller itself (what the person queued next), a delegated child or a launched chat. `edit_thread_queue` (`{ id, messageId, text?, action? }`) changes only children and launched chats: `text` edits, neither removes, `action: "up" | "down"` moves one place (`queue-move`) and `action: "steer"` sends the prompt into the running turn through the composer's steer path (`steer` with `queuedId`, so a refused prompt returns to the queue). It returns the new order. `send_thread` with `restart: true` cancels a running turn, waits for it to end, puts the prompt ahead of the queue and resumes, so the prompt starts the next turn.
+
 Launch guards:
 - The caller must be `permissionMode: "full-access"` and not in Plan mode (T3 requires full access and the default interaction mode).
 - Mode and permissions default to the caller's and can only be narrower (`childPrivileges`).
@@ -100,10 +116,16 @@ Launch guards:
 
 `list_projects` (`{ query? }`) returns `{ id, name, directory, current?, worktree?: { branch, baseCommit, sourceProjectId }, removed? }`. `directory` is the folder name only, never the full path. Listing needs no approval.
 
-`organize_thread` takes `{ id, action: "pin" | "unpin" | "archive" | "unarchive" | "rename", title? }`. It applies to the caller itself, its orchestration children and chats it launched. A chat cannot archive itself. Archiving first cancels an active or queued chat, then uses the runtime's archive path, which stops that chat's agent tree. Its `requireApproval` is a predicate (`action === "archive"`). The Phaseo agent loop already supports predicates; the MCP server now evaluates them too.
+`search_threads` (`{ query }`) finds the person's chats across the workspace by title, project, worktree branch or linked pull request (`owner/repo#number`), newest first, at most 20, without approval. It never searches or returns message text, skips archived chats and other chats' delegated children, and marks `readable` where `read_thread` works (this chat, chats it launched, chats the person referenced). Reading any other chat still needs the person to reference it.
+
+`add_project` (`{ path }`, an absolute folder) and `clone_project` (`{ url, parentPath? }`) add projects, with approval (Add project, Clone project) and the launch guards' full access outside Plan mode. A folder already added returns its project with `alreadyAdded`. `clone_project` uses the Clone repository flow's checks (`projectClone.ts`: HTTPS and SSH addresses only, no password prompts) and clones into a new folder named after the repository inside `parentPath`, by default the folder that holds the caller's project (the original checkout's, for a worktree chat). Both return `{ id, name, path }`. Agents cannot remove projects.
+
+Attachments. `delegate_task`, `launch_thread` (and `launch_threads` entries) and `send_thread` take `attachments`: up to 10 file paths, absolute or relative to the caller's project. Each file goes through the composer's attachment checks (images, PDFs and UTF-8 text, 10 MB) and is copied into the attachment store before the chat is created, then recorded against the receiving chat and put on its first prompt (or on the sent prompt). A failed file names itself and nothing is sent. Chat-mode callers have no file access, so they cannot send attachments.
+
+`organize_thread` takes `{ id, action, title?, tags?, until? }` with action pin, unpin, rename, regenerate_title, tag, settle, unsettle, snooze, wake, mark_unread, archive or unarchive. `mark_unread` and `regenerate_title` use the sidebar menu's commands; `regenerate_title` calls the person's title model, a small paid request, so it asks first (Name chat with a model). It applies to the caller itself, its orchestration children and chats it launched. A chat cannot archive itself. Archiving first cancels an active or queued chat, then uses the runtime's archive path, which stops that chat's agent tree. Its `requireApproval` is a predicate (archive or regenerate_title). The Phaseo agent loop already supports predicates; the MCP server now evaluates them too.
 
 Schedules are scheduled tasks (stored as missions). `MissionService` registers its command handler as `WorkspaceRuntime.missionCommand`, so the tools share the Scheduled tasks page's validation, timing and change notifications:
-- `schedule_task` takes `{ title, prompt, schedule, templateTaskId?, enabled? }`. `schedule` is `{ type: "interval", minutes: 1–10080 }` or `{ type: "daily", time: "HH:MM", weekdays: [0–6] }` (local time; Sunday is 0; `[]` means daily). The template defaults to the caller. Unlike the Scheduled tasks page, it is enabled unless `enabled: false`, matching T3.
+- `schedule_task` takes `{ title, prompt, schedule, templateTaskId?, postInThisChat?, enabled? }`. `schedule` is `{ type: "interval", minutes: 1–10080 }` or `{ type: "daily", time: "HH:MM", weekdays: [0–6] }` (local time; Sunday is 0; `[]` means daily). The template defaults to the caller. Unlike the Scheduled tasks page, it is enabled unless `enabled: false`, matching T3. With `postInThisChat` (template must be the caller), the mission stores `threadTaskId` and each run sends its prompt to that chat, with the chat's own settings, instead of starting a new chat. A run is skipped while that chat is busy, and only an admitted run marks the mission running, so the person's own turns in the chat do not. The Scheduled tasks page shows "Posts in" with the chat, and **Start a new chat each run** in the row's menu clears it (`threadTaskId: null` in `save`; omitted keeps it).
 - `update_scheduled_task` takes `{ id, enabled?, title?, prompt?, schedule? }`.
 - `delete_scheduled_task` and `run_scheduled_task_now` take `{ id }`.
 - `list_scheduled_tasks` takes `{}`.

@@ -37,7 +37,8 @@ export function mediaMime(bytes: Buffer, name = ""): { kind: "audio" | "video"; 
 }
 export class AttachmentService {
 	constructor(private readonly directory: string, private readonly repository: AttachmentRepository) {}
-	async import(taskId: string, filename: string): Promise<Attachment> {
+	/** Copies a file into the store; save false leaves recording it to the caller (an agent's files for a chat that does not exist yet). */
+	async import(taskId: string, filename: string, save = true): Promise<Attachment> {
 		const file = await open(filename, "r");
 		let bytes: Buffer;
 		try {
@@ -50,6 +51,7 @@ export class AttachmentService {
 			bytes = bytes.subarray(0, length);
 		} finally { await file.close(); }
 		const attachment = await this.prepare(taskId, path.basename(filename), bytes);
+		if (!save) return attachment;
 		try { this.repository.saveAttachment(attachment); return attachment; }
 		catch (error) { await this.discard(attachment); throw error; }
 	}

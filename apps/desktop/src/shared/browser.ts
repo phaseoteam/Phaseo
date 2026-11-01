@@ -56,7 +56,7 @@ export function browserColorScheme(value: unknown): BrowserColorScheme { if (val
 
 export type BrowserOpenTab = { sourceId: string; url: string; background: boolean };
 /** A page an agent opened in one of a chat's tabs, for the window to list among them. */
-export type BrowserAgentTabOpened = { context: string; id: string; url: string };
+export type BrowserAgentTabOpened = { context: string; id: string; url: string; closed?: boolean };
 /** Browser tabs per chat. */
 export const browserTabLimit = 20;
 /** A main-frame load that failed, for the "This site can't be reached" page. */

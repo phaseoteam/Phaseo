@@ -1,5 +1,5 @@
 import { threadTools } from "./threadTools";
-import { orchestrationInstructions, threadToolLabel } from "../shared/orchestration";
+import { alwaysAskThreadTools, orchestrationInstructions, threadToolLabel } from "../shared/orchestration";
 import { phaseoQuestionTools, answerPhaseoQuestion } from "./phaseoQuestionTools";
 import { phaseoPlanTools } from "./phaseoPlanTools";
 import path from "node:path";
@@ -19,7 +19,7 @@ import { readChatCompletion } from "./chatCompletionStream";
 import { connectPhaseoMcp } from "./phaseoMcp";
 import type { McpConnection } from "../shared/mcp";
 import { phaseoRequestSettings } from "./phaseoModelOptions";
-import { approvalRule, phaseoOrchestrationPrompt, runPhaseoTurn } from "./phaseoTurn";
+import { approvalRule, imageResultsToMessages, phaseoOrchestrationPrompt, runPhaseoTurn } from "./phaseoTurn";
 import { phaseoAnthropicCache } from "./phaseoCodingAdapter";
 
 const record = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -51,7 +51,8 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
  try { await refresh(); } catch (error) { throw new AgentInputRejectedError("Chat instructions could not be loaded; input was not submitted.", { cause: error }); }
  const mcp = await connectPhaseoMcp((dependencies.mcpConnections ?? []).filter(connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)), cwd, signal, callbacks, task.id);
  try {
- const orchestrationTools = callbacks.threads ? threadTools(callbacks.threads, { images: false }) : [];
+ const steering = dependencies.steering ?? [], images = !dependencies.facts?.input || dependencies.facts.input.includes("image");
+ const orchestrationTools = callbacks.threads ? imageResultsToMessages(threadTools(callbacks.threads, { images }), steering) : [];
  const tools = [...orchestrationTools, ...phaseoPlanTools(), ...phaseoQuestionTools(), ...toolkit?.tools() ?? [], ...mcp.tools];
  if (unfinished?.run.pause?.pendingToolCalls?.some(entry => !tools.some(tool => tool.id === entry.call.name))) throw new AgentInputRejectedError("This pending run requires tools unavailable in Chat. Restore its connections or resume it in its original mode.");
  const key = await credential(account.id);
@@ -76,7 +77,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
   }
  } };
  await runPhaseoTurn({
-  task, input: requested ? requested.arguments : text, callbacks, signal, store, client, tools, facts: dependencies.facts, steering: dependencies.steering ?? [], streamed,
+  task, input: requested ? requested.arguments : text, callbacks, signal, store, client, tools, facts: dependencies.facts, steering, streamed,
   transcript: phaseoConversationMessages(task.messages, text, attachments, requested?.arguments), previous, labels: mcp.labels,
   context: { ...record(unfinished?.run.context), ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) },
   overrides: () => ({ ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) }),
@@ -91,7 +92,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
    }
    try {
     if (call.name === "load_skill" && toolkit) return await toolkit.review(call);
-    if (orchestrationTools.some(tool => tool.id === call.name)) return { title: threadToolLabel(call.name, call.input), details: JSON.stringify(call.input, null, 2), ask: call.name.startsWith("browser_") };
+    if (orchestrationTools.some(tool => tool.id === call.name)) return { title: threadToolLabel(call.name, call.input), details: JSON.stringify(call.input, null, 2), ask: call.name.startsWith("browser_") || alwaysAskThreadTools.has(call.name) };
     // Chat is for conversation: tools that act on the world ask every time, even with full access, unless the person allowed this one.
     if (mcp.labels[call.name]) return rules.has(`tool:${call.name}`) ? { approve: true } : { title: mcp.labels[call.name], details: JSON.stringify(call.input, null, 2), always: approvalRule(call, "tool"), ask: true };
     throw new Error("This tool is unavailable in Chat.");
