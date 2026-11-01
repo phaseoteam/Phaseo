@@ -57,8 +57,8 @@ export type AgentStatus = { checkedAt: string; name?: string; version?: string; 
 export type BackgroundCommandView = { id: string; command: string; directory: string; running: boolean; durationMs: number; output: string };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image" | "audio" | "video"; mimeType: string; size: number; pages?: number };
 export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; /** Issue and pull request URLs the person referenced with `#`. */ githubReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Sent by Autopilot to keep the task going, not by the person. */ autopilot?: true; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
-/** `outside-agent` is a prompt an agent outside Phaseo sent through its MCP server; the summary names the agent. */
-export type MessageNotice = { kind: "pull-request" | "issue" | "outside-agent"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
+/** `outside-agent` is a prompt an agent outside Phaseo sent through its MCP server; the summary names the agent. `side-chat` is what the person brought back from a side chat. */
+export type MessageNotice = { kind: "pull-request" | "issue" | "outside-agent" | "side-chat"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string; /** The side chat it came from. */ taskId?: string };
 export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; githubReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; /** When the app first saw it running, for a live timer. */ startedAt?: string; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string };
@@ -173,7 +173,12 @@ export type TerminalEvent = { sessionId: string; data?: string; session?: Termin
 export type WorkspaceCommand =
 	| { type: "inbox-read"; id: string; revision: string }
 	| { type: "settle" | "unsettle" | "wake" | "mark-unread"; id: string }
-	| { type: "delete-task"; id: string }
+	/** onlyIfUnused deletes a side chat only if nothing was ever sent in it (closing its tab). */
+	| { type: "delete-task"; id: string; onlyIfUnused?: boolean }
+	/** Opens a side chat beside the chat `id`, copied from its conversation, and sends it `text` when there is one. */
+	| { type: "side-chat"; id: string; text: string }
+	/** Queues the side chat `id`'s questions and replies in its main chat, which runs them when it is free. */
+	| { type: "bring-back"; id: string }
 	/** Removes a project entry, its worktree entries and their chats. Files on disk are not touched. */
 	| { type: "remove-project"; id: string }
 	/** Pins or archives a project (not a worktree); its chats are untouched. */
@@ -532,7 +537,9 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			}
 			case "inbox-read": string("revision", true, 100); break;
-			case "settle": case "unsettle": case "wake": case "mark-unread": case "delete-task": case "remove-project": case "regenerate-title": break;
+			case "settle": case "unsettle": case "wake": case "mark-unread": case "remove-project": case "regenerate-title": case "bring-back": break;
+			case "delete-task": if (command.onlyIfUnused !== undefined && typeof command.onlyIfUnused !== "boolean") throw new Error("Invalid delete setting."); break;
+			case "side-chat": if (typeof command.text !== "string" || command.text.length > 100000) throw new Error("Invalid text."); break;
 			case "snooze": string("until", true, 100); if (Number.isNaN(Date.parse(command.until as string))) throw new Error("Invalid snooze time."); break;
 			case "visit": string("at", true, 100); if (Number.isNaN(Date.parse(command.at as string))) throw new Error("Invalid visit time."); break;
 			case "auto-settle": if (typeof command.enabled !== "boolean") throw new Error("Invalid auto-settle setting."); break;

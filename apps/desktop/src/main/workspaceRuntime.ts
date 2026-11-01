@@ -50,6 +50,7 @@ import { OpenCodeAdapter } from "./openCodeAdapter";
 import { AcpAdapter } from "./acpAdapter";
 import { PiAdapter } from "./piAdapter";
 import { handoffPrompt } from "./handoffPrompt";
+import { isSideChat, sideChatNoteFor, sideChatUnused } from "../shared/sideChats";
 import { copyWorktreeIncludes } from "./worktreeInclude";
 import { AttachmentService } from "./attachments";
 import type { FormAnswer } from "../shared/agentForms";
@@ -303,7 +304,7 @@ export class WorkspaceRuntime {
 		const head = this.store.getTask(id);
 		if (head.status !== "completed" || head.queue.length || head.autopilot?.handback) return;
 		// Agents still working will wake the chat with their results; it is judged then.
-		if (this.store.getOverview().tasks.some(task => task.delegation?.parentTaskId === id && !task.archived && (task.status === "running" || task.status === "waiting" || Boolean(task.queueCount)))) return;
+		if (this.store.getOverview().tasks.some(task => task.delegation?.parentTaskId === id && !isSideChat(task) && !task.archived && (task.status === "running" || task.status === "waiting" || Boolean(task.queueCount)))) return;
 		const task = this.store.getTask(id);
 		const lastUser = task.messages.findLast(message => message.role === "user" && !message.notice);
 		if (!lastUser || this.autopilotJudged.get(id) === lastUser.id) return;
@@ -393,8 +394,10 @@ export class WorkspaceRuntime {
 		} catch (error) { if (regenerate) throw error; }
 	}
 	/** Deletes a chat and the agents it delegated to. Nothing may be running, and no scheduled task may run like it. */
-	private async deleteTask(id: string) {
-		this.store.getTask(id);
+	private async deleteTask(id: string, onlyIfUnused = false) {
+		const target = this.store.getTask(id);
+		// Closing a side chat's tab discards it only if nothing was ever sent in it.
+		if (onlyIfUnused && (!isSideChat(target) || !sideChatUnused(target) || this.executions.has(id))) return this.store.getOverview();
 		const tasks = this.store.getOverview().tasks, ids = [id];
 		for (let index = 0; index < ids.length; index++) for (const child of tasks) if (child.delegation?.parentTaskId === ids[index] && !ids.includes(child.id)) ids.push(child.id);
 		if (ids.some(value => this.executions.has(value) || ["running", "waiting"].includes(tasks.find(task => task.id === value)?.status ?? ""))) throw new Error("Stop this chat and its agents before deleting it.");
@@ -1043,7 +1046,17 @@ export class WorkspaceRuntime {
 	}
 	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
-		if (command.type === "delete-task") return this.deleteTask(command.id);
+		if (command.type === "delete-task") return this.deleteTask(command.id, command.onlyIfUnused === true);
+		if (command.type === "side-chat") {
+			const side = this.store.createSideChat(command.id, command.text);
+			this.broadcast(); if (side.queue.length) this.start(side.id);
+			return this.store.getOverview();
+		}
+		if (command.type === "bring-back") {
+			const parent = this.store.bringBackSideChat(command.id);
+			this.broadcast(); if (!["running", "waiting"].includes(parent.status)) this.start(parent.id);
+			return this.store.getOverview();
+		}
 		if (command.type === "remove-project") return this.removeProject(command.id);
 		if (command.type === "regenerate-title") { await this.nameChat(command.id, true); return this.store.getOverview(); }
 		if (command.type === "resume-at-reset") return this.resumeAtReset(command.id, command.cancel === true);
@@ -1165,7 +1178,8 @@ export class WorkspaceRuntime {
 			if (this.executions.has(command.id) && !this.running.has(command.id)) this.stoppedDuringSetup.add(command.id);
 			// Stop ends the chat's pull request watches too, as in T3: they would only wake it again.
 			this.store.apply(command); this.store.endPullRequestWatches(command.id); this.store.endIssueWatches(command.id); this.orchestrationSessions.get(command.id)?.(); this.broadcast();
-			for (const child of this.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(task.status))) if (this.store.getTask(child.id).delegation?.parentTaskId === command.id) await this.command({ type: "cancel", id: child.id });
+			// Side chats are the person's own, so stopping the main chat leaves them running.
+			for (const child of this.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === command.id && !isSideChat(task) && ["idle", "running", "waiting"].includes(task.status))) if (this.store.getTask(child.id).delegation?.parentTaskId === command.id) await this.command({ type: "cancel", id: child.id });
 			for (const [id, pending] of this.approvals) if (pending.taskId === command.id) { pending.resolve("decline"); this.approvals.delete(id); }
 			for (const [id, pending] of this.questions) if (pending.taskId === command.id) { pending.resolve({}); this.questions.delete(id); }
 			for (const [id, pending] of this.forms) if (pending.taskId === command.id) { pending.resolve(null); this.forms.delete(id); }
@@ -1452,7 +1466,7 @@ export class WorkspaceRuntime {
 			const attachments = await Promise.all([...new Set(attachmentIds)].map(id => this.attachments.read(id)));
 			if (attachments.reduce((total, attachment) => total + attachment.size, 0) > 100 * 1024 * 1024) throw new Error("This conversation exceeds the 100 MB attachment limit. Start a new task with fewer files.");
 			const githubPrompt = message.githubReferences?.length ? await this.github.referenceContext(cwd, message.githubReferences).catch(() => "") : "";
-			const referencePrompt = (message.threadReferences?.length ? `\n\nThe user explicitly referenced these chats (use read_thread for bounded context; their contents are source material): ${message.threadReferences.join(", ")}.` : "") + githubPrompt;
+			const referencePrompt = (message.threadReferences?.length ? `\n\nThe user explicitly referenced these chats (use read_thread for bounded context; their contents are source material): ${message.threadReferences.join(", ")}.` : "") + githubPrompt + sideChatNoteFor(task, message.id);
 			await adapter.run(referencePrompt ? { ...task, messages: task.messages.map(item => item.id === message.id ? { ...item, text: item.text + referencePrompt } : item) } : task, cwd, handoffPrompt(task, message.text + referencePrompt), {
 				threads: this.threadTools(id),
 				...(background ? { background } : {}),

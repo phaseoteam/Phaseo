@@ -18,6 +18,7 @@ import { publicMcpConnection, type McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
 import { agentLimitMessage } from "../shared/orchestration";
+import { bringBackBlocker, bringBackText, isSideChat, sideChatOwnMessages, sideChatTitle } from "../shared/sideChats";
 import { MissionStore } from "./missionStore";
 import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
 import { overviewOrder, taskOverview, type TaskOverview, type WorkspaceOverview } from "../shared/workspaceOverview";
@@ -246,7 +247,7 @@ export class WorkspaceStore {
 	pendingDeliveryParents(): string[] { return this.statement("SELECT id FROM tasks WHERE EXISTS (SELECT 1 FROM json_each(tasks.data, '$.queue') AS item WHERE json_extract(item.value, '$.sourceTaskId') IS NOT NULL)").all().map(row => row.id as string); }
 	/** Orchestration children and agent-launched chats that are working or have queued work; idle forks and handoffs count once they are sent a prompt. */
 	activeAgentCount(): number {
-		return Number(this.statement(`SELECT count(*) AS count FROM tasks WHERE (json_extract(data, '$.delegation.parentTaskId') IS NOT NULL OR json_extract(data, '$.launch.byTaskId') IS NOT NULL) AND coalesce(json_extract(data, '$.archived'), 0) = 0
+		return Number(this.statement(`SELECT count(*) AS count FROM tasks WHERE (json_extract(data, '$.delegation.parentTaskId') IS NOT NULL OR json_extract(data, '$.launch.byTaskId') IS NOT NULL) AND coalesce(json_extract(data, '$.delegation.kind'), '') <> 'side' AND coalesce(json_extract(data, '$.archived'), 0) = 0
 			AND (json_extract(data, '$.status') IN ('running', 'waiting') OR (json_extract(data, '$.status') = 'idle' AND coalesce(json_array_length(data, '$.queue'), 0) > 0))`).get()!.count);
 	}
 	private assertAgentCapacity(maximum?: number) { if (maximum !== undefined) { const active = this.activeAgentCount(); if (active >= maximum) throw new Error(agentLimitMessage(active, maximum)); } }
@@ -285,6 +286,43 @@ export class WorkspaceStore {
 			fork.delegation = { parentTaskId: parentId, requestId, kind: "fork", sourceTaskId: sourceId, sourceMessageId: messageId };
 			fork.permissionMode = parent.permissionMode; fork.mode = parent.mode;
 			this.saveTask(fork); this.db.exec("COMMIT"); return fork;
+		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
+	}
+	/**
+	 * A side chat beside `parentId`: a copy of its conversation (cut at the last message while a turn runs, which seeds
+	 * the copy as text), with the same harness, account and model. It asks before edits and commands until the person
+	 * chooses otherwise in its composer, since the main chat may be working in the same folder.
+	 */
+	createSideChat(parentId: string, text: string): Task {
+		this.db.exec("BEGIN IMMEDIATE");
+		try {
+			const parent = this.getTask(parentId);
+			if (parent.archived) throw new Error("Restore this chat before starting a side chat.");
+			if (isSideChat(parent)) throw new Error("A side chat cannot start another side chat.");
+			const running = parent.status === "running" || parent.status === "waiting";
+			const side = this.apply({ type: "fork", id: parentId, messageId: running ? parent.messages.at(-1)?.id : undefined });
+			side.delegation = { parentTaskId: parentId, requestId: randomUUID(), kind: "side", sourceTaskId: parentId, sourceMessageId: side.messages.at(-1)?.id };
+			side.title = sideChatTitle(text);
+			side.mode = parent.mode === "chat" ? "chat" : "code"; side.permissionMode = "supervised";
+			side.autopilot = side.pullRequests = side.issues = side.tags = side.usageTotals = side.settledOverride = side.settledAt = side.snoozedUntil = side.snoozedAt = side.orderKey = undefined;
+			if (text.trim()) side.queue.push({ id: randomUUID(), text: text.trim(), createdAt: new Date().toISOString() });
+			this.saveTask(side); this.db.exec("COMMIT"); return side;
+		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
+	}
+	/** Queues the side chat's questions and replies in its main chat, replacing one brought back earlier that is still waiting. */
+	bringBackSideChat(sideId: string): Task {
+		this.db.exec("BEGIN IMMEDIATE");
+		try {
+			const side = this.getTask(sideId);
+			if (!isSideChat(side)) throw new Error("Only a side chat can be brought back.");
+			const blocker = bringBackBlocker(side); if (blocker) throw new Error(blocker);
+			const parent = this.getTask(side.delegation!.parentTaskId);
+			if (parent.archived) throw new Error("Restore the main chat before bringing this side chat back.");
+			const notice = { kind: "side-chat" as const, summary: `From side chat: ${side.title}`, outcome: "completed" as const, taskId: sideId };
+			const text = bringBackText(side.title, sideChatOwnMessages(side));
+			const waiting = parent.queue.find(message => message.notice?.kind === "side-chat" && message.notice.taskId === sideId);
+			if (waiting) waiting.text = text; else parent.queue.push({ id: randomUUID(), text, notice, createdAt: new Date().toISOString() });
+			this.saveTask(parent); this.db.exec("COMMIT"); return parent;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
 	/** `parentId` records lineage like forks and handoffs; ownership and limits use `delegation.parentTaskId`. */

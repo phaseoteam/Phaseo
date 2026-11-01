@@ -8,9 +8,11 @@ import type { HtmlPreviewRequest, HtmlPreviewResult, HtmlRenderRequest } from ".
 /**
  * Present only on orchestration children (delegated, or forked/handed off by an agent tool); `parentTaskId` is the owning chat.
  * `kind: "stage"` marks a Factory stage run under its work item's thread; it never delivers its result into that thread.
+ * `kind: "side"` is a side chat the person opened beside the chat (shared/sideChats.ts): it never delivers a result, is not
+ * the chat's agent (its tools neither list nor reach it, Stop leaves it running) and does not count towards the agent limit.
  * `Task.parentId` is lineage only: forks and handoffs point at their source, so it must not be used to hide or count children.
  */
-export type Delegation = { parentTaskId: string; requestId: string; background?: boolean; role?: string; kind?: "fork" | "handoff" | "stage"; sourceTaskId?: string; sourceMessageId?: string };
+export type Delegation = { parentTaskId: string; requestId: string; background?: boolean; role?: string; kind?: "fork" | "handoff" | "stage" | "side"; sourceTaskId?: string; sourceMessageId?: string };
 /**
  * Present only on ordinary top-level chats an agent started with launch_thread. They have no `delegation`, so they show in the sidebar,
  * never deliver results back and survive the launcher being stopped or archived; `byTaskId` lets the launcher read, wait for and message them.
