@@ -12,15 +12,18 @@ export type PhoneAddress = {
 	note?: string;
 };
 export type PhoneDeviceView = { id: string; name: string; pairedAt: string; lastSeenAt?: string; connected: boolean };
-/** Where Phaseo Connect stands. paused: on, but switched off until an unpaid month is settled. */
-export type ConnectStatus = "off" | "signed-out" | "checking" | "connecting" | "connected" | "paused" | "error";
+/** Where Phaseo Connect stands. payment-due: switched off until an unpaid month is taken from credits. */
+export type ConnectStatus = "off" | "signed-out" | "checking" | "connecting" | "connected" | "payment-due" | "error";
 export type ConnectView = {
 	status: ConnectStatus;
 	enabled: boolean;
 	/** The Phaseo sign-in it bills, by name or email. */
 	account?: string;
-	/** Days it was on this month, and what that comes to so far. */
+	/** False when this person can see Connect but only owners and admins can switch it. */
+	canManage?: boolean;
+	/** Days it was on this month, what that comes to so far, and by the month's end if nothing changes. */
 	daysOn?: number;
+	chargeSoFarNanos?: number;
 	estimatedNanos?: number;
 	message?: string;
 };
