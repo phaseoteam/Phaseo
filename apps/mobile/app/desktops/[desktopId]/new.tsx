@@ -1,7 +1,8 @@
-import { useLocalSearchParams } from "expo-router";
-import { NewDesktopChatScreen } from "@/features/desktops/NewDesktopChatScreen";
+import { Redirect, useLocalSearchParams } from "expo-router";
+import { newDesktopChatHref } from "@/features/desktops/routes";
 
-export default function NewDesktopChatRoute() {
+/** Older links to a new chat on a computer; it now opens under Chat. */
+export default function NewDesktopChatRedirect() {
   const { desktopId } = useLocalSearchParams<{ desktopId: string }>();
-  return <NewDesktopChatScreen key={desktopId} desktopId={desktopId} />;
+  return <Redirect href={newDesktopChatHref(desktopId)} />;
 }

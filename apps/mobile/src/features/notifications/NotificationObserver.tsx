@@ -2,6 +2,7 @@ import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import { useRouter, type Href } from "expo-router";
 import { useEffect } from "react";
+import { desktopChatHref } from "@/features/desktops/routes";
 import { catalogueQuery, filtersStore } from "@/features/models/state";
 import { useAuth } from "@/providers/AuthProvider";
 import { ensurePushChannels, installationId, syncThisPhone } from "./device";
@@ -33,7 +34,7 @@ function openTarget(target: NotificationTarget, router: Router, queryClient: Que
     case "lab": return void openLab(target.slug, router, queryClient);
     case "provider": return router.push({ pathname: "/providers/[id]", params: { id: target.id } });
     case "home": return router.push("/");
-    case "desktop-chat": return router.push({ pathname: "/desktops/[desktopId]/[chatId]", params: { desktopId: target.desktopId, chatId: target.chatId } });
+    case "desktop-chat": return router.push(desktopChatHref(target.desktopId, target.chatId));
   }
 }
 

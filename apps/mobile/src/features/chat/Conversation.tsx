@@ -6,6 +6,7 @@ import { ActivityIndicator, AppState, Pressable, ScrollView, View, type NativeSc
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Button, EmptyState, Header, Icon, IconButton, measureAnchor, Screen, showActions, Text, useToneColor, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
+import { useSidebarButton } from "./ChatDrawer";
 import { haptic, streamTick } from "@/lib/haptics";
 import { useAuth } from "@/providers/AuthProvider";
 import { perf } from "@/perf";
@@ -59,7 +60,8 @@ const EMPTY: string[] = [];
 
 export function Conversation({ chatId, focusMessage, search }: { chatId: string; focusMessage?: string | null; search?: string | null }) {
   const router = useRouter();
-  const { split, wide } = useLayout();
+  const { wide } = useLayout();
+  const sidebarButton = useSidebarButton();
   const { session } = useAuth();
   const { workspaceId } = useWorkspace();
   const labels = useModelLabels();
@@ -107,7 +109,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
     setAway((current) => (current === next ? current : next));
   }, []);
 
-  if (!chat) return <Screen><Header back={!split} /><EmptyState className="flex-1" icon={MessageSquareOff} title="Chat not found" body="It may have been deleted on this device." action="New chat" onAction={() => router.replace("/chat/new")} /></Screen>;
+  if (!chat) return <Screen><Header leading={sidebarButton} /><EmptyState className="flex-1" icon={MessageSquareOff} title="Chat not found" body="It may have been deleted on this device." action="New chat" onAction={() => router.replace("/chat/new")} /></Screen>;
 
   const openMenu = async () => {
     const anchor = await measureAnchor(moreRef);
@@ -122,7 +124,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
   return (
     <Screen>
       <Header
-        back={!split}
+        leading={sidebarButton}
         title={chat.title}
         right={<View ref={moreRef} collapsable={false}><IconButton icon={MoreHorizontal} label="Chat actions" onPress={() => void openMenu()} /></View>}
       />
@@ -227,7 +229,7 @@ const STARTERS: Record<DayPeriod, { label: string; prompt: string; icon: LucideI
 
 export function NewChat({ initialModel }: { initialModel?: string }) {
   const router = useRouter();
-  const { split } = useLayout();
+  const sidebarButton = useSidebarButton();
   const { session } = useAuth();
   const { workspaceId } = useWorkspace();
   const { options } = useChatModelOptions();
@@ -251,7 +253,7 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
 
   return (
     <Screen>
-      <Header back={!split} title="New chat" />
+      <Header leading={sidebarButton} title="New chat" />
       <ModelChipRow chatId={null} models={models} settings={settings} className="pb-2" />
       <View className="h-px bg-border" />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>

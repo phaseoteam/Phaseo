@@ -1,7 +1,14 @@
-import { useLocalSearchParams } from "expo-router";
-import { DesktopChatsScreen } from "@/features/desktops/DesktopChatsScreen";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect } from "react";
+import { chooseDesktop } from "@/features/chat/sidebar";
 
-export default function DesktopChatsRoute() {
+/** Older links to a computer's chats: Chat, with the sidebar on Code and that computer picked. */
+export default function DesktopChatsRedirect() {
+  const router = useRouter();
   const { desktopId } = useLocalSearchParams<{ desktopId: string }>();
-  return <DesktopChatsScreen key={desktopId} desktopId={desktopId} />;
+  useEffect(() => {
+    chooseDesktop(desktopId);
+    router.replace("/chat");
+  }, [desktopId, router]);
+  return null;
 }

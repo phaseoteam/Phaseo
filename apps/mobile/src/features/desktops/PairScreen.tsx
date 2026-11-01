@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Button, Callout, Header, LoadingState, Screen, Section, Text, TextField } from "@/components/ui";
+import { chooseDesktop } from "@/features/chat/sidebar";
 import { haptic } from "@/lib/haptics";
 import { pairDesktop, readPairingLink } from "./pairing";
 import type { FetchLike } from "./reach";
@@ -41,7 +42,10 @@ export function PairScreen({ link }: { link?: string }) {
         // Approvals and questions from the computer arrive as notifications while the app runs.
         const { status } = await Notifications.getPermissionsAsync();
         if (status === "undetermined") await Notifications.requestPermissionsAsync().catch(() => undefined);
-        router.replace({ pathname: "/desktops/[desktopId]", params: { desktopId: desktop.desktopId } });
+        // Its chats are in Chat's sidebar, on Code. Back returns to where pairing started (Desktops, or that sidebar).
+        chooseDesktop(desktop.desktopId);
+        if (router.canGoBack()) router.back();
+        else router.replace("/chat");
       })
       .catch((problem: unknown) => {
         haptic("error");
