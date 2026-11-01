@@ -33,6 +33,7 @@ function openTarget(target: NotificationTarget, router: Router, queryClient: Que
     case "lab": return void openLab(target.slug, router, queryClient);
     case "provider": return router.push({ pathname: "/providers/[id]", params: { id: target.id } });
     case "home": return router.push("/");
+    case "desktop-chat": return router.push({ pathname: "/desktops/[desktopId]/[chatId]", params: { desktopId: target.desktopId, chatId: target.chatId } });
   }
 }
 

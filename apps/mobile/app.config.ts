@@ -47,7 +47,10 @@ if (perf !== (process.env.EXPO_PUBLIC_PERF_TOOLS === "1")) {
   throw new Error("Set APP_VARIANT=perf and EXPO_PUBLIC_PERF_TOOLS=1 together for the perf build, and neither for a normal build.");
 }
 
-/** The perf build talks plain HTTP to the chat stand-in on the development machine. */
+/**
+ * Plain HTTP is needed by Phaseo on a computer reached directly (its phone server at a Wi-Fi or Tailscale IP has no
+ * certificate; Tailscale encrypts its own traffic) and by the perf build's chat stand-in. Phaseo's own origins stay https.
+ */
 const withCleartextTraffic: ConfigPlugin = (config) => withAndroidManifest(config, (manifest) => {
   const application = manifest.modResults.manifest.application?.[0];
   if (application) application.$["android:usesCleartextTraffic"] = "true";
@@ -108,4 +111,4 @@ export default perf
     ios: { ...base.ios, bundleIdentifier: "app.phaseo.client.perf" },
     android: { ...base.android, package: "app.phaseo.client.perf" },
   })
-  : base;
+  : withCleartextTraffic(base);
