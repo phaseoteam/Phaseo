@@ -138,7 +138,7 @@ function SectionHeader({ label, count, open, onToggle, tone, drop }: { label: st
 	</button>;
 }
 
-/** T3's project folder heading: the project, its chat count when collapsed, and a chevron. */
+/** A project folder's heading: the project, its chat count when collapsed, and a chevron. */
 function FolderHeader({ project, count, open, onToggle }: { project: Project; count: number; open: boolean; onToggle: () => void }) {
 	return <button type="button" aria-expanded={open} onClick={onToggle} className="group/folder mx-2 mt-1 flex h-7 w-[calc(100%-1rem)] items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground">
 		<ChevronRight aria-hidden className={cn("size-3 shrink-0 transition-transform", open && "rotate-90")} /><ProjectIcon project={project} className="size-3.5" /><span className="min-w-0 truncate">{project.name}</span>
@@ -263,7 +263,7 @@ export function CodeThreadList() {
 				<DropdownMenuContent align="start" className="w-60">
 					<DropdownMenuItem onClick={() => setScope("")}>All projects{!scope.length && <Check className="ml-auto" />}</DropdownMenuItem>
 					<DropdownMenuSeparator />
-					{/* T3's project picker: tick any number of projects; each row has pin and settings buttons at its end. */}
+					{/* Tick any number of projects; each row has pin and settings buttons at its end. */}
 					{projects.map(project => <DropdownMenuCheckboxItem key={project.id} checked={scope.includes(project.id)} onCheckedChange={() => toggleScope(project.id)} className="group/project pr-8">
 						<ProjectIcon project={project} /><span className="min-w-0 flex-1 truncate">{project.name}</span>
 						{!project.worktree && <Tip label={project.pinned ? `Unpin ${project.name}` : `Pin ${project.name} to the top`} side="right"><button type="button" aria-label={project.pinned ? `Unpin ${project.name}` : `Pin ${project.name}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); organize(project, { pinned: !project.pinned }); }}

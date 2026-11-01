@@ -4,7 +4,7 @@ import { CommandGroup, CommandItem } from "../components/ui/command";
 import { ProjectIcon } from "../components/ProjectIcon";
 import type { Project } from "../../shared/workspace";
 
-/** The palette's project commands: pin, unpin or archive the open chat's project, and unarchive any archived one (T3's "project unarchive"). */
+/** The palette's project commands: pin, unpin or archive the open chat's project, and unarchive any archived one. */
 export function ProjectShelfItems({ project, projects, run }: { project?: Project; projects: readonly Project[]; run: (action: () => void) => void }) {
 	const { command } = useWorkspace();
 	const source = project?.worktree ? projects.find(value => value.id === project.worktree!.sourceProjectId) : project;

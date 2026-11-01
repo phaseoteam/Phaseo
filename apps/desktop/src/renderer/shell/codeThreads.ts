@@ -5,7 +5,7 @@ import { isProjectArchived, projectScopes } from "../../shared/projectShelf";
 
 /** The Working section's setting (Settings → General), kept per window and off by default, as T3's beta is. */
 export const workingSectionKey = "phaseo.desktop.sidebar.workingSection";
-/** Settings → General: group the sidebar's active chats into project folders, off by default as T3's is. */
+/** Settings → General: group the sidebar's active chats into project folders, off by default. */
 export const projectFoldersKey = "phaseo.desktop.sidebar.projectFolders";
 /** The sidebar's project filter (a list of project ids, empty for all); it replaced a single id kept under codeProjectScope. */
 export const projectScopeKey = "phaseo.desktop.codeProjectScopes";
@@ -68,7 +68,7 @@ export function scopeLabel(scoped: readonly Pick<Project, "name">[]) { return !s
 
 export type CodeFolder = { project: Project; tasks: TaskOverview[] };
 /**
- * T3's project folders: the active chats grouped by project (a worktree's chats under the project it came from), the
+ * Project folders: the active chats grouped by project (a worktree's chats under the project it came from), the
  * folder holding your latest message first. Projects with no active chats have no folder. Chats keep the list's order.
  */
 export function codeFolders(tasks: readonly TaskOverview[], projects: readonly Project[]): CodeFolder[] {
