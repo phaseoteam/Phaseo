@@ -18,7 +18,7 @@ Keep these separate from the broader desktop feature ledger; an exposed tool alo
 - [x] Durable background result delivery and parent wake-up
 - [x] Composer thread references and sidebar drag references
 - [x] Child status and result UI
-- [x] Phaseo direct tools, Codex/Claude/Cursor/ACP/Grok MCP configuration and Pi extension bridge (fixture validation)
+- [x] Phaseo direct tools, Codex/Claude/Cursor/ACP/Grok/OpenCode MCP configuration and Pi extension bridge (fixture validation)
 - [x] Orchestration tools in Chat, Plan and Code for every MCP-capable harness, with shared orchestration instructions
 - [x] One-call agent catalog (`list_agents`), account auto-pick, workspace agent limit and privilege ceiling
 - [x] Batched result delivery, launch wake and upgrade-to-always-wake for abandoned waits (fixture validation)
@@ -29,6 +29,7 @@ Keep these separate from the broader desktop feature ledger; an exposed tool alo
 - [ ] Full provider handoff and Git worktree merge-back tools
 - [x] Top-level chat launch (single and batch) with workspace strategies including new Git worktrees, project listing, chat organisation and scheduled-task tools (fixture validation)
 - [x] Browser tools for agents: open, read, click, type, act (hover, select, key press, scroll, drag, upload), evaluate, wait, resize, colour scheme, dialogs, recording, close and screenshots (fixture validation)
+- [x] Chat search by title, child settings, queue reorder, steer and restart, attachments, adding and cloning projects, schedules that post in their chat, and instructions for every chat (fixture validation)
 - [ ] Full latest-nightly parity audit
 
 ## Validation and limits
