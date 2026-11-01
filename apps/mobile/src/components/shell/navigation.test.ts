@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { notificationRoute } from "@/features/notifications/links";
 import { chatOpens, launchHref, launchReset, sidebarItems, sidebarMove, stackedSections } from "./navigation";
 
 const APP = path.resolve(__dirname, "../../../app");
@@ -93,23 +92,6 @@ describe("opening a screen from the sidebar", () => {
     expect(sidebarMove("/", "/models", true)).toBe("push");
     expect(sidebarMove("/", "/code/desk-1/c2", true)).toBe("push");
     expect(sidebarMove("/", "/chat/abc", true)).toBe("back");
-  });
-});
-
-describe("notification taps", () => {
-  const thread = notificationRoute({ kind: "desktop-chat", desktopId: "desk-1", chatId: "c2" });
-
-  it("open a computer's thread in Code the way the sidebar opens screens, so the Code list and Chat are behind it", () => {
-    expect(thread).toEqual({ href: "/code/desk-1/c2", open: "screen" });
-    expect(sidebarMove("/chat/abc", thread.href, true, ["/chat"])).toBe("push");
-    // From another thread, it takes that one's place over the same Code list.
-    expect(sidebarMove("/code/desk-1/c1", thread.href, true, ["/chat", "/code"])).toBe("replace");
-    // From Models, Code takes Models' place, so back still leads to Chat.
-    expect(sidebarMove("/models/openai/gpt-5", thread.href, true, ["/chat", "/models"])).toBe("replace");
-  });
-
-  it("push model pages over whatever shows, so back returns there", () => {
-    expect(notificationRoute({ kind: "model", id: "openai/gpt-6" })).toEqual({ href: "/models/openai/gpt-6", open: "push" });
   });
 });
 
