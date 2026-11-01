@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { ArrowUp, AudioLines, Camera, ChevronDown, FileCode2, FileText, ImageIcon, Plus, Square, X } from "lucide-react-native";
+import { ArrowUp, AudioLines, Camera, FileCode2, FileText, ImageIcon, Plus, Square, X } from "lucide-react-native";
 import { useEffect, useRef, useState, type ComponentRef } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,7 +7,9 @@ import { Icon, measureAnchor, showActions, Text, toastError, type MenuAction, ty
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
 import { pickAudioFile, pickImages, pickTextFile, removeAttachmentFiles } from "./attachments";
+import { useChatModelLabel } from "./ChatModelSheet";
 import { ModelLogoStack } from "./ModelChips";
+import { ModelControl } from "./ModelSheet";
 import { useChatModelOptions, useModelLabels } from "./models";
 import type { ModelSettings } from "./settings";
 import type { ChatAttachment } from "./types";
@@ -16,16 +18,9 @@ const MAX_ATTACHMENTS = 6;
 
 const formatSize = (bytes?: number) => (bytes == null ? null : bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 
-/** "GPT-6 Astra", or "GPT-6 Astra +2" when several models answer. */
-export function modelsLabel(models: string[], label: (id: string) => string) {
-  if (!models.length) return "Choose a model";
-  if (models.length === 1) return label(models[0]!);
-  return `${label(models[0]!)} +${models.length - 1}`;
-}
-
 /**
  * The message box, laid out like the website's chat composer: text on top; below it the + menu
- * (what can be attached), the models that will answer, and send or stop.
+ * (what can be attached), the model control (the first model and its effort, and how many more answer), and send or stop.
  */
 export function Composer({ models, settings, onModelPress, running, onSend, onStop, autoFocus, disabledReason, seed }: {
   models: string[];
@@ -93,7 +88,7 @@ export function Composer({ models, settings, onModelPress, running, onSend, onSt
     setAttachments([]);
   };
 
-  const label = modelsLabel(models, (id) => labels(id, settings[id]).label);
+  const label = useChatModelLabel(models, settings);
 
   return (
     <View className="bg-background px-3 pt-1.5" style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
@@ -141,11 +136,7 @@ export function Composer({ models, settings, onModelPress, running, onSend, onSt
               <Icon icon={Plus} tone="foreground" size={20} />
             </Pressable>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Models: ${label}`} accessibilityHint="Choose which models answer" onPress={onModelPress} className="h-9 max-w-[72%] flex-row items-center gap-2 rounded-md pl-1.5 pr-2 active:bg-accent">
-            {models.length ? <ModelLogoStack models={models} size={18} /> : null}
-            <Text variant="small" numberOfLines={1} className="shrink font-semibold">{label}</Text>
-            <Icon icon={ChevronDown} tone="muted" size={14} />
-          </Pressable>
+          <ModelControl label={label} logos={models.length ? <ModelLogoStack models={models} size={18} /> : null} onPress={onModelPress} />
           <View className="flex-1" />
           {running ? (
             <Pressable accessibilityRole="button" accessibilityLabel="Stop" onPress={() => { haptic("press"); onStop(); }} className="h-9 w-9 items-center justify-center rounded-md bg-foreground">
