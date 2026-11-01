@@ -305,8 +305,6 @@ export class WorkspaceStore {
 			side.title = sideChatTitle(text);
 			side.mode = parent.mode === "chat" ? "chat" : "code"; side.permissionMode = "supervised";
 			side.autopilot = side.pullRequests = side.issues = side.tags = side.settledOverride = side.settledAt = side.snoozedUntil = side.snoozedAt = side.orderKey = undefined;
-			// The copied conversation was the main chat's spend; left unset, the totals would be rebuilt from its copied usage reports.
-			side.usageTotals = { tokens: 0, costNanos: 0 };
 			if (text.trim()) side.queue.push({ id: randomUUID(), text: text.trim(), createdAt: new Date().toISOString() });
 			this.saveTask(side); this.db.exec("COMMIT"); return side;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
@@ -947,7 +945,9 @@ export class WorkspaceStore {
 				const partial = branchIndex < task.messages.length - 1 || task.status === "running" || task.status === "waiting";
 				const messages = task.messages.slice(0, branchIndex + 1);
 				const turnIds = new Set(messages.filter(message => message.role === "user" && message.id !== command.messageId).map(message => message.id));
-				const fork: Task = { ...task, messages, activities: command.messageId ? task.activities?.filter(activity => [...turnIds].some(id => activity.id.startsWith(id + ":"))) : task.activities, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, delegation: undefined, launch: undefined, missionId: undefined, status: "idle", queue: [], steering: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: partial ? undefined : task.nativeSessionId, handoffFrom: partial ? task.harness : task.handoffFrom, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString() };
+				const fork: Task = { ...task, messages, activities: command.messageId ? task.activities?.filter(activity => [...turnIds].some(id => activity.id.startsWith(id + ":"))) : task.activities, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, delegation: undefined, launch: undefined, missionId: undefined, status: "idle", queue: [], steering: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: partial ? undefined : task.nativeSessionId, handoffFrom: partial ? task.harness : task.handoffFrom, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString(),
+					// What the copied turns cost stays the source chat's; left unset, the totals would be rebuilt from the copied usage reports and counted twice.
+					usageTotals: { tokens: 0, costNanos: 0 } };
 				this.saveTask(fork); return fork;
 			}
 			case "rewind": {
