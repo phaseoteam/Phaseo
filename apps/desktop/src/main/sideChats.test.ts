@@ -23,6 +23,8 @@ describe("side chats", () => {
 			expect(side.nativeForkFrom).toBe("native-1"); expect(side.handoffFrom).toBeUndefined();
 			expect(side.permissionMode).toBe("supervised"); expect(side.autopilot).toBeUndefined(); expect(side.tags).toBeUndefined();
 			expect(side.title).toBe("Why does auth.ts use a cookie?");
+			// What the copied conversation cost is the main chat's, so its spend does not count it again under the side chat.
+			expect(side.usageTotals).toEqual({ tokens: 0, costNanos: 0 });
 			expect(side.queue.map(value => value.text)).toEqual(["Why does auth.ts use a cookie?"]);
 			const after = store.getTask(parent.id);
 			expect([after.queue.length, after.messages.length, after.status, after.permissionMode]).toEqual([0, 2, "completed", "full-access"]);

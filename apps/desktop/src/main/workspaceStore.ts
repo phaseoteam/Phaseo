@@ -304,7 +304,9 @@ export class WorkspaceStore {
 			side.delegation = { parentTaskId: parentId, requestId: randomUUID(), kind: "side", sourceTaskId: parentId, sourceMessageId: side.messages.at(-1)?.id };
 			side.title = sideChatTitle(text);
 			side.mode = parent.mode === "chat" ? "chat" : "code"; side.permissionMode = "supervised";
-			side.autopilot = side.pullRequests = side.issues = side.tags = side.usageTotals = side.settledOverride = side.settledAt = side.snoozedUntil = side.snoozedAt = side.orderKey = undefined;
+			side.autopilot = side.pullRequests = side.issues = side.tags = side.settledOverride = side.settledAt = side.snoozedUntil = side.snoozedAt = side.orderKey = undefined;
+			// The copied conversation was the main chat's spend; left unset, the totals would be rebuilt from its copied usage reports.
+			side.usageTotals = { tokens: 0, costNanos: 0 };
 			if (text.trim()) side.queue.push({ id: randomUUID(), text: text.trim(), createdAt: new Date().toISOString() });
 			this.saveTask(side); this.db.exec("COMMIT"); return side;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
