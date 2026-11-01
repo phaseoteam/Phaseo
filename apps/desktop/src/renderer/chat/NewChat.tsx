@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { pickerProjects } from "../../shared/projectShelf";
-import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { BookOpen, Box, Bug, Check, ChevronDown, Code2, Columns3, LoaderCircle, FolderOpen, FolderPlus, Gauge, GitFork, Lightbulb, ListChecks, PenLine, Plug, PowerOff, Search, ShieldCheck, UserRound } from "lucide-react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { settingsProject } from "../../shared/projectSettings";
 import { ProjectIcon } from "../components/ProjectIcon";
@@ -14,7 +14,9 @@ import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
 import { cn } from "../lib/utils";
 import { ModelLogo } from "../components/ModelLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
-import { Composer, ComposerChip, ToolButton } from "./Composer";
+import { Composer, ComposerChip } from "./Composer";
+import { ComposerNotice } from "./ComposerBanner";
+import { ComposerOverflowMenu, ModeBlock, PermissionMenu, PermissionsFooterMenu, PlanIndicator, type PermissionMode } from "./ComposerControls";
 import { useComposerMenu } from "./ComposerMenu";
 import { openModelPickerEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { useComposerEditor } from "./composerEditor";
@@ -46,31 +48,13 @@ function greeting() {
 	return hour < 5 ? "Working late?" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 }
 
-export function PermissionMenu({ value, onChange }: { value: Task["permissionMode"]; onChange: (value: NonNullable<Task["permissionMode"]>) => void }) {
-	const full = value === "full-access", edits = value === "accept-edits";
-	return <DropdownMenu>
-		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium hover:bg-muted [&_svg]:size-4", full ? "text-warning" : "text-muted-foreground hover:text-foreground")} />}>
-			{full ? <ShieldAlert /> : <ShieldCheck />}{full ? "Full access" : edits ? "Accept edits" : "Ask first"}<ChevronDown className="size-3!" />
-		</DropdownMenuTrigger>
-		<DropdownMenuContent align="start" side="top" className="w-72">
-			<DropdownMenuItem onClick={() => onChange("supervised")} className="items-start"><ShieldCheck className="mt-0.5" /><span><span className="block font-semibold">Ask first</span><span className="text-xs text-muted-foreground">Approve commands and file changes before they run.</span></span>{!full && !edits && <Check className="ml-auto" />}</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => onChange("accept-edits")} className="items-start"><FilePen className="mt-0.5" /><span><span className="block font-semibold">Accept edits</span><span className="text-xs text-muted-foreground">File changes apply without asking; commands still ask first.</span></span>{edits && <Check className="ml-auto" />}</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => onChange("full-access")} className="items-start"><ShieldAlert className="mt-0.5 text-warning" /><span><span className="block font-semibold">Full access</span><span className="text-xs text-muted-foreground">The agent runs commands and edits files without asking.</span></span>{full && <Check className="ml-auto" />}</DropdownMenuItem>
-		</DropdownMenuContent>
-	</DropdownMenu>;
-}
-
-/** Shown only while plan mode is on (it is turned on from /); clicking it turns plan mode off. */
-export function PlanIndicator({ onClear }: { onClear?: () => void }) {
-	return <ToolButton label="Plan mode is on: the agent proposes a plan before changing anything. Click to turn it off." active disabled={!onClear} onClick={onClear}><ListChecks />Plan</ToolButton>;
-}
-
 export function NewChat() {
 	const { api, overview, command, setOverview, setError, mode, select, openCompare, saveCompareGroup, newChatProjectId, setNewChatProjectId, openSettings, openUsage } = useWorkspace();
 	const [draft, setDraft] = usePersistedState(newChatDraftKey, "");
 	// Images wait here until the chat exists; the draft holds a chip for each, keyed by a local id.
 	const [images, setImages] = useState<Record<string, File>>({});
 	const [busy, setBusy] = useState(false);
+	const fileInput = useRef<HTMLInputElement>(null);
 
 	const [planMode, setPlanMode] = usePersistedState<Task["mode"]>("phaseo.desktop.draftMode", "code");
 	const [permissionMode, setPermissionMode] = usePersistedState<NonNullable<Task["permissionMode"]>>("phaseo.desktop.draftPermissions", "supervised");
@@ -154,6 +138,9 @@ export function NewChat() {
 		requestAnimationFrame(() => editor.focus("end"));
 	}, [preparation, editor, setDraft, setOverview, setNewChatProjectId]);
 	const leaveTriage = () => { endTriage(); setDraft(withoutPlaybookLink); };
+	// Autopilot runs with full access, so choosing anything less turns it off.
+	const changePermission = (value: PermissionMode) => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); };
+	const shownPermission = autopilot ? "full-access" : permissionMode;
 	const attached = message.images.flatMap(id => images[id] ? [images[id]] : []);
 	useEffect(() => { if (code) setSelections(current => current.length > 1 ? current.slice(0, 1) : current); }, [code]);
 
@@ -208,7 +195,7 @@ export function NewChat() {
 	if (needsSignIn) return <div className="flex h-full items-center justify-center p-8"><SignInCard onOpenSettings={() => openSettings("accounts")} /></div>;
 
 	const projectMenu = <DropdownMenu>
-		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[13px] font-semibold shadow-xs hover:bg-muted", !project && "text-muted-foreground")} />}>
+		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[13px] font-semibold shadow-xs hover:bg-muted", !project && "text-muted-foreground")} />}>
 			{project ? <ProjectIcon project={project} className="size-4" /> : <FolderOpen className="size-4" />}{project?.name ?? "Choose a project"}<ChevronDown className="size-3.5 text-muted-foreground" />
 		</DropdownMenuTrigger>
 		<DropdownMenuContent align="center" className="w-60">
@@ -224,24 +211,34 @@ export function NewChat() {
 				<h1 className="text-[28px] font-bold tracking-tight">{triaging ? "What went wrong?" : code ? "What should we build?" : greeting()}</h1>
 				{triaging ? <TriageStatus onRetry={() => { if (api) { endTriage(); startTriage(api); } }} /> : code && <div className="mt-4 flex justify-center">{projectMenu}</div>}
 			</div>
-			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend}
+			<input ref={fileInput} type="file" multiple hidden onChange={event => { const files = Array.from(event.currentTarget.files ?? []); event.currentTarget.value = ""; addImages(files); editor.focus("end"); }} />
+			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend} collapsible={false} files={images}
 				menu={menu}
+				attach={{ onClick: () => fileInput.current?.click(), disabled: busy }}
 				chips={compare || fanOut ? <>
 					{selections.map(value => <ComposerChip key={value.harness + value.model} onRemove={() => setSelections(current => current.filter(item => !sameSelection(item, value)))}>
 						<span className="mr-1 inline-flex size-3.5 align-[-2px] [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>{knownModel(value.model)?.name ?? modelLabel(value.model)}
 					</ComposerChip>)}
 				</> : undefined}
-				tools={<>
-					<ModelControl selections={selections} onChange={setSelections} onSettings={next => setSelections([next])} multiple={!code || (!!worktree.createInWorktree && !triaging)} agents={code} disabled={busy} openEvent={openModelPickerEvent} hidden={hidden} />
-					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
-					{code && workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
-					{code && project && !triaging && !fanOut && <WorktreeTargetControls target={worktree} disabled={busy} />}
-					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
+				banners={<>
+					{compare && <ComposerNotice icon={<Columns3 />} title={`Sends to ${selections.length} models side by side`} description="Each answer is billed separately." />}
+					{fanOut && <ComposerNotice icon={<GitFork />} title={`Starts ${selections.length} chats, each in its own new worktree from ${worktree.base}`} description="Then compares them. Each is billed separately." />}
+					{turnedOff && <ComposerNotice variant="warning" role="status" icon={<PowerOff />} title={`${harnessNames[turnedOff.harness]} is turned off for ${project?.name ?? "this project"}`} description="Choose another model, or turn it back on in Project settings." />}
+					{!compare && !fanOut && !turnedOff && selections.length === 1 && <OutOfUsageOffer selection={selections[0]} hidden={hidden} onChoose={next => setSelections([next])} />}
 				</>}
-				footer={compare ? <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p> : fanOut ? <p className="mt-2 px-2 text-xs text-muted-foreground">Starts {selections.length} chats, each in its own new worktree from {worktree.base}, then compares them. Each is billed separately.</p> : turnedOff ? <p role="status" className="mt-2 px-2 text-xs text-warning">{harnessNames[turnedOff.harness]} is turned off for {project?.name ?? "this project"}. Choose another model, or turn it back on in Project settings.</p> : selections.length === 1 && <OutOfUsageOffer selection={selections[0]} hidden={hidden} onChoose={next => setSelections([next])} />} />
+				controls={<>
+					<ModelControl selections={selections} onChange={setSelections} onSettings={next => setSelections([next])} multiple={!code || (!!worktree.createInWorktree && !triaging)} agents={code} disabled={busy} openEvent={openModelPickerEvent} hidden={hidden}
+						footer={code ? <PermissionsFooterMenu value={shownPermission} onChange={changePermission} /> : undefined} />
+					{code && <ModeBlock menu={<ComposerOverflowMenu plan={plan} onPlan={on => setPlanMode(on ? "plan" : "code")} permission={shownPermission} onPermission={changePermission} />}>
+						<PermissionMenu always={false} value={shownPermission} onChange={changePermission} />
+						{plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
+						{workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
+					</ModeBlock>}
+				</>}
+				context={code && project && !triaging && !fanOut ? <WorktreeTargetControls target={worktree} disabled={busy} /> : undefined} />
 			{!code && <div className="flex flex-wrap justify-center gap-2">
 				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => editor.focus("end")); }}
-					className="flex h-8 items-center gap-2 rounded-full border border-border px-3.5 text-[13px] text-foreground/85 transition-colors hover:bg-muted"><Icon className="size-3.5 text-muted-foreground" />{label}</button>)}
+					className="flex h-8 items-center gap-2 rounded-md border border-border px-3.5 text-[13px] text-foreground/85 transition-colors hover:bg-muted"><Icon className="size-3.5 text-muted-foreground" />{label}</button>)}
 			</div>}
 			{!code && recent.length > 0 && <div className="flex flex-wrap items-center justify-center gap-1">
 				<span className="mr-1 text-xs font-semibold text-muted-foreground">Recent</span>
