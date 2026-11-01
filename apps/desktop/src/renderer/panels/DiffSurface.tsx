@@ -1,8 +1,8 @@
-import { formatTime } from "@phaseo/app-kit/format";
+import { formatDateParts, formatTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parsePatchFiles, type FileDiffContentsLoader, type FileDiffMetadata } from "@pierre/diffs";
 import { ArrowRight, Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Columns2, Copy, FolderTree, Pilcrow, Rows3, TextWrap } from "lucide-react";
-import type { GitDiffRequest, GitDiffResult, GitRefs } from "../../shared/gitDiff";
+import type { GitCommitSummary, GitDiffRequest, GitDiffResult, GitRefs } from "../../shared/gitDiff";
 import type { Task } from "../../shared/workspace";
 import { useWorkspace } from "../app/workspace";
 import { usePersistedState } from "../lib/persistedState";
@@ -23,6 +23,7 @@ const noKeys: ReadonlySet<string> = new Set();
 
 function requestFor(selection: DiffSelection, turns: ReturnType<typeof diffTurns>, ignoreWhitespace: boolean): GitDiffRequest | undefined {
 	if (selection.kind === "uncommitted") return { scope: "uncommitted", ignoreWhitespace };
+	if (selection.kind === "commit") return { scope: "commit", commit: selection.sha, ignoreWhitespace };
 	if (selection.kind === "branch") return { scope: "branch", ...(selection.baseRef ? { baseRef: selection.baseRef } : {}), ignoreWhitespace };
 	const turn = selectedTurn(selection, turns);
 	return turn ? { scope: "turn", from: turn.from, to: turn.to, ignoreWhitespace } : undefined;
@@ -110,6 +111,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	const [context, setContext] = useState({ loading: 0, error: "" });
 	const [collapsed, setCollapsed] = useState<{ section: string; keys: ReadonlySet<string> }>({ section: "", keys: new Set() });
 	const [selectedPath, setSelectedPath] = useState<string>();
+	const [commits, setCommits] = useState<{ list?: GitCommitSummary[]; error?: string }>({});
 	const viewer = useRef<DiffViewHandle | null>(null);
 
 	// A finished turn (or its snapshot arriving) refreshes the diff straight away.
@@ -178,14 +180,18 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 	};
 
 	const label = scopeLabel(selection, turns);
-	const scopeValue = selection.kind === "turn" ? (selectedTurn(selection, turns) === turns[0] ? "latest" : `turn:${selectedTurn(selection, turns)?.messageId}`) : selection.kind;
+	const scopeValue = selection.kind === "commit" ? "" : selection.kind === "turn" ? (selectedTurn(selection, turns) === turns[0] ? "latest" : `turn:${selectedTurn(selection, turns)?.messageId}`) : selection.kind;
 	const chooseScope = (value: unknown) => {
 		if (value === "branch") select({ kind: "branch" });
 		else if (value === "uncommitted") select({ kind: "uncommitted" });
 		else if (value === "latest") select({ kind: "turn" });
 		else if (typeof value === "string" && value.startsWith("turn:")) select({ kind: "turn", messageId: value.slice(5) });
+		else if (typeof value === "string" && value.startsWith("commit:")) { const sha = value.slice(7); select({ kind: "commit", sha, subject: commits.list?.find(commit => commit.sha === sha)?.subject }); }
 	};
 	const timeOf = (iso?: string) => iso ? formatTime(iso) : "";
+	const commitDate = (iso: string) => { const date = new Date(iso); return Number.isNaN(date.getTime()) ? "" : date.toDateString() === new Date().toDateString() ? formatTime(date) : formatDateParts(date, { day: "numeric", month: "short" }); };
+	// The list follows the branch comparison's base, and is read again each time the submenu opens.
+	const loadCommits = () => { if (!api) return; setCommits(current => ({ list: current.list })); void api.gitCommits(projectId, selection.kind === "branch" ? selection.baseRef : undefined).then(list => setCommits({ list }), reason => setCommits({ error: ipcError(reason) })); };
 
 	const header = <div className={cn(SURFACE_HEADER_CLASS, "justify-between gap-2")} data-surface-subheader>
 		<div className="flex min-w-0 flex-1 items-center gap-3">
@@ -209,8 +215,21 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 							</DropdownMenuRadioGroup> : <p className="px-2 py-1.5 text-xs text-muted-foreground">No completed turns yet.</p>}
 						</DropdownMenuSubContent>
 					</DropdownMenuSub>}
+					<DropdownMenuSub onOpenChange={open => { if (open) loadCommits(); }}>
+						<DropdownMenuSubTrigger className="text-xs">Commits</DropdownMenuSubTrigger>
+						<DropdownMenuSubContent className="max-h-96 w-80 overflow-y-auto">
+							{commits.error ? <p className="px-2 py-1.5 text-xs text-destructive">{commits.error}</p>
+								: !commits.list ? <p className="px-2 py-1.5 text-xs text-muted-foreground">Loading commits…</p>
+								: commits.list.length ? <DropdownMenuRadioGroup value={selection.kind === "commit" ? `commit:${selection.sha}` : ""} onValueChange={chooseScope}>
+									{commits.list.map(commit => <DropdownMenuRadioItem key={commit.sha} value={`commit:${commit.sha}`} className="text-xs" title={`${commit.subject}\n${commit.author}${commit.merge ? " · merge, shown against its first parent" : ""}`}>
+										<span className="flex min-w-0 flex-1 items-center gap-2"><span className="shrink-0 font-mono text-muted-foreground">{commit.sha.slice(0, 7)}</span><span className="min-w-0 flex-1 truncate">{commit.subject || "(no subject)"}</span><span className="shrink-0 text-muted-foreground tabular-nums">{commitDate(commit.date)}</span></span>
+									</DropdownMenuRadioItem>)}
+								</DropdownMenuRadioGroup> : <p className="px-2 py-1.5 text-xs text-muted-foreground">No commits on this branch yet.</p>}
+						</DropdownMenuSubContent>
+					</DropdownMenuSub>
 				</DropdownMenuContent>
 			</DropdownMenu>
+			{selection.kind === "commit" && selection.subject && <span className="min-w-0 truncate text-xs text-muted-foreground" title={selection.subject}>{selection.subject}</span>}
 			{selection.kind === "branch" && result?.repository && <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-muted-foreground" aria-label={`Comparing ${result.headRef ?? "HEAD"} against ${result.baseRef ?? "nothing"}`}>
 				<span className="min-w-0 max-w-48 truncate" title={result.headRef}>{result.headRef ?? "HEAD"}</span>
 				<ArrowRight className="size-3.5 shrink-0 opacity-70" />
@@ -221,7 +240,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 			{files.length > 0 && <span className="mr-1 flex items-center gap-1 font-mono text-[11px] tabular-nums" aria-label={`${stat.additions} lines added, ${stat.deletions} removed`}>
 				<span className="text-success">+{stat.additions}</span><span className="text-destructive">−{stat.deletions}</span>
 			</span>}
-			{selection.kind !== "turn" && <ToolbarButton label={loading ? "Refreshing diff" : "Refresh diff"} onClick={() => setRefresh(value => value + 1)}><RefreshIcon refreshing={loading} /></ToolbarButton>}
+			{selection.kind !== "turn" && selection.kind !== "commit" && <ToolbarButton label={loading ? "Refreshing diff" : "Refresh diff"} onClick={() => setRefresh(value => value + 1)}><RefreshIcon refreshing={loading} /></ToolbarButton>}
 			{files.length > 0 && <ToolbarButton label={everyCollapsed ? "Expand all files" : "Collapse all files"} onClick={() => setKeys(toggleAll(keys, collapsedKeys))}>{everyCollapsed ? <ChevronsUpDown /> : <ChevronsDownUp />}</ToolbarButton>}
 			<div role="radiogroup" aria-label="Diff layout" className="flex shrink-0 items-center rounded-md bg-muted/70 p-0.5">
 				{([["unified", "Stacked diff view", <Rows3 key="u" />], ["split", "Split diff view", <Columns2 key="s" />]] as const).map(([value, name, icon]) =>

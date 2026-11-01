@@ -53,7 +53,7 @@ import { SecretVault } from "./secretVault";
 import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, projectRelativePath, readFilePreview, readProjectFile } from "./projectFiles";
-import { gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
+import { gitCommits, gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
 import { turnChanges } from "./gitCheckpoints";
 import { isTreeId } from "../shared/gitDiff";
 import { extractPdfText } from "./pdfText";
@@ -678,6 +678,7 @@ ipcMain.handle("workspace:publish-repository", async (event, id: unknown, reques
 });
 ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id), { patch, hash, truncated, headRef, baseRef, repository } = await span("git.diff", undefined, () => gitScopedDiff(root, request)); return { patch, hash, truncated, headRef, baseRef, repository }; });
 ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); return span("git.diff-file", undefined, () => readScopedDiffContents(root, request)); });
+ipcMain.handle("workspace:git-commits", (event, id: unknown, baseRef: unknown) => { const root = projectRoot(event, id); if (baseRef !== undefined && typeof baseRef !== "string") throw new Error("Invalid commit list request."); return span("git.commits", undefined, () => gitCommits(root, baseRef)); });
 ipcMain.handle("workspace:git-refs", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.refs", undefined, () => gitRefs(root)); });
 ipcMain.handle("workspace:project-tree", (event, id: unknown, request: unknown, refresh: unknown) => { const root = projectRoot(event, id); if (refresh === true) refreshProjectIndex(root); return projectTree(root, request); });
 // Replies name images by absolute path as often as by relative one; either must be inside the project.

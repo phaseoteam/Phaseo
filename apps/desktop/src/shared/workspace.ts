@@ -26,7 +26,7 @@ import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
 import type { PlanStep } from "./planSteps";
 import { normalizeTags } from "./tags";
-import type { CheckpointChange, TurnFileChange, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
+import type { CheckpointChange, TurnFileChange, GitCommitSummary, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
 import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
 import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
@@ -362,6 +362,8 @@ export type WorkspaceApi = {
 	/** Both sides of one file in a scoped diff, checked against the diff's hash. */
 	gitDiffFile: (projectId: string, request: { diff: GitDiffRequest; filename: string; oldFilename?: string; hash: string }) => Promise<GitDiffContents>;
 	gitRefs: (projectId: string) => Promise<GitRefs>;
+	/** The newest commits since the branch left `baseRef` (or its automatic base), for the Diff pane's Commits. */
+	gitCommits: (projectId: string, baseRef?: string) => Promise<GitCommitSummary[]>;
 	/** Folder listings and search that skip Git-ignored files; `refresh` re-reads the project. */
 	projectTree: (projectId: string, request: ProjectTreeRequest, refresh?: boolean) => Promise<ProjectTreeResult>;
 	filePreview: (projectId: string, filename: string) => Promise<FilePreview>;
