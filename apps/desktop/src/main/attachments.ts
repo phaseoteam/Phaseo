@@ -30,8 +30,9 @@ export function mediaMime(bytes: Buffer, name = ""): { kind: "audio" | "video"; 
 	}
 	if (bytes.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]))) return /\.(weba|mka|opus)$/i.test(name) ? { kind: "audio", mimeType: "audio/webm" } : { kind: "video", mimeType: "video/webm" };
 	if (ascii(0, 3) === "ID3") return { kind: "audio", mimeType: "audio/mpeg" };
-	// Frame sync: ADTS (AAC) sets layer bits 00, MPEG audio does not.
-	if (bytes[0] === 0xff && bytes.length > 1 && (bytes[1] & 0xe0) === 0xe0) return (bytes[1] & 0x06) === 0 ? { kind: "audio", mimeType: "audio/aac" } : { kind: "audio", mimeType: "audio/mpeg" };
+	// Frame sync: ADTS (AAC) sets layer bits 00, MPEG audio does not. FF FE is a UTF-16 text file's byte order mark,
+	// and a real header never has an all-ones bitrate or sample rate index in its third byte.
+	if (bytes[0] === 0xff && bytes.length > 2 && bytes[1] !== 0xfe && (bytes[1] & 0xe0) === 0xe0 && (bytes[2] & 0xf0) !== 0xf0 && (bytes[2] & 0x0c) !== 0x0c) return (bytes[1] & 0x06) === 0 ? { kind: "audio", mimeType: "audio/aac" } : { kind: "audio", mimeType: "audio/mpeg" };
 	return undefined;
 }
 export class AttachmentService {

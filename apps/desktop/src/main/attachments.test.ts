@@ -27,6 +27,9 @@ describe("attachment snapshots", () => {
 		expect(mediaMime(Buffer.from("ID3\x04\0\0", "latin1"))).toEqual({ kind: "audio", mimeType: "audio/mpeg" });
 		expect(mediaMime(Buffer.from([0xff, 0xfb, 0x90, 0x00]))).toEqual({ kind: "audio", mimeType: "audio/mpeg" });
 		expect(mediaMime(Buffer.from([0xff, 0xf1, 0x50, 0x80]))).toEqual({ kind: "audio", mimeType: "audio/aac" });
+		// A UTF-16 text file and stray 0xFF bytes are not audio.
+		expect(mediaMime(Buffer.from("﻿hello", "utf16le"))).toBeUndefined();
+		expect(mediaMime(Buffer.from([0xff, 0xfb, 0xff, 0x00]))).toBeUndefined();
 		const matroska = Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0, 0]);
 		expect(mediaMime(matroska, "clip.webm")).toEqual({ kind: "video", mimeType: "video/webm" });
 		expect(mediaMime(matroska, "voice.weba")).toEqual({ kind: "audio", mimeType: "audio/webm" });
