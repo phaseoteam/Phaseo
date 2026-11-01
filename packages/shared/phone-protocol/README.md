@@ -10,6 +10,12 @@ What the Phaseo desktop app and the Phaseo phone app say to each other, shared b
 | `src/direct.ts` | The direct connection's key handshake and the sealed `POST /pair`. |
 | `src/relay.ts` | Phaseo Connect's wire protocol: envelope routing, `hold`, the relay's own frames, refusals, close codes and URLs. No crypto, so the relay Worker imports it alone as `@phaseo/phone-protocol/relay`. |
 
+## Models for a new chat
+
+A phone can't change the model of a chat that exists. For a new one, `list_models` (with the `projectId` the chat will use, if any) returns the models of the agent the computer would start it with, each with its efforts, and `selected`, the model and effort it would use unasked. `new_chat` takes one of those ids as `model` and one of its effort ids as `reasoningEffort`; the computer refuses anything else. Leave both out to keep the computer's choice. A computer from before `list_models` answers it with `invalid_frame`, so phones fall back to the computer's choice.
+
+List rows carry `model`, `branch` (the worktree's) and `settled`; `read_chat`'s chat adds `reasoningEffort` when the chat set one. `effortLabel(id)` gives the word both apps show for an effort.
+
 ## Direct connection
 
 Direct addresses are plain `http`/`ws` (a Wi-Fi or Tailscale IP has no certificate), so everything secret or private is sealed with the paired keys and no token is sent. `src/direct.ts` describes the handshake.

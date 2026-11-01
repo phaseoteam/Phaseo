@@ -23,14 +23,19 @@ export const phoneLimits = {
 export type PhoneChatStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
 export type PhoneChatMode = "chat" | "code" | "plan";
 /** A chat as the phone's list shows it. needsYou is set while it waits on the person (an approval, a question, a failure). */
-export type PhoneChat = { id: string; title: string; mode: PhoneChatMode; status: PhoneChatStatus; updatedAt: string; unread: boolean; needsYou: boolean; /** Why it needs the person, in words. */ attention?: string; projectId?: string; project?: string };
+export type PhoneChat = {
+	id: string; title: string; mode: PhoneChatMode; status: PhoneChatStatus; updatedAt: string; unread: boolean; needsYou: boolean; /** Why it needs the person, in words. */ attention?: string; projectId?: string; project?: string;
+	/** The model's id on the computer. */ model?: string; /** The worktree branch it works on. */ branch?: string; /** Settled on the computer: done with, kept at the foot of the list. */ settled?: true;
+};
 export type PhoneApproval = { id: string; title: string; description: string; /** A proposed plan: its Markdown is the description. */ plan?: true };
 export type PhoneQuestionOption = { label: string; description?: string };
 export type PhoneQuestion = { id: string; header: string; question: string; multiSelect?: true; isOther?: true; isSecret?: true; options?: PhoneQuestionOption[] };
 /** One set of questions; answer_question names it by id and answers each question by its own id. */
 export type PhoneQuestionRequest = { id: string; questions: PhoneQuestion[] };
 /** A chat with what it is waiting on, for the chat screen. */
-export type PhoneChatDetail = PhoneChat & { approvals: PhoneApproval[]; questions: PhoneQuestionRequest[] };
+export type PhoneChatDetail = PhoneChat & { approvals: PhoneApproval[]; questions: PhoneQuestionRequest[]; /** The effort the model runs at, when the chat set one. */ reasoningEffort?: string };
+/** A model a phone may start a chat with: the efforts it offers, in order, and the one it uses unless asked. */
+export type PhoneModel = { id: string; name: string; efforts?: { id: string; label: string }[]; defaultEffort?: string };
 export type PhoneMessage = { kind: "message"; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; createdAt: string; completedAt?: string; delivery?: "steer" | "subagent"; notice?: string; attachments?: { name: string; kind: string }[]; /** The text was cut for the phone. */ truncated?: true };
 export type PhoneActivity = { kind: "activity"; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; summary?: string; steps?: { text: string; status: string }[]; truncated?: true };
 export type PhoneEntry = PhoneMessage | PhoneActivity;
@@ -44,7 +49,8 @@ export type PhoneRequest =
 	| { id: string; type: "answer_approval"; chatId: string; approvalId: string; decision: "accept" | "decline" }
 	| { id: string; type: "answer_question"; chatId: string; questionId: string; answers: Record<string, string[]> }
 	| { id: string; type: "stop"; chatId: string }
-	| { id: string; type: "new_chat"; text: string; projectId?: string; mode: PhoneChatMode }
+	| { id: string; type: "new_chat"; text: string; projectId?: string; mode: PhoneChatMode; /** One of list_models' ids; the computer's choice without it. */ model?: string; reasoningEffort?: string }
+	| { id: string; type: "list_models"; projectId?: string }
 	| { id: string; type: "subscribe"; chatIds: string[] };
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
 
@@ -57,6 +63,8 @@ export type PhoneResults = {
 	answer_question: { chatId: string };
 	stop: { chatId: string };
 	new_chat: { chat: PhoneChat };
+	/** The models of the agent a new chat (in that project) would use, and the model and effort it would start with. */
+	list_models: { models: PhoneModel[]; selected: { model: string; reasoningEffort?: string } };
 	subscribe: { chatIds: string[] };
 };
 export type PhoneErrorCode = "invalid_frame" | "too_large" | "rate_limited" | "unauthorized" | "not_found" | "rejected" | "internal";
@@ -74,7 +82,7 @@ export class PhoneProtocolError extends Error {
 	constructor(readonly code: PhoneErrorCode, message: string, readonly id?: string, readonly type?: string) { super(message); this.name = "PhoneProtocolError"; }
 }
 
-const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "subscribe"]);
+const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe"]);
 const plain = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const validId = (value: unknown, max = 200): value is string => typeof value === "string" && value.length > 0 && value.length <= max && !/[\u0000-\u001f]/.test(value);
 
@@ -102,6 +110,11 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 		if (frame.limit === undefined) return {};
 		if (!Number.isSafeInteger(frame.limit) || (frame.limit as number) < 1 || (frame.limit as number) > phoneLimits.pageSize) fail(`limit must be a whole number from 1 to ${phoneLimits.pageSize}.`);
 		return { limit: frame.limit as number };
+	};
+	const projectId = () => {
+		if (frame.projectId === undefined) return {};
+		if (!validId(frame.projectId)) fail("Invalid projectId.");
+		return { projectId: frame.projectId as string };
 	};
 	const text_ = (key: string) => {
 		const value = frame[key];
@@ -145,9 +158,14 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 		case "stop": return { id: request, type, chatId: chatId() };
 		case "new_chat": {
 			if (frame.mode !== "chat" && frame.mode !== "code" && frame.mode !== "plan") fail("mode must be chat, code or plan.");
-			if (frame.projectId !== undefined && !validId(frame.projectId)) fail("Invalid projectId.");
-			return { id: request, type, text: text_("text"), mode: frame.mode as PhoneChatMode, ...frame.projectId !== undefined ? { projectId: frame.projectId as string } : {} };
+			if (frame.model !== undefined && !validId(frame.model)) fail("Invalid model.");
+			if (frame.reasoningEffort !== undefined && !validId(frame.reasoningEffort, 100)) fail("Invalid reasoningEffort.");
+			return {
+				id: request, type, text: text_("text"), mode: frame.mode as PhoneChatMode, ...projectId(),
+				...frame.model !== undefined ? { model: frame.model as string } : {}, ...frame.reasoningEffort !== undefined ? { reasoningEffort: frame.reasoningEffort as string } : {},
+			};
 		}
+		case "list_models": return { id: request, type, ...projectId() };
 		case "subscribe": {
 			const ids = frame.chatIds;
 			if (!Array.isArray(ids) || ids.length > phoneLimits.subscriptions || ids.some(value => !validId(value))) fail(`chatIds must list up to ${phoneLimits.subscriptions} chat ids.`);
@@ -173,6 +191,10 @@ export function parseDesktopFrame(text: string): DesktopFrame {
 	}
 	throw new PhoneProtocolError("invalid_frame", "Unknown or invalid desktop frame.");
 }
+
+const effortWords: Record<string, string> = { none: "None", instant: "Instant", minimal: "Minimal", low: "Low", medium: "Medium", high: "High", xhigh: "Extra high", max: "Max", ultra: "Ultra" };
+/** The word both apps show for an effort id ("xhigh" is "Extra high"); other ids are capitalised. */
+export const effortLabel = (id: string) => effortWords[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
 
 export const okResponse = <T extends PhoneRequest["type"]>(request: { id: string; type: T }, result: PhoneResults[T]): PhoneResponse<T> => ({ id: request.id, type: request.type, ok: true, result });
 export const errorResponse = (id: string, type: string, code: PhoneErrorCode, message: string) => ({ id, type, ok: false as const, error: { code, message } });

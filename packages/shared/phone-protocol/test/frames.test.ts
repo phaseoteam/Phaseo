@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseDesktopFrame, parsePhoneFrame, phoneLimits, PhoneProtocolError, RequestRate } from "../src/index";
+import { effortLabel, parseDesktopFrame, parsePhoneFrame, phoneLimits, PhoneProtocolError, RequestRate } from "../src/index";
 
 const refused = (text: string) => { try { parsePhoneFrame(text); } catch (error) { return error as PhoneProtocolError; } throw new Error("accepted"); };
 
@@ -21,6 +21,25 @@ describe("phone frames", () => {
 		expect(refused(JSON.stringify({ type: "stop", chatId: "c" })).message).toContain("id");
 		expect(refused("not json").code).toBe("invalid_frame");
 		expect(refused("[1]").code).toBe("invalid_frame");
+	});
+	it("lets a new chat name its model and effort, and lists the models to pick from", () => {
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "new_chat", text: "Fix it", mode: "code", projectId: "p1", model: "gpt-6.1", reasoningEffort: "high" })))
+			.toEqual({ id: "1", type: "new_chat", text: "Fix it", mode: "code", projectId: "p1", model: "gpt-6.1", reasoningEffort: "high" });
+		// Without them the computer chooses, as before.
+		expect(parsePhoneFrame(JSON.stringify({ id: "2", type: "new_chat", text: "Fix it", mode: "chat" }))).toEqual({ id: "2", type: "new_chat", text: "Fix it", mode: "chat" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "3", type: "list_models", projectId: "p1", extra: true }))).toEqual({ id: "3", type: "list_models", projectId: "p1" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "4", type: "list_models" }))).toEqual({ id: "4", type: "list_models" });
+	});
+	it("refuses a model, effort or project that isn't an id", () => {
+		expect(refused(JSON.stringify({ id: "1", type: "new_chat", text: "x", mode: "code", model: "" })).message).toContain("model");
+		expect(refused(JSON.stringify({ id: "1", type: "new_chat", text: "x", mode: "code", reasoningEffort: 3 })).message).toContain("reasoningEffort");
+		expect(refused(JSON.stringify({ id: "1", type: "new_chat", text: "x", mode: "code", reasoningEffort: "h".repeat(101) })).message).toContain("reasoningEffort");
+		expect(refused(JSON.stringify({ id: "1", type: "list_models", projectId: "a\u0001" }))).toMatchObject({ code: "invalid_frame", id: "1", type: "list_models" });
+	});
+	it("names efforts the same way on both sides", () => {
+		expect(effortLabel("xhigh")).toBe("Extra high");
+		expect(effortLabel("medium")).toBe("Medium");
+		expect(effortLabel("turbo")).toBe("Turbo");
 	});
 	it("refuses frames over 1 MiB", () => {
 		expect(refused(JSON.stringify({ id: "1", type: "send", chatId: "c", text: "x".repeat(phoneLimits.frameBytes) })).code).toBe("too_large");
