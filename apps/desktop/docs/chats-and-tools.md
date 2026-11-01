@@ -1,5 +1,7 @@
 # Chats and contextual tools
 
+Many of the features described here were inspired by T3 Code; see [Acknowledgements](../README.md#acknowledgements-inspired-by-t3-code) for the credit and its MIT licence.
+
 Chats are the desktop workspace's primary navigation. Each chat can be personal or associated with a project; the bounded history projection carries the optional project ID without returning conversation bodies. Search, pinning, archives and pagination remain available in the single left sidebar.
 
 The centre keeps the selected conversation mounted while opening tools and settings. Message drafts and history position survive those interactions. Accounts, agents, MCP connections and schedules live under Settings; Inbox and the existing Platform surface remain available from the sidebar footer. **Settings → Diagnostics** shows the processes Phaseo is running and what its trace log (`logs/traces.ndjson` in the app's data folder) says about slow or failed work; see [Settings](settings.md#diagnostics).
