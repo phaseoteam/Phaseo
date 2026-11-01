@@ -440,6 +440,7 @@
 			"status": "الحالة",
 			"code": "الرمز",
 			"request": "الطلب",
+			"viewRequestLog": "عرض سجل الطلب",
 			"requestId": "معرّف الطلب",
 			"endpoint": "نقطة النهاية",
 			"model": "النموذج",
