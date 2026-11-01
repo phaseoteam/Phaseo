@@ -961,7 +961,7 @@ export class WorkspaceRuntime {
 				prepared.set(file.id, await this.attachments.prepare("", file.name, file.bytes));
 			}
 			if (this.closing) throw new Error("The workspace is shutting down.");
-			const task = this.store.importTask(command, { title: conversation.title, createdAt: conversation.createdAt, handoffFrom: conversation.harness, messages: conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(id => { const file = prepared.get(id); if (!file) throw new Error("An imported attachment is missing."); return file; }) })) }, [...prepared.values()], initialModels);
+			const task = this.store.importTask(command, { title: conversation.title, createdAt: conversation.createdAt, ...conversation.nativeSessionId ? { nativeSessionId: conversation.nativeSessionId } : { handoffFrom: conversation.harness }, messages: conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(id => { const file = prepared.get(id); if (!file) throw new Error("An imported attachment is missing."); return file; }) })) }, [...prepared.values()], initialModels);
 			committed = true;
 			this.broadcast(); return { workspace: this.store.getOverview(), taskId: task.id };
 		} catch (error) { if (!committed) await Promise.allSettled([...prepared.values()].map(file => this.attachments.discard(file))); throw error; }

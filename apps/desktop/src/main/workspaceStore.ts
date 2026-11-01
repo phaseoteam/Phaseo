@@ -791,13 +791,13 @@ export class WorkspaceStore {
 		try { for (const attachment of attachments) this.saveAttachment(attachment); this.db.exec("COMMIT"); }
 		catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
-	importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: Pick<Task, "title" | "messages" | "createdAt" | "handoffFrom">, attachments: Attachment[], initialModels?: Task["nativeModels"]): Task {
+	importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: Pick<Task, "title" | "messages" | "createdAt" | "handoffFrom" | "nativeSessionId">, attachments: Attachment[], initialModels?: Task["nativeModels"]): Task {
 		this.db.exec("BEGIN");
 		try {
 			const task = this.apply(command, initialModels);
 			const files = new Map(attachments.map(attachment => [attachment.id, { ...attachment, taskId: task.id }]));
 			for (const attachment of files.values()) this.saveAttachment(attachment);
-			task.title = conversation.title; task.createdAt = conversation.createdAt; task.handoffFrom = conversation.handoffFrom;
+			task.title = conversation.title; task.createdAt = conversation.createdAt; task.handoffFrom = conversation.handoffFrom; task.nativeSessionId = conversation.nativeSessionId;
 			task.messages = conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(attachment => { const file = files.get(attachment.id); if (!file) throw new Error("An imported attachment is missing."); return file; }) }));
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }

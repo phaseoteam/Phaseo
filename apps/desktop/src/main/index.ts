@@ -11,6 +11,7 @@ import { codexNativeActions } from "./codexNativeActions";
 import { claudeNativeActions, claudeNativeModels } from "./claudeNativeActions";
 import { piNativeActions } from "./piNativeActions";
 import { mkdir } from "node:fs/promises";
+import { existsSync, statSync } from "node:fs";
 import { openCodeNativeActions } from "./openCodeNativeActions";
 import { OpenCode } from "@opencode/client";
 import { Service } from "@opencode/client/service";
@@ -83,6 +84,8 @@ import { gitBranches, gitCommand, gitPush, withGitLock } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
 import { listPullRequestDirectory, pullRequestCounts } from "./pullRequestDirectory";
 import { TranscriptScanner, transcriptFiles, transcriptFolders, type TranscriptFolder } from "./usageTranscripts";
+import { listNativeSessions, readNativeSession } from "./sessionImport";
+import { validateNativeSessionImport, type NativeSession } from "../shared/sessionImport";
 import { TranscriptWriter } from "./usageLedgerWrites";
 import { localDay, modelMatchKey, type TokenPrices, type UsagePeriod } from "../shared/usageLedger";
 import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
@@ -803,6 +806,38 @@ ipcMain.handle("workspace:export-task", async (event, id: unknown, format: unkno
 	if (shutdownStarted) throw new Error("The workspace is shutting down.");
 	const content = await taskExport(task, format, workspaceRuntime.attachments);
 	await saveTaskExport(result.filePath, content); return true;
+});
+/** Sessions the last list found, by `harness:sessionId`; an import names one of these, never a path. */
+let nativeSessions = new Map<string, NativeSession & { path: string }>();
+const sessionFolders = () => { const accounts = workspaceRuntime.store.getAccounts(); return transcriptFolders(accounts, workspaceRuntime.store.addedTranscriptFolders()).map(folder => ({ ...folder, ...(() => { const account = accounts.find(value => value.configDirectory && value.harness === folder.harness && path.resolve(value.configDirectory).toLowerCase() === path.resolve(folder.directory).toLowerCase()); return account ? { accountId: account.id } : {}; })() })); };
+ipcMain.handle("workspace:native-sessions", async event => {
+	if (!senderWindow(event)) throw new Error("Invalid conversation list request.");
+	const owned = new Set(workspaceRuntime.store.sessionOwners().keys());
+	const sessions = await span("sessions.list", undefined, () => listNativeSessions(sessionFolders(), owned));
+	nativeSessions = new Map(sessions.map(session => [`${session.harness}:${session.sessionId}`, session]));
+	return sessions.map(({ path: _path, ...session }) => session);
+});
+ipcMain.handle("workspace:import-native-sessions", async (event, value: unknown) => {
+	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid conversation import.");
+	let imported = 0; const failed: string[] = [];
+	for (const choice of validateNativeSessionImport(value)) {
+		const key = `${choice.harness}:${choice.sessionId}`, session = nativeSessions.get(key);
+		if (!session) { failed.push(`${choice.sessionId}: list the conversations again first.`); continue; }
+		if (workspaceRuntime.store.sessionOwners().has(key)) continue;
+		try {
+			const parsed = await readNativeSession(session.path, session.harness, session.updatedAt);
+			// The chat resumes the session in its own folder; a folder that is gone gets the history as a handoff instead.
+			const folder = parsed.cwd && existsSync(parsed.cwd) && statSync(parsed.cwd).isDirectory() ? parsed.cwd : undefined;
+			const project = folder ? workspaceRuntime.store.getProjects().find(item => !item.worktree?.removedAt && path.resolve(item.directory).toLowerCase() === path.resolve(folder).toLowerCase()) ?? workspaceRuntime.store.addProject(folder) : undefined;
+			await workspaceRuntime.importTask({ type: "create-task", harness: session.harness, model: parsed.model ?? "default", mode: project ? "code" : "chat", ...project ? { projectId: project.id } : {}, ...session.accountId ? { accountId: session.accountId } : {} }, {
+				...project ? { nativeSessionId: parsed.sessionId } : {}, title: parsed.title, harness: session.harness, createdAt: parsed.createdAt, attachments: [],
+				messages: parsed.messages.map(message => ({ id: randomUUID(), role: message.role, text: message.text, createdAt: message.createdAt })),
+			});
+			imported++;
+		} catch (reason) { failed.push(`${session.title}: ${reason instanceof Error ? reason.message : String(reason)}`); }
+	}
+	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state);
+	return { workspace: state, imported, failed };
 });
 ipcMain.handle("workspace:import-task", async (event, value: unknown) => {
 	const window = senderWindow(event); if (!window) throw new Error("Invalid conversation import.");

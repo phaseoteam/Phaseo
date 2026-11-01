@@ -38,6 +38,7 @@ import type { WorktreeCleanupReport, WorktreeCleanupRequest } from "./worktreeCl
 import type { UsageLimitState } from "./usageLimitRecovery";
 import type { SecretRequest } from "./secretRequests";
 import type { ThreadServer } from "./threadServers";
+import type { NativeSession, NativeSessionImport } from "./sessionImport";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 /** Harnesses a chat can run on. Antigravity stays a harness so usage history keeps its name, but it has no adapter yet, so it is offered nowhere. */
@@ -279,6 +280,10 @@ export type WorkspaceApi = {
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
 	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: WorkspaceOverview; taskId: string } | undefined>;
+	/** Claude Code and Codex conversations from the last 30 days on this computer. */
+	nativeSessions: () => Promise<NativeSession[]>;
+	/** Imports listed conversations as chats that resume them; returns what failed and why. */
+	importNativeSessions: (sessions: NativeSessionImport[]) => Promise<{ workspace: WorkspaceOverview; imported: number; failed: string[] }>;
 	attachment: (taskId: string, id: string) => Promise<{ attachment: Attachment; text?: string; dataUrl?: string }>;
 	installations: () => Promise<HarnessInstallation[]>;
 	updateHarness: (harness: "codex" | "claude" | "pi") => Promise<void>;
