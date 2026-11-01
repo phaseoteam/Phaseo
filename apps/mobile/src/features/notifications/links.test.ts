@@ -1,5 +1,27 @@
+import { sidebarMove } from "@/components/shell/navigation";
 import { DEFAULT_FILTERS, type CatalogueFilters } from "@/lib/catalogue";
-import { labFilterName, labFilters, notificationTarget, openLabModels, targetForHref, type OpenLabDeps } from "./links";
+import { labFilterName, labFilters, notificationRoute, notificationTarget, openLabModels, targetForHref, type OpenLabDeps } from "./links";
+
+describe("notificationRoute", () => {
+  it("pushes a model release or price change over whatever is showing", () => {
+    expect(notificationRoute(notificationTarget({ href: "/models/openai/gpt-6-astra", kind: "model_released" })!)).toEqual({ href: "/models/openai/gpt-6-astra", open: "push" });
+    expect(notificationRoute({ kind: "provider", id: "groq cloud" })).toEqual({ href: "/providers/groq%20cloud", open: "push" });
+  });
+
+  it("opens Models for a lab summary or anything else, as the sidebar would", () => {
+    expect(notificationRoute(notificationTarget({ href: "/", group: { key: "release:deepseek", count: 12 } })!)).toEqual({ href: "/models", open: "screen" });
+    expect(notificationRoute(notificationTarget({ href: "/", kind: "test" })!)).toEqual({ href: "/models", open: "screen" });
+  });
+
+  it("lands an approval or needs-you tap in Chat, going back to it from another screen", () => {
+    const route = notificationRoute(notificationTarget({ desktopId: "desk-1", chatId: "c2" })!);
+    expect(route).toEqual({ href: "/chat/code/desk-1/c2", open: "screen" });
+    expect(sidebarMove("/models/openai/gpt-6-astra", route.href, true)).toBe("back");
+    expect(sidebarMove("/chat/abc", route.href, true)).toBe("replace");
+    // A tap that launched the app arrives before `/` has redirected to Chat.
+    expect(sidebarMove("/", route.href, true)).toBe("replace");
+  });
+});
 
 describe("targetForHref", () => {
   it("opens model pages", () => {
@@ -18,9 +40,9 @@ describe("targetForHref", () => {
     expect(targetForHref("/api-providers/groq")).toEqual({ kind: "provider", id: "groq" });
   });
 
-  it("opens Home for / and anything it doesn't know", () => {
+  it("opens Models, where Home's releases now are, for / and anything it doesn't know", () => {
     for (const href of ["/", "/models", "/models/openai", "/labs", "/pricing", "/settings/keys"]) {
-      expect(targetForHref(href)).toEqual({ kind: "home" });
+      expect(targetForHref(href)).toEqual({ kind: "models" });
     }
   });
 
@@ -37,7 +59,7 @@ describe("notificationTarget", () => {
   it("follows href, as single pushes do", () => {
     expect(notificationTarget({ href: "/models/openai/gpt-6-astra", kind: "model_released", category: "new-models", modelId: "openai/gpt-6-astra", group: null }))
       .toEqual({ kind: "model", id: "openai/gpt-6-astra" });
-    expect(notificationTarget({ href: "/", kind: "test", modelId: null })).toEqual({ kind: "home" });
+    expect(notificationTarget({ href: "/", kind: "test", modelId: null })).toEqual({ kind: "models" });
   });
 
   it("opens the lab's models for a release summary, whatever the href", () => {

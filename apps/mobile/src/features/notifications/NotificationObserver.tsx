@@ -1,12 +1,12 @@
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import { useRouter, type Href } from "expo-router";
-import { useEffect } from "react";
-import { desktopChatHref } from "@/features/desktops/routes";
+import { useEffect, useEffectEvent } from "react";
+import { useOpenScreen } from "@/components/shell/useOpenScreen";
 import { catalogueQuery, filtersStore } from "@/features/models/state";
 import { useAuth } from "@/providers/AuthProvider";
 import { ensurePushChannels, installationId, syncThisPhone } from "./device";
-import { notificationTarget, openLabModels, type NotificationTarget } from "./links";
+import { notificationRoute, notificationTarget, openLabModels, type NotificationTarget } from "./links";
 import { notificationSettingsQuery } from "./state";
 
 Notifications.setNotificationHandler({
@@ -19,23 +19,16 @@ type Router = ReturnType<typeof useRouter>;
 // Keyed by delivery time too, since a merged notification reuses the earlier one's identifier.
 let lastOpened: string | null = null;
 
-function openLab(slug: string, router: Router, queryClient: QueryClient) {
-  return openLabModels(slug, {
+function openTarget(target: NotificationTarget, router: Router, openScreen: (href: string) => void, queryClient: QueryClient) {
+  const { href, open } = notificationRoute(target);
+  const navigate = () => (open === "push" ? router.push(href as Href) : openScreen(href));
+  if (target.kind !== "lab") return navigate();
+  void openLabModels(target.slug, {
     cached: queryClient.getQueryData(catalogueQuery.queryKey)?.models ?? null,
     refresh: async () => (await queryClient.fetchQuery({ ...catalogueQuery, staleTime: 0 })).models,
     filters: filtersStore,
-    navigate: () => router.push("/models"),
+    navigate,
   });
-}
-
-function openTarget(target: NotificationTarget, router: Router, queryClient: QueryClient) {
-  switch (target.kind) {
-    case "model": return router.push(`/models/${target.id}` as Href);
-    case "lab": return void openLab(target.slug, router, queryClient);
-    case "provider": return router.push({ pathname: "/providers/[id]", params: { id: target.id } });
-    case "home": return router.push("/");
-    case "desktop-chat": return router.push(desktopChatHref(target.desktopId, target.chatId));
-  }
 }
 
 /**
@@ -47,6 +40,9 @@ export function NotificationObserver() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const userId = useAuth().session?.user.id ?? null;
+  const openScreen = useOpenScreen();
+  // Reads the screen showing at the tap, without subscribing again on every navigation.
+  const openTapped = useEffectEvent((target: NotificationTarget) => openTarget(target, router, openScreen, queryClient));
 
   useEffect(() => {
     const open = (response: Notifications.NotificationResponse | null) => {
@@ -55,12 +51,12 @@ export function NotificationObserver() {
       if (key === lastOpened) return;
       lastOpened = key;
       const target = notificationTarget(response.notification.request.content.data);
-      if (target) openTarget(target, router, queryClient);
+      if (target) openTapped(target);
     };
     void Notifications.getLastNotificationResponseAsync().then(open);
     const listener = Notifications.addNotificationResponseReceivedListener(open);
     return () => listener.remove();
-  }, [router, queryClient]);
+  }, []);
 
   useEffect(() => {
     void (async () => {
