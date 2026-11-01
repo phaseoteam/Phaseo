@@ -135,6 +135,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@phaseo/phone-protocol':
+        specifier: workspace:*
+        version: link:../../packages/shared/phone-protocol
       '@streamparser/json':
         specifier: 0.0.26
         version: 0.0.26

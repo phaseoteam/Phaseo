@@ -7,7 +7,7 @@ What the Phaseo desktop app and the Phaseo phone app say to each other, shared b
 | `src/frames.ts` | Frame types, `parsePhoneFrame` (desktop side, strict) and `parseDesktopFrame` (phone side), limits, `RequestRate`. |
 | `src/pairing.ts` | The QR / `phaseo://pair?p=` payload, `POST /pair` request and result. |
 | `src/envelope.ts` | X25519 keys, HKDF-SHA256 (`phaseo-connect-v1`), XChaCha20-Poly1305 envelopes, `EnvelopeChannel`, `relayPairing`. |
-| `src/relay.ts` | The relay's own frames (`register_device`, `remove_device`, errors) and its URLs. |
+| `src/relay.ts` | Phaseo Connect's wire protocol: envelope routing, `hold`, the relay's own frames, refusals, close codes and URLs. No crypto, so the relay Worker imports it alone as `@phaseo/phone-protocol/relay`. |
 
 ## Direct connection
 
@@ -17,9 +17,10 @@ What the Phaseo desktop app and the Phaseo phone app say to each other, shared b
 
 ## Phaseo Connect
 
-- The phone connects to `relayPhoneUrl(relayUrl, desktopId)` with `Authorization: Bearer <relayToken>` and exchanges `Envelope`s addressed `from: deviceId`, `to: desktopId`. Seal and open them with `new EnvelopeChannel(sharedKey(devicePrivateKey, desktopPublicKey), deviceId, desktopId)`.
-- Pairing over Connect: `relayPairing(pairingCode)` gives a relay token and a pseudo device id. The phone signs in with that token and sends one envelope from that pseudo id, with `senderPublicKey` set to its public key, holding `{ id, type: "pair", pairingCode, deviceName, devicePublicKey }`. The answer is a normal response whose result is a `PairResult`. After that the phone reconnects with its own relay token.
-- The relay forwards envelopes unchanged. It holds those the sender marks `hold: true` (attention, and the phone's `send` and `answer_*`) for an offline device.
+- The phone connects to `relayPhoneUrl(relayUrl, desktopId)` with `Authorization: Bearer <relayToken>` and exchanges `Envelope`s addressed `from: deviceId`, `to: relayDesktopAddress` (`"desktop"`). The relay sets `from` from the sign-in, so seal with exactly those names: `new EnvelopeChannel(sharedKey(devicePrivateKey, desktopPublicKey), deviceId, relayDesktopAddress)`.
+- Pairing over Connect: `relayPairing(pairingCode)` gives a relay token and a pseudo device id (`pair-…`). The phone signs in with that token and sends one envelope from that pseudo id, with `senderPublicKey` set to its public key, holding `{ id, type: "pair", pairingCode, deviceName, devicePublicKey }`. The answer is a normal response whose result is a `PairResult`. The relay then closes the pairing socket (4001), and the phone reconnects with its own relay token.
+- Mark an envelope `hold: true` when `relayHolds(frame)` is true (attention, and the phone's `send` and `answer_*`); the relay keeps those for an offline recipient and drops the rest.
+- A refused sign-in is an HTTP status with `{ error }` (`RelayRefusal`). Close code 4402 means Connect is off or a month is unpaid: show it and stop retrying.
 
 ## React Native
 

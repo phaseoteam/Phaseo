@@ -5,6 +5,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex, randomBytes } from "@noble/hashes/utils.js";
 import { fromBase64url, fromUtf8, toBase64url, utf8 } from "./base64url";
 import { phoneLimits, PhoneProtocolError } from "./frames";
+import { relayPairingPrefix, type Envelope } from "./relay";
 
 /**
  * Phaseo Connect's end-to-end encryption. Each phone and the desktop hold an X25519 key pair; their shared secret goes
@@ -12,7 +13,6 @@ import { phoneLimits, PhoneProtocolError } from "./frames";
  * only their routing fields, which are bound into each ciphertext so it can't move one to another device or position.
  * Random bytes come from crypto.getRandomValues; React Native needs it polyfilled (expo-crypto) before this loads.
  */
-export type Envelope = { to: string; from: string; seq: number; nonce: string; ciphertext: string; /** Only on a phone's pairing envelope: the key the desktop doesn't know yet. */ senderPublicKey?: string };
 export type KeyPair = { publicKey: string; privateKey: string };
 
 const info = utf8("phaseo-connect-v1");
@@ -40,7 +40,7 @@ export function sharedKey(privateKey: string, publicKey: string): Uint8Array {
  */
 export function relayPairing(pairingCode: string) {
 	const token = toBase64url(hkdf(sha256, fromBase64url(pairingCode), undefined, pairInfo, 32));
-	return { relayToken: token, deviceId: `pair-${tokenHash(token).slice(0, 24)}` };
+	return { relayToken: token, deviceId: `${relayPairingPrefix}${tokenHash(token).slice(0, 24)}` };
 }
 
 const header = (to: string, from: string, seq: number) => utf8(`${to}\n${from}\n${seq}`);
@@ -60,13 +60,6 @@ export function openEnvelope(key: Uint8Array, envelope: Envelope): string {
 		if (nonce.length !== 24) throw new Error();
 		return fromUtf8(xchacha20poly1305(key, nonce, header(envelope.to, envelope.from, envelope.seq)).decrypt(fromBase64url(envelope.ciphertext)));
 	} catch { throw new PhoneProtocolError("unauthorized", "This envelope could not be opened."); }
-}
-
-export function isEnvelope(value: unknown): value is Envelope {
-	if (!value || typeof value !== "object") return false;
-	const envelope = value as Record<string, unknown>;
-	return typeof envelope.to === "string" && typeof envelope.from === "string" && Number.isSafeInteger(envelope.seq) && (envelope.seq as number) >= 0
-		&& typeof envelope.nonce === "string" && typeof envelope.ciphertext === "string" && (envelope.senderPublicKey === undefined || typeof envelope.senderPublicKey === "string");
 }
 
 /**
