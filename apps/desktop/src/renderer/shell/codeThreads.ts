@@ -1,9 +1,14 @@
 import { activeOrder, sidebarSection, type SidebarSection } from "../../shared/threadLifecycle";
 import type { Project } from "../../shared/workspace";
 import type { TaskOverview } from "../../shared/workspaceOverview";
+import { isProjectArchived, projectScopes } from "../../shared/projectShelf";
 
 /** The Working section's setting (Settings → General), kept per window and off by default, as T3's beta is. */
 export const workingSectionKey = "phaseo.desktop.sidebar.workingSection";
+/** Settings → General: group the sidebar's active chats into project folders, off by default. */
+export const projectFoldersKey = "phaseo.desktop.sidebar.projectFolders";
+/** The sidebar's project filter (a list of project ids, empty for all); it replaced a single id kept under codeProjectScope. */
+export const projectScopeKey = "phaseo.desktop.codeProjectScopes";
 export type CodeSections = Record<SidebarSection | "working", TaskOverview[]>;
 const time = (value?: string) => value ? Date.parse(value) || 0 : 0;
 
@@ -33,13 +38,15 @@ export type CodeSectionOptions = { working?: boolean; returnedAt?: (id: string) 
  * Code chats in T3's sidebar order: pinned, active (newest start or return first), then Working when it is on,
  * snoozed (soonest wake) and settled (latest first).
  */
-export function codeSections(tasks: TaskOverview[], projects: Project[], scope: string, now = Date.now(), options: CodeSectionOptions = {}): CodeSections {
-	const live = new Set(projects.filter(project => !project.worktree?.removedAt).map(project => project.id));
+export function codeSections(tasks: TaskOverview[], projects: Project[], scope: string | readonly string[], now = Date.now(), options: CodeSectionOptions = {}): CodeSections {
+	// Archived projects keep their chats, out of the sidebar until the project is unarchived.
+	const live = new Set(projects.filter(project => !project.worktree?.removedAt && !isProjectArchived(project, projects)).map(project => project.id));
+	const scopes = new Set(projectScopes(scope));
 	const sections: CodeSections = { pinned: [], active: [], working: [], snoozed: [], settled: [] };
 	const background = options.working ? withBackgroundWork(tasks) : new Set<string>();
 	for (const task of tasks) {
 		if (!task.projectId || !live.has(task.projectId) || task.delegation?.parentTaskId || task.archived) continue;
-		if (scope && task.projectId !== scope) continue;
+		if (scopes.size && !scopes.has(task.projectId)) continue;
 		const section = sidebarSection(task, now);
 		// Only the active list folds away: pins stay where the person put them, and snoozed and settled keep their shelves.
 		sections[section === "active" && options.working && isWorking(task, background) ? "working" : section].push(task);
@@ -54,6 +61,27 @@ export function codeSections(tasks: TaskOverview[], projects: Project[], scope: 
 	sections.snoozed.sort((a, b) => time(a.snoozedUntil) - time(b.snoozedUntil));
 	sections.settled.sort((a, b) => (time(b.settledAt) || time(b.updatedAt)) - (time(a.settledAt) || time(a.updatedAt)));
 	return sections;
+}
+
+/** The project menu's label: all projects, the one project, or how many are picked. */
+export function scopeLabel(scoped: readonly Pick<Project, "name">[]) { return !scoped.length ? "All projects" : scoped.length === 1 ? scoped[0].name : `${scoped.length} projects`; }
+
+export type CodeFolder = { project: Project; tasks: TaskOverview[] };
+/**
+ * Project folders: the active chats grouped by project (a worktree's chats under the project it came from), the
+ * folder holding your latest message first. Projects with no active chats have no folder. Chats keep the list's order.
+ */
+export function codeFolders(tasks: readonly TaskOverview[], projects: readonly Project[]): CodeFolder[] {
+	const byId = new Map(projects.map(project => [project.id, project]));
+	const folders = new Map<string, CodeFolder & { latest: number }>();
+	for (const task of tasks) {
+		const own = task.projectId ? byId.get(task.projectId) : undefined, project = own?.worktree ? byId.get(own.worktree.sourceProjectId) ?? own : own;
+		if (!project) continue;
+		const folder = folders.get(project.id) ?? { project, tasks: [], latest: 0 };
+		folder.tasks.push(task); folder.latest = Math.max(folder.latest, workingOrder(task));
+		folders.set(project.id, folder);
+	}
+	return [...folders.values()].sort((a, b) => b.latest - a.latest || a.project.name.localeCompare(b.project.name)).map(({ project, tasks }) => ({ project, tasks }));
 }
 
 /**

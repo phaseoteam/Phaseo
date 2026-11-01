@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const ports = vi.hoisted(() => ({ git: vi.fn() }));
 vi.mock("./gitProcess", () => ({ git: ports.git }));
+const hosted = vi.hoisted(() => ({ list: vi.fn() }));
+vi.mock("./codeHosts", async original => ({ ...await original<Record<string, unknown>>(), codeHostProvider: async () => ({ list: hosted.list }) }));
 import { listPullRequestDirectory, parseDirectoryEntry, parseDirectoryPage } from "./pullRequestDirectory";
 
 const node = (overrides: Record<string, unknown> = {}) => ({ number: 7, title: "Add the page", url: "javascript:evil", state: "OPEN", isDraft: false, createdAt: "2026-10-01T00:00:00Z", updatedAt: "2026-10-02T00:00:00Z", author: { login: "octo", avatarUrl: "https://avatars.githubusercontent.com/u/1", __typename: "User" }, headRefName: "feature", baseRefName: "main", headRefOid: "a".repeat(40), additions: 10, deletions: 2, reviewDecision: "APPROVED", mergeable: "MERGEABLE", repository: { nameWithOwner: "team/app" }, labels: { nodes: [{ name: "bug", color: "d73a4a" }, { name: "bad", color: "nothex" }] }, reviewRequests: { nodes: [{ requestedReviewer: { __typename: "User", login: "Me" } }] }, commits: { nodes: [{ commit: { statusCheckRollup: { state: "SUCCESS" } } }] }, ...overrides });
@@ -8,7 +10,7 @@ const page = (nodes: unknown[], next?: string) => JSON.stringify({ data: { viewe
 const projectFor = (repository: string) => repository.toLowerCase() === "team/app" ? "project-1" : undefined;
 
 describe("pull request directory", () => {
-	beforeEach(() => { vi.clearAllMocks(); ports.git.mockImplementation(async (directory: string) => directory === "/app" || directory === "/app-copy" ? "git@github.com:team/app.git\n" : directory === "/lib" ? "https://github.com/team/lib\n" : "https://gitlab.com/team/other\n"); });
+	beforeEach(() => { vi.clearAllMocks(); ports.git.mockImplementation(async (directory: string) => directory === "/app" || directory === "/app-copy" ? "git@github.com:team/app.git\n" : directory === "/lib" ? "https://github.com/team/lib\n" : "https://git.example.com/team/other\n"); });
 
 	it("parses a search result into a row with a canonical link and the viewer's review request", () => {
 		expect(parseDirectoryEntry(node(), projectFor, "me")).toMatchObject({ projectId: "project-1", repository: "team/app", number: 7, url: "https://github.com/team/app/pull/7", state: "open", review: "approved", checks: "passing", mergeable: "MERGEABLE", viewerReviewRequested: true, labels: [{ name: "bug", color: "d73a4a" }, { name: "bad" }], author: { login: "octo" } });
@@ -20,6 +22,18 @@ describe("pull request directory", () => {
 		expect(parseDirectoryPage(JSON.parse(page([node()], "next=")), projectFor)).toMatchObject({ viewer: "me", next: "next=", entries: [{ number: 7 }] });
 		expect(() => parseDirectoryPage({ errors: [{ message: "bad" }] }, projectFor)).toThrow("could not run");
 		expect(() => parseDirectoryPage({ data: {} }, projectFor)).toThrow("incomplete");
+	});
+
+	it("lists other hosts' open requests from their own list, narrowed by what a row says", async () => {
+		ports.git.mockImplementation(async (directory: string) => directory === "/gl" ? "git@gitlab.com:group/app.git\n" : "git@github.com:team/app.git\n");
+		const row = (number: number, title: string, draft = false) => ({ number, title, url: `https://gitlab.com/group/app/-/merge_requests/${number}`, author: "ada", draft, head: "x", base: "main", updatedAt: "2026-10-03T00:00:00Z", review: "none", checks: "unknown" });
+		hosted.list.mockResolvedValue({ repository: "group/app", requests: [row(1, "Add search"), row(2, "Draft: search box", true), row(3, "Other")], fetchedAt: "", limitReached: true });
+		const read = vi.fn(async () => page([]));
+		const result = await listPullRequestDirectory([{ id: "gl", directory: "/gl" }], { state: "open", text: "search", filters: { draft: "hide" }, limit: 100 }, read);
+		expect(read).not.toHaveBeenCalled();
+		expect(result.entries).toEqual([expect.objectContaining({ projectId: "gl", repository: "group/app", number: 1, headOid: "0".repeat(40), author: { login: "ada" } })]);
+		expect(result.truncated).toBe(true);
+		expect((await listPullRequestDirectory([{ id: "gl", directory: "/gl" }], { state: "merged", text: "", filters: {}, limit: 100 }, read)).entries).toEqual([]);
 	});
 
 	it("searches every GitHub project once, files shared repositories under the first, and names projects it cannot read", async () => {

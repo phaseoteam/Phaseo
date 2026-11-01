@@ -1,5 +1,8 @@
 import type { HtmlRenderActivity } from "./htmlRender";
 import type { Delegation, Launch } from "./orchestration";
+import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
+import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
+import type { CreatedOutsideAgentToken, OutsideAgentAccess, OutsideAgentSettings } from "./outsideAgents";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
@@ -45,7 +48,7 @@ export type Harness = typeof harnesses[number];
 /** Harnesses a chat can run on. Antigravity stays a harness so usage history keeps its name, but it has no adapter yet, so it is offered nowhere. */
 export const runnableHarnesses: readonly Harness[] = harnesses.filter(harness => harness !== "antigravity");
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
-export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject };
+export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject; /** Pinned projects lead the project picker; archived ones, and their chats, leave the sidebar and pickers until unarchived. */ pinned?: boolean; archived?: boolean };
 export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
 export type PhaseoSignInResult = { workspace: WorkspaceOverview; accountId: string } | { secondFactor: true };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo login (not an older OAuth sign-in): the vault entry holding the login, and the Phaseo workspace its key is for. */ sessionSecretId?: string; phaseoWorkspaceId?: string; /** For a Phaseo sign-in, who it belongs to, from its Phaseo profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
@@ -54,7 +57,8 @@ export type AgentStatus = { checkedAt: string; name?: string; version?: string; 
 export type BackgroundCommandView = { id: string; command: string; directory: string; running: boolean; durationMs: number; output: string };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image" | "audio" | "video"; mimeType: string; size: number; pages?: number };
 export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; /** Issue and pull request URLs the person referenced with `#`. */ githubReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Sent by Autopilot to keep the task going, not by the person. */ autopilot?: true; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
-export type MessageNotice = { kind: "pull-request" | "issue"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
+/** `outside-agent` is a prompt an agent outside Phaseo sent through its MCP server; the summary names the agent. */
+export type MessageNotice = { kind: "pull-request" | "issue" | "outside-agent"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
 export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; githubReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; /** When the app first saw it running, for a live timer. */ startedAt?: string; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string };
@@ -172,6 +176,8 @@ export type WorkspaceCommand =
 	| { type: "delete-task"; id: string }
 	/** Removes a project entry, its worktree entries and their chats. Files on disk are not touched. */
 	| { type: "remove-project"; id: string }
+	/** Pins or archives a project (not a worktree); its chats are untouched. */
+	| { type: "organize-project"; id: string; pinned?: boolean; archived?: boolean }
 	| { type: "regenerate-title"; id: string }
 	/** The chats of one sidebar section in the order the person dragged them into. */
 	| { type: "reorder"; ids: string[] }
@@ -361,6 +367,17 @@ export type WorkspaceApi = {
 	createPullRequest: (projectId: string, taskId?: string) => Promise<CreatedPullRequestResult & { workspace: WorkspaceOverview }>;
 	/** The project's GitHub repository (owner/repo) from its origin remote, or null when it has none. */
 	projectRepository: (projectId: string) => Promise<string | null>;
+	/** Settings ▸ Code hosts: saved self-hosted servers, which hosts have a token, and which host CLIs are installed. */
+	codeHosts: () => Promise<CodeHostSettings>;
+	/** Settings ▸ Outside agents: the local MCP server for agents Phaseo did not start, and its tokens. */
+	outsideAgents: () => Promise<OutsideAgentSettings>;
+	setOutsideAgentsEnabled: (enabled: boolean, port?: number) => Promise<OutsideAgentSettings>;
+	createOutsideAgentToken: (request: { name: string; access: OutsideAgentAccess }) => Promise<CreatedOutsideAgentToken>;
+	revokeOutsideAgentToken: (id: string) => Promise<OutsideAgentSettings>;
+	onOutsideAgentsChanged: (listener: (settings: OutsideAgentSettings) => void) => () => void;
+	saveCodeHostToken: (request: CodeHostTokenRequest) => Promise<CodeHostSettings>;
+	removeCodeHostToken: (kind: CodeHostKind, host: string) => Promise<CodeHostSettings>;
+	saveCodeHostServers: (servers: CustomCodeHost[]) => Promise<CodeHostSettings>;
 	/** The native GitHub stack a pull request is in, cached for a minute unless `fresh`; linked chats pick up its layers. */
 	pullRequestStack: (projectId: string, number: number, fresh?: boolean) => Promise<PullRequestStackRead>;
 	/** Merge stack (through this layer) or Rebase stack (from the top), refused if any expected head moved. */
@@ -519,6 +536,9 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "snooze": string("until", true, 100); if (Number.isNaN(Date.parse(command.until as string))) throw new Error("Invalid snooze time."); break;
 			case "visit": string("at", true, 100); if (Number.isNaN(Date.parse(command.at as string))) throw new Error("Invalid visit time."); break;
 			case "auto-settle": if (typeof command.enabled !== "boolean") throw new Error("Invalid auto-settle setting."); break;
+			case "organize-project":
+				if ((command.pinned === undefined && command.archived === undefined) || (command.pinned !== undefined && typeof command.pinned !== "boolean") || (command.archived !== undefined && typeof command.archived !== "boolean")) throw new Error("Invalid project change.");
+				break;
 			case "link-pull-request":
 				if (typeof command.reference !== "string" || command.reference.length > 500 || !parsePullRequestReference(command.reference)) throw new Error("Paste a GitHub pull request URL or a number like #42.");
 				// The main process fills these in from the reference.

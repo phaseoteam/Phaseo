@@ -15,7 +15,7 @@ export type FactoryRoute = { item?: string; tab?: string; page?: "new" };
 export type RightPanelSurface = "changes" | "files" | "diff" | "terminal" | "browser" | "agents" | "pulls";
 /** A surface to show in the right pane, "files" for Files, or "restore" to reopen the chat's own tabs. */
 export type RightPanelTab = RightPanelSurface | "files" | "restore";
-export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "keyboard" | "diagnostics" | "experimental" | "project" | FactorySettingsPage;
+export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "code-hosts" | "outside-agents" | "keyboard" | "diagnostics" | "experimental" | "project" | FactorySettingsPage;
 /** Factory's pages in Settings. */
 export type FactorySettingsPage = "factory-repositories" | "factory-issues" | "factory-pulls" | "factory-notes" | "factory-checking";
 export type CompareGroup = { id: string; title: string; taskIds: string[]; createdAt: string };

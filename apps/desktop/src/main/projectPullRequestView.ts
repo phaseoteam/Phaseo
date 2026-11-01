@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { git } from "./gitProcess";
 import { span } from "./diagnostics/tracer";
 import { resolveNativeCommand } from "./nativeProcess";
+import { codeHostProvider } from "./codeHosts";
 import { githubRepository, parsePullRequestDetails } from "./projectPullRequests";
 import { reviewCursor, reviewNodeId } from "../shared/pullRequestThreads";
 import { validRepository, validatePullRequestActionRequest, validatePullRequestCandidatesQuery, type PullRequestCandidates, type PullRequestActor, type PullRequestCheck, type PullRequestCheckStatus, type PullRequestComment, type PullRequestCommit, type PullRequestMergeMethod, type PullRequestReaction, type PullRequestReviewState, type PullRequestReviewThreadView, type PullRequestView, type PullRequestActionResult } from "../shared/pullRequestView";
@@ -156,6 +157,8 @@ async function repositoryOf(root: string) {
 
 export async function projectPullRequestView(root: string, number: unknown): Promise<PullRequestView> {
 	if (!Number.isSafeInteger(number) || Number(number) < 1 || Number(number) > 2147483647) throw new Error("Invalid pull-request number.");
+	const other = await codeHostProvider(root);
+	if (other) return other.view(Number(number));
 	return readPullRequestView(root, await repositoryOf(root), Number(number));
 }
 /** One pull request by repository, read with gh from any folder (the watcher reads chats without a project this way). */
@@ -181,6 +184,15 @@ export async function projectPullRequestAction(root: string, value: unknown): Pr
 	const request = validatePullRequestActionRequest(value), { action } = request;
 	const view = await projectPullRequestView(root, request.number);
 	// Reactions, labels and reviewers do not depend on the code, so a push since the person looked does not stop them.
+	const other = await codeHostProvider(root);
+	if (other) {
+		const host = view.codeHost;
+		if (!other.actions.includes(action.type)) throw new Error(`${host?.name ?? "This host"}'s ${host?.noun ?? "pull request"}s can't do that from Phaseo yet. Open it on ${host?.name ?? "the host"} instead.`);
+		// Some hosts' lists carry no full head commit, so only the writes that act on the code are held to it.
+		if (view.headOid !== request.headOid && ["merge", "enable-auto-merge", "review"].includes(action.type)) throw new Error("This pull request changed. It has been refreshed; check it and try again.");
+		await other.act(view, action);
+		return other.view(view.number);
+	}
 	if (view.headOid !== request.headOid && !["react", "label", "reviewer", "body", "update-comment", "title"].includes(action.type)) throw new Error("This pull request changed. It has been refreshed; check it and try again.");
 	const base = `repos/${view.repository}/pulls/${view.number}`;
 	let args: string[], input: string | undefined, after: string[] | undefined, many: string[][] | undefined;

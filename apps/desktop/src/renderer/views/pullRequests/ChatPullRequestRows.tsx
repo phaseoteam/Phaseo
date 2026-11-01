@@ -47,7 +47,7 @@ function RowTooltip({ view }: { view: PullRequestView }) {
 			{line(<GitBranch aria-hidden className="size-3 shrink-0" />, `${view.base} ← ${view.head}`)}
 			{view.state === "OPEN" && checks !== "none" && line(<CheckStatusIcon status={checks === "failing" ? "failure" : checks === "pending" ? "pending" : "success"} />, describeChecks(view.checkRuns))}
 			{view.state === "OPEN" && view.mergeable === "CONFLICTING" && line(<TriangleAlert aria-hidden className="size-3 shrink-0" />, `Merge conflicts with ${view.base}`)}
-			{line(<FileDiff aria-hidden className="size-3 shrink-0" />, <span className="inline-flex items-baseline gap-1">{view.changedFiles.toLocaleString()} {view.changedFiles === 1 ? "file" : "files"}<DiffStat additions={view.additions} deletions={view.deletions} /></span>)}
+			{(!view.statsUnknown || view.changedFiles > 0) && line(<FileDiff aria-hidden className="size-3 shrink-0" />, <span className="inline-flex items-baseline gap-1">{view.changedFiles.toLocaleString()} {view.changedFiles === 1 ? "file" : "files"}{!view.statsUnknown && <DiffStat additions={view.additions} deletions={view.deletions} />}</span>)}
 		</div>
 	</div>;
 }

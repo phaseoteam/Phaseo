@@ -139,6 +139,29 @@ Validation: deterministic fixtures in `orchestrationParity.test.ts`, the store, 
 
 Validation uses temporary profiles, mock model clients and an authenticated local MCP server. No paid inference was performed. The Electron UI audit checks keyboard reference selection, drag references, delivery, child navigation and collapsed results. Real subscription/provider end-to-end orchestration remains unverified.
 
+## Outside agents
+
+Agents Phaseo did not start, such as Claude Code or Codex in a terminal, reach the thread tools through a second MCP
+server (`main/outsideAgentsMcp.ts`). It is off until the person turns it on in Settings ▸ Outside agents, listens on
+127.0.0.1 at a fixed port (3781 unless changed) and refuses any request with an Origin header or a non-loopback Host,
+so web pages can't reach it. Each request carries a token the person made there; only its SHA-256 hash is stored in
+`outside-agents.json`, and revoking it stops the next call.
+
+A token is read only (`list_threads`, `read_thread`, `search_threads`, `list_projects`, `list_agents`, `list_models`) or
+can start chats (adds `launch_thread`, `delegate_task`, `send_thread` and `wait_thread`). The other tools act for a
+calling chat (its browser, pages, worktree, children, instructions or projects), so outside agents don't get them. The tools are the same definitions
+as above with descriptions worded for an agent that has no chat, served by `WorkspaceThreads.forOutside`:
+
+- It lists and reads every top-level chat that isn't archived.
+- Chats it launches are keyed by `outside-agent:<token id>` and the requestId, run supervised at most, and need an
+  explicit harness and model. Their first prompt shows as a notice, "<token name> started this chat".
+- `delegate_task` launches a chat with no project, so it refuses `isolation`; `wait_thread` waits only on chats the token started.
+- Attachments, and `send_thread`'s `restart`, are refused rather than ignored: files are read from a calling chat's
+  project, and a restart would stop a turn the person may be watching.
+- `send_thread` queues a prompt for a top-level supervised chat, shown there as "<token name> sent a message". Chats with
+  broader permissions refuse it, so outside words never drive an agent the person isn't approving.
+- Reads leave no trace in the chat.
+
 ## Follow-up: child controls
 
 Extend the existing shared service with owned-child rename, steering and queue inspection/edit/removal. Reference the pinned T3 thread management contract. Reuse desktop commands rather than a second execution path. Acceptance: fixtures cover successful durable mutations, queue ordering and rejection of mutations to referenced/unrelated chats. Local-only validation; no paid inference or deployment. Full parity remains pending in the ledger.

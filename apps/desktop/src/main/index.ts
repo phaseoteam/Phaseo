@@ -105,6 +105,10 @@ import { readPullRequestStack, runPullRequestStackAction } from "./pullRequestSt
 import { git } from "./gitProcess";
 import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest";
 import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkLog, type PullRequestContext } from "./createPullRequest";
+import { OutsideAgentsMcp } from "./outsideAgentsMcp";
+import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHostToken, saveCustomCodeHosts } from "./codeHosts";
+import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
+import { validateCodeHostTokenRequest } from "../shared/codeHostSettings";
 import { githubRepository } from "./projectPullRequests";
 import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
@@ -149,6 +153,7 @@ const accountChecks = new Map<string, AbortController>();
 const accountStatusRuns = new Map<string, Promise<AccountStatus>>();
 const agentChecks = new Map<string, AbortController>();
 let credentialVault: SecretVault;
+let outsideAgents: OutsideAgentsMcp | undefined;
 let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
 let missionService: MissionService;
@@ -486,7 +491,7 @@ app.on("before-quit", event => {
 	const deadline = setTimeout(() => { console.error("Shutdown timed out; quitting anyway."); stopTracing(); shutdownComplete = true; app.exit(0); }, 10_000);
 	// Factory saves its running stages as interrupted before the runtime stops their threads.
 	const factoryClosed = (factoryService?.shutdown() ?? Promise.resolve()).catch(() => { console.error("Factory shutdown failed."); });
-	void Promise.allSettled([factoryClosed.then(() => workspaceRuntime.close()).catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
+	void Promise.allSettled([factoryClosed.then(() => outsideAgents?.stop()).then(() => workspaceRuntime.close()).catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
 });
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
@@ -654,6 +659,23 @@ ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskI
 	if (task) await workspaceRuntime.command({ type: "link-pull-request", id: task.id, reference: result.url, source: "created" }).catch(() => undefined);
 	return { ...result, workspace: workspaceRuntime.store.getOverview() };
 });
+ipcMain.handle("workspace:outside-agents", event => { if (!senderWindow(event) || !outsideAgents) throw new Error("Invalid request."); return outsideAgents.settings(); });
+ipcMain.handle("workspace:outside-agents-enable", (event, enabled: unknown, port: unknown) => { if (!senderWindow(event) || !outsideAgents || typeof enabled !== "boolean" || (port !== undefined && typeof port !== "number") || shutdownStarted) throw new Error("Invalid request."); return outsideAgents.setEnabled(enabled, port as number | undefined); });
+ipcMain.handle("workspace:outside-agent-token", (event, request: unknown) => { if (!senderWindow(event) || !outsideAgents) throw new Error("Invalid request."); return outsideAgents.createToken(request); });
+ipcMain.handle("workspace:outside-agent-revoke", (event, id: unknown) => { if (!senderWindow(event) || !outsideAgents) throw new Error("Invalid request."); return outsideAgents.revokeToken(id); });
+ipcMain.handle("workspace:code-hosts", event => { if (!senderWindow(event)) throw new Error("Invalid request."); return codeHostSettings(); });
+ipcMain.handle("workspace:code-host-token", async (event, value: unknown) => {
+	if (!senderWindow(event)) throw new Error("Invalid request.");
+	const request = validateCodeHostTokenRequest(value);
+	await saveCodeHostToken(request.kind, request.host, request.kind === "bitbucket" ? JSON.stringify({ token: request.token, ...(request.email ? { email: request.email } : {}) }) : request.token);
+	return codeHostSettings();
+});
+ipcMain.handle("workspace:code-host-token-remove", (event, kind: unknown, host: unknown) => {
+	if (!senderWindow(event) || typeof kind !== "string" || !codeHostKinds.includes(kind as CodeHostKind) || !validHostName(host)) throw new Error("Invalid request.");
+	removeCodeHostToken(kind as CodeHostKind, host);
+	return codeHostSettings();
+});
+ipcMain.handle("workspace:code-host-servers", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid request."); saveCustomCodeHosts(value); return codeHostSettings(); });
 ipcMain.handle("workspace:project-repository", async (event, id: unknown) => {
 	const root = projectRoot(event, id);
 	try { return githubRepository(await git(root, ["remote", "get-url", "origin"])); } catch { return null; }
@@ -1261,11 +1283,14 @@ app.whenReady().then(() => {
 	}));
 	credentialVault = vault;
 	usageHubs = new UsageHubs(usageHubFile(workspaceDirectory), { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
+	configureCodeHosts(workspaceDirectory, { set: (id, value) => vault.set(id, value), get: id => vault.get(id), remove: id => vault.remove(id) });
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	harnessModelCache = new HarnessModelCache(path.join(app.getPath("userData"), "cache", "harness-models.json"), (harness, accountId) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness, accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	workspaceRuntime.phaseo.background = backgroundCommands();
 	workspaceRuntime.phaseo.background.onChange = taskId => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:background-changed", taskId); };
+	outsideAgents = new OutsideAgentsMcp(workspaceDirectory, { tools: agent => workspaceRuntime.outsideThreadTools(agent), changed: settings => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:outside-agents-changed", settings); } });
+	void outsideAgents.start();
 	// Rows are written by a worker on its own connection, so a first read doesn't hold up the app.
 	transcriptScanner = new TranscriptScanner(workspaceRuntime.store, () => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:usage-changed"); }, { writer: () => new TranscriptWriter(workspaceRuntime.store.filename) });
 	// After the ledger's own start-up work, so a first read of large transcripts doesn't compete with opening the app.

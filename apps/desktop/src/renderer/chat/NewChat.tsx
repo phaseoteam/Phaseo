@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { pickerProjects } from "../../shared/projectShelf";
 import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { settingsProject } from "../../shared/projectSettings";
@@ -84,7 +85,7 @@ export function NewChat() {
 	const [selections, setSelections] = useState<ModelSelection[]>(remembered ? [remembered] : []);
 	const code = mode === "code";
 	// Factory's per-item worktrees stay out of the picker; their threads still list.
-	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
+	const projects = pickerProjects(overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project)), newChatProjectId);
 	const project = projects.find(value => value.id === newChatProjectId);
 	const worktree = useWorktreeTarget(api, code ? project?.id : undefined, setOverview);
 	// Project defaults apply when a project is chosen; the person can still change each one before sending.

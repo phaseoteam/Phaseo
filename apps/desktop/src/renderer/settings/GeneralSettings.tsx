@@ -10,7 +10,7 @@ import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
 import { ModelPicker } from "../chat/ModelPicker";
 import { ModelSettings } from "../chat/ModelSettings";
-import { workingSectionKey } from "../shell/codeThreads";
+import { projectFoldersKey, workingSectionKey } from "../shell/codeThreads";
 import { publishWorkspacePreferences } from "../lib/workspacePreferences";
 import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
 import { isMac } from "../lib/shortcuts";
@@ -157,6 +157,7 @@ function MessageBox() {
 export function GeneralSettings() {
 	const [autoOpenPanes, setAutoOpenPanes] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
 	const [workingSection, setWorkingSection] = usePersistedState(workingSectionKey, false);
+	const [projectFolders, setProjectFolders] = usePersistedState(projectFoldersKey, false);
 	const { preferences, loading, busy, error, save, ready } = usePreferences();
 	return <SettingsPageLayout title="General">
 		<SettingsSection title="New chats"><DefaultModel /><ChatTitles preferences={preferences} save={save} disabled={!ready || busy} /></SettingsSection>
@@ -186,6 +187,8 @@ export function GeneralSettings() {
 		<SettingsSection title="Code chats" description="Settle a chat when you are done with it; it moves to Settled at the bottom of the sidebar. Each project can change these in its Project settings." label="Code chats">
 			<SettingsRow title="Show a Working section" description="Fold chats that are working and need nothing from you into a Working section above Snoozed. They return to the top of the list when they need you. Your list is then ordered by time."
 				control={<Switch aria-label="Show a Working section" checked={workingSection} onCheckedChange={setWorkingSection} />} />
+			<SettingsRow title="Group chats by project" description="Put active chats in a folder per project, on two lines each, with the project you wrote to last on top. Folders collapse, and projects with no active chats have none. Pinned chats stay above them."
+				control={<Switch aria-label="Group chats by project" checked={projectFolders} onCheckedChange={setProjectFolders} />} />
 			<SettingsRow title="Auto-settle merged chats" description="Settle a chat when its pull request merges. Closed pull requests still settle it."
 				control={<Switch aria-label="Auto-settle merged chats" disabled={!ready || busy} checked={preferences.autoSettleOnMerge} onCheckedChange={value => void save({ ...preferences, autoSettleOnMerge: value })} />} />
 			<SettingsRow title="Keep chats with a pull request" description="Inactivity does not settle chats with a pull request. Merging and closing still do."

@@ -9,13 +9,13 @@ import { ProjectIconGlyph, ProjectIconPickerDialog } from "../components/Project
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { useRemoveProject } from "./removeProject";
 import { Tip } from "../components/ui/tooltip";
+import { Switch } from "../components/ui/switch";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 import { cn } from "../lib/utils";
 import { keyLabel, scriptCommand } from "../../shared/keybindings";
 import { useKeybindings } from "../lib/keybindings";
 import { isMac } from "../lib/shortcuts";
 import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
-import { Switch } from "../components/ui/switch";
 import { ModelPicker, harnessNames } from "../chat/ModelPicker";
 import { ModelSettings } from "../chat/ModelSettings";
 import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
@@ -46,7 +46,7 @@ function IconButton({ label, onClick, disabled, children }: { label: string; onC
  * until changed), its actions (with t3.json imports), and Remove project. Worktrees share their project's page.
  */
 export function ProjectSettingsPage() {
-	const { api, overview, setOverview, settingsProjectId } = useWorkspace();
+	const { api, overview, setOverview, settingsProjectId, command } = useWorkspace();
 	const preferences = useWorkspacePreferences();
 	const opened = overview.projects.find(value => value.id === settingsProjectId);
 	const project = settingsProject(overview.projects, settingsProjectId);
@@ -88,6 +88,10 @@ export function ProjectSettingsPage() {
 					<SettingsButton disabled={busy} onClick={() => setPicking(true)}>Choose icon</SettingsButton>
 				</div>} />
 			<SettingsRow title="Folder" description={<span className="font-mono break-all">{project.directory}</span>} />
+			<SettingsRow title="Pin to the top" description="Pinned projects come first in the sidebar's project menu and the new chat picker."
+				control={<Switch aria-label="Pin project" disabled={busy || project.archived} checked={Boolean(project.pinned)} onCheckedChange={(pinned: boolean) => void command({ type: "organize-project", id: project.id, pinned })} />} />
+			<SettingsRow title="Archive" description="Archived projects and their chats leave the sidebar and the pickers. Nothing is deleted; turn this off to bring them back."
+				control={<Switch aria-label="Archive project" disabled={busy} checked={Boolean(project.archived)} onCheckedChange={(archived: boolean) => void command({ type: "organize-project", id: project.id, archived })} />} />
 		</SettingsSection>
 		<SettingsSection title="Code chats" description="When chats in this project settle on their own." label="Project auto-settle">
 			{toggle("autoSettleOnMerge", "Auto-settle merged chats", "Settle a chat when its pull request merges. Closed pull requests still settle it.")}

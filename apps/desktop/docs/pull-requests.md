@@ -19,7 +19,7 @@ results. Failed reads keep the rows already shown, with the error above them.
 Changing project resets the list and ignores obsolete replies.
 
 Watched pull requests are polled in the background (see [Watching](chats-and-tools.md#watching)). GitHub
-account selection, enterprise hosts and other Git providers remain unfinished.
+account selection and enterprise hosts remain unfinished. Other code hosts are below.
 The T3 nightly check-refresh hook remains a reference for future live refresh;
 the selected page also refreshes while visible: every 45 seconds for empty, pending or unavailable check states, and 60 seconds for settled states. Focus/visibility return is limited to one refresh per ten seconds; six idle minutes pause polling until interaction resumes. Page errors pause automatic retry. Manual Refresh/Retry remains available. This is foreground refresh; the background watcher below is separate.
 
@@ -51,6 +51,35 @@ References: [GitHub cursor pagination](https://docs.github.com/en/graphql/guides
 Eight deterministic timer/event cases cover first-read suppression, 45/60-second intervals, focus coalescing, hidden/idle pauses, resumed interaction, busy admission and cleanup. Owned source/archive browser cases drive the production controller clock, confirm one IPC read when a timer and focus arrive together, project pending checks to passing, choose the settled interval, prove successive responses do not reset the idle clock, resume after interaction and stop the timer after project removal. Native OS visibility and complete background-watcher parity remain separate checks.
 
 The idle browser fixture isolates its virtual clock from incidental trusted input in the owned audit window and waits for rendered reads to settle. It exercises the production controller using explicit synthetic interaction; it does not establish native OS focus or visibility behavior. The archive and source renderer assets are verified identical.
+
+## Other code hosts
+
+A project whose origin is on GitLab, Forgejo or Gitea, Bitbucket or Azure DevOps reads its pull or merge requests
+through `src/main/codeHosts`. The host comes from the remote URL: gitlab.com, codeberg.org, gitea.com, bitbucket.org,
+dev.azure.com and *.visualstudio.com, servers with gitlab, gitea or forgejo in their name, and servers named in
+Settings ▸ Code hosts. GitHub and unknown servers keep the gh path above unchanged.
+
+Each host signs in its own way. GitLab uses a saved token, else `glab api` with its login. Forgejo and Gitea use a
+saved token, else `tea api`. Bitbucket needs a saved access token or Atlassian email and API token. Azure DevOps
+uses a saved personal access token, else a token from `az account get-access-token`. Tokens are kept in the
+credential vault; `code-hosts.json` only records which servers have one.
+
+| | GitLab | Forgejo / Gitea | Bitbucket | Azure DevOps |
+| --- | --- | --- | --- | --- |
+| Project list, Pull requests page (open only) | yes | yes | yes | yes |
+| Summary and Timeline: checks, reviews, comments, commits | pipeline jobs | commit statuses | build statuses | PR statuses |
+| Line totals | no (files only) | yes | yes (diffstat) | no |
+| Create for the current branch | yes | yes | yes | yes |
+| Merge (methods) | merge, squash | merge, squash, rebase | merge, squash | merge, squash, rebase |
+| Auto-merge on and off | yes | yes | no | yes (auto-complete) |
+| Comment, close, reopen, title, description, draft | yes | yes | no reopen | yes |
+| Review | approve, comment | approve, request changes, comment | approve, request changes, comment | approve, wait for author, comment |
+
+Not yet on other hosts: the Guide and Code tabs (they read the diff through GitHub), line comments and review
+threads, labels and reviewer pickers, reactions, stacks, linking a request to a chat, background watching and the
+agents' pull request tools. Writes a host can't make are refused with a message that names it. Merges are held to the
+head the person saw: GitLab's `sha`, Forgejo's `head_commit_id` and Azure's `lastMergeSourceCommit` refuse a
+moved head, and Bitbucket's head is read again just before merging because its merge has no such guard.
 
 ## Pull requests page
 

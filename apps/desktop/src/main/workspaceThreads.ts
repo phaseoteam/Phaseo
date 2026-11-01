@@ -8,7 +8,8 @@ import { tagsInUse } from "../shared/tags";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
 import type { WorkspaceStore } from "./workspaceStore";
 import type { AttachmentService } from "./attachments";
-import { validateDelegate } from "./threadTools";
+import { validateDelegate, validateLaunch } from "./threadTools";
+import type { OutsideAgentAccess } from "../shared/outsideAgents";
 import { parsePullRequestReference, pullRequestUrl, samePullRequest, validatePullRequestLinks, type TaskPullRequestLink } from "../shared/pullRequestView";
 import { pullRequestChains, visiblePullRequestLinks } from "../shared/pullRequestStacks";
 import type { PullRequestGuideResult } from "../shared/pullRequestGuide";
@@ -324,6 +325,96 @@ export class WorkspaceThreads {
 		if (!command) throw new Error("Scheduling is unavailable.");
 		return { caller, command };
 	}
+	/** Top-level chats whose title, project, branch or linked pull request match, newest first. */
+	private searchChats(query: string, readable: (task: Pick<Task, "id" | "launch">) => boolean) {
+		const needle = query.trim().toLowerCase(); if (!needle) throw new Error("Pass words to search for.");
+		const projects = new Map(this.host.store.getProjects().map(project => [project.id, project]));
+		// Titles, branches and pull requests only: message text stays private, and so does other chats' delegated work.
+		return this.host.store.getOverview().tasks.filter(task => !task.archived && !task.delegation?.parentTaskId).map(task => {
+			const project = task.projectId ? projects.get(task.projectId) : undefined, pullRequests = (task.pullRequests ?? []).map(link => `${link.repository}#${link.number}`);
+			return { task, project, pullRequests, text: [task.title, project?.name, project?.worktree?.branch, ...pullRequests].filter(Boolean).join(" ").toLowerCase() };
+		}).filter(entry => entry.text.includes(needle)).slice(0, 20).map(({ task, project, pullRequests }) => ({ id: task.id, title: task.title, status: task.status, ...(project ? { project: project.name } : {}), ...(project?.worktree ? { branch: project.worktree.branch } : {}), ...(pullRequests.length ? { pullRequests } : {}), updatedAt: task.updatedAt, readable: readable(task) }));
+	}
+	/**
+	 * The thread tools for an agent outside Phaseo (a local MCP client with a token). It sees every top-level chat, but
+	 * only a token that can start chats may launch or message them. What it starts runs supervised and what it sends shows
+	 * in the chat as a notice naming it, so the person sees and approves its work. Chats it launched are keyed by
+	 * `outside-agent:<token id>` so a retried requestId finds the same chat.
+	 */
+	forOutside(agent: { id: string; name: string; access: OutsideAgentAccess }): Partial<ThreadTools> {
+		const caller = `outside-agent:${agent.id}`;
+		const summary = (task: Pick<Task, "id" | "title" | "harness" | "model" | "status" | "parentId"> & { error?: string }) => ({ id: task.id, title: task.title, harness: task.harness, model: task.model, status: task.status, parentId: task.parentId, error: task.error });
+		// Stands in for the calling chat where the shared helpers expect one; it is never stored and has no project or account.
+		const ceiling = { id: caller, harness: "phaseo", model: "default", mode: "code", permissionMode: "supervised" } as Task;
+		const writable = () => {
+			if (agent.access !== "start") throw new Error("This token is read only. Make one that can start chats in Phaseo's Settings, Outside agents.");
+			if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
+		};
+		const notice = (summary: string) => ({ kind: "outside-agent" as const, summary, outcome: "updated" as const });
+		const launch = async (request: LaunchRequest) => {
+			writable();
+			if (!request.harness) throw new Error("Choose a harness and model for the chat (see list_agents).");
+			// Attachments are read relative to the calling chat's project, and an outside agent has no chat.
+			if (request.attachments?.length) throw new Error("Outside agents can't send attachments. Put what the chat needs in the prompt.");
+			const existing = this.host.store.findLaunchedTask(caller, request.requestId);
+			if (existing) return this.launchResult(existing);
+			const { mode, permissionMode } = childPrivileges(ceiling, request), target = this.launchTarget(ceiling, request.workspace);
+			const settings = await this.agentSettings(ceiling, request, target.projectId);
+			let projectId = target.projectId;
+			if (target.worktree && harnessDisabled(this.host.store.getProjects(), target.worktree.sourceId, settings.harness)) throw new Error("This agent is turned off for this project. Choose another, or turn it back on in Project settings.");
+			if (target.worktree) { this.assertCapacity(); ({ projectId } = await this.host.createWorktree!(target.worktree.sourceId, target.worktree.branch, target.worktree.baseRef)); }
+			writable();
+			const task = this.host.store.createLaunchedTask({ type: "create-task", ...settings, projectId, mode, permissionMode }, { byTaskId: caller, requestId: request.requestId }, request.prompt, request.title, this.maxActiveAgents(), notice(`${agent.name} started this chat`));
+			this.host.broadcast(); this.host.start(task.id); return this.launchResult(task);
+		};
+		const launched = (id: string) => { const task = this.host.store.getTask(id); if (task.launch?.byTaskId !== caller) throw new Error("Outside agents can wait on the chats they started."); return task; };
+		return {
+			list: query => this.host.store.getOverview().tasks.filter(task => !task.archived && !task.delegation?.parentTaskId && (!query || task.title.toLowerCase().includes(query.toLowerCase()))).slice(0, 50).map(summary),
+			read: id => { const task = this.host.store.getTaskView(id); return { thread: summary(task), messages: task.messages.slice(-30).map(({ role, text, createdAt }) => ({ role, text: text.slice(0, 8000), createdAt })), truncated: (task.conversationCounts?.messages ?? task.messages.length) > 30 || task.messages.some(message => message.text.length > 8000) }; },
+			projects: query => {
+				const folder = (directory: string) => directory.split(/[\\/]/).filter(Boolean).at(-1) ?? directory;
+				// Folder names only: full paths stay private to the desktop.
+				return this.host.store.getProjects().filter(project => !project.worktree?.removedAt && (!query || `${project.name} ${folder(project.directory)}`.toLowerCase().includes(query.toLowerCase()))).slice(0, 200).map(project => ({ id: project.id, name: project.name, directory: folder(project.directory), ...(project.worktree ? { worktree: { branch: project.worktree.branch, baseCommit: project.worktree.baseCommit, sourceProjectId: project.worktree.sourceProjectId } } : {}) }));
+			},
+			// Every top-level chat is readable here, as list_threads and read_thread already allow.
+			search: query => this.searchChats(query, () => true),
+			agents: async (filter = {}) => this.catalog(ceiling, filter),
+			models: async (harness, accountId, query) => { const { models, total, accounts } = await this.discover(ceiling, harness, accountId, query); return { models, total, accounts }; },
+			launch,
+			// An outside agent has no chat of its own to delegate from, so a delegated task is a launched chat it waits on.
+			delegate: async raw => { const { background: _background, role: _role, ...rest } = raw as Record<string, unknown>; if (rest.isolation !== undefined || rest.branch !== undefined) throw new Error("Outside agents delegate chats with no project, so there is no worktree to isolate; use launch_thread with a worktree workspace."); const result = await launch(validateLaunch({ workspace: { strategy: "none" }, ...rest })); return summary(this.host.store.getTask(result.id)); },
+			send: async (id, text, attachments, restart) => {
+				writable();
+				if (attachments?.length) throw new Error("Outside agents can't send attachments. Put what the chat needs in the prompt.");
+				// Restarting stops a turn the person may be watching; outside agents only queue.
+				if (restart) throw new Error("Outside agents can't restart a chat's turn; the prompt is queued after its current work.");
+				const task = this.host.store.getTask(id);
+				if (task.archived || task.delegation?.parentTaskId) throw new Error("Outside agents can message top-level chats that are not archived.");
+				// A chat with broader permissions would act on the outside agent's words without the person approving each step.
+				if (permissionRank(task.permissionMode) > permissionRank(ceiling.permissionMode)) throw new Error("This chat runs with more than supervised permissions, so outside agents can't message it.");
+				if (!text.trim() || text.length > 100000) throw new Error("Invalid prompt.");
+				if (!["running", "waiting"].includes(task.status) && !task.queue.length) this.assertCapacity();
+				this.host.store.queueNotice(id, text, notice(`${agent.name} sent a message`));
+				this.host.broadcast(); this.host.start(id); return summary(this.host.store.getTask(id));
+			},
+			wait: async (id, timeoutMs = waitDefaultMs, signal) => {
+				if (!Number.isInteger(timeoutMs) || timeoutMs < 0 || timeoutMs > waitMaximumMs) throw new Error("Invalid wait timeout.");
+				launched(id);
+				return new Promise(resolve => {
+					const check = (abandoned = false) => {
+						const child = launched(id);
+						if (!abandoned && !this.host.isClosing() && active(child.status)) return;
+						clearTimeout(timer); this.listeners.delete(listener); signal?.removeEventListener("abort", abort);
+						resolve({ thread: summary(child), timedOut: abandoned && active(child.status), result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined });
+					};
+					const listener = () => check(); const abort = () => check(true);
+					const timer = setTimeout(abort, timeoutMs);
+					this.listeners.add(listener); signal?.addEventListener("abort", abort, { once: true });
+					if (signal?.aborted) abort(); else check();
+				});
+			},
+		};
+	}
 	forThread(parentId: string): ThreadTools {
 		const summary = (task: Pick<Task, "id" | "title" | "harness" | "model" | "status" | "parentId"> & { error?: string; tags?: string[] }) => ({ id: task.id, title: task.title, harness: task.harness, model: task.model, status: task.status, parentId: task.parentId, error: task.error, ...(task.tags?.length ? { tags: task.tags } : {}) });
 		/** Owned: a child this chat delegated, forked or handed off, plus, where `launched`, a top-level chat it launched. */
@@ -507,13 +598,8 @@ export class WorkspaceThreads {
 			launch: async request => { const prepared = await this.prepareLaunch(parentId, request); return "existing" in prepared ? prepared.existing : this.commitLaunch(parentId, prepared); },
 			launchBatch: requests => this.launchBatch(parentId, requests),
 			search: query => {
-				const needle = query.trim().toLowerCase(); if (!needle) throw new Error("Pass words to search for.");
-				const projects = new Map(this.host.store.getProjects().map(project => [project.id, project])), referenced = new Set(this.host.store.getTask(parentId).messages.flatMap(message => message.role === "user" ? message.threadReferences ?? [] : []));
-				// Titles, branches and pull requests only: message text stays private, and so does other chats' delegated work.
-				return this.host.store.getOverview().tasks.filter(task => !task.archived && !task.delegation?.parentTaskId).map(task => {
-					const project = task.projectId ? projects.get(task.projectId) : undefined, pullRequests = (task.pullRequests ?? []).map(link => `${link.repository}#${link.number}`);
-					return { task, project, pullRequests, text: [task.title, project?.name, project?.worktree?.branch, ...pullRequests].filter(Boolean).join(" ").toLowerCase() };
-				}).filter(entry => entry.text.includes(needle)).slice(0, 20).map(({ task, project, pullRequests }) => ({ id: task.id, title: task.title, status: task.status, ...(project ? { project: project.name } : {}), ...(project?.worktree ? { branch: project.worktree.branch } : {}), ...(pullRequests.length ? { pullRequests } : {}), updatedAt: task.updatedAt, readable: task.id === parentId || task.launch?.byTaskId === parentId || referenced.has(task.id) }));
+				const referenced = new Set(this.host.store.getTask(parentId).messages.flatMap(message => message.role === "user" ? message.threadReferences ?? [] : []));
+				return this.searchChats(query, task => task.id === parentId || task.launch?.byTaskId === parentId || referenced.has(task.id));
 			},
 			projects: query => {
 				const current = this.host.store.getTask(parentId).projectId, folder = (directory: string) => directory.split(/[\\/]/).filter(Boolean).at(-1) ?? directory;
