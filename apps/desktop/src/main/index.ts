@@ -36,7 +36,8 @@ import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import { validatePublishRepository } from "../shared/gitWorkflow";
-import { validateWorktreeCleanupRequest } from "../shared/worktreeCleanup";
+import { validateWorktreeCleanupRequest, type WorktreeSize } from "../shared/worktreeCleanup";
+import { measureWorktree } from "./worktreeSizes";
 import { limitResetAt } from "../shared/usageLimitRecovery";
 import { validateSecretAnswer } from "../shared/secretRequests";
 import { generateCommitMessage, gitInit, publishOwners, publishRepository } from "./gitWorkflow";
@@ -735,6 +736,13 @@ ipcMain.handle("workspace:answer-secret", (event, taskId: unknown, requestId: un
 	return workspaceRuntime.answerSecret(taskId, requestId, validateSecretAnswer(value));
 });
 ipcMain.handle("workspace:quit-interrupted", event => { if (!senderWindow(event)) throw new Error("Invalid request."); return workspaceRuntime.quitInterrupted(); });
+ipcMain.handle("workspace:worktree-sizes", async (event, value: unknown) => {
+	if (!senderWindow(event) || !Array.isArray(value) || value.length > 500 || value.some(id => typeof id !== "string")) throw new Error("Invalid worktree size request.");
+	const sizes: Record<string, WorktreeSize> = {};
+	// Only worktrees Phaseo made are measured, one at a time, so a big checkout does not starve the rest of the app.
+	for (const project of workspaceRuntime.store.getProjects().filter(item => item.worktree && !item.worktree.removedAt && (value as string[]).includes(item.id))) sizes[project.id] = await span("worktrees.size", undefined, () => measureWorktree(project.directory));
+	return sizes;
+});
 ipcMain.handle("workspace:worktree-cleanup", async (event, value: unknown) => {
 	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid worktree cleanup request.");
 	const request = validateWorktreeCleanupRequest(value);

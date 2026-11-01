@@ -34,7 +34,7 @@ import type { PullRequestGuideResult } from "./pullRequestGuide";
 import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pullRequestStacks";
 import type { WorktreeChatRequest, WorktreeSetup } from "./worktreeChat";
 import type { PublishRepositoryRequest, PublishRepositoryResult } from "./gitWorkflow";
-import type { WorktreeCleanupReport, WorktreeCleanupRequest } from "./worktreeCleanup";
+import type { WorktreeCleanupReport, WorktreeCleanupRequest, WorktreeSize } from "./worktreeCleanup";
 import type { UsageLimitState } from "./usageLimitRecovery";
 import type { SecretRequest } from "./secretRequests";
 import type { ThreadServer } from "./threadServers";
@@ -266,6 +266,8 @@ export type WorkspaceApi = {
 	answerSecret: (taskId: string, requestId: string, value: string | null) => Promise<WorkspaceOverview>;
 	/** T3's worktree cleanup: list what the rules would remove, or remove the chosen ones after checking again. */
 	worktreeCleanup: (request: WorktreeCleanupRequest) => Promise<{ report: WorktreeCleanupReport; last?: WorktreeCleanupReport; workspace: WorkspaceOverview }>;
+	/** Measures worktrees on disk, one at a time, for the clean-up dialog. */
+	worktreeSizes: (projectIds: string[]) => Promise<Record<string, WorktreeSize>>;
 	/** T3's New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */
 	startWorktreeChat: (request: WorktreeChatRequest & { create: Extract<WorkspaceCommand, { type: "create-task" }> }) => Promise<{ workspace: WorkspaceOverview; taskId: string }>;
 	/** Fetches a pull request's head and makes a managed worktree on a new branch at it (T3's "Check out in a separate worktree"). */
