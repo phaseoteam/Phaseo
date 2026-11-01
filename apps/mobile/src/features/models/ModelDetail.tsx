@@ -125,7 +125,7 @@ export function ModelDetail({ id }: { id: string }) {
   };
   const showLab = () => {
     updateFilters({ organisations: [organisation] });
-    router.push("/models");
+    openScreen("/models");
   };
 
   if (model.isLoading && !card) return <Screen><TopBar back={!split} /><LoadingState /></Screen>;
@@ -307,7 +307,7 @@ function ModelIdentifier({ modelId, aliases, variants }: { modelId: string; alia
           onPress={() => (identifiers.length > 1 || otherVariants.length ? void menu.show(triggerRef) : copy(modelId))}
           className="flex-row items-center gap-1"
         >
-          <Text variant="mono" numberOfLines={1} className="shrink text-[13px] text-foreground/80">{modelId}</Text>
+          <Text variant="mono" numberOfLines={1} className="shrink text-foreground/80">{modelId}</Text>
           <Icon icon={copied ? Check : ChevronDown} tone="muted" size={14} />
         </Pressable>
       </View>

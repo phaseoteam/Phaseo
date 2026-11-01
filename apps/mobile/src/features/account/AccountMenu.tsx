@@ -100,7 +100,7 @@ export function AccountMenu() {
 
   return (
     <Screen>
-      <Header large back={!split} title="Account" />
+      <Header large sidebar back={!split} title="Account" />
       <ScrollView contentContainerClassName="pb-16">
         {session ? (
           <>

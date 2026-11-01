@@ -27,6 +27,7 @@ export function CodeScreen() {
   return (
     <Screen>
       <Header
+        sidebar
         back={!split}
         large={split}
         title="Code"

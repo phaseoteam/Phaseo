@@ -4,9 +4,9 @@ import { ArrowDown, BookOpenText, Code2, Lightbulb, MessageSquareOff, MoreHorizo
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useSidebarButton } from "@/components/shell/sidebarDrawer";
 import { Button, EmptyState, Header, Icon, IconButton, measureAnchor, Screen, showActions, Text, useToneColor, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
-import { useSidebarButton } from "./ChatDrawer";
 import { haptic, streamTick } from "@/lib/haptics";
 import { useAuth } from "@/providers/AuthProvider";
 import { perf } from "@/perf";
@@ -263,7 +263,7 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="flex-grow justify-center px-5 py-8">
           <View className="w-full max-w-[560px] self-center">
-            <Text variant="display" className="text-center text-[26px]">{`Good ${period}`}</Text>
+            <Text variant="display" className="text-center text-[24px] leading-[30px]">{`Good ${period}`}</Text>
             <Text variant="muted" className="mt-1.5 text-center">{models.length > 1 ? `${models.length} models will answer side by side.` : "What can I help you think through?"}</Text>
             {session ? (
               <View className="mt-7 gap-2">
