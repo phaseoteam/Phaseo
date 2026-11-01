@@ -82,7 +82,7 @@ function ToastStack({ toasts }: { toasts: Toast[] }) {
               <View className="pt-0.5"><Icon icon={meta.icon} tone={meta.tone} size={17} /></View>
               <View className="flex-1">
                 {entry.title ? <Text variant="label">{entry.title}</Text> : null}
-                <Text variant={entry.title ? "muted" : "small"} className={entry.title ? "mt-0.5 text-[13px] leading-[18px]" : "font-medium"}>{entry.message}</Text>
+                <Text variant="muted" className={entry.title ? "mt-0.5" : "text-foreground"}>{entry.message}</Text>
               </View>
               <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={8} onPress={() => dismissToast(entry.id)} className="h-6 w-6 items-center justify-center rounded-md active:bg-accent">
                 <Icon icon={X} tone="muted" size={14} />

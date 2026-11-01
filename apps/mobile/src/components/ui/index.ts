@@ -14,4 +14,4 @@ export { Segmented } from "./segmented";
 export { Slider } from "./slider";
 export { EmptyState, ErrorState, LoadingState, Skeleton, SkeletonRows } from "./states";
 export { Switch, switchHaptic, type SwitchProps } from "./switch";
-export { Text } from "./text";
+export { INPUT_TEXT, Text } from "./text";

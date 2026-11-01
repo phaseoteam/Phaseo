@@ -7,7 +7,7 @@ import type { ComposerCommand } from "./commands";
 export function ComposerCommandPopover({ commands, onSelect }: { commands: ComposerCommand[]; onSelect(command: ComposerCommand): void }) {
   return (
     <View className="mb-2 overflow-hidden rounded-md border border-border bg-popover shadow-md">
-      <Text className="px-3.5 pb-1 pt-2.5 text-[12px] font-semibold text-muted-foreground">Commands</Text>
+      <Text variant="caption" className="px-3.5 pb-1 pt-2.5 font-semibold">Commands</Text>
       <ScrollView className="max-h-[180px]" keyboardShouldPersistTaps="always" showsVerticalScrollIndicator={false}>
         {commands.map((command, index) => (
           <Pressable
@@ -19,8 +19,8 @@ export function ComposerCommandPopover({ commands, onSelect }: { commands: Compo
             style={{ borderBottomWidth: index === commands.length - 1 ? 0 : StyleSheet.hairlineWidth }}
           >
             <Icon icon={SquareTerminal} tone="muted" size={14} />
-            <Text numberOfLines={1} className="shrink-0 text-[16px] font-medium text-foreground">{command.label}</Text>
-            <Text numberOfLines={1} className="min-w-0 flex-1 text-[12px] text-muted-foreground">{command.description}</Text>
+            <Text variant="body" numberOfLines={1} className="shrink-0">{command.label}</Text>
+            <Text variant="caption" numberOfLines={1} className="min-w-0 flex-1">{command.description}</Text>
           </Pressable>
         ))}
       </ScrollView>

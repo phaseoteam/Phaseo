@@ -44,7 +44,7 @@ export function Button({ label, variant = "primary", size = "md", icon, leading,
       className={cn("flex-row items-center justify-center disabled:opacity-50", sizes[size], style.box, className)}
     >
       {loading ? <ActivityIndicator size="small" color={spinner} /> : icon ? <Icon icon={icon} tone={style.tone} size={size === "sm" ? 16 : 18} /> : leading ?? null}
-      <Text variant="label" className={cn(style.text, size === "sm" && "text-[13px]")}>{label}</Text>
+      <Text variant="label" className={style.text}>{label}</Text>
     </Pressable>
   );
 }

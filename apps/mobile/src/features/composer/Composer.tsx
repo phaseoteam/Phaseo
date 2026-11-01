@@ -3,9 +3,10 @@ import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from "
 import { TextInput, View, type LayoutChangeEvent } from "react-native";
 import { useKeyboardState } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Text, type Anchor } from "@/components/ui";
+import { INPUT_TEXT, Text, type Anchor } from "@/components/ui";
 import type { ChatAttachment } from "@/features/chat/types";
 import type { ModelLabel } from "@/features/chat/modelSheetRows";
+import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
 import { AttachmentStrip, CompactAttachments } from "./ComposerAttachments";
 import { ComposerCommandPopover } from "./ComposerCommandPopover";
@@ -165,7 +166,7 @@ export function Composer(props: ComposerProps) {
               autoFocus={props.autoFocus}
               accessibilityLabel="Message"
               textAlignVertical={expanded ? "top" : "center"}
-              className="flex-1 font-sans text-[16px] text-foreground"
+              className={cn("flex-1", INPUT_TEXT)}
               style={{ padding: 0, lineHeight: LINE_HEIGHT }}
               placeholderTextColorClassName="accent-muted-foreground"
               cursorColorClassName="accent-primary"
@@ -180,5 +181,5 @@ export function Composer(props: ComposerProps) {
 
 /** A footnote under the composer, in its muted caption style. */
 export function ComposerFootnote({ children }: { children: string }) {
-  return <Text className="px-1 pt-2 text-[12px] text-muted-foreground">{children}</Text>;
+  return <Text variant="caption" className="px-1 pt-2">{children}</Text>;
 }
