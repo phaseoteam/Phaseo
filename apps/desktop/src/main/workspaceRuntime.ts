@@ -46,6 +46,7 @@ import { OpenCodeAdapter } from "./openCodeAdapter";
 import { AcpAdapter } from "./acpAdapter";
 import { PiAdapter } from "./piAdapter";
 import { handoffPrompt } from "./handoffPrompt";
+import { copyWorktreeIncludes } from "./worktreeInclude";
 import { AttachmentService } from "./attachments";
 import type { FormAnswer } from "../shared/agentForms";
 import { formAnswerError } from "../shared/agentForms";
@@ -695,6 +696,8 @@ export class WorkspaceRuntime {
 		const source = this.store.getProjects().find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
 		const root = path.join(this.directory, "worktrees"); mkdirSync(root, { recursive: true }); const directory = path.join(realpathSync(root), randomUUID());
 		const baseCommit = await createGitWorktree(source.directory, directory, branch, base);
+		// Local files such as .env, before any setup script runs; a failed copy leaves the worktree usable without them.
+		await copyWorktreeIncludes(source.directory, directory).catch(() => undefined);
 		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); if (runScripts) this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
 	}
