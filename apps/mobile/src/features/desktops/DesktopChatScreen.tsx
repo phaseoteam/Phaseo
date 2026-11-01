@@ -1,22 +1,26 @@
 import { LegendList } from "@legendapp/list/react-native";
-import { ArrowUp, Check, ChevronDown, ChevronRight, CircleAlert, Square, Wrench, X } from "lucide-react-native";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ChevronDown, ChevronRight, CircleAlert, Wrench } from "lucide-react-native";
+import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Logo } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
-import { Button, Chip, EmptyState, ErrorState, Header, Icon, IconButton, Screen, SkeletonRows, Text, TextField, toast, useToneColor } from "@/components/ui";
+import { EmptyState, ErrorState, Header, Icon, Screen, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
+import type { ModelLabel } from "@/features/chat/modelSheetRows";
+import { Composer } from "@/features/composer/Composer";
+import { ComposerErrorNotice } from "@/features/composer/ComposerNotices";
+import { resolveSendPresentation, type FollowUpAction } from "@/features/composer/sendPresentation";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
 import { chatItems, chatStatusLabel, type ChatItem } from "./chatState";
 import { DesktopRequestError, type DesktopClient } from "./client";
-import { ModelControl } from "@/features/chat/ModelSheet";
 import { ConnectionNotice } from "./CodeThreadList";
 import { clientFor, connectionLabel, useConnection } from "./connections";
 import { openDesktopChat } from "./DesktopConnections";
 import { knownModelsOf, useDesktopChat } from "./hooks";
-import { threadModelLabel } from "./newThread";
-import type { PhoneActivity, PhoneApproval, PhoneMessage, PhoneQuestionRequest } from "./protocol";
+import { threadModel } from "./newThread";
+import { PendingCards } from "./PendingCards";
+import type { PhoneActivity, PhoneMessage } from "./protocol";
 import { useDesktop } from "./store";
 
 const problemText = (error: unknown) => (error instanceof Error ? error.message : "That didn't work.");
@@ -55,6 +59,7 @@ function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chat
   const chat = view?.chat;
   const running = chat?.status === "running";
   const lastId = view?.entries.at(-1)?.id;
+  const model = chat ? threadModel(chat, knownModelsOf(client)) : null;
 
   const stop = async () => {
     haptic("press");
@@ -71,7 +76,6 @@ function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chat
         back
         title={chat?.title ?? "Thread"}
         subtitle={[chat ? chatStatusLabel(chat) : connectionLabel(connection), chat?.project, desktopName].filter(Boolean).join(" · ")}
-        right={running ? <IconButton icon={Square} label="Stop" onPress={() => void stop()} size={18} /> : null}
       />
       <ConnectionNotice client={client} />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
@@ -99,10 +103,16 @@ function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chat
           />
         )}
         {chat ? (
-          <>
-            <Pending client={client} chatId={chatId} approvals={chat.approvals} questions={chat.questions} onSettled={settle} />
-            <DesktopComposer client={client} chatId={chatId} running={running} model={threadModelLabel(chat, knownModelsOf(client))} onStop={() => void stop()} />
-          </>
+          <DesktopComposer
+            client={client}
+            chatId={chatId}
+            running={running}
+            model={model}
+            // A Phaseo model id names its lab before the slash; another agent's model shows its initial.
+            logo={model && chat.model ? <Logo id={chat.model.includes("/") ? chat.model.split("/")[0] : null} label={model.model} size={18} /> : null}
+            onStop={() => void stop()}
+            above={<PendingCards client={client} chatId={chatId} approvals={chat.approvals} questions={chat.questions} onSettled={settle} onStop={running ? () => void stop() : null} onFailure={reportFailure} />}
+          />
         ) : null}
       </KeyboardAvoidingView>
     </Screen>
@@ -180,151 +190,55 @@ function ActivityGroup({ activities }: { activities: PhoneActivity[] }) {
   );
 }
 
-/** What the chat waits on: approvals (accept or decline only; the phone can't change permissions) and questions. */
-function Pending({ client, chatId, approvals, questions, onSettled }: { client: DesktopClient; chatId: string; approvals: PhoneApproval[]; questions: PhoneQuestionRequest[]; onSettled(kind: "approval" | "question", id: string): void }) {
-  if (!approvals.length && !questions.length) return null;
-  return (
-    <ScrollView className="max-h-[50%] grow-0 border-t border-border" keyboardShouldPersistTaps="handled" contentContainerClassName="pb-1">
-      {approvals.map((approval) => <ApprovalCard key={approval.id} client={client} chatId={chatId} approval={approval} onSettled={() => onSettled("approval", approval.id)} />)}
-      {questions.map((request) => <QuestionCard key={request.id} client={client} chatId={chatId} request={request} onSettled={() => onSettled("question", request.id)} />)}
-    </ScrollView>
-  );
-}
-
-function ApprovalCard({ client, chatId, approval, onSettled }: { client: DesktopClient; chatId: string; approval: PhoneApproval; onSettled(): void }) {
-  const [busy, setBusy] = useState<"accept" | "decline" | null>(null);
-  const answer = async (decision: "accept" | "decline") => {
-    setBusy(decision);
-    haptic("press");
-    try {
-      await client.request("answer_approval", { chatId, approvalId: approval.id, decision });
-      onSettled();
-    } catch (problem) {
-      reportFailure("Couldn't answer", problem);
-    } finally {
-      setBusy(null);
-    }
-  };
-  return (
-    <View className="border-b border-border px-4 py-3">
-      <Text variant="label">{approval.plan ? "Proposed plan" : approval.title}</Text>
-      {approval.plan ? <View className="mt-1"><Markdown text={approval.description} /></View> : approval.description ? <Text variant="small" className="mt-1 text-muted-foreground" selectable numberOfLines={12}>{approval.description}</Text> : null}
-      <View className="mt-3 flex-row gap-2">
-        <Button label={approval.plan ? "Accept the plan" : "Accept"} icon={Check} size="sm" loading={busy === "accept"} disabled={busy != null} onPress={() => void answer("accept")} />
-        <Button label="Decline" icon={X} size="sm" variant="outline" loading={busy === "decline"} disabled={busy != null} onPress={() => void answer("decline")} />
-      </View>
-    </View>
-  );
-}
-
-function QuestionCard({ client, chatId, request, onSettled }: { client: DesktopClient; chatId: string; request: PhoneQuestionRequest; onSettled(): void }) {
-  const [chosen, setChosen] = useState<Record<string, string[]>>({});
-  const [other, setOther] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false);
-  const answers = Object.fromEntries(request.questions.map((question) => {
-    const typed = other[question.id]?.trim();
-    return [question.id, [...(chosen[question.id] ?? []), ...(typed ? [typed] : [])]];
-  }));
-  const complete = request.questions.every((question) => (answers[question.id]?.length ?? 0) > 0);
-  const toggle = (questionId: string, label: string, multi: boolean) => setChosen((current) => {
-    const now = current[questionId] ?? [];
-    const next = now.includes(label) ? now.filter((value) => value !== label) : multi ? [...now, label] : [label];
-    return { ...current, [questionId]: next };
-  });
-  const submit = async () => {
-    setBusy(true);
-    haptic("press");
-    try {
-      await client.request("answer_question", { chatId, questionId: request.id, answers });
-      onSettled();
-    } catch (problem) {
-      reportFailure("Couldn't send the answers", problem);
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <View className="gap-3 border-b border-border px-4 py-3">
-      {request.questions.map((question) => (
-        <View key={question.id} className="gap-2">
-          <Text variant="label">{question.header || question.question}</Text>
-          {question.header ? <Text variant="small" className="text-muted-foreground">{question.question}</Text> : null}
-          {question.options?.length ? (
-            <View className="flex-row flex-wrap gap-2">
-              {question.options.map((option) => (
-                <Chip key={option.label} label={option.label} selected={(chosen[question.id] ?? []).includes(option.label)} onPress={() => toggle(question.id, option.label, Boolean(question.multiSelect))} />
-              ))}
-            </View>
-          ) : null}
-          {question.isOther || !question.options?.length ? (
-            <TextField
-              value={other[question.id] ?? ""}
-              onChangeText={(text) => setOther((current) => ({ ...current, [question.id]: text }))}
-              placeholder={question.options?.length ? "Something else" : "Your answer"}
-              secureTextEntry={question.isSecret}
-              accessibilityLabel={question.question}
-            />
-          ) : null}
-        </View>
-      ))}
-      <Button label="Send answers" size="sm" className="self-start" loading={busy} disabled={!complete} onPress={() => void submit()} />
-    </View>
-  );
-}
-
-/** Send, or while a turn runs, steer it now or queue the message for after it. The model shows read-only: a phone can't change it on a thread that exists. */
-function DesktopComposer({ client, chatId, running, model, onStop }: { client: DesktopClient; chatId: string; running: boolean; model: string | null; onStop(): void }) {
-  const insets = useSafeAreaInsets();
+/**
+ * The thread's composer: send, or while a turn runs, steer it (a long press queues the message on the computer
+ * instead). The model shows read-only: a phone can't change it on a thread that exists. Attachments and `/` commands
+ * aren't offered, as the phone protocol carries neither.
+ */
+function DesktopComposer({ client, chatId, running, model, logo, above, onStop }: { client: DesktopClient; chatId: string; running: boolean; model: ModelLabel | null; logo: ReactNode; above: ReactNode; onStop(): void }) {
   const [text, setText] = useState("");
-  const [steer, setSteer] = useState(true);
   const [sending, setSending] = useState(false);
-  const canSend = text.trim().length > 0 && !sending;
-  const send = async () => {
-    if (!canSend) return;
+  const [error, setError] = useState<string | null>(null);
+  const presentation = resolveSendPresentation({ editingQueuedMessage: false, running, canSteer: running, followUpBehavior: "steer", deliveryDeferred: false });
+  const send = async (action?: FollowUpAction) => {
     const value = text.trim();
-    haptic("press");
+    if (!value || sending) return;
+    const steer = running && (action ?? presentation.action) === "steer";
     setSending(true);
     setText("");
+    setError(null);
     try {
-      await client.request("send", { chatId, text: value, ...(running && steer ? { steer: true } : {}) });
+      await client.request("send", { chatId, text: value, ...(steer ? { steer: true } : {}) });
     } catch (problem) {
       // Not sent (or not known to be): the text comes back so nothing typed is lost.
-      if (!(problem instanceof DesktopRequestError && problem.code === "held")) setText((current) => current || value);
-      reportFailure("Couldn't send", problem);
+      if (problem instanceof DesktopRequestError && problem.code === "held") {
+        reportFailure("Couldn't send", problem);
+      } else {
+        haptic("error");
+        setText((current) => current || value);
+        setError(problemText(problem));
+      }
     } finally {
       setSending(false);
     }
   };
   return (
-    <View className="border-t border-border bg-background px-3 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
-      {running ? (
-        <View className="mb-2 flex-row gap-2">
-          <Chip label="Steer now" selected={steer} onPress={() => setSteer(true)} />
-          <Chip label="After this turn" selected={!steer} onPress={() => setSteer(false)} />
-        </View>
-      ) : null}
-      {model ? <View className="-ml-1.5 mb-1"><ModelControl label={model} disabledReason="Change it on the computer" /></View> : null}
-      <View className="flex-row items-end gap-2 rounded-md border border-input bg-background px-1.5 py-1">
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder={running ? (steer ? "Steer this chat" : "Queue a message") : "Message"}
-          multiline
-          accessibilityLabel="Message"
-          className="max-h-40 min-h-11 flex-1 px-2 py-2.5 font-sans text-[16px] leading-[22px] text-foreground"
-          placeholderTextColorClassName="accent-muted-foreground"
-          cursorColorClassName="accent-primary"
-        />
-        {running && !text.trim() ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Stop" onPress={onStop} className="mb-1 h-9 w-9 items-center justify-center rounded-md bg-foreground">
-            <Icon icon={Square} tone="background" size={14} />
-          </Pressable>
-        ) : (
-          <Pressable accessibilityRole="button" accessibilityLabel={running && steer ? "Steer" : "Send"} disabled={!canSend} onPress={() => void send()} className={cn("mb-1 h-9 w-9 items-center justify-center rounded-md", canSend ? "bg-primary" : "bg-muted")}>
-            <Icon icon={ArrowUp} tone={canSend ? "primary-foreground" : "muted"} size={18} strokeWidth={2.4} />
-          </Pressable>
-        )}
-      </View>
-    </View>
+    <Composer
+      text={text}
+      onChangeText={setText}
+      placeholder="Ask anything"
+      onAttach={null}
+      model={model ? { label: model, logos: logo, readOnlyReason: "Change it on the computer" } : null}
+      send={presentation}
+      sendBlockedReason={sending ? "Sending…" : null}
+      onSend={(action) => void send(action)}
+      onStop={running ? onStop : null}
+      above={(
+        <>
+          {above}
+          {error ? <ComposerErrorNotice message={error} onDismiss={() => setError(null)} /> : null}
+        </>
+      )}
+    />
   );
 }

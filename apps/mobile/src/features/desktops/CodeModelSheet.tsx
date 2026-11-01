@@ -1,5 +1,5 @@
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
-import { effortRows, effortSummary, modelControlLabel, modelSheetRows } from "@/features/chat/modelSheetRows";
+import { effortRows, effortSummary, modelLabel, modelSheetRows } from "@/features/chat/modelSheetRows";
 import { ModelSheet, type SheetModel } from "@/features/chat/ModelSheet";
 import { rememberModel, useRecentModels } from "@/features/chat/recentModels";
 import type { ModelChoice, ModelList } from "./newThread";
@@ -10,7 +10,7 @@ const describe = (model: PhoneModel): SheetModel => ({ id: model.id, label: mode
 /** The new thread's control label: "GPT-6.1 · High", or the model alone when it has no effort levels. */
 export function codeModelLabel(list: ModelList, choice: ModelChoice) {
   const model = list.models.find((entry) => entry.id === choice.model);
-  return modelControlLabel(model?.name ?? choice.model, effortSummary(model?.efforts ?? [], model?.defaultEffort, choice.effort));
+  return modelLabel(model?.name ?? choice.model, effortSummary(model?.efforts ?? [], model?.defaultEffort, choice.effort));
 }
 
 /**
