@@ -12,7 +12,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { perf } from "@/perf";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { chatActions } from "./chatActions";
-import { Composer } from "./Composer";
+import { ChatComposer } from "./ChatComposer";
 import { buildItems, focusedAnswerPick, focusIndex, reconcileItems, type ConversationItem } from "./conversationItems";
 import { newestMatch } from "./db";
 import { getLive, liveShapes } from "./live";
@@ -170,9 +170,11 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
           </View>
         ) : null}
         </View>
-        <Composer
+        <ChatComposer
+          chatId={chatId}
           models={chat.models}
           settings={settings}
+          workspaceId={workspaceId}
           onModelPress={() => setSheetOpen(true)}
           running={running}
           disabledReason={session || perf?.chatOrigin() ? null : "Sign in to send messages"}
@@ -278,11 +280,13 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
             <Text variant="caption" className="mt-6 text-center">Chats are saved only on this device. Messages go through your Phaseo workspace.</Text>
           </View>
         </ScrollView>
-        <Composer
+        <ChatComposer
+          chatId={null}
           autoFocus={false}
           seed={seed}
           models={models}
           settings={settings}
+          workspaceId={workspaceId}
           onModelPress={() => setSheetOpen(true)}
           running={false}
           disabledReason={!session && !perf?.chatOrigin() ? "Sign in to send messages" : !models.length ? "Choose a model first" : null}

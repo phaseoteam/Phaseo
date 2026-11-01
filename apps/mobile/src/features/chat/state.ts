@@ -135,6 +135,8 @@ export function setRunning(chatId: string, delta: 1 | -1) {
   runningCounts.set((current) => ({ ...current, [chatId]: Math.max(0, (current[chatId] ?? 0) + delta) }));
 }
 
+export const isChatRunning = (chatId: string) => (runningCounts.get()[chatId] ?? 0) > 0;
+
 export function useChatRunning(chatId: string) {
   return runningCounts.use((value) => (value[chatId] ?? 0) > 0);
 }
