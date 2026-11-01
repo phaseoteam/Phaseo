@@ -47,6 +47,7 @@ const OPEN = 1;
 export const CLOSE_REPLACED = relayCloseCodes.replaced;
 export const CLOSE_DEVICE_REMOVED = relayCloseCodes.deviceRemoved;
 export const CLOSE_NOT_ENTITLED = relayCloseCodes.notEntitled;
+export const CLOSE_UNAVAILABLE = relayCloseCodes.unavailable;
 
 export async function sha256Hex(value: string): Promise<string> {
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -125,15 +126,17 @@ export class ConnectRoom {
 	private async connectPhone(request: Request): Promise<Response> {
 		const header = request.headers.get("authorization") ?? "";
 		const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-		if (!token) return json(401, "unauthorized");
+		// A phone's WebSocket can't read an HTTP status, so a refused phone is accepted and closed with a code that says why.
+		if (!token) return this.refuse(CLOSE_DEVICE_REMOVED, "unauthorized");
 		const tokenHash = await sha256Hex(token);
 		const device = this.sql.exec<{ device_id: string }>("SELECT device_id FROM devices WHERE token_hash = ?", tokenHash).toArray()[0];
-		if (!device) return json(401, "unauthorized");
+		if (!device) return this.refuse(CLOSE_DEVICE_REMOVED, "unauthorized");
 		const workspaceId = this.meta("workspace_id");
-		if (!workspaceId) return json(401, "unauthorized");
+		if (!workspaceId) return this.refuse(CLOSE_DEVICE_REMOVED, "unauthorized");
 		const entitlement = await this.entitlement(workspaceId);
-		if (!entitlement) return json(503, "entitlement_unavailable");
-		if (!entitlement.enabled || !entitlement.paidUp) return json(402, "connect_unavailable");
+		if (!entitlement) return this.refuse(CLOSE_UNAVAILABLE, "entitlement_unavailable");
+		if (!entitlement.enabled) return this.refuse(CLOSE_NOT_ENTITLED, "connect_off");
+		if (!entitlement.paidUp) return this.refuse(CLOSE_NOT_ENTITLED, "payment_required");
 
 		const tag = `device:${device.device_id}`;
 		for (const old of this.open(tag)) old.close(CLOSE_REPLACED, "replaced");
@@ -143,6 +146,15 @@ export class ConnectRoom {
 		this.deliverHeld(socket, device.device_id);
 		if (desktop) this.send(desktop, { type: "device_online", deviceId: device.device_id });
 		return response;
+	}
+
+	/** Opens the socket only to close it with a reason. Not hibernated or tagged, so it never reaches the handlers. Overridden in tests. */
+	protected refuse(code: number, reason: string): Response {
+		const pair = new WebSocketPair();
+		const [client, server] = Object.values(pair);
+		server.accept();
+		server.close(code, reason);
+		return new Response(null, { status: 101, webSocket: client });
 	}
 
 	/** Accepts the server end with hibernation and returns the 101 response. Overridden in tests (no WebSocketPair in Node). */

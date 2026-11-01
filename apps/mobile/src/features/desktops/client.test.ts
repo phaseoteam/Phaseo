@@ -268,6 +268,40 @@ describe("choosing a transport", () => {
     expect(await refused).toMatchObject({ message: expect.stringContaining("Phaseo Connect is off") });
     client.stop();
   });
+
+  test("says why Connect refused: removed, or payment due, and stops trying", async () => {
+    for (const [close, message] of [
+      [{ code: 4001, reason: "unauthorized" }, "This phone was removed on the computer. Pair it again."],
+      [{ code: 4402, reason: "payment_required" }, expect.stringMatching(/^Payment due\./)],
+    ] as const) {
+      const desktop = new FakeDesktop();
+      const saved = await pairDesktop(desktop.pairingLink({ connect: true }), deps(desktop));
+      desktop.reachable = false;
+      desktop.relayClose = close;
+      const { client } = clientFor(desktop, saved);
+      const refused = stateReached(client, "refused");
+      client.start();
+      expect(await refused).toMatchObject({ message });
+      client.stop();
+    }
+  });
+
+  test("keeps trying, and says why, while Connect can't check the workspace", async () => {
+    const desktop = new FakeDesktop();
+    const saved = await pairDesktop(desktop.pairingLink({ connect: true }), deps(desktop));
+    desktop.reachable = false;
+    desktop.relayClose = { code: 4503, reason: "entitlement_unavailable" };
+    const { client } = clientFor(desktop, saved);
+    const offline = stateReached(client, "offline");
+    client.start();
+    expect(await offline).toMatchObject({ message: expect.stringContaining("can't check this computer's workspace right now") });
+    // Once the relay can check again, the next try gets in.
+    desktop.relayClose = null;
+    const connected = stateReached(client, "connected");
+    client.retryNow();
+    expect(await connected).toMatchObject({ via: "connect" });
+    client.stop();
+  });
 });
 
 describe("chat state", () => {

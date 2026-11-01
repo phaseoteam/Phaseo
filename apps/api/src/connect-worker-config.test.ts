@@ -76,7 +76,9 @@ describe("phaseo-connect (the Connect relay Worker)", () => {
 
 	it("passes a phone's relay token to the room, which checks it", async () => {
 		const { call, forwarded, authenticate } = setup();
-		expect((await call(`/v1/phone/${DESKTOP_ID}`)).status).toBe(401);
+		// Even without a token the room gets it, and closes the socket with a reason the phone can read.
+		expect((await call(`/v1/phone/${DESKTOP_ID}`)).status).toBe(200);
+		expect(forwarded.shift()!.headers.get("authorization")).toBeNull();
 		expect((await call(`/v1/phone/${DESKTOP_ID}`, { authorization: "Bearer relay-token", "x-connect-role": "desktop" })).status).toBe(200);
 		expect(authenticate).not.toHaveBeenCalled();
 		expect(Object.fromEntries(forwarded[0].headers)).toMatchObject({ "x-connect-role": "phone", authorization: "Bearer relay-token" });

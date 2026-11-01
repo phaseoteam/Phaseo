@@ -23,7 +23,10 @@ Direct addresses are plain `http`/`ws` (a Wi-Fi or Tailscale IP has no certifica
 - The phone connects to `relayPhoneUrl(relayUrl, desktopId)` with `Authorization: Bearer <relayToken>` and exchanges `Envelope`s addressed `from: deviceId`, `to: relayDesktopAddress` (`"desktop"`). The relay sets `from` from the sign-in, so seal with exactly those names: `new EnvelopeChannel(sharedKey(devicePrivateKey, desktopPublicKey), deviceId, relayDesktopAddress)`.
 - Pairing over Connect: `relayPairing(pairingCode)` gives a relay token and a pseudo device id (`pair-…`). The phone signs in with that token and sends one envelope from that pseudo id, with `senderPublicKey` set to its public key, holding `{ id, type: "pair", pairingCode, deviceName, devicePublicKey }`. The answer is a normal response whose result is a `PairResult`. The relay then closes the pairing socket (4001), and the phone reconnects with its own relay token.
 - Mark an envelope `hold: true` when `relayHolds(frame)` is true (attention, and the phone's `send` and `answer_*`); the relay keeps those for an offline recipient and drops the rest.
-- A refused sign-in is an HTTP status with `{ error }` (`RelayRefusal`). Close code 4402 means Connect is off or a month is unpaid: show it and stop retrying.
+- A refused desktop sign-in is an HTTP status with `{ error }` (`RelayRefusal`). A phone's WebSocket can't read a status, so the relay accepts a refused phone and closes it at once with a code and reason (`relayCloseCodes`):
+  - 4001 `unauthorized`: the desktop doesn't know this token, or removed the phone. Pair again.
+  - 4402 `connect_off` or `payment_required`: show it and stop retrying.
+  - 4503 `entitlement_unavailable`: the relay couldn't check the workspace just now. Say so and keep retrying.
 
 ## React Native
 

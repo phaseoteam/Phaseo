@@ -14,8 +14,10 @@
  * - Desktop control frames: register_device and remove_device; the relay answers { id, ok } or { id, ok: false, error }.
  * - From the relay: desktop_online / desktop_offline to phones; devices_online, device_online and device_offline to
  *   the desktop; { type: "error", error, seq? } for a frame it refused.
- * - A refused sign-in is an HTTP status before the upgrade, with { error } as the body. A session that loses the
- *   entitlement is closed with relayCloseCodes.notEntitled and the reason "payment_required" or "connect_off".
+ * - A refused desktop sign-in is an HTTP status before the upgrade, with { error } as the body. A refused phone sign-in
+ *   is accepted and closed at once, because a phone's WebSocket can't read a status: deviceRemoved ("unauthorized")
+ *   for a token the desktop doesn't have, notEntitled ("payment_required" or "connect_off"), or unavailable when the
+ *   workspace couldn't be checked. A session that loses the entitlement is closed with notEntitled the same way.
  */
 
 /** The relay's name for the desktop in envelope routes. */
@@ -34,6 +36,8 @@ export const relayCloseCodes = {
 	deviceRemoved: 4001,
 	/** The workspace turned Connect off or has a month to pay: stop retrying until that changes. */
 	notEntitled: 4402,
+	/** The relay couldn't check the workspace just now: try again later. */
+	unavailable: 4503,
 } as const;
 
 export const relayLimits = {
