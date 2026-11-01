@@ -1,21 +1,30 @@
-import { useEffect, useRef } from "react";
-import { Archive, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { Task } from "../../shared/workspace";
-import { shortDuration } from "../../shared/threadLifecycle";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { showToast } from "../components/ui/toast";
 import { shortcut, useCommand } from "../lib/keybindings";
-import { mentionPlainText } from "../lib/mentions";
+import type { ComposerEditor } from "./composerEditor";
 import { chatPrompts, historyEntries, recentPrompts, stepHistory, type HistoryPosition } from "./promptHistory";
-import { clearStash, stashedDraft, stashPrompt, takeStashed, useStash } from "./promptStash";
+import { deleteStashed, stashedDraft, stashKeyAction, stashPrompt, takeStashed, useStash } from "./promptStash";
 
 type Draft = { text: string; setText: (value: string) => void };
 
-/** Up and Down in an empty message box step through earlier prompts: this chat's, then other chats'. */
-export function usePromptHistory(task: Pick<Task, "id" | "messages">, draft: Draft) {
+/** Whether the caret is on the box's first visual line (back) or last (forward), counting wrapped lines. */
+function atEdge(editor: ComposerEditor | undefined, direction: "back" | "forward") {
+	const instance = editor?.editor;
+	if (!instance || instance.isDestroyed) return true;
+	const { view } = instance, paragraph = view.state.selection.$from.index(0);
+	return view.endOfTextblock(direction === "back" ? "up" : "down") && paragraph === (direction === "back" ? 0 : view.state.doc.childCount - 1);
+}
+
+/**
+ * Up and Down in an empty message box step through earlier prompts: this chat's, then other chats'. On a recalled prompt
+ * left as it was they keep stepping while the caret is on its first line (Up) or last line (Down); elsewhere they move the caret.
+ */
+export function usePromptHistory(task: Pick<Task, "id" | "messages">, draft: Draft, editor?: ComposerEditor) {
 	const position = useRef<HistoryPosition | undefined>(undefined);
 	useEffect(() => { position.current = undefined; }, [task.id]);
 	const step = (direction: "back" | "forward") => {
+		if (draft.text && !atEdge(editor, direction)) return false;
 		const next = stepHistory(direction, historyEntries(chatPrompts(task.messages), recentPrompts()), position.current, draft.text);
 		if (!next) return false;
 		position.current = next.position; draft.setText(next.text);
@@ -24,43 +33,36 @@ export function usePromptHistory(task: Pick<Task, "id" | "messages">, draft: Dra
 	useCommand("composer.historyNext", () => step("forward"));
 }
 
-/** Mod+S parks the draft, or brings back the newest stashed one when the box is empty (composer.stash). */
+/**
+ * The stash: Mod+S parks the draft; in an empty box it brings back the only stashed draft, or opens the stash to choose
+ * from several (composer.stash). The stash shows as a tab above the box while it holds anything.
+ */
 export function usePromptStash(taskId: string, draft: Draft) {
+	const items = useStash();
+	const [open, setOpen] = useState(false);
+	// Bumped per stash, so the tab's count replays its fade in.
+	const [pulse, setPulse] = useState(0);
+	useEffect(() => { setOpen(false); }, [taskId]);
+	useEffect(() => { if (!items.length) setOpen(false); }, [items.length]);
 	const restore = (id?: string) => {
 		const item = takeStashed(id);
 		if (!item) return false;
+		setOpen(false);
 		// Bringing one back never loses what is in the box: it takes the stashed one's place.
 		if (draft.text.trim()) stashPrompt(draft.text, taskId);
 		const { text, dropped } = stashedDraft(item, taskId);
 		draft.setText(text);
 		if (dropped) showToast("info", dropped === 1 ? "The attachment stayed behind" : `${dropped} attachments stayed behind`, "Attachments belong to the chat they were added in.");
 	};
-	const stash = () => {
-		if (!draft.text.trim()) return false;
-		stashPrompt(draft.text, taskId); draft.setText("");
-		const key = shortcut("composer.stash");
-		showToast("info", "Draft stashed", key ? `${key} in an empty message box brings it back.` : undefined);
-	};
-	useCommand("composer.stash", () => draft.text.trim() ? stash() : restore());
+	const stash = () => { stashPrompt(draft.text, taskId); draft.setText(""); setPulse(value => value + 1); };
+	useCommand("composer.stash", () => {
+		const action = stashKeyAction(draft.text, items.length);
+		if (action === "stash") return stash();
+		if (action === "restore") return restore();
+		if (action === "open") { setOpen(true); return; }
+		return false;
+	});
 	/** Parks a draft without asking, so something else can take the box (Edit from here). */
-	const park = (text: string) => { if (text.trim()) { stashPrompt(text, taskId); showToast("info", "Your draft was stashed", "Bring it back from the stash beside Attach files."); } };
-	return { restore, park };
-}
-
-/** The stash beside Attach files, once something is in it: bring a draft back, or clear the lot. */
-export function StashMenu({ onRestore }: { onRestore: (id: string) => void }) {
-	const items = useStash();
-	if (!items.length) return null;
-	const now = Date.now();
-	return <DropdownMenu>
-		<DropdownMenuTrigger render={<button type="button" aria-label={`Stashed drafts (${items.length})`} title="Stashed drafts" className="flex h-8 items-center gap-1 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-4" />}><Archive />{items.length}</DropdownMenuTrigger>
-		<DropdownMenuContent align="start" className="w-72">
-			{items.map((item, index) => <DropdownMenuItem key={item.id} onClick={() => onRestore(item.id)}>
-				<span className="min-w-0 flex-1 truncate">{mentionPlainText(item.text).replace(/\s+/g, " ")}</span>
-				<DropdownMenuShortcut>{index === 0 && shortcut("composer.stash") ? shortcut("composer.stash") : `${shortDuration(now - Date.parse(item.createdAt))}`}</DropdownMenuShortcut>
-			</DropdownMenuItem>)}
-			<DropdownMenuSeparator />
-			<DropdownMenuItem onClick={clearStash}><X />Clear stash</DropdownMenuItem>
-		</DropdownMenuContent>
-	</DropdownMenu>;
+	const park = (text: string) => { if (text.trim()) { stashPrompt(text, taskId); setPulse(value => value + 1); showToast("info", "Your draft was stashed", "Bring it back from Stash above the message box."); } };
+	return { items, open, setOpen, pulse, restore, remove: deleteStashed, park, shortcut: shortcut("composer.stash") };
 }
