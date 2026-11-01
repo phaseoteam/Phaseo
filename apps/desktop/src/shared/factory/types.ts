@@ -388,6 +388,8 @@ export interface FactorySettings {
 	pollMinutes: number;
 	/** The reasoning effort chosen for an agent, by agent id. Unset uses the tool's default. */
 	agentEfforts: Record<string, string>;
+	/** Bots whose comments and reviews go to running stages, like people who can push. Unset uses TRUSTED_BOTS. */
+	trustedBots?: string[];
 }
 
 export interface FactorySnapshot {

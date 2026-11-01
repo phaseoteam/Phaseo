@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STALL_AFTER, STALL_GRACE, activityMessage, checksActivity, heldBackLine, lastProgress, sortActivity, stallAction, stallSummary, trustedActivity, type GithubActivity } from "./activity";
+import { STALL_AFTER, STALL_GRACE, activityMessage, checksActivity, heldBackLine, lastProgress, parseBots, sortActivity, stallAction, stallSummary, trustedActivity, type GithubActivity } from "./activity";
 import type { LogLine } from "./types";
 
 const entry = (patch: Partial<GithubActivity>): GithubActivity => ({ id: "comment:1", kind: "comment", author: "maria", association: "MEMBER", body: "Round half up, not down.", at: 1_000, ...patch });
@@ -27,8 +27,17 @@ describe("which GitHub activity goes to agents", () => {
 		], ["comment:1"]);
 		expect(pass.map((item) => item.id)).toEqual(["review:2", "comment:3"]);
 		expect(hold.map((item) => item.id)).toEqual(["comment:4"]);
-		expect(heldBackLine(hold)).toBe("Didn't pass on a comment from @drive-by: only people who can push to the repository, and known review bots, direct agents");
+		expect(heldBackLine(hold)).toBe("Didn't pass on a comment from @drive-by: only people who can push to the repository, and the review bots in Settings, direct agents");
 		expect(heldBackLine([])).toBeUndefined();
+	});
+
+	it("uses the bots chosen in Settings, typed loosely", () => {
+		expect(parseBots("@coderabbitai, chatgpt-codex-connector[bot]\nsourcery-ai  coderabbitai[bot]")).toEqual(["coderabbitai[bot]", "chatgpt-codex-connector[bot]", "sourcery-ai[bot]"]);
+		expect(parseBots("  ")).toEqual([]);
+		const bot = entry({ author: "sourcery-ai[bot]", bot: true, association: "NONE" });
+		expect(trustedActivity(bot)).toBe(false);
+		expect(trustedActivity(bot, parseBots("sourcery-ai"))).toBe(true);
+		expect(trustedActivity(entry({ author: "chatgpt-codex-connector[bot]", bot: true }), [])).toBe(false);
 	});
 
 	it("frames the message so the stage and its report stay the same", () => {

@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { STALL_NUDGE, activityMessage, checksActivity, heldBackLine, sortActivity, stallAction, stallSummary, type GithubActivity } from "../../shared/factory/activity";
+import { STALL_NUDGE, TRUSTED_BOTS, activityMessage, checksActivity, heldBackLine, sortActivity, stallAction, stallSummary, type GithubActivity } from "../../shared/factory/activity";
 import { autopilotFits, lastRun, linkedItem, pullsFor, stageAgent, withItemEffort } from "../../shared/factory/actions";
 import { INPUTS_FOLDER, attachRef, attachable, attachmentKey, attachmentsFor, imageProblem, isAttachmentName, supportsAttach } from "../../shared/factory/attachments";
 import { DEMO_AGENTS, DEMO_SETTINGS, demoAttachment, demoItems, demoNotes, demoProof, demoRepos, demoRuns } from "../../shared/factory/demo";
@@ -1380,7 +1380,7 @@ export class FactoryStore {
 		const run = this.snapshot.runs.find((candidate) => candidate.id === runId);
 		const session = this.sessions.get(runId);
 		if (!run || run.status !== "running" || !session) return;
-		const { pass, hold } = sortActivity(activity, run.heard ?? []);
+		const { pass, hold } = sortActivity(activity, run.heard ?? [], this.snapshot.settings.trustedBots ?? TRUSTED_BOTS);
 		if (!pass.length && !hold.length) return;
 		this.patchRun(runId, (current) => ({ ...current, heard: [...(current.heard ?? []), ...pass.map((entry) => entry.id), ...hold.map((entry) => entry.id)] }));
 		const held = heldBackLine(hold);

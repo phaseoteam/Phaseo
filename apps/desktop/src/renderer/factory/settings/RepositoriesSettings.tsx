@@ -1,5 +1,6 @@
 import { FolderGit2, GripVertical } from "lucide-react";
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { TRUSTED_BOTS, parseBots } from "../../../shared/factory/activity";
 import type { FactorySettings, FactorySnapshot, RepoStatus } from "../../../shared/factory/types";
 import { AddRepo, errorText, useLocalClones } from "../components/AddRepo";
 import { PersonMark } from "../components/Marks";
@@ -159,6 +160,11 @@ export function CheckingSettings({ snapshot }: { snapshot: FactorySnapshot }) {
 			<Row title="Check for new work" description={`Factory checks for new and changed issues and pull requests on this schedule and whenever you come back to the app. Each check only asks for what changed: about ${checksPerHour(snapshot.settings.pollMinutes, snapshot.settings.repos.length)} of your 5,000 GitHub API requests an hour.`}>
 				<CheckNow snapshot={snapshot} />
 				<Choice label="How often to check" value={snapshot.settings.pollMinutes} options={[1, 2, 5, 15, 30].map((minutes) => ({ value: minutes, label: minutes === 1 ? "Every minute" : `Every ${minutes} minutes` }))} onChange={(pollMinutes) => update({ pollMinutes })} />
+			</Row>
+		</Group>
+		<Group title="While a stage runs" description="New comments, reviews and failed checks on an item reach its agent as it works, so it doesn't finish on code someone already found a problem with. Only people who can push to the repository, and the bots below, are passed on; anyone else's comments are held back and noted in the run's log.">
+			<Row title="Review bots" description="Bots whose comments and reviews go to agents. Separate them with commas. Clear it to pass on no bots.">
+				<Field value={(snapshot.settings.trustedBots ?? TRUSTED_BOTS).join(", ")} placeholder="No bots" mono className="w-80" onSave={(text) => update({ trustedBots: parseBots(text) })} />
 			</Row>
 		</Group>
 	</SettingsPage>;

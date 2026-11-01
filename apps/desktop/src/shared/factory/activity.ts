@@ -28,10 +28,17 @@ export interface GithubActivity {
 }
 
 /**
- * Review bots whose comments go to agents. Other bots are left out: most post status, not findings, and a workflow's
- * bot can repeat text from whoever opened the pull request.
+ * Review bots whose comments go to agents until you choose your own (Settings → Factory → Checking for new work).
+ * Other bots are left out: most post status, not findings, and a workflow's bot can repeat text from whoever opened
+ * the pull request.
  */
 export const TRUSTED_BOTS = ["chatgpt-codex-connector[bot]", "copilot-pull-request-reviewer[bot]", "coderabbitai[bot]"];
+
+/** Bot logins as typed in Settings: separated by commas, spaces or lines, with "[bot]" added where it was left off. */
+export function parseBots(text: string): string[] {
+	const bots = text.split(/[\s,]+/).map((entry) => entry.trim().replace(/^@/, "")).filter(Boolean).map((entry) => (entry.endsWith("[bot]") ? entry : `${entry}[bot]`));
+	return [...new Set(bots)];
+}
 
 const WRITE_ACCESS = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
 
@@ -86,7 +93,7 @@ export function checksActivity(head: string, failed: { name: string; link?: stri
 export function heldBackLine(hold: GithubActivity[]): string | undefined {
 	if (!hold.length) return undefined;
 	const people = [...new Set(hold.map((entry) => `@${entry.author}`))];
-	return `Didn't pass on ${hold.length === 1 ? "a comment" : `${hold.length} comments`} from ${people.join(", ")}: only people who can push to the repository, and known review bots, direct agents`;
+	return `Didn't pass on ${hold.length === 1 ? "a comment" : `${hold.length} comments`} from ${people.join(", ")}: only people who can push to the repository, and the review bots in Settings, direct agents`;
 }
 
 /**
