@@ -36,7 +36,7 @@ export function BannerSlot({ className, ...props }: ComponentProps<"div">) {
 
 /** The stack above the box: drawers on the left, and the stash's tab on the right when there is one. */
 export function BannerDock({ children, aside }: { children?: ReactNode; aside?: ReactNode }) {
-	return <div data-slot="composer-banner-dock" className="relative mx-auto -mb-[calc(1rem+1px)] flex w-[calc(100%-2.75rem)] items-end gap-1 not-has-[[data-composer-banner]]:hidden">
+	return <div data-slot="composer-banner-dock" className="relative mx-auto -mb-[calc(1rem+1px)] flex w-[calc(100%-2.75rem)] items-end justify-end gap-1 not-has-[[data-composer-banner]]:hidden">
 		<div data-slot="composer-banner-column" className="flex min-w-0 flex-1 flex-col empty:hidden [&>[data-slot=composer-banner-slot]]:w-full [&>[data-slot=composer-banner-slot]:last-child]:mb-0">{children}</div>
 		<div data-slot="composer-banner-aside" className="flex shrink-0 empty:hidden">{aside}</div>
 	</div>;
