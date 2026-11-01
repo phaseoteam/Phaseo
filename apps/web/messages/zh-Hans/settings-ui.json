@@ -7696,7 +7696,7 @@
 			"timeZoneHelp": "每日、每周和每月警报遵循此时区，除非警报设置了自己的时区。",
 			"utcNote": "工作区预算和密钥限额仍在 UTC 午夜重置。",
 			"attribution": "部门支出",
-			"attributionHelp": "当一个人属于多个部门时，支出如何计算。",
+			"attributionHelp": "当一个人属于多个部门时，支出规则、部门预算和部门速率限制如何计算此人。",
 			"attributionAll": "其所属的所有部门",
 			"attributionAllHelp": "其支出全额计入每个部门。",
 			"attributionPrimary": "仅主部门",

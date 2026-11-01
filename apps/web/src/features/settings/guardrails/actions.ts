@@ -29,15 +29,6 @@ export type GlobalGuardrailsSettingsPayload = {
 	ioLoggingContentsAccess?: "members" | "admins";
 };
 
-export type GuardrailBudgetPayload = {
-	dailyRequests?: number | null;
-	weeklyRequests?: number | null;
-	monthlyRequests?: number | null;
-	dailyCostNanos?: number | null;
-	weeklyCostNanos?: number | null;
-	monthlyCostNanos?: number | null;
-};
-
 export type GuardrailUpsertPayload = GlobalGuardrailsSettingsPayload & {
 	enabled?: boolean;
 	name: string;
@@ -49,7 +40,6 @@ export type GuardrailUpsertPayload = GlobalGuardrailsSettingsPayload & {
 	sensitiveInfoEnabled?: boolean;
 	sensitiveInfoDefaultAction?: SensitiveInfoAction;
 	sensitiveInfoRules?: SensitiveInfoRulePayload[];
-	budgets?: GuardrailBudgetPayload;
 };
 
 async function account(expectedWorkspaceId?: string): Promise<{ accessToken: string; workspaceId: string }> {

@@ -84,7 +84,6 @@ import {
 	validateSensitiveInfoRulePayload,
 } from "./sensitiveInfoPreview";
 
-const NANOS_PER_USD = 1_000_000_000;
 const GUARDRAIL_SECTION_IDS = new Set([
 	"access",
 	"prompt-injection",
@@ -139,12 +138,6 @@ type GuardrailRow = {
 	sensitive_info_enabled?: boolean | null;
 	sensitive_info_default_action?: string | null;
 	sensitive_info_rules?: SensitiveInfoRulePayload[] | null;
-	daily_limit_requests?: number | null;
-	weekly_limit_requests?: number | null;
-	monthly_limit_requests?: number | null;
-	daily_limit_cost_nanos?: number | null;
-	weekly_limit_cost_nanos?: number | null;
-	monthly_limit_cost_nanos?: number | null;
 };
 
 function normalizeMode(value: unknown): ProviderRestrictionMode {
@@ -334,25 +327,6 @@ function formatModelPreviewTitle(args: {
 				: args.apiModelId.trim();
 	return orgLabel ? `${orgLabel}: ${modelLabel}` : modelLabel;
 }
-
-const formatUsdFromNanos = (value: number | null | undefined) =>
-	typeof value === "number" && Number.isFinite(value) && value > 0
-		? String(value / NANOS_PER_USD)
-		: "";
-
-const parseUsdToNanos = (value: string): number | null | undefined => {
-	if (!value || value.trim().length === 0) return null;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0) return undefined;
-	return Math.round(parsed * NANOS_PER_USD);
-};
-
-const parseInteger = (value: string): number | null | undefined => {
-	if (!value || value.trim().length === 0) return null;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0) return undefined;
-	return Math.floor(parsed);
-};
 
 type SelectionOption = { value: string; label: string; group?: string; variant?: string };
 
@@ -1041,13 +1015,6 @@ export default function GuardrailEditorPageClient(props: {
 			),
 			sensitiveInfoPreviewInput: "",
 
-			dailyRequests: g?.daily_limit_requests ? String(g.daily_limit_requests) : "",
-			weeklyRequests: g?.weekly_limit_requests ? String(g.weekly_limit_requests) : "",
-			monthlyRequests: g?.monthly_limit_requests ? String(g.monthly_limit_requests) : "",
-			dailyCostUsd: formatUsdFromNanos(Number(g?.daily_limit_cost_nanos ?? 0)),
-			weeklyCostUsd: formatUsdFromNanos(Number(g?.weekly_limit_cost_nanos ?? 0)),
-			monthlyCostUsd: formatUsdFromNanos(Number(g?.monthly_limit_cost_nanos ?? 0)),
-
 			keyIds: props.initialKeyIds ?? [],
 			memberIds: props.initialMemberIds ?? [],
 		};
@@ -1479,44 +1446,6 @@ export default function GuardrailEditorPageClient(props: {
 		);
 	}
 
-	function validateBudgets() {
-		const dailyRequests = parseInteger(form.dailyRequests);
-		const weeklyRequests = parseInteger(form.weeklyRequests);
-		const monthlyRequests = parseInteger(form.monthlyRequests);
-		const dailyCostNanos = parseUsdToNanos(form.dailyCostUsd);
-		const weeklyCostNanos = parseUsdToNanos(form.weeklyCostUsd);
-		const monthlyCostNanos = parseUsdToNanos(form.monthlyCostUsd);
-
-		const invalidField =
-			dailyRequests === undefined
-				? "Daily request budget"
-				: weeklyRequests === undefined
-					? "Weekly request budget"
-					: monthlyRequests === undefined
-						? "Monthly request budget"
-						: dailyCostNanos === undefined
-							? "Daily spend budget"
-							: weeklyCostNanos === undefined
-								? "Weekly spend budget"
-								: monthlyCostNanos === undefined
-									? "Monthly spend budget"
-									: null;
-
-		if (invalidField) {
-			toast.error(`${invalidField} ${t("strings.phraseMustBeAPositiveNumber" as never)}`);
-			return null;
-		}
-
-		return {
-			dailyRequests,
-			weeklyRequests,
-			monthlyRequests,
-			dailyCostNanos,
-			weeklyCostNanos,
-			monthlyCostNanos,
-		};
-	}
-
 	async function onSave() {
 		if (!form.name.trim()) {
 			toast.error(t("strings.phraseNameIsRequired" as never));
@@ -1534,9 +1463,6 @@ export default function GuardrailEditorPageClient(props: {
 			toast.error(firstSensitiveInfoIssue);
 			return;
 		}
-		const budgets = validateBudgets();
-		if (!budgets) return;
-
 		setSaving(true);
 		const toastId = toast.loading(
 			props.mode === "create" ? t("strings.phraseCreatingGuardrail" as never) : t("strings.phraseSavingGuardrail" as never),
@@ -1563,7 +1489,6 @@ export default function GuardrailEditorPageClient(props: {
 					sensitiveInfoEnabled: form.sensitiveInfoEnabled,
 					sensitiveInfoDefaultAction: form.sensitiveInfoDefaultAction,
 					sensitiveInfoRules: form.sensitiveInfoRules,
-					budgets,
 				} });
 				guardrailId = created.id ?? null;
 			} else if (props.mode === "edit" && props.guardrailId) {
@@ -1586,7 +1511,6 @@ export default function GuardrailEditorPageClient(props: {
 					sensitiveInfoEnabled: form.sensitiveInfoEnabled,
 					sensitiveInfoDefaultAction: form.sensitiveInfoDefaultAction,
 					sensitiveInfoRules: form.sensitiveInfoRules,
-					budgets,
 				} } });
 			}
 
