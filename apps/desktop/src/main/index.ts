@@ -671,7 +671,7 @@ ipcMain.handle("workspace:phone-pair", event => { if (!senderWindow(event) || !p
 ipcMain.handle("workspace:phone-remove", (event, id: unknown) => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.removeDevice(id); });
 ipcMain.handle("workspace:phone-https", event => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.setupHttps(); });
 ipcMain.handle("workspace:phone-connect", (event, enabled: unknown) => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.setConnect(enabled); });
-ipcMain.handle("workspace:phone-connect-refresh", event => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.refreshConnect(); });
+ipcMain.handle("workspace:phone-connect-refresh", event => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.refreshConnect(true); });
 /** The Phaseo sign-in Phaseo Connect bills: the first one made by signing in (not a pasted key). */
 function phoneSignIn(): PhaseoSignIn | undefined {
 	const account = workspaceRuntime.store.getAccounts().find(value => value.harness === "phaseo" && !value.archived && value.sessionSecretId && value.oauthExpiresAt);

@@ -24,6 +24,7 @@ describe("relay frames", () => {
 	it("holds attention and the phone's actions, never live entries or replies", () => {
 		expect(["attention", "send", "answer_approval", "answer_question"].every(type => relayHolds({ type }))).toBe(true);
 		expect(["entries", "chat_updated", "list_chats", undefined].some(type => relayHolds({ type }))).toBe(false);
+		expect(relayHolds({ id: "1", type: "send", ok: true })).toBe(false);
 	});
 	it("gives a pairing sign-in a device id the relay accepts", () => {
 		expect(relayPairing(toBase64url(new Uint8Array(32).fill(1))).deviceId).toMatch(relayDeviceIdPattern);

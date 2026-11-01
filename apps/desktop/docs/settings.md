@@ -65,7 +65,10 @@ Phaseo Connect is disconnected.
 - **Phaseo Connect.** $1 a month from Phaseo credits, charged for the days it's on, billed to the first Phaseo
   sign-in. The switch starts or stops the charge on phaseo.app first, then the desktop keeps one WebSocket to the relay,
   signed in with that sign-in's gateway key. Frames are end-to-end encrypted; changed entries go out at most every
-  250 ms, and attention for a phone that isn't connected is held by the relay. An unpaid month pauses it.
+  250 ms; attention, and a phone's sends and answers, are held by the relay for whoever is offline. Settings shows
+  this month's days and charge so far, and the estimate to the month's end. An unpaid month shows **Payment due** with the
+  amount: the relay closes Connect (4402) and the desktop stops reconnecting until Check again finds it paid. Only
+  workspace owners and admins can switch it.
 
 The frames and envelopes are in `packages/shared/phone-protocol`; the server is `src/main/phone`.
 

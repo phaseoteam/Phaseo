@@ -2,6 +2,7 @@ import { networkInterfaces } from "node:os";
 import { toQR } from "toqr";
 import { connectRelayUrl, encodePairingLink, generateKeyPair, publicKeyOf, tokenHash, type KeyPair } from "@phaseo/phone-protocol";
 import { phoneAddressLabels, validatePhoneSettingsUpdate, type ConnectView, type PhoneAddress, type PhoneAddressKind, type PhonePairingView, type PhoneState } from "../../shared/phone";
+import { formatSpend } from "../../shared/usageAmounts";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 import { connectBillingClient, type ConnectBilling, type ConnectBillingClient } from "./connectBilling";
 import { ConnectClient, type ConnectClientState } from "./connectClient";
@@ -181,15 +182,18 @@ export class PhoneService {
 
 	private relayUrl() { return this.ports.relayUrl ?? connectRelayUrl; }
 	private billingClient() { const signIn = this.ports.phaseo(); return signIn ? { signIn, client: (this.ports.billing ?? (value => connectBillingClient({ accessToken: value.accessToken, workspaceId: value.workspaceId, fetcher: this.ports.fetcher })))(signIn) } : undefined; }
-	/** Reads what Phaseo says about Connect for this workspace. */
-	async refreshConnect() {
+	/**
+	 * Reads what Phaseo says about Connect for this workspace. A relay refusal (payment due, switched off) stops
+	 * reconnecting; only the person's Check again (retryRefused) tries the relay again.
+	 */
+	async refreshConnect(retryRefused = false) {
 		const billing = this.billingClient();
 		if (!billing) { this.billing = undefined; this.emit(); return this.state(); }
 		this.billingChecking = true; this.emit();
 		try { this.billing = await billing.client.read(); this.billingError = undefined; if (this.billing.enabled !== this.store.value.connect) this.store.save({ connect: this.billing.enabled }); }
 		catch (error) { this.billingError = error instanceof Error ? error.message : String(error); }
 		finally { this.billingChecking = false; }
-		await this.serial(() => this.syncConnect());
+		await this.serial(() => this.syncConnect(retryRefused));
 		this.emit();
 		return this.state();
 	}
@@ -200,20 +204,26 @@ export class PhoneService {
 		if (!billing) throw new Error("Sign in to Phaseo in Settings → Accounts to use Phaseo Connect.");
 		this.billing = await billing.client.set(enabled); this.billingError = undefined;
 		this.store.save({ connect: this.billing.enabled });
-		await this.serial(() => this.syncConnect());
+		await this.serial(() => this.syncConnect(true));
 		this.emit();
 		return this.state();
 	}
-	private async syncConnect() {
+	private async syncConnect(retryRefused = false) {
 		const settings = this.store.value, signIn = this.ports.phaseo();
-		const wanted = settings.enabled && settings.connect && Boolean(signIn) && this.billing?.enabled === true && this.billing.paidUp;
+		const wanted = settings.enabled && settings.connect && Boolean(signIn) && this.billing?.enabled === true && !this.billing.paymentDue;
 		if (!wanted) { this.stopConnect(); return; }
-		if (this.connect) return;
+		if (this.connect && !(retryRefused && this.connect.state.status === "refused")) return;
+		this.stopConnect();
 		const identity = await this.loadIdentity();
-		this.connect = new ConnectClient({
+		const client: ConnectClient = this.connect = new ConnectClient({
 			relayUrl: this.relayUrl(), desktopId: settings.desktopId, desktopName: this.ports.host.desktopName, privateKey: identity.privateKey,
 			gatewayKey: () => signIn!.gatewayKey(), devices: () => this.store.value.devices, pairing: this.pairing, hub: this.hub,
-			onState: state => { this.connectState = state; this.emit(); },
+			onState: state => {
+				if (this.connect !== client) return;
+				this.connectState = state; this.emit();
+				// The relay knows first; read the unpaid amount or the switched-off state for Settings.
+				if (state.reason === "payment-due" || state.reason === "connect-off") void this.refreshConnect();
+			},
 		});
 		this.connect.start();
 	}
@@ -221,13 +231,19 @@ export class PhoneService {
 
 	private connectView(): ConnectView {
 		const settings = this.store.value, signIn = this.ports.phaseo();
-		const amounts = this.billing ? { daysOn: this.billing.daysOn, estimatedNanos: this.billing.estimatedNanos } : {};
-		const base = { enabled: settings.connect, ...signIn ? { account: this.billing?.workspaceName ? `${signIn.label} · ${this.billing.workspaceName}` : signIn.label } : {}, ...amounts };
+		const billing = this.billing;
+		const amounts = billing ? { canManage: billing.canManage, daysOn: billing.daysOn, chargeSoFarNanos: billing.chargeSoFarNanos, estimatedNanos: billing.estimatedNanos } : {};
+		const base = { enabled: settings.connect, ...signIn ? { account: billing?.workspaceName ? `${signIn.label} · ${billing.workspaceName}` : signIn.label } : {}, ...amounts };
 		if (!signIn) return { ...base, status: "signed-out", message: "Sign in to Phaseo in Settings → Accounts to use Phaseo Connect." };
 		if (this.billingChecking) return { ...base, status: "checking" };
 		if (this.billingError) return { ...base, status: "error", message: this.billingError };
+		// Money owed shows even with the switch off: the months it was on are still charged.
+		if (billing?.paymentDue) {
+			const months = billing.unpaidMonths === 1 ? "1 month" : `${billing.unpaidMonths} months`;
+			return { ...base, status: "payment-due", message: `Payment due: ${formatSpend(billing.unpaidNanos)} for ${months}. Phaseo Connect is off until it's paid from your credits. Add credits and it turns back on.` };
+		}
+		if (this.connectState.reason === "payment-due") return { ...base, status: "payment-due", message: this.connectState.message };
 		if (!settings.connect) return { ...base, status: "off" };
-		if (this.billing && !this.billing.paidUp) return { ...base, status: "paused", message: "Paused until last month's charge is paid. Add credits and it turns back on." };
 		if (!settings.enabled) return { ...base, status: "off", message: "Turn on phone access to connect." };
 		if (this.connectState.status === "connected") return { ...base, status: "connected" };
 		if (this.connectState.status === "refused") return { ...base, status: "error", message: this.connectState.message };

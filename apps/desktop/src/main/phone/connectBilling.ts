@@ -1,53 +1,62 @@
 /**
  * Phaseo Connect's billing state, from the website's account routes the desktop already signs in to (Bearer: the
  * Phaseo login's access token). The relay checks entitlement itself; this is what Settings → Phone shows and switches.
+ * The server counts the days and amounts in SQL (apps/web-api/src/routes/account/settings-connect.ts).
  *
- *   GET  {root}/api/account/settings/connect?workspace_id=…
- *   POST {root}/api/account/settings/connect   { workspace_id, enabled }
+ *   GET {root}/api/account/settings/connect?workspaceId=…              → { connect }
+ *   PUT {root}/api/account/settings/connect?workspaceId=…  { enabled }  → { changed, connect }
  */
 export type ConnectBilling = {
 	enabled: boolean;
-	/** False while a finished month is unpaid: Connect is off until it is. */
-	paidUp: boolean;
+	/** A finished month is unpaid: Connect is off until it's taken from credits. */
+	paymentDue: boolean;
+	/** Owners and admins switch it, because it bills the workspace; anyone can see it. */
+	canManage: boolean;
 	daysOn: number;
+	chargeSoFarNanos: number;
+	/** What this month comes to if Connect stays as it is until the month ends. */
 	estimatedNanos: number;
+	unpaidMonths: number;
+	unpaidNanos: number;
 	workspaceName?: string;
 };
 export type ConnectBillingClient = { read: () => Promise<ConnectBilling>; set: (enabled: boolean) => Promise<ConnectBilling> };
 
 const webRoot = "https://phaseo.app";
-const number = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : typeof value === "string" && /^\d+$/.test(value) ? Number(value) : undefined;
+const invalid = "Phaseo returned an invalid Phaseo Connect state.";
+const record = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+const count = (value: unknown) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 
-/** The state in a response; both the snake_case and camelCase spellings are read. */
+/** The `connect` object of a response. */
 export function parseConnectBilling(body: unknown): ConnectBilling {
-	const value = body && typeof body === "object" ? body as Record<string, unknown> : {};
-	const state = value.connect && typeof value.connect === "object" ? value.connect as Record<string, unknown> : value;
-	const enabled = state.enabled, paidUp = state.paidUp ?? state.paid_up;
-	const daysOn = number(state.daysOn ?? state.days_on ?? state.daysOnThisMonth ?? state.days_on_this_month);
-	const estimatedNanos = number(state.estimatedNanos ?? state.estimated_nanos ?? state.estimatedChargeNanos ?? state.estimated_charge_nanos);
-	if (typeof enabled !== "boolean" || daysOn === undefined || estimatedNanos === undefined) throw new Error("Phaseo returned an invalid Phaseo Connect state.");
-	const workspaceName = state.workspaceName ?? state.workspace_name;
-	return { enabled, paidUp: paidUp !== false, daysOn, estimatedNanos, ...typeof workspaceName === "string" && workspaceName ? { workspaceName: workspaceName.slice(0, 200) } : {} };
+	const state = record(record(body).connect), month = record(state.month), unpaid = record(state.unpaid);
+	const values = { daysOn: count(month.daysOn), chargeSoFarNanos: count(month.chargeSoFarNanos), estimatedNanos: count(month.estimatedNanos), unpaidMonths: count(unpaid.months), unpaidNanos: count(unpaid.amountNanos) };
+	if (typeof state.enabled !== "boolean" || typeof state.paymentDue !== "boolean" || Object.values(values).some(value => value === undefined)) throw new Error(invalid);
+	const workspaceName = typeof state.workspaceName === "string" && state.workspaceName ? state.workspaceName.slice(0, 200) : undefined;
+	return { enabled: state.enabled, paymentDue: state.paymentDue, canManage: state.canManage === true, ...values as { [K in keyof typeof values]: number }, ...workspaceName ? { workspaceName } : {} };
 }
 
 export function connectBillingClient({ accessToken, workspaceId, fetcher = fetch, root = webRoot }: { accessToken: () => Promise<string>; workspaceId?: string; fetcher?: typeof fetch; root?: string }): ConnectBillingClient {
-	const request = async (method: "GET" | "POST", body?: Record<string, unknown>) => {
+	const request = async (method: "GET" | "PUT", body?: { enabled: boolean }) => {
+		if (!workspaceId) throw new Error("Sign in to Phaseo again in Settings → Accounts, so Phaseo Connect knows which workspace to bill.");
 		const url = new URL("/api/account/settings/connect", root);
-		if (method === "GET" && workspaceId) url.searchParams.set("workspace_id", workspaceId);
+		url.searchParams.set("workspaceId", workspaceId);
 		const response = await fetcher(url, {
 			method, redirect: "error", signal: AbortSignal.timeout(15_000),
 			headers: { Authorization: `Bearer ${await accessToken()}`, ...body ? { "content-type": "application/json" } : {} },
-			...body ? { body: JSON.stringify({ ...workspaceId ? { workspace_id: workspaceId } : {}, ...body }) } : {},
+			...body ? { body: JSON.stringify(body) } : {},
 		});
-		if (response.status === 401) throw new Error("Your Phaseo login has ended. Sign in again in Settings → Accounts.");
-		if (response.status === 402) throw new Error("Add Phaseo credits to turn on Phaseo Connect.");
-		if (response.status === 404) throw new Error("Phaseo Connect isn't available yet.");
-		if (!response.ok) throw new Error(`Phaseo couldn't update Phaseo Connect (HTTP ${response.status}). Try again.`);
 		const text = await response.text();
-		if (text.length > 65_536) throw new Error("Phaseo returned an invalid Phaseo Connect state.");
 		let parsed: unknown;
-		try { parsed = JSON.parse(text); } catch { throw new Error("Phaseo returned an invalid Phaseo Connect state."); }
+		try { parsed = text.length <= 65_536 ? JSON.parse(text) : undefined; } catch { parsed = undefined; }
+		if (response.status === 401) throw new Error("Your Phaseo login has ended. Sign in again in Settings → Accounts.");
+		if (response.status === 404) throw new Error("Phaseo Connect isn't available yet.");
+		if (!response.ok) {
+			// The server explains a refusal in words (not a member, not an owner or admin, unavailable).
+			const message = record(parsed).message;
+			throw new Error(typeof message === "string" && message.length <= 300 ? message : `Phaseo couldn't update Phaseo Connect (HTTP ${response.status}). Try again.`);
+		}
 		return parseConnectBilling(parsed);
 	};
-	return { read: () => request("GET"), set: enabled => request("POST", { enabled }) };
+	return { read: () => request("GET"), set: enabled => request("PUT", { enabled }) };
 }

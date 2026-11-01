@@ -46,14 +46,19 @@ describe("phone service", () => {
 		expect(run).toHaveBeenCalledWith(process.platform === "win32" ? "tailscale.exe" : "tailscale", ["serve", "--https=443", "off"], 10_000);
 		expect(settings().tailscaleServe).toBe(false);
 	});
-	it("needs a Phaseo sign-in for Connect, and stays paused while a month is unpaid", async () => {
+	it("needs a Phaseo sign-in for Connect, and shows the payment due while a month is unpaid", async () => {
 		await expect(setup().service.setConnect(true)).rejects.toThrow("Sign in to Phaseo");
 		const signIn = { label: "daniel@example.com", gatewayKey: async () => "key", accessToken: async () => "access" };
-		const { service, billingClient } = setup({ signIn, billing: { enabled: false, paidUp: false, daysOn: 12, estimatedNanos: 387_096_774, workspaceName: "Acme" } });
+		const billing = { enabled: false, paymentDue: true, canManage: true, daysOn: 12, chargeSoFarNanos: 400_000_000, estimatedNanos: 1_000_000_000, unpaidMonths: 1, unpaidNanos: 1_000_000_000, workspaceName: "Acme" };
+		const { service, billingClient } = setup({ signIn, billing });
 		await service.update({ enabled: true });
 		const state = await service.setConnect(true);
 		expect(billingClient.set).toHaveBeenCalledWith(true);
-		expect(state.connect).toMatchObject({ status: "paused", enabled: true, account: "daniel@example.com · Acme", daysOn: 12, estimatedNanos: 387_096_774 });
+		expect(state.connect).toMatchObject({ status: "payment-due", enabled: true, account: "daniel@example.com · Acme", daysOn: 12, chargeSoFarNanos: 400_000_000, estimatedNanos: 1_000_000_000 });
+		expect(state.connect.message).toBe("Payment due: $1.00 for 1 month. Phaseo Connect is off until it's paid from your credits. Add credits and it turns back on.");
+		// Switching off doesn't hide what's owed.
+		expect((await service.setConnect(false)).connect).toMatchObject({ status: "payment-due", enabled: false });
+		billingClient.set.mockImplementation(async (enabled: boolean) => ({ ...billing, enabled, paymentDue: false, unpaidMonths: 0, unpaidNanos: 0 }));
 		expect((await service.setConnect(false)).connect).toMatchObject({ status: "off", enabled: false });
 	});
 });

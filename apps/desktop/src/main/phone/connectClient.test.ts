@@ -1,7 +1,7 @@
 import type { IncomingMessage } from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
-import { EnvelopeChannel, generateKeyPair, isEnvelope, relayPairing, sharedKey, tokenHash, type Envelope } from "@phaseo/phone-protocol";
+import { EnvelopeChannel, generateKeyPair, isEnvelope, relayDesktopAddress, relayPairing, sharedKey, tokenHash, type Envelope } from "@phaseo/phone-protocol";
 import { ConnectClient, type ConnectClientState } from "./connectClient";
 import { fakePhoneHost } from "./fakePhoneHost";
 import { PhonePairing, type PhoneSettings } from "./phoneDevices";
@@ -58,7 +58,7 @@ describe("Phaseo Connect client", () => {
 		hub.onAttention = (event, connected) => client.notifyOffline(event, connected);
 		pairing.onCodeExpired = id => client.removeDevice(id);
 		cleanup.push(() => client.stop());
-		const phoneChannel = new EnvelopeChannel(sharedKey(phone.privateKey, desktop.publicKey), paired.device.id, "desk-1");
+		const phoneChannel = new EnvelopeChannel(sharedKey(phone.privateKey, desktop.publicKey), paired.device.id, relayDesktopAddress);
 		return { relay, app, client, states, reaches, pairing, paired, desktop, phone, phoneChannel };
 	}
 
@@ -72,7 +72,7 @@ describe("Phaseo Connect client", () => {
 
 		connection.socket.send(JSON.stringify(phoneChannel.seal({ id: "1", type: "list_chats" })));
 		const envelope = await relay.next(0, frame => isEnvelope(frame)) as unknown as Envelope;
-		expect(envelope).toMatchObject({ to: paired.device.id, from: "desk-1" });
+		expect(envelope).toMatchObject({ to: paired.device.id, from: relayDesktopAddress });
 		expect(JSON.stringify(envelope)).not.toContain("Release notes");
 		expect(JSON.parse(phoneChannel.open(envelope))).toMatchObject({ id: "1", ok: true, result: { chats: [{ id: "chat-1", title: "Release notes" }] } });
 
@@ -101,7 +101,7 @@ describe("Phaseo Connect client", () => {
 		expect(JSON.parse(phoneChannel.open(held as unknown as Envelope))).toEqual({ type: "attention", chatId: "chat-1", kind: "done", summary: "Release notes: finished" });
 	});
 
-	it("reconnects after the relay drops it and registers again, but stops when the relay refuses", async () => {
+	it("reconnects after the relay drops it and registers again, but stops when the relay closes for payment", async () => {
 		const { relay, client, states, reaches } = await setup();
 		client.start();
 		const first = await relay.connection(0);
@@ -111,11 +111,28 @@ describe("Phaseo Connect client", () => {
 		expect(second.request.headers.authorization).toBe("Bearer phaseo-gateway-key");
 		await relay.next(1, frame => frame.type === "register_device");
 		const refused = reaches("refused");
-		second.socket.send(JSON.stringify({ type: "error", code: "unpaid", message: "Unpaid" }));
+		second.socket.close(4402, "payment_required");
 		await refused;
-		expect(client.state.message).toContain("paused until last month's charge is paid");
+		expect(client.state).toMatchObject({ status: "refused", reason: "payment-due" });
+		expect(client.state.message).toMatch(/^Payment due\./);
 		expect(relay.connections).toHaveLength(2);
 		expect(states.map(state => state.status)).toContain("connected");
+	});
+
+	it("tells a switched-off workspace from another workspace's room when the relay refuses the sign-in", async () => {
+		for (const [status, error, reason] of [[403, "connect_off", "connect-off"], [403, "workspace_mismatch", "wrong-workspace"], [402, "payment_required", "payment-due"], [401, "unauthorized", "unauthorized"]] as const) {
+			const server = new WebSocketServer({ host: "127.0.0.1", port: 0, verifyClient: (_info, done) => done(false, status, JSON.stringify({ error })) });
+			await new Promise<void>(resolve => server.once("listening", () => resolve()));
+			const { pairing, hub } = await setup();
+			let resolveRefused!: () => void;
+			const done = new Promise<void>(resolve => { resolveRefused = resolve; });
+			const client = new ConnectClient({ relayUrl: `ws://127.0.0.1:${(server.address() as { port: number }).port}`, desktopId: "desk-1", desktopName: () => "Test PC", privateKey: generateKeyPair().privateKey, gatewayKey: async () => "key", devices: () => [], pairing, hub, backoff: () => 0, onState: state => { if (state.status === "refused") resolveRefused(); } });
+			client.start();
+			await done;
+			expect(client.state.reason).toBe(reason);
+			client.stop();
+			await new Promise<void>(resolve => server.close(() => resolve()));
+		}
 	});
 
 	it("pairs a phone over the relay with a code it can't read", async () => {
@@ -124,7 +141,7 @@ describe("Phaseo Connect client", () => {
 		client.start();
 		await relay.connection(0);
 		expect(await relay.next(0, frame => frame.deviceId === relaySignIn.deviceId)).toEqual({ type: "register_device", deviceId: relaySignIn.deviceId, relayTokenHash: tokenHash(relaySignIn.relayToken) });
-		const channel = new EnvelopeChannel(sharedKey(newPhone.privateKey, desktop.publicKey), relaySignIn.deviceId, "desk-1");
+		const channel = new EnvelopeChannel(sharedKey(newPhone.privateKey, desktop.publicKey), relaySignIn.deviceId, relayDesktopAddress);
 		const envelope = { ...channel.seal({ id: "p", type: "pair", pairingCode, deviceName: "iPhone", devicePublicKey: newPhone.publicKey }), senderPublicKey: newPhone.publicKey };
 		relay.connections[0]!.socket.send(JSON.stringify(envelope));
 		const answer = JSON.parse(channel.open(await relay.next(0, frame => isEnvelope(frame)) as unknown as Envelope));

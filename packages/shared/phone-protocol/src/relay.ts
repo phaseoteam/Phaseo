@@ -67,10 +67,11 @@ export type RelayRefusal = "unauthorized" | "bad_request" | "workspace_mismatch"
 
 /**
  * Frames worth keeping for an offline recipient: attention for the phone, and the phone's send and answers for the
- * desktop. Live entries and replies are dropped; the phone reads the chat again when it returns.
+ * desktop. Live entries and replies (which echo the request's type) are dropped; the phone reads the chat again when
+ * it returns.
  */
-export const relayHolds = (frame: { type?: unknown }) =>
-	frame.type === "attention" || frame.type === "send" || frame.type === "answer_approval" || frame.type === "answer_question";
+export const relayHolds = (frame: { type?: unknown; ok?: unknown }) => frame.ok === undefined
+	&& (frame.type === "attention" || frame.type === "send" || frame.type === "answer_approval" || frame.type === "answer_question");
 
 export const connectRelayUrl = "wss://connect.phaseo.app";
 export const relayDesktopUrl = (relayUrl: string, desktopId: string) => `${relayUrl.replace(/\/+$/, "")}/v1/desktop/${encodeURIComponent(desktopId)}`;

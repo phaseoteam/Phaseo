@@ -1,9 +1,11 @@
 import WebSocket from "ws";
-import { EnvelopeChannel, parseRelayFrame, readFrameObject, relayDesktopUrl, sharedKey, type DesktopFrame, type Envelope, type RelayDesktopFrame, type RelayOutbound } from "@phaseo/phone-protocol";
+import { EnvelopeChannel, parseRelayFrame, readFrameObject, relayCloseCodes, relayDesktopAddress, relayDesktopUrl, relayHolds, relayPairingPrefix, sharedKey, type DesktopFrame, type Envelope, type RelayDesktopFrame, type RelayOutbound, type RelayRefusal } from "@phaseo/phone-protocol";
 import type { PhoneDeviceRecord, PhonePairing } from "./phoneDevices";
 import type { PhoneHub, PhoneSession } from "./phoneSession";
 
-export type ConnectClientState = { status: "connecting" | "connected" | "stopped" | "refused"; message?: string };
+/** Why the relay turned this computer away; each stops reconnecting until the person acts. */
+export type ConnectRefusal = "signed-out" | "unauthorized" | "payment-due" | "connect-off" | "wrong-workspace" | "replaced";
+export type ConnectClientState = { status: "connecting" | "connected" | "stopped" | "refused"; reason?: ConnectRefusal; message?: string };
 export type ConnectClientPorts = {
 	relayUrl: string;
 	desktopId: string;
@@ -23,18 +25,26 @@ export type ConnectClientPorts = {
 const defaultBackoff = (attempt: number) => Math.min(60_000, 1_000 * 2 ** attempt) * (0.5 + Math.random() / 2);
 /** A connection that lasts this long resets the backoff, so a relay that drops us at once isn't retried every second. */
 const stableMs = 30_000;
-const refusedMessages: Record<string, string> = {
+const refusalMessages: Record<ConnectRefusal, string> = {
+	"signed-out": "Sign in to Phaseo in Settings → Accounts to use Phaseo Connect.",
 	unauthorized: "Phaseo Connect didn't accept this computer's Phaseo sign-in. Sign in again in Settings → Accounts.",
-	not_entitled: "Phaseo Connect is off for this workspace.",
-	unpaid: "Phaseo Connect is paused until last month's charge is paid. Add credits to turn it back on.",
-	wrong_workspace: "This computer is linked to Phaseo Connect in another workspace.",
+	"payment-due": "Payment due. Phaseo Connect is off until last month's charge is paid from your credits. Add credits and it turns back on.",
+	"connect-off": "Phaseo Connect is off for this workspace.",
+	"wrong-workspace": "This computer is linked to Phaseo Connect in another workspace.",
+	replaced: "Phaseo Connect was opened by another copy of Phaseo with this computer's identity.",
 };
+const refused = (reason: ConnectRefusal): ConnectClientState => ({ status: "refused", reason, message: refusalMessages[reason] });
+/** The relay's sign-in refusals that retrying won't fix. Anything else (a 503, a network error) is retried. */
+const refusalFor = (status: number, error: RelayRefusal | undefined): ConnectRefusal | undefined =>
+	status === 401 ? "unauthorized" : status === 402 ? "payment-due" : error === "connect_off" ? "connect-off" : error === "workspace_mismatch" ? "wrong-workspace" : status === 403 ? "unauthorized" : undefined;
+const closeRefusal = (code: number, reason: string): ConnectRefusal | undefined =>
+	code === relayCloseCodes.notEntitled ? (reason === "connect_off" ? "connect-off" : "payment-due") : code === relayCloseCodes.replaced ? "replaced" : undefined;
 
 /**
  * Phaseo Connect from the desktop: one outbound WebSocket to the relay, signed in with the Phaseo gateway key. Phones'
  * frames arrive in envelopes only they and this desktop can open; each phone gets a PhoneSession as on the direct
- * server, so everything it does goes through the same commands. Attention for a phone that isn't connected is sent
- * marked hold, and the relay keeps it until the phone returns.
+ * server, so everything it does goes through the same commands. Attention is sent marked hold, and the relay keeps it
+ * for a phone that isn't connected until it returns.
  */
 export class ConnectClient {
 	private socket?: WebSocket;
@@ -67,7 +77,7 @@ export class ConnectClient {
 	}
 	/** Attention for paired phones without a live connection; the relay holds it for them. */
 	notifyOffline(event: { chatId: string; kind: string; summary: string }, connected: ReadonlySet<string>) {
-		for (const device of this.ports.devices()) if (!connected.has(device.id)) this.sendTo(device, { type: "attention", ...event } as DesktopFrame, true);
+		for (const device of this.ports.devices()) if (!connected.has(device.id)) this.sendTo(device, { type: "attention", ...event } as DesktopFrame);
 	}
 
 	private setState(state: ConnectClientState) { this.state = state; this.ports.onState?.(state); }
@@ -78,11 +88,11 @@ export class ConnectClient {
 		this.setState({ status: "connecting" });
 		let key: string;
 		try { key = await this.ports.gatewayKey(); }
-		catch { this.setState({ status: "refused", message: "Sign in to Phaseo in Settings → Accounts to use Phaseo Connect." }); this.stopped = true; return; }
+		catch { this.stopped = true; this.setState(refused("signed-out")); return; }
 		if (this.stopped) return;
 		const socket = new WebSocket(relayDesktopUrl(this.ports.relayUrl, this.ports.desktopId), { headers: { Authorization: `Bearer ${key}` }, maxPayload: 4 * 1024 * 1024, handshakeTimeout: 15_000 });
 		this.socket = socket;
-		let openedAt = 0, refused: string | undefined;
+		let openedAt = 0, refusal: ConnectRefusal | undefined;
 		socket.on("open", () => {
 			openedAt = Date.now();
 			for (const device of this.ports.devices()) this.registerDevice(device.id, device.relayTokenHash);
@@ -93,20 +103,29 @@ export class ConnectClient {
 			if (binary) return;
 			const frame = parseRelayFrame(data.toString());
 			if (!frame) return;
-			if ("type" in frame && frame.type === "error") {
-				if (refusedMessages[frame.code]) { refused = refusedMessages[frame.code]; socket.close(1000); }
-				return;
-			}
-			if ("type" in frame && frame.type === "device_offline") { this.sessions.get(frame.deviceId)?.close(); return; }
-			if ("ciphertext" in frame) this.receive(frame);
+			if ("ciphertext" in frame) { this.receive(frame); return; }
+			if ("type" in frame && frame.type === "device_offline") this.sessions.get(frame.deviceId)?.close();
 		});
-		socket.on("unexpected-response", (_request, response) => { refused = response.statusCode === 401 || response.statusCode === 403 ? refusedMessages.unauthorized : response.statusCode === 402 ? refusedMessages.unpaid : undefined; socket.terminate(); });
+		// A refused sign-in: the status says most, and the body's { error } tells a switched-off workspace from another workspace's room.
+		socket.on("unexpected-response", (_request, response) => {
+			const chunks: Buffer[] = [];
+			const decide = () => {
+				let error: RelayRefusal | undefined;
+				try { error = (JSON.parse(Buffer.concat(chunks).toString("utf8").slice(0, 1024)) as { error?: RelayRefusal }).error; } catch { /* no body */ }
+				refusal = refusalFor(response.statusCode ?? 0, error);
+				socket.terminate();
+			};
+			response.on("data", (chunk: Buffer) => { if (chunks.length < 4) chunks.push(chunk); });
+			response.on("end", decide);
+			response.on("error", decide);
+		});
 		socket.on("error", () => { /* close follows */ });
-		socket.on("close", () => {
+		socket.on("close", (code, reason) => {
 			if (this.socket === socket) this.socket = undefined;
 			this.closeSessions();
 			if (this.stopped) return;
-			if (refused) { this.stopped = true; this.setState({ status: "refused", message: refused }); return; }
+			refusal ??= closeRefusal(code, reason.toString());
+			if (refusal) { this.stopped = true; this.setState(refused(refusal)); return; }
 			if (openedAt && Date.now() - openedAt >= stableMs) this.attempt = 0;
 			const wait = (this.ports.backoff ?? defaultBackoff)(this.attempt++);
 			this.setState({ status: "connecting" });
@@ -115,19 +134,20 @@ export class ConnectClient {
 	}
 	private closeSessions() { for (const session of [...this.sessions.values()]) session.close(); this.sessions.clear(); this.channels.clear(); }
 
+	/** The relay names this side "desktop" in every route and sets `from` itself, so channels seal with that name. */
 	private channel(device: { id: string; publicKey: string }) {
 		let channel = this.channels.get(device.id);
-		if (!channel) { channel = new EnvelopeChannel(sharedKey(this.ports.privateKey, device.publicKey), this.ports.desktopId, device.id); this.channels.set(device.id, channel); }
+		if (!channel) { channel = new EnvelopeChannel(sharedKey(this.ports.privateKey, device.publicKey), relayDesktopAddress, device.id); this.channels.set(device.id, channel); }
 		return channel;
 	}
-	private sendTo(device: { id: string; publicKey: string }, frame: DesktopFrame | Record<string, unknown>, hold = false) {
+	private sendTo(device: { id: string; publicKey: string }, frame: DesktopFrame | Record<string, unknown>) {
 		const envelope = this.channel(device).seal(frame);
-		this.write(hold ? { ...envelope, hold: true } : envelope);
+		this.write(relayHolds(frame) ? { ...envelope, hold: true } : envelope);
 	}
 
 	private receive(envelope: Envelope) {
-		if (envelope.to !== this.ports.desktopId) return;
-		if (envelope.from.startsWith("pair-")) { this.pair(envelope); return; }
+		if (envelope.to !== relayDesktopAddress) return;
+		if (envelope.from.startsWith(relayPairingPrefix)) { this.pair(envelope); return; }
 		const device = this.ports.devices().find(value => value.id === envelope.from);
 		if (!device) return;
 		let text: string;
@@ -149,7 +169,7 @@ export class ConnectClient {
 		if (!publicKey || !this.ports.pairing.hasRelayCode(envelope.from)) return;
 		const peer = { id: envelope.from, publicKey };
 		let request: Record<string, unknown>;
-		try { request = readFrameObject(new EnvelopeChannel(sharedKey(this.ports.privateKey, publicKey), this.ports.desktopId, envelope.from).open(envelope)); } catch { return; }
+		try { request = readFrameObject(new EnvelopeChannel(sharedKey(this.ports.privateKey, publicKey), relayDesktopAddress, envelope.from).open(envelope)); } catch { return; }
 		const id = typeof request.id === "string" ? request.id.slice(0, 64) : "pair";
 		try {
 			if (request.type !== "pair" || request.devicePublicKey !== publicKey) throw new Error("Invalid pairing request.");

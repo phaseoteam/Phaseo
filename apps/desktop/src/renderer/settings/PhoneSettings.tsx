@@ -74,12 +74,12 @@ export function PhoneSettings() {
 			{tailscale?.installed && tailscale.httpsAvailable === false && !tailscale.serving && <SettingsNote>HTTPS needs certificates turned on for your tailnet in the Tailscale admin console.</SettingsNote>}
 		</SettingsSection>
 		<SettingsSection title="Phaseo Connect" description="Reach this computer from anywhere without Tailscale. Messages are encrypted on this computer and your phone, so the relay can't read them.">
-			<SettingsRow title="Phaseo Connect" description={<>{connectPriceText}.{connect?.account && <><br />Billed to {connect.account}.</>}{connect?.enabled && connect.daysOn !== undefined && connect.estimatedNanos !== undefined && <><br />This month: {connect.daysOn} {connect.daysOn === 1 ? "day" : "days"} on, {formatSpend(connect.estimatedNanos)} so far.</>}</>}
+			<SettingsRow title="Phaseo Connect" description={<>{connectPriceText}.{connect?.account && <><br />Billed to {connect.account}.</>}{connect?.daysOn !== undefined && connect.chargeSoFarNanos !== undefined && (connect.enabled || connect.daysOn > 0) && <><br />This month: {connect.daysOn} {connect.daysOn === 1 ? "day" : "days"} on, {formatSpend(connect.chargeSoFarNanos)} so far{connect.enabled && connect.estimatedNanos !== undefined && <>, about {formatSpend(connect.estimatedNanos)} by the end of the month if it stays on</>}.</>}{connect?.canManage === false && <><br />Only workspace owners and admins can turn it on or off.</>}</>}
 				control={<>
 					{connect && connect.status !== "signed-out" && <SettingsButton variant="ghost" title="Check again" disabled={busy} onClick={() => void run(() => api.refreshPhaseoConnect())}><RefreshCw /></SettingsButton>}
-					<Switch aria-label="Phaseo Connect" checked={connect?.enabled ?? false} disabled={!connect || busy || connect.status === "signed-out"} onCheckedChange={(checked: boolean) => void run(() => api.setPhaseoConnect(checked))} />
+					<Switch aria-label="Phaseo Connect" checked={connect?.enabled ?? false} disabled={!connect || busy || connect.status === "signed-out" || connect.canManage === false} onCheckedChange={(checked: boolean) => void run(() => api.setPhaseoConnect(checked))} />
 				</>} />
-			{connect && connectStatus(connect) && <SettingsNote role="status" tone={connect.status === "error" || connect.status === "paused" ? "error" : "muted"}>{connectStatus(connect)}</SettingsNote>}
+			{connect && connectStatus(connect) && <SettingsNote role="status" tone={connect.status === "error" || connect.status === "payment-due" ? "error" : "muted"}>{connectStatus(connect)}</SettingsNote>}
 		</SettingsSection>
 		<SettingsSection title="Paired phones" description="A phone can read and answer chats, approve or decline actions, stop chats and start new ones. It can't change models, permissions or settings."
 			action={<SettingsButton variant="primary" disabled={busy || !state?.enabled} title={state?.enabled ? undefined : "Turn on phone access first"} onClick={pair}><QrCode />Pair a phone</SettingsButton>}>
