@@ -29,6 +29,24 @@ describe("desktop missions", () => {
 			value.advance(60000); value.service.tick(); await vi.waitFor(() => expect(value.execute).toHaveBeenCalledTimes(2)); expect(value.execute.mock.calls[1][0].id).not.toBe(task.id); expect(value.runtime.store.getTask(value.template.id).nativeSessionId).toBe("old-native-session");
 		} finally { await value.close(); }
 	});
+	it("posts each run in its chat when bound to one, skips a busy chat, and can go back to a new chat each run", async () => {
+		const value = fixture(); try {
+			const saved = value.service.command({ type: "save", id: value.mission.id, title: value.mission.title, prompt: value.mission.prompt, templateTaskId: value.template.id, threadTaskId: value.template.id, schedule: value.mission.schedule }).find(mission => mission.id === value.mission.id)!;
+			expect(saved.threadTaskId).toBe(value.template.id);
+			value.service.command({ type: "run", id: value.mission.id });
+			await vi.waitFor(() => expect(value.runtime.store.missions.get(value.mission.id).lastStatus).toBe("completed"));
+			expect(value.execute.mock.calls[0][0].id).toBe(value.template.id); expect(value.execute.mock.calls[0][2]).toBe("Fresh research instruction");
+			expect(value.runtime.store.get().tasks.filter(task => task.missionId)).toHaveLength(0);
+			// Editing without threadTaskId keeps the chat; null lets runs start new chats again.
+			value.service.command({ type: "save", id: value.mission.id, title: "Renamed", prompt: value.mission.prompt, templateTaskId: value.template.id, schedule: value.mission.schedule });
+			expect(value.runtime.store.missions.get(value.mission.id).threadTaskId).toBe(value.template.id);
+			const busy = value.runtime.store.getTask(value.template.id); busy.status = "running"; value.runtime.store.saveTask(busy);
+			value.service.command({ type: "enable", id: value.mission.id, enabled: true }); value.advance(60000); value.service.tick();
+			expect(value.execute).toHaveBeenCalledOnce(); expect(value.runtime.store.missions.get(value.mission.id).enabled).toBe(true);
+			value.service.command({ type: "save", id: value.mission.id, title: "Renamed", prompt: value.mission.prompt, templateTaskId: value.template.id, threadTaskId: null, schedule: value.mission.schedule });
+			expect(value.runtime.store.missions.get(value.mission.id).threadTaskId).toBeUndefined();
+		} finally { await value.close(); }
+	});
 	it("keeps native approvals interactive and refuses overlapping manual runs", async () => {
 		const value = fixture(async (_task, _cwd, _text, callbacks) => { await callbacks.onApproval("file/write", "Owned fixture approval"); }); try {
 			value.service.command({ type: "run", id: value.mission.id }); await vi.waitFor(() => expect(value.runtime.store.get().tasks.find(task => task.missionId)?.status).toBe("waiting"));

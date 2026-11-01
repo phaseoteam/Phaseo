@@ -85,7 +85,7 @@ const harnessName: Partial<Record<Harness, string>> = { phaseo: "Phaseo", cursor
 const catalogBytes = 60000;
 type PreparedLaunch = { request: LaunchRequest; worktree?: { sourceId: string; branch: string; baseRef: string }; command: Extract<WorkspaceCommand, { type: "create-task" }> };
 const message = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
-const scheduledTask = ({ id, title, prompt, templateTaskId, schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error }: Mission): ScheduledTask => ({ id, title, prompt: prompt.slice(0, 8000), templateTaskId, schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error });
+const scheduledTask = ({ id, title, prompt, templateTaskId, threadTaskId, schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error }: Mission): ScheduledTask => ({ id, title, prompt: prompt.slice(0, 8000), templateTaskId, ...(threadTaskId ? { threadTaskId } : {}), schedule, enabled, nextRunAt, lastRunAt, lastTaskId, lastStatus, runCount, error });
 
 export class WorkspaceThreads {
 	private readonly listeners = new Set<() => void>();
@@ -610,9 +610,10 @@ export class WorkspaceThreads {
 			scheduled: () => this.host.store.missions.list().slice(0, 100).map(scheduledTask),
 			schedule: async request => {
 				const { caller, command } = this.scheduler(parentId, "Scheduling a task"), templateTaskId = request.templateTaskId ?? parentId;
+				if (request.postInThisChat && templateTaskId !== parentId) throw new Error("A schedule that posts in this chat runs like this chat; omit templateTaskId.");
 				this.assertTemplate(caller, templateTaskId);
 				const before = new Set(this.host.store.missions.list().map(mission => mission.id));
-				const saved = command(validateMissionCommand({ type: "save", title: request.title, prompt: request.prompt, templateTaskId, schedule: request.schedule })).find(mission => !before.has(mission.id));
+				const saved = command(validateMissionCommand({ type: "save", title: request.title, prompt: request.prompt, templateTaskId, ...(request.postInThisChat ? { threadTaskId: parentId } : {}), schedule: request.schedule })).find(mission => !before.has(mission.id));
 				if (!saved) throw new Error("The schedule could not be saved.");
 				// Missions start paused in the app; an agent asking for a schedule wants it running, as T3's schedule_task does by default.
 				if (request.enabled !== false) command({ type: "enable", id: saved.id, enabled: true });

@@ -11,7 +11,8 @@ export class MissionStore {
 	put(mission: Mission) { this.db.prepare("INSERT INTO missions (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(mission.id, JSON.stringify(mission)); }
 	save(command: Extract<MissionCommand, { type: "save" }>, now: number) {
 		const existing = command.id ? this.get(command.id) : undefined; if (existing?.lastStatus === "running") throw new Error("Stop this scheduled task's run before editing it.");
-		const timestamp = new Date(now).toISOString(); const mission: Mission = { ...existing, id: existing?.id ?? randomUUID(), title: command.title, prompt: command.prompt, templateTaskId: command.templateTaskId, schedule: command.schedule, enabled: existing?.enabled ?? false, createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp, lastStatus: existing?.lastStatus ?? "never", runCount: existing?.runCount ?? 0, error: undefined };
+		const timestamp = new Date(now).toISOString(); const threadTaskId = command.threadTaskId === undefined ? existing?.threadTaskId : command.threadTaskId ?? undefined;
+		const mission: Mission = { ...existing, id: existing?.id ?? randomUUID(), title: command.title, prompt: command.prompt, templateTaskId: command.templateTaskId, threadTaskId, schedule: command.schedule, enabled: existing?.enabled ?? false, createdAt: existing?.createdAt ?? timestamp, updatedAt: timestamp, lastStatus: existing?.lastStatus ?? "never", runCount: existing?.runCount ?? 0, error: undefined };
 		mission.nextRunAt = mission.enabled ? nextMissionRun(mission.schedule, now) : undefined; this.put(mission); return mission;
 	}
 	delete(id: string) { const mission = this.get(id); if (mission.lastStatus === "running") throw new Error("Stop this scheduled task's run before deleting it."); this.db.prepare("DELETE FROM missions WHERE id=?").run(id); }

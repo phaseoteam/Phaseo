@@ -560,7 +560,7 @@ Drag the sidebar's right edge to resize it (200–480 pixels; double-click to re
 
 ## Scheduled tasks
 
-**Scheduled tasks**, under New chat at the top of the sidebar, lists chats that start themselves while Phaseo is open: at a time of day (every day, or on chosen days, in this computer's timezone) or every few minutes or hours. Each one runs like a chat you pick, with that chat's account, agent, model, project and permissions, and every run is a fresh chat listed under the task. New ones start paused; the switch turns them on, and Run now starts one immediately. Missed runs are skipped. Agents can schedule tasks from a chat with `schedule_task`, and those start turned on.
+**Scheduled tasks**, under New chat at the top of the sidebar, lists chats that start themselves while Phaseo is open: at a time of day (every day, or on chosen days, in this computer's timezone) or every few minutes or hours. Each one runs like a chat you pick, with that chat's account, agent, model, project and permissions, and every run is a fresh chat listed under the task. New ones start paused; the switch turns them on, and Run now starts one immediately. Missed runs are skipped. Agents can schedule tasks from a chat with `schedule_task`, and those start turned on. An agent can also have each run posted in its own chat instead of a fresh one: the row then says "Posts in" that chat, a run is skipped while the chat is busy, and **Start a new chat each run** in the row's menu goes back to fresh chats.
 
 ## Reusable chat commands
 

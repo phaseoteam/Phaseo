@@ -25,7 +25,7 @@ export class MissionService {
 	close() { this.closed = true; if (this.timer) clearInterval(this.timer); this.timer = undefined; if (this.runtime.missionCommand === this.bound) this.runtime.missionCommand = undefined; }
 	command(command: MissionCommand) {
 		if (this.closed) throw new Error("The workspace is shutting down."); const store = this.runtime.store.missions; const now = this.clock();
-		if (command.type === "save") { const template = this.runtime.store.getTask(command.templateTaskId); if (template.archived) throw new Error("Choose an active template task."); store.save(command, now); }
+		if (command.type === "save") { const template = this.runtime.store.getTask(command.templateTaskId); if (template.archived) throw new Error("Choose an active template task."); if (command.threadTaskId && this.runtime.store.getTask(command.threadTaskId).archived) throw new Error("Choose an active chat to post runs in."); store.save(command, now); }
 		else if (command.type === "delete") store.delete(command.id);
 		else if (command.type === "enable") { const mission = store.get(command.id); mission.enabled = command.enabled; mission.nextRunAt = command.enabled ? nextMissionRun(mission.schedule, now) : undefined; mission.error = undefined; mission.updatedAt = new Date(now).toISOString(); store.put(mission); }
 		else this.runtime.startMission(command.id, now);
@@ -36,7 +36,8 @@ export class MissionService {
 		for (const mission of this.runtime.store.missions.list()) {
 			if (!mission.lastTaskId) continue;
 			const task = workspace.tasks.find(value => value.id === mission.lastTaskId);
-			if (task && (task.status === "running" || task.status === "waiting") && mission.lastStatus !== "running") { mission.lastStatus = "running"; mission.error = undefined; this.runtime.store.missions.put(mission); changed = true; continue; }
+			// A chat that runs posts in is also the person's: only the run admitted marks it running, not their own turns there.
+			if (task && (task.status === "running" || task.status === "waiting") && mission.lastStatus !== "running" && !mission.threadTaskId) { mission.lastStatus = "running"; mission.error = undefined; this.runtime.store.missions.put(mission); changed = true; continue; }
 			if (mission.lastStatus !== "running") continue;
 			if (!task || !["completed", "failed", "interrupted", "limited"].includes(task.status)) continue;
 			mission.lastStatus = task.status as "completed" | "failed" | "interrupted" | "limited"; mission.error = task.status === "completed" ? undefined : this.runtime.store.getTask(task.id).error; mission.updatedAt = new Date(this.clock()).toISOString();
@@ -51,7 +52,7 @@ export class MissionService {
 			const workspace = this.runtime.store.getOverview(); this.observe(workspace); const now = this.clock();
 			for (const mission of this.runtime.store.missions.list()) {
 				if (!mission.enabled || !mission.nextRunAt || Date.parse(mission.nextRunAt) > now) continue;
-				if (mission.lastStatus === "running" || workspace.tasks.some(task => task.missionId === mission.id && (task.status === "running" || task.status === "waiting")) || now - Date.parse(mission.nextRunAt) > 60000) { mission.nextRunAt = nextMissionRun(mission.schedule, now); this.runtime.store.missions.put(mission); this.onChange(); continue; }
+				if (mission.lastStatus === "running" || workspace.tasks.some(task => (task.missionId === mission.id || task.id === mission.threadTaskId) && (task.status === "running" || task.status === "waiting")) || now - Date.parse(mission.nextRunAt) > 60000) { mission.nextRunAt = nextMissionRun(mission.schedule, now); this.runtime.store.missions.put(mission); this.onChange(); continue; }
 				try { this.runtime.startMission(mission.id, now); }
 				catch (error) { const current = this.runtime.store.missions.get(mission.id); current.enabled = false; current.nextRunAt = undefined; current.lastStatus = "failed"; current.error = error instanceof Error ? error.message : "The scheduled task could not start."; this.runtime.store.missions.put(current); }
 				this.onChange();

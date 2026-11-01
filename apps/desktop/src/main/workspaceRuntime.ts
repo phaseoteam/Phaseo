@@ -1014,6 +1014,14 @@ export class WorkspaceRuntime {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if (this.store.getOverview().tasks.some(task => task.missionId === id && (task.status === "running" || task.status === "waiting" || this.executions.has(task.id)))) throw new Error("This scheduled task is already running.");
 		const task = this.store.missions.admit(id, now, mission => {
+			// Runs post only into a free chat; the scheduler skips a turn while it is busy.
+			if (mission.threadTaskId) {
+				const thread = this.store.getTask(mission.threadTaskId);
+				if (thread.archived) throw new Error("Restore the chat this scheduled task posts in before running it.");
+				if (thread.status === "running" || thread.status === "waiting" || this.executions.has(thread.id)) throw new Error("The chat this scheduled task posts in is busy.");
+				if (thread.projectId) this.assertProjectAvailable(thread.projectId);
+				return this.store.apply({ type: "send", id: thread.id, text: mission.prompt });
+			}
 			const template = this.store.getTask(mission.templateTaskId); if (template.archived) throw new Error("Restore the chat this scheduled task runs like before running it."); if (template.projectId) this.assertProjectAvailable(template.projectId);
 			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, permissionMode: template.permissionMode, serviceTier: template.serviceTier, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.modelOptions = template.modelOptions; created.nativeMode = template.nativeMode; this.store.saveTask(created);
 			return this.store.apply({ type: "send", id: created.id, text: mission.prompt });

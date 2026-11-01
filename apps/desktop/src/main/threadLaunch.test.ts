@@ -328,6 +328,10 @@ describe("scheduled-task tools", () => {
 			expect(created).toMatchObject({ title: "Nightly", templateTaskId: parentId, enabled: true, nextRunAt: expect.any(String), lastStatus: "never" });
 			const paused = await tools.schedule!({ title: "Paused", prompt: "Later", schedule: { type: "interval", minutes: 30 }, enabled: false });
 			expect(paused).toMatchObject({ enabled: false }); expect(paused.nextRunAt).toBeUndefined();
+			const bound = await tools.schedule!({ title: "Here", prompt: "Post here", schedule: { type: "interval", minutes: 30 }, enabled: false, postInThisChat: true });
+			expect(bound).toMatchObject({ templateTaskId: parentId, threadTaskId: parentId });
+			await expect(tools.schedule!({ title: "Elsewhere", prompt: "No", schedule: { type: "interval", minutes: 30 }, templateTaskId: paused.id, postInThisChat: true })).rejects.toThrow("omit templateTaskId");
+			await tools.deleteSchedule!(bound.id);
 			expect(tools.scheduled!().map(mission => mission.id).toSorted()).toEqual([created.id, paused.id].toSorted());
 			now += 1000;
 			expect(await tools.updateSchedule!(created.id, { title: "Hourly", schedule: { type: "interval", minutes: 60 }, enabled: false })).toMatchObject({ title: "Hourly", prompt: "Check builds", schedule: { type: "interval", minutes: 60 }, enabled: false });
