@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { CodeHostProvider } from "./codeHosts/common";
 
-const create = vi.fn(async (_request: { head: string; base: string; title: string; body: string }) => ({ number: 7, url: "https://gitlab.com/owned/repo/-/merge_requests/7" }));
+const create = vi.fn<(request: { head: string; base: string; title: string; body: string }) => Promise<{ number: number; url: string }>>(async () => ({ number: 7, url: "https://gitlab.com/owned/repo/-/merge_requests/7" }));
 vi.mock("./codeHosts", () => ({ codeHostProvider: async () => ({ remote: { repository: "owned/repo" }, forBranch: async () => null, create }) as unknown as CodeHostProvider }));
 const { createPullRequest } = await import("./createPullRequest");
 
