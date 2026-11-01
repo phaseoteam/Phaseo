@@ -15,4 +15,4 @@ export type PullRequestDetails = PullRequest & { repository: string; body: strin
 
 /** The pull request for a checkout's current branch, linked to a chat or not; `defaultBranch` is origin's. */
 export type BranchPullRequest = { branch: string; defaultBranch?: string; pullRequest: { repository: string; number: number; url: string; title: string; state: "OPEN" | "CLOSED" | "MERGED"; draft: boolean } | null };
-export type CreatedPullRequestResult = { repository: string; number: number; url: string; status: "created" | "opened_existing" };
+export type CreatedPullRequestResult = { repository: string; number: number; url: string; status: "created" | "opened_existing"; /** The title model that wrote the title and description; absent when they came from the commits. */ writtenBy?: string };

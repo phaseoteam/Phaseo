@@ -13,6 +13,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { announceProjectChange, onProjectChange, openProjectFile } from "./events";
 import { ipcError, ToolbarButton } from "./surfaceChrome";
 import { PublishRepositoryForm } from "./PublishRepository";
+import { pushesToDefaultBranch } from "../../shared/gitWorkflow";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
+import { knownModel, modelLabel } from "../chat/ModelPicker";
 
 const statusTone: Record<string, string> = { M: "text-warning", A: "text-success", "?": "text-success", D: "text-destructive", R: "text-info", U: "text-destructive" };
 const statusLabel = (file: GitFile) => (file.indexStatus === "?" ? "U" : [file.indexStatus, file.worktreeStatus].find(value => value.trim()) ?? "M");
@@ -52,6 +56,8 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 	const [checkoutOpen, setCheckoutOpen] = useState(false);
 	const [publishing, setPublishing] = useState(false);
 	const [generating, setGenerating] = useState(false);
+	// Pushing straight to the default branch asks first, with the option of a feature branch instead.
+	const [confirmPush, setConfirmPush] = useState<"push" | "commit-push">();
 	// Agents finishing in this project change its files, so their completion refreshes the list.
 	const activity = overview.tasks.filter(task => task.projectId === projectId).map(task => `${task.id}:${task.status}:${task.lastCompletedAt ?? ""}`).join("|");
 
@@ -90,7 +96,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 		try {
 			const result = await api!.createPullRequest(projectId, taskId);
 			setOverview(result.workspace); setRefresh(value => value + 1); announceProjectChange(projectId);
-			toastManager.update(id, { type: "success", title: result.status === "created" ? `Created pull request #${result.number}` : `Pull request #${result.number} is already open`, description: taskId ? "Linked to this chat." : undefined, timeout: 6000, actionProps: { children: "Open", onClick: () => openPullRequest({ number: result.number }) } });
+			toastManager.update(id, { type: "success", title: result.status === "created" ? `Created pull request #${result.number}` : `Pull request #${result.number} is already open`, description: [result.writtenBy && `${knownModel(result.writtenBy)?.name ?? modelLabel(result.writtenBy)} wrote the title and description.`, taskId && "Linked to this chat."].filter(Boolean).join(" ") || undefined, timeout: 6000, actionProps: { children: "Open", onClick: () => openPullRequest({ number: result.number }) } });
 		} catch (reason) { toastManager.update(id, { type: "error", title: "Could not create the pull request", description: ipcError(reason), timeout: 8000 }); }
 	});
 	/** T3: the title model writes the message from the changes; an empty message is written this way on commit. */
@@ -119,6 +125,9 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 	// T3 offers Create PR on a feature branch with no open pull request; an open one shows as its own row instead.
 	const openPull = branchPull?.branch === review?.branch && branchPull?.pullRequest?.state === "OPEN" ? branchPull.pullRequest : undefined;
 	const canCreatePull = Boolean(review?.branch) && Boolean(review?.hasRemote || review?.upstream) && !openPull && branchPull?.branch === review?.branch && branchPull?.defaultBranch !== review?.branch;
+	const onDefault = pushesToDefaultBranch(review?.branch, branchPull);
+	const push = () => { if (onDefault) setConfirmPush("push"); else void git({ type: "push" }); };
+	const commitAndPush = () => { if (onDefault) setConfirmPush("commit-push"); else void commit(true); };
 	const pullPresentation = openPull ? pullRequestStatePresentation(openPull.state, openPull.draft) : undefined;
 	const heading = (label: string, count: number, action: { label: string; icon: ReactNode; files: GitFile[]; type: "stage" | "unstage" }) => <div className="flex h-7 items-center justify-between px-1.5 text-xs font-semibold text-foreground/80">
 		<span>{label} <span className="font-normal text-muted-foreground">{count}</span></span>
@@ -158,7 +167,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 			</Tip>}
 			{canPublish && !publishing && <button type="button" disabled={busy} onClick={() => setPublishing(true)} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><CloudUpload />Publish repository</button>}
 			{canCreatePull && <Tip label={canPush ? "Push this branch and open a pull request for it" : "Open a pull request for this branch"}><button type="button" disabled={busy} onClick={() => void createPullRequest(canPush)} className={cn("flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5", !canPush && "ml-auto")}><GitPullRequestArrow />{canPush ? "Push & create PR" : "Create PR"}</button></Tip>}
-			{canPush && !canCreatePull && <button type="button" disabled={busy} onClick={() => void git({ type: "push" })} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowUp />{pushLabel}</button>}
+			{canPush && !canCreatePull && <button type="button" disabled={busy} onClick={push} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowUp />{pushLabel}</button>}
 		</div>
 		{openPull && pullPresentation && <button type="button" onClick={() => openPullRequest({ number: openPull.number })} aria-label={`Open pull request #${openPull.number}`} className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1.5 text-left text-xs hover:bg-accent/60">
 			<pullPresentation.Icon aria-hidden className={cn("size-3.5 shrink-0", pullPresentation.toneClassName)} /><span className="shrink-0 font-mono text-muted-foreground">#{openPull.number}</span><span className="min-w-0 truncate">{openPull.title}</span>
@@ -171,6 +180,19 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 		{publishing && <PublishRepositoryForm projectId={projectId} folder={folder} onCancel={() => setPublishing(false)} onDone={value => { setReview(value); setPublishing(false); setRefresh(current => current + 1); announceProjectChange(projectId); }} />}
 		{error && <p role="alert" className="px-1.5 text-xs text-destructive">{error}</p>}
 		<CheckoutPullRequestDialog projectId={projectId} open={checkoutOpen} onOpenChange={setCheckoutOpen} />
+		<Dialog open={confirmPush !== undefined} onOpenChange={open => { if (!open) setConfirmPush(undefined); }}>
+			<DialogContent className="max-w-md gap-4 p-5">
+				<DialogHeader>
+					<DialogTitle>{confirmPush === "commit-push" ? `Commit and push to ${review?.branch}?` : `Push to ${review?.branch}?`}</DialogTitle>
+					<DialogDescription className="text-xs">{review?.branch} is the repository's default branch, so the commits land on it straight away, without a pull request. A new branch keeps them separate until you open one.</DialogDescription>
+				</DialogHeader>
+				<DialogFooter>
+					<Button size="sm" variant="outline" onClick={() => setConfirmPush(undefined)}>Cancel</Button>
+					<Button size="sm" variant="outline" onClick={() => { setConfirmPush(undefined); setBranchKind("branch"); setNewBranch(""); }}>New branch first</Button>
+					<Button size="sm" onClick={() => { const action = confirmPush; setConfirmPush(undefined); if (action === "commit-push") void commit(true); else void git({ type: "push" }); }}>{confirmPush === "commit-push" ? "Commit & push" : "Push"} to {review?.branch}</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 		{review && !review.files.length && <p className="px-1.5 py-1 text-xs text-muted-foreground/70">No changes. The working tree is clean.</p>}
 		{staged.length > 0 && <div>
 			{heading("Staged", staged.length, { label: "Unstage all", icon: <Minus />, files: staged, type: "unstage" })}
@@ -189,7 +211,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 			</div>
 			<div className="mt-1.5 flex gap-1.5">
 				<button type="submit" disabled={busy || generating} className="h-7 min-w-0 flex-1 truncate rounded-md bg-primary px-2 text-xs font-semibold text-primary-foreground hover:bg-primary/85 disabled:opacity-50">{commitLabel}</button>
-				{canCommitPush && <button type="button" disabled={busy || generating} onClick={() => void commit(true)} className="h-7 shrink-0 rounded-md px-2.5 text-xs font-semibold text-foreground hover:bg-accent/60 disabled:opacity-50">Commit & push</button>}
+				{canCommitPush && <button type="button" disabled={busy || generating} onClick={commitAndPush} className="h-7 shrink-0 rounded-md px-2.5 text-xs font-semibold text-foreground hover:bg-accent/60 disabled:opacity-50">Commit & push</button>}
 			</div>
 		</form>}
 	</section>;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
+import { settingsProject } from "../../shared/projectSettings";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import type { Task } from "../../shared/workspace";
@@ -21,7 +22,7 @@ import { endTriage, startTriage, useTriage } from "../shell/Triage";
 import { triageTitle, withoutPlaybookLink, type TriagePreparation } from "../../shared/triage";
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
-import { MAX_COMPARE, knownModel, modelLabel, sameSelection } from "./ModelPicker";
+import { MAX_COMPARE, harnessNames, knownModel, modelLabel, sameSelection } from "./ModelPicker";
 import { ModelControl } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
 import { startChat } from "./startChat";
@@ -29,6 +30,7 @@ import { AutopilotControl, type AutopilotSetting } from "./Autopilot";
 import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { newChatDraftEvent, newChatDraftKey } from "../lib/newChatDraft";
 import { useWorktreeTarget, WorktreeTargetControls } from "./WorktreeTarget";
+import { OutOfUsageOffer } from "./OutOfUsageOffer";
 
 const suggestions = [
 	{ icon: PenLine, label: "Write", prompt: "Help me write " },
@@ -85,6 +87,19 @@ export function NewChat() {
 	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
 	const project = projects.find(value => value.id === newChatProjectId);
 	const worktree = useWorktreeTarget(api, code ? project?.id : undefined, setOverview);
+	// Project defaults apply when a project is chosen; the person can still change each one before sending.
+	const projectDefaults = code ? settingsProject(overview.projects, project?.id)?.settings : undefined;
+	const hidden = projectDefaults?.disabledHarnesses;
+	const turnedOff = selections.find(value => hidden?.includes(value.harness));
+	const defaultsFor = useRef<string>(undefined);
+	useEffect(() => {
+		if (!code || !project || defaultsFor.current === project.id) return;
+		defaultsFor.current = project.id;
+		const settings = settingsProject(overview.projects, project.id)?.settings;
+		if (settings?.defaultModel) setSelections([settings.defaultModel]);
+		if (settings?.defaultPermissionMode) setPermissionMode(settings.defaultPermissionMode);
+		if (settings?.defaultWorkspace) worktree.setMode(settings.defaultWorkspace);
+	}, [code, project, overview.projects, setPermissionMode, worktree]);
 	// Triage (from the command palette) runs in the build's own source, which the main process fetches first.
 	const triage = useTriage(), triaging = code && triage.status !== "idle";
 	const preparation = triage.status === "ready" ? triage.preparation : undefined;
@@ -97,8 +112,10 @@ export function NewChat() {
 		setSelections([{ harness: "phaseo", accountId: phaseoAccount.id, model: model.id }]);
 	}, [selections.length, phaseoAccount, phaseoModels]);
 	const compare = !code && selections.length > 1;
+	// Code fans one prompt out to several models, each in its own worktree from the chosen base, and compares them.
+	const fanOut = code && selections.length > 1;
 	const editor = useComposerEditor({ value: draft, onChange: setDraft, disabled: busy, onFiles: files => addImages(files),
-		placeholder: compare ? "Ask every model the same question…" : triaging ? "Describe what went wrong (optional)…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
+		placeholder: compare ? "Ask every model the same question…" : fanOut ? "Describe a change for every model to make…" : triaging ? "Describe what went wrong (optional)…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
 	// Native commands depend on one agent, so comparing models offers saved prompts, chats and files only.
 	const plan = planMode === "plan", full = permissionMode === "full-access", edits = permissionMode === "accept-edits";
 	const settingActions = useModelSettingActions(selections.length === 1 ? selections[0] : undefined, next => setSelections([next]));
@@ -117,7 +134,7 @@ export function NewChat() {
 		{ id: "usage", label: "Usage", description: "Open usage and limits", icon: <Gauge />, run: () => openUsage() },
 		...settingActions,
 	];
-	const menu = useComposerMenu({ editor, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined, actions });
+	const menu = useComposerMenu({ editor, harness: compare || fanOut ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined, actions });
 	const message = composeMessage(draft);
 	useEffect(() => { editor.focus(); }, [mode, editor.editor]); // Focus follows the mode switch and the editor's first mount.
 	// A pull request hand-off (Ask, Explain, Fix findings) puts its task here for the person to read over and send.
@@ -146,7 +163,7 @@ export function NewChat() {
 	}, [preferences]);
 
 	const needsSignIn = !phaseoAccount && ![...connected].some(harness => harness !== "phaseo");
-	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && (!code || !!project) && (!triaging || (!!preparation && project?.id === preparation.projectId));
+	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && !turnedOff && (!code || !!project) && (!fanOut || (!!worktree.createInWorktree && !triaging)) && (!triaging || (!!preparation && project?.id === preparation.projectId));
 
 	async function submit() {
 		if (!api || !canSend) return;
@@ -154,12 +171,12 @@ export function NewChat() {
 		const known = new Set(overview.tasks.map(task => task.id));
 		try {
 			const prepared = await menu.prepare(message.text), shared = { text: prepared.text, images: attached, threadReferences: message.threadReferences, githubReferences: message.githubReferences, nativeAction: prepared.nativeAction };
-			if (compare) {
+			if (compare || fanOut) {
 				const ids: string[] = [];
-				for (const selection of selections) { const id = await startChat(api, command, known, { selection, mode: "chat", ...shared }); if (id) ids.push(id); }
+				for (const selection of selections) { const id = await startChat(api, command, known, fanOut ? { selection, mode: planMode, projectId: project?.id, permissionMode, create: worktree.createInWorktree, ...shared } : { selection, mode: "chat", ...shared }); if (id) ids.push(id); }
 				if (ids.length) {
-					const group = { id: crypto.randomUUID(), title: draft.trim().split("\n")[0].slice(0, 80) || "Model comparison", taskIds: ids, createdAt: new Date().toISOString() };
-					saveCompareGroup(group); setDraft(""); setImages({}); openCompare(group.id);
+					const group = { id: crypto.randomUUID(), title: draft.trim().split("\n")[0].slice(0, 80) || (fanOut ? "Code comparison" : "Model comparison"), taskIds: ids, createdAt: new Date().toISOString() };
+					saveCompareGroup(group); setDraft(""); setImages({}); openCompare(group.id, fanOut ? "code" : "chat");
 				}
 			} else {
 				// The playbook is written now, so its diagnostics are as fresh as the message; triage works in the checkout itself, never a new worktree.
@@ -208,19 +225,19 @@ export function NewChat() {
 			</div>
 			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend}
 				menu={menu}
-				chips={compare ? <>
-					{compare && selections.map(value => <ComposerChip key={value.harness + value.model} onRemove={() => setSelections(current => current.filter(item => !sameSelection(item, value)))}>
+				chips={compare || fanOut ? <>
+					{selections.map(value => <ComposerChip key={value.harness + value.model} onRemove={() => setSelections(current => current.filter(item => !sameSelection(item, value)))}>
 						<span className="mr-1 inline-flex size-3.5 align-[-2px] [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>{knownModel(value.model)?.name ?? modelLabel(value.model)}
 					</ComposerChip>)}
 				</> : undefined}
 				tools={<>
-					<ModelControl selections={selections} onChange={setSelections} onSettings={next => setSelections([next])} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
+					<ModelControl selections={selections} onChange={setSelections} onSettings={next => setSelections([next])} multiple={!code || (!!worktree.createInWorktree && !triaging)} agents={code} disabled={busy} openEvent={openModelPickerEvent} hidden={hidden} />
 					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
 					{code && workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
-					{code && project && !triaging && <WorktreeTargetControls target={worktree} disabled={busy} />}
+					{code && project && !triaging && !fanOut && <WorktreeTargetControls target={worktree} disabled={busy} />}
 					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
 				</>}
-				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />
+				footer={compare ? <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p> : fanOut ? <p className="mt-2 px-2 text-xs text-muted-foreground">Starts {selections.length} chats, each in its own new worktree from {worktree.base}, then compares them. Each is billed separately.</p> : turnedOff ? <p role="status" className="mt-2 px-2 text-xs text-warning">{harnessNames[turnedOff.harness]} is turned off for {project?.name ?? "this project"}. Choose another model, or turn it back on in Project settings.</p> : selections.length === 1 && <OutOfUsageOffer selection={selections[0]} hidden={hidden} onChoose={next => setSelections([next])} />} />
 			{!code && <div className="flex flex-wrap justify-center gap-2">
 				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => editor.focus("end")); }}
 					className="flex h-8 items-center gap-2 rounded-full border border-border px-3.5 text-[13px] text-foreground/85 transition-colors hover:bg-muted"><Icon className="size-3.5 text-muted-foreground" />{label}</button>)}

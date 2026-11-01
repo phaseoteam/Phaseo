@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { autoSettleRules, importableScripts, newScriptId, normalisePreviewUrl, parseT3ProjectFile, projectIdentity, scriptFromProjectFile, validateProjectIcon, projectActionCommands, primaryScript, scriptMenuLabel, settingsProject, settleScriptTarget, validateProjectSettings, validateProjectUpdate, worktreeCreateScripts, type ProjectScript } from "./projectSettings";
+import { autoSettleRules, harnessDisabled, importableScripts, newScriptId, normalisePreviewUrl, parseT3ProjectFile, projectIdentity, scriptFromProjectFile, validateProjectIcon, projectActionCommands, primaryScript, scriptMenuLabel, settingsProject, settleScriptTarget, validateProjectSettings, validateProjectUpdate, worktreeCreateScripts, type ProjectScript } from "./projectSettings";
 
 const script = (patch: Partial<ProjectScript> = {}): ProjectScript => ({ id: "dev", name: "Dev server", command: "pnpm dev", icon: "play", runOnWorktreeCreate: false, ...patch });
 const preferences = { autoSettleAfterDays: 3, autoSettleOnMerge: true, keepPullRequests: false };
@@ -131,5 +131,31 @@ describe("project merge method", () => {
 		expect(validateProjectSettings({ pullRequestMergeMethod: "squash" })).toEqual({ pullRequestMergeMethod: "squash" });
 		expect(validateProjectSettings({})).toEqual({});
 		expect(() => validateProjectSettings({ pullRequestMergeMethod: "octopus" })).toThrow("merge method");
+	});
+});
+
+describe("project new chat defaults", () => {
+	it("keeps a default model with its settings, permissions, workspace and turned-off agents", () => {
+		expect(validateProjectSettings({ defaultModel: { harness: "codex", model: "gpt-6", reasoningEffort: "high", options: { fast: true } }, defaultPermissionMode: "accept-edits", defaultWorkspace: "worktree", disabledHarnesses: ["cursor", "cursor", "grok"] }))
+			.toEqual({ defaultModel: { harness: "codex", model: "gpt-6", reasoningEffort: "high", options: { fast: true } }, defaultPermissionMode: "accept-edits", defaultWorkspace: "worktree", disabledHarnesses: ["cursor", "grok"] });
+		expect(validateProjectSettings({ disabledHarnesses: [] })).toEqual({});
+		expect(() => validateProjectSettings({ defaultModel: { harness: "nobody", model: "x" } })).toThrow("default model");
+		expect(() => validateProjectSettings({ defaultPermissionMode: "yolo" })).toThrow("permission");
+		expect(() => validateProjectSettings({ defaultWorkspace: "cloud" })).toThrow("Local or New worktree");
+		expect(() => validateProjectSettings({ disabledHarnesses: ["nobody"] })).toThrow("agent list");
+		expect(() => validateProjectSettings({ defaultModel: { harness: "claude", model: "opus" }, disabledHarnesses: ["claude"] })).toThrow("turned off");
+	});
+
+	it("turns an agent off for a project and its worktrees only", () => {
+		const projects = [
+			{ id: "web", name: "Web", directory: "/web", settings: { disabledHarnesses: ["cursor" as const] } },
+			{ id: "tree", name: "Web", directory: "/tree", worktree: { sourceProjectId: "web" } },
+			{ id: "api", name: "API", directory: "/api" },
+		];
+		expect(harnessDisabled(projects, "web", "cursor")).toBe(true);
+		expect(harnessDisabled(projects, "tree", "cursor")).toBe(true);
+		expect(harnessDisabled(projects, "web", "claude")).toBe(false);
+		expect(harnessDisabled(projects, "api", "cursor")).toBe(false);
+		expect(harnessDisabled(projects, undefined, "cursor")).toBe(false);
 	});
 });

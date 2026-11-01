@@ -1,7 +1,8 @@
 import { formatDateTime } from "@phaseo/app-kit/format";
 import { useState } from "react";
 import type { WorkspacePreferences, WorktreeCleanupRules } from "../../shared/preferences";
-import type { WorktreeCleanupEntry, WorktreeCleanupReport } from "../../shared/worktreeCleanup";
+import type { WorktreeCleanupEntry, WorktreeCleanupReport, WorktreeSize } from "../../shared/worktreeCleanup";
+import { formatBytes } from "./diagnosticsFormat";
 import { errorText, useWorkspace } from "../app/workspace";
 import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
@@ -29,13 +30,19 @@ export function WorktreeCleanupSettings({ preferences, save, disabled }: { prefe
 	const rules = preferences.worktreeCleanup;
 	const set = (patch: Partial<WorktreeCleanupRules>) => void save({ ...preferences, worktreeCleanup: { ...rules, ...patch } });
 	const [plan, setPlan] = useState<WorktreeCleanupEntry[]>();
+	const [sizes, setSizes] = useState<Record<string, WorktreeSize>>();
 	const [last, setLast] = useState<WorktreeCleanupReport>();
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const check = async () => {
 		if (!api || busy) return;
 		setBusy(true); setError("");
-		try { const result = await api.worktreeCleanup({ type: "plan" }); setPlan(result.report.entries); setLast(result.last); }
+		try {
+			const result = await api.worktreeCleanup({ type: "plan" }); setPlan(result.report.entries); setLast(result.last); setSizes(undefined);
+			// Sizes arrive after the list, since measuring a big checkout takes a while; removing does not wait for them.
+			const ids = result.report.entries.filter(entry => entry.outcome === "remove").map(entry => entry.projectId);
+			if (ids.length) void api.worktreeSizes(ids).then(setSizes, () => setSizes({}));
+		}
 		catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
 	};
 	const remove = async (entries: WorktreeCleanupEntry[]) => {
@@ -68,10 +75,10 @@ export function WorktreeCleanupSettings({ preferences, save, disabled }: { prefe
 			<DialogContent className="max-w-lg gap-4 p-5">
 				<DialogHeader>
 					<DialogTitle>{removing.length ? `Remove ${plural(removing.length, "worktree")}?` : "Nothing to remove"}</DialogTitle>
-					<DialogDescription className="text-xs">{removing.length ? "Each checkout and its ignored files are deleted. Branches and chats are kept, and each worktree is checked again before it goes." : "No worktree matches the rules right now."}</DialogDescription>
+					<DialogDescription className="text-xs">{removing.length ? `Each checkout and its ignored files are deleted${freed(removing, sizes)}. Branches and chats are kept, and each worktree is checked again before it goes.` : "No worktree matches the rules right now."}</DialogDescription>
 				</DialogHeader>
 				<ScrollArea className="max-h-80" viewportClassName="max-h-80">
-					{removing.length > 0 && <EntryList title="Will be removed" entries={removing} />}
+					{removing.length > 0 && <EntryList title="Will be removed" entries={removing} sizes={sizes ?? "measuring"} />}
 					{kept.length > 0 && <EntryList title="Kept" entries={kept} muted />}
 				</ScrollArea>
 				<DialogFooter>
@@ -83,12 +90,26 @@ export function WorktreeCleanupSettings({ preferences, save, disabled }: { prefe
 	</SettingsSection>;
 }
 
-function EntryList({ title, entries, muted }: { title: string; entries: WorktreeCleanupEntry[]; muted?: boolean }) {
+/** ", freeing about 4.2 GB" once every worktree to remove has been measured. */
+function freed(entries: WorktreeCleanupEntry[], sizes?: Record<string, WorktreeSize>) {
+	const measured = entries.map(entry => sizes?.[entry.projectId]);
+	if (!measured.length || measured.some(size => !size)) return "";
+	const total = measured.reduce((sum, size) => sum + size!.bytes, 0);
+	return `, freeing ${measured.some(size => size!.partial) ? "at least" : "about"} ${formatBytes(total)}`;
+}
+
+/** "1.20 GB · dependencies 900 MB · build 120 MB", or "at least …" when the count stopped early. */
+export function sizeLabel(size: WorktreeSize) {
+	return [`${size.partial ? "at least " : ""}${formatBytes(size.bytes)}`, ...size.dependencies ? [`dependencies ${formatBytes(size.dependencies)}`] : [], ...size.build ? [`build ${formatBytes(size.build)}`] : []].join(" · ");
+}
+
+function EntryList({ title, entries, muted, sizes }: { title: string; entries: WorktreeCleanupEntry[]; muted?: boolean; sizes?: Record<string, WorktreeSize> | "measuring" }) {
 	return <div className="mb-3">
 		<p className="mb-1 text-xs font-semibold text-foreground/80">{title}</p>
 		<ul className="flex flex-col gap-1">{entries.map(entry => <li key={entry.projectId} className="flex min-w-0 flex-col text-xs">
 			<span className={muted ? "truncate text-muted-foreground" : "truncate"}>{entry.name}</span>
 			<span className="truncate text-muted-foreground"><span className="font-mono">{entry.branch}</span> · {entry.reason}</span>
+			{sizes && <span className="truncate text-muted-foreground">{sizes === "measuring" ? "Measuring size…" : sizes[entry.projectId] ? sizeLabel(sizes[entry.projectId]) : "Size unknown"}</span>}
 		</li>)}</ul>
 	</div>;
 }

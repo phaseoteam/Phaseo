@@ -5,8 +5,9 @@ import { TooltipProvider } from "../components/ui/tooltip";
 import { GitActions } from "../panels/GitActions";
 import { visiblePullRequestLinks } from "../../shared/pullRequestStacks";
 import { ChatPullRequestRows } from "../views/pullRequests/ChatPullRequestRows";
+import { ThreadServers } from "./ThreadServers";
 
-/** T3's details card in the title bar: the project's branch and Git actions, and the chat's pull requests. */
+/** T3's details card in the title bar: the project's branch and Git actions, the chat's pull requests and its servers. */
 export function ChatDetails() {
 	const { overview, selectedId, newChatProjectId, setNewChatProjectId, setRightPanel, settings, select } = useWorkspace();
 	const task = overview.tasks.find(value => value.id === selectedId);
@@ -22,6 +23,7 @@ export function ChatDetails() {
 					<div className="flex items-center justify-between px-1.5 pb-1"><span className="font-medium">Pull requests</span><button type="button" onClick={() => setRightPanel("pulls")} className="text-muted-foreground hover:text-foreground">{linked.length ? `${linked.length} linked` : "Link one"}</button></div>
 					<ChatPullRequestRows projectId={projectId} taskId={task.id} />
 				</div>}
+				{task && <ThreadServers taskId={task.id} />}
 			</TooltipProvider>
 		</PopoverContent>
 	</Popover>;

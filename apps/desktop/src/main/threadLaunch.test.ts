@@ -134,6 +134,14 @@ describe("delegate_task isolation", () => {
 		expect(() => validateDelegate({ requestId: "x", title: "X", prompt: "X", branch: "a" })).toThrow("branch needs isolation worktree.");
 		expect(() => validateLaunch({ requestId: "x", title: "X", prompt: "X", isolation: "worktree" })).toThrow("isolation applies to delegate_task");
 	}));
+	it("makes no worktree for an agent the project turned off", async () => withRuntime(async (runtime, directory) => {
+		const { root } = repository(directory), source = runtime.store.addProject(root);
+		const tools = runtime.threadTools(await caller(runtime, "code", "full-access", source.id));
+		runtime.store.saveProject({ ...runtime.store.getProjects().find(value => value.id === source.id)!, settings: { disabledHarnesses: ["codex"] } });
+		await expect(tools.delegate({ requestId: "off", title: "Off", prompt: "Work", isolation: "worktree" })).rejects.toThrow("turned off for this project");
+		await expect(tools.launch!({ requestId: "off", title: "Off", prompt: "Work", workspace: { strategy: "worktree", branch: "feature/off" } })).rejects.toThrow("turned off for this project");
+		expect(runtime.store.getProjects().filter(value => value.worktree)).toEqual([]);
+	}));
 });
 
 describe("html_render", () => {

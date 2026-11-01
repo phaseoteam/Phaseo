@@ -11,6 +11,7 @@ import { codexNativeActions } from "./codexNativeActions";
 import { claudeNativeActions, claudeNativeModels } from "./claudeNativeActions";
 import { piNativeActions } from "./piNativeActions";
 import { copyFile, mkdir } from "node:fs/promises";
+import { existsSync, statSync } from "node:fs";
 import { openCodeNativeActions } from "./openCodeNativeActions";
 import { OpenCode } from "@opencode/client";
 import { Service } from "@opencode/client/service";
@@ -37,7 +38,8 @@ import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import { validatePublishRepository } from "../shared/gitWorkflow";
-import { validateWorktreeCleanupRequest } from "../shared/worktreeCleanup";
+import { validateWorktreeCleanupRequest, type WorktreeSize } from "../shared/worktreeCleanup";
+import { measureWorktree } from "./worktreeSizes";
 import { limitResetAt } from "../shared/usageLimitRecovery";
 import { validateSecretAnswer } from "../shared/secretRequests";
 import { generateCommitMessage, gitInit, publishOwners, publishRepository } from "./gitWorkflow";
@@ -55,7 +57,7 @@ import { SecretVault } from "./secretVault";
 import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, projectRelativePath, readFilePreview, readProjectFile } from "./projectFiles";
-import { gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
+import { gitCommits, gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
 import { turnChanges } from "./gitCheckpoints";
 import { isTreeId } from "../shared/gitDiff";
 import { extractPdfText } from "./pdfText";
@@ -78,12 +80,15 @@ import { openCodeModels, piModels } from "./nativeModels";
 import { resolveOpenCodeCommand } from "./openCodeService";
 import { TerminalService } from "./terminalService";
 import { backgroundCommands, closeBackgroundCommands } from "./backgroundCommands";
+import { stopThreadServer, threadServers, type ServerRoot } from "./threadServers";
 import { closePhaseoMcpPool } from "./phaseoMcp";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand, gitPush, withGitLock } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
 import { listPullRequestDirectory, pullRequestCounts } from "./pullRequestDirectory";
 import { TranscriptScanner, transcriptFiles, transcriptFolders, type TranscriptFolder } from "./usageTranscripts";
+import { listNativeSessions, readNativeSession } from "./sessionImport";
+import { validateNativeSessionImport, type NativeSession } from "../shared/sessionImport";
 import { TranscriptWriter } from "./usageLedgerWrites";
 import { localDay, modelMatchKey, type TokenPrices, type UsagePeriod } from "../shared/usageLedger";
 import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
@@ -99,7 +104,7 @@ import { checkoutPullRequestHere, checkoutPullRequestWorktree } from "./pullRequ
 import { readPullRequestStack, runPullRequestStackAction } from "./pullRequestStacks";
 import { git } from "./gitProcess";
 import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest";
-import { createPullRequest } from "./createPullRequest";
+import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkLog, type PullRequestContext } from "./createPullRequest";
 import { githubRepository } from "./projectPullRequests";
 import { pullRequestLinkSnapshot } from "../shared/pullRequestView";
 import { readGitHunks } from "./gitHunks";
@@ -169,6 +174,17 @@ function terminalOwners() {
 	for (const owner of terminalService.processOwners()) { const chat = owner.taskId ? tasks.get(owner.taskId) : undefined; owners.set(owner.pid, { label: chat ? `${owner.title} · ${chat}` : owner.title, kind: "terminal" }); }
 	return owners;
 }
+/** What a chat started that can serve pages: its terminals' shells and its background commands. */
+function serverRoots(event: Electron.IpcMainInvokeEvent, taskId: unknown): ServerRoot[] {
+	if (!senderWindow(event) || typeof taskId !== "string" || !taskId || taskId.length > 200) throw new Error("Invalid chat.");
+	workspaceRuntime.store.getTask(taskId);
+	return [
+		...terminalService.processOwners().filter(owner => owner.taskId === taskId).map(owner => ({ pid: owner.pid, label: owner.title })),
+		...backgroundCommands().list(taskId).filter(command => command.running).map(command => ({ pid: command.pid, label: command.command.slice(0, 80) })),
+	];
+}
+ipcMain.handle("workspace:thread-servers", (event, taskId: unknown) => { const roots = serverRoots(event, taskId); return span("thread.servers", undefined, () => threadServers(roots)); });
+ipcMain.handle("workspace:stop-thread-server", (event, taskId: unknown, port: unknown) => { const roots = serverRoots(event, taskId); if (!Number.isSafeInteger(port) || Number(port) < 1 || Number(port) > 65535) throw new Error("Invalid port."); return stopThreadServer(roots, Number(port)); });
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
 ipcMain.handle("workspace:usage-report", async (event, period: unknown) => {
@@ -624,7 +640,14 @@ ipcMain.handle("workspace:branch-pull-request", (event, id: unknown, fresh: unkn
 ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskId: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof id !== "string" || (taskId !== undefined && typeof taskId !== "string") || shutdownStarted) throw new Error("Invalid pull request request.");
-	const result = await workspaceRuntime.mutateProject(id, () => createPullRequest(root));
+	// The title model writes the title and description from the branch, the repository's template and the chat's work; without one, the commits do.
+	const writer = "missing" in workspaceRuntime.titleModelAccount() ? undefined : async (context: PullRequestContext) => {
+		const thread = typeof taskId === "string" ? (() => { try { return threadWorkLog(workspaceRuntime.store.getTask(taskId)); } catch { return undefined; } })() : undefined;
+		const { reply, model } = await workspaceRuntime.completeWithTitleModel({ ...pullRequestPrompt(context, thread), maxTokens: 1_500, timeoutMs: 90_000, label: "The title model" });
+		const text = parsePullRequestText(reply ?? "");
+		return text && { ...text, model };
+	};
+	const result = await workspaceRuntime.mutateProject(id, () => createPullRequest(root, undefined, writer));
 	forgetBranchPullRequest(root);
 	// T3 links the pull request a Git action creates to the chat it ran beside, as "Created from this chat".
 	const task = typeof taskId === "string" ? workspaceRuntime.store.getOverview().tasks.find(value => value.id === taskId) : undefined;
@@ -673,6 +696,7 @@ ipcMain.handle("workspace:publish-repository", async (event, id: unknown, reques
 });
 ipcMain.handle("workspace:git-diff", async (event, id: unknown, request: unknown) => { const root = projectRoot(event, id), { patch, hash, truncated, headRef, baseRef, repository } = await span("git.diff", undefined, () => gitScopedDiff(root, request)); return { patch, hash, truncated, headRef, baseRef, repository }; });
 ipcMain.handle("workspace:git-diff-file", (event, id: unknown, request: unknown) => { const root = projectRoot(event, id); return span("git.diff-file", undefined, () => readScopedDiffContents(root, request)); });
+ipcMain.handle("workspace:git-commits", (event, id: unknown, baseRef: unknown) => { const root = projectRoot(event, id); if (baseRef !== undefined && typeof baseRef !== "string") throw new Error("Invalid commit list request."); return span("git.commits", undefined, () => gitCommits(root, baseRef)); });
 ipcMain.handle("workspace:git-refs", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.refs", undefined, () => gitRefs(root)); });
 ipcMain.handle("workspace:project-tree", (event, id: unknown, request: unknown, refresh: unknown) => { const root = projectRoot(event, id); if (refresh === true) refreshProjectIndex(root); return projectTree(root, request); });
 // Replies name images by absolute path as often as by relative one; either must be inside the project.
@@ -714,6 +738,13 @@ ipcMain.handle("workspace:answer-secret", (event, taskId: unknown, requestId: un
 	return workspaceRuntime.answerSecret(taskId, requestId, validateSecretAnswer(value));
 });
 ipcMain.handle("workspace:quit-interrupted", event => { if (!senderWindow(event)) throw new Error("Invalid request."); return workspaceRuntime.quitInterrupted(); });
+ipcMain.handle("workspace:worktree-sizes", async (event, value: unknown) => {
+	if (!senderWindow(event) || !Array.isArray(value) || value.length > 500 || value.some(id => typeof id !== "string")) throw new Error("Invalid worktree size request.");
+	const sizes: Record<string, WorktreeSize> = {};
+	// Only worktrees Phaseo made are measured, one at a time, so a big checkout does not starve the rest of the app.
+	for (const project of workspaceRuntime.store.getProjects().filter(item => item.worktree && !item.worktree.removedAt && (value as string[]).includes(item.id))) sizes[project.id] = await span("worktrees.size", undefined, () => measureWorktree(project.directory));
+	return sizes;
+});
 ipcMain.handle("workspace:worktree-cleanup", async (event, value: unknown) => {
 	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid worktree cleanup request.");
 	const request = validateWorktreeCleanupRequest(value);
@@ -785,6 +816,38 @@ ipcMain.handle("workspace:export-task", async (event, id: unknown, format: unkno
 	if (shutdownStarted) throw new Error("The workspace is shutting down.");
 	const content = await taskExport(task, format, workspaceRuntime.attachments);
 	await saveTaskExport(result.filePath, content); return true;
+});
+/** Sessions the last list found, by `harness:sessionId`; an import names one of these, never a path. */
+let nativeSessions = new Map<string, NativeSession & { path: string }>();
+const sessionFolders = () => { const accounts = workspaceRuntime.store.getAccounts(); return transcriptFolders(accounts, workspaceRuntime.store.addedTranscriptFolders()).map(folder => ({ ...folder, ...(() => { const account = accounts.find(value => value.configDirectory && value.harness === folder.harness && path.resolve(value.configDirectory).toLowerCase() === path.resolve(folder.directory).toLowerCase()); return account ? { accountId: account.id } : {}; })() })); };
+ipcMain.handle("workspace:native-sessions", async event => {
+	if (!senderWindow(event)) throw new Error("Invalid conversation list request.");
+	const owned = new Set(workspaceRuntime.store.sessionOwners().keys());
+	const sessions = await span("sessions.list", undefined, () => listNativeSessions(sessionFolders(), owned));
+	nativeSessions = new Map(sessions.map(session => [`${session.harness}:${session.sessionId}`, session]));
+	return sessions.map(({ path: _path, ...session }) => session);
+});
+ipcMain.handle("workspace:import-native-sessions", async (event, value: unknown) => {
+	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid conversation import.");
+	let imported = 0; const failed: string[] = [];
+	for (const choice of validateNativeSessionImport(value)) {
+		const key = `${choice.harness}:${choice.sessionId}`, session = nativeSessions.get(key);
+		if (!session) { failed.push(`${choice.sessionId}: list the conversations again first.`); continue; }
+		if (workspaceRuntime.store.sessionOwners().has(key)) continue;
+		try {
+			const parsed = await readNativeSession(session.path, session.harness, session.updatedAt);
+			// The chat resumes the session in its own folder; a folder that is gone gets the history as a handoff instead.
+			const folder = parsed.cwd && existsSync(parsed.cwd) && statSync(parsed.cwd).isDirectory() ? parsed.cwd : undefined;
+			const project = folder ? workspaceRuntime.store.getProjects().find(item => !item.worktree?.removedAt && path.resolve(item.directory).toLowerCase() === path.resolve(folder).toLowerCase()) ?? workspaceRuntime.store.addProject(folder) : undefined;
+			await workspaceRuntime.importTask({ type: "create-task", harness: session.harness, model: parsed.model ?? "default", mode: project ? "code" : "chat", ...project ? { projectId: project.id } : {}, ...session.accountId ? { accountId: session.accountId } : {} }, {
+				...project ? { nativeSessionId: parsed.sessionId } : {}, title: parsed.title, harness: session.harness, createdAt: parsed.createdAt, attachments: [],
+				messages: parsed.messages.map(message => ({ id: randomUUID(), role: message.role, text: message.text, createdAt: message.createdAt })),
+			});
+			imported++;
+		} catch (reason) { failed.push(`${session.title}: ${reason instanceof Error ? reason.message : String(reason)}`); }
+	}
+	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state);
+	return { workspace: state, imported, failed };
 });
 ipcMain.handle("workspace:import-task", async (event, value: unknown) => {
 	const window = senderWindow(event); if (!window) throw new Error("Invalid conversation import.");

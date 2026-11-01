@@ -27,7 +27,7 @@ import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
 import type { PlanStep } from "./planSteps";
 import { normalizeTags } from "./tags";
-import type { CheckpointChange, TurnFileChange, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
+import type { CheckpointChange, TurnFileChange, GitCommitSummary, GitDiffRequest, GitDiffResult, GitRefs, TurnCheckpoint } from "./gitDiff";
 import type { ProjectTreeRequest, ProjectTreeResult } from "./projectTree";
 import type { FilePreview } from "./filePreview";
 import type { ProjectSettings, ProjectUpdate, T3ProjectFileState } from "./projectSettings";
@@ -35,11 +35,15 @@ import type { PullRequestGuideResult } from "./pullRequestGuide";
 import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pullRequestStacks";
 import type { WorktreeChatRequest, WorktreeSetup } from "./worktreeChat";
 import type { PublishRepositoryRequest, PublishRepositoryResult } from "./gitWorkflow";
-import type { WorktreeCleanupReport, WorktreeCleanupRequest } from "./worktreeCleanup";
+import type { WorktreeCleanupReport, WorktreeCleanupRequest, WorktreeSize } from "./worktreeCleanup";
 import type { UsageLimitState } from "./usageLimitRecovery";
 import type { SecretRequest } from "./secretRequests";
+import type { ThreadServer } from "./threadServers";
+import type { NativeSession, NativeSessionImport } from "./sessionImport";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
+/** Harnesses a chat can run on. Antigravity stays a harness so usage history keeps its name, but it has no adapter yet, so it is offered nowhere. */
+export const runnableHarnesses: readonly Harness[] = harnesses.filter(harness => harness !== "antigravity");
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
 export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject };
 export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
@@ -265,6 +269,8 @@ export type WorkspaceApi = {
 	answerSecret: (taskId: string, requestId: string, value: string | null) => Promise<WorkspaceOverview>;
 	/** T3's worktree cleanup: list what the rules would remove, or remove the chosen ones after checking again. */
 	worktreeCleanup: (request: WorktreeCleanupRequest) => Promise<{ report: WorktreeCleanupReport; last?: WorktreeCleanupReport; workspace: WorkspaceOverview }>;
+	/** Measures worktrees on disk, one at a time, for the clean-up dialog. */
+	worktreeSizes: (projectIds: string[]) => Promise<Record<string, WorktreeSize>>;
 	/** T3's New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */
 	startWorktreeChat: (request: WorktreeChatRequest & { create: Extract<WorkspaceCommand, { type: "create-task" }> }) => Promise<{ workspace: WorkspaceOverview; taskId: string }>;
 	/** Fetches a pull request's head and makes a managed worktree on a new branch at it (T3's "Check out in a separate worktree"). */
@@ -279,6 +285,10 @@ export type WorkspaceApi = {
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
 	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: WorkspaceOverview; taskId: string } | undefined>;
+	/** Claude Code and Codex conversations from the last 30 days on this computer. */
+	nativeSessions: () => Promise<NativeSession[]>;
+	/** Imports listed conversations as chats that resume them; returns what failed and why. */
+	importNativeSessions: (sessions: NativeSessionImport[]) => Promise<{ workspace: WorkspaceOverview; imported: number; failed: string[] }>;
 	attachment: (taskId: string, id: string) => Promise<{ attachment: Attachment; text?: string; dataUrl?: string }>;
 	/** A chat's running background commands (dev servers, watchers), with the end of their output. */
 	backgroundCommands: (taskId: string) => Promise<BackgroundCommandView[]>;
@@ -372,6 +382,12 @@ export type WorkspaceApi = {
 	/** Both sides of one file in a scoped diff, checked against the diff's hash. */
 	gitDiffFile: (projectId: string, request: { diff: GitDiffRequest; filename: string; oldFilename?: string; hash: string }) => Promise<GitDiffContents>;
 	gitRefs: (projectId: string) => Promise<GitRefs>;
+	/** Local web servers this chat's terminals and background commands started. */
+	threadServers: (taskId: string) => Promise<ThreadServer[]>;
+	/** Stops one of them (the listening process and its children), checked against the chat again first. */
+	stopThreadServer: (taskId: string, port: number) => Promise<ThreadServer>;
+	/** The newest commits since the branch left `baseRef` (or its automatic base), for the Diff pane's Commits. */
+	gitCommits: (projectId: string, baseRef?: string) => Promise<GitCommitSummary[]>;
 	/** Folder listings and search that skip Git-ignored files; `refresh` re-reads the project. */
 	projectTree: (projectId: string, request: ProjectTreeRequest, refresh?: boolean) => Promise<ProjectTreeResult>;
 	filePreview: (projectId: string, filename: string) => Promise<FilePreview>;
@@ -424,6 +440,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		if (!Array.isArray(command.ids) || !command.ids.length || command.ids.length > 500 || command.ids.some(id => typeof id !== "string" || !id || id.length > 100) || new Set(command.ids).size !== command.ids.length) throw new Error("Invalid chat order.");
 	} else if (command.type === "create-task" || command.type === "handoff") {
 		if (command.type === "handoff") string("id");
+		if (command.harness === "antigravity") throw new Error("Antigravity chats are not available yet.");
 		if (!harnesses.includes(command.harness as Harness)) throw new Error("Unknown harness.");
 		if (command.permissionMode !== undefined && !["supervised", "accept-edits", "full-access"].includes(command.permissionMode as string)) throw new Error("Invalid permissions.");
 		if (!["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");

@@ -2,6 +2,7 @@ import { scriptCommand, type CommandInfo } from "./keybindings";
 import { isMergeMethod, type WorkspacePreferences } from "./preferences";
 import type { PullRequestMergeMethod } from "./pullRequestView";
 import { autoSettleDays, type AutoSettleRules } from "./threadLifecycle";
+import { harnesses, type Harness, type ModelOptionValues, type Task } from "./workspace";
 
 /** T3 Code's script icons. */
 export const projectScriptIcons = ["play", "test", "lint", "configure", "build", "debug"] as const;
@@ -16,7 +17,13 @@ export type ProjectScript = {
  * One project's own settings, after T3's project overrides. An absent auto-settle key follows Settings → General;
  * autoSettleAfterDays null means never. Worktrees use their source project's settings.
  */
-export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon; /** T3's per-project default merge method; absent follows Settings → General. */ pullRequestMergeMethod?: PullRequestMergeMethod };
+export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon; /** T3's per-project default merge method; absent follows Settings → General. */ pullRequestMergeMethod?: PullRequestMergeMethod;
+	/** What new Code chats in the project start with; each absent one follows the person's own choice. */
+	defaultModel?: ProjectModelDefault; defaultPermissionMode?: NonNullable<Task["permissionMode"]>; defaultWorkspace?: "local" | "worktree";
+	/** Agents turned off for this project: they leave its model pickers and its chats cannot start on them. */
+	disabledHarnesses?: Harness[] };
+/** A model and its settings, as the model picker chooses them. */
+export type ProjectModelDefault = { harness: Harness; model: string; accountId?: string; reasoningEffort?: string; serviceTier?: string; options?: ModelOptionValues };
 /** T3's project icon colours. */
 export const projectIconColors = ["gray", "red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"] as const;
 export type ProjectIconColor = typeof projectIconColors[number];
@@ -137,7 +144,29 @@ export function validateProjectSettings(value: unknown): ProjectSettings {
 	}
 	if (value.icon !== undefined) settings.icon = validateProjectIcon(value.icon);
 	if (value.pullRequestMergeMethod !== undefined) { if (!isMergeMethod(value.pullRequestMergeMethod)) throw new Error("Choose a merge method."); settings.pullRequestMergeMethod = value.pullRequestMergeMethod; }
+	if (value.defaultModel !== undefined) settings.defaultModel = validateModelDefault(value.defaultModel);
+	if (value.defaultPermissionMode !== undefined) { if (!["supervised", "accept-edits", "full-access"].includes(value.defaultPermissionMode as string)) throw new Error("Choose a permission mode."); settings.defaultPermissionMode = value.defaultPermissionMode as ProjectSettings["defaultPermissionMode"]; }
+	if (value.defaultWorkspace !== undefined) { if (value.defaultWorkspace !== "local" && value.defaultWorkspace !== "worktree") throw new Error("Choose Local or New worktree."); settings.defaultWorkspace = value.defaultWorkspace; }
+	if (value.disabledHarnesses !== undefined) {
+		if (!Array.isArray(value.disabledHarnesses) || value.disabledHarnesses.some(harness => !(harnesses as readonly unknown[]).includes(harness))) throw new Error("Invalid agent list.");
+		const disabled = [...new Set(value.disabledHarnesses as Harness[])];
+		if (disabled.length) settings.disabledHarnesses = disabled;
+	}
+	if (settings.defaultModel && settings.disabledHarnesses?.includes(settings.defaultModel.harness)) throw new Error("The default model's agent is turned off for this project.");
 	return settings;
+}
+
+function validateModelDefault(value: unknown): ProjectModelDefault {
+	if (!plain(value) || !(harnesses as readonly unknown[]).includes(value.harness) || typeof value.model !== "string" || !value.model || value.model.length > 300 || hasControl(value.model)) throw new Error("Choose a default model.");
+	const text = (key: "accountId" | "reasoningEffort" | "serviceTier") => { const field = value[key]; if (field === undefined) return {}; if (typeof field !== "string" || !field || field.length > 200 || hasControl(field)) throw new Error("Invalid default model."); return { [key]: field }; };
+	const options = value.options;
+	if (options !== undefined && (!plain(options) || Object.keys(options).length > 30 || Object.entries(options).some(([key, option]) => key.length > 100 || (typeof option !== "string" && typeof option !== "boolean") || (typeof option === "string" && option.length > 200)))) throw new Error("Invalid default model settings.");
+	return { harness: value.harness as Harness, model: value.model, ...text("accountId"), ...text("reasoningEffort"), ...text("serviceTier"), ...options && Object.keys(options).length ? { options: options as ModelOptionValues } : {} };
+}
+
+/** Whether a project's settings turn this agent off; a worktree follows its source project. */
+export function harnessDisabled<T extends ProjectLike>(projects: readonly T[], projectId: string | undefined, harness: Harness) {
+	return Boolean(projectId && settingsProject(projects, projectId)?.settings?.disabledHarnesses?.includes(harness));
 }
 
 export function validateProjectUpdate(value: unknown): ProjectUpdate {

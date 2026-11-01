@@ -20,6 +20,7 @@ import type { IssueRead, IssueToolTarget, ThreadIssueEntry } from "../shared/orc
 import { untrustedBlock, untrustedNotice } from "../shared/untrustedContent";
 import { withoutHtmlComments } from "../shared/htmlText";
 import { generatedBranchName } from "../shared/worktreeChat";
+import { harnessDisabled } from "../shared/projectSettings";
 import { allowsOwnAnswer, optionValue, questionOptions } from "../shared/agentQuestions";
 
 /** An issue tool's target: a URL, or a number with an optional repository. A pull request URL points at the pull request tools. */
@@ -281,6 +282,8 @@ export class WorkspaceThreads {
 			const existing = this.host.store.findLaunchedTask(callerId, prepared.request.requestId);
 			if (existing) return this.launchResult(existing);
 			let projectId = prepared.command.projectId;
+			// Checked before the worktree is made, so a turned-off agent does not leave a checkout behind.
+			if (prepared.worktree && harnessDisabled(this.host.store.getProjects(), prepared.worktree.sourceId, prepared.command.harness)) throw new Error("This agent is turned off for this project. Choose another, or turn it back on in Project settings.");
 			if (prepared.worktree) { this.assertCapacity(); ({ projectId } = await this.host.createWorktree!(prepared.worktree.sourceId, prepared.worktree.branch, prepared.worktree.baseRef)); }
 			let task: Task;
 			const files = await this.readFiles(callerId, prepared.request.attachments);
@@ -453,6 +456,7 @@ export class WorkspaceThreads {
 							const sourceId = parent.projectId!;
 							// The suffix keeps children with the same title apart, and stays the same when the request is retried.
 							const branch = request.branch ?? `${generatedBranchName(request.title)}-${createHash("sha256").update(key).digest("hex").slice(0, 6)}`;
+							if (harnessDisabled(this.host.store.getProjects(), sourceId, settings.harness)) throw new Error("This agent is turned off for this project. Choose another, or turn it back on in Project settings.");
 							pending = (async () => {
 								this.assertCapacity();
 								const { projectId } = await this.host.createWorktree!(sourceId, branch, "HEAD");

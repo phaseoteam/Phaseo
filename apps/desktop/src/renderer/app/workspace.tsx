@@ -41,7 +41,8 @@ type WorkspaceState = {
 	selectedId?: string;
 	select: (id?: string) => void;
 	compareId?: string;
-	openCompare: (id?: string) => void;
+	/** Opens a comparison; a Code fan-out stays in Code. */
+	openCompare: (id?: string, mode?: WorkspaceMode) => void;
 	compareGroups: CompareGroup[];
 	saveCompareGroup: (group: CompareGroup) => void;
 	removeCompareGroup: (id: string) => void;
@@ -176,7 +177,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		setCompareId(undefined); setSelectedId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false);
 		setModeState("code"); setCodeViewState("threads");
 	}, [setCompareId, setSelectedId, setModeState, setSettings, setCodeViewState]);
-	const openCompare = useCallback((id?: string) => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); if (id) setModeState("chat"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
+	const openCompare = useCallback((id?: string, mode: WorkspaceMode = "chat") => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); if (id) setModeState(mode); }, [setSelectedId, setCompareId, setModeState, setSettings]);
 	const openScheduled = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setPullRequestsPage(false); setInboxPage(false); setUsagePage(false); setScheduled(true); }, [setSelectedId, setCompareId, setSettings]);
 	const openPullRequests = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setInboxPage(false); setUsagePage(false); setPullRequestsPage(true); setModeState("code"); setCodeViewState("threads"); }, [setSelectedId, setCompareId, setModeState, setSettings, setCodeViewState]);
 	const openInbox = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setUsagePage(false); setInboxPage(true); }, [setSelectedId, setCompareId, setSettings]);

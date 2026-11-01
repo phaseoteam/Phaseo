@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./workspace";
 import type { TaskOverview } from "./workspaceOverview";
-import { inboxLists, inboxReason, needsAttention } from "./inbox";
+import { inboxLists, inboxReason, needsAttention, silentFor } from "./inbox";
 
 describe("task inbox", () => {
 	it("keeps unresolved requests visible after review and excludes archives", () => {
@@ -35,12 +35,29 @@ describe("Inbox lists", () => {
 	});
 	it("lists chats Autopilot is still running, but not their agents, chats it handed back, or chats already waiting on the person", () => {
 		const { inAutopilot, needsYou } = inboxLists([
-			task("running", { status: "running", autopilot: { capNanos: null, since: "2026-10-20T09:00:00.000Z" } }),
+			task("running", { status: "running", updatedAt: "2026-10-20T11:59:30.000Z", autopilot: { capNanos: null, since: "2026-10-20T09:00:00.000Z" } }),
 			task("stopped", { status: "interrupted", attentionReason: "Task interrupted", updatedAt: "2026-10-20T09:00:00.000Z", autopilot: { capNanos: null, since: "2026-10-20T09:00:00.000Z" } }),
-			task("agent", { status: "running", autopilot: { capNanos: null, since: "2026-10-20T09:00:00.000Z", inherited: true } }),
+			task("agent", { status: "running", updatedAt: "2026-10-20T11:59:30.000Z", autopilot: { capNanos: null, since: "2026-10-20T09:00:00.000Z", inherited: true } }),
 			task("blocked", { autopilot: { capNanos: 5_000_000_000, since: "2026-10-20T09:00:00.000Z", handback: { reason: "blocked", summary: "Needs the API key.", at: "2026-10-20T10:00:00.000Z" } }, attentionReason: "Autopilot needs you" }),
 		], now);
 		expect(inAutopilot.map(value => value.id)).toEqual(["running"]);
 		expect(needsYou.map(value => value.id)).toEqual(["blocked", "stopped"]);
+	});
+});
+
+describe("silence watchdog", () => {
+	const now = Date.parse("2026-10-20T12:00:00.000Z");
+	const running = (id: string, quietMs: number, fields: Partial<TaskOverview> = {}) => ({ id, title: id, status: "running", archived: false, updatedAt: new Date(now - quietMs).toISOString(), createdAt: "2026-10-20T09:00:00.000Z", approvalsCount: 0, answersCount: 0, steeringReviewCount: 0, ...fields }) as TaskOverview;
+	it("flags a running turn with no output for two minutes, but not one waiting on the person", () => {
+		expect(silentFor(running("a", 119_000), now)).toBeUndefined();
+		expect(silentFor(running("a", 125_000), now)).toBe(125_000);
+		expect(silentFor(running("a", 600_000, { approvalsCount: 1 }), now)).toBeUndefined();
+		expect(silentFor(running("a", 600_000, { status: "completed" }), now)).toBeUndefined();
+	});
+	it("raises one Inbox item that goes once output resumes, and keeps an Autopilot chat in one list", () => {
+		const quiet = running("quiet", 185_000, { autopilot: { capNanos: null, since: "" } });
+		expect(inboxLists([quiet, running("busy", 5_000)], now).needsYou.map(task => [task.id, task.attentionReason])).toEqual([["quiet", "No response for 3m"]]);
+		expect(inboxLists([quiet], now).inAutopilot).toEqual([]);
+		expect(inboxLists([{ ...quiet, updatedAt: new Date(now).toISOString() }], now).needsYou).toEqual([]);
 	});
 });

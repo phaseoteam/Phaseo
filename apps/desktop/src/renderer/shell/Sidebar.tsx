@@ -1,4 +1,5 @@
 import { formatAgoShort, formatDateParts } from "@phaseo/app-kit/format";
+import { useNow } from "../lib/useNow";
 import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -231,7 +232,9 @@ function UndoNotice() {
 /** The Inbox, in both modes: it lists what needs the person across every chat and agent, with how many. */
 function InboxLink() {
 	const { inboxPage, openInbox, overview } = useWorkspace();
-	const count = useMemo(() => inboxLists(overview.tasks).needsYou.length, [overview.tasks]);
+	// Ticks so a turn that goes silent counts without new data.
+	const now = useNow();
+	const count = useMemo(() => inboxLists(overview.tasks, now).needsYou.length, [overview.tasks, now]);
 	return <button type="button" aria-current={inboxPage ? "page" : undefined} onClick={openInbox}
 		className={cn("mt-1 flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", inboxPage && "bg-sidebar-accent text-sidebar-foreground")}>
 		<Inbox className="size-4 text-muted-foreground" />Inbox

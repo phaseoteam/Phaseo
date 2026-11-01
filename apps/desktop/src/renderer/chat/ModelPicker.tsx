@@ -2,7 +2,7 @@ import { formatDateParts } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, Star, Zap } from "lucide-react";
-import type { Harness, ModelOption } from "../../shared/workspace";
+import { runnableHarnesses, type Harness, type ModelOption } from "../../shared/workspace";
 import { usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
 import { refreshModels, useModels } from "../lib/useModels";
@@ -105,7 +105,7 @@ type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: n
 type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
 const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
-export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, settings }: {
+export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, settings, hidden }: {
 	selections: ModelSelection[];
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
@@ -118,6 +118,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	openEvent?: string;
 	/** The chosen model's effort and other settings: named after the model on the button, and set below the list. */
 	settings?: { label: string; fast: boolean; panel: ReactNode };
+	/** Agents the chat's project turns off. */
+	hidden?: readonly Harness[];
 }) {
 	const { overview } = useWorkspace();
 	const [open, setOpen] = useState(false);
@@ -130,7 +132,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const keepOpen = useRef(false);
 	const connected = useConnectedHarnesses();
 	const phaseoAccount = usablePhaseoAccounts(overview)[0];
-	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && (agents || harness !== "grok"))], [connected, agents, phaseoAccount]);
+	const hiddenKey = hidden?.join() ?? "";
+	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && runnableHarnesses.includes(harness) && (agents || harness !== "grok"))].filter(harness => !hiddenKey.split(",").includes(harness)), [connected, agents, phaseoAccount, hiddenKey]);
 	const sources = (["phaseo", "local"] as const).filter(value => harnesses.some(harness => sourceOf(harness) === value));
 	const active: Source = sources.includes(source) ? source : sources[0] ?? "phaseo";
 	const onLoad = useCallback((harness: Harness, state: { entries: Entry[]; loading: boolean; error: string }) => setCatalogs(current => ({ ...current, [harness]: state })), []);

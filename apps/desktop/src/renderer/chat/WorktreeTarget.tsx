@@ -32,15 +32,18 @@ export function useWorktreeTarget(api: WorkspaceApi | undefined, projectId: stri
 	const repository = Boolean(refs && (refs.current || refs.local.length));
 	const mode = projectId && repository ? modes[projectId] ?? "local" : "local";
 	const chosenBase = base ?? (refs?.current || refs?.local[0] || "HEAD");
+	const inWorktree = api && projectId ? async (command: CreateTask, text: string) => {
+		const result = await api.startWorktreeChat({ projectId, base: chosenBase, text: mentionPlainText(text), create: command });
+		setOverview(result.workspace); return result.taskId;
+	} : undefined;
 	return {
 		mode, refs, repository, base: chosenBase,
 		setMode: (value: "local" | "worktree") => { if (projectId) setModes(current => ({ ...current, [projectId]: value })); },
 		setBase,
 		/** For startChat: makes the worktree and the chat in it when New worktree is chosen. */
-		create: mode === "worktree" && api && projectId ? async (command: CreateTask, text: string) => {
-			const result = await api.startWorktreeChat({ projectId, base: chosenBase, text: mentionPlainText(text), create: command });
-			setOverview(result.workspace); return result.taskId;
-		} : undefined,
+		create: mode === "worktree" ? inWorktree : undefined,
+		/** The same, whatever is chosen: each model of a fan-out gets its own worktree. */
+		createInWorktree: repository ? inWorktree : undefined,
 	};
 }
 
