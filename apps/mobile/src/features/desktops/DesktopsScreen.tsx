@@ -6,7 +6,7 @@ import { clientFor, connectionLabel, useConnection } from "./connections";
 import type { SavedDesktop } from "./reach";
 import { forgetDesktop, useDesktops } from "./store";
 
-/** The computers this phone is paired with, how each is reached right now, Rename and Remove. Their chats are in Chat. */
+/** The computers this phone is paired with, how each is reached right now, Rename and Remove. Their threads are in Code. */
 export function DesktopsScreen() {
   const router = useRouter();
   const desktops = useDesktops();
@@ -28,7 +28,7 @@ export function DesktopsScreen() {
             {desktops.map((desktop, index) => <DesktopRow key={desktop.desktopId} desktop={desktop} last={index === desktops.length - 1} />)}
           </Section>
           <Text variant="caption" className="mt-4 px-4">
-            {"Their chats are in Chat: open the chats sidebar and choose Code. This phone tries the computer's own addresses first (the same Wi-Fi, or a Tailscale tailnet), then Phaseo Connect when the computer has it on."}
+            {"Their threads are in Code, at the top of the sidebar. This phone tries the computer's own addresses first (the same Wi-Fi, or a Tailscale tailnet), then Phaseo Connect when the computer has it on."}
           </Text>
         </ScrollView>
       )}

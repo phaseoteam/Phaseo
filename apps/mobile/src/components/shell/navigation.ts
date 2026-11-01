@@ -21,22 +21,38 @@ export const sectionOf = (path: string) => `/${path.split(/[/?#]/)[1] ?? ""}`;
 export type SidebarMove = "stay" | "replace" | "back" | "push";
 
 /**
- * How the sidebar opens `href` from `pathname`. Every screen opens over the launch screen (Chat, or Models when signed
- * out), so back always leads there: from the launch screen a screen is pushed, from another screen it takes that
- * one's place, and the launch screen is gone back to rather than opened a second time.
+ * How the sidebar (or a notification) opens `href` from `pathname`, given the sections already in the app's stack
+ * (`stacked`, bottom first). The launch screen (Chat, or Models when signed out) is the root and every section opens
+ * over it, so back leads there and nothing is open twice:
+ * - the launch screen, a section's own root, or a section already in the stack is gone back to ("back"), which
+ *   closes whatever was opened over it;
+ * - from the launch screen another section is pushed;
+ * - from another section, the target takes its place ("replace"), as does a detail in the section showing.
  */
-export function sidebarMove(pathname: string, href: string, signedIn: boolean): SidebarMove {
+export function sidebarMove(pathname: string, href: string, signedIn: boolean, stacked: readonly string[] = []): SidebarMove {
   if (pathname === href) return "stay";
   const target = sectionOf(href);
   const home = launchHref(signedIn);
   // `/` is the launch screen before its redirect has run (a notification that launched the app).
   const from = pathname === "/" ? home : sectionOf(pathname);
-  if (target === from) return "replace";
   if (target === home) return "back";
+  if (target === from) return href === target ? "back" : "replace";
+  if (stacked.includes(target)) return "back";
   return from === home ? "push" : "replace";
 }
 
+/**
+ * How a chat opens from the sidebar: inside Chat it takes the open chat's place, so Chat stays one screen and back
+ * leaves the app; from a screen pushed over Chat, it opens the way the sidebar opens screens (back to Chat).
+ */
+export const chatOpens = (pathname: string): "replace" | "screen" => (sectionOf(pathname) === "/chat" ? "replace" : "screen");
+
 type NavState = { key?: string; routes: readonly { name: string; state?: unknown }[] };
+
+/** The sections in the app's stack, bottom first (`/chat`, `/models`…), for sidebarMove; empty before it has mounted. */
+export function stackedSections(root: NavState | undefined): string[] {
+  return (findStack(root, "(app)")?.routes ?? []).map((route) => (route.name === "index" ? "/" : `/${route.name}`));
+}
 
 function findStack(state: NavState | undefined, name: string): NavState | undefined {
   for (const route of state?.routes ?? []) {

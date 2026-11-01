@@ -1,6 +1,7 @@
 import { applyEntries, chatItems, firstMessageId, mergeChat, mergeDetail, sortChats } from "./chatState";
 import { DesktopClient, DesktopRequestError, type ClientEvent, type ConnectionState } from "./client";
 import { FakeDesktop } from "./fakeDesktop";
+import { newThreadModel, threadModelLabel } from "./newThread";
 import { pairDesktop } from "./pairing";
 import type { PhoneChat, PhoneEntry } from "./protocol";
 import { chooseTransport, type SavedDesktop } from "./reach";
@@ -151,6 +152,33 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
     const { client } = await connected();
     const { chat } = await client.request("new_chat", { text: "Plan the release", mode: "plan" });
     expect(chat).toMatchObject({ id: "c3", mode: "plan", status: "running" });
+    client.stop();
+  });
+
+  test("lists the computer's models and starts a new thread on the one picked", async () => {
+    const { desktop, client } = await connected();
+    const list = await client.request("list_models", { projectId: "p1" });
+    expect(list.selected).toEqual({ model: "gpt-6.1", reasoningEffort: "low" });
+    expect(desktop.received.at(-1)).toMatchObject({ type: "list_models", projectId: "p1" });
+
+    const { chat } = await client.request("new_chat", { text: "Ship it", mode: "code", ...newThreadModel(list, { model: "gpt-6.1", effort: "high" }) });
+    expect(desktop.received.at(-1)).toMatchObject({ type: "new_chat", reasoningEffort: "high" });
+    expect(desktop.received.at(-1)).not.toHaveProperty("model");
+    expect(chat).toMatchObject({ model: "gpt-6.1" });
+    expect(threadModelLabel(await client.request("read_chat", { chatId: chat.id }).then((read) => read.chat), list.models)).toBe("GPT-6.1 · High");
+
+    // A computer refuses an effort the model doesn't offer, and the phone hears why.
+    await expect(client.request("new_chat", { text: "x", mode: "code", model: "gpt-6.1-mini", reasoningEffort: "high" })).rejects.toMatchObject({ code: "rejected" });
+    client.stop();
+  });
+
+  test("leaves the model to a computer from before list_models", async () => {
+    const { desktop, client } = await connected();
+    desktop.models = null;
+    await expect(client.request("list_models", {})).rejects.toMatchObject({ code: "invalid_frame" });
+    const { chat } = await client.request("new_chat", { text: "x", mode: "chat", ...newThreadModel(null, { model: "gpt-6.1", effort: "high" }) });
+    expect(chat.id).toBeTruthy();
+    expect(desktop.received.at(-1)).not.toHaveProperty("reasoningEffort");
     client.stop();
   });
 

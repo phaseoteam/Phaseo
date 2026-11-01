@@ -1,7 +1,7 @@
 import {
   checkDirectAuth, directChallenge, encodePairingLink, EnvelopeChannel, generateKeyPair, isEnvelope, okResponse, openPairRequest, errorResponse, parsePhoneFrame,
   randomToken, readRelayOutbound, relayDesktopAddress, relayPairing, sealPairResponse, sharedKey,
-  type DesktopFrame, type PhoneChatDetail, type PhoneEntry, type PhoneFrame, type PhoneRequest, type PhoneResponse,
+  type DesktopFrame, type PhoneChatDetail, type PhoneEntry, type PhoneFrame, type PhoneModel, type PhoneRequest, type PhoneResponse,
 } from "./protocol";
 import type { FetchLike } from "./reach";
 import type { OpenSocket, SocketLike } from "./transport";
@@ -57,6 +57,14 @@ export class FakeDesktop {
     { id: "c1", title: "Fix the build", mode: "code", status: "completed", updatedAt: "2026-11-01T09:00:00.000Z", unread: false, needsYou: false, project: "Phaseo", projectId: "p1", approvals: [], questions: [] },
     { id: "c2", title: "Release notes", mode: "chat", status: "waiting", updatedAt: "2026-11-01T08:00:00.000Z", unread: true, needsYou: true, attention: "Wants to run a command", approvals: [{ id: "a1", title: "Run pnpm build", description: "pnpm --filter web build" }], questions: [] },
   ];
+  /** What a new thread can start on; null answers list_models as a computer from before it did. */
+  models: { models: PhoneModel[]; selected: { model: string; reasoningEffort?: string } } | null = {
+    models: [
+      { id: "gpt-6.1", name: "GPT-6.1", efforts: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium" }, { id: "high", label: "High" }], defaultEffort: "medium" },
+      { id: "gpt-6.1-mini", name: "GPT-6.1 mini" },
+    ],
+    selected: { model: "gpt-6.1", reasoningEffort: "low" },
+  };
   entries = new Map<string, PhoneEntry[]>([
     ["c1", [
       { kind: "message", id: "m1", role: "user", text: "Fix the build", createdAt: "2026-11-01T08:59:00.000Z" },
@@ -201,8 +209,14 @@ export class FakeDesktop {
         return okResponse(request, { chatId: chat!.id });
       case "answer_question": return okResponse(request, { chatId: chat!.id });
       case "stop": chat!.status = "interrupted"; return okResponse(request, { chatId: chat!.id });
+      case "list_models":
+        return this.models ? okResponse(request, this.models) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
       case "new_chat": {
-        const created: PhoneChatDetail = { id: `c${this.chats.length + 1}`, title: "New chat", mode: request.mode, status: "running", updatedAt: "2026-11-01T10:00:00.000Z", unread: false, needsYou: false, approvals: [], questions: [] };
+        const model = this.models?.models.find((entry) => entry.id === (request.model ?? this.models?.selected.model));
+        if (request.model && !model) return errorResponse(request.id, request.type, "rejected", "That model isn't available on this computer any more.") as PhoneResponse;
+        if (request.reasoningEffort && !model?.efforts?.some((effort) => effort.id === request.reasoningEffort)) return errorResponse(request.id, request.type, "rejected", "That model doesn't offer that effort.") as PhoneResponse;
+        const reasoningEffort = request.reasoningEffort ?? (request.model ? undefined : this.models?.selected.reasoningEffort);
+        const created: PhoneChatDetail = { id: `c${this.chats.length + 1}`, title: "New chat", mode: request.mode, status: "running", updatedAt: "2026-11-01T10:00:00.000Z", unread: false, needsYou: false, ...(model ? { model: model.id } : {}), ...(reasoningEffort ? { reasoningEffort } : {}), approvals: [], questions: [] };
         this.chats.push(created);
         this.entries.set(created.id, [{ kind: "message", id: "n1", role: "user", text: request.text, createdAt: created.updatedAt }]);
         return okResponse(request, { chat: created });
