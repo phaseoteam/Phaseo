@@ -1,12 +1,14 @@
 import { directTransport, relayTransport, type DesktopTransport, type OpenSocket } from "./transport";
 
-/** A paired desktop as this phone keeps it, in secure storage: its tokens, this phone's private key and the desktop's public key. */
+/**
+ * A paired desktop as this phone keeps it, in secure storage: this phone's private key, the desktop's public key and
+ * the relay token for Phaseo Connect. Direct connections sign in by proving the key, so there is no token for them.
+ */
 export type SavedDesktop = {
   desktopId: string;
   desktopName: string;
   deviceId: string;
   deviceName: string;
-  deviceToken: string;
   relayToken: string;
   privateKey: string;
   publicKey: string;
@@ -49,11 +51,12 @@ export async function firstReachable(urls: string[], desktopId: string, fetcher:
 /** A direct URL that answers in time, else Phaseo Connect when the desktop offered it, else nothing. */
 export async function chooseTransport(desktop: SavedDesktop, deps: { fetch: FetchLike; openSocket: OpenSocket; probeMs?: number }): Promise<DesktopTransport | null> {
   const url = await firstReachable(desktop.direct, desktop.desktopId, deps.fetch, deps.probeMs);
-  if (url) return directTransport({ url, deviceToken: desktop.deviceToken, openSocket: deps.openSocket });
+  const keys = { deviceId: desktop.deviceId, privateKey: desktop.privateKey, desktopPublicKey: desktop.desktopPublicKey };
+  if (url) return directTransport({ url, keys, openSocket: deps.openSocket });
   if (desktop.connect) {
     return relayTransport({
       openSocket: deps.openSocket,
-      credentials: { relayUrl: desktop.connect.relayUrl, desktopId: desktop.desktopId, deviceId: desktop.deviceId, relayToken: desktop.relayToken, privateKey: desktop.privateKey, desktopPublicKey: desktop.desktopPublicKey },
+      credentials: { ...keys, relayUrl: desktop.connect.relayUrl, desktopId: desktop.desktopId, relayToken: desktop.relayToken },
     });
   }
   return null;

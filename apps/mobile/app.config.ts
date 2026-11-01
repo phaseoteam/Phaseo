@@ -49,7 +49,10 @@ if (perf !== (process.env.EXPO_PUBLIC_PERF_TOOLS === "1")) {
 
 /**
  * Plain HTTP is needed by Phaseo on a computer reached directly (its phone server at a Wi-Fi or Tailscale IP has no
- * certificate; Tailscale encrypts its own traffic) and by the perf build's chat stand-in. Phaseo's own origins stay https.
+ * certificate) and by the perf build's chat stand-in. Phaseo's own origins stay https. Nothing secret or private
+ * crosses that plain HTTP: pairing and every frame to the computer are sealed end to end with the paired keys
+ * (@phaseo/phone-protocol's direct.ts), and no token is sent; only the health check and the key handshake's random
+ * challenge are readable.
  */
 const withCleartextTraffic: ConfigPlugin = (config) => withAndroidManifest(config, (manifest) => {
   const application = manifest.modResults.manifest.application?.[0];

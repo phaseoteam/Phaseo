@@ -1,6 +1,6 @@
 import { createStore } from "@/lib/store";
-import { phoneProtocolVersion, type DesktopEvent, type DesktopFrame, type PhoneErrorCode, type PhoneRequest, type PhoneResults } from "./protocol";
-import { isHeld, type DesktopTransport, type Link, type LinkClosed, type TransportKind } from "./transport";
+import { phoneProtocolVersion, relayHolds, type DesktopEvent, type DesktopFrame, type PhoneErrorCode, type PhoneRequest, type PhoneResults } from "./protocol";
+import { LinkRefused, type DesktopTransport, type Link, type LinkClosed, type TransportKind } from "./transport";
 
 export type ConnectionState =
   | { status: "connecting" }
@@ -119,7 +119,7 @@ export class DesktopClient {
       const state = this.state.get();
       if (state.status === "refused") { reject(new DesktopRequestError("unauthorized", state.message)); return; }
       if (this.stopped) { reject(new DesktopRequestError("disconnected", "Not connected to the computer.")); return; }
-      const held = isHeld(frame) && this.via === "connect";
+      const held = relayHolds(frame) && this.via === "connect";
       const cancelTimer = (this.options.schedule ?? defaultSchedule)(() => this.timedOut(frame.id), this.options.requestTimeoutMs ?? 20_000);
       this.pending.set(frame.id, { resolve: resolve as (result: unknown) => void, reject, cancelTimer, held });
       if (this.ready && this.link) this.link.send(frame);
@@ -166,8 +166,9 @@ export class DesktopClient {
         frame: (frame) => { if (generation === this.generation) this.receive(frame); },
         closed: (reason) => { if (generation === this.generation) this.lost(reason); },
       });
-    } catch {
-      if (generation === this.generation) this.retryLater(unreachable);
+    } catch (error) {
+      if (generation !== this.generation) return;
+      if (error instanceof LinkRefused) this.refuse(error.message); else this.retryLater(unreachable);
       return;
     }
     if (generation !== this.generation) { link.close(); return; }
@@ -198,7 +199,7 @@ export class DesktopClient {
     for (const frame of waiting) {
       // A request queued before the transport was known may be held over Connect.
       const entry = this.pending.get(frame.id);
-      if (entry) entry.held = isHeld(frame) && transport.kind === "connect";
+      if (entry) entry.held = relayHolds(frame) && transport.kind === "connect";
       link.send(frame);
     }
     this.emit({ type: "connected", via: transport.kind, reconnect: this.connectedOnce });
