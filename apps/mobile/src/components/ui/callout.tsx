@@ -43,7 +43,7 @@ export function Callout({
   // The icon takes the title's colour, as on the website, where it inherits the box's text colour.
   const { color } = useResolveClassNames(style.title);
   const body = typeof children === "string" || typeof children === "number"
-    ? <Text className={cn("text-[14px] leading-5", style.description)}>{children}</Text>
+    ? <Text variant="muted" className={style.description}>{children}</Text>
     : children;
   return (
     <View
@@ -55,7 +55,7 @@ export function Callout({
         <Glyph size={16} strokeWidth={2} color={typeof color === "string" ? color : undefined} />
       </View>
       <View className="flex-1 gap-0.5">
-        {title ? <Text className={cn("text-[14px] leading-5 font-medium", style.title)}>{title}</Text> : null}
+        {title ? <Text variant="label" className={style.title}>{title}</Text> : null}
         {body}
       </View>
     </View>

@@ -9,7 +9,6 @@ import type { DesktopClient } from "./client";
 import type { PhoneApproval, PhoneQuestionRequest } from "./protocol";
 
 const CARD = "gap-2.5 rounded-md border border-border bg-card p-4";
-const KICKER = "text-[12px] font-semibold text-muted-foreground";
 
 /**
  * What the thread waits on, as cards over the composer: approvals (accept or decline only, as the phone can't change
@@ -50,9 +49,9 @@ function ApprovalCard({ client, chatId, approval, onSettled, onFailure }: { clie
   };
   return (
     <View className={CARD}>
-      <Text className={KICKER}>{approval.plan ? "Plan ready" : "Approval needed"}</Text>
-      <Text className="text-[18px] font-bold text-foreground">{approval.plan ? "Proposed plan" : approval.title}</Text>
-      {approval.plan ? <Markdown text={approval.description} /> : approval.description ? <Text selectable numberOfLines={12} className="text-[14px] leading-5 text-muted-foreground">{approval.description}</Text> : null}
+      <Text variant="caption" className="font-semibold">{approval.plan ? "Plan ready" : "Approval needed"}</Text>
+      <Text variant="heading">{approval.plan ? "Proposed plan" : approval.title}</Text>
+      {approval.plan ? <Markdown text={approval.description} /> : approval.description ? <Text variant="muted" selectable numberOfLines={12}>{approval.description}</Text> : null}
       <View className="flex-row flex-wrap gap-2.5">
         <Button label={approval.plan ? "Accept the plan" : "Accept"} icon={Check} loading={busy === "accept"} disabled={busy != null} onPress={() => void answer("accept")} />
         <Button label="Decline" icon={X} variant="danger" loading={busy === "decline"} disabled={busy != null} onPress={() => void answer("decline")} />
@@ -94,8 +93,8 @@ function QuestionCard({ client, chatId, request, onSettled, onStop, onFailure }:
     return (
       <View className="flex-row items-center gap-2 rounded-md border border-border bg-card py-1.5 pl-4 pr-1.5">
         <Pressable accessibilityRole="button" accessibilityLabel={`Expand user input, ${count} ${count === 1 ? "question" : "questions"}`} onPress={() => setCollapsed(false)} className="min-h-10 flex-1 flex-row items-center gap-2 active:opacity-70">
-          <Text className={KICKER}>User input needed</Text>
-          <Text className="text-[12px] text-muted-foreground">{`${count} ${count === 1 ? "question" : "questions"}`}</Text>
+          <Text variant="caption" className="font-semibold">User input needed</Text>
+          <Text variant="caption">{`${count} ${count === 1 ? "question" : "questions"}`}</Text>
           <View className="flex-1" />
           <Icon icon={ChevronUp} tone="muted" size={13} />
         </Pressable>
@@ -112,8 +111,8 @@ function QuestionCard({ client, chatId, request, onSettled, onStop, onFailure }:
     <View className={CARD}>
       <Pressable accessibilityRole="button" accessibilityLabel="Collapse user input" onPress={() => setCollapsed(true)} className="flex-row items-start gap-2">
         <View className="flex-1 gap-2.5">
-          <Text className={KICKER}>User input needed</Text>
-          <Text className="text-[18px] font-bold text-foreground">Fill in the pending answers</Text>
+          <Text variant="caption" className="font-semibold">User input needed</Text>
+          <Text variant="heading">Fill in the pending answers</Text>
         </View>
         <View className="h-8 w-8 items-center justify-center rounded-md bg-muted">
           <Icon icon={ChevronDown} tone="muted" size={13} />
@@ -121,8 +120,8 @@ function QuestionCard({ client, chatId, request, onSettled, onStop, onFailure }:
       </Pressable>
       {request.questions.map((question) => (
         <View key={question.id} className="gap-2 pt-1">
-          {question.header ? <Text className="text-[12px] font-bold text-muted-foreground">{question.header}</Text> : null}
-          <Text selectable className="text-[14px] leading-5 text-foreground">{question.question}</Text>
+          {question.header ? <Text variant="caption" className="font-bold">{question.header}</Text> : null}
+          <Text variant="muted" selectable className="text-foreground">{question.question}</Text>
           {question.options?.map((option) => {
             const selected = (chosen[question.id] ?? []).includes(option.label);
             return (
@@ -134,8 +133,8 @@ function QuestionCard({ client, chatId, request, onSettled, onStop, onFailure }:
                 onPress={() => toggle(question.id, option.label, Boolean(question.multiSelect))}
                 className={cn("min-h-12 w-full gap-0.5 rounded-md border px-3.5 py-3", selected ? "border-primary bg-primary/10" : "border-border bg-background")}
               >
-                <Text className={cn("text-[14px] font-bold", selected ? "text-foreground" : "text-muted-foreground")}>{option.label}</Text>
-                {option.description && option.description !== option.label ? <Text className="text-[14px] leading-5 text-muted-foreground">{option.description}</Text> : null}
+                <Text variant="label" className={cn(!selected && "text-muted-foreground")}>{option.label}</Text>
+                {option.description && option.description !== option.label ? <Text variant="muted">{option.description}</Text> : null}
               </Pressable>
             );
           })}

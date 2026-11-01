@@ -27,7 +27,7 @@ export function ConnectionNotice({ client }: { client: DesktopClient }) {
   return (
     <Callout tone={tone} role="status" title={state.status === "refused" ? "Can't use this computer" : "Not connected"} className="mx-4 mb-2">
       <View className="gap-2">
-        <Text className={cn("text-[14px] leading-5", CALLOUT_TONES[tone].description)}>{state.message}</Text>
+        <Text variant="muted" className={CALLOUT_TONES[tone].description}>{state.message}</Text>
         <Button label="Try again" size="sm" variant="outline" className="self-start" onPress={() => client.retryNow()} />
       </View>
     </Callout>

@@ -190,21 +190,21 @@ function ChatUsageCard({ workspaceId, onClose }: { workspaceId: string; onClose(
   return (
     <View className="mb-3 overflow-hidden rounded-md border border-border bg-card">
       <View className="flex-row items-center gap-3 px-4 pt-3">
-        <Text className="min-w-0 flex-1 text-[16px] font-semibold text-foreground">Usage</Text>
+        <Text variant="body" className="min-w-0 flex-1 font-semibold">Usage</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Dismiss usage" hitSlop={12} onPress={onClose} className="-mr-1 p-1 active:opacity-60">
           <Icon icon={X} tone="muted" size={14} />
         </Pressable>
       </View>
       <View className="flex-row items-center justify-between px-4 pt-2">
-        <Text className="text-[14px] text-muted-foreground">Credit balance</Text>
-        <Text className="text-[14px] font-medium text-foreground">{value(balance.isLoading, balance.data)}</Text>
+        <Text variant="muted">Credit balance</Text>
+        <Text variant="label">{value(balance.isLoading, balance.data)}</Text>
       </View>
       <View className="flex-row items-center justify-between px-4 pt-1">
-        <Text className="text-[14px] text-muted-foreground">Last 7 days</Text>
-        <Text className="text-[14px] font-medium text-foreground">{value(week.isLoading, week.nanos != null ? nanosToUsd(week.nanos) : null)}</Text>
+        <Text variant="muted">Last 7 days</Text>
+        <Text variant="label">{value(week.isLoading, week.nanos != null ? nanosToUsd(week.nanos) : null)}</Text>
       </View>
       <Pressable accessibilityRole="link" onPress={() => { onClose(); openScreen("/account/usage"); }} className="mt-2 border-t border-border px-4 py-2.5 active:bg-accent">
-        <Text className="text-[14px] font-medium text-link">Open Usage</Text>
+        <Text variant="label" className="text-link">Open Usage</Text>
       </Pressable>
     </View>
   );

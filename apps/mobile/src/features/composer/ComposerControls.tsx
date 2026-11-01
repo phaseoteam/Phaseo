@@ -78,8 +78,8 @@ export function ComposerModelControl({ label, logos, iconOnly, onPress, readOnly
       {logos ? <View className="shrink-0">{logos}</View> : null}
       {iconOnly && logos ? null : (
         <>
-          <Text numberOfLines={1} className={cn("shrink text-[14px] font-medium", onPress ? "text-foreground" : "text-muted-foreground")}>{label.model}</Text>
-          {suffix ? <Text numberOfLines={1} className="shrink text-[12px] text-muted-foreground">{suffix}</Text> : null}
+          <Text variant="label" numberOfLines={1} className={cn("shrink", !onPress && "text-muted-foreground")}>{label.model}</Text>
+          {suffix ? <Text variant="caption" numberOfLines={1} className="shrink">{suffix}</Text> : null}
         </>
       )}
       {onPress ? <Icon icon={ChevronDown} tone="muted" size={12} /> : null}

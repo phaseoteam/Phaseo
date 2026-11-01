@@ -68,7 +68,7 @@ function ArtificialAnalysis({ modelId, highlights, results }: { modelId: string;
                 <Text variant="small" className="font-medium">{metric.label}</Text>
               </View>
               <View className="mt-2 flex-row items-baseline gap-1.5">
-                <Text className="text-[18px] font-semibold leading-6 tracking-tight text-foreground">{result?.score == null ? "—" : formatAaScore(id, result.score)}</Text>
+                <Text variant="heading" className="tracking-tight">{result?.score == null ? "—" : formatAaScore(id, result.score)}</Text>
                 {result?.score != null && rank ? <Text variant="small" className="font-medium text-muted-foreground">(#{rank.rank})</Text> : null}
               </View>
             </View>
@@ -106,7 +106,7 @@ function Epoch({ modelId, highlights }: { modelId: string; highlights: ModelBenc
         <View className="flex-1">
           <Text variant="small" className="font-medium">Epoch Capabilities Index</Text>
           <View className="mt-2 flex-row flex-wrap items-baseline gap-x-4 gap-y-2">
-            <Text className="text-[18px] font-semibold leading-6 tracking-tight text-foreground">{result.score.toLocaleString("en-US", { maximumFractionDigits: 2 })}</Text>
+            <Text variant="heading" className="tracking-tight">{result.score.toLocaleString("en-US", { maximumFractionDigits: 2 })}</Text>
             {interval ? (
               <View className="flex-row items-baseline gap-2 border-l border-border pl-4">
                 <Text variant="caption">95% confidence interval</Text>
