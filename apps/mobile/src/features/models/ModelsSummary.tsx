@@ -4,6 +4,7 @@ import { ChartNoAxesColumn, Columns3, Server, UserRound, type LucideIcon } from 
 import { useMemo } from "react";
 import { View } from "react-native";
 import { Logo } from "@/components/Logo";
+import { useOpenScreen } from "@/components/shell/useOpenScreen";
 import { Button, Row, Section, Skeleton, Text } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { getReleases, type ModelRelease } from "@/lib/api/models";
@@ -85,9 +86,11 @@ export function ModelsSummary() {
   );
 }
 
+/** Compare opens over Models; the others are sections of their own, opened as the sidebar opens them. */
 function QuickLink({ label, icon, href }: { label: string; icon: LucideIcon; href: "/compare" | "/providers" | "/account/usage" | "/account" }) {
   const router = useRouter();
-  return <Button label={label} icon={icon} variant="secondary" className="flex-1" onPress={() => router.push(href)} />;
+  const openScreen = useOpenScreen();
+  return <Button label={label} icon={icon} variant="secondary" className="flex-1" onPress={() => (href === "/compare" ? router.push(href) : openScreen(href))} />;
 }
 
 /** As the website's releases list: "Today" on the day of release in UTC, otherwise the date. */

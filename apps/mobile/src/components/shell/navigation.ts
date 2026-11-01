@@ -18,16 +18,39 @@ export function sidebarItems({ split, signedIn }: { split: boolean; signedIn: bo
 /** The first path segment: `/models/openai/gpt-5` is in `/models`. */
 export const sectionOf = (path: string) => `/${path.split(/[/?#]/)[1] ?? ""}`;
 
-export type SidebarMove = "stay" | "replace" | "back" | "push";
+/** Opens as a section of its own: a section's root, or Usage, which lives in Account but has its own sidebar row. */
+export const opensAsSection = (href: string) => href === sectionOf(href) || href === "/account/usage";
+
+/** The app group's sections. Anything else (signing in, pairing, a sheet) opens over the app rather than inside it. */
+const APP_SECTIONS = ["/chat", "/models", "/providers", "/compare", "/account", "/code"];
+export const inApp = (path: string) => path === "/" || APP_SECTIONS.includes(sectionOf(path));
+
+/** The sidebar's destinations. Compare opens over a model on phones, so it keeps back. */
+const DESTINATIONS = ["/chat", "/models", "/providers", "/account", "/code"];
+
+/**
+ * Whether a phone screen leads with the sidebar rather than back: a destination's root at the bottom of its own stack
+ * (`depth` 0), as the sidebar opens it. Those show the sidebar button and open the drawer from a drag anywhere, edge
+ * included. Everything else is a detail (a provider opened from a model, or Usage over Account's list): back on the
+ * left and the edge swipe for back, and a drag that starts away from the edge opens the drawer. Chat stays one
+ * screen, so all of it leads with the sidebar.
+ */
+export function leadsWithSidebar(pathname: string, depth: number) {
+  const section = sectionOf(pathname);
+  return pathname === "/" || section === "/chat" || (DESTINATIONS.includes(section) && opensAsSection(pathname) && depth === 0);
+}
+
+export type SidebarMove = "stay" | "back" | "push" | "switch" | "replace";
 
 /**
  * How the sidebar (or a notification) opens `href` from `pathname`, given the sections already in the app's stack
- * (`stacked`, bottom first). The launch screen (Chat, or Models when signed out) is the root and every section opens
- * over it, so back leads there and nothing is open twice:
- * - the launch screen, a section's own root, or a section already in the stack is gone back to ("back"), which
- *   closes whatever was opened over it;
- * - from the launch screen another section is pushed;
- * - from another section, the target takes its place ("replace"), as does a detail in the section showing.
+ * (`stacked`, bottom first). The launch screen (Chat, or Models when signed out) is the root with at most one section
+ * over it, so back unwinds the section, then returns to the launch screen, then leaves the app:
+ * - the launch screen is gone back to ("back"), which closes whatever was open over it;
+ * - from the launch screen, the target is pushed over it;
+ * - from a section, a section (another, or the same one) is switched to at its root ("switch", see sectionSwitch);
+ * - a detail in a section already under the current one is gone back to; any other detail takes the current screen's
+ *   place ("replace"), with its section's root under it.
  */
 export function sidebarMove(pathname: string, href: string, signedIn: boolean, stacked: readonly string[] = []): SidebarMove {
   if (pathname === href) return "stay";
@@ -36,18 +59,20 @@ export function sidebarMove(pathname: string, href: string, signedIn: boolean, s
   // `/` is the launch screen before its redirect has run (a notification that launched the app).
   const from = pathname === "/" ? home : sectionOf(pathname);
   if (target === home) return "back";
-  if (target === from) return href === target ? "back" : "replace";
-  if (stacked.includes(target)) return "back";
-  return from === home ? "push" : "replace";
+  if (from === home) return "push";
+  if (opensAsSection(href)) return "switch";
+  if (target !== from && stacked.includes(target)) return "back";
+  return "replace";
 }
 
 /**
  * How a chat opens from the sidebar: inside Chat it takes the open chat's place, so Chat stays one screen and back
- * leaves the app; from a screen pushed over Chat, it opens the way the sidebar opens screens (back to Chat).
+ * leaves the app; from a section, it opens the way the sidebar opens screens (back to Chat).
  */
 export const chatOpens = (pathname: string): "replace" | "screen" => (sectionOf(pathname) === "/chat" ? "replace" : "screen");
 
-type NavState = { key?: string; routes: readonly { name: string; state?: unknown }[] };
+type NavRoute = { name: string; state?: unknown };
+type NavState = { key?: string; index?: number; routes: readonly NavRoute[] };
 
 /** The sections in the app's stack, bottom first (`/chat`, `/models`…), for sidebarMove; empty before it has mounted. */
 export function stackedSections(root: NavState | undefined): string[] {
@@ -70,7 +95,35 @@ function findStack(state: NavState | undefined, name: string): NavState | undefi
  */
 export function launchReset(root: NavState | undefined, signedIn: boolean) {
   const app = findStack(root, "(app)");
+  return app?.key ? resetApp(app, app.key, [{ name: launchHref(signedIn).slice(1) }]) : null;
+}
+
+/**
+ * Switching section from the sidebar: the app's stack becomes the launch screen (kept as it was, so the open chat
+ * stays) with the section over it at its root, closing whatever else was open. Usage opens alone in Account's stack,
+ * as its own section. Null before the stack has mounted.
+ */
+export function sectionSwitch(root: NavState | undefined, href: string, signedIn: boolean) {
+  const app = findStack(root, "(app)");
   if (!app?.key) return null;
-  // The router only takes a complete state, so the stack keeps its own fields and gets new routes.
-  return { type: "RESET", target: app.key, payload: { ...app, stale: false, index: 0, routes: [{ name: launchHref(signedIn).slice(1) }], preloadedRoutes: [] } };
+  const launch = launchHref(signedIn).slice(1);
+  // `index` is the launch screen before its redirect has run.
+  const homeAt = app.routes.findLastIndex((route) => route.name === launch || route.name === "index");
+  const home = homeAt >= 0 ? app.routes.slice(0, homeAt + 1) : [{ name: launch }];
+  const section = sectionOf(href);
+  const screen = href.slice(section.length + 1);
+  // A partial nested state: the section's stack fills in the rest when it mounts.
+  const route = screen ? { name: section.slice(1), state: { routes: [{ name: screen }] } } : { name: section.slice(1) };
+  return resetApp(app, app.key, [...home, route]);
+}
+
+// The router only takes a complete state, so the stack keeps its own fields and gets new routes.
+const resetApp = (app: NavState, target: string, routes: readonly NavRoute[]) =>
+  ({ type: "RESET", target, payload: { ...app, stale: false, index: routes.length - 1, routes, preloadedRoutes: [] } });
+
+/** How deep the open section's own stack is: 0 at its root (Models, the Code list), 1 for a detail over it. */
+export function sectionDepth(root: NavState | undefined) {
+  const app = findStack(root, "(app)");
+  const top = app?.routes[app.index ?? app.routes.length - 1]?.state as NavState | undefined;
+  return top ? top.index ?? top.routes.length - 1 : 0;
 }

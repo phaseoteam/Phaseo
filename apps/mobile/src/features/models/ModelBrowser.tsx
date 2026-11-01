@@ -79,7 +79,7 @@ export function ModelBrowser() {
   return (
     <Screen>
       {/* Signed out, Models is where the app opens, with nothing to go back to. */}
-      <Header large back={!split && signedIn} title="Models" subtitle={catalogue.data ? `${models.length.toLocaleString()} of ${catalogue.data.models.length.toLocaleString()}` : null} right={<IconButton icon={SlidersHorizontal} label="Filters" onPress={() => router.push("/filters/models")} />} />
+      <Header large sidebar back={!split && signedIn} title="Models" subtitle={catalogue.data ? `${models.length.toLocaleString()} of ${catalogue.data.models.length.toLocaleString()}` : null} right={<IconButton icon={SlidersHorizontal} label="Filters" onPress={() => router.push("/filters/models")} />} />
       <View className="px-4 pb-2">
         <SearchField value={filters.query} onChangeText={(value) => updateFilters({ query: value })} placeholder="Search models, labs or IDs" />
       </View>

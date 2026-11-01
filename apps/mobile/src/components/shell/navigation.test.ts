@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { chatOpens, launchHref, launchReset, sidebarItems, sidebarMove, stackedSections } from "./navigation";
+import { chatOpens, inApp, launchHref, launchReset, leadsWithSidebar, sectionDepth, sectionSwitch, sidebarItems, sidebarMove, stackedSections } from "./navigation";
 
 const APP = path.resolve(__dirname, "../../../app");
 
@@ -50,16 +50,23 @@ describe("the sidebar's footer", () => {
 });
 
 describe("opening a screen from the sidebar", () => {
-  it("pushes Models, Providers, Usage, Account and Code over Chat, so back returns to it", () => {
+  it("pushes a section over Chat, so back returns to it", () => {
     expect(sidebarMove("/chat", "/models", true)).toBe("push");
     expect(sidebarMove("/chat/abc", "/account/usage", true)).toBe("push");
     expect(sidebarMove("/chat/abc", "/code", true, ["/chat"])).toBe("push");
   });
 
-  it("swaps one screen for another rather than stacking them", () => {
-    expect(sidebarMove("/models/openai/gpt-5", "/providers", true, ["/chat", "/models"])).toBe("replace");
-    expect(sidebarMove("/account/keys", "/account/usage", true)).toBe("replace");
-    expect(sidebarMove("/code/desk-1/c1", "/code/desk-1/c2", true)).toBe("replace");
+  it("switches from one section to another at its root, rather than stacking them", () => {
+    expect(sidebarMove("/models/openai/gpt-5", "/providers", true, ["/chat", "/models"])).toBe("switch");
+    expect(sidebarMove("/account/keys", "/account/usage", true, ["/chat", "/account"])).toBe("switch");
+    // Model → model detail → Compare, then Providers: Models goes too, so back from Providers is Chat.
+    expect(sidebarMove("/compare", "/providers", true, ["/chat", "/models", "/compare"])).toBe("switch");
+  });
+
+  it("resets the open section to its root when it's chosen again", () => {
+    expect(sidebarMove("/code/desk-1/c1", "/code", true, ["/chat", "/code"])).toBe("switch");
+    expect(sidebarMove("/models/openai/gpt-5", "/models", true, ["/chat", "/models"])).toBe("switch");
+    expect(sidebarMove("/compare", "/models", true, ["/chat", "/models", "/compare"])).toBe("switch");
   });
 
   it("goes back to Chat for a chat, instead of opening a second Chat", () => {
@@ -67,15 +74,9 @@ describe("opening a screen from the sidebar", () => {
     expect(sidebarMove("/code/desk-1/c1", "/chat/new", true)).toBe("back");
   });
 
-  it("goes back to a section's own list rather than opening it again over its detail", () => {
-    expect(sidebarMove("/code/desk-1/c1", "/code", true, ["/chat", "/code"])).toBe("back");
-    expect(sidebarMove("/models/openai/gpt-5", "/models", true, ["/chat", "/models"])).toBe("back");
-  });
-
-  it("goes back to a section already open under the current one, so it's never open twice", () => {
-    // Model → model detail → Compare, then Models from the sidebar: back to Models, not a second Models on top.
-    expect(sidebarMove("/compare", "/models", true, ["/chat", "/models", "/compare"])).toBe("back");
-    expect(sidebarMove("/compare", "/providers", true, ["/chat", "/models", "/compare"])).toBe("replace");
+  it("opens a detail in the current screen's place, or goes back to it in a section already under the current one", () => {
+    expect(sidebarMove("/code/desk-1/c1", "/code/desk-1/c2", true, ["/chat", "/code"])).toBe("replace");
+    expect(sidebarMove("/compare", "/models/openai/gpt-5", true, ["/chat", "/models", "/compare"])).toBe("back");
   });
 
   it("does nothing for the screen already open", () => {
@@ -84,14 +85,71 @@ describe("opening a screen from the sidebar", () => {
 
   it("treats Models as the launch screen when signed out", () => {
     expect(sidebarMove("/models", "/providers", false)).toBe("push");
-    expect(sidebarMove("/providers", "/compare", false)).toBe("replace");
-    expect(sidebarMove("/compare", "/models", false)).toBe("back");
+    expect(sidebarMove("/providers", "/account", false, ["/models", "/providers"])).toBe("switch");
+    expect(sidebarMove("/providers/groq", "/models", false)).toBe("back");
   });
 
   it("treats / as the launch screen before its redirect runs, for a notification that launched the app", () => {
     expect(sidebarMove("/", "/models", true)).toBe("push");
     expect(sidebarMove("/", "/code/desk-1/c2", true)).toBe("push");
     expect(sidebarMove("/", "/chat/abc", true)).toBe("back");
+  });
+});
+
+describe("switching section", () => {
+  const chat = { key: "chat-1", name: "chat", state: { routes: [{ name: "index" }, { name: "[id]" }] } };
+  const app = { key: "stack-app", type: "stack", index: 2, routeNames: ["index", "chat", "models", "compare", "providers", "account", "code"], stale: false, routes: [chat, { key: "m", name: "models" }, { key: "c", name: "compare" }] };
+  const inRoot = (state: object) => ({ routes: [{ name: "__root", state: { routes: [{ name: "(app)", state }] } }] });
+
+  it("keeps the open chat as it was and puts the section over it at its root, closing everything else", () => {
+    expect(sectionSwitch(inRoot(app), "/providers", true)).toEqual({
+      type: "RESET",
+      target: "stack-app",
+      payload: { ...app, stale: false, index: 1, routes: [chat, { name: "providers" }], preloadedRoutes: [] },
+    });
+  });
+
+  it("opens Usage alone in Account's stack, so back from it is Chat", () => {
+    expect(sectionSwitch(inRoot(app), "/account/usage", true)?.payload.routes[1]).toEqual({ name: "account", state: { routes: [{ name: "usage" }] } });
+  });
+
+  it("keeps the launch redirect under a section a notification opened, and Models when signed out", () => {
+    const launched = inRoot({ ...app, routes: [{ key: "i", name: "index" }, { key: "k", name: "code" }] });
+    expect(sectionSwitch(launched, "/models", true)?.payload.routes).toEqual([{ key: "i", name: "index" }, { name: "models" }]);
+    const signedOut = inRoot({ ...app, routes: [{ key: "m", name: "models" }, { key: "p", name: "providers" }] });
+    expect(sectionSwitch(signedOut, "/account", false)?.payload.routes).toEqual([{ key: "m", name: "models" }, { name: "account" }]);
+  });
+
+  it("does nothing before the app's stack has mounted", () => {
+    expect(sectionSwitch(undefined, "/models", true)).toBeNull();
+  });
+});
+
+describe("the header and the drawer's swipe on phones", () => {
+  it("lead with the sidebar on Chat and on each section's root, as the sidebar opens them", () => {
+    for (const path of ["/", "/chat", "/chat/abc", "/models", "/providers", "/code", "/account", "/account/usage"]) {
+      expect([path, leadsWithSidebar(path, 0)]).toEqual([path, true]);
+    }
+  });
+
+  it("keep back on details: a section's detail, Usage over Account, a provider opened from a model, and Compare", () => {
+    expect(leadsWithSidebar("/models/openai/gpt-5", 1)).toBe(false);
+    expect(leadsWithSidebar("/code/desk-1/c1", 1)).toBe(false);
+    expect(leadsWithSidebar("/account/usage", 1)).toBe(false);
+    expect(leadsWithSidebar("/providers/groq", 0)).toBe(false);
+    expect(leadsWithSidebar("/compare", 0)).toBe(false);
+  });
+
+  it("read the open section's depth from the app's stack", () => {
+    const at = (code: object) => ({ routes: [{ name: "(app)", state: { index: 1, routes: [{ name: "chat" }, { name: "code", state: code }] } }] });
+    expect(sectionDepth(at({ index: 1, routes: [{ name: "index" }, { name: "[desktopId]/[chatId]" }] }))).toBe(1);
+    expect(sectionDepth(at({ index: 0, routes: [{ name: "index" }] }))).toBe(0);
+    expect(sectionDepth(undefined)).toBe(0);
+  });
+
+  it("close the drawer for screens in the app, not for sign-in, pairing or sheets opened over it", () => {
+    expect(["/", "/chat/abc", "/models/openai/gpt-5", "/compare", "/account/usage", "/code/desk-1/c1"].every(inApp)).toBe(true);
+    expect(["/pair", "/sign-in", "/sheets/compare", "/filters/models"].some(inApp)).toBe(false);
   });
 });
 

@@ -45,7 +45,7 @@ export function ProviderBrowser() {
 
   return (
     <Screen>
-      <Header large back={!split} title="Providers" subtitle={providers.data ? `${list.length} of ${providers.data.length}` : null} />
+      <Header large sidebar back={!split} title="Providers" subtitle={providers.data ? `${list.length} of ${providers.data.length}` : null} />
       <View className="px-4 pb-2"><SearchField value={query} onChangeText={setQuery} placeholder="Search providers" /></View>
       <ChipRow className="pb-2">
         <Chip label="On Phaseo" icon={CircleCheck} selected={filter === "phaseo"} onPress={() => setFilter(filter === "phaseo" ? "all" : "phaseo")} />

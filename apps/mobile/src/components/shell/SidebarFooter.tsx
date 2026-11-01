@@ -19,8 +19,7 @@ export function SidebarFooter({ pathname, go }: { pathname: string; go(href: str
   return (
     <View className="gap-0.5 border-t border-border pt-2" style={{ paddingBottom: insets.bottom + 8 }}>
       {items.map((item) => {
-        // Only split layouts show the sidebar beside these screens, so only they mark the open one.
-        const selected = split && (pathname === item.href || (item.href !== "/account/usage" && pathname.startsWith(`${item.href}/`)));
+        const selected = (pathname === item.href || (item.href !== "/account/usage" && pathname.startsWith(`${item.href}/`)));
         return (
           <Pressable
             key={item.href}
@@ -34,7 +33,7 @@ export function SidebarFooter({ pathname, go }: { pathname: string; go(href: str
           </Pressable>
         );
       })}
-      <ProfileRow selected={split && pathname.startsWith("/account") && pathname !== "/account/usage"} onPress={() => go("/account")} />
+      <ProfileRow selected={pathname.startsWith("/account") && pathname !== "/account/usage"} onPress={() => go("/account")} />
     </View>
   );
 }
