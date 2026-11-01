@@ -2,7 +2,7 @@ import { LegendList } from "@legendapp/list/react-native";
 import * as Clipboard from "expo-clipboard";
 import { useRouter, type Href } from "expo-router";
 import { Camera, ClipboardPaste, MessageSquare, Monitor } from "lucide-react-native";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useDeferredValue, useMemo } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { Button, Callout, CALLOUT_TONES, EmptyState, ErrorState, Icon, SkeletonRows, Text, useToneColor } from "@/components/ui";
 import { cn } from "@/lib/cn";
@@ -88,12 +88,15 @@ export function PairPrompt() {
   );
 }
 
-/** A paired computer's chats, those that need you first. `open` shows one in the main area. */
-export function DesktopChatList({ desktop, selectedChatId, open }: { desktop: SavedDesktop; selectedChatId: string | null; open(href: Href): void }) {
+/** A paired computer's chats, those that need you first, matching the sidebar's search. `open` shows one in the main area. */
+export function DesktopChatList({ desktop, query, selectedChatId, open }: { desktop: SavedDesktop; query: string; selectedChatId: string | null; open(href: Href): void }) {
   const client = clientFor(desktop);
   const { desktopId } = desktop;
   const state = useConnection(client);
-  const { chats, error, reload, loadMore, loadingMore } = useDesktopChats(client);
+  const { chats: loaded, error, reload, loadMore, loadingMore } = useDesktopChats(client);
+  // Only the loaded chats are searched: the computer has no search to ask.
+  const search = useDeferredValue(query.trim().toLocaleLowerCase());
+  const chats = useMemo(() => (search && loaded ? loaded.filter((chat) => `${chat.title} ${chat.project ?? ""}`.toLocaleLowerCase().includes(search)) : loaded), [loaded, search]);
   const openChat = useCallback((chat: PhoneChat) => open(desktopChatHref(desktopId, chat.id)), [open, desktopId]);
   const renderItem = useCallback(({ item }: { item: PhoneChat }) => <ChatRow chat={item} selected={item.id === selectedChatId} onOpen={openChat} />, [openChat, selectedChatId]);
   const extraData = useMemo(() => ({ selectedChatId }), [selectedChatId]);
@@ -110,7 +113,11 @@ export function DesktopChatList({ desktop, selectedChatId, open }: { desktop: Sa
           recycleItems
           onEndReached={loadMore ?? undefined}
           ListFooterComponent={loadingMore ? <SkeletonRows count={2} /> : null}
-          ListEmptyComponent={<EmptyState icon={MessageSquare} title="No chats on this computer yet" action="Start a chat" onAction={() => open(newDesktopChatHref(desktopId))} />}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={search
+            ? <EmptyState title="No chats match" body="Search looks through the titles of the chats loaded so far." />
+            : <EmptyState icon={MessageSquare} title="No chats on this computer yet" action="Start a chat" onAction={() => open(newDesktopChatHref(desktopId))} />}
           contentContainerStyle={{ paddingBottom: 24 }}
         />
       )}

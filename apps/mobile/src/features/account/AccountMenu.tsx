@@ -12,6 +12,7 @@ import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Button, confirm, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
 import { readStorageReport } from "@/features/chat/deviceStorage";
+import { useLayout } from "@/hooks/useLayout";
 import { FULL_VERSION_LABEL, VERSION_LABEL } from "@/lib/appInfo";
 import { formatBytes, formatNumber, formatUsd, nanosToUsd } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
@@ -19,6 +20,7 @@ import { openWeb } from "@/lib/web";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
+import { profileName } from "./profile";
 import { useBalance, useKeys, useStatus, useTeam, useTwoFactor, useWeekSpend } from "./queries";
 import { StatusDot } from "./StatusScreen";
 import { nextTap, TAPS_TO_OPEN, type TapRun } from "./versionArt";
@@ -51,6 +53,7 @@ export function AccountMenu() {
   const router = useRouter();
   const pathname = usePathname();
   const openDetail = useOpenDetail("/account");
+  const { split } = useLayout();
   const { session, signOut } = useAuth();
   const { workspace, workspaceId, workspaces } = useWorkspace();
   const balance = useBalance(session ? workspaceId : null);
@@ -60,7 +63,7 @@ export function AccountMenu() {
   const twoFactor = useTwoFactor();
   const status = useStatus();
   const [storage, setStorage] = useState<{ chats: number; bytes: number } | null>(null);
-  // Chats change in the Chat tab, so the figure is read again whenever the menu comes back into view.
+  // Chats change in Chat, so the figure is read again whenever the menu comes back into view.
   useFocusEffect(useCallback(() => {
     try {
       const report = readStorageReport();
@@ -92,12 +95,12 @@ export function AccountMenu() {
     const entry = ITEMS[key];
     return <Row key={key} icon={entry.icon} title={entry.title} subtitle={extra.subtitle} value={extra.value} trailing={extra.trailing} selected={pathname === entry.href} onPress={() => openDetail(entry.href)} last={extra.last} />;
   };
-  const name = session ? String(session.user.user_metadata?.full_name ?? session.user.user_metadata?.name ?? session.user.user_metadata?.user_name ?? "").trim() || null : null;
+  const name = session ? profileName(session.user) : null;
   const email = session?.user.email ?? null;
 
   return (
     <Screen>
-      <Header large title="Account" />
+      <Header large back={!split} title="Account" />
       <ScrollView contentContainerClassName="pb-16">
         {session ? (
           <>
@@ -160,7 +163,7 @@ export function AccountMenu() {
           {item("notifications")}
           {item("appearance")}
           {item("chats", { value: storage ? `${formatNumber(storage.chats)} · ${formatBytes(storage.bytes)}` : null })}
-          {/* A full-screen flow of its own (pairing), so it opens above the tabs on tablets too. */}
+          {/* A full-screen flow of its own (pairing), so it opens above the sidebar on tablets too. */}
           <Row icon={Monitor} title="Desktops" subtitle="Pair, rename and remove your computers" onPress={() => router.push("/desktops")} last />
         </Section>
         <Section title="Help">

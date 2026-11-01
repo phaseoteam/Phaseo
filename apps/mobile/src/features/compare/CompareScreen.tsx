@@ -6,6 +6,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Button, EmptyState, Header, Icon, Screen, Text } from "@/components/ui";
 import { compareStore, toggleCompare, useCatalogueIndex } from "@/features/models/state";
+import { useLayout } from "@/hooks/useLayout";
 import { getComparison, getComparisonUsage, MAX_COMPARE, type ComparedModel } from "@/lib/api/compare";
 import type { ModelCard } from "@/lib/api/models";
 import { contextWindow, modelName, organisationName } from "@/lib/catalogue";
@@ -60,6 +61,7 @@ export function CompareScreen() {
   const params = useLocalSearchParams<{ ids?: string }>();
   const ids = compareStore.use();
   const { index, isLoading } = useCatalogueIndex();
+  const { split } = useLayout();
 
   // A shared link (phaseo://compare?ids=a,b) replaces the current selection.
   useEffect(() => {
@@ -81,7 +83,7 @@ export function CompareScreen() {
   if (!ids.length) {
     return (
       <Screen>
-        <Header large title="Compare" />
+        <Header large back={!split} title="Compare" />
         <EmptyState className="flex-1" icon={Columns3} title="Pick models to compare" body={`Compare up to ${MAX_COMPARE} models side by side: price, context, modalities, providers and benchmarks.`} action="Choose models" onAction={() => router.push("/sheets/compare")} />
       </Screen>
     );
@@ -89,7 +91,7 @@ export function CompareScreen() {
 
   return (
     <Screen>
-      <Header large title="Compare" right={ids.length < MAX_COMPARE ? <Button label="Add" icon={Plus} variant="ghost" size="sm" onPress={() => router.push("/sheets/compare")} /> : null} />
+      <Header large back={!split} title="Compare" right={ids.length < MAX_COMPARE ? <Button label="Add" icon={Plus} variant="ghost" size="sm" onPress={() => router.push("/sheets/compare")} /> : null} />
       <ScrollView contentContainerClassName="pb-16">
         <View className="flex-row gap-2 px-4 pb-3">
           {columns.map((column) => (

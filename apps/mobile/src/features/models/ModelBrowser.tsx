@@ -1,8 +1,9 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { usePathname, useRouter } from "expo-router";
 import { ArrowDownAZ, ArrowUpDown, Bot, Building2, CircleCheck, CircleDollarSign, Clock, Flame, Gift, Maximize2, Shapes, SlidersHorizontal, X, type LucideIcon } from "lucide-react-native";
-import { type ComponentRef, useCallback, useDeferredValue, useEffect, useMemo, useRef } from "react";
-import { type TextInput, View } from "react-native";
+import { useCallback, useDeferredValue, useMemo, useRef } from "react";
+import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Button, Chip, ChipRow, EmptyState, ErrorState, Header, IconButton, OptionSheet, Screen, SearchField, SkeletonRows, Text, useMenu, type ViewRef } from "@/components/ui";
@@ -10,11 +11,10 @@ import { useLayout } from "@/hooks/useLayout";
 import type { ModelCard } from "@/lib/api/models";
 import { activeFilterCount, DEFAULT_FILTERS, filterModels, type CatalogueSort } from "@/lib/catalogue";
 import { haptic } from "@/lib/haptics";
-import { compareStore, filtersStore, searchFocusStore, toggleCompare, updateFilters, useCatalogue, useLabIds } from "./state";
+import { useAuth } from "@/providers/AuthProvider";
+import { ModelsSummary } from "./ModelsSummary";
+import { compareStore, filtersStore, toggleCompare, updateFilters, useCatalogue, useLabIds } from "./state";
 import { ModelRow } from "./ModelRow";
-
-// The last focus request this screen acted on, so remounting doesn't refocus the field.
-let handledFocusRequest = 0;
 
 export const SORT_LABELS: Record<CatalogueSort, string> = { newest: "Newest", popular: "Most used", price: "Lowest price", context: "Largest context", name: "Name" };
 export const SORT_ICONS: Record<CatalogueSort, LucideIcon> = { newest: Clock, popular: Flame, price: CircleDollarSign, context: Maximize2, name: ArrowDownAZ };
@@ -38,7 +38,7 @@ function SelectedLabLogos({ names }: { names: string[] }) {
   );
 }
 
-/** The searchable, filterable catalogue. Used as the Models tab on phones and as the list pane on tablets. */
+/** The searchable, filterable catalogue, below the summary on phones; the list pane on tablets. */
 export function ModelBrowser() {
   const router = useRouter();
   const pathname = usePathname();
@@ -54,20 +54,10 @@ export function ModelBrowser() {
   const models = useMemo(() => filterModels(catalogue.data?.models ?? [], { ...filters, query }), [catalogue.data, filters, query]);
   const selectedId = pathname.startsWith("/models/") ? decodeURIComponent(pathname.slice("/models/".length)) : null;
   const filterCount = activeFilterCount(filters);
-  const searchRef = useRef<ComponentRef<typeof TextInput>>(null);
-  const focusRequest = searchFocusStore.use();
-
-  useEffect(() => {
-    if (focusRequest === handledFocusRequest) return;
-    // Wait for the tab switch to settle before raising the keyboard. The request only counts as handled
-    // once the field has focus, so a remount that cancels the timer still gets the keyboard.
-    const timer = setTimeout(() => {
-      if (!searchRef.current) return;
-      searchRef.current.focus();
-      handledFocusRequest = focusRequest;
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [focusRequest]);
+  const signedIn = Boolean(useAuth().session);
+  const insets = useSafeAreaInsets();
+  // Phones show the summary above the whole catalogue; a search or filter goes straight to the matches.
+  const summary = !split && !query && !filterCount;
 
   const renderItem = useCallback(({ item }: { item: ModelCard }) => (
     <ModelRow
@@ -88,9 +78,10 @@ export function ModelBrowser() {
 
   return (
     <Screen>
-      <Header large title="Models" subtitle={catalogue.data ? `${models.length.toLocaleString()} of ${catalogue.data.models.length.toLocaleString()}` : null} right={<IconButton icon={SlidersHorizontal} label="Filters" onPress={() => router.push("/filters/models")} />} />
+      {/* Signed out, Models is where the app opens, with nothing to go back to. */}
+      <Header large back={!split && signedIn} title="Models" subtitle={catalogue.data ? `${models.length.toLocaleString()} of ${catalogue.data.models.length.toLocaleString()}` : null} right={<IconButton icon={SlidersHorizontal} label="Filters" onPress={() => router.push("/filters/models")} />} />
       <View className="px-4 pb-2">
-        <SearchField ref={searchRef} value={filters.query} onChangeText={(value) => updateFilters({ query: value })} placeholder="Search models, labs or IDs" />
+        <SearchField value={filters.query} onChangeText={(value) => updateFilters({ query: value })} placeholder="Search models, labs or IDs" />
       </View>
       <ChipRow className="pb-2">
         <View ref={sortRef} collapsable={false}>
@@ -123,8 +114,9 @@ export function ModelBrowser() {
           recycleItems
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={summary ? <><ModelsSummary /><Text variant="heading" className="px-4 pb-1 pt-6">All models</Text></> : null}
           ListEmptyComponent={<EmptyState icon={Bot} title="No models match" body="Try fewer filters or a shorter search." action={filterCount ? "Clear filters" : undefined} onAction={() => filtersStore.set({ ...DEFAULT_FILTERS })} />}
-          contentContainerStyle={{ paddingBottom: comparing.length ? 96 : 24 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + (comparing.length ? 96 : 24) }}
         />
       )}
       {comparing.length ? <CompareTray count={comparing.length} /> : null}
@@ -143,8 +135,9 @@ export function ModelBrowser() {
 
 function CompareTray({ count }: { count: number }) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   return (
-    <View className="absolute bottom-3 left-3 right-3 flex-row items-center gap-2 rounded-md border border-border bg-popover p-2 pl-4">
+    <View style={{ bottom: insets.bottom + 12 }} className="absolute left-3 right-3 flex-row items-center gap-2 rounded-md border border-border bg-popover p-2 pl-4">
       <Text variant="label" className="flex-1">{count === 1 ? "1 model selected" : `${count} models selected`}</Text>
       <Button label="Clear" variant="ghost" size="sm" onPress={() => compareStore.set([])} />
       <Button label="Compare" size="sm" disabled={count < 2} onPress={() => router.push("/compare")} />

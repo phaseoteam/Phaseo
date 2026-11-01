@@ -10,12 +10,12 @@ import { useLayout } from "@/hooks/useLayout";
 type ChatDrawerControls = { open(): void; close(): void };
 const ChatDrawerContext = createContext<ChatDrawerControls | null>(null);
 
-/** The phone drawer's controls; null on split layouts, where the sidebar is the list column and never hides. */
+/** The phone drawer's controls; null on split layouts, where the sidebar stays open on the left and never hides. */
 export const useChatDrawer = () => useContext(ChatDrawerContext);
 
 /**
- * Phones: Chat's sidebar slides in from the left, from the header button or a swipe from the screen's edge. Split
- * layouts render the children alone, as their SplitStack shows the sidebar as its list column.
+ * Phones: the sidebar slides in over Chat from the left, from the header button or a swipe from the screen's edge.
+ * Split layouts render the children alone, as the app layout keeps the sidebar open beside them.
  */
 export function ChatDrawer({ sidebar, children }: { sidebar: () => ReactNode; children: ReactNode }) {
   const { split, width } = useLayout();
