@@ -25,7 +25,7 @@ export function isWorking(task: TaskOverview, background: ReadonlySet<string>) {
 }
 
 /** Chats with agents still working for them. */
-export const withBackgroundWork = (tasks: readonly TaskOverview[]) => new Set(tasks.filter(child => child.delegation?.parentTaskId && !child.archived && (child.status === "running" || child.status === "waiting" || (child.status === "idle" && Boolean(child.queueCount)))).map(child => child.delegation!.parentTaskId!));
+export const withBackgroundWork = (tasks: readonly TaskOverview[]) => new Set(tasks.filter(child => child.delegation?.parentTaskId && child.delegation.kind !== "side" && !child.archived && (child.status === "running" || child.status === "waiting" || (child.status === "idle" && Boolean(child.queueCount)))).map(child => child.delegation!.parentTaskId!));
 
 /** Working chats newest first by the last message the person sent: finishing and waking do not move a row (T3's sortWorkingThreadsBySend). */
 export const workingOrder = (task: TaskOverview) => Math.max(time(task.createdAt), time(task.lastUserMessageAt));

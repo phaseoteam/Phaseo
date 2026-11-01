@@ -154,6 +154,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 	/** Actions clear the typed `/name` before they run, so it never lingers in the draft. */
 	const runAction = (action: ComposerAction) => {
 		if (action.options) { setSubmenu(action); setActive(0); return; }
+		if (action.insert !== undefined) { setSubmenu(undefined); replace(action.insert); return; }
 		if (editor && trigger) editor.chain().focus().deleteRange({ from: trigger.from, to: trigger.to }).run();
 		setSubmenu(undefined);
 		if (action.run) void guard(action.run)();

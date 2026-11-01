@@ -31,3 +31,8 @@ export function openTurnDiff(detail: OpenTurnDiffDetail) {
 	try { const saved = JSON.parse(localStorage.getItem(DIFF_SELECTION_KEY) ?? "{}") as Record<string, unknown>; localStorage.setItem(DIFF_SELECTION_KEY, JSON.stringify({ ...saved, [detail.taskId]: { kind: "turn", messageId: detail.messageId } })); } catch { /* The open pane still follows the event. */ }
 	window.dispatchEvent(new CustomEvent<OpenTurnDiffDetail>(OPEN_TURN_DIFF_EVENT, { detail }));
 }
+
+/** Asks the pane to show a side chat of the open chat as a tab (after /side, or from the chat's side chat list). */
+export const OPEN_SIDE_CHAT_EVENT = "phaseo:open-side-chat";
+export type OpenSideChatDetail = { parentId: string; id: string };
+export const openSideChat = (detail: OpenSideChatDetail) => window.dispatchEvent(new CustomEvent<OpenSideChatDetail>(OPEN_SIDE_CHAT_EVENT, { detail }));

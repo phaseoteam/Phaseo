@@ -1,6 +1,6 @@
 import { activitySummary } from "../lib/activitySummary";
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Bot, Brain, Check, ChevronRight, Circle, CircleDot, CornerDownRight, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
+import { ArrowDown, Plane, Bot, Brain, Check, ChevronRight, Circle, CircleDot, CornerDownRight, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, MessagesSquare, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
@@ -84,7 +84,7 @@ function WatchNotice({ message }: { message: Message }) {
 	const [open, setOpen] = useState(false), notice = message.notice!;
 	return <div data-conversation-id={`message:${message.id}`} data-notice={notice.kind} className="text-[12.5px]">
 		<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="group/notice flex w-full min-w-0 items-center gap-2 rounded-md py-1 text-left text-muted-foreground hover:text-foreground">
-			{notice.kind === "issue" ? <CircleDot aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} /> : notice.kind === "outside-agent" ? <Bot aria-hidden className="size-3.5 shrink-0" /> : <GitPullRequestArrow aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} />}
+			{notice.kind === "issue" ? <CircleDot aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} /> : notice.kind === "outside-agent" ? <Bot aria-hidden className="size-3.5 shrink-0" /> : notice.kind === "side-chat" ? <MessagesSquare aria-hidden className="size-3.5 shrink-0" /> : <GitPullRequestArrow aria-hidden className={cn("size-3.5 shrink-0", noticeTones[notice.outcome])} />}
 			<span className="min-w-0 truncate font-medium text-foreground/85">{notice.kind === "pull-request" ? `Pull request ${notice.summary}` : notice.summary}</span>
 			<time dateTime={message.createdAt} title={fullMessageTime(message.createdAt)} className="shrink-0 text-[11px]">{messageTime(message.createdAt)}</time>
 			<ChevronRight aria-hidden className={cn("size-3.5 shrink-0 opacity-0 transition group-hover/notice:opacity-100", open && "rotate-90 opacity-100")} />

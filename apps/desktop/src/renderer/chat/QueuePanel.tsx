@@ -19,7 +19,7 @@ export function steerBlocker(task: Pick<Task, "harness" | "status">) {
 export const ownQueue = (task: Pick<Task, "queue">) => task.queue.filter(message => !message.notice && !message.sourceTaskId);
 /** Who a queued message is from when it is not the person: Autopilot, a watched pull request or issue, or another chat's agent. */
 export function queueSender(message: Pick<QueuedMessage, "autopilot" | "notice" | "sourceTaskId" | "sourceTaskIds">, chatTitle: (id: string) => string | undefined = () => undefined) {
-	if (message.notice) return message.notice.kind === "issue" ? "Issue update" : "Pull request update";
+	if (message.notice) return message.notice.kind === "issue" ? "Issue update" : message.notice.kind === "side-chat" ? "Side chat" : "Pull request update";
 	if (message.sourceTaskId) { const others = (message.sourceTaskIds?.length ?? 1) - 1; return `${chatTitle(message.sourceTaskId) || "Agent"}${others > 0 ? ` and ${others} more` : ""}`; }
 	return message.autopilot ? "Autopilot" : undefined;
 }

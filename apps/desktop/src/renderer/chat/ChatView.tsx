@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
 import { IssueDraftPanel } from "./IssueDraftPanel";
@@ -55,6 +55,8 @@ import { useSendKey } from "./sendKey";
 import { addPendingSend, dropDeliveredSends, PendingSends } from "./pendingSends";
 import { attachmentsOnlyText } from "./MessageAttachments";
 import { settingsProject } from "../../shared/projectSettings";
+import { isSideChat, parseSideChatCommand } from "../../shared/sideChats";
+import { openSideChat } from "../panels/events";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
 	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
@@ -146,10 +148,23 @@ function ChatComposer({ task }: { task: Task }) {
 	const canCompact = ["opencode", "codex", "claude", "pi", "phaseo"].includes(task.harness) && !!task.nativeSessionId && !task.archived && !running;
 	const fork = async () => { const known = new Set(overview.tasks.map(value => value.id)); const state = await command({ type: "fork", id: task.id }); const id = state?.tasks.find(value => !known.has(value.id))?.id; if (id) select(id); };
 	const plan = task.mode === "plan", full = task.permissionMode === "full-access", edits = task.permissionMode === "accept-edits";
+	const sideChats = !isSideChat(task) && !task.archived;
+	/** /side and /btw: a side chat beside this one, shown in the right pane, that leaves this chat's turn alone. */
+	async function startSideChat(text: string) {
+		const known = new Set(overview.tasks.map(value => value.id));
+		const state = await command({ type: "side-chat", id: task.id, text });
+		const id = state?.tasks.find(value => !known.has(value.id))?.id;
+		if (id) openSideChat({ parentId: task.id, id });
+		return Boolean(state);
+	}
 	const actions: ComposerAction[] = [
 		{ id: "archive", label: "Archive", description: "Archive this chat", icon: <Archive />, run: () => void command({ type: "update-task", id: task.id, archived: true }) },
 		...canCompact ? [{ id: "compact", label: "Compact", description: "Summarise earlier messages to free up context", icon: <Layers />, run: () => void command({ type: "send", id: task.id, text: "/compact" }) }] : [],
 		...running ? [] : [{ id: "fork", label: "Fork chat", description: "Continue in a copy of this chat", icon: <GitBranch />, run: () => void fork() }],
+		...sideChats ? [
+			{ id: "side", label: "Side chat", hint: "/side", description: "Ask something beside this chat without interrupting it", icon: <MessagesSquare />, insert: "/side " },
+			{ id: "btw", label: "Btw", hint: "/btw", description: "Same as Side chat", icon: <MessagesSquare />, insert: "/btw " },
+		] : [],
 		{ id: "export", label: "Export", description: "Save this chat as a file", icon: <Download />, options: (["markdown", "json"] as const).map(format => ({ id: `export:${format}`, label: format === "markdown" ? "Markdown" : "JSON", icon: null, run: () => void api?.exportTask(task.id, format).catch(reason => setError(errorText(reason))) })) },
 		{ id: "attach", label: "Attach files", description: "Add files or images to this message", icon: <Paperclip />, run: () => void attach() },
 		{ id: "mcp", label: "MCP", description: "Manage MCP servers", icon: <Plug />, run: () => openSettings("mcp") },
@@ -222,6 +237,14 @@ function ChatComposer({ task }: { task: Task }) {
 	async function send(): Promise<boolean> {
 		if (editing) { await saveEdit(); return false; }
 		if (!canSend) return false;
+		// /side comes before an open question, which would otherwise take the text as its answer.
+		const side = sideChats ? parseSideChatCommand(message.text) : undefined;
+		if (side) {
+			if (message.attachments.length) { setError("Side chats take text only. Remove the attachments, then send it again."); return false; }
+			setBusy(true);
+			try { if (await startSideChat(mentionPlainText(side.prompt))) draft.clear(); } finally { setBusy(false); }
+			return false;
+		}
 		if (answerer) {
 			if (message.attachments.length) { setError("Answers cannot carry attachments. Remove them, or dismiss the question first."); return false; }
 			if (answerer.answer(mentionPlainText(message.text))) draft.clear();

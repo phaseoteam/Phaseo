@@ -12,7 +12,7 @@ export type WorkspaceMode = "chat" | "code";
 export type CodeView = "threads" | "factory";
 /** Where Code ▸ Factory is: the open item (`owner/name#number`) and its tab, or the new issue form. */
 export type FactoryRoute = { item?: string; tab?: string; page?: "new" };
-export type RightPanelSurface = "changes" | "files" | "diff" | "terminal" | "browser" | "agents" | "pulls";
+export type RightPanelSurface = "changes" | "files" | "diff" | "terminal" | "browser" | "agents" | "pulls" | "side";
 /** A surface to show in the right pane, "files" for Files, or "restore" to reopen the chat's own tabs. */
 export type RightPanelTab = RightPanelSurface | "files" | "restore";
 export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "code-hosts" | "outside-agents" | "keyboard" | "diagnostics" | "experimental" | "project" | FactorySettingsPage;
