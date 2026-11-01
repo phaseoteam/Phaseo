@@ -16,19 +16,19 @@ describe("phone pairing", () => {
 	};
 	const request = (pairingCode: string) => ({ pairingCode, deviceName: "Pixel 9", devicePublicKey: generateKeyPair().publicKey });
 
-	it("pairs once with a code and keeps only token hashes", () => {
+	it("pairs once with a code and keeps only the relay token's hash", () => {
 		const { folder, pairing } = setup();
 		const { pairingCode } = pairing.create();
 		const { device, result } = pairing.redeem(request(pairingCode));
 		expect(result.deviceId).toBe(device.id);
-		expect(pairing.authenticate(result.deviceToken)?.id).toBe(device.id);
+		expect(pairing.device(result.deviceId)?.publicKey).toBe(device.publicKey);
+		expect(result).not.toHaveProperty("deviceToken");
 		expect(device.relayTokenHash).toBe(tokenHash(result.relayToken));
 		const saved = readFileSync(path.join(folder, "phone.json"), "utf8");
-		expect(saved).not.toContain(result.deviceToken);
 		expect(saved).not.toContain(result.relayToken);
 		expect(saved).not.toContain(pairingCode);
 		expect(() => pairing.redeem(request(pairingCode))).toThrow("expired or was already used");
-		expect(pairing.authenticate("wrong")).toBeUndefined();
+		expect(pairing.device("wrong")).toBeUndefined();
 	});
 	it("refuses a code after ten minutes and tells Connect to drop its sign-in", () => {
 		const { pairing, advance } = setup();
@@ -48,11 +48,11 @@ describe("phone pairing", () => {
 		const first = pairing.redeem(request(pairing.create().pairingCode)), second = pairing.redeem(request(pairing.create().pairingCode));
 		pairing.remove(first.device.id);
 		expect(removed).toEqual([first.device.id]);
-		expect(pairing.authenticate(first.result.deviceToken)).toBeUndefined();
+		expect(pairing.device(first.result.deviceId)).toBeUndefined();
 		expect(() => pairing.remove(first.device.id)).toThrow("no longer paired");
 		const reopened = new PhonePairing(new PhoneSettingsFile(folder));
-		expect(reopened.authenticate(second.result.deviceToken)?.name).toBe("Pixel 9");
-		expect(reopened.authenticate(first.result.deviceToken)).toBeUndefined();
+		expect(reopened.device(second.result.deviceId)?.name).toBe("Pixel 9");
+		expect(reopened.device(first.result.deviceId)).toBeUndefined();
 	});
 	it("starts off, with Tailscale on and Wi-Fi off", () => {
 		const { store } = setup();

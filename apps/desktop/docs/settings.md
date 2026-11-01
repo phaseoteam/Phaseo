@@ -57,8 +57,13 @@ Phaseo Connect is disconnected.
   Set up HTTPS runs `tailscale serve --bg --https=443 http://127.0.0.1:47917`, so the server also listens on loopback
   while it serves; turning off phone access or the HTTPS address runs `tailscale serve --https=443 off`.
 - **Pairing.** Pair a phone shows a QR code and the same `phaseo://pair` link. Its code works once, for ten minutes. A
-  paired phone gets a device token (direct) and a relay token (Phaseo Connect); `phone.json` keeps only their hashes,
-  and the desktop's X25519 key stays in the credential vault. Remove revokes both and closes the phone's connections.
+  paired phone keeps its own X25519 key pair and gets a relay token for Phaseo Connect; `phone.json` keeps the phone's
+  public key and only the token's hash, and the desktop's X25519 key stays in the credential vault. Remove revokes
+  both and closes the phone's connections.
+- **Encryption on direct addresses.** Wi-Fi and Tailscale IPs are plain `http`/`ws`, so `POST /pair` is sealed both
+  ways with the QR code's key, and a `/v1/phone` session starts with a random challenge the phone answers sealed under
+  the paired key (no token); every frame after that is sealed like Phaseo Connect's. Only the health check and the
+  challenge are readable on the network.
 - **What a phone can do.** Read and answer chats, approve or decline (never "always" or "never"), answer questions,
   stop, and start chats. Every action goes through the same commands as the window. A new chat uses the project's
   default model and permissions, else the latest chat's model; with neither it is refused.

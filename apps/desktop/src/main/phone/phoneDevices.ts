@@ -1,10 +1,10 @@
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pairingLifetimeMs, relayPairing, tokenHash, validatePairRequest, type PairResult } from "@phaseo/phone-protocol";
 import { defaultPhonePort, type PhoneAddressKind } from "../../shared/phone";
 
-export type PhoneDeviceRecord = { id: string; name: string; publicKey: string; tokenHash: string; relayTokenHash: string; pairedAt: string; lastSeenAt?: string };
+export type PhoneDeviceRecord = { id: string; name: string; publicKey: string; relayTokenHash: string; pairedAt: string; lastSeenAt?: string };
 /** Settings → Phone as kept on disk. Tokens are kept only as hashes; the identity key is in the credential vault. */
 export type PhoneSettings = { enabled: boolean; port: number; addresses: Record<PhoneAddressKind, boolean>; desktopId: string; tailscaleServe: boolean; connect: boolean; devices: PhoneDeviceRecord[] };
 const defaults = (): PhoneSettings => ({ enabled: false, port: defaultPhonePort, addresses: { lan: false, "tailscale-ip": true, "tailscale-https": true }, desktopId: randomUUID(), tailscaleServe: false, connect: false, devices: [] });
@@ -24,7 +24,7 @@ export class PhoneSettingsFile {
 				enabled: stored.enabled === true, port: Number.isInteger(stored.port) && stored.port! >= 1024 && stored.port! <= 65535 ? stored.port! : fallback.port,
 				addresses: { lan: addresses.lan === true, "tailscale-ip": addresses["tailscale-ip"] !== false, "tailscale-https": addresses["tailscale-https"] !== false },
 				desktopId: text(stored.desktopId, 100) ? stored.desktopId : fallback.desktopId, tailscaleServe: stored.tailscaleServe === true, connect: stored.connect === true,
-				devices: (Array.isArray(stored.devices) ? stored.devices : []).filter(device => device && text(device.id) && text(device.name) && text(device.publicKey) && text(device.tokenHash) && text(device.relayTokenHash) && text(device.pairedAt)),
+				devices: (Array.isArray(stored.devices) ? stored.devices : []).filter(device => device && text(device.id) && text(device.name) && text(device.publicKey) && text(device.relayTokenHash) && text(device.pairedAt)),
 			};
 		} catch { this.value = fallback; }
 	}
@@ -38,12 +38,11 @@ export class PhoneSettingsFile {
 
 export type DeviceStore = { value: PhoneSettings; save: (change?: Partial<PhoneSettings>) => PhoneSettings };
 const sha = (token: string) => createHash("sha256").update(token).digest("hex");
-const sameHash = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
 /**
  * Pairing codes and the phones they made. A code is 32 random bytes, works once, and lasts ten minutes; only its hash is
- * kept. A paired phone gets a device token for direct connections and a separate relay token for Phaseo Connect;
- * both are kept only as hashes, and removing the phone revokes both at once.
+ * kept. A paired phone signs in directly by proving the key it paired with, and to Phaseo Connect's relay with a relay
+ * token kept only as a hash; removing the phone revokes both at once.
  */
 export class PhonePairing {
 	private readonly codes = new Map<string, { expiresAt: number; relayDeviceId: string; relayTokenHash: string }>();
@@ -71,20 +70,15 @@ export class PhonePairing {
 		if (!code) throw new Error("This pairing code has expired or was already used. Show a new one on the computer.");
 		this.codes.delete(hash);
 		if (this.store.value.devices.length >= 20) throw new Error("Remove a phone before pairing another; up to 20 are kept.");
-		const deviceToken = randomBytes(32).toString("base64url"), relayToken = randomBytes(32).toString("base64url");
-		const device: PhoneDeviceRecord = { id: randomUUID(), name: request.deviceName, publicKey: request.devicePublicKey, tokenHash: sha(deviceToken), relayTokenHash: tokenHash(relayToken), pairedAt: new Date(this.now()).toISOString() };
+		const relayToken = randomBytes(32).toString("base64url");
+		const device: PhoneDeviceRecord = { id: randomUUID(), name: request.deviceName, publicKey: request.devicePublicKey, relayTokenHash: tokenHash(relayToken), pairedAt: new Date(this.now()).toISOString() };
 		this.store.save({ devices: [...this.store.value.devices, device] });
 		// After the caller has answered the phone: over Phaseo Connect, ending the pairing sign-in closes its socket.
 		queueMicrotask(() => this.onCodeExpired?.(code.relayDeviceId));
 		this.onPaired?.(device);
-		return { device, result: { deviceId: device.id, deviceToken, relayToken, desktopId: this.store.value.desktopId } };
+		return { device, result: { deviceId: device.id, relayToken, desktopId: this.store.value.desktopId } };
 	}
-	/** The phone a device token belongs to, matched by hash in constant time. */
-	authenticate(token: string | undefined) {
-		if (!token) return undefined;
-		const presented = sha(token);
-		return this.store.value.devices.find(device => sameHash(device.tokenHash, presented));
-	}
+	device(deviceId: string) { return this.store.value.devices.find(device => device.id === deviceId); }
 	/** Pending codes' relay sign-ins, for Phaseo Connect to register. */
 	relayCodes() { this.prune(); return [...this.codes.values()].map(code => ({ deviceId: code.relayDeviceId, relayTokenHash: code.relayTokenHash })); }
 	hasRelayCode(relayDeviceId: string) { this.prune(); return [...this.codes.values()].some(code => code.relayDeviceId === relayDeviceId); }

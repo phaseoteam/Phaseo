@@ -9,10 +9,10 @@ export type PairingPayload = { v: 1; desktopId: string; desktopName: string; pai
 /** What the phone sends to POST /pair, or in a pair frame over Phaseo Connect. */
 export type PairRequest = { pairingCode: string; deviceName: string; devicePublicKey: string };
 /**
- * What the phone keeps: deviceToken signs in to the desktop directly, relayToken to Phaseo Connect. The desktop keeps
- * only their hashes, and the relay only the relay token's.
+ * What the phone keeps. relayToken signs in to Phaseo Connect's relay, which keeps only its hash; the desktop itself is
+ * reached by proving the paired key (see direct.ts), so there is no token for direct connections.
  */
-export type PairResult = { deviceId: string; deviceToken: string; relayToken: string; desktopId: string; desktopName: string };
+export type PairResult = { deviceId: string; relayToken: string; desktopId: string; desktopName: string };
 
 export const pairingCodeBytes = 32;
 export const pairingLifetimeMs = 10 * 60_000;
@@ -48,6 +48,6 @@ export function validatePairRequest(value: unknown): PairRequest {
 }
 
 export function validatePairResult(value: unknown): PairResult {
-	if (!plain(value) || !text(value.deviceId, 100) || !text(value.deviceToken, 200) || !text(value.relayToken, 200) || !text(value.desktopId, 100) || !text(value.desktopName, 100)) throw new Error("The desktop returned an invalid pairing response.");
-	return { deviceId: value.deviceId as string, deviceToken: value.deviceToken as string, relayToken: value.relayToken as string, desktopId: value.desktopId as string, desktopName: value.desktopName as string };
+	if (!plain(value) || !text(value.deviceId, 100) || !text(value.relayToken, 200) || !text(value.desktopId, 100) || !text(value.desktopName, 100)) throw new Error("The desktop returned an invalid pairing response.");
+	return { deviceId: value.deviceId as string, relayToken: value.relayToken as string, desktopId: value.desktopId as string, desktopName: value.desktopName as string };
 }

@@ -48,7 +48,7 @@ export class PhoneService {
 	private hosts: string[] = [];
 	private httpsReachable = false;
 	private serverErrors: string[] = [];
-	private identity?: KeyPair;
+	private identity?: Promise<KeyPair>;
 	private timer?: ReturnType<typeof setInterval>;
 	private applying = Promise.resolve();
 
@@ -56,7 +56,7 @@ export class PhoneService {
 		this.store = ports.store ?? new PhoneSettingsFile(ports.directory);
 		this.pairing = new PhonePairing(this.store);
 		this.hub = new PhoneHub(ports.host);
-		this.server = new PhoneServer({ hub: this.hub, pairing: this.pairing, desktopId: () => this.store.value.desktopId, desktopName: ports.host.desktopName });
+		this.server = new PhoneServer({ hub: this.hub, pairing: this.pairing, desktopId: () => this.store.value.desktopId, desktopName: ports.host.desktopName, identity: () => this.loadIdentity() });
 		this.pairing.onPaired = device => { this.connect?.registerDevice(device.id, device.relayTokenHash); this.emit(); };
 		this.pairing.onRemoved = deviceId => { this.hub.closeDevice(deviceId); this.connect?.removeDevice(deviceId); this.emit(); };
 		this.pairing.onCodeExpired = relayDeviceId => this.connect?.removeDevice(relayDeviceId);
@@ -149,14 +149,16 @@ export class PhoneService {
 		return this.state();
 	}
 
-	private async loadIdentity() {
-		if (this.identity) return this.identity;
-		try { const privateKey = await this.ports.vault.get(identitySecret); this.identity = { privateKey, publicKey: publicKeyOf(privateKey) }; }
-		catch {
-			const created = generateKeyPair();
-			await this.ports.vault.set(identitySecret, created.privateKey);
-			this.identity = created;
-		}
+	/** Loaded once; phones connecting at the same moment must not each create a key. */
+	private loadIdentity() {
+		this.identity ??= (async () => {
+			try { const privateKey = await this.ports.vault.get(identitySecret); return { privateKey, publicKey: publicKeyOf(privateKey) }; }
+			catch {
+				const created = generateKeyPair();
+				await this.ports.vault.set(identitySecret, created.privateKey);
+				return created;
+			}
+		})().catch(error => { this.identity = undefined; throw error; });
 		return this.identity;
 	}
 

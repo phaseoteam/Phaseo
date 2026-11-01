@@ -7,13 +7,16 @@ What the Phaseo desktop app and the Phaseo phone app say to each other, shared b
 | `src/frames.ts` | Frame types, `parsePhoneFrame` (desktop side, strict) and `parseDesktopFrame` (phone side), limits, `RequestRate`. |
 | `src/pairing.ts` | The QR / `phaseo://pair?p=` payload, `POST /pair` request and result. |
 | `src/envelope.ts` | X25519 keys, HKDF-SHA256 (`phaseo-connect-v1`), XChaCha20-Poly1305 envelopes, `EnvelopeChannel`, `relayPairing`. |
+| `src/direct.ts` | The direct connection's key handshake and the sealed `POST /pair`. |
 | `src/relay.ts` | Phaseo Connect's wire protocol: envelope routing, `hold`, the relay's own frames, refusals, close codes and URLs. No crypto, so the relay Worker imports it alone as `@phaseo/phone-protocol/relay`. |
 
 ## Direct connection
 
-1. Pair: `POST {direct url}/pair` with `PairRequest` returns `PairResult` (`deviceId`, `deviceToken`, `relayToken`). The pairing code works once, for ten minutes.
+Direct addresses are plain `http`/`ws` (a Wi-Fi or Tailscale IP has no certificate), so everything secret or private is sealed with the paired keys and no token is sent. `src/direct.ts` describes the handshake.
+
+1. Pair: `POST {direct url}/pair` with `sealPairRequest(phonePrivateKey, desktopPublicKey, PairRequest)`; open the answer with `openPairResponse` to get a `PairResult` (`deviceId`, `relayToken`). The pairing code works once, for ten minutes.
 2. Check a URL answers: `GET {direct url}/v1/phone/health` returns `{ ok: true, desktopId }` without signing in.
-3. Connect: WebSocket `{direct url}/v1/phone` (`http` → `ws`, `https` → `wss`) with `Authorization: Bearer <deviceToken>`. Send `hello` first.
+3. Connect: WebSocket `{direct url}/v1/phone` (`http` → `ws`, `https` → `wss`), with no credentials. The desktop sends `{ type: "challenge" }`; answer with `directAuth(channel, challenge)` on `new EnvelopeChannel(sharedKey(devicePrivateKey, desktopPublicKey), deviceId, relayDesktopAddress)`, check the first envelope back with `checkDirectWelcome`, then seal and open every frame on that channel. Send `hello` first. Close code 4401 means the desktop doesn't know this phone or it was removed.
 
 ## Phaseo Connect
 
