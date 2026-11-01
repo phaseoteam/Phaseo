@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanCommitMessage, commitChanges, commitMessagePrompt, generateCommitMessage, gitInit, gitPull, publishRepository } from "./gitWorkflow";
 import { gitCommand } from "./gitOperations";
-import { validatePublishRepository, repositoryNameFrom } from "../shared/gitWorkflow";
+import { pushesToDefaultBranch, validatePublishRepository, repositoryNameFrom } from "../shared/gitWorkflow";
 
 const folders: string[] = [];
 afterEach(() => { for (const folder of folders.splice(0)) rmSync(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); });
@@ -91,5 +91,16 @@ describe("Git workflow", () => {
 		expect(() => validatePublishRepository({ name: "bad name", visibility: "public" })).toThrow("repository name");
 		expect(() => validatePublishRepository({ name: "ok", owner: "../x", visibility: "public" })).toThrow("account");
 		expect(repositoryNameFrom("My Project!")).toBe("My-Project");
+	});
+});
+
+describe("pushing to the default branch", () => {
+	it("asks only when the checkout is on the remote's default branch", () => {
+		expect(pushesToDefaultBranch("main", { branch: "main", defaultBranch: "main" })).toBe(true);
+		expect(pushesToDefaultBranch("feature", { branch: "feature", defaultBranch: "main" })).toBe(false);
+		// A reading for another branch, or none yet, does not ask on a guess.
+		expect(pushesToDefaultBranch("main", { branch: "feature", defaultBranch: "main" })).toBe(false);
+		expect(pushesToDefaultBranch("main", undefined)).toBe(false);
+		expect(pushesToDefaultBranch(undefined, { branch: "", defaultBranch: "" })).toBe(false);
 	});
 });
