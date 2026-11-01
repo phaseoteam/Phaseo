@@ -1,6 +1,6 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { ArrowUp, Check, ChevronDown, ChevronRight, CircleAlert, Square, Wrench, X } from "lucide-react-native";
-import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,11 +10,12 @@ import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
 import { chatItems, chatStatusLabel, type ChatItem } from "./chatState";
 import { DesktopRequestError, type DesktopClient } from "./client";
+import { ModelControl } from "@/features/chat/ModelSheet";
+import { ConnectionNotice } from "./CodeThreadList";
 import { clientFor, connectionLabel, useConnection } from "./connections";
-import { useSidebarButton } from "@/features/chat/ChatDrawer";
-import { ConnectionNotice } from "./DesktopChatList";
 import { openDesktopChat } from "./DesktopConnections";
-import { useDesktopChat } from "./hooks";
+import { knownModelsOf, useDesktopChat } from "./hooks";
+import { threadModelLabel } from "./newThread";
 import type { PhoneActivity, PhoneApproval, PhoneMessage, PhoneQuestionRequest } from "./protocol";
 import { useDesktop } from "./store";
 
@@ -27,27 +28,27 @@ function reportFailure(title: string, error: unknown) {
   else toast(problemText(error), { title, tone: "error" });
 }
 
+/** A thread on a paired computer, as its own screen over the Code list: back returns there. */
 export function DesktopChatScreen({ desktopId, chatId }: { desktopId: string; chatId: string }) {
   const desktop = useDesktop(desktopId);
   const client = desktop ? clientFor(desktop) : null;
-  const sidebarButton = useSidebarButton();
   useEffect(() => {
     openDesktopChat.set({ desktopId, chatId });
     return () => openDesktopChat.set((current) => (current?.chatId === chatId && current.desktopId === desktopId ? null : current));
   }, [desktopId, chatId]);
-  if (desktop === undefined) return <Screen><Header leading={sidebarButton} title="Chat" /><SkeletonRows count={5} /></Screen>;
-  if (!client) {
+  if (desktop === undefined) return <Screen><Header back title="Thread" /><SkeletonRows count={5} /></Screen>;
+  if (!client || !desktop) {
     return (
       <Screen>
-        <Header leading={sidebarButton} title="Chat" />
+        <Header back title="Thread" />
         <EmptyState className="flex-1" title="This computer isn't paired" body="It may have been removed from this phone. Pair it again from Account → Desktops." />
       </Screen>
     );
   }
-  return <ChatView client={client} chatId={chatId} sidebarButton={sidebarButton} />;
+  return <ChatView client={client} chatId={chatId} desktopName={desktop.desktopName} />;
 }
 
-function ChatView({ client, chatId, sidebarButton }: { client: DesktopClient; chatId: string; sidebarButton: ReactNode }) {
+function ChatView({ client, chatId, desktopName }: { client: DesktopClient; chatId: string; desktopName: string }) {
   const connection = useConnection(client);
   const { view, error, reload, loadEarlier, loadingEarlier, settle } = useDesktopChat(client, chatId);
   const items = useMemo(() => (view ? chatItems(view.entries) : []), [view]);
@@ -67,9 +68,9 @@ function ChatView({ client, chatId, sidebarButton }: { client: DesktopClient; ch
   return (
     <Screen>
       <Header
-        leading={sidebarButton}
-        title={chat?.title ?? "Chat"}
-        subtitle={chat ? [chatStatusLabel(chat), chat.project].filter(Boolean).join(" · ") : connectionLabel(connection)}
+        back
+        title={chat?.title ?? "Thread"}
+        subtitle={[chat ? chatStatusLabel(chat) : connectionLabel(connection), chat?.project, desktopName].filter(Boolean).join(" · ")}
         right={running ? <IconButton icon={Square} label="Stop" onPress={() => void stop()} size={18} /> : null}
       />
       <ConnectionNotice client={client} />
@@ -100,7 +101,7 @@ function ChatView({ client, chatId, sidebarButton }: { client: DesktopClient; ch
         {chat ? (
           <>
             <Pending client={client} chatId={chatId} approvals={chat.approvals} questions={chat.questions} onSettled={settle} />
-            <DesktopComposer client={client} chatId={chatId} running={running} onStop={() => void stop()} />
+            <DesktopComposer client={client} chatId={chatId} running={running} model={threadModelLabel(chat, knownModelsOf(client))} onStop={() => void stop()} />
           </>
         ) : null}
       </KeyboardAvoidingView>
@@ -271,8 +272,8 @@ function QuestionCard({ client, chatId, request, onSettled }: { client: DesktopC
   );
 }
 
-/** Send, or while a turn runs, steer it now or queue the message for after it. */
-function DesktopComposer({ client, chatId, running, onStop }: { client: DesktopClient; chatId: string; running: boolean; onStop(): void }) {
+/** Send, or while a turn runs, steer it now or queue the message for after it. The model shows read-only: a phone can't change it on a thread that exists. */
+function DesktopComposer({ client, chatId, running, model, onStop }: { client: DesktopClient; chatId: string; running: boolean; model: string | null; onStop(): void }) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const [steer, setSteer] = useState(true);
@@ -302,6 +303,7 @@ function DesktopComposer({ client, chatId, running, onStop }: { client: DesktopC
           <Chip label="After this turn" selected={!steer} onPress={() => setSteer(false)} />
         </View>
       ) : null}
+      {model ? <View className="-ml-1.5 mb-1"><ModelControl label={model} disabledReason="Change it on the computer" /></View> : null}
       <View className="flex-row items-end gap-2 rounded-md border border-input bg-background px-1.5 py-1">
         <TextInput
           value={text}

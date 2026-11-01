@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { applyEntries, firstMessageId, mergeChat, mergeDetail, prependEntries, sortChats } from "./chatState";
 import type { ClientEvent, DesktopClient } from "./client";
 import { useClientEvents } from "./connections";
+import type { ModelList } from "./newThread";
 import type { PhoneChat, PhoneChatDetail, PhoneEntry } from "./protocol";
 
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : "Something went wrong.");
@@ -109,4 +110,29 @@ export function useDesktopChat(client: DesktopClient | null, chatId: string) {
   }, []);
 
   return { view, error, reload: read, loadEarlier: view && view.earlier > 0 ? loadEarlier : null, loadingEarlier, settle };
+}
+
+/** The last model list each computer sent, so a thread's read-only control can name its model. */
+const knownModels = new WeakMap<DesktopClient, ModelList>();
+export const knownModelsOf = (client: DesktopClient | null) => (client ? knownModels.get(client)?.models : undefined);
+
+/**
+ * The models a new thread (in a project) can start on, read again when the project changes or the computer reconnects.
+ * `unavailable` is set when the computer can't list them (one from before list_models): the thread then starts on the
+ * computer's own choice.
+ */
+export function useDesktopModels(client: DesktopClient | null, projectId: string | null) {
+  const [state, setState] = useState<{ key: string; list: ModelList | null; unavailable: boolean }>({ key: "", list: null, unavailable: false });
+  const key = projectId ?? "";
+  const load = useCallback(() => {
+    if (!client) return;
+    client.request("list_models", projectId ? { projectId } : {}).then((list) => {
+      knownModels.set(client, list);
+      setState({ key, list, unavailable: false });
+    }, () => setState({ key, list: null, unavailable: true }));
+  }, [client, projectId, key]);
+  useEffect(load, [load]);
+  useClientEvents(client, useCallback((event: ClientEvent) => { if (event.type === "connected" && event.reconnect) load(); }, [load]));
+  // A list for another project isn't shown while this one loads.
+  return state.key === key ? { list: state.list, unavailable: state.unavailable } : { list: null, unavailable: false };
 }

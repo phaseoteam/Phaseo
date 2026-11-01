@@ -10,7 +10,7 @@ import { useAuth } from "@/providers/AuthProvider";
 export const unstable_settings = { anchor: "index" };
 
 /**
- * One stack: the launch screen (a new chat, or Models when signed out) with Models, Providers, Compare and Account
+ * One stack: the launch screen (a new chat, or Models when signed out) with Models, Providers, Compare, Account and Code
  * pushed over it. Phones open the sidebar from Chat as a drawer; split layouts keep it open on the left.
  */
 export default function AppLayout() {
