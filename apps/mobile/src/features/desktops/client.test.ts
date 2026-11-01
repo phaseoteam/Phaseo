@@ -54,8 +54,13 @@ describe("pairing", () => {
     const desktop = new FakeDesktop();
     const saved = await pairDesktop(desktop.pairingLink({ connect: true }), deps(desktop));
     expect(saved).toMatchObject({ desktopId: "desk-1", desktopName: "Studio PC", deviceId: "dev-1", deviceName: "Pixel 9", direct: [desktop.directUrl], desktopPublicKey: desktop.keys.publicKey, connect: { relayUrl: desktop.relayUrl } });
-    expect(saved.deviceToken).toBe(desktop.devices[0]!.token);
+    expect(saved).not.toHaveProperty("deviceToken");
     expect(saved.relayToken).toBe(desktop.devices[0]!.relayToken);
+    // POST /pair went sealed both ways over the plain http:// address.
+    const wire = desktop.directWire.join("\n");
+    expect(wire).not.toContain(desktop.pairingCode);
+    expect(wire).not.toContain(saved.relayToken);
+    expect(wire).not.toContain("Pixel 9");
     // The desktop knows this phone by the key it sent.
     expect(desktop.devices[0]!.publicKey).toBe(saved.publicKey);
     expect(desktop.socketUrls).toEqual([]);
@@ -67,7 +72,7 @@ describe("pairing", () => {
     const saved = await pairDesktop(desktop.pairingLink({ connect: true }), deps(desktop));
     expect(saved.deviceId).toBe("dev-1");
     expect(desktop.relayed).toHaveLength(1);
-    expect(desktop.relayed[0]).toMatchObject({ to: "desk-1", senderPublicKey: saved.publicKey });
+    expect(desktop.relayed[0]).toMatchObject({ to: "desktop", senderPublicKey: saved.publicKey });
     expect(JSON.stringify(desktop.relayed[0])).not.toContain(desktop.pairingCode);
   });
 
@@ -124,6 +129,21 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
       expect(desktop.relayed).toHaveLength(6);
       expect(desktop.relayed.every((frame) => !("text" in frame))).toBe(true);
     }
+    client.stop();
+  });
+
+  test("sends no chat text or secret in the clear", async () => {
+    const { desktop, client, saved } = await connected();
+    client.watch("c1");
+    await client.request("read_chat", { chatId: "c1" });
+    await client.request("send", { chatId: "c1", text: "Ship the hotfix tonight" });
+    const streamed = nextEvent(client, "entries");
+    desktop.emit({ type: "entries", chatId: "c1", entries: [{ kind: "message", id: "m9", role: "assistant", text: "Hotfix deployed to staging.", createdAt: "2026-11-01T10:00:00.000Z" }] });
+    await streamed;
+    const wire = via === "direct" ? desktop.directWire.join("\n") : desktop.relayed.map((frame) => JSON.stringify(frame)).join("\n");
+    expect(wire.length).toBeGreaterThan(0);
+    for (const text of ["Fix the build", "Fixed.", "Ship the hotfix tonight", "Hotfix deployed", "Studio PC", saved.relayToken, saved.privateKey]) expect(wire).not.toContain(text);
+    if (via === "direct") expect(desktop.socketUrls.at(-1)).toEqual({ url: "ws://100.64.0.7:47800/v1/phone", token: undefined });
     client.stop();
   });
 
@@ -226,11 +246,22 @@ describe("choosing a transport", () => {
     client.stop();
   });
 
+  test("stops retrying when the desktop no longer knows this phone's key", async () => {
+    const desktop = new FakeDesktop();
+    const saved = await pairDesktop(desktop.pairingLink(), deps(desktop));
+    desktop.devices.length = 0;
+    const { client } = clientFor(desktop, saved);
+    const refused = stateReached(client, "refused");
+    client.start();
+    expect(await refused).toMatchObject({ message: "This phone was removed on the computer. Pair it again." });
+    client.stop();
+  });
+
   test("shows Connect's refusal when it's off for the desktop", async () => {
     const desktop = new FakeDesktop();
     const saved = await pairDesktop(desktop.pairingLink({ connect: true }), deps(desktop));
     desktop.reachable = false;
-    desktop.relayError = "not_entitled";
+    desktop.relayClose = { code: 4402, reason: "connect_off" };
     const { client } = clientFor(desktop, saved);
     const refused = stateReached(client, "refused");
     client.start();

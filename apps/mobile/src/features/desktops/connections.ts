@@ -10,16 +10,16 @@ const nativeFetch = fetch as unknown as FetchLike;
 /** The one client for a paired desktop, connecting, and shared by its screens and the attention notifications. */
 export function clientFor(desktop: SavedDesktop): DesktopClient {
   const existing = clients.get(desktop.desktopId);
-  // Pairing the same computer again gives new tokens and keys, so its old client goes.
-  if (existing && existing.pairing !== desktop.deviceToken) existing.client.stop();
-  let client = existing?.pairing === desktop.deviceToken ? existing.client : undefined;
+  // Pairing the same computer again makes a new key pair, so its old client goes.
+  if (existing && existing.pairing !== desktop.publicKey) existing.client.stop();
+  let client = existing?.pairing === desktop.publicKey ? existing.client : undefined;
   if (!client) {
     client = new DesktopClient({
       deviceId: desktop.deviceId,
       appVersion: APP_VERSION,
       choose: () => chooseTransport(desktop, { fetch: nativeFetch, openSocket: openNativeSocket }),
     });
-    clients.set(desktop.desktopId, { pairing: desktop.deviceToken, client });
+    clients.set(desktop.desktopId, { pairing: desktop.publicKey, client });
   }
   client.start();
   return client;
