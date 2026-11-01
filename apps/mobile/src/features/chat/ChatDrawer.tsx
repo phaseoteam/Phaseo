@@ -1,11 +1,13 @@
 import { usePathname } from "expo-router";
 import { PanelLeft } from "lucide-react-native";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { BackHandler, Pressable } from "react-native";
 import { Drawer } from "react-native-drawer-layout";
+import type { LegacyPanGesture } from "react-native-gesture-handler";
 import { Icon, Text } from "@/components/ui";
 import { useNeedsYouCount } from "@/features/desktops/needsYou";
 import { useLayout } from "@/hooks/useLayout";
+import { drawerPan, drawerSwipe } from "./drawerSwipe";
 
 type ChatDrawerControls = { open(): void; close(): void };
 const ChatDrawerContext = createContext<ChatDrawerControls | null>(null);
@@ -14,8 +16,10 @@ const ChatDrawerContext = createContext<ChatDrawerControls | null>(null);
 export const useChatDrawer = () => useContext(ChatDrawerContext);
 
 /**
- * Phones: the sidebar slides in over Chat from the left, from the header button or a swipe from the screen's edge.
- * Split layouts render the children alone, as the app layout keeps the sidebar open beside them.
+ * Phones: the sidebar slides in over Chat from the left, from the header button or a drag to the right anywhere on the
+ * chat, following the finger (see drawerSwipe for when it takes a drag and where it settles). A drag left on it, a tap
+ * on the dimmed chat or Back closes it. It lives in Chat's layout only, so screens pushed over Chat keep the platform's
+ * edge swipe for back. Split layouts render the children alone, as the app layout keeps the sidebar open beside them.
  */
 export function ChatDrawer({ sidebar, children }: { sidebar: () => ReactNode; children: ReactNode }) {
   const { split, width } = useLayout();
@@ -23,6 +27,13 @@ export function ChatDrawer({ sidebar, children }: { sidebar: () => ReactNode; ch
   const [open, setOpen] = useState(false);
   const [shown, setShown] = useState(pathname);
   const controls = useMemo<ChatDrawerControls>(() => ({ open: () => setOpen(true), close: () => setOpen(false) }), []);
+  const swipe = drawerSwipe(width);
+  // react-native-drawer-layout's own pan, with clearer offsets than its 5 dp (later calls replace earlier ones). It
+  // builds the pan with the legacy Gesture API, though its types name gesture-handler 3's hook gesture.
+  const configurePan = useCallback((gesture: LegacyPanGesture) => {
+    const pan = drawerPan(open);
+    return gesture.activeOffsetX(pan.activeOffsetX).failOffsetY(pan.failOffsetY);
+  }, [open]) as unknown as ComponentProps<typeof Drawer>["configureGestureHandler"];
 
   // A chat opening (from the sidebar, a link or a notification) closes the drawer. Pairing leaves Chat and keeps it
   // open, so coming back shows the new computer's chats.
@@ -49,7 +60,11 @@ export function ChatDrawer({ sidebar, children }: { sidebar: () => ReactNode; ch
         onClose={controls.close}
         renderDrawerContent={sidebar}
         drawerType="front"
-        drawerStyle={{ width: Math.min(width - 56, 360) }}
+        drawerStyle={{ width: swipe.width }}
+        swipeEdgeWidth={swipe.swipeEdgeWidth}
+        swipeMinDistance={swipe.swipeMinDistance}
+        swipeMinVelocity={swipe.swipeMinVelocity}
+        configureGestureHandler={configurePan}
         overlayAccessibilityLabel="Close chats"
       >
         {children}
