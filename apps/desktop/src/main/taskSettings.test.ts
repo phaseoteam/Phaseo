@@ -78,3 +78,17 @@ describe("existing conversation settings", () => {
 		} finally { store.close(); }
 	});
 });
+
+describe("project agents", () => {
+	it("refuses to start or hand off a chat on an agent its project turned off", () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-project-agents-")), store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
+		try {
+			const project = store.addProject(directory);
+			store.saveProject({ ...project, settings: { disabledHarnesses: ["codex"] } });
+			expect(() => store.apply({ type: "create-task", projectId: project.id, harness: "codex", model: "native", mode: "code" })).toThrow("turned off for this project");
+			const source = store.apply({ type: "create-task", projectId: project.id, harness: "claude", model: "default", mode: "code" });
+			expect(() => store.apply({ type: "handoff", id: source.id, projectId: project.id, harness: "codex", model: "native", mode: "code" })).toThrow("turned off for this project");
+			expect(store.apply({ type: "create-task", harness: "codex", model: "native", mode: "chat" }).harness).toBe("codex");
+		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+});

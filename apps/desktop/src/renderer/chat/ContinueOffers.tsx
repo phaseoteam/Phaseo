@@ -19,7 +19,7 @@ const priceSuffix = (price?: string) => price === "free" ? ", free" : price ? ` 
  * Phaseo at the catalogue's price. `exhausted` is whether the given login is out of usage by its last reading, and
  * `resetsAt` (ms) when it allows work again, if known.
  */
-export function useContinueOffers(current: ModelSelection | undefined, enabled = true) {
+export function useContinueOffers(current: ModelSelection | undefined, enabled = true, hidden?: readonly Harness[]) {
 	const { api, overview } = useWorkspace();
 	const { kept, statuses } = useUsageLimits();
 	const preferences = useModelPreferences();
@@ -50,7 +50,7 @@ export function useContinueOffers(current: ModelSelection | undefined, enabled =
 	}));
 	const preferred = [preferences.defaultSelection, ...preferences.recent].find(selection => selection?.harness === "phaseo")?.model;
 	const model: ModelOption | undefined = phaseoAccount ? phaseoContinuation(current.model, catalog, preferred) : undefined;
-	if (model && phaseoAccount) offers.push({ key: "phaseo", label: `Phaseo ${model.name}`, selection: { harness: "phaseo", accountId: phaseoAccount.id, model: model.id }, price: priceSuffix(perMillionPrice(model.facts, formatUsdHeadlinePrice)) });
+	if (model && phaseoAccount && !hidden?.includes("phaseo")) offers.push({ key: "phaseo", label: `Phaseo ${model.name}`, selection: { harness: "phaseo", accountId: phaseoAccount.id, model: model.id }, price: priceSuffix(perMillionPrice(model.facts, formatUsdHeadlinePrice)) });
 	return { exhausted, resetsAt, offers };
 }
 

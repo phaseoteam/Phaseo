@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
+import { settingsProject } from "../../shared/projectSettings";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import type { Task } from "../../shared/workspace";
@@ -21,7 +22,7 @@ import { endTriage, startTriage, useTriage } from "../shell/Triage";
 import { triageTitle, withoutPlaybookLink, type TriagePreparation } from "../../shared/triage";
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
-import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
+import { MAX_COMPARE, ModelPicker, harnessNames, knownModel, modelLabel, sameSelection } from "./ModelPicker";
 import { ModelSettings } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
 import { startChat } from "./startChat";
@@ -86,6 +87,19 @@ export function NewChat() {
 	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
 	const project = projects.find(value => value.id === newChatProjectId);
 	const worktree = useWorktreeTarget(api, code ? project?.id : undefined, setOverview);
+	// Project defaults apply when a project is chosen; the person can still change each one before sending.
+	const projectDefaults = code ? settingsProject(overview.projects, project?.id)?.settings : undefined;
+	const hidden = projectDefaults?.disabledHarnesses;
+	const turnedOff = selections.find(value => hidden?.includes(value.harness));
+	const defaultsFor = useRef<string>(undefined);
+	useEffect(() => {
+		if (!code || !project || defaultsFor.current === project.id) return;
+		defaultsFor.current = project.id;
+		const settings = settingsProject(overview.projects, project.id)?.settings;
+		if (settings?.defaultModel) setSelections([settings.defaultModel]);
+		if (settings?.defaultPermissionMode) setPermissionMode(settings.defaultPermissionMode);
+		if (settings?.defaultWorkspace) worktree.setMode(settings.defaultWorkspace);
+	}, [code, project, overview.projects, setPermissionMode, worktree]);
 	// Triage (from the command palette) runs in the build's own source, which the main process fetches first.
 	const triage = useTriage(), triaging = code && triage.status !== "idle";
 	const preparation = triage.status === "ready" ? triage.preparation : undefined;
@@ -147,7 +161,7 @@ export function NewChat() {
 	}, [preferences]);
 
 	const needsSignIn = !phaseoAccount && ![...connected].some(harness => harness !== "phaseo");
-	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && (!code || !!project) && (!triaging || (!!preparation && project?.id === preparation.projectId));
+	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && !turnedOff && (!code || !!project) && (!triaging || (!!preparation && project?.id === preparation.projectId));
 
 	async function submit() {
 		if (!api || !canSend) return;
@@ -215,14 +229,14 @@ export function NewChat() {
 					</ComposerChip>)}
 				</> : undefined}
 				tools={<>
-					<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
+					<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} hidden={hidden} />
 					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
 					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
 					{code && workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
 					{code && project && !triaging && <WorktreeTargetControls target={worktree} disabled={busy} />}
 					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
 				</>}
-				footer={compare ? <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p> : selections.length === 1 && <OutOfUsageOffer selection={selections[0]} onChoose={next => setSelections([next])} />} />
+				footer={compare ? <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p> : turnedOff ? <p role="status" className="mt-2 px-2 text-xs text-warning">{harnessNames[turnedOff.harness]} is turned off for {project?.name ?? "this project"}. Choose another model, or turn it back on in Project settings.</p> : selections.length === 1 && <OutOfUsageOffer selection={selections[0]} hidden={hidden} onChoose={next => setSelections([next])} />} />
 			{!code && <div className="flex flex-wrap justify-center gap-2">
 				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => editor.focus("end")); }}
 					className="flex h-8 items-center gap-2 rounded-full border border-border px-3.5 text-[13px] text-foreground/85 transition-colors hover:bg-muted"><Icon className="size-3.5 text-muted-foreground" />{label}</button>)}

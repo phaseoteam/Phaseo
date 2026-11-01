@@ -48,6 +48,7 @@ import { StashMenu, usePromptHistory, usePromptStash } from "./composerHistory";
 import { recordPrompt } from "./promptHistory";
 import { showToast } from "../components/ui/toast";
 import { ChatNotices } from "./ChatNotices";
+import { settingsProject } from "../../shared/projectSettings";
 
 function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () => void }) {
 	const { overview, command, select, api, setError, openProjectSettings } = useWorkspace();
@@ -284,7 +285,7 @@ function ChatComposer({ task }: { task: Task }) {
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
 				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
-				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
+				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} hidden={settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses} />
 				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
 				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
 				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}

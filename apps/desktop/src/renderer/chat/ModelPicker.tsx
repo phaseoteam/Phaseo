@@ -105,7 +105,7 @@ type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: n
 type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
 const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
-export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent }: {
+export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, hidden }: {
 	selections: ModelSelection[];
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
@@ -116,6 +116,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	className?: string;
 	/** A window event that opens this picker, sent by the composer's / menu. */
 	openEvent?: string;
+	/** Agents the chat's project turns off. */
+	hidden?: readonly Harness[];
 }) {
 	const { overview } = useWorkspace();
 	const [open, setOpen] = useState(false);
@@ -128,7 +130,8 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const keepOpen = useRef(false);
 	const connected = useConnectedHarnesses();
 	const phaseoAccount = usablePhaseoAccounts(overview)[0];
-	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && (agents || harness !== "grok"))], [connected, agents, phaseoAccount]);
+	const hiddenKey = hidden?.join() ?? "";
+	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && (agents || harness !== "grok"))].filter(harness => !hiddenKey.split(",").includes(harness)), [connected, agents, phaseoAccount, hiddenKey]);
 	const sources = (["phaseo", "local"] as const).filter(value => harnesses.some(harness => sourceOf(harness) === value));
 	const active: Source = sources.includes(source) ? source : sources[0] ?? "phaseo";
 	const onLoad = useCallback((harness: Harness, state: { entries: Entry[]; loading: boolean; error: string }) => setCatalogs(current => ({ ...current, [harness]: state })), []);

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Gauge } from "lucide-react";
 import type { Task } from "../../shared/workspace";
 import { resetLabel } from "../../shared/usageLimitRecovery";
+import { settingsProject } from "../../shared/projectSettings";
 import { errorText, useWorkspace } from "../app/workspace";
 import { showToast } from "../components/ui/toast";
 import { ContinueOfferLinks, useContinueOffers, type ContinueOffer } from "./ContinueOffers";
@@ -17,7 +18,7 @@ export function UsageLimitNotice({ task }: { task: Task }) {
 	const [busy, setBusy] = useState(false);
 	const limit = task.usageLimit;
 	const limited = task.status === "limited" && !!limit;
-	const { offers } = useContinueOffers({ harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions }, limited);
+	const { offers } = useContinueOffers({ harness: task.harness, model: task.model, accountId: task.accountId, reasoningEffort: task.reasoningEffort, serviceTier: task.serviceTier, options: task.modelOptions }, limited, settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses);
 	if (!limited) return null;
 	const run = async (action: () => Promise<unknown>) => { setBusy(true); try { await action(); } catch (reason) { showToast("error", "Could not continue the chat", errorText(reason)); } finally { setBusy(false); } };
 	const moveTo = (offer: ContinueOffer) => run(async () => { const moved = await continueElsewhere(command, task, offer.selection, new Set(overview.tasks.map(value => value.id))); if (!moved) return; select(moved.id); if (moved.filesLeft) showToast("info", "Queued files stayed behind", "Files attached to queued messages belong to the original chat. Attach them again if the agent needs them."); });

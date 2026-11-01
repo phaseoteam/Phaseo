@@ -3,6 +3,7 @@ import { messageRange, TaskEntries, taskEntriesSchema, type EntryOffsets } from 
 import { existsSync, renameSync } from "node:fs";
 import { BrowserDownloadStore } from "./browserDownloadStore";
 import { settleBlocker, snoozeBlocker } from "../shared/threadLifecycle";
+import { harnessDisabled } from "../shared/projectSettings";
 import { mentionPlainText } from "../shared/mentions";
 import { DatabaseSync, type StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -815,6 +816,7 @@ export class WorkspaceStore {
 			if (command.serviceTier && (command.harness !== "codex" || !initialModels?.find(model => command.model === "default" ? model.default : model.id === command.model)?.serviceTiers?.some(tier => tier.id === command.serviceTier))) throw new Error("The selected model does not offer this speed.");
 			if (command.harness === "grok" && command.mode === "chat") throw new Error("Grok currently supports Code and Plan tasks.");
 			if (command.projectId && !this.getProjects().some(project => project.id === command.projectId && !project.worktree?.removedAt)) throw new Error("Project no longer exists or its worktree has been removed.");
+			if (harnessDisabled(this.getProjects(), command.projectId, command.harness)) throw new Error("This agent is turned off for this project. Choose another, or turn it back on in Project settings.");
 			if (command.accountId && !this.getAccounts().some(account => account.id === command.accountId && account.harness === command.harness && account.configured && !account.archived)) throw new Error("Account is unavailable for this harness. Restore it or sign in first.");
 			if ((command.harness === "phaseo" || command.harness === "cursor") && !command.accountId) throw new Error(`Choose an account for the ${command.harness === "cursor" ? "Cursor" : "Phaseo"} harness.`);
 			if (command.harness === "acp" && !this.getAgents().some(agent => agent.id === command.agentId && !agent.archived)) throw new Error("Choose an active connected ACP agent.");
