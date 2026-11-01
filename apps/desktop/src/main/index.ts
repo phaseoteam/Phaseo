@@ -107,7 +107,7 @@ import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest"
 import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkLog, type PullRequestContext } from "./createPullRequest";
 import { OutsideAgentsMcp } from "./outsideAgentsMcp";
 import { PhoneService, type PhaseoSignIn } from "./phone/phoneService";
-import { startPhoneChat } from "./phone/phoneHost";
+import { phoneModels, startPhoneChat, type DiscoverModels } from "./phone/phoneHost";
 import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHostToken, saveCustomCodeHosts } from "./codeHosts";
 import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
 import { validateCodeHostTokenRequest } from "../shared/codeHostSettings";
@@ -1310,7 +1310,8 @@ app.whenReady().then(() => {
 	workspaceRuntime.phaseo.background.onChange = taskId => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:background-changed", taskId); };
 	outsideAgents = new OutsideAgentsMcp(workspaceDirectory, { tools: agent => workspaceRuntime.outsideThreadTools(agent), changed: settings => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:outside-agents-changed", settings); } });
 	void outsideAgents.start();
-	// Phones use the same reads and commands as the window, so each action is checked the same way.
+	// Phones use the same reads, commands and model lists as the window, so each action is checked the same way.
+	const phoneDiscover: DiscoverModels = async (harness, accountId, projectId) => { workspaceRuntime.assertHarnessAvailable(harness); return await discoverDesktopModels(harness, accountId, projectId); };
 	phoneService = new PhoneService({
 		directory: workspaceDirectory, vault: { get: id => vault.get(id), set: (id, value) => vault.set(id, value) }, phaseo: phoneSignIn,
 		changed: state => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:phone-changed", state); },
@@ -1318,7 +1319,8 @@ app.whenReady().then(() => {
 			desktopName: () => hostname(), appVersion: app.getVersion(),
 			overview: () => workspaceRuntime.store.getOverview(), task: id => workspaceRuntime.store.getTask(id), page: query => workspaceRuntime.store.conversationPage(query),
 			command: command => workspaceRuntime.command(command),
-			newChat: input => startPhoneChat(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), input),
+			newChat: input => startPhoneChat(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), phoneDiscover, input),
+			models: input => phoneModels(workspaceRuntime.store.getOverview(), phoneDiscover, input),
 		},
 	});
 	void phoneService.start().catch(() => {});

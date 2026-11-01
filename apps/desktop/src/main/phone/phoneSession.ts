@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneChatMode, type PhoneEntry, type PhoneRequest, type PhoneResponse } from "@phaseo/phone-protocol";
+import { errorResponse, okResponse, parsePhoneFrame, phoneLimits, phoneProtocolVersion, PhoneProtocolError, RequestRate, type AttentionKind, type DesktopFrame, type PhoneChatMode, type PhoneEntry, type PhoneRequest, type PhoneResponse, type PhoneResults } from "@phaseo/phone-protocol";
 import type { ConversationPage, ConversationPageQuery } from "../../shared/conversationPage";
 import { validateCommand, type AgentActivity, type Message, type Task, type WorkspaceCommand } from "../../shared/workspace";
 import type { TaskOverview, WorkspaceOverview } from "../../shared/workspaceOverview";
@@ -14,8 +14,10 @@ export type PhoneHost = {
 	task: (id: string) => Task;
 	page: (query: ConversationPageQuery) => ConversationPage;
 	command: (command: WorkspaceCommand) => Promise<unknown>;
-	/** Starts a chat with the project's or the app's defaults and sends its first message; returns its id. */
-	newChat: (input: { text: string; projectId?: string; mode: PhoneChatMode }) => Promise<string>;
+	/** Starts a chat with the phone's model and effort, else the project's or the app's defaults, and sends its first message; returns its id. */
+	newChat: (input: { text: string; projectId?: string; mode: PhoneChatMode; model?: string; reasoningEffort?: string }) => Promise<string>;
+	/** What a new chat (in that project) could run on, and what it would use unasked (phoneHost's phoneModels). */
+	models: (input: { projectId?: string }) => Promise<PhoneResults["list_models"]>;
 };
 export type PhoneDevice = { id: string; name: string };
 export type Attention = { chatId: string; kind: AttentionKind; summary: string };
@@ -123,12 +125,15 @@ export class PhoneSession {
 				await command({ type: "cancel", id: request.chatId });
 				return okResponse(request, { chatId: request.chatId });
 			case "new_chat": {
-				if (request.projectId && !this.host.overview().projects.some(project => project.id === request.projectId && !project.worktree?.removedAt)) throw new PhoneProtocolError("not_found", "That project isn't on this computer any more.");
-				const id = await this.host.newChat({ text: request.text, mode: request.mode, ...request.projectId ? { projectId: request.projectId } : {} });
+				this.checkProject(request.projectId);
+				const id = await this.host.newChat({ text: request.text, mode: request.mode, ...request.projectId ? { projectId: request.projectId } : {}, ...request.model ? { model: request.model } : {}, ...request.reasoningEffort ? { reasoningEffort: request.reasoningEffort } : {} });
 				const overview = this.host.overview(), task = overview.tasks.find(value => value.id === id);
 				if (!task) throw new Error("The chat was started but could not be read.");
 				return okResponse(request, { chat: phoneChat(task, overview.projects) });
 			}
+			case "list_models":
+				this.checkProject(request.projectId);
+				return okResponse(request, await this.host.models(request.projectId ? { projectId: request.projectId } : {}));
 			case "subscribe": {
 				const listed = new Set(phoneChats(this.host.overview()).map(task => task.id));
 				const chatIds = request.chatIds.filter(id => listed.has(id));
@@ -139,6 +144,9 @@ export class PhoneSession {
 		}
 	}
 
+	private checkProject(projectId: string | undefined) {
+		if (projectId && !this.host.overview().projects.some(project => project.id === projectId && !project.worktree?.removedAt)) throw new PhoneProtocolError("not_found", "That project isn't on this computer any more.");
+	}
 	/** A chat the phone may use: listed (top level, not archived). */
 	private chatOverview(id: string) {
 		const task = phoneChats(this.host.overview()).find(value => value.id === id);

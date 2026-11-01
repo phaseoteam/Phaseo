@@ -38,6 +38,25 @@ describe("phone session", () => {
 		expect(frames.at(-1)).toMatchObject({ id: "over", ok: false, error: { code: "rate_limited" } });
 		expect(new RequestRate(() => 0).take()).toBe(true);
 	});
+	it("lists models for a new chat and starts one on the model and effort the phone picked", async () => {
+		const { app, session, frames } = connected();
+		app.overview().projects[0]!.settings = { defaultModel: { harness: "codex", model: "gpt-6.1" } };
+		await session.receive(JSON.stringify({ id: "m", type: "list_models", projectId: "p1" }));
+		expect(frames.at(-1)).toMatchObject({ id: "m", ok: true, result: { selected: { model: "gpt-6.1" }, models: [{ id: "gpt-6.1", defaultEffort: "medium" }, { id: "gpt-6.1-mini" }] } });
+
+		await session.receive(JSON.stringify({ id: "n", type: "new_chat", text: "Ship it", mode: "code", projectId: "p1", model: "gpt-6.1", reasoningEffort: "xhigh" }));
+		const created = frames.at(-1) as Extract<DesktopFrame, { ok: true }>;
+		expect(created).toMatchObject({ id: "n", ok: true, result: { chat: { model: "gpt-6.1", project: "Phaseo" } } });
+		const chatId = (created.result as { chat: { id: string } }).chat.id;
+		expect(app.get(chatId)).toMatchObject({ harness: "codex", model: "gpt-6.1", reasoningEffort: "xhigh" });
+		await session.receive(JSON.stringify({ id: "r", type: "read_chat", chatId }));
+		expect(frames.at(-1)).toMatchObject({ id: "r", ok: true, result: { chat: { model: "gpt-6.1", reasoningEffort: "xhigh" } } });
+
+		await session.receive(JSON.stringify({ id: "x", type: "new_chat", text: "Ship it", mode: "code", projectId: "p1", model: "gpt-6.1-mini", reasoningEffort: "xhigh" }));
+		expect(frames.at(-1)).toMatchObject({ id: "x", ok: false, error: { code: "rejected", message: "GPT-6.1 mini doesn't offer that effort." } });
+		await session.receive(JSON.stringify({ id: "y", type: "list_models", projectId: "gone" }));
+		expect(frames.at(-1)).toMatchObject({ id: "y", ok: false, error: { code: "not_found" } });
+	});
 	it("tells every connected phone when a chat needs the person", () => {
 		const { app, frames } = connected();
 		const task = app.get("chat-1");
