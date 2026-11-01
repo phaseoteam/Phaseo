@@ -137,6 +137,8 @@ const desktopApi: PhaseoDesktopApi = {
 		gitDiff: (id, request) => ipcRenderer.invoke("workspace:git-diff", id, request),
 		gitDiffFile: (id, request) => ipcRenderer.invoke("workspace:git-diff-file", id, request),
 		gitRefs: id => ipcRenderer.invoke("workspace:git-refs", id),
+		threadServers: taskId => ipcRenderer.invoke("workspace:thread-servers", taskId),
+		stopThreadServer: (taskId, port) => ipcRenderer.invoke("workspace:stop-thread-server", taskId, port),
 		gitCommits: (id, baseRef) => ipcRenderer.invoke("workspace:git-commits", id, baseRef),
 		projectTree: (id, request, refresh) => ipcRenderer.invoke("workspace:project-tree", id, request, refresh === true),
 		filePreview: (id, filename) => ipcRenderer.invoke("workspace:file-preview", id, filename),

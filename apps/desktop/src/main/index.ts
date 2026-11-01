@@ -76,6 +76,7 @@ import { openCodeModels, piModels } from "./nativeModels";
 import { resolveOpenCodeCommand } from "./openCodeService";
 import { TerminalService } from "./terminalService";
 import { backgroundCommands, closeBackgroundCommands } from "./backgroundCommands";
+import { stopThreadServer, threadServers, type ServerRoot } from "./threadServers";
 import { closePhaseoMcpPool } from "./phaseoMcp";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand, gitPush, withGitLock } from "./gitOperations";
@@ -167,6 +168,17 @@ function terminalOwners() {
 	for (const owner of terminalService.processOwners()) { const chat = owner.taskId ? tasks.get(owner.taskId) : undefined; owners.set(owner.pid, { label: chat ? `${owner.title} · ${chat}` : owner.title, kind: "terminal" }); }
 	return owners;
 }
+/** What a chat started that can serve pages: its terminals' shells and its background commands. */
+function serverRoots(event: Electron.IpcMainInvokeEvent, taskId: unknown): ServerRoot[] {
+	if (!senderWindow(event) || typeof taskId !== "string" || !taskId || taskId.length > 200) throw new Error("Invalid chat.");
+	workspaceRuntime.store.getTask(taskId);
+	return [
+		...terminalService.processOwners().filter(owner => owner.taskId === taskId).map(owner => ({ pid: owner.pid, label: owner.title })),
+		...backgroundCommands().list(taskId).filter(command => command.running).map(command => ({ pid: command.pid, label: command.command.slice(0, 80) })),
+	];
+}
+ipcMain.handle("workspace:thread-servers", (event, taskId: unknown) => { const roots = serverRoots(event, taskId); return span("thread.servers", undefined, () => threadServers(roots)); });
+ipcMain.handle("workspace:stop-thread-server", (event, taskId: unknown, port: unknown) => { const roots = serverRoots(event, taskId); if (!Number.isSafeInteger(port) || Number(port) < 1 || Number(port) > 65535) throw new Error("Invalid port."); return stopThreadServer(roots, Number(port)); });
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
 ipcMain.handle("workspace:usage-report", async (event, period: unknown) => {

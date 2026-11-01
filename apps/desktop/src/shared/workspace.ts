@@ -37,6 +37,7 @@ import type { PublishRepositoryRequest, PublishRepositoryResult } from "./gitWor
 import type { WorktreeCleanupReport, WorktreeCleanupRequest } from "./worktreeCleanup";
 import type { UsageLimitState } from "./usageLimitRecovery";
 import type { SecretRequest } from "./secretRequests";
+import type { ThreadServer } from "./threadServers";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -362,6 +363,10 @@ export type WorkspaceApi = {
 	/** Both sides of one file in a scoped diff, checked against the diff's hash. */
 	gitDiffFile: (projectId: string, request: { diff: GitDiffRequest; filename: string; oldFilename?: string; hash: string }) => Promise<GitDiffContents>;
 	gitRefs: (projectId: string) => Promise<GitRefs>;
+	/** Local web servers this chat's terminals and background commands started. */
+	threadServers: (taskId: string) => Promise<ThreadServer[]>;
+	/** Stops one of them (the listening process and its children), checked against the chat again first. */
+	stopThreadServer: (taskId: string, port: number) => Promise<ThreadServer>;
 	/** The newest commits since the branch left `baseRef` (or its automatic base), for the Diff pane's Commits. */
 	gitCommits: (projectId: string, baseRef?: string) => Promise<GitCommitSummary[]>;
 	/** Folder listings and search that skip Git-ignored files; `refresh` re-reads the project. */
