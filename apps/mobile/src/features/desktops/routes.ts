@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 
-// A computer's chats live under the Chat tab, beside Phaseo's own chats, so they open in its stack and split view.
+// A computer's chats live under Chat, beside Phaseo's own chats, so they open in its stack.
 const ROOT = "/chat/code";
 const segment = encodeURIComponent;
 

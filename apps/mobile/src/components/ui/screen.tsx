@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 import { IconButton } from "./button";
 import { Text } from "./text";
 
-/** Page background with the top safe area applied. Bottom insets are left to scroll content and the tab bar. */
+/** Page background with the top safe area applied. Bottom insets are left to scroll content, composers and the sidebar's footer. */
 export function Screen({ children, className, edges = ["top"] }: { children: ReactNode; className?: string; edges?: ("top" | "bottom")[] }) {
   const insets = useSafeAreaInsets();
   return (
@@ -19,7 +19,7 @@ export function Screen({ children, className, edges = ["top"] }: { children: Rea
 
 /**
  * Screen title row. `back` shows a back arrow when there is somewhere to go back to;
- * `large` uses the page-title size for tab roots.
+ * `large` uses the page-title size for section roots.
  */
 export function Header({ title, subtitle, back, large, leading, right, className }: { title?: string; subtitle?: string | null; back?: boolean; large?: boolean; leading?: ReactNode; right?: ReactNode; className?: string }) {
   const router = useRouter();
