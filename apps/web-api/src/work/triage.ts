@@ -11,6 +11,7 @@ import {
 	type DataClient,
 	type WorkItemChanges,
 } from "./items";
+import { notifySubscribers } from "./notifications";
 import type { AgentRunRow, WorkItemRow } from "./types";
 
 // The triage agent: one gateway request with structured output that sorts a work item (summary,
@@ -469,6 +470,15 @@ export async function triageWorkItem(args: TriageArgs): Promise<TriageResult> {
 	} catch (error) {
 		console.error("[work] triage event not written", { itemId: item.id, message: error instanceof Error ? error.message : String(error) });
 	}
+	// A finished agent run notifies the item's subscribers (never the person who asked for it).
+	await notifySubscribers(client, {
+		workspaceId,
+		workItemId: item.id,
+		kind: "agent",
+		actorName: "Triage agent",
+		body: `#${updated.number} ${updated.title}: triaged`,
+		exceptUserId: args.requestedBy?.id ?? null,
+	});
 	return { ok: true, run, item: updated };
 }
 

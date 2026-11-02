@@ -32,20 +32,39 @@ export async function readBody(c: any): Promise<Body> {
 	return body && typeof body === "object" && !Array.isArray(body) ? body as Body : {};
 }
 
-export async function isInternalAdmin(context: AccountWorkspaceContext): Promise<boolean> {
-	const role = await context.client.from("users").select("role").eq("user_id", context.user.id).maybeSingle();
-	return !role.error && String(role.data?.role ?? "").toLowerCase() === "admin";
+/** Whether the user is a Phaseo internal admin, and their display name (for timelines and notifications). */
+export async function internalAdminProfile(context: AccountWorkspaceContext): Promise<{ admin: boolean; name: string | null }> {
+	const row = await context.client.from("users").select("role,display_name").eq("user_id", context.user.id).maybeSingle();
+	if (row.error) return { admin: false, name: null };
+	const name = typeof row.data?.display_name === "string" ? row.data.display_name.trim() || null : null;
+	return { admin: String(row.data?.role ?? "").toLowerCase() === "admin", name };
 }
 
+export async function isInternalAdmin(context: AccountWorkspaceContext): Promise<boolean> {
+	return (await internalAdminProfile(context)).admin;
+}
+
+export type WorkAccess = {
+	context: AccountWorkspaceContext;
+	/** The person's display name, or their email's local part. */
+	actorName: string | null;
+};
+
 /** The workspace context for a member who is also an internal admin, or the 403 response. */
-export async function workAccess(c: any, workspaceId: unknown): Promise<{ context: AccountWorkspaceContext } | { response: Response }> {
+export async function workAccess(c: any, workspaceId: unknown): Promise<WorkAccess | { response: Response }> {
 	if (c.req.header("sec-fetch-site") === "cross-site") return { response: json(c, { error: "cross_site_request_blocked" }, 403) };
 	const id = typeof workspaceId === "string" ? workspaceId.trim() : "";
 	if (!id) return { response: badRequest(c, "workspaceId is required") };
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: id });
 	if (!context) return { response: json(c, { error: "forbidden" }, 403) };
-	if (!await isInternalAdmin(context)) return { response: json(c, { error: "forbidden" }, 403) };
-	return { context };
+	const profile = await internalAdminProfile(context);
+	if (!profile.admin) return { response: json(c, { error: "forbidden" }, 403) };
+	return { context, actorName: profile.name ?? context.user.email?.split("@")[0] ?? null };
+}
+
+/** Workspace owners and admins (settings changes). */
+export function isWorkspaceOwnerOrAdmin(context: AccountWorkspaceContext): boolean {
+	return context.isOwner || ["owner", "admin"].includes(String(context.role).toLowerCase());
 }
 
 /** Reads workspaceId from the query (GET) or the JSON body (writes). */
@@ -111,4 +130,56 @@ export function isWorkspaceMember(context: AccountWorkspaceContext, userId: stri
 		context.client.from("workspace_members").select("user_id").eq("workspace_id", context.workspaceId).eq("user_id", userId).maybeSingle(),
 		context.client.from("workspaces").select("owner_user_id").eq("id", context.workspaceId).maybeSingle(),
 	]).then(([member, workspace]) => Boolean(member.data) || workspace.data?.owner_user_id === userId);
+}
+
+const MAX_MEMBERS = 200;
+
+export type WorkMemberProfile = { userId: string; name: string | null; email: string | null };
+
+/** The workspace's members and owner with display names and emails (one auth lookup per member). */
+export async function listWorkMembers(context: AccountWorkspaceContext): Promise<WorkMemberProfile[] | null> {
+	const [members, workspace] = await Promise.all([
+		context.client.from("workspace_members").select("user_id").eq("workspace_id", context.workspaceId).limit(MAX_MEMBERS),
+		context.client.from("workspaces").select("owner_user_id").eq("id", context.workspaceId).maybeSingle(),
+	]);
+	if (members.error || workspace.error) return null;
+	const ids = [...new Set([
+		...(members.data ?? []).map((row: any) => String(row.user_id ?? "")),
+		String(workspace.data?.owner_user_id ?? ""),
+	].filter(Boolean))].slice(0, MAX_MEMBERS);
+	if (!ids.length) return [];
+	const profiles = await context.client.from("users").select("user_id,display_name").in("user_id", ids);
+	if (profiles.error) return null;
+	const names = new Map((profiles.data ?? []).map((row: any) => [String(row.user_id), typeof row.display_name === "string" ? row.display_name.trim() || null : null]));
+	// Emails live in auth; one admin lookup per member, as the workspace user pages do.
+	const emails = await Promise.all(ids.map((id) => context.client.auth.admin.getUserById(id)
+		.then((result) => result.data?.user?.email ?? null)
+		.catch(() => null)));
+	const list = ids.map((userId, index) => ({ userId, name: names.get(userId) ?? null, email: emails[index] ?? null }));
+	list.sort((left, right) => (left.name ?? left.email ?? "").localeCompare(right.name ?? right.email ?? ""));
+	return list;
+}
+
+/** Runs `task` over `items` with at most `limit` running at once, keeping the order of results. */
+export async function mapLimit<T, R>(items: readonly T[], limit: number, task: (item: T, index: number) => Promise<R>): Promise<R[]> {
+	const results = new Array<R>(items.length);
+	let next = 0;
+	const worker = async () => {
+		while (next < items.length) {
+			const index = next;
+			next += 1;
+			results[index] = await task(items[index]!, index);
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+	return results;
+}
+
+/** An optional uuid field: undefined when absent, null when cleared, the lowercased id otherwise. */
+export function optionalUuid(body: Body, field: string): { ok: true; value: string | null | undefined } | { ok: false; message: string } {
+	const value = body[field];
+	if (value === undefined) return { ok: true, value: undefined };
+	if (value === null || value === "") return { ok: true, value: null };
+	if (typeof value !== "string" || !UUID_PATTERN.test(value)) return { ok: false, message: `${field} must be an id or null` };
+	return { ok: true, value: value.toLowerCase() };
 }
