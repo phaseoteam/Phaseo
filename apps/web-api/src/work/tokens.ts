@@ -1,12 +1,12 @@
 // Tokens for the work tracker's public endpoints: intake forms (pwf_), error projects (pwe_) and
-// GitHub bridges (pwg_) and source map uploads (pws_). A token is shown once; the database keeps its SHA-256 hex and a short
+// GitHub bridges (pwg_), source map uploads (pws_) and the public work API (pwk_). A token is shown once; the database keeps its SHA-256 hex and a short
 // prefix so people can tell tokens apart.
 
-export type WorkTokenKind = "form" | "errors" | "github" | "uploads";
+export type WorkTokenKind = "form" | "errors" | "github" | "uploads" | "api";
 
-const PREFIXES: Record<WorkTokenKind, string> = { form: "pwf_", errors: "pwe_", github: "pwg_", uploads: "pws_" };
+const PREFIXES: Record<WorkTokenKind, string> = { form: "pwf_", errors: "pwe_", github: "pwg_", uploads: "pws_", api: "pwk_" };
 const DISPLAY_PREFIX_LENGTH = 12;
-const TOKEN_PATTERN = /^pw[fegs]_[A-Za-z0-9_-]{43}$/;
+const TOKEN_PATTERN = /^pw[fegsk]_[A-Za-z0-9_-]{43}$/;
 
 function base64url(bytes: Uint8Array): string {
 	let binary = "";

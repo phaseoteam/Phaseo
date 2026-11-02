@@ -790,5 +790,41 @@
 		"stopRepeating": "繰り返しを停止",
 		"nextRun": "次回",
 		"paused": "一時停止中"
+	},
+	"integrations": {
+		"title": "API と Webhook",
+		"description": "スクリプトや他のツールから項目を読み取り・変更できるようにし、項目が変更されたときにサービスへ通知します。",
+		"loading": "読み込み中…",
+		"loadFailed": "API キーと Webhook を読み込めませんでした。しばらくしてからもう一度お試しください。",
+		"readOnly": "API キーと Webhook を追加・変更できるのは、ワークスペースのオーナーと管理者のみです。",
+		"secretOnce": "今すぐコピーしてください。再表示されません。",
+		"apiKey": "API キー",
+		"apiExample": "試してみる",
+		"signingSecret": "署名シークレット",
+		"verifyExample": "署名を検証",
+		"keysTitle": "API キー",
+		"keysHint": "読み取りキーでは、項目とプロジェクトの一覧表示と読み取りができます。書き込みキーでは、項目の作成、変更、コメントもできます。顧客リクエストは API から利用できません。",
+		"keyName": "キー名",
+		"keyNamePlaceholder": "CI パイプライン",
+		"accessLabel": "アクセス",
+		"access": {
+			"read": "読み取り専用",
+			"write": "読み取りと書き込み"
+		},
+		"createKey": "キーを作成",
+		"revoke": "取り消す",
+		"revokeConfirm": "{name} を取り消しますか？使用しているものはすぐに動作しなくなります。",
+		"revoked": "取り消し済み",
+		"lastUsed": "最終使用: {time}",
+		"neverUsed": "未使用",
+		"webhooksTitle": "Webhook",
+		"webhooksHint": "新しい項目イベントは 1 分ごとに、Webhook のシークレットで署名して送信されます。送信に 20 回連続で失敗すると、Webhook はオフになります。",
+		"webhookUrl": "Webhook のアドレス",
+		"addWebhook": "Webhook を追加",
+		"deleteWebhookConfirm": "この Webhook を削除しますか？",
+		"lastDelivery": "最終送信: {status}、{time}",
+		"noAnswer": "応答なし",
+		"noDeliveries": "まだ送信されていません",
+		"turnedOff": "{count} 回失敗したためオフになりました"
 	}
 }

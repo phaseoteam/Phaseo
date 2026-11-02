@@ -327,6 +327,8 @@
     "public/tables/work_templates.sql",
     "public/tables/work_recurrences.sql",
     "public/tables/work_reactions.sql",
+    "public/tables/work_api_keys.sql",
+    "public/tables/work_webhooks.sql",
     "private/views/v2_rpc_benchmark_results_compat.sql",
     "private/views/v2_rpc_benchmarks_compat.sql",
     "private/views/v2_rpc_capabilities_compat.sql",
@@ -1916,6 +1918,8 @@
     "public/tables/work_reactions.sql",
     "public/functions/work_event_reactions.sql",
     "public/functions/work_milestone_counts.sql",
-    "public/functions/work_project_health.sql"
+    "public/functions/work_project_health.sql",
+    "public/tables/work_api_keys.sql",
+    "public/tables/work_webhooks.sql"
   ]
 }

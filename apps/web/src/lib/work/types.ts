@@ -241,6 +241,11 @@ export type ReactionEmoji = (typeof REACTION_EMOJI)[number];
 export type ReactionCount = { emoji: ReactionEmoji; count: number; mine: boolean };
 export const REACTION_GLYPHS: Record<ReactionEmoji, string> = { "+1": "👍", "-1": "👎", heart: "❤️", tada: "🎉", eyes: "👀", rocket: "🚀" };
 
+// Public API keys and webhooks.
+
+export type WorkApiKey = { id: string; name: string; keyPrefix: string; access: "read" | "write"; createdBy: string | null; createdAt: string; lastUsedAt: string | null; revokedAt: string | null };
+export type WorkWebhook = { id: string; url: string; events: WorkEventKind[]; enabled: boolean; failureCount: number; lastStatus: number | null; lastDeliveryAt: string | null; createdBy: string | null; createdAt: string };
+
 /** A file on a work item (the file itself is fetched from the account API). */
 export type WorkAttachment = { id: string; fileName: string; contentType: string; sizeBytes: number; uploadedBy: string | null; createdAt: string };
 /** What the item page needs to show and manage attachments. */

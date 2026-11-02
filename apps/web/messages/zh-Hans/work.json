@@ -790,5 +790,41 @@
 		"stopRepeating": "停止重复",
 		"nextRun": "下次",
 		"paused": "已暂停"
+	},
+	"integrations": {
+		"title": "API 和 Webhook",
+		"description": "允许脚本和其他工具读取和更改条目，并在条目变更时通知你的服务。",
+		"loading": "正在加载…",
+		"loadFailed": "无法加载 API 密钥和 Webhook。请稍后重试。",
+		"readOnly": "只有工作区所有者和管理员可以添加或更改 API 密钥和 Webhook。",
+		"secretOnce": "请立即复制。它不会再次显示。",
+		"apiKey": "API 密钥",
+		"apiExample": "试一试",
+		"signingSecret": "签名密钥",
+		"verifyExample": "校验签名",
+		"keysTitle": "API 密钥",
+		"keysHint": "只读密钥可以列出和读取条目与项目。写入密钥还可以创建和更改条目，并发表评论。客户请求永远无法通过 API 访问。",
+		"keyName": "密钥名称",
+		"keyNamePlaceholder": "CI 流水线",
+		"accessLabel": "访问权限",
+		"access": {
+			"read": "只读",
+			"write": "读写"
+		},
+		"createKey": "创建密钥",
+		"revoke": "撤销",
+		"revokeConfirm": "撤销 {name}？使用它的所有内容将立即停止工作。",
+		"revoked": "已撤销",
+		"lastUsed": "上次使用：{time}",
+		"neverUsed": "从未使用",
+		"webhooksTitle": "Webhook",
+		"webhooksHint": "新的条目事件每分钟发送一次，并使用 Webhook 的密钥签名。连续 20 次发送失败后，Webhook 将被关闭。",
+		"webhookUrl": "Webhook 地址",
+		"addWebhook": "添加 Webhook",
+		"deleteWebhookConfirm": "删除此 Webhook？",
+		"lastDelivery": "上次发送：{status}，{time}",
+		"noAnswer": "无响应",
+		"noDeliveries": "尚未发送任何内容",
+		"turnedOff": "失败 {count} 次后已关闭"
 	}
 }

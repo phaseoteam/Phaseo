@@ -790,5 +790,41 @@
 		"stopRepeating": "Parar de repetir",
 		"nextRun": "Próximo",
 		"paused": "Pausado"
+	},
+	"integrations": {
+		"title": "API e webhooks",
+		"description": "Permita que scripts e outras ferramentas leiam e alterem itens, e avise seus serviços quando os itens mudarem.",
+		"loading": "Carregando…",
+		"loadFailed": "Não foi possível carregar as chaves de API e os webhooks. Tente novamente em instantes.",
+		"readOnly": "Somente proprietários e administradores do espaço de trabalho podem adicionar ou alterar chaves de API e webhooks.",
+		"secretOnce": "Copie agora. Isso não será mostrado novamente.",
+		"apiKey": "Chave de API",
+		"apiExample": "Experimente",
+		"signingSecret": "Segredo de assinatura",
+		"verifyExample": "Verificar a assinatura",
+		"keysTitle": "Chaves de API",
+		"keysHint": "Chaves de leitura listam e leem itens e projetos. Chaves de escrita também podem criar itens, alterá-los e comentar. Solicitações de clientes nunca ficam disponíveis pela API.",
+		"keyName": "Nome da chave",
+		"keyNamePlaceholder": "Pipeline de CI",
+		"accessLabel": "Acesso",
+		"access": {
+			"read": "Somente leitura",
+			"write": "Leitura e escrita"
+		},
+		"createKey": "Criar chave",
+		"revoke": "Revogar",
+		"revokeConfirm": "Revogar {name}? Tudo o que a usa para de funcionar imediatamente.",
+		"revoked": "Revogada",
+		"lastUsed": "Usada {time}",
+		"neverUsed": "Nunca usada",
+		"webhooksTitle": "Webhooks",
+		"webhooksHint": "Novos eventos de itens são enviados a cada minuto, assinados com o segredo do webhook. Um webhook é desativado após 20 envios com falha seguidos.",
+		"webhookUrl": "Endereço do webhook",
+		"addWebhook": "Adicionar webhook",
+		"deleteWebhookConfirm": "Excluir este webhook?",
+		"lastDelivery": "Último envio: {status}, {time}",
+		"noAnswer": "sem resposta",
+		"noDeliveries": "Nada enviado ainda",
+		"turnedOff": "Desativado após {count} falhas"
 	}
 }

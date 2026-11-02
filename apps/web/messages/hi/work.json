@@ -790,5 +790,41 @@
 		"stopRepeating": "दोहराना बंद करें",
 		"nextRun": "अगला",
 		"paused": "रुका हुआ"
+	},
+	"integrations": {
+		"title": "API और webhook",
+		"description": "स्क्रिप्ट और दूसरे टूल को आइटम पढ़ने और बदलने दें, और आइटम बदलने पर अपनी सेवाओं को सूचित करें।",
+		"loading": "लोड हो रहा है…",
+		"loadFailed": "API कुंजियाँ और webhook लोड नहीं हो सके। थोड़ी देर में फिर से कोशिश करें।",
+		"readOnly": "केवल वर्कस्पेस के मालिक और एडमिन ही API कुंजियाँ और webhook जोड़ या बदल सकते हैं।",
+		"secretOnce": "इसे अभी कॉपी करें। यह दोबारा नहीं दिखाया जाएगा।",
+		"apiKey": "API कुंजी",
+		"apiExample": "आज़माएँ",
+		"signingSecret": "साइनिंग सीक्रेट",
+		"verifyExample": "सिग्नेचर जाँचें",
+		"keysTitle": "API कुंजियाँ",
+		"keysHint": "रीड कुंजियाँ आइटम और प्रोजेक्ट की सूची देख और पढ़ सकती हैं। राइट कुंजियाँ आइटम बना, बदल और उन पर टिप्पणी भी कर सकती हैं। ग्राहक अनुरोध कभी भी API के ज़रिए उपलब्ध नहीं होते।",
+		"keyName": "कुंजी का नाम",
+		"keyNamePlaceholder": "CI पाइपलाइन",
+		"accessLabel": "एक्सेस",
+		"access": {
+			"read": "केवल पढ़ने के लिए",
+			"write": "पढ़ना और लिखना"
+		},
+		"createKey": "कुंजी बनाएँ",
+		"revoke": "रद्द करें",
+		"revokeConfirm": "{name} रद्द करें? इसका इस्तेमाल करने वाली हर चीज़ तुरंत काम करना बंद कर देगी।",
+		"revoked": "रद्द की गई",
+		"lastUsed": "अंतिम उपयोग: {time}",
+		"neverUsed": "कभी इस्तेमाल नहीं हुई",
+		"webhooksTitle": "Webhook",
+		"webhooksHint": "नए आइटम इवेंट हर मिनट भेजे जाते हैं और webhook के सीक्रेट से साइन किए जाते हैं। लगातार 20 बार भेजना विफल होने पर webhook बंद हो जाता है।",
+		"webhookUrl": "Webhook पता",
+		"addWebhook": "Webhook जोड़ें",
+		"deleteWebhookConfirm": "यह webhook हटाएँ?",
+		"lastDelivery": "पिछली बार भेजा गया: {status}, {time}",
+		"noAnswer": "कोई जवाब नहीं",
+		"noDeliveries": "अभी तक कुछ नहीं भेजा गया",
+		"turnedOff": "{count} बार विफल होने के बाद बंद किया गया"
 	}
 }

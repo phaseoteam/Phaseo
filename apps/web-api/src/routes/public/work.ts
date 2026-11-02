@@ -4,6 +4,7 @@ import type { Env } from "@/env";
 import { ingestErrorEvents, loadErrorProject, MAX_ERROR_BYTES, parseErrorPayload } from "@/work/errorIngest";
 import { parseSourcemapTarget, SOURCEMAP_COLUMNS, sourcemapObjectKey } from "@/work/errorTools";
 import { MAX_SOURCEMAP_BYTES, SourceMapReader } from "@/work/sourcemap";
+import { publicWorkApiRouter } from "@/work/publicApi";
 import { ERRORS_SCRIPT, ERRORS_SCRIPT_CACHE_SECONDS } from "@/work/errorsScript";
 import { handleBridgeEvent, loadGithubRepoLink, MAX_GITHUB_BYTES, parseBridgePayload } from "@/work/githubBridge";
 import { onWorkItemDone } from "@/work/support";
@@ -17,6 +18,9 @@ import { hashWorkToken, isWorkToken, type WorkTokenKind } from "@/work/tokens";
 // uploaded from a build (CI) with the project's secret upload token (pws_) as a bearer token,
 // never the ingest key, which is public in the app's pages.
 export const publicWorkRouter = new Hono<{ Bindings: Env }>();
+
+// The public work API for scripts and integrations (work API keys): /api/_web/work/v1/...
+publicWorkRouter.route("/v1", publicWorkApiRouter);
 
 type WorkContext = Context<{ Bindings: Env }>;
 

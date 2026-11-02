@@ -29,6 +29,8 @@ CREATE INDEX work_item_events_workspace_id_idx ON public.work_item_events USING 
 
 CREATE INDEX work_item_events_item_created_idx ON public.work_item_events USING btree (work_item_id, created_at);
 
+CREATE INDEX work_item_events_workspace_created_idx ON public.work_item_events USING btree (workspace_id, created_at, id);
+
 CREATE POLICY "deny_direct_client_access" ON "public"."work_item_events"
   AS RESTRICTIVE
   FOR ALL

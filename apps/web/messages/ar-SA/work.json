@@ -790,5 +790,41 @@
 		"stopRepeating": "أوقف التكرار",
 		"nextRun": "التالي",
 		"paused": "متوقف مؤقتًا"
+	},
+	"integrations": {
+		"title": "API وWebhook",
+		"description": "اسمح للبرامج النصية والأدوات الأخرى بقراءة العناصر وتغييرها، وأبلغ خدماتك عند تغيّر العناصر.",
+		"loading": "جارٍ التحميل…",
+		"loadFailed": "تعذّر تحميل مفاتيح API وWebhook. حاول مرة أخرى بعد قليل.",
+		"readOnly": "يمكن لمالكي مساحة العمل ومسؤوليها فقط إضافة مفاتيح API وWebhook أو تغييرها.",
+		"secretOnce": "انسخ هذا الآن. لن يظهر مرة أخرى.",
+		"apiKey": "مفتاح API",
+		"apiExample": "جرّبه",
+		"signingSecret": "سر التوقيع",
+		"verifyExample": "التحقق من التوقيع",
+		"keysTitle": "مفاتيح API",
+		"keysHint": "تتيح مفاتيح القراءة عرض العناصر والمشاريع وقراءتها. ويمكن لمفاتيح الكتابة أيضًا إنشاء العناصر وتغييرها والتعليق عليها. طلبات العملاء غير متاحة أبدًا عبر API.",
+		"keyName": "اسم المفتاح",
+		"keyNamePlaceholder": "مسار CI",
+		"accessLabel": "الوصول",
+		"access": {
+			"read": "قراءة فقط",
+			"write": "قراءة وكتابة"
+		},
+		"createKey": "إنشاء مفتاح",
+		"revoke": "إبطال",
+		"revokeConfirm": "هل تريد إبطال {name}؟ سيتوقف كل ما يستخدمه عن العمل فورًا.",
+		"revoked": "تم الإبطال",
+		"lastUsed": "آخر استخدام: {time}",
+		"neverUsed": "لم يُستخدم قط",
+		"webhooksTitle": "Webhook",
+		"webhooksHint": "تُرسل أحداث العناصر الجديدة كل دقيقة موقّعةً بسر الـ Webhook. يتوقف الـ Webhook بعد 20 محاولة إرسال فاشلة متتالية.",
+		"webhookUrl": "عنوان Webhook",
+		"addWebhook": "إضافة Webhook",
+		"deleteWebhookConfirm": "هل تريد حذف هذا الـ Webhook؟",
+		"lastDelivery": "آخر إرسال: {status}، {time}",
+		"noAnswer": "لا يوجد رد",
+		"noDeliveries": "لم يُرسل شيء بعد",
+		"turnedOff": "تم الإيقاف بعد {count} من الإخفاقات"
 	}
 }

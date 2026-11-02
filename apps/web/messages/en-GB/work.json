@@ -790,5 +790,41 @@
 		"stopRepeating": "Stop repeating",
 		"nextRun": "Next",
 		"paused": "Paused"
+	},
+	"integrations": {
+		"title": "API and webhooks",
+		"description": "Let scripts and other tools read and change items, and tell your services when items change.",
+		"loading": "Loading…",
+		"loadFailed": "API keys and webhooks couldn't be loaded. Try again in a moment.",
+		"readOnly": "Only workspace owners and admins can add or change API keys and webhooks.",
+		"secretOnce": "Copy this now. It won't be shown again.",
+		"apiKey": "API key",
+		"apiExample": "Try it",
+		"signingSecret": "Signing secret",
+		"verifyExample": "Check the signature",
+		"keysTitle": "API keys",
+		"keysHint": "Read keys list and read items and projects. Write keys can also create items, change them and comment. Customer requests are never available through the API.",
+		"keyName": "Key name",
+		"keyNamePlaceholder": "CI pipeline",
+		"accessLabel": "Access",
+		"access": {
+			"read": "Read only",
+			"write": "Read and write"
+		},
+		"createKey": "Create key",
+		"revoke": "Revoke",
+		"revokeConfirm": "Revoke {name}? Anything using it stops working straight away.",
+		"revoked": "Revoked",
+		"lastUsed": "Used {time}",
+		"neverUsed": "Never used",
+		"webhooksTitle": "Webhooks",
+		"webhooksHint": "New item events are sent each minute, signed with the webhook's secret. A webhook turns off after 20 failed sends in a row.",
+		"webhookUrl": "Webhook address",
+		"addWebhook": "Add webhook",
+		"deleteWebhookConfirm": "Delete this webhook?",
+		"lastDelivery": "Last send: {status}, {time}",
+		"noAnswer": "no answer",
+		"noDeliveries": "Nothing sent yet",
+		"turnedOff": "Turned off after {count} failures"
 	}
 }

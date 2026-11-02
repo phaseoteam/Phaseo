@@ -34,6 +34,7 @@ import { normaliseGithubRepo } from "@/lib/work/format";
 import { errorFetchExample, errorNodeExample, errorScriptTag, intakeCurlExample, intakeFormHtml, sourcemapUploadExample } from "@/lib/work/snippets";
 import { DEFAULT_WORK_SETTINGS, ERROR_RULE_ACTIONS, ERROR_RULE_FIELDS, type ErrorProject, type ErrorRelease, type ErrorRule, type ErrorRuleAction, type ErrorRuleField, type ErrorSourcemap, type GithubRepo, type IntakeForm, type WorkMember, type WorkMemberSettingsResponse, type WorkSettings } from "@/lib/work/types";
 import { useWorkAction } from "./useWorkAction";
+import { WorkIntegrationsSection } from "./WorkIntegrations";
 import { CopyBlock, PriorityIcon, TimeAgo, useRelativeTime, useWorkCopy } from "./WorkBits";
 
 export function WorkSettingsView({ forms, projects, repos, settings = null, canEditSettings = true, mine = null }: { forms: IntakeForm[]; projects: ErrorProject[]; repos: GithubRepo[]; settings?: WorkSettings | null; canEditSettings?: boolean; mine?: WorkMemberSettingsResponse | null }) {
@@ -49,6 +50,7 @@ export function WorkSettingsView({ forms, projects, repos, settings = null, canE
 			<IntakeFormsSection forms={forms} />
 			<ErrorProjectsSection projects={projects} />
 			<GithubReposSection repos={repos} />
+			<WorkIntegrationsSection />
 		</div>
 	);
 }

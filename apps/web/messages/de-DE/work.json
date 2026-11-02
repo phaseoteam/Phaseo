@@ -790,5 +790,41 @@
 		"stopRepeating": "Wiederholung beenden",
 		"nextRun": "Nächster",
 		"paused": "Pausiert"
+	},
+	"integrations": {
+		"title": "API und Webhooks",
+		"description": "Lass Skripte und andere Tools Einträge lesen und ändern, und benachrichtige deine Dienste, wenn sich Einträge ändern.",
+		"loading": "Wird geladen…",
+		"loadFailed": "API-Schlüssel und Webhooks konnten nicht geladen werden. Versuch es gleich noch einmal.",
+		"readOnly": "Nur Workspace-Inhaber und Admins können API-Schlüssel und Webhooks hinzufügen oder ändern.",
+		"secretOnce": "Kopiere das jetzt. Es wird nicht noch einmal angezeigt.",
+		"apiKey": "API-Schlüssel",
+		"apiExample": "Ausprobieren",
+		"signingSecret": "Signaturgeheimnis",
+		"verifyExample": "Signatur prüfen",
+		"keysTitle": "API-Schlüssel",
+		"keysHint": "Leseschlüssel können Einträge und Projekte auflisten und lesen. Schreibschlüssel können außerdem Einträge erstellen, ändern und kommentieren. Kundenanfragen sind nie über die API verfügbar.",
+		"keyName": "Schlüsselname",
+		"keyNamePlaceholder": "CI-Pipeline",
+		"accessLabel": "Zugriff",
+		"access": {
+			"read": "Nur lesen",
+			"write": "Lesen und schreiben"
+		},
+		"createKey": "Schlüssel erstellen",
+		"revoke": "Widerrufen",
+		"revokeConfirm": "{name} widerrufen? Alles, was ihn nutzt, funktioniert sofort nicht mehr.",
+		"revoked": "Widerrufen",
+		"lastUsed": "Verwendet {time}",
+		"neverUsed": "Nie verwendet",
+		"webhooksTitle": "Webhooks",
+		"webhooksHint": "Neue Ereignisse zu Einträgen werden jede Minute gesendet und mit dem Geheimnis des Webhooks signiert. Ein Webhook wird nach 20 fehlgeschlagenen Sendungen in Folge deaktiviert.",
+		"webhookUrl": "Webhook-Adresse",
+		"addWebhook": "Webhook hinzufügen",
+		"deleteWebhookConfirm": "Diesen Webhook löschen?",
+		"lastDelivery": "Zuletzt gesendet: {status}, {time}",
+		"noAnswer": "keine Antwort",
+		"noDeliveries": "Noch nichts gesendet",
+		"turnedOff": "Nach {count} Fehlern deaktiviert"
 	}
 }

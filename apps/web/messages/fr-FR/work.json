@@ -790,5 +790,41 @@
 		"stopRepeating": "Arrêter la répétition",
 		"nextRun": "Prochain",
 		"paused": "En pause"
+	},
+	"integrations": {
+		"title": "API et webhooks",
+		"description": "Permettez aux scripts et à d’autres outils de lire et de modifier des éléments, et prévenez vos services quand des éléments changent.",
+		"loading": "Chargement…",
+		"loadFailed": "Impossible de charger les clés API et les webhooks. Réessayez dans un instant.",
+		"readOnly": "Seuls les propriétaires et les administrateurs de l’espace de travail peuvent ajouter ou modifier des clés API et des webhooks.",
+		"secretOnce": "Copiez-le maintenant. Il ne sera plus affiché.",
+		"apiKey": "Clé API",
+		"apiExample": "Essayer",
+		"signingSecret": "Secret de signature",
+		"verifyExample": "Vérifier la signature",
+		"keysTitle": "Clés API",
+		"keysHint": "Les clés de lecture listent et lisent les éléments et les projets. Les clés d’écriture peuvent aussi créer des éléments, les modifier et commenter. Les demandes des clients ne sont jamais disponibles via l’API.",
+		"keyName": "Nom de la clé",
+		"keyNamePlaceholder": "Pipeline CI",
+		"accessLabel": "Accès",
+		"access": {
+			"read": "Lecture seule",
+			"write": "Lecture et écriture"
+		},
+		"createKey": "Créer une clé",
+		"revoke": "Révoquer",
+		"revokeConfirm": "Révoquer {name} ? Tout ce qui l’utilise cessera immédiatement de fonctionner.",
+		"revoked": "Révoquée",
+		"lastUsed": "Utilisée {time}",
+		"neverUsed": "Jamais utilisée",
+		"webhooksTitle": "Webhooks",
+		"webhooksHint": "Les nouveaux événements d’éléments sont envoyés chaque minute, signés avec le secret du webhook. Un webhook se désactive après 20 envois échoués d’affilée.",
+		"webhookUrl": "Adresse du webhook",
+		"addWebhook": "Ajouter un webhook",
+		"deleteWebhookConfirm": "Supprimer ce webhook ?",
+		"lastDelivery": "Dernier envoi : {status}, {time}",
+		"noAnswer": "aucune réponse",
+		"noDeliveries": "Rien n’a encore été envoyé",
+		"turnedOff": "Désactivé après {count} échecs"
 	}
 }

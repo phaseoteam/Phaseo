@@ -42,6 +42,8 @@ import type {
 	WorkMilestone,
 	WorkRecurrence,
 	WorkTemplate,
+	WorkApiKey,
+	WorkWebhook,
 } from "@/lib/work/types";
 
 export type WorkActionError = { ok: false; status: number | null; code: string | null; message: string | null };
@@ -421,6 +423,38 @@ export async function updateWorkRecurrence(recurrenceId: string, input: { enable
 
 export async function deleteWorkRecurrence(recurrenceId: string) {
 	return run(() => send<Record<string, unknown>>("DELETE", `recurrences/${id(recurrenceId)}`));
+}
+
+// API keys and webhooks (workspace owners and admins)
+
+export async function getWorkIntegrations() {
+	return run(async () => {
+		const [keys, hooks] = await Promise.all([
+			get<{ keys: WorkApiKey[]; canManage: boolean }>("api-keys"),
+			get<{ webhooks: WorkWebhook[]; canManage: boolean }>("webhooks"),
+		]);
+		return { keys: keys.keys, webhooks: hooks.webhooks, canManage: keys.canManage };
+	});
+}
+
+export async function createWorkApiKey(input: { name: string; access: "read" | "write" }) {
+	return run(() => send<{ key: WorkApiKey; token: string }>("POST", "api-keys", input));
+}
+
+export async function revokeWorkApiKey(keyId: string) {
+	return run(() => send<{ key: WorkApiKey }>("POST", `api-keys/${id(keyId)}/revoke`));
+}
+
+export async function createWorkWebhook(input: { url: string }) {
+	return run(() => send<{ webhook: WorkWebhook; secret: string }>("POST", "webhooks", input));
+}
+
+export async function updateWorkWebhook(webhookId: string, input: { enabled?: boolean }) {
+	return run(() => send<{ webhook: WorkWebhook }>("PATCH", `webhooks/${id(webhookId)}`, input));
+}
+
+export async function deleteWorkWebhook(webhookId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `webhooks/${id(webhookId)}`));
 }
 
 // Reactions

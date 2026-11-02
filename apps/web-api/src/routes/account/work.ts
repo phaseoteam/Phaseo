@@ -50,6 +50,7 @@ import { accountWorkCustomersRouter } from "./work-customers";
 import { accountWorkNotificationsRouter } from "./work-notifications";
 import { accountWorkPlanningRouter } from "./work-planning";
 import { accountWorkExtrasRouter } from "./work-extras";
+import { accountWorkIntegrationsRouter } from "./work-integrations";
 import { loadReactions } from "@/work/extras";
 import { accountWorkSettingsRouter } from "./work-settings";
 import {
@@ -992,3 +993,4 @@ accountWorkRouter.route("/", accountWorkSettingsRouter);
 accountWorkRouter.route("/", accountWorkPlanningRouter);
 accountWorkRouter.route("/", accountWorkNotificationsRouter);
 accountWorkRouter.route("/", accountWorkExtrasRouter);
+accountWorkRouter.route("/", accountWorkIntegrationsRouter);
