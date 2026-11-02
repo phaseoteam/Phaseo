@@ -6,13 +6,15 @@ export type FakeQuery = {
 	op: "select" | "insert" | "update" | "delete" | "upsert";
 	payload?: unknown;
 	columns?: string;
+	/** The select or upsert options (count, head, onConflict, ignoreDuplicates). */
+	options?: Record<string, unknown>;
 	filters: Array<[string, ...unknown[]]>;
 };
 
 export type FakeResult = { data: unknown; error: { message: string } | null };
 export type FakeHandler = (query: FakeQuery) => FakeResult | undefined;
 
-const FILTERS = ["eq", "neq", "ilike", "is", "in", "order", "limit", "gt", "lt", "gte", "lte"] as const;
+const FILTERS = ["eq", "neq", "ilike", "is", "in", "order", "limit", "gt", "lt", "gte", "lte", "not", "or", "contains", "range", "filter"] as const;
 
 export function fakeDataClient(handler: FakeHandler = () => undefined) {
 	const queries: FakeQuery[] = [];
@@ -30,8 +32,11 @@ export function fakeDataClient(handler: FakeHandler = () => undefined) {
 			return Promise.resolve(handler(query) ?? { data: null, error: null });
 		};
 		const chain: Record<string, unknown> = {
-			select(columns?: string) {
-				if (query.op === "select") query.columns = columns;
+			select(columns?: string, options?: Record<string, unknown>) {
+				if (query.op === "select") {
+					query.columns = columns;
+					if (options) query.options = options;
+				}
 				return chain;
 			},
 			insert(payload: unknown) {
@@ -44,9 +49,10 @@ export function fakeDataClient(handler: FakeHandler = () => undefined) {
 				query.payload = payload;
 				return chain;
 			},
-			upsert(payload: unknown) {
+			upsert(payload: unknown, options?: Record<string, unknown>) {
 				query.op = "upsert";
 				query.payload = payload;
+				if (options) query.options = options;
 				return chain;
 			},
 			delete() {

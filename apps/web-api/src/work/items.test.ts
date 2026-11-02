@@ -18,14 +18,15 @@ function item(overrides: Partial<WorkItemRow> = {}): WorkItemRow {
 		title: "Login fails", description: "", state: "todo", priority: 0, source: "manual", labels: ["bug"],
 		assignee_user_id: null, assignee_agent: null, duplicate_of: null, error_group_id: null, github_repo: null,
 		github_issue_number: null, github_issue_url: null, github_pr_url: null, triage_summary: null, due_at: null,
-		created_by: null, created_at: NOW, updated_at: NOW, closed_at: null, ...overrides,
+		created_by: null, created_at: NOW, updated_at: NOW, closed_at: null, project_id: null, cycle_id: null, parent_id: null,
+		estimate: null, sla_due_at: null, last_activity_at: NOW, ...overrides,
 	};
 }
 
 describe("planWorkItemChanges", () => {
 	it("sets closed_at and writes a state event when an item is closed", () => {
 		const plan = planWorkItemChanges(item(), { state: "done" }, NOW);
-		expect(plan.patch).toEqual({ state: "done", closed_at: NOW, updated_at: NOW });
+		expect(plan.patch).toEqual({ state: "done", closed_at: NOW, updated_at: NOW, last_activity_at: NOW });
 		expect(plan.events).toEqual([{ kind: "state", data: { from: "todo", to: "done" } }]);
 	});
 
@@ -47,7 +48,7 @@ describe("planWorkItemChanges", () => {
 			title: "Login fails",
 		}, NOW);
 		expect(plan.events.map((event) => event.kind)).toEqual(["assignee", "link"]);
-		expect(plan.patch).toEqual({ assignee_agent: "engineer", duplicate_of: "00000000-0000-4000-8000-000000000102", updated_at: NOW });
+		expect(plan.patch).toEqual({ assignee_agent: "engineer", duplicate_of: "00000000-0000-4000-8000-000000000102", updated_at: NOW, last_activity_at: NOW });
 	});
 
 	it("returns an empty patch when nothing changes", () => {

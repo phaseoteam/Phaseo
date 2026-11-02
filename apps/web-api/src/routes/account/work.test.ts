@@ -53,6 +53,9 @@ function database(options: { admin?: boolean; member?: boolean; reviewed?: boole
 		if (table === "workspace_members") return Response.json(options.member === false ? [] : [{ role: "member", user_id: USER }]);
 		if (table === "workspaces") return Response.json([{ owner_user_id: "owner", slug: "w", name: "W" }]);
 		if (table === "users") return Response.json([{ role: options.admin === false ? "user" : "admin", user_id: USER, display_name: "Staff" }]);
+		if (["work_subscriptions", "work_notifications", "work_settings", "work_item_relations"].includes(table)) {
+			return request.method === "HEAD" ? new Response(null, { status: 200, headers: { "content-range": "*/0" } }) : Response.json([], { status: request.method === "POST" ? 201 : 200 });
+		}
 		if (table === "work_item_events") return Response.json([{ id: "e1", workspace_id: WORKSPACE, work_item_id: ITEM_ID, kind: "comment", author_kind: "user", author_user_id: USER, author_name: null, body: call.body?.body ?? "", data: {}, created_at: NOW }], { status: 201 });
 		throw new Error(`Unexpected fixture request: ${request.method} ${url.pathname}${url.search}`);
 	}));
