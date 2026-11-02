@@ -126,6 +126,43 @@ describe("audit request detail persistence", () => {
 		}
 	});
 
+	it.each(["success", "execute failure"])("records the attempt's wallet charge key on %s", async (kind) => {
+		const insert = vi.fn((_row: any) => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-02T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc: vi.fn().mockResolvedValue({ data: "fact", error: null }) });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const args = {
+			requestId: "req_public", billingRequestId: "bill_attempt", workspaceId: "ws", provider: "openai",
+			model: "model", endpoint: "responses" as const, stream: false, byok: false,
+			usagePriced: { input_tokens: 10 }, totalNanos: 5000, currency: "USD",
+		};
+		if (kind === "success") await auditSuccess(args);
+		else await auditFailure({ ...args, stage: "execute", statusCode: 502, errorCode: "upstream_error" });
+		expect(insert.mock.calls[0][0]).toMatchObject({ request_id: "req_public", billing_request_id: "bill_attempt" });
+	});
+
+	it("keeps the request row when the database predates the charge key column", async () => {
+		vi.resetModules();
+		const { auditSuccess: freshAuditSuccess } = await import("./index");
+		const insert = vi.fn((row: any) => ({ select: () => ({ single: async () => ("billing_request_id" in row
+			? { data: null, error: { code: "PGRST204", message: "Could not find the 'billing_request_id' column of 'gateway_requests' in the schema cache" } }
+			: { data: { id: "row", created_at: "2026-11-02T00:00:00Z", workspace_id: "ws" }, error: null }) }) }));
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc: vi.fn().mockResolvedValue({ data: "fact", error: null }) });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const args = {
+			requestId: "req_public", billingRequestId: "bill_attempt", workspaceId: "ws", provider: "openai",
+			model: "model", endpoint: "responses" as const, stream: false, byok: false,
+			usagePriced: {}, totalNanos: 5000, currency: "USD",
+		};
+		await freshAuditSuccess(args);
+		await freshAuditSuccess({ ...args, requestId: "req_next" });
+		// One rejected insert, then every row is written without the column.
+		expect(insert).toHaveBeenCalledTimes(3);
+		expect(insert.mock.calls[1][0]).toMatchObject({ request_id: "req_public", cost_nanos: 5000 });
+		expect(insert.mock.calls[2][0]).not.toHaveProperty("billing_request_id");
+	});
+
 	it.each([
 		["a requests-per-minute policy rejection", "user:rate_limit_exceeded", "policy_requests_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "requests" }],
 		["a tokens-per-minute policy rejection", "user:rate_limit_exceeded", "policy_tokens_per_minute", { policy_id: "policy-1", limit_scope: "member", limit: "tokens" }],

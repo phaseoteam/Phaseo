@@ -141,6 +141,19 @@ describe("generationsRoutes", () => {
 		expect(isGatewayIoLoggingFeatureEnabledMock).not.toHaveBeenCalled();
 	});
 
+	it("keeps the internal wallet charge key out of the generation", async () => {
+		getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({
+			requestData: { request_id: "gen_123", status_code: 200, cost_nanos: 12_345, billing_request_id: "bill_internal" },
+		}));
+
+		const response = await generationsRoutes.request("https://example.com/?id=gen_123");
+		const body = await response.json() as Record<string, unknown>;
+
+		expect(response.status).toBe(200);
+		expect(body).toMatchObject({ request_id: "gen_123", cost_nanos: 12_345 });
+		expect(body).not.toHaveProperty("billing_request_id");
+	});
+
 	it("does not expose raw generation payloads to activity-only credentials", async () => {
 		authenticateMock.mockResolvedValue({
 			ok: true,

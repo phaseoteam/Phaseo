@@ -128,10 +128,12 @@ async function handleGeneration(req: Request) {
         }
     }
     const replayRequest = resolveReplayRequest(ioLogPayload?.request_payload);
+    // The internal wallet charge key is for reconciliation, not part of the public generation.
+    const { billing_request_id: _billingRequestId, ...generation } = data as Record<string, unknown>;
 
     return json(
         {
-            ...data,
+            ...generation,
             replay_supported: Boolean(replayRequest),
             replay_request: replayRequest,
 			io_log: ioLog ? {
