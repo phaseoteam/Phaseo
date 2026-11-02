@@ -17,6 +17,7 @@ import {
 	Key as KeyIcon,
 	LifeBuoy,
 	Lock,
+	ListTodo,
 	LogOut,
 	Monitor,
 	Moon,
@@ -318,6 +319,14 @@ export default function HeaderClient({
 										<span>{t("internal")}</span>
 									</Link>
 								</DropdownMenuItem>
+								{userRole === "admin" ? (
+									<DropdownMenuItem asChild className="cursor-pointer rounded-md text-sm">
+										<Link href="/work" prefetch={false}>
+											<ListTodo className="h-4 w-4" />
+											<span>{t("work")}</span>
+										</Link>
+									</DropdownMenuItem>
+								) : null}
 								<DropdownMenuSeparator />
 							</>
 						)}

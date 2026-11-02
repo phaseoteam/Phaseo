@@ -15,6 +15,7 @@ import {
 	Settings,
 	LifeBuoy,
 	Lock,
+	ListTodo,
 	FlaskConical,
 	Sun,
 	Moon,
@@ -194,6 +195,17 @@ export default function TeamSwitcher({
 									<span>{tNav("internal")}</span>
 								</Link>
 							</DropdownMenuItem>
+							{userRole === "admin" ? (
+								<DropdownMenuItem
+									asChild
+									className="cursor-pointer rounded-md"
+								>
+									<Link href="/work">
+										<ListTodo className="h-4 w-4" />
+										<span>{tNav("work")}</span>
+									</Link>
+								</DropdownMenuItem>
+							) : null}
 							<DropdownMenuSeparator />
 						</>
 					)}
