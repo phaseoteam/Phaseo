@@ -139,10 +139,16 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         completionTimingRecorded = true;
         if (
             ctx.meta.preserve_stream_timing &&
-            typeof ctx.meta.latency_ms === "number" &&
             typeof ctx.meta.generation_ms === "number" &&
             typeof ctx.meta.end_to_end_ms === "number"
         ) {
+            // Synthetic streams were timed when their provider rounds ended.
+            const failoverMs = resolveFailoverMs(ctx);
+            if (failoverMs !== null) ctx.meta.failover_ms = failoverMs;
+            ctx.meta.phaseo_overhead_ms = Math.max(
+                0,
+                ctx.meta.end_to_end_ms - ctx.meta.generation_ms - (failoverMs ?? 0),
+            );
             return;
         }
         const nowMs = Date.now();

@@ -122,6 +122,8 @@ export type RequestMeta = {
     failover_ms?: number;         // First upstream dispatch to the selected one (failed attempts)
     end_to_end_ms?: number;       // Request start to completion when available
     preserve_stream_timing?: boolean; // Internal: stream is synthetic and already has authoritative timing
+    providerRoundsMs?: number;    // Internal: provider time of the rounds read to the end so far (recordProviderRound)
+    providerRoundsFailoverMs?: number; // Internal: failover time of those rounds
     downstreamDisconnected?: boolean; // Client closed the response while the gateway continued draining upstream
     streamCancellationSupport?: "supported" | "unsupported" | "unknown";
     streamProviderBillingOnCancel?: "stops" | "unknown";
