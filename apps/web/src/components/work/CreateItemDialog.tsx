@@ -1,8 +1,8 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import { createWorkItem } from "@/app/(dashboard)/work/actions";
+import { createWorkItem, listWorkTemplates } from "@/app/(dashboard)/work/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { useRouter } from "@/i18n/navigation";
 import { normaliseGithubRepo, parseLabels } from "@/lib/work/format";
 import { parseAssigneeKey } from "@/lib/work/inbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { WorkCycle, WorkItemState, WorkMember, WorkProject } from "@/lib/work/types";
+import type { WorkCycle, WorkItemState, WorkMember, WorkProject, WorkTemplate } from "@/lib/work/types";
 import { useWorkAction } from "./useWorkAction";
 import { AssigneeSelect, PrioritySelect, StateSelect } from "./WorkSelects";
 
@@ -46,6 +46,27 @@ export function CreateItemDialog({ open, onOpenChange, members, projects = [], c
 	const [cycleId, setCycleId] = useState<string>("none");
 	const [estimate, setEstimate] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [templates, setTemplates] = useState<WorkTemplate[] | null>(null);
+
+	// Templates are read the first time the dialog opens; with none, the picker stays hidden.
+	useEffect(() => {
+		if (!open || templates !== null) return;
+		let cancelled = false;
+		void listWorkTemplates().then((result) => { if (!cancelled) setTemplates(result.ok ? result.templates : []); });
+		return () => { cancelled = true; };
+	}, [open, templates]);
+
+	const applyTemplate = (templateId: string) => {
+		const template = templates?.find((entry) => entry.id === templateId);
+		if (!template) return;
+		setTitle(template.title || template.name);
+		setDescription(template.description);
+		setPriority(template.priority);
+		setLabels(template.labels.join(", "));
+		setEstimate(typeof template.estimate === "number" ? String(template.estimate) : "");
+		if (template.projectId && !presetProject) setProjectId(template.projectId);
+		if (template.assigneeAgent) setAssignee(`agent:${template.assigneeAgent}`);
+	};
 
 	const reset = () => {
 		setTitle(""); setDescription(""); setState("triage"); setPriority(0); setAssignee("none"); setLabels(""); setRepo(""); setProjectId(presetProject ?? "none"); setCycleId("none"); setEstimate(""); setError(null);
@@ -86,6 +107,15 @@ export function CreateItemDialog({ open, onOpenChange, members, projects = [], c
 						<DialogTitle>{t("title")}</DialogTitle>
 						<DialogDescription>{t("description")}</DialogDescription>
 					</DialogHeader>
+					{templates?.length ? (
+						<div className="space-y-1.5">
+							<Label>{t("template")}</Label>
+							<Select value="" onValueChange={applyTemplate}>
+								<SelectTrigger aria-label={t("template")} className="w-full rounded-md"><SelectValue placeholder={t("templatePlaceholder")} /></SelectTrigger>
+								<SelectContent>{templates.map((template) => <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>)}</SelectContent>
+							</Select>
+						</div>
+					) : null}
 					<div className="space-y-1.5">
 						<Label htmlFor={`${id}-title`}>{t("titleLabel")}</Label>
 						<Input id={`${id}-title`} autoFocus value={title} maxLength={300} placeholder={t("titlePlaceholder")} onChange={(event) => setTitle(event.target.value)} className="rounded-md" />

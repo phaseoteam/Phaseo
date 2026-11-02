@@ -1,9 +1,9 @@
 "use client";
 
 import { useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
-import { Bell, BellOff, Bot, ChevronRight, Copy, ExternalLink, GitBranch, GitPullRequest, MessageSquare, Pencil, Plus, RotateCcw, Sparkles, CircleCheck, Info, Bug, X } from "lucide-react";
+import { Bell, BellOff, Bot, ChevronRight, Copy, ExternalLink, GitBranch, GitPullRequest, MessageSquare, Pencil, Plus, RotateCcw, Sparkles, CircleCheck, Info, Bug, SmilePlus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { addWorkRelation, commentOnWorkItem, createGithubIssueForItem, createWorkItem, removeWorkRelation, setWorkSubscription, triageWorkItem, updateWorkItem, type UpdateWorkItemInput } from "@/app/(dashboard)/work/actions";
+import { addWorkRelation, commentOnWorkItem, createGithubIssueForItem, createWorkItem, removeWorkRelation, setWorkSubscription, toggleWorkReaction, triageWorkItem, updateWorkItem, type UpdateWorkItemInput } from "@/app/(dashboard)/work/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
@@ -17,7 +17,8 @@ import { formatCostNanos, isClosedState, normaliseGithubRepo, parseItemNumber, p
 import { assigneeKey, parseAssigneeKey } from "@/lib/work/inbox";
 import { activeMention, insertMention, mentionHandle, mentionSuggestions } from "@/lib/work/mentions";
 import { slaStatus } from "@/lib/work/sla";
-import type { AgentRun, CustomerRequest, ErrorGroup, ReplyDraft, WorkCycle, WorkItem, WorkItemEvent, WorkItemSummary, WorkMember, WorkProject, WorkRelation, WorkSettings, WorkAttachmentsInfo } from "@/lib/work/types";
+import { REACTION_EMOJI, REACTION_GLYPHS, type ReactionEmoji } from "@/lib/work/types";
+import type { AgentRun, CustomerRequest, ErrorGroup, ReplyDraft, WorkCycle, WorkItem, WorkItemEvent, WorkItemSummary, WorkMember, WorkProject, WorkRelation, WorkSettings, WorkAttachmentsInfo, WorkMilestone, ReactionCount } from "@/lib/work/types";
 import { ReplyDraftsSection } from "./ReplyDrafts";
 import { useWorkAction } from "./useWorkAction";
 import { AssigneeLabel, SlaBadge, SourceIcon, StateIcon, TimeAgo, memberName, useWorkCopy } from "./WorkBits";
@@ -41,9 +42,13 @@ export type WorkItemViewProps = {
 	relations?: WorkRelation[];
 	subscribed?: boolean;
 	attachments?: WorkAttachmentsInfo | null;
+	/** The milestones of the item's project. */
+	milestones?: WorkMilestone[];
+	/** Reactions on comments, by event id. */
+	reactions?: Record<string, ReactionCount[]>;
 };
 
-export function WorkItemView({ item, events, requests, runs, errorGroup, members, projects = [], cycles = [], settings = null, drafts = [], children = [], parent = null, relations = [], subscribed = false, attachments = null }: WorkItemViewProps) {
+export function WorkItemView({ item, events, requests, runs, errorGroup, members, projects = [], cycles = [], settings = null, drafts = [], children = [], parent = null, relations = [], subscribed = false, attachments = null, milestones = [], reactions = {} }: WorkItemViewProps) {
 	const t = useTranslations("Work.item");
 	const { perform, busy } = useWorkAction();
 	const [duplicateOpen, setDuplicateOpen] = useState(false);
@@ -121,10 +126,10 @@ export function WorkItemView({ item, events, requests, runs, errorGroup, members
 				<RequestsSection requests={requests} />
 				<ReplyDraftsSection drafts={drafts.filter((draft) => draft.workItemId === item.id)} requests={requests} />
 				<RunsSection runs={runs} />
-				<Timeline item={item} events={events} members={members} />
+				<Timeline item={item} events={events} members={members} reactions={reactions} />
 			</div>
 
-			<ItemProperties item={item} errorGroup={errorGroup} members={members} projects={projects} cycles={cycles} parent={parent} busy={busy} onUpdate={update} />
+			<ItemProperties item={item} errorGroup={errorGroup} members={members} projects={projects} cycles={cycles} milestones={milestones} parent={parent} busy={busy} onUpdate={update} />
 
 			<DuplicateDialog open={duplicateOpen} onOpenChange={setDuplicateOpen} current={item.number} onSubmit={async (number) => {
 				const result = await update("duplicate", { duplicateOf: number, state: "cancelled" });
@@ -235,7 +240,7 @@ function ExternalRow({ href, children }: { href: string; children: ReactNode }) 
 	);
 }
 
-function ItemProperties({ item, errorGroup, members, projects, cycles, parent, busy, onUpdate }: { item: WorkItem; errorGroup: ErrorGroup | null; members: WorkMember[]; projects: WorkProject[]; cycles: WorkCycle[]; parent: WorkItemSummary | null; busy: string | null; onUpdate: (key: string, input: UpdateWorkItemInput) => unknown }) {
+function ItemProperties({ item, errorGroup, members, projects, cycles, milestones, parent, busy, onUpdate }: { item: WorkItem; errorGroup: ErrorGroup | null; members: WorkMember[]; projects: WorkProject[]; cycles: WorkCycle[]; milestones: WorkMilestone[]; parent: WorkItemSummary | null; busy: string | null; onUpdate: (key: string, input: UpdateWorkItemInput) => unknown }) {
 	const t = useTranslations("Work.item");
 	const tCreate = useTranslations("Work.create");
 	const tCommon = useTranslations("Work.common");
@@ -254,6 +259,13 @@ function ItemProperties({ item, errorGroup, members, projects, cycles, parent, b
 						options={projects.map((project) => ({ value: project.id, label: project.name }))}
 						onChange={(value) => onUpdate("project", { projectId: value === "none" ? null : value })} />
 				</PropertyRow>
+				{item.projectId && milestones.length ? (
+					<PropertyRow label={t("milestone")}>
+						<OptionProperty label={t("milestone")} value={item.milestoneId ?? "none"} disabled={disabled} noneLabel={t("noMilestone")}
+							options={milestones.map((milestone) => ({ value: milestone.id, label: milestone.name }))}
+							onChange={(value) => onUpdate("milestone", { milestoneId: value === "none" ? null : value })} />
+					</PropertyRow>
+				) : null}
 				<PropertyRow label={t("cycle")}>
 					<OptionProperty label={t("cycle")} value={item.cycleId ?? "none"} disabled={disabled} noneLabel={t("noCycle")}
 						options={cycles.map((cycle) => ({ value: cycle.id, label: cycle.name || t("cycleNumber", { number: cycle.number }) }))}
@@ -400,7 +412,7 @@ function EventAvatar({ event, members }: { event: WorkItemEvent; members: WorkMe
 	}
 }
 
-function Timeline({ item, events, members }: { item: WorkItem; events: WorkItemEvent[]; members: WorkMember[] }) {
+function Timeline({ item, events, members, reactions }: { item: WorkItem; events: WorkItemEvent[]; members: WorkMember[]; reactions: Record<string, ReactionCount[]> }) {
 	const t = useTranslations("Work.item");
 	const tEvents = useTranslations("Work.events");
 	const tAuthors = useTranslations("Work.authors");
@@ -426,6 +438,7 @@ function Timeline({ item, events, members }: { item: WorkItem; events: WorkItemE
 											{url ? <a href={url} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 hover:text-foreground"><ExternalLink className="size-3" aria-hidden="true" /></a> : null}
 										</div>
 										<WorkMarkdown className="px-3 py-2">{event.body}</WorkMarkdown>
+										<CommentReactions eventId={event.id} initial={reactions[event.id] ?? []} />
 									</div>
 								</li>
 							);
@@ -748,5 +761,41 @@ function RelationsSection({ number, relations }: { number: number; relations: Wo
 				</form>
 			) : null}
 		</section>
+	);
+}
+
+/** Reactions under a comment: one press adds yours, a second takes it back. */
+function CommentReactions({ eventId, initial }: { eventId: string; initial: ReactionCount[] }) {
+	const t = useTranslations("Work.reactions");
+	const { perform, busy } = useWorkAction();
+	const [counts, setCounts] = useState(initial);
+	const [picking, setPicking] = useState(false);
+	const toggle = async (emoji: ReactionEmoji) => {
+		setPicking(false);
+		const result = await perform(`react-${eventId}`, () => toggleWorkReaction(eventId, emoji), { refresh: false });
+		if (result.ok) setCounts(result.reactions);
+	};
+	return (
+		<div className="flex flex-wrap items-center gap-1 px-3 pb-2">
+			{counts.map((reaction) => (
+				<button key={reaction.emoji} type="button" disabled={busy !== null} aria-pressed={reaction.mine} aria-label={t("toggle", { emoji: t(`names.${reaction.emoji}`), count: reaction.count })} onClick={() => void toggle(reaction.emoji)}
+					className={cn("inline-flex h-6 items-center gap-1 rounded-md border px-1.5 text-xs tabular-nums", reaction.mine ? "border-sky-500/60 bg-sky-500/10" : "hover:bg-muted")}>
+					<span aria-hidden="true">{REACTION_GLYPHS[reaction.emoji]}</span>{reaction.count}
+				</button>
+			))}
+			{picking ? (
+				<span role="group" aria-label={t("pick")} className="inline-flex gap-0.5 rounded-md border px-1">
+					{REACTION_EMOJI.map((emoji) => (
+						<button key={emoji} type="button" disabled={busy !== null} aria-label={t(`names.${emoji}`)} onClick={() => void toggle(emoji)} className="h-6 rounded-md px-1 hover:bg-muted">
+							<span aria-hidden="true">{REACTION_GLYPHS[emoji]}</span>
+						</button>
+					))}
+				</span>
+			) : (
+				<button type="button" aria-label={t("add")} onClick={() => setPicking(true)} className="inline-flex h-6 items-center rounded-md px-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
+					<SmilePlus className="size-3.5" aria-hidden="true" />
+				</button>
+			)}
+		</div>
 	);
 }

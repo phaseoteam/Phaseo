@@ -9,7 +9,8 @@
 		"settings": "Ajustes",
 		"projects": "Proyectos",
 		"cycles": "Ciclos",
-		"insights": "Análisis"
+		"insights": "Análisis",
+		"templates": "Plantillas"
 	},
 	"common": {
 		"save": "Guardar",
@@ -130,7 +131,9 @@
 		"repoPlaceholder": "owner/name",
 		"repoInvalid": "Usa el formato owner/name, por ejemplo acme/api.",
 		"submit": "Crear elemento",
-		"titleRequired": "Añade un título."
+		"titleRequired": "Añade un título.",
+		"template": "Empezar con una plantilla",
+		"templatePlaceholder": "Elige una plantilla"
 	},
 	"item": {
 		"back": "Bandeja",
@@ -219,7 +222,9 @@
 		"relationKind": "Relación",
 		"relationOther": "Número del elemento",
 		"mentionSuggestions": "Personas para mencionar",
-		"commentHint": "Admite Markdown. Escribe @ para mencionar a alguien."
+		"commentHint": "Admite Markdown. Escribe @ para mencionar a alguien.",
+		"milestone": "Hito",
+		"noMilestone": "Sin hito"
 	},
 	"runStatus": {
 		"queued": "En cola",
@@ -253,7 +258,8 @@
 		"reply": "respondió al cliente",
 		"sla": "marcó el SLA",
 		"stalled": "anotó que no hay actividad reciente",
-		"attachment": "adjuntó un archivo"
+		"attachment": "adjuntó un archivo",
+		"milestone": "cambió el hito"
 	},
 	"authors": {
 		"user": "Alguien",
@@ -560,7 +566,8 @@
 		"nameRequired": "Añade un nombre.",
 		"deleteConfirm": "¿Eliminar {name}? Sus elementos se conservan, sin proyecto.",
 		"items": "Elementos",
-		"noItems": "Este proyecto aún no tiene elementos."
+		"noItems": "Este proyecto aún no tiene elementos.",
+		"health": "Estado"
 	},
 	"cycles": {
 		"title": "Ciclos",
@@ -705,5 +712,83 @@
 		"confirmRemove": "¿Quitar {name}? No se puede deshacer.",
 		"download": "Descargar {name}",
 		"remove": "Quitar {name}"
+	},
+	"reactions": {
+		"add": "Añadir una reacción",
+		"pick": "Reacciones",
+		"toggle": "{emoji}, {count}. Pulsa para añadir o quitar la tuya.",
+		"names": {
+			"+1": "Pulgar arriba",
+			"-1": "Pulgar abajo",
+			"heart": "Corazón",
+			"tada": "Celebrar",
+			"eyes": "Mirando",
+			"rocket": "Cohete"
+		}
+	},
+	"milestones": {
+		"title": "Hitos",
+		"empty": "Aún no hay hitos. Divide el proyecto en pasos y luego asígnales elementos desde la página de cada elemento.",
+		"name": "Nombre del hito",
+		"namePlaceholder": "Beta",
+		"targetDate": "Fecha objetivo",
+		"targetDateFor": "Fecha objetivo de {name}",
+		"noDate": "Sin fecha",
+		"add": "Añadir hito",
+		"progressOf": "Progreso de {name}",
+		"doneOf": "{done} de {total} hechos",
+		"deleteConfirm": "¿Eliminar el hito {name}? Sus elementos se quedan en el proyecto."
+	},
+	"projectUpdates": {
+		"title": "Actualizaciones",
+		"empty": "Aún no hay actualizaciones. Publica una para contar cómo va el proyecto.",
+		"healthLabel": "Estado",
+		"bodyLabel": "Actualización",
+		"bodyPlaceholder": "Qué ha pasado, qué viene ahora y qué lo está frenando",
+		"post": "Publicar actualización",
+		"deleteConfirm": "¿Eliminar esta actualización?",
+		"health": {
+			"on_track": "Según lo previsto",
+			"at_risk": "En riesgo",
+			"off_track": "Desviado"
+		}
+	},
+	"templates": {
+		"title": "Plantillas",
+		"description": "Puntos de partida para los elementos que creas a menudo y para los que se repiten según una programación.",
+		"new": "Nueva plantilla",
+		"editTitle": "Editar plantilla",
+		"editNamed": "Editar {name}",
+		"dialogDescription": "Un elemento nuevo creado con esta plantilla empieza con estos campos.",
+		"empty": "Aún no hay plantillas.",
+		"name": "Nombre de la plantilla",
+		"namePlaceholder": "Informe de error",
+		"nameRequired": "Ponle un nombre a la plantilla.",
+		"itemTitle": "Título del elemento",
+		"itemDescription": "Descripción del elemento",
+		"labels": "Etiquetas",
+		"agent": "Agente",
+		"noAgent": "Sin agente",
+		"agents": {
+			"triage": "Agente de triaje",
+			"engineer": "Agente de ingeniería",
+			"support": "Agente de soporte"
+		},
+		"deleteConfirm": "¿Eliminar la plantilla {name}? Sus programaciones periódicas también se detienen.",
+		"repeat": "Repetir",
+		"repeatTitle": "Repetir {name}",
+		"repeatDescription": "Se crea un elemento nuevo a partir de la plantilla según esta programación.",
+		"cadence": "Frecuencia",
+		"cadences": {
+			"daily": "Cada día",
+			"weekly": "Cada semana",
+			"monthly": "Cada mes"
+		},
+		"firstOn": "Primer elemento",
+		"firstOnHint": "Déjalo vacío para crear el primer elemento ahora. Los siguientes se crean a la misma hora del día.",
+		"startRepeating": "Empezar a repetir",
+		"stopRepeating": "Dejar de repetir",
+		"nextRun": "Siguiente",
+		"paused": "En pausa"
 	}
 }

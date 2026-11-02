@@ -9,7 +9,8 @@
 		"settings": "الإعدادات",
 		"projects": "المشاريع",
 		"cycles": "الدورات",
-		"insights": "التحليلات"
+		"insights": "التحليلات",
+		"templates": "القوالب"
 	},
 	"common": {
 		"save": "حفظ",
@@ -130,7 +131,9 @@
 		"repoPlaceholder": "owner/name",
 		"repoInvalid": "استخدم الصيغة owner/name، مثل acme/api.",
 		"submit": "إنشاء العنصر",
-		"titleRequired": "أضف عنوانًا."
+		"titleRequired": "أضف عنوانًا.",
+		"template": "ابدأ من قالب",
+		"templatePlaceholder": "اختر قالبًا"
 	},
 	"item": {
 		"back": "الوارد",
@@ -219,7 +222,9 @@
 		"relationKind": "العلاقة",
 		"relationOther": "رقم العنصر",
 		"mentionSuggestions": "أشخاص للإشارة إليهم",
-		"commentHint": "يدعم Markdown. اكتب @ للإشارة إلى شخص."
+		"commentHint": "يدعم Markdown. اكتب @ للإشارة إلى شخص.",
+		"milestone": "المرحلة الرئيسية",
+		"noMilestone": "بلا مرحلة رئيسية"
 	},
 	"runStatus": {
 		"queued": "في قائمة الانتظار",
@@ -253,7 +258,8 @@
 		"reply": "ردّ على العميل",
 		"sla": "نبّه إلى اتفاقية الخدمة",
 		"stalled": "سجّل غياب النشاط الحديث",
-		"attachment": "أرفق ملفًا"
+		"attachment": "أرفق ملفًا",
+		"milestone": "غيّر المرحلة الرئيسية"
 	},
 	"authors": {
 		"user": "شخص ما",
@@ -560,7 +566,8 @@
 		"nameRequired": "أضف اسمًا.",
 		"deleteConfirm": "هل تريد حذف {name}؟ تبقى عناصره دون مشروع.",
 		"items": "العناصر",
-		"noItems": "لا عناصر في هذا المشروع بعد."
+		"noItems": "لا عناصر في هذا المشروع بعد.",
+		"health": "الحالة"
 	},
 	"cycles": {
 		"title": "الدورات",
@@ -705,5 +712,83 @@
 		"confirmRemove": "إزالة {name}؟ لا يمكن التراجع عن ذلك.",
 		"download": "تنزيل {name}",
 		"remove": "إزالة {name}"
+	},
+	"reactions": {
+		"add": "أضف تفاعلًا",
+		"pick": "التفاعلات",
+		"toggle": "{emoji}، {count}. اضغط لإضافة تفاعلك أو إزالته.",
+		"names": {
+			"+1": "إبهام لأعلى",
+			"-1": "إبهام لأسفل",
+			"heart": "قلب",
+			"tada": "احتفال",
+			"eyes": "أطّلع عليه",
+			"rocket": "صاروخ"
+		}
+	},
+	"milestones": {
+		"title": "المراحل الرئيسية",
+		"empty": "لا توجد مراحل رئيسية بعد. قسّم المشروع إلى خطوات، ثم أضف إليها عناصر من صفحة كل عنصر.",
+		"name": "اسم المرحلة الرئيسية",
+		"namePlaceholder": "Beta",
+		"targetDate": "التاريخ المستهدف",
+		"targetDateFor": "التاريخ المستهدف لـ {name}",
+		"noDate": "بلا تاريخ",
+		"add": "أضف مرحلة رئيسية",
+		"progressOf": "تقدّم {name}",
+		"doneOf": "اكتمل {done} من {total}",
+		"deleteConfirm": "هل تريد حذف المرحلة الرئيسية {name}؟ تبقى عناصرها في المشروع."
+	},
+	"projectUpdates": {
+		"title": "التحديثات",
+		"empty": "لا توجد تحديثات بعد. انشر تحديثًا لتوضّح سير المشروع.",
+		"healthLabel": "الحالة",
+		"bodyLabel": "التحديث",
+		"bodyPlaceholder": "ما حدث، وما التالي، وأي عوائق",
+		"post": "انشر التحديث",
+		"deleteConfirm": "هل تريد حذف هذا التحديث؟",
+		"health": {
+			"on_track": "على المسار الصحيح",
+			"at_risk": "معرّض للخطر",
+			"off_track": "خارج المسار"
+		}
+	},
+	"templates": {
+		"title": "القوالب",
+		"description": "نقاط انطلاق للعناصر التي تنشئها كثيرًا، وللعناصر التي تتكرر وفق جدول.",
+		"new": "قالب جديد",
+		"editTitle": "تعديل القالب",
+		"editNamed": "تعديل {name}",
+		"dialogDescription": "يبدأ العنصر الجديد المُنشأ من هذا القالب بهذه الحقول.",
+		"empty": "لا توجد قوالب بعد.",
+		"name": "اسم القالب",
+		"namePlaceholder": "تقرير خطأ",
+		"nameRequired": "أعطِ القالب اسمًا.",
+		"itemTitle": "عنوان العنصر",
+		"itemDescription": "وصف العنصر",
+		"labels": "التصنيفات",
+		"agent": "الوكيل",
+		"noAgent": "بلا وكيل",
+		"agents": {
+			"triage": "وكيل الفرز",
+			"engineer": "وكيل الهندسة",
+			"support": "وكيل الدعم"
+		},
+		"deleteConfirm": "هل تريد حذف القالب {name}؟ ستتوقف جداوله المتكررة أيضًا.",
+		"repeat": "تكرار",
+		"repeatTitle": "تكرار {name}",
+		"repeatDescription": "يُنشأ عنصر جديد من القالب وفق هذا الجدول.",
+		"cadence": "الوتيرة",
+		"cadences": {
+			"daily": "كل يوم",
+			"weekly": "كل أسبوع",
+			"monthly": "كل شهر"
+		},
+		"firstOn": "العنصر الأول",
+		"firstOnHint": "اتركه فارغًا لإنشاء العنصر الأول الآن. تُنشأ العناصر اللاحقة في الوقت نفسه من اليوم.",
+		"startRepeating": "ابدأ التكرار",
+		"stopRepeating": "أوقف التكرار",
+		"nextRun": "التالي",
+		"paused": "متوقف مؤقتًا"
 	}
 }

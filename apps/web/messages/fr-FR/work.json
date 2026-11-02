@@ -9,7 +9,8 @@
 		"settings": "Paramètres",
 		"projects": "Projets",
 		"cycles": "Cycles",
-		"insights": "Analyses"
+		"insights": "Analyses",
+		"templates": "Modèles"
 	},
 	"common": {
 		"save": "Enregistrer",
@@ -130,7 +131,9 @@
 		"repoPlaceholder": "owner/name",
 		"repoInvalid": "Utilisez la forme owner/name, par exemple acme/api.",
 		"submit": "Créer l’élément",
-		"titleRequired": "Ajoutez un titre."
+		"titleRequired": "Ajoutez un titre.",
+		"template": "Partir d’un modèle",
+		"templatePlaceholder": "Choisir un modèle"
 	},
 	"item": {
 		"back": "Boîte de réception",
@@ -219,7 +222,9 @@
 		"relationKind": "Relation",
 		"relationOther": "Numéro de l’élément",
 		"mentionSuggestions": "Personnes à mentionner",
-		"commentHint": "Le Markdown est pris en charge. Tapez @ pour mentionner quelqu’un."
+		"commentHint": "Le Markdown est pris en charge. Tapez @ pour mentionner quelqu’un.",
+		"milestone": "Jalon",
+		"noMilestone": "Aucun jalon"
 	},
 	"runStatus": {
 		"queued": "En file d’attente",
@@ -253,7 +258,8 @@
 		"reply": "a répondu au client",
 		"sla": "a signalé le SLA",
 		"stalled": "a noté l’absence d’activité récente",
-		"attachment": "a joint un fichier"
+		"attachment": "a joint un fichier",
+		"milestone": "a modifié le jalon"
 	},
 	"authors": {
 		"user": "Quelqu’un",
@@ -560,7 +566,8 @@
 		"nameRequired": "Ajoutez un nom.",
 		"deleteConfirm": "Supprimer {name} ? Ses éléments sont conservés, sans projet.",
 		"items": "Éléments",
-		"noItems": "Aucun élément dans ce projet pour l’instant."
+		"noItems": "Aucun élément dans ce projet pour l’instant.",
+		"health": "État"
 	},
 	"cycles": {
 		"title": "Cycles",
@@ -705,5 +712,83 @@
 		"confirmRemove": "Retirer {name} ? Cette action est définitive.",
 		"download": "Télécharger {name}",
 		"remove": "Retirer {name}"
+	},
+	"reactions": {
+		"add": "Ajouter une réaction",
+		"pick": "Réactions",
+		"toggle": "{emoji}, {count}. Appuyez pour ajouter ou retirer la vôtre.",
+		"names": {
+			"+1": "Pouce levé",
+			"-1": "Pouce baissé",
+			"heart": "Cœur",
+			"tada": "Fête",
+			"eyes": "Je regarde",
+			"rocket": "Fusée"
+		}
+	},
+	"milestones": {
+		"title": "Jalons",
+		"empty": "Aucun jalon pour l’instant. Découpez le projet en étapes, puis ajoutez-y des éléments depuis la page de chaque élément.",
+		"name": "Nom du jalon",
+		"namePlaceholder": "Bêta",
+		"targetDate": "Date cible",
+		"targetDateFor": "Date cible de {name}",
+		"noDate": "Aucune date",
+		"add": "Ajouter un jalon",
+		"progressOf": "Progression de {name}",
+		"doneOf": "{done} sur {total} terminés",
+		"deleteConfirm": "Supprimer le jalon {name} ? Ses éléments restent dans le projet."
+	},
+	"projectUpdates": {
+		"title": "Points d’avancement",
+		"empty": "Aucun point d’avancement pour l’instant. Publiez-en un pour dire où en est le projet.",
+		"healthLabel": "État",
+		"bodyLabel": "Point d’avancement",
+		"bodyPlaceholder": "Ce qui s’est passé, la suite et ce qui bloque",
+		"post": "Publier",
+		"deleteConfirm": "Supprimer ce point d’avancement ?",
+		"health": {
+			"on_track": "En bonne voie",
+			"at_risk": "À risque",
+			"off_track": "En dérive"
+		}
+	},
+	"templates": {
+		"title": "Modèles",
+		"description": "Des points de départ pour les éléments que vous créez souvent et pour ceux qui se répètent selon un calendrier.",
+		"new": "Nouveau modèle",
+		"editTitle": "Modifier le modèle",
+		"editNamed": "Modifier {name}",
+		"dialogDescription": "Un nouvel élément créé à partir de ce modèle commence avec ces champs.",
+		"empty": "Aucun modèle pour l’instant.",
+		"name": "Nom du modèle",
+		"namePlaceholder": "Rapport de bug",
+		"nameRequired": "Donnez un nom au modèle.",
+		"itemTitle": "Titre de l’élément",
+		"itemDescription": "Description de l’élément",
+		"labels": "Libellés",
+		"agent": "Agent",
+		"noAgent": "Aucun agent",
+		"agents": {
+			"triage": "Agent de tri",
+			"engineer": "Agent d’ingénierie",
+			"support": "Agent de support"
+		},
+		"deleteConfirm": "Supprimer le modèle {name} ? Ses planifications récurrentes s’arrêtent aussi.",
+		"repeat": "Répéter",
+		"repeatTitle": "Répéter {name}",
+		"repeatDescription": "Un nouvel élément est créé à partir du modèle selon ce calendrier.",
+		"cadence": "Fréquence",
+		"cadences": {
+			"daily": "Chaque jour",
+			"weekly": "Chaque semaine",
+			"monthly": "Chaque mois"
+		},
+		"firstOn": "Premier élément",
+		"firstOnHint": "Laissez vide pour créer le premier élément maintenant. Les suivants sont créés à la même heure.",
+		"startRepeating": "Lancer la répétition",
+		"stopRepeating": "Arrêter la répétition",
+		"nextRun": "Prochain",
+		"paused": "En pause"
 	}
 }

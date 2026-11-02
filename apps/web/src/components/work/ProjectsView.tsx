@@ -13,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { slaStatus } from "@/lib/work/sla";
-import { WORK_PROJECT_STATES, type WorkCycle, type WorkItem, type WorkMember, type WorkProject, type WorkProjectState } from "@/lib/work/types";
+import { WORK_PROJECT_STATES, type ProjectHealthMap, type ProjectUpdate, type WorkCycle, type WorkItem, type WorkMember, type WorkMilestone, type WorkProject, type WorkProjectState } from "@/lib/work/types";
 import { CreateItemDialog } from "./CreateItemDialog";
+import { HealthLabel, ProjectMilestones, ProjectUpdates } from "./ProjectExtras";
 import { useWorkAction } from "./useWorkAction";
 import { WorkBoard } from "./WorkBoard";
 import { AssigneeLabel, PriorityIcon, ProgressBar, SlaBadge, StateIcon, TimeAgo, memberName, useWorkCopy } from "./WorkBits";
@@ -37,7 +38,7 @@ const PROJECT_STATE_TONE: Record<WorkProjectState, string> = {
 	cancelled: "text-muted-foreground line-through",
 };
 
-export function ProjectsView({ projects, members }: { projects: WorkProject[]; members: WorkMember[] }) {
+export function ProjectsView({ projects, members, health = {} }: { projects: WorkProject[]; members: WorkMember[]; health?: ProjectHealthMap }) {
 	const t = useTranslations("Work.projects");
 	const formatDay = useDayFormat();
 	const [editing, setEditing] = useState<WorkProject | "new" | null>(null);
@@ -57,6 +58,7 @@ export function ProjectsView({ projects, members }: { projects: WorkProject[]; m
 							<tr>
 								<th className="px-3 py-2 font-normal">{t("name")}</th>
 								<th className="px-3 py-2 font-normal">{t("state")}</th>
+								<th className="px-3 py-2 font-normal">{t("health")}</th>
 								<th className="px-3 py-2 font-normal">{t("progress")}</th>
 								<th className="px-3 py-2 font-normal">{t("lead")}</th>
 								<th className="px-3 py-2 font-normal">{t("targetDate")}</th>
@@ -68,6 +70,7 @@ export function ProjectsView({ projects, members }: { projects: WorkProject[]; m
 								<tr key={project.id} className="hover:bg-muted/40">
 									<td className="px-3 py-2"><Link href={`/work/projects/${project.id}`} className="font-medium hover:underline">{project.name}</Link></td>
 									<td className={cn("px-3 py-2 whitespace-nowrap", PROJECT_STATE_TONE[project.state])}>{t(`states.${project.state}`)}</td>
+									<td className="px-3 py-2 text-xs">{health[project.id] ? <HealthLabel health={health[project.id]!.health} /> : <span className="text-muted-foreground">—</span>}</td>
 									<td className="px-3 py-2 whitespace-nowrap">
 										<ProgressBar value={project.progress} label={t("progressOf", { name: project.name })} />
 										<span className="ml-2 text-xs text-muted-foreground tabular-nums">{t("doneOf", { done: project.doneCount, total: project.itemCount })}</span>
@@ -184,7 +187,7 @@ export function ProjectDialog({ project, members, onClose }: { project: WorkProj
 	);
 }
 
-export function ProjectDetail({ project, items, members, projects, cycles, layout }: { project: WorkProject; items: WorkItem[]; members: WorkMember[]; projects: WorkProject[]; cycles: WorkCycle[]; layout: "list" | "board" }) {
+export function ProjectDetail({ project, items, members, projects, cycles, layout, milestones = [], updates = [], currentUserId = null, canManageAll = false }: { project: WorkProject; items: WorkItem[]; members: WorkMember[]; projects: WorkProject[]; cycles: WorkCycle[]; layout: "list" | "board"; milestones?: WorkMilestone[]; updates?: ProjectUpdate[]; currentUserId?: string | null; canManageAll?: boolean }) {
 	const t = useTranslations("Work.projects");
 	const tInbox = useTranslations("Work.inbox");
 	const tViews = useTranslations("Work.views");
@@ -209,6 +212,7 @@ export function ProjectDetail({ project, items, members, projects, cycles, layou
 						<span className="tabular-nums">{t("doneOf", { done: project.doneCount, total: project.itemCount })}</span>
 						{project.leadUserId ? <span className="inline-flex items-center gap-1.5">{t("lead")}: <AssigneeLabel agent={null} userId={project.leadUserId} members={members} /></span> : null}
 						{project.targetDate ? <span>{t("targetOn", { date: formatDay(project.targetDate) })}</span> : null}
+						{updates[0] ? <HealthLabel health={updates[0].health} /> : null}
 					</p>
 				</div>
 				<div className="flex gap-2">
@@ -217,6 +221,7 @@ export function ProjectDetail({ project, items, members, projects, cycles, layou
 				</div>
 			</div>
 			{project.description ? <WorkMarkdown className="max-w-3xl">{project.description}</WorkMarkdown> : null}
+			<ProjectMilestones projectId={project.id} milestones={milestones} formatDay={formatDay} />
 			<section aria-labelledby="work-project-items" className="space-y-2">
 				<div className="flex items-center justify-between gap-2">
 					<h3 id="work-project-items" className="text-sm font-medium">{t("items")}</h3>
@@ -241,6 +246,7 @@ export function ProjectDetail({ project, items, members, projects, cycles, layou
 					</ul>
 				)) : <p className="rounded-md border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">{t("noItems")}</p>}
 			</section>
+			<ProjectUpdates projectId={project.id} updates={updates} members={members} currentUserId={currentUserId} canManageAll={canManageAll} />
 			{editing ? <ProjectDialog project={project} members={members} onClose={() => setEditing(false)} /> : null}
 			<CreateItemDialog open={creating} onOpenChange={setCreating} members={members} projects={projects} cycles={cycles} projectId={project.id} />
 		</div>

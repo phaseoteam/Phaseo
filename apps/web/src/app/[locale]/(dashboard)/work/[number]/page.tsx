@@ -4,7 +4,7 @@ import { WorkItemView } from "@/components/work/WorkItemView";
 import { WorkLiveRefresh } from "@/components/work/WorkLiveRefresh";
 import { WorkLoadError } from "@/components/work/WorkLoadError";
 import { listFrom, loadWork, requireWorkPage } from "@/lib/work/server";
-import type { ReplyDraft, WorkAttachment, WorkCycle, WorkItemDetailResponse, WorkMember, WorkProject, WorkSettingsResponse } from "@/lib/work/types";
+import type { ReplyDraft, WorkAttachment, WorkCycle, WorkItemDetailResponse, WorkMember, WorkMilestone, WorkProject, WorkSettingsResponse } from "@/lib/work/types";
 
 type Params = Promise<{ number: string }>;
 
@@ -33,7 +33,8 @@ export default async function WorkItemPage({ params }: { params: Params }) {
 		if (detail.status === 404) notFound();
 		return <WorkLoadError status={detail.status} message={detail.message} />;
 	}
-	const { item, events, requests, runs, errorGroup, children, parent, relations, subscribed } = detail.data;
+	const { item, events, requests, runs, errorGroup, children, parent, relations, subscribed, reactions } = detail.data;
+	const milestones = item.projectId ? await loadWork<{ milestones: WorkMilestone[] }>(context, `projects/${item.projectId}/milestones`) : null;
 	// Drafts only exist for items with customer requests.
 	const drafts = requests?.length ? await loadWork<{ drafts: ReplyDraft[] }>(context, "reply-drafts", { status: "draft", itemNumber: number }) : null;
 	return (
@@ -54,6 +55,8 @@ export default async function WorkItemPage({ params }: { params: Params }) {
 			parent={parent ?? null}
 			relations={relations ?? []}
 			subscribed={subscribed === true}
+			milestones={milestones?.ok ? listFrom<WorkMilestone>(milestones.data, "milestones") : []}
+			reactions={reactions ?? {}}
 			attachments={files.ok && context.workspaceId ? {
 				list: listFrom<WorkAttachment>(files.data, "attachments"),
 				available: files.data?.available === true,

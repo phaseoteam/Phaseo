@@ -9,7 +9,8 @@
 		"settings": "Configurações",
 		"projects": "Projetos",
 		"cycles": "Ciclos",
-		"insights": "Análises"
+		"insights": "Análises",
+		"templates": "Modelos"
 	},
 	"common": {
 		"save": "Salvar",
@@ -130,7 +131,9 @@
 		"repoPlaceholder": "owner/name",
 		"repoInvalid": "Use o formato owner/name, por exemplo acme/api.",
 		"submit": "Criar item",
-		"titleRequired": "Adicione um título."
+		"titleRequired": "Adicione um título.",
+		"template": "Começar com um modelo",
+		"templatePlaceholder": "Escolha um modelo"
 	},
 	"item": {
 		"back": "Caixa de entrada",
@@ -219,7 +222,9 @@
 		"relationKind": "Relação",
 		"relationOther": "Número do item",
 		"mentionSuggestions": "Pessoas para mencionar",
-		"commentHint": "Aceita Markdown. Digite @ para mencionar alguém."
+		"commentHint": "Aceita Markdown. Digite @ para mencionar alguém.",
+		"milestone": "Marco",
+		"noMilestone": "Sem marco"
 	},
 	"runStatus": {
 		"queued": "Na fila",
@@ -253,7 +258,8 @@
 		"reply": "respondeu ao cliente",
 		"sla": "sinalizou o SLA",
 		"stalled": "registrou a falta de atividade recente",
-		"attachment": "anexou um arquivo"
+		"attachment": "anexou um arquivo",
+		"milestone": "alterou o marco"
 	},
 	"authors": {
 		"user": "Alguém",
@@ -560,7 +566,8 @@
 		"nameRequired": "Adicione um nome.",
 		"deleteConfirm": "Excluir {name}? Os itens continuam, sem projeto.",
 		"items": "Itens",
-		"noItems": "Este projeto ainda não tem itens."
+		"noItems": "Este projeto ainda não tem itens.",
+		"health": "Status"
 	},
 	"cycles": {
 		"title": "Ciclos",
@@ -705,5 +712,83 @@
 		"confirmRemove": "Remover {name}? Não dá para desfazer.",
 		"download": "Baixar {name}",
 		"remove": "Remover {name}"
+	},
+	"reactions": {
+		"add": "Adicionar uma reação",
+		"pick": "Reações",
+		"toggle": "{emoji}, {count}. Pressione para adicionar ou remover a sua.",
+		"names": {
+			"+1": "Polegar para cima",
+			"-1": "Polegar para baixo",
+			"heart": "Coração",
+			"tada": "Comemorar",
+			"eyes": "Olhando",
+			"rocket": "Foguete"
+		}
+	},
+	"milestones": {
+		"title": "Marcos",
+		"empty": "Nenhum marco ainda. Divida o projeto em etapas e depois coloque itens nelas pela página de cada item.",
+		"name": "Nome do marco",
+		"namePlaceholder": "Beta",
+		"targetDate": "Data prevista",
+		"targetDateFor": "Data prevista de {name}",
+		"noDate": "Sem data",
+		"add": "Adicionar marco",
+		"progressOf": "Progresso de {name}",
+		"doneOf": "{done} de {total} concluídos",
+		"deleteConfirm": "Excluir o marco {name}? Os itens dele continuam no projeto."
+	},
+	"projectUpdates": {
+		"title": "Atualizações",
+		"empty": "Nenhuma atualização ainda. Publique uma para contar como o projeto está indo.",
+		"healthLabel": "Status",
+		"bodyLabel": "Atualização",
+		"bodyPlaceholder": "O que aconteceu, o que vem a seguir e o que está atrapalhando",
+		"post": "Publicar atualização",
+		"deleteConfirm": "Excluir esta atualização?",
+		"health": {
+			"on_track": "No caminho certo",
+			"at_risk": "Em risco",
+			"off_track": "Fora do caminho"
+		}
+	},
+	"templates": {
+		"title": "Modelos",
+		"description": "Pontos de partida para itens que você cria com frequência e para itens que se repetem em uma programação.",
+		"new": "Novo modelo",
+		"editTitle": "Editar modelo",
+		"editNamed": "Editar {name}",
+		"dialogDescription": "Um novo item criado com este modelo começa com estes campos.",
+		"empty": "Nenhum modelo ainda.",
+		"name": "Nome do modelo",
+		"namePlaceholder": "Relatório de bug",
+		"nameRequired": "Dê um nome ao modelo.",
+		"itemTitle": "Título do item",
+		"itemDescription": "Descrição do item",
+		"labels": "Etiquetas",
+		"agent": "Agente",
+		"noAgent": "Sem agente",
+		"agents": {
+			"triage": "Agente de triagem",
+			"engineer": "Agente de engenharia",
+			"support": "Agente de suporte"
+		},
+		"deleteConfirm": "Excluir o modelo {name}? As programações de repetição dele também param.",
+		"repeat": "Repetir",
+		"repeatTitle": "Repetir {name}",
+		"repeatDescription": "Um novo item é criado a partir do modelo nesta programação.",
+		"cadence": "Frequência",
+		"cadences": {
+			"daily": "Todo dia",
+			"weekly": "Toda semana",
+			"monthly": "Todo mês"
+		},
+		"firstOn": "Primeiro item",
+		"firstOnHint": "Deixe vazio para criar o primeiro item agora. Os próximos seguem no mesmo horário do dia.",
+		"startRepeating": "Começar a repetir",
+		"stopRepeating": "Parar de repetir",
+		"nextRun": "Próximo",
+		"paused": "Pausado"
 	}
 }

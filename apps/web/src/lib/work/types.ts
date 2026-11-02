@@ -17,7 +17,7 @@ export type WorkPriority = (typeof WORK_PRIORITIES)[number];
 
 export const WORK_EVENT_KINDS = [
 	"created", "comment", "state", "priority", "assignee", "link", "triage", "agent_run", "customer_request", "github", "error",
-	"project", "cycle", "parent", "relation", "estimate", "reply", "sla", "stalled", "attachment",
+	"project", "cycle", "parent", "relation", "estimate", "reply", "sla", "stalled", "attachment", "milestone",
 ] as const;
 export type WorkEventKind = (typeof WORK_EVENT_KINDS)[number];
 
@@ -68,6 +68,8 @@ export type WorkItem = {
 	cycleId?: string | null;
 	parentId?: string | null;
 	parentNumber?: number | null;
+	/** The project milestone the item is in. */
+	milestoneId?: string | null;
 	/** 0 to 21 points. */
 	estimate?: number | null;
 	slaDueAt?: string | null;
@@ -209,6 +211,8 @@ export type WorkItemDetailResponse = {
 	requests: CustomerRequest[];
 	runs: AgentRun[];
 	errorGroup?: ErrorGroup | null;
+	/** Reactions on the item's comments, by event id. */
+	reactions?: Record<string, ReactionCount[]>;
 } & WorkItemRelationsDetail;
 export type WorkMembersResponse = { members: WorkMember[] };
 export type WorkCustomersResponse = { customers: Customer[] };
@@ -221,6 +225,22 @@ export type WorkAgentRunsResponse = { runs: AgentRun[] };
 
 /** The browser and server error event shared by the capture script and ingest. */
 export type WorkErrorFrame = { function?: string; file?: string; line?: number; column?: number; inApp?: boolean };
+// Milestones, project updates, templates, recurring items and reactions.
+
+export type WorkMilestone = { id: string; projectId: string; name: string; targetDate: string | null; position: number; itemCount: number; doneCount: number };
+export const PROJECT_HEALTHS = ["on_track", "at_risk", "off_track"] as const;
+export type ProjectHealth = (typeof PROJECT_HEALTHS)[number];
+export type ProjectUpdate = { id: string; projectId: string; health: ProjectHealth; body: string; authorUserId: string | null; createdAt: string };
+export type ProjectHealthMap = Record<string, { health: ProjectHealth; updatedAt: string }>;
+export type WorkTemplate = { id: string; name: string; title: string; description: string; priority: number; labels: string[]; estimate: number | null; projectId: string | null; assigneeAgent: WorkAgent | null; createdAt: string };
+export const RECURRENCE_CADENCES = ["daily", "weekly", "monthly"] as const;
+export type RecurrenceCadence = (typeof RECURRENCE_CADENCES)[number];
+export type WorkRecurrence = { id: string; templateId: string; cadence: RecurrenceCadence; nextRunAt: string; enabled: boolean; lastRunAt: string | null; createdAt: string };
+export const REACTION_EMOJI = ["+1", "-1", "heart", "tada", "eyes", "rocket"] as const;
+export type ReactionEmoji = (typeof REACTION_EMOJI)[number];
+export type ReactionCount = { emoji: ReactionEmoji; count: number; mine: boolean };
+export const REACTION_GLYPHS: Record<ReactionEmoji, string> = { "+1": "👍", "-1": "👎", heart: "❤️", tada: "🎉", eyes: "👀", rocket: "🚀" };
+
 /** A file on a work item (the file itself is fetched from the account API). */
 export type WorkAttachment = { id: string; fileName: string; contentType: string; sizeBytes: number; uploadedBy: string | null; createdAt: string };
 /** What the item page needs to show and manage attachments. */

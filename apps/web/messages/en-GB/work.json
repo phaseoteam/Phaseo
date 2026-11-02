@@ -9,7 +9,8 @@
 		"settings": "Settings",
 		"projects": "Projects",
 		"cycles": "Cycles",
-		"insights": "Insights"
+		"insights": "Insights",
+		"templates": "Templates"
 	},
 	"common": {
 		"save": "Save",
@@ -130,7 +131,9 @@
 		"repoPlaceholder": "owner/name",
 		"repoInvalid": "Use the owner/name form, for example acme/api.",
 		"submit": "Create item",
-		"titleRequired": "Add a title."
+		"titleRequired": "Add a title.",
+		"template": "Start from a template",
+		"templatePlaceholder": "Choose a template"
 	},
 	"item": {
 		"back": "Inbox",
@@ -219,7 +222,9 @@
 		"relationKind": "Relation",
 		"relationOther": "Item number",
 		"mentionSuggestions": "People to mention",
-		"commentHint": "Markdown works. Type @ to mention someone."
+		"commentHint": "Markdown works. Type @ to mention someone.",
+		"milestone": "Milestone",
+		"noMilestone": "No milestone"
 	},
 	"runStatus": {
 		"queued": "Queued",
@@ -253,7 +258,8 @@
 		"reply": "replied to the customer",
 		"sla": "flagged the SLA",
 		"stalled": "noted no recent activity",
-		"attachment": "attached a file"
+		"attachment": "attached a file",
+		"milestone": "changed the milestone"
 	},
 	"authors": {
 		"user": "Someone",
@@ -560,7 +566,8 @@
 		"nameRequired": "Add a name.",
 		"deleteConfirm": "Delete {name}? Its items stay, without a project.",
 		"items": "Items",
-		"noItems": "No items in this project yet."
+		"noItems": "No items in this project yet.",
+		"health": "Health"
 	},
 	"cycles": {
 		"title": "Cycles",
@@ -705,5 +712,83 @@
 		"confirmRemove": "Remove {name}? This can't be undone.",
 		"download": "Download {name}",
 		"remove": "Remove {name}"
+	},
+	"reactions": {
+		"add": "Add a reaction",
+		"pick": "Reactions",
+		"toggle": "{emoji}, {count}. Press to add or remove yours.",
+		"names": {
+			"+1": "Thumbs up",
+			"-1": "Thumbs down",
+			"heart": "Heart",
+			"tada": "Celebrate",
+			"eyes": "Looking",
+			"rocket": "Rocket"
+		}
+	},
+	"milestones": {
+		"title": "Milestones",
+		"empty": "No milestones yet. Break the project into steps, then put items in them from the item page.",
+		"name": "Milestone name",
+		"namePlaceholder": "Beta",
+		"targetDate": "Target date",
+		"targetDateFor": "Target date for {name}",
+		"noDate": "No date",
+		"add": "Add milestone",
+		"progressOf": "Progress of {name}",
+		"doneOf": "{done} of {total} done",
+		"deleteConfirm": "Delete the {name} milestone? Its items stay in the project."
+	},
+	"projectUpdates": {
+		"title": "Updates",
+		"empty": "No updates yet. Post one to say how the project is going.",
+		"healthLabel": "Health",
+		"bodyLabel": "Update",
+		"bodyPlaceholder": "What happened, what's next, and anything in the way",
+		"post": "Post update",
+		"deleteConfirm": "Delete this update?",
+		"health": {
+			"on_track": "On track",
+			"at_risk": "At risk",
+			"off_track": "Off track"
+		}
+	},
+	"templates": {
+		"title": "Templates",
+		"description": "Starting points for items you make often, and items that repeat on a schedule.",
+		"new": "New template",
+		"editTitle": "Edit template",
+		"editNamed": "Edit {name}",
+		"dialogDescription": "A new item made from this template starts with these fields.",
+		"empty": "No templates yet.",
+		"name": "Template name",
+		"namePlaceholder": "Bug report",
+		"nameRequired": "Give the template a name.",
+		"itemTitle": "Item title",
+		"itemDescription": "Item description",
+		"labels": "Labels",
+		"agent": "Agent",
+		"noAgent": "No agent",
+		"agents": {
+			"triage": "Triage agent",
+			"engineer": "Engineer agent",
+			"support": "Support agent"
+		},
+		"deleteConfirm": "Delete the {name} template? Its repeating schedules stop too.",
+		"repeat": "Repeat",
+		"repeatTitle": "Repeat {name}",
+		"repeatDescription": "A new item is made from the template on this schedule.",
+		"cadence": "Every",
+		"cadences": {
+			"daily": "Every day",
+			"weekly": "Every week",
+			"monthly": "Every month"
+		},
+		"firstOn": "First item",
+		"firstOnHint": "Leave empty to make the first item now. Later items follow at the same time of day.",
+		"startRepeating": "Start repeating",
+		"stopRepeating": "Stop repeating",
+		"nextRun": "Next",
+		"paused": "Paused"
 	}
 }

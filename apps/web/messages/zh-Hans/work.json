@@ -9,7 +9,8 @@
 		"settings": "设置",
 		"projects": "项目",
 		"cycles": "周期",
-		"insights": "洞察"
+		"insights": "洞察",
+		"templates": "模板"
 	},
 	"common": {
 		"save": "保存",
@@ -130,7 +131,9 @@
 		"repoPlaceholder": "owner/name",
 		"repoInvalid": "请使用 owner/name 格式，例如 acme/api。",
 		"submit": "创建条目",
-		"titleRequired": "请填写标题。"
+		"titleRequired": "请填写标题。",
+		"template": "从模板开始",
+		"templatePlaceholder": "选择模板"
 	},
 	"item": {
 		"back": "收件箱",
@@ -219,7 +222,9 @@
 		"relationKind": "关联类型",
 		"relationOther": "条目编号",
 		"mentionSuggestions": "可提及的人",
-		"commentHint": "支持 Markdown。输入 @ 可提及他人。"
+		"commentHint": "支持 Markdown。输入 @ 可提及他人。",
+		"milestone": "里程碑",
+		"noMilestone": "无里程碑"
 	},
 	"runStatus": {
 		"queued": "排队中",
@@ -253,7 +258,8 @@
 		"reply": "回复了客户",
 		"sla": "标记了 SLA",
 		"stalled": "记录了近期没有动态",
-		"attachment": "添加了文件"
+		"attachment": "添加了文件",
+		"milestone": "更改了里程碑"
 	},
 	"authors": {
 		"user": "有人",
@@ -560,7 +566,8 @@
 		"nameRequired": "请填写名称。",
 		"deleteConfirm": "删除 {name}？其中的条目会保留，但不再属于任何项目。",
 		"items": "条目",
-		"noItems": "此项目还没有条目。"
+		"noItems": "此项目还没有条目。",
+		"health": "健康状况"
 	},
 	"cycles": {
 		"title": "周期",
@@ -705,5 +712,83 @@
 		"confirmRemove": "删除 {name}？此操作无法撤销。",
 		"download": "下载 {name}",
 		"remove": "删除 {name}"
+	},
+	"reactions": {
+		"add": "添加回应",
+		"pick": "回应",
+		"toggle": "{emoji}，{count}。按下可添加或移除你的回应。",
+		"names": {
+			"+1": "赞",
+			"-1": "踩",
+			"heart": "爱心",
+			"tada": "庆祝",
+			"eyes": "正在看",
+			"rocket": "火箭"
+		}
+	},
+	"milestones": {
+		"title": "里程碑",
+		"empty": "还没有里程碑。先把项目拆分成几个步骤，再在各条目页面把条目放进去。",
+		"name": "里程碑名称",
+		"namePlaceholder": "Beta",
+		"targetDate": "目标日期",
+		"targetDateFor": "{name} 的目标日期",
+		"noDate": "无日期",
+		"add": "添加里程碑",
+		"progressOf": "{name} 的进度",
+		"doneOf": "已完成 {done}/{total}",
+		"deleteConfirm": "删除里程碑 {name}？其中的条目会保留在项目中。"
+	},
+	"projectUpdates": {
+		"title": "更新",
+		"empty": "还没有更新。发布一条，说说项目进展如何。",
+		"healthLabel": "健康状况",
+		"bodyLabel": "更新",
+		"bodyPlaceholder": "发生了什么、下一步做什么，以及有什么阻碍",
+		"post": "发布更新",
+		"deleteConfirm": "删除这条更新？",
+		"health": {
+			"on_track": "进展正常",
+			"at_risk": "有风险",
+			"off_track": "偏离计划"
+		}
+	},
+	"templates": {
+		"title": "模板",
+		"description": "用于常建条目和按计划重复条目的起点。",
+		"new": "新建模板",
+		"editTitle": "编辑模板",
+		"editNamed": "编辑 {name}",
+		"dialogDescription": "用此模板新建的条目会预先填好这些字段。",
+		"empty": "还没有模板。",
+		"name": "模板名称",
+		"namePlaceholder": "Bug 报告",
+		"nameRequired": "请为模板命名。",
+		"itemTitle": "条目标题",
+		"itemDescription": "条目描述",
+		"labels": "标签",
+		"agent": "智能体",
+		"noAgent": "无智能体",
+		"agents": {
+			"triage": "分诊智能体",
+			"engineer": "工程智能体",
+			"support": "支持智能体"
+		},
+		"deleteConfirm": "删除模板 {name}？它的重复计划也会停止。",
+		"repeat": "重复",
+		"repeatTitle": "重复 {name}",
+		"repeatDescription": "将按此计划用模板新建条目。",
+		"cadence": "频率",
+		"cadences": {
+			"daily": "每天",
+			"weekly": "每周",
+			"monthly": "每月"
+		},
+		"firstOn": "首个条目",
+		"firstOnHint": "留空则立即创建首个条目。之后的条目会在每天的同一时间创建。",
+		"startRepeating": "开始重复",
+		"stopRepeating": "停止重复",
+		"nextRun": "下次",
+		"paused": "已暂停"
 	}
 }

@@ -9,7 +9,8 @@
 		"settings": "設定",
 		"projects": "プロジェクト",
 		"cycles": "サイクル",
-		"insights": "インサイト"
+		"insights": "インサイト",
+		"templates": "テンプレート"
 	},
 	"common": {
 		"save": "保存",
@@ -130,7 +131,9 @@
 		"repoPlaceholder": "owner/name",
 		"repoInvalid": "owner/name の形式で入力してください（例: acme/api）。",
 		"submit": "項目を作成",
-		"titleRequired": "タイトルを入力してください。"
+		"titleRequired": "タイトルを入力してください。",
+		"template": "テンプレートから作成",
+		"templatePlaceholder": "テンプレートを選択"
 	},
 	"item": {
 		"back": "受信箱",
@@ -219,7 +222,9 @@
 		"relationKind": "関連の種類",
 		"relationOther": "項目番号",
 		"mentionSuggestions": "メンションする人",
-		"commentHint": "Markdown を使えます。@ を入力すると誰かをメンションできます。"
+		"commentHint": "Markdown を使えます。@ を入力すると誰かをメンションできます。",
+		"milestone": "マイルストーン",
+		"noMilestone": "マイルストーンなし"
 	},
 	"runStatus": {
 		"queued": "待機中",
@@ -253,7 +258,8 @@
 		"reply": "が顧客に返信しました",
 		"sla": "が SLA を警告しました",
 		"stalled": "が最近の動きがないことを記録しました",
-		"attachment": "がファイルを添付しました"
+		"attachment": "がファイルを添付しました",
+		"milestone": "がマイルストーンを変更しました"
 	},
 	"authors": {
 		"user": "誰か",
@@ -560,7 +566,8 @@
 		"nameRequired": "名前を入力してください。",
 		"deleteConfirm": "{name} を削除しますか？項目はプロジェクトなしで残ります。",
 		"items": "項目",
-		"noItems": "このプロジェクトにはまだ項目がありません。"
+		"noItems": "このプロジェクトにはまだ項目がありません。",
+		"health": "状況"
 	},
 	"cycles": {
 		"title": "サイクル",
@@ -705,5 +712,83 @@
 		"confirmRemove": "{name} を削除しますか？元に戻せません。",
 		"download": "{name} をダウンロード",
 		"remove": "{name} を削除"
+	},
+	"reactions": {
+		"add": "リアクションを追加",
+		"pick": "リアクション",
+		"toggle": "{emoji}、{count}。押すと自分のリアクションを追加または削除します。",
+		"names": {
+			"+1": "サムズアップ",
+			"-1": "サムズダウン",
+			"heart": "ハート",
+			"tada": "お祝い",
+			"eyes": "確認中",
+			"rocket": "ロケット"
+		}
+	},
+	"milestones": {
+		"title": "マイルストーン",
+		"empty": "マイルストーンはまだありません。プロジェクトをステップに分けてから、各項目のページで項目を割り当ててください。",
+		"name": "マイルストーン名",
+		"namePlaceholder": "ベータ",
+		"targetDate": "目標日",
+		"targetDateFor": "{name}の目標日",
+		"noDate": "日付なし",
+		"add": "マイルストーンを追加",
+		"progressOf": "{name}の進捗",
+		"doneOf": "{total}件中{done}件完了",
+		"deleteConfirm": "マイルストーン「{name}」を削除しますか？項目はプロジェクトに残ります。"
+	},
+	"projectUpdates": {
+		"title": "アップデート",
+		"empty": "アップデートはまだありません。投稿してプロジェクトの状況を共有しましょう。",
+		"healthLabel": "状況",
+		"bodyLabel": "アップデート",
+		"bodyPlaceholder": "起きたこと、次にやること、妨げになっていること",
+		"post": "アップデートを投稿",
+		"deleteConfirm": "このアップデートを削除しますか？",
+		"health": {
+			"on_track": "順調",
+			"at_risk": "リスクあり",
+			"off_track": "遅れあり"
+		}
+	},
+	"templates": {
+		"title": "テンプレート",
+		"description": "よく作る項目や、スケジュールに沿って繰り返す項目のひな形です。",
+		"new": "新しいテンプレート",
+		"editTitle": "テンプレートを編集",
+		"editNamed": "{name}を編集",
+		"dialogDescription": "このテンプレートから作成した項目には、これらのフィールドが最初から入ります。",
+		"empty": "テンプレートはまだありません。",
+		"name": "テンプレート名",
+		"namePlaceholder": "バグ報告",
+		"nameRequired": "テンプレートに名前を付けてください。",
+		"itemTitle": "項目のタイトル",
+		"itemDescription": "項目の説明",
+		"labels": "ラベル",
+		"agent": "エージェント",
+		"noAgent": "エージェントなし",
+		"agents": {
+			"triage": "トリアージエージェント",
+			"engineer": "エンジニアエージェント",
+			"support": "サポートエージェント"
+		},
+		"deleteConfirm": "テンプレート「{name}」を削除しますか？繰り返しのスケジュールも停止します。",
+		"repeat": "繰り返し",
+		"repeatTitle": "{name}を繰り返す",
+		"repeatDescription": "このスケジュールでテンプレートから新しい項目が作成されます。",
+		"cadence": "頻度",
+		"cadences": {
+			"daily": "毎日",
+			"weekly": "毎週",
+			"monthly": "毎月"
+		},
+		"firstOn": "最初の項目",
+		"firstOnHint": "空欄にすると最初の項目をすぐに作成します。以降の項目は同じ時刻に作成されます。",
+		"startRepeating": "繰り返しを開始",
+		"stopRepeating": "繰り返しを停止",
+		"nextRun": "次回",
+		"paused": "一時停止中"
 	}
 }

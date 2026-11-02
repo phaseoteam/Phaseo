@@ -34,6 +34,14 @@ import type {
 	ErrorRuleAction,
 	ErrorRuleField,
 	ErrorSourcemap,
+	ProjectHealth,
+	ProjectUpdate,
+	ReactionCount,
+	ReactionEmoji,
+	RecurrenceCadence,
+	WorkMilestone,
+	WorkRecurrence,
+	WorkTemplate,
 } from "@/lib/work/types";
 
 export type WorkActionError = { ok: false; status: number | null; code: string | null; message: string | null };
@@ -107,6 +115,7 @@ export type CreateWorkItemInput = {
 	parentNumber?: number | null;
 	estimate?: number | null;
 	dueAt?: string | null;
+	milestoneId?: string | null;
 };
 
 export async function createWorkItem(input: CreateWorkItemInput) {
@@ -358,6 +367,66 @@ export async function deleteErrorRule(ruleId: string) {
 
 export async function deleteErrorSourcemap(projectId: string, mapId: string) {
 	return run(() => send<Record<string, unknown>>("DELETE", `error-projects/${id(projectId)}/sourcemaps/${id(mapId)}`));
+}
+
+// Milestones and project updates
+
+export async function createWorkMilestone(projectId: string, input: { name: string; targetDate?: string | null }) {
+	return run(() => send<{ milestone: WorkMilestone }>("POST", `projects/${id(projectId)}/milestones`, input));
+}
+
+export async function updateWorkMilestone(milestoneId: string, input: { name?: string; targetDate?: string | null; position?: number }) {
+	return run(() => send<{ milestone: WorkMilestone }>("PATCH", `milestones/${id(milestoneId)}`, input));
+}
+
+export async function deleteWorkMilestone(milestoneId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `milestones/${id(milestoneId)}`));
+}
+
+export async function postProjectUpdate(projectId: string, input: { health: ProjectHealth; body: string }) {
+	return run(() => send<{ update: ProjectUpdate }>("POST", `projects/${id(projectId)}/updates`, input));
+}
+
+export async function deleteProjectUpdate(updateId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `project-updates/${id(updateId)}`));
+}
+
+// Templates and recurring items
+
+export type WorkTemplateInput = { name: string; title?: string; description?: string; priority?: number; labels?: string[]; estimate?: number | null; projectId?: string | null; assigneeAgent?: string | null };
+
+export async function listWorkTemplates() {
+	return run(() => get<{ templates: WorkTemplate[] }>("templates"));
+}
+
+export async function createWorkTemplate(input: WorkTemplateInput) {
+	return run(() => send<{ template: WorkTemplate }>("POST", "templates", input));
+}
+
+export async function updateWorkTemplate(templateId: string, input: Partial<WorkTemplateInput>) {
+	return run(() => send<{ template: WorkTemplate }>("PATCH", `templates/${id(templateId)}`, input));
+}
+
+export async function deleteWorkTemplate(templateId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `templates/${id(templateId)}`));
+}
+
+export async function createWorkRecurrence(input: { templateId: string; cadence: RecurrenceCadence; startAt?: string | null }) {
+	return run(() => send<{ recurrence: WorkRecurrence }>("POST", "recurrences", input));
+}
+
+export async function updateWorkRecurrence(recurrenceId: string, input: { enabled?: boolean; cadence?: RecurrenceCadence }) {
+	return run(() => send<{ recurrence: WorkRecurrence }>("PATCH", `recurrences/${id(recurrenceId)}`, input));
+}
+
+export async function deleteWorkRecurrence(recurrenceId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `recurrences/${id(recurrenceId)}`));
+}
+
+// Reactions
+
+export async function toggleWorkReaction(eventId: string, emoji: ReactionEmoji) {
+	return run(() => send<{ eventId: string; reactions: ReactionCount[] }>("POST", `events/${id(eventId)}/reactions`, { emoji }));
 }
 
 // Notifications

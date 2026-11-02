@@ -9,7 +9,8 @@
 		"settings": "Einstellungen",
 		"projects": "Projekte",
 		"cycles": "Zyklen",
-		"insights": "Auswertungen"
+		"insights": "Auswertungen",
+		"templates": "Vorlagen"
 	},
 	"common": {
 		"save": "Speichern",
@@ -130,7 +131,9 @@
 		"repoPlaceholder": "owner/name",
 		"repoInvalid": "Nutze die Form owner/name, zum Beispiel acme/api.",
 		"submit": "Eintrag erstellen",
-		"titleRequired": "Gib einen Titel ein."
+		"titleRequired": "Gib einen Titel ein.",
+		"template": "Mit einer Vorlage beginnen",
+		"templatePlaceholder": "Vorlage auswählen"
 	},
 	"item": {
 		"back": "Eingang",
@@ -219,7 +222,9 @@
 		"relationKind": "Beziehung",
 		"relationOther": "Eintragsnummer",
 		"mentionSuggestions": "Personen zum Erwähnen",
-		"commentHint": "Markdown wird unterstützt. Mit @ erwähnst du jemanden."
+		"commentHint": "Markdown wird unterstützt. Mit @ erwähnst du jemanden.",
+		"milestone": "Meilenstein",
+		"noMilestone": "Kein Meilenstein"
 	},
 	"runStatus": {
 		"queued": "In Warteschlange",
@@ -253,7 +258,8 @@
 		"reply": "hat dem Kunden geantwortet",
 		"sla": "hat das SLA markiert",
 		"stalled": "hat fehlende Aktivität vermerkt",
-		"attachment": "hat eine Datei angehängt"
+		"attachment": "hat eine Datei angehängt",
+		"milestone": "hat den Meilenstein geändert"
 	},
 	"authors": {
 		"user": "Jemand",
@@ -560,7 +566,8 @@
 		"nameRequired": "Gib einen Namen ein.",
 		"deleteConfirm": "{name} löschen? Die Einträge bleiben erhalten, ohne Projekt.",
 		"items": "Einträge",
-		"noItems": "Noch keine Einträge in diesem Projekt."
+		"noItems": "Noch keine Einträge in diesem Projekt.",
+		"health": "Zustand"
 	},
 	"cycles": {
 		"title": "Zyklen",
@@ -705,5 +712,83 @@
 		"confirmRemove": "{name} entfernen? Das lässt sich nicht rückgängig machen.",
 		"download": "{name} herunterladen",
 		"remove": "{name} entfernen"
+	},
+	"reactions": {
+		"add": "Reaktion hinzufügen",
+		"pick": "Reaktionen",
+		"toggle": "{emoji}, {count}. Drücke, um deine hinzuzufügen oder zu entfernen.",
+		"names": {
+			"+1": "Daumen hoch",
+			"-1": "Daumen runter",
+			"heart": "Herz",
+			"tada": "Feiern",
+			"eyes": "Schaue ich mir an",
+			"rocket": "Rakete"
+		}
+	},
+	"milestones": {
+		"title": "Meilensteine",
+		"empty": "Noch keine Meilensteine. Teile das Projekt in Schritte auf und ordne ihnen dann auf der Seite eines Eintrags Einträge zu.",
+		"name": "Name des Meilensteins",
+		"namePlaceholder": "Beta",
+		"targetDate": "Zieldatum",
+		"targetDateFor": "Zieldatum für {name}",
+		"noDate": "Kein Datum",
+		"add": "Meilenstein hinzufügen",
+		"progressOf": "Fortschritt von {name}",
+		"doneOf": "{done} von {total} erledigt",
+		"deleteConfirm": "Meilenstein {name} löschen? Seine Einträge bleiben im Projekt."
+	},
+	"projectUpdates": {
+		"title": "Updates",
+		"empty": "Noch keine Updates. Poste eins, um zu zeigen, wie es mit dem Projekt läuft.",
+		"healthLabel": "Zustand",
+		"bodyLabel": "Update",
+		"bodyPlaceholder": "Was passiert ist, was als Nächstes kommt und was im Weg steht",
+		"post": "Update posten",
+		"deleteConfirm": "Dieses Update löschen?",
+		"health": {
+			"on_track": "Im Plan",
+			"at_risk": "Gefährdet",
+			"off_track": "Nicht im Plan"
+		}
+	},
+	"templates": {
+		"title": "Vorlagen",
+		"description": "Ausgangspunkte für Einträge, die du oft erstellst, und für Einträge, die sich nach Zeitplan wiederholen.",
+		"new": "Neue Vorlage",
+		"editTitle": "Vorlage bearbeiten",
+		"editNamed": "{name} bearbeiten",
+		"dialogDescription": "Ein neuer Eintrag aus dieser Vorlage beginnt mit diesen Feldern.",
+		"empty": "Noch keine Vorlagen.",
+		"name": "Name der Vorlage",
+		"namePlaceholder": "Fehlerbericht",
+		"nameRequired": "Gib der Vorlage einen Namen.",
+		"itemTitle": "Titel des Eintrags",
+		"itemDescription": "Beschreibung des Eintrags",
+		"labels": "Labels",
+		"agent": "Agent",
+		"noAgent": "Kein Agent",
+		"agents": {
+			"triage": "Triage-Agent",
+			"engineer": "Entwickler-Agent",
+			"support": "Support-Agent"
+		},
+		"deleteConfirm": "Vorlage {name} löschen? Ihre wiederkehrenden Zeitpläne enden ebenfalls.",
+		"repeat": "Wiederholen",
+		"repeatTitle": "{name} wiederholen",
+		"repeatDescription": "Nach diesem Zeitplan wird aus der Vorlage ein neuer Eintrag erstellt.",
+		"cadence": "Intervall",
+		"cadences": {
+			"daily": "Jeden Tag",
+			"weekly": "Jede Woche",
+			"monthly": "Jeden Monat"
+		},
+		"firstOn": "Erster Eintrag",
+		"firstOnHint": "Lass das Feld leer, um den ersten Eintrag sofort zu erstellen. Spätere Einträge folgen zur selben Uhrzeit.",
+		"startRepeating": "Wiederholung starten",
+		"stopRepeating": "Wiederholung beenden",
+		"nextRun": "Nächster",
+		"paused": "Pausiert"
 	}
 }
