@@ -1,6 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { linkedItem } from "../../shared/factory/actions";
-import { ciFrom, ghError, linkWork, mergeStateFrom, timelineFrom, workItem } from "./github";
+import { activityFrom, ciFrom, ghError, linkWork, mergeStateFrom, timelineFrom, workItem } from "./github";
+
+describe("activityFrom", () => {
+	const line = (entry: Record<string, unknown>) => JSON.stringify({ id: 7, author: "maria", bot: false, association: "MEMBER", body: "Looks off", url: "https://github.com/o/r/pull/5#r7", at: "2026-11-01T10:00:00Z", ...entry });
+
+	it("reads comments with who wrote them, and leaves out Factory's own", () => {
+		const out = [line({}), line({ id: 8, body: "Triage report\n\n<sub>Sonnet 5.5 · Phaseo Factory</sub>" }), line({ id: 9, author: "codex[bot]", bot: true, association: "NONE", body: "P1: off by one" })].join("\n");
+		expect(activityFrom("comment", out)).toEqual([
+			{ id: "comment:7", kind: "comment", author: "maria", association: "MEMBER", body: "Looks off", at: Date.parse("2026-11-01T10:00:00Z"), url: "https://github.com/o/r/pull/5#r7", bot: undefined, state: undefined, path: undefined, line: undefined },
+			expect.objectContaining({ id: "comment:9", author: "codex[bot]", bot: true, association: "NONE" }),
+		]);
+	});
+
+	it("skips reviews still being written, and empty ones that only carry line comments", () => {
+		const out = [line({ state: "PENDING" }), line({ id: 2, state: "COMMENTED", body: "" }), line({ id: 3, state: "CHANGES_REQUESTED", body: "" }), line({ id: 4, state: "APPROVED", at: null })].join("\n");
+		expect(activityFrom("review", out).map((entry) => entry.id)).toEqual(["review:3"]);
+	});
+
+	it("drops hidden HTML comments, and comments that were nothing else", () => {
+		const out = [line({ body: "<!-- codex-review-state:v1 {\"a\":1} -->\n**P1** Off by one" }), line({ id: 8, body: "<!-- only state -->" })].join("\n");
+		expect(activityFrom("comment", out).map((entry) => entry.body)).toEqual(["**P1** Off by one"]);
+	});
+
+	it("keeps where a line comment is", () => {
+		expect(activityFrom("line", line({ path: "src/cart.js", line: 58 }))[0]).toMatchObject({ id: "line:7", path: "src/cart.js", line: 58 });
+	});
+});
 
 const node = (number: number, extra: Record<string, unknown> = {}) => ({
 	number, title: `Item ${number}`, body: "", url: `https://github.com/o/r/issues/${number}`, state: "OPEN" as const,

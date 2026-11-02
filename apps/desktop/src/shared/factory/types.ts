@@ -247,6 +247,12 @@ export interface Run {
 	carriedOnBy?: string;
 	/** The desktop thread the stage ran in: a child of the item's thread. */
 	threadId?: string;
+	/** GitHub activity already passed on to the agent, or held back, by id (see activity.ts). */
+	heard?: string[];
+	/** When GitHub was last read for activity on this run's item. */
+	heardAt?: number;
+	/** When Factory told the agent it seemed stalled. */
+	nudgedAt?: number;
 }
 
 /** A note is about one repository, or about this computer and given to every run. */
@@ -382,6 +388,14 @@ export interface FactorySettings {
 	pollMinutes: number;
 	/** The reasoning effort chosen for an agent, by agent id. Unset uses the tool's default. */
 	agentEfforts: Record<string, string>;
+	/** Bots whose comments and reviews go to running stages, like people who can push. Unset uses TRUSTED_BOTS. */
+	trustedBots?: string[];
+	/** Whether new GitHub comments, reviews and failed checks go to running stages. Unset is on. */
+	passOnActivity?: boolean;
+	/** Minutes of nothing before Factory tells the agent; 0 turns stall checks off. Unset is 30. */
+	stallMinutes?: number;
+	/** Minutes after that before the run is stopped for a person. Unset is 15. */
+	stallGraceMinutes?: number;
 }
 
 export interface FactorySnapshot {
