@@ -1,5 +1,5 @@
 import type { ChatModelOption } from "./modelOptions";
-import { chatSheetSections, effortRows, effortSummary, modelControlLabel, modelLabel, modelLabelSuffix, modelLabelText, modelSheetRows } from "./modelSheetRows";
+import { chatSheetSections, effortRows, effortSummary, modelControlLabel, modelLabel, modelLabelSuffix, modelLabelText, modelSheetRows, sheetModelDetail } from "./modelSheetRows";
 
 const option = (modelId: string, releaseDate: string, more: Partial<ChatModelOption> = {}): ChatModelOption => ({
   modelId, label: modelId.split("/")[1]!, orgId: modelId.split("/")[0]!, orgName: modelId.split("/")[0]!, releaseDate, status: "active", free: false,
@@ -82,5 +82,17 @@ describe("the composer's model control", () => {
     expect(modelLabelSuffix(modelLabel("Phaseo Free", null, 1))).toBe("+1");
     expect(modelLabelSuffix(modelLabel("Phaseo Free", null))).toBeNull();
     expect(modelLabelText(modelLabel("GPT-6 Astra", "Medium", 2))).toBe("GPT-6 Astra · Medium +2");
+  });
+});
+
+describe("a sheet row's second line", () => {
+  it("gives context, then the price per million tokens, leaving the lab to the logo", () => {
+    expect(sheetModelDetail({ contextWindow: 1_000_000, free: false, inputPrice: 4, outputPrice: 20 })).toBe("1M context · $4 in · $20 out per 1M");
+  });
+
+  it("leaves out what isn't known and the price of a free model, whose badge says so", () => {
+    expect(sheetModelDetail({ contextWindow: 128_000, free: true, inputPrice: 0, outputPrice: 0 })).toBe("128K context");
+    expect(sheetModelDetail({ contextWindow: null, free: false, inputPrice: 2.5, outputPrice: null })).toBeNull();
+    expect(sheetModelDetail({ contextWindow: null, free: false, inputPrice: 0.3, outputPrice: 0.9 })).toBe("$0.3 in · $0.9 out per 1M");
   });
 });

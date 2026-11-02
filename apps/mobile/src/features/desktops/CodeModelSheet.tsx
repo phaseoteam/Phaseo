@@ -43,6 +43,7 @@ export function CodeModelSheet({ desktopId, list, choice, onChoose, open, onClos
       onQuery={(value) => { setQuery(value); setExpanded(false); }}
       rows={rows}
       describe={describe}
+      selected={model ? describe(model) : { id: choice.model, label: choice.model }}
       selectedId={choice.model}
       onPick={pick}
       onShowMore={() => setExpanded(true)}

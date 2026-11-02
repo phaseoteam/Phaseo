@@ -1,13 +1,12 @@
 import { Sparkles } from "lucide-react-native";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { Badge, Chip, ChipRow, toast } from "@/components/ui";
-import { formatPrice, formatTokens } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { modelReasoningSupport, REASONING_LABELS, resolveReasoningEffort } from "./capabilities";
-import { useFavourites } from "./favourites";
-import { isNewModel, isSelectable, type ChatModelOption, type PickerFilters } from "./modelOptions";
+import { toggleFavouriteModel, useFavourites } from "./favourites";
+import { isNewModel, isSelectable, normaliseFavouriteId, type ChatModelOption, type PickerFilters } from "./modelOptions";
 import { useChatModelOptions, useModelLabels } from "./models";
-import { chatSheetSections, effortRows, effortSummary, modelLabel, modelSheetRows, type Effort, type ModelLabel } from "./modelSheetRows";
+import { chatSheetSections, effortRows, effortSummary, modelLabel, modelSheetRows, sheetModelDetail, type Effort, type ModelLabel } from "./modelSheetRows";
 import { ModelSheet, type SheetModel } from "./ModelSheet";
 import { rememberModel, useRecentModels } from "./recentModels";
 import type { ModelSettings } from "./settings";
@@ -34,13 +33,6 @@ export function useChatModelLabel(models: string[], settings: Record<string, Mod
   return modelLabel(label, effortSummary(efforts, defaultId, selected), models.length - 1);
 }
 
-function facts(option: ChatModelOption) {
-  const parts = [option.orgName];
-  if (option.contextWindow) parts.push(`${formatTokens(option.contextWindow)} context`);
-  if (!option.free && option.inputPrice != null && option.outputPrice != null) parts.push(`${formatPrice(option.inputPrice)} in · ${formatPrice(option.outputPrice)} out`);
-  return parts.join(" · ");
-}
-
 /**
  * The model sheet for a Phaseo chat (or the new chat's draft with no `chatId`). A pick replaces the first model,
  * keeping any others that answer beside it (the chips above the chat add those); the effort applies to that model.
@@ -63,15 +55,17 @@ export function ChatModelSheet({ chatId, models, settings, open, onClose }: { ch
     return modelSheetRows<ChatModelOption>({ pinned, rest: rest.map((section) => ({ key: section.key, title: section.title, items: section.items })), idOf: (item) => item.modelId, expanded });
   }, [isLoading, error, options, search, favourites, recents, filters, nowMs, expanded]);
 
+  const favouriteIds = useMemo(() => new Set(favourites), [favourites]);
   const describe = useCallback((item: ChatModelOption): SheetModel => ({
     id: item.modelId,
     label: item.label,
-    detail: facts(item),
+    detail: sheetModelDetail(item),
+    favourite: favouriteIds.has(normaliseFavouriteId(item.modelId)),
     orgId: item.orgId,
     orgName: item.orgName,
     disabled: !isSelectable(item),
     badge: !isSelectable(item) ? <Badge label="Coming soon" /> : item.free ? <Badge label="Free" tone="success" /> : isNewModel(item.releaseDate, nowMs) ? <Badge label="New" tone="primary" /> : null,
-  }), [nowMs]);
+  }), [nowMs, favouriteIds]);
 
   const pick = useCallback((item: ChatModelOption) => {
     if (!isSelectable(item)) {
@@ -101,16 +95,18 @@ export function ChatModelSheet({ chatId, models, settings, open, onClose }: { ch
       query={query}
       onQuery={(value) => { setQuery(value); setExpanded(false); }}
       controls={(
-        <ChipRow className="pb-2">
+        <ChipRow>
           <Chip label="Free" icon={Sparkles} selected={filters.free} onPress={() => setFilters((current) => ({ ...current, free: !current.free }))} />
           <Chip label="New" selected={filters.new} onPress={() => setFilters((current) => ({ ...current, new: !current.new }))} />
         </ChipRow>
       )}
       rows={rows}
       describe={describe}
+      selected={option ? describe(option) : first ? { id: first, label: first } : null}
       selectedId={first}
       onPick={pick}
       onShowMore={() => setExpanded(true)}
+      onToggleFavourite={(item) => toggleFavouriteModel(favourites, item.modelId)}
       effort={effort}
       error={error}
       onRetry={refetch}

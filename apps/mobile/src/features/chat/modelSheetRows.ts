@@ -1,4 +1,5 @@
-import { pickerSections, normaliseFavouriteId, type ChatModelOption, type PickerFilters } from "./modelOptions";
+import { formatPrice, formatTokens } from "@/lib/format";
+import { pickerSections,normaliseFavouriteId, type ChatModelOption, type PickerFilters } from "./modelOptions";
 
 /**
  * The model sheet's logic, shared by Phaseo chats and Code threads: which rows it lists, the effort rows for the
@@ -54,6 +55,17 @@ export function chatSheetSections({ options, query, favourites, recents, filters
     pinned: [...favouriteSection, ...(recent.length ? [{ key: "recent", title: "Recent", items: recent }] : [])],
     rest: sections.filter((section) => section.kind !== "favourites"),
   };
+}
+
+/**
+ * A sheet row's second line: context, then price per million tokens ("1M context · $4 in · $20 out per 1M"). A free
+ * model's badge says so, and the row's logo shows the lab. An unknown fact is left out rather than guessed.
+ */
+export function sheetModelDetail(option: Pick<ChatModelOption, "free" | "inputPrice" | "outputPrice" | "contextWindow">) {
+  const parts: string[] = [];
+  if (option.contextWindow) parts.push(`${formatTokens(option.contextWindow)} context`);
+  if (!option.free && option.inputPrice != null && option.outputPrice != null) parts.push(`${formatPrice(option.inputPrice)} in · ${formatPrice(option.outputPrice)} out per 1M`);
+  return parts.join(" · ") || null;
 }
 
 export type Effort = { id: string; label: string };
