@@ -17,9 +17,14 @@ export function HorizontalScroll(props: Omit<ScrollViewProps, "horizontal">) {
       "worklet";
       releaseSwipeLock(lock);
     };
+    // Gesture-handler's Android native gesture cancels itself once the finger leaves the view, by default, and the
+    // row stops scrolling there. A thumb's sideways swipe arcs well past a row's few dp of height, so the row keeps
+    // the drag wherever the finger goes, like a plain scroll view.
     return Gesture.Native()
+      .shouldCancelWhenOutside(false)
       .onTouchesDown(() => {
         "worklet";
+        // eslint-disable-next-line react-hooks/purity -- runs on touch-down, on the UI thread, never during render
         acquireSwipeLock(lock, Date.now());
       })
       .onTouchesUp((event) => {
