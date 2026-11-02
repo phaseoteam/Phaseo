@@ -2,11 +2,13 @@
 // fingerprinted and counted with record_work_error_event. A group that is new, or that comes back
 // after it was resolved, gets a work item (source "error") when the project has auto-triage on:
 // a new item for a new group, or the group's existing item reopened with an error event. The
-// triage agent then sorts it in the background.
+// triage agent then sorts it in the background. When the RPC reports a spike, spikes.ts writes the
+// spike event and notifications (or creates the group's item, priority 2, when it has none).
 
 import type { Env } from "@/env";
 import { culpritFor, fingerprintError } from "./fingerprint";
 import { addWorkItemEvent, createWorkItem, isClosedState, loadWorkItemById, updateWorkItem, type DataClient } from "./items";
+import { handleErrorSpike, SPIKE_ITEM_PRIORITY } from "./spikes";
 import { normaliseFrames, parseStack, type StackFrame } from "./stack";
 import { triageWorkItem } from "./triage";
 import type { ErrorProjectRow, RecordErrorEventResult } from "./types";
@@ -159,7 +161,7 @@ function triageInBackground(env: Env, client: DataClient, workspaceId: string, i
 	);
 }
 
-/** Creates or reopens the work item for a group that is new or came back. */
+/** Creates or reopens the work item for a group that is new or came back. Returns the item id. */
 async function openItemForGroup(args: {
 	env: Env;
 	client: DataClient;
@@ -168,7 +170,8 @@ async function openItemForGroup(args: {
 	event: CleanErrorEvent;
 	culprit: string | null;
 	waitUntil: (promise: Promise<unknown>) => void;
-}): Promise<void> {
+	priority?: number;
+}): Promise<string> {
 	const { env, client, project, result, event, culprit, waitUntil } = args;
 	const workspaceId = result.workspace_id;
 	if (result.work_item_id) {
@@ -186,7 +189,7 @@ async function openItemForGroup(args: {
 				data: { groupId: result.group_id, eventCount: result.event_count, release: event.release ?? null },
 			});
 			if (reopened.state === "triage") triageInBackground(env, client, workspaceId, item.id, waitUntil);
-			return;
+			return item.id;
 		}
 	}
 	const text = errorItemText(event, culprit);
@@ -195,6 +198,7 @@ async function openItemForGroup(args: {
 		title: text.title,
 		description: text.description,
 		state: "triage",
+		...(args.priority ? { priority: args.priority } : {}),
 		source: "error",
 		authorKind: "system",
 		errorGroupId: result.group_id,
@@ -207,6 +211,7 @@ async function openItemForGroup(args: {
 		.is("work_item_id", null);
 	if (error) console.error("[work] error group link failed", { groupId: result.group_id, message: error.message });
 	triageInBackground(env, client, workspaceId, item.id, waitUntil);
+	return item.id;
 }
 
 /** Records the events and returns the ids of the groups they went to. */
@@ -237,12 +242,22 @@ export async function ingestErrorEvents(args: {
 		const result = data as RecordErrorEventResult | null;
 		if (!result?.group_id) continue; // project disabled meanwhile
 		if (!groups.includes(result.group_id)) groups.push(result.group_id);
+		let itemId = result.work_item_id;
 		if ((result.is_new || result.reopened) && result.auto_triage && result.status !== "ignored") {
 			try {
-				await openItemForGroup({ env, client, project, result, event, culprit, waitUntil });
+				itemId = await openItemForGroup({ env, client, project, result, event, culprit, waitUntil });
 			} catch (itemError) {
 				console.error("[work] error item failed", { groupId: result.group_id, message: String(itemError) });
 			}
+		}
+		if (result.spiking === true && result.status !== "ignored") {
+			const firstLine = event.message.split("\n")[0].trim();
+			await handleErrorSpike({
+				client,
+				result: { ...result, work_item_id: itemId },
+				errorLabel: (firstLine ? `${event.type}: ${firstLine}` : event.type).slice(0, 300),
+				createItem: () => openItemForGroup({ env, client, project, result: { ...result, work_item_id: null }, event, culprit, waitUntil, priority: SPIKE_ITEM_PRIORITY }),
+			});
 		}
 	}
 	return groups;
