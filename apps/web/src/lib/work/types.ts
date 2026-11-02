@@ -15,7 +15,10 @@ export type WorkAgent = (typeof WORK_AGENTS)[number];
 export const WORK_PRIORITIES = [0, 1, 2, 3, 4] as const;
 export type WorkPriority = (typeof WORK_PRIORITIES)[number];
 
-export const WORK_EVENT_KINDS = ["created", "comment", "state", "priority", "assignee", "link", "triage", "agent_run", "customer_request", "github", "error"] as const;
+export const WORK_EVENT_KINDS = [
+	"created", "comment", "state", "priority", "assignee", "link", "triage", "agent_run", "customer_request", "github", "error",
+	"project", "cycle", "parent", "relation", "estimate", "reply", "sla", "stalled",
+] as const;
 export type WorkEventKind = (typeof WORK_EVENT_KINDS)[number];
 
 export const WORK_AUTHOR_KINDS = ["user", "agent", "system", "github", "customer"] as const;
@@ -60,6 +63,21 @@ export type WorkItem = {
 	createdAt: string;
 	updatedAt: string;
 	closedAt: string | null;
+	// Batch 2. Optional while the API rolls out, so older answers still parse.
+	projectId?: string | null;
+	cycleId?: string | null;
+	parentId?: string | null;
+	parentNumber?: number | null;
+	/** 0 to 21 points. */
+	estimate?: number | null;
+	slaDueAt?: string | null;
+	slaBreached?: boolean;
+	slaAtRisk?: boolean;
+	lastActivityAt?: string;
+	/** Sub-items, from GET /items. */
+	childCount?: number;
+	/** Open items blocking this one, from GET /items. */
+	blockedByCount?: number;
 };
 
 export type WorkItemEvent = {
@@ -185,7 +203,7 @@ export type WorkItemDetailResponse = {
 	requests: CustomerRequest[];
 	runs: AgentRun[];
 	errorGroup?: ErrorGroup | null;
-};
+} & WorkItemRelationsDetail;
 export type WorkMembersResponse = { members: WorkMember[] };
 export type WorkCustomersResponse = { customers: Customer[] };
 export type WorkRequestsResponse = { requests: CustomerRequest[] };
@@ -197,3 +215,177 @@ export type WorkAgentRunsResponse = { runs: AgentRun[] };
 
 /** The browser and server error event shared by the capture script and ingest. */
 export type WorkErrorFrame = { function?: string; file?: string; line?: number; column?: number; inApp?: boolean };
+
+// Batch 2: projects, cycles, relations, views, settings, notifications, reply drafts and insights.
+
+export const WORK_PROJECT_STATES = ["planned", "active", "paused", "completed", "cancelled"] as const;
+export type WorkProjectState = (typeof WORK_PROJECT_STATES)[number];
+
+export type WorkProject = {
+	id: string;
+	name: string;
+	description: string;
+	state: WorkProjectState;
+	leadUserId: string | null;
+	/** yyyy-mm-dd */
+	targetDate: string | null;
+	itemCount: number;
+	doneCount: number;
+	/** 0 to 1. */
+	progress: number;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type WorkCycle = {
+	id: string;
+	number: number;
+	name: string | null;
+	/** yyyy-mm-dd */
+	startsOn: string;
+	/** yyyy-mm-dd */
+	endsOn: string;
+	itemCount: number;
+	doneCount: number;
+	/** Sum of estimates in the cycle; null when the database couldn't sum them. */
+	scope: number | null;
+	/** Sum of estimates of done items in the cycle. */
+	completed: number | null;
+	createdAt: string;
+};
+
+export const WORK_RELATION_KINDS = ["blocks", "related"] as const;
+export type WorkRelationKind = (typeof WORK_RELATION_KINDS)[number];
+
+export type WorkRelationDirection = "blocks" | "blocked_by" | "related";
+
+/** A relation read from this item's side: it blocks the other, is blocked by it, or they are related. */
+export type WorkRelation = {
+	id: string;
+	kind: WorkRelationKind;
+	direction: WorkRelationDirection;
+	otherItemId?: string;
+	otherNumber: number | null;
+	otherTitle: string | null;
+	otherState: WorkItemState | null;
+	createdAt?: string;
+};
+
+export type WorkItemSummary = Pick<WorkItem, "id" | "number" | "title" | "state"> & Partial<Pick<WorkItem, "priority" | "assigneeUserId" | "assigneeAgent" | "estimate">>;
+
+export const WORK_VIEW_LAYOUTS = ["list", "board"] as const;
+export type WorkViewLayout = (typeof WORK_VIEW_LAYOUTS)[number];
+
+/** The filters a saved view stores. Every key is optional. */
+export type WorkViewFilters = {
+	q?: string;
+	state?: string;
+	source?: string;
+	assignee?: string;
+	label?: string;
+	projectId?: string;
+	cycleId?: string;
+	priority?: number;
+	parent?: number;
+	blocked?: boolean;
+};
+
+export type WorkView = {
+	id: string;
+	/** null means shared with the workspace. */
+	ownerUserId: string | null;
+	shared?: boolean;
+	name: string;
+	filters: WorkViewFilters;
+	layout: WorkViewLayout;
+	position: number;
+	createdAt?: string;
+	updatedAt?: string;
+};
+
+export type WorkSettings = {
+	/** Priority "1" to "4" to hours. */
+	slaHours: Record<"1" | "2" | "3" | "4", number>;
+	stallDays: number;
+	ambientEnabled: boolean;
+	supportDraftsEnabled: boolean;
+};
+
+export const DEFAULT_WORK_SETTINGS: WorkSettings = {
+	slaHours: { "1": 4, "2": 24, "3": 72, "4": 168 },
+	stallDays: 7,
+	ambientEnabled: false,
+	supportDraftsEnabled: true,
+};
+
+export const WORK_NOTIFICATION_KINDS = ["assigned", "comment", "mention", "state", "sla", "stalled", "error_spike", "agent", "reply_draft"] as const;
+export type WorkNotificationKind = (typeof WORK_NOTIFICATION_KINDS)[number];
+
+export type WorkNotification = {
+	id: string;
+	kind: WorkNotificationKind;
+	workItemId: string | null;
+	workItemNumber: number | null;
+	workItemTitle: string | null;
+	actorName: string | null;
+	body: string;
+	readAt: string | null;
+	createdAt: string;
+};
+
+export const REPLY_DRAFT_STATUSES = ["draft", "sent", "discarded"] as const;
+export type ReplyDraftStatus = (typeof REPLY_DRAFT_STATUSES)[number];
+
+export type ReplyDraft = {
+	id: string;
+	workItemId: string;
+	workItemNumber?: number | null;
+	requestId: string;
+	subject: string;
+	body: string;
+	status: ReplyDraftStatus;
+	model: string | null;
+	costNanos: number;
+	/** The recipient, when the API returns it. Otherwise the request's contact email is used. */
+	contactEmail?: string | null;
+	sentTo: string | null;
+	sentAt: string | null;
+	createdAt: string;
+	updatedAt: string;
+};
+
+export type WorkInsights = {
+	from: string;
+	to: string;
+	created: Array<{ day: string; source: WorkItemSource; items: number }>;
+	closed: Array<{ day: string; items: number; done: number }>;
+	/** State to count. Older answers sent a list of { state, items }. */
+	openByState: Partial<Record<WorkItemState, number>> | Array<{ state: WorkItemState; items: number }>;
+	/** Priority "0" to "4" to count. Older answers sent a list of { priority, items }. */
+	openByPriority: Partial<Record<string, number>> | Array<{ priority: number; items: number }>;
+	openPastSla: number;
+	openStalled: number;
+	closeHoursP50: number | null;
+	closeHoursP90: number | null;
+	/** costUsd is in US dollars, as the API returns it. */
+	runs: Array<{ agent: WorkAgent; runs: number; succeeded: number; costUsd?: number; costNanos?: number }>;
+	totalCostUsd?: number;
+};
+
+export type WorkItemRelationsDetail = {
+	children?: WorkItemSummary[];
+	parent?: WorkItemSummary | null;
+	relations?: WorkRelation[];
+	subscribed?: boolean;
+};
+
+export type WorkProjectsResponse = { projects: WorkProject[] };
+export type WorkProjectDetailResponse = { project: WorkProject; items: WorkItem[] };
+export type WorkCyclesResponse = { cycles: WorkCycle[] };
+export type WorkCurrentCycleResponse = { cycle: WorkCycle | null };
+export type WorkViewsResponse = { views: WorkView[] };
+export type WorkSettingsResponse = { settings: WorkSettings; canEdit?: boolean };
+export type WorkNotificationsResponse = { notifications: WorkNotification[]; unreadCount: number; nextCursor?: string | null };
+export type ReplyDraftsResponse = { drafts: ReplyDraft[] };
+/** web-api has no email sender for arbitrary recipients yet: "manual" means marked sent, for the person to send. */
+export type ReplyDraftSendResponse = { draft: ReplyDraft; delivery?: "manual" | "email"; email?: { to: string; subject: string; body: string }; mailto?: string };

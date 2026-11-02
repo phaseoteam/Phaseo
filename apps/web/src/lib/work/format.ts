@@ -6,7 +6,12 @@ const NANOS_PER_USD = 1_000_000_000;
 /** Agent run cost in US format: "$0.0042" under a cent, "$12.50" above it. */
 export function formatCostNanos(nanos: number | string | null | undefined): string {
 	const value = Number(nanos ?? 0);
-	const usd = Number.isFinite(value) ? value / NANOS_PER_USD : 0;
+	return formatUsd(Number.isFinite(value) ? value / NANOS_PER_USD : 0);
+}
+
+/** US dollars in US format, with four decimals under a cent: "$0.0042", "$12.50". */
+export function formatUsd(amount: number): string {
+	const usd = Number.isFinite(amount) ? amount : 0;
 	const digits = usd > 0 && usd < 0.01 ? 4 : 2;
 	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(usd);
 }

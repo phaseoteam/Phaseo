@@ -48,9 +48,15 @@ export type InboxFilters = {
 	assignee: AssigneeFilter;
 	label: string;
 	query: string;
+	/** "all" or a project id. */
+	project?: string;
+	/** "all" or a cycle id. */
+	cycle?: string;
+	/** "all" or "0" to "4". */
+	priority?: string;
 };
 
-export const EMPTY_FILTERS: InboxFilters = { state: "all", source: "all", assignee: "all", label: "all", query: "" };
+export const EMPTY_FILTERS: InboxFilters = { state: "all", source: "all", assignee: "all", label: "all", query: "", project: "all", cycle: "all", priority: "all" };
 
 export function assigneeKey(item: Pick<WorkItem, "assigneeAgent" | "assigneeUserId">): string {
 	if (item.assigneeAgent) return `agent:${item.assigneeAgent}`;
@@ -75,13 +81,16 @@ export function filterItems(items: WorkItem[], filters: InboxFilters): WorkItem[
 		if (filters.source !== "all" && item.source !== filters.source) return false;
 		if (filters.assignee !== "all" && assigneeKey(item) !== filters.assignee) return false;
 		if (filters.label !== "all" && !item.labels.includes(filters.label)) return false;
+		if (filters.project && filters.project !== "all" && (item.projectId ?? null) !== filters.project) return false;
+		if (filters.cycle && filters.cycle !== "all" && (item.cycleId ?? null) !== filters.cycle) return false;
+		if (filters.priority && filters.priority !== "all" && String(item.priority) !== filters.priority) return false;
 		if (query && !item.title.toLowerCase().includes(query) && String(item.number) !== number && !item.labels.some((label) => label.includes(query))) return false;
 		return true;
 	});
 }
 
 export function activeFilterCount(filters: InboxFilters): number {
-	return (["state", "source", "assignee", "label"] as const).filter((key) => filters[key] !== "all").length + (filters.query.trim() ? 1 : 0);
+	return (["state", "source", "assignee", "label", "project", "cycle", "priority"] as const).filter((key) => (filters[key] ?? "all") !== "all").length + (filters.query.trim() ? 1 : 0);
 }
 
 /** Every label in use, most used first, then alphabetically. */
@@ -118,7 +127,7 @@ export function listCursorReducer(state: ListCursor, action: ListCursorAction): 
 	return index === state.index ? state : { index };
 }
 
-export type ListKey = "create" | "next" | "previous" | "open" | null;
+export type ListKey = "create" | "next" | "previous" | "open" | "select" | null;
 
 /** Maps a key press to a list command, ignoring typing in fields and modified keys. */
 export function listKeyCommand(event: { key: string; metaKey?: boolean; ctrlKey?: boolean; altKey?: boolean; target?: { tagName?: string; isContentEditable?: boolean } | null }): ListKey {
@@ -127,6 +136,7 @@ export function listKeyCommand(event: { key: string; metaKey?: boolean; ctrlKey?
 	if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || event.target?.isContentEditable) return null;
 	switch (event.key) {
 		case "c": return "create";
+		case "x": return "select";
 		case "j":
 		case "ArrowDown": return "next";
 		case "k":
