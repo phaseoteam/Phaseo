@@ -7,7 +7,8 @@ vi.mock("cloudflare:workers", () => ({
 	},
 }));
 
-import { HEALTH_URGENT_PUBLISH_GAP_MS, RoutingHealthDurableObject } from "./routing-health-durable-object";
+import { HEALTH_URGENT_PUBLISH_GAP_MS, RoutingHealthDurableObject, type BreakerStateRow } from "./routing-health-durable-object";
+import { HEALTH_CONSTANTS } from "@pipeline/execute/health.config";
 import { HEALTH_PUBLISH_INTERVAL_MS, healthSnapshotKey, type HealthObservation, type HealthSnapshot } from "@pipeline/execute/health-evidence";
 import type { GatewayBindings } from "@/runtime/env.types";
 
@@ -20,9 +21,18 @@ let state: DurableObjectState;
 let env: GatewayBindings;
 let sequence = 0;
 let initialising: Promise<unknown>;
+let recorded: BreakerStateRow[][];
+let recordBreakerStates: ReturnType<typeof vi.fn>;
+
+class TestRoutingHealth extends RoutingHealthDurableObject {
+	protected override async writeBreakerStates(rows: BreakerStateRow[]) {
+		await recordBreakerStates(rows);
+		recorded.push(rows);
+	}
+}
 
 function object() {
-	return new RoutingHealthDurableObject(state, env);
+	return new TestRoutingHealth(state, env);
 }
 
 async function ready(health: RoutingHealthDurableObject) {
@@ -51,6 +61,8 @@ beforeEach(() => {
 	sqlCalls = [];
 	storageCalls = [];
 	put = vi.fn().mockResolvedValue(undefined);
+	recorded = [];
+	recordBreakerStates = vi.fn().mockResolvedValue(undefined);
 	state = {
 		blockConcurrencyWhile: (fn: () => Promise<unknown>) => (initialising = fn()),
 		storage: {
@@ -192,5 +204,77 @@ describe("routing health coordinator", () => {
 		const health = await ready(object());
 		expect(db.prepare("SELECT name FROM sqlite_master WHERE name='reports'").get()).toBeUndefined();
 		expect(await health.observe(event({ id: "legacy" }))).toBeNull();
+	});
+});
+
+describe("breaker state history", () => {
+	async function openBreaker(health: RoutingHealthDurableObject) {
+		let receipt;
+		for (let index = 0; index < HEALTH_CONSTANTS.OPEN_MIN_TOTAL_FLOOR; index++) receipt = await health.observe(event({ ok: false }));
+		expect(receipt?.health.breaker).toBe("open");
+		return receipt!.health;
+	}
+
+	it("writes nothing for ordinary evidence", async () => {
+		const health = await ready(object());
+		for (let index = 0; index < 20; index++) await health.observe(event());
+		vi.setSystemTime(alarm!);
+		await health.alarm();
+		expect(recordBreakerStates).not.toHaveBeenCalled();
+	});
+
+	it("records an opened breaker within the urgent publication", async () => {
+		const health = await ready(object());
+		const opened = await openBreaker(health);
+		vi.setSystemTime(alarm!);
+		await health.alarm();
+		expect(recorded).toEqual([[{
+			provider_id: "alpha", model_id: "lab/model", endpoint: "text.generate", breaker_state: "open",
+			is_deranked: true, open_until_ms: opened.breaker_until_ms, open_until: new Date(opened.breaker_until_ms).toISOString(),
+			last_transition_at: expect.any(String), updated_at: new Date(Date.now()).toISOString(), last_reason: "closed_to_open",
+		}]]);
+		expect(db.prepare("SELECT count(*) AS count FROM breaker_transitions").get()).toEqual({ count: 0 });
+		// Continued failures while open are not new transitions.
+		await health.observe(event({ ok: false }));
+		vi.setSystemTime(alarm!);
+		await health.alarm();
+		expect(recorded).toHaveLength(1);
+	});
+
+	it("records recovery after successful probes close the breaker", async () => {
+		const health = await ready(object());
+		const opened = await openBreaker(health);
+		vi.setSystemTime(alarm!);
+		await health.alarm();
+		vi.setSystemTime(opened.breaker_until_ms + 1000);
+		let receipt;
+		for (let index = 0; index < HEALTH_CONSTANTS.HALF_OPEN_MIN_PROBES; index++) {
+			receipt = await health.observe(event({ probe: true, startedAt: Date.now() - 10 }));
+		}
+		expect(receipt?.health.breaker).toBe("closed");
+		vi.setSystemTime(alarm!);
+		await health.alarm();
+		expect(recorded.at(-1)).toEqual([expect.objectContaining({
+			provider_id: "alpha", breaker_state: "closed", is_deranked: false, open_until_ms: 0, open_until: null,
+			last_reason: "half_open_to_closed",
+		})]);
+	});
+
+	it("keeps a failed write pending across eviction and retries it", async () => {
+		const first = await ready(object());
+		await openBreaker(first);
+		recordBreakerStates.mockRejectedValueOnce(new Error("database unavailable"));
+		vi.setSystemTime(alarm!);
+		await first.alarm();
+		expect(recorded).toEqual([]);
+		expect(published().providers.alpha.breaker).toBe("open");
+		expect(alarm).toBe(Date.now() + HEALTH_PUBLISH_INTERVAL_MS);
+		expect(db.prepare("SELECT provider, from_state FROM breaker_transitions").all()).toEqual([{ provider: "alpha", from_state: "closed" }]);
+
+		const second = await ready(object());
+		vi.setSystemTime(alarm!);
+		await second.alarm();
+		expect(recorded).toEqual([[expect.objectContaining({ provider_id: "alpha", breaker_state: "open", last_reason: "closed_to_open" })]]);
+		expect(db.prepare("SELECT count(*) AS count FROM breaker_transitions").get()).toEqual({ count: 0 });
 	});
 });

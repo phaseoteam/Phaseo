@@ -1790,4 +1790,39 @@ describe("public model routes", () => {
 			checkedPairs: 2,
 		} } });
 	});
+
+	it("reports an open breaker past its cooldown as recovering, whatever was stored at opening", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([
+			{ provider_id: "openai", breaker_state: "open", is_deranked: true, open_until_ms: Date.now() - 1_000 },
+		]), { status: 200 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai",
+			{},
+			env,
+		);
+
+		await expect(response.json()).resolves.toEqual({ providers: { openai: {
+			providerId: "openai",
+			deranked: false,
+			recovering: true,
+			openCount: 0,
+			halfOpenCount: 1,
+			checkedPairs: 1,
+		} } });
+	});
+
+	it("does not cache an empty status when breaker state cannot be read", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "unavailable" }), { status: 500 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cache-tag")).toBeNull();
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
+	});
 });

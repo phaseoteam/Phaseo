@@ -1062,10 +1062,14 @@ publicModelsRouter.get("/provider-routing-health", async (c) => {
 		}
 		const providers = Object.fromEntries(providerIds.map((providerId) => {
 			const matches = rows.filter((row) => row.provider_id === providerId);
-			const openCount = matches.filter((row) => row.breaker_state === "open").length;
-			const halfOpenCount = matches.filter((row) => row.breaker_state === "half_open").length;
-			const deranked = matches.some((row) => Boolean(row.is_deranked)
-				|| (row.breaker_state === "open" && Number(row.open_until_ms ?? 0) > nowMs));
+			// Rows change only on breaker transitions, so a stored is_deranked outlives the cooldown.
+			// An open breaker past its cooldown admits recovery probes: it is recovering, not limited.
+			const openNow = (row: Record<string, unknown>) =>
+				row.breaker_state === "open" && Number(row.open_until_ms ?? 0) > nowMs;
+			const openCount = matches.filter(openNow).length;
+			const halfOpenCount = matches.filter((row) => row.breaker_state === "half_open"
+				|| (row.breaker_state === "open" && !openNow(row))).length;
+			const deranked = openCount > 0;
 			return [providerId, {
 				providerId,
 				deranked,
@@ -1078,7 +1082,8 @@ publicModelsRouter.get("/provider-routing-health", async (c) => {
 		return withPublicCache(c.json({ providers }), sectionPolicy("routingHealth"));
 	} catch (error) {
 		console.error("[web-api/models] provider routing health failed", { providerIds, error });
-		return withPublicCache(c.json({ providers: {} }), sectionPolicy("routingHealth"));
+		// Unknown is not healthy: do not cache an empty status for every visitor.
+		return c.json({ error: "provider_routing_health_unavailable" }, 503);
 	}
 });
 
