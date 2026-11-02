@@ -22,6 +22,11 @@ describe("Codex managed MCP", () => {
 		await waitCodexMcp({ request }, "thread", [connection], new AbortController().signal);
 		expect(request).toHaveBeenLastCalledWith("mcpServerStatus/list", { threadId: "thread", cursor: "next", detail: "toolsAndAuthOnly", limit: 100 }, expect.any(Number));
 	});
+	it("waits for a status answer that comes only once Codex's own servers have started", async () => {
+		// Measured on a Windows config with eight servers, some needing sign-in: Codex answered after 24 s.
+		const request = vi.fn().mockImplementation(async (_method: string, _params: unknown, timeoutMs: number) => { if (timeoutMs < 24000) throw new Error("Agent request timed out: mcpServerStatus/list"); return { data: [{ name: nativeMcpName(connection), runtimeStatus: "connected" }], nextCursor: null }; });
+		await expect(waitCodexMcp({ request }, "thread", [connection], new AbortController().signal)).resolves.toBeUndefined();
+	});
 	it("rejects failed connections without exposing native diagnostics", async () => {
 		const request = vi.fn().mockResolvedValue({ data: [{ name: nativeMcpName(connection), runtimeStatus: "authenticationRequired", toolsError: "secret diagnostic" }], nextCursor: null });
 		await expect(waitCodexMcp({ request }, "thread", [connection], new AbortController().signal)).rejects.toThrow("MCP server “Fixture” needs native sign-in.");
