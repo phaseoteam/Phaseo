@@ -7,16 +7,18 @@ const DEFAULT_KEY_LIMIT = 100;
 export const CHAT_MANAGED_KEY_NAME = "__chat_route_managed_key__";
 /** The Slack agent's key: created, rotated and removed only by the Slack install flow. */
 export const SLACK_AGENT_MANAGED_KEY_NAME = "__slack_agent_managed_key__";
+/** The work tracker's triage agent key: created by web-api the first time a member runs triage. */
+export const WORK_AGENT_MANAGED_KEY_NAME = "__work_agent_managed_key__";
 /**
  * Keys Phaseo manages for its own features. The control API never lists, counts
  * or changes them: rotating or deleting one would break the feature that holds it.
  * Use with PostgREST as `.not("name", "in", MANAGED_KEY_NAMES_FILTER)`.
  */
-export const MANAGED_KEY_NAMES_FILTER = `(${[CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME].map((name) => `"${name}"`).join(",")})`;
+export const MANAGED_KEY_NAMES_FILTER = `(${[CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME, WORK_AGENT_MANAGED_KEY_NAME].map((name) => `"${name}"`).join(",")})`;
 
 /** Managed names are reserved: a key given one would vanish from every route and skip the key limit. */
 export function isManagedKeyName(name: string): boolean {
-	return name === CHAT_MANAGED_KEY_NAME || name === SLACK_AGENT_MANAGED_KEY_NAME;
+	return name === CHAT_MANAGED_KEY_NAME || name === SLACK_AGENT_MANAGED_KEY_NAME || name === WORK_AGENT_MANAGED_KEY_NAME;
 }
 export type WorkspaceKeyType = "api" | "management";
 

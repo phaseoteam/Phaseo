@@ -315,6 +315,7 @@
     "public/tables/work_subscriptions.sql",
     "public/tables/work_notifications.sql",
     "public/tables/work_reply_drafts.sql",
+    "public/tables/work_cycle_days.sql",
     "private/views/v2_rpc_benchmark_results_compat.sql",
     "private/views/v2_rpc_benchmarks_compat.sql",
     "private/views/v2_rpc_capabilities_compat.sql",
@@ -941,6 +942,7 @@
     "public/functions/record_work_error_event.sql",
     "public/functions/work_insights.sql",
     "public/functions/work_cycle_estimates.sql",
+    "public/functions/snapshot_work_cycle_days.sql",
     "_cluster/event_triggers.sql",
     "_cluster/default_privileges.sql",
     "public/default_privileges.sql",
@@ -1884,6 +1886,8 @@
     "public/tables/work_notifications.sql",
     "public/tables/work_reply_drafts.sql",
     "public/functions/work_insights.sql",
-    "public/functions/work_cycle_estimates.sql"
+    "public/functions/work_cycle_estimates.sql",
+    "public/tables/work_cycle_days.sql",
+    "public/functions/snapshot_work_cycle_days.sql"
   ]
 }

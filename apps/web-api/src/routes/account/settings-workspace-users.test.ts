@@ -26,7 +26,7 @@ vi.mock("./context", () => ({ requireAccountWorkspace: async () => mocks.allowed
 		const builder = {
 			select: (columns: string) => { query.columns = columns; return builder; },
 			eq: (key: string, value: unknown) => { query.filters.push([key, value]); return builder; },
-			neq: (key: string, value: unknown) => { query.excluded = [...(query.excluded ?? []), [key, value]]; return builder; }, gte: () => builder, lt: () => builder, order: () => builder,
+			neq: (key: string, value: unknown) => { query.excluded = [...(query.excluded ?? []), [key, value]]; return builder; }, not: (key: string, _op: string, value: unknown) => { query.excluded = [...(query.excluded ?? []), [key, value]]; return builder; }, gte: () => builder, lt: () => builder, order: () => builder,
 			range: (...bounds: number[]) => { query.range = bounds; return builder; },
 			limit: (limit: number) => { query.limit = limit; return builder; },
 			maybeSingle: async () => result(),

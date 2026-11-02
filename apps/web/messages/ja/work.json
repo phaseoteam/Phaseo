@@ -523,7 +523,7 @@
 		"ideal": "理想",
 		"items": "項目",
 		"doneOf": "{total} 件中 {done} 件完了",
-		"burnUpCaption": "見積もりポイント: スコープ、理想のペース、今日までの完了分。",
+		"burnUpCaption": "日ごとの見積もりポイント: スコープ、理想のペース、完了分。",
 		"rollover": "持ち越す",
 		"rolloverTitle": "未完了の項目を持ち越す",
 		"rolloverDescription": "{name} の未完了の項目 {count} 件を次のサイクルに移動しますか？",

@@ -523,7 +523,7 @@
 		"ideal": "Idéal",
 		"items": "Éléments",
 		"doneOf": "{done} sur {total} terminés",
-		"burnUpCaption": "Points d’estimation : périmètre, rythme idéal et ce qui est terminé aujourd’hui.",
+		"burnUpCaption": "Points d’estimation par jour : périmètre, rythme idéal et ce qui a été terminé.",
 		"rollover": "Reporter",
 		"rolloverTitle": "Reporter les éléments non terminés",
 		"rolloverDescription": "{count, plural, one {Déplacer # élément non terminé de {name} vers le cycle suivant ?} other {Déplacer # éléments non terminés de {name} vers le cycle suivant ?}}",

@@ -34,7 +34,7 @@ begin
     and key.created_at < v_incident.keys_created_before
     and key.key_kind = 'standard'
     and key.status = any(case when v_incident.action = 'pause' then array['active'] else array['active', 'paused'] end)
-    and key.name not in ('__chat_route_managed_key__', '__slack_agent_managed_key__')
+    and key.name not in ('__chat_route_managed_key__', '__slack_agent_managed_key__', '__work_agent_managed_key__')
   for update of key;
 
   update public.keys as key

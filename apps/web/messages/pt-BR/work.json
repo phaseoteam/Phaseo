@@ -523,7 +523,7 @@
 		"ideal": "Ideal",
 		"items": "Itens",
 		"doneOf": "{done} de {total} concluídos",
-		"burnUpCaption": "Pontos de estimativa: escopo, ritmo ideal e o que está concluído até hoje.",
+		"burnUpCaption": "Pontos de estimativa por dia: escopo, ritmo ideal e o que foi concluído.",
 		"rollover": "Passar adiante",
 		"rolloverTitle": "Passar itens não concluídos",
 		"rolloverDescription": "{count, plural, one {Mover # item não concluído de {name} para o próximo ciclo?} other {Mover # itens não concluídos de {name} para o próximo ciclo?}}",

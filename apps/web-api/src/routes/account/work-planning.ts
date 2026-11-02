@@ -4,6 +4,7 @@ import {
 	CYCLE_COLUMNS,
 	MAX_CYCLES_LISTED,
 	describeCycle,
+	describeCycleWithHistory,
 	insertCycle,
 	loadCurrentCycle,
 	loadNextCycle,
@@ -163,7 +164,7 @@ accountWorkPlanningRouter.delete("/projects/:id", async (c) => {
 
 /** Another cycle overlapping these dates (cycles must not overlap), or null. */
 async function overlappingCycle(context: AccountWorkspaceContext, startsOn: string, endsOn: string, exceptId?: string): Promise<WorkCycleRow | null> {
-	let query = context.client.from("work_cycles").select(CYCLE_COLUMNS).eq("workspace_id", context.workspaceId).lt("starts_on", endsOn).gt("ends_on", startsOn);
+	let query = context.client.from("work_cycles").select(CYCLE_COLUMNS).eq("workspace_id", context.workspaceId).lte("starts_on", endsOn).gte("ends_on", startsOn);
 	if (exceptId) query = query.neq("id", exceptId);
 	const { data, error } = await query.limit(1);
 	if (error) throw new Error(`work_cycles read failed: ${error.message}`);
@@ -192,7 +193,7 @@ accountWorkPlanningRouter.get("/cycles/current", async (c) => {
 	const { context } = access;
 	try {
 		const row = await loadCurrentCycle(context.client, context.workspaceId);
-		return json(c, { cycle: row ? await describeCycle(context.client, row) : null });
+		return json(c, { cycle: row ? await describeCycleWithHistory(context.client, row) : null });
 	} catch {
 		return unavailable(c);
 	}
@@ -224,7 +225,7 @@ accountWorkPlanningRouter.get("/cycles/:id", async (c) => {
 	try {
 		const row = await loadWorkCycle(context.client, context.workspaceId, id);
 		if (!row) return notFound(c, "Cycle not found");
-		const [cycle, items] = await Promise.all([describeCycle(context.client, row), listItems(context, "cycle_id", id)]);
+		const [cycle, items] = await Promise.all([describeCycleWithHistory(context.client, row), listItems(context, "cycle_id", id)]);
 		return json(c, { cycle, items });
 	} catch {
 		return unavailable(c);

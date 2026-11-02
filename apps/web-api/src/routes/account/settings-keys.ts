@@ -5,7 +5,7 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
-import { CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME, isManagedKeyName } from "@/lib/managed-keys";
+import { MANAGED_KEY_NAMES_FILTER, isManagedKeyName } from "@/lib/managed-keys";
 import { requireAccountWorkspace } from "./context";
 import { keyIpAllowlistSchema } from "./keyIpAllowlist";
 import { parseKeyStorageLocations } from "./key-storage-locations";
@@ -87,7 +87,7 @@ async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof re
 	const limit = Math.max(1, Number.parseInt(env.NON_ENTERPRISE_KEY_LIMIT ?? "100", 10) || 100);
 	const notExpiredFilter = `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`;
 	const countQuery = keyType === "api"
-		? context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter).neq("name", CHAT_MANAGED_KEY_NAME).neq("name", SLACK_AGENT_MANAGED_KEY_NAME).neq("key_kind", "workload_identity")
+		? context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter).not("name", "in", MANAGED_KEY_NAMES_FILTER).neq("key_kind", "workload_identity")
 		: context.client.from("management_keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter);
 	if (excludeKeyId) countQuery.neq("id", excludeKeyId);
 	const countResult = await countQuery;

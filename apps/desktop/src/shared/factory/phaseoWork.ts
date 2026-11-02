@@ -168,8 +168,23 @@ export function workOnly(item: Pick<WorkItem, "phaseo">): boolean {
 }
 
 /** What names the item's worktree and branch: its number, marked for a Phaseo-only item so it never takes a GitHub issue's. */
-export function itemKey(item: Pick<WorkItem, "phaseo" | "number">): string {
+export function itemKey(item: Pick<WorkItem, "phaseo" | "number" | "worktreeKey">): string {
+	if (item.worktreeKey) return item.worktreeKey;
 	return workOnly(item) ? `work-${item.number}` : String(item.number);
+}
+
+/**
+ * Phaseo-only items that have since got a GitHub issue: Factory knew each as `<repo>#work-N` and now knows it as
+ * `<repo>#<issue>`. Returns old id → item, for the store to carry its runs, stages, thread and worktree over.
+ */
+export function renamedWork(work: WorkItem[]): Map<string, WorkItem> {
+	const renamed = new Map<string, WorkItem>();
+	for (const item of work) {
+		if (!item.phaseo || item.phaseo.githubIssue === undefined) continue;
+		const before = workItemId(item.repo, item.phaseo.number);
+		if (before !== item.id) renamed.set(before, item);
+	}
+	return renamed;
 }
 
 /**

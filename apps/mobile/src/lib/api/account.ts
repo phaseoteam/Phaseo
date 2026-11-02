@@ -174,7 +174,7 @@ export async function getKeys(workspaceId: string): Promise<GatewayKey[]> {
   const raw = await request("/api/account/settings/keys", { auth: true, query: { workspaceId } });
   const parsed = z.object({ teamsWithKeys: z.array(z.object({ id: str, keys: z.array(keySchema).default([]) }).passthrough()).default([]) }).passthrough().parse(raw);
   const team = parsed.teamsWithKeys.find((entry) => entry.id === workspaceId) ?? parsed.teamsWithKeys[0];
-  return (team?.keys ?? []).filter((key) => key.name !== "__chat_route_managed_key__" && key.status !== "deleted");
+  return (team?.keys ?? []).filter((key) => !/^__.*_managed_key__$/.test(key.name ?? "") && key.status !== "deleted");
 }
 
 export async function revokeKey(workspaceId: string, keyId: string): Promise<void> {

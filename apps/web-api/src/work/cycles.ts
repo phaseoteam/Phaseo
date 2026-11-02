@@ -2,7 +2,7 @@ import type { getDataClient } from "@/data/supabase";
 import { CLOSED_WORK_ITEM_STATES, type WorkCycle, type WorkCycleRow, type WorkItemRow } from "./types";
 import { itemCounts, isIsoDate, type ItemCounts } from "./projects";
 
-// Work cycles: numbered, time-boxed periods (starts_on inclusive, ends_on exclusive). Counts are
+// Work cycles: numbered, time-boxed periods (starts_on and ends_on both inclusive). Counts are
 // count queries and estimate sums are summed by the database (one query per sum), never by adding
 // up rows here.
 
@@ -47,6 +47,53 @@ export async function cycleEstimates(client: DataClient, workspaceId: string, cy
 	}
 }
 
+/** One day of a cycle's burn-up: its totals as last recorded that UTC day. */
+export type WorkCycleDay = { day: string; scope: number; completed: number; itemCount: number; doneCount: number };
+
+/**
+ * Records the day's totals for running cycles (public.snapshot_work_cycle_days): every workspace's,
+ * one workspace's, or one cycle's. A second call the same day replaces the first. Returns how many
+ * cycles were recorded, or null when the database call failed.
+ */
+export async function snapshotCycleDays(client: DataClient, day: string, scope: { workspaceId?: string; cycleId?: string } = {}): Promise<number | null> {
+	try {
+		const { data, error } = await client.rpc("snapshot_work_cycle_days", { p_day: day, p_workspace_id: scope.workspaceId ?? null, p_cycle_id: scope.cycleId ?? null });
+		if (error) return null;
+		const count = Number(data);
+		return Number.isFinite(count) ? count : null;
+	} catch {
+		return null;
+	}
+}
+
+/** A cycle's recorded days, oldest first (a cycle is at most 367 days, so one read holds them all). Empty when the read fails. */
+export async function cycleHistory(client: DataClient, workspaceId: string, cycleId: string): Promise<WorkCycleDay[]> {
+	try {
+		const { data, error } = await client.from("work_cycle_days").select("day,scope,completed,item_count,done_count")
+			.eq("workspace_id", workspaceId).eq("cycle_id", cycleId).order("day", { ascending: true }).limit(MAX_CYCLE_DAYS + 1);
+		if (error) return [];
+		return ((data ?? []) as Array<Record<string, unknown>>).flatMap((row) => {
+			const day = typeof row.day === "string" ? row.day.slice(0, 10) : "";
+			if (!isIsoDate(day)) return [];
+			const number = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
+			return [{ day, scope: number(row.scope), completed: number(row.completed), itemCount: number(row.item_count), doneCount: number(row.done_count) }];
+		});
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * A cycle as its own page shows it: counts, estimate totals and its day-by-day history. While the
+ * cycle is running, today's point is recorded first, so the chart reaches today even between the
+ * hourly snapshots.
+ */
+export async function describeCycleWithHistory(client: DataClient, row: WorkCycleRow, today: string = utcDate()): Promise<WorkCycle & { history: WorkCycleDay[] }> {
+	if (row.starts_on <= today && today <= row.ends_on) await snapshotCycleDays(client, today, { workspaceId: row.workspace_id, cycleId: row.id });
+	const [cycle, history] = await Promise.all([describeCycle(client, row), cycleHistory(client, row.workspace_id, row.id)]);
+	return { ...cycle, history };
+}
+
 /** A cycle with its counts and estimate totals (two count queries and one database function). */
 export async function describeCycle(client: DataClient, row: WorkCycleRow): Promise<WorkCycle> {
 	const [counts, estimates] = await Promise.all([
@@ -67,10 +114,10 @@ export function utcDate(now: Date = new Date()): string {
 	return now.toISOString().slice(0, 10);
 }
 
-/** The cycle covering `today` (starts_on <= today < ends_on), or null. */
+/** The cycle covering `today` (starts_on <= today <= ends_on), or null. */
 export async function loadCurrentCycle(client: DataClient, workspaceId: string, today: string = utcDate()): Promise<WorkCycleRow | null> {
 	const { data, error } = await client.from("work_cycles").select(CYCLE_COLUMNS).eq("workspace_id", workspaceId)
-		.lte("starts_on", today).gt("ends_on", today).order("starts_on", { ascending: false }).limit(1);
+		.lte("starts_on", today).gte("ends_on", today).order("starts_on", { ascending: false }).limit(1);
 	if (error) throw new Error(`work_cycles read failed: ${error.message}`);
 	return ((data ?? [])[0] as WorkCycleRow | undefined) ?? null;
 }

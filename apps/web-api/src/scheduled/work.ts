@@ -1,13 +1,23 @@
 import type { Env } from "@/env";
 import { getDataClient } from "@/data/supabase";
+import { snapshotCycleDays, utcDate } from "@/work/cycles";
 import { dueWorkJobs, runWorkAutomation, workAutomationEnabled } from "@/work/scheduled";
 
-// The work tracker's SLA watch (every 15 minutes) and ambient follow-ups (hourly), on the Worker's
-// every-minute cron. Both are off unless WORK_SLA_WATCH_ENABLED / WORK_AMBIENT_ENABLED are "true";
-// while they are off this returns before touching the database.
+/** Cycle burn-up snapshots: once an hour, at this minute, for every running cycle (one database statement). */
+export const WORK_CYCLE_SNAPSHOT_MINUTE = 50;
+
+// The work tracker's jobs on the Worker's every-minute cron:
+// * cycle snapshots (hourly): each running cycle's totals for the day, for its burn-up chart. Always on;
+//   it only records totals the cycle page already shows.
+// * SLA watch (every 15 minutes) and ambient follow-ups (hourly): off unless WORK_SLA_WATCH_ENABLED /
+//   WORK_AMBIENT_ENABLED are "true"; while they are off nothing is read for them.
 export async function handleWorkScheduledEvent(event: ScheduledController, env: Env): Promise<void> {
-	if (!workAutomationEnabled(env)) return;
 	const now = new Date(event.scheduledTime);
+	if (now.getUTCMinutes() === WORK_CYCLE_SNAPSHOT_MINUTE) {
+		const recorded = await snapshotCycleDays(getDataClient(env), utcDate(now));
+		if (recorded === null) console.error("work_cycle_snapshot_failed");
+	}
+	if (!workAutomationEnabled(env)) return;
 	const jobs = dueWorkJobs(now);
 	if (!jobs.sla && !jobs.ambient) return;
 	try {

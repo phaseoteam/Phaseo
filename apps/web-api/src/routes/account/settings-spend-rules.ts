@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { MANAGED_KEY_NAMES_FILTER } from "@/lib/managed-keys";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { isSpendReportCadence, parseIanaTimeZone } from "@/lib/notification-destinations";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
@@ -247,7 +248,7 @@ accountSettingsSpendRulesRouter.get("/spend-rules/options", async (c) => {
 	const { context } = access;
 	const [keys, members, departments, providers, budgets] = await Promise.all([
 		context.client.from("keys").select("id,name,prefix,status,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
-			.eq("workspace_id", context.workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__")
+			.eq("workspace_id", context.workspaceId).neq("status", "deleted").not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.order("name", { ascending: true }).limit(SCOPE_OPTION_LIMIT),
 		context.client.from("workspace_members").select("user_id,role,users(display_name)")
 			.eq("workspace_id", context.workspaceId).limit(SCOPE_OPTION_LIMIT),

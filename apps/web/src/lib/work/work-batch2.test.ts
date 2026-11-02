@@ -283,6 +283,17 @@ describe("insights shaping", () => {
 		expect(rows.every((row) => row.scope === 8)).toBe(true);
 	});
 
+	it("draws recorded days, carrying scope over a missed day and using live totals today", () => {
+		const history = [
+			{ day: "2026-11-01", scope: 5, completed: 0, itemCount: 3, doneCount: 0 },
+			{ day: "2026-11-03", scope: 7, completed: 2, itemCount: 4, doneCount: 1 },
+		];
+		const rows = cycleBurnUp({ startsOn: "2026-11-01", endsOn: "2026-11-06", scope: 8, completed: 3, history }, "2026-11-04");
+		expect(rows.map((row) => row.scope)).toEqual([5, 5, 7, 8, 8, 8]);
+		expect(rows.map((row) => row.completed)).toEqual([0, null, 2, 3, null, null]);
+		expect(rows.at(-1)!.ideal).toBe(8);
+	});
+
 	it("starts the next cycle after the latest one, for the same length", () => {
 		expect(nextCycleDates([{ startsOn: "2026-10-19", endsOn: "2026-11-01" }])).toEqual({ startsOn: "2026-11-02", endsOn: "2026-11-15" });
 		expect(nextCycleDates([], "2026-11-02")).toEqual({ startsOn: "2026-11-02", endsOn: "2026-11-15" });

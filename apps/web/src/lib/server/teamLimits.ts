@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
+import { MANAGED_KEY_NAMES_FILTER } from "@/lib/gateway/managed-chat-key";
 
 const TOP_UP_LEDGER_KINDS = ["top_up", "top_up_one_off", "auto_top_up"] as const;
 const SUCCESS_PAYMENT_STATUSES = ["Succeeded", "succeeded", "paid", "Paid"] as const;
@@ -100,7 +100,7 @@ export async function enforceTeamKeyLimit(
 			.eq("status", "active")
 			.eq("soft_blocked", false)
 			.or(notExpiredFilter)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 		: await supabase
 			.from("management_keys")
 			.select("id", { count: "exact", head: true })

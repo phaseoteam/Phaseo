@@ -116,7 +116,7 @@ describe("management helpers", () => {
 				{ method: "eq", args: ["workspace_id", "ws_1"] },
 				{ method: "eq", args: ["status", "active"] },
 				{ method: "eq", args: ["soft_blocked", false] },
-				{ method: "not", args: ["name", "in", '("__chat_route_managed_key__","__slack_agent_managed_key__")'] },
+				{ method: "not", args: ["name", "in", '("__chat_route_managed_key__","__slack_agent_managed_key__","__work_agent_managed_key__")'] },
 			]),
 		);
 		expect(state.managementKeyQueryCalls).toHaveLength(0);

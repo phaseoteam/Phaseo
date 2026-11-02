@@ -523,7 +523,7 @@
 		"ideal": "理想",
 		"items": "条目",
 		"doneOf": "已完成 {done}/{total}",
-		"burnUpCaption": "估算点数：范围、理想进度和截至今天的完成量。",
+		"burnUpCaption": "每日估算点数：范围、理想进度和完成量。",
 		"rollover": "顺延",
 		"rolloverTitle": "顺延未完成的条目",
 		"rolloverDescription": "要把 {name} 中 {count} 个未完成的条目移到下一个周期吗？",

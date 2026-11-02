@@ -80,7 +80,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."work_cycles"
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."work_cycles" IS 'Time-boxed cycles (sprints), numbered per workspace. Work items are planned into at most one cycle.';
+COMMENT ON TABLE "public"."work_cycles" IS 'Time-boxed cycles (sprints), numbered per workspace, from starts_on to ends_on (both days included). Work items are planned into at most one cycle.';
 
 REVOKE ALL ON TABLE "public"."work_cycles" FROM "service_role";
 
@@ -871,6 +871,37 @@ GRANT INSERT, SELECT, UPDATE ON TABLE "public"."work_reply_drafts" TO "service_r
 
 REVOKE ALL ON TABLE "public"."work_reply_drafts" FROM "anon", "authenticated";
 
+CREATE TABLE "public"."work_cycle_days" (
+  "cycle_id"     uuid                     NOT NULL,
+  "workspace_id" uuid                     NOT NULL,
+  "day"          date                     NOT NULL,
+  "scope"        numeric                  NOT NULL DEFAULT 0,
+  "completed"    numeric                  NOT NULL DEFAULT 0,
+  "item_count"   integer                  NOT NULL DEFAULT 0,
+  "done_count"   integer                  NOT NULL DEFAULT 0,
+  "recorded_at"  timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_cycle_days_cycle_id_fkey" FOREIGN KEY (cycle_id) REFERENCES public.work_cycles(id) ON DELETE CASCADE,
+  CONSTRAINT "work_cycle_days_pkey" PRIMARY KEY (cycle_id, day)
+);
+
+ALTER TABLE "public"."work_cycle_days"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_cycle_days"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_cycle_days" IS 'A work cycle''s totals at the end of each UTC day it ran (the latest snapshot that day), for its burn-up chart. Written by public.snapshot_work_cycle_days.';
+
+REVOKE ALL ON TABLE "public"."work_cycle_days" FROM "service_role";
+
+GRANT SELECT ON TABLE "public"."work_cycle_days" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_cycle_days" FROM "anon", "authenticated";
+
 CREATE OR REPLACE FUNCTION public.create_work_item (
   p_workspace_id uuid,
   p_title        text,
@@ -1143,3 +1174,52 @@ REVOKE ALL ON FUNCTION public.work_cycle_estimates(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.work_cycle_estimates(uuid, uuid) FROM "anon", "authenticated";
 
 GRANT EXECUTE ON FUNCTION public.work_cycle_estimates(uuid, uuid) TO "service_role";
+
+CREATE OR REPLACE FUNCTION public.snapshot_work_cycle_days (
+  p_day          date,
+  p_workspace_id uuid DEFAULT NULL,
+  p_cycle_id     uuid DEFAULT NULL
+)
+  RETURNS integer
+  LANGUAGE sql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+-- Records each cycle running on p_day (starts_on <= p_day <= ends_on): its scope (estimates of
+-- every item but cancelled), completed (estimates of done items) and item counts, replacing any
+-- earlier snapshot that day. Optionally one workspace or one cycle. Returns the cycles recorded.
+with totals as (
+  insert into public.work_cycle_days as day_row (cycle_id, workspace_id, day, scope, completed, item_count, done_count, recorded_at)
+  select
+    cycle.id,
+    cycle.workspace_id,
+    p_day,
+    coalesce(sum(item.estimate) filter (where item.state <> 'cancelled'), 0),
+    coalesce(sum(item.estimate) filter (where item.state = 'done'), 0),
+    count(item.id) filter (where item.state <> 'cancelled')::integer,
+    count(item.id) filter (where item.state = 'done')::integer,
+    now()
+  from public.work_cycles cycle
+  left join public.work_items item on item.workspace_id = cycle.workspace_id and item.cycle_id = cycle.id
+  where cycle.starts_on <= p_day and cycle.ends_on >= p_day
+    and (p_workspace_id is null or cycle.workspace_id = p_workspace_id)
+    and (p_cycle_id is null or cycle.id = p_cycle_id)
+  group by cycle.id, cycle.workspace_id
+  on conflict (cycle_id, day) do update set
+    scope = excluded.scope,
+    completed = excluded.completed,
+    item_count = excluded.item_count,
+    done_count = excluded.done_count,
+    recorded_at = excluded.recorded_at
+  returning 1
+)
+select count(*)::integer from totals;
+$function$;
+
+COMMENT ON FUNCTION public.snapshot_work_cycle_days(date, uuid, uuid) IS 'Records the day''s totals for every work cycle running on that day (or one workspace''s, or one cycle''s), for burn-up charts. Service role only.';
+
+REVOKE ALL ON FUNCTION public.snapshot_work_cycle_days(date, uuid, uuid) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION public.snapshot_work_cycle_days(date, uuid, uuid) FROM "anon", "authenticated";
+
+GRANT EXECUTE ON FUNCTION public.snapshot_work_cycle_days(date, uuid, uuid) TO "service_role";

@@ -723,10 +723,10 @@ describe("management key routes", () => {
 		});
 	});
 
-	it("never reads, changes, rotates or deletes keys Phaseo manages for Chat and the Slack agent", async () => {
+	it("never reads, changes, rotates or deletes keys Phaseo manages for Chat, the Slack agent and the work tracker", async () => {
 		const { keysRoutes } = await import("./keys");
 		const { MANAGED_KEY_NAMES_FILTER } = await import("./management-helpers");
-		expect(MANAGED_KEY_NAMES_FILTER).toBe('("__chat_route_managed_key__","__slack_agent_managed_key__")');
+		expect(MANAGED_KEY_NAMES_FILTER).toBe('("__chat_route_managed_key__","__slack_agent_managed_key__","__work_agent_managed_key__")');
 
 		const calls: Array<[string, RequestInit]> = [
 			["https://example.com/hash_managed", { method: "GET" }],
@@ -746,7 +746,7 @@ describe("management key routes", () => {
 
 	it("refuses to create or rename a key with a name Phaseo reserves for its managed keys", async () => {
 		const { keysRoutes } = await import("./keys");
-		for (const name of ["__slack_agent_managed_key__", " __chat_route_managed_key__ "]) {
+		for (const name of ["__slack_agent_managed_key__", " __chat_route_managed_key__ ", "__work_agent_managed_key__"]) {
 			const created = await keysRoutes.request("https://example.com/", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },

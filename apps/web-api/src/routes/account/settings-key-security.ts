@@ -4,7 +4,7 @@ import { requireUser } from "@/auth/requireUser";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { sanitizeAuditMetadata } from "@/lib/audit/workspaceAudit";
-import { CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
+import { MANAGED_KEY_NAMES_FILTER } from "@/lib/managed-keys";
 import { requireAccountWorkspace } from "./context";
 import { isKeyStorageLocationId, parseKeyStorageLocations } from "./key-storage-locations";
 import { invalidateGatewayKey } from "./settings-keys";
@@ -119,7 +119,7 @@ accountSettingsKeySecurityRouter.post("/key-security/bulk", bodyLimit({ maxSize:
 		.eq("key_kind", "standard")
 		.in("status", plan.statuses)
 		.or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-		.not("name", "in", `("${CHAT_MANAGED_KEY_NAME}","${SLACK_AGENT_MANAGED_KEY_NAME}")`);
+		.not("name", "in", MANAGED_KEY_NAMES_FILTER);
 	query = storageLocation !== null ? query.contains("storage_locations", [storageLocation]) : query.in("id", keyIds);
 	const result = await query.select("id,name,prefix");
 	if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);

@@ -85,23 +85,31 @@ export function closeTimeParts(hours: number | null | undefined): { value: numbe
 export type BurnUpRow = { day: string; scope: number; ideal: number; completed: number | null };
 
 /**
- * A burn-up for a cycle from what the API knows: today's scope and completed estimate. Scope is drawn
- * flat, the ideal line rises from 0 to scope across the cycle, and completed runs from 0 at the start
- * to today's value (the API has no daily history, so the days between are not plotted).
+ * A burn-up for a cycle, one row per day from start to end (both included). Up to today, scope and
+ * completed are the totals recorded each day (`history`); today's are the live totals. Scope carries
+ * the last recorded value over days with no record and runs on flat after today; completed is left
+ * out (null) on days with no record, so the line joins the days around them. The ideal line rises
+ * from 0 to today's scope across the cycle. Without history, completed is 0 at the start and today's
+ * value today.
  */
-export function cycleBurnUp(cycle: Pick<WorkCycle, "startsOn" | "endsOn" | "scope" | "completed">, today: string = new Date().toISOString().slice(0, 10)): BurnUpRow[] {
+export function cycleBurnUp(cycle: Pick<WorkCycle, "startsOn" | "endsOn" | "scope" | "completed" | "history">, today: string = new Date().toISOString().slice(0, 10)): BurnUpRow[] {
 	const days = daysBetween(cycle.startsOn, cycle.endsOn);
 	if (!days.length) return [];
 	const scope = Math.max(0, Number(cycle.scope) || 0);
 	const completed = Math.max(0, Number(cycle.completed) || 0);
+	const recorded = new Map((cycle.history ?? []).map((entry) => [entry.day, entry]));
 	const last = Math.max(1, days.length - 1);
 	const todayIndex = today < days[0]! ? -1 : today > days.at(-1)! ? days.length - 1 : days.indexOf(today);
-	return days.map((day, index) => ({
-		day,
-		scope,
-		ideal: Math.round((scope * index * 100) / last) / 100,
-		completed: index === 0 ? 0 : index === todayIndex ? completed : null,
-	}));
+	const firstRecorded = (cycle.history ?? []).find((entry) => entry.day >= days[0]!);
+	let carried = firstRecorded ? Math.max(0, firstRecorded.scope) : scope;
+	return days.map((day, index) => {
+		const ideal = Math.round((scope * index * 100) / last) / 100;
+		if (index === todayIndex) return { day, scope, ideal, completed };
+		if (index > todayIndex) return { day, scope, ideal, completed: null };
+		const entry = recorded.get(day);
+		if (entry) carried = Math.max(0, entry.scope);
+		return { day, scope: carried, ideal, completed: entry ? Math.max(0, entry.completed) : index === 0 ? 0 : null };
+	});
 }
 
 /** Whether a yyyy-mm-dd range covers today. */

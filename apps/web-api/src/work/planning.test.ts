@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { insertCycle, parseCycleInput, cycleEstimates } from "./cycles";
+import { insertCycle, parseCycleInput, cycleEstimates, describeCycleWithHistory } from "./cycles";
 import { fakeDataClient, hasFilter } from "./fakeDataClient.testing";
 import { formatWorkInsights, insightsRange } from "./insights";
 import { formatWorkProject, isIsoDate, parseProjectInput } from "./projects";
@@ -59,6 +59,34 @@ describe("cycles", () => {
 		const fake = fakeDataClient(() => ({ data: null, error: null }));
 		fake.onRpc(() => ({ data: null, error: { message: "boom" } }));
 		expect(await cycleEstimates(fake.client, "ws", "c")).toEqual({ scope: null, completed: null });
+	});
+
+	it("records today on a running cycle, then returns its days oldest first", async () => {
+		const fake = fakeDataClient((query) => {
+			if (query.table === "work_cycle_days") return { data: [{ day: "2026-11-01", scope: "5", completed: "0", item_count: 3, done_count: 0 }, { day: "2026-11-02", scope: 8, completed: 3, item_count: 4, done_count: 1 }], error: null };
+			if (query.op === "select") return { data: null, error: null, count: 0 } as never;
+			return undefined;
+		});
+		fake.onRpc((name) => (name === "snapshot_work_cycle_days" ? { data: 1, error: null } : { data: { scope: 8, completed: 3 }, error: null }));
+		const row = { id: "c", workspace_id: "ws", number: 1, name: null, starts_on: "2026-11-01", ends_on: "2026-11-14", created_at: NOW };
+		const cycle = await describeCycleWithHistory(fake.client, row, "2026-11-02");
+		expect(fake.rpcCalls[0]).toEqual({ name: "snapshot_work_cycle_days", args: { p_day: "2026-11-02", p_workspace_id: "ws", p_cycle_id: "c" } });
+		expect(cycle.history).toEqual([
+			{ day: "2026-11-01", scope: 5, completed: 0, itemCount: 3, doneCount: 0 },
+			{ day: "2026-11-02", scope: 8, completed: 3, itemCount: 4, doneCount: 1 },
+		]);
+		const days = fake.queries.find((query) => query.table === "work_cycle_days")!;
+		expect(hasFilter(days, "eq", "cycle_id", "c")).toBe(true);
+	});
+
+	it("records nothing for a cycle that has ended (its end day still counts)", async () => {
+		const fake = fakeDataClient(() => ({ data: [], error: null }));
+		const row = { id: "c", workspace_id: "ws", number: 1, name: null, starts_on: "2026-11-01", ends_on: "2026-11-14", created_at: NOW };
+		await describeCycleWithHistory(fake.client, row, "2026-11-14");
+		expect(fake.rpcCalls.some((call) => call.name === "snapshot_work_cycle_days")).toBe(true);
+		const later = fakeDataClient(() => ({ data: [], error: null }));
+		await describeCycleWithHistory(later.client, row, "2026-11-15");
+		expect(later.rpcCalls.some((call) => call.name === "snapshot_work_cycle_days")).toBe(false);
 	});
 });
 

@@ -252,7 +252,12 @@ export type WorkCycle = {
 	/** Sum of estimates of done items in the cycle. */
 	completed: number | null;
 	createdAt: string;
+	/** The cycle's totals as recorded each day, oldest first. Only on the current cycle and a cycle's own page. */
+	history?: WorkCycleDay[];
 };
+
+/** One recorded day of a cycle (yyyy-mm-dd, UTC). */
+export type WorkCycleDay = { day: string; scope: number; completed: number; itemCount: number; doneCount: number };
 
 export const WORK_RELATION_KINDS = ["blocks", "related"] as const;
 export type WorkRelationKind = (typeof WORK_RELATION_KINDS)[number];

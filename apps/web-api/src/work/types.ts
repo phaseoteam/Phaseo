@@ -271,7 +271,7 @@ export type WorkCycleRow = {
 	workspace_id: string;
 	number: number;
 	name: string | null;
-	/** Dates (YYYY-MM-DD); ends_on is after starts_on. */
+	/** Dates (YYYY-MM-DD), both inclusive; ends_on is after starts_on. */
 	starts_on: string;
 	ends_on: string;
 	created_at: string;

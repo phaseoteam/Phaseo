@@ -9,7 +9,7 @@ import { DEMO_AGENTS, DEMO_SETTINGS, demoAttachment, demoItems, demoNotes, demoP
 import { agentForStage, defaultPlaybooks, withPlaybookDefaults } from "../../shared/factory/intake";
 import { ASK_ROUNDS, asksReporter, pullRequestBody, reportMarkdown, reporterComment, runOutcome, stageOutcome, verdictPassed, type ProofRef } from "../../shared/factory/report";
 import { COMPUTER, MAX_NOTES, applyNoteReport, noteRefs, notesForPrompt } from "../../shared/factory/notes";
-import { mergeWork, normalizeWorkSettings, workOnly } from "../../shared/factory/phaseoWork";
+import { mergeWork, normalizeWorkSettings, renamedWork, workOnly } from "../../shared/factory/phaseoWork";
 import { TRIAGE_THRESHOLD, similarIssues } from "../../shared/factory/similar";
 import { ASKS_REPORTER, STAGES, ciBrief, conflictBrief, currentStage, emptyStages, findingsBrief, staleChecks, issueBody, replyPrompt, stageLabel, stagePrompt, stagesFor } from "../../shared/factory/stages";
 import type { AgentProfile, CheckRun, FactorySettings, PhaseoWorkStatus, GithubChange, ImageUpload, PullFiles, RepoLabel, IssueComment, Mentionable, MergeState, NotePatch, TimelineEntry, RepoNote, RepoStatus, FactorySnapshot, ItemAction, LogLine, NewIssueInput, Run, RunOutcome, RunReport, SimilarItem, StageId, StageStatus, StartRunInput, WorkItem } from "../../shared/factory/types";
@@ -27,6 +27,7 @@ export interface ItemOverlay {
 	ci?: WorkItem["ci"];
 	attachments?: WorkItem["attachments"];
 	branch?: string;
+	worktreeKey?: string;
 	linked?: number;
 	revisions?: number;
 	asked?: WorkItem["asked"];
@@ -365,10 +366,45 @@ export class FactoryStore {
 		try {
 			this.work = await this.deps.work.poll();
 			this.workStatus = { syncedAt: Date.now(), items: this.work.length };
+			this.carryRenamedWork();
 		} catch (error) {
 			this.workStatus = { ...this.workStatus, items: this.work.length, error: message(error) };
 		}
 		this.cacheChanged = true;
+	}
+
+	/**
+	 * A Phaseo-only item that has since got a GitHub issue changes id (`<repo>#work-N` to `<repo>#<issue>`). What
+	 * Factory kept under the old id (its stages, runs and thread) moves to the new one, and it keeps its `work-N`
+	 * worktree and branch, so the fix already under way carries on there.
+	 */
+	private carryRenamedWork() {
+		for (const [before, item] of renamedWork(this.work)) {
+			const overlay = this.overlays[before];
+			const runs = this.snapshot.runs.some((run) => run.itemId === before);
+			const thread = this.snapshot.threads[before];
+			if (!overlay && !runs && !thread) continue;
+			if (overlay) {
+				const current = this.overlays[item.id];
+				const worktreeKey = overlay.worktreeKey ?? (overlay.branch || runs ? `work-${item.phaseo!.number}` : undefined);
+				// A stage the new id has done something in wins; an idle one keeps what was done under the old id.
+				const stages = { ...overlay.stages } as NonNullable<ItemOverlay["stages"]>;
+				for (const [stage, state] of Object.entries(current?.stages ?? {})) if (state.status !== "idle") stages[stage as keyof typeof stages] = state;
+				// Overlays keep unset fields as undefined, which mustn't wipe the old id's branch and the rest.
+				const set = Object.fromEntries(Object.entries(current ?? {}).filter(([, value]) => value !== undefined)) as ItemOverlay;
+				this.overlays[item.id] = { ...overlay, ...set, stages, ...(worktreeKey ? { worktreeKey } : {}) };
+				delete this.overlays[before];
+			} else if (runs) {
+				this.overlays[item.id] = { ...this.overlays[item.id], worktreeKey: `work-${item.phaseo!.number}` };
+			}
+			const threads = { ...this.snapshot.threads };
+			if (thread) {
+				threads[item.id] ??= thread;
+				delete threads[before];
+			}
+			this.snapshot = { ...this.snapshot, threads, runs: this.snapshot.runs.map((run) => (run.itemId === before ? { ...run, itemId: item.id } : run)) };
+			for (const answer of this.answers) if (answer.itemId === before) answer.itemId = item.id;
+		}
 	}
 
 	/** Reads every open issue and pull request in a repository. */
@@ -535,7 +571,7 @@ export class FactoryStore {
 	private withOverlay(item: WorkItem): WorkItem {
 		const overlay = this.overlays[item.id];
 		if (!overlay) return item;
-		return { ...item, assigneeId: overlay.assigneeId, effort: overlay.effort, loggedHere: overlay.loggedHere, duplicateOf: overlay.duplicateOf, ci: overlay.ci, attachments: item.attachments ?? overlay.attachments, branch: item.branch ?? overlay.branch, linked: item.linked ?? overlay.linked, revisions: overlay.revisions, asked: overlay.asked, autopilot: overlay.autopilot, stages: staleChecks(item, { ...emptyStages(), ...overlay.stages }) };
+		return { ...item, assigneeId: overlay.assigneeId, effort: overlay.effort, loggedHere: overlay.loggedHere, duplicateOf: overlay.duplicateOf, ci: overlay.ci, attachments: item.attachments ?? overlay.attachments, branch: item.branch ?? overlay.branch, worktreeKey: item.worktreeKey ?? overlay.worktreeKey, linked: item.linked ?? overlay.linked, revisions: overlay.revisions, asked: overlay.asked, autopilot: overlay.autopilot, stages: staleChecks(item, { ...emptyStages(), ...overlay.stages }) };
 	}
 
 	private item(itemId: string): WorkItem {
@@ -547,7 +583,7 @@ export class FactoryStore {
 	private patchItem(itemId: string, patch: (item: WorkItem) => WorkItem) {
 		this.snapshot = { ...this.snapshot, items: this.snapshot.items.map((item) => (item.id === itemId ? patch(item) : item)) };
 		const item = this.snapshot.items.find((candidate) => candidate.id === itemId);
-		if (item) this.overlays[itemId] = { assigneeId: item.assigneeId, effort: item.effort, loggedHere: item.loggedHere, duplicateOf: item.duplicateOf, ci: item.ci, attachments: item.attachments, branch: item.branch, linked: item.linked, revisions: item.revisions, asked: item.asked, autopilot: item.autopilot, stages: item.stages };
+		if (item) this.overlays[itemId] = { assigneeId: item.assigneeId, effort: item.effort, loggedHere: item.loggedHere, duplicateOf: item.duplicateOf, ci: item.ci, attachments: item.attachments, branch: item.branch, worktreeKey: item.worktreeKey, linked: item.linked, revisions: item.revisions, asked: item.asked, autopilot: item.autopilot, stages: item.stages };
 		this.changed();
 	}
 

@@ -41,7 +41,7 @@ CREATE OR REPLACE FUNCTION public.workspace_key_security (
       and key.key_kind = 'standard'
       and key.status in ('active', 'paused')
       and (key.expires_at is null or key.expires_at > now())
-      and key.name not in ('__chat_route_managed_key__', '__slack_agent_managed_key__')
+      and key.name not in ('__chat_route_managed_key__', '__slack_agent_managed_key__', '__work_agent_managed_key__')
   ), flagged as (
     select
       live.*,

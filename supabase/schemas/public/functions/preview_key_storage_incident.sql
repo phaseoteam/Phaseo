@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION public.preview_key_storage_incident (
     and key.created_at < p_keys_created_before
     and key.key_kind = 'standard'
     and key.status = any(case when p_action = 'pause' then array['active'] else array['active', 'paused'] end)
-    and key.name not in ('__chat_route_managed_key__', '__slack_agent_managed_key__');
+    and key.name not in ('__chat_route_managed_key__', '__slack_agent_managed_key__', '__work_agent_managed_key__');
 $function$;
 
 COMMENT ON FUNCTION "public"."preview_key_storage_incident"(text, timestamp with time zone, text) IS 'How many keys and workspaces a key storage incident would revoke or pause. Service-only.';

@@ -523,7 +523,7 @@
 		"ideal": "Ideal",
 		"items": "Einträge",
 		"doneOf": "{done} von {total} erledigt",
-		"burnUpCaption": "Schätzpunkte: Umfang, ideales Tempo und der heute erledigte Stand.",
+		"burnUpCaption": "Schätzpunkte pro Tag: Umfang, ideales Tempo und was erledigt wurde.",
 		"rollover": "Übernehmen",
 		"rolloverTitle": "Unerledigte Einträge übernehmen",
 		"rolloverDescription": "{count, plural, one {# unerledigten Eintrag aus {name} in den nächsten Zyklus verschieben?} other {# unerledigte Einträge aus {name} in den nächsten Zyklus verschieben?}}",

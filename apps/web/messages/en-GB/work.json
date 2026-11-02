@@ -523,7 +523,7 @@
 		"ideal": "Ideal",
 		"items": "Items",
 		"doneOf": "{done} of {total} done",
-		"burnUpCaption": "Estimate points: scope, the ideal pace, and what's completed today.",
+		"burnUpCaption": "Estimate points by day: scope, the ideal pace, and what was completed.",
 		"rollover": "Roll over",
 		"rolloverTitle": "Roll over unfinished items",
 		"rolloverDescription": "{count, plural, one {Move # unfinished item from {name} to the next cycle?} other {Move # unfinished items from {name} to the next cycle?}}",

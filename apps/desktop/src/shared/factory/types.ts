@@ -97,6 +97,11 @@ export interface WorkItem {
 	comments: number;
 	/** Pull requests: the head branch. Issues: the branch an agent opened, if any. */
 	branch?: string;
+	/**
+	 * What names the item's worktree folder and branch, when it isn't the usual one: a Phaseo Work item that Factory
+	 * started on before it had a GitHub issue keeps its `work-N` worktree after it gets one.
+	 */
+	worktreeKey?: string;
 	/** Pull requests: the head branch's latest commit. */
 	head?: string;
 	/** Issues: the pull request that fixes it. Pull requests: the issue it closes. */

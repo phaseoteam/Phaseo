@@ -83,7 +83,7 @@ describe("key security", () => {
 			["in", "id", keyIds],
 			["in", "status", ["active", "paused"]],
 			["or", expect.stringMatching(/^expires_at\.is\.null,expires_at\.gt\.\d{4}-/)],
-			["not", "name", "in", "(\"__chat_route_managed_key__\",\"__slack_agent_managed_key__\")"],
+			["not", "name", "in", "(\"__chat_route_managed_key__\",\"__slack_agent_managed_key__\",\"__work_agent_managed_key__\")"],
 		]));
 		expect(mocks.state.audit).toEqual([expect.objectContaining({ action: "api_key.revoked", target_id: keyIds[0], metadata: expect.objectContaining({ bulkAction: "revoke" }) })]);
 		expect(invalidateGatewayKey).toHaveBeenCalledWith(expect.anything(), keyIds[0]);

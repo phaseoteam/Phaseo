@@ -48,6 +48,29 @@ describe("FactoryStore with Phaseo Work", () => {
 		expect(events).toEqual([]);
 	});
 
+	it("carries a Phaseo-only item's stages, runs, thread and worktree over when it gets a GitHub issue", async () => {
+		const { store } = await storeWithWork();
+		const inner = store as unknown as {
+			overlays: Record<string, { branch?: string; worktreeKey?: string; stages?: Record<string, { status: string }> }>;
+			snapshot: { runs: Run[]; threads: Record<string, string> };
+			work: WorkItem[];
+			carryRenamedWork: () => void;
+		};
+		const before = "acme/app#work-12";
+		const after = "acme/app#57";
+		inner.overlays[before] = { branch: "factory/work-12-fix-login", stages: { triage: { status: "passed" }, fix: { status: "running" } } };
+		inner.overlays[after] = { branch: undefined, stages: { triage: { status: "idle" }, review: { status: "failed" } } };
+		inner.snapshot.runs = [...inner.snapshot.runs, { id: "run-x", itemId: before, stage: "fix", agentId: "claude-sonnet", status: "running", startedAt: 1, log: [] } as Run];
+		inner.snapshot.threads = { ...inner.snapshot.threads, [before]: "thread-12" };
+		inner.work = [{ id: after, repo: "acme/app", number: 57, kind: "issue", phaseo: { workspaceId: "ws-1", number: 12, url: "https://phaseo.app/work/12", state: "in_progress", priority: 2, githubIssue: 57 } } as WorkItem];
+		inner.carryRenamedWork();
+		expect(inner.overlays[before]).toBeUndefined();
+		expect(inner.overlays[after]).toMatchObject({ branch: "factory/work-12-fix-login", worktreeKey: "work-12", stages: { triage: { status: "passed" }, fix: { status: "running" }, review: { status: "failed" } } });
+		expect(inner.snapshot.runs.find((run) => run.id === "run-x")?.itemId).toBe(after);
+		expect(inner.snapshot.threads[after]).toBe("thread-12");
+		expect(inner.snapshot.threads[before]).toBeUndefined();
+	});
+
 	it("keeps only valid Phaseo Work settings", async () => {
 		const { store } = await storeWithWork();
 		await store.updateSettings({ phaseoWork: { enabled: true, workspaceId: "ws-1", engineer: false, mine: true, label: " Agent ", token: "x" } as never });

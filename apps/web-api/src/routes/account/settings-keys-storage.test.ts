@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => {
     const insert = vi.fn(() => ({ select: () => ({ maybeSingle: async () => ({ data: { id: "key-2" }, error: null }) }) }));
     const keyRow = { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: key, error: null }) }) }), update, insert };
     // enforceKeyLimit: workspace tier, then a count of active keys.
-    const countQuery: any = { eq: () => countQuery, or: () => countQuery, neq: () => countQuery, then: (resolve: (value: unknown) => void) => resolve({ count: 0, error: null }) };
+    const countQuery: any = { eq: () => countQuery, or: () => countQuery, neq: () => countQuery, not: () => countQuery, then: (resolve: (value: unknown) => void) => resolve({ count: 0, error: null }) };
     const client = {
         from: vi.fn((table: string) => table === "workspaces"
             ? { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { tier: "basic" }, error: null }) }) }) }

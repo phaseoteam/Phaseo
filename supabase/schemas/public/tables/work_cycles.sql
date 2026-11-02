@@ -24,7 +24,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."work_cycles"
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."work_cycles" IS 'Time-boxed cycles (sprints), numbered per workspace. Work items are planned into at most one cycle.';
+COMMENT ON TABLE "public"."work_cycles" IS 'Time-boxed cycles (sprints), numbered per workspace, from starts_on to ends_on (both days included). Work items are planned into at most one cycle.';
 
 REVOKE ALL ON TABLE "public"."work_cycles" FROM "service_role";
 

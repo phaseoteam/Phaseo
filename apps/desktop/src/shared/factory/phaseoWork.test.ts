@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { nextActions } from "./actions";
 import { pullRequestBody } from "./report";
-import { costNanos, itemKey, mergeWork, normalizeWorkSettings, readWorkDetail, readWorkList, toFactoryItem, unionRecords, workOnly, workQueries, workRunSummary } from "./phaseoWork";
+import { costNanos, itemKey, mergeWork, normalizeWorkSettings, readWorkDetail, renamedWork, readWorkList, toFactoryItem, unionRecords, workOnly, workQueries, workRunSummary } from "./phaseoWork";
 import { emptyStages, stagePrompt } from "./stages";
 import type { FactorySnapshot, Run, WorkItem } from "./types";
 
@@ -63,6 +63,8 @@ describe("Phaseo Work mapping", () => {
 		expect(linked).toMatchObject({ id: "acme/app#345", number: 345, url: "https://github.com/acme/app/issues/345", phaseo: { number: 12, githubIssue: 345 } });
 		expect(workOnly(linked)).toBe(false);
 		expect(itemKey(linked)).toBe("345");
+		expect(itemKey({ ...linked, worktreeKey: "work-12" })).toBe("work-12");
+		expect([...renamedWork([linked])]).toEqual([["acme/app#work-12", linked]]);
 
 		const github: WorkItem = { ...linked, source: "github", phaseo: undefined, title: "From GitHub", author: { login: "octo" } };
 		const alone = toFactoryItem(readWorkList({ items: [apiItem(13)] })[0]!, "ws-1");
