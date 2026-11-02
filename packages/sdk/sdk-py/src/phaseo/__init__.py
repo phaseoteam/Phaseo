@@ -18,6 +18,7 @@ from phaseo_devtools import TelemetryRecorder, create_phaseo_devtools
 from ._version import __version__
 from .model_ids import MODEL_IDS, ModelIds
 from .auth import ApiKeyProvider
+from .workload_tokens import github_actions_token, vercel_token
 from .transport import HttpClient, APIResponse, PhaseoHTTPError, RawResponse, RequestHook, request_trace_url
 from .helpers import parse_output, output_text, collect_stream, check_capabilities, check_parameter_support, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
 from .async_client import AsyncPhaseo, AsyncJobHandle, collect_async_stream, ParsedOutput
@@ -2051,6 +2052,8 @@ def _as_trimmed_string(value: Any) -> Optional[str]:
 __all__ = [
     "__version__",
     "ApiKeyProvider",
+    "github_actions_token",
+    "vercel_token",
     "APIResponse",
     "AsyncPhaseo",
     "AsyncJobHandle",

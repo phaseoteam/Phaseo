@@ -49,5 +49,21 @@
 		"working": "Unsubscribing…",
 		"done": "You're unsubscribed.",
 		"error": "That didn't work. Please try again."
+	},
+	"spendReports": {
+		"metaTitle": "Spend report emails",
+		"title": "Spend report emails for {workspace}",
+		"subscribedBody": "You get this workspace's spend report by email. Unsubscribing stops only these reports: other workspaces' reports, alerts, and account and billing emails still arrive.",
+		"unsubscribedBody": "You won't get this workspace's spend report by email any more. Owners and admins can still see spend on the usage page.",
+		"unsubscribe": "Unsubscribe",
+		"unsubscribing": "Unsubscribing…",
+		"subscribe": "Subscribe again",
+		"subscribing": "Subscribing…",
+		"unsubscribed": "You're unsubscribed.",
+		"subscribed": "You're subscribed again.",
+		"error": "That didn't work. Please try again.",
+		"invalidTitle": "This link doesn't work",
+		"invalidBody": "Check that the whole link was copied. You can also change spend report settings in Settings → Notifications.",
+		"unavailable": "This page isn't available right now. Please try again later."
 	}
 }

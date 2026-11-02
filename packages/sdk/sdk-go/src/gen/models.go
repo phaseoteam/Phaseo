@@ -2530,14 +2530,10 @@ type GenerationResponse struct {
 type Guardrail struct {
 	AllowedApiModelIds *[]string `json:"allowed_api_model_ids,omitempty"`
 	CreatedAt *string `json:"created_at,omitempty"`
-	DailyLimitCostNanos *int `json:"daily_limit_cost_nanos,omitempty"`
-	DailyLimitRequests *int `json:"daily_limit_requests,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	Id string `json:"id"`
 	ModelRestrictionMode *string `json:"model_restriction_mode,omitempty"`
-	MonthlyLimitCostNanos *int `json:"monthly_limit_cost_nanos,omitempty"`
-	MonthlyLimitRequests *int `json:"monthly_limit_requests,omitempty"`
 	Name string `json:"name"`
 	PrivacyEnableFreeMayPublishPrompts *bool `json:"privacy_enable_free_may_publish_prompts,omitempty"`
 	PrivacyEnableFreeMayTrain *bool `json:"privacy_enable_free_may_train,omitempty"`
@@ -2553,23 +2549,11 @@ type Guardrail struct {
 	SensitiveInfoEnabled *bool `json:"sensitive_info_enabled,omitempty"`
 	SensitiveInfoRules *[]map[string]interface{} `json:"sensitive_info_rules,omitempty"`
 	UpdatedAt *string `json:"updated_at,omitempty"`
-	WeeklyLimitCostNanos *int `json:"weekly_limit_cost_nanos,omitempty"`
-	WeeklyLimitRequests *int `json:"weekly_limit_requests,omitempty"`
 	WorkspaceId string `json:"workspace_id"`
-}
-
-type GuardrailBudgetInput struct {
-	DailyCostNanos *int `json:"dailyCostNanos,omitempty"`
-	DailyRequests *int `json:"dailyRequests,omitempty"`
-	MonthlyCostNanos *int `json:"monthlyCostNanos,omitempty"`
-	MonthlyRequests *int `json:"monthlyRequests,omitempty"`
-	WeeklyCostNanos *int `json:"weeklyCostNanos,omitempty"`
-	WeeklyRequests *int `json:"weeklyRequests,omitempty"`
 }
 
 type GuardrailCreateRequest struct {
 	AllowedApiModelIds *[]string `json:"allowedApiModelIds,omitempty"`
-	Budgets *map[string]interface{} `json:"budgets,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	ModelRestrictionMode *string `json:"modelRestrictionMode,omitempty"`
@@ -2651,7 +2635,6 @@ type GuardrailMemberListResponse struct {
 
 type GuardrailPolicyInput struct {
 	AllowedApiModelIds *[]string `json:"allowedApiModelIds,omitempty"`
-	Budgets *map[string]interface{} `json:"budgets,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	ModelRestrictionMode *string `json:"modelRestrictionMode,omitempty"`
@@ -2681,7 +2664,6 @@ type GuardrailResponse struct {
 
 type GuardrailUpdateRequest struct {
 	AllowedApiModelIds *[]string `json:"allowedApiModelIds,omitempty"`
-	Budgets *map[string]interface{} `json:"budgets,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	ModelRestrictionMode *string `json:"modelRestrictionMode,omitempty"`
@@ -6501,14 +6483,30 @@ const (
 )
 
 
+type WorkspaceSpendReportCadence string
+
+const (
+	WorkspaceSpendReportCadenceOff WorkspaceSpendReportCadence = "off"
+	WorkspaceSpendReportCadenceDaily WorkspaceSpendReportCadence = "daily"
+	WorkspaceSpendReportCadenceWeekly WorkspaceSpendReportCadence = "weekly"
+	WorkspaceSpendReportCadenceMonthly WorkspaceSpendReportCadence = "monthly"
+)
+
+
+type WorkspaceSpendReportIncludeAdmins = bool
+
 type WorkspaceSpendSettings struct {
 	BillingTimeZone string `json:"billing_time_zone"`
 	DepartmentAttribution string `json:"department_attribution"`
+	ReportCadence string `json:"report_cadence"`
+	ReportIncludeAdmins bool `json:"report_include_admins"`
 }
 
 type WorkspaceSpendSettingsUpdate struct {
 	BillingTimeZone *string `json:"billing_time_zone,omitempty"`
 	DepartmentAttribution *string `json:"department_attribution,omitempty"`
+	ReportCadence *string `json:"report_cadence,omitempty"`
+	ReportIncludeAdmins *bool `json:"report_include_admins,omitempty"`
 }
 
 type WorkspaceSsoResponse struct {

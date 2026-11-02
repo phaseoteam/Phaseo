@@ -122,7 +122,8 @@ export function convertToGatewayChatRequest(
   if (options.tools?.length) {
     body.tools = prepareTools(options.tools);
   }
-  if (options.toolChoice) {
+  // AI SDK passes toolChoice "auto" even without tools; OpenAI rejects tool_choice without tools.
+  if (options.toolChoice && body.tools) {
     body.tool_choice = convertToolChoice(options.toolChoice);
   }
 

@@ -1,0 +1,9 @@
+---
+title: "Verlauf einer Ausgabenregel auflisten"
+sidebarTitle: "Regelverlauf"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/history"
+description: "Listet die Warnungen und Sperrereignisse auf, die eine Ausgabenregel gesendet hat."
+---
+
+Erfordert `spend_rules:read`. Blättere mit `limit` (1 bis 100) und `offset` durch die Ereignisse. `periods` zeigt die in jedem Zeitraum bereits gesendeten Schwellen.

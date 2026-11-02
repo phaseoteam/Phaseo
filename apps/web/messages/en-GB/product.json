@@ -490,6 +490,7 @@
 				"earlier_history_missing": "This request continued an earlier response by ID, so the turns before it aren't included.",
 				"unsupported_content": "Some content couldn't be shown and was left out.",
 				"attachment_reference": "Some attachments were referenced by ID and weren't stored with the request.",
+				"media_not_stored": "Images, audio and files aren't kept in I/O logs, so they're left out.",
 				"no_response": "The logged response is missing or failed, so the chat ends with the request.",
 				"response_truncated": "The logged response was cut short.",
 				"extra_choices": "Only the first of the response's choices is included.",

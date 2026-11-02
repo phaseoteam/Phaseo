@@ -1,0 +1,9 @@
+---
+title: "Test-Ausgabenwarnung senden"
+sidebarTitle: "Test senden"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /spend-rules/{id}/test"
+description: "Sendet die Warnung, die eine Ausgabenregel jetzt senden würde, als TEST markiert."
+---
+
+Erfordert `spend_rules:write`. Der Test geht an die Ziele der Regel oder, wenn sie keine hat, an die Route **Ausgabenwarnungen**. Es wird nichts gespeichert. Ein Arbeitsbereich kann fünf Tests pro Minute senden; weitere ergeben `429` mit `Retry-After`.

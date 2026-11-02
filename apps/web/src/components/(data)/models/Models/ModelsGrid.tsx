@@ -32,9 +32,9 @@ type ModelRow = {
 const VIRTUALIZE_AFTER_ROWS = 60;
 const VIRTUAL_OVERSCAN_ROWS = 4;
 const SERVER_RENDERED_MODEL_COUNT = 18;
-const DEFAULT_DESKTOP_ROW_HEIGHT = 208;
-const DEFAULT_MOBILE_ROW_HEIGHT = 320;
-const DEFAULT_WIDE_DESKTOP_ROW_HEIGHT = 196;
+const DEFAULT_DESKTOP_ROW_HEIGHT = 244;
+const DEFAULT_MOBILE_ROW_HEIGHT = 356;
+const DEFAULT_WIDE_DESKTOP_ROW_HEIGHT = 232;
 // Window observers populate the exact viewport after hydration. A non-zero
 // estimate keeps the first virtual rows visible while that observer attaches.
 const INITIAL_WINDOW_RECT = { width: 0, height: 900 };

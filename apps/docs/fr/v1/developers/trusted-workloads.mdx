@@ -101,6 +101,22 @@ La [référence de l’API](../api-reference/endpoint/trusted-workloads-create.m
 
 ## Appeler Phaseo avec un jeton
 
+Chaque SDK Phaseo accepte une fonction à la place de la clé API et l’appelle avant chaque requête et chaque nouvelle tentative, pour que chaque requête utilise un jeton à jour. Chaque SDK, sauf C++, inclut une fonction utilitaire pour chaque plateforme. Elle obtient un jeton émis pour `https://api.phaseo.app` et le réutilise jusqu’à une minute avant son expiration :
+
+| SDK | GitHub Actions | Vercel |
+| --- | --- | --- |
+| TypeScript | `githubActionsToken()` | `vercelToken()` |
+| Python | `github_actions_token()` | `vercel_token()` |
+| Go | `phaseo.GitHubActionsToken()` | `phaseo.VercelToken()` |
+| Java | `WorkloadTokens.gitHubActions()` | `WorkloadTokens.vercel()` |
+| C# | `WorkloadTokens.GitHubActions()` | `WorkloadTokens.Vercel()` |
+| PHP | `WorkloadTokens::githubActions()` | `WorkloadTokens::vercel()` |
+| Ruby | `PhaseoSdk::WorkloadTokens.github_actions` | `PhaseoSdk::WorkloadTokens.vercel` |
+| Rust | `phaseo::auth::github_actions_token()` | `phaseo::auth::vercel_token()` |
+| C++ | Passez votre propre fonction à `set_api_key_provider` | Passez votre propre fonction à `set_api_key_provider` |
+
+Les fonctions utilitaires nécessitent la prochaine version de chaque SDK. Sur Vercel, la fonction utilitaire échange le jeton du déploiement provenant de `VERCEL_OIDC_TOKEN_FILE` ou de `VERCEL_OIDC_TOKEN`. Dans Vercel Functions, le jeton arrive avec chaque requête dans l’en-tête `x-vercel-oidc-token` ; passez-le à la fonction utilitaire comme source du jeton.
+
 <Tabs>
 <Tab title="Vercel">
 Utilisez `getVercelOidcToken` depuis le point d'entrée serveur de `@vercel/oidc` 4.x. En passant `audience`, le jeton du déploiement est échangé contre un jeton émis pour Phaseo.

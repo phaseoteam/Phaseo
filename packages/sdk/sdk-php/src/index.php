@@ -12,6 +12,7 @@ require_once __DIR__ . "/gen/Operations.php";
 require_once __DIR__ . "/ModelIds.php";
 require_once __DIR__ . "/Workflows.php";
 require_once __DIR__ . "/Realtime.php";
+require_once __DIR__ . "/WorkloadTokens.php";
 
 use Phaseo\Gen\Client as GenClient;
 use RuntimeException;
@@ -68,7 +69,7 @@ class Phaseo
     private ?Realtime $realtime = null;
 
     public function __construct(
-        ?string $apiKey = null,
+        string|callable|null $apiKey = null,
         string $basePath = "https://api.phaseo.app/v1",
         bool $enableDeprecationWarnings = true,
         bool $warningsAsErrors = false,
@@ -80,15 +81,22 @@ class Phaseo
         string $clientSource = "phaseo-php",
         string $clientSourceVersion = "2.1.0"
     ) {
-        $apiKey = $apiKey ?? getenv("PHASEO_API_KEY") ?: null;
-        if (!$apiKey) {
-            throw new \InvalidArgumentException("Missing API key. Pass apiKey or set PHASEO_API_KEY.");
+        // A callable apiKey (for example WorkloadTokens::githubActions()) is called before every
+        // request and retry; a string is sent as-is.
+        if (is_string($apiKey) || $apiKey === null) {
+            $apiKey = $apiKey ?? getenv("PHASEO_API_KEY") ?: null;
+            if (!$apiKey) {
+                throw new \InvalidArgumentException("Missing API key. Pass apiKey or set PHASEO_API_KEY.");
+            }
+            $authorization = "Bearer " . $apiKey;
+        } else {
+            $authorization = new BearerCredential($apiKey);
         }
         $this->basePath = rtrim($basePath, "/");
         $this->client = new GenClient(
             $this->basePath,
             [
-                "Authorization" => "Bearer " . $apiKey,
+                "Authorization" => $authorization,
                 "X-Phaseo-Client" => $clientSource,
                 "X-Phaseo-Client-Version" => $clientSourceVersion,
             ],
@@ -134,7 +142,24 @@ class Phaseo
         mixed $body = null,
         ?array $options = null
     ): \Phaseo\Gen\Response {
+        // An Authorization header given here replaces the client's own, whatever its casing.
+        $headers = self::normalizeAuthorizationHeader($headers);
+        if (isset($options["headers"])) {
+            $options["headers"] = self::normalizeAuthorizationHeader($options["headers"]);
+        }
         return $this->client->requestWithResponse($method, $path, $query, $headers, $body, $options);
+    }
+
+    private static function normalizeAuthorizationHeader(?array $headers): ?array
+    {
+        if ($headers === null) {
+            return null;
+        }
+        $normalized = [];
+        foreach ($headers as $name => $value) {
+            $normalized[is_string($name) && strcasecmp($name, "Authorization") === 0 ? "Authorization" : $name] = $value;
+        }
+        return $normalized;
     }
 
     public function asyncJobs(): AsyncJobsResource

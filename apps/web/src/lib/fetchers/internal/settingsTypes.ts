@@ -323,6 +323,10 @@ export type SettingsCreditsInitialData = {
 	departmentSpendAttribution?: "all" | "primary";
 	/** IANA time zone for spend rule calendar periods (rules without their own zone) and spend reports. */
 	billingTimeZone?: string;
+	/** How often owners (and admins when included) get the spend report email. */
+	spendReportCadence?: SpendReportCadence;
+	/** Whether admins get the spend report email too. */
+	spendReportIncludeAdmins?: boolean;
 	notificationDestinations: NotificationDestination[];
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 	obfuscateInfo: boolean;
@@ -455,6 +459,9 @@ export type NotificationDestination = {
 	signingSecretRotatedAt?: string | null;
 };
 
+/** workspace_settings.spend_report_cadence: daily 09:00, weekly Monday 09:00, monthly on the 1st, in the billing time zone. */
+export type SpendReportCadence = "off" | "daily" | "weekly" | "monthly";
+
 export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "broadcast_destination_failing" | "spend_alert" | "spend_blocked" | "spend_report";
 
 export type SettingsPaymentMethodsInitialData = {
@@ -579,7 +586,7 @@ export type SettingsPresetsInitialData = {
 };
 
 export type SettingsGuardrailProviderModel = { providerId: string; apiModelId: string; internalModelId: string | null; internalModelName?: string | null; organisationId?: string | null; organisationName?: string | null; providerPolicy?: { zeroDataRetention: boolean; dataPolicyTier: string; dataPolicyConfidence: string }; capabilities?: Array<{ id: string; dataPolicy: Record<string, unknown> | null }> };
-export type SettingsGuardrailRow = { id: string; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null; daily_limit_requests?: number | null; weekly_limit_requests?: number | null; monthly_limit_requests?: number | null; daily_limit_cost_nanos?: number | null; weekly_limit_cost_nanos?: number | null; monthly_limit_cost_nanos?: number | null };
+export type SettingsGuardrailRow = { id: string; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null };
 export type SettingsGuardrailMember = { id: string; name: string; role: string };
 export type SettingsGuardrailProvider = { id: string; name: string; familyId: string; offerLabel: string | null; offerScope: "global" | "regional" | "specialized" | null };
 export type SettingsGuardrailsInitialData = { activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrailKeyIdsByGuardrailId: Record<string, string[]>; guardrailMemberIdsByGuardrailId: Record<string, string[]>; guardrails: SettingsGuardrailRow[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; providers: SettingsGuardrailProvider[]; workspaceId: string | null };
@@ -740,8 +747,14 @@ export type SettingsSpendRulesInitialData = {
 	testSendsPerMinute: number;
 	/** Whether block rules block requests yet (SPEND_RULE_BLOCKS_ENABLED); until then they only notify. */
 	blocksEnabled?: boolean;
+	/** Whether spend report emails go out yet (SPEND_REPORTS_ENABLED); the settings save either way. */
+	reportsEnabled?: boolean;
 	/** The zone a rule with time_zone null uses. */
 	billingTimeZone: string;
+	/** How often owners (and admins when included) get the spend report email. */
+	spendReportCadence?: SpendReportCadence;
+	/** Whether admins get the spend report email too. */
+	spendReportIncludeAdmins?: boolean;
 	rules: SpendRule[];
 };
 /** GET /api/account/settings/spend-rules/options: what the rule editor's scope and base pickers offer. */

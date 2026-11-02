@@ -1,0 +1,225 @@
+---
+title: "支出警报"
+description: "接收关于支出、预算、预测、激增和低余额的警报，并在支出超过限额后拦截请求。"
+icon: "badge-dollar-sign"
+---
+
+支出规则会监控工作区的支出，并在支出越过阈值时发送警报。规则还可以在支出超过宽限幅度后拦截请求。所有套餐每个工作区都最多可创建 50 条规则。
+
+<Note>支出警报、拦截和支出报告正在逐步推出。在启用之前，规则和设置会被保存，但不会评估、拦截或发送任何内容。</Note>
+
+## 规则的工作方式
+
+一条规则由以下部分组成：
+
+- **指标**：衡量什么（参见[警报类型](#alert-types-and-bases)）；
+- **范围**：计入谁的支出，例如整个工作区、一个 API 密钥或一个部门；
+- **周期**：一个自然日、自然周或自然月，或按小时计的滚动窗口；
+- **阈值**：触发警报的美元金额或百分比；
+- **操作**：`notify`，或 `block` 以同时拒绝超过限额的请求。
+
+Phaseo 根据已记录的用量评估规则，时间在请求完成几分钟后。有规则的工作区还会每小时检查一次，余额规则每 15 分钟检查一次。支出包括视频、批处理、音乐和实时任务。
+
+要创建规则，请打开 **Gateway → 设置 → 通知 → 支出警报**，然后选择 **添加警报**。编辑器会显示已保存规则的当前值，并可以发送测试警报。API 密钥页面和预算页面提供快捷方式，可以以该密钥的限额或该预算为基准打开编辑器。成员可以查看规则；所有者和管理员可以创建、更改、测试和删除规则。
+
+<span id="alert-types-and-bases"></span>
+
+## 警报类型和基准
+
+| 指标 | 发送警报的条件 | 周期 |
+| --- | --- | --- |
+| `spend` | 周期内支出达到 `threshold_amount` | 任意 |
+| `budget_percent` | 支出达到基准的某个百分比，最多五个阈值，例如 50、80 和 100 | 任意 |
+| `forecast` | 预计到周期结束时的支出达到某个金额或基准的某个百分比 | 日、周、月 |
+| `spike` | 最近几个小时的支出是平常支出的数倍 | 滚动 |
+| `balance` | 可用余额降到某个金额，或只够维持少于一定天数 | 滚动，仅限工作区范围 |
+
+百分比相对于一个基准（`base_kind`）计算：
+
+- `amount`：在规则上设置的美元金额，仅用于警报。
+- `workspace_budget`：间隔匹配的工作区预算（`base_ref`：日周期为 `daily`，周为 `weekly`，月为 `monthly`）。永久预算不能作为基准。
+- `key_limit`：规则所针对的 API 密钥在对应窗口内的支出限额。需要密钥范围。
+- `previous_period`：上一个周期同一时间点的支出，例如“昨天此时”。滚动规则使用前一个窗口；预测使用整个上一个周期。
+
+缺少基准的规则（例如预算已删除，或密钥没有支出限额）在基准重新存在之前不会发送任何内容。防护规则没有支出限额，不能作为基准。
+
+## 范围
+
+| 范围 | `scope_id` | 计入 |
+| --- | --- | --- |
+| `workspace` | 无 | 工作区的全部支出 |
+| `key` | API 密钥 ID | 使用该密钥发出的请求 |
+| `member` | 成员的用户 ID | 使用该成员创建的密钥发出的请求，以及该成员自己的 OAuth 请求 |
+| `department` | 部门 ID | 部门中的人员所做的一切（见下文） |
+| `model` | 模型 ID，例如 `openai/gpt-5` | 由该模型处理的请求 |
+| `provider` | 提供商 ID | 由该提供商处理的请求 |
+
+部门支出按请求归属：
+
+1. 分配给某个部门的密钥只计入该部门。
+2. 否则由密钥的创建者决定：计入其所属部门；对于 OAuth 请求，计入登录用户所属的部门。
+3. 属于多个部门的人默认计入**所有**部门。在 **工作区支出设置** 中选择 **仅主部门**（而不是 **其所属的所有部门**，API：`spend.department_attribution: "primary"`），即可只计入其主部门。如果没有部门被标记为主部门，则优先使用其被手动加入的部门，然后是最早的部门。
+
+每次评估规则时都会读取部门成员关系，因此把某人调到另一个部门时，其当前周期的支出也会随之转移。由于一个人可以计入多个部门，各部门的总额相加可能超过工作区总额。2026 年 9 月之前的用量没有归属到成员或部门。
+
+## 周期和时区
+
+日、周和月是自然周期。每周从周一到周日。每条规则都可以设置自己的 IANA `time_zone`，例如 `Europe/London` 或 `America/New_York`；否则使用工作区的计费时区，默认为 UTC。可在 **工作区支出设置** 中，或通过[通知设置 API](../api-reference/endpoint/notifications-settings-update.mdx) 的 `spend.billing_time_zone` 更改计费时区。夏令时变化会被正确处理，时区名称区分大小写。
+
+`rolling` 周期覆盖最近的 `window_hours`（1 到 720）并持续滚动。激增规则将其用作激增窗口，余额规则将其用作计算平均支出的时间段。
+
+<Note>[密钥限额](../api-reference/limits.mdx#key-limits-and-budgets)和[工作区预算](../api-reference/endpoint/budgets-list.mdx)始终按 UTC 边界重置。在其他时区中以 `workspace_budget` 或 `key_limit` 为基准的规则，会用自己本地的日、周或月与该限额比较，因此其支出可能与限额所计入的支出不同。</Note>
+
+## 阈值和重复警报
+
+根据指标，一条规则有一到五个百分比阈值（1 到 1000）或一个美元阈值。
+
+- 在自然周期中，每个阈值每个周期最多发送一次警报。当支出同时越过多个阈值时，只发送一条警报，注明最高的阈值并列出其他阈值。
+- 滚动、激增和余额规则改用 `cooldown_minutes`（5 到 43,200，默认 360）。冷却期间只有更高的阈值会发送警报；冷却结束后，如果支出仍高于阈值，规则会再次发出警报。
+- 编辑规则时，本周期已发送过的阈值不会再次发送。
+
+**发送测试** 会把规则此刻会发送的警报标记为 `[TEST]`，发送到规则的通知目标。不会记录任何内容，每个工作区每分钟可以发送五次测试。每条规则的 **历史** 会列出它发送过的警报和拦截。
+
+<span id="block-requests"></span>
+
+## 拦截请求
+
+设置了 `action: "block"` 的 `spend` 或 `budget_percent` 规则会在其阈值处发出警告，并在支出达到拦截点时拦截：拦截点为基准的 `block_at_percent`（默认 110，且不低于最高阈值），对于 `spend` 规则则为 `block_at_amount`。以 `previous_period` 为基准的规则不能拦截。最后一次警报与拦截点之间的空间就是宽限幅度：在请求停止之前，你的团队会先收到警告。
+
+<Warning>拦截为尽力而为。它依据已记录的用量，因此拦截会在支出超过拦截点几分钟后才开始，在这段时间内支出可能超过拦截点。如需在每个请求上检查的硬性上限，请使用密钥限额或工作区预算。</Warning>
+
+| | 支出规则拦截 | 密钥限额 | 工作区预算 |
+| --- | --- | --- | --- |
+| 检查方式 | 每隔几分钟，依据已记录的用量 | 每个请求 | 每个请求 |
+| 范围 | 工作区、密钥、成员、部门、模型或提供商 | 一个密钥 | 整个工作区 |
+| 周期 | 任意时区的日、周、月或滚动周期 | UTC 日、周或月 | UTC 日、周或月，或永久 |
+| 免费模型 | 不拦截，除非 `block_free_models` 为 true | 计入 | 计入 |
+| 事先警告 | 有，在规则的阈值处 | 无 | 无 |
+| 解除 | 由所有者或管理员解除，在本周期剩余时间内有效 | 提高限额 | 提高预算 |
+
+拦截生效期间，范围内的请求会收到带有 `spend_rule_blocked` 错误代码的 `429`。响应体包含 `reason: "spend_rule_block"`、`rule_id`、`rule_name`、`block_id`、`limit_scope`、`limit_value`（美元）和 `reset_at`。`Retry-After` 给出距离周期重置的秒数。滚动规则没有重置时间：其拦截会持续到窗口内的支出降到拦截点以下，响应中也没有 `Retry-After`。提供商拦截会移除该提供商的路由，只有在没有其他路由可用时才拒绝请求。实时会话目前不会被拦截。
+
+当支出已超过规则的最后一个阈值但仍低于拦截点时，范围内请求的响应会带有 `x-phaseo-spend-warning` 标头，最多列出三条规则，例如 `rule_id=…; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`。客户端可以记录它，或在拦截开始前放慢速度。
+
+当周期重置、滚动规则的支出降到拦截点以下，或者规则被停用、删除或更改时，拦截会自动解除。所有者和管理员可以在 **支出警报 → 生效中的拦截** 中，或通过 [`POST /v1/spend-blocks/{id}/lift`](../api-reference/endpoint/spend-blocks-lift.mdx) 解除拦截。已解除的拦截在同一周期内不会再次开始（滚动规则为一个窗口内）。拦截开始和解除时都会发送支出拦截通知。
+
+## 余额和可用天数
+
+`balance` 规则监控工作区的可用余额：即额度余额减去为进行中请求预留的金额。它使用工作区范围和滚动周期，满足任一条件即发送警报：
+
+- `threshold_amount`：可用余额等于或低于该金额；
+- `runway_days`：按最近 `window_hours` 的日均支出计算，余额能维持的天数少于该值。最近没有支出时，不会发送可用天数警报。
+
+余额规则每次下降只发送一次警报。只有余额回升后再次下降才会再次发出警报，且频率不会超过其冷却时间。在自动充值已开启且正常工作期间，不会发送警报。
+
+**设置 → 额度** 中的低余额邮件仍是简单的默认选项。每当余额降到其阈值以下时发送一次，最多每六小时一次，自动充值正常工作时不会发送。如需可用天数警报、其他通知目标或不同的阈值，请使用余额规则。
+
+## 预测
+
+`forecast` 规则按直线把支出预测到当前日、周或月的结束：即目前为止的支出除以周期已过去的比例。它会等到一天过去 3 小时、一周过去 24 小时或一个月过去 72 小时，并且至少已支出 0.01 美元，以免平静的开头触发警报。警报会说明按当前速度何时会达到限额。
+
+设置美元金额 `threshold_amount`，或设置基准和百分比。以 `previous_period` 为基准时，预测值会与整个上一个周期比较。每个阈值每个周期发送一次警报。
+
+## 激增
+
+`spike` 规则把最近 `window_hours`（1 到 56）的支出与该时段的平常支出比较：
+
+- 对于短于 24 小时的窗口，平常支出是前七天每天相同时段的中位数。对于更长的窗口，是前七天内相同长度的较早窗口的中位数。
+- 当支出至少为平常的 `spike_multiplier` 倍（默认 3）且至少为 `spike_floor`（默认 5 美元）时发送警报。
+- 它需要工作区在至少三个较早的窗口中有支出。在此之前，编辑器会显示它仍在学习。平常支出为零时，只适用下限。
+- 它使用冷却时间（默认 6 小时），并且从不拦截。
+
+比较使用精确的 24 小时步长，因此夏令时变化后，它会与本地时钟上早一小时或晚一小时的时段比较。激增规则会在有新用量时检查。
+
+## 支出报告
+
+所有者默认会收到每周支出报告，管理员可以选择接收。也提供每日和每月报告。设置和内容见[工作区通知指南](./workspace-notifications.mdx#spend-reports)。此外：
+
+- 报告会在其周期结束后的第一天、计费时区的 09:00 到 21:00 之间发送。如果当天无法发送，会跳过而不是延后发送。
+- 报告中的预测针对当前计费月份。
+- 成员和部门的总额包含异步任务，并遵循上述部门规则，因此可能与总额略有不同。
+- 每个人只能退订自己收到的那份工作区报告。既不是所有者也不是管理员的成员永远不会收到报告。
+
+## 路由和通知目标
+
+支出规则会发送三类通知。在 **设置 → 通知** 中选择每类通知的去向：
+
+| 路由 | 类型 | 发送时机 |
+| --- | --- | --- |
+| 支出警报 | `spend_alert` | 越过规则的阈值时 |
+| 支出拦截 | `spend_blocked` | 拦截开始或解除时（`payload.state` 为 `started` 或 `lifted`） |
+| 支出报告 | `spend_report` | 支出报告到期时 |
+
+规则可以有自己的通知目标。对于该规则，它们会替代支出警报和支出拦截路由；如果这些目标全部暂停，该规则的警报不会改为发送到路由。警报和拦截也会发送到所有者和管理员，以及规则所涉及的密钥创建者或成员的移动应用。
+
+自定义 Webhook 以 JSON 接收警报，包含 `title`、`message`、`rule_id`、`rule_name`、`metric`、`scope`、`period`、`value_nanos`，并根据指标包含 `base_nanos`、`forecast`、`spike` 或余额字段。请用签名验证每次投递；参见[工作区通知](./workspace-notifications.mdx)中关于验证 Webhook 签名的部分。
+
+## 使用 API 管理规则
+
+[支出规则 API](../api-reference/endpoint/spend-rules-list.mdx) 使用具有 `spend_rules:read`、`spend_rules:write` 或 `spend_rules:delete` 的管理密钥。金额可以用美元（`threshold_amount_usd`）发送，也可以用纳美元精确发送（`threshold_amount_nanos`），响应中两者都会包含。
+
+```bash
+curl https://api.phaseo.app/v1/spend-rules \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Monthly budget",
+    "metric": "budget_percent",
+    "period": "month",
+    "base_kind": "workspace_budget",
+    "base_ref": "monthly",
+    "threshold_percents": [50, 80, 100],
+    "action": "block",
+    "block_at_percent": 110
+  }'
+```
+
+使用 [`GET /v1/spend-rules/{id}/preview`](../api-reference/endpoint/spend-rules-preview.mdx) 查看当前值和下一个阈值，使用 [`POST /v1/spend-rules/{id}/test`](../api-reference/endpoint/spend-rules-test.mdx) 发送测试。[`GET /v1/spend-blocks`](../api-reference/endpoint/spend-blocks-list.mdx) 列出生效中的拦截。计费时区、部门归属和报告设置位于[通知设置](../api-reference/endpoint/notifications-settings-update.mdx)的 `spend` 对象中。
+
+## 使用 Terraform 管理规则
+
+[Phaseo Terraform 提供程序](https://github.com/phaseoteam/terraform-provider-phaseo)（`phaseoteam/phaseo`）提供 `phaseo_spend_rule` 和 `phaseo_workspace_budget` 资源，以及 `phaseo_spend_rules`、`phaseo_spend_blocks` 和 `phaseo_workspace_budgets` 数据源。
+
+```hcl
+resource "phaseo_workspace_budget" "monthly" {
+  interval = "monthly"
+  limit    = 500
+}
+
+resource "phaseo_spend_rule" "monthly_budget" {
+  name               = "Monthly budget"
+  metric             = "budget_percent"
+  period             = "month"
+  base_kind          = "workspace_budget"
+  base_ref           = "monthly"
+  threshold_percents = [50, 80, 100]
+  action             = "block"
+  block_at_percent   = 110
+
+  depends_on = [phaseo_workspace_budget.monthly]
+}
+
+resource "phaseo_spend_rule" "spike" {
+  name             = "Spend spike"
+  metric           = "spike"
+  period           = "rolling"
+  window_hours     = 3
+  spike_multiplier = 4
+}
+```
+
+按 ID 导入现有的规则或预算：
+
+```bash
+terraform import phaseo_spend_rule.monthly_budget 11111111-1111-4111-8111-111111111111
+```
+
+<Visibility for="agents">
+面向智能体的支出规则要点，总结自本页：
+
+- 支出规则拦截为尽力而为，会在达到限额几分钟后开始；如需精确上限，请使用密钥限额或工作区预算。
+- 被拦截的请求返回带有 `spend_rule_blocked`、`rule_id`、`block_id` 和 `reset_at` 的 `429`。请等待 `Retry-After`；没有该标头时，拦截会持续到滚动窗口内的支出下降，或所有者或管理员通过 `POST /v1/spend-blocks/{id}/lift` 解除。不要循环重试。
+- 响应中的 `x-phaseo-spend-warning` 表示某条拦截规则已超过其最后一个警报阈值；可能即将拦截。
+- 除非规则设置了 `block_free_models`，否则免费模型不会被拦截。
+- 自然周期使用规则的时区（默认为工作区计费时区，其默认值为 UTC）；密钥限额和工作区预算使用 UTC。
+</Visibility>

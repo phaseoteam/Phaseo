@@ -1,4 +1,5 @@
 import type { Delegation, Launch } from "./orchestration";
+import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
 import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
@@ -39,7 +40,7 @@ import type { SecretRequest } from "./secretRequests";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
-export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings };
+export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject };
 export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
 export type PhaseoSignInResult = { workspace: WorkspaceOverview; accountId: string } | { secondFactor: true };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo login (not an older OAuth sign-in): the vault entry holding the login, and the Phaseo workspace its key is for. */ sessionSecretId?: string; phaseoWorkspaceId?: string; /** For a Phaseo sign-in, who it belongs to, from its Phaseo profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
@@ -122,6 +123,8 @@ export type Task = {
 	pullRequests?: TaskPullRequestLink[];
 	/** GitHub issues linked to this chat, beside its pull requests. */
 	issues?: TaskIssueLink[];
+	/** An issue a triage chat's agent drafted (draft_issue); filed only when the person chooses to. */
+	issueDraft?: IssueDraft;
 	/** Started in a new worktree from the new-chat composer: its setup, shown until the agent starts (shared/worktreeChat.ts). */
 	worktreeSetup?: WorktreeSetup;
 	/** A Claude or Codex turn stopped on a plan limit (status "limited"); see shared/usageLimitRecovery.ts. */
@@ -241,6 +244,12 @@ export type WorkspaceApi = {
 	chooseProject: () => Promise<WorkspaceOverview>;
 	/** Asks for a folder, clones the repository into it and adds the checkout as a project; undefined if cancelled. */
 	cloneProject: (url: string) => Promise<{ workspace: WorkspaceOverview; projectId: string } | undefined>;
+	/** Triage: fetches the running build's source (or reuses it) and adds the checkout as a project. */
+	prepareTriage: () => Promise<TriagePreparation>;
+	/** Writes the playbook a triage chat's first message points at. */
+	writeTriagePlaybook: (projectId: string, playbook: string, options: { offerPullRequest: boolean }) => Promise<void>;
+	/** Files a chat's drafted issue (with the person's edits) and links it to the chat, or discards the draft. */
+	issueDraft: (taskId: string, action: "file" | "discard", edit?: { title: string; body: string }) => Promise<void>;
 	/** Renames a project or replaces its settings (Project settings). */
 	updateProject: (update: ProjectUpdate) => Promise<WorkspaceOverview>;
 	/** The scripts in a project checkout's t3.json, T3 Code's checked-in project file. */

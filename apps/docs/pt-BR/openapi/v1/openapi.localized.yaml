@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: Tomar decisões estruturadas
-      description: 'Para novas chamadas, use o formato compatível com OpenAI: input contém texto ou mensagens do usuário com partes input_image incorporadas, e questions é uma lista ordenada de perguntas predicate, choice ou score. As respostas mantêm a ordem e os nomes opcionais. Valores booleanos continuam booleanos. URLs de imagens hospedadas não são aceitas; Luna aceita até 128 imagens incorporadas, enquanto outros provedores têm limites próprios. Detalhes explícitos de imagem e safety_identifier exigem uma rota OpenAI. O formato anterior com state, perguntas nomeadas, noul e criteria continua aceito e retorna um mapa de respostas. Together Tev exige esse formato porque retorna rótulos sem probabilidades. Os exemplos anteriores continuam válidos.'
+      description: 'Para novas chamadas, use o formato compatível com OpenAI: input contém texto ou mensagens do usuário com partes input_image incorporadas, e questions é uma lista ordenada de perguntas predicate, choice ou score. As respostas mantêm a ordem e os nomes opcionais. Valores booleanos continuam booleanos. URLs HTTPS de imagens hospedadas funcionam apenas nos modelos da Base Labs (Elephant-1, Mammoth-1 e Joey-1) e precisam estar no Amazon S3, Google Cloud Storage ou Azure Blob Storage; Luna aceita até 128 imagens incorporadas, enquanto outros provedores têm limites próprios. Detalhes explícitos de imagem e safety_identifier exigem uma rota OpenAI. O formato anterior com state, perguntas nomeadas, noul e criteria continua aceito e retorna um mapa de respostas. Together Tev exige esse formato porque retorna rótulos sem probabilidades. Os exemplos anteriores continuam válidos.'
       requestBody:
         required: true
         content:
@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: Criar uma regra de gastos
-      description: Cria uma regra de gastos e define seus destinos de notificação. Qualquer métrica é aceita; regras retornadas com evaluated false são salvas e passarão a disparar em uma versão futura. O bloqueio é feito com o melhor esforço e age minutos após o limite; use limites de chave e orçamentos do workspace para tetos exatos. Um workspace pode ter 50 regras de gastos.
+      description: Cria uma regra de gastos e define seus destinos de notificação. Todas as métricas são avaliadas. O bloqueio é feito com o melhor esforço e age minutos após o limite; use limites de chave e orçamentos do workspace para tetos exatos. Um workspace pode ter 50 regras de gastos.
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: Imagem base64 incorporada. Sem URLs hospedadas ou IDs de arquivos. Máximo 128 imagens por solicitação; provedores podem impor limites menores.
+      description: Imagem base64 incorporada, ou URL HTTPS de imagem no Amazon S3, Google Cloud Storage ou Azure Blob Storage (apenas modelos da Base Labs). Sem IDs de arquivos. Máximo 128 imagens por solicitação; provedores podem impor limites menores.
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true
@@ -25323,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'Como as regras de gastos atribuem o gasto de uma pessoa aos departamentos quando a chave dela não tem departamento próprio: all atribui a todos os departamentos dos quais ela faz parte; primary apenas ao departamento principal. O departamento próprio de uma chave sempre prevalece.'
+      description: 'Como as regras de gastos, os orçamentos de departamento e os limites de taxa de departamento atribuem as solicitações de uma pessoa aos departamentos quando a chave dela não tem departamento próprio: all atribui a todos os departamentos dos quais ela faz parte; primary apenas ao departamento principal. O departamento próprio de uma chave e a substituição de diretório de um membro sempre prevalecem.'
       enum:
         - all
         - primary
@@ -25332,16 +25332,33 @@ components:
       maxLength: 64
       description: Fuso horário IANA para os períodos de calendário das regras de gastos que não têm fuso próprio e para os relatórios de gastos. O padrão é UTC. Os limites de chave e os orçamentos do workspace aplicados sempre usam UTC.
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: 'Com que frequência os proprietários do workspace recebem um e-mail com o relatório de gastos, e também os administradores quando report_include_admins está ativado: off, daily (às 09:00 para o dia anterior), weekly (segunda-feira às 09:00 para a semana anterior, de segunda a domingo) ou monthly (dia 1 às 09:00 para o mês anterior), no fuso horário de cobrança. Períodos sem gastos são ignorados. As rotas spend_report do workspace recebem um resumo por relatório. O padrão é weekly.'
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: Envia também o relatório de gastos por e-mail aos administradores do workspace, não apenas aos proprietários. O padrão é false. Qualquer pessoa pode cancelar a inscrição pelo link no e-mail.
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -25433,6 +25450,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -26358,42 +26379,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26463,8 +26448,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26562,42 +26545,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
         created_at:
           type: string
           format: date-time
@@ -26709,42 +26656,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.
             created_at:
               type: string
               format: date-time

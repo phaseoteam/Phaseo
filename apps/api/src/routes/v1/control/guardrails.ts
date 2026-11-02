@@ -90,27 +90,14 @@ const WRITABLE_FIELDS = new Set([
 	"sensitive_info_enabled",
 	"sensitive_info_default_action",
 	"sensitive_info_rules",
-	"daily_limit_requests",
-	"weekly_limit_requests",
-	"monthly_limit_requests",
-	"daily_limit_cost_nanos",
-	"weekly_limit_cost_nanos",
-	"monthly_limit_cost_nanos",
 ]);
 
-function normalizeGuardrailPatch(body: Record<string, unknown>): Record<string, unknown> {
+// Fields outside WRITABLE_FIELDS are ignored, not rejected. That includes the removed guardrail
+// request and spend limits (the `budgets` object and the *_limit_requests / *_limit_cost_nanos
+// fields), which older clients may still send. Use key limits or workspace budgets instead.
+export function normalizeGuardrailPatch(body: Record<string, unknown>): Record<string, unknown> {
 	const patch: Record<string, unknown> = {};
 	for (const [rawKey, value] of Object.entries(body)) {
-		if (rawKey === "budgets" && value && typeof value === "object" && !Array.isArray(value)) {
-			const budgets = value as Record<string, unknown>;
-			if (budgets.dailyRequests !== undefined) patch.daily_limit_requests = budgets.dailyRequests;
-			if (budgets.weeklyRequests !== undefined) patch.weekly_limit_requests = budgets.weeklyRequests;
-			if (budgets.monthlyRequests !== undefined) patch.monthly_limit_requests = budgets.monthlyRequests;
-			if (budgets.dailyCostNanos !== undefined) patch.daily_limit_cost_nanos = budgets.dailyCostNanos;
-			if (budgets.weeklyCostNanos !== undefined) patch.weekly_limit_cost_nanos = budgets.weeklyCostNanos;
-			if (budgets.monthlyCostNanos !== undefined) patch.monthly_limit_cost_nanos = budgets.monthlyCostNanos;
-			continue;
-		}
 		const key = FIELD_MAP[rawKey] ?? rawKey;
 		if (WRITABLE_FIELDS.has(key)) patch[key] = value;
 	}
@@ -141,12 +128,6 @@ function selectColumns(): string {
 		"sensitive_info_enabled",
 		"sensitive_info_default_action",
 		"sensitive_info_rules",
-		"daily_limit_requests",
-		"weekly_limit_requests",
-		"monthly_limit_requests",
-		"daily_limit_cost_nanos",
-		"weekly_limit_cost_nanos",
-		"monthly_limit_cost_nanos",
 		"created_at",
 		"updated_at",
 	].join(", ");

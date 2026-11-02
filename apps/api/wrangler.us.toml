@@ -19,6 +19,7 @@ RATE_LIMIT_POLICIES_ENABLED = "true"
 # worker that runs the cron jobs (phaseo-gateway) acts on it.
 SPEND_RULES_ENABLED = "false"
 SPEND_RULE_BLOCKS_ENABLED = "false"
+SPEND_REPORTS_ENABLED = "false"
 # Trust-ladder RPM per workspace from the tiers published to KV by phaseo-gateway.
 CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true"
 # When a charge would have invalidated the credit cache, store its exact

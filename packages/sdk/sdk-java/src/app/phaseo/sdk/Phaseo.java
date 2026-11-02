@@ -144,23 +144,64 @@ public class Phaseo {
 		this(apiKey, basePath, enableDeprecationWarnings, warningsAsErrors, logger, lifecycleResolver, httpClient, devtoolsConfig, "phaseo-java", "2.1.0");
 	}
 
+	/**
+	 * Uses {@code apiKeyProvider} for every request instead of a fixed key, for example
+	 * {@link WorkloadTokens#gitHubActions()} or {@link WorkloadTokens#vercel()} for trusted
+	 * workloads. It is called before every request and retry; a blank result fails the request
+	 * before it is sent. A null provider falls back to {@code PHASEO_API_KEY}.
+	 */
+	public static Phaseo withApiKeyProvider(ApiKeyProvider apiKeyProvider) {
+		return withApiKeyProvider(apiKeyProvider, DEFAULT_BASE_URL);
+	}
+
+	public static Phaseo withApiKeyProvider(ApiKeyProvider apiKeyProvider, String basePath) {
+		return withApiKeyProvider(apiKeyProvider, basePath, "phaseo-java", "2.1.0");
+	}
+
+	public static Phaseo withApiKeyProvider(ApiKeyProvider apiKeyProvider, String basePath, String clientSource, String clientSourceVersion) {
+		return new Phaseo(null, apiKeyProvider, basePath, true, false, null, null, null, null, clientSource, clientSourceVersion);
+	}
+
+	public static Phaseo withApiKeyProvider(
+		ApiKeyProvider apiKeyProvider,
+		String basePath,
+		boolean enableDeprecationWarnings,
+		boolean warningsAsErrors,
+		PhaseoLogger logger,
+		ModelLifecycleResolver lifecycleResolver,
+		HttpClient httpClient,
+		DevtoolsConfig devtoolsConfig
+	) {
+		return new Phaseo(null, apiKeyProvider, basePath, enableDeprecationWarnings, warningsAsErrors, logger, lifecycleResolver, httpClient, devtoolsConfig, "phaseo-java", "2.1.0");
+	}
+
 	private Phaseo(
 		String apiKey, String basePath, boolean enableDeprecationWarnings,
 		boolean warningsAsErrors, PhaseoLogger logger,
 		ModelLifecycleResolver lifecycleResolver, HttpClient httpClient,
 		DevtoolsConfig devtoolsConfig, String clientSource, String clientSourceVersion
 	) {
-		String resolvedApiKey = resolveApiKey(apiKey);
+		this(apiKey, null, basePath, enableDeprecationWarnings, warningsAsErrors, logger, lifecycleResolver, httpClient, devtoolsConfig, clientSource, clientSourceVersion);
+	}
+
+	private Phaseo(
+		String apiKey, ApiKeyProvider apiKeyProvider, String basePath, boolean enableDeprecationWarnings,
+		boolean warningsAsErrors, PhaseoLogger logger,
+		ModelLifecycleResolver lifecycleResolver, HttpClient httpClient,
+		DevtoolsConfig devtoolsConfig, String clientSource, String clientSourceVersion
+	) {
 		this.basePath = normalizeBasePath(basePath);
+		HttpClient transport = httpClient == null ? java.net.http.HttpClient.newHttpClient() : httpClient;
 		Map<String, String> headers = new HashMap<>();
-		headers.put("Authorization", "Bearer " + resolvedApiKey);
+		if (apiKeyProvider == null) {
+			headers.put("Authorization", "Bearer " + resolveApiKey(apiKey));
+		} else {
+			// The provider is called per attempt by the transport, never cached here.
+			transport = new ApiKeyProviderHttpClient(transport, apiKeyProvider);
+		}
 		headers.put("X-Phaseo-Client", clientSource);
 		headers.put("X-Phaseo-Client-Version", clientSourceVersion);
-		this.rawClient = new Client(
-			this.basePath,
-			httpClient == null ? java.net.http.HttpClient.newHttpClient() : httpClient,
-			headers
-		);
+		this.rawClient = new Client(this.basePath, transport, headers);
 		this.enableDeprecationWarnings = enableDeprecationWarnings;
 		this.warningsAsErrors = warningsAsErrors;
 		this.logger = logger;

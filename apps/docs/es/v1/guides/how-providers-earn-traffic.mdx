@@ -1,0 +1,44 @@
+---
+title: "Cómo ganan tráfico los proveedores"
+sidebarTitle: "Ganar tráfico"
+description: "Cómo el enrutamiento predeterminado reparte el tráfico de un modelo entre proveedores y qué cambios dan a un endpoint una cuota mayor."
+icon: "chart-no-axes-column-increasing"
+---
+
+import { ProviderTrafficPlayground } from "/snippets/routing-cost.jsx";
+
+Cuando varios proveedores sirven el mismo modelo, el enrutamiento predeterminado los clasifica por el coste esperado por respuesta correcta y reparte el tráfico según esa clasificación: el coste más bajo obtiene la mayor parte. Esta página es para proveedores que quieren entender esa clasificación y ganar más tráfico con ella.
+
+## Qué mide la clasificación
+
+Para cada endpoint, Phaseo mide:
+
+- **Precio efectivo.** Lo que cuesta una solicitud típica del modelo en tu endpoint, según los tamaños reales de prompt y salida del modelo y la parte de los tokens de prompt que realmente sirves desde caché. Un precio de entrada bajo no ayuda si la salida o las lecturas de caché cuestan más.
+- **Tiempo hasta el primer token**, contado desde que Phaseo envía la solicitud.
+- **Velocidad de salida**, medida en toda la respuesta, incluido el primer token.
+- **Errores que causas**, como respuestas `5xx` y streams que fallan a mitad. Tienen una penalización alta.
+- **Rechazos por límite de frecuencia** (`429`). Tienen una penalización menor.
+
+El tiempo de espera se convierte a dólares según el precio típico por segundo del modelo, así que un endpoint más rápido puede cobrar más y seguir quedando primero.
+
+## Pruébalo
+
+Los controles enfrentan tu endpoint a otros tres proveedores del mismo modelo. La curva muestra cómo cae el tráfico a medida que tu coste por respuesta supera el mínimo.
+
+<ProviderTrafficPlayground locale="es" />
+
+## Cómo se reparte el tráfico
+
+- Los proveedores que están hasta un 30 % por encima del coste mínimo por respuesta se reparten la mayor parte del tráfico. Ir un poco por detrás cuesta poco.
+- Más allá de ese margen, la cuota cae rápidamente.
+- Cada endpoint enrutable conserva una pequeña parte, para que las recuperaciones y mejoras se detecten sin que tengas que hacer nada.
+- Una conversación que lee de tu caché de prompts suele quedarse en tu endpoint mientras siga estable.
+
+Las solicitudes que indican un orden de proveedores o piden ordenar por precio, latencia o rendimiento no usan esta clasificación. Consulta [Enrutamiento y alternativas](./routing-and-fallbacks.mdx).
+
+## Qué te da más tráfico
+
+- Baja el precio de una solicitud típica, incluidas la salida y las lecturas de caché.
+- Sirve los prompts repetidos desde caché.
+- Devuelve el primer token antes y transmite más rápido.
+- Evita errores y rechazos por límite de frecuencia, y amplía tu capacidad antes de que la demanda alcance tus límites.

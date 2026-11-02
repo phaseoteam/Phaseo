@@ -9,6 +9,8 @@ use std::time::Duration;
 use serde_json::Value;
 use url::{Host, Url};
 
+use crate::auth::ApiKeyProvider;
+
 const DEFAULT_BASE_URL: &str = "https://api.phaseo.app/v1";
 
 #[derive(Clone, Debug, PartialEq)]
@@ -33,7 +35,7 @@ pub struct PhaseoError {
 }
 
 impl PhaseoError {
-    fn configuration(message: impl Into<String>) -> Self {
+    pub(crate) fn configuration(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
             status: None,
@@ -99,10 +101,16 @@ impl fmt::Display for PhaseoError {
 
 impl Error for PhaseoError {}
 
+#[derive(Clone)]
+enum Credential {
+    Key(String),
+    Provider(ApiKeyProvider),
+}
+
 /// Authenticated Phaseo Gateway client.
 #[derive(Clone)]
 pub struct Phaseo {
-    api_key: String,
+    api_key: Credential,
     base_url: String,
     headers: HashMap<String, String>,
     agent: ureq::Agent,
@@ -133,8 +141,20 @@ impl Phaseo {
                 "Phaseo API key must not be empty",
             ));
         }
+        Ok(Self::with_credential(Credential::Key(api_key)))
+    }
 
-        Ok(Self {
+    /// Builds a client that asks `provider` for the credential before every request and
+    /// retry: an API key, or a short-lived token such as a GitHub Actions or Vercel OIDC
+    /// token for a trusted workload (see [`crate::auth`]). The result is trimmed and sent as
+    /// `Authorization: Bearer <credential>`; an empty result fails the request before it is
+    /// sent. Requests that set their own `Authorization` header keep it.
+    pub fn from_api_key_provider(provider: ApiKeyProvider) -> Self {
+        Self::with_credential(Credential::Provider(provider))
+    }
+
+    fn with_credential(api_key: Credential) -> Self {
+        Self {
             api_key,
             base_url: DEFAULT_BASE_URL.to_string(),
             headers: HashMap::new(),
@@ -144,7 +164,7 @@ impl Phaseo {
             on_request: None,
             on_response: None,
             on_retry: None,
-        })
+        }
     }
 
     pub fn from_env() -> Result<Self, PhaseoError> {
@@ -343,10 +363,12 @@ impl Phaseo {
         };
         let mut attempt = 0;
         loop {
-            let mut builder = self
-                .agent
-                .request(&method, url)
-                .set("Authorization", &format!("Bearer {}", self.api_key))
+            let authorization = self.authorization(options)?;
+            let mut builder = self.agent.request(&method, url);
+            if let Some(authorization) = &authorization {
+                builder = builder.set("Authorization", authorization);
+            }
+            builder = builder
                 .set("X-Phaseo-Client", "phaseo-rust")
                 .set("X-Phaseo-Client-Version", env!("CARGO_PKG_VERSION"))
                 .set(
@@ -421,6 +443,37 @@ impl Phaseo {
             }
             return parse_response(result);
         }
+    }
+
+    /// The Authorization value for one attempt. A provider is skipped when the client or
+    /// request already sets Authorization; a static key is always set and those headers
+    /// override it, as before.
+    fn authorization(&self, options: &RequestOptions) -> Result<Option<String>, PhaseoError> {
+        let provider = match &self.api_key {
+            Credential::Key(key) => return Ok(Some(format!("Bearer {key}"))),
+            Credential::Provider(provider) => provider,
+        };
+        let has_authorization = self
+            .headers
+            .keys()
+            .chain(options.headers.keys())
+            .any(|name| name.eq_ignore_ascii_case("authorization"));
+        if has_authorization {
+            return Ok(None);
+        }
+        let credential = provider().map_err(|error| match error.downcast::<PhaseoError>() {
+            Ok(error) => *error,
+            Err(error) => {
+                PhaseoError::configuration(format!("Phaseo API key provider failed: {error}"))
+            }
+        })?;
+        let credential = credential.trim();
+        if credential.is_empty() {
+            return Err(PhaseoError::configuration(
+                "The API key provider returned an empty credential",
+            ));
+        }
+        Ok(Some(format!("Bearer {credential}")))
     }
 }
 
@@ -546,6 +599,7 @@ fn parse_json_body(raw: &str) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::{headers, serve};
     use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -731,5 +785,141 @@ mod tests {
         assert_eq!(retries.load(Ordering::SeqCst), 1);
         server.join().unwrap();
         assert!(captured.lock().unwrap()[2].contains("Idempotency-Key: idem-rust"));
+    }
+
+    fn ok_response() -> String {
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}"
+            .to_string()
+    }
+
+    fn counting_provider() -> (Arc<AtomicUsize>, ApiKeyProvider) {
+        let calls = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::clone(&calls);
+        let provider: ApiKeyProvider = Arc::new(move || {
+            let call = counter.fetch_add(1, Ordering::SeqCst) + 1;
+            Ok(format!("  token-{call}\n"))
+        });
+        (calls, provider)
+    }
+
+    #[test]
+    fn api_key_provider_is_called_for_every_request_and_retry() {
+        let (base, captured, server) = serve(vec![
+            ok_response(),
+            ok_response(),
+            "HTTP/1.1 503 Service Unavailable\r\nRetry-After: 0\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                .to_string(),
+            ok_response(),
+        ]);
+        let (calls, provider) = counting_provider();
+        let client = Phaseo::from_api_key_provider(provider)
+            .with_base_url(base)
+            .unwrap();
+        client
+            .request("GET", "/one", None, &RequestOptions::default())
+            .unwrap();
+        client.post("/two", &serde_json::json!({})).unwrap();
+        client
+            .request(
+                "GET",
+                "/retry",
+                None,
+                &RequestOptions {
+                    max_retries: Some(1),
+                    ..RequestOptions::default()
+                },
+            )
+            .unwrap();
+        server.join().unwrap();
+
+        let requests = captured.lock().unwrap();
+        let tokens: Vec<Vec<String>> = requests
+            .iter()
+            .map(|request| headers(request, "authorization"))
+            .collect();
+        assert_eq!(
+            tokens,
+            vec![
+                vec!["Bearer token-1".to_string()],
+                vec!["Bearer token-2".to_string()],
+                vec!["Bearer token-3".to_string()],
+                vec!["Bearer token-4".to_string()],
+            ]
+        );
+        assert_eq!(calls.load(Ordering::SeqCst), 4);
+        assert!(!format!("{client:?}").contains("token-"));
+    }
+
+    #[test]
+    fn request_authorization_header_wins_over_the_provider() {
+        let (base, captured, server) = serve(vec![ok_response()]);
+        let (calls, provider) = counting_provider();
+        let client = Phaseo::from_api_key_provider(provider)
+            .with_base_url(base)
+            .unwrap();
+        client
+            .request(
+                "GET",
+                "/explicit",
+                None,
+                &RequestOptions {
+                    headers: HashMap::from([(
+                        "authorization".to_string(),
+                        "Bearer explicit".to_string(),
+                    )]),
+                    ..RequestOptions::default()
+                },
+            )
+            .unwrap();
+        server.join().unwrap();
+        assert_eq!(calls.load(Ordering::SeqCst), 0);
+        assert_eq!(
+            headers(&captured.lock().unwrap()[0], "authorization"),
+            vec!["Bearer explicit".to_string()]
+        );
+    }
+
+    #[test]
+    fn blank_or_failing_credentials_stop_the_request() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+
+        let blank = Phaseo::from_api_key_provider(Arc::new(|| Ok(" \t".to_string())))
+            .with_base_url(base.clone())
+            .unwrap();
+        let error = blank.post("/blank", &serde_json::json!({})).unwrap_err();
+        assert_eq!(
+            error.message,
+            "The API key provider returned an empty credential"
+        );
+
+        let failing = Phaseo::from_api_key_provider(Arc::new(|| Err("token fetch failed".into())))
+            .with_base_url(base.clone())
+            .unwrap();
+        let error = failing
+            .post("/failing", &serde_json::json!({}))
+            .unwrap_err();
+        assert!(
+            error.message.contains("token fetch failed"),
+            "{}",
+            error.message
+        );
+
+        let phaseo_error = Phaseo::from_api_key_provider(Arc::new(|| {
+            Err(PhaseoError::configuration("needs id-token: write").into())
+        }))
+        .with_base_url(base)
+        .unwrap();
+        let error = phaseo_error
+            .post("/typed", &serde_json::json!({}))
+            .unwrap_err();
+        assert_eq!(error.message, "needs id-token: write");
+
+        assert_eq!(
+            listener.accept().map_err(|error| error.kind()).unwrap_err(),
+            std::io::ErrorKind::WouldBlock,
+            "no request reached the server"
+        );
     }
 }

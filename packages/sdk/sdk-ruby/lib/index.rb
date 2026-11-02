@@ -7,6 +7,7 @@ require "uri"
 require_relative "phaseo_sdk/model_ids"
 require_relative "phaseo_sdk/workflows"
 require_relative "phaseo_sdk/realtime"
+require_relative "phaseo_sdk/workload_tokens"
 require_relative "gen/client"
 require_relative "gen/models"
 require_relative "gen/operations"
@@ -62,13 +63,21 @@ module PhaseoSdk
       client_source: "phaseo-ruby",
       client_source_version: "2.1.0"
     )
+      # A callable api_key (for example WorkloadTokens.github_actions) is called before every
+      # request and retry; a string is sent as-is.
       api_key ||= ENV["PHASEO_API_KEY"]
-      raise ArgumentError, "Missing API key. Pass api_key or set PHASEO_API_KEY." if api_key.to_s.empty?
+      if api_key.respond_to?(:call)
+        authorization = BearerCredential.new(api_key)
+      else
+        raise ArgumentError, "Missing API key. Pass api_key or set PHASEO_API_KEY." if api_key.to_s.empty?
+
+        authorization = "Bearer #{api_key}"
+      end
 
       @raw_client = ::Phaseo::Gen::Client.new(
         base_url: base_path,
         headers: {
-          "Authorization" => "Bearer #{api_key}",
+          "Authorization" => authorization,
           "X-Phaseo-Client" => client_source,
           "X-Phaseo-Client-Version" => client_source_version
         }
@@ -103,11 +112,13 @@ module PhaseoSdk
     end
 
     def request_with_response(method:, path:, query: nil, headers: nil, body: nil, options: nil)
+      # An Authorization header given here replaces the client's own, whatever its casing.
+      options = options.merge(headers: normalize_authorization_header(options[:headers])) if options&.key?(:headers)
       @raw_client.request_with_response(
         method: method,
         path: path,
         query: query,
-        headers: headers,
+        headers: normalize_authorization_header(headers),
         body: body,
         options: options
       )
@@ -618,6 +629,12 @@ module PhaseoSdk
     end
 
     private
+
+    def normalize_authorization_header(headers)
+      return headers if headers.nil?
+
+      headers.to_h.transform_keys { |name| name.to_s.casecmp?("authorization") ? "Authorization" : name }
+    end
 
     def maybe_warn_for_payload(payload)
       model_id = extract_model_id(payload)

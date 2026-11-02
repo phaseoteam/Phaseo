@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: 作出结构化决策
-      description: 新调用请使用兼容 OpenAI 的格式：input 包含文本或带有内联 input_image 的用户消息，questions 是按顺序排列的 predicate、choice 或 score 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 safety_identifier 需要 OpenAI 路由。原有的 state、命名问题映射、noul 和 criteria 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。
+      description: 新调用请使用兼容 OpenAI 的格式：input 包含文本或带有内联 input_image 的用户消息，questions 是按顺序排列的 predicate、choice 或 score 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。托管图片的 HTTPS URL 仅适用于 Base Labs 模型（Elephant-1、Mammoth-1 和 Joey-1），且必须位于 Amazon S3、Google Cloud Storage 或 Azure Blob Storage；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 safety_identifier 需要 OpenAI 路由。原有的 state、命名问题映射、noul 和 criteria 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。
       requestBody:
         required: true
         content:
@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: 创建支出规则
-      description: 创建支出规则并设置其通知目标。接受所有指标；返回 evaluated 为 false 的规则会被保存，并将在后续版本中开始触发。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。
+      description: 创建支出规则并设置其通知目标。所有指标都会被评估。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: 内联 base64 图片。不支持托管 URL 或文件 ID。每个请求最多128张图片；提供商可能限制更低。
+      description: 内联 base64 图片，或位于 Amazon S3、Google Cloud Storage 或 Azure Blob Storage 的图片 HTTPS URL（仅限 Base Labs 模型）。不支持文件 ID。每个请求最多128张图片；提供商可能限制更低。
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true
@@ -25323,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 当某人的密钥没有自己的部门时，支出规则如何将其支出计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门始终优先。
+      description: 当某人的密钥没有自己的部门时，支出规则、部门预算和部门速率限制如何将其请求计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门和成员的目录覆盖始终优先。
       enum:
         - all
         - primary
@@ -25332,16 +25332,33 @@ components:
       maxLength: 64
       description: 用于没有自身时区的支出规则的日历周期以及支出报告的 IANA 时区。默认为 UTC。强制执行的密钥限额和工作区预算始终使用 UTC。
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: 工作区所有者接收支出报告邮件的频率（report_include_admins 开启时管理员也会收到）：off、daily（09:00 发送前一天的报告）、weekly（周一 09:00 发送上一个周一至周日的报告）或 monthly（每月 1 日 09:00 发送上个月的报告），时间均按计费时区。没有支出的周期会被跳过。工作区的 spend_report 路由每份报告收到一条摘要。默认为 weekly。
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: 将支出报告也通过邮件发送给工作区管理员，而不仅是所有者。默认为 false。任何人都可以通过邮件中的链接退订。
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -25433,6 +25450,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -26358,42 +26379,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26463,8 +26448,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26562,42 +26545,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
         created_at:
           type: string
           format: date-time
@@ -26709,42 +26656,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
             created_at:
               type: string
               format: date-time

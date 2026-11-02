@@ -1,0 +1,44 @@
+---
+title: "Comment les fournisseurs gagnent du trafic"
+sidebarTitle: "Gagner du trafic"
+description: "Comment le routage par défaut répartit le trafic d’un modèle entre fournisseurs, et quels changements valent une plus grande part à un endpoint."
+icon: "chart-no-axes-column-increasing"
+---
+
+import { ProviderTrafficPlayground } from "/snippets/routing-cost.jsx";
+
+Lorsque plusieurs fournisseurs servent le même modèle, le routage par défaut les classe selon le coût attendu par réponse réussie et répartit le trafic selon ce classement : le coût le plus bas obtient la plus grande part. Cette page s’adresse aux fournisseurs qui veulent comprendre ce classement et en obtenir une plus grande part.
+
+## Ce que mesure le classement
+
+Pour chaque endpoint, Phaseo mesure :
+
+- **Le prix effectif.** Le coût d’une requête type pour le modèle sur votre endpoint, d’après les tailles réelles de prompt et de sortie du modèle et la part des tokens de prompt que vous servez réellement depuis le cache. Un prix d’entrée bas ne sert à rien si la sortie ou les lectures de cache coûtent plus cher.
+- **Le délai avant le premier token**, compté à partir de l’envoi de la requête par Phaseo.
+- **La vitesse de sortie**, mesurée sur toute la réponse, premier token compris.
+- **Les erreurs de votre fait**, comme les réponses `5xx` et les streams qui échouent en cours de route. Elles sont fortement pénalisées.
+- **Les refus pour limite de débit** (`429`). Ils sont moins pénalisés.
+
+Le temps d’attente est converti en dollars au prix typique par seconde du modèle : un endpoint plus rapide peut donc facturer plus et rester premier.
+
+## Essayer
+
+Les curseurs opposent votre endpoint à trois autres fournisseurs du même modèle. La courbe montre comment le trafic diminue à mesure que votre coût par réponse dépasse le minimum.
+
+<ProviderTrafficPlayground locale="fr" />
+
+## Comment le trafic est réparti
+
+- Les fournisseurs dont le coût par réponse dépasse d’environ 30 % au plus le coût le plus bas se partagent l’essentiel du trafic. Être légèrement derrière ne coûte que peu.
+- Au-delà, la part chute rapidement.
+- Chaque endpoint routable conserve une petite part, afin que les reprises et les améliorations soient détectées sans action de votre part.
+- Une conversation qui lit votre cache de prompts reste généralement sur votre endpoint tant qu’il fonctionne normalement.
+
+Les requêtes qui imposent un ordre de fournisseurs, ou demandent un tri par prix, latence ou débit, n’utilisent pas ce classement. Voir [Routage et solutions de repli](./routing-and-fallbacks.mdx).
+
+## Ce qui rapporte plus de trafic
+
+- Baisser le prix d’une requête type, sortie et lectures de cache comprises.
+- Servir les prompts répétés depuis le cache.
+- Renvoyer le premier token plus tôt et streamer plus vite.
+- Éviter les erreurs et les refus pour limite de débit, et augmenter votre capacité avant que la demande n’atteigne vos limites.

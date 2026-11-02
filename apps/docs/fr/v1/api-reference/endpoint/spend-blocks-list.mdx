@@ -1,0 +1,9 @@
+---
+title: "Lister les blocages de dépenses"
+sidebarTitle: "Lister les blocages"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /spend-blocks"
+description: "Liste les blocages de règles de dépenses qui refusent des requêtes."
+---
+
+Nécessite `spend_rules:read`. Les appelants OAuth doivent être propriétaires ou administrateurs de l'espace de travail. Ajoutez `include_lifted=true` pour inclure les blocages levés. Les blocages sont appliqués au mieux ; consultez [bloquer les requêtes](../../guides/spend-alerts.mdx#block-requests).

@@ -1,0 +1,9 @@
+---
+title: "Crear una regla de gasto"
+sidebarTitle: "Crear regla"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /spend-rules"
+description: "Crea una alerta de gasto, opcionalmente una que bloquee las solicitudes al superar un límite."
+---
+
+Requiere `spend_rules:write`. Los llamadores OAuth deben ser propietarios o administradores del espacio de trabajo. Envía cada importe en USD (`*_usd`) o en nanodólares (`*_nanos`), no ambos. Un espacio de trabajo puede tener 50 reglas de gasto. Consulta la [guía de alertas de gasto](../../guides/spend-alerts.mdx) para conocer las métricas, bases, ámbitos y periodos.

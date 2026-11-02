@@ -490,6 +490,7 @@
 				"earlier_history_missing": "Esta solicitud continuaba una respuesta anterior por ID, así que no se incluyen los turnos previos.",
 				"unsupported_content": "Parte del contenido no se pudo mostrar y se omitió.",
 				"attachment_reference": "Algunos adjuntos se referenciaban por ID y no se guardaron con la solicitud.",
+				"media_not_stored": "Las imágenes, el audio y los archivos no se guardan en los registros de E/S, así que se omiten.",
 				"no_response": "La respuesta registrada falta o falló, así que el chat termina con la solicitud.",
 				"response_truncated": "La respuesta registrada quedó cortada.",
 				"extra_choices": "Solo se incluye la primera de las opciones de la respuesta.",

@@ -4144,14 +4144,6 @@ export type CreateGuardrailParams = {
   headers?: Record<string, never>;
   body?: {
     allowedApiModelIds?: string[];
-    budgets?: {
-      dailyCostNanos?: number | null;
-      dailyRequests?: number | null;
-      monthlyCostNanos?: number | null;
-      monthlyRequests?: number | null;
-      weeklyCostNanos?: number | null;
-      weeklyRequests?: number | null;
-    };
     description?: string | null;
     enabled?: boolean;
     modelRestrictionMode?: "none" | "allowlist" | "blocklist";
@@ -4184,14 +4176,10 @@ export async function createGuardrail(
   data: {
     allowed_api_model_ids?: string[] | null;
     created_at?: string | null;
-    daily_limit_cost_nanos?: number | null;
-    daily_limit_requests?: number | null;
     description?: string | null;
     enabled?: boolean | null;
     id: string;
     model_restriction_mode?: "none" | "allowlist" | "blocklist" | null;
-    monthly_limit_cost_nanos?: number | null;
-    monthly_limit_requests?: number | null;
     name: string;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
@@ -4211,8 +4199,6 @@ export async function createGuardrail(
         }[]
       | null;
     updated_at?: string | null;
-    weekly_limit_cost_nanos?: number | null;
-    weekly_limit_requests?: number | null;
     workspace_id: string;
   };
 }> {
@@ -4222,14 +4208,10 @@ export async function createGuardrail(
     data: {
       allowed_api_model_ids?: string[] | null;
       created_at?: string | null;
-      daily_limit_cost_nanos?: number | null;
-      daily_limit_requests?: number | null;
       description?: string | null;
       enabled?: boolean | null;
       id: string;
       model_restriction_mode?: "none" | "allowlist" | "blocklist" | null;
-      monthly_limit_cost_nanos?: number | null;
-      monthly_limit_requests?: number | null;
       name: string;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
@@ -4249,8 +4231,6 @@ export async function createGuardrail(
           }[]
         | null;
       updated_at?: string | null;
-      weekly_limit_cost_nanos?: number | null;
-      weekly_limit_requests?: number | null;
       workspace_id: string;
     };
   }>({
@@ -7102,7 +7082,7 @@ export type CreateSpendRuleParams = {
 };
 
 /**
- * Creates a spend rule and sets its notification destinations. Every metric is accepted; rules returned with evaluated false are saved and fire from a later release. Blocking is best effort and acts minutes after the threshold; use key limits and workspace budgets for exact caps. A workspace can have 50 spend rules.
+ * Creates a spend rule and sets its notification destinations. Every metric is evaluated. Blocking is best effort and acts minutes after the threshold; use key limits and workspace budgets for exact caps. A workspace can have 50 spend rules.
  */
 export async function createSpendRule(
   client: Client,
@@ -11538,15 +11518,11 @@ export async function getGuardrail(
   data: {
     allowed_api_model_ids?: string[] | null;
     created_at?: string | null;
-    daily_limit_cost_nanos?: number | null;
-    daily_limit_requests?: number | null;
     description?: string | null;
     enabled?: boolean | null;
     id: string;
     key_ids: string[];
     model_restriction_mode?: "none" | "allowlist" | "blocklist" | null;
-    monthly_limit_cost_nanos?: number | null;
-    monthly_limit_requests?: number | null;
     name: string;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
@@ -11566,8 +11542,6 @@ export async function getGuardrail(
         }[]
       | null;
     updated_at?: string | null;
-    weekly_limit_cost_nanos?: number | null;
-    weekly_limit_requests?: number | null;
     workspace_id: string;
   };
 }> {
@@ -11579,15 +11553,11 @@ export async function getGuardrail(
     data: {
       allowed_api_model_ids?: string[] | null;
       created_at?: string | null;
-      daily_limit_cost_nanos?: number | null;
-      daily_limit_requests?: number | null;
       description?: string | null;
       enabled?: boolean | null;
       id: string;
       key_ids: string[];
       model_restriction_mode?: "none" | "allowlist" | "blocklist" | null;
-      monthly_limit_cost_nanos?: number | null;
-      monthly_limit_requests?: number | null;
       name: string;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
@@ -11607,8 +11577,6 @@ export async function getGuardrail(
           }[]
         | null;
       updated_at?: string | null;
-      weekly_limit_cost_nanos?: number | null;
-      weekly_limit_requests?: number | null;
       workspace_id: string;
     };
   }>({
@@ -13975,6 +13943,8 @@ export async function getWorkspaceNotificationSettings(
     spend: {
       billing_time_zone: string;
       department_attribution: "all" | "primary";
+      report_cadence: "off" | "daily" | "weekly" | "monthly";
+      report_include_admins: boolean;
     };
   };
 }> {
@@ -14000,6 +13970,8 @@ export async function getWorkspaceNotificationSettings(
       spend: {
         billing_time_zone: string;
         department_attribution: "all" | "primary";
+        report_cadence: "off" | "daily" | "weekly" | "monthly";
+        report_include_admins: boolean;
       };
     };
   }>({
@@ -16831,14 +16803,10 @@ export async function listGuardrails(
   data: {
     allowed_api_model_ids?: string[] | null;
     created_at?: string | null;
-    daily_limit_cost_nanos?: number | null;
-    daily_limit_requests?: number | null;
     description?: string | null;
     enabled?: boolean | null;
     id: string;
     model_restriction_mode?: "none" | "allowlist" | "blocklist" | null;
-    monthly_limit_cost_nanos?: number | null;
-    monthly_limit_requests?: number | null;
     name: string;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
@@ -16858,8 +16826,6 @@ export async function listGuardrails(
         }[]
       | null;
     updated_at?: string | null;
-    weekly_limit_cost_nanos?: number | null;
-    weekly_limit_requests?: number | null;
     workspace_id: string;
   }[];
   total_count: number;
@@ -16870,14 +16836,10 @@ export async function listGuardrails(
     data: {
       allowed_api_model_ids?: string[] | null;
       created_at?: string | null;
-      daily_limit_cost_nanos?: number | null;
-      daily_limit_requests?: number | null;
       description?: string | null;
       enabled?: boolean | null;
       id: string;
       model_restriction_mode?: "none" | "allowlist" | "blocklist" | null;
-      monthly_limit_cost_nanos?: number | null;
-      monthly_limit_requests?: number | null;
       name: string;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
@@ -16897,8 +16859,6 @@ export async function listGuardrails(
           }[]
         | null;
       updated_at?: string | null;
-      weekly_limit_cost_nanos?: number | null;
-      weekly_limit_requests?: number | null;
       workspace_id: string;
     }[];
     total_count: number;
@@ -25562,14 +25522,6 @@ export type UpdateGuardrailParams = {
   headers?: Record<string, never>;
   body?: {
     allowedApiModelIds?: string[];
-    budgets?: {
-      dailyCostNanos?: number | null;
-      dailyRequests?: number | null;
-      monthlyCostNanos?: number | null;
-      monthlyRequests?: number | null;
-      weeklyCostNanos?: number | null;
-      weeklyRequests?: number | null;
-    };
     description?: string | null;
     enabled?: boolean;
     modelRestrictionMode?: "none" | "allowlist" | "blocklist";
@@ -25602,14 +25554,10 @@ export async function updateGuardrail(
   data: {
     allowed_api_model_ids?: string[] | null;
     created_at?: string | null;
-    daily_limit_cost_nanos?: number | null;
-    daily_limit_requests?: number | null;
     description?: string | null;
     enabled?: boolean | null;
     id: string;
     model_restriction_mode?: "none" | "allowlist" | "blocklist" | null;
-    monthly_limit_cost_nanos?: number | null;
-    monthly_limit_requests?: number | null;
     name: string;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
@@ -25629,8 +25577,6 @@ export async function updateGuardrail(
         }[]
       | null;
     updated_at?: string | null;
-    weekly_limit_cost_nanos?: number | null;
-    weekly_limit_requests?: number | null;
     workspace_id: string;
   };
 }> {
@@ -25642,14 +25588,10 @@ export async function updateGuardrail(
     data: {
       allowed_api_model_ids?: string[] | null;
       created_at?: string | null;
-      daily_limit_cost_nanos?: number | null;
-      daily_limit_requests?: number | null;
       description?: string | null;
       enabled?: boolean | null;
       id: string;
       model_restriction_mode?: "none" | "allowlist" | "blocklist" | null;
-      monthly_limit_cost_nanos?: number | null;
-      monthly_limit_requests?: number | null;
       name: string;
       privacy_enable_free_may_publish_prompts?: boolean | null;
       privacy_enable_free_may_train?: boolean | null;
@@ -25669,8 +25611,6 @@ export async function updateGuardrail(
           }[]
         | null;
       updated_at?: string | null;
-      weekly_limit_cost_nanos?: number | null;
-      weekly_limit_requests?: number | null;
       workspace_id: string;
     };
   }>({
@@ -27630,6 +27570,8 @@ export type UpdateWorkspaceNotificationSettingsParams = {
     spend?: {
       billing_time_zone?: string;
       department_attribution?: "all" | "primary";
+      report_cadence?: "off" | "daily" | "weekly" | "monthly";
+      report_include_admins?: boolean;
     };
   };
 };
@@ -27660,6 +27602,8 @@ export async function updateWorkspaceNotificationSettings(
     spend: {
       billing_time_zone: string;
       department_attribution: "all" | "primary";
+      report_cadence: "off" | "daily" | "weekly" | "monthly";
+      report_include_admins: boolean;
     };
   };
 }> {
@@ -27685,6 +27629,8 @@ export async function updateWorkspaceNotificationSettings(
       spend: {
         billing_time_zone: string;
         department_attribution: "all" | "primary";
+        report_cadence: "off" | "daily" | "weekly" | "monthly";
+        report_include_admins: boolean;
       };
     };
   }>({

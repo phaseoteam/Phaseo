@@ -101,6 +101,22 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
 
 ## トークンで Phaseo を呼び出す
 
+Phaseo のすべての SDK は API キーの代わりに関数を受け付け、リクエストと再試行のたびにその関数を呼び出すため、各リクエストは最新のトークンを使います。C++ 以外の各 SDK には、プラットフォームごとのヘルパーがあります。`https://api.phaseo.app` 向けに発行されたトークンを取得し、有効期限の 1 分前まで再利用します。
+
+| SDK | GitHub Actions | Vercel |
+| --- | --- | --- |
+| TypeScript | `githubActionsToken()` | `vercelToken()` |
+| Python | `github_actions_token()` | `vercel_token()` |
+| Go | `phaseo.GitHubActionsToken()` | `phaseo.VercelToken()` |
+| Java | `WorkloadTokens.gitHubActions()` | `WorkloadTokens.vercel()` |
+| C# | `WorkloadTokens.GitHubActions()` | `WorkloadTokens.Vercel()` |
+| PHP | `WorkloadTokens::githubActions()` | `WorkloadTokens::vercel()` |
+| Ruby | `PhaseoSdk::WorkloadTokens.github_actions` | `PhaseoSdk::WorkloadTokens.vercel` |
+| Rust | `phaseo::auth::github_actions_token()` | `phaseo::auth::vercel_token()` |
+| C++ | 独自の関数を `set_api_key_provider` に渡します | 独自の関数を `set_api_key_provider` に渡します |
+
+ヘルパーを使うには、各 SDK の次回リリースが必要です。Vercel では、ヘルパーが `VERCEL_OIDC_TOKEN_FILE` または `VERCEL_OIDC_TOKEN` のデプロイ用トークンを交換します。Vercel Functions では、トークンは各リクエストの `x-vercel-oidc-token` ヘッダーで届くので、トークンの取得元としてヘルパーに渡してください。
+
 <Tabs>
 <Tab title="Vercel">
 `@vercel/oidc` 4.x のサーバー用エントリーから `getVercelOidcToken` を使います。`audience` を渡すと、デプロイのトークンが Phaseo 向けに発行されたトークンに交換されます。

@@ -1,0 +1,63 @@
+---
+title: "eve"
+icon: "bot"
+description: "Execute agentes eve com modelos do Phaseo usando o provedor de AI SDK do Phaseo."
+---
+
+Os agentes do [eve](https://eve.dev) aceitam qualquer modelo de linguagem do AI SDK. Passe um modelo do [provedor de AI SDK do Phaseo](./ai-sdk.mdx) e cada chamada ao modelo passa pelo Phaseo, com seu roteamento, suas chaves, orçamentos e logs.
+
+## Instalar
+
+Instale o provedor no seu projeto eve. O eve usa o AI SDK 7, então use a versão 2.0.1 ou posterior:
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+Defina `PHASEO_API_KEY` em `.env.local` para o `eve dev` e no ambiente do servidor de cada deploy.
+
+## Configurar o agente
+
+```ts title="agent/agent.ts"
+import { defineAgent } from "eve";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: phaseo("openai/gpt-6-luna"),
+	modelContextWindowTokens: 1_050_000,
+	reasoning: "low",
+});
+```
+
+Use IDs de modelo do [endpoint Models](../../api-reference/endpoint/models.mdx) e defina `modelContextWindowTokens` com o `limits.input_tokens` do modelo nesse mesmo endpoint. O eve não consegue consultar a janela de contexto de um objeto de modelo e usa esse número para decidir quando compactar a conversa.
+
+## Escolher um modelo a cada turno
+
+`defineDynamic` roda antes de cada chamada ao modelo. Retorne um objeto de seleção para que cada modelo mantenha sua própria janela de contexto:
+
+```ts title="agent/agent.ts"
+import { defineAgent } from "eve";
+import { defineDynamic } from "eve/models";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: defineDynamic((ctx) =>
+		ctx.session.auth.initiator?.attributes.plan === "enterprise"
+			? { model: phaseo("openai/gpt-6-sol"), modelContextWindowTokens: 1_050_000 }
+			: { model: phaseo("openai/gpt-6-luna"), modelContextWindowTokens: 1_050_000 },
+	),
+});
+```
+
+## Observações
+
+- Passe um objeto de modelo como `phaseo("openai/gpt-6-luna")`. Um ID de modelo em texto simples não é enviado ao Phaseo.
+- Ferramentas, streaming, raciocínio, compactação e cache de prompts funcionam pelo Phaseo. As leituras de cache aparecem nos eventos de uso do eve e nos logs do Phaseo.
+- O eve deixa vazio o custo de cada execução com objetos de modelo. Veja o custo na página Usage do Phaseo ou em Logs.
+- A conexão `/login` do eve só funciona na sua máquina. Deploys precisam de `PHASEO_API_KEY`.
+
+## Relacionados
+
+- [AI SDK](./ai-sdk.mdx)
+- [Presets](../presets.mdx)
+- [Chamada de ferramentas](../tool-calling.mdx)

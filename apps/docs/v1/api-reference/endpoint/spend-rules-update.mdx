@@ -1,0 +1,10 @@
+---
+title: "Update a spend rule"
+sidebarTitle: "Update rule"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml PATCH /spend-rules/{id}"
+description: "Change a spend rule's fields, destinations or action."
+"og:image": "https://phaseo.app/og/dynamic?title=Update%20a%20spend%20rule&description=Change%20a%20spend%20rule%27s%20fields%2C%20destinations%20or%20action.&pathname=/docs/v1/api-reference/endpoint/spend-rules-update"
+---
+
+Requires `spend_rules:write`. The fields you send are merged over the stored rule, and the whole rule is checked again. `destination_ids` replaces the rule's destinations; leave it out to keep them. Changing the action, scope, period or base of a blocking rule lifts its active block.

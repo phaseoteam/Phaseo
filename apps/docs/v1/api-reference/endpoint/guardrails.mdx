@@ -11,6 +11,6 @@ Guardrail management requires a management API key. Read operations require `gua
 
 Use guardrails to apply privacy controls, provider and model restrictions, prompt-injection handling and sensitive-information policies. A guardrail can be assigned to API keys, workspace members, or both.
 
-Guardrails do not enforce request or spend limits. The `budgets` input and the `*_limit_requests` and `*_limit_cost_nanos` fields are accepted and returned for compatibility, but have no effect. Use [API key limits](./keys-update.mdx) or [workspace budgets](./budgets-list.mdx) instead.
+Guardrails do not limit requests or spend. Use [API key limits](./keys-update.mdx), [workspace budgets](./budgets-list.mdx) or [spend alerts](../../guides/spend-alerts.mdx) instead. The guardrail `budgets` input and the `*_limit_requests` and `*_limit_cost_nanos` fields have been removed; a client that still sends them is not rejected, and they are ignored.
 
 Successful mutations refresh workspace policy state and appear in the workspace audit log.

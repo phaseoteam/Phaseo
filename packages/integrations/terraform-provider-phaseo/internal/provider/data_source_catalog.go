@@ -30,6 +30,15 @@ func NewProvidersDataSource() datasource.DataSource {
 func NewCreditsDataSource() datasource.DataSource {
 	return &jsonDataSource{typeName: "credits", endpoint: "credits", description: "Returns current Phaseo credit information as JSON."}
 }
+func NewSpendRulesDataSource() datasource.DataSource {
+	return &jsonDataSource{typeName: "spend_rules", endpoint: "spend-rules", description: "Returns the workspace's spend rules as JSON."}
+}
+func NewSpendBlocksDataSource() datasource.DataSource {
+	return &jsonDataSource{typeName: "spend_blocks", endpoint: "spend-blocks", description: "Returns the workspace's active spend blocks as JSON."}
+}
+func NewWorkspaceBudgetsDataSource() datasource.DataSource {
+	return &jsonDataSource{typeName: "workspace_budgets", endpoint: "budgets", description: "Returns the workspace's budgets, with current usage and reset times, as JSON."}
+}
 func (d *jsonDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_" + d.typeName
 }

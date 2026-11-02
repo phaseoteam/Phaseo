@@ -1,0 +1,63 @@
+---
+title: "eve"
+icon: "bot"
+description: "Exécutez des agents eve sur des modèles Phaseo avec le fournisseur AI SDK de Phaseo."
+---
+
+Les agents [eve](https://eve.dev) acceptent n'importe quel modèle de langage AI SDK. Passez un modèle du [fournisseur AI SDK de Phaseo](./ai-sdk.mdx) et chaque appel au modèle passe par Phaseo, avec votre routage, vos clés, vos budgets et vos journaux.
+
+## Installation
+
+Installez le fournisseur dans votre projet eve. eve utilise AI SDK 7 : utilisez la version 2.0.1 ou ultérieure :
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+Définissez `PHASEO_API_KEY` dans `.env.local` pour `eve dev`, et dans l'environnement serveur de chaque déploiement.
+
+## Configurer l'agent
+
+```ts title="agent/agent.ts"
+import { defineAgent } from "eve";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: phaseo("openai/gpt-6-luna"),
+	modelContextWindowTokens: 1_050_000,
+	reasoning: "low",
+});
+```
+
+Utilisez des identifiants de modèle de l'[endpoint Models](../../api-reference/endpoint/models.mdx) et donnez à `modelContextWindowTokens` la valeur `limits.input_tokens` du modèle dans ce même endpoint. eve ne peut pas connaître la fenêtre de contexte d'un objet modèle et s'appuie sur ce nombre pour décider quand compacter la conversation.
+
+## Choisir un modèle à chaque tour
+
+`defineDynamic` s'exécute avant chaque appel au modèle. Renvoyez un objet de sélection pour que chaque modèle garde sa propre fenêtre de contexte :
+
+```ts title="agent/agent.ts"
+import { defineAgent } from "eve";
+import { defineDynamic } from "eve/models";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: defineDynamic((ctx) =>
+		ctx.session.auth.initiator?.attributes.plan === "enterprise"
+			? { model: phaseo("openai/gpt-6-sol"), modelContextWindowTokens: 1_050_000 }
+			: { model: phaseo("openai/gpt-6-luna"), modelContextWindowTokens: 1_050_000 },
+	),
+});
+```
+
+## Remarques
+
+- Passez un objet modèle comme `phaseo("openai/gpt-6-luna")`. Un simple identifiant de modèle en chaîne n'est pas envoyé à Phaseo.
+- Les outils, le streaming, le raisonnement, la compaction et le cache de prompts fonctionnent via Phaseo. Les lectures du cache apparaissent dans les événements d'usage d'eve et dans les journaux Phaseo.
+- eve laisse vide le coût de chaque exécution pour les objets modèle. Consultez le coût sur la page Usage de Phaseo ou dans Logs.
+- La connexion `/login` d'eve ne fonctionne que sur votre machine. Les déploiements ont besoin de `PHASEO_API_KEY`.
+
+## Voir aussi
+
+- [AI SDK](./ai-sdk.mdx)
+- [Presets](../presets.mdx)
+- [Appels d'outils](../tool-calling.mdx)

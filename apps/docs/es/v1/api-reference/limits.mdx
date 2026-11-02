@@ -37,13 +37,15 @@ Los presupuestos de departamento se gestionan con la API `/v1/department-budgets
 
 Los propietarios y administradores también pueden gestionar los presupuestos de departamento en [Configuración → Presupuestos](https://phaseo.app/settings/budgets), o con el recurso `phaseo_department_budget` del proveedor de Terraform. Desde la CLI, usa `phaseo department-budgets`.
 
+Las [alertas de gasto](../guides/spend-alerts.mdx) pueden avisar antes de que se alcancen estos límites. Una regla de gasto configurada para bloquear devuelve en su lugar `429` con el código de error `spend_rule_blocked`; se aplica en la medida de lo posible y empieza unos minutos después de que el gasto supere su límite, así que usa los límites de clave y los presupuestos para topes exactos.
+
 ## Políticas de límite de frecuencia
 
 Los administradores del espacio de trabajo pueden crear políticas de límite de frecuencia con nombre mediante la API de administración `/v1/rate-limits` y asignarlas a claves API, miembros del espacio de trabajo, departamentos, barreras de seguridad o como valor predeterminado para cada usuario final. El gateway aplica el `requests_per_minute` y el `tokens_per_minute` de una política, cada uno medido en un minuto móvil:
 
 - **Clave:** la asignación propia de la clave.
 - **Miembro:** una asignación compartida por las claves y las solicitudes OAuth del miembro.
-- **Departamento:** una asignación compartida por todo lo que cuenta para el departamento. Una clave vinculada a un departamento cuenta solo para ese departamento. Cualquier otra clave cuenta para todos los departamentos de quien la creó, y las solicitudes OAuth cuentan para todos los departamentos de su usuario. Un miembro con una anulación de departamento cuenta solo para el departamento de la anulación.
+- **Departamento:** una asignación compartida por todo lo que cuenta para el departamento. Una clave vinculada a un departamento cuenta solo para ese departamento. Cualquier otra clave cuenta para todos los departamentos de quien la creó, y las solicitudes OAuth cuentan para todos los departamentos de su usuario. Un miembro con una anulación de departamento cuenta solo para el departamento de la anulación. Para que esas claves y solicitudes OAuth cuenten solo para el departamento principal de la persona, establece la atribución de departamentos del espacio de trabajo en primary en [Configuración → Notificaciones](https://phaseo.app/settings/notifications), con `spend.department_attribution` en `PATCH /v1/notifications/settings` o con `phaseo notifications settings update --department-attribution primary`. Los presupuestos de departamento y las reglas de gasto usan la misma configuración.
 - **Barrera de seguridad:** una asignación independiente para cada clave (o usuario de OAuth) que cubre la barrera.
 - **Valor predeterminado por usuario final:** una asignación independiente para cada usuario final, identificado por el campo `user` de la solicitud o la cabecera `X-Phaseo-User-Id`. Las solicitudes sin ID de usuario final no quedan limitadas por ella.
 
@@ -87,6 +89,7 @@ Reglas de límites de tasa para agentes, resumen de esta página:
 - Las cuotas del Gateway devuelven `429` con el motivo `customer_requests_per_minute` o `free_requests_per_day`; espera los segundos de `Retry-After`. Si la aplicación de cuotas no está disponible, el Gateway devuelve `503` con indicaciones para reintentar.
 - Los límites de clave y los presupuestos devuelven `429` con `key_limit_exceeded` y un `reset_at`. Sin `Retry-After`, el límite no se restablece solo: aumenta el límite o usa otra clave en lugar de reintentar.
 - Un presupuesto de departamento agotado devuelve `429` con `key_limit_exceeded`, el motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` y `reset_at`; espera los segundos de `Retry-After` o aumenta el presupuesto. Los presupuestos de departamento no bloquean las solicitudes por lotes, en tiempo real ni OAuth. Si la comprobación del presupuesto no está disponible, la solicitud se permite.
+- Las reglas de gasto que bloquean devuelven `429` con `spend_rule_blocked`; espera `Retry-After` o pide a un propietario o administrador que levante el bloqueo. `x-phaseo-spend-warning` significa que puede llegar un bloqueo.
 - Las políticas de límite de tasa del espacio de trabajo devuelven `429` con `rate_limit_exceeded`, `policy_id` y `limit_scope`. `x-ratelimit-remaining-requests` es aproximado.
 - `Retry-After` puede ser un número de segundos o una fecha HTTP; valídalo antes de programar un reintento. Nunca reenvíes un trabajo de vídeo o por lotes ambiguo; consulta su estado.
 </Visibility>

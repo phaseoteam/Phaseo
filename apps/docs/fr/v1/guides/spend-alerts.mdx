@@ -1,0 +1,225 @@
+---
+title: "Alertes de dépenses"
+description: "Recevez des alertes sur les dépenses, les budgets, les prévisions, les pics et un solde bas, et bloquez les requêtes une fois les dépenses au-delà d'une limite."
+icon: "badge-dollar-sign"
+---
+
+Les règles de dépenses surveillent les dépenses de votre espace de travail et envoient une alerte quand elles franchissent un seuil. Une règle peut aussi bloquer les requêtes une fois les dépenses au-delà d'une marge de tolérance. Chaque formule peut créer jusqu'à 50 règles par espace de travail.
+
+<Note>Les alertes de dépenses, le blocage et les rapports de dépenses sont en cours de déploiement. Tant qu'ils ne sont pas activés, les règles et les réglages sont enregistrés, mais rien n'est évalué, bloqué ni envoyé.</Note>
+
+## Fonctionnement d'une règle
+
+Une règle combine :
+
+- une **métrique** : ce qui est mesuré (voir les [types d'alertes](#alert-types-and-bases)) ;
+- une **portée** : les dépenses qui comptent, par exemple celles de l'espace de travail, d'une clé API ou d'un département ;
+- une **période** : un jour, une semaine ou un mois calendaire, ou une fenêtre glissante d'heures ;
+- des **seuils** : le montant en dollars ou les pourcentages qui envoient une alerte ;
+- une **action** : `notify`, ou `block` pour refuser aussi les requêtes au-delà d'une limite.
+
+Phaseo évalue les règles à partir de l'utilisation enregistrée, quelques minutes après la fin des requêtes. Les espaces de travail qui ont des règles sont aussi vérifiés toutes les heures, et les règles de solde toutes les 15 minutes. Les dépenses incluent les tâches vidéo, batch, musique et temps réel.
+
+Pour créer une règle, ouvrez **Gateway → Paramètres → Notifications → Alertes de dépenses** et sélectionnez **Ajouter une alerte**. L'éditeur affiche la valeur actuelle d'une règle enregistrée et peut envoyer une alerte de test. La page d'une clé API et la page des budgets proposent des raccourcis qui ouvrent l'éditeur avec la limite de la clé ou le budget comme base. Les membres peuvent voir les règles ; les propriétaires et administrateurs les créent, les modifient, les testent et les suppriment.
+
+<span id="alert-types-and-bases"></span>
+
+## Types d'alertes et bases
+
+| Métrique | Envoie une alerte quand | Périodes |
+| --- | --- | --- |
+| `spend` | les dépenses de la période atteignent `threshold_amount` | toutes |
+| `budget_percent` | les dépenses atteignent un pourcentage d'une base, avec jusqu'à cinq seuils comme 50, 80 et 100 | toutes |
+| `forecast` | les dépenses projetées à la fin de la période atteignent un montant ou un pourcentage d'une base | jour, semaine, mois |
+| `spike` | les dépenses des dernières heures représentent plusieurs fois les dépenses habituelles | glissante |
+| `balance` | le solde disponible descend à un montant, ou durerait moins qu'un nombre de jours | glissante, portée espace de travail uniquement |
+
+Les pourcentages sont mesurés par rapport à une base (`base_kind`) :
+
+- `amount` : un montant en dollars défini sur la règle, utilisé uniquement pour les alertes.
+- `workspace_budget` : le budget de l'espace de travail ayant l'intervalle correspondant (`base_ref` : `daily` pour une période d'un jour, `weekly` pour une semaine, `monthly` pour un mois). Un budget sans échéance (lifetime) ne peut pas être une base.
+- `key_limit` : la limite de dépenses de la clé API de la règle pour la fenêtre correspondante. Nécessite la portée clé.
+- `previous_period` : les dépenses au même moment de la période précédente, par exemple « hier à la même heure ». Pour les règles glissantes, c'est la fenêtre précédente ; pour les prévisions, toute la période précédente.
+
+Une règle dont la base manque, comme un budget supprimé ou une clé sans limite de dépenses, n'envoie rien tant que la base n'existe pas de nouveau. Les garde-fous n'ont pas de limites de dépenses et ne peuvent pas servir de base.
+
+## Portées
+
+| Portée | `scope_id` | Compte |
+| --- | --- | --- |
+| `workspace` | aucun | toutes les dépenses de l'espace de travail |
+| `key` | ID de la clé API | les requêtes faites avec la clé |
+| `member` | l'ID utilisateur du membre | les requêtes faites avec des clés créées par le membre, plus ses propres requêtes OAuth |
+| `department` | ID du département | tout ce que font les personnes du département (voir ci-dessous) |
+| `model` | ID du modèle, comme `openai/gpt-5` | les requêtes servies par le modèle |
+| `provider` | ID du fournisseur | les requêtes servies par le fournisseur |
+
+Les dépenses d'un département sont attribuées requête par requête :
+
+1. Une clé affectée à un département compte uniquement pour ce département.
+2. Sinon, c'est le créateur de la clé qui décide : ses départements, ou pour les requêtes OAuth, les départements de l'utilisateur connecté.
+3. Une personne qui appartient à plusieurs départements compte par défaut pour **tous**. Choisissez **Département principal uniquement** au lieu de **Tous ses départements** dans **Réglages des dépenses de l'espace de travail** (API : `spend.department_attribution: "primary"`) pour ne compter que son département principal. Si aucun département n'est marqué comme principal, un département auquel elle a été ajoutée à la main passe en premier, puis le plus ancien.
+
+L'appartenance aux départements est lue à chaque évaluation de la règle : déplacer quelqu'un dans un autre département déplace avec lui ses dépenses de la période en cours. Comme une personne peut compter pour plusieurs départements, la somme des départements peut dépasser le total de l'espace de travail. L'utilisation antérieure à septembre 2026 n'est attribuée à aucun membre ni département.
+
+## Périodes et fuseaux horaires
+
+Le jour, la semaine et le mois sont des périodes calendaires. Les semaines vont du lundi au dimanche. Chaque règle peut définir son propre `time_zone` IANA, comme `Europe/London` ou `America/New_York` ; sinon, elle utilise le fuseau horaire de facturation de l'espace de travail, UTC par défaut. Modifiez le fuseau horaire de facturation dans **Réglages des dépenses de l'espace de travail** ou avec `spend.billing_time_zone` dans l'[API des réglages de notification](../api-reference/endpoint/notifications-settings-update.mdx). Les changements d'heure sont pris en compte, et les noms de fuseau respectent la casse.
+
+Une période `rolling` couvre les dernières `window_hours` (de 1 à 720) et avance en continu. Les règles de pic l'utilisent comme fenêtre du pic, et les règles de solde comme durée sur laquelle elles font la moyenne des dépenses.
+
+<Note>Les [limites de clé](../api-reference/limits.mdx#key-limits-and-budgets) et les [budgets de l'espace de travail](../api-reference/endpoint/budgets-list.mdx) sont toujours réinitialisés sur les limites UTC. Une règle avec une base `workspace_budget` ou `key_limit` dans un autre fuseau horaire compare son propre jour, sa semaine ou son mois local avec cette limite, si bien que ses dépenses peuvent différer de ce que compte la limite.</Note>
+
+## Seuils et alertes répétées
+
+Selon sa métrique, une règle a de un à cinq seuils en pourcentage (de 1 à 1000) ou un seuil en dollars.
+
+- Sur les périodes calendaires, chaque seuil envoie au plus une alerte par période. Quand les dépenses franchissent plusieurs seuils à la fois, une seule alerte nomme le plus élevé et liste les autres.
+- Les règles glissantes, de pic et de solde utilisent à la place `cooldown_minutes` (de 5 à 43 200, 360 par défaut). Pendant ce délai, seul un seuil plus élevé envoie une alerte ; ensuite, la règle alerte de nouveau si les dépenses sont toujours au-dessus.
+- Les seuils déjà envoyés pendant cette période ne sont pas renvoyés lorsque vous modifiez la règle.
+
+**Envoyer un test** envoie l'alerte que la règle enverrait maintenant, marquée `[TEST]`, aux destinations de la règle. Rien n'est enregistré, et un espace de travail peut envoyer cinq tests par minute. L'**Historique** de chaque règle liste les alertes et les blocages qu'elle a envoyés.
+
+<span id="block-requests"></span>
+
+## Bloquer les requêtes
+
+Une règle `spend` ou `budget_percent` avec `action: "block"` alerte à ses seuils et bloque dès que les dépenses atteignent le point de blocage : `block_at_percent` de la base (110 par défaut, au moins le seuil le plus élevé), ou `block_at_amount` pour une règle `spend`. Les règles avec une base `previous_period` ne peuvent pas bloquer. L'écart entre la dernière alerte et le point de blocage est la marge de tolérance : votre équipe est prévenue avant que les requêtes s'arrêtent.
+
+<Warning>Le blocage est appliqué au mieux. Il s'appuie sur l'utilisation enregistrée : un blocage commence donc quelques minutes après que les dépenses ont dépassé le point de blocage, et les dépenses peuvent le dépasser pendant ce temps. Pour un plafond strict vérifié à chaque requête, utilisez les limites de clé ou les budgets de l'espace de travail.</Warning>
+
+| | Blocage par règle de dépenses | Limite de clé | Budget de l'espace de travail |
+| --- | --- | --- | --- |
+| Vérifié | toutes les quelques minutes, d'après l'utilisation enregistrée | à chaque requête | à chaque requête |
+| Portée | espace de travail, clé, membre, département, modèle ou fournisseur | une clé | l'espace de travail |
+| Périodes | jour, semaine, mois ou glissante, dans tout fuseau horaire | jour, semaine ou mois UTC | jour, semaine ou mois UTC, ou sans échéance |
+| Modèles gratuits | non bloqués sauf si `block_free_models` vaut true | comptés | comptés |
+| Alerte préalable | oui, aux seuils de la règle | non | non |
+| Levée | par un propriétaire ou un administrateur, pour le reste de la période | augmenter la limite | augmenter le budget |
+
+Tant qu'un blocage est actif, les requêtes dans sa portée reçoivent `429` avec le code d'erreur `spend_rule_blocked`. Le corps contient `reason: "spend_rule_block"`, `rule_id`, `rule_name`, `block_id`, `limit_scope`, `limit_value` (USD) et `reset_at`. `Retry-After` indique le nombre de secondes avant la réinitialisation de la période. Une règle glissante n'a pas d'heure de réinitialisation : son blocage dure jusqu'à ce que les dépenses de la fenêtre repassent sous le point de blocage, et la réponse n'a pas de `Retry-After`. Un blocage de fournisseur retire les routes de ce fournisseur, et la requête n'est refusée que s'il ne reste aucune autre route. Les sessions en temps réel ne sont pas encore bloquées.
+
+Tant que les dépenses dépassent le dernier seuil de la règle sans atteindre son point de blocage, les réponses aux requêtes dans sa portée portent un en-tête `x-phaseo-spend-warning` qui liste jusqu'à trois règles, par exemple `rule_id=…; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Les clients peuvent le journaliser ou ralentir avant le début du blocage.
+
+Un blocage est levé automatiquement quand la période est réinitialisée, quand les dépenses d'une règle glissante repassent sous son point de blocage, ou quand la règle est désactivée, supprimée ou modifiée. Les propriétaires et administrateurs peuvent le lever dans **Alertes de dépenses → Blocages actifs** ou avec [`POST /v1/spend-blocks/{id}/lift`](../api-reference/endpoint/spend-blocks-lift.mdx). Un blocage levé ne reprend pas pendant la même période (pour les règles glissantes, pendant une fenêtre). Des notifications de blocages de dépenses sont envoyées quand un blocage commence et quand il est levé.
+
+## Solde et autonomie
+
+Une règle `balance` surveille le solde disponible de l'espace de travail : son solde de crédits moins les montants réservés pour les requêtes en cours. Elle utilise la portée espace de travail et une période glissante, et alerte dès que l'une des conditions est remplie :
+
+- `threshold_amount` : le solde disponible est inférieur ou égal à ce montant ;
+- `runway_days` : au rythme moyen de dépenses quotidiennes des dernières `window_hours`, le solde durerait moins que ce nombre de jours. Sans dépenses récentes, il n'y a pas d'alerte d'autonomie.
+
+Une règle de solde alerte une fois par baisse. Elle n'alerte de nouveau qu'après que le solde est remonté puis redescendu, et pas plus souvent que son délai. Aucune alerte n'est envoyée tant que la recharge automatique est activée et fonctionne.
+
+L'e-mail de solde bas dans **Paramètres → Crédits** reste l'option simple par défaut. Il est envoyé une fois chaque fois que le solde passe sous son seuil, au plus toutes les six heures, et pas tant que la recharge automatique fonctionne. Utilisez une règle de solde pour des alertes d'autonomie, d'autres destinations ou un autre seuil.
+
+## Prévision
+
+Une règle `forecast` projette en ligne droite les dépenses jusqu'à la fin du jour, de la semaine ou du mois en cours : les dépenses jusqu'ici, divisées par la part de la période déjà écoulée. Elle attend que 3 heures d'un jour, 24 heures d'une semaine ou 72 heures d'un mois se soient écoulées, et qu'au moins 0,01 $ ait été dépensé, pour qu'un début calme ne déclenche pas d'alerte. L'alerte indique quand la limite sera atteinte au rythme actuel.
+
+Définissez un montant `threshold_amount` en dollars, ou une base avec des pourcentages. Avec une base `previous_period`, la projection est comparée à l'ensemble de la période précédente. Chaque seuil alerte une fois par période.
+
+## Pic
+
+Une règle `spike` compare les dépenses des dernières `window_hours` (de 1 à 56) aux dépenses habituelles pour ce moment :
+
+- Pour les fenêtres de moins de 24 heures, les dépenses habituelles sont la médiane des mêmes heures sur chacun des sept jours précédents. Pour les fenêtres plus longues, c'est la médiane des fenêtres antérieures de même durée sur les sept jours précédents.
+- Elle alerte quand les dépenses atteignent au moins `spike_multiplier` fois les dépenses habituelles (3 par défaut) et au moins `spike_floor` (5 $ par défaut).
+- Elle a besoin de dépenses de l'espace de travail dans au moins trois de ces fenêtres antérieures. D'ici là, l'éditeur indique qu'elle apprend encore. Quand les dépenses habituelles sont nulles, seul le plancher s'applique.
+- Elle utilise un délai (6 heures par défaut) et ne bloque jamais.
+
+La comparaison utilise des pas exacts de 24 heures : après un changement d'heure, elle compare donc avec une heure plus tôt ou plus tard sur l'horloge locale. Les règles de pic sont vérifiées quand une nouvelle utilisation arrive.
+
+## Rapports de dépenses
+
+Les propriétaires reçoivent par défaut un rapport de dépenses hebdomadaire, et les administrateurs peuvent s'y abonner. Des rapports quotidiens et mensuels sont aussi disponibles. Le [guide des notifications de l'espace de travail](./workspace-notifications.mdx#spend-reports) présente les réglages et le contenu. Par ailleurs :
+
+- Un rapport est envoyé entre 09:00 et 21:00 dans le fuseau horaire de facturation, le premier jour après sa période. S'il ne peut pas être envoyé ce jour-là, il est ignoré au lieu d'être envoyé en retard.
+- La prévision d'un rapport porte sur le mois de facturation en cours.
+- Les totaux par membre et par département incluent les tâches asynchrones et suivent la règle des départements ci-dessus ; ils peuvent donc différer légèrement du total.
+- Chaque personne se désabonne de sa propre copie du rapport d'un espace de travail. Les membres qui ne sont ni propriétaires ni administrateurs ne le reçoivent jamais.
+
+## Routage et destinations
+
+Les règles de dépenses envoient trois types de notification. Choisissez la destination de chacun dans **Paramètres → Notifications** :
+
+| Route | Type | Envoyé quand |
+| --- | --- | --- |
+| Alertes de dépenses | `spend_alert` | un seuil d'une règle est franchi |
+| Blocages de dépenses | `spend_blocked` | un blocage commence ou est levé (`payload.state` vaut `started` ou `lifted`) |
+| Rapports de dépenses | `spend_report` | un rapport de dépenses est dû |
+
+Une règle peut avoir ses propres destinations. Elles remplacent les routes Alertes de dépenses et Blocages de dépenses pour cette règle ; si elles sont toutes en pause, les alertes de la règle ne sont pas envoyées aux routes à la place. Les alertes et les blocages arrivent aussi dans l'application mobile des propriétaires et administrateurs, ainsi que du créateur de la clé ou du membre concerné par une règle.
+
+Les webhooks personnalisés reçoivent l'alerte en JSON, avec `title`, `message`, `rule_id`, `rule_name`, `metric`, `scope`, `period`, `value_nanos` et, selon la métrique, `base_nanos`, `forecast`, `spike` ou les champs de solde. Vérifiez chaque livraison avec sa signature ; consultez la section sur la vérification des signatures de webhook dans les [notifications de l'espace de travail](./workspace-notifications.mdx).
+
+## Gérer les règles avec l'API
+
+L'[API des règles de dépenses](../api-reference/endpoint/spend-rules-list.mdx) utilise une clé de gestion avec `spend_rules:read`, `spend_rules:write` ou `spend_rules:delete`. Les montants peuvent être envoyés en dollars (`threshold_amount_usd`) ou exactement en nanodollars (`threshold_amount_nanos`), et les réponses contiennent les deux.
+
+```bash
+curl https://api.phaseo.app/v1/spend-rules \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Monthly budget",
+    "metric": "budget_percent",
+    "period": "month",
+    "base_kind": "workspace_budget",
+    "base_ref": "monthly",
+    "threshold_percents": [50, 80, 100],
+    "action": "block",
+    "block_at_percent": 110
+  }'
+```
+
+Utilisez [`GET /v1/spend-rules/{id}/preview`](../api-reference/endpoint/spend-rules-preview.mdx) pour voir la valeur actuelle et le prochain seuil, et [`POST /v1/spend-rules/{id}/test`](../api-reference/endpoint/spend-rules-test.mdx) pour envoyer un test. [`GET /v1/spend-blocks`](../api-reference/endpoint/spend-blocks-list.mdx) liste les blocages actifs. Le fuseau horaire de facturation, l'attribution par département et les réglages des rapports se trouvent dans l'objet `spend` des [réglages de notification](../api-reference/endpoint/notifications-settings-update.mdx).
+
+## Gérer les règles avec Terraform
+
+Le [fournisseur Terraform de Phaseo](https://github.com/phaseoteam/terraform-provider-phaseo) (`phaseoteam/phaseo`) propose les ressources `phaseo_spend_rule` et `phaseo_workspace_budget`, et les sources de données `phaseo_spend_rules`, `phaseo_spend_blocks` et `phaseo_workspace_budgets`.
+
+```hcl
+resource "phaseo_workspace_budget" "monthly" {
+  interval = "monthly"
+  limit    = 500
+}
+
+resource "phaseo_spend_rule" "monthly_budget" {
+  name               = "Monthly budget"
+  metric             = "budget_percent"
+  period             = "month"
+  base_kind          = "workspace_budget"
+  base_ref           = "monthly"
+  threshold_percents = [50, 80, 100]
+  action             = "block"
+  block_at_percent   = 110
+
+  depends_on = [phaseo_workspace_budget.monthly]
+}
+
+resource "phaseo_spend_rule" "spike" {
+  name             = "Spend spike"
+  metric           = "spike"
+  period           = "rolling"
+  window_hours     = 3
+  spike_multiplier = 4
+}
+```
+
+Importez une règle ou un budget existant à l'aide de son ID :
+
+```bash
+terraform import phaseo_spend_rule.monthly_budget 11111111-1111-4111-8111-111111111111
+```
+
+<Visibility for="agents">
+Règles sur les règles de dépenses pour les agents, en résumé de cette page :
+
+- Les blocages des règles de dépenses sont appliqués au mieux et commencent quelques minutes après la limite ; pour des plafonds exacts, utilisez les limites de clé ou les budgets de l'espace de travail.
+- Une requête bloquée renvoie `429` avec `spend_rule_blocked`, `rule_id`, `block_id` et `reset_at`. Attendez `Retry-After` ; sans cet en-tête, le blocage dure jusqu'à ce que les dépenses de la fenêtre glissante baissent, ou qu'un propriétaire ou administrateur le lève avec `POST /v1/spend-blocks/{id}/lift`. Ne réessayez pas en boucle.
+- `x-phaseo-spend-warning` dans une réponse signifie qu'une règle qui bloque a dépassé son dernier seuil d'alerte ; un blocage peut suivre.
+- Les modèles gratuits ne sont pas bloqués sauf si la règle définit `block_free_models`.
+- Les périodes calendaires utilisent le fuseau horaire de la règle (par défaut, le fuseau horaire de facturation de l'espace de travail, UTC par défaut) ; les limites de clé et les budgets de l'espace de travail utilisent UTC.
+</Visibility>

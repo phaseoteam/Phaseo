@@ -62,6 +62,30 @@ public class Main {
 }
 ```
 
+## Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then pass an `ApiKeyProvider` instead of a key. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
+
+`WorkloadTokens` has providers for both platforms. They reuse a token until a minute before it expires.
+
+```java
+import app.phaseo.sdk.Phaseo;
+import app.phaseo.sdk.WorkloadTokens;
+
+// GitHub Actions: the job needs `permissions: id-token: write`.
+Phaseo client = Phaseo.withApiKeyProvider(WorkloadTokens.gitHubActions());
+```
+
+```java
+// Vercel: reads VERCEL_OIDC_TOKEN_FILE or VERCEL_OIDC_TOKEN and exchanges it for a Phaseo-audience token.
+Phaseo client = Phaseo.withApiKeyProvider(WorkloadTokens.vercel());
+
+// Or exchange the token from the request's x-vercel-oidc-token header.
+Phaseo perRequest = Phaseo.withApiKeyProvider(WorkloadTokens.vercel(request.getHeader("x-vercel-oidc-token"), WorkloadTokens.DEFAULT_AUDIENCE));
+```
+
+Any lambda that returns a credential works too, for example `Phaseo.withApiKeyProvider(() -> secrets.currentKey())`. A blank credential fails the request before it is sent, and a request that sets its own `Authorization` header keeps it.
+
 ## Common methods
 
 Pass a `Map` or `JsonNode` to JSON request helpers. A Java `String` is serialized

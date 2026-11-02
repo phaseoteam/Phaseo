@@ -6,6 +6,7 @@ import { matchesKey } from "../shared/keybindings";
 import { BrowserDownloads } from "./browserDownloads";
 import { overlayControllerScript, overlayZoomScript } from "./browserOverlay";
 import { BrowserPermissions } from "./browserPermissions";
+import { pngPixels } from "./capturePixels";
 import { pickScript } from "./browserPick";
 
 /** Per-page settings and status the native web contents do not keep for us. */
@@ -114,7 +115,7 @@ export class BrowserHost {
 		if (image.isEmpty()) throw new Error("The page has nothing to capture yet.");
 		const png = image.toPNG();
 		await clipboard.write([new ClipboardItem({ "image/png": new Blob([new Uint8Array(png)], { type: "image/png" }) })]);
-		const size = image.getSize();
+		const size = pngPixels(png);
 		return { png: png.toString("base64"), width: size.width, height: size.height, url: view.webContents.getURL(), title: view.webContents.getTitle() };
 	}
 	/** A stream id the app window can record the page with (getUserMedia, chromeMediaSource "tab"); valid for ten seconds. */
@@ -139,9 +140,9 @@ export class BrowserHost {
 		const scale = page.zoom * (page.viewport.mode === "device" ? bounds.width / page.viewport.width : 1);
 		const pad = 8, x = Math.max(0, Math.floor((picked.rect.x - pad) * scale)), y = Math.max(0, Math.floor((picked.rect.y - pad) * scale));
 		const rect = { x, y, width: Math.max(1, Math.min(bounds.width - x, Math.ceil((picked.rect.width + pad * 2) * scale))), height: Math.max(1, Math.min(bounds.height - y, Math.ceil((picked.rect.height + pad * 2) * scale))) };
-		const image = await contents.capturePage(rect);
-		const size = image.getSize();
-		return { selector: String(picked.selector).slice(0, 500), text: String(picked.text).slice(0, 500), tag: String(picked.tag).slice(0, 40), png: image.toPNG().toString("base64"), width: size.width, height: size.height, url: contents.getURL(), title: contents.getTitle() };
+		const image = await contents.capturePage(rect), png = image.toPNG();
+		const size = pngPixels(png);
+		return { selector: String(picked.selector).slice(0, 500), text: String(picked.text).slice(0, 500), tag: String(picked.tag).slice(0, 40), png: png.toString("base64"), width: size.width, height: size.height, url: contents.getURL(), title: contents.getTitle() };
 	}
 
 	// Agent browser tools reach pages only through these, and only pages whose id belongs to the agent's chat.

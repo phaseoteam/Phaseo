@@ -11,6 +11,12 @@ describe("decisions feature routing", () => {
 		expect(filterDecisionCandidatesByModalities([jev13, jev14, openai] as any, ir)).toEqual([jev14]);
 		expect(filterDecisionCandidatesByModalities([jev14] as any, { ...ir, images: [] })).toEqual([]);
 	});
+	it("routes hosted image URLs only to capabilities that fetch them", () => {
+		const baseten = { providerId: "baseten", inputModalities: ["text", "image"], capabilityParams: { images: true, image_urls: true } };
+		const candidates = [jev13, openai, baseten] as any;
+		expect(filterDecisionCandidatesByModalities(candidates, { ...base, images: ["https://bucket.s3.amazonaws.com/a.png"] })).toEqual([baseten]);
+		expect(filterDecisionCandidatesByModalities(candidates, base)).toEqual(candidates);
+	});
 	it("requires TypeSafe long-context support only when enabled", () => {
 		const candidates = [jev13, openai] as any;
 		expect(filterDecisionCandidatesByModalities(candidates, { ...base, providerOptions: { typesafe: { long_context: true } } })).toEqual([jev13]);
