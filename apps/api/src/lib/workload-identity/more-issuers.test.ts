@@ -161,6 +161,22 @@ describe("custom issuers", () => {
 		expect(fetches).toHaveLength(2);
 	});
 
+	it("stops reading a discovery body without Content-Length once it passes 64 KB", async () => {
+		let pulled = 0;
+		const chunk = new TextEncoder().encode(" ".repeat(16 * 1024));
+		const body = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				pulled += 1;
+				controller.enqueue(chunk);
+			},
+		});
+		const fetchImpl = vi.fn(async () => new Response(body, { status: 200 }));
+		const source = createJwksSource({ fetchImpl: fetchImpl as unknown as typeof fetch });
+		await expect(source.getJwksUri!(CUSTOM_ISSUER)).rejects.toThrow("jwks_too_large");
+		// The body is endless; reading stops just past the cap.
+		expect(pulled).toBeLessThanOrEqual(6);
+	});
+
 	it("never discovers an issuer that no policy names, or without the configured list", async () => {
 		const { fetches, source } = customSource({});
 		const token = await signTestToken(rsa, claims());

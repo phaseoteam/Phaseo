@@ -269,6 +269,35 @@ export function __resetWorkloadJwksCacheForTests(): void {
 	inFlight.clear();
 }
 
+/**
+ * Reads at most `maxBytes`, cancelling the body as soon as it is exceeded.
+ * Custom issuers serve these documents, so a missing Content-Length must not
+ * let them stream an unbounded body into the isolate.
+ */
+async function readCappedText(response: Response, maxBytes: number): Promise<string> {
+	if (!response.body) return "";
+	const reader = response.body.getReader();
+	const chunks: Uint8Array[] = [];
+	let total = 0;
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		total += value.byteLength;
+		if (total > maxBytes) {
+			await reader.cancel().catch(() => undefined);
+			throw new Error("jwks_too_large");
+		}
+		chunks.push(value);
+	}
+	const bytes = new Uint8Array(total);
+	let offset = 0;
+	for (const chunk of chunks) {
+		bytes.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	return new TextDecoder().decode(bytes);
+}
+
 async function fetchJsonDocument(url: string, fetchImpl: typeof fetch): Promise<Record<string, unknown>> {
 	const response = await fetchImpl(url, {
 		headers: { accept: "application/json", "user-agent": "Phaseo-Gateway/1.0" },
@@ -278,9 +307,7 @@ async function fetchJsonDocument(url: string, fetchImpl: typeof fetch): Promise<
 	if (response.status !== 200) throw new Error(`jwks_http_${response.status}`);
 	const declaredLength = Number(response.headers.get("content-length") ?? "0");
 	if (declaredLength > JWKS_MAX_BYTES) throw new Error("jwks_too_large");
-	const text = await response.text();
-	if (text.length > JWKS_MAX_BYTES) throw new Error("jwks_too_large");
-	const parsed = JSON.parse(text) as unknown;
+	const parsed = JSON.parse(await readCappedText(response, JWKS_MAX_BYTES)) as unknown;
 	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("jwks_invalid");
 	return parsed as Record<string, unknown>;
 }
