@@ -215,8 +215,14 @@ export async function handleStreamResponse(
             : true
     );
     const stickyRoutingModel = getBaseModel(ctx.model);
-    // Cache native ID from first chunk to avoid checking every frame
+    // The provider's response ID, from the first frame that names one. Re-encoded frames
+    // already carry the request ID, which is never the native one.
     let cachedNativeId: string | undefined;
+    const rememberNativeId = (frame: any) => {
+        if (cachedNativeId || !frame || typeof frame !== "object") return;
+        cachedNativeId = [frame.nativeResponseId, frame.response?.nativeResponseId, frame.response?.id, frame.message?.id, frame.id]
+            .find((value) => typeof value === "string" && value.length > 0 && value !== ctx.requestId);
+    };
     let cachedFinishReason: string | null = null;
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
@@ -363,6 +369,8 @@ export async function handleStreamResponse(
 		if (event.type === "error") {
 			streamFailed = true;
 		}
+        // Sees the provider's own frame, also when it is re-encoded for the client.
+        if (event.type === "start") rememberNativeId(event.payload);
         if (event.type === "delta_tool") {
             const key = resolveStreamedToolCallKey(event);
             streamedToolCallKeys.add(key);
@@ -394,17 +402,16 @@ export async function handleStreamResponse(
             delete next.gateway;
 
             if (ctx.endpoint === "chat.completions" || ctx.endpoint === "responses") {
-                // Cache native ID from first chunk that has one
-                if (!cachedNativeId) {
-                    cachedNativeId = typeof next.nativeResponseId === "string"
-                        ? next.nativeResponseId
-                        : (typeof next.id === "string" ? next.id : undefined);
-                }
-                // Use cached native ID for all subsequent frames
-                if (!next.nativeResponseId && cachedNativeId) {
+                rememberNativeId(next);
+                if (ctx.endpoint === "chat.completions" && !next.nativeResponseId && cachedNativeId) {
                     next.nativeResponseId = cachedNativeId;
                 }
                 next.id = ctx.requestId;
+                // Responses events nest the response object; it gets the same IDs as the
+                // buffered body: the request ID, with the provider's as nativeResponseId.
+                if (next.response && typeof next.response === "object") {
+                    next.response = { ...next.response, id: ctx.requestId, nativeResponseId: cachedNativeId };
+                }
             }
 
             if (!includeMeta && "meta" in next) {
@@ -413,6 +420,11 @@ export async function handleStreamResponse(
 
             const isMessagesStream = ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages";
             if (isMessagesStream) accumulateMessagesStreamUsage(next.message?.usage ?? next.usage);
+            // message_start names the message as the buffered body does.
+            if (isMessagesStream && next.message && typeof next.message === "object") {
+                rememberNativeId(next);
+                next.message = { ...next.message, id: ctx.requestId, nativeResponseId: cachedNativeId };
+            }
 
             if (next.usage) {
                 if (ctx.meta.debug) {
