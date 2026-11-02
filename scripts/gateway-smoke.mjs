@@ -12,6 +12,7 @@ const PAID_REQUESTS = 2;
 const MAX_OUTPUT_TOKENS = 16;
 // Generous for the prompt plus chat formatting; usage_recorded fails if a request costs more than the bound.
 const PROMPT_TOKEN_BOUND = 256;
+const PROMPT_TEXT_BOUND = 1024;
 
 // Units of each meter one smoke request can use: a short text chat with no tools or media.
 function meterUnits(meter) {
@@ -19,26 +20,33 @@ function meterUnits(meter) {
   if (/^output_(text_|reasoning_)?tokens$/.test(meter)) return MAX_OUTPUT_TOKENS;
   if (meter === 'total_tokens') return PROMPT_TOKEN_BOUND + MAX_OUTPUT_TOKENS;
   if (/^(input_(text_)?tokens|implicit_cached_input_text_tokens|cached_(read|write)_text_tokens(_\w+)?)$/.test(meter)) return PROMPT_TOKEN_BOUND;
+  if (meter === 'input_characters' || meter === 'input_text_bytes') return PROMPT_TEXT_BOUND;
   if (/^((input|output|cached_read|cached_write)_(image|audio|video)|native_web_)/.test(meter)) return 0;
   return null;
 }
 
-/** Most one smoke request can cost on any routable offer, or null when the published prices cannot bound it. */
-export function requestCostBoundNanos(model) {
-  const offers = Array.isArray(model?.offers) ? model.offers.filter((offer) => offer?.routable) : [];
+/**
+ * Most one smoke request can cost, from `GET /v1/pricing/models`: every billable meter of every
+ * active Chat price row for the model, across providers, service tiers and conditional rules.
+ * Null when there are no rows or a price cannot be bounded.
+ */
+export function requestCostBoundNanos(pricingModels, modelId) {
+  const offers = (Array.isArray(pricingModels) ? pricingModels : [])
+    .filter((entry) => entry?.model === modelId && entry.endpoint === 'text.generate');
   if (!offers.length) return null;
   let bound = 0;
   for (const offer of offers) {
-    const meters = Object.entries(offer.pricing?.meters ?? {}).filter(([, price]) => price);
+    const meters = Array.isArray(offer.meters) ? offer.meters : [];
     if (!meters.length) return null;
-    let offerBound = 0;
-    for (const [meter, price] of meters) {
-      const units = meterUnits(meter);
-      const perUnit = Number(price.price_per_unit) / Number(price.unit_size);
+    // Conditional rules repeat a meter; the dearest one bounds it.
+    const rates = new Map();
+    for (const price of meters) {
+      const units = meterUnits(price?.meter);
+      const perUnit = Number(price?.price_per_unit) / Number(price?.unit_size);
       if (units === null || price.currency !== 'USD' || !Number.isFinite(perUnit) || perUnit < 0) return null;
-      offerBound += units * perUnit;
+      rates.set(price.meter, Math.max(rates.get(price.meter) ?? 0, units * perUnit));
     }
-    bound = Math.max(bound, offerBound);
+    bound = Math.max(bound, [...rates.values()].reduce((sum, cost) => sum + cost, 0));
   }
   return Math.ceil(bound * 1e9);
 }
@@ -124,15 +132,13 @@ export async function runSmoke(config, { fetcher = fetch, wait = (ms) => new Pro
   // A lookup of an unknown ID is free: 404 proves the key authenticated.
   await expectStatus('auth_accepts_key', 404, () => call(`/generations?id=${missingId}`));
 
-  let costBoundNanos = null;
   await check('discovery', async () => {
-    const { response, durationMs } = await call(`/models?search=${encodeURIComponent(config.model)}&limit=50`);
+    const { response, durationMs } = await call(`/models?format=openai&search=${encodeURIComponent(config.model)}&limit=50`);
     const body = await readJson(response);
-    const listed = (Array.isArray(body?.models) ? body.models : []).find((model) => model?.id === config.model);
-    costBoundNanos = requestCostBoundNanos(listed);
+    const models = Array.isArray(body?.data) ? body.data : [];
+    const listed = models.some((model) => (model.id ?? model.model_id) === config.model);
     return record('discovery', response.ok && listed ? 'pass' : 'fail', {
-      status: response.status, duration_ms: durationMs, cost_bound_nanos: costBoundNanos,
-      ...(response.ok && !listed ? { reason: 'model_not_listed' } : {}),
+      status: response.status, duration_ms: durationMs, ...(response.ok && !listed ? { reason: 'model_not_listed' } : {}),
     });
   });
 
@@ -164,6 +170,12 @@ export async function runSmoke(config, { fetcher = fetch, wait = (ms) => new Pro
     return results;
   }
   // Nothing is sent unless the published prices bound every paid request within the budget.
+  let costBoundNanos = null;
+  try {
+    const { response } = await call('/pricing/models');
+    const body = await readJson(response);
+    if (response.ok) costBoundNanos = requestCostBoundNanos(body?.models, config.model);
+  } catch { /* unreadable prices leave the bound unknown */ }
   const refusal = !(costBoundNanos > 0) ? 'cost_bound_unknown'
     : PAID_REQUESTS * costBoundNanos > config.maxSpendNanos ? 'budget_below_cost_bound' : null;
   if (refusal) {
@@ -236,7 +248,7 @@ export async function runSmoke(config, { fetcher = fetch, wait = (ms) => new Pro
           Number(row.usage_output_tokens) !== generation.usage.completion_tokens) return fail('usage_differs_from_response');
       spentNanos += cost;
     }
-    return record('usage_recorded', 'pass', { requests: generations.length, spent_nanos: spentNanos });
+    return record('usage_recorded', 'pass', { requests: generations.length, spent_nanos: spentNanos, cost_bound_nanos: costBoundNanos });
   });
 
   if (!config.managementKey) {

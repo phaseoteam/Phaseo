@@ -12,7 +12,7 @@ authenticated requests, usage or billing; this does.
 | --- | --- | --- |
 | `auth_rejects_invalid_key` | free | an invalid key gets 401 |
 | `auth_accepts_key` | free | the smoke key gets 404 for an unknown generation ID, not 401 |
-| `discovery` | free | `GET /v1/models` lists `PHASEO_SMOKE_MODEL`; reports the most one request can cost at its published prices |
+| `discovery` | free | `GET /v1/models` lists `PHASEO_SMOKE_MODEL` |
 | `invalid_request` | free | a malformed Chat Completions body gets 400 |
 | `insufficient_credit` | free | the zero-balance key gets 402 for a paid model |
 | `buffered_request` | paid | a Chat Completions request returns content, an ID and token usage |
@@ -23,10 +23,12 @@ authenticated requests, usage or billing; this does.
 Paid checks run only with `--paid` (the workflow's `paid` input) and a budget in
 `PHASEO_SMOKE_MAX_SPEND_USD`, at most $1. Each paid run sends two requests
 capped at 16 output tokens. Before sending either, the check bounds what one
-request can cost from the model's published prices on every routable offer
-(256 prompt tokens and 16 output tokens, plus any per-request fee). It sends
-nothing if twice that bound exceeds the budget, or if a price cannot be
-bounded (a meter it does not know, or a currency other than USD).
+request can cost from `GET /v1/pricing/models`: every billable meter of every
+active Chat price row for the model, across providers, service tiers and
+conditional rules, taking the dearest rule for each meter (256 prompt tokens, 16
+output tokens, and any per-request fee). It sends nothing if twice that bound
+exceeds the budget, or if a price cannot be bounded (no price rows, a meter it
+does not know, or a currency other than USD).
 
 A missing management or zero-balance key reports its check as `skip`, never
 as a pass. A missing smoke key or model stops the run as a configuration error.
@@ -80,7 +82,7 @@ PHASEO_SMOKE_MAX_SPEND_USD=0.01 … node scripts/gateway-smoke.mjs --paid
 | `request_row_missing`, `usage_differs_from_response`, `cost_missing`, `cost_above_bound` | the audit writer and pricing for that request ID |
 | `balance_change_differs_from_recorded_cost` | `gateway_request_charges` for the smoke workspace; see `supabase/operations/gateway-billing-reconciliation.md` |
 | `budget_below_cost_bound` | the model's price; raise the budget or choose a cheaper model |
-| `cost_bound_unknown` | the model's pricing in `/v1/models`: a meter the check does not know, a non-USD price, or no prices |
+| `cost_bound_unknown` | the model's Chat rows in `/v1/pricing/models`: none, a meter the check does not know, or a non-USD price |
 
 The maintainer who deploys the gateway or changes a provider runs this check
 and owns acting on a failure; outages escalate through incident.io as in

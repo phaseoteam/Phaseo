@@ -20,9 +20,17 @@ function config(overrides = {}) {
 
 const json = (status, body, headers = {}) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...headers } });
 
-const usd = (price) => ({ provider_id: 'p', unit: 'token', unit_size: 1, price_per_unit: price, currency: 'USD' });
+// The shape of GET /v1/pricing/models: one entry per provider, model, endpoint and service tier.
+const meter = (name, price, extra = {}) => ({ meter: name, unit: 'token', unit_size: 1, price_per_unit: price, currency: 'USD', conditions: [], ...extra });
 // $1 / $2 per million tokens: one request costs at most 256 * 1000 + 16 * 2000 = 288,000 nanos.
-const PRICED = { input_text_tokens: usd('0.000001'), output_text_tokens: usd('0.000002'), cached_read_text_tokens: null };
+const PRICED = [meter('input_text_tokens', '0.000001'), meter('output_text_tokens', '0.000002')];
+const pricingModels = (meters) => [
+  { provider: 'cheap', model: MODEL, endpoint: 'text.generate', meters },
+  // Another provider's dearer chat row, and price rows that a chat request cannot use.
+  { provider: 'dear', model: MODEL, endpoint: 'text.generate', meters: [meter('input_text_tokens', '0.0000005'), meter('output_text_tokens', '0.0000015')] },
+  { provider: 'cheap', model: MODEL, endpoint: 'image.generate', meters: [meter('output_image', '5', { unit: 'image' })] },
+  { provider: 'cheap', model: 'other/model', endpoint: 'text.generate', meters: [meter('requests', '9', { unit: 'request' })] },
+];
 
 /** A gateway that bills each generation `cost` nanos once its row is recorded. */
 function gateway({ cost = 3000, chargeDelta = null, rowUsage = null, streamError = false, rowsVisibleAfter = 1, meters = PRICED, chargeInvalid = 0 } = {}) {
@@ -43,12 +51,8 @@ function gateway({ cost = 3000, chargeDelta = null, rowUsage = null, streamError
       const row = rows.get(id);
       return row && lookups.get(id) > rowsVisibleAfter - 1 ? json(200, row) : json(404, { ok: false, error: 'not_found' });
     }
-    if (pathname === '/v1/models') {
-      return json(200, { models: [
-        { id: MODEL, offers: [{ routable: true, pricing: { meters } }, { routable: false, pricing: { meters: { requests: usd('5') } } }] },
-        { id: 'other/model', offers: [] },
-      ] });
-    }
+    if (pathname === '/v1/models') return json(200, { data: [{ id: MODEL }, { id: 'other/model' }] });
+    if (pathname === '/v1/pricing/models') return json(200, { ok: true, models: pricingModels(meters) });
     if (pathname === '/v1/credits') return json(200, { ok: true, credits: { balance_nanos: balance } });
     if (pathname === '/v1/chat/completions') {
       if (!Array.isArray(body.messages)) {
@@ -92,7 +96,7 @@ test('a paid run asserts responses, recorded usage and the exact wallet charge',
   const { fetcher } = gateway({ rowsVisibleAfter: 3 });
   const results = await runSmoke(config(), { fetcher, wait: async () => {} });
   assert.ok(results.every((r) => r.outcome === 'pass'), JSON.stringify(results));
-  assert.deepEqual(results.find((r) => r.check === 'usage_recorded'), { check: 'usage_recorded', outcome: 'pass', requests: 2, spent_nanos: 6000 });
+  assert.deepEqual(results.find((r) => r.check === 'usage_recorded'), { check: 'usage_recorded', outcome: 'pass', requests: 2, spent_nanos: 6000, cost_bound_nanos: 288_000 });
   assert.equal(results.find((r) => r.check === 'billing_settled').charged_nanos, 6000);
   assert.equal(results.find((r) => r.check === 'streamed_request').request_id, 'gen-2');
 });
@@ -117,7 +121,7 @@ test('sends no paid request when the published prices could exceed the budget', 
   const { fetcher, calls } = gateway();
   // Two requests may cost up to 576,000 nanos.
   const results = await runSmoke(config({ maxSpendNanos: 500_000 }), { fetcher, wait: async () => {} });
-  assert.equal(results.find((r) => r.check === 'discovery').cost_bound_nanos, 288_000);
+  assert.equal(results.find((r) => r.check === 'buffered_request').cost_bound_nanos, 288_000);
   assert.deepEqual(results.filter((r) => r.outcome === 'fail').map((r) => `${r.check}:${r.reason}`), [
     'buffered_request:budget_below_cost_bound', 'streamed_request:budget_below_cost_bound',
     'usage_recorded:budget_below_cost_bound', 'billing_settled:budget_below_cost_bound',
@@ -125,8 +129,16 @@ test('sends no paid request when the published prices could exceed the budget', 
   assert.equal(paidSends(calls), 0);
 });
 
+test('bounds a request by every chat meter, including per-request fees and the dearest conditional rule', async () => {
+  const { fetcher } = gateway({ meters: [...PRICED, meter('requests', '0.001', { unit: 'request' }),
+    meter('input_text_tokens', '0.000003', { conditions: [{ path: 'usage.input_text_tokens', op: 'gt', value: 200000 }] })] });
+  const results = await runSmoke(config(), { fetcher, wait: async () => {} });
+  // 256 * 3000 + 16 * 2000 + 1,000,000 nanos.
+  assert.equal(results.find((r) => r.check === 'usage_recorded').cost_bound_nanos, 1_800_000);
+});
+
 test('sends no paid request when a price cannot be bounded', async () => {
-  for (const meters of [{ ...PRICED, deepinfra_cost_usd: { ...usd('1'), unit: 'USD' } }, { ...PRICED, input_text_tokens: { ...usd('0.000001'), currency: 'EUR' } }, {}]) {
+  for (const meters of [[...PRICED, meter('deepinfra_cost_usd', '1', { unit: 'USD' })], [meter('input_text_tokens', '0.000001', { currency: 'EUR' })], []]) {
     const { fetcher, calls } = gateway({ meters });
     const results = await runSmoke(config(), { fetcher, wait: async () => {} });
     assert.equal(results.find((r) => r.check === 'buffered_request').reason, 'cost_bound_unknown', JSON.stringify(meters));
