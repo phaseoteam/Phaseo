@@ -16,7 +16,7 @@ function PeerBoard({ board, models }: { board: ComparePeerBoard; models: Compare
 	return (
 		<div className="min-w-0 space-y-2">
 			<h4 className="flex items-baseline justify-between gap-2 text-sm font-medium">
-				<span className="truncate">{board.name}</span>
+				<span className="min-w-0">{board.name}</span>
 				<span className="shrink-0 text-xs font-normal text-muted-foreground">{t("peerModels", { count: board.total })}</span>
 			</h4>
 			<ol className="space-y-1">

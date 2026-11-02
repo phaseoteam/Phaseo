@@ -1,5 +1,7 @@
 import {
+	bestBenchmarkIndices,
 	bestIndices,
+	distinctDigits,
 	buildVerdicts,
 	defaultEffort,
 	doSameJob,
@@ -156,6 +158,23 @@ describe("bestIndices", () => {
 	});
 });
 
+describe("distinctDigits", () => {
+	const compact = (value: number, digits: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumSignificantDigits: digits }).format(value);
+
+	it("adds digits until different context windows read differently", () => {
+		// Production, 27 Oct: GPT-6 Astra and Gemini 4 Argon both rendered as "1.05M".
+		const values = [1_050_000, 200_000, 1_048_576];
+		const digits = distinctDigits(values, compact);
+		expect(digits).toBe(4);
+		expect(values.map((value) => compact(value, digits))).toEqual(["1.05M", "200K", "1.049M"]);
+	});
+
+	it("keeps three digits when the values already read differently or truly tie", () => {
+		expect(distinctDigits([400_000, 200_000, null], compact)).toBe(3);
+		expect(distinctDigits([1_048_576, 1_048_576], compact)).toBe(3);
+	});
+});
+
 describe("doSameJob", () => {
 	it("separates chat from speech", () => {
 		expect(doSameJob([gpt5, sonnet])).toBe(true);
@@ -209,6 +228,24 @@ describe("benchmark efforts", () => {
 		} };
 		expect(pickResult(lab, "openai/gpt-5", "high")).toMatchObject({ kind: "result", result: { score: 5.968 } });
 		expect(effortLevels([lab], ["openai/gpt-5"])).toEqual([]);
+	});
+
+	it("marks no winner when a lab reported any of the scores", () => {
+		// Production, 2 Nov: each lab's own launch numbers, with different versions and task sets.
+		const lab = (score: number, variant: string | null) => ({ score, variant, effort: null, ci: null, selfReported: true, sourceLink: null });
+		const agentsLastExam: CompareViewBenchmark = { ...eci, id: "agents-last-exam", source: "lab", results: {
+			"openai/gpt-6-astra": [lab(59.3, null), lab(58.3, "xhigh")],
+			"google/gemini-4-argon": [lab(39.5, "Pass rate")],
+		} };
+		const picks = flagshipIds.map((id) => pickResult(agentsLastExam, id, "high"));
+		expect(picks.map((picked) => (picked.kind === "result" ? picked.result.score : picked.kind))).toEqual([59.3, "none", 39.5]);
+		expect(bestBenchmarkIndices(picks, true).size).toBe(0);
+	});
+
+	it("still marks the best independent result", () => {
+		const picks = flagshipIds.map((id) => pickResult(flagshipAa, id, "high"));
+		expect([...bestBenchmarkIndices(picks, true)]).toEqual([1]);
+		expect([...bestBenchmarkIndices(picks, false)]).toEqual([0]);
 	});
 
 	it("keeps benchmarks two models share and sets aside the rest", () => {
