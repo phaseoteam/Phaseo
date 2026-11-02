@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { StatsigClient } from "@statsig/js-client";
 import { useReportWebVitals } from "@/lib/analytics/webVitals";
 import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
-import { ANALYTICS_CONSENT_EVENT } from "@/lib/cookieConsent";
+import { ANALYTICS_CONSENT_EVENT, readAnalyticsConsent } from "@/lib/cookieConsent";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { buildAnonymousStatsigUser, readStableIdCookie, writeStableIdCookie } from "@/lib/statsig/shared";
 import { MODELS_LAYOUT_EXPERIMENT, selectModelsLayout, type ModelsLayout } from "./modelsLayoutExperiment";
@@ -20,6 +20,9 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 	const pendingVitals = useRef<EventProperties[]>([]);
 	const vitalSink = useRef<((properties: EventProperties) => void) | null>(null);
 	const vitalsActive = useRef(false);
+	// Events from before the visitor has chosen (first rows, early vitals) wait here and
+	// are only sent if they accept on this page; a decline discards them for good.
+	const awaitingConsent = useRef<{ event: LayoutEvent; properties: EventProperties }[]>([]);
 
 	useEffect(() => {
 		if (!enabled) return;
@@ -88,7 +91,13 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 	}, [enabled]);
 
 	const track = useCallback((event: LayoutEvent, properties: EventProperties = {}) => {
-		if (!enabled || !assignment || !isAnalyticsCaptureAllowed()) return;
+		if (!enabled || !assignment) return;
+		if (!isAnalyticsCaptureAllowed()) {
+			if (readAnalyticsConsent() === null && awaitingConsent.current.length < 50) {
+				awaitingConsent.current.push({ event, properties });
+			}
+			return;
+		}
 		const metadata = { experiment: MODELS_LAYOUT_EXPERIMENT, variant: assignment.variant, in_experiment: assignment.inExperiment ?? false, ...properties };
 		captureProductEvent(event, metadata);
 		assignment.client?.logEvent(event, properties.value, Object.fromEntries(
@@ -108,6 +117,21 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 		vitalSink.current = (properties) => track("models_layout_web_vital", properties);
 		for (const metric of pendingVitals.current.splice(0)) track("models_layout_web_vital", metric);
 		return () => { vitalSink.current = null; };
+	}, [assignment, track]);
+
+	useEffect(() => {
+		if (!assignment) return;
+		const flush = () => {
+			if (readAnalyticsConsent() === "denied") awaitingConsent.current.length = 0;
+			if (!isAnalyticsCaptureAllowed()) return;
+			for (const pending of awaitingConsent.current.splice(0)) track(pending.event, pending.properties);
+		};
+		window.addEventListener(ANALYTICS_CONSENT_EVENT, flush);
+		window.addEventListener("storage", flush);
+		return () => {
+			window.removeEventListener(ANALYTICS_CONSENT_EVENT, flush);
+			window.removeEventListener("storage", flush);
+		};
 	}, [assignment, track]);
 
 	const rowsRef = useRef<HTMLDivElement>(null);
