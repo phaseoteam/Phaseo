@@ -30,7 +30,7 @@ faq:
   - question: "What's the difference between requests per minute, tokens per minute and concurrency limits?"
     answer: "Requests per minute counts calls over a rolling minute. Tokens per minute counts input and output tokens over a rolling minute, so it tracks real model load. A concurrency limit caps how many requests can be in progress at the same time, which suits long streams and agents."
   - question: "Can I set a monthly AI budget per team or department?"
-    answer: "Yes. Give a department a daily, weekly or monthly budget. Owners and admins get a push notification at about 80% and at 100%, and once the budget is used up, API-key requests that count toward that department are refused until the period resets."
+    answer: "Yes, on Self Serve Enterprise workspaces, which include departments. Give a department a daily, weekly or monthly budget. Owners and admins get a push notification at about 80% and at 100%, and once the budget is used up, API-key requests that count toward that department are refused until the period resets."
   - question: "What happens when a rate limit or budget is reached?"
     answer: "The request returns HTTP 429 with a Retry-After header. A rate limit returns the rate_limit_exceeded error code with the policy and scope that refused it. A department budget returns key_limit_exceeded with the department's name and when the budget resets."
   - question: "Do rate limits add latency to my requests?"
@@ -46,11 +46,13 @@ Most teams find out they needed a limit right after something used up the shared
 
 Phaseo now has **rate limit policies** and **department budgets**. You decide how many requests, tokens and parallel calls each API key, team member, department or end user gets, and how much each department can spend before its requests stop. It works across the models and providers you call through Phaseo, with no code changes. Nothing is limited until you set it up.
 
+Rate limits for keys, members, guardrails and end users are available on every workspace. Department limits and budgets come with [Self Serve Enterprise](https://phaseo.app/docs/v1/pricing/tiers), alongside SSO, SCIM and directory management.
+
 ## Who needs LLM rate limits and AI budgets
 
 <FeatureGrid>
   <Feature title="Teams building AI products">One customer running a bulk job shouldn't slow your app for the rest. Give every end user their own allowance, keyed on the user ID you already send.</Feature>
-  <Feature title="Companies rolling out AI by department">Engineering, support and marketing can share one workspace and still each get a fair share, with a shared pool and a budget per department.</Feature>
+  <Feature title="Companies rolling out AI by department">Engineering, support and marketing can share one workspace and still each get a fair share, with a shared pool and a budget per department. Included with Self Serve Enterprise.</Feature>
   <Feature title="Platform teams running agents">A per-key limit with a concurrency cap keeps a runaway agent or batch job away from the capacity your production traffic needs.</Feature>
   <Feature title="Whoever owns the AI bill">Department budgets block at 100%, not just warn, so a monthly budget is a real ceiling.</Feature>
 </FeatureGrid>
@@ -98,7 +100,7 @@ When a limit must hold exactly, mark the policy **strict**. Strict limits are ch
 
 ## AI budgets per department that actually stop spending
 
-Give a department a daily, weekly or monthly budget, and Phaseo tracks its spend as requests complete. Owners and admins get a push notification at about 80% and again at 100%. Once a budget is used up, that department's API-key requests are refused until the period resets, at midnight UTC, on Mondays or on the 1st of the month.
+On Self Serve Enterprise workspaces, give a department a daily, weekly or monthly budget, and Phaseo tracks its spend as requests complete. Owners and admins get a push notification at about 80% and again at 100%. Once a budget is used up, that department's API-key requests are refused until the period resets, at midnight UTC, on Mondays or on the 1st of the month.
 
 A department's spend includes the keys linked to it. Keys that aren't linked to a department count toward the departments of the person who created them, and OAuth requests count toward the departments of the signed-in person.
 
