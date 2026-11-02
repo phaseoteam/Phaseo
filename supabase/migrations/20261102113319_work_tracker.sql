@@ -111,6 +111,7 @@ CREATE TABLE "public"."work_items" (
   "project_id"          uuid,
   "cycle_id"            uuid,
   "parent_id"           uuid,
+  "milestone_id"     uuid,
   "estimate"            smallint,
   "sla_due_at"          timestamp with time zone,
   "last_activity_at"    timestamp with time zone NOT NULL DEFAULT now(),
@@ -238,7 +239,7 @@ CREATE TABLE "public"."work_item_events" (
   CONSTRAINT "work_item_events_author_user_id_fkey" FOREIGN KEY (author_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "work_item_events_body_length_check" CHECK ((char_length(body) <= 100000)),
   CONSTRAINT "work_item_events_data_object_check" CHECK ((jsonb_typeof(data) = 'object'::text)),
-  CONSTRAINT "work_item_events_kind_check" CHECK ((kind = ANY (ARRAY['created'::text, 'comment'::text, 'state'::text, 'priority'::text, 'assignee'::text, 'link'::text, 'triage'::text, 'agent_run'::text, 'customer_request'::text, 'github'::text, 'error'::text, 'project'::text, 'cycle'::text, 'parent'::text, 'relation'::text, 'estimate'::text, 'reply'::text, 'sla'::text, 'stalled'::text, 'attachment'::text]))),
+  CONSTRAINT "work_item_events_kind_check" CHECK ((kind = ANY (ARRAY['created'::text, 'comment'::text, 'state'::text, 'priority'::text, 'assignee'::text, 'link'::text, 'triage'::text, 'agent_run'::text, 'customer_request'::text, 'github'::text, 'error'::text, 'project'::text, 'cycle'::text, 'parent'::text, 'relation'::text, 'estimate'::text, 'reply'::text, 'sla'::text, 'stalled'::text, 'attachment'::text, 'milestone'::text]))),
   CONSTRAINT "work_item_events_pkey" PRIMARY KEY (id),
   CONSTRAINT "work_item_events_work_item_id_fkey" FOREIGN KEY (work_item_id) REFERENCES public.work_items(id) ON DELETE CASCADE,
   CONSTRAINT "work_item_events_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
@@ -1116,6 +1117,197 @@ GRANT DELETE, INSERT, SELECT ON TABLE "public"."work_attachments" TO "service_ro
 
 REVOKE ALL ON TABLE "public"."work_attachments" FROM "anon", "authenticated";
 
+CREATE TABLE "public"."work_milestones" (
+  "id"           uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id" uuid                     NOT NULL,
+  "project_id"   uuid                     NOT NULL,
+  "name"         text                     NOT NULL,
+  "target_date"  date,
+  "position"     integer                  NOT NULL DEFAULT 0,
+  "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_milestones_name_length_check" CHECK (((char_length(name) >= 1) AND (char_length(name) <= 120))),
+  CONSTRAINT "work_milestones_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_milestones_project_id_fkey" FOREIGN KEY (project_id) REFERENCES public.work_projects(id) ON DELETE CASCADE,
+  CONSTRAINT "work_milestones_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_milestones"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_milestones_project_id_idx ON public.work_milestones USING btree (project_id, position);
+
+ALTER TABLE "public"."work_items"
+  ADD CONSTRAINT "work_items_milestone_id_fkey" FOREIGN KEY (milestone_id) REFERENCES public.work_milestones(id) ON DELETE SET NULL;
+
+CREATE INDEX work_items_milestone_id_idx ON public.work_items USING btree (milestone_id)
+  WHERE (milestone_id IS NOT NULL);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_milestones"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_milestones" IS 'Milestones within a work project, in order. Items point at one with work_items.milestone_id.';
+
+REVOKE ALL ON TABLE "public"."work_milestones" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_milestones" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_milestones" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_project_updates" (
+  "id"             uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id"   uuid                     NOT NULL,
+  "project_id"     uuid                     NOT NULL,
+  "health"         text                     NOT NULL,
+  "body"           text                     NOT NULL,
+  "author_user_id" uuid,
+  "created_at"     timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_project_updates_health_check" CHECK ((health = ANY (ARRAY['on_track'::text, 'at_risk'::text, 'off_track'::text]))),
+  CONSTRAINT "work_project_updates_body_length_check" CHECK (((char_length(body) >= 1) AND (char_length(body) <= 10000))),
+  CONSTRAINT "work_project_updates_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_project_updates_author_user_id_fkey" FOREIGN KEY (author_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_project_updates_project_id_fkey" FOREIGN KEY (project_id) REFERENCES public.work_projects(id) ON DELETE CASCADE,
+  CONSTRAINT "work_project_updates_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_project_updates"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_project_updates_project_created_idx ON public.work_project_updates USING btree (project_id, created_at DESC);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_project_updates"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_project_updates" IS 'Written status updates on a work project, each with a health (on track, at risk, off track). The newest one is the project''s current health.';
+
+REVOKE ALL ON TABLE "public"."work_project_updates" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT ON TABLE "public"."work_project_updates" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_project_updates" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_templates" (
+  "id"             uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id"   uuid                     NOT NULL,
+  "name"           text                     NOT NULL,
+  "title"          text                     NOT NULL DEFAULT ''::text,
+  "description"    text                     NOT NULL DEFAULT ''::text,
+  "priority"       smallint                 NOT NULL DEFAULT 0,
+  "labels"         text[]                   NOT NULL DEFAULT '{}'::text[],
+  "estimate"       smallint,
+  "project_id"     uuid,
+  "assignee_agent" text,
+  "created_by"     uuid,
+  "created_at"     timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_templates_name_length_check" CHECK (((char_length(name) >= 1) AND (char_length(name) <= 80))),
+  CONSTRAINT "work_templates_title_length_check" CHECK ((char_length(title) <= 300)),
+  CONSTRAINT "work_templates_description_length_check" CHECK ((char_length(description) <= 20000)),
+  CONSTRAINT "work_templates_priority_check" CHECK (((priority >= 0) AND (priority <= 4))),
+  CONSTRAINT "work_templates_estimate_check" CHECK (((estimate IS NULL) OR ((estimate >= 0) AND (estimate <= 21)))),
+  CONSTRAINT "work_templates_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_templates_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_templates_project_id_fkey" FOREIGN KEY (project_id) REFERENCES public.work_projects(id) ON DELETE SET NULL,
+  CONSTRAINT "work_templates_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_templates"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_templates_workspace_id_idx ON public.work_templates USING btree (workspace_id, name);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_templates"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_templates" IS 'Item templates: the fields a new work item starts with. Recurring items are made from a template.';
+
+REVOKE ALL ON TABLE "public"."work_templates" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_templates" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_templates" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_recurrences" (
+  "id"           uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id" uuid                     NOT NULL,
+  "template_id"  uuid                     NOT NULL,
+  "cadence"      text                     NOT NULL,
+  "next_run_at"  timestamp with time zone NOT NULL,
+  "enabled"      boolean                  NOT NULL DEFAULT true,
+  "last_item_id" uuid,
+  "last_run_at"  timestamp with time zone,
+  "created_by"   uuid,
+  "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_recurrences_cadence_check" CHECK ((cadence = ANY (ARRAY['daily'::text, 'weekly'::text, 'monthly'::text]))),
+  CONSTRAINT "work_recurrences_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_recurrences_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_recurrences_last_item_id_fkey" FOREIGN KEY (last_item_id) REFERENCES public.work_items(id) ON DELETE SET NULL,
+  CONSTRAINT "work_recurrences_template_id_fkey" FOREIGN KEY (template_id) REFERENCES public.work_templates(id) ON DELETE CASCADE,
+  CONSTRAINT "work_recurrences_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_recurrences"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_recurrences_due_idx ON public.work_recurrences USING btree (next_run_at)
+  WHERE enabled;
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_recurrences"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_recurrences" IS 'Recurring work items: a template made into a new item every day, week or month from next_run_at. Run by web-api''s cron.';
+
+REVOKE ALL ON TABLE "public"."work_recurrences" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_recurrences" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_recurrences" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_reactions" (
+  "event_id"     uuid                     NOT NULL,
+  "workspace_id" uuid                     NOT NULL,
+  "user_id"      uuid                     NOT NULL,
+  "emoji"        text                     NOT NULL,
+  "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_reactions_emoji_check" CHECK ((emoji = ANY (ARRAY['+1'::text, '-1'::text, 'heart'::text, 'tada'::text, 'eyes'::text, 'rocket'::text]))),
+  CONSTRAINT "work_reactions_pkey" PRIMARY KEY (event_id, user_id, emoji),
+  CONSTRAINT "work_reactions_event_id_fkey" FOREIGN KEY (event_id) REFERENCES public.work_item_events(id) ON DELETE CASCADE,
+  CONSTRAINT "work_reactions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT "work_reactions_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_reactions"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_reactions"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_reactions" IS 'Reactions on work item comments: one row per person per emoji (a fixed set).';
+
+REVOKE ALL ON TABLE "public"."work_reactions" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT ON TABLE "public"."work_reactions" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_reactions" FROM "anon", "authenticated";
+
 CREATE OR REPLACE FUNCTION public.create_work_item (
   p_workspace_id uuid,
   p_title        text,
@@ -1465,3 +1657,81 @@ REVOKE ALL ON FUNCTION public.snapshot_work_cycle_days(date, uuid, uuid) FROM PU
 REVOKE ALL ON FUNCTION public.snapshot_work_cycle_days(date, uuid, uuid) FROM "anon", "authenticated";
 
 GRANT EXECUTE ON FUNCTION public.snapshot_work_cycle_days(date, uuid, uuid) TO "service_role";
+
+CREATE OR REPLACE FUNCTION public.work_event_reactions (
+  p_workspace_id uuid,
+  p_event_ids    uuid[],
+  p_user_id      uuid
+)
+  RETURNS TABLE(event_id uuid, emoji text, count integer, mine boolean)
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+-- For each of the events, how many people reacted with each emoji and whether p_user_id did.
+select reaction.event_id, reaction.emoji, count(*)::integer, bool_or(reaction.user_id = p_user_id)
+from public.work_reactions reaction
+where reaction.workspace_id = p_workspace_id and reaction.event_id = any(p_event_ids)
+group by reaction.event_id, reaction.emoji;
+$function$;
+
+COMMENT ON FUNCTION public.work_event_reactions(uuid, uuid[], uuid) IS 'Reaction counts per work item event and emoji, and whether the given person reacted. Service role only.';
+
+REVOKE ALL ON FUNCTION public.work_event_reactions(uuid, uuid[], uuid) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION public.work_event_reactions(uuid, uuid[], uuid) FROM "anon", "authenticated";
+
+GRANT EXECUTE ON FUNCTION public.work_event_reactions(uuid, uuid[], uuid) TO "service_role";
+
+CREATE OR REPLACE FUNCTION public.work_milestone_counts (
+  p_workspace_id uuid,
+  p_project_id   uuid
+)
+  RETURNS TABLE(milestone_id uuid, item_count integer, done_count integer)
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+-- Items per milestone of a project (cancelled items left out) and how many are done.
+select item.milestone_id,
+  count(*) filter (where item.state <> 'cancelled')::integer,
+  count(*) filter (where item.state = 'done')::integer
+from public.work_items item
+join public.work_milestones milestone on milestone.id = item.milestone_id
+where item.workspace_id = p_workspace_id and milestone.project_id = p_project_id
+group by item.milestone_id;
+$function$;
+
+COMMENT ON FUNCTION public.work_milestone_counts(uuid, uuid) IS 'Item and done counts for each milestone of a work project. Service role only.';
+
+REVOKE ALL ON FUNCTION public.work_milestone_counts(uuid, uuid) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION public.work_milestone_counts(uuid, uuid) FROM "anon", "authenticated";
+
+GRANT EXECUTE ON FUNCTION public.work_milestone_counts(uuid, uuid) TO "service_role";
+
+CREATE OR REPLACE FUNCTION public.work_project_health (
+  p_workspace_id uuid
+)
+  RETURNS TABLE(project_id uuid, health text, updated_at timestamp with time zone)
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+-- Each project's current health: its newest update's.
+select distinct on (update_row.project_id) update_row.project_id, update_row.health, update_row.created_at
+from public.work_project_updates update_row
+where update_row.workspace_id = p_workspace_id
+order by update_row.project_id, update_row.created_at desc;
+$function$;
+
+COMMENT ON FUNCTION public.work_project_health(uuid) IS 'The newest project update''s health for each work project in a workspace. Service role only.';
+
+REVOKE ALL ON FUNCTION public.work_project_health(uuid) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION public.work_project_health(uuid) FROM "anon", "authenticated";
+
+GRANT EXECUTE ON FUNCTION public.work_project_health(uuid) TO "service_role";

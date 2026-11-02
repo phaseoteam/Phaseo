@@ -21,6 +21,7 @@ CREATE TABLE "public"."work_items" (
   "project_id"          uuid,
   "cycle_id"            uuid,
   "parent_id"           uuid,
+  "milestone_id"     uuid,
   "estimate"            smallint,
   "sla_due_at"          timestamp with time zone,
   "last_activity_at"    timestamp with time zone NOT NULL DEFAULT now(),

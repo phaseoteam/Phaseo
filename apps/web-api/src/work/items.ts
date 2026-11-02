@@ -38,7 +38,7 @@ import {
 
 export type DataClient = ReturnType<typeof getDataClient>;
 
-export const WORK_ITEM_COLUMNS = "id,workspace_id,number,title,description,state,priority,source,labels,assignee_user_id,assignee_agent,duplicate_of,error_group_id,github_repo,github_issue_number,github_issue_url,github_pr_url,triage_summary,due_at,created_by,created_at,updated_at,closed_at,project_id,cycle_id,parent_id,estimate,sla_due_at,last_activity_at";
+export const WORK_ITEM_COLUMNS = "id,workspace_id,number,title,description,state,priority,source,labels,assignee_user_id,assignee_agent,duplicate_of,error_group_id,github_repo,github_issue_number,github_issue_url,github_pr_url,triage_summary,due_at,created_by,created_at,updated_at,closed_at,project_id,cycle_id,parent_id,estimate,sla_due_at,last_activity_at,milestone_id";
 export const MAX_TITLE_LENGTH = 300;
 export const MAX_DESCRIPTION_LENGTH = 100_000;
 export const MAX_LABELS = 20;
@@ -140,6 +140,7 @@ export function formatWorkItem(row: WorkItemRow, duplicateOfNumber: number | nul
 		projectId: row.project_id ?? null,
 		cycleId: row.cycle_id ?? null,
 		parentId: row.parent_id ?? null,
+		milestoneId: row.milestone_id ?? null,
 		parentNumber: extras.parentNumber ?? null,
 		estimate: row.estimate ?? null,
 		slaDueAt: row.sla_due_at ?? null,
@@ -449,6 +450,8 @@ export type WorkItemChanges = {
 	cycleId?: string | null;
 	/** The parent item's id, or null to clear it. The caller checks for cycles (wouldCreateParentCycle). */
 	parentId?: string | null;
+	/** The project milestone's id, or null. The caller checks it belongs to the item's project. */
+	milestoneId?: string | null;
 	estimate?: number | null;
 	dueAt?: string | null;
 	/**
@@ -523,6 +526,10 @@ export function planWorkItemChanges(item: WorkItemRow, changes: WorkItemChanges,
 	if (changes.parentId !== undefined && changes.parentId !== (item.parent_id ?? null)) {
 		patch.parent_id = changes.parentId;
 		events.push({ kind: "parent", data: { from: item.parent_id ?? null, to: changes.parentId } });
+	}
+	if (changes.milestoneId !== undefined && changes.milestoneId !== (item.milestone_id ?? null)) {
+		patch.milestone_id = changes.milestoneId;
+		events.push({ kind: "milestone", data: { from: item.milestone_id ?? null, to: changes.milestoneId } });
 	}
 	if (changes.estimate !== undefined && changes.estimate !== (item.estimate ?? null)) {
 		patch.estimate = changes.estimate;

@@ -35,6 +35,7 @@ export const WORK_EVENT_KINDS = [
 	"sla",
 	"stalled",
 	"attachment",
+	"milestone",
 ] as const;
 export type WorkEventKind = (typeof WORK_EVENT_KINDS)[number];
 
@@ -111,6 +112,7 @@ export type WorkItemRow = {
 	estimate: number | null;
 	sla_due_at: string | null;
 	last_activity_at: string;
+	milestone_id?: string | null;
 };
 
 export type WorkItemEventRow = {
@@ -411,6 +413,8 @@ export type WorkItem = {
 	parentId: string | null;
 	/** The parent item's number, when known. */
 	parentNumber: number | null;
+	/** The project milestone the item is in. */
+	milestoneId: string | null;
 	estimate: number | null;
 	slaDueAt: string | null;
 	/** Closed after its SLA due time, or open and past it. */

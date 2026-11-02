@@ -49,6 +49,8 @@ import type { AccountWorkspaceContext } from "./context";
 import { accountWorkCustomersRouter } from "./work-customers";
 import { accountWorkNotificationsRouter } from "./work-notifications";
 import { accountWorkPlanningRouter } from "./work-planning";
+import { accountWorkExtrasRouter } from "./work-extras";
+import { loadReactions } from "@/work/extras";
 import { accountWorkSettingsRouter } from "./work-settings";
 import {
 	accessFromQuery,
@@ -180,7 +182,7 @@ function parseItemFields(body: Body, creating: boolean): ParsedChanges {
 		if (body.githubRepo !== null && body.githubRepo !== "" && !isGithubRepo(body.githubRepo)) return { ok: false, message: "githubRepo must look like owner/name" };
 		changes.githubRepo = body.githubRepo ? String(body.githubRepo) : null;
 	}
-	for (const field of ["projectId", "cycleId"] as const) {
+	for (const field of ["projectId", "cycleId", "milestoneId"] as const) {
 		const id = optionalUuid(body, field);
 		if (id.ok === false) return id;
 		if (id.value !== undefined) changes[field] = id.value;
@@ -211,8 +213,22 @@ async function checkAssignee(context: AccountWorkspaceContext, changes: WorkItem
 	return await isWorkspaceMember(context, changes.assigneeUserId) ? null : "assigneeUserId must be a member of the workspace";
 }
 
-/** Checks that a project and cycle belong to the workspace. */
-async function checkPlanning(context: AccountWorkspaceContext, changes: Pick<WorkItemChanges, "projectId" | "cycleId">): Promise<string | null> {
+/**
+ * Checks that a project, cycle and milestone belong to the workspace. A milestone puts the item in
+ * the milestone's project; moving an item to another project (with no milestone given) takes it
+ * out of its milestone.
+ */
+async function checkPlanning(context: AccountWorkspaceContext, changes: Pick<WorkItemChanges, "projectId" | "cycleId" | "milestoneId">, current: Pick<WorkItemRow, "project_id" | "milestone_id"> | null = null): Promise<string | null> {
+	if (changes.milestoneId) {
+		const { data, error } = await context.client.from("work_milestones").select("id,project_id").eq("workspace_id", context.workspaceId).eq("id", changes.milestoneId).maybeSingle();
+		if (error) throw new Error(`work_milestones read failed: ${error.message}`);
+		if (!data) return "milestoneId must be a milestone in this workspace";
+		const projectId = String((data as { project_id: string }).project_id);
+		if (changes.projectId && changes.projectId !== projectId) return "The milestone belongs to a different project";
+		changes.projectId = projectId;
+	} else if (changes.milestoneId === undefined && changes.projectId !== undefined && current?.milestone_id && changes.projectId !== current.project_id) {
+		changes.milestoneId = null;
+	}
 	if (changes.projectId && !await loadWorkProject(context.client, context.workspaceId, changes.projectId)) return "projectId must be a project in this workspace";
 	if (changes.cycleId && !await loadWorkCycle(context.client, context.workspaceId, changes.cycleId)) return "cycleId must be a cycle in this workspace";
 	return null;
@@ -285,7 +301,7 @@ accountWorkRouter.get("/items", async (c) => {
 	}
 	const label = c.req.query("label")?.trim().toLowerCase();
 	if (label) query = query.contains("labels", [label.slice(0, 40)]);
-	for (const [param, column] of [["projectId", "project_id"], ["cycleId", "cycle_id"]] as const) {
+	for (const [param, column] of [["projectId", "project_id"], ["cycleId", "cycle_id"], ["milestoneId", "milestone_id"]] as const) {
 		const value = c.req.query(param)?.trim().toLowerCase();
 		if (!value) continue;
 		if (value === "none") query = query.is(column, null);
@@ -382,7 +398,11 @@ accountWorkRouter.post("/items", async (c) => {
 			estimate: changes.estimate,
 			dueAt: changes.dueAt,
 		});
-		return json(c, { item: await formatOne(context.client, context.workspaceId, row) }, 201);
+		// create_work_item takes no milestone, so a new item is put in one straight after.
+		const created = changes.milestoneId
+			? await updateWorkItem(context.client, row, { milestoneId: changes.milestoneId }, { kind: "user", userId: context.user.id, name: access.actorName }, { quiet: true })
+			: row;
+		return json(c, { item: await formatOne(context.client, context.workspaceId, created) }, 201);
 	} catch {
 		return unavailable(c, "work_item_create_failed");
 	}
@@ -430,7 +450,11 @@ accountWorkRouter.get("/items/:number", async (c) => {
 	} catch {
 		return unavailable(c);
 	}
-	const subscribed = await isSubscribed(context.client, item.id, context.user.id);
+	const commentIds = ((events.data ?? []) as Array<{ id: string; kind: string }>).filter((row) => row.kind === "comment").map((row) => row.id);
+	const [subscribed, reactions] = await Promise.all([
+		isSubscribed(context.client, item.id, context.user.id),
+		loadReactions(context.client, context.workspaceId, commentIds, context.user.id),
+	]);
 	const childRows = (children.data ?? []) as unknown as WorkItemRow[];
 	const [formatted, ...formattedChildren] = await formatItems(context.client, context.workspaceId, [item, ...childRows]);
 	return json(c, {
@@ -443,6 +467,7 @@ accountWorkRouter.get("/items/:number", async (c) => {
 		parent: parent ? await formatOne(context.client, context.workspaceId, parent) : null,
 		relations,
 		subscribed,
+		reactions,
 	});
 });
 
@@ -460,7 +485,7 @@ accountWorkRouter.patch("/items/:number", async (c) => {
 	try {
 		const assigneeError = await checkAssignee(context, changes);
 		if (assigneeError) return badRequest(c, assigneeError);
-		const planningError = await checkPlanning(context, changes);
+		const planningError = await checkPlanning(context, changes, item);
 		if (planningError) return badRequest(c, planningError);
 		const parent = await resolveParent(context, item, parsed.parentNumber);
 		if (parent.ok === false) return badRequest(c, parent.message);
@@ -966,3 +991,4 @@ accountWorkRouter.route("/", accountWorkCustomersRouter);
 accountWorkRouter.route("/", accountWorkSettingsRouter);
 accountWorkRouter.route("/", accountWorkPlanningRouter);
 accountWorkRouter.route("/", accountWorkNotificationsRouter);
+accountWorkRouter.route("/", accountWorkExtrasRouter);

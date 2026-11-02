@@ -322,6 +322,11 @@
     "public/tables/work_error_rules.sql",
     "public/tables/work_error_sourcemaps.sql",
     "public/tables/work_attachments.sql",
+    "public/tables/work_milestones.sql",
+    "public/tables/work_project_updates.sql",
+    "public/tables/work_templates.sql",
+    "public/tables/work_recurrences.sql",
+    "public/tables/work_reactions.sql",
     "private/views/v2_rpc_benchmark_results_compat.sql",
     "private/views/v2_rpc_benchmarks_compat.sql",
     "private/views/v2_rpc_capabilities_compat.sql",
@@ -949,6 +954,9 @@
     "public/functions/work_insights.sql",
     "public/functions/work_cycle_estimates.sql",
     "public/functions/snapshot_work_cycle_days.sql",
+    "public/functions/work_event_reactions.sql",
+    "public/functions/work_milestone_counts.sql",
+    "public/functions/work_project_health.sql",
     "_cluster/event_triggers.sql",
     "_cluster/default_privileges.sql",
     "public/default_privileges.sql",
@@ -1900,6 +1908,14 @@
     "public/tables/work_error_releases.sql",
     "public/tables/work_error_rules.sql",
     "public/tables/work_error_sourcemaps.sql",
-    "public/tables/work_attachments.sql"
+    "public/tables/work_attachments.sql",
+    "public/tables/work_milestones.sql",
+    "public/tables/work_project_updates.sql",
+    "public/tables/work_templates.sql",
+    "public/tables/work_recurrences.sql",
+    "public/tables/work_reactions.sql",
+    "public/functions/work_event_reactions.sql",
+    "public/functions/work_milestone_counts.sql",
+    "public/functions/work_project_health.sql"
   ]
 }
