@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { STALL_NUDGE, TRUSTED_BOTS, activityMessage, checksActivity, heldBackLine, sortActivity, stallAction, stallSummary, type GithubActivity } from "../../shared/factory/activity";
+import { STALL_NUDGE, STALL_WAIT, TRUSTED_BOTS, activityMessage, checksActivity, heldBackLine, sortActivity, stallAction, stallSummary, type GithubActivity } from "../../shared/factory/activity";
 import { autopilotFits, lastRun, linkedItem, pullsFor, stageAgent, withItemEffort } from "../../shared/factory/actions";
 import { INPUTS_FOLDER, attachRef, attachable, attachmentKey, attachmentsFor, imageProblem, isAttachmentName, supportsAttach } from "../../shared/factory/attachments";
 import { DEMO_AGENTS, DEMO_SETTINGS, demoAttachment, demoItems, demoNotes, demoProof, demoRepos, demoRuns } from "../../shared/factory/demo";
@@ -1402,7 +1402,7 @@ export class FactoryStore {
 			const action = stallAction(run, now, movedAt);
 			if (action === "nudge") {
 				this.patchRun(run.id, (current) => ({ ...current, nudgedAt: now }));
-				this.log(run.id, { at: now, kind: "info", text: "Nothing happened for 30 minutes, so Factory told the agent to stop anything that won't finish on its own" });
+				this.log(run.id, { at: now, kind: "info", text: `Nothing happened for ${STALL_WAIT}, so Factory told the agent to stop anything that won't finish on its own` });
 				session.send(STALL_NUDGE);
 			} else if (action === "stop") {
 				const why = stallSummary(run, now, movedAt);

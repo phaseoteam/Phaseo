@@ -105,7 +105,10 @@ export const STALL_AFTER = 30 * 60_000;
 /** How long the agent has, after being told, to show it's moving again. */
 export const STALL_GRACE = 15 * 60_000;
 
-export const STALL_NUDGE = "Phaseo Factory: nothing has happened in this run for 30 minutes. If you're waiting on a command that won't finish on its own (a watch mode, a dev server, a prompt for input), stop it and carry on without it. If you're still making progress, say so in one line and keep going.";
+/** The quiet spell before the nudge, as said in the nudge and the run's log. */
+export const STALL_WAIT = `${Math.round(STALL_AFTER / 60_000)} minutes`;
+
+export const STALL_NUDGE = `Phaseo Factory: nothing has happened in this run for ${STALL_WAIT}. If you're waiting on a command that won't finish on its own (a watch mode, a dev server, a prompt for input), stop it and carry on without it. If you're still making progress, say so in one line and keep going.`;
 
 /** Factory's own lines and messages from people aren't the agent doing anything. */
 const progressLine = (line: LogLine) => line.kind !== "info" && line.kind !== "you";
