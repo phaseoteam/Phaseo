@@ -114,6 +114,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-skill-picker-smoke.mjs
             - name: Phaseo skill approvals and execution
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-skills-smoke.mjs
+            - name: Operator events, app commands and kill switch
+              run: pnpm --filter @phaseo/desktop exec electron scripts/operator-smoke.mjs
             - name: Phaseo structured questions
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-questions-smoke.mjs
             - name: Phaseo question forced-crash recovery
