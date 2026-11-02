@@ -62,10 +62,13 @@ export function buildGithubIssueBody(item: Pick<WorkItemRow, "number" | "title" 
 
 export type GithubIssueResult =
 	| { ok: true; number: number; url: string }
-	| { ok: false; status: 409 | 502; code: "github_token_missing" | "github_token_unreadable" | "github_request_failed"; message: string };
+	| { ok: false; status: 409 | 502; code: "github_token_missing" | "github_token_unreadable" | "github_request_failed" | "triage_required"; message: string };
 
 /** Creates the issue in the repository with its stored token. */
 export async function createGithubIssue(env: Env, repo: Pick<GithubRepoRow, "repo" | "github_token_ciphertext">, item: Pick<WorkItemRow, "number" | "title" | "description" | "source" | "triage_summary">): Promise<GithubIssueResult> {
+	// Items from outside (asks, errors, synced sources) carry outside text in their title until triage
+	// has given them a neutral one, so they go to GitHub only after triage.
+	if (item.source !== "manual" && !item.triage_summary?.trim()) return { ok: false, status: 409, code: "triage_required", message: "Triage this item before creating a GitHub issue" };
 	if (!repo.github_token_ciphertext) return { ok: false, status: 409, code: "github_token_missing", message: "Add a GitHub token to this repository to create issues from Phaseo" };
 	let token: string | null;
 	try {

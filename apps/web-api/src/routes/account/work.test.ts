@@ -169,7 +169,7 @@ describe("POST /items/:number/triage", () => {
 				},
 				keys: (entry) => entry.method === "GET" ? Response.json([]) : new Response(null, { status: 201 }),
 				work_customer_requests: () => Response.json([{ subject: "Login", body: "I am locked out, mail me at a@b.co", contact_name: "Ann Lee", customer: { name: "Acme", tier: "pro" } }]),
-				work_agent_runs: (entry) => Response.json([{ id: "run-1", workspace_id: WORKSPACE, work_item_id: ITEM_ID, agent: "triage", runner: "gateway", status: entry.method === "PATCH" ? "succeeded" : "running", model: "openai/gpt-5-mini", cost_nanos: 4200, summary: null, output: {}, external_url: null, requested_by: USER, created_at: NOW, started_at: NOW, finished_at: null }]),
+				work_agent_runs: (entry) => Response.json([{ id: "run-1", workspace_id: WORKSPACE, work_item_id: ITEM_ID, agent: "triage", runner: "gateway", status: entry.method === "PATCH" ? "succeeded" : "running", model: "openai/gpt-5.4-mini", cost_nanos: 4200, summary: null, output: {}, external_url: null, requested_by: USER, created_at: NOW, started_at: NOW, finished_at: null }]),
 			},
 		});
 		const fetchMock = vi.mocked(fetch);
@@ -178,7 +178,7 @@ describe("POST /items/:number/triage", () => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
 			if (url.hostname === "gateway.test") {
 				gateway(JSON.parse(String(init?.body)));
-				return Response.json({ output_text: JSON.stringify({ summary: "Ann Lee (a@b.co) cannot sign in.", priority: 2, labels: ["bug"], state: "todo", duplicateOf: null, engineering: true, reasoning: "Blocks use." }), cost_nanos: 4200, model: "openai/gpt-5-mini" });
+				return Response.json({ output_text: JSON.stringify({ summary: "Ann Lee (a@b.co) cannot sign in.", priority: 2, labels: ["bug"], state: "todo", duplicateOf: null, engineering: true, reasoning: "Blocks use." }), cost_nanos: 4200, model: "openai/gpt-5.4-mini" });
 			}
 			return original(input, init);
 		});

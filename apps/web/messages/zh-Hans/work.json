@@ -27,6 +27,7 @@
 		"actionFailed": "操作没有成功，请重试。",
 		"forbidden": "只有内部管理员可以执行此操作。",
 		"githubTokenMissing": "请先在工作设置中为此仓库添加 GitHub 令牌。",
+		"triageRequired": "请先对此项进行分诊，再创建 GitHub 议题。",
 		"confirmDelete": "删除 {name}？此操作无法撤销。",
 		"internalOnly": "内部预览"
 	},

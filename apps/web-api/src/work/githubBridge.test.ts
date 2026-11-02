@@ -177,13 +177,13 @@ describe("handleBridgeEvent", () => {
 			action: status,
 			repo: "acme/shop",
 			issue: { number: 12 },
-			run: { id: "99-1", status, run_url: "https://github.com/acme/shop/actions/runs/99", model: "anthropic/claude-sonnet-4.6", summary: "", ...extra },
+			run: { id: "99-1", status, run_url: "https://github.com/acme/shop/actions/runs/99", model: "anthropic/claude-sonnet-5.5", summary: "", ...extra },
 		})!;
 
 		const started = setup(itemRow(), (query) => (query.table === "work_agent_runs" && query.op === "select" ? { data: null, error: null } : undefined));
 		await handleBridgeEvent(started.fake.client, link, runPayload("running"));
 		const insert = started.fake.queries.find((query) => query.table === "work_agent_runs" && query.op === "insert")!;
-		expect(insert.payload).toMatchObject({ agent: "engineer", runner: "github_actions", status: "running", external_url: "https://github.com/acme/shop/actions/runs/99", work_item_id: "item-1", model: "anthropic/claude-sonnet-4.6" });
+		expect(insert.payload).toMatchObject({ agent: "engineer", runner: "github_actions", status: "running", external_url: "https://github.com/acme/shop/actions/runs/99", work_item_id: "item-1", model: "anthropic/claude-sonnet-5.5" });
 		expect(started.updates()[0]).toMatchObject({ state: "in_progress", assignee_agent: "engineer" });
 
 		const finished = setup(itemRow({ state: "in_progress" }), (query) =>

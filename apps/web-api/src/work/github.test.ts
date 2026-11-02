@@ -38,6 +38,12 @@ describe("GitHub token storage", () => {
 describe("createGithubIssue", () => {
 	const item = { number: 9, title: "Crash", description: "", source: "manual" as const, triage_summary: null };
 
+	it("refuses items from outside until they are triaged", async () => {
+		const ask = { ...item, title: "Subject a customer wrote", source: "ask" as const };
+		expect(await createGithubIssue(env, { repo: "acme/app", github_token_ciphertext: await encryptGithubToken(env, "tok") }, ask))
+			.toMatchObject({ ok: false, status: 409, code: "triage_required" });
+	});
+
 	it("needs a stored token", async () => {
 		expect(await createGithubIssue(env, { repo: "acme/app", github_token_ciphertext: null }, item))
 			.toMatchObject({ ok: false, status: 409, code: "github_token_missing" });

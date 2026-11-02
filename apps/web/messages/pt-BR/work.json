@@ -27,6 +27,7 @@
 		"actionFailed": "Não deu certo. Tente de novo.",
 		"forbidden": "Só administradores internos podem fazer isso.",
 		"githubTokenMissing": "Primeiro adicione um token do GitHub para este repositório nas configurações de trabalho.",
+		"triageRequired": "Faça a triagem deste item antes de criar uma issue no GitHub.",
 		"confirmDelete": "Excluir {name}? Não dá para desfazer.",
 		"internalOnly": "Prévia interna"
 	},

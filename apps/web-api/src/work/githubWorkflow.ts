@@ -12,8 +12,8 @@
 
 export type WorkflowHarness = "claude-code" | "codex";
 
-export const DEFAULT_WORKFLOW_MODEL = "anthropic/claude-sonnet-4.6";
-export const DEFAULT_CODEX_MODEL = "openai/gpt-5.5";
+export const DEFAULT_WORKFLOW_MODEL = "anthropic/claude-sonnet-5.5";
+export const DEFAULT_CODEX_MODEL = "openai/gpt-6.1-sol";
 export const DEFAULT_PHASEO_ORIGIN = "https://phaseo.app";
 export const PHASEO_GATEWAY_ORIGIN = "https://api.phaseo.app";
 export const WORKFLOW_PATH = ".github/workflows/phaseo.yml";

@@ -27,6 +27,7 @@
 		"actionFailed": "うまくいきませんでした。もう一度お試しください。",
 		"forbidden": "この操作は社内管理者だけが行えます。",
 		"githubTokenMissing": "先に作業設定でこのリポジトリの GitHub トークンを追加してください。",
+		"triageRequired": "GitHub の Issue を作成する前に、この項目をトリアージしてください。",
 		"confirmDelete": "{name} を削除しますか？元に戻せません。",
 		"internalOnly": "社内プレビュー"
 	},

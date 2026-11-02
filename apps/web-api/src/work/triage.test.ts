@@ -11,10 +11,11 @@ import {
 } from "./triage";
 
 function payload(answer: Record<string, unknown>, extra: Record<string, unknown> = {}) {
-	return { output_text: JSON.stringify(answer), cost_nanos: 4_200_000, model: "openai/gpt-5-mini", ...extra };
+	return { output_text: JSON.stringify(answer), cost_nanos: 4_200_000, model: "openai/gpt-5.4-mini", ...extra };
 }
 
 const ANSWER = {
+	title: "Login fails after a password reset",
 	summary: "Login fails after a password reset.",
 	priority: 2,
 	labels: ["Bug", "auth"],
@@ -42,7 +43,7 @@ describe("stripPersonalData", () => {
 describe("parseTriageAnswer", () => {
 	it("parses and normalises a structured answer", () => {
 		expect(parseTriageAnswer(payload(ANSWER))).toEqual({
-			summary: "Login fails after a password reset.", priority: 2, labels: ["bug", "auth"], state: "todo",
+			title: "Login fails after a password reset", summary: "Login fails after a password reset.", priority: 2, labels: ["bug", "auth"], state: "todo",
 			duplicateOf: null, engineering: true, reasoning: "Blocks sign-in.",
 		});
 	});
@@ -50,6 +51,11 @@ describe("parseTriageAnswer", () => {
 	it("reads JSON wrapped in a code fence (prompted JSON fallback)", () => {
 		const wrapped = { output: [{ type: "message", content: [{ type: "output_text", text: `Here you go:\n\`\`\`json\n${JSON.stringify(ANSWER)}\n\`\`\`` }] }] };
 		expect(parseTriageAnswer(wrapped)?.priority).toBe(2);
+	});
+
+	it("strips personal data from the title too", () => {
+		const answer = parseTriageAnswer(payload({ ...ANSWER, title: "Bob Stone cannot log in (bob@example.com)" }), { knownNames: ["Bob Stone"] });
+		expect(answer?.title).toBe("a customer cannot log in ([email removed])");
 	});
 
 	it("strips personal data from the summary and reasoning (post-filter)", () => {
@@ -102,7 +108,7 @@ describe("prompt", () => {
 	});
 
 	it("asks for structured output, or prompted JSON as the fallback", () => {
-		expect(buildTriageRequestBody("x", "json_schema")).toMatchObject({ model: "openai/gpt-5-mini", text: { format: { type: "json_schema", strict: true } } });
+		expect(buildTriageRequestBody("x", "json_schema")).toMatchObject({ model: "openai/gpt-5.4-mini", text: { format: { type: "json_schema", strict: true } } });
 		expect(buildTriageRequestBody("x", "json")).not.toHaveProperty("text");
 	});
 });

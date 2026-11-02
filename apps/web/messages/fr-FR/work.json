@@ -27,6 +27,7 @@
 		"actionFailed": "Ça n’a pas marché. Réessayez.",
 		"forbidden": "Seuls les administrateurs internes peuvent faire ça.",
 		"githubTokenMissing": "Ajoutez d’abord un jeton GitHub pour ce dépôt dans les paramètres du suivi.",
+		"triageRequired": "Triez cet élément avant de créer un ticket GitHub.",
 		"confirmDelete": "Supprimer {name} ? Cette action est irréversible.",
 		"internalOnly": "Aperçu interne"
 	},

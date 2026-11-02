@@ -101,14 +101,14 @@ describe("buildGithubWorkflow", () => {
 	});
 
 	it("offers Codex through the Phaseo Responses endpoint", () => {
-		const codex = parse(buildGithubWorkflow({ repo: "acme/shop", harness: "codex", model: "openai/gpt-5.5", phaseoOrigin: "https://staging.phaseo.app/" }));
+		const codex = parse(buildGithubWorkflow({ repo: "acme/shop", harness: "codex", model: "openai/gpt-6.1-sol", phaseoOrigin: "https://staging.phaseo.app/" }));
 		const harness = codex.jobs.agent.steps.find((step) => step.id === "harness")!;
 		expect(harness.env).toEqual({ PHASEO_API_KEY: "${{ secrets.PHASEO_API_KEY }}", CODEX_HOME: "${{ runner.temp }}/codex-home" });
 		expect(harness.run).toContain("npx -y @openai/codex exec --sandbox workspace-write --skip-git-repo-check");
 		expect(harness.run).toContain("base_url = \"https://api.phaseo.app/v1\"");
 		expect(harness.run).toContain("wire_api = \"responses\"");
 		expect(codex.jobs.report.steps[0].env?.PHASEO_WORK_URL).toBe("https://staging.phaseo.app/api/_web/work/github");
-		expect(codex.jobs.agent.env?.PHASEO_MODEL).toBe("openai/gpt-5.5");
+		expect(codex.jobs.agent.env?.PHASEO_MODEL).toBe("openai/gpt-6.1-sol");
 	});
 
 	it("rejects repos, models and origins that could break the YAML", () => {

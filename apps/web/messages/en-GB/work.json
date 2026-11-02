@@ -27,6 +27,7 @@
 		"actionFailed": "That didn't work. Try again.",
 		"forbidden": "Only internal admins can do this.",
 		"githubTokenMissing": "Add a GitHub token for this repo in work settings first.",
+		"triageRequired": "Triage this item before creating a GitHub issue.",
 		"confirmDelete": "Delete {name}? This can't be undone.",
 		"internalOnly": "Internal preview"
 	},

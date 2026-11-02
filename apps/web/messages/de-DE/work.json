@@ -27,6 +27,7 @@
 		"actionFailed": "Das hat nicht geklappt. Versuch es noch einmal.",
 		"forbidden": "Nur interne Admins können das.",
 		"githubTokenMissing": "Hinterlege zuerst in den Arbeitseinstellungen ein GitHub-Token für dieses Repo.",
+		"triageRequired": "Lass das Element zuerst sortieren, bevor du ein GitHub-Issue erstellst.",
 		"confirmDelete": "{name} löschen? Das lässt sich nicht rückgängig machen.",
 		"internalOnly": "Interne Vorschau"
 	},
