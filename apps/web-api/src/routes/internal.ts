@@ -10,6 +10,7 @@ import { internalProviderCatalogReviewRouter } from "@/routes/internal-provider-
 import { internalRealtimeBillingRouter } from "@/routes/internal-realtime-billing";
 import { internalKeyIncidentsRouter } from "@/routes/internal-key-incidents";
 import { internalSlackAgentRouter } from "@/routes/internal-slack-agent";
+import { internalWorkSlackRouter } from "@/routes/internal-work-slack";
 import {
 	LEGACY_ALLOWED_CACHE_TAGS,
 	isCacheScopeId,
@@ -54,6 +55,8 @@ internalRouter.route("/", internalGatewayBenchmarkRouter);
 internalRouter.route("/", internalRealtimeBillingRouter);
 internalRouter.route("/", internalKeyIncidentsRouter);
 internalRouter.route("/", internalSlackAgentRouter);
+// Signed by the Slack Worker (no user session): its file_work_item tool.
+internalRouter.route("/", internalWorkSlackRouter);
 
 internalRouter.get("/cache", async (c) => {
 	if (isCrossSiteBrowserRequest(c.req.raw)) {
