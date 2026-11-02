@@ -36,7 +36,8 @@
 		"noNextCycle": "Crie o próximo ciclo primeiro.",
 		"cycleOverlaps": "Essas datas se sobrepõem a outro ciclo.",
 		"relationExists": "Esses itens já estão vinculados.",
-		"draftChanged": "Este rascunho mudou ou já foi tratado. Recarregue a página e revise de novo."
+		"draftChanged": "Este rascunho mudou ou já foi tratado. Recarregue a página e revise de novo.",
+		"emailFailed": "Não foi possível enviar o e-mail. O rascunho continua aberto, então você pode tentar de novo."
 	},
 	"states": {
 		"triage": "Triagem",
@@ -433,6 +434,13 @@
 			"slaInvalid": "Use horas inteiras de 1 a 2.160 para cada prioridade.",
 			"stallInvalid": "Use dias inteiros de 1 a 90.",
 			"readOnly": "Só proprietários e administradores do espaço de trabalho podem alterar essas configurações."
+		},
+		"mine": {
+			"title": "Seu e-mail",
+			"description": "Só para você, neste espaço de trabalho.",
+			"emailDigest": "Receber minhas notificações por e-mail",
+			"emailDigestHint": "Notificações não lidas chegam em um único e-mail curto, no máximo a cada 10 minutos. O que você ler aqui antes não é enviado.",
+			"emailUnavailable": "O e-mail do Work ainda não está ativado no Phaseo. Sua escolha fica salva para quando estiver."
 		}
 	},
 	"sla": {

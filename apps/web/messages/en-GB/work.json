@@ -36,7 +36,8 @@
 		"noNextCycle": "Create the next cycle first.",
 		"cycleOverlaps": "These dates overlap another cycle.",
 		"relationExists": "These items are already linked.",
-		"draftChanged": "This draft changed or was already handled. Reload the page and review it again."
+		"draftChanged": "This draft changed or was already handled. Reload the page and review it again.",
+		"emailFailed": "The email couldn't be sent. The draft is still open, so you can try again."
 	},
 	"states": {
 		"triage": "Triage",
@@ -433,6 +434,13 @@
 			"slaInvalid": "Use whole hours from 1 to 2,160 for each priority.",
 			"stallInvalid": "Use whole days from 1 to 90.",
 			"readOnly": "Only workspace owners and admins can change these settings."
+		},
+		"mine": {
+			"title": "Your email",
+			"description": "Only for you, in this workspace.",
+			"emailDigest": "Email me about my notifications",
+			"emailDigestHint": "Unread notifications come in one short email, at most every 10 minutes. Anything you read here first isn't emailed.",
+			"emailUnavailable": "Work email isn't turned on for Phaseo yet. Your choice is kept for when it is."
 		}
 	},
 	"sla": {

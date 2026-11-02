@@ -36,7 +36,8 @@
 		"noNextCycle": "Erstelle zuerst den nächsten Zyklus.",
 		"cycleOverlaps": "Diese Daten überschneiden sich mit einem anderen Zyklus.",
 		"relationExists": "Diese Einträge sind bereits verknüpft.",
-		"draftChanged": "Dieser Entwurf wurde geändert oder schon bearbeitet. Lade die Seite neu und prüfe ihn noch einmal."
+		"draftChanged": "Dieser Entwurf wurde geändert oder schon bearbeitet. Lade die Seite neu und prüfe ihn noch einmal.",
+		"emailFailed": "Die E-Mail konnte nicht gesendet werden. Der Entwurf ist noch offen, du kannst es erneut versuchen."
 	},
 	"states": {
 		"triage": "Triage",
@@ -433,6 +434,13 @@
 			"slaInvalid": "Gib für jede Priorität ganze Stunden von 1 bis 2.160 ein.",
 			"stallInvalid": "Gib ganze Tage von 1 bis 90 ein.",
 			"readOnly": "Nur Workspace-Inhaber und Admins können diese Einstellungen ändern."
+		},
+		"mine": {
+			"title": "Deine E-Mails",
+			"description": "Nur für dich, in diesem Workspace.",
+			"emailDigest": "Mir meine Benachrichtigungen per E-Mail senden",
+			"emailDigestHint": "Ungelesene Benachrichtigungen kommen gesammelt in einer kurzen E-Mail, höchstens alle 10 Minuten. Was du hier zuerst liest, wird nicht gemailt.",
+			"emailUnavailable": "E-Mails aus Work sind bei Phaseo noch nicht eingeschaltet. Deine Wahl bleibt für später gespeichert."
 		}
 	},
 	"sla": {

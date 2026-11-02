@@ -36,7 +36,8 @@
 		"noNextCycle": "请先创建下一个周期。",
 		"cycleOverlaps": "这些日期与另一个周期重叠。",
 		"relationExists": "这些条目已经关联。",
-		"draftChanged": "此草稿已更改或已处理。请刷新页面后重新审阅。"
+		"draftChanged": "此草稿已更改或已处理。请刷新页面后重新审阅。",
+		"emailFailed": "邮件未能发送。草稿仍然打开，你可以再试一次。"
 	},
 	"states": {
 		"triage": "待分诊",
@@ -433,6 +434,13 @@
 			"slaInvalid": "每个优先级请填写 1 到 2,160 之间的整数小时数。",
 			"stallInvalid": "请填写 1 到 90 之间的整数天数。",
 			"readOnly": "只有工作区所有者和管理员可以更改这些设置。"
+		},
+		"mine": {
+			"title": "你的邮件",
+			"description": "仅对你生效，仅限此工作区。",
+			"emailDigest": "通过邮件接收我的通知",
+			"emailDigestHint": "未读通知会合并成一封简短的邮件，最多每 10 分钟一封。你先在这里读过的不会再发邮件。",
+			"emailUnavailable": "Phaseo 尚未开启 Work 邮件。你的选择会保留，开启后生效。"
 		}
 	},
 	"sla": {

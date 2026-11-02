@@ -18,6 +18,19 @@ vi.mock("@/routes/account/work-shared", async (importOriginal) => {
 	};
 });
 
+const email: { enabled: boolean; ok: boolean; sent: Array<Record<string, unknown>> } = { enabled: false, ok: true, sent: [] };
+vi.mock("./email", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("./email")>();
+	return {
+		...actual,
+		workEmailEnabled: () => email.enabled,
+		sendWorkEmail: async (_env: unknown, message: Record<string, unknown>) => {
+			email.sent.push(message);
+			return email.ok ? { ok: true, id: "e1" } : { ok: false, code: "email_failed", message: "boom" };
+		},
+	};
+});
+
 const { registerReplyDraftRoutes } = await import("./support");
 
 function app() {
@@ -42,6 +55,9 @@ function post(path: string, body: unknown) {
 beforeEach(() => {
 	state.allowed = true;
 	state.fake = null;
+	email.enabled = false;
+	email.ok = true;
+	email.sent = [];
 });
 
 describe("reply draft routes", () => {
@@ -63,6 +79,40 @@ describe("reply draft routes", () => {
 		expect(event.payload).toMatchObject({ kind: "reply", author_kind: "user", body: "Reply sent to a customer" });
 		expect(JSON.stringify(event.payload)).not.toContain("ana@example.com");
 		expect(state.fake!.queries.some((query) => query.table === "work_items" && query.op === "update")).toBe(true);
+	});
+
+	it("emails the reply from the workspace when work email is on, replies going to the sender", async () => {
+		email.enabled = true;
+		state.handler = (query) => {
+			if (query.table === "work_reply_drafts" && query.op === "select") return { data: draftRow(), error: null };
+			if (query.table === "work_reply_drafts" && query.op === "update") return { data: draftRow({ status: "sent", sent_to: "ana@example.com", sent_by: "sender", sent_at: "now" }), error: null };
+			if (query.table === "workspaces") return { data: { name: "Acme Tools" }, error: null };
+			return { data: null, error: null };
+		};
+		const response = await post(`/reply-drafts/${DRAFT}/send`, { workspaceId: WS });
+		expect(response.status).toBe(200);
+		const body = await response.json() as any;
+		expect(body).toMatchObject({ delivery: "email", draft: { status: "sent" } });
+		expect(body.mailto).toBeUndefined();
+		expect(email.sent).toEqual([expect.objectContaining({ to: "ana@example.com", subject: "Re: Export", fromName: "Acme Tools via Phaseo", idempotencyKey: `work-reply-${DRAFT}` })]);
+		const event = state.fake!.queries.find((query) => query.table === "work_item_events")!;
+		expect(event.payload).toMatchObject({ kind: "reply", data: { delivery: "email" } });
+	});
+
+	it("puts the draft back to open when the email fails", async () => {
+		email.enabled = true;
+		email.ok = false;
+		state.handler = (query) => {
+			if (query.table === "work_reply_drafts" && query.op === "select") return { data: draftRow(), error: null };
+			if (query.table === "work_reply_drafts" && query.op === "update") return { data: draftRow({ status: "sent" }), error: null };
+			return { data: null, error: null };
+		};
+		const response = await post(`/reply-drafts/${DRAFT}/send`, { workspaceId: WS });
+		expect(response.status).toBe(502);
+		expect((await response.json() as any).error).toBe("email_failed");
+		const updates = state.fake!.queries.filter((query) => query.table === "work_reply_drafts" && query.op === "update");
+		expect(updates[1]!.payload).toMatchObject({ status: "draft", sent_to: null, sent_at: null });
+		expect(state.fake!.queries.some((query) => query.table === "work_item_events")).toBe(false);
 	});
 
 	it("refuses to send a draft that is not open, or to a changed recipient", async () => {

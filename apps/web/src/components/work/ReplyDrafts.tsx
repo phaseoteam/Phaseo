@@ -77,7 +77,7 @@ export function ReplyDraftEditor({ draft, request, showItemLink = false }: { dra
 			toast.success(t("sentTo", { email: recipient }));
 			return;
 		}
-		// No email sender for customers yet: the draft is marked sent and the person sends it themselves.
+		// Work email is off: the draft is marked sent and the person sends it themselves.
 		const ok = await copy();
 		const mailto = typeof result.mailto === "string" && result.mailto.startsWith("mailto:") ? result.mailto : null;
 		toast.success(ok ? t("markedSentCopied") : t("markedSent"), mailto ? { action: { label: t("openEmail"), onClick: () => { window.location.href = mailto; } }, duration: 15_000 } : undefined);

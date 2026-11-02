@@ -7,6 +7,7 @@ CREATE TABLE "public"."work_notifications" (
   "actor_name"   text,
   "body"         text                     NOT NULL DEFAULT ''::text,
   "read_at"      timestamp with time zone,
+  "emailed_at"   timestamp with time zone,
   "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "work_notifications_body_length_check" CHECK ((char_length(body) <= 2000)),
   CONSTRAINT "work_notifications_kind_check" CHECK ((kind = ANY (ARRAY['assigned'::text, 'comment'::text, 'mention'::text, 'state'::text, 'sla'::text, 'stalled'::text, 'error_spike'::text, 'agent'::text, 'reply_draft'::text]))),
@@ -21,6 +22,9 @@ ALTER TABLE "public"."work_notifications"
 
 CREATE INDEX work_notifications_user_unread_idx ON public.work_notifications USING btree (user_id, workspace_id, created_at DESC)
   WHERE (read_at IS NULL);
+
+CREATE INDEX work_notifications_email_due_idx ON public.work_notifications USING btree (created_at)
+  WHERE ((read_at IS NULL) AND (emailed_at IS NULL));
 
 CREATE INDEX work_notifications_user_created_idx ON public.work_notifications USING btree (user_id, workspace_id, created_at DESC);
 

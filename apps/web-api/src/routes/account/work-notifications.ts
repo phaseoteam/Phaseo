@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "@/env";
+import { workEmailEnabled } from "@/work/email";
 import { formatWorkNotification } from "@/work/notifications";
 import type { WorkNotificationRow } from "@/work/types";
 import {
@@ -13,7 +14,8 @@ import {
 	workAccess,
 } from "./work-shared";
 
-// A person's work notifications (/api/account/work/notifications): their own, in this workspace.
+// A person's work notifications (/api/account/work/notifications) and their own work settings
+// (/api/account/work/me/settings: email digests on or off), in this workspace.
 
 export const accountWorkNotificationsRouter = new Hono<{ Bindings: Env }>();
 
@@ -85,4 +87,36 @@ accountWorkNotificationsRouter.post("/notifications/read", async (c) => {
 	const unread = await context.client.from("work_notifications").select("id", { count: "exact", head: true })
 		.eq("workspace_id", context.workspaceId).eq("user_id", context.user.id).is("read_at", null);
 	return json(c, { ok: true, unreadCount: unread.error ? null : unread.count ?? 0 });
+});
+
+const EMAIL_NOTIFICATION_SETTINGS = ["off", "digest"] as const;
+type EmailNotificationSetting = (typeof EMAIL_NOTIFICATION_SETTINGS)[number];
+
+/** GET /me/settings: the person's own work settings here. `emailAvailable` says whether work email is on at all. */
+accountWorkNotificationsRouter.get("/me/settings", async (c) => {
+	const access = await accessFromQuery(c);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const { data, error } = await context.client.from("work_member_settings").select("email_notifications")
+		.eq("workspace_id", context.workspaceId).eq("user_id", context.user.id).maybeSingle();
+	if (error) return unavailable(c);
+	const value = (data as { email_notifications?: string } | null)?.email_notifications;
+	return json(c, { settings: { emailNotifications: value === "off" ? "off" : "digest" }, emailAvailable: workEmailEnabled(c.env) });
+});
+
+/** PATCH /me/settings {workspaceId, emailNotifications: "off" | "digest"}. */
+accountWorkNotificationsRouter.patch("/me/settings", async (c) => {
+	const body = await readBody(c);
+	const access = await workAccess(c, body.workspaceId);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	if (!EMAIL_NOTIFICATION_SETTINGS.includes(body.emailNotifications as EmailNotificationSetting)) return badRequest(c, "emailNotifications must be off or digest");
+	const { error } = await context.client.from("work_member_settings").upsert({
+		workspace_id: context.workspaceId,
+		user_id: context.user.id,
+		email_notifications: body.emailNotifications,
+		updated_at: new Date().toISOString(),
+	}, { onConflict: "workspace_id,user_id" });
+	if (error) return unavailable(c);
+	return json(c, { settings: { emailNotifications: body.emailNotifications }, emailAvailable: workEmailEnabled(c.env) });
 });

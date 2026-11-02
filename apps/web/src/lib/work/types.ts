@@ -393,4 +393,7 @@ export type WorkSettingsResponse = { settings: WorkSettings; canEdit?: boolean }
 export type WorkNotificationsResponse = { notifications: WorkNotification[]; unreadCount: number; nextCursor?: string | null };
 export type ReplyDraftsResponse = { drafts: ReplyDraft[] };
 /** web-api has no email sender for arbitrary recipients yet: "manual" means marked sent, for the person to send. */
+/** GET/PATCH /me/settings: the person's own work settings; emailAvailable says whether work email is on at all. */
+export type WorkMemberSettingsResponse = { settings: { emailNotifications: "off" | "digest" }; emailAvailable: boolean };
+
 export type ReplyDraftSendResponse = { draft: ReplyDraft; delivery?: "manual" | "email"; email?: { to: string; subject: string; body: string }; mailto?: string };

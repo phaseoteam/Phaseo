@@ -11,6 +11,7 @@ import {
 	deleteIntakeForm,
 	getGithubWorkflow,
 	linkGithubRepo,
+	saveMyWorkSettings,
 	saveWorkSettings,
 	updateErrorProject,
 	updateGithubRepo,
@@ -23,11 +24,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { normaliseGithubRepo } from "@/lib/work/format";
 import { errorFetchExample, errorScriptTag, intakeCurlExample, intakeFormHtml } from "@/lib/work/snippets";
-import { DEFAULT_WORK_SETTINGS, type ErrorProject, type GithubRepo, type IntakeForm, type WorkSettings } from "@/lib/work/types";
+import { DEFAULT_WORK_SETTINGS, type ErrorProject, type GithubRepo, type IntakeForm, type WorkMemberSettingsResponse, type WorkSettings } from "@/lib/work/types";
 import { useWorkAction } from "./useWorkAction";
 import { CopyBlock, PriorityIcon, TimeAgo, useRelativeTime, useWorkCopy } from "./WorkBits";
 
-export function WorkSettingsView({ forms, projects, repos, settings = null, canEditSettings = true }: { forms: IntakeForm[]; projects: ErrorProject[]; repos: GithubRepo[]; settings?: WorkSettings | null; canEditSettings?: boolean }) {
+export function WorkSettingsView({ forms, projects, repos, settings = null, canEditSettings = true, mine = null }: { forms: IntakeForm[]; projects: ErrorProject[]; repos: GithubRepo[]; settings?: WorkSettings | null; canEditSettings?: boolean; mine?: WorkMemberSettingsResponse | null }) {
 	const t = useTranslations("Work.settings");
 	return (
 		<div className="space-y-10">
@@ -35,6 +36,7 @@ export function WorkSettingsView({ forms, projects, repos, settings = null, canE
 				<h2 className="text-base font-semibold">{t("title")}</h2>
 				<p className="text-sm text-muted-foreground">{t("description")}</p>
 			</div>
+			{mine ? <MyEmailSection mine={mine} /> : null}
 			<TrackerSection settings={settings ?? DEFAULT_WORK_SETTINGS} canEdit={canEditSettings} />
 			<IntakeFormsSection forms={forms} />
 			<ErrorProjectsSection projects={projects} />
@@ -321,6 +323,30 @@ function GithubReposSection({ repos }: { repos: GithubRepo[] }) {
 				{error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
 				<Button type="submit" size="sm" disabled={busy !== null || !repo.trim()}>{t("link")}</Button>
 			</form>
+		</Section>
+	);
+}
+
+/** The reader's own email digest of their work notifications. Saved as soon as it is switched. */
+function MyEmailSection({ mine }: { mine: WorkMemberSettingsResponse }) {
+	const t = useTranslations("Work.settings.mine");
+	const { perform, busy } = useWorkAction();
+	const [on, setOn] = useState(mine.settings.emailNotifications !== "off");
+	const toggle = async (checked: boolean) => {
+		const previous = on;
+		setOn(checked);
+		const result = await perform("mine", () => saveMyWorkSettings({ emailNotifications: checked ? "digest" : "off" }), { refresh: false });
+		if (!result.ok) setOn(previous);
+	};
+	return (
+		<Section id="work-my-settings" title={t("title")} description={t("description")}>
+			<label className="flex items-start gap-3 text-sm">
+				<Switch className="mt-0.5" disabled={busy === "mine"} checked={on} onCheckedChange={(checked) => void toggle(Boolean(checked))} />
+				<span className="space-y-0.5">
+					<span className="block font-medium">{t("emailDigest")}</span>
+					<span className="block text-xs text-muted-foreground">{mine.emailAvailable ? t("emailDigestHint") : t("emailUnavailable")}</span>
+				</span>
+			</label>
 		</Section>
 	);
 }

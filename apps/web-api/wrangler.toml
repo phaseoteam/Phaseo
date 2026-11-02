@@ -38,9 +38,11 @@ SPEND_RULE_BLOCKS_ENABLED = "false"
 SPEND_REPORTS_ENABLED = "false"
 # Work tracker automation (src/scheduled/work.ts, on the minute cron below). Both off by default:
 # SLA watch warns on items near or past their SLA every 15 minutes; ambient follows up on stalled
-# items hourly, and only in workspaces that turned ambient follow-ups on.
+# items hourly, and only in workspaces that turned ambient follow-ups on. Work email (digests and
+# customer replies) stays off until WORK_EMAIL_ENABLED is "true".
 WORK_SLA_WATCH_ENABLED = "false"
 WORK_AMBIENT_ENABLED = "false"
+WORK_EMAIL_ENABLED = "false"
 # Set by deployment environment; kept out of source configuration.
 # STAGING_GATEWAY_BASE_URL = "https://<staging-gateway>/v1"
 
@@ -84,6 +86,7 @@ SPEND_RULE_BLOCKS_ENABLED = "false"
 SPEND_REPORTS_ENABLED = "false"
 WORK_SLA_WATCH_ENABLED = "false"
 WORK_AMBIENT_ENABLED = "false"
+WORK_EMAIL_ENABLED = "false"
 
 [[env.staging.r2_buckets]]
 binding = "PROFILE_AVATARS_BUCKET"

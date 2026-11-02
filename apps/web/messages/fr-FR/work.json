@@ -36,7 +36,8 @@
 		"noNextCycle": "Créez d’abord le cycle suivant.",
 		"cycleOverlaps": "Ces dates chevauchent un autre cycle.",
 		"relationExists": "Ces éléments sont déjà liés.",
-		"draftChanged": "Ce brouillon a changé ou a déjà été traité. Rechargez la page et relisez-le."
+		"draftChanged": "Ce brouillon a changé ou a déjà été traité. Rechargez la page et relisez-le.",
+		"emailFailed": "L’e-mail n’a pas pu être envoyé. Le brouillon est toujours ouvert, vous pouvez réessayer."
 	},
 	"states": {
 		"triage": "À trier",
@@ -433,6 +434,13 @@
 			"slaInvalid": "Indiquez un nombre entier d’heures de 1 à 2 160 pour chaque priorité.",
 			"stallInvalid": "Indiquez un nombre entier de jours de 1 à 90.",
 			"readOnly": "Seuls les propriétaires et administrateurs de l’espace de travail peuvent modifier ces paramètres."
+		},
+		"mine": {
+			"title": "Vos e-mails",
+			"description": "Uniquement pour vous, dans cet espace de travail.",
+			"emailDigest": "M’envoyer mes notifications par e-mail",
+			"emailDigestHint": "Les notifications non lues arrivent dans un seul e-mail court, au plus toutes les 10 minutes. Ce que vous lisez ici avant n’est pas envoyé.",
+			"emailUnavailable": "Les e-mails de Work ne sont pas encore activés sur Phaseo. Votre choix est conservé pour plus tard."
 		}
 	},
 	"sla": {

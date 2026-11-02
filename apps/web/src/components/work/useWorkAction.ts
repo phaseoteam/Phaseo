@@ -18,6 +18,7 @@ export function useWorkErrorMessage() {
 		if (error.code === "cycle_overlaps") return t("cycleOverlaps");
 		if (error.code === "relation_exists") return t("relationExists");
 		if (error.code === "recipient_mismatch" || error.code === "draft_not_open") return t("draftChanged");
+		if (error.code === "email_failed") return t("emailFailed");
 		if (error.status === 403) return t("forbidden");
 		if (error.status === 400 && !error.message && !error.code) return t("selectWorkspace");
 		return error.message ?? t("actionFailed");

@@ -42,6 +42,10 @@ export type Env = {
 	WORK_SLA_WATCH_ENABLED?: string;
 	/** "true" turns on ambient follow-ups on stalled work items (hourly), for workspaces that enable them too. Default off. */
 	WORK_AMBIENT_ENABLED?: string;
+	/** "true" lets the work tracker send email: notification digests to members and replies a person sends to a customer. Default off. */
+	WORK_EMAIL_ENABLED?: string;
+	/** The address work tracker email is sent from (default noreply@phaseo.app); the display name is the workspace or sender. */
+	WORK_EMAIL_FROM?: string;
 	RESEND_API_KEY?: string;
 	EXPO_ACCESS_TOKEN?: string;
 	FEEDBACK_REWARD_USD?: string;

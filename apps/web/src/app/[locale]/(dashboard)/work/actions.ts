@@ -28,6 +28,7 @@ import type {
 	WorkView,
 	WorkViewFilters,
 	WorkViewLayout,
+	WorkMemberSettingsResponse,
 } from "@/lib/work/types";
 
 export type WorkActionError = { ok: false; status: number | null; code: string | null; message: string | null };
@@ -321,6 +322,10 @@ export async function saveWorkSettings(settings: WorkSettings) {
 
 // Notifications
 
+export async function saveMyWorkSettings(input: { emailNotifications: "off" | "digest" }) {
+	return run(() => send<WorkMemberSettingsResponse>("PATCH", "me/settings", input));
+}
+
 export async function getWorkNotifications(options: { unread?: boolean; limit?: number; cursor?: string } = {}) {
 	const search = new URLSearchParams({ limit: String(Math.min(100, Math.max(1, options.limit ?? 50))) });
 	if (options.unread) search.set("unread", "1");
@@ -345,8 +350,8 @@ export async function discardReplyDraft(draftId: string) {
 
 /**
  * Sends a reviewed draft to the recipient the person confirmed; the API refuses if the request's
- * address has changed since. delivery "manual" means web-api only marked it sent (it has no email
- * sender for arbitrary recipients), so the UI copies the reply and offers a mailto link.
+ * address has changed since. delivery "email" means Phaseo emailed it; "manual" means work email is
+ * off, so web-api only marked it sent and the UI copies the reply and offers a mailto link.
  */
 export async function sendReplyDraft(draftId: string, confirmRecipient: string) {
 	return run(() => send<ReplyDraftSendResponse>("POST", `reply-drafts/${id(draftId)}/send`, { confirmRecipient }));

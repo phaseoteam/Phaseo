@@ -316,6 +316,7 @@
     "public/tables/work_notifications.sql",
     "public/tables/work_reply_drafts.sql",
     "public/tables/work_cycle_days.sql",
+    "public/tables/work_member_settings.sql",
     "private/views/v2_rpc_benchmark_results_compat.sql",
     "private/views/v2_rpc_benchmarks_compat.sql",
     "private/views/v2_rpc_capabilities_compat.sql",
@@ -1888,6 +1889,7 @@
     "public/functions/work_insights.sql",
     "public/functions/work_cycle_estimates.sql",
     "public/tables/work_cycle_days.sql",
-    "public/functions/snapshot_work_cycle_days.sql"
+    "public/functions/snapshot_work_cycle_days.sql",
+    "public/tables/work_member_settings.sql"
   ]
 }

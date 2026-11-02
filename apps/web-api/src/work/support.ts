@@ -10,11 +10,10 @@
 //     POST /reply-drafts/:id/discard     discard an open draft
 //     POST /reply-drafts/:id/send        a person sends it
 //
-// Sending: web-api has no transactional email path for arbitrary recipients (it only manages
-// Resend contacts and events; the gateway's email_outbox renders a fixed list of templates and
-// refuses any other). So "send" here marks the draft sent by that person, writes a reply event on
-// the item and returns the email (to, subject, body and a mailto link) for the web UI to copy or
-// open in the person's own mail client. No new email provider is added.
+// Sending: with work email on (WORK_EMAIL_ENABLED, see ./email.ts) "send" emails the reply from
+// "<workspace> via Phaseo", with replies going to the person who sent it. With it off, "send" marks
+// the draft sent by that person and returns the email (to, subject, body and a mailto link) for the
+// web UI to copy or open in the person's own mail client. Either way it writes a reply event.
 //
 // Privacy: request bodies and contact details are read only to write the draft, through the work
 // agent key (never_store_content). Drafts live in work_reply_drafts and the customer's inbox only:
@@ -35,6 +34,7 @@ import {
 	unavailable,
 	workAccess,
 } from "@/routes/account/work-shared";
+import { sendWorkEmail, textToHtml, workEmailEnabled } from "./email";
 import { addWorkItemEvent, loadWorkItemById, loadWorkItemByNumber, type DataClient } from "./items";
 import { notify, subscriberIds } from "./notifications";
 import { loadWorkSettingsOrDefaults } from "./settings";
@@ -585,8 +585,10 @@ export async function handleDiscardReplyDraft(c: any): Promise<Response> {
  * POST /reply-drafts/:id/send {workspaceId, confirmRecipient?}: a person sends an open draft. The
  * only way a draft is ever sent. With confirmRecipient, it must match the request's contact email
  * (the address the UI's confirmation named). Marks the draft sent (only if it is still open, so a
- * double click sends once), writes a reply event, bumps the item's activity, and returns
- * { draft, delivery: "manual", email: { to, subject, body }, mailto } for the UI to copy or open.
+ * double click sends once), then emails it when work email is on (putting the draft back to open if
+ * the email fails), writes a reply event, bumps the item's activity, and returns
+ * { draft, delivery: "email" } or { draft, delivery: "manual", email: { to, subject, body }, mailto }
+ * for the UI to copy or open.
  */
 export async function handleSendReplyDraft(c: any): Promise<Response> {
 	const body = await readBody(c);
@@ -616,6 +618,28 @@ export async function handleSendReplyDraft(c: any): Promise<Response> {
 	if (error) return unavailable(c);
 	if (!data) return json(c, { error: "draft_not_open", message: "This draft was already sent or discarded" }, 409);
 	const sent = data as DraftJoinRow;
+	const delivery = workEmailEnabled(c.env) ? "email" : "manual";
+	if (delivery === "email") {
+		const workspace = await context.client.from("workspaces").select("name").eq("id", context.workspaceId).maybeSingle();
+		const workspaceName = typeof workspace.data?.name === "string" ? workspace.data.name : null;
+		const result = await sendWorkEmail(c.env, {
+			to,
+			subject: sent.subject,
+			text: sent.body,
+			html: textToHtml(sent.body),
+			fromName: workspaceName ? `${workspaceName} via Phaseo` : "Phaseo",
+			replyTo: isEmailAddress(context.user.email) ? context.user.email : null,
+			idempotencyKey: `work-reply-${sent.id}`,
+		});
+		if (result.ok === false) {
+			console.error("[work] reply email failed", { draftId: sent.id, message: result.message });
+			const reopened = await context.client.from("work_reply_drafts")
+				.update({ status: "draft", sent_to: null, sent_by: null, sent_at: null, updated_at: new Date().toISOString() })
+				.eq("workspace_id", context.workspaceId).eq("id", id).eq("status", "sent");
+			if (reopened.error) console.error("[work] reply draft not reopened", { draftId: sent.id, message: reopened.error.message });
+			return json(c, { error: "email_failed", message: "The email couldn't be sent. The draft is still open; try again." }, 502);
+		}
+	}
 	try {
 		await addWorkItemEvent(context.client, {
 			workspaceId: context.workspaceId,
@@ -624,7 +648,7 @@ export async function handleSendReplyDraft(c: any): Promise<Response> {
 			authorKind: "user",
 			authorUserId: context.user.id,
 			body: "Reply sent to a customer",
-			data: { draftId: sent.id, requestId: sent.request_id, delivery: "manual" },
+			data: { draftId: sent.id, requestId: sent.request_id, delivery },
 		});
 	} catch (eventError) {
 		console.error("[work] reply event not written", { draftId: sent.id, message: eventError instanceof Error ? eventError.message : String(eventError) });
@@ -632,6 +656,7 @@ export async function handleSendReplyDraft(c: any): Promise<Response> {
 	const { error: activityError } = await context.client.from("work_items").update({ last_activity_at: now })
 		.eq("workspace_id", context.workspaceId).eq("id", sent.work_item_id);
 	if (activityError) console.error("[work] activity not bumped", { itemId: sent.work_item_id, message: activityError.message });
+	if (delivery === "email") return json(c, { draft: formatReplyDraft(sent), delivery });
 	return json(c, {
 		draft: formatReplyDraft(sent),
 		delivery: "manual",

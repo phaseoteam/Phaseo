@@ -781,6 +781,7 @@ CREATE TABLE "public"."work_notifications" (
   "actor_name"   text,
   "body"         text                     NOT NULL DEFAULT ''::text,
   "read_at"      timestamp with time zone,
+  "emailed_at"   timestamp with time zone,
   "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "work_notifications_body_length_check" CHECK ((char_length(body) <= 2000)),
   CONSTRAINT "work_notifications_kind_check" CHECK ((kind = ANY (ARRAY['assigned'::text, 'comment'::text, 'mention'::text, 'state'::text, 'sla'::text, 'stalled'::text, 'error_spike'::text, 'agent'::text, 'reply_draft'::text]))),
@@ -795,6 +796,9 @@ ALTER TABLE "public"."work_notifications"
 
 CREATE INDEX work_notifications_user_unread_idx ON public.work_notifications USING btree (user_id, workspace_id, created_at DESC)
   WHERE (read_at IS NULL);
+
+CREATE INDEX work_notifications_email_due_idx ON public.work_notifications USING btree (created_at)
+  WHERE ((read_at IS NULL) AND (emailed_at IS NULL));
 
 CREATE INDEX work_notifications_user_created_idx ON public.work_notifications USING btree (user_id, workspace_id, created_at DESC);
 
@@ -901,6 +905,35 @@ REVOKE ALL ON TABLE "public"."work_cycle_days" FROM "service_role";
 GRANT SELECT ON TABLE "public"."work_cycle_days" TO "service_role";
 
 REVOKE ALL ON TABLE "public"."work_cycle_days" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_member_settings" (
+  "workspace_id"        uuid                     NOT NULL,
+  "user_id"             uuid                     NOT NULL,
+  "email_notifications" text                     NOT NULL DEFAULT 'digest'::text,
+  "updated_at"          timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_member_settings_email_notifications_check" CHECK ((email_notifications = ANY (ARRAY['off'::text, 'digest'::text]))),
+  CONSTRAINT "work_member_settings_pkey" PRIMARY KEY (workspace_id, user_id),
+  CONSTRAINT "work_member_settings_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT "work_member_settings_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_member_settings"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_member_settings"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_member_settings" IS 'A member''s own work tracker settings in a workspace. A missing row means the defaults (email_notifications = digest).';
+
+REVOKE ALL ON TABLE "public"."work_member_settings" FROM "service_role";
+
+GRANT INSERT, SELECT, UPDATE ON TABLE "public"."work_member_settings" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_member_settings" FROM "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.create_work_item (
   p_workspace_id uuid,
