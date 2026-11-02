@@ -1,10 +1,10 @@
 import { FolderGit2, GripVertical } from "lucide-react";
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { TRUSTED_BOTS, parseBots } from "../../../shared/factory/activity";
+import { TRUSTED_BOTS, parseBots, stallLimits } from "../../../shared/factory/activity";
 import type { FactorySettings, FactorySnapshot, RepoStatus } from "../../../shared/factory/types";
 import { AddRepo, errorText, useLocalClones } from "../components/AddRepo";
 import { PersonMark } from "../components/Marks";
-import { Choice, Field, Group, Row, SettingsPage } from "../components/Settings";
+import { Choice, Field, Group, Row, SettingsPage, Toggle } from "../components/Settings";
 import { Button } from "../../components/ui/button";
 import { since } from "../lib/format";
 import { factory, useNow } from "../lib/useFactory";
@@ -141,6 +141,7 @@ function OrderedRepos({ snapshot }: { snapshot: FactorySnapshot }) {
 /** The GitHub CLI Factory reads and writes through, and how often it checks for new work. */
 export function CheckingSettings({ snapshot }: { snapshot: FactorySnapshot }) {
 	const update = (patch: Partial<FactorySettings>) => void factory().updateSettings(patch);
+	const limits = stallLimits(snapshot.settings);
 	return <SettingsPage title="Checking for new work" description="Factory reads issues and pull requests, opens pull requests and posts proof through the GitHub CLI you're signed in to.">
 		<Group title="GitHub CLI">
 			<Row
@@ -162,10 +163,19 @@ export function CheckingSettings({ snapshot }: { snapshot: FactorySnapshot }) {
 				<Choice label="How often to check" value={snapshot.settings.pollMinutes} options={[1, 2, 5, 15, 30].map((minutes) => ({ value: minutes, label: minutes === 1 ? "Every minute" : `Every ${minutes} minutes` }))} onChange={(pollMinutes) => update({ pollMinutes })} />
 			</Row>
 		</Group>
-		<Group title="While a stage runs" description="New comments, reviews and failed checks on an item reach its agent as it works, so it doesn't finish on code someone already found a problem with. Only people who can push to the repository, and the bots below, are passed on; anyone else's comments are held back and noted in the run's log.">
-			<Row title="Review bots" description="Bots whose comments and reviews go to agents. Separate them with commas. Clear it to pass on no bots.">
-				<Field value={(snapshot.settings.trustedBots ?? TRUSTED_BOTS).join(", ")} placeholder="No bots" mono className="w-80" onSave={(text) => update({ trustedBots: parseBots(text) })} />
+		<Group title="While a stage runs">
+			<Row title="Pass on GitHub activity" description="New comments, reviews and failed checks on an item reach its agent as it works, so it doesn't finish on code someone already found a problem with. Only people who can push to the repository, and the bots below, are passed on; anyone else's comments are held back and noted in the run's log.">
+				<Toggle label="Pass on GitHub activity" on={snapshot.settings.passOnActivity !== false} onChange={(passOnActivity) => update({ passOnActivity })} />
 			</Row>
+			{snapshot.settings.passOnActivity !== false && <Row title="Review bots" description="Bots whose comments and reviews go to agents. Separate them with commas. Clear it to pass on no bots.">
+				<Field value={(snapshot.settings.trustedBots ?? TRUSTED_BOTS).join(", ")} placeholder="No bots" mono className="w-80" onSave={(text) => update({ trustedBots: parseBots(text) })} />
+			</Row>}
+			<Row title="Nudge a quiet run" description="A run that shows nothing for this long is usually waiting on something that never ends, like a watch mode or a dev server. Factory tells the agent to stop it and carry on.">
+				<Choice label="Nudge a quiet run" value={limits.after} options={[0, 10, 20, 30, 60].map((minutes) => ({ value: minutes, label: minutes ? `After ${minutes} minutes` : "Never" }))} onChange={(stallMinutes) => update({ stallMinutes })} />
+			</Row>
+			{limits.after > 0 && <Row title="Stop it if still quiet" description="If nothing happens after the nudge either, the run stops and the stage waits for you, with the last thing the agent did.">
+				<Choice label="Stop it if still quiet" value={limits.grace} options={[5, 10, 15, 30, 60].map((minutes) => ({ value: minutes, label: `${minutes} minutes later` }))} onChange={(stallGraceMinutes) => update({ stallGraceMinutes })} />
+			</Row>}
 		</Group>
 	</SettingsPage>;
 }

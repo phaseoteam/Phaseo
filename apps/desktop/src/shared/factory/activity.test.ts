@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STALL_AFTER, STALL_GRACE, activityMessage, checksActivity, heldBackLine, lastProgress, parseBots, sortActivity, stallAction, stallSummary, trustedActivity, type GithubActivity } from "./activity";
+import { STALL_AFTER, STALL_GRACE, activityMessage, checksActivity, heldBackLine, lastProgress, parseBots, sortActivity, stallAction, stallLimits, stallNudge, stallNudgeLine, stallSummary, trustedActivity, type GithubActivity } from "./activity";
 import type { LogLine } from "./types";
 
 const entry = (patch: Partial<GithubActivity>): GithubActivity => ({ id: "comment:1", kind: "comment", author: "maria", association: "MEMBER", body: "Round half up, not down.", at: 1_000, ...patch });
@@ -81,6 +81,17 @@ describe("stalled runs", () => {
 		// It moved again after being told: the clock starts over.
 		expect(stallAction({ startedAt: start, log, nudgedAt }, nudgedAt + STALL_GRACE, nudgedAt + 60_000)).toBeUndefined();
 		expect(stallAction({ startedAt: start, log, nudgedAt }, nudgedAt + 60_000 + STALL_AFTER, nudgedAt + 60_000)).toBe("nudge");
+	});
+
+	it("uses the timings from Settings, and never acts when they're off", () => {
+		const log = [line(start)];
+		expect(stallLimits({})).toEqual({ after: 30, grace: 15 });
+		const limits = stallLimits({ stallMinutes: 10, stallGraceMinutes: 5 });
+		expect(stallAction({ startedAt: start, log }, start + 10 * 60_000, 0, limits)).toBe("nudge");
+		expect(stallAction({ startedAt: start, log, nudgedAt: start + 10 * 60_000 }, start + 15 * 60_000, 0, limits)).toBe("stop");
+		expect(stallAction({ startedAt: start, log }, start + 600 * 60_000, 0, stallLimits({ stallMinutes: 0 }))).toBeUndefined();
+		expect(stallNudge(10)).toContain("nothing has happened in this run for 10 minutes.");
+		expect(stallNudgeLine(1)).toBe("Nothing happened for a minute, so Factory told the agent to stop anything that won't finish on its own");
 	});
 
 	it("says how long it was quiet and what it did last", () => {

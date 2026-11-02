@@ -38,7 +38,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 		{ id: "factory-issues", label: "Issue playbook", icon: <CircleDot />, keywords: "factory issues proof pull request reporter ask agents rules models stages prompts instructions triage reproduce fix" },
 		{ id: "factory-pulls", label: "Pull request playbook", icon: <GitPullRequest />, keywords: "factory pull requests review independent findings agents rules models stages prompts instructions verify" },
 		{ id: "factory-notes", label: "Notes", icon: <NotebookPen />, keywords: "factory notes memory remember learnt agents repository tests setup" },
-		{ id: "factory-checking", label: "Checking for new work", icon: <RefreshCw />, keywords: "factory github gh cli images poll schedule check new work api requests" },
+		{ id: "factory-checking", label: "Checking for new work", icon: <RefreshCw />, keywords: "factory github gh cli images poll schedule check new work api requests comments reviews bots stall stalled nudge quiet running stage" },
 	] },
 	// Listed after the projects, at the bottom, like T3's.
 	{ label: "Advanced", pages: [

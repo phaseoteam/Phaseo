@@ -390,6 +390,12 @@ export interface FactorySettings {
 	agentEfforts: Record<string, string>;
 	/** Bots whose comments and reviews go to running stages, like people who can push. Unset uses TRUSTED_BOTS. */
 	trustedBots?: string[];
+	/** Whether new GitHub comments, reviews and failed checks go to running stages. Unset is on. */
+	passOnActivity?: boolean;
+	/** Minutes of nothing before Factory tells the agent; 0 turns stall checks off. Unset is 30. */
+	stallMinutes?: number;
+	/** Minutes after that before the run is stopped for a person. Unset is 15. */
+	stallGraceMinutes?: number;
 }
 
 export interface FactorySnapshot {

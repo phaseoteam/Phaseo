@@ -105,10 +105,28 @@ export const STALL_AFTER = 30 * 60_000;
 /** How long the agent has, after being told, to show it's moving again. */
 export const STALL_GRACE = 15 * 60_000;
 
-/** The quiet spell before the nudge, as said in the nudge and the run's log. */
-export const STALL_WAIT = `${Math.round(STALL_AFTER / 60_000)} minutes`;
+/** The stall timings in Settings, in minutes. A wait of 0 turns stall checks off. */
+export interface StallLimits {
+	after: number;
+	grace: number;
+}
 
-export const STALL_NUDGE = `Phaseo Factory: nothing has happened in this run for ${STALL_WAIT}. If you're waiting on a command that won't finish on its own (a watch mode, a dev server, a prompt for input), stop it and carry on without it. If you're still making progress, say so in one line and keep going.`;
+/** The timings Settings chose, or the defaults above. */
+export function stallLimits(settings: { stallMinutes?: number; stallGraceMinutes?: number }): StallLimits {
+	return { after: settings.stallMinutes ?? STALL_AFTER / 60_000, grace: settings.stallGraceMinutes ?? STALL_GRACE / 60_000 };
+}
+
+const minutesText = (minutes: number) => (minutes === 1 ? "a minute" : `${minutes} minutes`);
+
+/** What Factory tells an agent that has been quiet for `minutes`. */
+export function stallNudge(minutes: number): string {
+	return `Phaseo Factory: nothing has happened in this run for ${minutesText(minutes)}. If you're waiting on a command that won't finish on its own (a watch mode, a dev server, a prompt for input), stop it and carry on without it. If you're still making progress, say so in one line and keep going.`;
+}
+
+/** Said in the run's log when the agent is told. */
+export function stallNudgeLine(minutes: number): string {
+	return `Nothing happened for ${minutesText(minutes)}, so Factory told the agent to stop anything that won't finish on its own`;
+}
 
 /** Factory's own lines and messages from people aren't the agent doing anything. */
 const progressLine = (line: LogLine) => line.kind !== "info" && line.kind !== "you";
@@ -122,11 +140,12 @@ export function lastProgress(run: Pick<Run, "startedAt" | "log">, movedAt = 0): 
 }
 
 /** What to do about a run that may have stalled: tell the agent, stop it, or nothing yet. */
-export function stallAction(run: Pick<Run, "startedAt" | "log" | "nudgedAt">, now: number, movedAt = 0): "nudge" | "stop" | undefined {
+export function stallAction(run: Pick<Run, "startedAt" | "log" | "nudgedAt">, now: number, movedAt = 0, limits: StallLimits = { after: STALL_AFTER / 60_000, grace: STALL_GRACE / 60_000 }): "nudge" | "stop" | undefined {
+	if (limits.after <= 0) return undefined;
 	const progress = lastProgress(run, movedAt);
 	// Told already, and nothing since: past the grace period it stops.
-	if (run.nudgedAt && run.nudgedAt >= progress) return now - run.nudgedAt >= STALL_GRACE ? "stop" : undefined;
-	return now - progress >= STALL_AFTER ? "nudge" : undefined;
+	if (run.nudgedAt && run.nudgedAt >= progress) return now - run.nudgedAt >= limits.grace * 60_000 ? "stop" : undefined;
+	return now - progress >= limits.after * 60_000 ? "nudge" : undefined;
 }
 
 /** Why a stalled run was stopped, with the last thing it did. */

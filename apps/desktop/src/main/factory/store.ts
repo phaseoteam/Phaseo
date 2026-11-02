@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { STALL_NUDGE, STALL_WAIT, TRUSTED_BOTS, activityMessage, checksActivity, heldBackLine, sortActivity, stallAction, stallSummary, type GithubActivity } from "../../shared/factory/activity";
+import { TRUSTED_BOTS, activityMessage, checksActivity, heldBackLine, sortActivity, stallAction, stallLimits, stallNudge, stallNudgeLine, stallSummary, type GithubActivity } from "../../shared/factory/activity";
 import { autopilotFits, lastRun, linkedItem, pullsFor, stageAgent, withItemEffort } from "../../shared/factory/actions";
 import { INPUTS_FOLDER, attachRef, attachable, attachmentKey, attachmentsFor, imageProblem, isAttachmentName, supportsAttach } from "../../shared/factory/attachments";
 import { DEMO_AGENTS, DEMO_SETTINGS, demoAttachment, demoItems, demoNotes, demoProof, demoRepos, demoRuns } from "../../shared/factory/demo";
@@ -1339,7 +1339,7 @@ export class FactoryStore {
 	 * goes to the agent. GitHub is only asked when one of them changed since the last read.
 	 */
 	private async passOnActivity(): Promise<void> {
-		if (this.demo) return;
+		if (this.demo || this.snapshot.settings.passOnActivity === false) return;
 		await Promise.all(this.snapshot.runs.map(async (run) => {
 			if (run.status !== "running" || !this.sessions.has(run.id) || this.hearing.has(run.id)) return;
 			const item = this.snapshot.items.find((candidate) => candidate.id === run.itemId);
@@ -1364,6 +1364,7 @@ export class FactoryStore {
 	/** A pull request's checks just failed: the agent working on it, or on the issue it fixes, hears why. */
 	private async passOnChecks(pullId: string, failed: { name: string; link?: string }[]): Promise<void> {
 		const pull = this.snapshot.items.find((candidate) => candidate.id === pullId);
+		if (this.snapshot.settings.passOnActivity === false) return;
 		const run = this.snapshot.runs.find((candidate) => {
 			if (candidate.status !== "running" || !this.sessions.has(candidate.id)) return false;
 			const item = this.snapshot.items.find((entry) => entry.id === candidate.itemId);
@@ -1399,11 +1400,12 @@ export class FactoryStore {
 			const session = this.sessions.get(run.id);
 			if (run.status !== "running" || !session || this.stalled.has(run.id)) continue;
 			const movedAt = this.movedAt.get(run.id);
-			const action = stallAction(run, now, movedAt);
+			const limits = stallLimits(this.snapshot.settings);
+			const action = stallAction(run, now, movedAt, limits);
 			if (action === "nudge") {
 				this.patchRun(run.id, (current) => ({ ...current, nudgedAt: now }));
-				this.log(run.id, { at: now, kind: "info", text: `Nothing happened for ${STALL_WAIT}, so Factory told the agent to stop anything that won't finish on its own` });
-				session.send(STALL_NUDGE);
+				this.log(run.id, { at: now, kind: "info", text: stallNudgeLine(limits.after) });
+				session.send(stallNudge(limits.after));
 			} else if (action === "stop") {
 				const why = stallSummary(run, now, movedAt);
 				this.stalled.set(run.id, why);
