@@ -6754,17 +6754,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "Workloads confiáveis",
-		"description": "Permita que deployments da Vercel e jobs do GitHub Actions chamem a API com um token OIDC de curta duração em vez de uma chave de API.",
+		"description": "Permita que deployments, jobs de CI e workloads na nuvem chamem a API com um token OIDC de curta duração em vez de uma chave de API.",
 		"feedback": "Como os workloads confiáveis poderiam funcionar melhor para você?",
 		"selectWorkspace": "Selecione um espaço de trabalho para gerenciar workloads confiáveis.",
 		"unavailable": "Workloads confiáveis ainda não estão disponíveis para este espaço de trabalho.",
 		"adminsOnly": "Somente proprietários e administradores do espaço de trabalho podem ver e alterar workloads confiáveis.",
-		"howItWorks": "A Vercel e o GitHub Actions dão a cada deployment ou job um token assinado que informa quem ele é e expira em poucas horas. Quando um token corresponde a uma destas políticas, a requisição usa a chave dessa política, com os mesmos limites, orçamentos, logs e cobrança de uma chave de API. Nenhum segredo precisa ser armazenado.",
+		"howItWorks": "Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI e AWS podem dar a cada deployment, job ou workload um token assinado que informa quem ele é e expira em poucas horas, assim como um emissor OIDC que você mesmo opera, como um cluster Kubernetes. Quando um token corresponde a uma destas políticas, a requisição usa a chave dessa política, com os mesmos limites, orçamentos, logs e cobrança de uma chave de API. Nenhum segredo precisa ser armazenado.",
 		"policiesTitle": "Políticas de confiança",
 		"propagation": "As alterações entram em vigor em cerca de um minuto.",
 		"newPolicy": "Nova política",
 		"emptyTitle": "Nenhum workload confiável ainda",
-		"emptyBody": "Adicione uma política para um projeto da Vercel ou um repositório do GitHub para que ele possa chamar a API sem uma chave de API.",
+		"emptyBody": "Adicione uma política para um projeto, repositório, pipeline, conta de serviço ou função para que ele possa chamar a API sem uma chave de API.",
 		"noConditions": "Nenhuma",
 		"disabled": "Desativada",
 		"enabledLabel": "Aceitar tokens para {name}",
@@ -6789,15 +6789,28 @@
 		"audienceLabel": "Público (audience)",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "Emissor OIDC personalizado"
 		},
 		"ownerLabel": {
 			"vercel": "ID da equipe",
-			"github_actions": "ID do proprietário"
+			"github_actions": "ID do proprietário",
+			"gitlab": "ID do projeto",
+			"google_cloud": "ID da conta de serviço",
+			"buildkite": "ID da organização",
+			"circleci": "ID da organização",
+			"aws": "ARN da função"
 		},
 		"ownerWide": {
 			"vercel": "Confia em todos os projetos desta equipe da Vercel. Adicione um ID de projeto para restringir.",
-			"github_actions": "Confia em todos os repositórios deste proprietário. Adicione um ID de repositório para restringir."
+			"github_actions": "Confia em todos os repositórios deste proprietário. Adicione um ID de repositório para restringir.",
+			"buildkite": "Confia em todos os pipelines desta organização do Buildkite. Adicione o slug de um pipeline para restringir.",
+			"circleci": "Confia em todos os projetos desta organização do CircleCI. Adicione um ID de projeto para restringir."
 		},
 		"environments": {
 			"production": "Produção",
@@ -6820,7 +6833,36 @@
 			"githubIdsHint": "Use os IDs numéricos, que não mudam se o proprietário ou o repositório for renomeado. O ID do repositório é opcional, mas sem ele todos os repositórios do proprietário são confiáveis.",
 			"githubRef": "Branch ou tag (opcional)",
 			"lifetime": "Token mais longo aceito (horas)",
-			"lifetimeHint": "Tokens emitidos para durar mais que isso são recusados. Até {max} horas."
+			"lifetimeHint": "Tokens emitidos para durar mais que isso são recusados. Até {max} horas.",
+			"environmentOptional": "Ambiente (opcional)",
+			"gitlabProjectId": "ID do projeto",
+			"gitlabProjectHint": "O ID numérico na página de visão geral do projeto no GitLab.com. Ele não muda se o projeto for renomeado ou movido. Para GitLab autogerenciado, escolha Emissor OIDC personalizado.",
+			"gitlabRef": "Branch ou tag (opcional)",
+			"gitlabConditionsHint": "Use o nome da branch ou tag, como main. Deixe ambos vazios para aceitar qualquer job do projeto.",
+			"googleServiceAccountId": "ID exclusivo da conta de serviço",
+			"googleServiceAccountHint": "O ID exclusivo numérico na página de detalhes da conta de serviço no console do Google Cloud. Use-o em vez do e-mail, que pode ser reutilizado se a conta for excluída.",
+			"googleServiceAccountEmail": "E-mail da conta de serviço (opcional)",
+			"googleEmailHint": "Os tokens só incluem o e-mail quando o workload os solicita com format=full.",
+			"buildkiteOrganizationId": "ID da organização",
+			"buildkiteOrganizationHint": "O UUID da organização, que todo token do Buildkite traz na claim organization_id.",
+			"buildkitePipelineSlug": "Slug do pipeline (opcional)",
+			"buildkitePipelineHint": "Sem ele, todos os pipelines da organização são confiáveis.",
+			"circleciOrganizationId": "ID da organização",
+			"circleciOrganizationHint": "Encontre-o no CircleCI em Organization Settings → Overview.",
+			"circleciProjectId": "ID do projeto (opcional)",
+			"circleciProjectHint": "Encontre-o em Project Settings → Overview. Sem ele, todos os projetos da organização são confiáveis.",
+			"awsIssuer": "URL do emissor",
+			"awsIssuerHint": "Cada conta da AWS tem seu próprio emissor. Execute aws iam get-outbound-web-identity-federation-info e copie IssuerIdentifier.",
+			"awsRoleArn": "ARN da função do IAM",
+			"awsRoleHint": "Só são aceitos tokens desta função.",
+			"customIssuer": "URL do emissor",
+			"customIssuerHint": "Uma URL https pública que sirva /.well-known/openid-configuration, com as chaves de assinatura no mesmo host.",
+			"customOwnerClaim": "Claim do proprietário",
+			"customOwnerId": "Valor do proprietário",
+			"customOwnerHint": "Todo token precisa trazer esta claim com exatamente este valor, como sub para uma conta de serviço do Kubernetes. Escolha uma claim que ninguém mais possa reutilizar.",
+			"customConditionClaim": "Claim extra (opcional)",
+			"customConditionValue": "Valor obrigatório",
+			"customConditionHint": "Os tokens também precisam trazer esta claim com exatamente este valor."
 		},
 		"problems": {
 			"name": "Digite um nome com até 100 caracteres.",
@@ -6829,7 +6871,19 @@
 			"vercelProjectId": "IDs de projeto começam com prj_.",
 			"githubOwnerId": "Digite o ID numérico do proprietário.",
 			"githubRepositoryId": "Digite o ID numérico do repositório.",
-			"lifetime": "Digite um número inteiro de horas entre 1 e 12."
+			"lifetime": "Digite um número inteiro de horas entre 1 e 12.",
+			"gitlabProjectId": "Digite o ID numérico do projeto.",
+			"googleServiceAccountId": "Digite o ID exclusivo numérico da conta de serviço.",
+			"googleServiceAccountEmail": "Digite um endereço de e-mail, como app@project.iam.gserviceaccount.com.",
+			"buildkiteOrganizationId": "Digite o UUID da organização.",
+			"circleciOrganizationId": "Digite o ID da organização, que é um UUID.",
+			"circleciProjectId": "Digite o ID do projeto, que é um UUID.",
+			"awsIssuer": "Digite o emissor da AWS. Ele termina em .tokens.sts.global.api.aws.",
+			"awsRoleArn": "Digite um ARN de função, como arn:aws:iam::123456789012:role/evals.",
+			"customIssuer": "Digite uma URL https pública sem porta, consulta ou fragmento.",
+			"customOwnerClaim": "Digite o nome de uma claim, como sub. iss, aud, exp, iat, nbf e jti não podem ser usadas.",
+			"customOwnerId": "Digite o valor que a claim do proprietário precisa ter.",
+			"customCondition": "Digite uma claim e um valor, ou deixe ambos vazios. A claim precisa ser diferente da claim do proprietário."
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6842,7 +6896,10 @@
 			"deleted": "Política excluída",
 			"enabled": "Política ativada",
 			"disabled": "Política desativada"
-		}
+		},
+		"listPipeline": "Pipeline",
+		"listEmail": "E-mail da conta de serviço",
+		"usageCustomHint": "Qualquer emissor OIDC com descoberta pública funciona. Este exemplo dá a um pod do Kubernetes um token de conta de serviço para o público."
 	},
 	"budgets": {
 		"title": "Orçamentos",

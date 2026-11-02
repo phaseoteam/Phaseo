@@ -6754,17 +6754,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "受信任的工作负载",
-		"description": "让 Vercel 部署和 GitHub Actions 作业使用短期 OIDC 令牌而不是 API 密钥调用 API。",
+		"description": "让部署、CI 作业和云端工作负载使用短期 OIDC 令牌而不是 API 密钥调用 API。",
 		"feedback": "受信任的工作负载怎样才能更好地为你所用？",
 		"selectWorkspace": "请选择一个工作区来管理受信任的工作负载。",
 		"unavailable": "此工作区暂时无法使用受信任的工作负载。",
 		"adminsOnly": "只有工作区所有者和管理员可以查看和更改受信任的工作负载。",
-		"howItWorks": "Vercel 和 GitHub Actions 会为每个部署或作业签发一个已签名的令牌，说明其身份，并在数小时内过期。令牌与其中一条策略匹配时，请求会以该策略的密钥运行，限额、预算、日志和计费都与 API 密钥相同。无需保存任何密钥。",
+		"howItWorks": "Vercel、GitHub Actions、GitLab、Google Cloud、Buildkite、CircleCI 和 AWS 可以为每个部署、作业或工作负载签发一个已签名的令牌，说明其身份，并在数小时内过期；你自己运行的 OIDC 签发方（例如 Kubernetes 集群）也可以。令牌与其中一条策略匹配时，请求会以该策略的密钥运行，限额、预算、日志和计费都与 API 密钥相同。无需保存任何密钥。",
 		"policiesTitle": "信任策略",
 		"propagation": "更改大约在一分钟内生效。",
 		"newPolicy": "新建策略",
 		"emptyTitle": "还没有受信任的工作负载",
-		"emptyBody": "为 Vercel 项目或 GitHub 仓库添加策略后，它就能在没有 API 密钥的情况下调用 API。",
+		"emptyBody": "为项目、仓库、流水线、服务账号或角色添加策略后，它就能在没有 API 密钥的情况下调用 API。",
 		"noConditions": "无",
 		"disabled": "已关闭",
 		"enabledLabel": "接受 {name} 的令牌",
@@ -6789,15 +6789,28 @@
 		"audienceLabel": "受众",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "自定义 OIDC 签发方"
 		},
 		"ownerLabel": {
 			"vercel": "团队 ID",
-			"github_actions": "所有者 ID"
+			"github_actions": "所有者 ID",
+			"gitlab": "项目 ID",
+			"google_cloud": "服务账号 ID",
+			"buildkite": "组织 ID",
+			"circleci": "组织 ID",
+			"aws": "角色 ARN"
 		},
 		"ownerWide": {
 			"vercel": "信任此 Vercel 团队中的所有项目。添加项目 ID 可缩小范围。",
-			"github_actions": "信任此所有者的所有仓库。添加仓库 ID 可缩小范围。"
+			"github_actions": "信任此所有者的所有仓库。添加仓库 ID 可缩小范围。",
+			"buildkite": "信任此 Buildkite 组织中的所有流水线。添加流水线 slug 可缩小范围。",
+			"circleci": "信任此 CircleCI 组织中的所有项目。添加项目 ID 可缩小范围。"
 		},
 		"environments": {
 			"production": "生产",
@@ -6820,7 +6833,36 @@
 			"githubIdsHint": "请使用数字 ID，所有者或仓库改名后它们也不会变。仓库 ID 为可选项，但不填写时会信任该所有者的所有仓库。",
 			"githubRef": "分支或标签（可选）",
 			"lifetime": "可接受的最长令牌（小时）",
-			"lifetimeHint": "签发时有效期超过此值的令牌会被拒绝。最多 {max} 小时。"
+			"lifetimeHint": "签发时有效期超过此值的令牌会被拒绝。最多 {max} 小时。",
+			"environmentOptional": "环境（可选）",
+			"gitlabProjectId": "项目 ID",
+			"gitlabProjectHint": "GitLab.com 上项目概览页中的数字 ID。项目改名或移动后它也不会变。自管理 GitLab 请选择“自定义 OIDC 签发方”。",
+			"gitlabRef": "分支或标签（可选）",
+			"gitlabConditionsHint": "请使用分支或标签名称，例如 main。两项都留空则接受项目中的所有作业。",
+			"googleServiceAccountId": "服务账号唯一 ID",
+			"googleServiceAccountHint": "Google Cloud 控制台中服务账号详情页上的数字唯一 ID。请使用它而不是邮箱，因为账号删除后邮箱可能被重新使用。",
+			"googleServiceAccountEmail": "服务账号邮箱（可选）",
+			"googleEmailHint": "只有工作负载使用 format=full 请求令牌时，令牌中才会包含邮箱。",
+			"buildkiteOrganizationId": "组织 ID",
+			"buildkiteOrganizationHint": "组织的 UUID，每个 Buildkite 令牌都会在 organization_id 声明中携带它。",
+			"buildkitePipelineSlug": "流水线 slug（可选）",
+			"buildkitePipelineHint": "不填写时会信任组织中的所有流水线。",
+			"circleciOrganizationId": "组织 ID",
+			"circleciOrganizationHint": "可在 CircleCI 的 Organization Settings → Overview 中找到。",
+			"circleciProjectId": "项目 ID（可选）",
+			"circleciProjectHint": "可在 Project Settings → Overview 中找到。不填写时会信任组织中的所有项目。",
+			"awsIssuer": "签发方 URL",
+			"awsIssuerHint": "每个 AWS 账号都有自己的签发方。运行 aws iam get-outbound-web-identity-federation-info 并复制 IssuerIdentifier。",
+			"awsRoleArn": "IAM 角色 ARN",
+			"awsRoleHint": "只接受此角色的令牌。",
+			"customIssuer": "签发方 URL",
+			"customIssuerHint": "一个公开的 https URL，需提供 /.well-known/openid-configuration，且签名密钥位于同一主机。",
+			"customOwnerClaim": "所有者声明",
+			"customOwnerId": "所有者值",
+			"customOwnerHint": "每个令牌都必须携带此声明且值完全一致，例如 Kubernetes 服务账号的 sub。请选择其他人无法重复使用的声明。",
+			"customConditionClaim": "额外声明（可选）",
+			"customConditionValue": "要求的值",
+			"customConditionHint": "令牌还必须携带此声明且值完全一致。"
 		},
 		"problems": {
 			"name": "请输入不超过 100 个字符的名称。",
@@ -6829,7 +6871,19 @@
 			"vercelProjectId": "项目 ID 以 prj_ 开头。",
 			"githubOwnerId": "请输入所有者的数字 ID。",
 			"githubRepositoryId": "请输入仓库的数字 ID。",
-			"lifetime": "请输入 1 到 12 之间的整数小时数。"
+			"lifetime": "请输入 1 到 12 之间的整数小时数。",
+			"gitlabProjectId": "请输入项目的数字 ID。",
+			"googleServiceAccountId": "请输入服务账号的数字唯一 ID。",
+			"googleServiceAccountEmail": "请输入邮箱地址，例如 app@project.iam.gserviceaccount.com。",
+			"buildkiteOrganizationId": "请输入组织的 UUID。",
+			"circleciOrganizationId": "请输入组织 ID（UUID 格式）。",
+			"circleciProjectId": "请输入项目 ID（UUID 格式）。",
+			"awsIssuer": "请输入 AWS 提供的签发方，它以 .tokens.sts.global.api.aws 结尾。",
+			"awsRoleArn": "请输入角色 ARN，例如 arn:aws:iam::123456789012:role/evals。",
+			"customIssuer": "请输入不含端口、查询或片段的公开 https URL。",
+			"customOwnerClaim": "请输入声明名称，例如 sub。不能使用 iss、aud、exp、iat、nbf 和 jti。",
+			"customOwnerId": "请输入所有者声明必须具有的值。",
+			"customCondition": "请同时填写声明和值，或两者都留空。该声明必须不同于所有者声明。"
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6842,7 +6896,10 @@
 			"deleted": "策略已删除",
 			"enabled": "策略已开启",
 			"disabled": "策略已关闭"
-		}
+		},
+		"listPipeline": "流水线",
+		"listEmail": "服务账号邮箱",
+		"usageCustomHint": "任何支持公开发现的 OIDC 签发方都可以使用。此示例为 Kubernetes Pod 提供面向该受众的服务账号令牌。"
 	},
 	"budgets": {
 		"title": "预算",

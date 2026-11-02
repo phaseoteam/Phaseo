@@ -4095,6 +4095,7 @@ public final class Models {
 		public String last_used_at;
 		public Integer max_token_lifetime_seconds;
 		public String name;
+		public String owner_claim;
 		public String owner_id;
 		public Object provider;
 		public Object status;
@@ -4110,6 +4111,7 @@ public final class Models {
 		public String issuer;
 		public Integer max_token_lifetime_seconds;
 		public String name;
+		public String owner_claim;
 		public String owner_id;
 		public Object provider;
 	}

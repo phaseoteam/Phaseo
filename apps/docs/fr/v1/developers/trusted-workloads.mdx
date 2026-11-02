@@ -1,6 +1,6 @@
 ---
 title: "Workloads de confiance"
-description: "Permettez aux déploiements Vercel et aux jobs GitHub Actions d'appeler Phaseo avec un jeton OIDC de courte durée au lieu d'une clé API."
+description: "Permettez aux déploiements, jobs de CI et workloads cloud sur Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS ou votre propre émetteur OIDC d'appeler Phaseo sans clé API."
 icon: "fingerprint-pattern"
 ---
 
@@ -8,22 +8,24 @@ icon: "fingerprint-pattern"
 Les workloads de confiance sont en bêta et sont déployés progressivement dans les espaces de travail. Si **Paramètres → Clés API → Workloads de confiance** n'apparaît pas dans votre tableau de bord, votre espace de travail n'y a pas encore accès.
 </Note>
 
-Vercel et GitHub Actions donnent à chaque déploiement ou job un jeton signé qui indique qui il est, par exemple « ceci est le déploiement de production du projet `website` » ou « ceci est un workflow de `acme/app` ». Le jeton expire en quelques heures. Avec les workloads de confiance, vous indiquez à Phaseo à quels workloads faire confiance, et ceux-ci envoient ce jeton au lieu d'une clé API. Rien de durable n'a besoin d'être stocké dans les paramètres de votre projet ni dans les secrets de CI.
+De nombreuses plateformes donnent à chaque déploiement, job ou workload un jeton signé qui indique qui il est, par exemple « ceci est le déploiement de production du projet `website` » ou « ceci est un job du projet GitLab `4815162` ». Le jeton expire en quelques heures. Avec les workloads de confiance, vous indiquez à Phaseo à quels workloads faire confiance, et ceux-ci envoient ce jeton au lieu d'une clé API. Rien de durable n'a besoin d'être stocké dans les paramètres de votre projet ni dans les secrets de CI.
 
-Les clés API continuent de fonctionner. Utilisez les workloads de confiance pour le code exécuté sur Vercel ou dans GitHub Actions, et gardez les clés API pour tout le reste, comme les serveurs hébergés ailleurs, les scripts locaux et les applications mobiles.
+Phaseo accepte les jetons de Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI et AWS, ainsi que ceux d'un émetteur OIDC que vous gérez vous-même, comme un cluster Kubernetes, Bitbucket Pipelines ou une instance GitLab autogérée.
+
+Les clés API continuent de fonctionner. Utilisez les workloads de confiance pour le code exécuté sur ces plateformes, et gardez les clés API pour tout le reste, comme les scripts locaux et les applications mobiles.
 
 ---
 
 ## Fonctionnement
 
-1. Un propriétaire ou un administrateur de l'espace de travail crée une **règle de confiance** dans **Paramètres → Clés API → Workloads de confiance**. La règle indique la plateforme, votre équipe Vercel ou votre propriétaire GitHub, ainsi que des conditions facultatives comme un projet, un dépôt, une branche ou un environnement.
+1. Un propriétaire ou un administrateur de l'espace de travail crée une **règle de confiance** dans **Paramètres → Clés API → Workloads de confiance**. La règle indique la plateforme, le propriétaire auquel elle fait confiance, comme un propriétaire GitHub, un projet GitLab ou un rôle AWS, ainsi que des conditions facultatives comme un projet, un dépôt, une branche ou un environnement.
 2. Votre code demande à la plateforme un jeton pour l'audience `https://api.phaseo.app` et l'envoie sous la forme `Authorization: Bearer <token>`.
 3. Phaseo vérifie la signature et l'expiration du jeton, puis recherche exactement une règle active qui lui correspond.
 4. La requête s'exécute avec la clé de cette règle. Elle reçoit les mêmes limites de débit, budgets, journaux et facturation qu'une requête faite avec une clé API.
 
 ### Pourquoi l'audience est importante
 
-Les jetons doivent être émis pour l'audience `https://api.phaseo.app`. Par défaut, Vercel et GitHub Actions émettent des jetons pour une audience partagée par tous les services que votre workload appelle. Si Phaseo les acceptait, un jeton envoyé à un autre service pourrait être réutilisé pour appeler Phaseo. Phaseo refuse les jetons dont l'audience est différente.
+Les jetons doivent être émis pour l'audience `https://api.phaseo.app`. Par défaut, la plupart des plateformes émettent des jetons pour une audience partagée par tous les services que votre workload appelle. Si Phaseo les acceptait, un jeton envoyé à un autre service pourrait être réutilisé pour appeler Phaseo. Phaseo refuse les jetons dont l'audience est différente.
 
 ---
 
@@ -34,6 +36,8 @@ Les jetons doivent être émis pour l'audience `https://api.phaseo.app`. Par dé
 Accédez à **Paramètres → Clés API → Workloads de confiance** et sélectionnez **Nouvelle règle**. Seuls les propriétaires et les administrateurs de l'espace de travail peuvent gérer les règles.
 </Step>
 <Step title="Choisissez la plateforme et renseignez les ID">
+Chaque plateforme lie la règle à un ID qui ne peut être ni renommé ni repris par quelqu'un d'autre. Les noms peuvent changer de main, donc Phaseo ne fait jamais confiance à un nom seul.
+
 <Tabs>
 <Tab title="Vercel">
 - **Slug de l'équipe** : le slug de l'équipe, comme dans `vercel.com/<team-slug>`. Laissez-le vide si votre projet utilise le mode d'émetteur global de Vercel (émetteur `https://oidc.vercel.com` au lieu de `https://oidc.vercel.com/<team-slug>`).
@@ -53,6 +57,66 @@ gh api repos/OWNER/REPO --jq '.id, .owner.id'
 ```
 
 Phaseo utilise des ID numériques, car les noms peuvent être modifiés ou repris par quelqu'un d'autre.
+</Tab>
+<Tab title="GitLab">
+Pour les projets sur GitLab.com. Pour une instance GitLab autogérée, choisissez **Émetteur OIDC personnalisé**.
+
+- **ID du projet** : l'ID numérique affiché sur la page de présentation du projet. Il ne change pas si le projet est renommé ou déplacé dans un autre groupe, c'est pourquoi Phaseo lie la règle à cet ID plutôt qu'au groupe.
+- **Branche ou tag** (facultatif) : le nom de la branche ou du tag, comme `main`.
+- **Environnement** (facultatif) : l'environnement du job, comme `production`.
+
+Laissez les deux conditions vides pour accepter tous les jobs du projet.
+</Tab>
+<Tab title="Google Cloud">
+Pour les jetons du serveur de métadonnées sur Cloud Run, Compute Engine, GKE, Cloud Run functions, App Engine et Cloud Build.
+
+- **ID unique du compte de service** : l'ID unique numérique affiché sur la page de détails du compte de service dans la console Google Cloud. Tous les comptes Google partagent le même émetteur, c'est donc cet ID qui distingue votre workload. N'utilisez pas l'adresse e-mail : si le compte de service est supprimé, quelqu'un peut en créer un nouveau avec la même adresse.
+- **E-mail du compte de service** (facultatif) : une vérification supplémentaire. Les jetons ne contiennent l'adresse e-mail que si le workload les demande avec `format=full`.
+</Tab>
+<Tab title="Buildkite">
+- **ID de l'organisation** : l'UUID de l'organisation. Chaque jeton Buildkite le contient dans la revendication `organization_id` : vous pouvez donc le lire dans un jeton demandé par l'un de vos pipelines. Contrairement au slug de l'organisation, il ne change jamais.
+- **Slug du pipeline** (facultatif) : sans lui, tous les pipelines de l'organisation sont considérés comme fiables.
+</Tab>
+<Tab title="CircleCI">
+- **ID de l'organisation** : vous le trouverez dans **Organization Settings → Overview**. Chaque organisation CircleCI a son propre émetteur, `https://oidc.circleci.com/org/<organisation ID>`, que Phaseo construit à partir de cet ID.
+- **ID du projet** (facultatif) : vous le trouverez dans **Project Settings → Overview**. Sans lui, tous les projets de l'organisation sont considérés comme fiables.
+</Tab>
+<Tab title="AWS">
+Pour les jetons de la fédération d'identité sortante IAM (outbound identity federation), qui donne à un rôle IAM un jeton signé pour un service externe.
+
+- **URL de l'émetteur** : chaque compte AWS a son propre émetteur, qui se termine par `.tokens.sts.global.api.aws`. Exécutez `aws iam get-outbound-web-identity-federation-info` et copiez `IssuerIdentifier`. Si la commande échoue, activez d'abord la fonctionnalité avec `aws iam enable-outbound-web-identity-federation`.
+- **ARN du rôle IAM** : seuls les jetons de ce rôle sont acceptés, par exemple `arn:aws:iam::123456789012:role/evals`. L'émetteur identifie déjà votre compte, l'ARN du rôle identifie donc le workload.
+</Tab>
+<Tab title="Émetteur OIDC personnalisé">
+Utilisez cette option pour tout autre émetteur OIDC qui remplit toutes ces conditions :
+
+- Son URL d'émetteur est une URL `https://` publique, sans port, requête ni fragment, et n'est pas sur un hôte appartenant à l'une des plateformes ci-dessus.
+- Il fournit un document de découverte à `<issuer>/.well-known/openid-configuration`.
+- Ses clés de signature (`jwks_uri`) sont sur le même hôte que l'émetteur.
+- Il signe les jetons avec RS256, ES256 ou ES384 et peut les émettre pour l'audience `https://api.phaseo.app`.
+
+Renseignez :
+
+- **URL de l'émetteur** : copiez-la exactement telle qu'elle apparaît dans la revendication `iss` du jeton, y compris une éventuelle barre oblique finale.
+- **Revendication du propriétaire** et **Valeur du propriétaire** : la revendication que chaque jeton doit contenir et la valeur exacte qu'elle doit avoir. Choisissez une revendication que personne d'autre ne peut réutiliser, comme un ID numérique, plutôt qu'un nom qui peut être renommé ou réenregistré.
+- **Revendication supplémentaire** et **Valeur requise** (facultatives) : une autre revendication à laquelle le jeton doit correspondre.
+
+Les conditions ne portent que sur les revendications de premier niveau. Les revendications imbriquées, comme l'objet `kubernetes.io` de Kubernetes, ne peuvent pas être utilisées.
+
+**Kubernetes (EKS, GKE, AKS)** : chaque cluster a son propre émetteur. Sur EKS, exécutez `aws eks describe-cluster --name <cluster> --query cluster.identity.oidc.issuer`. Sur AKS, activez l'émetteur OIDC et exécutez `az aks show -n <cluster> -g <resource-group> --query oidcIssuerProfile.issuerUrl`. Sur GKE, l'émetteur est `https://container.googleapis.com/v1/projects/<project>/locations/<location>/clusters/<cluster>`. Utilisez `sub` comme revendication du propriétaire, avec la valeur `system:serviceaccount:<namespace>:<service-account>`.
+
+Les clusters Kubernetes autogérés dont le point de terminaison de découverte n'est pas public ne fonctionnent pas. Phaseo doit récupérer le document de découverte et les clés depuis Internet sans identifiants, et la plupart des clusters ne le permettent pas par défaut.
+
+**Bitbucket Pipelines** : l'émetteur est `https://api.bitbucket.org/2.0/workspaces/<workspace>/pipelines-config/identity/oidc`. Utilisez `workspaceUuid` comme revendication du propriétaire, avec la valeur accolades comprises, par exemple `{a1b2c3d4-...}`. Demandez l'audience Phaseo dans le step :
+
+```yaml
+- step:
+    oidc:
+      audiences:
+        - https://api.phaseo.app
+```
+
+**GitLab autogéré** : l'émetteur est l'URL de votre GitLab, par exemple `https://gitlab.example.com`. Utilisez `project_id` comme revendication du propriétaire, avec l'ID numérique du projet. Votre instance doit être accessible depuis Internet.
 </Tab>
 </Tabs>
 </Step>
@@ -84,7 +148,32 @@ resource "phaseo_trusted_workload" "deploy" {
 }
 ```
 
-`platform` vaut `vercel` ou `github_actions`. Pour Vercel, définissez aussi `issuer` sur `https://oidc.vercel.com/<team-slug>`, ou sur `https://oidc.vercel.com` en mode émetteur global, et utilisez des conditions comme `project_id` et `environment`. Changer la plateforme, l'émetteur ou le propriétaire remplace la règle. Une règle n'a pas de secret : rien de sensible n'est stocké dans l'état Terraform.
+`owner_id` est la valeur de la revendication du propriétaire de la plateforme. Définissez `issuer` lorsque la plateforme en a besoin :
+
+| `platform` | `issuer` | Revendication du propriétaire |
+| --- | --- | --- |
+| `vercel` | Obligatoire : `https://oidc.vercel.com/<team-slug>`, ou `https://oidc.vercel.com` en mode émetteur global | `owner_id` (ID de l'équipe) |
+| `github_actions` | Par défaut : `https://token.actions.githubusercontent.com` | `repository_owner_id` |
+| `gitlab` | Par défaut : `https://gitlab.com` | `project_id` |
+| `google_cloud` | Par défaut : `https://accounts.google.com` | `sub` (ID unique du compte de service) |
+| `buildkite` | Par défaut : `https://agent.buildkite.com` | `organization_id` |
+| `circleci` | Obligatoire : `https://oidc.circleci.com/org/<organisation ID>` | `oidc.circleci.com/org-id` |
+| `aws` | Obligatoire : l'émetteur de votre compte | `sub` (ARN du rôle IAM) |
+| `custom` | Obligatoire : l'URL de votre émetteur | La revendication définie dans `owner_claim` |
+
+Pour un émetteur personnalisé, définissez aussi `owner_claim` :
+
+```hcl
+resource "phaseo_trusted_workload" "cluster" {
+  name        = "Production cluster"
+  platform    = "custom"
+  issuer      = "https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
+  owner_claim = "sub"
+  owner_id    = "system:serviceaccount:prod:api"
+}
+```
+
+Changer la plateforme, l'émetteur, la revendication du propriétaire ou le propriétaire remplace la règle. Une règle n'a pas de secret : rien de sensible n'est stocké dans l'état Terraform.
 
 Avec l'API, envoyez les mêmes champs à `/v1/workload-identity/policies`. Dans l'API, la plateforme s'appelle `provider` :
 
@@ -95,13 +184,22 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
 
+Pour un émetteur personnalisé :
+
+```bash
+curl https://api.phaseo.app/v1/workload-identity/policies \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Production cluster","provider":"custom","issuer":"https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE","owner_claim":"sub","owner_id":"system:serviceaccount:prod:api"}'
+```
+
 La [référence de l’API](../api-reference/endpoint/trusted-workloads-create.mdx) décrit tous les champs et toutes les réponses.
 
 ---
 
 ## Appeler Phaseo avec un jeton
 
-Chaque SDK Phaseo accepte une fonction à la place de la clé API et l’appelle avant chaque requête et chaque nouvelle tentative, pour que chaque requête utilise un jeton à jour. Chaque SDK, sauf C++, inclut une fonction utilitaire pour chaque plateforme. Elle obtient un jeton émis pour `https://api.phaseo.app` et le réutilise jusqu’à une minute avant son expiration :
+Chaque SDK Phaseo accepte une fonction à la place de la clé API et l’appelle avant chaque requête et chaque nouvelle tentative, pour que chaque requête utilise un jeton à jour. Chaque SDK, sauf C++, inclut une fonction utilitaire pour GitHub Actions et une pour Vercel. Elle obtient un jeton émis pour `https://api.phaseo.app` et le réutilise jusqu’à une minute avant son expiration :
 
 | SDK | GitHub Actions | Vercel |
 | --- | --- | --- |
@@ -116,6 +214,22 @@ Chaque SDK Phaseo accepte une fonction à la place de la clé API et l’appelle
 | C++ | Passez votre propre fonction à `set_api_key_provider` | Passez votre propre fonction à `set_api_key_provider` |
 
 Les fonctions utilitaires nécessitent la prochaine version de chaque SDK. Sur Vercel, la fonction utilitaire échange le jeton du déploiement provenant de `VERCEL_OIDC_TOKEN_FILE` ou de `VERCEL_OIDC_TOKEN`. Dans Vercel Functions, le jeton arrive avec chaque requête dans l’en-tête `x-vercel-oidc-token` ; passez-le à la fonction utilitaire comme source du jeton.
+
+Sur les autres plateformes, passez votre propre fonction qui renvoie le jeton, par exemple une fonction qui lit la variable du job GitLab ou appelle le serveur de métadonnées de Google Cloud :
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({
+	apiKey: async () => {
+		const response = await fetch(
+			"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://api.phaseo.app",
+			{ headers: { "Metadata-Flavor": "Google" } },
+		);
+		return response.text();
+	},
+});
+```
 
 <Tabs>
 <Tab title="Vercel">
@@ -205,6 +319,111 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 Les jetons GitHub Actions sont de courte durée ; demandez-en donc un nouveau pour les jobs longs.
 </Tab>
+<Tab title="GitLab">
+Ajoutez une entrée `id_tokens` au job dans `.gitlab-ci.yml`. GitLab place le jeton dans la variable que vous nommez :
+
+```yaml
+evals:
+  id_tokens:
+    PHASEO_TOKEN:
+      aud: https://api.phaseo.app
+  script:
+    - >
+      curl https://api.phaseo.app/v1/chat/completions
+      -H "Authorization: Bearer $PHASEO_TOKEN"
+      -H "Content-Type: application/json"
+      -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from GitLab"}]}'
+```
+
+Le jeton dure aussi longtemps que le délai d'expiration (timeout) du job.
+</Tab>
+<Tab title="Google Cloud">
+Demandez le jeton au serveur de métadonnées. Cela fonctionne sur Cloud Run, Compute Engine, GKE, Cloud Run functions, App Engine et Cloud Build :
+
+```bash
+TOKEN=$(curl -sS -H "Metadata-Flavor: Google" \
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://api.phaseo.app")
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
+```
+
+Ajoutez `&format=full` à l'URL si votre règle vérifie l'adresse e-mail du compte de service. Les jetons durent 1 heure.
+</Tab>
+<Tab title="Buildkite">
+Demandez le jeton avec l'agent dans la commande d'un step :
+
+```bash
+TOKEN=$(buildkite-agent oidc request-token --audience https://api.phaseo.app)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
+```
+
+Les jetons durent 5 minutes par défaut. Pour les steps plus longs, demandez-en un nouveau ou passez `--lifetime` en secondes.
+</Tab>
+<Tab title="CircleCI">
+Demandez le jeton avec la CLI CircleCI dans une étape du job :
+
+```bash
+TOKEN=$(circleci run oidc get --claims '{"aud":"https://api.phaseo.app"}')
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
+```
+
+Les jetons durent 1 heure.
+</Tab>
+<Tab title="AWS">
+Activez la fédération d'identité sortante une fois par compte AWS, puis demandez un jeton en tant que rôle IAM. Le rôle a besoin de l'autorisation `sts:GetWebIdentityToken`.
+
+```bash
+# Once per account
+aws iam enable-outbound-web-identity-federation
+
+# In the workload
+TOKEN=$(aws sts get-web-identity-token --audience https://api.phaseo.app \
+  --signing-algorithm ES384 --query WebIdentityToken --output text)
+
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from AWS"}]}'
+```
+
+Phaseo accepte `ES384` et `RS256`. Les jetons durent 5 minutes par défaut ; passez `--duration-seconds` pour aller jusqu'à 1 heure.
+</Tab>
+<Tab title="Émetteur OIDC personnalisé">
+Sur Kubernetes, montez un jeton de compte de service projeté émis pour l'audience Phaseo :
+
+```yaml
+spec:
+  serviceAccountName: api
+  containers:
+    - name: app
+      volumeMounts:
+        - name: phaseo-token
+          mountPath: /var/run/secrets/phaseo
+  volumes:
+    - name: phaseo-token
+      projected:
+        sources:
+          - serviceAccountToken:
+              audience: https://api.phaseo.app
+              expirationSeconds: 3600
+              path: token
+```
+
+Lisez `/var/run/secrets/phaseo/token` avant chaque requête et envoyez son contenu comme jeton bearer. Kubernetes renouvelle le fichier avant l'expiration du jeton : ne gardez donc pas la valeur en mémoire.
+
+Dans Bitbucket Pipelines, un step dont les audiences `oidc` sont définies reçoit le jeton dans `BITBUCKET_STEP_OIDC_TOKEN`.
+</Tab>
 </Tabs>
 
 ---
@@ -214,7 +433,8 @@ Les jetons GitHub Actions sont de courte durée ; demandez-en donc un nouveau po
 - **Les mêmes contrôles qu'une clé.** Les requêtes s'exécutent avec la clé de la règle : les limites de débit de la clé, les budgets, les liens vers les départements, les listes d'adresses IP autorisées, les paramètres de journalisation et la facturation s'appliquent comme d'habitude.
 - **Appels de modèles uniquement.** Les jetons de workloads fonctionnent là où fonctionne une clé API du gateway. Les API de gestion les refusent.
 - **Une seule règle correspondante.** Si deux espaces de travail font confiance au même workload, Phaseo ne peut pas savoir lequel vous visez et refuse la requête. Envoyez l'ID de l'espace de travail dans l'en-tête `x-phaseo-workspace` pour en choisir un.
-- **Durée de vie du jeton.** Les jetons émis pour durer plus longtemps que le **Jeton le plus long accepté** de la règle sont refusés.
+- **Durée de vie du jeton.** Les jetons émis pour durer plus longtemps que le **Jeton le plus long accepté** de la règle sont refusés, et Phaseo n'accepte jamais de jetons émis pour plus de 12 heures. Les jetons Buildkite et AWS durent 5 minutes par défaut ; ceux de Google Cloud et CircleCI, 1 heure. Les jetons GitLab durent aussi longtemps que le délai d'expiration du job : un job dont le délai dépasse 12 heures reçoit donc un jeton que Phaseo refuse. AKS peut émettre des jetons valables jusqu'à 24 heures : définissez un `expirationSeconds` plus court.
+- **Azure n'est pas encore pris en charge.** Les identités managées Azure ne peuvent pas demander de jetons pour l'audience Phaseo. Les pods sur AKS peuvent toutefois utiliser un jeton de compte de service Kubernetes via un émetteur personnalisé.
 - **Les clés API ne changent pas.** Les workloads de confiance ajoutent une seconde méthode d'authentification ; ils ne modifient ni ne désactivent les clés API.
 
 ---
@@ -226,11 +446,12 @@ Un jeton refusé renvoie `401` avec l'un de ces messages :
 | Message | Signification | Que faire |
 | --- | --- | --- |
 | `workload_token_wrong_audience` | Le jeton n'a pas été émis pour `https://api.phaseo.app`. | Demandez le jeton avec cette audience. |
-| `workload_issuer_not_trusted` | Aucune règle active n'utilise l'émetteur de ce jeton. | Vérifiez le slug de l'équipe Vercel ou le mode d'émetteur, et que la règle est activée. |
-| `workload_identity_no_matching_policy` | Le jeton est valide, mais aucune règle active ne lui correspond. | Vérifiez les ID d'équipe, de propriétaire, de projet ou de dépôt, les conditions d'environnement, de branche ou de tag, et que la durée de vie du jeton ne dépasse pas le **Jeton le plus long accepté** de la règle. |
+| `workload_issuer_not_trusted` | Aucune règle active n'utilise l'émetteur de ce jeton. | Vérifiez que la règle est activée et que son émetteur correspond exactement à la revendication `iss` du jeton, y compris le slug de l'équipe Vercel ou le mode d'émetteur, et une éventuelle barre oblique finale pour un émetteur personnalisé. |
+| `workload_identity_no_matching_policy` | Le jeton est valide, mais aucune règle active ne lui correspond. | Vérifiez l'ID du propriétaire, les conditions de projet, de dépôt, de pipeline, de branche, de tag ou d'environnement, et que la durée de vie du jeton ne dépasse pas le **Jeton le plus long accepté** de la règle. |
 | `workload_identity_ambiguous` | Plusieurs espaces de travail font confiance à ce workload. | Envoyez `x-phaseo-workspace: <workspace id>`. |
 | `workload_identity_not_enabled` | Les workloads de confiance ne sont pas encore disponibles pour cet espace de travail. | Utilisez une clé API pour le moment. |
 | `workload_token_expired` | Le jeton a expiré. | Demandez un nouveau jeton pour chaque requête ou étape du job. |
-| `workload_token_lifetime_too_long` | Le jeton a été émis pour durer plus de 12 heures, le maximum accepté par Phaseo. | Demandez un jeton de plus courte durée. |
+| `workload_token_lifetime_too_long` | Le jeton a été émis pour durer plus de 12 heures, le maximum accepté par Phaseo. | Demandez un jeton de plus courte durée, par exemple avec un `expirationSeconds` plus court sur Kubernetes ou un délai d'expiration du job plus court sur GitLab. |
+| `workload_token_unsupported_alg` | Le jeton n'est pas signé avec RS256, ES256 ou ES384. | Configurez l'émetteur pour qu'il utilise l'un de ces algorithmes. |
 | `workload_token_invalid_signature` | La signature du jeton ne correspond pas aux clés de la plateforme. | Envoyez le jeton tel que la plateforme l'a émis, sans le modifier. |
-| `workload_jwks_unavailable` | Phaseo n'a pas pu récupérer les clés de signature de la plateforme. | Réessayez après une courte attente. |
+| `workload_jwks_unavailable` | Phaseo n'a pas pu récupérer les clés de signature de la plateforme. | Réessayez après une courte attente. Pour un émetteur personnalisé, vérifiez que `<issuer>/.well-known/openid-configuration` se charge depuis Internet sans identifiants et que son `jwks_uri` est sur le même hôte. |
