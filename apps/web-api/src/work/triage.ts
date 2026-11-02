@@ -50,7 +50,8 @@ type TriageArgs = {
 	waitUntil: (p: Promise<unknown>) => void;
 };
 
-export type TriageResult = { ok: true; run: AgentRunRow; item: WorkItemRow } | { ok: false; code: string; message: string };
+// code and message are declared (as undefined) on success too, so callers can read them without narrowing.
+export type TriageResult = { ok: true; run: AgentRunRow; item: WorkItemRow; code?: undefined; message?: undefined } | { ok: false; code: string; message: string };
 
 export type TriageAnswer = {
 	summary: string;
@@ -353,7 +354,7 @@ export async function triageWorkItem(args: TriageArgs): Promise<TriageResult> {
 	if (!item) return { ok: false, code: "not_found", message: "Work item not found" };
 
 	const key = await workAgentGatewayKey(env, client, workspaceId, args.requestedBy ?? null);
-	if (!key.ok) return key;
+	if (key.ok === false) return { ok: false, code: key.code, message: key.message };
 	const baseUrl = resolveGatewayBaseUrlForEnvironment({
 		configuredBaseUrl: env.AI_STATS_GATEWAY_URL ?? env.PHASEO_GATEWAY_URL,
 		stagingBaseUrl: env.STAGING_GATEWAY_BASE_URL,

@@ -114,7 +114,7 @@ function parseItemFields(body: Body, creating: boolean): ParsedChanges {
 	}
 	if (body.assigneeAgent !== undefined) {
 		if (body.assigneeAgent !== null && !isWorkAgent(body.assigneeAgent)) return { ok: false, message: "assigneeAgent must be triage, engineer, support or null" };
-		changes.assigneeAgent = body.assigneeAgent;
+		changes.assigneeAgent = body.assigneeAgent as WorkItemChanges["assigneeAgent"];
 	}
 	if (body.githubRepo !== undefined) {
 		if (body.githubRepo !== null && body.githubRepo !== "" && !isGithubRepo(body.githubRepo)) return { ok: false, message: "githubRepo must look like owner/name" };
