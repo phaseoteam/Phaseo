@@ -1,12 +1,12 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { usePathname, useRouter } from "expo-router";
-import { ArrowDownAZ, ArrowUpDown, Bot, Building2, CircleCheck, CircleDollarSign, Clock, Flame, Gift, Maximize2, Shapes, SlidersHorizontal, X, type LucideIcon } from "lucide-react-native";
+import { ArrowDownAZ, ArrowUpDown, Bot, Building2, CircleCheck, CircleDollarSign, Clock, Columns3, Flame, Gift, Maximize2, SlidersHorizontal, X, type LucideIcon } from "lucide-react-native";
 import { useCallback, useDeferredValue, useMemo, useRef } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
-import { Button, Chip, ChipRow, EmptyState, ErrorState, Header, IconButton, OptionSheet, Screen, SearchField, SkeletonRows, Text, useMenu, type ViewRef } from "@/components/ui";
+import { Button, Chip, ChipRow, EmptyState, ErrorState, Header, OptionSheet, Screen, SearchField, SkeletonRows, Text, useMenu, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import type { ModelCard } from "@/lib/api/models";
 import { activeFilterCount, DEFAULT_FILTERS, filterModels, type CatalogueSort } from "@/lib/catalogue";
@@ -58,6 +58,8 @@ export function ModelBrowser() {
   const insets = useSafeAreaInsets();
   // Phones show the summary above the whole catalogue; a search or filter goes straight to the matches.
   const summary = !split && !query && !filterCount;
+  // What only the filters sheet sets (modalities, retired models); the other filters have chips of their own.
+  const sheetFilters = filters.inputModalities.length + filters.outputModalities.length + (filters.includeRetired ? 1 : 0);
 
   const renderItem = useCallback(({ item }: { item: ModelCard }) => (
     <ModelRow
@@ -79,16 +81,16 @@ export function ModelBrowser() {
   return (
     <Screen>
       {/* Signed out, Models is where the app opens, with nothing to go back to. */}
-      <Header large sidebar back={!split && signedIn} title="Models" subtitle={catalogue.data ? `${models.length.toLocaleString()} of ${catalogue.data.models.length.toLocaleString()}` : null} right={<IconButton icon={SlidersHorizontal} label="Filters" onPress={() => router.push("/filters/models")} />} />
-      <View className="px-4 pb-2">
+      <Header large sidebar back={!split && signedIn} title="Models" subtitle={catalogue.data ? `${models.length.toLocaleString()} of ${catalogue.data.models.length.toLocaleString()} models` : null} />
+      <View className="px-4 pb-3 pt-2">
         <SearchField value={filters.query} onChangeText={(value) => updateFilters({ query: value })} placeholder="Search models, labs or IDs" />
       </View>
-      <ChipRow className="pb-2">
+      {/* One row: how the list is ordered, the full filters sheet and labs, then the two quick switches. */}
+      <ChipRow className="pb-3">
         <View ref={sortRef} collapsable={false}>
           <Chip label={SORT_LABELS[filters.sort]} icon={ArrowUpDown} dropdown onPress={() => (split ? void sortMenu.show(sortRef) : router.push("/filters/sort"))} />
         </View>
-        <Chip label="On Phaseo" icon={CircleCheck} selected={filters.availability === "phaseo"} onPress={() => updateFilters({ availability: filters.availability === "phaseo" ? "all" : "phaseo" })} />
-        <Chip label="Free" icon={Gift} selected={filters.availability === "free"} onPress={() => updateFilters({ availability: filters.availability === "free" ? "all" : "free" })} />
+        <Chip label={sheetFilters ? `Filters · ${sheetFilters}` : "Filters"} icon={SlidersHorizontal} selected={sheetFilters > 0} dropdown onPress={() => router.push("/filters/models")} />
         <Chip
           label={filters.organisations.length ? `Labs · ${filters.organisations.length}` : "Labs"}
           icon={filters.organisations.length ? undefined : Building2}
@@ -97,9 +99,11 @@ export function ModelBrowser() {
           dropdown
           onPress={() => router.push("/filters/organisations")}
         />
-        <Chip label={filters.inputModalities.length + filters.outputModalities.length ? `Modalities · ${filters.inputModalities.length + filters.outputModalities.length}` : "Modalities"} icon={Shapes} selected={filters.inputModalities.length + filters.outputModalities.length > 0} dropdown onPress={() => router.push("/filters/models")} />
+        <Chip label="On Phaseo" icon={CircleCheck} selected={filters.availability === "phaseo"} onPress={() => updateFilters({ availability: filters.availability === "phaseo" ? "all" : "phaseo" })} />
+        <Chip label="Free" icon={Gift} selected={filters.availability === "free"} onPress={() => updateFilters({ availability: filters.availability === "free" ? "all" : "free" })} />
         {filterCount ? <Chip label="Clear" icon={X} onPress={() => filtersStore.set({ ...DEFAULT_FILTERS, query: filters.query, sort: filters.sort })} /> : null}
       </ChipRow>
+      <View className="h-px bg-border" />
       {catalogue.isLoading ? (
         <SkeletonRows />
       ) : catalogue.isError && !catalogue.data ? (
@@ -114,7 +118,7 @@ export function ModelBrowser() {
           recycleItems
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
-          ListHeaderComponent={summary ? <><ModelsSummary /><Text variant="heading" className="px-4 pb-1 pt-6">All models</Text></> : null}
+          ListHeaderComponent={summary ? <><ModelsSummary /><AllModelsHeading /></> : <View className="h-2" />}
           ListEmptyComponent={<EmptyState icon={Bot} title="No models match" body="Try fewer filters or a shorter search." action={filterCount ? "Clear filters" : undefined} onAction={() => filtersStore.set({ ...DEFAULT_FILTERS })} />}
           contentContainerStyle={{ paddingBottom: insets.bottom + (comparing.length ? 96 : 24) }}
         />
@@ -130,6 +134,17 @@ export function ModelBrowser() {
         onClose={sortMenu.close}
       />
     </Screen>
+  );
+}
+
+/** Where the catalogue starts under the summary, with Compare, which phones otherwise reach from a model. */
+function AllModelsHeading() {
+  const router = useRouter();
+  return (
+    <View className="mt-8 flex-row items-center justify-between pb-1 pl-4 pr-2">
+      <Text accessibilityRole="header" variant="heading">All models</Text>
+      <Button label="Compare" icon={Columns3} variant="ghost" size="sm" onPress={() => router.push("/compare")} />
+    </View>
   );
 }
 

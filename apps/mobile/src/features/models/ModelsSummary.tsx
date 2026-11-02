@@ -1,10 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { ChartNoAxesColumn, Columns3, Server, UserRound, type LucideIcon } from "lucide-react-native";
 import { useMemo } from "react";
 import { View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { useOpenScreen } from "@/components/shell/useOpenScreen";
 import { Button, Row, Section, Skeleton, Text } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { getReleases, type ModelRelease } from "@/lib/api/models";
@@ -25,51 +23,49 @@ const releaseLabel = (types: string[], upcoming: boolean) => {
 };
 const isNewRelease = (release: ModelRelease) => release.types.some((value) => ["released", "added", "announced"].includes(typeKey(value)));
 
+// Phones list a few of each so the catalogue starts within a scroll or two; the catalogue below is sorted newest
+// first by default, so it carries on where Latest releases stops. The tablet's detail pane has room for more.
+const PHONE_COUNTS = { latest: 5, upcoming: 3, trending: 5 };
+const SPLIT_COUNTS = { latest: 8, upcoming: 5, trending: 6 };
+
 /**
  * The top of Models: a way to sign in, the latest and coming releases and the most used models. Above the list on
- * phones; on split layouts it fills the detail pane until a model is chosen.
+ * phones, until a search or filter (then the matches come first); on split layouts it fills the detail pane until
+ * a model is chosen. Compare, Providers and Usage are in the sidebar, which every screen opens.
  */
 export function ModelsSummary() {
   const router = useRouter();
   const { split } = useLayout();
   const { session } = useAuth();
+  const counts = split ? SPLIT_COUNTS : PHONE_COUNTS;
   const catalogue = useCatalogue();
   const releases = useQuery({ queryKey: ["public", "releases"], queryFn: getReleases, staleTime: 10 * 60 * 1000 });
   const trending = useMemo(
-    () => (catalogue.data?.models ?? []).filter((model) => isOnPhaseo(model) && (model.popularity_tokens_week ?? 0) > 0).sort((a, b) => (b.popularity_tokens_week ?? 0) - (a.popularity_tokens_week ?? 0)).slice(0, 6),
-    [catalogue.data],
+    () => (catalogue.data?.models ?? []).filter((model) => isOnPhaseo(model) && (model.popularity_tokens_week ?? 0) > 0).sort((a, b) => (b.popularity_tokens_week ?? 0) - (a.popularity_tokens_week ?? 0)).slice(0, counts.trending),
+    [catalogue.data, counts.trending],
   );
 
   return (
     <View className="pb-2">
       {session ? null : (
-        <View className="px-4 pt-2">
+        <View className="px-4 pt-5">
           <Text variant="body" className="text-muted-foreground">Prices, providers, benchmarks and releases for every model, with one API to use them.</Text>
           <Button label="Sign in to chat" className="mt-4" onPress={() => router.push("/sign-in")} />
         </View>
       )}
 
-      {/* Split layouts have these in the sidebar. */}
-      {split ? null : (
-        <View className="mt-4 flex-row gap-2 px-4">
-          <QuickLink label="Compare" icon={Columns3} href="/compare" />
-          <QuickLink label="Providers" icon={Server} href="/providers" />
-          {session ? <QuickLink label="Usage" icon={ChartNoAxesColumn} href="/account/usage" /> : <QuickLink label="Account" icon={UserRound} href="/account" />}
-        </View>
-      )}
-
-      <Section title="Latest releases">
-        {releases.isLoading ? <ReleaseSkeleton /> : onePerModel((releases.data?.past ?? []).filter(isNewRelease)).slice(0, 8).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
+      <Section title="Latest releases" className={split ? undefined : "mt-5"}>
+        {releases.isLoading ? <ReleaseSkeleton /> : onePerModel((releases.data?.past ?? []).filter(isNewRelease)).slice(0, counts.latest).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
       </Section>
 
       {releases.data?.future.length ? (
-        <Section title="Coming up">
-          {releases.data.future.slice(0, 5).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} upcoming />)}
+        <Section title="Coming up" className="mt-8">
+          {releases.data.future.slice(0, counts.upcoming).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} upcoming />)}
         </Section>
       ) : null}
 
       {trending.length ? (
-        <Section title="Most used this week" description="By tokens through Phaseo.">
+        <Section title="Most used this week" description="By tokens through Phaseo." className="mt-8">
           {trending.map((model, index) => (
             <Row
               key={model.model_id}
@@ -84,13 +80,6 @@ export function ModelsSummary() {
       ) : null}
     </View>
   );
-}
-
-/** Compare opens over Models; the others are sections of their own, opened as the sidebar opens them. */
-function QuickLink({ label, icon, href }: { label: string; icon: LucideIcon; href: "/compare" | "/providers" | "/account/usage" | "/account" }) {
-  const router = useRouter();
-  const openScreen = useOpenScreen();
-  return <Button label={label} icon={icon} variant="secondary" className="flex-1" onPress={() => (href === "/compare" ? router.push(href) : openScreen(href))} />;
 }
 
 /** As the website's releases list: "Today" on the day of release in UTC, otherwise the date. */
