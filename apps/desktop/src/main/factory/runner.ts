@@ -9,6 +9,8 @@ export interface RunHandlers {
 	log(line: LogLine): void;
 	/** The desktop thread the run works in, so a reply can carry on the same conversation. */
 	session(threadId: string): void;
+	/** The agent did something: a tool started or ended, or its answer grew. Messages sent to it don't count. */
+	progress?(): void;
 	/** `crashed`: the agent ended badly without a report, which is worth carrying on rather than failing. */
 	finish(result: { status: Run["status"]; summary?: string; usage?: Run["usage"]; report?: RunReport; crashed?: boolean }): void;
 }
@@ -39,6 +41,8 @@ export interface StageStart {
 export interface AgentProcess {
 	/** Hands a message to the running agent: steered into its turn where the harness can, queued after it otherwise. */
 	send(text: string): boolean;
+	/** Whether it's waiting on a person (a question or an approval in its thread): that's not a stall. */
+	waiting?(): boolean;
 	/** Ends it. Its end still comes through `finish`, as cancelled. */
 	stop(): void;
 }
