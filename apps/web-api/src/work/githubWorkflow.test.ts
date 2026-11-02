@@ -46,6 +46,8 @@ describe("buildGithubWorkflow", () => {
 		expect(agent.steps.map((step) => step.name)).toEqual([
 			"Check out the repository",
 			"Set up Node.js",
+			"Set up Python",
+			"Install the project's dependencies",
 			"Report the agent run as running",
 			"Write the agent prompt",
 			"Run the engineer agent (Claude Code through the Phaseo gateway)",
@@ -69,6 +71,27 @@ describe("buildGithubWorkflow", () => {
 		expect(JSON.stringify(workflow.jobs.agent.env)).not.toContain("PHASEO_API_KEY");
 		const checkout = workflow.jobs.agent.steps[0];
 		expect(checkout.with).toEqual({ "persist-credentials": false });
+	});
+
+	it("lets Claude Code edit files and run test commands, but no other shell commands", () => {
+		const harness = workflow.jobs.agent.steps.find((step) => step.id === "harness")!;
+		expect(harness.run).toContain("--allowedTools 'Read' 'Edit' 'Write'");
+		expect(harness.run).toContain("'Bash(npm test:*)'");
+		expect(harness.run).toContain("'Bash(pytest:*)'");
+		for (const broad of ["'Bash'", "Bash(*", "Bash(curl", "Bash(env", "Bash(sh"]) expect(harness.run).not.toContain(broad);
+		const install = workflow.jobs.agent.steps.find((step) => step.name === "Install the project's dependencies")!;
+		expect(install.env).toBeUndefined();
+		expect(install.run).toContain("pnpm install --frozen-lockfile");
+		const steps = workflow.jobs.agent.steps.map((step) => step.name);
+		expect(steps.indexOf("Install the project's dependencies")).toBeLessThan(steps.indexOf("Run the engineer agent (Claude Code through the Phaseo gateway)"));
+	});
+
+	it("opens the pull request with PHASEO_PR_TOKEN when it is set, so checks run", () => {
+		const pr = workflow.jobs.agent.steps.find((step) => step.id === "pr")!;
+		expect(pr.env?.GH_TOKEN).toBe("${{ secrets.PHASEO_PR_TOKEN || github.token }}");
+		expect(pr.env?.PR_TOKEN_SET).toBe("${{ secrets.PHASEO_PR_TOKEN != '' }}");
+		expect(pr.run).toContain("Add a PHASEO_PR_TOKEN secret");
+		expect(text).toContain("PHASEO_PR_TOKEN    optional");
 	});
 
 	it("opens the pull request on phaseo/issue-N with Fixes #N", () => {

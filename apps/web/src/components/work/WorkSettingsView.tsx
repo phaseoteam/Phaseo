@@ -237,6 +237,7 @@ function SetupSteps() {
 			<ol className="list-decimal space-y-1 pl-5 text-sm">
 				<li>{t("stepSecretToken")}</li>
 				<li>{t("stepSecretKey")}</li>
+				<li>{t("stepSecretPrToken")}</li>
 				<li>{t("stepCommit")}</li>
 			</ol>
 		</div>

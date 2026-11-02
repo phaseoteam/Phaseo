@@ -415,7 +415,8 @@
 			"stepsTitle": "Termina la configuración en GitHub",
 			"stepSecretToken": "Añade un secreto del repositorio llamado PHASEO_WORK_TOKEN con el token puente.",
 			"stepSecretKey": "Añade un secreto del repositorio llamado PHASEO_API_KEY con una clave de la API de Phaseo. El uso del agente ingeniero se factura a esa clave.",
-			"stepCommit": "Haz commit del workflow como .github/workflows/phaseo.yml en la rama principal."
+			"stepCommit": "Haz commit del workflow como .github/workflows/phaseo.yml en la rama principal.",
+			"stepSecretPrToken": "Opcional: añade un secreto llamado PHASEO_PR_TOKEN con un token detallado (contenido y pull requests, lectura y escritura) para que tus comprobaciones se ejecuten en las pull requests del agente."
 		},
 		"tracker": {
 			"title": "Seguimiento",

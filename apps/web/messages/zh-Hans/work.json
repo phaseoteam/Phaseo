@@ -415,7 +415,8 @@
 			"stepsTitle": "在 GitHub 上完成设置",
 			"stepSecretToken": "添加名为 PHASEO_WORK_TOKEN 的仓库密钥，值为桥接令牌。",
 			"stepSecretKey": "添加名为 PHASEO_API_KEY 的仓库密钥，值为一个 Phaseo API 密钥。工程智能体的用量会计入这个密钥。",
-			"stepCommit": "把工作流以 .github/workflows/phaseo.yml 提交到默认分支。"
+			"stepCommit": "把工作流以 .github/workflows/phaseo.yml 提交到默认分支。",
+			"stepSecretPrToken": "可选：添加一个名为 PHASEO_PR_TOKEN 的密钥，值为细粒度令牌（contents 和 pull requests 的读写权限），这样代理的拉取请求也会运行你的检查。"
 		},
 		"tracker": {
 			"title": "跟踪器",

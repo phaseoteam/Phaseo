@@ -415,7 +415,8 @@
 			"stepsTitle": "Terminer la configuration sur GitHub",
 			"stepSecretToken": "Ajoutez un secret de dépôt nommé PHASEO_WORK_TOKEN contenant le jeton de liaison.",
 			"stepSecretKey": "Ajoutez un secret de dépôt nommé PHASEO_API_KEY contenant une clé d’API Phaseo. L’usage de l’agent ingénieur lui est facturé.",
-			"stepCommit": "Commitez le workflow sous .github/workflows/phaseo.yml sur la branche par défaut."
+			"stepCommit": "Commitez le workflow sous .github/workflows/phaseo.yml sur la branche par défaut.",
+			"stepSecretPrToken": "Facultatif : ajoutez un secret nommé PHASEO_PR_TOKEN avec un jeton à granularité fine (contenu et pull requests, lecture et écriture) pour que vos vérifications s’exécutent sur les pull requests de l’agent."
 		},
 		"tracker": {
 			"title": "Suivi",

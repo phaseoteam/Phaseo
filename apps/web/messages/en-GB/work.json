@@ -415,7 +415,8 @@
 			"stepsTitle": "Finish setup on GitHub",
 			"stepSecretToken": "Add a repository secret named PHASEO_WORK_TOKEN with the bridge token.",
 			"stepSecretKey": "Add a repository secret named PHASEO_API_KEY with a Phaseo API key. The engineer agent's usage is billed to it.",
-			"stepCommit": "Commit the workflow as .github/workflows/phaseo.yml on the default branch."
+			"stepCommit": "Commit the workflow as .github/workflows/phaseo.yml on the default branch.",
+			"stepSecretPrToken": "Optional: add a secret named PHASEO_PR_TOKEN with a fine-grained token (contents and pull requests, read and write) so your checks run on the agent's pull requests."
 		},
 		"tracker": {
 			"title": "Tracker",

@@ -415,7 +415,8 @@
 			"stepsTitle": "GitHub で設定を完了する",
 			"stepSecretToken": "ブリッジトークンを値にして、PHASEO_WORK_TOKEN という名前のリポジトリシークレットを追加します。",
 			"stepSecretKey": "Phaseo の API キーを値にして、PHASEO_API_KEY という名前のリポジトリシークレットを追加します。エンジニアエージェントの利用料金はこのキーに請求されます。",
-			"stepCommit": "ワークフローを .github/workflows/phaseo.yml としてデフォルトブランチにコミットします。"
+			"stepCommit": "ワークフローを .github/workflows/phaseo.yml としてデフォルトブランチにコミットします。",
+			"stepSecretPrToken": "任意: PHASEO_PR_TOKEN という名前のシークレットに、きめ細かいトークン（contents と pull requests の読み書き）を追加すると、エージェントのプルリクエストでもチェックが実行されます。"
 		},
 		"tracker": {
 			"title": "トラッカー",

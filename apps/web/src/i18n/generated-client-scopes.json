@@ -1414,6 +1414,7 @@
     "Work.settings.github.showWorkflow",
     "Work.settings.github.stepCommit",
     "Work.settings.github.stepSecretKey",
+    "Work.settings.github.stepSecretPrToken",
     "Work.settings.github.stepSecretToken",
     "Work.settings.github.stepsTitle",
     "Work.settings.github.syncIssues",

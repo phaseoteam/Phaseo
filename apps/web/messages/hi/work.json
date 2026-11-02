@@ -415,7 +415,8 @@
 			"stepsTitle": "GitHub पर सेटअप पूरा करें",
 			"stepSecretToken": "ब्रिज टोकन के साथ PHASEO_WORK_TOKEN नाम का रिपॉज़िटरी सीक्रेट जोड़ें।",
 			"stepSecretKey": "Phaseo API कुंजी के साथ PHASEO_API_KEY नाम का रिपॉज़िटरी सीक्रेट जोड़ें। इंजीनियर एजेंट का इस्तेमाल इसी कुंजी पर बिल होता है।",
-			"stepCommit": "वर्कफ़्लो को .github/workflows/phaseo.yml के रूप में डिफ़ॉल्ट ब्रांच पर कमिट करें।"
+			"stepCommit": "वर्कफ़्लो को .github/workflows/phaseo.yml के रूप में डिफ़ॉल्ट ब्रांच पर कमिट करें।",
+			"stepSecretPrToken": "वैकल्पिक: PHASEO_PR_TOKEN नाम का एक सीक्रेट जोड़ें, जिसमें एक fine-grained टोकन हो (contents और pull requests, पढ़ना और लिखना), ताकि एजेंट के pull requests पर आपके चेक चलें।"
 		},
 		"tracker": {
 			"title": "ट्रैकर",

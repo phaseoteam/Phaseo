@@ -130,6 +130,30 @@ FENCE="PHASEO_UNTRUSTED_$(openssl rand -hex 12)"
   fi
 } > "$RUNNER_TEMP/phaseo-prompt.md"`;
 
+/** Test runners the Claude Code agent may run (Claude Code permission rules: a command prefix, then any arguments). */
+export const AGENT_TEST_COMMANDS = [
+	"npm test", "npm run test", "pnpm test", "pnpm run test", "pnpm vitest", "yarn test", "bun test",
+	"npx vitest", "npx jest", "pytest", "python3 -m pytest", "go test", "cargo test", "make test",
+] as const;
+
+/** --allowedTools for Claude Code, each rule single-quoted for the shell. */
+export const CLAUDE_ALLOWED_TOOLS = ["Read", "Edit", "Write", "Glob", "Grep", "LS", ...AGENT_TEST_COMMANDS.map((command) => `Bash(${command}:*)`)]
+	.map((rule) => `'${rule}'`).join(" ");
+
+// Installs the project's dependencies before the agent runs, from its lockfile, with no secrets
+// in the environment, so the agent's test runs work without it ever installing anything itself.
+const INSTALL_SCRIPT = String.raw`set -u
+if [ -f pnpm-lock.yaml ]; then corepack enable && pnpm install --frozen-lockfile
+elif [ -f yarn.lock ]; then corepack enable && yarn install --immutable || yarn install --frozen-lockfile
+elif [ -f bun.lockb ] || [ -f bun.lock ]; then npx -y bun install --frozen-lockfile
+elif [ -f package-lock.json ]; then npm ci
+elif [ -f package.json ]; then npm install --no-audit --no-fund
+fi
+if [ -f requirements.txt ]; then python3 -m pip install -q -r requirements.txt pytest; fi
+if [ -f pyproject.toml ] && [ ! -f requirements.txt ]; then python3 -m pip install -q -e . pytest || python3 -m pip install -q pytest; fi
+if [ -f go.mod ]; then go mod download; fi
+exit 0`;
+
 function harnessStep(harness: WorkflowHarness): string {
 	if (harness === "codex") {
 		return `- name: Run the engineer agent (Codex through the Phaseo gateway)
@@ -172,8 +196,11 @@ echo "exit_code=$code" >> "$GITHUB_OUTPUT"`,
   run: |
 ${indent(
 	String.raw`set +e
+# Edits are allowed, and of shell commands only the test runners below, so untrusted issue text
+# can't talk the agent into running anything else while the gateway key is in its environment.
 npx -y @anthropic-ai/claude-code -p "$(cat "$RUNNER_TEMP/phaseo-prompt.md")" \
-  --permission-mode acceptEdits --max-turns 40 > "$RUNNER_TEMP/phaseo-summary.md"
+  --permission-mode acceptEdits --max-turns 40 \
+  --allowedTools ${CLAUDE_ALLOWED_TOOLS} > "$RUNNER_TEMP/phaseo-summary.md"
 code=$?
 set -e
 echo "exit_code=$code" >> "$GITHUB_OUTPUT"`,
@@ -225,6 +252,11 @@ git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" \
   echo "Fixes #$ISSUE_NUMBER"
   echo
   head -c 60000 "$RUNNER_TEMP/phaseo-summary.md" 2>/dev/null || true
+  if [ "$PR_TOKEN_SET" != "true" ]; then
+    echo
+    echo "> Checks didn't start on their own: this pull request was opened with the workflow's job token."
+    echo "> Add a PHASEO_PR_TOKEN secret so they do, or push to this branch to start them."
+  fi
 } > "$RUNNER_TEMP/phaseo-pr-body.md"
 PR_URL="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json url --jq '.[0].url // ""')"
 if [ -z "$PR_URL" ]; then
@@ -269,9 +301,15 @@ report_agent_run running "" ""`;
 # Repository secrets:
 #   PHASEO_WORK_TOKEN  the bridge token Phaseo showed when you linked the repository (pwg_...)
 #   PHASEO_API_KEY     a Phaseo API key for the engineer agent; it pays for the agent's requests
-# Also allow GitHub Actions to create pull requests (Settings > Actions > General > Workflow
-# permissions). Pull requests opened with the job token don't start other workflows, so re-run
-# your checks on the agent's branch or push to it to start CI.
+#   PHASEO_PR_TOKEN    optional: a fine-grained token with Contents and Pull requests (read and
+#                      write) on this repository. The agent's branch and pull request are made
+#                      with it, so your checks run on them. Without it they're made with the job
+#                      token, and GitHub doesn't start other workflows for those.
+# Without PHASEO_PR_TOKEN, also allow GitHub Actions to create pull requests (Settings > Actions >
+# General > Workflow permissions).
+#
+# The agent can edit files and run the project's tests (npm/pnpm/yarn/bun test, vitest, jest,
+# pytest, go test, cargo test, make test); dependencies are installed before it starts.
 #
 # Job "report" sends issue, comment and pull request activity to Phaseo.
 # Job "agent" runs ${harnessName} through the Phaseo gateway when someone with write access
@@ -344,6 +382,17 @@ ${indent(reportScript, 10)}
         with:
           node-version: 22
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # No secrets in this step: lockfile installs can run the project's own scripts.
+      - name: Install the project's dependencies
+        continue-on-error: true
+        run: |
+${indent(INSTALL_SCRIPT, 10)}
+
       - name: Report the agent run as running
         env:
           PHASEO_WORK_TOKEN: \${{ secrets.PHASEO_WORK_TOKEN }}
@@ -366,7 +415,10 @@ ${indent(harnessStep(harness), 6)}
         id: pr
         if: steps.harness.outputs.exit_code == '0'
         env:
-          GH_TOKEN: \${{ github.token }}
+          # With PHASEO_PR_TOKEN the branch and pull request are made with that token, so your
+          # checks run on them; with the job token, GitHub doesn't start other workflows.
+          GH_TOKEN: \${{ secrets.PHASEO_PR_TOKEN || github.token }}
+          PR_TOKEN_SET: \${{ secrets.PHASEO_PR_TOKEN != '' }}
           DEFAULT_BRANCH: \${{ github.event.repository.default_branch }}
         run: |
 ${indent(prScript, 10)}

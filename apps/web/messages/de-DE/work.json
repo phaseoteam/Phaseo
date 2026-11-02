@@ -415,7 +415,8 @@
 			"stepsTitle": "Einrichtung auf GitHub abschließen",
 			"stepSecretToken": "Lege ein Repository-Secret namens PHASEO_WORK_TOKEN mit dem Bridge-Token an.",
 			"stepSecretKey": "Lege ein Repository-Secret namens PHASEO_API_KEY mit einem Phaseo-API-Schlüssel an. Die Nutzung des Entwickler-Agenten wird darüber abgerechnet.",
-			"stepCommit": "Committe den Workflow als .github/workflows/phaseo.yml im Standard-Branch."
+			"stepCommit": "Committe den Workflow als .github/workflows/phaseo.yml im Standard-Branch.",
+			"stepSecretPrToken": "Optional: Füge ein Secret namens PHASEO_PR_TOKEN mit einem Fine-grained Token hinzu (Contents und Pull Requests, Lesen und Schreiben), damit deine Checks auf den Pull Requests des Agenten laufen."
 		},
 		"tracker": {
 			"title": "Tracker",

@@ -415,7 +415,8 @@
 			"stepsTitle": "أكمل الإعداد على GitHub",
 			"stepSecretToken": "أضف سرًا للمستودع باسم PHASEO_WORK_TOKEN يحتوي على رمز الجسر.",
 			"stepSecretKey": "أضف سرًا للمستودع باسم PHASEO_API_KEY يحتوي على مفتاح API من Phaseo. يُحتسب استخدام الوكيل المهندس على هذا المفتاح.",
-			"stepCommit": "أرسل سير العمل باسم .github/workflows/phaseo.yml إلى الفرع الافتراضي."
+			"stepCommit": "أرسل سير العمل باسم .github/workflows/phaseo.yml إلى الفرع الافتراضي.",
+			"stepSecretPrToken": "اختياري: أضف سرًا باسم PHASEO_PR_TOKEN يحتوي على رمز دقيق الصلاحيات (المحتوى وطلبات السحب، قراءة وكتابة) لتعمل فحوصك على طلبات السحب التي يفتحها الوكيل."
 		},
 		"tracker": {
 			"title": "المتتبع",
