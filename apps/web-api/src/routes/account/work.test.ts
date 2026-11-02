@@ -264,3 +264,142 @@ describe("POST /github-repos", () => {
 		expect(body.workflow).not.toContain(body.bridgeToken);
 	});
 });
+
+const RUN_ID = "00000000-0000-4000-8000-000000000501";
+const SUBSCRIBER = "00000000-0000-4000-8000-0000000000bb";
+
+function runRow(overrides: Record<string, unknown> = {}) {
+	return {
+		id: RUN_ID, workspace_id: WORKSPACE, work_item_id: ITEM_ID, agent: "engineer", runner: "desktop", status: "running", model: "m",
+		cost_nanos: 0, summary: null, output: {}, external_url: null, requested_by: USER, created_at: NOW, started_at: NOW, finished_at: null, ...overrides,
+	};
+}
+
+describe("desktop runs", () => {
+	it("records a run with its event and bumps last activity", async () => {
+		const calls = database({
+			handlers: {
+				work_items: () => Response.json([itemRow()]),
+				work_agent_runs: (entry) => Response.json([runRow({ ...entry.body, id: RUN_ID })], { status: 201 }),
+			},
+		});
+		const response = await write("/items/7/runs", "POST", { agent: "engineer", runner: "desktop", status: "running", model: "anthropic/claude-sonnet-5.5" });
+		expect(response.status).toBe(201);
+		expect((await response.json() as any).run).toMatchObject({ id: RUN_ID, runner: "desktop", status: "running", workItemNumber: 7 });
+		const insert = calls.find((entry) => entry.method === "POST" && entry.url.pathname.endsWith("/work_agent_runs"))!;
+		expect(insert.body).toMatchObject({ agent: "engineer", runner: "desktop", status: "running", requested_by: USER, started_at: expect.any(String), finished_at: null });
+		const event = calls.find((entry) => entry.method === "POST" && entry.url.pathname.endsWith("/work_item_events"))!;
+		expect(event.body).toMatchObject({ kind: "agent_run", author_kind: "agent", data: { runId: RUN_ID, status: "running" } });
+		const bump = calls.find((entry) => entry.method === "PATCH" && entry.url.pathname.endsWith("/work_items"))!;
+		expect(bump.body).toMatchObject({ last_activity_at: expect.any(String) });
+		expect(calls.some((entry) => entry.url.pathname.endsWith("/work_notifications"))).toBe(false);
+	});
+
+	it("only accepts desktop runs", async () => {
+		database();
+		expect((await write("/items/7/runs", "POST", { agent: "engineer", runner: "gateway", status: "running" })).status).toBe(400);
+	});
+
+	it("finishes a run and notifies subscribers once", async () => {
+		const calls = database({
+			handlers: {
+				work_items: () => Response.json([itemRow()]),
+				work_agent_runs: (entry) => Response.json([entry.method === "PATCH" ? runRow({ ...entry.body }) : runRow()]),
+				work_subscriptions: () => Response.json([{ user_id: SUBSCRIBER }, { user_id: USER }]),
+				work_notifications: () => Response.json([], { status: 201 }),
+			},
+		});
+		const response = await write(`/runs/${RUN_ID}`, "PATCH", { status: "succeeded", summary: "Opened a pull request", externalUrl: "https://github.com/acme/app/pull/3", costNanos: 4200 });
+		expect(response.status).toBe(200);
+		const patch = calls.find((entry) => entry.method === "PATCH" && entry.url.pathname.endsWith("/work_agent_runs"))!;
+		expect(patch.body).toMatchObject({ status: "succeeded", finished_at: expect.any(String), external_url: "https://github.com/acme/app/pull/3", cost_nanos: 4200 });
+		const notification = calls.find((entry) => entry.method === "POST" && entry.url.pathname.endsWith("/work_notifications"))!;
+		expect(notification.body).toEqual([expect.objectContaining({ user_id: SUBSCRIBER, kind: "agent" })]);
+	});
+});
+
+describe("GET /notifications", () => {
+	it("returns the person's notifications with an unread count query", async () => {
+		const calls = database({
+			handlers: {
+				work_notifications: (entry) => entry.method === "HEAD"
+					? new Response(null, { status: 200, headers: { "content-range": "*/3" } })
+					: Response.json([{ id: "00000000-0000-4000-8000-000000000601", workspace_id: WORKSPACE, user_id: USER, work_item_id: ITEM_ID, kind: "mention", actor_name: "Ann", body: "#7 Login fails: @staff", read_at: null, created_at: NOW, item: { number: 7, title: "Login fails" } }]),
+			},
+		});
+		const response = await call("/notifications?unread=1");
+		expect(response.status).toBe(200);
+		const body = await response.json() as any;
+		expect(body.unreadCount).toBe(3);
+		expect(body.notifications[0]).toMatchObject({ kind: "mention", workItemNumber: 7, workItemTitle: "Login fails" });
+		const list = calls.find((entry) => entry.method === "GET" && entry.url.pathname.endsWith("/work_notifications"))!;
+		expect(list.url.searchParams.get("user_id")).toBe(`eq.${USER}`);
+		expect(list.url.searchParams.get("read_at")).toBe("is.null");
+	});
+});
+
+describe("PUT /settings", () => {
+	it("is for workspace owners and admins only", async () => {
+		database();
+		const response = await write("/settings", "PUT", { stallDays: 10 });
+		expect(response.status).toBe(403);
+	});
+
+	it("validates and saves for an admin", async () => {
+		const calls = database({
+			handlers: {
+				workspace_members: () => Response.json([{ role: "admin", user_id: USER }]),
+				work_settings: (entry) => Response.json(entry.method === "GET" ? [] : [{ workspace_id: WORKSPACE, ...entry.body }]),
+			},
+		});
+		expect((await write("/settings", "PUT", { stallDays: 0 })).status).toBe(400);
+		const response = await write("/settings", "PUT", { stallDays: 10, slaHours: { "1": 2 } });
+		expect(response.status).toBe(200);
+		expect((await response.json() as any).settings).toMatchObject({ stallDays: 10, slaHours: { "1": 2, "2": 24, "3": 72, "4": 168 } });
+		const upsert = calls.find((entry) => entry.method === "POST" && entry.url.pathname.endsWith("/work_settings"))!;
+		expect(upsert.body).toMatchObject({ workspace_id: WORKSPACE, stall_days: 10, updated_by: USER });
+	});
+});
+
+describe("POST /items/bulk", () => {
+	it("changes each item with its own events and merges labels", async () => {
+		const calls = database({
+			handlers: {
+				work_items: (entry) => Response.json(entry.method === "PATCH"
+					? [itemRow({ ...entry.body })]
+					: [itemRow({ labels: ["bug", "old"] }), itemRow({ id: "00000000-0000-4000-8000-000000000102", number: 8, labels: [] })]),
+			},
+		});
+		const response = await write("/items/bulk", "POST", { numbers: [7, 8, 9], changes: { priority: 0, labelsAdd: ["ui"], labelsRemove: ["old"] } });
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ updated: 2, failed: 0, notFound: 1 });
+		const patches = calls.filter((entry) => entry.method === "PATCH" && entry.url.pathname.endsWith("/work_items")).map((entry) => entry.body.labels);
+		expect(patches).toEqual(expect.arrayContaining([["bug", "ui"], ["ui"]]));
+	});
+
+	it("refuses more than 100 items and unknown changes", async () => {
+		database();
+		expect((await write("/items/bulk", "POST", { numbers: Array.from({ length: 101 }, (_, index) => index + 1), changes: { priority: 1 } })).status).toBe(400);
+		expect((await write("/items/bulk", "POST", { numbers: [7], changes: { title: "x" } })).status).toBe(400);
+	});
+});
+
+describe("PATCH /items/:number parent", () => {
+	it("refuses a parent that would make the item its own ancestor", async () => {
+		const child = itemRow({ id: "00000000-0000-4000-8000-000000000102", number: 8, parent_id: ITEM_ID });
+		database({
+			handlers: {
+				work_items: (entry) => {
+					const number = entry.url.searchParams.get("number");
+					const id = entry.url.searchParams.get("id");
+					if (number === "eq.7") return Response.json([itemRow()]);
+					if (number === "eq.8" || id === `eq.${child.id}`) return Response.json([child]);
+					return Response.json([itemRow()]);
+				},
+			},
+		});
+		const response = await write("/items/7", "PATCH", { parentNumber: 8 });
+		expect(response.status).toBe(400);
+		expect((await response.json() as any).message).toMatch(/own ancestor/);
+	});
+});

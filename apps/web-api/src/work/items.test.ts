@@ -6,8 +6,11 @@ import {
 	formatWorkItem,
 	normalizeLabels,
 	planWorkItemChanges,
+	updateWorkItem,
+	wouldCreateParentCycle,
 	type DataClient,
 } from "./items";
+import { fakeDataClient } from "./fakeDataClient.testing";
 import type { GithubRepoRow, WorkItemRow } from "./types";
 
 const NOW = "2026-11-02T12:00:00.000Z";
@@ -51,8 +54,81 @@ describe("planWorkItemChanges", () => {
 		expect(plan.patch).toEqual({ assignee_agent: "engineer", duplicate_of: "00000000-0000-4000-8000-000000000102", updated_at: NOW, last_activity_at: NOW });
 	});
 
+	it("writes project, cycle, parent and estimate events and bumps last activity", () => {
+		const plan = planWorkItemChanges(item(), { projectId: "p", cycleId: "c", parentId: "parent", estimate: 3 }, NOW);
+		expect(plan.events.map((event) => event.kind)).toEqual(["project", "cycle", "parent", "estimate"]);
+		expect(plan.patch).toMatchObject({ project_id: "p", cycle_id: "c", parent_id: "parent", estimate: 3, last_activity_at: NOW });
+	});
+
+	it("does not count a recomputed SLA alone as activity", () => {
+		const plan = planWorkItemChanges(item(), { slaDueAt: "2026-11-03T00:00:00.000Z" }, NOW);
+		expect(plan.patch).toEqual({ sla_due_at: "2026-11-03T00:00:00.000Z", updated_at: NOW });
+	});
+
 	it("returns an empty patch when nothing changes", () => {
 		expect(planWorkItemChanges(item(), { state: "todo", labels: ["bug"] }, NOW)).toEqual({ patch: {}, events: [] });
+	});
+});
+
+describe("updateWorkItem", () => {
+	const ASSIGNEE = "00000000-0000-4000-8000-0000000000bb";
+	const ACTOR = "00000000-0000-4000-8000-0000000000aa";
+
+	function setup(current: WorkItemRow, settings: unknown = null, subscribers: string[] = []) {
+		return fakeDataClient((query) => {
+			if (query.table === "work_settings") return { data: settings, error: null };
+			if (query.table === "work_subscriptions" && query.op === "select") return { data: subscribers.map((user_id) => ({ user_id })), error: null };
+			if (query.table === "work_items" && query.op === "update") return { data: { ...current, ...(query.payload as object) }, error: null };
+			return undefined;
+		});
+	}
+
+	it("sets sla_due_at from the workspace hours when the priority changes, and clears it at 0", async () => {
+		const fake = setup(item(), { sla_hours: { "1": 2 } });
+		await updateWorkItem(fake.client, item(), { priority: 1 }, { kind: "user", userId: ACTOR });
+		const patch = fake.queries.find((query) => query.table === "work_items" && query.op === "update")!.payload as Record<string, unknown>;
+		const due = Date.parse(String(patch.sla_due_at));
+		expect(due - Date.now()).toBeGreaterThan(7_100_000);
+		expect(due - Date.now()).toBeLessThanOrEqual(7_200_000);
+
+		const cleared = setup(item({ priority: 2, sla_due_at: NOW }));
+		await updateWorkItem(cleared.client, item({ priority: 2, sla_due_at: NOW }), { priority: 0 }, { kind: "user", userId: ACTOR });
+		expect(cleared.queries.find((query) => query.table === "work_items" && query.op === "update")!.payload).toMatchObject({ priority: 0, sla_due_at: null });
+	});
+
+	it("keeps sla_due_at when the item closes", async () => {
+		const fake = setup(item({ priority: 2, sla_due_at: NOW }));
+		await updateWorkItem(fake.client, item({ priority: 2, sla_due_at: NOW }), { state: "done" }, { kind: "user", userId: ACTOR });
+		expect(fake.queries.find((query) => query.table === "work_items" && query.op === "update")!.payload).not.toHaveProperty("sla_due_at");
+	});
+
+	it("subscribes and notifies a new assignee, and notifies subscribers when the item closes", async () => {
+		const fake = setup(item(), null, [ACTOR, ASSIGNEE]);
+		await updateWorkItem(fake.client, item(), { assigneeUserId: ASSIGNEE, state: "done" }, { kind: "user", userId: ACTOR, name: "Staff" });
+		expect(fake.queries.find((query) => query.table === "work_subscriptions" && query.op === "upsert")!.payload).toMatchObject({ user_id: ASSIGNEE, reason: "assignee" });
+		const notifications = fake.queries.filter((query) => query.table === "work_notifications").flatMap((query) => query.payload as Array<Record<string, unknown>>);
+		expect(notifications.map((row) => [row.kind, row.user_id])).toEqual([["assigned", ASSIGNEE], ["state", ASSIGNEE]]);
+	});
+});
+
+describe("wouldCreateParentCycle", () => {
+	it("refuses a parent that descends from the item", async () => {
+		const parents: Record<string, string | null> = { b: "c", c: "a" };
+		const fake = fakeDataClient((query) => {
+			const id = query.filters.find(([name, column]) => name === "eq" && column === "id")?.[2] as string;
+			return { data: { id, parent_id: parents[id] ?? null }, error: null };
+		});
+		expect(await wouldCreateParentCycle(fake.client, "ws", "a", "b")).toBe(true);
+		expect(await wouldCreateParentCycle(fake.client, "ws", "x", "b")).toBe(false);
+	});
+
+	it("refuses chains deeper than ten levels", async () => {
+		const fake = fakeDataClient((query) => {
+			const id = query.filters.find(([name, column]) => name === "eq" && column === "id")?.[2] as string;
+			return { data: { id, parent_id: `${id}-up` }, error: null };
+		});
+		expect(await wouldCreateParentCycle(fake.client, "ws", "a", "b")).toBe(true);
+		expect(fake.queries).toHaveLength(10);
 	});
 });
 
