@@ -10,6 +10,7 @@ import { frontendProfileAvatarsRouter } from "@/routes/frontend-profile-avatars"
 import { scimRouter } from "@/scim/router";
 import { handleProviderCatalogScheduledEvent } from "@/scheduled/provider-catalog";
 import { handleSlackAgentChargesScheduledEvent } from "@/scheduled/slack-agent-charges";
+import { handleWorkScheduledEvent } from "@/scheduled/work";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -29,6 +30,7 @@ export default Object.assign(app, {
 		await Promise.all([
 			handleProviderCatalogScheduledEvent(event, env, executionCtx),
 			handleSlackAgentChargesScheduledEvent(event, env),
+			handleWorkScheduledEvent(event, env),
 		]);
 	},
 });

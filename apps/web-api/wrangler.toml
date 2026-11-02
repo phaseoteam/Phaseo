@@ -36,6 +36,11 @@ SPEND_RULE_BLOCKS_ENABLED = "false"
 # Display only: tells Settings whether spend report emails go out yet. Keep it equal to the
 # gateway's SPEND_REPORTS_ENABLED (apps/api/wrangler*.toml), which queues them.
 SPEND_REPORTS_ENABLED = "false"
+# Work tracker automation (src/scheduled/work.ts, on the minute cron below). Both off by default:
+# SLA watch warns on items near or past their SLA every 15 minutes; ambient follows up on stalled
+# items hourly, and only in workspaces that turned ambient follow-ups on.
+WORK_SLA_WATCH_ENABLED = "false"
+WORK_AMBIENT_ENABLED = "false"
 # Set by deployment environment; kept out of source configuration.
 # STAGING_GATEWAY_BASE_URL = "https://<staging-gateway>/v1"
 
@@ -77,6 +82,8 @@ ENV = "staging"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 SPEND_RULE_BLOCKS_ENABLED = "false"
 SPEND_REPORTS_ENABLED = "false"
+WORK_SLA_WATCH_ENABLED = "false"
+WORK_AMBIENT_ENABLED = "false"
 
 [[env.staging.r2_buckets]]
 binding = "PROFILE_AVATARS_BUCKET"

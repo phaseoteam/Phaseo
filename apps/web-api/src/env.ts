@@ -38,6 +38,10 @@ export type Env = {
 	SPEND_RULE_BLOCKS_ENABLED?: string;
 	/** Display only: "true" when the gateway queues spend report emails (mirrors its SPEND_REPORTS_ENABLED). */
 	SPEND_REPORTS_ENABLED?: string;
+	/** "true" turns on the work tracker's SLA watch (scheduled every 15 minutes). Default off. */
+	WORK_SLA_WATCH_ENABLED?: string;
+	/** "true" turns on ambient follow-ups on stalled work items (hourly), for workspaces that enable them too. Default off. */
+	WORK_AMBIENT_ENABLED?: string;
 	RESEND_API_KEY?: string;
 	EXPO_ACCESS_TOKEN?: string;
 	FEEDBACK_REWARD_USD?: string;
