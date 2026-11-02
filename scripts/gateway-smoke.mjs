@@ -8,6 +8,40 @@ const USER_AGENT = 'Phaseo-Gateway-Smoke/1.0';
 // Guards against a mistyped budget; the smoke key's own spend limit is the real backstop.
 const MAX_SPEND_CEILING_USD = 1;
 const PROMPT = 'Reply with the single word OK.';
+const PAID_REQUESTS = 2;
+const MAX_OUTPUT_TOKENS = 16;
+// Generous for the prompt plus chat formatting; usage_recorded fails if a request costs more than the bound.
+const PROMPT_TOKEN_BOUND = 256;
+
+// Units of each meter one smoke request can use: a short text chat with no tools or media.
+function meterUnits(meter) {
+  if (meter === 'requests') return 1;
+  if (/^output_(text_|reasoning_)?tokens$/.test(meter)) return MAX_OUTPUT_TOKENS;
+  if (meter === 'total_tokens') return PROMPT_TOKEN_BOUND + MAX_OUTPUT_TOKENS;
+  if (/^(input_(text_)?tokens|implicit_cached_input_text_tokens|cached_(read|write)_text_tokens(_\w+)?)$/.test(meter)) return PROMPT_TOKEN_BOUND;
+  if (/^((input|output|cached_read|cached_write)_(image|audio|video)|native_web_)/.test(meter)) return 0;
+  return null;
+}
+
+/** Most one smoke request can cost on any routable offer, or null when the published prices cannot bound it. */
+export function requestCostBoundNanos(model) {
+  const offers = Array.isArray(model?.offers) ? model.offers.filter((offer) => offer?.routable) : [];
+  if (!offers.length) return null;
+  let bound = 0;
+  for (const offer of offers) {
+    const meters = Object.entries(offer.pricing?.meters ?? {}).filter(([, price]) => price);
+    if (!meters.length) return null;
+    let offerBound = 0;
+    for (const [meter, price] of meters) {
+      const units = meterUnits(meter);
+      const perUnit = Number(price.price_per_unit) / Number(price.unit_size);
+      if (units === null || price.currency !== 'USD' || !Number.isFinite(perUnit) || perUnit < 0) return null;
+      offerBound += units * perUnit;
+    }
+    bound = Math.max(bound, offerBound);
+  }
+  return Math.ceil(bound * 1e9);
+}
 
 export function configFromEnv(env = process.env, argv = process.argv.slice(2)) {
   const maxSpendUsd = Number(env.PHASEO_SMOKE_MAX_SPEND_USD ?? 0);
@@ -83,22 +117,38 @@ export async function runSmoke(config, { fetcher = fetch, wait = (ms) => new Pro
       ...(ok ? {} : { reason: `expected_${expected}` }),
     });
   });
-  const chat = (extra) => ({ model: config.model, messages: [{ role: 'user', content: PROMPT }], max_tokens: 16, temperature: 0, ...extra });
+  const chat = (extra) => ({ model: config.model, messages: [{ role: 'user', content: PROMPT }], max_tokens: MAX_OUTPUT_TOKENS, temperature: 0, ...extra });
   const missingId = `smoke-missing-${Date.now()}`;
 
   await expectStatus('auth_rejects_invalid_key', 401, () => call(`/generations?id=${missingId}`, { key: 'phaseo-smoke-invalid-key' }));
   // A lookup of an unknown ID is free: 404 proves the key authenticated.
   await expectStatus('auth_accepts_key', 404, () => call(`/generations?id=${missingId}`));
 
+  let costBoundNanos = null;
   await check('discovery', async () => {
-    const { response, durationMs } = await call(`/models?format=openai&search=${encodeURIComponent(config.model)}&limit=50`);
+    const { response, durationMs } = await call(`/models?search=${encodeURIComponent(config.model)}&limit=50`);
     const body = await readJson(response);
-    const models = Array.isArray(body?.data) ? body.data : [];
-    const listed = models.some((model) => (model.id ?? model.model_id) === config.model);
+    const listed = (Array.isArray(body?.models) ? body.models : []).find((model) => model?.id === config.model);
+    costBoundNanos = requestCostBoundNanos(listed);
     return record('discovery', response.ok && listed ? 'pass' : 'fail', {
-      status: response.status, duration_ms: durationMs, ...(response.ok && !listed ? { reason: 'model_not_listed' } : {}),
+      status: response.status, duration_ms: durationMs, cost_bound_nanos: costBoundNanos,
+      ...(response.ok && !listed ? { reason: 'model_not_listed' } : {}),
     });
   });
+
+  const balance = async () => {
+    const { response } = await call('/credits', { key: config.managementKey });
+    const body = await readJson(response);
+    const nanos = Number(body?.credits?.balance_nanos);
+    if (!response.ok || !Number.isFinite(nanos)) throw new Error(`credits_${response.status}`);
+    return nanos;
+  };
+  // Read before the rejected requests, so a charge for one of them shows in billing_settled.
+  let balanceBefore = null;
+  let balanceProblem = null;
+  if (config.paid && config.managementKey) {
+    try { balanceBefore = await balance(); } catch { balanceProblem = 'credits_unreadable_before'; }
+  }
 
   await expectStatus('invalid_request', 400, () => call('/chat/completions', { method: 'POST', body: { model: config.model, messages: 'not-a-list' } }));
 
@@ -108,22 +158,19 @@ export async function runSmoke(config, { fetcher = fetch, wait = (ms) => new Pro
     record('insufficient_credit', 'skip', { reason: 'PHASEO_SMOKE_LOW_CREDIT_API_KEY not set' });
   }
 
+  const paidChecks = ['buffered_request', 'streamed_request', 'usage_recorded', 'billing_settled'];
   if (!config.paid) {
-    for (const id of ['buffered_request', 'streamed_request', 'usage_recorded', 'billing_settled']) record(id, 'skip', { reason: 'paid checks not requested' });
+    for (const id of paidChecks) record(id, 'skip', { reason: 'paid checks not requested' });
     return results;
   }
-
-  const balance = async () => {
-    const { response } = await call('/credits', { key: config.managementKey });
-    const body = await readJson(response);
-    const nanos = Number(body?.credits?.balance_nanos);
-    if (!response.ok || !Number.isFinite(nanos)) throw new Error(`credits_${response.status}`);
-    return nanos;
-  };
-  let balanceBefore = null;
-  if (config.managementKey) {
-    try { balanceBefore = await balance(); } catch { record('billing_settled', 'fail', { reason: 'credits_unreadable_before' }); }
+  // Nothing is sent unless the published prices bound every paid request within the budget.
+  const refusal = !(costBoundNanos > 0) ? 'cost_bound_unknown'
+    : PAID_REQUESTS * costBoundNanos > config.maxSpendNanos ? 'budget_below_cost_bound' : null;
+  if (refusal) {
+    for (const id of paidChecks) record(id, 'fail', { reason: refusal, cost_bound_nanos: costBoundNanos });
+    return results;
   }
+  if (balanceProblem) record('billing_settled', 'fail', { reason: balanceProblem });
 
   const generations = [];
   await check('buffered_request', async () => {
@@ -184,11 +231,11 @@ export async function runSmoke(config, { fetcher = fetch, wait = (ms) => new Pro
       if (row.success !== true || row.byok !== false) return fail('row_not_successful_paid_request');
       const cost = Number(row.cost_nanos);
       if (!(cost > 0)) return fail('cost_missing');
+      if (cost > costBoundNanos) return fail('cost_above_bound');
       if (Number(row.usage_input_tokens) !== generation.usage.prompt_tokens ||
           Number(row.usage_output_tokens) !== generation.usage.completion_tokens) return fail('usage_differs_from_response');
       spentNanos += cost;
     }
-    if (spentNanos > config.maxSpendNanos) return record('usage_recorded', 'fail', { spent_nanos: spentNanos, reason: 'budget_exceeded' });
     return record('usage_recorded', 'pass', { requests: generations.length, spent_nanos: spentNanos });
   });
 

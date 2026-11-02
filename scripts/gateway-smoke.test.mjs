@@ -20,8 +20,12 @@ function config(overrides = {}) {
 
 const json = (status, body, headers = {}) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...headers } });
 
+const usd = (price) => ({ provider_id: 'p', unit: 'token', unit_size: 1, price_per_unit: price, currency: 'USD' });
+// $1 / $2 per million tokens: one request costs at most 256 * 1000 + 16 * 2000 = 288,000 nanos.
+const PRICED = { input_text_tokens: usd('0.000001'), output_text_tokens: usd('0.000002'), cached_read_text_tokens: null };
+
 /** A gateway that bills each generation `cost` nanos once its row is recorded. */
-function gateway({ cost = 3000, chargeDelta = null, rowUsage = null, streamError = false, rowsVisibleAfter = 1 } = {}) {
+function gateway({ cost = 3000, chargeDelta = null, rowUsage = null, streamError = false, rowsVisibleAfter = 1, meters = PRICED, chargeInvalid = 0 } = {}) {
   let balance = 5_000_000_000;
   const rows = new Map();
   const lookups = new Map();
@@ -39,10 +43,18 @@ function gateway({ cost = 3000, chargeDelta = null, rowUsage = null, streamError
       const row = rows.get(id);
       return row && lookups.get(id) > rowsVisibleAfter - 1 ? json(200, row) : json(404, { ok: false, error: 'not_found' });
     }
-    if (pathname === '/v1/models') return json(200, { data: [{ id: MODEL }, { id: 'other/model' }] });
+    if (pathname === '/v1/models') {
+      return json(200, { models: [
+        { id: MODEL, offers: [{ routable: true, pricing: { meters } }, { routable: false, pricing: { meters: { requests: usd('5') } } }] },
+        { id: 'other/model', offers: [] },
+      ] });
+    }
     if (pathname === '/v1/credits') return json(200, { ok: true, credits: { balance_nanos: balance } });
     if (pathname === '/v1/chat/completions') {
-      if (!Array.isArray(body.messages)) return json(400, { error: { code: 'invalid_request', message: 'messages must be a list' } });
+      if (!Array.isArray(body.messages)) {
+        balance -= chargeInvalid;
+        return json(400, { error: { code: 'invalid_request', message: 'messages must be a list' } });
+      }
       if (auth === LOW) return json(402, { error: { code: 'insufficient_quota', message: 'add credits' } });
       const id = `gen-${++next}`;
       const usage = { prompt_tokens: 12, completion_tokens: 2, total_tokens: 14 };
@@ -99,10 +111,42 @@ test('fails when recorded usage differs from what the response reported', async 
   assert.equal(results.find((r) => r.check === 'usage_recorded').reason, 'usage_differs_from_response');
 });
 
-test('fails when the run costs more than its budget', async () => {
-  const { fetcher } = gateway({ cost: 6_000_000 });
+const paidSends = (calls) => calls.filter((c) => c.path === '/v1/chat/completions' && c.auth === KEY && Array.isArray(c.body.messages)).length;
+
+test('sends no paid request when the published prices could exceed the budget', async () => {
+  const { fetcher, calls } = gateway();
+  // Two requests may cost up to 576,000 nanos.
+  const results = await runSmoke(config({ maxSpendNanos: 500_000 }), { fetcher, wait: async () => {} });
+  assert.equal(results.find((r) => r.check === 'discovery').cost_bound_nanos, 288_000);
+  assert.deepEqual(results.filter((r) => r.outcome === 'fail').map((r) => `${r.check}:${r.reason}`), [
+    'buffered_request:budget_below_cost_bound', 'streamed_request:budget_below_cost_bound',
+    'usage_recorded:budget_below_cost_bound', 'billing_settled:budget_below_cost_bound',
+  ]);
+  assert.equal(paidSends(calls), 0);
+});
+
+test('sends no paid request when a price cannot be bounded', async () => {
+  for (const meters of [{ ...PRICED, deepinfra_cost_usd: { ...usd('1'), unit: 'USD' } }, { ...PRICED, input_text_tokens: { ...usd('0.000001'), currency: 'EUR' } }, {}]) {
+    const { fetcher, calls } = gateway({ meters });
+    const results = await runSmoke(config(), { fetcher, wait: async () => {} });
+    assert.equal(results.find((r) => r.check === 'buffered_request').reason, 'cost_bound_unknown', JSON.stringify(meters));
+    assert.equal(paidSends(calls), 0);
+  }
+});
+
+test('fails when a request costs more than its published-price bound', async () => {
+  const { fetcher } = gateway({ cost: 300_000 });
   const results = await runSmoke(config(), { fetcher, wait: async () => {} });
-  assert.equal(results.find((r) => r.check === 'usage_recorded').reason, 'budget_exceeded');
+  assert.equal(results.find((r) => r.check === 'usage_recorded').reason, 'cost_above_bound');
+});
+
+test('fails when a rejected request moved the wallet', async () => {
+  const { fetcher } = gateway({ chargeInvalid: 1000 });
+  const results = await runSmoke(config(), { fetcher, wait: async () => {} });
+  assert.equal(results.find((r) => r.check === 'invalid_request').outcome, 'pass');
+  assert.deepEqual(results.find((r) => r.check === 'billing_settled'), {
+    check: 'billing_settled', outcome: 'fail', charged_nanos: 7000, spent_nanos: 6000, reason: 'balance_change_differs_from_recorded_cost',
+  });
 });
 
 test('fails when a request row never appears', async () => {
