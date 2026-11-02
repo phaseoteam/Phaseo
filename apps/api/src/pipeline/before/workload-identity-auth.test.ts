@@ -19,19 +19,15 @@ const runtime = vi.hoisted(() => {
 	};
 	const policyQuery = () => {
 		const filters: Array<[string, unknown]> = [];
-		const chain = {
-			select: () => chain,
-			eq: (column: string, value: unknown) => {
-				filters.push([column, value]);
-				if (filters.length === 3) {
-					state.policyQueries.push(filters);
-					const result = Promise.resolve({ data: state.policyError ? null : state.policyRows, error: state.policyError });
-					// Custom-issuer lookups add a row limit.
-					return Object.assign(result, { limit: (count: number) => (filters.push(["limit", count]), result) });
-				}
-				return chain;
-			},
+		const filter = (column: string, value: unknown) => {
+			filters.push([column, value]);
+			if (filters.length === 3) {
+				state.policyQueries.push(filters);
+				return Promise.resolve({ data: state.policyError ? null : state.policyRows, error: state.policyError });
+			}
+			return chain;
 		};
+		const chain = { select: () => chain, eq: filter, in: filter };
 		return chain;
 	};
 	const supabase = {
@@ -186,7 +182,7 @@ describe("authenticate with workload identity tokens", () => {
 			internal: false,
 			authMethod: "api_key",
 		});
-		expect(runtime.state.policyQueries).toEqual([[["issuer", ISSUER], ["status", "active"], ["pinned_owner_id", "team_123"]]]);
+		expect(runtime.state.policyQueries).toEqual([[["issuer", ISSUER], ["status", "active"], ["pinned_owner_id", ["team_123"]]]]);
 		await Promise.all(runtime.state.background);
 		expect(runtime.state.keyUpdates).toHaveLength(1);
 	});
@@ -228,13 +224,27 @@ describe("authenticate with workload identity tokens", () => {
 		})];
 		const token = await signTestToken(signer, claims({ iss: CUSTOM_ISSUER, sub: "system:serviceaccount:prod:api", "kubernetes.io/cluster": "prod" }));
 		expect(await authenticate(request(token))).toMatchObject({ ok: true, apiKeyId: "key_1", workspaceId: "ws_1" });
-		// Custom policies are found by issuer alone, bounded, never by an unverified owner value.
-		expect(runtime.state.policyQueries).toEqual([[["issuer", CUSTOM_ISSUER], ["status", "active"], ["provider", "custom"], ["limit", 200]]]);
+		// Custom policies are found by issuer and any of the token's claim values as owner.
+		const [[, , [column, owners]]] = runtime.state.policyQueries;
+		expect(column).toBe("pinned_owner_id");
+		expect(owners).toEqual(expect.arrayContaining(["system:serviceaccount:prod:api", "prod"]));
 		expect(jwksFetches).toBe(2);
 
 		__resetWorkloadIdentityAuthCachesForTests();
 		const otherAccount = await signTestToken(signer, claims({ iss: CUSTOM_ISSUER, sub: "system:serviceaccount:prod:other", "kubernetes.io/cluster": "prod" }));
 		expect(await authenticate(request(otherAccount))).toEqual({ ok: false, reason: "workload_identity_no_matching_policy" });
+
+		// A stored pinned claim that names an Object prototype property still has to be on the token.
+		__resetWorkloadIdentityAuthCachesForTests();
+		runtime.state.policyRows = [policyRow({
+			provider: "custom",
+			issuer: CUSTOM_ISSUER,
+			pinned_claim: "__proto__",
+			pinned_owner_id: "prod",
+			claim_conditions: {},
+		})];
+		const withoutPinnedClaim = await signTestToken(signer, claims({ iss: CUSTOM_ISSUER, "kubernetes.io/cluster": "prod" }));
+		expect(await authenticate(request(withoutPinnedClaim))).toEqual({ ok: false, reason: "workload_identity_no_matching_policy" });
 	});
 
 	it("never fetches keys for an issuer no active policy names", async () => {

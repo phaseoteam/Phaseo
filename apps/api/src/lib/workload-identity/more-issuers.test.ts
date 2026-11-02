@@ -148,6 +148,19 @@ describe("custom issuers", () => {
 		expect(fetches).toEqual([DISCOVERY_URL, CUSTOM_JWKS_URL]);
 	});
 
+	it("checks the exact issuer on cached discovery documents too", async () => {
+		const { fetches, source } = customSource({
+			"https://oidc.example.com/.well-known/openid-configuration": { issuer: "https://oidc.example.com", jwks_uri: "https://oidc.example.com/keys" },
+			"https://oidc.example.com/keys": { keys: [rsa.publicJwk] },
+		});
+		const configuredIssuers = new Set(["https://oidc.example.com", "https://oidc.example.com/"]);
+		const exact = await signTestToken(rsa, claims({ iss: "https://oidc.example.com" }));
+		const slashed = await signTestToken(rsa, claims({ iss: "https://oidc.example.com/" }));
+		expect(await verifyWorkloadToken(exact, { jwks: source, nowSeconds: NOW, configuredIssuers })).toMatchObject({ ok: true });
+		expect(await verifyWorkloadToken(slashed, { jwks: source, nowSeconds: NOW, configuredIssuers })).toEqual({ ok: false, reason: "workload_jwks_unavailable" });
+		expect(fetches).toHaveLength(2);
+	});
+
 	it("never discovers an issuer that no policy names, or without the configured list", async () => {
 		const { fetches, source } = customSource({});
 		const token = await signTestToken(rsa, claims());
@@ -180,6 +193,8 @@ describe("custom issuers", () => {
 		for (const [input, error] of [
 			[{ pinnedClaim: null }, "owner_claim must be a claim name such as sub"],
 			[{ pinnedClaim: "aud" }, "owner_claim must be a claim name such as sub"],
+			[{ pinnedClaim: "__proto__" }, "owner_claim must be a claim name such as sub"],
+			[{ pinnedClaim: "constructor" }, "owner_claim must be a claim name such as sub"],
 			[{ claimConditions: {} }, 'claim "sub" is required for custom policies'],
 			[{ issuer: "https://gitlab.com" }, "issuer must be a public https URL on a host that is not a preset platform's"],
 		] as const) {

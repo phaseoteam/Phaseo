@@ -254,7 +254,8 @@ export async function verifyWorkloadToken(
 
 type L1Entry<T> = { value: T; expiresAt: number };
 const jwksL1 = new Map<string, L1Entry<JsonWebKey[]>>();
-const discoveryL1 = new Map<string, L1Entry<string>>();
+type DiscoveredIssuer = { issuer: string; jwksUri: string };
+const discoveryL1 = new Map<string, L1Entry<DiscoveredIssuer>>();
 // When each URL last started a forced refresh, successful or not.
 const forcedRefreshAt = new Map<string, number>();
 const failedUntil = new Map<string, number>();
@@ -380,19 +381,22 @@ export function createJwksSource(args: { kv?: KVNamespace | null; fetchImpl?: ty
 		async getJwksUri(issuer) {
 			const url = discoveryUrlForIssuer(issuer);
 			if (!url) throw new Error("issuer_not_custom");
-			return load({
+			const discovered = await load<DiscoveredIssuer>({
 				url,
 				l1: discoveryL1,
 				kvPrefix: DISCOVERY_KV_PREFIX,
 				parse: (document) => {
-					// OIDC Discovery: the document must name the issuer it was fetched for.
-					if (document.issuer !== issuer || !isAllowedDiscoveredJwksUrl(issuer, document.jwks_uri)) {
+					if (typeof document.issuer !== "string" || !isAllowedDiscoveredJwksUrl(document.issuer, document.jwks_uri)) {
 						throw new Error("discovery_invalid");
 					}
-					return document.jwks_uri;
+					return { issuer: document.issuer, jwksUri: document.jwks_uri };
 				},
-				toKv: (jwksUri) => ({ issuer, jwks_uri: jwksUri }),
+				toKv: (value) => ({ issuer: value.issuer, jwks_uri: value.jwksUri }),
 			});
+			// OIDC Discovery: the document must name exactly this issuer. Checked on every
+			// call, since "https://a.example" and "https://a.example/" share one document.
+			if (discovered.issuer !== issuer) throw new Error("discovery_invalid");
+			return discovered.jwksUri;
 		},
 	};
 }

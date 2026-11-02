@@ -28,8 +28,9 @@ const TOKEN_L1_TTL_MS = 30_000;
 const TOKEN_L1_MAX_ENTRIES = 5_000;
 // New policies' issuers are picked up within this window.
 const ISSUERS_L1_TTL_MS = 60_000;
-// A custom issuer belongs to one workspace, so it has few policies; this bounds the read.
-const CUSTOM_ISSUER_POLICY_LIMIT = 200;
+// Bounds the owner values a custom-issuer token can look policies up by.
+const MAX_CUSTOM_OWNER_CANDIDATES = 64;
+const MAX_OWNER_ID_LENGTH = 256;
 export const WORKLOAD_IDENTITY_WORKSPACE_HEADER = "x-phaseo-workspace";
 
 type PolicyKeyRow = {
@@ -104,9 +105,9 @@ function toCandidate(row: PolicyRow): CandidatePolicy | null {
 	if (!row.keys) return null;
 	const pinnedClaim = pinnedClaimFor(row.provider, row.pinned_claim);
 	if (!pinnedClaim) return null;
-	const conditions = { ...(row.claim_conditions ?? {}) };
-	// The pinned owner is stored in its own indexed column.
-	conditions[pinnedClaim] = [row.pinned_owner_id];
+	// The pinned owner is stored in its own indexed column. A computed key keeps
+	// it an own property whatever its name.
+	const conditions = { ...(row.claim_conditions ?? {}), [pinnedClaim]: [row.pinned_owner_id] };
 	return {
 		id: row.id,
 		workspaceId: row.workspace_id,
@@ -139,21 +140,21 @@ async function loadConfiguredIssuers(nowMs: number): Promise<ReadonlySet<string>
 }
 
 /**
- * Preset policies are found by issuer and pinned owner. Each custom-issuer
- * policy chooses its own pinned claim, so those are found by issuer alone.
+ * Policies are found by issuer and pinned owner. A preset pins one known
+ * claim; each custom-issuer policy chooses its own, so every top-level claim
+ * value of the token is a possible owner and the policy's own pinned claim is
+ * checked when matching.
  */
-async function loadCandidatePolicies(issuer: string, ownerId: string | null): Promise<CandidatePolicy[] | "db_error"> {
-	const cacheKey = ownerId === null ? `${issuer}\n*` : `${issuer}\n${ownerId}`;
+async function loadCandidatePolicies(issuer: string, ownerIds: string[]): Promise<CandidatePolicy[] | "db_error"> {
+	const cacheKey = `${issuer}\n${ownerIds.join("\n")}`;
 	const cached = policyL1.get(cacheKey);
 	if (cached && cached.expiresAt > Date.now()) return cached.policies;
-	const query = getSupabaseAdmin()
+	const { data, error } = await getSupabaseAdmin()
 		.from("workload_identity_policies")
 		.select("id,workspace_id,key_id,provider,issuer,pinned_claim,pinned_owner_id,claim_conditions,max_token_lifetime_seconds,status,keys(id,kid,workspace_id,status,key_kind,expires_at,ip_allowlist,created_by)")
 		.eq("issuer", issuer)
-		.eq("status", "active");
-	const { data, error } = ownerId === null
-		? await query.eq("provider", "custom").limit(CUSTOM_ISSUER_POLICY_LIMIT)
-		: await query.eq("pinned_owner_id", ownerId);
+		.eq("status", "active")
+		.in("pinned_owner_id", ownerIds);
 	if (error) return "db_error";
 	const policies = ((data ?? []) as unknown as PolicyRow[])
 		.map(toCandidate)
@@ -166,6 +167,23 @@ function claimAsString(value: unknown): string | null {
 	if (typeof value === "string" && value.length > 0) return value;
 	if (typeof value === "number" && Number.isFinite(value)) return String(value);
 	return null;
+}
+
+/** Owner values to look policies up by: the preset's pinned claim, or any claim value for a custom issuer. */
+function possibleOwnerIds(provider: WorkloadIdentityProvider, claims: Record<string, unknown>): string[] {
+	if (provider !== "custom") {
+		const pinnedClaim = pinnedClaimFor(provider);
+		const ownerId = pinnedClaim ? claimAsString(claims[pinnedClaim]) : null;
+		return ownerId ? [ownerId] : [];
+	}
+	const values = new Set<string>();
+	for (const value of Object.values(claims)) {
+		const ownerId = claimAsString(value);
+		// pinned_owner_id is at most 256 characters, so longer values cannot match.
+		if (ownerId && ownerId.length <= MAX_OWNER_ID_LENGTH) values.add(ownerId);
+		if (values.size >= MAX_CUSTOM_OWNER_CANDIDATES) break;
+	}
+	return [...values].sort();
 }
 
 function isGateOpen(auth: AuthSuccess): Promise<boolean> {
@@ -211,14 +229,10 @@ export async function authenticateWorkloadIdentity(
 	});
 	if (verified.ok === false) return { result: { ok: false, reason: verified.reason } };
 
-	let ownerId: string | null = null;
-	if (verified.provider !== "custom") {
-		const pinnedClaim = pinnedClaimFor(verified.provider);
-		ownerId = pinnedClaim ? claimAsString(verified.claims[pinnedClaim]) : null;
-		if (!ownerId) return { result: { ok: false, reason: "workload_identity_no_matching_policy" } };
-	}
+	const ownerIds = possibleOwnerIds(verified.provider, verified.claims);
+	if (ownerIds.length === 0) return { result: { ok: false, reason: "workload_identity_no_matching_policy" } };
 
-	const policies = await loadCandidatePolicies(verified.claims.iss, ownerId);
+	const policies = await loadCandidatePolicies(verified.claims.iss, ownerIds);
 	if (policies === "db_error") return { result: { ok: false, reason: "db_error" } };
 	// Owner IDs are public, so another workspace can pin someone else's and make
 	// their token ambiguous. Never resolve that by dropping or ranking candidates

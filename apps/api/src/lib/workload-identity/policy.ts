@@ -51,8 +51,9 @@ export function pinnedClaimFor(provider: WorkloadIdentityProvider, pinnedClaim?:
 	return REQUIRED_PINNED_CLAIMS[provider]?.[0] ?? null;
 }
 
-// Registered claims are checked by the verifier.
-const RESERVED_CLAIMS = new Set(["iss", "aud", "exp", "iat", "nbf", "jti"]);
+// Registered claims are checked by the verifier. Object prototype names would
+// read inherited properties instead of the token's claims.
+const RESERVED_CLAIMS = new Set(["iss", "aud", "exp", "iat", "nbf", "jti", "__proto__", "constructor", "prototype"]);
 // Slashes and colons appear in platform claims such as `oidc.circleci.com/org-id`.
 export const CLAIM_NAME = /^[A-Za-z0-9._:/-]{1,128}$/;
 const MAX_CONDITIONS = 16;
@@ -138,9 +139,9 @@ export function policyMatchesClaims(policy: WorkloadIdentityPolicy, claims: Work
 	if (tokenLifetimeSeconds(claims) > policy.maxTokenLifetimeSeconds) return false;
 	// Defence in depth: a stored policy that lost its pinned claim never matches.
 	const pinned = pinnedClaimFor(policy.provider, policy.pinnedClaim);
-	if (!pinned || !policy.claimConditions[pinned]?.length) return false;
+	if (!pinned || !Object.hasOwn(policy.claimConditions, pinned) || !policy.claimConditions[pinned]?.length) return false;
 	for (const [claim, allowed] of Object.entries(policy.claimConditions)) {
-		const actual = claimAsString(claims[claim]);
+		const actual = Object.hasOwn(claims, claim) ? claimAsString(claims[claim]) : null;
 		if (actual === null || !allowed.includes(actual)) return false;
 	}
 	return true;
