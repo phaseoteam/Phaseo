@@ -5,6 +5,7 @@ import englishCatalogueMessages from "../../messages/en-GB/catalogue.json";
 import englishContentMessages from "../../messages/en-GB/content.json";
 import englishProductMessages from "../../messages/en-GB/product.json";
 import englishSettingsUiMessages from "../../messages/en-GB/settings-ui.json";
+import englishWorkMessages from "../../messages/en-GB/work.json";
 
 export { englishAuthMessages };
 export type SourceAuthMessages = typeof englishAuthMessages;
@@ -45,6 +46,11 @@ export { englishSettingsUiMessages };
 export type SourceSettingsUiMessages = typeof englishSettingsUiMessages;
 export type SettingsUiMessages = WidenMessages<SourceSettingsUiMessages>;
 
+/** Source catalog for the internal work tracker. */
+export { englishWorkMessages };
+export type SourceWorkMessages = typeof englishWorkMessages;
+export type WorkMessages = WidenMessages<SourceWorkMessages>;
+
 /** The complete source message tree supplied to NextIntlClientProvider. */
 export const englishMessages = {
 	...englishAuthMessages,
@@ -54,5 +60,6 @@ export const englishMessages = {
 	Content: englishContentMessages,
 	Product: englishProductMessages,
 	SettingsUI: englishSettingsUiMessages,
+	Work: englishWorkMessages,
 } as const;
 export type SourceMessages = typeof englishMessages;

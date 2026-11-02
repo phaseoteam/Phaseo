@@ -6,6 +6,7 @@ import {
 	englishContentMessages,
 	englishProductMessages,
 	englishSettingsUiMessages,
+	englishWorkMessages,
 	type SourceMessages,
 	type AuthMessages,
 } from "./default-messages";
@@ -94,6 +95,19 @@ const settingsUiMessageLoaders: Record<ShippedLocale, DomainMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/settings-ui.json")).default,
 };
 
+const workMessageLoaders: Record<ShippedLocale, DomainMessageLoader> = {
+	"en-GB": async () => englishWorkMessages,
+	"en-US": async () => mergeCatalogMessages(englishWorkMessages, (await import("../../messages/en-US/work.overrides.json")).default),
+	"zh-Hans": async () => (await import("../../messages/zh-Hans/work.json")).default,
+	hi: async () => (await import("../../messages/hi/work.json")).default,
+	"es-ES": async () => (await import("../../messages/es-ES/work.json")).default,
+	"fr-FR": async () => (await import("../../messages/fr-FR/work.json")).default,
+	"de-DE": async () => (await import("../../messages/de-DE/work.json")).default,
+	"pt-BR": async () => (await import("../../messages/pt-BR/work.json")).default,
+	ja: async () => (await import("../../messages/ja/work.json")).default,
+	"ar-SA": async () => (await import("../../messages/ar-SA/work.json")).default,
+};
+
 const publicMessageLoaders: Record<ShippedLocale, PublicMessageLoader> = {
 	"en-GB": async () => englishAuthMessages,
 	"en-US": async () => mergeMessages(englishAuthMessages, (await import("../../messages/en-US/auth.overrides.json")).default),
@@ -112,11 +126,12 @@ const publicMessageLoaders: Record<ShippedLocale, PublicMessageLoader> = {
 const loadedMessages = new Map<PublicLocale, Promise<SourceMessages>>();
 
 async function loadPublicMessages(locale: PublicLocale): Promise<SourceMessages> {
-	const [messages, common, site, catalogue, content, product, settingsUI] = await Promise.all([
+	const [messages, common, site, catalogue, content, product, settingsUI, work] = await Promise.all([
 		publicMessageLoaders[locale](), commonMessageLoaders[locale](), siteMessageLoaders[locale](),
 		catalogueMessageLoaders[locale](), contentMessageLoaders[locale](), productMessageLoaders[locale](), settingsUiMessageLoaders[locale](),
+		workMessageLoaders[locale](),
 	]);
-	return { ...messages, Common: common, Site: site, Catalogue: catalogue, Content: content, Product: product, SettingsUI: nestDottedMessageKeys(settingsUI) } as SourceMessages;
+	return { ...messages, Common: common, Site: site, Catalogue: catalogue, Content: content, Product: product, SettingsUI: nestDottedMessageKeys(settingsUI), Work: work } as SourceMessages;
 }
 
 export function getPublicMessages(locale: PublicLocale): Promise<SourceMessages> {
