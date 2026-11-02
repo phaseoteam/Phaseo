@@ -711,6 +711,7 @@ describe("runTextGeneratePipeline server tools", () => {
 		// end at 2000; the tool runs; round 2 is sent at 2500 and done at 3000.
 		let now = 0;
 		const dateNow = vi.spyOn(Date, "now").mockImplementation(() => now);
+		let sharedMeta: any;
 		const syntheticStream = createEmptyStream();
 
 		consumeTextProtocolStreamToIRMock.mockImplementation(async (consumeArgs: any) => {
@@ -744,7 +745,10 @@ describe("runTextGeneratePipeline server tools", () => {
 		});
 
 		buildServerToolContinuationMock
-			.mockResolvedValueOnce({
+			.mockImplementationOnce(async () => {
+				// A tool's own provider call (advisor, image) on the shared meta at 2200.
+				sharedMeta.upstreamFetchStartMs = 2200;
+				return {
 				assistantMessage: {
 					role: "assistant",
 					content: [],
@@ -772,6 +776,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					imageGenerationRequests: 0,
 					applyPatchRequests: 0,
 				},
+			};
 			})
 			.mockResolvedValueOnce(null);
 
@@ -790,6 +795,7 @@ describe("runTextGeneratePipeline server tools", () => {
 
 		doRequestWithIRMock
 			.mockImplementationOnce(async (ctx: any) => {
+				sharedMeta = ctx.meta;
 				ctx.meta.upstreamFetchStartMs = 1000;
 				ctx.meta.selectedUpstreamFetchStartMs = 1000;
 				return { result: {

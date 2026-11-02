@@ -1298,6 +1298,9 @@ async function runTextGeneratePipelineInner(
 						},
 					],
 				};
+				// Advisor and image tools share this meta and make their own provider calls;
+				// the follow-up's failover is measured from its own first dispatch only.
+				delete (pre.ctx.meta as Record<string, unknown>).upstreamFetchStartMs;
 				const followUpExec = await doRequestWithIR(pre.ctx, nextIrRequest, timing);
 				if (followUpExec instanceof Response) {
 					const header = timing.timer.header();
