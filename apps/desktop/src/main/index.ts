@@ -28,9 +28,12 @@ import { BrowserAgent } from "./browserAgent";
 import { htmlPreview, registerHtmlRenderScheme, serveHtmlRenders } from "./htmlRenders";
 import { htmlRenderUrl } from "../shared/htmlRender";
 import { BrowserRecordings } from "./browserRecordings";
+import { latestHarnessVersion, newerVersion } from "./harnessUpdates";
+import { registerMaintenanceIpc } from "./maintenanceIpc";
 import { localServers, probeAddress } from "./browserLocalServers";
 import { readProjectScriptsFile } from "./projectScriptsFile";
 import { browserId, probeUrl, type BrowserRecording } from "../shared/browser";
+import { knownBrowserProfile, validBrowserProfileId } from "../shared/browserPreferences";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
@@ -120,6 +123,8 @@ import { nativeAccountStatus } from "./accountStatus";
 import { checkAcpAgent } from "./acpAgentStatus";
 import { validateMcpCommand } from "../shared/mcp";
 import { validatePreferences } from "../shared/preferences";
+import { QuitGuard, workingChats } from "./quitGuard";
+import { QuitHold } from "./quitHold";
 import { validateProjectUpdate } from "../shared/projectSettings";
 import { TaskNotifications } from "./taskNotifications";
 import { MissionService } from "./missionService";
@@ -142,6 +147,25 @@ let factoryService: FactoryService | undefined;
 let globalInstructions: GlobalInstructions;
 let shutdownComplete = false;
 let shutdownStarted = false;
+// Settings → Chat → Quitting. The answer's "Don't ask again" box turns the question off.
+const quitGuard = new QuitGuard({
+	mode: () => workspaceRuntime ? workspaceRuntime.store.getPreferences().chat.quitConfirmation : "direct",
+	working: () => workspaceRuntime ? workingChats(workspaceRuntime.store.getOverview().tasks) : 0,
+	ask: async working => {
+		const owner = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows().find(window => !window.isDestroyed());
+		const options = { type: "question" as const, buttons: ["Quit", "Cancel"], defaultId: 1, cancelId: 1, noLink: true, checkboxLabel: "Don't ask again",
+			message: working ? `${working === 1 ? "A chat is" : `${working} chats are`} still working. Quit Phaseo?` : "Quit Phaseo?",
+			detail: working ? "Quitting stops them. Phaseo offers to continue them when it next opens." : "" };
+		const answer = owner ? await dialog.showMessageBox(owner, options) : await dialog.showMessageBox(options);
+		if (answer.response !== 0) return false;
+		if (answer.checkboxChecked) { const preferences = workspaceRuntime.store.getPreferences(); workspaceRuntime.store.savePreferences({ ...preferences, chat: { ...preferences.chat, quitConfirmation: "direct" } }); }
+		return true;
+	},
+	quit: () => app.quit(),
+});
+// "Hold the shortcut to quit": ⌘Q, or Ctrl+Q on Windows and Linux, quits once held; the window shows the hold.
+const quitHold = new QuitHold({ mac: process.platform === "darwin", enabled: () => workspaceRuntime?.store.getPreferences().chat.quitConfirmation === "hold", quit: () => quitGuard.quitNow() });
+const quitHoldInput = (input: Electron.Input, window: BrowserWindow) => quitHold.input(input, state => { if (!window.isDestroyed()) window.webContents.send("desktop:quit-hold", state); });
 const signIns = new Map<string, AbortController>();
 const phaseoSignIns = new Map<number, AbortController>();
 const modelChecks = new Map<Harness, number>();
@@ -159,7 +183,7 @@ let taskNotifications: TaskNotifications;
 let missionService: MissionService;
 let settleTimer: ReturnType<typeof setInterval> | undefined;
 let worktreeCleanupTimer: ReturnType<typeof setInterval> | undefined;
-/** Automatic worktree cleanup, when turned on in Settings → General. */
+/** Automatic worktree cleanup, when turned on in Settings → Worktrees. */
 const autoCleanWorktrees = () => { if (!shutdownStarted && workspaceRuntime.store.getPreferences().worktreeCleanup.enabled) void workspaceRuntime.cleanWorktrees("auto").catch(() => {}); };
 let phaseoSignInTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
@@ -171,6 +195,7 @@ const modelDiscovery = new AbortController();
 // Before any handler is registered, so each one is traced (slow or failed calls only).
 traceIpcHandlers(ipcMain);
 const diagnostics = registerDiagnosticsIpc(ipcMain, { senderWindow, owners: terminalOwners });
+registerMaintenanceIpc(ipcMain, { senderWindow, userData: app.getPath("userData"), appPath: app.getAppPath(), temp: app.getPath("temp"), preferences: () => workspaceRuntime.store.getPreferences().threads, closing: () => shutdownStarted || !workspaceRuntime });
 /** Terminal shells by PID, named as the terminal list names them, with their chat. */
 function terminalOwners() {
 	const owners = new Map<number, ProcessOwner>();
@@ -204,7 +229,7 @@ ipcMain.handle("workspace:autopilot-log", event => { if (!senderWindow(event)) t
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
 ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });
 ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
-ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); return preferences; });
+ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); workspaceRuntime.limitPreferencesChanged(); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
 	return workspaceRuntime.mcp(validateMcpCommand(value));
@@ -466,7 +491,7 @@ ipcMain.handle("workspace:refresh-models", (event, harness: unknown, accountId: 
 app.on("before-quit", event => {
 	if (!workspaceRuntime || shutdownComplete) return;
 	event.preventDefault();
-	if (shutdownStarted) return;
+	if (shutdownStarted || quitGuard.intercept()) return;
 	shutdownStarted = true;
 	browserHost.downloads.close();
 	diagnostics.close();
@@ -645,14 +670,14 @@ ipcMain.handle("workspace:branch-pull-request", (event, id: unknown, fresh: unkn
 ipcMain.handle("workspace:create-pull-request", async (event, id: unknown, taskId: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof id !== "string" || (taskId !== undefined && typeof taskId !== "string") || shutdownStarted) throw new Error("Invalid pull request request.");
-	// The title model writes the title and description from the branch, the repository's template and the chat's work; without one, the commits do.
-	const writer = "missing" in workspaceRuntime.titleModelAccount() ? undefined : async (context: PullRequestContext) => {
+	// The Git text model writes the title and description from the branch, the repository's template (unless turned off) and the chat's work, with the person's instructions; without a model, the commits do.
+	const writer = "missing" in workspaceRuntime.titleModelAccount("git") ? undefined : async (context: PullRequestContext) => {
 		const thread = typeof taskId === "string" ? (() => { try { return threadWorkLog(workspaceRuntime.store.getTask(taskId)); } catch { return undefined; } })() : undefined;
-		const { reply, model } = await workspaceRuntime.completeWithTitleModel({ ...pullRequestPrompt(context, thread), maxTokens: 1_500, timeoutMs: 90_000, label: "The title model" });
+		const { reply, model } = await workspaceRuntime.completeWithTitleModel({ ...pullRequestPrompt(context, thread, workspaceRuntime.store.getPreferences().sourceControl.writingInstructions), maxTokens: 1_500, timeoutMs: 90_000, label: "The Git text model" }, "git");
 		const text = parsePullRequestText(reply ?? "");
 		return text && { ...text, model };
 	};
-	const result = await workspaceRuntime.mutateProject(id, () => createPullRequest(root, undefined, writer));
+	const result = await workspaceRuntime.mutateProject(id, () => createPullRequest(root, undefined, writer, { followTemplate: workspaceRuntime.store.getPreferences().sourceControl.followPullRequestTemplate }));
 	forgetBranchPullRequest(root);
 	// The pull request a Git action creates is linked to the chat it ran beside, as "Created from this chat".
 	const task = typeof taskId === "string" ? workspaceRuntime.store.getOverview().tasks.find(value => value.id === taskId) : undefined;
@@ -708,7 +733,7 @@ ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unkn
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
 ipcMain.handle("workspace:turn-changes", (event, id: unknown, from: unknown, to: unknown) => { const root = projectRoot(event, id); if (!isTreeId(from) || !isTreeId(to)) throw new Error("This turn has no saved snapshot."); return turnChanges(root, from, to); });
-ipcMain.handle("workspace:git-commit-message", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.commit-message", undefined, () => generateCommitMessage(root, input => workspaceRuntime.completeWithTitleModel(input))); });
+ipcMain.handle("workspace:git-commit-message", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.commit-message", undefined, () => generateCommitMessage(root, input => workspaceRuntime.completeWithTitleModel(input, "git"), workspaceRuntime.store.getPreferences().sourceControl.writingInstructions)); });
 ipcMain.handle("workspace:git-init", (event, id: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitInit(root)); });
 ipcMain.handle("workspace:publish-owners", (event, id: unknown) => publishOwners(projectRoot(event, id)));
 ipcMain.handle("workspace:publish-repository", async (event, id: unknown, request: unknown) => {
@@ -890,19 +915,32 @@ ipcMain.handle("workspace:command", async (event, value: unknown) => {
 	}
 	return result;
 });
+/** Whether a saved folder still exists, so a dialog only opens in it then. */
+const existingFolder = (folder: string) => { try { return statSync(folder).isDirectory(); } catch { return false; } };
 ipcMain.handle("workspace:choose-project", async event => {
 	const window = senderWindow(event);
 	if (!window) throw new Error("Untrusted workspace request.");
-	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory"], title: "Open project" });
+	// Opens in the folder chosen in Settings → Source control while it still exists; otherwise where the system chooses.
+	const start = workspaceRuntime.store.getPreferences().sourceControl.addProjectDirectory;
+	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory"], title: "Open project", ...start && existingFolder(start) ? { defaultPath: start } : {} });
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
+});
+/** Settings → Worktrees and Source control: picks the folder for new worktrees or for Add project to open in. Returns the folder; the page saves it. */
+ipcMain.handle("workspace:choose-settings-folder", async (event, purpose: unknown) => {
+	const window = senderWindow(event);
+	if (!window || (purpose !== "worktrees" && purpose !== "add-project")) throw new Error("Invalid folder request.");
+	const current = purpose === "worktrees" ? workspaceRuntime.store.getPreferences().sourceControl.worktreeDirectory : workspaceRuntime.store.getPreferences().sourceControl.addProjectDirectory;
+	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory", "createDirectory"], title: purpose === "worktrees" ? "Choose where new worktrees go" : "Choose where Add project opens", buttonLabel: "Choose folder", ...current && existingFolder(current) ? { defaultPath: current } : {} });
+	return result.canceled || !result.filePaths[0] ? undefined : path.resolve(result.filePaths[0]);
 });
 // Clone from a remote URL: asks where to put the checkout, clones it and adds it as a project.
 ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
 	const window = senderWindow(event);
 	if (!window || shutdownStarted) throw new Error("Untrusted workspace request.");
 	cloneSource(url);
-	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory", "createDirectory"], title: "Choose where to clone", buttonLabel: "Clone here" });
+	const start = workspaceRuntime.store.getPreferences().sourceControl.addProjectDirectory;
+	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory", "createDirectory"], title: "Choose where to clone", buttonLabel: "Clone here", ...start && existingFolder(start) ? { defaultPath: start } : {} });
 	if (result.canceled || !result.filePaths[0]) return undefined;
 	const directory = await span("projects.clone", undefined, () => cloneRepository(url, result.filePaths[0]));
 	const project = workspaceRuntime.store.addProject(directory);
@@ -1023,7 +1061,9 @@ function harnessInstallations() {
 			const command = await resolveNativeCommand(harness, harness === "codex" ? "@openai/codex/bin/codex.js" : harness === "pi" ? piEntries : undefined);
 			const version = await harnessVersion(command, app.getPath("userData"));
 			const maintenance = await resolveHarnessMaintenance(harness, command);
-			return { harness, installed: true, version, maintenance: { method: maintenance.method, canUpdate: Boolean(maintenance.action) } };
+			// Settings → Maintenance → Provider update checks: off, nothing asks the registry.
+			const latestVersion = workspaceRuntime.store.getPreferences().threads.providerUpdateChecks ? newerVersion(version, await latestHarnessVersion(harness)) : undefined;
+			return { harness, installed: true, version, ...latestVersion ? { latestVersion } : {}, maintenance: { method: maintenance.method, canUpdate: Boolean(maintenance.action) } };
 		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
 }
@@ -1107,7 +1147,10 @@ function createWindow(): BrowserWindow {
 
 	appWindows.add(window); window.once("closed", () => appWindows.delete(window));
 	window.once("ready-to-show", () => window.show());
-	window.on("blur", () => broadcastWindowState(window));
+	window.on("blur", () => { quitHold.cancel(); broadcastWindowState(window); });
+	window.webContents.on("before-input-event", (event, input) => { if (quitHoldInput(input, window)) event.preventDefault(); });
+	// Closing the last window quits on Windows and Linux, so it asks first like Quit does (Settings → Chat → Quitting).
+	window.on("close", event => { if (process.platform !== "darwin" && !shutdownStarted && BrowserWindow.getAllWindows().filter(value => !value.isDestroyed()).length === 1 && quitGuard.intercept()) event.preventDefault(); });
 	window.on("focus", () => broadcastWindowState(window));
 	window.on("maximize", () => broadcastWindowState(window));
 	window.on("unmaximize", () => broadcastWindowState(window));
@@ -1147,6 +1190,7 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 }
 
 const browserHost = new BrowserHost();
+browserHost.quitHoldInput = quitHoldInput;
 registerHtmlRenderScheme();
 registerFactoryIpc(ipcMain, () => factoryService, senderWindow, async window => { const picked = await dialog.showOpenDialog(window, { title: "Choose a local clone of the repository", properties: ["openDirectory"] }); return picked.canceled ? undefined : picked.filePaths[0]; });
 // Recording runs in the window (it owns the tab's capture stream), so an agent's start or stop is a request the window answers.
@@ -1173,6 +1217,7 @@ ipcMain.handle("desktop:browser-pick", (event, id: unknown, cancel: unknown) => 
 ipcMain.handle("desktop:browser-recording-source", (event, id: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.mediaSource(owner, browserId(id)); });
 ipcMain.handle("desktop:browser-recording-save", (event, mimeType: unknown, data: unknown) => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); return browserRecordings.save(mimeType, data); });
 ipcMain.handle("desktop:browser-recording-reveal", async (event, file: unknown) => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); shell.showItemInFolder(await browserRecordings.resolve(file)); });
+ipcMain.handle("desktop:browser-profile-clear", async (event, profile: unknown) => { if (!senderWindow(event) || !validBrowserProfileId(profile)) throw new Error("Untrusted browser request."); await browserHost.clearProfile(profile); });
 ipcMain.handle("desktop:browser-local-servers", event => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); return localServers(); });
 ipcMain.handle("desktop:browser-probe", (event, url: unknown) => { if (!senderWindow(event)) throw new Error("Untrusted browser request."); return probeAddress(probeUrl(url)); });
 ipcMain.handle("desktop:browser-download", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted download request."); return browserHost.downloads.command(owner, command); });
@@ -1297,10 +1342,10 @@ app.whenReady().then(() => {
 	setTimeout(() => { if (!shutdownStarted) void transcriptScanner?.scan(true).catch(() => {}); }, 5000).unref?.();
 	// Phaseo turns size compaction and output limits from the cached catalogue; a model not in it gets safe defaults.
 	workspaceRuntime.phaseo.facts = async (account, model) => account.endpoint ? (await modelCatalogCache.read({ endpoint: account.endpoint, accountId: account.id }))?.models.find(value => value.id === model)?.facts : undefined;
-	pullRequestGuides = new PullRequestGuides(path.join(workspaceDirectory, "pull-request-guides"), input => workspaceRuntime.completeWithTitleModel(input), async (root, view) => {
+	pullRequestGuides = new PullRequestGuides(path.join(workspaceDirectory, "pull-request-guides"), input => workspaceRuntime.completeWithTitleModel(input, "guide"), async (root, view) => {
 		try { return await runGh(root, ["pr", "diff", String(view.number), "--repo", `github.com/${view.repository}`, "--color", "never"]); }
 		catch (reason) { throw new Error(ghFailure((reason as { stderr?: unknown }).stderr, "Could not read the pull request's diff."), { cause: reason }); }
-	});
+	}, () => workspaceRuntime.store.getPreferences().sourceControl.reviewGuideInstructions);
 	pullRequestGuides.onFinished = ({ root, view, error }) => {
 		if (shutdownStarted) return;
 		const projectId = workspaceRuntime.store.getProjects().find(project => path.resolve(project.directory).toLowerCase() === path.resolve(root).toLowerCase())?.id;
@@ -1348,6 +1393,7 @@ app.whenReady().then(() => {
 		return limitResetAt(await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.timeout(30000)));
 	};
 	workspaceRuntime.browserTools = chatId => browserAgent.forChat(chatId);
+	browserHost.profiles = { resolve: profile => knownBrowserProfile(workspaceRuntime.store.getPreferences().browser, profile), preferred: () => { const browser = workspaceRuntime.store.getPreferences().browser; return knownBrowserProfile(browser, browser.defaultProfile); } };
 	serveHtmlRenders();
 	workspaceRuntime.htmlPreview = request => htmlPreview(request, htmlRenderUrl(request.html, request.appearance));
 	browserRecordings = new BrowserRecordings(path.join(app.getPath("userData"), "browser-recordings"));

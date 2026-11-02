@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
+import { checkoutSubmodules, createGitWorktree, ownedWorktreeRoots, removeGitWorktree, submoduleCommands, worktreeRoot } from "./gitWorktrees";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { WorkspaceStore } from "./workspaceStore";
 
@@ -71,4 +71,58 @@ describe("desktop Git worktrees", () => {
 			await runtime.close(); closed = true; const restored = new WorkspaceStore(path.join(workspaceDirectory, "workspace.sqlite")); try { expect(restored.get().projects.find(value => value.id === project.id)?.worktree).toEqual(project.worktree); } finally { restored.close(); }
 		} finally { if (!closed) await runtime.close(); if (checkout) removeCleanWorktree(value, checkout); rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
 	}, 30000);
+	it("creates worktrees in the chosen location and still removes ones made in earlier locations", async () => {
+		const value = fixture(); const workspaceDirectory = path.join(value.directory, "workspace"); const runtime = new WorkspaceRuntime(workspaceDirectory);
+		const chosen = (worktreeDirectory: string | null) => runtime.store.savePreferences({ ...runtime.store.getPreferences(), sourceControl: { ...runtime.store.getPreferences().sourceControl, worktreeDirectory } });
+		const checkouts: string[] = [];
+		try {
+			const source = runtime.store.addProject(value.root);
+			const create = async (branch: string) => { const result = await runtime.createWorktree(source.id, branch, "HEAD"); const project = result.workspace.projects.find(item => item.id === result.projectId)!; checkouts.push(project.directory); return project; };
+			const old = await create("feature/old");
+			const first = path.join(value.directory, "elsewhere", "one"), second = path.join(value.directory, "elsewhere", "two");
+			chosen(first); const middle = await create("feature/middle");
+			expect(path.relative(realpathSync(first), middle.directory).split(path.sep)).toHaveLength(1); expect(middle.worktree?.root).toBe(realpathSync(first)); expect(old.worktree?.root).toBeUndefined();
+			chosen(second); const latest = await create("feature/latest");
+			expect(path.dirname(latest.directory)).toBe(realpathSync(second));
+			for (const project of [old, middle, latest]) { await runtime.removeWorktree(project.id); expect(existsSync(project.directory)).toBe(false); }
+			checkouts.length = 0;
+		} finally { await runtime.close(); for (const checkout of checkouts) if (existsSync(checkout)) removeCleanWorktree(value, checkout); rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 60000);
+	it("resolves the worktree folders and owns only direct managed children of them", async () => {
+		const workspace = path.resolve("/data/workspace");
+		expect(worktreeRoot(workspace, null)).toBe(path.join(workspace, "worktrees"));
+		expect(worktreeRoot(workspace, path.resolve("/d/worktrees"))).toBe(path.resolve("/d/worktrees"));
+		expect(ownedWorktreeRoots(workspace, null)).toEqual([path.join(workspace, "worktrees")]);
+		expect(ownedWorktreeRoots(workspace, path.resolve("/d/new"), path.resolve("/d/old"))).toEqual([path.resolve("/d/old"), path.resolve("/d/new"), path.join(workspace, "worktrees")]);
+		const value = fixture();
+		try {
+			// A folder that is not a managed worktree is refused, whichever roots are given, and a missing root owns nothing.
+			await expect(removeGitWorktree(value.root, [path.join(value.directory, "missing"), value.directory], value.root)).rejects.toThrow("desktop-managed");
+		} finally { rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	});
+	it("chooses the submodule commands for each mode, and skips repositories without submodules", async () => {
+		expect(submoduleCommands("none")).toEqual([]);
+		expect(submoduleCommands("top-level")).toEqual([["submodule", "init"], ["submodule", "update", "--init"]]);
+		expect(submoduleCommands("recursive")).toEqual([["submodule", "init"], ["submodule", "update", "--init", "--recursive"]]);
+		const value = fixture();
+		try {
+			expect(await checkoutSubmodules(value.root, "recursive")).toEqual({ ran: false });
+			writeFileSync(path.join(value.root, ".gitmodules"), "[submodule \"missing\"]\n\tpath = missing\n\turl = ./does-not-exist\n");
+			expect(await checkoutSubmodules(value.root, "none")).toEqual({ ran: false });
+		} finally { rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	});
+	it("checks out submodules in new worktrees", async () => {
+		const value = fixture(); const workspaceDirectory = path.join(value.directory, "workspace"); const runtime = new WorkspaceRuntime(workspaceDirectory); let checkout: string | undefined;
+		const library = path.join(value.directory, "library"); mkdirSync(library);
+		const git = (args: string[], cwd: string) => execFileSync("git", args, { cwd, windowsHide: true, stdio: "pipe" }).toString().trim();
+		git(["init", "-b", "main"], library); git(["config", "user.name", "Fixture"], library); git(["config", "user.email", "fixture@example.invalid"], library); git(["config", "commit.gpgsign", "false"], library);
+		writeFileSync(path.join(library, "lib.txt"), "Library\n"); git(["add", "."], library); git(["commit", "-m", "Library"], library);
+		// Local submodules need the file protocol allowed, for this repository only.
+		value.git(["-c", "protocol.file.allow=always", "submodule", "add", library, "vendor/library"]); value.git(["commit", "-m", "Add submodule"]); value.git(["config", "protocol.file.allow", "always"]);
+		try {
+			const source = runtime.store.addProject(value.root);
+			const result = await runtime.createWorktree(source.id, "feature/submodules", "HEAD"); checkout = result.workspace.projects.find(item => item.id === result.projectId)!.directory;
+			expect(readFileSync(path.join(checkout, "vendor", "library", "lib.txt"), "utf8").trim()).toBe("Library");
+		} finally { await runtime.close(); if (checkout) { value.git(["worktree", "remove", "--force", checkout]); value.git(["worktree", "prune"]); } rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 60000);
 });

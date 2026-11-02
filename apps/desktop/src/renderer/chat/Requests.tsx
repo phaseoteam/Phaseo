@@ -2,7 +2,6 @@ import { useRef, useState } from "react";
 import { ShieldQuestion } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import type { ApprovalDecision, ApprovalRequest, Task } from "../../shared/workspace";
-import { Textarea } from "../components/ui/textarea";
 import { ProposedPlan } from "./ProposedPlan";
 import { useWorkspace } from "../app/workspace";
 import { Button } from "../components/ui/button";
@@ -10,6 +9,7 @@ import { QuestionPanel } from "./QuestionPanel";
 import { AgentForm } from "../components/AgentForm";
 import { threadToolLabels } from "../../shared/orchestration";
 import { DiffView } from "../components/DiffView";
+import { MarkdownTextarea } from "../components/MarkdownTextarea";
 
 /** A file change offered for approval as a unified diff, after any text that introduces it. */
 function approvalDiff(description: string) {
@@ -52,7 +52,7 @@ function PlanCard({ approval, projectId, onDecision }: { approval: ApprovalReque
 	return <ProposedPlan markdown={approval.description} projectId={projectId}>
 		{error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
 		{revising ? <div className="mt-2.5 flex flex-col gap-2">
-			<Textarea aria-label="What should change in the plan" autoFocus placeholder="What should change?" value={feedback} disabled={!!pending} maxLength={20000} onChange={event => setFeedback(event.target.value)}
+			<MarkdownTextarea ui aria-label="What should change in the plan" autoFocus placeholder="What should change?" value={feedback} disabled={!!pending} maxLength={20000} onChange={event => setFeedback(event.target.value)}
 				onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && feedback.trim()) { event.preventDefault(); void decide("decline", feedback.trim()); } }} className="max-h-60 text-[13px]" />
 			<div className="flex gap-2">
 				<Button size="sm" disabled={!!pending || !feedback.trim()} onClick={() => void decide("decline", feedback.trim())}>{pending ? "Sending…" : "Send revision"}</Button>

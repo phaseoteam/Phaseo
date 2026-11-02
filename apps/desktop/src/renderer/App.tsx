@@ -20,6 +20,7 @@ import { RightPanel } from "./shell/RightPanel";
 import { BrowserMiniPlayerHost } from "./components/browser/BrowserMiniPlayer";
 import { CommandPalette } from "./shell/CommandPalette";
 import { Toaster } from "./components/ui/toast";
+import { QuitHoldNotice } from "./shell/QuitHoldNotice";
 import { QuitRecoveryOffer } from "./chat/UsageLimitNotice";
 import { SettingsPage } from "./settings/SettingsPage";
 import { ScheduledTasks } from "./views/ScheduledTasks";
@@ -31,6 +32,7 @@ import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
+import { useDiffColours } from "./lib/workspacePreferences";
 import { FactoryPage } from "./factory/FactoryPage";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
@@ -121,6 +123,7 @@ function Shell() {
 		<CommandPalette />
 		<HistoryNavigation />
 		<Toaster />
+		<QuitHoldNotice />
 		<ChatNotifications />
 		<GuideRunNotices />
 		<QuitRecoveryOffer />
@@ -129,5 +132,6 @@ function Shell() {
 
 export function App() {
 	useAppTheme();
+	useDiffColours();
 	return <WorkspaceProvider><Shell /></WorkspaceProvider>;
 }

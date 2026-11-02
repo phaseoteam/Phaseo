@@ -2,11 +2,11 @@ import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 import { Pencil } from "lucide-react";
 import { MessageContent } from "../../components/MessageContent";
 import { Button } from "../../components/ui/button";
-import { Textarea } from "../../components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "../../components/ui/toggle-group";
 import { cn } from "../../lib/utils";
 import { Tip } from "./presentation";
 import { segmentedGroup, segmentedItem } from "./segmented";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 /** Markdown from a pull request: `#123` and commit SHAs link into its repository, GitHub video uploads play inline. */
 export function PullRequestMarkdown({ text, projectId, repository, className }: { text: string; projectId: string; repository: string; className?: string }) {
@@ -57,7 +57,7 @@ export function MarkdownEditor({ value, label, placeholder, saving, allowEmpty =
 			<ToggleGroupItem value="preview" className={segmentedItem}>Preview</ToggleGroupItem>
 		</ToggleGroup>
 		{preview ? <div className="border-l-2 border-border/60 py-1 pl-3">{empty ? <p className="text-xs text-muted-foreground">Nothing to preview.</p> : <PullRequestMarkdown text={draft} projectId={projectId} repository={repository} />}</div>
-			: <Textarea autoFocus disabled={saving} value={draft} rows={6} placeholder={placeholder} aria-label={label} className="min-h-24 text-xs" onChange={event => setDraft(event.target.value)} />}
+			: <MarkdownTextarea ui autoFocus disabled={saving} value={draft} rows={6} placeholder={placeholder} aria-label={label} className="min-h-24 text-xs" onChange={event => setDraft(event.target.value)} />}
 		<div className="flex justify-end gap-2">
 			<Button size="xs" variant="ghost" disabled={saving} onClick={onCancel}>Cancel</Button>
 			<Button size="xs" variant="outline" disabled={disabled} onClick={() => onSave(draft)}>{saving ? "Saving…" : "Save"}</Button>

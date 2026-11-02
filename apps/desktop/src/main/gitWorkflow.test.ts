@@ -36,6 +36,8 @@ describe("commit messages", () => {
 		expect(await generateCommitMessage(root, async input => { prompts.push(input.user); return { reply: "Update a.txt" }; })).toBe("Update a.txt");
 		expect(prompts[0]).toContain("Branch: main");
 		expect(commitMessagePrompt({ branch: "", summary: "", patch: "x".repeat(50_000) }).user).toContain("[truncated]");
+		expect(commitMessagePrompt({ branch: "b", summary: "", patch: "" }, "Use Conventional Commits.").system).toContain("<preferences>\nUse Conventional Commits.\n</preferences>");
+		expect(commitMessagePrompt({ branch: "b", summary: "", patch: "" }, "  ").system).not.toContain("preferences");
 	});
 });
 

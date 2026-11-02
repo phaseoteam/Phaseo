@@ -17,11 +17,13 @@ export type ProjectScript = {
  * One project's own settings, overriding the workspace's. An absent auto-settle key follows Settings → General;
  * autoSettleAfterDays null means never. Worktrees use their source project's settings.
  */
-export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon; /** The project's default merge method; absent follows Settings → General. */ pullRequestMergeMethod?: PullRequestMergeMethod;
+export type ProjectSettings = { autoSettleAfterDays?: number | null; autoSettleOnMerge?: boolean; keepPullRequests?: boolean; scripts?: ProjectScript[]; icon?: ProjectIcon; /** The project's default merge method; absent follows Settings → Source control. */ pullRequestMergeMethod?: PullRequestMergeMethod;
 	/** What new Code chats in the project start with; each absent one follows the person's own choice. */
 	defaultModel?: ProjectModelDefault; defaultPermissionMode?: NonNullable<Task["permissionMode"]>; defaultWorkspace?: "local" | "worktree";
 	/** Agents turned off for this project: they leave its model pickers and its chats cannot start on them. */
-	disabledHarnesses?: Harness[] };
+	disabledHarnesses?: Harness[];
+	/** Whether agents in the project get the built-in browser's tools; absent follows Settings → Browser. */
+	agentBrowserTools?: boolean };
 /** A model and its settings, as the model picker chooses them. */
 export type ProjectModelDefault = { harness: Harness; model: string; accountId?: string; reasoningEffort?: string; serviceTier?: string; options?: ModelOptionValues };
 /** The colours a project icon can take. */
@@ -153,6 +155,7 @@ export function validateProjectSettings(value: unknown): ProjectSettings {
 		const disabled = [...new Set(value.disabledHarnesses as Harness[])];
 		if (disabled.length) settings.disabledHarnesses = disabled;
 	}
+	if (value.agentBrowserTools !== undefined) { if (typeof value.agentBrowserTools !== "boolean") throw new Error("Invalid agent browser setting."); settings.agentBrowserTools = value.agentBrowserTools; }
 	if (settings.defaultModel && settings.disabledHarnesses?.includes(settings.defaultModel.harness)) throw new Error("The default model's agent is turned off for this project.");
 	return settings;
 }

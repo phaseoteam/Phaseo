@@ -57,6 +57,18 @@
 	--text-3xs--line-height: calc(0.875 / 0.625);
 }
 
+/* Settings → Diffs → Colours: blue additions and orange removals, which read apart for people who confuse red and green. */
+:root[data-diff-colours="blue-orange"] {
+	--diff-addition: #2563eb;
+	--diff-deletion: #ea580c;
+	--diffs-addition-color-override: var(--diff-addition);
+	--diffs-deletion-color-override: var(--diff-deletion);
+}
+:root.dark[data-diff-colours="blue-orange"] {
+	--diff-addition: #60a5fa;
+	--diff-deletion: #fb923c;
+}
+
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
@@ -324,6 +336,40 @@
 .composer-editor .composer-chip { display: inline; }
 .composer-editor .ProseMirror-selectednode { outline: none; }
 
+/* Live Markdown (composerMarkdown.ts): styled as typed, with its markers kept and faded. */
+.composer-editor .composer-md-marker, .composer-editor .composer-md-fence, .composer-editor .composer-md-rule { color: var(--muted-foreground); opacity: 0.75; font-weight: 400; font-style: normal; text-decoration: none; }
+.composer-editor .composer-md-escape { color: var(--muted-foreground); opacity: 0.55; }
+.composer-editor .composer-md-bold { font-weight: 650; }
+.composer-editor .composer-md-italic { font-style: italic; }
+.composer-editor .composer-md-strike { text-decoration: line-through; }
+.composer-editor .composer-md-code, .composer-editor .composer-md-code-block, .composer-editor .composer-md-fence { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.92em; }
+.composer-editor .composer-md-code { background: color-mix(in srgb, var(--muted-foreground) 14%, transparent); border-radius: 0.3em; padding: 0.05em 0.2em; }
+.composer-editor .composer-md-link { color: var(--primary); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--primary) 45%, transparent); text-underline-offset: 0.2em; }
+.composer-editor .composer-md-h1 { font-size: 1.3em; font-weight: 650; }
+.composer-editor .composer-md-h2 { font-size: 1.15em; font-weight: 650; }
+.composer-editor .composer-md-h3 { font-weight: 650; }
+.composer-editor .composer-md-quote { color: var(--muted-foreground); font-style: italic; }
+.composer-editor .composer-md-list { color: var(--primary); font-weight: 600; }
+.composer-editor .composer-md-task, .composer-editor .composer-md-task-done { font-family: var(--font-mono, ui-monospace, monospace); color: var(--primary); }
+.composer-editor .composer-md-command, .composer-editor .composer-md-skill { color: var(--primary); font-weight: 500; }
+
+/*
+ * The same in text fields (MarkdownTextarea.tsx): the field's own text is hidden under a styled copy. Nothing here may
+ * change a character's width (no font, size, italic or padding changes), or the caret would drift from the copy.
+ * Weight is drawn as a stroke, which leaves widths alone.
+ */
+.markdown-field-input { -webkit-text-fill-color: transparent; }
+.markdown-field-input::placeholder { -webkit-text-fill-color: currentColor; }
+.markdown-field-copy { position: absolute; pointer-events: none; user-select: none; overflow: hidden; margin: 0; border-style: solid; border-color: transparent; background: transparent; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; }
+.markdown-field-copy .composer-md-marker, .markdown-field-copy .composer-md-fence, .markdown-field-copy .composer-md-rule, .markdown-field-copy .composer-md-escape { color: var(--muted-foreground); opacity: 0.7; -webkit-text-stroke: 0; text-decoration: none; }
+.markdown-field-copy .composer-md-bold, .markdown-field-copy .composer-md-h1, .markdown-field-copy .composer-md-h2, .markdown-field-copy .composer-md-h3 { -webkit-text-stroke: 0.035em currentColor; }
+.markdown-field-copy .composer-md-h1, .markdown-field-copy .composer-md-h2 { color: var(--foreground); }
+.markdown-field-copy .composer-md-italic, .markdown-field-copy .composer-md-quote { color: color-mix(in srgb, currentColor 72%, var(--muted-foreground)); }
+.markdown-field-copy .composer-md-strike { text-decoration: line-through; }
+.markdown-field-copy .composer-md-code, .markdown-field-copy .composer-md-code-block { background: color-mix(in srgb, var(--muted-foreground) 16%, transparent); border-radius: 0.2em; }
+.markdown-field-copy .composer-md-link { color: var(--primary); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--primary) 45%, transparent); text-underline-offset: 0.2em; }
+.markdown-field-copy .composer-md-list, .markdown-field-copy .composer-md-task, .markdown-field-copy .composer-md-task-done { color: var(--primary); }
+
 /*
  * Scrolling areas use the shadcn ScrollArea. The few that still scroll natively (legacy panels, the terminal,
  * menus taller than the window, text areas) draw the same thin rounded thumb, with no track or arrows.
@@ -509,3 +555,6 @@ summary:has(> svg:first-child)::before { display: none; }
 @keyframes factory-sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 .factory-sweep { animation: factory-sweep 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .factory-sweep { animation: none; } }
+
+/* The quit-shortcut hold bar (shell/QuitHoldNotice.tsx). */
+@keyframes quit-hold { from { width: 0%; } to { width: 100%; } }

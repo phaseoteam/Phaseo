@@ -119,10 +119,15 @@ export function ProjectSettingsPage() {
 				control={<Switch aria-label={`Use ${harnessNames[harness]} in this project`} disabled={busy || (!off && settings.defaultModel?.harness === harness)} checked={!off}
 					onCheckedChange={on => { const rest = (settings.disabledHarnesses ?? []).filter(value => value !== harness); override("disabledHarnesses", on ? (rest.length ? rest : "inherit") : [...rest, harness]); }} />} />; })}
 		</SettingsSection>
+		<SettingsSection title="Browser" label="Project browser">
+			<SettingsRow title="Agent browser tools" description="Whether agents in this project can open and use pages in Phaseo's browser. Applies from the agent's next turn."
+				control={<Select label="Project agent browser tools" disabled={busy} value={settings.agentBrowserTools === undefined ? "inherit" : settings.agentBrowserTools ? "on" : "off"} onValueChange={value => override("agentBrowserTools", value === "inherit" ? "inherit" : value === "on")}
+					options={[{ value: "inherit", label: `Use the workspace setting (${preferences.browser.agentTools ? "on" : "off"})` }, { value: "on", label: "On" }, { value: "off", label: "Off" }]} />} />
+		</SettingsSection>
 		<SettingsSection title="Pull requests" label="Project pull requests">
 			<SettingsRow title="Default merge method" description="Pull requests in this project start with this method."
 				control={<Select label="Project default merge method" disabled={busy} value={settings.pullRequestMergeMethod ?? "inherit"} onValueChange={value => override("pullRequestMergeMethod", value === "merge" || value === "squash" || value === "rebase" ? value : "inherit")}
-					options={[{ value: "inherit", label: `Same as General (${preferences.pullRequestMergeMethod ? mergeMethodLabels[preferences.pullRequestMergeMethod].toLowerCase() : "last selected"})` }, { value: "merge", label: mergeMethodLabels.merge }, { value: "squash", label: mergeMethodLabels.squash }, { value: "rebase", label: mergeMethodLabels.rebase }]} />} />
+					options={[{ value: "inherit", label: `Same as Source control (${preferences.pullRequestMergeMethod ? mergeMethodLabels[preferences.pullRequestMergeMethod].toLowerCase() : "last selected"})` }, { value: "merge", label: mergeMethodLabels.merge }, { value: "squash", label: mergeMethodLabels.squash }, { value: "rebase", label: mergeMethodLabels.rebase }]} />} />
 		</SettingsSection>
 		<SettingsSection title="Actions" description="Commands for this project, run from the chat header in a terminal in the chat's checkout." label="Project actions"
 			action={<span className="flex items-center gap-1.5">

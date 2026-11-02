@@ -7,6 +7,7 @@ import { ChecksList } from "./ChecksPopover";
 import { CHECKS_ROLLUP_PRESENTATION, errorMessage } from "./presentation";
 import { checksCountLabel } from "./checksLogic";
 import { summarizeChecks, type ChecksRollup } from "./pullRequestLogic";
+import { openWebLink } from "../../lib/openLink";
 
 /** Mounted by the popup, so a page of rows costs no reads until somebody opens one. */
 function LazyChecks({ projectId, number, onOpen }: { projectId: string; number: number; onOpen: (url: string) => void }) {
@@ -29,7 +30,7 @@ function LazyChecks({ projectId, number, onOpen }: { projectId: string; number: 
  */
 export function RowChecksPopover({ rollup, projectId, number, checks, variant = "icon", render, className }: { rollup: ChecksRollup; projectId: string; number: number; checks?: readonly PullRequestCheck[]; variant?: "icon" | "count"; render?: ReactElement; className?: string }) {
 	const presentation = CHECKS_ROLLUP_PRESENTATION[rollup];
-	const open = (url: string) => { void window.phaseoDesktop?.workspace.openLink(url); };
+	const open = (url: string) => { void openWebLink(url).catch(() => undefined); };
 	const count = checks ? checksCountLabel(checks) : null, summary = checks ? summarizeChecks(checks) : null;
 	// A list row is itself a button, so the icon trigger is a span; the click stops here so it does not open the row.
 	return <Popover>

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { usePersistedState } from "../lib/persistedState";
 import { defaultPreferences, type WorkspacePreferences } from "../../shared/preferences";
 import { cn } from "../lib/utils";
 import type { InstructionDocument } from "../../shared/instructions";
@@ -10,20 +9,15 @@ import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
 import { ModelPicker } from "../chat/ModelPicker";
 import { ModelSettings } from "../chat/ModelSettings";
-import { projectFoldersKey, workingSectionKey } from "../shell/codeThreads";
 import { publishWorkspacePreferences } from "../lib/workspacePreferences";
-import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
-import { isMac } from "../lib/shortcuts";
-import { setSendKey, useSendKey } from "../chat/sendKey";
-import { shortcut } from "../lib/keybindings";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
-import { WorktreeCleanupSettings } from "./WorktreeCleanupSettings";
 import { Check, Copy } from "lucide-react";
 import type { DesktopRuntimeInfo, DesktopUpdateState } from "../../shared/desktop";
 import { checkForUpdates, useUpdateState, versionText } from "../lib/updateState";
+import { MarkdownTextarea } from "../components/MarkdownTextarea";
 
 /** Workspace preferences, loaded once and saved one change at a time. */
-function usePreferences() {
+export function usePreferences() {
 	const api = window.phaseoDesktop?.workspace;
 	const [preferences, setPreferences] = useState(defaultPreferences);
 	const [supported, setSupported] = useState<boolean>();
@@ -61,9 +55,13 @@ function DefaultModel() {
 
 const updateText: Record<DesktopUpdateState["status"], string> = { checking: "Checking for updates…", available: "An update is available and downloading.", downloading: "Downloading an update…", ready: "An update is ready. Restart Phaseo to finish.", unavailable: "Phaseo is up to date.", unsupported: "This build doesn't update itself; release builds do.", error: "The last check for updates failed." };
 
+/** The Android app's latest build, kept on the repository's mobile-android release (replaced with each new build). */
+const androidApkUrl = "https://github.com/phaseoteam/Phaseo/releases/download/mobile-android/Phaseo.apk";
+
 function About() {
 	const [info, setInfo] = useState<DesktopRuntimeInfo>();
 	const [copied, setCopied] = useState(false);
+	const [noticesError, setNoticesError] = useState("");
 	const update = useUpdateState();
 	useEffect(() => { void window.phaseoDesktop?.getRuntimeInfo().then(setInfo, () => undefined); }, []);
 	const copy = async () => { if (!info) return; await navigator.clipboard.writeText(`Phaseo ${versionText(info)}`); setCopied(true); setTimeout(() => setCopied(false), 1500); };
@@ -72,6 +70,12 @@ function About() {
 			control={<SettingsButton disabled={!info} onClick={() => void copy()} title="Copy the version">{copied ? <Check /> : <Copy />}{copied ? "Copied" : "Copy"}</SettingsButton>} />
 		<SettingsRow title="Acknowledgements" description="Many of Phaseo's desktop features were inspired by T3 Code, and some code is adapted from it under the MIT licence. Copyright (c) 2026 T3 Tools Inc."
 			control={<SettingsButton onClick={() => void window.phaseoDesktop?.openExternal("https://github.com/pingdotgg/t3code")}>Open on GitHub</SettingsButton>} />
+		<SettingsRow title="Open source licences" description={noticesError || "The licences of the open source software Phaseo is built with."}
+			control={<SettingsButton disabled={!window.phaseoDesktop?.maintenance} onClick={() => { setNoticesError(""); void window.phaseoDesktop?.maintenance.openNotices().catch(reason => setNoticesError(errorText(reason))); }}>Open</SettingsButton>} />
+		<SettingsRow title="Phaseo for Android" description="Models, chat, usage and notifications on your phone. Download the APK on the phone and open it to install."
+			control={<SettingsButton onClick={() => void window.phaseoDesktop?.openExternal(androidApkUrl)}>Download APK</SettingsButton>} />
+		<SettingsRow title="Privacy policy" description="How Phaseo handles your data."
+			control={<SettingsButton onClick={() => void window.phaseoDesktop?.openExternal("https://phaseo.app/privacy")}>Open</SettingsButton>} />
 		<SettingsRow title="Updates" description={!update ? "Not checked since Phaseo started." : update.status === "error" && update.message ? `${updateText.error} ${update.message}` : updateText[update.status]}
 			control={update?.status === "ready"
 				? <SettingsButton variant="primary" onClick={() => void window.phaseoDesktop?.installUpdate()}>Restart to update{update.version ? ` to ${update.version}` : ""}</SettingsButton>
@@ -100,7 +104,7 @@ function GlobalInstructions() {
 	}
 	return <SettingsSection title="Instructions" description="Apply to every Phaseo chat. A project's own instructions take precedence." label="Global instructions">
 		<SettingsRow title="Global instructions" description="Written to AGENTS.md in your Phaseo profile." control={<SettingsButton variant="primary" disabled={busy || !document || content === document.content} onClick={() => void save()}>Save instructions</SettingsButton>}>
-			<textarea aria-label="Global instructions text" value={content} disabled={busy || !document} rows={8} placeholder="For example: answer in British English, and keep explanations short."
+			<MarkdownTextarea aria-label="Global instructions text" value={content} disabled={busy || !document} rows={8} placeholder="For example: answer in British English, and keep explanations short."
 				onChange={event => { setContent(event.target.value); setSaved(false); }} className={cn(settingsInput, "h-auto min-h-32 resize-y py-2 leading-relaxed")} />
 		</SettingsRow>
 		{saved && <SettingsNote role="status">Instructions saved.</SettingsNote>}
@@ -145,21 +149,8 @@ export function ExperimentalSettings() {
 	</SettingsPageLayout>;
 }
 
-/** The send shortcut. The other key adds a new line; the rest of the message box's keys are in Keyboard shortcuts. */
-function MessageBox() {
-	const sendKey = useSendKey(), mod = isMac() ? "⌘" : "Ctrl";
-	const sendAndNew = shortcut("composer.sendAndNewChat");
-	return <SettingsSection title="Message box" label="Message box">
-		<SettingsRow title="Send with" description={`${sendKey === "enter" ? `Shift+Enter adds a new line.` : `Enter adds a new line.`}${sendAndNew ? ` ${sendAndNew} sends and starts a new chat.` : ""}`}
-			control={<Select label="Send with" value={sendKey} onValueChange={value => setSendKey(value === "mod+enter" ? "mod+enter" : "enter")}
-				options={[{ value: "enter", label: "Enter" }, { value: "mod+enter", label: `${mod}+Enter` }]} />} />
-	</SettingsSection>;
-}
 
 export function GeneralSettings() {
-	const [autoOpenPanes, setAutoOpenPanes] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
-	const [workingSection, setWorkingSection] = usePersistedState(workingSectionKey, false);
-	const [projectFolders, setProjectFolders] = usePersistedState(projectFoldersKey, false);
 	const { preferences, loading, busy, error, save, ready } = usePreferences();
 	return <SettingsPageLayout title="General">
 		<SettingsSection title="New chats"><DefaultModel /><ChatTitles preferences={preferences} save={save} disabled={!ready || busy} /></SettingsSection>
@@ -171,36 +162,6 @@ export function GeneralSettings() {
 					className={cn(settingsInput, "w-20 text-right")} />} />
 			{(loading || error) && <SettingsNote tone={error ? "error" : "muted"} role={error ? "alert" : "status"}>{error || "Loading settings…"}</SettingsNote>}
 		</SettingsSection>
-		<MessageBox />
-		<SettingsSection title="Panes" label="Panes">
-			<SettingsRow title="Open panes automatically" description="Show the diff when a turn changes files, and a pull request when one is linked to the chat. Using the pane during a turn holds this back."
-				control={<Switch aria-label="Open panes automatically" checked={autoOpenPanes} onCheckedChange={setAutoOpenPanes} />} />
-			<SettingsRow title="Default diff file state" description="Start with files expanded or collapsed when opening diffs or a pull request's Code tab."
-				control={<Select label="Default diff file state" disabled={!ready || busy} value={preferences.diffFilesCollapsed ? "collapsed" : "expanded"} onValueChange={value => void save({ ...preferences, diffFilesCollapsed: value === "collapsed" })}
-					options={[{ value: "expanded", label: "Expanded" }, { value: "collapsed", label: "Collapsed" }]} />} />
-		</SettingsSection>
-		<SettingsSection title="Pull requests" label="Pull requests">
-			<SettingsRow title="Open pull requests in Phaseo" description={`Clicking a pull request link opens it in Phaseo. ${isMac() ? "⌘-click" : "Ctrl-click"} or middle-click still opens it on GitHub. Turn off to open pull request links like any other link, on GitHub.`}
-				control={<Switch aria-label="Open pull requests in Phaseo" disabled={!ready || busy} checked={preferences.openPullRequestsInApp} onCheckedChange={value => void save({ ...preferences, openPullRequestsInApp: value })} />} />
-			<SettingsRow title="Default merge method" description="Pull requests start with this method. Last selected reuses whatever you chose most recently on this device. Each project can change this in its Project settings."
-				control={<Select label="Default pull request merge method" disabled={!ready || busy} value={preferences.pullRequestMergeMethod ?? "last"} onValueChange={value => void save({ ...preferences, pullRequestMergeMethod: value === "merge" || value === "squash" || value === "rebase" ? value : null })}
-					options={[{ value: "last", label: "Last selected" }, { value: "merge", label: mergeMethodLabels.merge }, { value: "squash", label: mergeMethodLabels.squash }, { value: "rebase", label: mergeMethodLabels.rebase }]} />} />
-		</SettingsSection>
-		<SettingsSection title="Code chats" description="Settle a chat when you are done with it; it moves to Settled at the bottom of the sidebar. Each project can change these in its Project settings." label="Code chats">
-			<SettingsRow title="Show a Working section" description="Fold chats that are working and need nothing from you into a Working section above Snoozed. They return to the top of the list when they need you. Your list is then ordered by time."
-				control={<Switch aria-label="Show a Working section" checked={workingSection} onCheckedChange={setWorkingSection} />} />
-			<SettingsRow title="Group chats by project" description="Put active chats in a folder per project, on two lines each, with the project you wrote to last on top. Folders collapse, and projects with no active chats have none. Pinned chats stay above them."
-				control={<Switch aria-label="Group chats by project" checked={projectFolders} onCheckedChange={setProjectFolders} />} />
-			<SettingsRow title="Auto-settle merged chats" description="Settle a chat when its pull request merges. Closed pull requests still settle it."
-				control={<Switch aria-label="Auto-settle merged chats" disabled={!ready || busy} checked={preferences.autoSettleOnMerge} onCheckedChange={value => void save({ ...preferences, autoSettleOnMerge: value })} />} />
-			<SettingsRow title="Keep chats with a pull request" description="Inactivity does not settle chats with a pull request. Merging and closing still do."
-				control={<Switch aria-label="Keep chats with a pull request" disabled={!ready || busy} checked={preferences.keepPullRequests} onCheckedChange={value => void save({ ...preferences, keepPullRequests: value })} />} />
-			<SettingsRow title="Auto-settle inactive chats" description="Code chats with no activity for this long settle automatically. Any new activity un-settles a chat."
-				control={<Select label="Auto-settle inactive chats" disabled={!ready || busy} value={String(preferences.autoSettleAfterDays ?? "never")}
-					onValueChange={value => void save({ ...preferences, autoSettleAfterDays: value === "never" ? null : Number(value) })}
-					options={[{ value: "never", label: "Never" }, ...[...new Set([1, 2, 3, 5, 7, 14, 30, ...(preferences.autoSettleAfterDays ? [preferences.autoSettleAfterDays] : [])])].sort((a, b) => a - b).map(days => ({ value: String(days), label: days === 1 ? "After 1 day" : `After ${days} days` }))]} />} />
-		</SettingsSection>
-		<WorktreeCleanupSettings preferences={preferences} save={save} disabled={!ready || busy} />
 		<GlobalInstructions />
 		<About />
 	</SettingsPageLayout>;

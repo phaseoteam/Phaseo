@@ -1,3 +1,5 @@
+import { defaultSnoozePresets, snoozePresetId, type SnoozePreset, type SnoozePresetDay } from "./threadPreferences";
+
 /**
  * Code-mode chat lifecycle: settle parks a chat once you are done with it, snooze hides it until a time,
  * and chats left alone settle on their own. "active" means the person un-settled the chat, which holds off auto-settle
@@ -96,18 +98,31 @@ export function autoSettleAt(thread: ThreadLifecycle, rules: AutoSettleRules | n
 /** Where a chat sits in the active list: newest first by when it began or came back. Activity does not reorder it. */
 export const activeOrder = (thread: ThreadLifecycle) => Math.max(time(thread.createdAt), time(thread.unsettledAt));
 
-export type SnoozePreset = { label: string; until: Date };
-/** Snooze choices: an hour, three hours, this evening (if over an hour away), tomorrow 9:00, next Monday 9:00. */
-export function snoozePresets(now = new Date()): SnoozePreset[] {
-	const at = (days: number, hour: number) => { const value = new Date(now); value.setDate(value.getDate() + days); value.setHours(hour, 0, 0, 0); return value; };
-	const presets: SnoozePreset[] = [{ label: "In 1 hour", until: new Date(now.getTime() + 3_600_000) }, { label: "In 3 hours", until: new Date(now.getTime() + 3 * 3_600_000) }];
-	const evening = at(0, 18);
-	if (evening.getTime() - now.getTime() > 3_600_000) presets.push({ label: "This evening", until: evening });
-	const tomorrow = at(1, 9);
-	presets.push({ label: "Tomorrow", until: tomorrow });
-	const monday = at((8 - now.getDay()) % 7 || 7, 9);
-	if (monday.getTime() !== tomorrow.getTime()) presets.push({ label: "Next week", until: monday });
-	return presets;
+export type ResolvedSnooze = { id: string; label: string; until: Date };
+const weekdays: SnoozePresetDay[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const plural = (count: number, unit: string) => `${count} ${unit}${count === 1 ? "" : "s"}`;
+/** "3 hours", "90 minutes", "2 days": the largest unit that divides evenly. */
+export const snoozeDuration = (minutes: number) => minutes % 1440 === 0 ? plural(minutes / 1440, "day") : minutes % 60 === 0 ? plural(minutes / 60, "hour") : plural(minutes, "minute");
+const capitalize = (word: string) => word[0].toUpperCase() + word.slice(1);
+
+/** When a preset wakes from `now`, with its menu label. A time today that has passed, or is within the hour, is left out. */
+export function resolveSnoozePreset(preset: SnoozePreset, now = new Date()): ResolvedSnooze | undefined {
+	const id = snoozePresetId(preset);
+	if (preset.kind === "after") return { id, label: `In ${snoozeDuration(preset.minutes)}`, until: new Date(now.getTime() + preset.minutes * 60_000) };
+	const ahead = preset.day === "today" ? 0 : preset.day === "tomorrow" ? 1 : (weekdays.indexOf(preset.day) - now.getDay() + 7) % 7 || 7;
+	// Calendar days rather than 24-hour steps, so a daylight saving change does not shift the wake time.
+	const until = new Date(now); until.setDate(until.getDate() + ahead); until.setHours(Number(preset.time.slice(0, 2)), Number(preset.time.slice(3)), 0, 0);
+	if (ahead === 0 && until.getTime() - now.getTime() <= 3_600_000) return undefined;
+	const hour = until.getHours();
+	// Labels follow the real gap, so a Monday option on a Sunday reads "Tomorrow".
+	const label = ahead === 0 ? (hour < 12 ? "This morning" : hour < 17 ? "This afternoon" : "This evening") : ahead === 1 ? "Tomorrow" : preset.day === "monday" ? "Next week" : ahead === 7 ? `Next ${capitalize(preset.day)}` : capitalize(preset.day);
+	return { id, label, until };
+}
+
+/** The snooze menu from the options in Settings → Threads: soonest first, one choice per wake minute. */
+export function snoozePresets(now = new Date(), presets: readonly SnoozePreset[] = defaultSnoozePresets): ResolvedSnooze[] {
+	const minute = (value: ResolvedSnooze) => Math.floor(value.until.getTime() / 60_000), seen = new Set<number>();
+	return presets.flatMap(preset => resolveSnoozePreset(preset, now) ?? []).sort((a, b) => minute(a) - minute(b)).filter(value => !seen.has(minute(value)) && !!seen.add(minute(value)));
 }
 
 /** "now", "4m", "2h", "3d": how long ago, or how long until. */

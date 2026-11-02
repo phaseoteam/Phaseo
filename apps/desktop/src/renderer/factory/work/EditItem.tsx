@@ -9,6 +9,7 @@ import { Button } from "../../components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { factory } from "../lib/useFactory";
 import { cn } from "../../lib/utils";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 /** Editing an issue or pull request's title, description, labels, assignees and reviewers, on GitHub. */
 
@@ -65,7 +66,7 @@ export function MarkdownField({ value, onChange, repo, placeholder, rows = 8, au
 		</div>
 		{preview
 			? <div className="min-h-24 px-3 py-2.5">{value.trim() ? <Markdown source={value} repo={repo} /> : <p className="text-sm text-muted-foreground">Nothing to preview.</p>}</div>
-			: <textarea autoFocus={autoFocus} value={value} placeholder={placeholder} rows={Math.min(24, Math.max(rows, value.split("\n").length))} onChange={(event) => onChange(event.target.value)} onKeyDown={onKeyDown} className="block w-full resize-y bg-transparent px-3 py-2.5 text-sm leading-relaxed outline-none placeholder:text-muted-foreground" />}
+			: <MarkdownTextarea autoFocus={autoFocus} value={value} placeholder={placeholder} rows={Math.min(24, Math.max(rows, value.split("\n").length))} onChange={(event) => onChange(event.target.value)} onKeyDown={onKeyDown} className="block w-full resize-y bg-transparent px-3 py-2.5 text-sm leading-relaxed outline-none placeholder:text-muted-foreground" />}
 	</div>;
 }
 

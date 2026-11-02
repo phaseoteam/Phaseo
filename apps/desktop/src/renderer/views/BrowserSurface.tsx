@@ -7,7 +7,9 @@ import { BrowserDeviceToolbar } from "../components/browser/BrowserDeviceToolbar
 import { BrowserMoreMenu } from "../components/browser/BrowserMoreMenu";
 import { BrowserEmptyState, BrowserPoppedOut, BrowserRecordingNotice, BrowserUnreachable } from "../components/browser/BrowserStates";
 import { browserNavigationAddress, browserRecents, projectRecents, recordBrowserVisit, type BrowserRecent } from "../lib/browserHistory";
-import { browserTabError, browserViewportToRestore, focusedBrowserTab, recordBrowserState, setFocusedBrowserTab, useBrowserTab } from "../lib/browserTabs";
+import { browserTabError, browserTabProfile, browserViewportToRestore, focusedBrowserTab, recordBrowserState, setBrowserTabProfile, setFocusedBrowserTab, useBrowserTab, withBrowserProfile } from "../lib/browserTabs";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
+import { browserProfiles, browserSearchTemplate, knownBrowserProfile } from "../../shared/browserPreferences";
 import { closeMiniPlayer, markBrowserSurfaceShown, openMiniPlayer, useMiniPlayer } from "../lib/browserMiniPlayer";
 import { revealLabel, startBrowserRecording, stopBrowserRecording, useBrowserRecording, type SavedBrowserRecording } from "../lib/browserRecording";
 import { shortcut, useCommand } from "../lib/keybindings";
@@ -48,11 +50,15 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 	const restore = useRef(tab);
 	const recovery = useRef<BrowserCrashRecovery>({ attempts: 0, since: null });
 	const lastRecorded = useRef("");
+	const browserPreferences = useWorkspacePreferences().browser;
+	// A tab whose profile was removed opens in Default, so that is what it shows.
+	const profile = knownBrowserProfile(browserPreferences, browserTabProfile(tab)), profiles = browserProfiles(browserPreferences);
+	const profileName = profiles.find(item => item.id === profile)?.name ?? "Default", dataScope = profiles.length > 1 ? `every tab in the ${profileName} profile` : "every browser tab";
 
-	const send = useCallback(async (command: BrowserCommand) => { try { const result = await api?.browser(command); if (result?.id === tabId) { setState(result); recordBrowserState(result); } return result; } catch (reason) { setError(errorText(reason)); } }, [api, tabId]);
+	const send = useCallback(async (command: BrowserCommand) => { try { const result = await api?.browser(withBrowserProfile(command)); if (result?.id === tabId) { setState(result); recordBrowserState(result); } return result; } catch (reason) { setError(errorText(reason)); } }, [api, tabId]);
 	const act = (type: "back" | "forward" | "reload" | "hardReload" | "stop" | "devtools") => { setError(""); void send({ id: tabId, type }); };
 	const navigate = (url: string) => { setError(""); void send({ id: tabId, type: "navigate", url }); };
-	const submit = (value: string) => { try { navigate(browserNavigationAddress(value)); } catch (reason) { setError(errorText(reason)); } };
+	const submit = (value: string) => { try { navigate(browserNavigationAddress(value, browserSearchTemplate(browserPreferences))); } catch (reason) { setError(errorText(reason)); } };
 	const flash = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(current => current === message ? "" : current), 2500); };
 
 	// Native state for this tab; a fresh native page takes the saved address, preview, zoom and colours.
@@ -97,7 +103,7 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 			const signature = [rect.x, rect.y, rect.width, rect.height].join();
 			if (signature === last) return;
 			last = signature;
-			void api.browser({ type: "show", id: tabId, slot: "pane", bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } }).then(value => applyState.current(value), reason => setError(errorText(reason)));
+			void api.browser(withBrowserProfile({ type: "show", id: tabId, slot: "pane", bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } })).then(value => applyState.current(value), reason => setError(errorText(reason)));
 		};
 		const overlays = new MutationObserver(() => { place(); cancelAnimationFrame(frame); frame = requestAnimationFrame(place); });
 		overlays.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "style", "data-open", "data-closed"] });
@@ -224,15 +230,16 @@ export function BrowserSurface({ context, tabId, covered, requestedLink }: { con
 			onOpenInBrowser={() => void api?.workspace.openLink(url).catch(reason => setError(errorText(reason)))}
 			onPick={() => void pick()} picking={picking} onCapture={record => void capture(record)} capturing={capturing} recording={recording} onFloat={float} floating={floating}
 			downloads={downloads.length} downloadsOpen={downloadsOpen} onDownloads={() => setDownloadsOpen(value => !value)}
-			menu={<BrowserMoreMenu enabled={Boolean(url)} zoom={zoom} colorScheme={state?.colorScheme ?? "system"} devToolsOpen={state?.devToolsOpen ?? false} deviceToolbar={viewport.mode === "device"} muted={state?.muted ?? false} downloads={downloads.length} poppedOut={Boolean(state?.poppedOut)}
+			menu={<BrowserMoreMenu enabled={Boolean(url)} profile={profile} profiles={profiles} zoom={zoom} colorScheme={state?.colorScheme ?? "system"} devToolsOpen={state?.devToolsOpen ?? false} deviceToolbar={viewport.mode === "device"} muted={state?.muted ?? false} downloads={downloads.length} poppedOut={Boolean(state?.poppedOut)}
 				zoomShortcuts={{ in: shortcut("browser.zoomIn"), out: shortcut("browser.zoomOut"), reset: shortcut("browser.zoomReset") }}
 				actions={{
 					hardReload: () => act("hardReload"), toggleDevTools: () => act("devtools"), toggleDeviceToolbar,
 					setColorScheme: colorScheme => void send({ id: tabId, type: "colorScheme", colorScheme }),
 					zoomIn: () => setZoom(stepBrowserZoom(zoom, 1)), zoomOut: () => setZoom(stepBrowserZoom(zoom, -1)), resetZoom: () => setZoom(1),
 					toggleMute: () => void send({ id: tabId, type: "mute", muted: !state?.muted }), openDownloads: () => setDownloadsOpen(true),
-					clearCookies: () => void send({ id: tabId, type: "clearData", data: "cookies" }).then(() => flash("Cookies cleared for every browser tab.")),
-					clearCache: () => void send({ id: tabId, type: "clearData", data: "cache" }).then(() => flash("Cache cleared for every browser tab.")),
+					clearCookies: () => void send({ id: tabId, type: "clearData", data: "cookies" }).then(() => flash(`Cookies cleared for ${dataScope}.`)),
+					clearCache: () => void send({ id: tabId, type: "clearData", data: "cache" }).then(() => flash(`Cache cleared for ${dataScope}.`)),
+					setProfile: next => { setError(""); void setBrowserTabProfile(context, tabId, next).then(() => flash(`Opened in the ${profiles.find(item => item.id === next)?.name ?? "Default"} profile.`), reason => setError(errorText(reason))); },
 					togglePopOut: () => void send({ id: tabId, type: state?.poppedOut ? "popIn" : "popOut" }),
 				}} />} />
 		{(error || browserTabError(context)) && <p role="alert" className="flex shrink-0 items-center gap-2 border-y border-destructive/20 bg-destructive/5 px-3 py-1.5 text-xs text-destructive">{error || browserTabError(context)}</p>}

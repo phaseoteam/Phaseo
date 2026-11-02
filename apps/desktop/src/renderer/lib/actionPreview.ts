@@ -1,5 +1,5 @@
 import { browserUrl, isLoopbackUrl, openableLocalUrl, previewPrinted } from "../../shared/browser";
-import { createBrowserTab, listBrowserTabs, revealBrowserTab } from "./browserTabs";
+import { createBrowserTab, listBrowserTabs, revealBrowserTab, withBrowserProfile } from "./browserTabs";
 import { terminalOutput, terminalSession } from "./terminalSessions";
 
 /**
@@ -12,7 +12,7 @@ export function openInChatBrowser(taskId: string, address: string) {
 	const existing = listBrowserTabs(taskId).find(tab => { try { return Boolean(tab.url) && new URL(tab.url).origin === origin; } catch { return false; } });
 	if (existing) {
 		revealBrowserTab(taskId, existing.id);
-		void window.phaseoDesktop?.browser({ type: "reload", id: existing.id }).catch(() => undefined);
+		void window.phaseoDesktop?.browser(withBrowserProfile({ type: "reload", id: existing.id })).catch(() => undefined);
 		return existing.id;
 	}
 	const id = createBrowserTab(taskId, { url });

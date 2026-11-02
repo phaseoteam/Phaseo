@@ -4,16 +4,17 @@ import { git } from "./gitProcess";
 import { ghFailure, runGh } from "./projectPullRequestView";
 import { gitReview } from "./projectFiles";
 import type { PublishRepositoryRequest } from "../shared/gitWorkflow";
+import { preferenceLines } from "../shared/sourceControlPreferences";
 
 const execute = promisify(execFile);
 type Gh = (root: string, args: string[]) => Promise<string>;
-/** Calls the title model (WorkspaceRuntime.completeWithTitleModel). */
+/** Calls the Git text model (WorkspaceRuntime.completeWithTitleModel with "git"). */
 type Complete = (input: { system: string; user: string; maxTokens: number; timeoutMs: number; label: string }) => Promise<{ reply?: string }>;
 
 const limit = (text: string, size: number) => text.length > size ? `${text.slice(0, size)}\n[truncated]` : text;
 
-/** The commit message prompt, asking for plain text instead of JSON. */
-export function commitMessagePrompt(input: { branch: string; summary: string; patch: string }) {
+/** The commit message prompt, asking for plain text instead of JSON, with the person's commit and pull request instructions last. */
+export function commitMessagePrompt(input: { branch: string; summary: string; patch: string }, instructions?: string) {
 	return {
 		system: [
 			"You write concise git commit messages.",
@@ -22,6 +23,7 @@ export function commitMessagePrompt(input: { branch: string; summary: string; pa
 			"- subject must be imperative, <= 72 chars, and no trailing period",
 			"- body can be empty or short bullet points",
 			"- capture the primary user-visible or developer-visible change",
+			...preferenceLines(instructions),
 		].join("\n"),
 		user: [`Branch: ${input.branch || "(detached)"}`, "", "Changed files:", limit(input.summary, 6_000), "", "Patch:", limit(input.patch, 40_000)].join("\n"),
 	};
@@ -33,7 +35,7 @@ export function cleanCommitMessage(raw: string) {
 	while (lines.length && !lines[0].trim()) lines.shift();
 	const subject = (lines.shift() ?? "").trim().replace(/^(subject|commit message):\s*/i, "").replace(/^["'`]+|["'`]+$/g, "").replace(/\.+$/, "").slice(0, 72).trim();
 	const body = lines.join("\n").replace(/^\s*body:\s*/i, "").trim();
-	if (!subject) throw new Error("The title model did not write a commit message. Try again or type one.");
+	if (!subject) throw new Error("The model did not write a commit message. Try again or type one.");
 	return body ? `${subject}\n\n${body}` : subject;
 }
 
@@ -46,9 +48,9 @@ export async function commitChanges(root: string) {
 	return { branch: branch.trim(), summary, patch: await git(root, ["diff", "--no-ext-diff"]).catch(() => "") };
 }
 
-/** A generated commit message: the title model reads the changes and writes the message. */
-export async function generateCommitMessage(root: string, complete: Complete) {
-	const { reply } = await complete({ ...commitMessagePrompt(await commitChanges(root)), maxTokens: 400, timeoutMs: 60_000, label: "The title model" });
+/** A generated commit message: the Git text model reads the changes and writes the message. */
+export async function generateCommitMessage(root: string, complete: Complete, instructions?: string) {
+	const { reply } = await complete({ ...commitMessagePrompt(await commitChanges(root), instructions), maxTokens: 400, timeoutMs: 60_000, label: "The Git text model" });
 	return cleanCommitMessage(reply ?? "");
 }
 
