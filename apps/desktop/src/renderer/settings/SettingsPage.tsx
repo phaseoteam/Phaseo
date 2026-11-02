@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Activity, ArrowLeft, Bell, Bot, CircleDot, FlaskConical, FolderGit2, GitPullRequest, Keyboard, Gauge, NotebookPen, Palette, Plug, RefreshCw, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { Activity, ArrowLeft, Bell, Bot, CircleDot, FlaskConical, FolderGit2, GitPullRequest, Inbox, Keyboard, Gauge, NotebookPen, Palette, Plug, RefreshCw, Search, SlidersHorizontal, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -39,6 +39,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 		{ id: "factory-pulls", label: "Pull request playbook", icon: <GitPullRequest />, keywords: "factory pull requests review independent findings agents rules models stages prompts instructions verify" },
 		{ id: "factory-notes", label: "Notes", icon: <NotebookPen />, keywords: "factory notes memory remember learnt agents repository tests setup" },
 		{ id: "factory-checking", label: "Checking for new work", icon: <RefreshCw />, keywords: "factory github gh cli images poll schedule check new work api requests comments reviews bots stall stalled nudge quiet running stage" },
+		{ id: "factory-phaseo-work", label: "Phaseo Work", icon: <Inbox />, keywords: "factory phaseo work items tracker source workspace engineer agent label assigned runs report" },
 	] },
 	// Listed after the projects, at the bottom, like T3's.
 	{ label: "Advanced", pages: [

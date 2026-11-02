@@ -12,6 +12,8 @@ import { Tip } from "../../components/ui/tooltip";
 import { ago } from "../lib/format";
 import { factory, lastActivity, useNow, useSeen } from "../lib/useFactory";
 import { FactoryLink } from "../components/FactoryLink";
+import { PhaseoBadge } from "../components/PhaseoWork";
+import { workOnly } from "../../../shared/factory/phaseoWork";
 import { cn } from "../../lib/utils";
 
 /** When GitHub was last read, as a button that reads it again. */
@@ -120,7 +122,8 @@ function Row({ item, snapshot, selected, showRepo, child, isNew, replies = 0 }: 
 			</div>
 			<div className="mt-0.5 flex items-center gap-1.5 text-2xs text-muted-foreground">
 				{showRepo && <Tip label={item.repo}><span className="max-w-28 shrink-0 truncate font-medium text-foreground/70">{repoName(item.repo)}</span></Tip>}
-				<span className="font-mono tabular-nums">{item.number}</span>
+				{!workOnly(item) && <span className="font-mono tabular-nums">{item.number}</span>}
+				<PhaseoBadge item={item} />
 				<span className="text-muted-foreground/40">·</span>
 				{state && stage ? <>
 					<StatusMark status={state.status} className="size-3" />

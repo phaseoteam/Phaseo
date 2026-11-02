@@ -3,15 +3,16 @@ import { copyFile, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promise
 import os from "node:os";
 import path from "node:path";
 import { TRUSTED_BOTS, activityMessage, checksActivity, heldBackLine, mayPush, sortActivity, stallAction, stallLimits, stallNudge, stallNudgeLine, stallSummary, type GithubActivity } from "../../shared/factory/activity";
-import { autopilotFits, lastRun, linkedItem, pullsFor, stageAgent, withItemEffort } from "../../shared/factory/actions";
+import { GITHUB_ONLY, autopilotFits, lastRun, linkedItem, pullsFor, stageAgent, withItemEffort } from "../../shared/factory/actions";
 import { INPUTS_FOLDER, attachRef, attachable, attachmentKey, attachmentsFor, imageProblem, isAttachmentName, supportsAttach } from "../../shared/factory/attachments";
 import { DEMO_AGENTS, DEMO_SETTINGS, demoAttachment, demoItems, demoNotes, demoProof, demoRepos, demoRuns } from "../../shared/factory/demo";
 import { agentForStage, defaultPlaybooks, withPlaybookDefaults } from "../../shared/factory/intake";
 import { ASK_ROUNDS, asksReporter, pullRequestBody, reportMarkdown, reporterComment, runOutcome, stageOutcome, verdictPassed, type ProofRef } from "../../shared/factory/report";
 import { COMPUTER, MAX_NOTES, applyNoteReport, noteRefs, notesForPrompt } from "../../shared/factory/notes";
+import { mergeWork, normalizeWorkSettings, workOnly } from "../../shared/factory/phaseoWork";
 import { TRIAGE_THRESHOLD, similarIssues } from "../../shared/factory/similar";
 import { ASKS_REPORTER, STAGES, ciBrief, conflictBrief, currentStage, emptyStages, findingsBrief, staleChecks, issueBody, replyPrompt, stageLabel, stagePrompt, stagesFor } from "../../shared/factory/stages";
-import type { AgentProfile, CheckRun, FactorySettings, GithubChange, ImageUpload, PullFiles, RepoLabel, IssueComment, Mentionable, MergeState, NotePatch, TimelineEntry, RepoNote, RepoStatus, FactorySnapshot, ItemAction, LogLine, NewIssueInput, Run, RunOutcome, RunReport, SimilarItem, StageId, StageStatus, StartRunInput, WorkItem } from "../../shared/factory/types";
+import type { AgentProfile, CheckRun, FactorySettings, PhaseoWorkStatus, GithubChange, ImageUpload, PullFiles, RepoLabel, IssueComment, Mentionable, MergeState, NotePatch, TimelineEntry, RepoNote, RepoStatus, FactorySnapshot, ItemAction, LogLine, NewIssueInput, Run, RunOutcome, RunReport, SimilarItem, StageId, StageStatus, StartRunInput, WorkItem } from "../../shared/factory/types";
 import { localClones } from "./clones";
 import { MAX_ATTACH, SEARCH_LIMIT, activitySince, allComments, canPush, changesSince, checkoutRepo, closeAsDuplicate, closeItem, comment, commentsSince, allChecks, lineComment, pullFiles, replyToThread, resolveThread, assignable, deleteComment, editComment, editItem, editPeopleOrLabels, repoLabels, rerunFailed, updateBranch, createIssue, createPullRequest, failedLog, ghVersion, githubLogin, importOpen, itemTimeline, mentionable, readItem, linkWork, markDraft, markReady, mergePull, mergeState, openCounts, pullChecks, reopenItem, reviewPull } from "./github";
 import { changedFiles, git, prepareProof, prepareWorktree, proofDir } from "./worktrees";
@@ -70,6 +71,18 @@ export interface FactoryDeps {
 	threads: FactoryThreads;
 	/** Why no more stages can start now (every agent slot is busy), or undefined when one can. */
 	capacity?(): string | undefined;
+	/** Phaseo Work as a source of items, and where runs on its items are reported. */
+	work?: FactoryWork;
+}
+
+/** Phaseo Work, as the store uses it (see phaseoWork.ts). */
+export interface FactoryWork {
+	/** Open items the settings' rule takes; none while it's off. */
+	poll(): Promise<WorkItem[]>;
+	/** Returns the Phaseo agent run's id. */
+	runStarted(item: WorkItem, run: Run, agent: AgentProfile): Promise<string | undefined>;
+	runEnded(item: WorkItem, run: Run): Promise<void>;
+	pullOpened(item: WorkItem, run: Run | undefined, url: string): Promise<void>;
 }
 
 /** Each repository's open issues and pull requests as GitHub last gave them, kept so a restart needn't read them all again. */
@@ -119,6 +132,9 @@ export class FactoryStore {
 	private snapshot: FactorySnapshot;
 	private overlays: Record<string, ItemOverlay> = {};
 	private cache: Record<string, RepoCache> = {};
+	/** Phaseo Work's items as last read, as Factory items: only the fields its allowlist keeps. */
+	private work: WorkItem[] = [];
+	private workStatus: PhaseoWorkStatus | undefined;
 	private importing = new Map<string, { done: number; total: number }>();
 	private cacheChanged = false;
 	private sessions = new Map<string, AgentProcess>();
@@ -197,7 +213,9 @@ export class FactoryStore {
 		// The cache is only what GitHub said: if it's lost, the next check reads it all again.
 		try {
 			const text = this.deps.persistence.read("items");
-			this.cache = text ? (JSON.parse(text) as { repos: Record<string, RepoCache> }).repos ?? {} : {};
+			const saved = text ? JSON.parse(text) as { repos?: Record<string, RepoCache>; work?: WorkItem[] } : {};
+			this.cache = saved.repos ?? {};
+			this.work = this.snapshot.settings.phaseoWork?.enabled && Array.isArray(saved.work) ? saved.work : [];
 		} catch {
 			this.cache = {};
 		}
@@ -232,6 +250,8 @@ export class FactoryStore {
 		const due = this.snapshot.runs.filter((run) => run.interrupted && !run.carriedOnAt && run.status !== "running" && !this.snapshot.runs.some((other) => other.resumes === run.id));
 		for (const run of due) {
 			const item = this.snapshot.items.find((candidate) => candidate.id === run.itemId);
+			// Quitting cut it short with nothing reported: Phaseo Work hears it ended, and of the run that carries it on.
+			if (run.interrupted === "app") this.reportWorkEnd(run.id);
 			if (item && (item.state === "closed" || item.state === "merged")) {
 				const shown = item.kind === "pull" && run.stage === "fix" ? "review" : run.stage;
 				const why = `Interrupted when Phaseo closed, and not carried on: this ${item.kind === "pull" ? "pull request" : "issue"} was ${item.state} since.`;
@@ -287,7 +307,7 @@ export class FactoryStore {
 		}
 		const settings = this.snapshot.settings;
 		const known = this.snapshot.github.login ? { login: this.snapshot.github.login, avatar: this.snapshot.github.avatar } : null;
-		const [agents, version, user] = await Promise.all([this.deps.agents().catch(() => this.discovered), ghVersion(), known ?? githubLogin(), ...settings.repos.map((repo) => this.sync(repo.repo))]);
+		const [agents, version, user] = await Promise.all([this.deps.agents().catch(() => this.discovered), ghVersion(), known ?? githubLogin(), ...settings.repos.map((repo) => this.sync(repo.repo)), this.pollWork()]);
 		this.discovered = agents;
 		this.snapshot = { ...this.snapshot, agents: this.withEfforts(agents), loadedAt: Date.now(), github: { version, attach: supportsAttach(version), login: user?.login, avatar: user?.avatar } };
 		this.rebuildItems();
@@ -326,6 +346,27 @@ export class FactoryStore {
 			this.cache[repo] = { ...cached, syncedAt: started, items: [...byId.values()], error: undefined };
 		} catch (error) {
 			this.cache[repo] = { ...cached, error: message(error) };
+		}
+		this.cacheChanged = true;
+	}
+
+	/**
+	 * Reads Phaseo Work's items, on the same schedule as GitHub. A failed read keeps what was read before and says why
+	 * in Settings; turned off, there are none.
+	 */
+	private async pollWork(): Promise<void> {
+		const settings = this.snapshot.settings.phaseoWork;
+		if (!this.deps.work || !settings?.enabled) {
+			if (this.work.length || this.workStatus) this.cacheChanged = true;
+			this.work = [];
+			this.workStatus = undefined;
+			return;
+		}
+		try {
+			this.work = await this.deps.work.poll();
+			this.workStatus = { syncedAt: Date.now(), items: this.work.length };
+		} catch (error) {
+			this.workStatus = { ...this.workStatus, items: this.work.length, error: message(error) };
 		}
 		this.cacheChanged = true;
 	}
@@ -410,16 +451,15 @@ export class FactoryStore {
 	private rebuildItems() {
 		if (this.demo) return;
 		const repos = this.snapshot.settings.repos;
-		const items = linkWork(repos.flatMap((repo) => this.cache[repo.repo]?.items ?? []))
-			.map((item) => this.withOverlay(item))
-			.sort((a, b) => b.updatedAt - a.updatedAt);
+		const github = linkWork(repos.flatMap((repo) => this.cache[repo.repo]?.items ?? [])).map((item) => this.withOverlay(item));
+		const items = mergeWork(github, this.work, (item) => this.withOverlay(item)).sort((a, b) => b.updatedAt - a.updatedAt);
 		const statuses = repos.map((repo): RepoStatus => {
 			const cached = this.cache[repo.repo];
 			const open = (cached?.items ?? []).filter((item) => item.state === "open" || item.state === "draft");
 			return { repo: repo.repo, importing: this.importing.get(repo.repo), importedAt: cached?.importedAt, syncedAt: cached?.syncedAt, issues: open.filter((item) => item.kind === "issue").length, pulls: open.filter((item) => item.kind === "pull").length, error: cached?.error };
 		});
 		const failing = statuses.find((status) => status.error);
-		this.snapshot = { ...this.snapshot, items, repos: statuses, error: this.loadProblem ?? (failing ? `${failing.repo}: ${failing.error}` : undefined) };
+		this.snapshot = { ...this.snapshot, items, repos: statuses, phaseoWork: this.workStatus, error: this.loadProblem ?? (failing ? `${failing.repo}: ${failing.error}` : undefined) };
 		this.changed();
 	}
 
@@ -431,6 +471,7 @@ export class FactoryStore {
 	}
 
 	private repoPath(repo: string): string {
+		if (!repo) throw new Error("This Phaseo Work item has no GitHub repository. Set one on the item in Phaseo first");
 		const checkout = this.snapshot.settings.repos.find((entry) => entry.repo === repo)?.path;
 		if (!checkout) throw new Error(`Add a local checkout of ${repo} in Settings → Factory → Repositories first`);
 		return checkout;
@@ -442,12 +483,19 @@ export class FactoryStore {
 	}
 
 	async updateSettings(patch: Partial<FactorySettings>): Promise<FactorySnapshot> {
-		const settings = { ...this.snapshot.settings, ...patch };
+		const settings = { ...this.snapshot.settings, ...patch, ...(patch.phaseoWork !== undefined ? { phaseoWork: normalizeWorkSettings(patch.phaseoWork) } : {}) };
 		this.snapshot = { ...this.snapshot, settings };
 		if (patch.agentEfforts && !this.demo) this.snapshot = { ...this.snapshot, agents: this.withEfforts(this.discovered) };
 		this.changed();
 		if (patch.pollMinutes !== undefined) this.schedulePoll();
+		// A different rule, workspace or sign-in: read Phaseo Work again now rather than at the next check.
+		if (patch.phaseoWork !== undefined && !this.demo) await this.reloadWork();
 		return this.snapshot;
+	}
+
+	private async reloadWork(): Promise<void> {
+		await this.pollWork();
+		this.rebuildItems();
 	}
 
 	/** The agents with the effort chosen for each in Settings. */
@@ -551,6 +599,7 @@ export class FactoryStore {
 		// The notes it reads, by the labels its report will use to say how they held up.
 		const notes = notesForPrompt(this.snapshot.notes[item.repo] ?? [], this.snapshot.notes[COMPUTER] ?? []);
 		this.patchRun(run.id, (current) => ({ ...current, noteRefs: noteRefs(notes) }));
+		this.reportWorkStart(item, run, agent);
 		if (this.demo) return run;
 
 		try {
@@ -654,6 +703,23 @@ export class FactoryStore {
 		await this.launch({ itemId, stage, agentId }, { resume: previous, message });
 	}
 
+	/** A run on a Phaseo Work item is reported there as the engineer agent running on this desktop. */
+	private reportWorkStart(item: WorkItem, run: Run, agent: AgentProfile) {
+		if (!item.phaseo || !this.deps.work) return;
+		this.deps.work.runStarted(item, run, agent).then(
+			(workRunId) => { if (workRunId) this.patchRun(run.id, (current) => ({ ...current, workRunId })); },
+			(error: unknown) => this.log(run.id, { at: Date.now(), kind: "info", text: `Couldn't tell Phaseo Work this started: ${message(error)}` }),
+		);
+	}
+
+	/** How the run ended, on its Phaseo Work item. */
+	private reportWorkEnd(runId: string) {
+		const run = this.snapshot.runs.find((candidate) => candidate.id === runId);
+		const item = run && this.snapshot.items.find((candidate) => candidate.id === run.itemId);
+		if (!run || !item?.phaseo || !this.deps.work) return;
+		this.deps.work.runEnded(item, run).catch((error: unknown) => this.log(run.id, { at: Date.now(), kind: "info", text: `Couldn't tell Phaseo Work how this ended: ${message(error)}` }));
+	}
+
 	private finishRun(runId: string, ended: { status: Run["status"]; summary?: string; usage?: Run["usage"]; report?: RunReport; crashed?: boolean }) {
 		// Quitting stops the threads; their runs were already saved as interrupted, to carry on at the next start.
 		if (this.closing) return;
@@ -670,6 +736,7 @@ export class FactoryStore {
 		if (result.status === "failed" && result.crashed && !stopped && !this.demo) {
 			const tries = (run.continued ?? 0) + 1;
 			this.patchRun(runId, (current) => ({ ...current, status: "failed", interrupted: "crash", summary: result.summary, usage: result.usage ?? current.usage, finishedAt: Date.now(), pending: undefined }));
+			this.reportWorkEnd(runId);
 			if (tries <= AUTO_CONTINUE) {
 				const pause = CRASH_PAUSE[Math.min(tries, CRASH_PAUSE.length) - 1]!;
 				this.log(runId, { at: Date.now(), kind: "info", text: `It stopped unexpectedly. Factory carries it on in ${Math.round(pause / 1000)} seconds` });
@@ -688,6 +755,7 @@ export class FactoryStore {
 			return;
 		}
 		this.patchRun(runId, (current) => ({ ...current, status: result.status, summary: result.summary, report: result.report ?? current.report, usage: result.usage ?? current.usage, finishedAt: Date.now(), pending: undefined }));
+		this.reportWorkEnd(runId);
 		const item = this.snapshot.items.find((candidate) => candidate.id === run.itemId);
 		// Its repository was removed while it ran: the run is recorded, and there's nothing more to move along.
 		if (!item) return;
@@ -717,7 +785,7 @@ export class FactoryStore {
 		}
 
 		// Missing something only the reporter knows: ask them and wait, a couple of times at most.
-		if (item.kind === "issue" && result.status === "succeeded" && outcome.status !== "done" && playbook.askReporter && asksReporter(run.stage, result.report) && (item.asked?.rounds ?? 0) < ASK_ROUNDS && !this.demo) {
+		if (item.kind === "issue" && result.status === "succeeded" && outcome.status !== "done" && playbook.askReporter && asksReporter(run.stage, result.report) && (item.asked?.rounds ?? 0) < ASK_ROUNDS && !this.demo && !workOnly(item)) {
 			settle({ status: "waiting", summary: "Needs details only the reporter has" });
 			this.endAutopilot(item.id, run.id, "it's waiting on the reporter");
 			void this.askReporter(item.id, runId);
@@ -732,7 +800,7 @@ export class FactoryStore {
 		const fixedBy = run.stage === "fix" ? result.report?.fixedBy : undefined;
 		if (fixedBy && this.snapshot.items.some((candidate) => candidate.repo === item.repo && candidate.number === fixedBy && candidate.kind === "pull")) this.patchItem(run.itemId, (current) => ({ ...current, linked: current.linked ?? fixedBy }));
 		const after = this.item(run.itemId);
-		if (result.status === "succeeded" && result.report && playbook.postReports && run.stage !== "reproduce" && run.stage !== "fix" && !this.demo) void this.postReport(after.id, run.id).catch(() => undefined);
+		if (result.status === "succeeded" && result.report && playbook.postReports && run.stage !== "reproduce" && run.stage !== "fix" && !this.demo && !workOnly(after)) void this.postReport(after.id, run.id).catch(() => undefined);
 		if (after.autopilot) {
 			if (outcome.status === "done") void this.carryOn(after.id).catch((error: unknown) => this.endAutopilot(after.id, runId, `couldn't start the next stage: ${message(error)}`));
 			else this.endAutopilot(after.id, run.id, result.status === "cancelled" ? "the run was stopped" : `${stageLabel(run.stage)} needs you`);
@@ -801,7 +869,7 @@ export class FactoryStore {
 	/** The comments on an item, read from GitHub when it's opened: too many to keep for every item. */
 	async itemComments(itemId: string): Promise<IssueComment[]> {
 		const item = this.snapshot.items.find((candidate) => candidate.id === itemId);
-		if (!item || this.demo) return [];
+		if (!item || this.demo || workOnly(item)) return [];
 		return allComments(item.repo, item.number);
 	}
 
@@ -877,6 +945,7 @@ export class FactoryStore {
 	async act(itemId: string, action: ItemAction): Promise<void> {
 		const item = this.item(itemId);
 		const playbook = this.snapshot.settings.playbooks[item.kind];
+		if (workOnly(item) && GITHUB_ONLY.has(action.id)) throw new Error("This item is only in Phaseo Work, so there's no GitHub issue to do that on");
 		switch (action.id) {
 			case "run": {
 				if (!action.stage) return;
@@ -981,6 +1050,7 @@ export class FactoryStore {
 	 */
 	async changeOnGithub(itemId: string, change: GithubChange): Promise<void> {
 		const item = this.item(itemId);
+		if (workOnly(item)) throw new Error("This item is only in Phaseo Work, not on GitHub. Change it in Phaseo");
 		const { repo, kind, number } = item;
 		const pullOnly = change.kind === "merge" || change.kind === "review" || change.kind === "draft" || change.kind === "reviewers" || change.kind === "update-branch" || change.kind === "rerun-checks" || change.kind === "line-comment" || change.kind === "reply" || change.kind === "resolve";
 		if ((change.kind === "line-comment" || change.kind === "reply") && !change.body.trim()) throw new Error("Write a comment first");
@@ -1128,7 +1198,7 @@ export class FactoryStore {
 
 	async itemTimeline(itemId: string): Promise<TimelineEntry[]> {
 		const item = this.snapshot.items.find((candidate) => candidate.id === itemId);
-		if (!item || this.demo) return [];
+		if (!item || this.demo || workOnly(item)) return [];
 		return itemTimeline(item.repo, item.kind, item.number);
 	}
 
@@ -1228,20 +1298,24 @@ export class FactoryStore {
 				return (await createPullRequest({ repo: issue.repo, cwd: fix.worktree, branch, title: issue.title, body, attach: proof.files })).number;
 			})();
 
-		// The fixer is noted on the pull request, so its review goes to someone else.
+		// The fixer is noted on the pull request, so its review goes to someone else. A Phaseo-only item's number isn't a
+		// GitHub issue's, so its pull request links to nothing on GitHub; the item still knows its pull request.
+		const url = `https://github.com/${issue.repo}/pull/${number}`;
 		const pull: WorkItem = {
 			...issue,
 			id: `${issue.repo}#${number}`,
+			source: "github",
+			phaseo: undefined,
 			number,
 			kind: "pull",
 			state: "draft",
 			body,
-			url: `https://github.com/${issue.repo}/pull/${number}`,
+			url,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 			comments: 0,
 			branch,
-			linked: issue.number,
+			linked: workOnly(issue) ? undefined : issue.number,
 			duplicateOf: undefined,
 			asked: undefined,
 			autopilot: undefined,
@@ -1255,6 +1329,7 @@ export class FactoryStore {
 		const issueThread = this.snapshot.threads[issueId];
 		if (issueThread && !this.demo) void this.deps.threads.linkItem?.(issueThread, this.item(issueId)).catch(() => undefined);
 		if (fix) this.log(fix.id, { at: Date.now(), kind: "result", text: `Opened draft pull request #${number}` });
+		if (issue.phaseo && this.deps.work && !this.demo) this.deps.work.pullOpened(issue, fix && this.snapshot.runs.find((run) => run.id === fix.id), url).catch((error: unknown) => fix && this.log(fix.id, { at: Date.now(), kind: "info", text: `Couldn't tell Phaseo Work about the pull request: ${message(error)}` }));
 		if (!this.demo) this.checksRestarted(pull.id);
 	}
 
@@ -1348,7 +1423,9 @@ export class FactoryStore {
 			if (run.status !== "running" || !this.sessions.has(run.id) || this.hearing.has(run.id)) return;
 			const item = this.snapshot.items.find((candidate) => candidate.id === run.itemId);
 			if (!item) return;
-			const items = [item, linkedItem(item, this.snapshot.items)].filter((candidate): candidate is WorkItem => !!candidate);
+			// A Phaseo-only item has nothing on GitHub to read; the pull request Factory opened for it does.
+			const items = [item, linkedItem(item, this.snapshot.items)].filter((candidate): candidate is WorkItem => !!candidate && !workOnly(candidate));
+			if (!items.length) return;
 			if (!items.some((candidate) => candidate.updatedAt > (run.heardAt ?? run.startedAt))) return;
 			this.hearing.add(run.id);
 			const readAt = Date.now();
@@ -1578,7 +1655,7 @@ export class FactoryStore {
 	private save(): Promise<void> {
 		this.saveTimer = null;
 		try {
-			const items = this.cacheChanged ? JSON.stringify({ repos: this.cache }) : undefined;
+			const items = this.cacheChanged ? JSON.stringify({ repos: this.cache, work: this.work }) : undefined;
 			this.deps.persistence.write({ state: this.savedState(), ...(items ? { items } : {}) });
 			this.cacheChanged = false;
 		} catch {

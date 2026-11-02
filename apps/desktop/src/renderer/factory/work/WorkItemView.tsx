@@ -26,6 +26,8 @@ import { ChecksBox, CommentBox, GithubMenu, MergeBox } from "./GithubActions";
 import { CommentEntry, TimelineView, useTimeline } from "./Timeline";
 import { ActionButton, Composer, NextSteps, runAction } from "./NextSteps";
 import { Pipeline } from "./Pipeline";
+import { OpenInPhaseo, PhaseoBadge } from "../components/PhaseoWork";
+import { workOnly } from "../../../shared/factory/phaseoWork";
 import { errorText } from "../components/AddRepo";
 
 const PRIORITY = { urgent: "Urgent", high: "High", normal: "Normal", low: "Low" } as const;
@@ -253,7 +255,8 @@ export function WorkItemView({ item, snapshot, route }: { item: WorkItem; snapsh
 	const tabs = [
 		{ id: "overview", label: "Overview" },
 		{ id: "runs", label: "Runs", count: runs.length },
-		{ id: "activity", label: "Activity", count: comments?.length ?? item.comments },
+		// A Phaseo-only item has no GitHub conversation: its activity is on phaseo.app.
+		...(workOnly(item) ? [] : [{ id: "activity", label: "Activity", count: comments?.length ?? item.comments }]),
 		...(item.kind === "pull" ? [{ id: "files", label: "Files changed", count: item.diff?.files }] : []),
 	];
 
@@ -266,7 +269,7 @@ export function WorkItemView({ item, snapshot, route }: { item: WorkItem; snapsh
 		<Tip label={snapshot.threads[item.id] ? "Open this item's thread in Code" : "Start this item's thread in Code, in its worktree"}>
 			<Button variant="outline" size={size} disabled={thread.busy} onClick={() => void thread.open(item.id)}><MessagesSquare className="size-3.5" />{thread.busy ? "Opening…" : "Open thread"}</Button>
 		</Tip>
-		<GithubMenu item={item} />
+		{!workOnly(item) && <GithubMenu item={item} />}
 		<div className="flex">
 			{lead && !liveRun
 				? <ActionButton item={item} action={lead} size={size} onError={setError} />
@@ -330,7 +333,8 @@ export function WorkItemView({ item, snapshot, route }: { item: WorkItem; snapsh
 				</Tip>
 				<span className="text-muted-foreground/40">/</span>
 				<ItemMark item={item} className="size-3.5" />
-				<span>{item.kind === "pull" ? "Pull request" : "Issue"} #{item.number}</span>
+				{workOnly(item) ? <span>Phaseo Work item {item.phaseo!.number}</span> : <span>{item.kind === "pull" ? "Pull request" : "Issue"} #{item.number}</span>}
+				{!workOnly(item) && <PhaseoBadge item={item} />}
 				</div>
 				<div className="ml-auto flex flex-wrap items-center justify-end gap-2">
 					{controls("default")}
@@ -365,7 +369,8 @@ export function WorkItemView({ item, snapshot, route }: { item: WorkItem; snapsh
 				</FactoryLink>}
 				{risk && <Tip label={risk.why ?? "Review's rating"}><span className={cn("rounded-[4px] border px-1.5 py-px text-2xs font-medium", risk.level === "high" ? "border-destructive/40 text-destructive" : risk.level === "medium" ? "border-warning/40 text-warning" : "text-success")}>{RISK_LABEL[risk.level]}</span></Tip>}
 				{item.labels.map((label) => <LabelChip key={label} name={label} color={item.labelColors?.[label]} />)}
-				<button type="button" onClick={() => openExternal(item.url)} className="ml-auto flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-sm hover:bg-accent/60 hover:text-foreground">Open on GitHub<ArrowUpRight className="size-3.5" /></button>
+				<OpenInPhaseo item={item} className="ml-auto" />
+				{!workOnly(item) && <button type="button" onClick={() => openExternal(item.url)} className={cn("flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-sm hover:bg-accent/60 hover:text-foreground", !item.phaseo && "ml-auto")}>Open on GitHub<ArrowUpRight className="size-3.5" /></button>}
 			</div>
 
 			{error && <p className="mt-4 border-l-2 border-destructive pl-3 text-sm text-destructive">{error}</p>}
@@ -434,6 +439,10 @@ export function WorkItemView({ item, snapshot, route }: { item: WorkItem; snapsh
 						{item.kind === "pull" && <PeopleDetail item={item} what="reviewers" />}
 					</>}
 					<Detail label="Priority">{PRIORITY[item.priority]}</Detail>
+					{item.phaseo && <Detail label="Phaseo Work">
+						<button type="button" onClick={() => openExternal(item.phaseo!.url)} className="text-left hover:underline">Item {item.phaseo.number} · {item.phaseo.state.replace("_", " ")}</button>
+						{item.phaseo.triageSummary && <span className="mt-0.5 block text-xs text-muted-foreground">{item.phaseo.triageSummary}</span>}
+					</Detail>}
 					{item.branch && <Detail label="Branch"><span className="flex items-center gap-1.5 font-mono text-xs"><GitBranch className="size-3.5 text-muted-foreground" /><span className="truncate">{item.branch}</span></span></Detail>}
 					{item.linked && <Detail label={item.kind === "pull" ? "Closes" : "Fixed by"}><FactoryLink to={{ item: `${item.repo}#${item.linked}` }} className="underline decoration-muted-foreground/40 underline-offset-2 hover:decoration-foreground">#{item.linked}{related ? ` ${related.title}` : ""}</FactoryLink></Detail>}
 					{item.diff && <Detail label="Changes"><span className="tabular-nums">{item.diff.files} files <span className="text-success">+{item.diff.additions}</span> <span className="text-destructive">−{item.diff.deletions}</span></span></Detail>}

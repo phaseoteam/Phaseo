@@ -5,6 +5,7 @@ import { appendFile, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { proofKind } from "../../shared/factory/report";
 import { FACTORY_BRANCH_PREFIX } from "../../shared/factory/intake";
+import { itemKey } from "../../shared/factory/phaseoWork";
 import { PROOF_FOLDER } from "../../shared/factory/stages";
 import type { ProofFile, WorkItem } from "../../shared/factory/types";
 
@@ -33,7 +34,7 @@ function slug(text: string): string {
  */
 export async function prepareWorktree(root: string, checkout: string, item: WorkItem): Promise<{ dir: string; branch: string; note?: string }> {
 	const dir = await worktreeFolder(root, checkout, item);
-	const wanted = item.branch ?? `factory/${item.number}-${slug(item.title)}`;
+	const wanted = item.branch ?? `factory/${itemKey(item)}-${slug(item.title)}`;
 	if (existsSync(dir)) {
 		// The branch it really has: it may have been given another name when it was made.
 		const current = await git(dir, ["rev-parse", "--abbrev-ref", "HEAD"]).catch(() => "");
@@ -75,10 +76,10 @@ export async function prepareWorktree(root: string, checkout: string, item: Work
  * item gets a folder named with a hash of its repository too.
  */
 async function worktreeFolder(root: string, checkout: string, item: WorkItem): Promise<string> {
-	const plain = path.join(root, `${slug(item.repo)}-${item.number}`);
+	const plain = path.join(root, `${slug(item.repo)}-${itemKey(item)}`);
 	if (!existsSync(plain) || (await sameClone(plain, checkout))) return plain;
 	const hash = createHash("sha256").update(item.repo.toLowerCase()).digest("hex").slice(0, 8);
-	const hashed = path.join(root, `${slug(item.repo)}-${hash}-${item.number}`);
+	const hashed = path.join(root, `${slug(item.repo)}-${hash}-${itemKey(item)}`);
 	if (existsSync(hashed) && !(await sameClone(hashed, checkout))) throw new Error(`${hashed} is a worktree of another repository, so ${item.repo}#${item.number} can't use it`);
 	return hashed;
 }

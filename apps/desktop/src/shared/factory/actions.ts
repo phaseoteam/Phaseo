@@ -1,7 +1,11 @@
 import { FACTORY_BRANCH_PREFIX, agentForStage, stageAgentIsFixed } from "./intake";
 import { ASK_ROUNDS, asksReporter, hasProof, verdictPassed } from "./report";
+import { workOnly } from "./phaseoWork";
 import { currentStage, stagesFor } from "./stages";
-import type { AgentProfile, FactorySnapshot, ItemAction, Run, StageId, WorkItem } from "./types";
+import type { ActionId, AgentProfile, FactorySnapshot, ItemAction, Run, StageId, WorkItem } from "./types";
+
+/** Actions that post on, ask on or close a GitHub issue. */
+export const GITHUB_ONLY = new Set<ActionId>(["close-duplicate", "post-report", "ask-reporter", "open-on-github"]);
 
 /** The agent as it runs on an item: with the item's effort when the agent offers it, its own otherwise. */
 export function withItemEffort<T extends Pick<AgentProfile, "efforts" | "effort">>(agent: T, item: Pick<WorkItem, "effort">): T {
@@ -129,7 +133,8 @@ export function nextActions(item: WorkItem, snapshot: FactorySnapshot): ItemActi
 	if (linked && !actions.some((action) => action.id === "go-to" && action.target === linked.id)) actions.push(goTo(linked));
 	// Only one button leads.
 	let led = false;
-	return actions.map((action) => {
+	// A Phaseo-only item has no GitHub issue to post on, ask on or close.
+	return actions.filter((action) => !workOnly(item) || !GITHUB_ONLY.has(action.id)).map((action) => {
 		const primary = Boolean(action.primary) && !led;
 		led ||= primary;
 		return { ...action, primary };

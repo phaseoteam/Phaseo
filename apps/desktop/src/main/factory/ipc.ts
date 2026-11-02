@@ -90,6 +90,11 @@ export function registerFactoryIpc(ipcMain: IpcMain, factory: () => FactoryServi
 		return localClones();
 	});
 	handle("item-body", (event, itemId) => service(event).itemBody(text(itemId)));
+	// Sign-ins and workspaces for Settings: names and ids only; the tokens stay here.
+	handle("phaseo-work-options", (event, accountId) => {
+		service(event);
+		return factory()!.phaseoWorkOptions(accountId === undefined || accountId === null ? undefined : text(accountId, 200));
+	});
 	handle("similar-items", (event, itemId) => service(event).similarItems(text(itemId)));
 	handle("item-comments", (event, itemId) => service(event).itemComments(text(itemId)));
 	handle("add-note", (event, repo, note) => service(event).addNote(text(repo), text(note, 20_000)));

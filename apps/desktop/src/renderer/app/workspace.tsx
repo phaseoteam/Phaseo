@@ -17,7 +17,7 @@ export type RightPanelSurface = "changes" | "files" | "diff" | "terminal" | "bro
 export type RightPanelTab = RightPanelSurface | "files" | "restore";
 export type SettingsPage = "general" | "appearance" | "notifications" | "accounts" | "usage" | "agents" | "mcp" | "keyboard" | "diagnostics" | "experimental" | "project" | FactorySettingsPage;
 /** Factory's pages in Settings. */
-export type FactorySettingsPage = "factory-repositories" | "factory-issues" | "factory-pulls" | "factory-notes" | "factory-checking";
+export type FactorySettingsPage = "factory-repositories" | "factory-issues" | "factory-pulls" | "factory-notes" | "factory-checking" | "factory-phaseo-work";
 export type CompareGroup = { id: string; title: string; taskIds: string[]; createdAt: string };
 
 type WorkspaceState = {

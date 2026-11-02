@@ -176,6 +176,7 @@ const desktopApi: PhaseoDesktopApi = {
 		proofFile: (runId, name) => ipcRenderer.invoke("factory:proof-file", runId, name),
 		attachmentFile: (itemId, name) => ipcRenderer.invoke("factory:attachment-file", itemId, name),
 		githubImage: url => ipcRenderer.invoke("factory:github-image", url),
+		phaseoWorkOptions: accountId => ipcRenderer.invoke("factory:phaseo-work-options", accountId),
 		onChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, snapshot: Parameters<typeof listener>[0]) => listener(snapshot); ipcRenderer.on("factory:changed", subscription); return () => ipcRenderer.removeListener("factory:changed", subscription); },
 	},
 	getRuntimeInfo: () => ipcRenderer.invoke("desktop:get-runtime-info"),

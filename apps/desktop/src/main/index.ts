@@ -311,6 +311,16 @@ function phaseoSession(account: Account): Promise<PhaseoSession> {
 	phaseoSessionReads.set(secretId, read);
 	return read;
 }
+/** Phaseo logins (not older OAuth sign-ins, which have no login) that Factory can read Phaseo Work with. */
+const phaseoLogins = () => workspaceRuntime.store.getAccounts().filter(account => account.harness === "phaseo" && account.sessionSecretId && !account.archived);
+/** Factory's way to Phaseo Work: the sign-ins by name, and a fresh access token that never leaves the main process. */
+const phaseoWorkAccess = {
+	accounts: () => phaseoLogins().map(account => ({ id: account.id, name: account.profile?.name ?? account.name, ...account.profile?.email ? { email: account.profile.email } : {}, ...account.phaseoWorkspaceId ? { workspaceId: account.phaseoWorkspaceId } : {} })),
+	token: async (accountId?: string) => {
+		const logins = phaseoLogins(), account = accountId ? logins.find(value => value.id === accountId) : logins[0];
+		return account ? (await phaseoSession(account)).accessToken : null;
+	},
+};
 /**
  * Keeps each Phaseo sign-in going while the app is used: renews its key once a day (a key lasts 30 days from its last
  * renewal), replaces a key that ran out from the login, and reads who it belongs to for the sidebar's profile, a new
@@ -1180,7 +1190,7 @@ app.whenReady().then(() => {
 	};
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	workspaceRuntime.discoverInstallations = harnessInstallations;
-	factoryService = new FactoryService(workspaceRuntime, { dataDir: factoryDataFolder(workspaceDirectory), legacyFolder: legacyFactoryFolder(app.getPath("appData")), demo: process.env.PHASEO_FACTORY_DEMO === "1", broadcast: factoryBroadcaster(() => BrowserWindow.getAllWindows()) });
+	factoryService = new FactoryService(workspaceRuntime, { dataDir: factoryDataFolder(workspaceDirectory), legacyFolder: legacyFactoryFolder(app.getPath("appData")), demo: process.env.PHASEO_FACTORY_DEMO === "1", broadcast: factoryBroadcaster(() => BrowserWindow.getAllWindows()), phaseoWork: phaseoWorkAccess });
 	workspaceRuntime.factoryTools = threadId => factoryService!.agentTools(threadId);
 	void factoryService.start().catch(() => {});
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
@@ -1191,7 +1201,7 @@ app.whenReady().then(() => {
 		open: taskId => { if (shutdownStarted) return; const window = BrowserWindow.getAllWindows().find(value => !value.isDestroyed()) ?? createWindow(); if (window.isMinimized()) window.restore(); window.show(); window.focus(); const id = taskId && workspaceRuntime.store.getOverview().tasks.some(value => value.id === taskId) ? taskId : undefined; const navigate = () => { if (!window.isDestroyed()) window.webContents.send("workspace:open-task", id); }; if (window.webContents.isLoading()) window.webContents.once("did-finish-load", navigate); else navigate(); },
 	}, workspaceRuntime.store.getPreferences());
 	taskNotifications.update(workspaceRuntime.store.getOverview());
-	app.on("browser-window-focus", () => taskNotifications.dismiss());
+	app.on("browser-window-focus", () => { taskNotifications.dismiss(); factoryService?.windowFocused(); });
 	missionService = new MissionService(workspaceRuntime);
 	missionService.onChange = () => { const missions = workspaceRuntime.store.missions.list(); for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:missions-changed", missions); };
 	workspaceRuntime.onAutopilotLog = () => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:autopilot-log-changed"); };

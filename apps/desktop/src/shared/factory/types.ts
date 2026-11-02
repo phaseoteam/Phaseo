@@ -1,5 +1,5 @@
-/** Where a work item came from. GitHub is the only live source for now. */
-export type SourceKind = "github" | "linear" | "sentry";
+/** Where a work item came from: GitHub, or Phaseo Work (the workspace's own tracker). */
+export type SourceKind = "github" | "linear" | "sentry" | "phaseo";
 
 export type WorkKind = "issue" | "pull";
 
@@ -124,6 +124,56 @@ export interface WorkItem {
 	/** Pull requests: changed files and lines. */
 	diff?: { files: number; additions: number; deletions: number };
 	checks?: { passed: number; failed: number; pending: number };
+	/** Set when the item is (or comes from) a Phaseo Work item. */
+	phaseo?: PhaseoWorkLink;
+}
+
+/**
+ * The Phaseo Work item behind a Factory item. Only these fields are kept: never the customer requests or contact
+ * details the Phaseo API can also return.
+ */
+export interface PhaseoWorkLink {
+	workspaceId: string;
+	number: number;
+	/** https://phaseo.app/work/<number>. */
+	url: string;
+	/** Phaseo's own state: triage, backlog, todo, in_progress, in_review, done or cancelled. */
+	state: string;
+	/** 0 none, 1 urgent, 2 high, 3 medium, 4 low. */
+	priority: number;
+	triageSummary?: string;
+	/** The GitHub issue the item has, when it has one: then Factory works on that issue. */
+	githubIssue?: number;
+	githubPrUrl?: string;
+}
+
+/** Which Phaseo Work items Factory takes, and through which sign-in. Off until turned on in Settings. */
+export interface PhaseoWorkSettings {
+	enabled: boolean;
+	/** The desktop's Phaseo sign-in to read with. Unset uses the first one. */
+	accountId?: string;
+	workspaceId?: string;
+	workspaceName?: string;
+	/** Items assigned to the engineer agent. */
+	engineer: boolean;
+	/** Items assigned to you. */
+	mine: boolean;
+	/** Items with this label. Empty takes none by label. */
+	label: string;
+}
+
+/** How the last read of Phaseo Work went. */
+export interface PhaseoWorkStatus {
+	syncedAt?: number;
+	error?: string;
+	items: number;
+}
+
+/** What the Phaseo Work settings page can choose from. */
+export interface PhaseoWorkOptions {
+	accounts: { id: string; name: string; email?: string; workspaceId?: string }[];
+	workspaces: { id: string; name: string }[];
+	error?: string;
 }
 
 /** A pull request's checks on GitHub, summed up. `none`: the branch has no checks to wait for. */
@@ -253,6 +303,8 @@ export interface Run {
 	heardAt?: number;
 	/** When Factory told the agent it seemed stalled. */
 	nudgedAt?: number;
+	/** The agent run this run was reported as on its Phaseo Work item. */
+	workRunId?: string;
 }
 
 /** A note is about one repository, or about this computer and given to every run. */
@@ -396,6 +448,8 @@ export interface FactorySettings {
 	stallMinutes?: number;
 	/** Minutes after that before the run is stopped for a person. Unset is 15. */
 	stallGraceMinutes?: number;
+	/** Phaseo Work as a source of items. Unset is off. */
+	phaseoWork?: PhaseoWorkSettings;
 }
 
 export interface FactorySnapshot {
@@ -414,6 +468,8 @@ export interface FactorySnapshot {
 	loadedAt: number;
 	error?: string;
 	demo: boolean;
+	/** Set while Phaseo Work is turned on. */
+	phaseoWork?: PhaseoWorkStatus;
 }
 
 /** A change sent to the window. Items are left out when only something else changed. */
@@ -677,6 +733,8 @@ export interface FactoryApi {
 	attachmentFile(itemId: string, name: string): Promise<string | null>;
 	/** A GitHub image or video (in a description or comment) read with gh's sign-in, as a data: URL, so private repositories' ones show. */
 	githubImage(url: string): Promise<string | null>;
+	/** The Phaseo sign-ins on this computer, and the workspaces the chosen one (or the first) belongs to. */
+	phaseoWorkOptions(accountId?: string): Promise<PhaseoWorkOptions>;
 	/** Changes, at most every 50 ms. `items` is left out when only something else changed: keep the list you have. */
 	onChange(listener: (update: WindowUpdate) => void): () => void;
 }

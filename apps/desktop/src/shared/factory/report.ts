@@ -217,7 +217,8 @@ export function pullRequestBody(issue: WorkItem, runs: Run[], agentLabel: (agent
 	});
 	const files = latest.flatMap((run) => localOnly(run, ref));
 	return [
-		`Fixes #${issue.number}`,
+		// A Phaseo-only item has no GitHub issue to close: the pull request points at the item instead.
+		issue.phaseo && issue.phaseo.githubIssue === undefined ? `For Phaseo Work item ${issue.phaseo.number}: ${issue.phaseo.url}` : `Fixes #${issue.number}`,
 		"",
 		"## What changed",
 		"",

@@ -1,10 +1,11 @@
 import path from "node:path";
 import { stageLabel, stagesFor } from "../../shared/factory/stages";
-import type { AgentProfile, FactorySnapshot, StageId, WorkItem } from "../../shared/factory/types";
+import type { AgentProfile, FactorySnapshot, PhaseoWorkOptions, StageId, WorkItem } from "../../shared/factory/types";
 import type { FactoryAgentTools, WorkItemFilter, WorkItemRead, WorkItemSummary } from "../../shared/orchestration";
 import type { WorkspaceRuntime } from "../workspaceRuntime";
 import { discoverAgents } from "./agents";
 import { factoryPersistence, importLegacyOnce } from "./persistence";
+import { PhaseoWorkClient, PhaseoWorkSource, type PhaseoWorkAccess } from "./phaseoWork";
 import { StageThreads } from "./stageThreads";
 import { FactoryStore } from "./store";
 
@@ -20,14 +21,18 @@ const STAGES: StageId[] = ["triage", "reproduce", "fix", "review", "verify"];
 export class FactoryService {
 	readonly store: FactoryStore;
 	private readonly threads: StageThreads;
+	private readonly work?: PhaseoWorkSource;
 	private agents?: { at: number; list: Promise<AgentProfile[]> };
 	private started?: Promise<void>;
 	/** Set once saved state is loaded: shutting down before that has nothing of its own to save. */
 	private loaded = false;
 
-	constructor(private readonly runtime: WorkspaceRuntime, private readonly options: { dataDir: string; legacyFolder: string; demo: boolean; broadcast: (snapshot: FactorySnapshot) => void }) {
+	constructor(private readonly runtime: WorkspaceRuntime, private readonly options: { dataDir: string; legacyFolder: string; demo: boolean; broadcast: (snapshot: FactorySnapshot) => void; phaseoWork?: PhaseoWorkAccess }) {
 		this.threads = new StageThreads(runtime, { get: (itemId) => this.store.threadOf(itemId), set: (itemId, threadId) => this.store.setThread(itemId, threadId) });
+		// Phaseo Work reads with the desktop's Phaseo sign-in; the demo never reaches it.
+		if (options.phaseoWork && !options.demo) this.work = new PhaseoWorkSource(new PhaseoWorkClient(options.phaseoWork), () => this.store.get().settings.phaseoWork);
 		this.store = new FactoryStore({
+			work: this.work,
 			dataDir: options.dataDir,
 			demo: options.demo,
 			broadcast: options.broadcast,
@@ -51,7 +56,7 @@ export class FactoryService {
 			if (!this.options.demo) await importLegacyOnce(this.runtime.store, this.options.legacyFolder, () => this.discover(), this.options.dataDir).catch(() => undefined);
 			await this.store.load();
 			this.loaded = true;
-			if (this.options.demo || this.store.get().settings.repos.length) this.activate();
+			if (this.options.demo || this.store.get().settings.repos.length || this.store.get().settings.phaseoWork?.enabled) this.activate();
 		})();
 		return this.started;
 	}
@@ -61,6 +66,16 @@ export class FactoryService {
 		this.working ??= this.store.start().catch(() => undefined);
 	}
 	private working?: Promise<void>;
+
+	/** Coming back to a window: GitHub and Phaseo Work are read again when the last check is a while old. Not before Factory has started. */
+	windowFocused() {
+		if (this.working) this.store.refreshIfStale();
+	}
+
+	/** The Phaseo sign-ins and the chosen one's workspaces, for Settings. */
+	phaseoWorkOptions(accountId?: string): Promise<PhaseoWorkOptions> {
+		return this.work?.options(accountId) ?? Promise.resolve({ accounts: [], workspaces: [], error: "Phaseo Work isn't available here." });
+	}
 
 	/** Runs going are saved as interrupted, to carry on at the next start; call before the runtime closes. */
 	async shutdown() {

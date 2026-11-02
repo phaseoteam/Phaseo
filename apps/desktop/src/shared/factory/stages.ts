@@ -1,5 +1,6 @@
 import { FACTORY_BRANCH_PREFIX, instructionsFor } from "./intake";
 import { notesRules, notesSection, type PromptNotes } from "./notes";
+import { workOnly, workPromptLines } from "./phaseoWork";
 import type { IssueComment, Playbook, SimilarItem, StageId, StageState, WorkItem } from "./types";
 
 /** What a stage may do: read the code, run commands and save proof, or change files. */
@@ -251,9 +252,11 @@ export function stagePrompt(item: WorkItem, stage: StageId, playbook?: Playbook,
 	return [
 		...(instructions ? [`Instructions for every ${kind} in this repository:`, instructions, ""] : []),
 		...notesSection(notes),
-		`You are working on ${item.repo} ${kind} #${item.number}: ${item.title}`,
+		workOnly(item) ? `You are working on a task in ${item.repo}: ${item.title}` : `You are working on ${item.repo} ${kind} #${item.number}: ${item.title}`,
 		"",
-		alone ? `(The pull request's description is left out on purpose. Judge the change on its diff against ${options.fixes ? "the issue below" : "its base"}, not on what its author says it does.)` : item.body.trim() || "(no description)",
+		// A Phaseo-only item's description comes fenced, with the rest of what Phaseo Work says about it.
+		...(workOnly(item) ? [] : [alone ? `(The pull request's description is left out on purpose. Judge the change on its diff against ${options.fixes ? "the issue below" : "its base"}, not on what its author says it does.)` : item.body.trim() || "(no description)"]),
+		...(item.phaseo ? [...(workOnly(item) ? [] : [""]), ...workPromptLines(item)] : []),
 		...(options.fixes ? ["", `It fixes issue #${options.fixes.number}: ${options.fixes.title}`, "", options.fixes.body.trim() || "(no description)"] : []),
 		...(similar.length ? ["", "Other issues in this repository that may be about the same thing, closest first. Some only share words:", ...similarLines(similar, options.similarBodies ?? new Map())] : []),
 		...(item.kind === "issue" ? openPullLines(options.pulls ?? [], item, stage) : []),
