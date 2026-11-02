@@ -43,6 +43,17 @@ describe("blogShareImage", () => {
 		expect(parsed.ok).toBe(true);
 	});
 
+	it("keeps shortened titles within the limit after normalisation", () => {
+		const image = blogShareImage({
+			...post,
+			coverImage: "/blog-images/blog-data.svg",
+			title: `${"a".repeat(88)} bbbbbb`,
+		});
+		const params = dynamicParams(image!.path);
+		expect(parseDynamicOgParams(params).ok).toBe(true);
+		expect(params.get("title")?.endsWith("...")).toBe(true);
+	});
+
 	it("drops a description the card refuses", () => {
 		const image = blogShareImage({
 			...post,
