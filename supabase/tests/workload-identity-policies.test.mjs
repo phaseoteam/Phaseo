@@ -139,7 +139,7 @@ try {
   assert.equal((await rows('select pinned_claim from public.workload_identity_policies where id = $1', [gitlab.policy_id]))[0].pinned_claim, null);
   const [cluster] = await rows(createWithClaim, withClaim(vercel({ name: 'Cluster', provider: 'custom', issuer: 'https://oidc.example.com/cluster', owner: 'system:serviceaccount:prod:api' }), 'sub'));
   assert.equal((await rows('select pinned_claim from public.workload_identity_policies where id = $1', [cluster.policy_id]))[0].pinned_claim, 'sub');
-  assert.ok((await issuers()).includes('https://oidc.example.com/cluster'));
+  assert.deepEqual(await issuers(), ['https://gitlab.com', 'https://oidc.example.com/cluster', 'https://oidc.vercel.com/acme']);
   const beforePhase2 = (await rows('select count(*)::int as n from public.keys'))[0].n;
   for (const [args, pattern] of [
     [withClaim(vercel({ provider: 'custom', issuer: 'https://oidc.example.com/x' }), null), /pinned_claim_check/],
