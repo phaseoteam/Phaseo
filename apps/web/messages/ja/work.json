@@ -252,7 +252,8 @@
 		"estimate": "が見積もりを変更しました",
 		"reply": "が顧客に返信しました",
 		"sla": "が SLA を警告しました",
-		"stalled": "が最近の動きがないことを記録しました"
+		"stalled": "が最近の動きがないことを記録しました",
+		"attachment": "がファイルを添付しました"
 	},
 	"authors": {
 		"user": "誰か",
@@ -689,5 +690,20 @@
 		"markedSent": "送信済みにしました。返信はご自身のメールから送ってください。",
 		"markedSentCopied": "送信済みにしてコピーしました。ご自身のメールに貼り付けて送ってください。",
 		"openEmail": "メールで開く"
+	},
+	"attachments": {
+		"title": "ファイル",
+		"add": "ファイルを追加",
+		"uploading": "アップロード中…",
+		"none": "まだファイルはありません。ファイルは Phaseo 内に保存され、GitHub やエージェントに送られることはありません。",
+		"unavailable": "この Phaseo サーバーではファイルの保存先がまだ設定されていません。",
+		"tooLarge": "{name} は 25 MB を超えています。",
+		"empty": "{name} は空です。",
+		"uploadFailed": "{name} をアップロードできませんでした。",
+		"downloadFailed": "ファイルをダウンロードできませんでした。",
+		"removeFailed": "ファイルを削除できませんでした。",
+		"confirmRemove": "{name} を削除しますか？元に戻せません。",
+		"download": "{name} をダウンロード",
+		"remove": "{name} を削除"
 	}
 }

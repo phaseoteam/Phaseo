@@ -171,6 +171,8 @@ CREATE INDEX work_items_open_activity_idx ON public.work_items USING btree (work
 
 CREATE INDEX work_items_workspace_state_updated_idx ON public.work_items USING btree (workspace_id, state, updated_at DESC);
 
+CREATE INDEX work_items_workspace_updated_idx ON public.work_items USING btree (workspace_id, updated_at DESC);
+
 CREATE POLICY "deny_direct_client_access" ON "public"."work_items"
   AS RESTRICTIVE
   FOR ALL
@@ -236,7 +238,7 @@ CREATE TABLE "public"."work_item_events" (
   CONSTRAINT "work_item_events_author_user_id_fkey" FOREIGN KEY (author_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "work_item_events_body_length_check" CHECK ((char_length(body) <= 100000)),
   CONSTRAINT "work_item_events_data_object_check" CHECK ((jsonb_typeof(data) = 'object'::text)),
-  CONSTRAINT "work_item_events_kind_check" CHECK ((kind = ANY (ARRAY['created'::text, 'comment'::text, 'state'::text, 'priority'::text, 'assignee'::text, 'link'::text, 'triage'::text, 'agent_run'::text, 'customer_request'::text, 'github'::text, 'error'::text, 'project'::text, 'cycle'::text, 'parent'::text, 'relation'::text, 'estimate'::text, 'reply'::text, 'sla'::text, 'stalled'::text]))),
+  CONSTRAINT "work_item_events_kind_check" CHECK ((kind = ANY (ARRAY['created'::text, 'comment'::text, 'state'::text, 'priority'::text, 'assignee'::text, 'link'::text, 'triage'::text, 'agent_run'::text, 'customer_request'::text, 'github'::text, 'error'::text, 'project'::text, 'cycle'::text, 'parent'::text, 'relation'::text, 'estimate'::text, 'reply'::text, 'sla'::text, 'stalled'::text, 'attachment'::text]))),
   CONSTRAINT "work_item_events_pkey" PRIMARY KEY (id),
   CONSTRAINT "work_item_events_work_item_id_fkey" FOREIGN KEY (work_item_id) REFERENCES public.work_items(id) ON DELETE CASCADE,
   CONSTRAINT "work_item_events_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
@@ -1067,13 +1069,52 @@ CREATE POLICY "deny_direct_client_access" ON "public"."work_error_sourcemaps"
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."work_error_sourcemaps" IS 'Source maps uploaded for an error project release. The map itself is in R2 (WORK_SOURCEMAPS) under object_key; file is the minified file''s name as stack frames show it.';
+COMMENT ON TABLE "public"."work_error_sourcemaps" IS 'Source maps uploaded for an error project release. The map itself is in R2 (WORK_FILES) under object_key; file is the minified file''s name as stack frames show it.';
 
 REVOKE ALL ON TABLE "public"."work_error_sourcemaps" FROM "service_role";
 
 GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_error_sourcemaps" TO "service_role";
 
 REVOKE ALL ON TABLE "public"."work_error_sourcemaps" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_attachments" (
+  "id"           uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id" uuid                     NOT NULL,
+  "work_item_id" uuid                     NOT NULL,
+  "file_name"    text                     NOT NULL,
+  "content_type" text                     NOT NULL,
+  "size_bytes"   integer                  NOT NULL,
+  "object_key"   text                     NOT NULL,
+  "uploaded_by"  uuid,
+  "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_attachments_file_name_length_check" CHECK (((char_length(file_name) >= 1) AND (char_length(file_name) <= 200))),
+  CONSTRAINT "work_attachments_size_check" CHECK (((size_bytes > 0) AND (size_bytes <= 26214400))),
+  CONSTRAINT "work_attachments_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_attachments_object_key_key" UNIQUE (object_key),
+  CONSTRAINT "work_attachments_uploaded_by_fkey" FOREIGN KEY (uploaded_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_attachments_work_item_id_fkey" FOREIGN KEY (work_item_id) REFERENCES public.work_items(id) ON DELETE CASCADE,
+  CONSTRAINT "work_attachments_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_attachments"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_attachments_work_item_id_idx ON public.work_attachments USING btree (work_item_id, created_at);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_attachments"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_attachments" IS 'Files attached to work items (at most 25 MB each). The file is in R2 (WORK_FILES) under object_key; it is never sent to GitHub or to agents.';
+
+REVOKE ALL ON TABLE "public"."work_attachments" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT ON TABLE "public"."work_attachments" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_attachments" FROM "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.create_work_item (
   p_workspace_id uuid,

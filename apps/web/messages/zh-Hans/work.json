@@ -252,7 +252,8 @@
 		"estimate": "更改了估算",
 		"reply": "回复了客户",
 		"sla": "标记了 SLA",
-		"stalled": "记录了近期没有动态"
+		"stalled": "记录了近期没有动态",
+		"attachment": "添加了文件"
 	},
 	"authors": {
 		"user": "有人",
@@ -689,5 +690,20 @@
 		"markedSent": "已标为已发送。请从你自己的邮箱发送这条回复。",
 		"markedSentCopied": "已标为已发送并复制。请粘贴到你自己的邮件中发送。",
 		"openEmail": "在邮件中打开"
+	},
+	"attachments": {
+		"title": "文件",
+		"add": "添加文件",
+		"uploading": "正在上传…",
+		"none": "还没有文件。文件保存在 Phaseo 中，绝不会发送给 GitHub 或代理。",
+		"unavailable": "此 Phaseo 服务器尚未配置文件存储。",
+		"tooLarge": "{name} 超过 25 MB。",
+		"empty": "{name} 是空文件。",
+		"uploadFailed": "无法上传 {name}。",
+		"downloadFailed": "无法下载该文件。",
+		"removeFailed": "无法删除该文件。",
+		"confirmRemove": "删除 {name}？此操作无法撤销。",
+		"download": "下载 {name}",
+		"remove": "删除 {name}"
 	}
 }

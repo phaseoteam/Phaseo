@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WorkItemView } from "@/components/work/WorkItemView";
+import { WorkLiveRefresh } from "@/components/work/WorkLiveRefresh";
 import { WorkLoadError } from "@/components/work/WorkLoadError";
 import { listFrom, loadWork, requireWorkPage } from "@/lib/work/server";
-import type { ReplyDraft, WorkCycle, WorkItemDetailResponse, WorkMember, WorkProject, WorkSettingsResponse } from "@/lib/work/types";
+import type { ReplyDraft, WorkAttachment, WorkCycle, WorkItemDetailResponse, WorkMember, WorkProject, WorkSettingsResponse } from "@/lib/work/types";
 
 type Params = Promise<{ number: string }>;
 
@@ -20,12 +21,13 @@ export default async function WorkItemPage({ params }: { params: Params }) {
 	const number = parseNumber((await params).number);
 	if (!number) notFound();
 	const context = await requireWorkPage();
-	const [detail, members, projects, cycles, settings] = await Promise.all([
+	const [detail, members, projects, cycles, settings, files] = await Promise.all([
 		loadWork<WorkItemDetailResponse>(context, `items/${number}`),
 		loadWork<{ members: WorkMember[] }>(context, "members"),
 		loadWork<{ projects: WorkProject[] }>(context, "projects"),
 		loadWork<{ cycles: WorkCycle[] }>(context, "cycles"),
 		loadWork<WorkSettingsResponse>(context, "settings"),
+		loadWork<{ attachments: WorkAttachment[]; available: boolean }>(context, `items/${number}/attachments`),
 	]);
 	if (!detail.ok) {
 		if (detail.status === 404) notFound();
@@ -35,6 +37,8 @@ export default async function WorkItemPage({ params }: { params: Params }) {
 	// Drafts only exist for items with customer requests.
 	const drafts = requests?.length ? await loadWork<{ drafts: ReplyDraft[] }>(context, "reply-drafts", { status: "draft", itemNumber: number }) : null;
 	return (
+		<>
+		{context.workspaceId ? <WorkLiveRefresh workspaceId={context.workspaceId} number={number} /> : null}
 		<WorkItemView
 			item={item}
 			events={events ?? []}
@@ -50,6 +54,14 @@ export default async function WorkItemPage({ params }: { params: Params }) {
 			parent={parent ?? null}
 			relations={relations ?? []}
 			subscribed={subscribed === true}
+			attachments={files.ok && context.workspaceId ? {
+				list: listFrom<WorkAttachment>(files.data, "attachments"),
+				available: files.data?.available === true,
+				workspaceId: context.workspaceId,
+				currentUserId: context.userId,
+				canManageAll: settings.ok ? settings.data?.canEdit === true : false,
+			} : null}
 		/>
+		</>
 	);
 }

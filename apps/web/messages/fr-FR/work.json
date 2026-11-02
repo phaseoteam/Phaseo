@@ -252,7 +252,8 @@
 		"estimate": "a changé l’estimation",
 		"reply": "a répondu au client",
 		"sla": "a signalé le SLA",
-		"stalled": "a noté l’absence d’activité récente"
+		"stalled": "a noté l’absence d’activité récente",
+		"attachment": "a joint un fichier"
 	},
 	"authors": {
 		"user": "Quelqu’un",
@@ -689,5 +690,20 @@
 		"markedSent": "Marquée comme envoyée. Envoyez la réponse depuis votre propre messagerie.",
 		"markedSentCopied": "Marquée comme envoyée et copiée. Collez-la dans votre propre e-mail pour l’envoyer.",
 		"openEmail": "Ouvrir dans la messagerie"
+	},
+	"attachments": {
+		"title": "Fichiers",
+		"add": "Ajouter des fichiers",
+		"uploading": "Envoi…",
+		"none": "Aucun fichier pour l’instant. Les fichiers restent dans Phaseo et ne sont jamais envoyés à GitHub ni aux agents.",
+		"unavailable": "Le stockage des fichiers n’est pas encore configuré sur ce serveur Phaseo.",
+		"tooLarge": "{name} dépasse 25 Mo.",
+		"empty": "{name} est vide.",
+		"uploadFailed": "{name} n’a pas pu être envoyé.",
+		"downloadFailed": "Le fichier n’a pas pu être téléchargé.",
+		"removeFailed": "Le fichier n’a pas pu être retiré.",
+		"confirmRemove": "Retirer {name} ? Cette action est définitive.",
+		"download": "Télécharger {name}",
+		"remove": "Retirer {name}"
 	}
 }

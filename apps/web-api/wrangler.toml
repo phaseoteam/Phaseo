@@ -62,13 +62,13 @@ binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
 bucket_name = "phaseo-gateway-io-logs"
 preview_bucket_name = "phaseo-gateway-io-logs-preview"
 
-# Work tracker source maps (uploaded per error project release). Create the buckets first
-# (wrangler r2 bucket create phaseo-work-sourcemaps, and phaseo-work-sourcemaps-preview), then
-# uncomment this and the staging block below. Until then uploads answer 503 sourcemaps_unavailable.
+# Work tracker files: error source maps (per release) and item attachments. Create the buckets first
+# (wrangler r2 bucket create phaseo-work-files, and phaseo-work-files-preview), then
+# uncomment this and the staging block below. Until then uploads answer 503 (files_unavailable).
 # [[r2_buckets]]
-# binding = "WORK_SOURCEMAPS"
-# bucket_name = "phaseo-work-sourcemaps"
-# preview_bucket_name = "phaseo-work-sourcemaps-preview"
+# binding = "WORK_FILES"
+# bucket_name = "phaseo-work-files"
+# preview_bucket_name = "phaseo-work-files-preview"
 
 # The Slack agent Worker's admin entrypoint (apps/slack, SlackAgentAdmin): Settings →
 # Slack lists and deletes the agent's shared pages, and uninstalling deletes them.
@@ -105,8 +105,8 @@ binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
 bucket_name = "phaseo-gateway-io-logs-preview"
 
 # [[env.staging.r2_buckets]]
-# binding = "WORK_SOURCEMAPS"
-# bucket_name = "phaseo-work-sourcemaps-preview"
+# binding = "WORK_FILES"
+# bucket_name = "phaseo-work-files-preview"
 
 # Anonymous provenance checks are intentionally approximate and scoped per
 # Cloudflare location. The upstream OpenAI project remains the spend boundary.

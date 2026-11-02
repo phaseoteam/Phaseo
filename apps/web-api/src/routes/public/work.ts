@@ -180,7 +180,7 @@ publicWorkRouter.post("/sourcemaps", async (c) => {
 	if (limited) return limited;
 	const target = parseSourcemapTarget(c.req.query("release"), c.req.query("file"));
 	if (target.ok === false) return c.json({ error: "invalid_target", message: target.message }, 400, NO_STORE);
-	const bucket = c.env.WORK_SOURCEMAPS;
+	const bucket = c.env.WORK_FILES;
 	if (!bucket) return c.json({ error: "sourcemaps_unavailable", message: "Source maps aren't set up on this server yet" }, 503, NO_STORE);
 	const body = await readBody(c, MAX_SOURCEMAP_BYTES, NO_STORE);
 	if ("response" in body) return body.response;

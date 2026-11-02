@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { WorkInbox } from "@/components/work/WorkInbox";
+import { WorkLiveRefresh } from "@/components/work/WorkLiveRefresh";
 import { WorkLoadError } from "@/components/work/WorkLoadError";
 import { belongsToTab, inboxTabQueries, mergeItems, parseInboxTab } from "@/lib/work/inbox";
 import { listFrom, loadWork, requireWorkPage } from "@/lib/work/server";
@@ -39,6 +40,8 @@ export default async function WorkInboxPage({ searchParams }: { searchParams: Se
 	const firstQuery = queries[0];
 	const cursor = queries.length === 1 && !view ? loaded[0]?.nextCursor : null;
 	return (
+		<>
+		{context.workspaceId ? <WorkLiveRefresh workspaceId={context.workspaceId} /> : null}
 		<WorkInbox
 			tab={tab}
 			items={items}
@@ -51,5 +54,6 @@ export default async function WorkInboxPage({ searchParams }: { searchParams: Se
 			projects={projects.ok ? listFrom<WorkProject>(projects.data, "projects") : []}
 			cycles={cycles.ok ? listFrom<WorkCycle>(cycles.data, "cycles") : []}
 		/>
+		</>
 	);
 }

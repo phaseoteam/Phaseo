@@ -275,7 +275,7 @@ accountWorkSettingsRouter.get("/errors/:id", async (c) => {
 	const { group } = loaded;
 	let mappedFrames = null;
 	try {
-		mappedFrames = await mapGroupFrames({ client: access.context.client, bucket: c.env.WORK_SOURCEMAPS, projectId: group.project_id, release: group.last_release, lastEvent: group.last_event ?? {} });
+		mappedFrames = await mapGroupFrames({ client: access.context.client, bucket: c.env.WORK_FILES, projectId: group.project_id, release: group.last_release, lastEvent: group.last_event ?? {} });
 	} catch (error) {
 		console.error("[work] source map lookup failed", { groupId: group.id, message: error instanceof Error ? error.message : String(error) });
 	}
@@ -509,7 +509,7 @@ accountWorkSettingsRouter.get("/error-projects/:id/sourcemaps", async (c) => {
 	if (release) query = query.eq("release", release.slice(0, 200));
 	const { data, error } = await query.order("created_at", { ascending: false }).limit(clampLimit(c.req.query("limit"), 100, 200));
 	if (error) return unavailable(c);
-	return json(c, { sourcemaps: ((data ?? []) as SourcemapRow[]).map(formatSourcemap), available: Boolean(c.env.WORK_SOURCEMAPS) });
+	return json(c, { sourcemaps: ((data ?? []) as SourcemapRow[]).map(formatSourcemap), available: Boolean(c.env.WORK_FILES) });
 });
 
 accountWorkSettingsRouter.delete("/error-projects/:id/sourcemaps/:mapId", async (c) => {
@@ -525,9 +525,9 @@ accountWorkSettingsRouter.delete("/error-projects/:id/sourcemaps/:mapId", async 
 		.eq("workspace_id", context.workspaceId).eq("project_id", project.id).eq("id", mapId).select("id,object_key").maybeSingle();
 	if (error) return unavailable(c, "work_settings_write_failed");
 	if (!data) return notFound(c, "Source map not found");
-	if (c.env.WORK_SOURCEMAPS) {
+	if (c.env.WORK_FILES) {
 		try {
-			await c.env.WORK_SOURCEMAPS.delete(String(data.object_key));
+			await c.env.WORK_FILES.delete(String(data.object_key));
 		} catch (deleteError) {
 			console.error("[work] source map object not deleted", { mapId, message: deleteError instanceof Error ? deleteError.message : String(deleteError) });
 		}

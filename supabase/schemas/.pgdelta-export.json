@@ -321,6 +321,7 @@
     "public/tables/work_error_releases.sql",
     "public/tables/work_error_rules.sql",
     "public/tables/work_error_sourcemaps.sql",
+    "public/tables/work_attachments.sql",
     "private/views/v2_rpc_benchmark_results_compat.sql",
     "private/views/v2_rpc_benchmarks_compat.sql",
     "private/views/v2_rpc_capabilities_compat.sql",
@@ -1898,6 +1899,7 @@
     "public/tables/work_error_group_users.sql",
     "public/tables/work_error_releases.sql",
     "public/tables/work_error_rules.sql",
-    "public/tables/work_error_sourcemaps.sql"
+    "public/tables/work_error_sourcemaps.sql",
+    "public/tables/work_attachments.sql"
   ]
 }

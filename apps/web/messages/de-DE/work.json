@@ -252,7 +252,8 @@
 		"estimate": "hat die Schätzung geändert",
 		"reply": "hat dem Kunden geantwortet",
 		"sla": "hat das SLA markiert",
-		"stalled": "hat fehlende Aktivität vermerkt"
+		"stalled": "hat fehlende Aktivität vermerkt",
+		"attachment": "hat eine Datei angehängt"
 	},
 	"authors": {
 		"user": "Jemand",
@@ -689,5 +690,20 @@
 		"markedSent": "Als gesendet markiert. Sende die Antwort aus deinem eigenen E-Mail-Postfach.",
 		"markedSentCopied": "Als gesendet markiert und kopiert. Füge sie in deine eigene E-Mail ein, um sie zu senden.",
 		"openEmail": "In E-Mail öffnen"
+	},
+	"attachments": {
+		"title": "Dateien",
+		"add": "Dateien hinzufügen",
+		"uploading": "Wird hochgeladen …",
+		"none": "Noch keine Dateien. Dateien bleiben in Phaseo und werden nie an GitHub oder Agenten gesendet.",
+		"unavailable": "Der Dateispeicher ist auf diesem Phaseo-Server noch nicht eingerichtet.",
+		"tooLarge": "{name} ist größer als 25 MB.",
+		"empty": "{name} ist leer.",
+		"uploadFailed": "{name} konnte nicht hochgeladen werden.",
+		"downloadFailed": "Die Datei konnte nicht heruntergeladen werden.",
+		"removeFailed": "Die Datei konnte nicht entfernt werden.",
+		"confirmRemove": "{name} entfernen? Das lässt sich nicht rückgängig machen.",
+		"download": "{name} herunterladen",
+		"remove": "{name} entfernen"
 	}
 }

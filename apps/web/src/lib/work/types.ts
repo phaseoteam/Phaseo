@@ -17,7 +17,7 @@ export type WorkPriority = (typeof WORK_PRIORITIES)[number];
 
 export const WORK_EVENT_KINDS = [
 	"created", "comment", "state", "priority", "assignee", "link", "triage", "agent_run", "customer_request", "github", "error",
-	"project", "cycle", "parent", "relation", "estimate", "reply", "sla", "stalled",
+	"project", "cycle", "parent", "relation", "estimate", "reply", "sla", "stalled", "attachment",
 ] as const;
 export type WorkEventKind = (typeof WORK_EVENT_KINDS)[number];
 
@@ -221,6 +221,11 @@ export type WorkAgentRunsResponse = { runs: AgentRun[] };
 
 /** The browser and server error event shared by the capture script and ingest. */
 export type WorkErrorFrame = { function?: string; file?: string; line?: number; column?: number; inApp?: boolean };
+/** A file on a work item (the file itself is fetched from the account API). */
+export type WorkAttachment = { id: string; fileName: string; contentType: string; sizeBytes: number; uploadedBy: string | null; createdAt: string };
+/** What the item page needs to show and manage attachments. */
+export type WorkAttachmentsInfo = { list: WorkAttachment[]; available: boolean; workspaceId: string; currentUserId: string | null; canManageAll: boolean };
+
 /** A frame with its original position, when the release's source map covers it. */
 export type WorkMappedFrame = WorkErrorFrame & { original?: { file: string; line: number; column: number; function?: string } };
 

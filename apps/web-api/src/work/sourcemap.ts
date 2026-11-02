@@ -1,4 +1,4 @@
-// Source maps for error groups: maps uploaded per release (stored in R2, WORK_SOURCEMAPS) turn a
+// Source maps for error groups: maps uploaded per release (stored in R2, WORK_FILES) turn a
 // minified frame (file, line, column) back into the original file, line, column and name. Only
 // standard (v3, non-indexed) maps are read. Decoding stops at the frame's line, decoded lines are
 // kept per isolate for a few maps, and this runs only when a person opens an error group, never

@@ -252,7 +252,8 @@
 		"estimate": "changed the estimate",
 		"reply": "replied to the customer",
 		"sla": "flagged the SLA",
-		"stalled": "noted no recent activity"
+		"stalled": "noted no recent activity",
+		"attachment": "attached a file"
 	},
 	"authors": {
 		"user": "Someone",
@@ -689,5 +690,20 @@
 		"markedSent": "Marked as sent. Send the reply from your own email.",
 		"markedSentCopied": "Marked as sent and copied. Paste it into your own email to send it.",
 		"openEmail": "Open in email"
+	},
+	"attachments": {
+		"title": "Files",
+		"add": "Add files",
+		"uploading": "Uploading…",
+		"none": "No files yet. Files stay in Phaseo and are never sent to GitHub or agents.",
+		"unavailable": "File storage isn't set up on this Phaseo server yet.",
+		"tooLarge": "{name} is over 25 MB.",
+		"empty": "{name} is empty.",
+		"uploadFailed": "{name} couldn't be uploaded.",
+		"downloadFailed": "The file couldn't be downloaded.",
+		"removeFailed": "The file couldn't be removed.",
+		"confirmRemove": "Remove {name}? This can't be undone.",
+		"download": "Download {name}",
+		"remove": "Remove {name}"
 	}
 }

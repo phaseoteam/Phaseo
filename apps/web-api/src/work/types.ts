@@ -34,6 +34,7 @@ export const WORK_EVENT_KINDS = [
 	"reply",
 	"sla",
 	"stalled",
+	"attachment",
 ] as const;
 export type WorkEventKind = (typeof WORK_EVENT_KINDS)[number];
 

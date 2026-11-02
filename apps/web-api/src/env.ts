@@ -106,7 +106,7 @@ export type Env = {
 	STATUS_PAGE_WIDGET_API_URL?: string;
 	PROFILE_AVATARS_BUCKET?: R2Bucket;
 	GATEWAY_ROUTING_ARCHIVES_BUCKET?: R2Bucket;
-	/** Work tracker source maps, per error project release. Optional until the bucket exists (see wrangler.toml). */
-	WORK_SOURCEMAPS?: R2Bucket;
+	/** Work tracker files: error source maps and item attachments. Optional until the bucket exists (see wrangler.toml). */
+	WORK_FILES?: R2Bucket;
 	PROFILE_AVATARS_PUBLIC_BASE_URL?: string;
 };

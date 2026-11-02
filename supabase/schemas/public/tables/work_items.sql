@@ -81,6 +81,8 @@ CREATE INDEX work_items_open_activity_idx ON public.work_items USING btree (work
 
 CREATE INDEX work_items_workspace_state_updated_idx ON public.work_items USING btree (workspace_id, state, updated_at DESC);
 
+CREATE INDEX work_items_workspace_updated_idx ON public.work_items USING btree (workspace_id, updated_at DESC);
+
 CREATE POLICY "deny_direct_client_access" ON "public"."work_items"
   AS RESTRICTIVE
   FOR ALL

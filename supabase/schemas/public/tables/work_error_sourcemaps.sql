@@ -25,7 +25,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."work_error_sourcemaps"
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."work_error_sourcemaps" IS 'Source maps uploaded for an error project release. The map itself is in R2 (WORK_SOURCEMAPS) under object_key; file is the minified file''s name as stack frames show it.';
+COMMENT ON TABLE "public"."work_error_sourcemaps" IS 'Source maps uploaded for an error project release. The map itself is in R2 (WORK_FILES) under object_key; file is the minified file''s name as stack frames show it.';
 
 REVOKE ALL ON TABLE "public"."work_error_sourcemaps" FROM "service_role";
 

@@ -219,8 +219,8 @@ describe("source map uploads", () => {
 		useFake(() => undefined);
 		expect((await upload("?release=1&file=app.js", MAP)).status).toBe(503);
 		const bucket = { put: vi.fn(), get: vi.fn(), delete: vi.fn() };
-		expect((await upload("?release=1&file=app.css", MAP, undefined, { WORK_SOURCEMAPS: bucket as any })).status).toBe(400);
-		expect((await upload("?release=1&file=app.js", "{\"version\":2}", undefined, { WORK_SOURCEMAPS: bucket as any })).status).toBe(400);
+		expect((await upload("?release=1&file=app.css", MAP, undefined, { WORK_FILES: bucket as any })).status).toBe(400);
+		expect((await upload("?release=1&file=app.js", "{\"version\":2}", undefined, { WORK_FILES: bucket as any })).status).toBe(400);
 		expect(bucket.put).not.toHaveBeenCalled();
 	});
 
@@ -232,7 +232,7 @@ describe("source map uploads", () => {
 			return undefined;
 		});
 		const bucket = { put: vi.fn(async () => ({})), get: vi.fn(), delete: vi.fn() };
-		const response = await upload("?release=2.1.0&file=https://cdn.test/app.9f.js", MAP, undefined, { WORK_SOURCEMAPS: bucket as any });
+		const response = await upload("?release=2.1.0&file=https://cdn.test/app.9f.js", MAP, undefined, { WORK_FILES: bucket as any });
 		expect(response.status).toBe(200);
 		expect(await response.json()).toMatchObject({ ok: true, release: "2.1.0", file: "app.9f.js" });
 		const lookup = fake.queries.find((query) => query.table === "work_error_projects")!;

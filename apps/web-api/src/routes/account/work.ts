@@ -31,6 +31,8 @@ import {
 import { isSubscribed, notify, notifySubscribers, resolveMentions, subscribe, subscriberIds, unsubscribe } from "@/work/notifications";
 import { loadWorkProject } from "@/work/projects";
 import { blockedItemIds, countOpenBlockers, loadRelations, relationExists, storedRelation } from "@/work/relations";
+import { registerAttachmentRoutes } from "@/work/attachments";
+import { registerLiveRoutes } from "@/work/live";
 import { onWorkItemDone, registerReplyDraftRoutes } from "@/work/support";
 import { triageWorkItem } from "@/work/triage";
 import {
@@ -957,6 +959,8 @@ accountWorkRouter.patch("/runs/:id", async (c) => {
 
 // Reply drafts: the support agent's handlers (src/work/support.ts), mounted here.
 registerReplyDraftRoutes(accountWorkRouter);
+registerAttachmentRoutes(accountWorkRouter);
+registerLiveRoutes(accountWorkRouter);
 
 accountWorkRouter.route("/", accountWorkCustomersRouter);
 accountWorkRouter.route("/", accountWorkSettingsRouter);

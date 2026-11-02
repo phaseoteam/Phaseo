@@ -17,10 +17,11 @@ import { formatCostNanos, isClosedState, normaliseGithubRepo, parseItemNumber, p
 import { assigneeKey, parseAssigneeKey } from "@/lib/work/inbox";
 import { activeMention, insertMention, mentionHandle, mentionSuggestions } from "@/lib/work/mentions";
 import { slaStatus } from "@/lib/work/sla";
-import type { AgentRun, CustomerRequest, ErrorGroup, ReplyDraft, WorkCycle, WorkItem, WorkItemEvent, WorkItemSummary, WorkMember, WorkProject, WorkRelation, WorkSettings } from "@/lib/work/types";
+import type { AgentRun, CustomerRequest, ErrorGroup, ReplyDraft, WorkCycle, WorkItem, WorkItemEvent, WorkItemSummary, WorkMember, WorkProject, WorkRelation, WorkSettings, WorkAttachmentsInfo } from "@/lib/work/types";
 import { ReplyDraftsSection } from "./ReplyDrafts";
 import { useWorkAction } from "./useWorkAction";
 import { AssigneeLabel, SlaBadge, SourceIcon, StateIcon, TimeAgo, memberName, useWorkCopy } from "./WorkBits";
+import { WorkAttachments } from "./WorkAttachments";
 import { WorkMarkdown } from "./WorkMarkdown";
 import { AssigneeSelect, PrioritySelect, StateSelect } from "./WorkSelects";
 
@@ -39,9 +40,10 @@ export type WorkItemViewProps = {
 	parent?: WorkItemSummary | null;
 	relations?: WorkRelation[];
 	subscribed?: boolean;
+	attachments?: WorkAttachmentsInfo | null;
 };
 
-export function WorkItemView({ item, events, requests, runs, errorGroup, members, projects = [], cycles = [], settings = null, drafts = [], children = [], parent = null, relations = [], subscribed = false }: WorkItemViewProps) {
+export function WorkItemView({ item, events, requests, runs, errorGroup, members, projects = [], cycles = [], settings = null, drafts = [], children = [], parent = null, relations = [], subscribed = false, attachments = null }: WorkItemViewProps) {
 	const t = useTranslations("Work.item");
 	const { perform, busy } = useWorkAction();
 	const [duplicateOpen, setDuplicateOpen] = useState(false);
@@ -115,6 +117,7 @@ export function WorkItemView({ item, events, requests, runs, errorGroup, members
 
 				<SubItemsSection item={item} items={children} />
 				<RelationsSection number={item.number} relations={relations} />
+				{attachments ? <WorkAttachments number={item.number} workspaceId={attachments.workspaceId} attachments={attachments.list} available={attachments.available} currentUserId={attachments.currentUserId} canManageAll={attachments.canManageAll} /> : null}
 				<RequestsSection requests={requests} />
 				<ReplyDraftsSection drafts={drafts.filter((draft) => draft.workItemId === item.id)} requests={requests} />
 				<RunsSection runs={runs} />
