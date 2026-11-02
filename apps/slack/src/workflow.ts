@@ -30,6 +30,7 @@ import { hasBotScope, installationSecrets, installationSlackAppId, loadInstallat
 import { loadTurnMemory, memoryInstructions, memoryPromptLines, memoryTools, noteAccess, type NoteAccess } from "./memory";
 import { modelChoiceOn, modelNames, withoutMention } from "./model-choice";
 import { turnPageTools } from "./pages";
+import { turnWorkTools } from "./work-tools";
 import { answerOutput, askQuestionTool, MAX_QUESTIONS, QUESTION_TIMEOUT, questionMessage, updateQuestionMessage, type QuestionDraft, type QuestionState } from "./questions";
 import { finishReply, postReply, replaceReply, SlackPostError, SlackReplyStream, type Footer, type ReplyTarget } from "./reply-stream";
 import { reportScheduledRun, skippedTurnOutcome } from "./scheduled-runs";
@@ -621,13 +622,15 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	const schedules = scheduleMode(installation, turn);
 	// publish_page, where this person may publish shared pages; nothing once the answer has searched Slack.
 	const pageTools = await turnPageTools(deps, turn, installation, notes, searched);
-	const request = (parts: Array<Record<string, unknown>>, files: FileOutcome[]): AgentTurnRequest => ({
+	// file_work_item, for workspaces with a Phaseo internal admin (the work tracker is internal only).
+	const workTools = await turnWorkTools(deps, turn, installation, slack, notes, searched);
+	const request =(parts: Array<Record<string, unknown>>, files: FileOutcome[]): AgentTurnRequest => ({
 		...gateway,
 		model,
 		instructions: buildInstructions(installation, load, deps.now(), access, turn.external === true, posts, schedules, search, pageTools.length > 0),
 		prompt: [...memoryPromptLines(memory), buildPrompt(input, turn, installation.bot_user_id, context.source, fileLines(files), posted)].join("\n"),
 		// Nobody waits in a scheduled run's thread to answer a question.
-		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access, schedules, leg, searched), ...fileTools, ...searchTools, ...(schedules === "run" ? [] : [askQuestion]), ...askTools, ...pageTools],
+		tools: [...turnTools(deps, turn, coordinator, slack, installation, load, notes, access, schedules, leg, searched), ...fileTools, ...searchTools, ...(schedules === "run" ? [] : [askQuestion]), ...askTools, ...pageTools, ...workTools],
 		maxCostUsd: budgetUsd,
 		// The models it asks and the images it makes.
 		otherCostUsd: () => consultedUsd() + toolUsd,
