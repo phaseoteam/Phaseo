@@ -69,6 +69,36 @@ export function useForecastSummary() {
 	};
 }
 
+type SpikeSummary =
+	| { kind: "spike"; currentUsd: number; baselineUsd: number; multiple: number | null; firesAtUsd: number; windowHours: number; spiking: boolean }
+	| { kind: "spikePending"; currentUsd: number; windowHours: number; activeWindows: number; baselineWindows: number; needed: number };
+
+/**
+ * A spike rule's preview: "Spent $42.10 in the last 3 h, 4.2× the usual $10.02 for this window.
+ * It alerts at $30.06.", or how much history it still needs.
+ */
+export function useSpikeSummary() {
+	const t = useTranslations("SettingsUI.spendAlerts");
+	const usd = useSpendUsd();
+	const format = useDisplayFormatters();
+	const times = (value: number) => format.number(value, { maximumFractionDigits: 1 });
+	return {
+		text: (summary: SpikeSummary) => {
+			if (summary.kind === "spikePending") {
+				return t("preview.spikePending", { hours: summary.windowHours, current: usd(summary.currentUsd), needed: summary.needed, active: summary.activeWindows });
+			}
+			return summary.multiple === null
+				? t("preview.spikeNoBaseline", { hours: summary.windowHours, current: usd(summary.currentUsd), firesAt: usd(summary.firesAtUsd) })
+				: t("preview.spike", { hours: summary.windowHours, current: usd(summary.currentUsd), multiple: times(summary.multiple), baseline: usd(summary.baselineUsd), firesAt: usd(summary.firesAtUsd) });
+		},
+		short: (summary: SpikeSummary) => summary.kind === "spikePending"
+			? t("row.spikeLearning")
+			: summary.multiple === null
+				? t("row.spikeNoBaseline")
+				: t("row.spikeUsual", { multiple: times(summary.multiple), baseline: usd(summary.baselineUsd) }),
+	};
+}
+
 /** The name of what a rule covers: the key, member, department, provider or model it is scoped to. */
 export function useScopeLabel(options: Pick<SettingsSpendRuleOptions, "keys" | "members" | "departments" | "providers">) {
 	const t = useTranslations("SettingsUI.spendAlerts");

@@ -1,3 +1,4 @@
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
@@ -33,7 +34,7 @@ export default async function LabPerformance({
 			barClassName: "bg-[hsl(189,90%,45%)]",
 			id: "throughput",
 			label: t("throughput"),
-			format: (value) => <><DisplayNumber value={value} options={{ maximumFractionDigits: 1, notation: "standard" }} /> t/s</>,
+			format: (value) => formatTps(value, locale),
 			value: (model) => model.throughput_week,
 		},
 		{
@@ -41,7 +42,7 @@ export default async function LabPerformance({
 			barClassName: "bg-[hsl(32,95%,44%)]",
 			id: "latency",
 			label: t("timeToFirstToken"),
-			format: (value) => <><DisplayNumber value={Math.round(value)} options={{ maximumFractionDigits: 0, notation: "standard" }} /> ms</>,
+			format: (value) => formatLatency(value, locale),
 			value: (model) => model.latency_week,
 		},
 		{

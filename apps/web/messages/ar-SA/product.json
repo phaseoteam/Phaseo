@@ -490,6 +490,7 @@
 				"earlier_history_missing": "تابع هذا الطلب ردًا سابقًا عبر المعرّف، لذا لا تتضمن الدردشة الأدوار التي سبقته.",
 				"unsupported_content": "تعذّر عرض بعض المحتوى فتم استبعاده.",
 				"attachment_reference": "أُشير إلى بعض المرفقات بمعرّف ولم تُخزَّن مع الطلب.",
+				"media_not_stored": "لا تُحفظ الصور والصوت والملفات في سجلات الإدخال والإخراج، لذا حُذفت.",
 				"no_response": "الرد المسجَّل مفقود أو فاشل، لذا تنتهي الدردشة بالطلب.",
 				"response_truncated": "اقتُطع الرد المسجَّل.",
 				"extra_choices": "لا يُضمَّن سوى الخيار الأول من خيارات الرد.",
@@ -1716,7 +1717,7 @@
 		"hideAllRuns": "إخفاء كل عمليات التشغيل",
 		"yourGateway": "Gateway الخاص بك",
 		"yourGatewayTtft": "Gateway الخاص بك (TTFT)",
-		"yourGatewayThroughput": "Gateway الخاص بك (رمز/ثانية)",
+		"yourGatewayThroughput": "Gateway الخاص بك (tps)",
 		"tie": "تعادل",
 		"latestProvider": "أحدث نتيجة: {provider}",
 		"requestFailed": "تعذر إكمال الطلب. تحقق من نقطة النهاية وبيانات الاعتماد ثم حاول مرة أخرى.",
@@ -1734,7 +1735,7 @@
 		"throughput": "معدل الإنجاز",
 		"responsePlaceholder": "ستظهر الاستجابة هنا...",
 		"gatewayLabel": "البوابة",
-		"openaiThroughput": "OpenAI API (رموز/ثانية)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"gatewayBenchmark": {
 		"title": "مقارنة أداء البوابات",

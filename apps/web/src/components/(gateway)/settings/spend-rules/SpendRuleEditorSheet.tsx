@@ -33,7 +33,7 @@ import { Link } from "@/i18n/navigation";
 import type { NotificationDestination, SettingsSpendAlertsData } from "@/lib/fetchers/internal/settingsTypes";
 import { createSpendRule, testSpendRule, updateSpendRule, type SpendRuleActionError } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
-import { OptionTiles, useBalanceSummary, useForecastSummary, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
+import { OptionTiles, useBalanceSummary, useForecastSummary, useSpendPercent, useSpendUsd, useSpikeSummary } from "./spendAlertsUi";
 import { SpendRuleDestinationPicker } from "./SpendRuleDestinationPicker";
 import {
 	PRESET_THRESHOLDS,
@@ -142,6 +142,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 	const percentText = useSpendPercent();
 	const balanceSummary = useBalanceSummary();
 	const forecastSummary = useForecastSummary();
+	const spikeSummary = useSpikeSummary();
 	const actionError = useSpendActionError();
 	const canManage = data.canManageSpendRules;
 	const rule = target.mode === "edit" ? target.rule : null;
@@ -419,7 +420,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 									<Field
 										label={draft.metric === "spike" ? t("editor.spikeWindow") : draft.metric === "balance" ? t("editor.balanceLookback") : t("editor.windowHours")}
 										htmlFor="spend-rule-window"
-										help={t("editor.windowHoursHelp")}
+										help={draft.metric === "spike" ? t("editor.spikeWindowHelp") : t("editor.windowHoursHelp")}
 										error={issueText("windowHours")}
 									>
 										<Input id="spend-rule-window" className="rounded-md tabular-nums" inputMode="numeric" value={draft.windowHours} onChange={(event) => update({ windowHours: event.target.value })} />
@@ -509,6 +510,8 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 										? balanceSummary.text(summary)
 									: summary?.kind === "forecast" || summary?.kind === "forecastPending"
 										? forecastSummary.text(summary)
+									: summary?.kind === "spike" || summary?.kind === "spikePending"
+										? spikeSummary.text(summary)
 									: rule && !rule.evaluated
 										? t("preview.notEvaluated")
 										: rule && !rule.enabled

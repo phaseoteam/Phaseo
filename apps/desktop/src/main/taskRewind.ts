@@ -37,5 +37,5 @@ export function rewindConversation(task: Task, messageId: string): Message {
 /** The removed message queued to send again (Regenerate), under a new id: its old steps are gone. */
 export function requeued(message: Message): QueuedMessage {
 	return { id: randomUUID(), text: message.text, createdAt: new Date().toISOString(),
-		...message.attachments?.length ? { attachments: message.attachments } : {}, ...message.threadReferences?.length ? { threadReferences: message.threadReferences } : {}, ...message.nativeAction ? { nativeAction: message.nativeAction } : {} };
+		...message.attachments?.length ? { attachments: message.attachments } : {}, ...message.threadReferences?.length ? { threadReferences: message.threadReferences } : {}, ...message.githubReferences?.length ? { githubReferences: message.githubReferences } : {}, ...message.nativeAction ? { nativeAction: message.nativeAction } : {} };
 }

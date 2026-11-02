@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency } from "@phaseo/app-kit/format";
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle2, Clock3, Database, GitBranch, MessageSquareText, Route, Server, Wrench, type LucideIcon } from "lucide-react";
@@ -638,7 +639,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 					</div>
 				</div>
 				<div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3 sm:grid-cols-4">
-					<div><div className="text-[10px] font-medium text-muted-foreground">{t("strings.upstreamOutcomeGeneration" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{formatTraceDuration(request.generation_ms) ?? t("usageGaps.copyNotRecorded" as never)}</div></div>
+					<div><div className="text-[10px] font-medium text-muted-foreground">{t("strings.upstreamOutcomeGeneration" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{(typeof request.generation_ms === "number" ? formatLatency(request.generation_ms) : null) ?? t("usageGaps.copyNotRecorded" as never)}</div></div>
 					<div><div className="text-[10px] font-medium text-muted-foreground">{journal ? t("trace.modelCalls" as never) : t("strings.Provider attempts" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{journal ? journal.events.filter((event) => event.type === "provider.started").length : attempts.length ? attempts.length.toLocaleString() : t("usageGaps.copyNotRecorded" as never)}</div></div>
 					<div><div className="text-[10px] font-medium text-muted-foreground">{t("trace.toolCalls" as never)}</div><div className="mt-0.5 font-mono text-xs font-semibold tabular-nums">{toolActivityCount.toLocaleString()}</div></div>
 					<div><div className="text-[10px] font-medium text-muted-foreground">{t("trace.retainedUntil" as never)}</div><div className="mt-0.5 truncate text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : t("trace.notStored" as never)}</div></div>
@@ -714,7 +715,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 												</div>
 												{model ? <div className="mt-1 truncate pl-7 font-mono text-[10px] text-muted-foreground">{model}</div> : null}
 											</div>
-											<div className="flex items-center gap-2"><StatusPill tone={status.tone}>{status.label}</StatusPill>{formatTraceDuration(duration) ? <span className="font-mono text-[10px] text-muted-foreground">{formatTraceDuration(duration)}</span> : null}</div>
+											<div className="flex items-center gap-2"><StatusPill tone={status.tone}>{status.label}</StatusPill>{typeof duration === "number" && Number.isFinite(duration) ? <span className="font-mono text-[10px] text-muted-foreground">{formatLatency(duration)}</span> : null}</div>
 										</div>
 										{attempt.fallback_attempted === true || attempt.retryable === true ? <div className="mt-2 pl-7 text-[10px] text-muted-foreground">{t("trace.retryOrFallbackPathRecorded" as never)}</div> : null}
 									</div>

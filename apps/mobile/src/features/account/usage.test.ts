@@ -1,5 +1,5 @@
 import type { UsageCell } from "@/lib/api/account";
-import { bucketStarts, usageBuckets, usageRange, weekSpendNanos } from "./usage";
+import { bucketStarts, change, usageBuckets, usageRange, weekSpendNanos } from "./usage";
 
 const cell = (bucket: Date, costNanos: number, requests = 1, tokens = 100): UsageCell => ({ bucket: bucket.toISOString(), modelId: "m/one", provider: null, keyId: null, appId: null, requests, successfulRequests: requests, costNanos, tokens, inputTokens: tokens, outputTokens: 0 });
 
@@ -39,5 +39,17 @@ describe("usage buckets", () => {
     expect(weekSpendNanos({ current, recent: { cells: [cell(now, 7), cell(now, 8)] } })).toBe(15);
     expect(weekSpendNanos({ current })).toBe(5);
     expect(weekSpendNanos(null)).toBeNull();
+  });
+});
+
+describe("change from the previous period", () => {
+  it("reads as the website's usage dashboard, with a sign for its arrow", () => {
+    expect([[150, 100], [50, 100], [100, 100], [5, 0], [0, 0]].map(([current, previous]) => change(current!, previous!))).toEqual([
+      "+50.0% vs. previous period",
+      "−50.0% vs. previous period",
+      "0.0% vs. previous period",
+      "+100.0% vs. previous period",
+      "No prior",
+    ]);
   });
 });

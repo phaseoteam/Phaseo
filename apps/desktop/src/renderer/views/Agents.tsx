@@ -1,3 +1,4 @@
+import { formatTime } from "@phaseo/app-kit/format";
 import { ArgumentFields } from "../components/ArgumentFields";
 import { useEffect, useRef, useState } from "react";
 import type { AgentStatus, HarnessInstallation } from "../../shared/workspace";
@@ -117,7 +118,7 @@ export function Agents() {
 						<p className="text-foreground">Connected to {statuses[agent.id].name ?? agent.name}{statuses[agent.id].version ? ` · ${statuses[agent.id].version}` : ""}</p>
 						<p>Capabilities: {statuses[agent.id].capabilities.join(", ") || "Basic ACP"}</p>
 						{statuses[agent.id].authMethods.length > 0 && <p>Sign-in: {statuses[agent.id].authMethods.join(", ")}</p>}
-						<p>Checked {new Date(statuses[agent.id].checkedAt).toLocaleTimeString()}</p>
+						<p>Checked {formatTime(statuses[agent.id].checkedAt, { includeSeconds: true })}</p>
 					</div>}
 				</SettingsRow>
 			</article>)}

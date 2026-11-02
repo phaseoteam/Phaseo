@@ -174,6 +174,18 @@ describe("routing health coordinator", () => {
 		await expect(health.observe(event({ model: "other" }))).rejects.toThrow("Health pool mismatch");
 	});
 
+	it("blends reported token mixes and rejects malformed ones", async () => {
+		const health = await ready(object());
+		await health.observe(event({ tokens: { prompt: 10_000, cached: 6_000, output: 400 } }));
+		const receipt = await health.observe(event({ tokens: { prompt: 2_000, cached: 0, output: 200 } }));
+		expect(receipt!.health.tok_weight).toBeCloseTo(2);
+		expect(receipt!.health.prompt_tok_ewma).toBeCloseTo(6_000);
+		expect(receipt!.health.cached_tok_ewma).toBeCloseTo(3_000);
+		expect(receipt!.health.out_tok_ewma).toBeCloseTo(300);
+		await expect(health.observe(event({ tokens: { prompt: 100, cached: 200, output: 0 } }))).rejects.toThrow("Invalid health observation");
+		await expect(health.observe(event({ tokens: { prompt: Number.NaN, cached: 0, output: 0 } }))).rejects.toThrow("Invalid health observation");
+	});
+
 	it("adopts and drops legacy deduplication rows", async () => {
 		db.exec("CREATE TABLE reports (id TEXT PRIMARY KEY, received INTEGER NOT NULL) WITHOUT ROWID");
 		db.prepare("INSERT INTO reports VALUES (?, ?)").run("legacy", Date.now() - 1000);

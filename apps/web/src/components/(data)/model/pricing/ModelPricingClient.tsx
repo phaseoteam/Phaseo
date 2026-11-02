@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
 
@@ -541,14 +542,11 @@ function formatServiceTierLabel(plan: string): string {
 }
 
 function formatTierLatency(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "--";
-	const seconds = value / 1_000;
-	return `${seconds.toFixed(seconds >= 10 ? 1 : 2)}s`;
+	return formatLatency(value) ?? "--";
 }
 
 function formatTierThroughput(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "--";
-	return `${value >= 100 ? value.toFixed(0) : value.toFixed(1)} tps`;
+	return formatTps(value) ?? "--";
 }
 
 function formatTierUptime(stats: ProviderRuntimeStats | null): string {

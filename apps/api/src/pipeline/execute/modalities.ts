@@ -18,6 +18,7 @@ export type Modality = "text" | "image" | "audio" | "video";
 export function filterDecisionCandidatesByModalities(candidates: ProviderCandidate[], ir: IRDecisionsRequest): ProviderCandidate[] {
 	const requestsBox = Object.values(ir.questions ?? {}).some(question => question.type === "box");
 	const requestsLongContext = ir.providerOptions?.typesafe?.long_context === true;
+	const requestsImageUrls = (ir.images ?? []).some(image => typeof image === "string" && !/^data:/i.test(image));
 	const media = [
 		{ modality: "image", parameter: "images", requested: Boolean(ir.images?.length) },
 		{ modality: "audio", parameter: "audio", requested: Boolean(ir.audio?.length) },
@@ -26,6 +27,7 @@ export function filterDecisionCandidatesByModalities(candidates: ProviderCandida
 	return candidates.filter(candidate =>
 		(!requestsBox || (Boolean(ir.images?.length) && candidate.capabilityParams?.box === true)) &&
 		(!requestsLongContext || (candidate.providerId === "typesafe" && candidate.capabilityParams?.long_context === true)) &&
+		(!requestsImageUrls || candidate.capabilityParams?.image_urls === true) &&
 		media.every(item => candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));
 }
 

@@ -1,3 +1,4 @@
+import { formatDateParts, formatDateTime } from "@phaseo/app-kit/format";
 import { useEffect, useState } from "react";
 import { CalendarClock, Ellipsis, Pencil, Play, Plus, SquareArrowOutUpRight, Trash2 } from "lucide-react";
 import type { Mission, MissionCommand, MissionSchedule } from "../../shared/missions";
@@ -80,7 +81,7 @@ function ScheduledTaskRow({ task, busy, run, onEdit }: { task: Mission; busy: bo
 	const { overview, select } = useWorkspace();
 	const runs = overview.tasks.filter(value => value.missionId === task.id);
 	const running = task.lastStatus === "running";
-	const next = task.enabled && task.nextRunAt ? `Next ${new Date(task.nextRunAt).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}` : task.enabled ? undefined : "Paused";
+	const next = task.enabled && task.nextRunAt ? `Next ${formatDateParts(task.nextRunAt, { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : task.enabled ? undefined : "Paused";
 	return <article data-scheduled-task={task.id} className="flex flex-col gap-2 px-4 py-3.5">
 		<div className="flex items-center gap-4">
 			<span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"><CalendarClock className="size-4" /></span>
@@ -104,7 +105,7 @@ function ScheduledTaskRow({ task, busy, run, onEdit }: { task: Mission; busy: bo
 		{runs.length > 0 && <details className="ml-11 text-xs text-muted-foreground">
 			<summary className="w-fit hover:text-foreground">{runs.length === 1 ? "1 run" : `${runs.length} runs`}</summary>
 			<div className="mt-1 ml-5 flex flex-col">{runs.map(value => <button key={value.id} type="button" onClick={() => select(value.id)} className="flex h-7 items-center justify-between gap-3 rounded-md px-2 -mx-2 text-left hover:bg-muted hover:text-foreground">
-				<span>{new Date(value.createdAt).toLocaleString()}</span><span className="capitalize">{value.status}</span>
+				<span>{formatDateTime(value.createdAt)}</span><span className="capitalize">{value.status}</span>
 			</button>)}</div>
 		</details>}
 	</article>;

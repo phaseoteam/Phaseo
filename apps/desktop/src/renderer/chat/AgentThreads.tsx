@@ -1,3 +1,4 @@
+import { formatTime } from "@phaseo/app-kit/format";
 import { useEffect, useState } from "react";
 import { ChevronRight, LoaderCircle, Network, Square, SquareArrowOutUpRight } from "lucide-react";
 import type { Message } from "../../shared/workspace";
@@ -64,7 +65,7 @@ export function AgentResult({ message, projectId }: { message: Message; projectI
 			<ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />
 			<Network className="size-3.5" />
 			<span className="font-medium">{agents === 1 ? "Agent result" : `Results from ${agents} agents`}</span>
-			<span>· {new Date(message.createdAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>
+			<span>· {formatTime(message.createdAt)}</span>
 		</button>
 		{open && <div data-selectable className="mt-1 ml-[7px] border-l border-border py-0.5 pl-4 text-[13px] text-foreground/85"><MessageContent text={message.text} projectId={projectId} /></div>}
 	</div>;

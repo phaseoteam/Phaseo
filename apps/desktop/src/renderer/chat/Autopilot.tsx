@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Plane } from "lucide-react";
 import { autopilotCap } from "../../shared/workspace";
-import { formatCost } from "../../shared/usageAmounts";
+import { formatSpend } from "../../shared/usageAmounts";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Checkbox } from "../components/ui/checkbox";
@@ -60,7 +60,7 @@ export function AutopilotControl({ value, onChange, disabled, disabledReason }: 
 		{value
 			? <DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" title="Autopilot is on (experimental)" className={cn(button, "text-warning")} />}>
-					<Plane />Autopilot{value.capNanos !== null && <span className="text-muted-foreground tabular-nums">· {formatCost(value.capNanos)} cap</span>}<ChevronDown className="size-3!" />
+					<Plane />Autopilot{value.capNanos !== null && <span className="text-muted-foreground tabular-nums">· {formatSpend(value.capNanos)} cap</span>}<ChevronDown className="size-3!" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start" side="top" className="w-56">
 					<DropdownMenuItem onClick={() => setDialog(true)}>Change spend cap…</DropdownMenuItem>

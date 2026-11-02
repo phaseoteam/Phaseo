@@ -1,3 +1,4 @@
+import { formatUsd, formatUsdCost } from "@phaseo/app-kit/format";
 import type { UsageTokens } from "./usageLedger";
 import type { UsageTotals } from "./workspace";
 
@@ -69,9 +70,12 @@ export function usageTotalsOf(reports: readonly string[]): UsageTotals {
 	return totals;
 }
 
-/** Dollars in US format: cents from a dollar up, finer below it so small turns do not all read $0.00. */
+/** What a chat, turn or answer cost, as the website's chat shows it: "$0.1234", "$0.5", "$0.00004". */
 export function formatCost(nanos: number) {
-	const dollars = nanos / 1e9;
-	if (dollars > 0 && dollars < 0.0001) return "<$0.0001";
-	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: dollars >= 1 ? 2 : 4 }).format(dollars);
+	return formatUsdCost(nanos / 1e9) ?? "$0";
+}
+
+/** A spend cap or a usage total, as the website's budgets show it: "$12.50", with four places below a cent. */
+export function formatSpend(nanos: number) {
+	return formatUsd(nanos / 1e9);
 }

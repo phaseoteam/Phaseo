@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency } from "@phaseo/app-kit/format";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,10 +54,7 @@ interface SavedConfig {
 }
 
 function formatTime(ms: number | null, notAvailable: string, locale: string): string {
-	if (ms === null || ms === undefined) return notAvailable;
-	const decimals = ms < 1000 ? 0 : 2;
-	const value = new Intl.NumberFormat(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(ms < 1000 ? ms : ms / 1000);
-	return `${value}${ms < 1000 ? "ms" : "s"}`;
+	return formatLatency(ms, locale) ?? notAvailable;
 }
 
 async function streamRequest(
@@ -1313,7 +1311,7 @@ export default function LatencyComparisonClient() {
 														<div>TTFT: {formatLocalizedTime(result.gateway.ttft)}</div>
 														<div>{t("totalTime")}: {formatLocalizedTime(result.gateway.totalTime)}</div>
 														<div>{t("chunks")}: {result.gateway.chunks}</div>
-														<div>{extrasT("throughput")}: {result.gateway.throughput ? formatNumber(result.gateway.throughput) + "/s" : t("nA")}</div>
+														<div>{extrasT("throughput")}: {result.gateway.throughput ? displayFormat.tps(result.gateway.throughput) : t("nA")}</div>
 													</div>
 												)}
 											</div>
@@ -1329,7 +1327,7 @@ export default function LatencyComparisonClient() {
 														<div>TTFT: {formatLocalizedTime(result.openai.ttft)}</div>
 														<div>{t("totalTime")}: {formatLocalizedTime(result.openai.totalTime)}</div>
 														<div>{t("chunks")}: {result.openai.chunks}</div>
-														<div>{extrasT("throughput")}: {result.openai.throughput ? formatNumber(result.openai.throughput) + "/s" : t("nA")}</div>
+														<div>{extrasT("throughput")}: {result.openai.throughput ? displayFormat.tps(result.openai.throughput) : t("nA")}</div>
 													</div>
 												)}
 											</div>
@@ -1373,7 +1371,7 @@ export default function LatencyComparisonClient() {
 												</div>
 												<div className="flex justify-between text-sm">
 													<span className="text-muted-foreground">{extrasT("throughput")}</span>
-													<span className="font-mono">{latestResult.gateway.throughput ? formatNumber(latestResult.gateway.throughput) + "/s" : t("nA")}</span>
+													<span className="font-mono">{latestResult.gateway.throughput ? displayFormat.tps(latestResult.gateway.throughput) : t("nA")}</span>
 												</div>
 											</div>
 										)}
@@ -1417,7 +1415,7 @@ export default function LatencyComparisonClient() {
 												</div>
 												<div className="flex justify-between text-sm">
 													<span className="text-muted-foreground">{extrasT("throughput")}</span>
-													<span className="font-mono">{latestResult.openai.throughput ? formatNumber(latestResult.openai.throughput) + "/s" : t("nA")}</span>
+													<span className="font-mono">{latestResult.openai.throughput ? displayFormat.tps(latestResult.openai.throughput) : t("nA")}</span>
 												</div>
 											</div>
 										)}

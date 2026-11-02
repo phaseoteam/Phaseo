@@ -1,0 +1,10 @@
+---
+title: "Preview a spend rule"
+sidebarTitle: "Preview rule"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml GET /spend-rules/{id}/preview"
+description: "See a spend rule's current value, base and next threshold."
+"og:image": "https://phaseo.app/og/dynamic?title=Preview%20a%20spend%20rule&description=See%20a%20spend%20rule%27s%20current%20value%2C%20base%20and%20next%20threshold.&pathname=/docs/v1/api-reference/endpoint/spend-rules-preview"
+---
+
+Requires `spend_rules:read`. Nothing is sent or recorded. Forecast, spike and balance rules include their own `forecast`, `spike` or `balance` object.

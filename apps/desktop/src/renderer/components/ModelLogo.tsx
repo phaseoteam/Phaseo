@@ -1,5 +1,5 @@
 import { Bot } from "lucide-react";
-import { resolveLogo } from "../../../../web/src/lib/logos";
+import { resolveLogo } from "@phaseo/app-kit/logos";
 import type { ModelOption } from "../../shared/workspace";
 import type { Harness } from "../../shared/workspace";
 import { HarnessLogo } from "./HarnessLogo";

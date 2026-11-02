@@ -52,10 +52,8 @@ export function useCompareFormat() {
 			tokens: (value: number) => format.number(value, { maximumFractionDigits: 0 }),
 			/** "400K", "1.05M": exact counts read slowly side by side. English uses the US capitals ("1.05M", not en-GB's "1.05m"). */
 			compactTokens: (value: number) => new Intl.NumberFormat(locale.startsWith("en") ? "en-US" : locale, { notation: "compact", maximumSignificantDigits: 3 }).format(value),
-			latency: (ms: number) => ms >= 1000
-				? t("seconds", { value: format.number(ms / 1000, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) })
-				: t("milliseconds", { value: format.number(ms, { maximumFractionDigits: 0 }) }),
-			throughput: (value: number) => t("tokensPerSecond", { value: format.number(value, { maximumFractionDigits: 0 }) }),
+			latency: (ms: number) => format.latency(ms) ?? "-",
+			throughput: (value: number) => format.tps(value) ?? "-",
 			monthYear: (value: string) => format.dateParts(asUtc(value), { month: "short", year: "numeric", timeZone: "UTC" }),
 			shortDate: (value: string) => format.dateParts(asUtc(value), { day: "numeric", month: "short", timeZone: "UTC" }),
 			date: (value: string) => format.dateParts(asUtc(value), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }),

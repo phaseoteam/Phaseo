@@ -182,7 +182,7 @@ describe("spend rule settings: writes", () => {
 		const requests = database({ role: "owner" });
 		const response = await send("/spend-rules", "POST", { name: "Spike", metric: "spike", period: "rolling", window_hours: 6, destination_ids: [DEST] });
 		expect(response.status).toBe(201);
-		expect(((await response.json()) as any).rule).toMatchObject({ metric: "spike", evaluated: false, spike_multiplier: 3, spike_floor_usd: 5 });
+		expect(((await response.json()) as any).rule).toMatchObject({ metric: "spike", evaluated: true, spike_multiplier: 3, spike_floor_usd: 5 });
 		expect(rpcCalls(requests, "save_workspace_spend_rule")).toEqual([expect.objectContaining({
 			p_workspace_id: WORKSPACE, p_rule_id: null, p_destination_ids: [DEST], p_actor_user_id: "user-a",
 			p_rule: expect.objectContaining({ metric: "spike", spike_multiplier: 3, spike_floor_nanos: 5_000_000_000 }),
@@ -253,6 +253,16 @@ describe("spend blocks", () => {
 			headers: { authorization: "Bearer fixture-token" },
 		}, { ...env, SPEND_RULE_BLOCKS_ENABLED: "true" }, executionCtx);
 		expect(((await enabled.json()) as any).blocksEnabled).toBe(true);
+	});
+
+	it("returns the spend report settings and says whether reports go out yet", async () => {
+		database({ role: "member" });
+		const body = (await (await call(`/spend-rules?workspaceId=${WORKSPACE}`)).json()) as any;
+		expect(body).toMatchObject({ reportsEnabled: false, spendReportCadence: "weekly", spendReportIncludeAdmins: false });
+		const enabled = await app.request(`https://phaseo.app/api/account/settings/spend-rules?workspaceId=${WORKSPACE}`, {
+			headers: { authorization: "Bearer fixture-token" },
+		}, { ...env, SPEND_REPORTS_ENABLED: "true" }, executionCtx);
+		expect(((await enabled.json()) as any).reportsEnabled).toBe(true);
 	});
 
 	it("only lets owners and admins lift a block", async () => {

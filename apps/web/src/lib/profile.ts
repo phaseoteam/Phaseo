@@ -1,4 +1,3 @@
-import { MONEY_LOCALE } from "@/lib/displayPreferences";
 export type DailyActivityPoint = {
 	date: string
 	requests: number
@@ -104,22 +103,6 @@ export function calculatePeriodChange(current: number, previous: number): number
 	if (current === 0 && previous === 0) return null
 	if (previous === 0) return 100
 	return ((current - previous) / previous) * 100
-}
-
-export function formatCompactNumber(value: number, locale = "en"): string {
-	return new Intl.NumberFormat(locale, {
-		maximumFractionDigits: value >= 100 ? 0 : 1,
-		notation: value >= 1000 ? "compact" : "standard",
-	}).format(value)
-}
-
-export function formatUsdFromNanos(nanos: number, _locale = "en"): string {
-	return new Intl.NumberFormat(MONEY_LOCALE, {
-		style: "currency",
-		currency: "USD",
-		minimumFractionDigits: 4,
-		maximumFractionDigits: 4,
-	}).format(nanos / 1_000_000_000)
 }
 
 export function buildHeatmapDays(

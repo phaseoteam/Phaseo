@@ -145,7 +145,7 @@ export function LatencyChart({
 							fontSize: 12,
 							fill: "var(--muted-foreground)",
 						}}
-						tickFormatter={(value) => `${value}ms`}
+						tickFormatter={(value) => format.latency(value) ?? ""}
 					/>
 					<RechartsTooltip
 						cursor={{
@@ -280,7 +280,7 @@ export function ThroughputChart({
 							fontSize: 12,
 							fill: "var(--muted-foreground)",
 						}}
-						tickFormatter={(value) => `${value}t/s`}
+						tickFormatter={(value) => format.tps(value) ?? ""}
 					/>
 					<RechartsTooltip
 						cursor={{
@@ -415,7 +415,7 @@ export function E2ELatencyChart({
 							fontSize: 12,
 							fill: "var(--muted-foreground)",
 						}}
-						tickFormatter={(value) => `${value}ms`}
+						tickFormatter={(value) => format.latency(value) ?? ""}
 					/>
 					<RechartsTooltip
 						cursor={{

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
@@ -594,9 +595,7 @@ function formatCost(nanos: number | null | undefined): string {
 
 function formatThroughput(value: number | string | null | undefined): string {
 	if (value === null || value === undefined) return "-";
-	const n = Number(value);
-	if (!Number.isFinite(n)) return "-";
-	return `${Math.round(n * 100) / 100} tok/s`;
+	return formatTps(Number(value)) ?? "-";
 }
 
 function formatScoreValue(value: number | null | undefined): string {
@@ -2734,8 +2733,8 @@ export default function RequestDetailDialog({
 							<DetailKeyValueGrid
 								columns={3}
 								items={[
-									{ label: timelineTiming.generationMs !== null ? s("Provider latency") : s("Provider duration"), value: <span className="font-mono">{timelineTiming.providerMs !== null ? `${timingLatency} ms` : "-"}</span> },
-									{ label: s("Generation time"), value: <span className="font-mono">{timelineTiming.generationMs !== null ? `${timingGeneration} ms` : "-"}</span> },
+									{ label: timelineTiming.generationMs !== null ? s("Provider latency") : s("Provider duration"), value: <span className="font-mono">{timelineTiming.providerMs !== null ? formatLatency(timingLatency) : "-"}</span> },
+									{ label: s("Generation time"), value: <span className="font-mono">{timelineTiming.generationMs !== null ? formatLatency(timingGeneration) : "-"}</span> },
 									{ label: s("Throughput"), value: <span className="font-mono">{formatThroughput(request.throughput)}</span> },
 									{ label: s("Cost"), value: <span className="font-mono">{formatCost(request.cost_nanos)}</span> },
 									{ label: s("Tokens"), value: <span className="font-mono">{usageSummary.input != null || usageSummary.output != null ? `${formatUsageNumber(usageSummary.input ?? 0, format.number)} → ${formatUsageNumber(usageSummary.output ?? 0, format.number)}` : "-"}</span> },

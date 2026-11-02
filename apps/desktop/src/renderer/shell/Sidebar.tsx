@@ -1,3 +1,4 @@
+import { formatAgoShort, formatDateParts } from "@phaseo/app-kit/format";
 import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -17,6 +18,7 @@ import { SettingsNav } from "../settings/SettingsPage";
 import { ModelStack } from "../chat/ModelPicker";
 import { useScheduledTasks } from "../views/ScheduledTasks";
 import { CodeThreadList } from "./CodeThreadList";
+import { FactorySidebar } from "../factory/FactoryPage";
 import { UsageRings } from "./UsageRings";
 import { deleteWithUndo, dismissUndo, offerUndo, runUndo, undoLabel, usePendingDeletes, useThreadUndo } from "./threadUndo";
 import { isUnread } from "../../shared/threadLifecycle";
@@ -25,8 +27,6 @@ import { TagChip, TagDots, TagMenu } from "../components/Tags";
 import { tagsInUse } from "../../shared/tags";
 
 const dayMs = 86_400_000;
-// Formatters are costly to build, and the sidebar labels every chat it lists.
-const monthLabel = new Intl.DateTimeFormat(undefined, { month: "long" }), monthYearLabel = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
 function dateBucket(iso: string, now = new Date()) {
 	const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 	const time = Date.parse(iso);
@@ -34,16 +34,13 @@ function dateBucket(iso: string, now = new Date()) {
 	if (time >= start - dayMs) return "Yesterday";
 	if (time >= start - 7 * dayMs) return "Previous 7 days";
 	if (time >= start - 30 * dayMs) return "Previous 30 days";
-	return (now.getFullYear() === new Date(time).getFullYear() ? monthLabel : monthYearLabel).format(time);
+	return formatDateParts(time, now.getFullYear() === new Date(time).getFullYear() ? { month: "long" } : { month: "long", year: "numeric" });
 }
 
+/** "5m", "3h", "2d" (the website's relative units, abbreviated), then the date once it is a week old. */
 function relative(iso: string) {
-	const minutes = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60_000));
-	if (minutes < 1) return "now";
-	if (minutes < 60) return `${minutes}m`;
-	if (minutes < 60 * 24) return `${Math.round(minutes / 60)}h`;
-	if (minutes < 60 * 24 * 7) return `${Math.round(minutes / 60 / 24)}d`;
-	return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+	const at = Date.parse(iso);
+	return Date.now() - at < 7 * dayMs ? formatAgoShort(at) : formatDateParts(iso, { month: "short", day: "numeric" });
 }
 
 export function StatusDot({ task, className }: { task: TaskOverview; className?: string }) {
@@ -278,20 +275,27 @@ function SidebarFrame({ label, children }: { label: string; children: ReactNode 
 }
 
 export function Sidebar() {
-	const { mode, select, selectedId, compareId, setNewChatProjectId, settings, scheduled, pullRequestsPage, inboxPage } = useWorkspace();
+	const { mode, codeView, factoryRoute, openFactory, select, selectedId, compareId, setNewChatProjectId, settings, scheduled, pullRequestsPage, inboxPage } = useWorkspace();
+	const factory = mode === "code" && codeView === "factory";
+	const writing = factory && factoryRoute.page === "new" && !inboxPage;
 	const [chatViewport, setChatViewport] = useState<HTMLDivElement | null>(null);
-	const fresh = !selectedId && !compareId && !scheduled && !pullRequestsPage && !inboxPage;
+	const fresh = !factory && !selectedId && !compareId && !scheduled && !pullRequestsPage && !inboxPage;
 	if (settings) return <SidebarFrame label="Settings"><SettingsNav /></SidebarFrame>;
-	return <SidebarFrame label={mode === "chat" ? "Chats" : "Projects"}>
+	return <SidebarFrame label={mode === "chat" ? "Chats" : factory ? "Factory" : "Projects"}>
 		<div className="p-2.5">
-			<button type="button" onClick={() => { if (mode === "chat") setNewChatProjectId(""); select(undefined); }}
+			{factory ? <button type="button" onClick={() => openFactory({ page: "new" })}
+				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", writing ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
+				<Plus className="size-4" />New issue
+			</button> : <button type="button" onClick={() => { if (mode === "chat") setNewChatProjectId(""); select(undefined); }}
 				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", fresh ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
 				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
-			</button>
+			</button>}
 			<InboxLink />
-			{mode === "code" && <PullRequestsLink />}
+			{mode === "code" && !factory && <PullRequestsLink />}
 		</div>
-		{mode === "chat"
+		{factory
+			? <FactorySidebar />
+			: mode === "chat"
 			? <ScrollArea className="min-h-0 flex-1" viewportRef={setChatViewport}><nav className="pb-3"><ChatList viewport={chatViewport} /></nav></ScrollArea>
 			: <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList /></nav></ScrollArea>}
 		<UndoNotice />

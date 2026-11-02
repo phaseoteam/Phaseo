@@ -13,6 +13,7 @@ RATE_LIMIT_POLICIES_ENABLED = "true"
 # worker that runs the cron jobs (phaseo-gateway) acts on it.
 SPEND_RULES_ENABLED = "false"
 SPEND_RULE_BLOCKS_ENABLED = "false"
+SPEND_REPORTS_ENABLED = "false"
 # Enforce: the spend-limit coordinator decides key caps, department budgets and workspace
 # budgets for API-key requests; when it is unavailable the legacy key-limit check decides.
 GATEWAY_SPEND_LIMIT_DO_MODE = "enforce"

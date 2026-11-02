@@ -15,7 +15,7 @@ import {
 import { request } from "@/lib/api/http";
 import { isChatModel, modelName as cardName, organisationName as cardOrganisation } from "@/lib/catalogue";
 import { cn } from "@/lib/cn";
-import { formatCompact } from "@/lib/format";
+import { formatUsd, formatCompact } from "@/lib/format";
 import { compareStore, toggleCompare, updateFilters, useCatalogueIndex } from "./state";
 import { lineage, parseTypes } from "./detail/about";
 import { AboutSection, SubscriptionsList, VerificationBlock } from "./detail/AboutSection";
@@ -393,7 +393,7 @@ function FreeRouterOverview() {
       ) : (
         <View className="gap-4">
           <View className="flex-row flex-wrap overflow-hidden rounded-md border border-border">
-            {([["Eligible models", formatCompact(summary.eligibleModels)], ["Eligible providers", formatCompact(summary.eligibleProviders)], ["Requests (30d)", formatCompact(summary.routedRequests30d)], ["Spend (30d)", `$${(summary.totalCostNanos30d / 1e9).toFixed(2)}`]] as const).map(([label, value], index) => (
+            {([["Eligible models", formatCompact(summary.eligibleModels)], ["Eligible providers", formatCompact(summary.eligibleProviders)], ["Requests (30d)", formatCompact(summary.routedRequests30d)], ["Spend (30d)", formatUsd(summary.totalCostNanos30d / 1e9)]] as const).map(([label, value], index) => (
               <View key={label} className={cn("w-1/2 px-3 py-3", index % 2 && "border-l border-border", index > 1 && "border-t border-border")}>
                 <Text variant="caption">{label}</Text>
                 <Text variant="heading">{value}</Text>

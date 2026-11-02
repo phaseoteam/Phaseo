@@ -1,3 +1,4 @@
+import { formatCalendarDate, formatRelativeUnit } from "@/lib/format";
 import { ALargeSmall, BadgeAlert, Braces, Captions, Headphones, ImageIcon, Music4, Scale, Speech, Video, type LucideIcon } from "lucide-react-native";
 import type { ModelDetail, ModelTimelineEvent } from "@/lib/api/models";
 
@@ -167,7 +168,7 @@ export function lineage(events: ModelTimelineEvent[] | null | undefined, previou
   };
 }
 
-/** "11 days ago", "in 3 weeks", "today": the website's relative date beside each key date. */
+/** "11 days ago", "in 3 weeks", "last month", "today": the website's relative date beside each key date (RelativeDateBadge). */
 export function relativeDateLabel(value: string, now = new Date()) {
   const target = new Date(value);
   if (Number.isNaN(target.getTime())) return null;
@@ -177,14 +178,11 @@ export function relativeDateLabel(value: string, now = new Date()) {
   if (days === 1) return "tomorrow";
   if (days === -1) return "yesterday";
   const abs = Math.abs(days);
-  const [amount, unit] = abs < 14 ? [abs, "day"] : abs < 28 ? [Math.round(abs / 7), "week"] : abs < 730 ? [Math.round(abs / 30.4375), "month"] : [Math.round(abs / 365.25), "year"];
-  const phrase = `${amount} ${unit}${amount === 1 ? "" : "s"}`;
-  return days < 0 ? `${phrase} ago` : `in ${phrase}`;
+  const [amount, unit] = abs < 14 ? [abs, "day" as const] : abs < 28 ? [Math.round(abs / 7), "week" as const] : abs < 730 ? [Math.round(abs / 30.4375), "month" as const] : [Math.round(abs / 365.25), "year" as const];
+  return formatRelativeUnit(Math.sign(days) * amount, unit);
 }
 
 /** The calendar date in UTC ("7 Oct 2026"), in the app's date style. */
 export function formatKeyDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" }).format(date);
+  return formatCalendarDate(value);
 }

@@ -17,6 +17,7 @@ import { publicGatewayRouter } from "./gateway";
 import { publicOgRouter } from "./og";
 import { publicGamesRouter } from "./games";
 import { publicFeedbackRouter } from "./feedback";
+import { publicSpendReportsRouter } from "./spend-reports";
 import { publicToolsRouter } from "./tools";
 import { createPublicReadCoalescer } from "@/http/publicReadCoalescer";
 
@@ -42,4 +43,5 @@ publicRouter.route("/", publicGatewayRouter);
 publicRouter.route("/", publicOgRouter);
 publicRouter.route("/games", publicGamesRouter);
 publicRouter.route("/feedback", publicFeedbackRouter);
+publicRouter.route("/spend-reports", publicSpendReportsRouter);
 publicRouter.route("/", publicToolsRouter);

@@ -282,34 +282,6 @@ const OPENAI_CLIENT_METHODS: Partial<Record<EndpointId, string>> = {
 	moderations: "moderations.create",
 };
 
-function formatPercent(value: number | null | undefined, digits = 2): string {
-	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return `${normalized.toFixed(digits)}%`;
-}
-
-function formatLatency(value: number | null | undefined): string {
-	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return `${Math.round(normalized)} ms`;
-}
-
-function formatCompactNumber(value: number | null | undefined): string {
-	const normalized = value == null || Number.isNaN(value) ? 0 : value;
-	return Intl.NumberFormat("en-US", {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(normalized);
-}
-
-function formatAbsoluteNumber(
-	value: number | string | null | undefined
-): string {
-	if (value == null) return "0";
-	const numericValue =
-		typeof value === "number" ? value : Number.parseFloat(String(value));
-	if (!Number.isFinite(numericValue)) return "0";
-	return Intl.NumberFormat("en-US").format(Math.round(numericValue));
-}
-
 function formatHourLabel(iso: string): string {
 	const date = new Date(iso);
 	return date.toLocaleString(undefined, {

@@ -4,6 +4,8 @@ on:
     pull_request:
         paths:
             - "apps/desktop/**"
+            - "packages/shared/app-kit/**"
+            - "packages/shared/ui/**"
             - "packages/sdk/agent-sdk-ts/**"
             - "packages/sdk/sdk-ts/**"
             - "package.json"
@@ -14,6 +16,8 @@ on:
         branches: [main]
         paths:
             - "apps/desktop/**"
+            - "packages/shared/app-kit/**"
+            - "packages/shared/ui/**"
             - "packages/sdk/agent-sdk-ts/**"
             - "packages/sdk/sdk-ts/**"
             - "package.json"

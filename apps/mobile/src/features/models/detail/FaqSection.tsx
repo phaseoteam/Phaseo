@@ -8,7 +8,7 @@ import { Icon, Text } from "@/components/ui";
 import { getOrganisationModels } from "@/lib/api/models";
 import { cn } from "@/lib/cn";
 import { WEB_ORIGIN } from "@/lib/config";
-import { formatDate } from "@/lib/format";
+import { formatCalendarDate } from "@/lib/format";
 import type { FaqItem, FaqPart } from "./faq";
 import type { SectionId } from "./sections";
 
@@ -63,7 +63,7 @@ export function OtherModels({ modelId, organisationId }: { modelId: string; orga
             <Pressable key={model.model_id} accessibilityRole="link" onPress={() => router.push(`/models/${model.model_id}`)} className={cn("w-[220px] rounded-md border border-border bg-muted/20 px-3 py-3 active:bg-accent")}>
               <Text variant="label" numberOfLines={1}>{model.name ?? model.model_id}</Text>
               <Text variant="caption" numberOfLines={1} className="mt-1">{model.model_id}</Text>
-              <Text variant="caption" className="mt-3">{model.primary_date ? formatDate(model.primary_date) : "Undated"}</Text>
+              <Text variant="caption" className="mt-3">{model.primary_date ? formatCalendarDate(model.primary_date) : "Undated"}</Text>
             </Pressable>
           ))}
         </ScrollView>

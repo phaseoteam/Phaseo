@@ -20,7 +20,7 @@ app/                 Expo Router routes
 src/components/ui    Primitives (Text, Button, Row, Section, SearchField, …)
 src/features/*       Screens and logic per feature (models, providers, compare, chat, account, notifications)
 src/lib/api/*        Typed clients for phaseo.app endpoints (zod)
-global.css           Theme tokens, copied from apps/web/src/app/globals.css
+global.css           Fonts, radii and the theme tokens (generated from packages/shared/app-kit/src/theme/tokens.ts)
 ```
 
 Design rules shared with the desktop app: sentence-case bold headings (no caps labels), flat rows and dividers rather than cards, plain names.

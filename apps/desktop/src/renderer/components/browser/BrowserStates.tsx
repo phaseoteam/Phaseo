@@ -1,3 +1,4 @@
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { ChevronRight, Globe, Globe2, History, PictureInPicture2, RadioTower, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { describeBrowserError, type BrowserFailure, type BrowserLocalServer } from "../../../shared/browser";
@@ -11,16 +12,6 @@ export function BrowserFavicon({ src, className }: { src?: string; className?: s
 	const [failed, setFailed] = useState<string>();
 	if (!src || failed === src) return <Globe2 aria-hidden className={cn("size-4 shrink-0 text-muted-foreground", className)} />;
 	return <img src={src} alt="" aria-hidden draggable={false} className={cn("size-4 shrink-0 rounded-sm object-contain", className)} onError={() => setFailed(src)} />;
-}
-
-export function relativeTime(at: number, now = Date.now()) {
-	const minutes = Math.round((now - at) / 60000);
-	if (minutes < 1) return "Just now";
-	if (minutes < 60) return `${minutes} min ago`;
-	const hours = Math.round(minutes / 60);
-	if (hours < 24) return `${hours} hr ago`;
-	const days = Math.round(hours / 24);
-	return days === 1 ? "Yesterday" : days < 30 ? `${days} days ago` : new Date(at).toLocaleDateString();
 }
 
 const displayAddress = (url: string) => { try { const parsed = new URL(url); return parsed.host + (parsed.pathname === "/" ? "" : parsed.pathname) + parsed.search + parsed.hash; } catch { return url; } };
@@ -55,7 +46,7 @@ export function BrowserEmptyState({ recents, onOpen, onRemove }: { recents: Brow
 					<BrowserFavicon src={entry.favicon} />
 					<span className="flex min-w-0 flex-1 flex-col">
 						<span className="truncate text-xs font-medium text-foreground">{entry.title || displayAddress(entry.url)}</span>
-						<span className="truncate text-xs text-muted-foreground">{entry.title ? displayAddress(entry.url) + " · " : ""}{relativeTime(entry.at)}</span>
+						<span className="truncate text-xs text-muted-foreground">{entry.title ? displayAddress(entry.url) + " · " : ""}{formatRelativeTime(entry.at)}</span>
 					</span>
 				</button>
 				<button type="button" aria-label={`Remove ${displayAddress(entry.url)} from history`} onClick={() => onRemove(entry.url)} className="absolute right-2 rounded p-1 text-muted-foreground opacity-0 hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"><X className="size-3.5" /></button>

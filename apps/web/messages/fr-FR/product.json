@@ -490,6 +490,7 @@
 				"earlier_history_missing": "Cette requête poursuivait une réponse antérieure par ID ; les tours précédents ne sont donc pas inclus.",
 				"unsupported_content": "Une partie du contenu n'a pas pu être affichée et a été omise.",
 				"attachment_reference": "Certaines pièces jointes étaient référencées par ID et n'ont pas été stockées avec la requête.",
+				"media_not_stored": "Les images, l'audio et les fichiers ne sont pas conservés dans les journaux d'E/S, ils sont donc omis.",
 				"no_response": "La réponse journalisée est absente ou en échec ; la conversation se termine donc par la requête.",
 				"response_truncated": "La réponse journalisée a été tronquée.",
 				"extra_choices": "Seul le premier des choix de la réponse est inclus.",
@@ -1716,7 +1717,7 @@
 		"hideAllRuns": "Masquer toutes les exécutions",
 		"yourGateway": "Votre Gateway",
 		"yourGatewayTtft": "Votre Gateway (TTFT)",
-		"yourGatewayThroughput": "Votre Gateway (jetons/s)",
+		"yourGatewayThroughput": "Votre Gateway (tps)",
 		"tie": "Égalité",
 		"latestProvider": "Dernier résultat : {provider}",
 		"requestFailed": "La requête n’a pas abouti. Vérifiez le point de terminaison et les identifiants, puis réessayez.",
@@ -1734,7 +1735,7 @@
 		"throughput": "Débit",
 		"responsePlaceholder": "La réponse apparaîtra ici...",
 		"gatewayLabel": "Passerelle",
-		"openaiThroughput": "OpenAI API (tokens/s)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"gatewayBenchmark": {
 		"title": "Comparaison des performances des passerelles",

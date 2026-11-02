@@ -201,6 +201,8 @@ jobs:
               run: pnpm run validate:workspace-routing-settings
             - name: Validate shared key IP allowlist validation
               run: pnpm run validate:key-ip-allowlist
+            - name: Validate shared theme tokens
+              run: pnpm run validate:theme-tokens
 
             - name: Validate unique Supabase migration versions
               shell: bash
@@ -241,8 +243,11 @@ jobs:
               run: pnpm --filter "@phaseo/agent-sdk..." build
 
             # These apps have no CI build job; TypeScript 7 checks each in seconds.
-            - name: Typecheck desktop, mobile and perf-upstream
-              run: pnpm --filter @phaseo/desktop --filter @phaseo/mobile --filter @phaseo/perf-upstream run typecheck
+            - name: Typecheck desktop, mobile, perf-upstream and the shared packages
+              run: pnpm --filter @phaseo/desktop --filter @phaseo/mobile --filter @phaseo/perf-upstream --filter @phaseo/ui --filter @phaseo/app-kit run typecheck
+
+            - name: Test the shared app-kit package
+              run: pnpm --filter @phaseo/app-kit test
 
     check-paths:
         name: Check changed paths
@@ -252,7 +257,6 @@ jobs:
             pull-requests: read
         outputs:
             migrations-changed: ${{ steps.filter.outputs.migrations }}
-            factory-changed: ${{ steps.filter.outputs.factory }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
@@ -260,52 +264,12 @@ jobs:
               id: filter
               with:
                   filters: |
-                      factory:
-                          - 'apps/factory/**'
-                          - 'pnpm-lock.yaml'
-                          - '.github/workflows/ci.yml'
                       migrations:
                           - 'supabase/migrations/**'
                           - 'supabase/baseline/**'
                           - 'supabase/tests/**'
                           - 'supabase/config.toml'
                           - 'scripts/validate-supabase-migrations.mjs'
-
-    factory:
-        name: Factory checks and build
-        runs-on: ubuntu-latest
-        needs: check-paths
-        if: needs.check-paths.outputs.factory-changed == 'true'
-        env:
-            # Typecheck, lint, tests and the Vite build don't run Electron; only packaging needs its binary.
-            ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-            - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
-              with:
-                  version: 10.33.0
-                  run_install: false
-                  standalone: true
-            - name: Setup Node.js
-              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-              with:
-                  node-version: ${{ env.NODE_VERSION }}
-
-            - name: Restore lockfile (guard setup-node cache mutation)
-              run: git checkout -- pnpm-lock.yaml
-
-            - name: Install dependencies
-              run: corepack pnpm install --frozen-lockfile --filter @phaseo/factory...
-
-            - name: Typecheck, lint, test and build Factory
-              working-directory: apps/factory
-              run: |
-                  pnpm run typecheck
-                  pnpm run lint
-                  pnpm run test
-                  pnpm run build
 
     migration-validation:
         name: Validate database migration policy
@@ -919,13 +883,15 @@ jobs:
                           | jq -r '.targets.production | select(.readyState == "READY" and (.aliasAssigned == true or ((.aliasAssigned | type) == "number" and .aliasAssigned > 0))) | .meta.githubCommitSha // empty') || production_sha=""
                       # Everything outside apps/web that the web build reads:
                       # - apps/docs, read by the prebuild for the docs search index;
+                      # - packages/shared/app-kit and packages/shared/ui, workspace packages
+                      #   the website compiles from source (transpilePackages);
                       # - the two model-discovery modules imported by the internal
                       #   model-discovery-notifier server action.
                       # Add any new import that reaches outside apps/web here too.
                       if [ -n "$production_sha" ] \
                           && git fetch --quiet --depth=1 origin "$production_sha" \
                           && git diff --quiet "$production_sha" "$GITHUB_SHA" -- \
-                              apps/web apps/docs \
+                              apps/web apps/docs packages/shared/app-kit packages/shared/ui \
                               apps/api/src/pipeline/model-discovery/public-model-announcement-discord.ts \
                               apps/api/src/pipeline/model-discovery/discord-webhook.ts \
                               package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json; then

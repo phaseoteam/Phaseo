@@ -25,6 +25,7 @@ import {
 	reportProbeResult,
 	maybeOpenOnRecentErrors,
 } from "../execute/health";
+import { promptTokensFromUsage } from "../execute/routing-cost";
 import { getBaseModel } from "../execute/utils";
 import { droppedParamsForClient, twelveHourCacheDroppedFor } from "../execute/unsupportedParams";
 import { noteModelSubstitutionServed } from "../before/modelSuccessor";
@@ -734,6 +735,7 @@ export async function handleStreamResponse(
                         shapedUsage?.output_text_tokens ??
                         0
                 ),
+                ...promptTokensFromUsage(shapedUsage),
             });
             if (isProbe && healthImpact !== "neutral") {
 				await reportProbeResult(ctx.endpoint, healthProvider, baseModel, healthImpact === "success");

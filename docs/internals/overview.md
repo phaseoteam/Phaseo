@@ -19,7 +19,7 @@ are in the [glossary](./glossary.md); setup and deploys are in [operations](../o
 | MCP server | [`apps/mcp`](../../apps/mcp) | Cloudflare Worker at `mcp.phaseo.app` | Read-only catalogue and usage tools over Phaseo OAuth, reviewed inference, and opt-in account management |
 | Slack agent | [`apps/slack`](../../apps/slack) | Cloudflare Worker at `slack.phaseo.app` | Slack events and interactions, one agent turn at a time per thread, shared pages and recurring tasks; it answers through the gateway |
 | Docs | [`apps/docs`](../../apps/docs) | Mintlify, deployed from `main` by its GitHub app | Guides and API reference in nine languages, published agent skills |
-| Desktop, mobile, Factory | [`apps/desktop`](../../apps/desktop), [`apps/mobile`](../../apps/mobile), [`apps/factory`](../../apps/factory) | Electron; Expo; Electron | Client apps. CI does not deploy them |
+| Desktop, mobile | [`apps/desktop`](../../apps/desktop), [`apps/mobile`](../../apps/mobile) | Electron; Expo | Client apps. CI does not deploy them |
 | SDKs | [`packages/sdk`](../../packages/sdk) | Package registries such as npm and PyPI | Nine generated SDKs, their handwritten wrappers, and Agent SDKs |
 | Database | [`supabase`](../../supabase) | Supabase Postgres | Schema definitions, forward migrations, `pg_cron` jobs |
 | Other packages | [`packages`](../../packages) | Build time or registries | The `phaseo` CLI, the in-house OpenAPI generator (`openapi`, `openapi-backends`), AI SDK providers, integrations, shared registries and the provider mock |

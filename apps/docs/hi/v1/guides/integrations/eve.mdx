@@ -1,0 +1,63 @@
+---
+title: "eve"
+icon: "bot"
+description: "Phaseo AI SDK प्रोवाइडर के साथ eve एजेंट को Phaseo मॉडल पर चलाएँ।"
+---
+
+[eve](https://eve.dev) एजेंट कोई भी AI SDK लैंग्वेज मॉडल स्वीकार करते हैं। [Phaseo AI SDK प्रोवाइडर](./ai-sdk.mdx) का मॉडल दें, तो हर मॉडल कॉल Phaseo से होकर जाती है, आपकी रूटिंग, कुंजियों, बजट और लॉग के साथ।
+
+## इंस्टॉल करें
+
+अपने eve प्रोजेक्ट में प्रोवाइडर इंस्टॉल करें। eve AI SDK 7 का उपयोग करता है, इसलिए संस्करण 2.0.1 या उसके बाद का उपयोग करें:
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+`eve dev` के लिए `.env.local` में, और हर डिप्लॉयमेंट के सर्वर एनवायरनमेंट में `PHASEO_API_KEY` सेट करें।
+
+## एजेंट कॉन्फ़िगर करें
+
+```ts title="agent/agent.ts"
+import { defineAgent } from "eve";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: phaseo("openai/gpt-6-luna"),
+	modelContextWindowTokens: 1_050_000,
+	reasoning: "low",
+});
+```
+
+[Models एंडपॉइंट](../../api-reference/endpoint/models.mdx) से मॉडल ID लें, और `modelContextWindowTokens` को उसी एंडपॉइंट में मॉडल के `limits.input_tokens` पर सेट करें। eve किसी मॉडल ऑब्जेक्ट की कॉन्टेक्स्ट विंडो नहीं देख सकता, और इसी संख्या से तय करता है कि बातचीत कब कॉम्पैक्ट करनी है।
+
+## हर टर्न में मॉडल चुनें
+
+`defineDynamic` हर मॉडल कॉल से पहले चलता है। एक सिलेक्शन ऑब्जेक्ट लौटाएँ, ताकि हर मॉडल अपनी कॉन्टेक्स्ट विंडो रखे:
+
+```ts title="agent/agent.ts"
+import { defineAgent } from "eve";
+import { defineDynamic } from "eve/models";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: defineDynamic((ctx) =>
+		ctx.session.auth.initiator?.attributes.plan === "enterprise"
+			? { model: phaseo("openai/gpt-6-sol"), modelContextWindowTokens: 1_050_000 }
+			: { model: phaseo("openai/gpt-6-luna"), modelContextWindowTokens: 1_050_000 },
+	),
+});
+```
+
+## नोट्स
+
+- `phaseo("openai/gpt-6-luna")` जैसा मॉडल ऑब्जेक्ट दें। केवल मॉडल ID स्ट्रिंग Phaseo को नहीं भेजी जाती।
+- टूल, स्ट्रीमिंग, रीज़निंग, कॉम्पैक्शन और प्रॉम्प्ट कैशिंग Phaseo के ज़रिए काम करते हैं। कैश रीड eve के usage इवेंट और Phaseo लॉग में दिखते हैं।
+- मॉडल ऑब्जेक्ट के लिए eve हर रन की लागत खाली छोड़ता है। लागत Phaseo के Usage पेज या Logs में देखें।
+- eve का `/login` कनेक्शन केवल आपकी मशीन पर काम करता है। डिप्लॉयमेंट को `PHASEO_API_KEY` चाहिए।
+
+## संबंधित
+
+- [AI SDK](./ai-sdk.mdx)
+- [Presets](../presets.mdx)
+- [टूल कॉलिंग](../tool-calling.mdx)

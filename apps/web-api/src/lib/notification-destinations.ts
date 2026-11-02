@@ -150,3 +150,10 @@ export async function encryptNotificationTarget(env: Env, target: string) {
 		target_key_version: env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION?.trim() || "v1",
 	};
 }
+
+/** How often owners (and opted-in admins) get the spend report email (workspace_settings.spend_report_cadence). */
+export const SPEND_REPORT_CADENCES = ["off", "daily", "weekly", "monthly"] as const;
+export type SpendReportCadence = typeof SPEND_REPORT_CADENCES[number];
+export function isSpendReportCadence(value: unknown): value is SpendReportCadence {
+	return typeof value === "string" && (SPEND_REPORT_CADENCES as readonly string[]).includes(value);
+}

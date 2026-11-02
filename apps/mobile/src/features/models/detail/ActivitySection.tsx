@@ -1,3 +1,4 @@
+import { formatCompactAxisTick } from "@phaseo/app-kit/format";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as Linking from "expo-linking";
@@ -36,7 +37,7 @@ export function ActivitySection({ modelId, onLayoutSection, first }: { modelId: 
       <Text variant="caption" className="mb-2">Press and hold the chart, then drag, to see a day.</Text>
       <StackedBarChart
         height={240}
-        yFormat={(value) => formatCompact(value)}
+        yFormat={(value) => formatCompactAxisTick(value, "en-US")}
         bars={days.map((entry) => ({
           key: entry.day,
           segments: mode === "tokens"

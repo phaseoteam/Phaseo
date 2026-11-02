@@ -11,8 +11,8 @@ CREATE OR REPLACE FUNCTION private.evaluate_workspace_spend_rules (
 -- Evaluates a workspace's enabled spend rules at p_now, queues an alert for each rule that
 -- crossed a threshold, and starts or lifts the blocks of rules with action = 'block'.
 --   * Rules: private.spend_rule_evaluable (spend, budget_percent and forecast over a calendar day,
---     Monday week or month; spend and budget_percent over a rolling window; balance rules);
---     spike is left for later. Each calendar rule's period is in its own time zone, or the
+--     Monday week or month; spend and budget_percent over a rolling window; balance and spike
+--     rules). Each calendar rule's period is in its own time zone, or the
 --     workspace's billing_time_zone (private.spend_rule_period).
 --   * Spend: v2_private_usage_15m from the period (or window) start up to p_now, plus successful async jobs
 --     and realtime sessions from gateway_requests (as sweep_spend_limit_warnings adds them).
@@ -73,6 +73,14 @@ CREATE OR REPLACE FUNCTION private.evaluate_workspace_spend_rules (
 --     re-arms once neither threshold holds. Dedupe:
 --     spend_alert:<rule id>:cooldown:<epoch / cooldown>:<balance|runway>. The state row is written
 --     only when armed changes or the rule fires.
+--   * Spike rules (rolling; never block): values from private.spend_spike_rule_values (spend over
+--     the last window_hours in the rule's scope against the median of the same window over the
+--     previous 7 days; ready once the workspace spent in at least 3 baseline windows). A rule
+--     fires when spend is at least spike_multiplier x the median and at least spike_floor_nanos
+--     (a median of 0 leaves only the floor, and the message says so), at most once per
+--     cooldown_minutes (state row '-infinity', written only on fire). Dedupe:
+--     spend_alert:<rule id>:cooldown:<epoch / cooldown>:spike. Sweep events carry the multiplier
+--     as threshold and trigger 'spike'.
 -- Returns {rules, fired, state_rows, events: [{event_id, rule_id, dedupe_key, threshold}],
 -- blocks: [{block_id, rule_id, state: started|lifted, reason, event_id}], block_scope}, where
 -- block_scope says the workspace has block rules or blocks, so its gateway entry is republished.
@@ -85,6 +93,7 @@ declare
   v_changed integer := 0;
   v_fresh boolean;
   v_balance jsonb;
+  v_spike jsonb;
 begin
   if p_workspace_id is null or p_now is null then
     raise exception 'invalid_spend_rule_evaluation';
@@ -437,11 +446,136 @@ begin
     ), '[]'::jsonb)
   ) into v_balance;
 
+  -- Spike rules: spend over the window against the median of the same window over the previous
+  -- 7 days, at most one alert per cooldown. Skipped (and free) for workspaces without them.
+  v_spike := jsonb_build_object('rules', 0, 'fired', 0, 'state_rows', 0, 'events', '[]'::jsonb);
+  if exists (
+    select 1 from public.workspace_spend_rules rule
+    where rule.workspace_id = p_workspace_id and rule.metric = 'spike' and rule.enabled and rule.deleted_at is null
+  ) then
+    with spike as materialized (
+      select * from private.spend_spike_rule_values(p_workspace_id, p_now)
+    ),
+    decided as (
+      select spike.*,
+        coalesce(state.last_fired_at > p_now - make_interval(mins => spike.cooldown_minutes), false) as cooling
+      from spike
+      left join public.workspace_spend_rule_state state
+        on state.rule_id = spike.id and state.period_start = '-infinity'::timestamptz
+      where spike.spiking
+    ),
+    rendered as (
+      select decided.*, alert.scope_label, alert.title, alert.message,
+        'spend_alert:' || decided.id || ':cooldown:' || floor(extract(epoch from p_now) / (decided.cooldown_minutes * 60))::bigint
+          || ':spike' as dedupe_key
+      from decided
+      cross join lateral private.spend_spike_alert_text(
+        v_workspace.name, decided.name, decided.scope_type, decided.scope_id, decided.scope_key_id, decided.scope_user_id,
+        decided.scope_department_id, decided.window_hours, decided.current_nanos, decided.baseline_nanos, decided.multiple,
+        decided.spike_multiplier, decided.spike_floor_nanos, decided.baseline_windows
+      ) alert
+      where not decided.cooling
+    ),
+    queued as (
+      insert into public.email_outbox (kind, template, to_email, subject, workspace_id, user_id, payload, dedupe_key)
+      select
+        'spend_alert',
+        'spend_alert',
+        coalesce(v_workspace.owner_email, ''),
+        rendered.title,
+        p_workspace_id,
+        v_workspace.owner_user_id,
+        jsonb_build_object(
+          'title', rendered.title,
+          'message', rendered.message,
+          'workspace_name', v_workspace.name,
+          'rule_id', rendered.id,
+          'rule_name', rendered.name,
+          'metric', 'spike',
+          'action', rendered.action,
+          'scope', jsonb_strip_nulls(jsonb_build_object(
+            'type', rendered.scope_type,
+            'id', rendered.scope_id,
+            'label', rendered.scope_label,
+            'key_id', rendered.scope_key_id,
+            'user_id', rendered.scope_user_id,
+            'department_id', rendered.scope_department_id
+          )),
+          'period', jsonb_build_object(
+            'kind', 'rolling',
+            'start', rendered.period_start,
+            'end', rendered.period_end,
+            'time_zone', rendered.time_zone,
+            'window_hours', rendered.window_hours
+          ),
+          'value_nanos', rendered.current_nanos,
+          'base_nanos', rendered.baseline_nanos,
+          'threshold_percent', null,
+          'threshold_amount_nanos', null,
+          'spike', jsonb_build_object(
+            'current_nanos', rendered.current_nanos,
+            'baseline_nanos', rendered.baseline_nanos,
+            'multiple', rendered.multiple,
+            'multiplier', rendered.spike_multiplier,
+            'floor_nanos', rendered.spike_floor_nanos,
+            'fires_at_nanos', rendered.fires_at_nanos,
+            'baseline_windows', rendered.baseline_windows,
+            'active_windows', rendered.active_windows,
+            'floor_only', not (rendered.baseline_nanos > 0)
+          ),
+          'cooldown_minutes', rendered.cooldown_minutes,
+          'evaluated_at', p_now,
+          'url', 'https://phaseo.app/settings/notifications',
+          'push', jsonb_build_object(
+            'title', left(rendered.title, 120),
+            'body', left(rendered.message, 240),
+            'href', '/settings/notifications',
+            'lowerLead', false
+          )
+        ),
+        rendered.dedupe_key
+      from rendered
+      on conflict (dedupe_key) do nothing
+      returning id, dedupe_key, payload
+    ),
+    saved as (
+      -- One '-infinity' row per spike rule, written only when it fires (the cooldown starts again).
+      insert into public.workspace_spend_rule_state as state (
+        rule_id, workspace_id, period_start, period_end, last_fired_at, fire_count, last_value_nanos, last_base_nanos, last_dedupe_key
+      )
+      select rendered.id, p_workspace_id, '-infinity'::timestamptz, null, p_now, 1, round(rendered.current_nanos)::bigint,
+        round(rendered.baseline_nanos)::bigint, rendered.dedupe_key
+      from rendered
+      on conflict (rule_id, period_start) do update set
+        last_fired_at = excluded.last_fired_at,
+        fire_count = state.fire_count + 1,
+        last_value_nanos = excluded.last_value_nanos,
+        last_base_nanos = excluded.last_base_nanos,
+        last_dedupe_key = excluded.last_dedupe_key
+      returning 1
+    )
+    select jsonb_build_object(
+      'rules', (select count(*) from spike),
+      'fired', (select count(*) from queued),
+      'state_rows', (select count(*) from saved),
+      'events', coalesce((
+        select jsonb_agg(jsonb_build_object(
+          'event_id', queued.id,
+          'rule_id', queued.payload ->> 'rule_id',
+          'dedupe_key', queued.dedupe_key,
+          'threshold', queued.payload -> 'spike' -> 'multiplier',
+          'trigger', 'spike'
+        ) order by queued.dedupe_key)
+        from queued
+      ), '[]'::jsonb)
+    ) into v_spike;
+  end if;
+
   v_result := v_result || jsonb_build_object(
-    'rules', (v_result ->> 'rules')::integer + (v_balance ->> 'rules')::integer,
-    'fired', (v_result ->> 'fired')::integer + (v_balance ->> 'fired')::integer,
-    'state_rows', (v_result ->> 'state_rows')::integer + (v_balance ->> 'state_rows')::integer,
-    'events', (v_result -> 'events') || (v_balance -> 'events')
+    'rules', (v_result ->> 'rules')::integer + (v_balance ->> 'rules')::integer + (v_spike ->> 'rules')::integer,
+    'fired', (v_result ->> 'fired')::integer + (v_balance ->> 'fired')::integer + (v_spike ->> 'fired')::integer,
+    'state_rows', (v_result ->> 'state_rows')::integer + (v_balance ->> 'state_rows')::integer + (v_spike ->> 'state_rows')::integer,
+    'events', (v_result -> 'events') || (v_balance -> 'events') || (v_spike -> 'events')
   );
 
   v_block_rules := v_result -> 'block_rules';
@@ -544,7 +678,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "private"."evaluate_workspace_spend_rules"(uuid, timestamp with time zone, boolean) IS 'Evaluates a workspace''s enabled spend, budget_percent and forecast rules over their calendar period (or rolling window, with a cooldown) at p_now: queues one spend_alert event per rule that crossed, or is projected to cross, a new threshold (the highest one) and per balance rule whose balance or runway dropped to its threshold (armed/unarmed with a cooldown, never while auto top-up is working), lifts blocks that no longer apply and, when p_blocks is true and p_now is current, starts blocks for block rules past their block point. Writes rule state only on fire or period rollover. Called by public.sweep_spend_rules.';
+COMMENT ON FUNCTION "private"."evaluate_workspace_spend_rules"(uuid, timestamp with time zone, boolean) IS 'Evaluates a workspace''s enabled spend, budget_percent and forecast rules over their calendar period (or rolling window, with a cooldown) at p_now: queues one spend_alert event per rule that crossed, or is projected to cross, a new threshold (the highest one) and per balance rule whose balance or runway dropped to its threshold (armed/unarmed with a cooldown, never while auto top-up is working) and per spike rule whose spend over its window reached spike_multiplier x the median of the same window over the previous 7 days and its floor (with a cooldown), lifts blocks that no longer apply and, when p_blocks is true and p_now is current, starts blocks for block rules past their block point. Writes rule state only on fire or period rollover. Called by public.sweep_spend_rules.';
 
 REVOKE ALL ON FUNCTION "private"."evaluate_workspace_spend_rules"(uuid, timestamp with time zone, boolean) FROM PUBLIC;
 

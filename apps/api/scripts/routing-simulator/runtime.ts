@@ -29,8 +29,10 @@ export function resetRuntime() {
 }
 export function dispatchBackground(task: Promise<unknown>) { background.push(task); }
 export function getBindings() {
-  return coordinator ? { ROUTING_HEALTH: { idFromName: (name: string) => name, get: () => ({ observe: coordinator! }) } } : {};
+  const algorithm = { GATEWAY_ROUTING_ALGORITHM: process.env.ROUTING_SIM_ALGORITHM };
+  return coordinator ? { ...algorithm, ROUTING_HEALTH: { idFromName: (name: string) => name, get: () => ({ observe: coordinator! }) } } : algorithm;
 }
+export function getBindingsIfConfigured() { return getBindings(); }
 export async function flushBackground() {
   while (background.length) await Promise.all(background.splice(0));
 }

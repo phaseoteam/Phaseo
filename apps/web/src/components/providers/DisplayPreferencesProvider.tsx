@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 
 import {
@@ -154,6 +155,10 @@ export function useDisplayFormatters() {
 
 	return React.useMemo(() => ({
 		count: (value: number) => formatRoundedCount(value, preferences.locale),
+		/** "0.85 s": latency in seconds, from milliseconds. Null without a reading. */
+		latency: (milliseconds: number | null | undefined) => formatLatency(milliseconds, preferences.locale),
+		/** "45.3 tps": output speed. Null without a reading. */
+		tps: (value: number | null | undefined) => formatTps(value, preferences.locale),
 		countAxisTick: (value: number) => formatCompactAxisTick(value, preferences.locale),
 		calendarDate: (value: DisplayDateValue, fallback?: string) =>
 			formatDisplayCalendarDate(value, preferences, fallback),

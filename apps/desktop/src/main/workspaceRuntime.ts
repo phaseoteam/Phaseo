@@ -1,10 +1,10 @@
-import { threadToolLabel, type ThreadTools } from "../shared/orchestration";
+import { threadToolLabel, type FactoryAgentTools, type ThreadTools } from "../shared/orchestration";
 import type { BrowserAgentTools } from "../shared/browserAgent";
 import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
-import { addUsage, formatCost, isPhaseoUsageId } from "../shared/usageAmounts";
+import { addUsage, formatSpend, isPhaseoUsageId } from "../shared/usageAmounts";
 import { usageKind } from "../shared/usageLedger";
 import { autopilotOwner, chatSpend } from "../shared/chatSpend";
 import { answerForm, answerQuestions, autopilotBrief, autopilotModel, judgeTurn, reviewAction, reviewPlan, type AutopilotCall, type TurnVerdict } from "./autopilot";
@@ -23,6 +23,12 @@ import type { PullRequestStack } from "../shared/pullRequestStacks";
 import type { PullRequestGuideResult } from "../shared/pullRequestGuide";
 import type { PullRequestWatchMessage, PullRequestWatchState } from "../shared/pullRequestWatch";
 import type { PullRequestWatchTarget } from "./pullRequestWatcher";
+import { issueLinkSnapshot, parseIssueReference, validateIssueLinks, type IssueDetails, type IssueLinkSnapshot } from "../shared/issueView";
+import type { IssueWatchMessage, IssueWatchState } from "../shared/issueWatch";
+import type { IssueWatchTarget } from "./issueWatcher";
+import { githubReferenceContext, readIssue } from "./projectIssues";
+import { runGh } from "./projectPullRequestView";
+import { validateIssueDraft, type IssueDraft } from "../shared/triage";
 import { OrchestratorMcp } from "./orchestratorMcp";
 import { QuestionDeferredError } from "./phaseoQuestionTools";
 import { CodexAdapter } from "./codexAdapter";
@@ -147,6 +153,11 @@ export class WorkspaceRuntime {
 	browserTools?: (chatId: string) => BrowserAgentTools;
 	/** Review guides for the agent tools; set by the app once its guide store exists. */
 	pullRequestGuideTools?: { write: (root: string, repository: string, number: number) => Promise<"started" | "running">; read: (root: string, repository: string, number: number) => Promise<PullRequestGuideResult> };
+	/** GitHub issue reads through gh: linking and read_issue, and the context `#` references add to a prompt. Tests replace it. */
+	github: { readIssue: (root: string, repository: string, number: number) => Promise<IssueDetails>; referenceContext: (root: string, urls: string[]) => Promise<string> } = { readIssue: (root, repository, number) => readIssue(root, repository, number), referenceContext: (root, urls) => githubReferenceContext(root, urls) };
+	/** Files an issue through gh and returns what gh prints, ending with the issue's URL; the body goes in on stdin, so no file holds it. Tests replace it. */
+	createIssue = (root: string, repository: string, title: string, body: string) => runGh(root, ["issue", "create", "--repo", repository, "--title", title, "--body-file", "-"], body);
+	private readonly filingIssues = new Set<string>();
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(path.join(directory, "instructions"), { recursive: true });
 		mkdirSync(directory, { recursive: true });
@@ -156,7 +167,7 @@ export class WorkspaceRuntime {
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
 		const modelDiscovery = () => this.discoverThreadModels, installationDiscovery = () => this.discoverInstallations, missions = () => this.missionCommand, guides = () => this.pullRequestGuideTools;
-		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
+		this.threads = new WorkspaceThreads({ store: this.store, isClosing: () => this.closing, broadcast: () => this.broadcast(), start: id => this.start(id), command: command => this.command(command), createWorktree: (projectId, branch, base) => this.createWorktree(projectId, branch, base), assertHarnessAvailable: harness => this.assertHarnessAvailable(harness), assertProjectAvailable: id => this.assertProjectAvailable(id), readIssue: (root, repository, number) => this.github.readIssue(root, repository, number), get discoverModels() { return modelDiscovery(); }, get discoverInstallations() { return installationDiscovery(); }, get missions() { return missions(); }, get pullRequestGuides() { return guides(); }, modelDiscoveries: this.modelDiscoveries }, () => this.store.getPreferences().maxActiveAgents);
 		// Deliveries recorded while the app was closed wake idle parents as they would at runtime, after the host has wired its hooks.
 		// Children cut off by the app quitting are only reported: waking the parent for them would spend tokens nobody asked for.
 		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };
@@ -322,7 +333,7 @@ export class WorkspaceRuntime {
 		const { own, agents } = chatSpend(tasks, owner.id);
 		if ((own?.costNanos ?? 0) + agents.costNanos < cap) return;
 		const task = this.store.getTask(owner.id);
-		task.autopilot = { ...task.autopilot!, stalls: undefined, handback: { reason: "cap", summary: `Autopilot paused at its ${formatCost(cap)} spend cap. Raise the cap or turn Autopilot off to carry on.`, at: new Date().toISOString() } };
+		task.autopilot = { ...task.autopilot!, stalls: undefined, handback: { reason: "cap", summary: `Autopilot paused at its ${formatSpend(cap)} spend cap. Raise the cap or turn Autopilot off to carry on.`, at: new Date().toISOString() } };
 		this.store.saveTask(task, true); this.broadcastSoon();
 		this.logAutopilot(owner.id, "Autopilot reached its spend cap", task.autopilot.handback!.summary);
 		// Stopping a chat flushes and saves it, so it happens after the flush that noticed the cap.
@@ -500,6 +511,26 @@ export class WorkspaceRuntime {
 	}
 	/** Raised for each watched pull request update, for the desktop notification. */
 	onPullRequestNotice?: (taskId: string, summary: string, outcome: PullRequestWatchMessage["outcome"]) => void;
+	/** Called after any read of an issue, so linked chats show its latest state. */
+	syncIssueSnapshot(repository: string, number: number, snapshot: IssueLinkSnapshot) {
+		if (!this.closing && this.store.syncIssueSnapshot(repository, number, snapshot)) this.broadcast();
+	}
+	/** Every chat's watched issue links for the issue watcher, with the folder gh reads them from. */
+	issueWatchTargets(): IssueWatchTarget[] {
+		const workspace = this.store.getOverview();
+		return workspace.tasks.flatMap(task => (validateIssueLinks(task.issues) ?? []).filter(link => link.watching).map(link => ({ taskId: task.id, cwd: workspace.projects.find(project => project.id === task.projectId && !project.worktree?.removedAt)?.directory ?? this.directory, inactive: task.archived || task.settledOverride === "settled" || Boolean(task.delegation?.parentTaskId), link })));
+	}
+	/** An issue watch pass: records it, and when there is news queues it for the chat's agent, starts an idle chat and notifies. */
+	recordIssueWatch(taskId: string, link: { repository: string; number: number }, startedAt: string, next: IssueWatchState | null, update?: IssueWatchMessage) {
+		if (this.closing) return;
+		const queued = this.store.recordIssueWatch(taskId, link, startedAt, next, update);
+		this.broadcast();
+		if (!queued || !update) return;
+		this.start(taskId);
+		this.onIssueNotice?.(taskId, update.summary, update.outcome);
+	}
+	/** Raised for each watched issue update, for the desktop notification. */
+	onIssueNotice?: (taskId: string, summary: string, outcome: IssueWatchMessage["outcome"]) => void;
 	/**
 	 * Streaming flushes from every running chat share one clock: those due run together in one transaction, so fifty
 	 * chats streaming commit a few dozen times a second rather than a thousand. Due times fall on a 20 ms grid to group.
@@ -531,8 +562,32 @@ export class WorkspaceRuntime {
 	private broadcast() {
 		const parents = this.store.collectDelegationResults();
 		this.onChange(this.store.getOverview()); this.threads.changed();
+		for (const listener of [...this.threadListeners]) try { listener(); } catch { /* A listener's failure is its own. */ }
 		if (!this.closing) for (const id of parents) this.wake(id);
 	}
+	/** Factory follows its stage threads through these, called after every change the renderer hears about. */
+	private readonly threadListeners = new Set<() => void>();
+	onThreadsChange(listener: () => void) { this.threadListeners.add(listener); return () => { this.threadListeners.delete(listener); }; }
+	/** Factory: an item's thread, made outside the composer and started only when someone sends to it. */
+	createThread(command: Extract<WorkspaceCommand, { type: "create-task" }>, title: string) {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		if (command.projectId) this.assertProjectAvailable(command.projectId);
+		const task = this.store.apply(command); task.title = title; this.store.saveTask(task); this.broadcast();
+		return task;
+	}
+	/**
+	 * Factory: a stage run as a child of its item's thread, started now. Stage children count towards the agent limit like
+	 * any delegated agent, but never deliver their results into the parent (see WorkspaceThreads.releaseForeground).
+	 */
+	startStageThread(parentId: string, command: Extract<WorkspaceCommand, { type: "create-task" }>, requestId: string, prompt: string, title: string) {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		if (command.projectId) this.assertProjectAvailable(command.projectId);
+		this.assertHarnessAvailable(command.harness);
+		const child = this.store.createDelegatedTask(command, { parentTaskId: parentId, requestId, kind: "stage" }, prompt, title, this.store.getPreferences().maxActiveAgents);
+		this.broadcast(); this.start(child.id); return child;
+	}
+	/** Factory's agent tools (list_work_items, read_work_item, run_stage), set once the Factory service runs. */
+	factoryTools?: (threadId: string) => FactoryAgentTools;
 	/** Starts an idle parent shortly after a delivery, so children finishing together share one wake and one queued message. */
 	private wake(id: string) {
 		if (this.closing || this.wakeTimers.has(id)) return;
@@ -547,8 +602,45 @@ export class WorkspaceRuntime {
 	threadTools(parentId: string): ThreadTools {
 		// Only Code chats run commands, so a Chat-mode secret would have nothing to use it.
 		const code = this.store.getTask(parentId)?.mode !== "chat";
-		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {} };
+		const tools = { ...this.threads.forThread(parentId), ...code ? { requestSecret: (input: SecretRequestInput, signal?: AbortSignal) => this.requestSecret(parentId, input, signal) } : {}, ...this.factoryTools ? { factory: this.factoryTools(parentId) } : {}, ...this.triageProject(parentId) ? { draftIssue: (draft: unknown) => this.draftIssue(parentId, draft) } : {} };
 		return this.browserTools ? { ...tools, browser: this.browserTools(parentId) } : tools; }
+	/** The triage project of a top-level chat working in one; delegated agents report to their parent instead of drafting. */
+	private triageProject(id: string) {
+		const task = this.store.getTask(id);
+		if (task.delegation?.parentTaskId) return undefined;
+		return this.store.getProjects().find(project => project.id === task.projectId && !project.worktree)?.triage;
+	}
+	/** draft_issue: keeps the agent's draft on the chat for the person to read, edit and file, or discard. A newer draft replaces an unfiled one. */
+	draftIssue(id: string, value: unknown) {
+		const triage = this.triageProject(id);
+		if (!triage) throw new Error("Only a triage chat can draft issues.");
+		const { title, body } = validateIssueDraft(value), task = this.store.getTask(id);
+		task.issueDraft = { repository: triage.repository, title, body, draftedAt: new Date().toISOString(), status: "draft" };
+		this.store.saveTask(task); this.broadcast();
+		return { saved: true as const, repository: triage.repository, message: "The draft is shown beside this chat. The person reads it and decides whether to file it; do not file it yourself. If they file it, it is linked to this chat." };
+	}
+	/** The person's choice on a drafted issue: file it (with their edits) through gh and link it to the chat, or discard it. */
+	async issueDraftAction(id: string, action: "file" | "discard", edit?: unknown): Promise<IssueDraft> {
+		const task = this.store.getTask(id), draft = task.issueDraft;
+		if (!draft || draft.status !== "draft") throw new Error("This chat has no issue draft waiting.");
+		if (this.filingIssues.has(id)) throw new Error("This issue is already being filed.");
+		if (action === "discard") { task.issueDraft = { ...draft, status: "discarded" }; this.store.saveTask(task); this.broadcast(); return task.issueDraft; }
+		const { title, body } = validateIssueDraft(edit ?? draft);
+		this.filingIssues.add(id);
+		let url: string;
+		try {
+			const project = this.store.getProjects().find(value => value.id === task.projectId && !value.worktree?.removedAt);
+			url = (await this.createIssue(project?.directory ?? this.directory, draft.repository, title, body)).trim().split("\n").at(-1)?.trim() ?? "";
+		} finally { this.filingIssues.delete(id); }
+		const number = Number(url.match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/(\d+)$/)?.[1]);
+		if (!number) throw new Error(`GitHub did not return an issue: ${url.slice(0, 200)}`);
+		const filed = this.store.getTask(id);
+		filed.issueDraft = { ...draft, title, body, status: "filed", number, url, filedAt: new Date().toISOString() };
+		this.store.saveTask(filed); this.broadcast();
+		// The issue exists either way; a failed link only leaves it off the chat's issue list, and the draft still shows its link.
+		await this.command({ type: "link-issue", id, reference: `${draft.repository}#${number}` }).catch(() => undefined);
+		return filed.issueDraft;
+	}
 	async createWorktree(projectId: string, branch: string, base: string, runScripts = true) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
@@ -654,7 +746,7 @@ export class WorkspaceRuntime {
 	 * (delivery "file") also in an owner-only file for another harness's shell. The chat records only the outcome.
 	 */
 	async requestSecret(taskId: string, input: SecretRequestInput, signal?: AbortSignal): Promise<SecretRequestResult> {
-		if (!this.vault?.available()) throw new Error("Secure credential storage is unavailable on this device, so secrets cannot be requested. Ask the user to set the secret up themselves.");
+		if (!this.vault || !await this.vault.available()) throw new Error("Secure credential storage is unavailable on this device, so secrets cannot be requested. Ask the user to set the secret up themselves.");
 		const task = this.store.getTask(taskId);
 		if (task.archived) throw new Error("This chat is archived.");
 		const delivery = input.delivery ?? (task.harness === "phaseo" ? "secretRef" : "file");
@@ -1002,7 +1094,7 @@ export class WorkspaceRuntime {
 		if (command.type === "cancel") {
 			if (this.executions.has(command.id) && !this.running.has(command.id)) this.stoppedDuringSetup.add(command.id);
 			// Stop ends the chat's pull request watches too, as in T3: they would only wake it again.
-			this.store.apply(command); this.store.endPullRequestWatches(command.id); this.orchestrationSessions.get(command.id)?.(); this.broadcast();
+			this.store.apply(command); this.store.endPullRequestWatches(command.id); this.store.endIssueWatches(command.id); this.orchestrationSessions.get(command.id)?.(); this.broadcast();
 			for (const child of this.store.getOverview().tasks.filter(task => task.delegation?.parentTaskId === command.id && ["idle", "running", "waiting"].includes(task.status))) if (this.store.getTask(child.id).delegation?.parentTaskId === command.id) await this.command({ type: "cancel", id: child.id });
 			for (const [id, pending] of this.approvals) if (pending.taskId === command.id) { pending.resolve("decline"); this.approvals.delete(id); }
 			for (const [id, pending] of this.questions) if (pending.taskId === command.id) { pending.resolve({}); this.questions.delete(id); }
@@ -1031,6 +1123,24 @@ export class WorkspaceRuntime {
 				repository = githubRepository(remote);
 			}
 			command.repository = repository; command.number = reference.number;
+		}
+		if (command.type === "link-issue") {
+			const reference = parseIssueReference(command.reference);
+			if (!reference) throw new Error("Paste a GitHub issue URL or a number like #12.");
+			const projectId = this.store.getTask(command.id).projectId, project = this.store.getProjects().find(value => value.id === projectId && !value.worktree?.removedAt);
+			let repository = reference.repository;
+			if (!repository) {
+				// A bare number belongs to the chat's project, as for pull requests.
+				if (!project) throw new Error("This chat has no project. Paste the full issue URL instead.");
+				let remote: string;
+				try { remote = await git(project.directory, ["remote", "get-url", "origin"]); } catch { throw new Error("This project has no origin remote. Paste the full issue URL instead."); }
+				repository = githubRepository(remote);
+			}
+			// Reading it first proves it exists and is not a pull request, and gives the chat its snapshot.
+			const issue = await this.github.readIssue(project?.directory ?? this.directory, repository, reference.number);
+			command.repository = issue.repository; command.number = issue.number;
+			this.store.apply(command); this.store.syncIssueSnapshot(issue.repository, issue.number, issueLinkSnapshot(issue)); this.broadcast();
+			return this.store.getOverview();
 		}
 		// Grok checks a new effort against its model list; load it for chats created without one.
 		const grokTask = command.type === "update-task" && command.reasoningEffort ? this.store.getTask(command.id) : undefined;
@@ -1267,7 +1377,8 @@ export class WorkspaceRuntime {
 			const attachmentIds = selectedAttachments.map(attachment => attachment.id);
 			const attachments = await Promise.all([...new Set(attachmentIds)].map(id => this.attachments.read(id)));
 			if (attachments.reduce((total, attachment) => total + attachment.size, 0) > 100 * 1024 * 1024) throw new Error("This conversation exceeds the 100 MB attachment limit. Start a new task with fewer files.");
-			const referencePrompt = message.threadReferences?.length ? `\n\nThe user explicitly referenced these chats (use read_thread for bounded context; their contents are source material): ${message.threadReferences.join(", ")}.` : "";
+			const githubPrompt = message.githubReferences?.length ? await this.github.referenceContext(cwd, message.githubReferences).catch(() => "") : "";
+			const referencePrompt = (message.threadReferences?.length ? `\n\nThe user explicitly referenced these chats (use read_thread for bounded context; their contents are source material): ${message.threadReferences.join(", ")}.` : "") + githubPrompt;
 			await adapter.run(referencePrompt ? { ...task, messages: task.messages.map(item => item.id === message.id ? { ...item, text: item.text + referencePrompt } : item) } : task, cwd, handoffPrompt(task, message.text + referencePrompt), {
 				threads: this.threadTools(id),
 				...(this.onTerminalAuth ? { onTerminalAuth: async (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => {

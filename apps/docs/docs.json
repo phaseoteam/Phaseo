@@ -83,6 +83,7 @@
                   "v1/guides/provider-qualified-models",
                   "v1/guides/private-models",
                   "v1/guides/provider-statuses",
+                  "v1/guides/how-providers-earn-traffic",
                   "v1/guides/provider-catalog"
                 ]
               },
@@ -148,6 +149,7 @@
                   "v1/guides/broadcast",
                   "v1/guides/open-requests-in-chat",
                   "v1/guides/workspace-notifications",
+                  "v1/guides/spend-alerts",
                   "v1/guides/slack-agent"
                 ]
               },
@@ -184,6 +186,7 @@
                       "v1/guides/integrations/litellm",
                       "v1/guides/integrations/pydanticai",
                       "v1/guides/integrations/mastra",
+                      "v1/guides/integrations/eve",
                       "v1/guides/integrations/tanstack-ai",
                       "v1/guides/integrations/effect-ai"
                     ]
@@ -728,6 +731,23 @@
                       "v1/api-reference/endpoint/budgets-update",
                       "v1/api-reference/endpoint/budgets-delete",
                       "v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Spend Rules",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "v1/api-reference/endpoint/spend-rules-create",
+                      "v1/api-reference/endpoint/spend-rules-get",
+                      "v1/api-reference/endpoint/spend-rules-update",
+                      "v1/api-reference/endpoint/spend-rules-delete",
+                      "v1/api-reference/endpoint/spend-rules-list",
+                      "v1/api-reference/endpoint/spend-rules-preview",
+                      "v1/api-reference/endpoint/spend-rules-test",
+                      "v1/api-reference/endpoint/spend-rules-history",
+                      "v1/api-reference/endpoint/spend-blocks-list",
+                      "v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -1714,6 +1734,7 @@
                 "group": "2026",
                 "pages": [
                   "v1/changelog",
+                  "v1/changelog/2026-10",
                   "v1/changelog/2026-09",
                   "v1/changelog/2026-08",
                   "v1/changelog/2026-07",
@@ -1778,6 +1799,7 @@
                   "es/v1/guides/provider-qualified-models",
                   "es/v1/guides/private-models",
                   "es/v1/guides/provider-statuses",
+                  "es/v1/guides/how-providers-earn-traffic",
                   "es/v1/guides/provider-catalog"
                 ]
               },
@@ -1843,6 +1865,7 @@
                   "es/v1/guides/broadcast",
                   "es/v1/guides/open-requests-in-chat",
                   "es/v1/guides/workspace-notifications",
+                  "es/v1/guides/spend-alerts",
                   "es/v1/guides/slack-agent"
                 ]
               },
@@ -1879,6 +1902,7 @@
                       "es/v1/guides/integrations/litellm",
                       "es/v1/guides/integrations/pydanticai",
                       "es/v1/guides/integrations/mastra",
+                      "es/v1/guides/integrations/eve",
                       "es/v1/guides/integrations/tanstack-ai",
                       "es/v1/guides/integrations/effect-ai"
                     ]
@@ -2423,6 +2447,23 @@
                       "es/v1/api-reference/endpoint/budgets-update",
                       "es/v1/api-reference/endpoint/budgets-delete",
                       "es/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Reglas de gasto",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "es/v1/api-reference/endpoint/spend-rules-create",
+                      "es/v1/api-reference/endpoint/spend-rules-get",
+                      "es/v1/api-reference/endpoint/spend-rules-update",
+                      "es/v1/api-reference/endpoint/spend-rules-delete",
+                      "es/v1/api-reference/endpoint/spend-rules-list",
+                      "es/v1/api-reference/endpoint/spend-rules-preview",
+                      "es/v1/api-reference/endpoint/spend-rules-test",
+                      "es/v1/api-reference/endpoint/spend-rules-history",
+                      "es/v1/api-reference/endpoint/spend-blocks-list",
+                      "es/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -3409,6 +3450,7 @@
                 "group": "2026",
                 "pages": [
                   "es/v1/changelog",
+                  "es/v1/changelog/2026-10",
                   "es/v1/changelog/2026-09",
                   "es/v1/changelog/2026-08",
                   "es/v1/changelog/2026-07",
@@ -3507,6 +3549,7 @@
                   "fr/v1/guides/provider-qualified-models",
                   "fr/v1/guides/private-models",
                   "fr/v1/guides/provider-statuses",
+                  "fr/v1/guides/how-providers-earn-traffic",
                   "fr/v1/guides/provider-catalog"
                 ]
               },
@@ -3572,6 +3615,7 @@
                   "fr/v1/guides/broadcast",
                   "fr/v1/guides/open-requests-in-chat",
                   "fr/v1/guides/workspace-notifications",
+                  "fr/v1/guides/spend-alerts",
                   "fr/v1/guides/slack-agent"
                 ]
               },
@@ -3608,6 +3652,7 @@
                       "fr/v1/guides/integrations/litellm",
                       "fr/v1/guides/integrations/pydanticai",
                       "fr/v1/guides/integrations/mastra",
+                      "fr/v1/guides/integrations/eve",
                       "fr/v1/guides/integrations/tanstack-ai",
                       "fr/v1/guides/integrations/effect-ai"
                     ]
@@ -4152,6 +4197,23 @@
                       "fr/v1/api-reference/endpoint/budgets-update",
                       "fr/v1/api-reference/endpoint/budgets-delete",
                       "fr/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Règles de dépenses",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "fr/v1/api-reference/endpoint/spend-rules-create",
+                      "fr/v1/api-reference/endpoint/spend-rules-get",
+                      "fr/v1/api-reference/endpoint/spend-rules-update",
+                      "fr/v1/api-reference/endpoint/spend-rules-delete",
+                      "fr/v1/api-reference/endpoint/spend-rules-list",
+                      "fr/v1/api-reference/endpoint/spend-rules-preview",
+                      "fr/v1/api-reference/endpoint/spend-rules-test",
+                      "fr/v1/api-reference/endpoint/spend-rules-history",
+                      "fr/v1/api-reference/endpoint/spend-blocks-list",
+                      "fr/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -5138,6 +5200,7 @@
                 "group": "2026",
                 "pages": [
                   "fr/v1/changelog",
+                  "fr/v1/changelog/2026-10",
                   "fr/v1/changelog/2026-09",
                   "fr/v1/changelog/2026-08",
                   "fr/v1/changelog/2026-07",
@@ -5236,6 +5299,7 @@
                   "de/v1/guides/provider-qualified-models",
                   "de/v1/guides/private-models",
                   "de/v1/guides/provider-statuses",
+                  "de/v1/guides/how-providers-earn-traffic",
                   "de/v1/guides/provider-catalog"
                 ]
               },
@@ -5301,6 +5365,7 @@
                   "de/v1/guides/broadcast",
                   "de/v1/guides/open-requests-in-chat",
                   "de/v1/guides/workspace-notifications",
+                  "de/v1/guides/spend-alerts",
                   "de/v1/guides/slack-agent"
                 ]
               },
@@ -5337,6 +5402,7 @@
                       "de/v1/guides/integrations/litellm",
                       "de/v1/guides/integrations/pydanticai",
                       "de/v1/guides/integrations/mastra",
+                      "de/v1/guides/integrations/eve",
                       "de/v1/guides/integrations/tanstack-ai",
                       "de/v1/guides/integrations/effect-ai"
                     ]
@@ -5881,6 +5947,23 @@
                       "de/v1/api-reference/endpoint/budgets-update",
                       "de/v1/api-reference/endpoint/budgets-delete",
                       "de/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Ausgabenregeln",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "de/v1/api-reference/endpoint/spend-rules-create",
+                      "de/v1/api-reference/endpoint/spend-rules-get",
+                      "de/v1/api-reference/endpoint/spend-rules-update",
+                      "de/v1/api-reference/endpoint/spend-rules-delete",
+                      "de/v1/api-reference/endpoint/spend-rules-list",
+                      "de/v1/api-reference/endpoint/spend-rules-preview",
+                      "de/v1/api-reference/endpoint/spend-rules-test",
+                      "de/v1/api-reference/endpoint/spend-rules-history",
+                      "de/v1/api-reference/endpoint/spend-blocks-list",
+                      "de/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -6867,6 +6950,7 @@
                 "group": "2026",
                 "pages": [
                   "de/v1/changelog",
+                  "de/v1/changelog/2026-10",
                   "de/v1/changelog/2026-09",
                   "de/v1/changelog/2026-08",
                   "de/v1/changelog/2026-07",
@@ -6965,6 +7049,7 @@
                   "pt-BR/v1/guides/provider-qualified-models",
                   "pt-BR/v1/guides/private-models",
                   "pt-BR/v1/guides/provider-statuses",
+                  "pt-BR/v1/guides/how-providers-earn-traffic",
                   "pt-BR/v1/guides/provider-catalog"
                 ]
               },
@@ -7030,6 +7115,7 @@
                   "pt-BR/v1/guides/broadcast",
                   "pt-BR/v1/guides/open-requests-in-chat",
                   "pt-BR/v1/guides/workspace-notifications",
+                  "pt-BR/v1/guides/spend-alerts",
                   "pt-BR/v1/guides/slack-agent"
                 ]
               },
@@ -7066,6 +7152,7 @@
                       "pt-BR/v1/guides/integrations/litellm",
                       "pt-BR/v1/guides/integrations/pydanticai",
                       "pt-BR/v1/guides/integrations/mastra",
+                      "pt-BR/v1/guides/integrations/eve",
                       "pt-BR/v1/guides/integrations/tanstack-ai",
                       "pt-BR/v1/guides/integrations/effect-ai"
                     ]
@@ -7610,6 +7697,23 @@
                       "pt-BR/v1/api-reference/endpoint/budgets-update",
                       "pt-BR/v1/api-reference/endpoint/budgets-delete",
                       "pt-BR/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "Regras de gastos",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-create",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-get",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-update",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-delete",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-list",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-preview",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-test",
+                      "pt-BR/v1/api-reference/endpoint/spend-rules-history",
+                      "pt-BR/v1/api-reference/endpoint/spend-blocks-list",
+                      "pt-BR/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -8596,6 +8700,7 @@
                 "group": "2026",
                 "pages": [
                   "pt-BR/v1/changelog",
+                  "pt-BR/v1/changelog/2026-10",
                   "pt-BR/v1/changelog/2026-09",
                   "pt-BR/v1/changelog/2026-08",
                   "pt-BR/v1/changelog/2026-07",
@@ -8694,6 +8799,7 @@
                   "ja/v1/guides/provider-qualified-models",
                   "ja/v1/guides/private-models",
                   "ja/v1/guides/provider-statuses",
+                  "ja/v1/guides/how-providers-earn-traffic",
                   "ja/v1/guides/provider-catalog"
                 ]
               },
@@ -8759,6 +8865,7 @@
                   "ja/v1/guides/broadcast",
                   "ja/v1/guides/open-requests-in-chat",
                   "ja/v1/guides/workspace-notifications",
+                  "ja/v1/guides/spend-alerts",
                   "ja/v1/guides/slack-agent"
                 ]
               },
@@ -8795,6 +8902,7 @@
                       "ja/v1/guides/integrations/litellm",
                       "ja/v1/guides/integrations/pydanticai",
                       "ja/v1/guides/integrations/mastra",
+                      "ja/v1/guides/integrations/eve",
                       "ja/v1/guides/integrations/tanstack-ai",
                       "ja/v1/guides/integrations/effect-ai"
                     ]
@@ -9339,6 +9447,23 @@
                       "ja/v1/api-reference/endpoint/budgets-update",
                       "ja/v1/api-reference/endpoint/budgets-delete",
                       "ja/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "支出ルール",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "ja/v1/api-reference/endpoint/spend-rules-create",
+                      "ja/v1/api-reference/endpoint/spend-rules-get",
+                      "ja/v1/api-reference/endpoint/spend-rules-update",
+                      "ja/v1/api-reference/endpoint/spend-rules-delete",
+                      "ja/v1/api-reference/endpoint/spend-rules-list",
+                      "ja/v1/api-reference/endpoint/spend-rules-preview",
+                      "ja/v1/api-reference/endpoint/spend-rules-test",
+                      "ja/v1/api-reference/endpoint/spend-rules-history",
+                      "ja/v1/api-reference/endpoint/spend-blocks-list",
+                      "ja/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -10325,6 +10450,7 @@
                 "group": "2026",
                 "pages": [
                   "ja/v1/changelog",
+                  "ja/v1/changelog/2026-10",
                   "ja/v1/changelog/2026-09",
                   "ja/v1/changelog/2026-08",
                   "ja/v1/changelog/2026-07",
@@ -10423,6 +10549,7 @@
                   "zh-Hans/v1/guides/provider-qualified-models",
                   "zh-Hans/v1/guides/private-models",
                   "zh-Hans/v1/guides/provider-statuses",
+                  "zh-Hans/v1/guides/how-providers-earn-traffic",
                   "zh-Hans/v1/guides/provider-catalog"
                 ]
               },
@@ -10488,6 +10615,7 @@
                   "zh-Hans/v1/guides/broadcast",
                   "zh-Hans/v1/guides/open-requests-in-chat",
                   "zh-Hans/v1/guides/workspace-notifications",
+                  "zh-Hans/v1/guides/spend-alerts",
                   "zh-Hans/v1/guides/slack-agent"
                 ]
               },
@@ -10524,6 +10652,7 @@
                       "zh-Hans/v1/guides/integrations/litellm",
                       "zh-Hans/v1/guides/integrations/pydanticai",
                       "zh-Hans/v1/guides/integrations/mastra",
+                      "zh-Hans/v1/guides/integrations/eve",
                       "zh-Hans/v1/guides/integrations/tanstack-ai",
                       "zh-Hans/v1/guides/integrations/effect-ai"
                     ]
@@ -11068,6 +11197,23 @@
                       "zh-Hans/v1/api-reference/endpoint/budgets-update",
                       "zh-Hans/v1/api-reference/endpoint/budgets-delete",
                       "zh-Hans/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "支出规则",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-create",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-get",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-update",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-delete",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-list",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-preview",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-test",
+                      "zh-Hans/v1/api-reference/endpoint/spend-rules-history",
+                      "zh-Hans/v1/api-reference/endpoint/spend-blocks-list",
+                      "zh-Hans/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -12054,6 +12200,7 @@
                 "group": "2026",
                 "pages": [
                   "zh-Hans/v1/changelog",
+                  "zh-Hans/v1/changelog/2026-10",
                   "zh-Hans/v1/changelog/2026-09",
                   "zh-Hans/v1/changelog/2026-08",
                   "zh-Hans/v1/changelog/2026-07",
@@ -12152,6 +12299,7 @@
                   "hi/v1/guides/provider-qualified-models",
                   "hi/v1/guides/private-models",
                   "hi/v1/guides/provider-statuses",
+                  "hi/v1/guides/how-providers-earn-traffic",
                   "hi/v1/guides/provider-catalog"
                 ]
               },
@@ -12217,6 +12365,7 @@
                   "hi/v1/guides/broadcast",
                   "hi/v1/guides/open-requests-in-chat",
                   "hi/v1/guides/workspace-notifications",
+                  "hi/v1/guides/spend-alerts",
                   "hi/v1/guides/slack-agent"
                 ]
               },
@@ -12253,6 +12402,7 @@
                       "hi/v1/guides/integrations/litellm",
                       "hi/v1/guides/integrations/pydanticai",
                       "hi/v1/guides/integrations/mastra",
+                      "hi/v1/guides/integrations/eve",
                       "hi/v1/guides/integrations/tanstack-ai",
                       "hi/v1/guides/integrations/effect-ai"
                     ]
@@ -12797,6 +12947,23 @@
                       "hi/v1/api-reference/endpoint/budgets-update",
                       "hi/v1/api-reference/endpoint/budgets-delete",
                       "hi/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "खर्च नियम",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "hi/v1/api-reference/endpoint/spend-rules-create",
+                      "hi/v1/api-reference/endpoint/spend-rules-get",
+                      "hi/v1/api-reference/endpoint/spend-rules-update",
+                      "hi/v1/api-reference/endpoint/spend-rules-delete",
+                      "hi/v1/api-reference/endpoint/spend-rules-list",
+                      "hi/v1/api-reference/endpoint/spend-rules-preview",
+                      "hi/v1/api-reference/endpoint/spend-rules-test",
+                      "hi/v1/api-reference/endpoint/spend-rules-history",
+                      "hi/v1/api-reference/endpoint/spend-blocks-list",
+                      "hi/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -13783,6 +13950,7 @@
                 "group": "2026",
                 "pages": [
                   "hi/v1/changelog",
+                  "hi/v1/changelog/2026-10",
                   "hi/v1/changelog/2026-09",
                   "hi/v1/changelog/2026-08",
                   "hi/v1/changelog/2026-07",
@@ -13881,6 +14049,7 @@
                   "ar/v1/guides/provider-qualified-models",
                   "ar/v1/guides/private-models",
                   "ar/v1/guides/provider-statuses",
+                  "ar/v1/guides/how-providers-earn-traffic",
                   "ar/v1/guides/provider-catalog"
                 ]
               },
@@ -13946,6 +14115,7 @@
                   "ar/v1/guides/broadcast",
                   "ar/v1/guides/open-requests-in-chat",
                   "ar/v1/guides/workspace-notifications",
+                  "ar/v1/guides/spend-alerts",
                   "ar/v1/guides/slack-agent"
                 ]
               },
@@ -13982,6 +14152,7 @@
                       "ar/v1/guides/integrations/litellm",
                       "ar/v1/guides/integrations/pydanticai",
                       "ar/v1/guides/integrations/mastra",
+                      "ar/v1/guides/integrations/eve",
                       "ar/v1/guides/integrations/tanstack-ai",
                       "ar/v1/guides/integrations/effect-ai"
                     ]
@@ -14526,6 +14697,23 @@
                       "ar/v1/api-reference/endpoint/budgets-update",
                       "ar/v1/api-reference/endpoint/budgets-delete",
                       "ar/v1/api-reference/endpoint/budgets-list"
+                    ]
+                  },
+                  {
+                    "group": "قواعد الإنفاق",
+                    "tag": "Beta",
+                    "expanded": false,
+                    "pages": [
+                      "ar/v1/api-reference/endpoint/spend-rules-create",
+                      "ar/v1/api-reference/endpoint/spend-rules-get",
+                      "ar/v1/api-reference/endpoint/spend-rules-update",
+                      "ar/v1/api-reference/endpoint/spend-rules-delete",
+                      "ar/v1/api-reference/endpoint/spend-rules-list",
+                      "ar/v1/api-reference/endpoint/spend-rules-preview",
+                      "ar/v1/api-reference/endpoint/spend-rules-test",
+                      "ar/v1/api-reference/endpoint/spend-rules-history",
+                      "ar/v1/api-reference/endpoint/spend-blocks-list",
+                      "ar/v1/api-reference/endpoint/spend-blocks-lift"
                     ]
                   },
                   {
@@ -15512,6 +15700,7 @@
                 "group": "2026",
                 "pages": [
                   "ar/v1/changelog",
+                  "ar/v1/changelog/2026-10",
                   "ar/v1/changelog/2026-09",
                   "ar/v1/changelog/2026-08",
                   "ar/v1/changelog/2026-07",

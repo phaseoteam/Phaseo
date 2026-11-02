@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -523,18 +524,7 @@ function formatDuration(
 	locale: string,
 	notAvailable: string,
 ): string {
-	if (typeof durationMs !== "number" || !Number.isFinite(durationMs)) return notAvailable;
-	if (durationMs < 1000) {
-		return new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short" }).format(Math.round(durationMs));
-	}
-	const seconds = new Intl.NumberFormat(locale, {
-		style: "unit",
-		unit: "second",
-		unitDisplay: "short",
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	});
-	return seconds.format(durationMs / 1000);
+	return formatLatency(durationMs, locale) ?? notAvailable;
 }
 
 function formatVideoSeconds(

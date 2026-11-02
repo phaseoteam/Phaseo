@@ -23,7 +23,6 @@ const lanes = [
 	{ nameKey: "veryFastPace" as const, rate: 90, firstToken: 240, color: "bg-emerald-500" },
 ].map((lane) => ({
 	...lane,
-	speed: `${lane.rate} tokens/s`,
 	interval: (1000 * playbackSlowdown) / lane.rate,
 }));
 
@@ -109,7 +108,7 @@ export default function TokenSpeedSimulation() {
 							<div>
 								<div className="flex items-center gap-2"><span className={`size-2 rounded-full ${lane.color}`} /><p className="text-sm font-medium">{t(lane.nameKey)}</p></div>
 								<p className="mt-1 pl-4 font-mono text-xs text-muted-foreground">
-									{t("tokensPerSecond", { count: format.number(lane.rate) })}
+									{format.tps(lane.rate)}
 								</p>
 							</div>
 							<StreamingOutput

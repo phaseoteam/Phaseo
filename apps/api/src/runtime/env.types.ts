@@ -23,6 +23,8 @@ export type GatewayBindings = {
 	GATEWAY_ROUTING_ARCHIVES_BUCKET?: R2Bucket;
 	GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF?: string;
 	GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED?: string;
+	/** Default text routing: "v9" (default), "v8", or "switchback" to alternate them in 3-hour blocks. */
+	GATEWAY_ROUTING_ALGORITHM?: string;
 	GATEWAY_IO_LOGS_BUCKET_NAME?: string;
 	GATEWAY_IO_LOGGING_MAX_BYTES?: string;
 	DATA_CONTRIBUTIONS_BUCKET?: R2Bucket;
@@ -71,6 +73,8 @@ export type GatewayBindings = {
 	WORKLOAD_IDENTITY_AUTH_ENABLED?: string;
 	/** "true" lets block spend rules start blocks, publishes their KV entries and enforces them on requests. Off by default. */
 	SPEND_RULE_BLOCKS_ENABLED?: string;
+	/** Queue daily/weekly/monthly spend report emails (public.queue_spend_reports). Default "false": nothing is sent until turned on. */
+	SPEND_REPORTS_ENABLED?: string;
 	/** Kill switch: "false" stops request classifiers. On when unset. */
 	REQUEST_CLASSIFIERS_ENABLED?: string;
 	SPEND_LIMITS?: DurableObjectNamespace;

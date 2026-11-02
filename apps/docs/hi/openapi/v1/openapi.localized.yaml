@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: संरचित निर्णय लें
-      description: 'नई कॉल के लिए OpenAI-संगत प्रारूप इस्तेमाल करें: input में टेक्स्ट या इनलाइन input_image वाले उपयोगकर्ता संदेश होते हैं और questions में predicate, choice या score प्रश्नों की क्रमबद्ध सूची होती है। उत्तर वही क्रम और वैकल्पिक नाम रखते हैं। बूलियन विकल्प बूलियन ही रहते हैं। होस्ट किए गए चित्र URL समर्थित नहीं हैं; Luna अधिकतम 128 इनलाइन चित्र स्वीकार करता है और अन्य प्रदाताओं की अपनी सीमाएँ हैं। स्पष्ट चित्र विवरण और safety_identifier के लिए OpenAI रूट आवश्यक है। पुराना state, नामित प्रश्न मैप, noul और criteria प्रारूप समर्थित है और उत्तर मैप लौटाता है। Together Tev को वही प्रारूप चाहिए क्योंकि वह संभावनाओं के बिना लेबल लौटाता है। पुराने उदाहरण मान्य हैं।'
+      description: 'नई कॉल के लिए OpenAI-संगत प्रारूप इस्तेमाल करें: input में टेक्स्ट या इनलाइन input_image वाले उपयोगकर्ता संदेश होते हैं और questions में predicate, choice या score प्रश्नों की क्रमबद्ध सूची होती है। उत्तर वही क्रम और वैकल्पिक नाम रखते हैं। बूलियन विकल्प बूलियन ही रहते हैं। होस्ट किए गए चित्रों के HTTPS URL केवल Base Labs मॉडल (Elephant-1, Mammoth-1 और Joey-1) पर काम करते हैं और Amazon S3, Google Cloud Storage या Azure Blob Storage पर होने चाहिए; Luna अधिकतम 128 इनलाइन चित्र स्वीकार करता है और अन्य प्रदाताओं की अपनी सीमाएँ हैं। स्पष्ट चित्र विवरण और safety_identifier के लिए OpenAI रूट आवश्यक है। पुराना state, नामित प्रश्न मैप, noul और criteria प्रारूप समर्थित है और उत्तर मैप लौटाता है। Together Tev को वही प्रारूप चाहिए क्योंकि वह संभावनाओं के बिना लेबल लौटाता है। पुराने उदाहरण मान्य हैं।'
       requestBody:
         required: true
         content:
@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: खर्च नियम बनाएँ
-      description: एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक स्वीकार की जाती है; evaluated false के साथ लौटाए गए नियम सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।
+      description: एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक का मूल्यांकन किया जाता है। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: इनलाइन base64 चित्र। होस्ट किए URL और फ़ाइल ID समर्थित नहीं। प्रति अनुरोध अधिकतम 128 चित्र; प्रदाता कम सीमा लगा सकते हैं।
+      description: इनलाइन base64 चित्र, या Amazon S3, Google Cloud Storage या Azure Blob Storage पर चित्र का HTTPS URL (केवल Base Labs मॉडल)। फ़ाइल ID समर्थित नहीं। प्रति अनुरोध अधिकतम 128 चित्र; प्रदाता कम सीमा लगा सकते हैं।
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true
@@ -24085,7 +24085,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend: खर्च threshold_amount तक पहुँचा। budget_percent: खर्च आधार के threshold_percents तक पहुँचा। forecast: अवधि के अंत तक अनुमानित खर्च सीमा तक पहुँचता है। spike: पिछले window_hours का खर्च सामान्य स्तर के कम से कम spike_multiplier गुना और कम से कम spike_floor है। balance: वर्कस्पेस का बैलेंस या रनवे सीमा से नीचे जाता है।'
+      description: 'spend: खर्च threshold_amount तक पहुँचा। budget_percent: खर्च आधार के threshold_percents तक पहुँचा। forecast: अवधि के अंत तक अनुमानित खर्च सीमा तक पहुँचता है। spike: पिछले window_hours का खर्च पिछले 7 दिनों में उसी विंडो के माध्यिका (median) का कम से कम spike_multiplier गुना है, और कम से कम spike_floor। balance: वर्कस्पेस का बैलेंस या रनवे सीमा से नीचे जाता है।'
       enum:
         - spend
         - budget_percent
@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (spike नियम)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+          description: क्या मूल्यांकन नियम के मेट्रिक, अवधि और आधार को संभालता है। API जिन नियमों को स्वीकार करता है, उन सभी का मूल्यांकन होता है।
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24183,7 +24183,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।'
+          description: 'rolling विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो (अधिकतम 56, ताकि पिछले 7 दिनों में 3 विंडो आ सकें) और balance नियमों के लिए खर्च दर की अवधि। कैलेंडर अवधियों के लिए null।'
         time_zone:
           type: string
           maxLength: 64
@@ -24310,7 +24310,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।'
+          description: 'rolling विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो (अधिकतम 56, ताकि पिछले 7 दिनों में 3 विंडो आ सकें) और balance नियमों के लिए खर्च दर की अवधि। कैलेंडर अवधियों के लिए null।'
         time_zone:
           type: string
           maxLength: 64
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: खर्च नियम अभी कहाँ है। rolling नियमों में उनकी विंडो period होती है। forecast नियमों में एक forecast ऑब्जेक्ट होता है, और उनकी सीमाएँ अनुमान के आधार पर मापी जाती हैं। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। spike नियमों में period, value और alert null होते हैं।
+      description: खर्च नियम अभी कहाँ है। rolling नियमों में उनकी विंडो period होती है। forecast नियमों में एक forecast ऑब्जेक्ट होता है, और उनकी सीमाएँ अनुमान के आधार पर मापी जाती हैं। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। spike नियमों में उनकी विंडो period, उसमें हुआ खर्च मान, पिछले 7 दिनों में उसी विंडो का माध्यिका आधार, ट्रिगर होने का बिंदु next_threshold और एक spike ऑब्जेक्ट होता है।
       required:
         - rule_id
         - metric
@@ -24472,6 +24472,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -24482,7 +24483,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (spike नियम)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+          description: क्या मूल्यांकन नियम के मेट्रिक, अवधि और आधार को संभालता है। API जिन नियमों को स्वीकार करता है, उन सभी का मूल्यांकन होता है।
         computed_at:
           type: string
           format: date-time
@@ -24715,6 +24716,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: ऑटो टॉप-अप चालू है और काम कर रहा है, इसलिए गिरावट बिना अलर्ट के दर्ज की जाती है।
+        spike:
+          type: object
+          nullable: true
+          description: 'केवल spike नियम: पिछले window_hours का खर्च, पिछले 7 दिनों में उसी विंडो की माध्यिका की तुलना में, जैसा मूल्यांकन इसे देखता है। अन्य नियमों के लिए null।'
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 'पिछले 7 दिनों में उसी विंडो की माध्यिका: 24 घंटे से छोटी विंडो के लिए पिछले 7 दिनों में से हर दिन के वही घंटे, अन्यथा उससे पहले की बिना ओवरलैप वाली विंडो जो 7 दिनों में आ जाएँ।'
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: विंडो का खर्च आधार से भाग। आधार 0 होने पर null, तब केवल न्यूनतम सीमा (floor) लागू होती है।
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 'ट्रिगर होने के लिए विंडो के खर्च को कहाँ तक पहुँचना होगा: आधार का spike_multiplier गुना और न्यूनतम सीमा में से जो बड़ा हो।'
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: आधार में कितनी विंडो हैं। किसी नियम को कम से कम 3 चाहिए।
+            active_windows:
+              type: integer
+              description: आधार की वे विंडो जिनमें वर्कस्पेस ने कुछ खर्च किया।
+            history_ready:
+              type: boolean
+              description: जब तक वर्कस्पेस ने आधार की कम से कम 3 विंडो में खर्च न किया हो, तब तक false। उससे पहले नियम ट्रिगर नहीं होता।
+            spiking:
+              type: boolean
+              description: क्या नियम अभी ट्रिगर होगा, कूलडाउन से पहले।
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: पिछले अलर्ट के बाद का कूलडाउन कब खत्म होगा, अगर अभी खत्म नहीं हुआ है।
         alert:
           type: object
           nullable: true
@@ -25257,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'जब किसी व्यक्ति की कुंजी का अपना कोई विभाग नहीं होता, तब खर्च नियम उसके खर्च को विभागों में कैसे गिनते हैं: all उसे उन सभी विभागों में गिनता है जिनका वह सदस्य है; primary केवल उसके प्राथमिक विभाग में। कुंजी का अपना विभाग हमेशा प्राथमिकता पाता है।'
+      description: 'जब किसी व्यक्ति की कुंजी का अपना कोई विभाग नहीं होता, तब खर्च नियम, विभाग बजट और विभाग दर सीमाएँ उसके अनुरोधों को विभागों में कैसे गिनते हैं: all उन्हें उन सभी विभागों में गिनता है जिनका वह सदस्य है; primary केवल उसके प्राथमिक विभाग में। कुंजी का अपना विभाग और सदस्य का डायरेक्टरी ओवरराइड हमेशा प्राथमिकता पाते हैं।'
       enum:
         - all
         - primary
@@ -25266,16 +25332,33 @@ components:
       maxLength: 64
       description: उन खर्च नियमों की कैलेंडर अवधियों के लिए IANA समय क्षेत्र जिनका अपना कोई समय क्षेत्र नहीं है, और खर्च रिपोर्ट के लिए। डिफ़ॉल्ट UTC है। लागू की गई कुंजी सीमाएँ और वर्कस्पेस बजट हमेशा UTC का उपयोग करते हैं।
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: 'वर्कस्पेस मालिकों को खर्च रिपोर्ट ईमेल कितनी बार मिलता है, और report_include_admins चालू होने पर एडमिन को भी: off, daily (पिछले दिन के लिए 09:00 बजे), weekly (पिछले सोमवार से रविवार के सप्ताह के लिए सोमवार 09:00 बजे) या monthly (पिछले महीने के लिए 1 तारीख को 09:00 बजे), बिलिंग समय क्षेत्र में। बिना खर्च वाली अवधियाँ छोड़ दी जाती हैं। वर्कस्पेस के spend_report रूट को हर रिपोर्ट का एक सारांश मिलता है। डिफ़ॉल्ट weekly है।'
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: खर्च रिपोर्ट केवल मालिकों को नहीं, वर्कस्पेस एडमिन को भी ईमेल करें। डिफ़ॉल्ट false है। कोई भी ईमेल में दिए लिंक से सदस्यता छोड़ सकता है।
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -25367,6 +25450,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -26292,42 +26379,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26397,8 +26448,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26496,42 +26545,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
         created_at:
           type: string
           format: date-time
@@ -26643,42 +26656,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
             created_at:
               type: string
               format: date-time

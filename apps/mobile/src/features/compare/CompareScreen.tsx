@@ -10,7 +10,7 @@ import { getComparison, getComparisonUsage, MAX_COMPARE, type ComparedModel } fr
 import type { ModelCard } from "@/lib/api/models";
 import { contextWindow, modelName, organisationName } from "@/lib/catalogue";
 import { cn } from "@/lib/cn";
-import { formatCompact, formatDate, formatPrice, formatTokens, modalityLabel } from "@/lib/format";
+import { formatCalendarDate, formatCompact, formatDateParts, formatPrice, formatTokens, modalityLabel } from "@/lib/format";
 
 type Column = { id: string; card?: ModelCard; detail?: ComparedModel; tokens30d?: number | null };
 type Better = "high" | "low" | null;
@@ -18,7 +18,7 @@ type RowSpec = { label: string; value(column: Column): string; numeric?(column: 
 
 const ROWS: RowSpec[] = [
   { label: "Lab", value: (c) => (c.card ? organisationName(c.card) : c.detail?.provider?.name ?? "—") },
-  { label: "Released", value: (c) => formatDate(c.detail?.release_date ?? c.card?.primary_date) },
+  { label: "Released", value: (c) => formatCalendarDate(c.detail?.release_date ?? c.card?.primary_date, "—") },
   { label: "Context window", value: (c) => formatTokens(c.card ? contextWindow(c.card) : c.detail?.input_context_length), numeric: (c) => (c.card ? contextWindow(c.card) : null), better: "high" },
   { label: "Input price", value: (c) => formatPrice(c.card?.lowest_input_price), numeric: (c) => c.card?.lowest_input_price ?? null, better: "low" },
   { label: "Output price", value: (c) => formatPrice(c.card?.lowest_output_price), numeric: (c) => c.card?.lowest_output_price ?? null, better: "low" },
@@ -27,7 +27,7 @@ const ROWS: RowSpec[] = [
   { label: "Providers on Phaseo", value: (c) => String(c.card?.gateway_active_provider_count ?? 0), numeric: (c) => c.card?.gateway_active_provider_count ?? null, better: "high" },
   { label: "Tokens, last 30 days", value: (c) => formatCompact(c.tokens30d), numeric: (c) => c.tokens30d ?? null, better: "high" },
   { label: "Licence", value: (c) => c.detail?.license ?? "—" },
-  { label: "Knowledge cutoff", value: (c) => (c.detail?.knowledge_cutoff ? formatDate(c.detail.knowledge_cutoff) : "—") },
+  { label: "Knowledge cutoff", value: (c) => (c.detail?.knowledge_cutoff ? formatDateParts(c.detail.knowledge_cutoff, { month: "short", year: "numeric", timeZone: "UTC" }) : "—") },
 ];
 
 function bestIndex(columns: Column[], row: RowSpec) {

@@ -88,6 +88,9 @@ describe("about", () => {
     expect(formatLongCount(0)).toBeNull();
     expect(relativeDateLabel("2026-10-07T18:00:00Z", new Date("2026-10-18T10:00:00Z"))).toBe("11 days ago");
     expect(relativeDateLabel("2026-11-08", new Date("2026-10-18T10:00:00Z"))).toBe("in 3 weeks");
+    // A month either way reads as the website words it.
+    expect(relativeDateLabel("2026-09-18", new Date("2026-10-18T10:00:00Z"))).toBe("last month");
+    expect(relativeDateLabel("2026-11-15", new Date("2026-10-18T10:00:00Z"))).toBe("next month");
   });
 
   test("related models come from the timeline, named from the catalogue when the API has no name", () => {

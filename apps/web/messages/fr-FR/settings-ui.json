@@ -7421,8 +7421,8 @@
 			"body": "Ajoutez une alerte pour être prévenu avant que les dépenses ne surprennent, par exemple à 50 %, 80 % et 100 % d'un montant mensuel."
 		},
 		"badges": {
-			"notEvaluated": "Pas encore évaluée",
-			"notEvaluatedHelp": "Ce type d'alerte est enregistré mais pas encore vérifié. Il commencera à envoyer dans une version ultérieure.",
+			"notEvaluated": "Non évaluée",
+			"notEvaluatedHelp": "Ces paramètres ne sont pas vérifiés, cette alerte n'est donc pas envoyée. Modifiez sa période ou sa base.",
 			"blocks": "Notifie, puis bloque",
 			"disabled": "Désactivée",
 			"blockingNow": "Bloque en ce moment",
@@ -7502,12 +7502,15 @@
 			"delete": "Supprimer",
 			"runway": "environ {days} jours restants",
 			"projectedBy": "prévu d'ici le {date}",
-			"forecastFrom": "prévision à partir du {date}"
+			"forecastFrom": "prévision à partir du {date}",
+			"spikeUsual": "{multiple}× l'habituel ({baseline})",
+			"spikeNoBaseline": "pas encore de dépense habituelle",
+			"spikeLearning": "apprentissage de l'habituel"
 		},
 		"preview": {
 			"ofBase": "Actuellement {value} sur {base} ({percent})",
 			"value": "Actuellement {value} sur cette période",
-			"notEvaluated": "Pas encore d'aperçu : ce type d'alerte n'est pas encore évalué.",
+			"notEvaluated": "Pas d'aperçu : ces paramètres ne sont pas évalués.",
 			"disabled": "Activez l'alerte pour voir sa valeur actuelle.",
 			"unavailable": "La valeur actuelle n'est pas disponible pour le moment.",
 			"afterSave": "La valeur actuelle s'affiche après l'enregistrement.",
@@ -7516,7 +7519,10 @@
 			"balanceNoSpend": "Solde {balance}, aucune dépense au cours des {hours} dernières heures",
 			"forecast": "{value} dépensés jusqu'ici, {projected} prévus d'ici le {date}",
 			"forecastReaches": "{value} dépensés jusqu'ici, {projected} prévus d'ici le {date}. À ce rythme, {limit} sera atteint le {reachDate}.",
-			"forecastPending": "{value} dépensés jusqu'ici. La prévision commence le {date}, une fois qu'une part suffisante de la période est écoulée."
+			"forecastPending": "{value} dépensés jusqu'ici. La prévision commence le {date}, une fois qu'une part suffisante de la période est écoulée.",
+			"spike": "{current} dépensés sur les {hours} dernières heures, soit {multiple}× l'habituel ({baseline}) pour cette fenêtre. Alerte à partir de {firesAt}.",
+			"spikeNoBaseline": "{current} dépensés sur les {hours} dernières heures, sans dépense dans cette fenêtre sur les 7 derniers jours. Alerte à partir de {firesAt}.",
+			"spikePending": "{current} dépensés sur les {hours} dernières heures. Les alertes de pic commencent une fois que l'espace de travail a dépensé dans {needed} des mêmes fenêtres sur les 7 derniers jours ({active} jusqu'ici)."
 		},
 		"editor": {
 			"createTitle": "Ajouter une alerte de dépenses",
@@ -7527,7 +7533,7 @@
 			"name": "Nom",
 			"namePlaceholder": "Dépenses mensuelles",
 			"type": "Type d'alerte",
-			"notEvaluatedNote": "Ce type d'alerte est enregistré dès maintenant et commencera à envoyer dans une version ultérieure.",
+			"notEvaluatedNote": "Ces paramètres ne sont pas vérifiés, cette alerte ne serait donc pas envoyée. Changez sa période ou sa base.",
 			"sectionScope": "Quoi surveiller",
 			"scopeType": "Portée",
 			"balanceWorkspaceOnly": "Les alertes de solde bas couvrent toujours tout l'espace de travail.",
@@ -7611,7 +7617,8 @@
 			"create": "Ajouter l'alerte",
 			"saving": "Enregistrement…",
 			"blockingOff": "Le blocage n'est pas encore activé. D'ici là, cette alerte se contente de notifier.",
-			"balanceEmailNote": "Indépendant de l'e-mail de solde bas ci-dessus. Une alerte de solde peut aussi surveiller le nombre de jours de crédit restants, avec ses propres destinations et son propre délai. Aucune des deux n'alerte tant que la recharge automatique réapprovisionne le solde."
+			"balanceEmailNote": "Indépendant de l'e-mail de solde bas ci-dessus. Une alerte de solde peut aussi surveiller le nombre de jours de crédit restants, avec ses propres destinations et son propre délai. Aucune des deux n'alerte tant que la recharge automatique réapprovisionne le solde.",
+			"spikeWindowHelp": "De 1 à 56 heures. Comparé aux mêmes heures de chacun des 7 derniers jours, ou à partir de 24 heures aux fenêtres précédentes."
 		},
 		"issues": {
 			"nameRequired": "Saisissez un nom de 100 caractères maximum.",
@@ -7630,7 +7637,8 @@
 			"blockPercentRange": "Saisissez un pourcentage entier entre 100 et 1000.",
 			"blockPercentBelowThreshold": "Bloquez au pourcentage d'alerte le plus élevé ou au-dessus.",
 			"blockAmountBelowThreshold": "Bloquez au montant de l'alerte ou au-dessus.",
-			"thresholdChip": "Utilisez des pourcentages entiers de 1 à 1000, {max} au maximum."
+			"thresholdChip": "Utilisez des pourcentages entiers de 1 à 1000, {max} au maximum.",
+			"spikeWindowRange": "Saisissez un nombre entier d'heures entre 1 et 56 : l'habituel nécessite 3 fenêtres sur les 7 derniers jours."
 		},
 		"errors": {
 			"limit": "Un espace de travail peut avoir jusqu'à {max} alertes de dépenses.",
@@ -7688,7 +7696,7 @@
 			"timeZoneHelp": "Les alertes quotidiennes, hebdomadaires et mensuelles suivent ce fuseau, sauf si une alerte définit le sien.",
 			"utcNote": "Les budgets de l'espace de travail et les limites de clé se réinitialisent toujours à minuit UTC.",
 			"attribution": "Dépenses par département",
-			"attributionHelp": "Comment les dépenses sont comptées lorsqu'une personne appartient à plusieurs départements.",
+			"attributionHelp": "Comment les règles de dépenses, les budgets de département et les limites de débit de département comptent une personne qui appartient à plusieurs départements.",
 			"attributionAll": "Tous ses départements",
 			"attributionAllHelp": "Ses dépenses comptent entièrement pour chaque département.",
 			"attributionPrimary": "Département principal uniquement",
@@ -7696,7 +7704,21 @@
 			"attributionNote": "Avec tous les départements, la somme des départements peut dépasser les dépenses de l'espace de travail. L'appartenance est lue lors de la vérification des alertes : déplacer quelqu'un déplace ses dépenses de la période en cours.",
 			"saving": "Enregistrement…",
 			"saved": "Enregistré",
-			"saveFailed": "Impossible d'enregistrer le réglage"
+			"saveFailed": "Impossible d'enregistrer le réglage",
+			"report": "E-mail de rapport de dépenses",
+			"reportHelp": "Un résumé des dépenses et de l’évolution par rapport à la période précédente, des principales clés, modèles, membres et départements, de la prévision du mois, de l’autonomie et des alertes. Les propriétaires le reçoivent par défaut. Il part à 09:00 dans le fuseau horaire de facturation et n’est pas envoyé s’il n’y a eu aucune dépense.",
+			"reportOff": "Désactivé",
+			"reportOffHelp": "Aucun e-mail de rapport.",
+			"reportDaily": "Quotidien",
+			"reportDailyHelp": "Chaque matin, pour la veille.",
+			"reportWeekly": "Hebdomadaire",
+			"reportWeeklyHelp": "Le lundi matin, pour la semaine précédente.",
+			"reportMonthly": "Mensuel",
+			"reportMonthlyHelp": "Le 1er, pour le mois précédent.",
+			"reportIncludeAdmins": "L’envoyer aussi aux administrateurs",
+			"reportIncludeAdminsHelp": "Les propriétaires le reçoivent toujours. Les administrateurs seulement si cette option est activée.",
+			"reportNote": "Chacun peut se désabonner depuis le lien de l’e-mail. Les routes de notification des rapports de dépenses reçoivent un résumé par rapport.",
+			"reportsOff": "Les e-mails de rapport ne sont pas encore envoyés. Votre choix est enregistré et s’appliquera dès leur lancement."
 		},
 		"shortcuts": {
 			"keyLimit": "M'alerter à {percent} % de la limite de cette clé",

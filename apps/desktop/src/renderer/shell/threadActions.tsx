@@ -1,3 +1,4 @@
+import { formatDateParts } from "@phaseo/app-kit/format";
 import { useState } from "react";
 import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, Settings, Sparkles, SquarePen, Trash2, Undo2, WandSparkles } from "lucide-react";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, snoozeBlocker, snoozePresets } from "../../shared/threadLifecycle";
@@ -12,7 +13,7 @@ import { cn } from "../lib/utils";
 import { codeSections, nextAfterParking } from "./codeThreads";
 import { offerUndo } from "./threadUndo";
 
-export const snoozeTime = (date: Date) => date.toLocaleString(undefined, { weekday: date.getDate() === new Date().getDate() ? undefined : "short", hour: "numeric", minute: "2-digit" });
+export const snoozeTime = (date: Date) => formatDateParts(date, { weekday: date.getDate() === new Date().getDate() ? undefined : "short", hour: "2-digit", minute: "2-digit" });
 
 /** Settle, snooze, pin and read actions for Code chats, with undo and "open the next chat" as in T3 Code. */
 export function useThreadActions() {

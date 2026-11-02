@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { usageDeltaPercent as deltaPercent } from "@phaseo/app-kit/format";
 import { Link } from "@/i18n/navigation";
 import { UserUsageChip } from "@/components/(gateway)/settings/keys/UserUsageChip";
 import { memo, useEffect } from "react";
@@ -48,11 +49,6 @@ const spendOf = (cell: UsageCell) => cell.costNanos / 1e9;
 
 function sumCells(cells: UsageCell[], getValue: (cell: UsageCell) => number): number {
 	return cells.reduce((sum, cell) => sum + getValue(cell), 0);
-}
-
-function deltaPercent(current: number, previous: number): number | null {
-	if (previous === 0) return current > 0 ? 100 : null;
-	return ((current - previous) / previous) * 100;
 }
 
 function floorToBucket(date: Date, range: ObservabilityRange): Date {

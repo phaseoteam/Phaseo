@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: 構造化された判断を行う
-      description: 新しい呼び出しには OpenAI 互換形式を使います。input はテキストまたはインラインの input_image を含むユーザーメッセージ、questions は predicate、choice、score 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像 URL は使用できません。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と safety_identifier は OpenAI ルートが必要です。従来の state、名前付き質問マップ、noul、criteria 形式も使用でき、回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。従来の例も有効です。
+      description: 新しい呼び出しには OpenAI 互換形式を使います。input はテキストまたはインラインの input_image を含むユーザーメッセージ、questions は predicate、choice、score 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像の HTTPS URL は Base Labs のモデル（Elephant-1、Mammoth-1、Joey-1）でのみ使用でき、Amazon S3、Google Cloud Storage、Azure Blob Storage 上にある必要があります。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と safety_identifier は OpenAI ルートが必要です。従来の state、名前付き質問マップ、noul、criteria 形式も使用でき、回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。従来の例も有効です。
       requestBody:
         required: true
         content:
@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: 支出ルールを作成
-      description: 支出ルールを作成し、通知先を設定します。どの指標も受け付けます。evaluated が false で返されるルールは保存され、今後のリリースから発火します。ブロックはベストエフォートで、しきい値の数分後に作動します。正確な上限にはキーの上限とワークスペース予算を使ってください。ワークスペースあたり 50 件まで作成できます。
+      description: 支出ルールを作成し、通知先を設定します。すべての指標が評価されます。ブロックはベストエフォートで、しきい値の数分後に作動します。正確な上限にはキーの上限とワークスペース予算を使ってください。ワークスペースあたり 50 件まで作成できます。
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: インライン base64 画像。外部 URL とファイル ID は非対応。リクエスト全体で最大128枚。プロバイダーの制限が低い場合があります。
+      description: インライン base64 画像、または Amazon S3、Google Cloud Storage、Azure Blob Storage 上の画像の HTTPS URL（Base Labs のモデルのみ）。ファイル ID は非対応。リクエスト全体で最大128枚。プロバイダーの制限が低い場合があります。
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true
@@ -24085,7 +24085,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend: 支出が threshold_amount に達した。budget_percent: 支出が基準額の threshold_percents に達した。forecast: 期間末までの予測支出がしきい値に達する。spike: 直近 window_hours の支出が通常の水準の spike_multiplier 倍以上かつ spike_floor 以上。balance: ワークスペースの残高または残り日数がしきい値を下回る。'
+      description: spend：支出が threshold_amount に達した。budget_percent：支出が基準額の threshold_percents に達した。forecast：期間終了時の予測支出がしきい値に達する。spike：直近 window_hours の支出が、直前 7 日間の同じウィンドウの中央値の spike_multiplier 倍以上で、かつ spike_floor 以上。balance：ワークスペースの残高または残り日数がしきい値を下回った。
       enum:
         - spend
         - budget_percent
@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 評価がまだ対応していないルール（spike ルール）では false です。保存され、今後のリリースから発火します。
+          description: 評価がルールの指標・期間・基準に対応しているかどうか。API が受け付けるルールはすべて評価されます。
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24183,7 +24183,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: ローリングウィンドウの時間数。spike ルールでは急増の判定期間、balance ルールでは消費ペースを測る期間です。暦期間では null。
+          description: rolling ウィンドウの時間数：spike ルールではスパイクのウィンドウ（直前 7 日間に 3 つのウィンドウが収まるよう最大 56）、balance ルールでは消費ペースの算出期間。カレンダー期間では null です。
         time_zone:
           type: string
           maxLength: 64
@@ -24310,7 +24310,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: ローリングウィンドウの時間数。spike ルールでは急増の判定期間、balance ルールでは消費ペースを測る期間です。暦期間では null。
+          description: rolling ウィンドウの時間数：spike ルールではスパイクのウィンドウ（直前 7 日間に 3 つのウィンドウが収まるよう最大 56）、balance ルールでは消費ペースの算出期間。カレンダー期間では null です。
         time_zone:
           type: string
           maxLength: 64
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: 支出ルールの現在の状況です。rolling ルールでは期間ウィンドウが period になります。forecast ルールには forecast オブジェクトが含まれ、しきい値は予測値に対して判定されます。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。spike ルールでは period、value、alert は null です。
+      description: 支出ルールの現在の状況です。rolling ルールでは期間ウィンドウが period になります。forecast ルールには forecast オブジェクトが含まれ、しきい値は予測値に対して判定されます。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。spike ルールでは period がウィンドウ、値がその間の支出、基準が直前 7 日間の同じウィンドウの中央値、next_threshold が発火する金額となり、spike オブジェクトが含まれます。
       required:
         - rule_id
         - metric
@@ -24472,6 +24472,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -24482,7 +24483,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 評価がまだ対応していないルール（spike ルール）では false です。保存され、今後のリリースから発火します。
+          description: 評価がルールの指標・期間・基準に対応しているかどうか。API が受け付けるルールはすべて評価されます。
         computed_at:
           type: string
           format: date-time
@@ -24715,6 +24716,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: 自動チャージが有効で正常に機能しているため、残高の低下はアラートなしで記録されます。
+        spike:
+          type: object
+          nullable: true
+          description: spike ルールのみ：評価から見た、直近 window_hours の支出と直前 7 日間の同じウィンドウの中央値の比較。その他のルールでは null です。
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 直前 7 日間の同じウィンドウの中央値。24 時間未満のウィンドウでは直前 7 日それぞれの同じ時間帯、それ以外では 7 日間に収まる重ならない直前のウィンドウを使います。
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: ウィンドウ内の支出を基準で割った値。基準が 0 のときは null で、その場合は下限額のみが適用されます。
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 発火するためにウィンドウ内の支出が達する必要のある金額：基準の spike_multiplier 倍と下限額のうち大きい方。
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: 基準に含まれるウィンドウの数。ルールには 3 つ以上が必要です。
+            active_windows:
+              type: integer
+              description: ワークスペースに何らかの支出があった基準ウィンドウの数。
+            history_ready:
+              type: boolean
+              description: ワークスペースが 3 つ以上の基準ウィンドウで支出するまでは false です。それまでルールは発火しません。
+            spiking:
+              type: boolean
+              description: クールダウンを考慮しない場合に、ルールが今発火するかどうか。
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: 最後のアラート後のクールダウンが終わる時刻（まだ終わっていない場合）。
         alert:
           type: object
           nullable: true
@@ -25257,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: キーに部門が設定されていない場合に、支出ルールが個人の支出をどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門が常に優先されます。
+      description: キーに部門が設定されていない場合に、支出ルール、部門予算、部門レート制限が個人のリクエストをどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門とメンバーのディレクトリ上書きが常に優先されます。
       enum:
         - all
         - primary
@@ -25266,16 +25332,33 @@ components:
       maxLength: 64
       description: 独自のタイムゾーンを持たない支出ルールの暦期間と支出レポートに使う IANA タイムゾーン。既定値は UTC です。適用されるキーの上限とワークスペース予算は常に UTC を使います。
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: ワークスペースのオーナーが支出レポートのメールを受け取る頻度（report_include_admins が有効なら管理者も）：off、daily（09:00 に前日分）、weekly（月曜 09:00 に前週の月曜〜日曜分）、monthly（1 日 09:00 に前月分）。時刻は請求タイムゾーンです。支出のない期間は送信されません。ワークスペースの spend_report ルートにはレポートごとに 1 件の要約が届きます。既定値は weekly です。
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: 支出レポートをオーナーだけでなくワークスペースの管理者にもメールで送ります。既定値は false です。メール内のリンクから誰でも配信を停止できます。
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -25367,6 +25450,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -26292,42 +26379,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26397,8 +26448,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26496,42 +26545,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
         created_at:
           type: string
           format: date-time
@@ -26643,42 +26656,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。
             created_at:
               type: string
               format: date-time

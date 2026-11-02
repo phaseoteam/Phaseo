@@ -10,7 +10,7 @@ import { searchFocusStore, useCatalogue } from "@/features/models/state";
 import { getBalance } from "@/lib/api/account";
 import { getReleases, type ModelRelease } from "@/lib/api/models";
 import { isOnPhaseo, modelName, organisationName } from "@/lib/catalogue";
-import { formatCompact, formatRelativeDay, formatUsd } from "@/lib/format";
+import { formatCalendarDate, formatCompact, formatUsd } from "@/lib/format";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
@@ -157,6 +157,13 @@ function QuickAction({ label, icon, href }: { label: string; icon: typeof Messag
   return <Button label={label} icon={icon} variant="secondary" className="flex-1" onPress={() => router.navigate(href)} />;
 }
 
+/** As the website's releases list: "Today" on the day of release in UTC, otherwise the date. */
+function releaseDay(date: string) {
+  const time = Date.parse(date);
+  const today = Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10);
+  return today ? "Today" : formatCalendarDate(date, "—");
+}
+
 function ReleaseRow({ release, last, upcoming }: { release: ModelRelease; last: boolean; upcoming?: boolean }) {
   const router = useRouter();
   const type = releaseLabel(release.types, Boolean(upcoming));
@@ -165,7 +172,7 @@ function ReleaseRow({ release, last, upcoming }: { release: ModelRelease; last: 
     <Row
       leading={<Logo id={release.model.organisation_id ?? release.model.model_id.split("/")[0]} label={org} size={30} />}
       title={release.model.name ?? release.model.model_id}
-      subtitle={`${type} · ${formatRelativeDay(release.date)}`}
+      subtitle={`${type} · ${releaseDay(release.date)}`}
       onPress={() => router.push(`/models/${release.model.model_id}`)}
       last={last}
     />

@@ -1,3 +1,4 @@
+import { formatDateParts, formatTime } from "@phaseo/app-kit/format";
 import type { AccountStatus } from "./workspace";
 
 /**
@@ -37,6 +38,6 @@ export function limitResetAt(status: Pick<AccountStatus, "usage">, now = Date.no
 /** A short local time for the reset, with the day when it is not today. */
 export function resetLabel(iso: string, now = new Date()) {
 	const date = new Date(iso), sameDay = date.toDateString() === now.toDateString();
-	const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-	return sameDay ? time : `${date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}, ${time}`;
+	const time = formatTime(date);
+	return sameDay ? time : `${formatDateParts(date, { weekday: "short", day: "numeric", month: "short" })}, ${time}`;
 }

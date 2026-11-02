@@ -4,7 +4,7 @@ import type { PullRequestLinkSnapshot } from "../../../shared/pullRequestView";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../lib/utils";
 import { ActorLabel, DiffStat, MetaLine, PullRequestGlyph, pullRequestStatePresentation } from "./presentation";
-import { relativeTime } from "./pullRequestLogic";
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { segmentedGroup } from "./segmented";
 
 const Bar = ({ className }: { className?: string }) => <span aria-hidden className={cn("block h-3 rounded bg-muted-foreground/15", className)} />;
@@ -41,7 +41,7 @@ export function PullRequestDetailGhost({ number, seed, repository, onBack, onOpe
 			<div className="mr-4 flex h-7 shrink-0 items-center gap-1"><Bar className="h-6 w-16 rounded-md" /><Button size="icon-xs" variant="ghost" disabled aria-label="Pull request actions loading"><MoreHorizontal className="size-4" /></Button></div>
 			<div className="col-span-2 mt-1 min-w-0 px-4 pb-4">
 				{seed ? <h1 className="truncate text-base leading-snug font-semibold">{seed.title}</h1> : <Bar className="h-5 w-4/5 max-w-md" />}
-				<div className="mt-2 flex min-h-5 items-center gap-2 text-xs text-muted-foreground">{seed ? <MetaLine className="min-w-0"><ActorLabel key="author" actor={{ login: seed.author }} /><span key="updated">updated {relativeTime(seed.updatedAt)}</span></MetaLine> : <><Bar className="size-4 rounded-full" /><Bar className="w-24" /></>}</div>
+				<div className="mt-2 flex min-h-5 items-center gap-2 text-xs text-muted-foreground">{seed ? <MetaLine className="min-w-0"><ActorLabel key="author" actor={{ login: seed.author }} /><span key="updated">updated {formatRelativeTime(seed.updatedAt)}</span></MetaLine> : <><Bar className="size-4 rounded-full" /><Bar className="w-24" /></>}</div>
 				<div className="mt-4 flex min-h-5 items-center gap-2 font-mono text-xs text-muted-foreground/70">{seed ? <><span className="truncate">{seed.base}</span><span aria-hidden>←</span><span className="truncate">{seed.head}</span><DiffStat additions={seed.additions} deletions={seed.deletions} className="ml-auto shrink-0" /></> : <><Bar className="w-20" /><Bar className="w-28" /></>}</div>
 			</div>
 			<div className="col-span-2 flex items-center gap-2 border-t border-border/60 px-4 py-2"><span aria-hidden className={cn("flex items-center gap-0.5", segmentedGroup)}>{tabs.map(tab => <span key={tab} className="px-2 py-0.5 text-xs text-muted-foreground/60">{tab}</span>)}</span></div>

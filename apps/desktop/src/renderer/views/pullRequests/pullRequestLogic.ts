@@ -251,16 +251,6 @@ export function fileTree(paths: readonly string[]): FileTreeNode[] {
 	return compact(root).children;
 }
 
-export function relativeTime(iso: string, now = Date.now()): string {
-	const seconds = Math.round((now - Date.parse(iso)) / 1000);
-	if (!Number.isFinite(seconds)) return "";
-	if (seconds < 45) return "just now";
-	const minutes = Math.round(seconds / 60); if (minutes < 60) return `${minutes}m ago`;
-	const hours = Math.round(minutes / 60); if (hours < 24) return `${hours}h ago`;
-	const days = Math.round(hours / 24); if (days < 30) return `${days}d ago`;
-	const months = Math.round(days / 30); if (months < 12) return `${months}mo ago`;
-	return `${Math.round(months / 12)}y ago`;
-}
 export function compactCount(value: number) { return value >= 10_000 ? `${Math.round(value / 1000)}k` : value >= 1000 ? `${(value / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(value); }
 
 /** One thing to fix, handed off on its own (T3's PullRequestFinding). */

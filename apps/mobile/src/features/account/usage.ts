@@ -1,3 +1,4 @@
+import { formatUsageDeltaPercent, usageDeltaPercent } from "@phaseo/app-kit/format";
 import type { UsageCell, UsageRange } from "@/lib/api/account";
 
 export type UsagePeriod = "24h" | "7d" | "30d";
@@ -83,9 +84,12 @@ export function byModel(cells: UsageCell[]) {
   return [...map.entries()].map(([modelId, value]) => ({ modelId, ...value })).sort((a, b) => b.costNanos - a.costNanos || b.requests - a.requests);
 }
 
-export function change(current: number, previous: number): string | null {
-  if (!previous) return current ? "New" : null;
-  const delta = ((current - previous) / previous) * 100;
-  if (Math.abs(delta) < 0.5) return "No change";
-  return `${delta > 0 ? "+" : ""}${delta.toFixed(0)}% vs previous`;
+/**
+ * The change from the previous period, as the website's usage dashboard words it: "+12.3% vs. previous period", or
+ * "No prior" when both periods are empty. The sign stands in for the website's arrow.
+ */
+export function change(current: number, previous: number): string {
+  const delta = usageDeltaPercent(current, previous);
+  if (delta === null) return "No prior";
+  return `${delta > 0 ? "+" : delta < 0 ? "−" : ""}${formatUsageDeltaPercent(delta)}% vs. previous period`;
 }

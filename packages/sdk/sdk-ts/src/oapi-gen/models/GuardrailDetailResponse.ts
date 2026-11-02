@@ -2,15 +2,11 @@ export interface GuardrailDetailResponse {
   data: {
     allowed_api_model_ids?: string[] | null;
     created_at?: string | null;
-    daily_limit_cost_nanos?: number | null;
-    daily_limit_requests?: number | null;
     description?: string | null;
     enabled?: boolean | null;
     id: string;
     key_ids: string[];
     model_restriction_mode?: "none" | "allowlist" | "blocklist" | null;
-    monthly_limit_cost_nanos?: number | null;
-    monthly_limit_requests?: number | null;
     name: string;
     privacy_enable_free_may_publish_prompts?: boolean | null;
     privacy_enable_free_may_train?: boolean | null;
@@ -30,8 +26,6 @@ export interface GuardrailDetailResponse {
         }[]
       | null;
     updated_at?: string | null;
-    weekly_limit_cost_nanos?: number | null;
-    weekly_limit_requests?: number | null;
     workspace_id: string;
   };
 }

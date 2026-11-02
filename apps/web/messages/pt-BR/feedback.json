@@ -49,5 +49,21 @@
 		"working": "Cancelando…",
 		"done": "Sua inscrição foi cancelada.",
 		"error": "Não funcionou. Tente novamente."
+	},
+	"spendReports": {
+		"metaTitle": "E-mails de relatório de gastos",
+		"title": "E-mails com o relatório de gastos de {workspace}",
+		"subscribedBody": "Você recebe por e-mail o relatório de gastos deste workspace. Cancelar a inscrição interrompe apenas estes relatórios: relatórios de outros workspaces, alertas e e-mails de conta e cobrança continuam chegando.",
+		"unsubscribedBody": "Você não receberá mais por e-mail o relatório de gastos deste workspace. Proprietários e administradores continuam vendo os gastos na página de uso.",
+		"unsubscribe": "Cancelar inscrição",
+		"unsubscribing": "Cancelando…",
+		"subscribe": "Inscrever-se de novo",
+		"subscribing": "Inscrevendo…",
+		"unsubscribed": "Sua inscrição foi cancelada.",
+		"subscribed": "Você se inscreveu de novo.",
+		"error": "Não funcionou. Tente novamente.",
+		"invalidTitle": "Este link não funciona",
+		"invalidBody": "Verifique se o link inteiro foi copiado. Você também pode alterar as configurações do relatório de gastos em Configurações → Notificações.",
+		"unavailable": "Esta página não está disponível agora. Tente novamente mais tarde."
 	}
 }

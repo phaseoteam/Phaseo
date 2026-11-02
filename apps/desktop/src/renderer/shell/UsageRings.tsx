@@ -11,7 +11,7 @@ import { AccountChip, providerNames } from "../settings/UsageLimits";
 import { resetText } from "../settings/UsageMeters";
 import { checkAllUsage, refreshUsageIfStale, usageAccounts, usageChecking, usageLocals, useUsageLimits } from "../settings/usageLimitsStore";
 import { rankRings, usagePools, usageRings, sidebarRings, type ProviderRings, type RingAccount, type UsageProvider, type UsageRing } from "../settings/usagePools";
-import { relativeTime } from "../views/pullRequests/pullRequestLogic";
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 
 const minute = 60_000;
 /** Colour only says how much is left, never which provider: the logo beside each pair does that. */
@@ -141,7 +141,7 @@ export function UsageRings() {
 				</div>
 			</ScrollArea>
 			<div className="flex items-center gap-1 border-t border-border/60 px-1 pt-2 text-muted-foreground">
-				<span className="min-w-0 flex-1 truncate">{busy ? "Checking…" : limits.checkedAt ? `Checked ${relativeTime(new Date(limits.checkedAt).toISOString(), now)}` : ""}</span>
+				<span className="min-w-0 flex-1 truncate">{busy ? "Checking…" : limits.checkedAt ? `Checked ${formatRelativeTime(new Date(limits.checkedAt).toISOString(), now)}` : ""}</span>
 				<button type="button" aria-label="Check limits again" title="Check again" disabled={busy || !api} onClick={() => { if (api) void checkAllUsage(api, locals); }} className="grid size-6 place-items-center rounded-md hover:bg-muted hover:text-foreground disabled:opacity-50"><RotateCw className={cn("size-3.5", busy && "animate-spin")} /></button>
 				<button type="button" onClick={() => openUsage("limits")} className="rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Usage & limits</button>
 			</div>

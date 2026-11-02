@@ -121,7 +121,7 @@ function PreviewModel({ model, displayTimeZone }: { model: ProviderCatalogPrevie
 	const availabilityKey = `identity.availability.${model.availability}`;
 	const availabilityLabel = t.has(availabilityKey as never) ? t(availabilityKey as never) : t("identity.availability.other");
 	const availabilityTone = model.availability === "ready" ? "success" : model.availability === "degraded" ? "warning" : "neutral";
-	const formatValue = (value: number | null) => value === null ? tx("SettingsUI.strings.Not supplied" as never) : new Intl.NumberFormat(locale, { notation: "compact" }).format(value);
+	const formatValue = (value: number | null) => value === null ? tx("SettingsUI.strings.Not supplied" as never) : new Intl.NumberFormat(locale).format(value);
 	const lifecycleTimestamp = (value: string | null) => {
 		const formatted = formatTimestamp(value, displayTimeZone, locale);
 		return formatted ? <><p>{formatted.local} <span className="text-muted-foreground">({displayTimeZone})</span></p><p className="mt-0.5 text-[11px] text-muted-foreground">{formatted.utc} {tx("SettingsUI.strings.UTC" as never)}</p></> : <p>{tx("SettingsUI.strings.Not supplied" as never)}</p>;

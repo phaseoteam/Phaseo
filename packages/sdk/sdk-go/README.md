@@ -42,6 +42,28 @@ func main() {
 }
 ```
 
+## Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then give the client an `APIKeyProvider`. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
+
+In GitHub Actions (the job needs `permissions: id-token: write`):
+
+```go
+client := phaseo.NewWithAPIKeyProvider(phaseo.GitHubActionsToken(), "")
+```
+
+On Vercel, `VercelToken` exchanges the deployment's OIDC token for one issued to Phaseo. It reads `VERCEL_OIDC_TOKEN_FILE` or `VERCEL_OIDC_TOKEN`, or you can pass the per-request `x-vercel-oidc-token` header:
+
+```go
+client := phaseo.NewWithAPIKeyProvider(phaseo.VercelToken(phaseo.VercelTokenOptions{
+	TokenProvider: func(ctx context.Context) (string, error) {
+		return r.Header.Get("x-vercel-oidc-token"), nil
+	},
+}), "")
+```
+
+Both helpers cache the token until a minute before it expires and accept a custom `Audience`. Any `func(context.Context) (string, error)` works as a provider, and `phaseo.WithAPIKeyProvider(provider)` adds one to `New`. A request that sets its own `Authorization` header keeps it.
+
 ## Common methods
 
 - `CreateResponse(ctx, req)`

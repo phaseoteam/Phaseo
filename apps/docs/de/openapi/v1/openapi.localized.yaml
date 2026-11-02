@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: Strukturierte Entscheidungen treffen
-      description: 'Verwende für neue Aufrufe das OpenAI-kompatible Format: input enthält Text oder Benutzernachrichten mit eingebetteten input_image-Teilen; questions ist eine geordnete Liste von predicate-, choice- oder score-Fragen. Antworten behalten Reihenfolge und optionale Namen bei. Boolesche Auswahlwerte bleiben boolesch. Externe Bild-URLs werden nicht unterstützt; Luna akzeptiert bis zu 128 eingebettete Bilder, andere Anbieter haben eigene Grenzen. Explizite Bilddetails und safety_identifier erfordern eine OpenAI-Route. Das bisherige Format mit state, benannten Fragen, noul und criteria bleibt unterstützt und liefert eine Antwort-Map. Together Tev benötigt dieses Format, da es Bezeichnungen ohne Wahrscheinlichkeiten liefert. Die bisherigen Beispiele bleiben gültig.'
+      description: 'Verwende für neue Aufrufe das OpenAI-kompatible Format: input enthält Text oder Benutzernachrichten mit eingebetteten input_image-Teilen; questions ist eine geordnete Liste von predicate-, choice- oder score-Fragen. Antworten behalten Reihenfolge und optionale Namen bei. Boolesche Auswahlwerte bleiben boolesch. Externe HTTPS-Bild-URLs funktionieren nur mit Base-Labs-Modellen (Elephant-1, Mammoth-1 und Joey-1) und müssen auf Amazon S3, Google Cloud Storage oder Azure Blob Storage liegen; Luna akzeptiert bis zu 128 eingebettete Bilder, andere Anbieter haben eigene Grenzen. Explizite Bilddetails und safety_identifier erfordern eine OpenAI-Route. Das bisherige Format mit state, benannten Fragen, noul und criteria bleibt unterstützt und liefert eine Antwort-Map. Together Tev benötigt dieses Format, da es Bezeichnungen ohne Wahrscheinlichkeiten liefert. Die bisherigen Beispiele bleiben gültig.'
       requestBody:
         required: true
         content:
@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: Ausgabenregel erstellen
-      description: Erstellt eine Ausgabenregel und legt ihre Benachrichtigungsziele fest. Jede Metrik wird akzeptiert; Regeln, die mit evaluated false zurückgegeben werden, werden gespeichert und lösen erst ab einer späteren Version aus. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert; für exakte Obergrenzen Schlüssellimits und Workspace-Budgets verwenden. Ein Workspace kann 50 Ausgabenregeln haben.
+      description: Erstellt eine Ausgabenregel und legt ihre Benachrichtigungsziele fest. Jede Metrik wird ausgewertet. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert; für exakte Obergrenzen Schlüssellimits und Workspace-Budgets verwenden. Ein Workspace kann 50 Ausgabenregeln haben.
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: Eingebettetes Base64-Bild. Keine externen URLs oder Datei-IDs. Höchstens 128 Bilder pro Anfrage; Anbieter können niedrigere Grenzen setzen.
+      description: Eingebettetes Base64-Bild oder HTTPS-Bild-URL auf Amazon S3, Google Cloud Storage oder Azure Blob Storage (nur Base-Labs-Modelle). Keine Datei-IDs. Höchstens 128 Bilder pro Anfrage; Anbieter können niedrigere Grenzen setzen.
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true
@@ -24085,7 +24085,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend: Ausgaben haben threshold_amount erreicht. budget_percent: Ausgaben haben threshold_percents der Basis erreicht. forecast: die bis zum Zeitraumende hochgerechneten Ausgaben erreichen den Schwellenwert. spike: Ausgaben der letzten window_hours betragen mindestens das spike_multiplier-Fache des üblichen Niveaus und mindestens spike_floor. balance: Guthaben oder Reichweite des Workspace fallen unter den Schwellenwert.'
+      description: 'spend: Die Ausgaben haben threshold_amount erreicht. budget_percent: Die Ausgaben haben threshold_percents der Basis erreicht. forecast: Die bis Zeitraumende projizierten Ausgaben erreichen den Schwellenwert. spike: Die Ausgaben der letzten window_hours betragen mindestens das spike_multiplier-Fache des Medians desselben Fensters über die vorherigen 7 Tage und mindestens spike_floor. balance: Guthaben oder Reichweite des Workspace fallen unter den Schwellenwert.'
       enum:
         - spend
         - budget_percent
@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: False für Regeln, die die Auswertung noch nicht unterstützt (Regeln vom Typ spike). Sie werden gespeichert und lösen erst ab einer späteren Version aus.
+          description: Ob die Auswertung Metrik, Zeitraum und Basis der Regel unterstützt. Jede Regel, die die API annimmt, wird ausgewertet.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24183,7 +24183,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'Stunden eines gleitenden Fensters: das Spitzenfenster für spike-Regeln und der Rückblick für die Verbrauchsrate bei balance-Regeln. Null für Kalenderzeiträume.'
+          description: 'Stunden eines rolling-Fensters: das Spitzenfenster bei Regeln vom Typ spike (höchstens 56, damit 3 Fenster in die vorherigen 7 Tage passen) und der Verbrauchszeitraum bei Regeln vom Typ balance. Null für Kalenderzeiträume.'
         time_zone:
           type: string
           maxLength: 64
@@ -24310,7 +24310,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'Stunden eines gleitenden Fensters: das Spitzenfenster für spike-Regeln und der Rückblick für die Verbrauchsrate bei balance-Regeln. Null für Kalenderzeiträume.'
+          description: 'Stunden eines rolling-Fensters: das Spitzenfenster bei Regeln vom Typ spike (höchstens 56, damit 3 Fenster in die vorherigen 7 Tage passen) und der Verbrauchszeitraum bei Regeln vom Typ balance. Null für Kalenderzeiträume.'
         time_zone:
           type: string
           maxLength: 64
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: Wo eine Ausgabenregel gerade steht. Regeln vom Typ rolling haben ihr Fenster als period. Regeln vom Typ forecast haben ein forecast-Objekt, und ihre Schwellenwerte werden an der Prognose gemessen. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Regeln vom Typ spike haben period, value und alert null.
+      description: Wo eine Ausgabenregel gerade steht. Regeln vom Typ rolling haben ihr Fenster als period. Regeln vom Typ forecast haben ein forecast-Objekt, und ihre Schwellenwerte werden an der Prognose gemessen. Regeln vom Typ balance haben das Verbrauchsfenster als period, das verfügbare Guthaben als Wert und ein balance-Objekt. Regeln vom Typ spike haben ihr Fenster als period, die Ausgaben darin als Wert, den Median desselben Fensters über die vorherigen 7 Tage als Basis, den Auslösepunkt als next_threshold und ein spike-Objekt.
       required:
         - rule_id
         - metric
@@ -24472,6 +24472,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -24482,7 +24483,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: False für Regeln, die die Auswertung noch nicht unterstützt (Regeln vom Typ spike). Sie werden gespeichert und lösen erst ab einer späteren Version aus.
+          description: Ob die Auswertung Metrik, Zeitraum und Basis der Regel unterstützt. Jede Regel, die die API annimmt, wird ausgewertet.
         computed_at:
           type: string
           format: date-time
@@ -24715,6 +24716,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: Die automatische Aufladung ist aktiv und funktioniert, daher wird ein Rückgang ohne Warnung erfasst.
+        spike:
+          type: object
+          nullable: true
+          description: 'Nur Regeln vom Typ spike: die Ausgaben der letzten window_hours im Vergleich zum Median desselben Fensters über die vorherigen 7 Tage, so wie die Auswertung sie sieht. Null für andere Regeln.'
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 'Der Median desselben Fensters über die vorherigen 7 Tage: dieselben Stunden an jedem der 7 Tage davor bei Fenstern unter 24 Stunden, sonst die vorherigen, nicht überlappenden Fenster, die in 7 Tage passen.'
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: Die Ausgaben im Fenster geteilt durch die Basis. Null, wenn die Basis 0 ist; dann gilt nur die Untergrenze.
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 'Was die Ausgaben im Fenster erreichen müssen, um auszulösen: das Größere aus dem spike_multiplier-Fachen der Basis und der Untergrenze.'
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: Wie viele Fenster die Basis hat. Eine Regel braucht mindestens 3.
+            active_windows:
+              type: integer
+              description: Basisfenster, in denen der Workspace etwas ausgegeben hat.
+            history_ready:
+              type: boolean
+              description: False, bis der Workspace in mindestens 3 Basisfenstern etwas ausgegeben hat. Vorher löst die Regel nicht aus.
+            spiking:
+              type: boolean
+              description: Ob die Regel jetzt auslösen würde, vor der Abklingzeit.
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: Wann die Abklingzeit nach der letzten Warnung endet, falls sie noch läuft.
         alert:
           type: object
           nullable: true
@@ -25257,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'Wie Ausgabenregeln die Ausgaben einer Person Abteilungen zurechnen, wenn ihr Schlüssel keine eigene Abteilung hat: all rechnet sie jeder Abteilung zu, der die Person angehört; primary nur ihrer Hauptabteilung. Die eigene Abteilung eines Schlüssels hat immer Vorrang.'
+      description: 'Wie Ausgabenregeln, Abteilungsbudgets und Abteilungs-Ratenlimits die Anfragen einer Person Abteilungen zurechnen, wenn ihr Schlüssel keine eigene Abteilung hat: all rechnet sie jeder Abteilung zu, der die Person angehört; primary nur ihrer Hauptabteilung. Die eigene Abteilung eines Schlüssels und die Verzeichnisüberschreibung eines Mitglieds haben immer Vorrang.'
       enum:
         - all
         - primary
@@ -25266,16 +25332,33 @@ components:
       maxLength: 64
       description: IANA-Zeitzone für die Kalenderzeiträume von Ausgabenregeln ohne eigene Zeitzone und für Ausgabenberichte. Standard ist UTC. Durchgesetzte Schlüssellimits und Workspace-Budgets verwenden immer UTC.
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: 'Wie oft Workspace-Inhaber eine E-Mail mit dem Ausgabenbericht erhalten, und auch Admins, wenn report_include_admins aktiv ist: off, daily (um 09:00 für den Vortag), weekly (montags um 09:00 für die Vorwoche von Montag bis Sonntag) oder monthly (am 1. um 09:00 für den Vormonat), in der Abrechnungszeitzone. Zeiträume ohne Ausgaben werden übersprungen. Die spend_report-Routen des Workspace erhalten eine Zusammenfassung pro Bericht. Standard ist weekly.'
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: Den Ausgabenbericht auch an Workspace-Admins senden, nicht nur an Inhaber. Standard ist false. Jeder kann sich über den Link in der E-Mail abmelden.
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -25367,6 +25450,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -26292,42 +26379,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26397,8 +26448,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26496,42 +26545,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
         created_at:
           type: string
           format: date-time
@@ -26643,42 +26656,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.
             created_at:
               type: string
               format: date-time

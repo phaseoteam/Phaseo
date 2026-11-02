@@ -13,14 +13,10 @@ import { BUILD_COMMIT, BUILD_NUMBER, BUILT_AT, deviceName, osName } from "@/lib/
 import { APP_VERSION } from "@/lib/config";
 import { slowLog } from "@/lib/diagnostics";
 import { hapticsHere } from "@/lib/haptics";
-import { formatBytes, formatNumber } from "@/lib/format";
+import { formatBytes, formatNumber, formatRelativeTime } from "@/lib/format";
 import { diagnosticsText, slowOperationLine, type DiagnosticsSection } from "./diagnosticsReport";
 
 const when = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-const ago = (at: number, now: number) => {
-  const seconds = Math.max(0, Math.round((now - at) / 1000));
-  return seconds < 60 ? `${seconds} s ago` : seconds < 3600 ? `${Math.round(seconds / 60)} min ago` : `${Math.round(seconds / 3600)} h ago`;
-};
 
 type Database = { report: StorageReport; pages: ReturnType<typeof databasePages> } | { error: string };
 
@@ -100,7 +96,7 @@ export function DiagnosticsScreen() {
               <View key={`${operation.at}-${index}`} className="flex-row items-start gap-3 border-b border-border px-4 py-2.5" accessible accessibilityLabel={slowOperationLine(operation)}>
                 <View className="flex-1">
                   <Text variant="small" className="font-medium">{operation.name}</Text>
-                  <Text variant="caption">{[operation.detail, ago(operation.at, now)].filter(Boolean).join(" · ")}</Text>
+                  <Text variant="caption">{[operation.detail, formatRelativeTime(Math.min(operation.at, now), now)].filter(Boolean).join(" · ")}</Text>
                 </View>
                 <Text variant="small" className="font-semibold">{`${formatNumber(operation.ms)} ms`}</Text>
               </View>

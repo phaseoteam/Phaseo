@@ -15,10 +15,12 @@ const activityTextLimit = 20_000;
 const compactAt = 0.8;
 const fallbackContextTokens = 128_000;
 /** The tool calls a turn can make without being offered every orchestration tool on every request. */
-export const coreThreadToolIds = ["list_agents", "delegate_task", "wait_thread", "list_threads", "read_thread"];
+// draft_issue exists only in triage chats, where drafting the issue is the job, so it is never behind load_tools.
+export const coreThreadToolIds = ["list_agents", "delegate_task", "wait_thread", "list_threads", "read_thread", "draft_issue"];
 export const phaseoToolsets: Record<string, { description: string; match: (id: string) => boolean }> = {
 	threads: { description: "manage chats: send, steer, fork, hand off, rename, queue, merge, interrupt, organise, launch separate chats, list projects and models", match: id => /^(handoff|rename|steer|read|edit|fork|send|merge|interrupt|organize)_thread(_queue|_context)?$|^launch_threads?$|^list_(projects|models)$|^edit_thread_queue$|^read_thread_queue$/.test(id) },
 	pull_requests: { description: "link, watch and review pull requests", match: id => /pull_request/.test(id) },
+	issues: { description: "link, read and watch GitHub issues", match: id => /(^|_)issues?(_|$)/.test(id) },
 	scheduling: { description: "create and manage scheduled tasks", match: id => /scheduled_task|^schedule_task$/.test(id) },
 	browser: { description: "open, read and use web pages in this chat's browser", match: id => id.startsWith("browser_") },
 };

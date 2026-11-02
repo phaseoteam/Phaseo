@@ -1,3 +1,4 @@
+import { formatDateTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowRight, Check, ChevronDown, ChevronRight, ChevronUp, Code2, Eye, File, LoaderCircle, MessageCircleQuestion, MessageSquare, Sparkles, TriangleAlert } from "lucide-react";
 import type { DiffLineAnnotation, SelectedLineRange } from "@pierre/diffs";
@@ -224,7 +225,7 @@ function GuideTour({ guide, view, projectId, active, banner, onOpenCode, onFinis
 				{banner}
 				{stop ? <StopView key={position} stop={stop} index={position} count={count} nextTitle={guide.stops[position + 1]?.title} view={view} projectId={projectId} layout={layout} railOpen={railOpen} onRailOpenChange={setRailOpen} stopList={rail} commenting={commenting} onStep={step} onOpenFile={path => onOpenCode(path)} {...(onAsk ? { onAsk: (question: string) => onAsk(stopQuestionPrompt({ number: view.number, title: view.title, url: view.url, stop, question })) } : {})} {...(finish ? { onFinish: finish } : {})} />
 					: <p className="text-sm text-muted-foreground">This change has no files to tour.</p>}
-				<p className="text-[11px] text-muted-foreground/80">Written by {guide.model} {new Date(guide.generatedAt).toLocaleString()}.{guide.truncated ? " The change was too large to show the model in full, so some files are listed without excerpts." : ""} Drag the line numbers in an excerpt to comment on them or ask about them.</p>
+				<p className="text-[11px] text-muted-foreground/80">Written by {guide.model} {formatDateTime(guide.generatedAt)}.{guide.truncated ? " The change was too large to show the model in full, so some files are listed without excerpts." : ""} Drag the line numbers in an excerpt to comment on them or ask about them.</p>
 			</main>
 		</div>
 	</ScrollArea>;

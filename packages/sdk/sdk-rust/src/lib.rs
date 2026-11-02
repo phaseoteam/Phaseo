@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+pub mod auth;
 #[allow(non_snake_case, unused_imports, unused_variables)]
 #[path = "gen/lib.rs"]
 pub mod gen;
@@ -9,8 +10,11 @@ mod parameter_support;
 mod phaseo;
 #[cfg(feature = "realtime")]
 pub mod realtime;
+#[cfg(test)]
+mod test_support;
 pub mod workflows;
 
+pub use auth::ApiKeyProvider;
 pub use parameter_support::{check_parameter_support, ParameterSupportOptions};
 pub use phaseo::{
     Phaseo, PhaseoError, PhaseoResponse, RequestEvent, RequestHook, RequestOptions, ResponseEvent,

@@ -1,3 +1,4 @@
+import { formatDateParts } from "@phaseo/app-kit/format";
 import { useEffect, useState } from "react";
 import { MessageSquareText } from "lucide-react";
 import type { MessageSearchHit } from "../../shared/conversationSearch";
@@ -31,7 +32,7 @@ export function snippetParts(snippet: string, query: string) {
 	return parts;
 }
 
-const when = (iso?: string) => iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+const when = (iso?: string) => iso ? formatDateParts(iso, { month: "short", day: "numeric" }) : "";
 
 /** T3's "In messages": chats whose messages match, each with its latest match; choosing one opens it with find on the word. */
 export function MessageSearchResults({ query, hits, searching, onOpen }: { query: string; hits: MessageSearchHit[]; searching: boolean; onOpen: (hit: MessageSearchHit) => void }) {

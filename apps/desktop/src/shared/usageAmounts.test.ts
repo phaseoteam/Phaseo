@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addUsage, formatCost, isPhaseoUsageId, usageAmounts, usageTotalsOf } from "./usageAmounts";
+import { addUsage, formatCost, formatSpend, isPhaseoUsageId, usageAmounts, usageTotalsOf } from "./usageAmounts";
 import { chatSpend } from "./chatSpend";
 import { turnUsage } from "../renderer/lib/turnUsage";
 import type { TaskOverview } from "./workspaceOverview";
@@ -37,13 +37,9 @@ describe("usage amounts", () => {
 		for (const id of ["usage", "turn-1:usage", "turn-1:run-9:usage", "turn-1:usage:x", "turn-1:compaction:1:usage:extra"]) expect(isPhaseoUsageId(id)).toBe(false);
 	});
 
-	it("formats dollars in US format, with finer amounts below a dollar", () => {
-		expect(formatCost(12_500_000_000)).toBe("$12.50");
-		expect(formatCost(1_234_567_890)).toBe("$1.23");
-		expect(formatCost(4_250_000)).toBe("$0.0043");
-		expect(formatCost(420_000_000)).toBe("$0.42");
-		expect(formatCost(0)).toBe("$0.00");
-		expect(formatCost(20_000)).toBe("<$0.0001");
+	it("formats a chat's cost as the website's chat does, and caps and totals as its budgets do", () => {
+		expect([12_500_000_000, 1_234_567_890, 4_250_000, 420_000_000, 0, 20_000].map(formatCost)).toEqual(["$12.5", "$1.2346", "$0.00425", "$0.42", "$0", "$0.00002"]);
+		expect([12_500_000_000, 1_234_567_890, 4_250_000, 420_000_000, 0, 20_000].map(formatSpend)).toEqual(["$12.50", "$1.23", "$0.0043", "$0.42", "$0.00", "$0.00"]);
 	});
 });
 

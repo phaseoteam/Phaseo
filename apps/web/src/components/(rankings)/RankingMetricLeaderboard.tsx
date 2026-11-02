@@ -34,10 +34,10 @@ export function RankingMetricLeaderboard({
 			return `${format.number(entry.value, { maximumFractionDigits: 1 })} ${tUnits("second")}`;
 		}
 		if (metricId === "text-throughput") {
-			return `${format.number(entry.value, { maximumFractionDigits: 1 })} tok/s`;
+			return format.tps(entry.value) ?? "-";
 		}
 		if (metricId === "text-latency") {
-			return `${format.number(entry.value, { maximumFractionDigits: 0 })} ms`;
+			return format.latency(entry.value) ?? "-";
 		}
 		const unit = metricId.includes("image") ? tUnits("image") : tUnits("token");
 		return `${metricId.includes("image") ? format.number(entry.value, { maximumFractionDigits: 1 }) : formatRoundedCount(entry.value, locale)} ${unit}`;

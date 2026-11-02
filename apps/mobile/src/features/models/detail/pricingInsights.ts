@@ -1,6 +1,6 @@
 import type { EffectivePricingRow, PricingHistoryRule, ProviderPricing } from "@/lib/api/models";
 import { basePricePerMillion } from "../pricing";
-import { normalizeGatewayStatusValue } from "../../../../../web/src/components/(data)/model/pricing/providerGatewayStatus";
+import { normalizeGatewayStatusValue } from "@phaseo/app-kit/gateway-status";
 import { normalizePlan, providerLogoId, providerOfferName, providerPlans } from "./providers";
 import { providerSeriesColour } from "./tiers";
 

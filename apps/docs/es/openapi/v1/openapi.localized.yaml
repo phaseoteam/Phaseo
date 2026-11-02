@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: Tomar decisiones estructuradas
-      description: 'Para llamadas nuevas, usa el formato compatible con OpenAI: input contiene texto o mensajes de usuario con partes input_image integradas, y questions es una lista ordenada de preguntas predicate, choice o score. Las respuestas mantienen el orden y los nombres opcionales. Los valores booleanos siguen siendo booleanos. No se admiten URL de imágenes alojadas; Luna admite hasta 128 imágenes integradas, con límites propios para otros proveedores. El detalle explícito de imagen y safety_identifier requieren una ruta OpenAI. El formato anterior con state, mapas de preguntas, noul y criteria sigue funcionando y devuelve un mapa de respuestas. Together Tev requiere ese formato porque devuelve etiquetas sin probabilidades. Los ejemplos anteriores siguen siendo válidos.'
+      description: 'Para llamadas nuevas, usa el formato compatible con OpenAI: input contiene texto o mensajes de usuario con partes input_image integradas, y questions es una lista ordenada de preguntas predicate, choice o score. Las respuestas mantienen el orden y los nombres opcionales. Los valores booleanos siguen siendo booleanos. Las URL HTTPS de imágenes alojadas solo funcionan con los modelos de Base Labs (Elephant-1, Mammoth-1 y Joey-1) y deben estar en Amazon S3, Google Cloud Storage o Azure Blob Storage; Luna admite hasta 128 imágenes integradas, con límites propios para otros proveedores. El detalle explícito de imagen y safety_identifier requieren una ruta OpenAI. El formato anterior con state, mapas de preguntas, noul y criteria sigue funcionando y devuelve un mapa de respuestas. Together Tev requiere ese formato porque devuelve etiquetas sin probabilidades. Los ejemplos anteriores siguen siendo válidos.'
       requestBody:
         required: true
         content:
@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: Crear una regla de gasto
-      description: Crea una regla de gasto y define sus destinos de notificación. Se acepta cualquier métrica; las reglas que se devuelven con evaluated en false se guardan y empezarán a activarse en una versión posterior. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.
+      description: Crea una regla de gasto y define sus destinos de notificación. Se evalúan todas las métricas. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: Imagen base64 integrada. Sin URL alojadas ni ID de archivos. Máximo 128 imágenes por solicitud; los proveedores pueden imponer límites menores.
+      description: Imagen base64 integrada, o URL HTTPS de imagen en Amazon S3, Google Cloud Storage o Azure Blob Storage (solo modelos de Base Labs). Sin ID de archivos. Máximo 128 imágenes por solicitud; los proveedores pueden imponer límites menores.
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true
@@ -24085,7 +24085,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend: el gasto alcanzó threshold_amount. budget_percent: el gasto alcanzó threshold_percents de la base. forecast: el gasto proyectado al final del periodo alcanza el umbral. spike: el gasto de las últimas window_hours es al menos spike_multiplier veces el nivel habitual y al menos spike_floor. balance: el saldo o la autonomía del espacio de trabajo baja del umbral.'
+      description: 'spend: el gasto alcanzó threshold_amount. budget_percent: el gasto alcanzó threshold_percents de la base. forecast: el gasto proyectado al final del periodo alcanza el umbral. spike: el gasto de las últimas window_hours es al menos spike_multiplier veces la mediana de la misma ventana en los 7 días anteriores, y al menos spike_floor. balance: el saldo o la autonomía del espacio de trabajo cae por debajo del umbral.'
       enum:
         - spend
         - budget_percent
@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: Es false para las reglas que la evaluación aún no admite (reglas spike). Se guardan y empezarán a activarse en una versión posterior.
+          description: Indica si la evaluación admite la métrica, el periodo y la base de la regla. Todas las reglas que acepta la API se evalúan.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24183,7 +24183,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'Horas de una ventana móvil: la ventana del pico en las reglas spike y el periodo de consumo que se analiza en las reglas balance. Null en los periodos naturales.'
+          description: 'Horas de una ventana rolling: la ventana de pico en las reglas spike (como máximo 56, para que quepan 3 ventanas en los 7 días anteriores) y el periodo de consumo en las reglas balance. Es null para los periodos de calendario.'
         time_zone:
           type: string
           maxLength: 64
@@ -24310,7 +24310,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'Horas de una ventana móvil: la ventana del pico en las reglas spike y el periodo de consumo que se analiza en las reglas balance. Null en los periodos naturales.'
+          description: 'Horas de una ventana rolling: la ventana de pico en las reglas spike (como máximo 56, para que quepan 3 ventanas en los 7 días anteriores) y el periodo de consumo en las reglas balance. Es null para los periodos de calendario.'
         time_zone:
           type: string
           maxLength: 64
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: Dónde se encuentra ahora una regla de gasto. Las reglas rolling tienen su ventana como period. Las reglas forecast tienen un objeto forecast y sus umbrales se miden con la proyección. Las reglas balance tienen como period la ventana de consumo, como valor el saldo disponible y un objeto balance. Las reglas spike tienen period, value y alert en null.
+      description: Dónde se encuentra ahora una regla de gasto. Las reglas rolling tienen su ventana como period. Las reglas forecast tienen un objeto forecast y sus umbrales se miden con la proyección. Las reglas balance tienen como period la ventana de consumo, como valor el saldo disponible y un objeto balance. Las reglas spike tienen su ventana como period, el gasto en ella como valor, la mediana de la misma ventana en los 7 días anteriores como base, el punto en que se activan como next_threshold y un objeto spike.
       required:
         - rule_id
         - metric
@@ -24472,6 +24472,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -24482,7 +24483,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: Es false para las reglas que la evaluación aún no admite (reglas spike). Se guardan y empezarán a activarse en una versión posterior.
+          description: Indica si la evaluación admite la métrica, el periodo y la base de la regla. Todas las reglas que acepta la API se evalúan.
         computed_at:
           type: string
           format: date-time
@@ -24715,6 +24716,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: La recarga automática está activada y funciona, así que una caída se registra sin alerta.
+        spike:
+          type: object
+          nullable: true
+          description: 'Solo reglas spike: el gasto de las últimas window_hours frente a la mediana de la misma ventana en los 7 días anteriores, tal como lo ve la evaluación. Es null para las demás reglas.'
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 'La mediana de la misma ventana en los 7 días anteriores: las mismas horas de cada uno de los 7 días anteriores para ventanas de menos de 24 horas o, si no, las ventanas anteriores sin solapamiento que caben en 7 días.'
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: El gasto de la ventana dividido por la base. Es null cuando la base es 0, en cuyo caso solo se aplica el mínimo.
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 'Lo que debe alcanzar el gasto de la ventana para activarse: el mayor entre spike_multiplier veces la base y el mínimo.'
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: Cuántas ventanas tiene la base. Una regla necesita al menos 3.
+            active_windows:
+              type: integer
+              description: Ventanas de la base en las que el espacio de trabajo tuvo algún gasto.
+            history_ready:
+              type: boolean
+              description: Es false hasta que el espacio de trabajo haya tenido gasto en al menos 3 ventanas de la base. Hasta entonces la regla no se activa.
+            spiking:
+              type: boolean
+              description: Si la regla se activaría ahora, sin contar el tiempo de espera.
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: Cuándo termina el tiempo de espera tras la última alerta, si aún no ha terminado.
         alert:
           type: object
           nullable: true
@@ -25257,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'Cómo cuentan las reglas de gasto el gasto de una persona en los departamentos cuando su clave no tiene departamento propio: all lo cuenta en todos los departamentos a los que pertenece; primary solo en su departamento principal. El departamento propio de una clave siempre prevalece.'
+      description: 'Cómo cuentan las reglas de gasto, los presupuestos de departamento y los límites de frecuencia de departamento las solicitudes de una persona en los departamentos cuando su clave no tiene departamento propio: all las cuenta en todos los departamentos a los que pertenece; primary solo en su departamento principal. El departamento propio de una clave y la anulación de directorio de un miembro siempre prevalecen.'
       enum:
         - all
         - primary
@@ -25266,16 +25332,33 @@ components:
       maxLength: 64
       description: Zona horaria IANA para los periodos naturales de las reglas de gasto que no tienen zona horaria propia y para los informes de gasto. El valor predeterminado es UTC. Los límites de clave y los presupuestos del espacio de trabajo que se aplican siempre usan UTC.
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: 'Con qué frecuencia reciben los propietarios del espacio de trabajo un correo con el informe de gasto, y también los administradores cuando report_include_admins está activado: off, daily (a las 09:00 para el día anterior), weekly (el lunes a las 09:00 para la semana anterior, de lunes a domingo) o monthly (el día 1 a las 09:00 para el mes anterior), en la zona horaria de facturación. Los periodos sin gasto se omiten. Las rutas spend_report del espacio de trabajo reciben un resumen por informe. El valor predeterminado es weekly.'
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: Envía también el informe de gasto por correo a los administradores del espacio de trabajo, no solo a los propietarios. El valor predeterminado es false. Cualquiera puede darse de baja desde el enlace del correo.
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -25367,6 +25450,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -26292,42 +26379,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26397,8 +26448,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26496,42 +26545,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
         created_at:
           type: string
           format: date-time
@@ -26643,42 +26656,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
             created_at:
               type: string
               format: date-time

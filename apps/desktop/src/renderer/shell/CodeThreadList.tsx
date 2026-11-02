@@ -1,5 +1,6 @@
 import { prefetchTask } from "../lib/useSelectedTask";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from "react";
+import { isFactoryWorktree } from "../../shared/factory/projects";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { AlarmClock, AlarmClockOff, Check, ChevronDown, CircleAlert, CircleCheck, CircleDashed, CircleDotDashed, Clock, FolderPlus, GitBranch, MessageCircleQuestion, Pin, PinOff, Plus, Settings, ShieldQuestion, Trash2, Undo2 } from "lucide-react";
@@ -18,6 +19,7 @@ import { codeSections, createReturnTracker, workingSectionKey } from "./codeThre
 import { BulkMenuItems, CustomSnoozeDialog, DeleteChatDialog, RenameInput, SnoozeItems, ThreadMenuItems, useThreadActions } from "./threadActions";
 import { chatDragType } from "../../shared/mentions";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
+import { IssueBadge } from "../views/issues/IssueBadge";
 
 /** A Code chat being dragged within the sidebar. */
 const codeRowType = "application/x-phaseo-code-chat";
@@ -89,6 +91,7 @@ function CardRow({ task, now, scope, onScope, hint, controls }: { task: TaskOver
 			<div className="flex h-4 items-center gap-1.5 text-[11px] text-muted-foreground/70">
 				{project?.worktree && <span className="flex min-w-0 items-center gap-1 truncate font-mono"><GitBranch className="size-3 shrink-0" />{project.worktree.branch}</span>}
 				<PullRequestBadge taskId={task.id} projectId={task.projectId} links={task.pullRequests} />
+				<IssueBadge taskId={task.id} links={task.issues} />
 				<TagDots tags={task.tags} />
 				<span className="ml-auto shrink-0"><ModelStack models={[task]} size="sm" ringClassName="ring-transparent" /></span>
 			</div>
@@ -155,7 +158,8 @@ export function CodeThreadList() {
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [picked.length]);
-	const projects = overview.projects.filter(project => !project.worktree?.removedAt);
+	// Factory's per-item worktrees stay out of the picker; their threads still list.
+	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
 	const scoped = projects.find(project => project.id === scope);
 	const running = overview.tasks.some(task => task.projectId && task.status === "running");
 	const now = useNow(running ? 1_000 : 30_000);

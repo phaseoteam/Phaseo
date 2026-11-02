@@ -49,5 +49,21 @@
 		"working": "正在退订…",
 		"done": "你已退订。",
 		"error": "操作未成功。请重试。"
+	},
+	"spendReports": {
+		"metaTitle": "支出报告邮件",
+		"title": "{workspace} 的支出报告邮件",
+		"subscribedBody": "你会通过邮件收到此工作区的支出报告。退订只会停止这些报告：其他工作区的报告、提醒以及账户和账单邮件仍会照常发送。",
+		"unsubscribedBody": "你将不再通过邮件收到此工作区的支出报告。所有者和管理员仍可在使用情况页面查看支出。",
+		"unsubscribe": "退订",
+		"unsubscribing": "正在退订…",
+		"subscribe": "重新订阅",
+		"subscribing": "正在订阅…",
+		"unsubscribed": "你已退订。",
+		"subscribed": "你已重新订阅。",
+		"error": "操作未成功，请重试。",
+		"invalidTitle": "此链接无效",
+		"invalidBody": "请检查是否复制了完整链接。你也可以在“设置 → 通知”中更改支出报告设置。",
+		"unavailable": "此页面暂时不可用，请稍后再试。"
 	}
 }

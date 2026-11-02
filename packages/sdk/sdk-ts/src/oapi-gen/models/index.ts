@@ -215,7 +215,6 @@ export type { GatewayWebFetchToolDefinition } from "./GatewayWebFetchToolDefinit
 export type { GatewayWebSearchToolDefinition } from "./GatewayWebSearchToolDefinition.js";
 export type { GenerationResponse } from "./GenerationResponse.js";
 export type { Guardrail } from "./Guardrail.js";
-export type { GuardrailBudgetInput } from "./GuardrailBudgetInput.js";
 export type { GuardrailCreateRequest } from "./GuardrailCreateRequest.js";
 export type { GuardrailDeleteResponse } from "./GuardrailDeleteResponse.js";
 export type { GuardrailDetailResponse } from "./GuardrailDetailResponse.js";
@@ -592,6 +591,8 @@ export type { WorkspaceSettings } from "./WorkspaceSettings.js";
 export type { WorkspaceSettingsResponse } from "./WorkspaceSettingsResponse.js";
 export type { WorkspaceSettingsUpdateRequest } from "./WorkspaceSettingsUpdateRequest.js";
 export type { WorkspaceSpendAttribution } from "./WorkspaceSpendAttribution.js";
+export type { WorkspaceSpendReportCadence } from "./WorkspaceSpendReportCadence.js";
+export type { WorkspaceSpendReportIncludeAdmins } from "./WorkspaceSpendReportIncludeAdmins.js";
 export type { WorkspaceSpendSettings } from "./WorkspaceSpendSettings.js";
 export type { WorkspaceSpendSettingsUpdate } from "./WorkspaceSpendSettingsUpdate.js";
 export type { WorkspaceSsoResponse } from "./WorkspaceSsoResponse.js";

@@ -1,5 +1,5 @@
 /**
- * Where a spend rule stands now. Rolling rules have their window as period. Forecast rules have a forecast object, and their thresholds are measured against the projection. Balance rules have the burn-rate window as period, the available balance as value and a balance object. Spike rules have period, value and alert null.
+ * Where a spend rule stands now. Rolling rules have their window as period. Forecast rules have a forecast object, and their thresholds are measured against the projection. Balance rules have the burn-rate window as period, the available balance as value and a balance object. Spike rules have their window as period, the spend over it as value, the median of the same window over the previous 7 days as base, the point they fire at as next_threshold and a spike object.
  */
 export interface SpendRulePreview {
   alert: {
@@ -60,6 +60,23 @@ export interface SpendRulePreview {
   } | null;
   reached_threshold_percent: number | null;
   rule_id: string;
+  spike: {
+    active_windows: number;
+    baseline_nanos: number;
+    baseline_usd: number;
+    baseline_windows: number;
+    cooldown_until: string | null;
+    current_nanos: number;
+    current_usd: number;
+    fires_at_nanos: number;
+    fires_at_usd: number;
+    floor_usd: number;
+    history_ready: boolean;
+    multiple: number | null;
+    multiplier: number;
+    spiking: boolean;
+    window_hours: number;
+  } | null;
   state: {
     amount_fired_at: string | null;
     armed?: boolean;

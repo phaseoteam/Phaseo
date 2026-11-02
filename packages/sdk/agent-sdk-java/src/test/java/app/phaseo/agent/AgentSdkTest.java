@@ -83,6 +83,36 @@ class AgentSdkTest {
     State state=new State();var stream=AgentSdk.createAgent(new AgentSdk.AgentDefinition("stream",null,null,null,List.of(),12,null,null,null,null)).stream(new AgentSdk.RunOptions("run",new Client(),null,null,null,null,null,null,null,null,state));
     assertEquals(List.of("hel","lo"),stream.textStream());var result=stream.getResult();assertEquals(List.of("hel","lo"),stream.textStream());assertEquals("hello",result.output());assertNotNull(state.value);
   }
+
+  @Test
+  void gatewayClientSendsTheApiKeyProviderCredential() throws Exception {
+    List<String> authorizations = new java.util.concurrent.CopyOnWriteArrayList<>();
+    var server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext("/responses", exchange -> {
+      authorizations.add(exchange.getRequestHeaders().getFirst("Authorization"));
+      byte[] bytes = "{\"id\":\"resp_1\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"ok\"}]}]}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      exchange.getResponseHeaders().add("Content-Type", "application/json");
+      exchange.sendResponseHeaders(200, bytes.length);
+      try (var os = exchange.getResponseBody()) { os.write(bytes); }
+    });
+    server.createContext("/models", exchange -> {
+      byte[] bytes = "{\"models\":[]}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      exchange.sendResponseHeaders(200, bytes.length);
+      try (var os = exchange.getResponseBody()) { os.write(bytes); }
+    });
+    server.start();
+    try {
+      AtomicInteger calls = new AtomicInteger();
+      String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
+      var client = AgentSdk.createGatewayAgentClient(new AgentSdk.GatewayOptions(null, null, baseUrl, "openai/gpt-5.4-nano", null, null, () -> "workload-token-" + calls.incrementAndGet()));
+      var response = client.generate(new AgentSdk.ModelRequest("agent", List.of(new AgentSdk.Message("user", "hi")), List.of(), null, null, null));
+      assertEquals("ok", response.message().content());
+      // Call 1 is the model lifecycle lookup on /models; the Responses request gets a fresh credential.
+      assertEquals(List.of("Bearer workload-token-2"), authorizations);
+    } finally {
+      server.stop(0);
+    }
+  }
 }
 
 class LiveGatewayTest {

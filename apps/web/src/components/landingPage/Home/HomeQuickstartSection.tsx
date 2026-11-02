@@ -603,8 +603,8 @@ function ObservabilityVisual() {
 			providerId: "openai",
 			model: "GPT-6 Astra",
 			path: "/v1/responses",
-			latency: "612 ms",
-			throughput: "91 tok/s",
+			latency: "0.61 s",
+			throughput: "91.0 tps",
 			cost: "$0.018",
 			status: "200 OK",
 			statusTone:
@@ -614,8 +614,8 @@ function ObservabilityVisual() {
 			providerId: "anthropic",
 			model: "Claude Fable 5.1",
 			path: "/v1/messages",
-			latency: "958 ms",
-			throughput: "61 tok/s",
+			latency: "0.96 s",
+			throughput: "61.0 tps",
 			cost: "$0.041",
 			status: "200 OK",
 			statusTone:
@@ -625,8 +625,8 @@ function ObservabilityVisual() {
 			providerId: "google",
 			model: "Gemini 3.8 Flash",
 			path: "/v1/generate",
-			latency: "684 ms",
-			throughput: "88 tok/s",
+			latency: "0.68 s",
+			throughput: "88.0 tps",
 			cost: "$0.014",
 			status: "200 OK",
 			statusTone:
@@ -636,8 +636,8 @@ function ObservabilityVisual() {
 			providerId: "x-ai",
 			model: "Grok 4.6",
 			path: "/v1/chat",
-			latency: "488 ms",
-			throughput: "112 tok/s",
+			latency: "0.49 s",
+			throughput: "112 tps",
 			cost: "$0.012",
 			status: "200 OK",
 			statusTone:
@@ -880,9 +880,9 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 							{t("latency")}
 						</span>
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-							<HydratedNumberFlow value={currentModel.latencyMs} />
+							<HydratedNumberFlow value={currentModel.latencyMs / 1000} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
-								ms
+								s
 							</span>
 						</p>
 					</div>
@@ -893,7 +893,7 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
 							<HydratedNumberFlow value={currentModel.throughputTps} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
-								tok/s
+								tps
 							</span>
 						</p>
 					</div>
@@ -941,8 +941,8 @@ function DatabaseVisual({
 		<VisualStage>
 			<div className="w-full max-w-[232px] space-y-1.5">
 				{[
-					[t("latency"), "472ms"],
-					[t("throughput"), "184 tok/s"],
+					[t("latency"), "0.47 s"],
+					[t("throughput"), "184 tps"],
 					[t("gpqaScore"), "86.4"],
 					[t("rank"), t("rankOverall")],
 				].map(([label, value], index) => (

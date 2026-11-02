@@ -52,16 +52,9 @@ function toUtcBucket(date: Date): string {
 function formatMetricValue(
 	metric: MetricKey,
 	value: number | null,
-	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
+	format: ReturnType<typeof useDisplayFormatters>,
 ): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	if (metric === "throughput") {
-		return `${formatNumber(value, {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		})} t/s`;
-	}
-	return `${formatNumber(value, { maximumFractionDigits: 0 })} ms`;
+	return (metric === "throughput" ? format.tps(value) : format.latency(value)) ?? "-";
 }
 
 function DeltaPill({
@@ -135,7 +128,7 @@ function PerformanceCard({
 }) {
 	const format = useDisplayFormatters();
 	const isEmpty = value == null || !Number.isFinite(value);
-	const displayValue = isEmpty ? "-" : formatMetricValue(metric, value, format.number);
+	const displayValue = isEmpty ? "-" : formatMetricValue(metric, value, format);
 
 	return (
 		<div className="space-y-4 px-0 py-4 md:px-6">
@@ -195,7 +188,7 @@ function MiniModelLeaderboard({
 							<div className="inline-flex items-baseline gap-1 justify-self-end">
 								<span className="text-[11px] text-muted-foreground">{t("averageAbbreviation")}</span>
 								<span className="text-sm font-medium text-foreground">
-									{formatMetricValue(metric, item.value, format.number)}
+									{formatMetricValue(metric, item.value, format)}
 								</span>
 							</div>
 						</div>

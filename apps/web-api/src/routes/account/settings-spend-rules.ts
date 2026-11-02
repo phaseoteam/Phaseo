@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
-import { parseIanaTimeZone } from "@/lib/notification-destinations";
+import { isSpendReportCadence, parseIanaTimeZone } from "@/lib/notification-destinations";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
 import {
 	MAX_SPEND_RULES_PER_WORKSPACE,
@@ -210,8 +210,9 @@ accountSettingsSpendRulesRouter.get("/spend-rules", async (c) => {
 			.eq("workspace_id", context.workspaceId).is("deleted_at", null)
 			.order("created_at", { ascending: true }).order("id", { ascending: true })
 			.limit(MAX_SPEND_RULES_PER_WORKSPACE),
-		context.client.from("workspace_settings").select("billing_time_zone").eq("workspace_id", context.workspaceId).maybeSingle(),
+		context.client.from("workspace_settings").select("billing_time_zone,spend_report_cadence,spend_report_include_admins").eq("workspace_id", context.workspaceId).maybeSingle(),
 	]);
+	const stored = settings.data as { billing_time_zone?: unknown; spend_report_cadence?: unknown; spend_report_include_admins?: unknown } | null;
 	if (rules.error || settings.error) return json(c, { error: "settings_unavailable" }, 503);
 	return json(c, {
 		workspaceId: context.workspaceId,
@@ -220,7 +221,11 @@ accountSettingsSpendRulesRouter.get("/spend-rules", async (c) => {
 		testSendsPerMinute: SPEND_RULE_TEST_SENDS_PER_MINUTE,
 		// Whether block rules block yet; until then they only notify (SPEND_RULE_BLOCKS_ENABLED).
 		blocksEnabled: c.env.SPEND_RULE_BLOCKS_ENABLED === "true",
-		billingTimeZone: parseIanaTimeZone((settings.data as { billing_time_zone?: unknown } | null)?.billing_time_zone) ?? "UTC",
+		// Whether spend report emails go out yet (SPEND_REPORTS_ENABLED on the gateway); the settings save either way.
+		reportsEnabled: c.env.SPEND_REPORTS_ENABLED === "true",
+		billingTimeZone: parseIanaTimeZone(stored?.billing_time_zone) ?? "UTC",
+		spendReportCadence: isSpendReportCadence(stored?.spend_report_cadence) ? stored.spend_report_cadence : "weekly",
+		spendReportIncludeAdmins: stored?.spend_report_include_admins === true,
 		rules: (rules.data ?? []).map((row) => formatSpendRule(row as unknown as SpendRuleRow, embeddedDestinationIds(row as never))),
 	});
 });

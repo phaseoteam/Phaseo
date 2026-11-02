@@ -1,3 +1,4 @@
+import { formatDateParts } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, Star } from "lucide-react";
@@ -164,7 +165,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 		const months = new Map<string, Entry[]>();
 		for (const entry of [...rest].sort((a, b) => released(b) - released(a))) {
 			const time = released(entry);
-			const heading = Number.isFinite(time) ? new Date(time).toLocaleDateString(undefined, { month: "long", year: "numeric", timeZone: "UTC" }) : "Other";
+			const heading = Number.isFinite(time) ? formatDateParts(time, { month: "long", year: "numeric", timeZone: "UTC" }) : "Other";
 			months.set(heading, [...months.get(heading) ?? [], entry]);
 		}
 		for (const [heading, entries] of months) result.push({ heading, entries });

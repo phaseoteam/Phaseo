@@ -1,3 +1,4 @@
+import { formatDateParts, formatUsdHeadlinePrice } from "@phaseo/app-kit/format";
 import { useState, type ReactNode } from "react";
 import { PreviewCard } from "@base-ui/react/preview-card";
 import { ArrowUpRight } from "lucide-react";
@@ -9,8 +10,10 @@ import { knownModel, modelLabel } from "./ModelPicker";
 /** The model's page on the website: catalog IDs are its organisation and model segments. */
 export const modelPageUrl = (id: string) => `https://phaseo.app/models/${id.split("/").map(encodeURIComponent).join("/")}`;
 
-const tokens = (value: number) => value >= 1_000_000 ? `${+(value / 1_000_000).toFixed(2)}M` : value >= 1_000 ? `${+(value / 1_000).toFixed(1)}K` : String(value);
-const dollars = (value: number) => `$${value >= 1 ? +value.toFixed(2) : +value.toPrecision(2)}`;
+// As the website's /models cards show them: "1,048,576 tokens", "$3 in · $15.50 out".
+const tokenCount = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 });
+const tokens = (value: number) => tokenCount.format(value);
+const dollars = formatUsdHeadlinePrice;
 const sentence = (values: string[]) => values.map((value, index) => index ? value : value[0].toUpperCase() + value.slice(1)).join(", ");
 
 function price(facts: ModelFacts) {
@@ -42,7 +45,7 @@ export function ModelInfoCard({ harness, model: id, className, children }: { har
 	const [open, setOpen] = useState(false);
 	if (harness !== "phaseo" || id === "default") return <span className={className}>{children}</span>;
 	const model = knownModel(id);
-	const released = model?.releaseDate && !Number.isNaN(Date.parse(model.releaseDate)) ? new Date(model.releaseDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : undefined;
+	const released = model?.releaseDate && !Number.isNaN(Date.parse(model.releaseDate)) ? formatDateParts(model.releaseDate, { month: "short", year: "numeric", timeZone: "UTC" }) : undefined;
 	const byline = [model?.organisationName, released && `Released ${released}`].filter(Boolean).join(" · ");
 	return <PreviewCard.Root open={open} onOpenChange={setOpen}>
 		<PreviewCard.Trigger delay={350} closeDelay={150} render={<button type="button" aria-label={`About ${model?.name ?? modelLabel(id)}`} onClick={() => setOpen(value => !value)} />}

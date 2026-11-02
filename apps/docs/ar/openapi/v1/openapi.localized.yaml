@@ -1010,7 +1010,7 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: اتخاذ قرارات منظّمة
-      description: 'استخدم التنسيق المتوافق مع OpenAI للمكالمات الجديدة: يحتوي input على نص أو رسائل مستخدم تتضمن أجزاء input_image مضمنة، وquestions مصفوفة مرتبة من أسئلة predicate أو choice أو score. تحافظ الإجابات على الترتيب والأسماء الاختيارية، وتبقى قيم الخيارات المنطقية منطقية. روابط الصور المستضافة غير مدعومة؛ يدعم Luna حتى 128 صورة مضمنة وللمزودين الآخرين حدودهم الخاصة. تتطلب تفاصيل الصور الصريحة وsafety_identifier مسار OpenAI. يظل التنسيق القديم باستخدام state وخرائط الأسئلة المسماة وnoul وcriteria مدعومًا ويعيد خريطة إجابات. يتطلب Together Tev هذا التنسيق لأنه يعيد تسميات دون احتمالات. تظل الأمثلة القديمة صالحة.'
+      description: 'استخدم التنسيق المتوافق مع OpenAI للمكالمات الجديدة: يحتوي input على نص أو رسائل مستخدم تتضمن أجزاء input_image مضمنة، وquestions مصفوفة مرتبة من أسئلة predicate أو choice أو score. تحافظ الإجابات على الترتيب والأسماء الاختيارية، وتبقى قيم الخيارات المنطقية منطقية. تعمل روابط HTTPS للصور المستضافة مع نماذج Base Labs فقط (Elephant-1 وMammoth-1 وJoey-1)، ويجب أن تكون على Amazon S3 أو Google Cloud Storage أو Azure Blob Storage؛ يدعم Luna حتى 128 صورة مضمنة وللمزودين الآخرين حدودهم الخاصة. تتطلب تفاصيل الصور الصريحة وsafety_identifier مسار OpenAI. يظل التنسيق القديم باستخدام state وخرائط الأسئلة المسماة وnoul وcriteria مدعومًا ويعيد خريطة إجابات. يتطلب Together Tev هذا التنسيق لأنه يعيد تسميات دون احتمالات. تظل الأمثلة القديمة صالحة.'
       requestBody:
         required: true
         content:
@@ -5405,7 +5405,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: إنشاء قاعدة إنفاق
-      description: ينشئ قاعدة إنفاق ويحدد وجهات إشعاراتها. تُقبل كل المقاييس؛ القواعد التي تُعاد مع evaluated بقيمة false تُحفظ وتبدأ بالعمل في إصدار لاحق. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق؛ استخدم حدود المفاتيح وميزانيات مساحة العمل لحدود دقيقة. يمكن أن تحتوي مساحة العمل على 50 قاعدة إنفاق.
+      description: ينشئ قاعدة إنفاق ويحدد وجهات إشعاراتها. تُقيَّم كل المقاييس. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق؛ استخدم حدود المفاتيح وميزانيات مساحة العمل لحدود دقيقة. يمكن أن تحتوي مساحة العمل على 50 قاعدة إنفاق.
       requestBody:
         required: true
         content:
@@ -14458,7 +14458,7 @@ components:
         - type
         - image_url
       additionalProperties: false
-      description: صورة base64 مضمنة. دون روابط مستضافة أو معرّفات ملفات. الحد الأقصى 128 صورة لكل طلب؛ قد يفرض المزود حدودًا أقل.
+      description: صورة base64 مضمنة، أو رابط HTTPS لصورة على Amazon S3 أو Google Cloud Storage أو Azure Blob Storage (نماذج Base Labs فقط). دون معرّفات ملفات. الحد الأقصى 128 صورة لكل طلب؛ قد يفرض المزود حدودًا أقل.
       properties:
         type:
           type: string
@@ -14467,7 +14467,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true
@@ -24085,7 +24085,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend: بلغ الإنفاق threshold_amount. budget_percent: بلغ الإنفاق threshold_percents من الأساس. forecast: يبلغ الإنفاق المتوقع حتى نهاية الفترة الحد. spike: الإنفاق خلال آخر window_hours لا يقل عن spike_multiplier ضعف المستوى المعتاد ولا يقل عن spike_floor. balance: ينخفض رصيد مساحة العمل أو مدة كفايته عن الحد.'
+      description: 'spend: بلغ الإنفاق threshold_amount. budget_percent: بلغ الإنفاق threshold_percents من الأساس. forecast: يبلغ الإنفاق المتوقع حتى نهاية الفترة العتبة. spike: الإنفاق خلال آخر window_hours يساوي spike_multiplier مرة على الأقل من وسيط النافذة نفسها خلال الأيام السبعة السابقة، ولا يقل عن spike_floor. balance: ينخفض رصيد مساحة العمل أو مدة كفايته عن العتبة.'
       enum:
         - spend
         - budget_percent
@@ -24168,7 +24168,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: تكون false للقواعد التي لا يدعمها التقييم بعد (قواعد spike). تُحفظ وتبدأ بالعمل في إصدار لاحق.
+          description: ما إذا كان التقييم يدعم مقياس القاعدة وفترتها وأساسها. تُقيَّم كل القواعد التي تقبلها الواجهة البرمجية.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -24183,7 +24183,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'ساعات النافذة المتحركة: نافذة الارتفاع لقواعد spike وفترة احتساب معدل الاستهلاك لقواعد balance. null للفترات التقويمية.'
+          description: 'عدد ساعات نافذة rolling: نافذة الارتفاع المفاجئ لقواعد spike (56 على الأكثر، حتى تتسع الأيام السبعة السابقة لثلاث نوافذ) وفترة معدل الاستهلاك لقواعد balance. تكون null للفترات التقويمية.'
         time_zone:
           type: string
           maxLength: 64
@@ -24310,7 +24310,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'ساعات النافذة المتحركة: نافذة الارتفاع لقواعد spike وفترة احتساب معدل الاستهلاك لقواعد balance. null للفترات التقويمية.'
+          description: 'عدد ساعات نافذة rolling: نافذة الارتفاع المفاجئ لقواعد spike (56 على الأكثر، حتى تتسع الأيام السبعة السابقة لثلاث نوافذ) وفترة معدل الاستهلاك لقواعد balance. تكون null للفترات التقويمية.'
         time_zone:
           type: string
           maxLength: 64
@@ -24447,7 +24447,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: وضع قاعدة الإنفاق الآن. تكون لقواعد rolling نافذتها بصفتها period. تحتوي قواعد forecast على كائن forecast، وتُقاس عتباتها على التوقع. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. أما قواعد spike فتكون فيها period وvalue وalert فارغة (null).
+      description: وضع قاعدة الإنفاق الآن. تكون لقواعد rolling نافذتها بصفتها period. تحتوي قواعد forecast على كائن forecast، وتُقاس عتباتها على التوقع. تكون لقواعد balance نافذة معدل الاستهلاك بصفتها period، والرصيد المتاح بصفته القيمة، وكائن balance. وتكون لقواعد spike نافذتها بصفتها period، والإنفاق خلالها بصفته القيمة، ووسيط النافذة نفسها خلال الأيام السبعة السابقة بصفته الأساس، ونقطة التنبيه بصفتها next_threshold، وكائن spike.
       required:
         - rule_id
         - metric
@@ -24472,6 +24472,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -24482,7 +24483,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: تكون false للقواعد التي لا يدعمها التقييم بعد (قواعد spike). تُحفظ وتبدأ بالعمل في إصدار لاحق.
+          description: ما إذا كان التقييم يدعم مقياس القاعدة وفترتها وأساسها. تُقيَّم كل القواعد التي تقبلها الواجهة البرمجية.
         computed_at:
           type: string
           format: date-time
@@ -24715,6 +24716,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: الشحن التلقائي مفعّل ويعمل، لذا يُسجَّل الانخفاض دون تنبيه.
+        spike:
+          type: object
+          nullable: true
+          description: 'قواعد spike فقط: الإنفاق خلال آخر window_hours مقارنةً بوسيط النافذة نفسها خلال الأيام السبعة السابقة، كما يراه التقييم. تكون null للقواعد الأخرى.'
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 'وسيط النافذة نفسها خلال الأيام السبعة السابقة: الساعات نفسها في كل يوم من الأيام السبعة السابقة للنوافذ الأقل من 24 ساعة، وإلا فالنوافذ السابقة غير المتداخلة التي تتسع لها 7 أيام.'
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: الإنفاق خلال النافذة مقسومًا على الأساس. تكون null عندما يكون الأساس 0، وعندها يُطبَّق الحد الأدنى وحده.
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 'ما يجب أن يبلغه الإنفاق خلال النافذة لإطلاق التنبيه: الأكبر بين spike_multiplier مرة من الأساس والحد الأدنى.'
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: عدد النوافذ في الأساس. تحتاج القاعدة إلى 3 على الأقل.
+            active_windows:
+              type: integer
+              description: نوافذ الأساس التي أنفقت فيها مساحة العمل أي مبلغ.
+            history_ready:
+              type: boolean
+              description: تكون false إلى أن تنفق مساحة العمل في 3 نوافذ أساس على الأقل. لا تُطلق القاعدة تنبيهًا قبل ذلك.
+            spiking:
+              type: boolean
+              description: ما إذا كانت القاعدة ستُطلق تنبيهًا الآن، قبل احتساب فترة التهدئة.
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: متى تنتهي فترة التهدئة بعد آخر تنبيه، إن لم تكن قد انتهت بعد.
         alert:
           type: object
           nullable: true
@@ -25257,7 +25323,7 @@ components:
       additionalProperties: false
     WorkspaceSpendAttribution:
       type: string
-      description: 'كيف تحتسب قواعد الإنفاق إنفاق الشخص ضمن الأقسام عندما لا يكون لمفتاحه قسم خاص به: all تحتسبه في كل الأقسام التي ينتمي إليها؛ وprimary في قسمه الأساسي فقط. ويُقدَّم دائمًا القسم الخاص بالمفتاح.'
+      description: 'كيف تحتسب قواعد الإنفاق وميزانيات الأقسام وحدود معدل الأقسام طلبات الشخص ضمن الأقسام عندما لا يكون لمفتاحه قسم خاص به: all تحتسبها في كل الأقسام التي ينتمي إليها؛ وprimary في قسمه الأساسي فقط. ويُقدَّم دائمًا القسم الخاص بالمفتاح وتجاوز الدليل الخاص بالعضو.'
       enum:
         - all
         - primary
@@ -25266,16 +25332,33 @@ components:
       maxLength: 64
       description: المنطقة الزمنية وفق IANA للفترات التقويمية لقواعد الإنفاق التي ليست لها منطقة زمنية خاصة بها، ولتقارير الإنفاق. القيمة الافتراضية UTC. تستخدم حدود المفاتيح وميزانيات مساحة العمل المطبقة دائمًا UTC.
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: 'عدد مرات تلقي مالكي مساحة العمل بريدًا إلكترونيًا بتقرير الإنفاق، والمسؤولين أيضًا عند تفعيل report_include_admins: off، أو daily (الساعة 09:00 لليوم السابق)، أو weekly (يوم الاثنين الساعة 09:00 للأسبوع السابق من الاثنين إلى الأحد)، أو monthly (في اليوم الأول الساعة 09:00 للشهر السابق)، وفق المنطقة الزمنية للفوترة. تُتخطّى الفترات التي لا إنفاق فيها. تتلقى مسارات spend_report في مساحة العمل ملخصًا واحدًا لكل تقرير. القيمة الافتراضية weekly.'
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: إرسال تقرير الإنفاق بالبريد الإلكتروني إلى مسؤولي مساحة العمل أيضًا، وليس إلى المالكين فقط. القيمة الافتراضية false. يمكن لأي شخص إلغاء الاشتراك من الرابط الموجود في البريد.
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -25367,6 +25450,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -26292,42 +26379,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -26397,8 +26448,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -26496,42 +26545,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
         created_at:
           type: string
           format: date-time
@@ -26643,42 +26656,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل.
             created_at:
               type: string
               format: date-time

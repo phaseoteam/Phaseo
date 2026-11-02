@@ -95,6 +95,7 @@ type Phaseo struct {
 	warnedModels              map[string]struct{}
 	modelLifecycleCache       map[string]*ModelLifecycleInfo
 	lifecycleResolver         func(ctx context.Context, modelID string) (*ModelLifecycleInfo, error)
+	apiKeyProvider            APIKeyProvider
 	mu                        sync.Mutex
 }
 
@@ -161,6 +162,8 @@ func WithLifecycleResolver(
 }
 
 // New creates a new API client targeting the given base URL with a bearer token.
+// Pass WithAPIKeyProvider (or use NewWithAPIKeyProvider) for credentials that change,
+// such as trusted-workload OIDC tokens.
 func New(apiKey string, baseURL string, opts ...Option) *Phaseo {
 	if strings.TrimSpace(baseURL) == "" {
 		baseURL = defaultBaseURL
@@ -179,6 +182,9 @@ func New(apiKey string, baseURL string, opts ...Option) *Phaseo {
 	}
 	for _, opt := range opts {
 		opt(client)
+	}
+	if client.apiKeyProvider != nil {
+		installAPIKeyProvider(raw, client.apiKeyProvider)
 	}
 	if client.lifecycleResolver == nil {
 		client.lifecycleResolver = client.fetchModelLifecycle

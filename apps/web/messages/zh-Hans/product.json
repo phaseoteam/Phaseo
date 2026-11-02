@@ -490,6 +490,7 @@
 				"earlier_history_missing": "此请求通过 ID 延续了之前的回复，因此不包含之前的轮次。",
 				"unsupported_content": "部分内容无法显示，已被省略。",
 				"attachment_reference": "部分附件通过 ID 引用，未随请求一起存储。",
+				"media_not_stored": "I/O 日志不保存图片、音频和文件，因此已省略。",
 				"no_response": "已记录的回复缺失或失败，因此聊天以请求结束。",
 				"response_truncated": "已记录的回复被截断了。",
 				"extra_choices": "只包含回复的第一个候选项。",
@@ -1688,7 +1689,7 @@
 		"hideAllRuns": "隐藏所有运行",
 		"yourGateway": "你的 Gateway",
 		"yourGatewayTtft": "你的 Gateway（TTFT）",
-		"yourGatewayThroughput": "你的 Gateway（token/秒）",
+		"yourGatewayThroughput": "你的 Gateway（tps）",
 		"tie": "平局",
 		"latestProvider": "最新结果：{provider}",
 		"requestFailed": "请求未能完成。请检查端点和凭据后重试。",
@@ -1734,7 +1735,7 @@
 		"throughput": "吞吐量",
 		"responsePlaceholder": "响应将显示在此处……",
 		"gatewayLabel": "网关",
-		"openaiThroughput": "OpenAI API（词元/秒）"
+		"openaiThroughput": "OpenAI API（tps）"
 	},
 	"gatewayBenchmark": {
 		"title": "网关性能对比",

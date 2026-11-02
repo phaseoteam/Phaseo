@@ -490,6 +490,7 @@
 				"earlier_history_missing": "Esta solicitud continuaba una respuesta anterior por ID, así que no se incluyen los turnos previos.",
 				"unsupported_content": "Parte del contenido no se pudo mostrar y se omitió.",
 				"attachment_reference": "Algunos adjuntos se referenciaban por ID y no se guardaron con la solicitud.",
+				"media_not_stored": "Las imágenes, el audio y los archivos no se guardan en los registros de E/S, así que se omiten.",
 				"no_response": "La respuesta registrada falta o falló, así que el chat termina con la solicitud.",
 				"response_truncated": "La respuesta registrada quedó cortada.",
 				"extra_choices": "Solo se incluye la primera de las opciones de la respuesta.",
@@ -1688,7 +1689,7 @@
 		"hideAllRuns": "Ocultar todas las ejecuciones",
 		"yourGateway": "Tu Gateway",
 		"yourGatewayTtft": "Tu Gateway (TTFT)",
-		"yourGatewayThroughput": "Tu Gateway (tokens/s)",
+		"yourGatewayThroughput": "Tu Gateway (tps)",
 		"tie": "Empate",
 		"latestProvider": "Último resultado: {provider}",
 		"requestFailed": "No se pudo completar la solicitud. Comprueba el endpoint y las credenciales e inténtalo de nuevo.",
@@ -1706,7 +1707,7 @@
 		"throughput": "Rendimiento",
 		"responsePlaceholder": "La respuesta aparecerá aquí...",
 		"gatewayLabel": "Puerta de enlace",
-		"openaiThroughput": "OpenAI API (tokens/s)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"feedback": {
 		"category": "Categoría de comentarios",

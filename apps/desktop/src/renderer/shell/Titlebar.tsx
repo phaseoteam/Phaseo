@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ChatDetails } from "./ChatDetails";
-import { ArrowLeft, ArrowRight, Code2, Ellipsis, MessageSquare, Minus, PanelLeft, PanelRight, Search, Square, X, Copy as Restore } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Code2, Ellipsis, Factory, MessageSquare, MessagesSquare, Minus, PanelLeft, PanelRight, Search, Square, X, Copy as Restore } from "lucide-react";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowState } from "../../shared/desktop";
 import { useWorkspace, type WorkspaceMode } from "../app/workspace";
 import { cn } from "../lib/utils";
@@ -15,12 +15,27 @@ export function IconButton({ label, onClick, disabled, active, children, classNa
 		className={cn("no-drag grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent [&_svg]:size-4", active && "bg-sidebar-accent text-foreground", className)}>{children}</button>;
 }
 
+/** Chat or Code, and Code's two views: its threads, or Factory's issues and pull requests. Choosing Chat keeps Code's view for next time. */
 function ModeSwitch() {
-	const { mode, setMode } = useWorkspace();
-	const option = (value: WorkspaceMode, label: string, icon: ReactNode) => <button type="button" role="radio" aria-checked={mode === value} onClick={() => setMode(value)}
-		className={cn("flex h-6 items-center gap-1.5 rounded-[5px] px-2.5 text-xs font-semibold transition-colors [&_svg]:size-3.5", mode === value ? "bg-background text-foreground shadow-sm dark:bg-sidebar-accent" : "text-muted-foreground hover:text-foreground")}>{icon}{label}</button>;
+	const { mode, setMode, codeView, setCodeView } = useWorkspace();
+	const segment = (on: boolean) => cn("flex h-6 items-center gap-1.5 rounded-[5px] px-2.5 text-xs font-semibold transition-colors [&_svg]:size-3.5", on ? "bg-background text-foreground shadow-sm dark:bg-sidebar-accent" : "text-muted-foreground hover:text-foreground");
+	const option = (value: WorkspaceMode, label: ReactNode, icon: ReactNode, className?: string) => <button type="button" role="radio" aria-checked={mode === value} onClick={() => setMode(value)} className={cn(segment(mode === value), className)}>{icon}{label}</button>;
+	const view = (value: typeof codeView, label: string, icon: ReactNode, detail: string) => <DropdownMenuItem onClick={() => setCodeView(value)}>
+		{icon}<span className="min-w-0 flex-1"><span className="block">{label}</span><span className="block text-2xs text-muted-foreground">{detail}</span></span>
+		{mode === "code" && codeView === value ? <Check className="size-3.5" /> : <span className="size-3.5" />}
+	</DropdownMenuItem>;
 	return <div role="radiogroup" aria-label="Workspace" className="no-drag flex items-center gap-0.5 rounded-md bg-sidebar-accent/70 p-0.5 dark:bg-black/30">
-		{option("chat", "Chat", <MessageSquare />)}{option("code", "Code", <Code2 />)}
+		{option("chat", "Chat", <MessageSquare />)}
+		<div className={cn("flex items-center rounded-[5px]", mode === "code" && "bg-background shadow-sm dark:bg-sidebar-accent")}>
+			{option("code", <>Code{codeView === "factory" && <span className="font-medium text-muted-foreground">· Factory</span>}</>, codeView === "factory" ? <Factory /> : <Code2 />, cn("pr-1.5", mode === "code" && "bg-transparent shadow-none dark:bg-transparent"))}
+			<DropdownMenu>
+				<DropdownMenuTrigger render={<button type="button" aria-label="Code views" title="Threads or Factory" className={cn("grid h-6 w-5 place-items-center rounded-[5px] text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:text-foreground", mode === "code" && "text-foreground/70")} />}><ChevronDown className="size-3" /></DropdownMenuTrigger>
+				<DropdownMenuContent align="start" className="w-64">
+					{view("threads", "Threads", <MessagesSquare />, "Code chats in your projects")}
+					{view("factory", "Factory", <Factory />, "Issues and pull requests, stage by stage")}
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</div>
 	</div>;
 }
 

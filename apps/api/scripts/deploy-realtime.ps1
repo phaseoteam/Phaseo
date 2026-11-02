@@ -60,10 +60,26 @@ try {
     if ($accountIdOverridden) { $env:CLOUDFLARE_ACCOUNT_ID = $deployAccountId }
 
     if (-not $Initial) {
-        # A key that was never set is a 404 (exit 1): the switch is off.
-        $switch = $null
-        try { $switch = & pnpm exec wrangler kv key get $maintenanceKey --namespace-id $cacheNamespaceId --remote --text 2>$null } catch { $switch = $null }
-        if ($LASTEXITCODE -ne 0 -or -not $switch -or -not (($switch | Out-String) -match '"enabled"\s*:\s*true')) {
+        # A key that was never set is a 404 (exit 1): the switch is off. Any other
+        # failure (such as a token without KV read access) is reported as itself.
+        # Wrangler's stderr must not stop the script before its exit code is read.
+        $ErrorActionPreference = "Continue"
+        $switchOutput = @(& pnpm exec wrangler kv key get $maintenanceKey --namespace-id $cacheNamespaceId --remote --text 2>&1 | ForEach-Object { "$_" })
+        $switchExit = $LASTEXITCODE
+        $ErrorActionPreference = "Stop"
+        # The whole value, even if it was written across several lines; the checks
+        # below only look for "enabled" and "since" in it.
+        $switch = $switchOutput -join "`n"
+        if ($switchExit -ne 0) {
+            $detail = (($switchOutput | Select-Object -Last 15) -join "`n") -replace "\x1b\[[0-9;]*m", ""
+            # Wrangler: "Failed to fetch .../values/<key> - 404: Not Found". A 401 or 403
+            # (a token without KV read access) or a missing wrangler is a different failure.
+            if ($detail -match '/values/\S+ - 404: Not Found') {
+                throw "The realtime maintenance switch is off. Turn it on and wait for live calls to end before deploying $worker."
+            }
+            throw "Could not read the realtime maintenance switch (wrangler exit $switchExit). Check the deploy token can read Workers KV:`n$detail"
+        }
+        if (-not ($switch -match '"enabled"\s*:\s*true')) {
             throw "The realtime maintenance switch is off. Turn it on and wait for live calls to end before deploying $worker."
         }
         $since = $null

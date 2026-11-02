@@ -60,6 +60,11 @@ import { extractPdfText } from "./pdfText";
 import { projectTree, refreshProjectIndex, searchProjectFiles } from "./projectFileSearch";
 import { searchProjectContents } from "./projectContentSearch";
 import { cloneRepository, cloneSource } from "./projectClone";
+import { homedir, release } from "node:os";
+import { buildStamp } from "./buildInfo";
+import { prepareTriageCheckout, writeTriagePlaybook } from "./triage";
+import { diagnosticsSection, triagePlaybook, triagePlaybookName, triageSourceRepository, type TriageBuild, type TriagePreparation } from "../shared/triage";
+import { readTraceDiagnostics } from "./diagnostics/traceDiagnostics";
 import { UsageHubs, usageHubFile } from "./usageHubs";
 import { validateUsageHubRequest } from "../shared/usageHubs";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
@@ -82,6 +87,12 @@ import { localDay, modelMatchKey, type TokenPrices, type UsagePeriod } from "../
 import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
 import { PullRequestGuides } from "./pullRequestGuides";
 import { PullRequestWatcher } from "./pullRequestWatcher";
+import { FactoryService, factoryDataFolder } from "./factory/service";
+import { factoryBroadcaster, registerFactoryIpc } from "./factory/ipc";
+import { legacyFactoryFolder } from "./factory/persistence";
+import { IssueWatcher } from "./issueWatcher";
+import { searchGithubReferences } from "./projectIssues";
+import { issueLinkSnapshot, validateGithubReferenceQuery } from "../shared/issueView";
 import { checkoutPullRequestHere, checkoutPullRequestWorktree } from "./pullRequestCheckout";
 import { readPullRequestStack, runPullRequestStackAction } from "./pullRequestStacks";
 import { git } from "./gitProcess";
@@ -115,6 +126,8 @@ const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmen
 const updateFeedUrl = process.env.PHASEO_DESKTOP_UPDATE_URL;
 let workspaceRuntime: WorkspaceRuntime;
 let pullRequestGuides: PullRequestGuides;
+/** Code ▸ Factory; PHASEO_FACTORY_DEMO=1 runs it on demo data, for screenshots. */
+let factoryService: FactoryService | undefined;
 let globalInstructions: GlobalInstructions;
 let shutdownComplete = false;
 let shutdownStarted = false;
@@ -138,6 +151,7 @@ let worktreeCleanupTimer: ReturnType<typeof setInterval> | undefined;
 const autoCleanWorktrees = () => { if (!shutdownStarted && workspaceRuntime.store.getPreferences().worktreeCleanup.enabled) void workspaceRuntime.cleanWorktrees("auto").catch(() => {}); };
 let phaseoSignInTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
+let issueWatcher: IssueWatcher | undefined;
 let modelCatalogCache: ModelCatalogCache;
 let harnessModelCache: HarnessModelCache;
 /** Ends model discovery still running at quit, such as a background refresh of a harness's list. */
@@ -199,11 +213,16 @@ function phaseoSignInMethod(value: unknown): PhaseoSignInMethod {
 /** Runs one step of a Phaseo sign-in for a window, which a cancel, the window closing or the app quitting stops. */
 async function phaseoSignInStep<T>(event: Electron.IpcMainInvokeEvent, step: (owner: BrowserWindow, signal: AbortSignal) => Promise<T>) {
 	const owner = senderWindow(event);
-	if (!owner || shutdownStarted || !credentialVault.available()) throw new Error("Phaseo sign-in is unavailable.");
+	if (!owner || shutdownStarted) throw new Error("Phaseo sign-in is unavailable.");
 	if (phaseoSignIns.has(event.sender.id)) throw new Error("Phaseo sign-in is already open.");
 	const controller = new AbortController(); phaseoSignIns.set(event.sender.id, controller);
 	const destroyed = () => controller.abort(); owner.webContents.once("destroyed", destroyed);
-	try { return await step(owner, controller.signal); }
+	try {
+		// Claimed before this await, so a cancel or a closing window during the check still stops the sign-in.
+		if (!await credentialVault.available()) throw new Error("Phaseo sign-in is unavailable.");
+		if (controller.signal.aborted || shutdownStarted) throw new Error("Sign-in canceled.");
+		return await step(owner, controller.signal);
+	}
 	catch (error) { if (controller.signal.aborted) throw new Error("Sign-in canceled.", { cause: error }); throw error; }
 	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); }
 }
@@ -433,6 +452,7 @@ app.on("before-quit", event => {
 	if (worktreeCleanupTimer) clearInterval(worktreeCleanupTimer);
 	if (phaseoSignInTimer) clearInterval(phaseoSignInTimer);
 	void pullRequestWatcher?.close();
+	void issueWatcher?.close();
 	taskNotifications?.dismiss();
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
@@ -446,7 +466,9 @@ app.on("before-quit", event => {
 	for (const window of BrowserWindow.getAllWindows()) window.destroy();
 	// A hung shutdown (a process that won't die, a stuck run) must not leave an invisible app holding the database.
 	const deadline = setTimeout(() => { console.error("Shutdown timed out; quitting anyway."); stopTracing(); shutdownComplete = true; app.exit(0); }, 10_000);
-	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
+	// Factory saves its running stages as interrupted before the runtime stops their threads.
+	const factoryClosed = (factoryService?.shutdown() ?? Promise.resolve()).catch(() => { console.error("Factory shutdown failed."); });
+	void Promise.allSettled([factoryClosed.then(() => workspaceRuntime.close()).catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
 });
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
@@ -459,7 +481,7 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 	const controller = new AbortController(); signIns.set(id, controller);
 	try {
 		if (account.harness === "cursor") {
-			if (!credentialVault.available()) throw new Error("Secure credential storage is unavailable on this device.");
+			if (!await credentialVault.available()) throw new Error("Secure credential storage is unavailable on this device.");
 			const result = await cursorSignIn(url => shell.openExternal(url), controller.signal);
 			if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled."); const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id && !value.archived); if (!current) throw new Error("Account is unavailable.");
 			const oldSecret = current.secretId ?? current.id; const newSecret = randomUUID(); await credentialVault.set(newSecret, result.apiKey);
@@ -589,6 +611,7 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 });
 ipcMain.handle("workspace:git-review", (event, id: unknown) => { const root = projectRoot(event, id); return span("git.review", undefined, () => gitReview(root)); });
 ipcMain.handle("workspace:pull-requests", (event, id: unknown, cursor: unknown) => { const root = projectRoot(event, id); return span("gh.pull-requests", { page: cursor !== undefined }, () => projectPullRequests(root, cursor)); });
+ipcMain.handle("workspace:github-references", (event, id: unknown, query: unknown) => { const root = projectRoot(event, id), text = validateGithubReferenceQuery(query); return span("gh.github-references", undefined, () => searchGithubReferences(root, text)); });
 // Projects being removed or not yet available are left out rather than failing the whole page.
 ipcMain.handle("workspace:pull-request-directory", (event, query: unknown) => { if (!senderWindow(event)) throw new Error("Invalid pull request list request."); return listPullRequestDirectory(workspaceRuntime.store.getProjects().filter(project => { try { workspaceRuntime.assertProjectAvailable(project.id); return true; } catch { return false; } }), query); });
 ipcMain.handle("workspace:pull-request", async (event, id: unknown, number: unknown) => { const details = await projectPullRequest(projectRoot(event, id), number); workspaceRuntime.syncPullRequestSnapshot(details.repository, details.number, pullRequestLinkSnapshot(details)); return details; });
@@ -798,6 +821,41 @@ ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
 	const project = workspaceRuntime.store.addProject(directory);
 	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return { workspace: state, projectId: project.id };
 });
+const triageBuild = (): TriageBuild => ({ version: app.getVersion(), ...buildStamp, platform: process.platform, osRelease: release(), arch: process.arch, electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, packaged: app.isPackaged });
+/** Where filed issues and offered pull requests go; PHASEO_TRIAGE_REPOSITORY points them at a test repository. */
+const triageRepository = () => /^[\w.-]+\/[\w.-]+$/.test(process.env.PHASEO_TRIAGE_REPOSITORY ?? "") ? process.env.PHASEO_TRIAGE_REPOSITORY! : triageSourceRepository;
+let triagePreparing: Promise<{ projectId: string }> | undefined;
+// Triage: the running build's source as a project, for a Code chat that debugs the app itself.
+ipcMain.handle("workspace:triage-prepare", async (event): Promise<TriagePreparation> => {
+	if (!senderWindow(event) || shutdownStarted) throw new Error("Untrusted workspace request.");
+	// A second request while the first is fetching waits for it rather than fetching again.
+	triagePreparing ??= span("triage.prepare", { exact: Boolean(buildStamp.commit) }, async () => {
+		const checkout = await prepareTriageCheckout(path.join(app.getPath("userData"), "triage"), buildStamp.commit);
+		const project = workspaceRuntime.store.addProject(checkout.directory);
+		const { version } = triageBuild();
+		project.name = `Phaseo ${version} source`;
+		project.triage = { version, commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
+		workspaceRuntime.store.saveProject(project);
+		return { projectId: project.id };
+	}).finally(() => { triagePreparing = undefined; });
+	const { projectId } = await triagePreparing;
+	const workspace = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(workspace);
+	const triage = workspaceRuntime.store.getProjects().find(project => project.id === projectId)!.triage!;
+	return { workspace, projectId, build: triageBuild(), triage, playbook: triagePlaybookName() };
+});
+ipcMain.handle("workspace:triage-playbook", async (event, projectId: unknown, playbook: unknown, options: unknown) => {
+	if (!senderWindow(event) || shutdownStarted || typeof projectId !== "string" || typeof playbook !== "string") throw new Error("Invalid triage request.");
+	const project = workspaceRuntime.store.getProjects().find(value => value.id === projectId);
+	if (!project?.triage) throw new Error("This project is not a triage checkout.");
+	const offerPullRequest = Boolean(options && typeof options === "object" && (options as { offerPullRequest?: unknown }).offerPullRequest === true);
+	const logsDirectory = path.join(app.getPath("userData"), "logs");
+	const diagnostics = await readTraceDiagnostics({ traceFilePath: path.join(logsDirectory, "traces.ndjson"), logsDirectory, maxFiles: 3 }).catch(() => undefined);
+	await writeTriagePlaybook(project.directory, playbook, triagePlaybook({ build: triageBuild(), triage: project.triage, checkout: project.directory, userData: app.getPath("userData"), diagnostics: diagnosticsSection(diagnostics, homedir()), offerPullRequest }));
+});
+ipcMain.handle("workspace:issue-draft", async (event, taskId: unknown, action: unknown, edit: unknown) => {
+	if (!senderWindow(event) || shutdownStarted || typeof taskId !== "string" || (action !== "file" && action !== "discard")) throw new Error("Invalid issue draft request.");
+	await span("triage.issue", { action }, () => workspaceRuntime.issueDraftAction(taskId, action, edit));
+});
 ipcMain.handle("workspace:project-file", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid project request.");
 	const project = workspaceRuntime.store.getProjects().find(value => value.id === id);
@@ -972,6 +1030,7 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 }
 
 const browserHost = new BrowserHost();
+registerFactoryIpc(ipcMain, () => factoryService, senderWindow, async window => { const picked = await dialog.showOpenDialog(window, { title: "Choose a local clone of the repository", properties: ["openDirectory"] }); return picked.canceled ? undefined : picked.filePaths[0]; });
 const browserAgent = new BrowserAgent(browserHost, () => [...appWindows].find(window => !window.isDestroyed()));
 let browserRecordings: BrowserRecordings;
 ipcMain.handle("desktop:browser", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.command(owner, command); });
@@ -1084,7 +1143,7 @@ app.whenReady().then(() => {
 	if (process.platform === "darwin") app.dock?.setIcon(applicationIcon);
 	const workspaceDirectory = path.join(app.getPath("userData"), "workspace");
 	const vault = new SecretVault(path.join(workspaceDirectory, "credentials"), windowsCredentialEncryption({
-		available: () => safeStorage.isEncryptionAvailable() && (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),
+		available: async () => await safeStorage.isAsyncEncryptionAvailable() && (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),
 		encrypt: value => safeStorage.encryptStringAsync(value), decrypt: async value => (await safeStorage.decryptStringAsync(value)).result,
 	}));
 	credentialVault = vault;
@@ -1121,6 +1180,9 @@ app.whenReady().then(() => {
 	};
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	workspaceRuntime.discoverInstallations = harnessInstallations;
+	factoryService = new FactoryService(workspaceRuntime, { dataDir: factoryDataFolder(workspaceDirectory), legacyFolder: legacyFactoryFolder(app.getPath("appData")), demo: process.env.PHASEO_FACTORY_DEMO === "1", broadcast: factoryBroadcaster(() => BrowserWindow.getAllWindows()) });
+	workspaceRuntime.factoryTools = threadId => factoryService!.agentTools(threadId);
+	void factoryService.start().catch(() => {});
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
 	browserHost.downloads.configure(workspaceRuntime.store.browserDownloads);
 	taskNotifications = new TaskNotifications({
@@ -1166,6 +1228,9 @@ app.whenReady().then(() => {
 	workspaceRuntime.onPullRequestNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome !== "completed"); };
 	pullRequestWatcher = new PullRequestWatcher({ targets: () => workspaceRuntime.pullRequestWatchTargets(), read: readPullRequestView, record: (taskId, link, startedAt, next, update) => workspaceRuntime.recordPullRequestWatch(taskId, link, startedAt, next, update), snapshot: view => workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)) });
 	pullRequestWatcher.start();
+	workspaceRuntime.onIssueNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome === "failed"); };
+	issueWatcher = new IssueWatcher({ targets: () => workspaceRuntime.issueWatchTargets(), read: (cwd, repository, number) => workspaceRuntime.github.readIssue(cwd, repository, number), record: (taskId, link, startedAt, next, update) => workspaceRuntime.recordIssueWatch(taskId, link, startedAt, next, update), snapshot: issue => workspaceRuntime.syncIssueSnapshot(issue.repository, issue.number, issueLinkSnapshot(issue)) });
+	issueWatcher.start();
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	});

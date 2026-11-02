@@ -1,6 +1,14 @@
 "use client";
 
 import { SortableTableHead } from "../SortableTableHead";
+// The dashboard's formats are shared with the mobile app's usage screen.
+import {
+	formatUsageDeltaPercent as formatDeltaPercent,
+	formatUsageNumber as formatNumber,
+	formatUsagePercent as formatPercent,
+	formatUsageUsd as formatCurrency,
+	formatUsageUsdAxis,
+} from "@phaseo/app-kit/format";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -141,37 +149,11 @@ const FILTER_FIELDS: Array<{
 	{ id: "user", messageKey: "fieldUser", icon: UserRound },
 ];
 
-function formatNumber(value: number): string {
-	return new Intl.NumberFormat("en", {
-		notation: value >= 100000 ? "compact" : "standard",
-		maximumFractionDigits: value >= 100000 ? 1 : 0,
-	}).format(value);
-}
-
-function formatCurrency(value: number): string {
-	const absoluteValue = Math.abs(value);
-	const maximumFractionDigits =
-		absoluteValue > 0 && absoluteValue < 0.01 ? 5 : absoluteValue >= 100 ? 0 : 2;
-	return new Intl.NumberFormat("en", {
-		style: "currency",
-		currency: "USD",
-		maximumFractionDigits,
-	}).format(value);
-}
-
-function formatPercent(value: number): string {
-	return `${(value * 100).toFixed(1)}%`;
-}
-
 function formatKpiValue(kpi: ObservabilityKpi, value = kpi.value): string {
 	if (kpi.format === "currency") return formatCurrency(value);
 	if (kpi.format === "currency_per_million") return `${formatCurrency(value)}/M`;
 	if (kpi.format === "percent") return formatPercent(value);
 	return formatNumber(value);
-}
-
-function formatDeltaPercent(value: number): string {
-	return Math.abs(value).toFixed(1);
 }
 
 function formatCompactDeltaPercent(value: number): string {
@@ -882,10 +864,7 @@ function timeSeriesYAxisDomain(max: number) {
 type TimeSeriesValueKind = "number" | "currency";
 
 function formatAxisValue(value: number, kind: TimeSeriesValueKind) {
-	if (kind === "currency") {
-		if (value > 0 && value < 0.01) return `$${value.toFixed(3)}`;
-		return formatCurrency(value);
-	}
+	if (kind === "currency") return formatUsageUsdAxis(value);
 	return formatNumber(value);
 }
 

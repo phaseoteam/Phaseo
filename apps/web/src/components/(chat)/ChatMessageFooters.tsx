@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -46,36 +47,8 @@ function formatServiceTierLabel(value: string | null | undefined, labels: Record
 		.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function formatThroughputLabel(value: number | null) {
-	if (typeof value !== "number" || !Number.isFinite(value)) return "-";
-	const normalized = Math.max(0, value);
-	if (normalized === 0) return "0 tps";
-	if (normalized < 1) return `${normalized.toFixed(2)} tps`;
-	if (normalized < 10) {
-		return `${normalized.toFixed(1).replace(/\.0$/, "")} tps`;
-	}
-	return `${Math.round(normalized)} tps`;
-}
-
-function formatTimingLabel(value: number, locale: string) {
-	if (!Number.isFinite(value)) return "-";
-	const formatNumber = (number: number, digits: number) =>
-		new Intl.NumberFormat(locale, {
-			maximumFractionDigits: digits,
-		}).format(number);
-	if (value < 1000) return `${Math.max(0, Math.round(value))} ms`;
-	const seconds = value / 1000;
-	if (seconds < 10) {
-		return `${formatNumber(seconds, 2)} s`;
-	}
-	if (seconds < 60) {
-		return `${formatNumber(seconds, 1)} s`;
-	}
-	const minutes = seconds / 60;
-	if (minutes < 10) {
-		return `${formatNumber(minutes, 2)} min`;
-	}
-	return `${formatNumber(minutes, 1)} min`;
+function formatThroughputLabel(value: number | null, locale: string) {
+	return formatTps(value, locale) ?? "-";
 }
 
 function MetadataSection({
@@ -115,7 +88,7 @@ function TimingMetricRow({
 	return (
 		<MetadataRow label={label}>
 			<NumericValue>
-				{formatTimingLabel(normalizedValue, locale)}
+				{formatLatency(normalizedValue, locale)}
 			</NumericValue>
 		</MetadataRow>
 	);
@@ -262,6 +235,7 @@ export function AssistantMessageFooter({
 	variantCount,
 }: AssistantMessageFooterProps) {
 	const t = useTranslations("Product.chat.messageActions");
+	const locale = useLocale();
 	const providerHref = metadataProviderId && metadataProviderId !== "auto"
 		? `/api-providers/${encodeURIComponent(metadataProviderId)}`
 		: null;
@@ -438,14 +412,14 @@ export function AssistantMessageFooter({
 									</MetadataRow>
 									<MetadataRow label={t("throughput")}>
 										<NumericValue>
-											{formatThroughputLabel(throughputTps)}
+											{formatThroughputLabel(throughputTps, locale)}
 										</NumericValue>
 									</MetadataRow>
 									{typeof outputSpeedTps === "number" &&
 									Number.isFinite(outputSpeedTps) ? (
 										<MetadataRow label={t("outputSpeed")}>
 											<NumericValue>
-												{formatThroughputLabel(outputSpeedTps)}
+												{formatThroughputLabel(outputSpeedTps, locale)}
 											</NumericValue>
 										</MetadataRow>
 									) : null}

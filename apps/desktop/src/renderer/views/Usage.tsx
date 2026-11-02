@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Boxes, CalendarDays, ChartLine, CircleCheck, FolderOpen, Hourglass, Info, MessageSquare, Plane, RotateCw } from "lucide-react";
 import { inboxLists } from "../../shared/inbox";
-import { formatCost } from "../../shared/usageAmounts";
+import { formatAgoShort, formatRoundedCount } from "@phaseo/app-kit/format";
+import { formatSpend } from "../../shared/usageAmounts";
 import { localDay, todayPace, usagePeriods, type TodayPace, type UsageCost, type UsagePeriod, type UsageReport } from "../../shared/usageLedger";
 import type { Harness } from "../../shared/workspace";
 import { errorText, useWorkspace, type UsageView } from "../app/workspace";
@@ -12,13 +13,11 @@ import { Tip } from "../components/ui/tooltip";
 import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
 import { UsageLimitsPanel } from "../settings/UsageSettings";
-import { relativeTime } from "./pullRequests/pullRequestLogic";
 import { Group, Row } from "./Inbox";
 
-/** Money as people read it: $1.32, $0.51; only amounts under a cent keep more places, so they don't read as $0.00. */
-const money = (nanos: number) => formatCost(nanos >= 1e7 ? Math.round(nanos / 1e7) * 1e7 : nanos);
-const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
-const tokens = (count: number) => count < 10_000 ? count.toLocaleString("en-US") : compact.format(count);
+/** Totals as the website's budgets show them: $1.32, $0.51, with four places below a cent. */
+const money = formatSpend;
+const tokens = (count: number) => formatRoundedCount(count, "en-US");
 const percent = (part: number, whole: number) => whole ? `${Math.round(part / whole * 100)}%` : "0%";
 
 /** Each harness keeps one colour on every chart, as on T3 Code's Usage page; Codex is the foreground, as its logo is. */
@@ -340,7 +339,7 @@ export function Usage() {
 
 					{period === "today" && <Group Icon={CircleCheck} label="Finished today" count={finished.length || undefined}>
 						{finished.length ? finished.slice(0, 12).map(task => <Row key={task.id} glyph={{ Icon: task.autopilot && !task.autopilot.inherited ? Plane : CircleCheck, tone: "text-success" }} label={`${task.title}, finished`} onOpen={() => select(task.id)}
-							title={task.title} aside={relativeTime(task.lastCompletedAt!, now.getTime())} meta={overview.projects.find(project => project.id === task.projectId)?.name} />)
+							title={task.title} aside={formatAgoShort(task.lastCompletedAt!, now.getTime())} meta={overview.projects.find(project => project.id === task.projectId)?.name} />)
 							: <p className="px-3 py-2 text-xs text-muted-foreground">Nothing has finished yet today.</p>}
 					</Group>}
 

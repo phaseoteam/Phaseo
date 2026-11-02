@@ -49,5 +49,21 @@
 		"working": "Désabonnement…",
 		"done": "Vous êtes désabonné.",
 		"error": "Cela n’a pas fonctionné. Veuillez réessayer."
+	},
+	"spendReports": {
+		"metaTitle": "E-mails de rapport de dépenses",
+		"title": "E-mails de rapport de dépenses pour {workspace}",
+		"subscribedBody": "Vous recevez par e-mail le rapport de dépenses de cet espace de travail. Le désabonnement n’arrête que ces rapports : les rapports d’autres espaces de travail, les alertes et les e-mails de compte et de facturation continuent d’arriver.",
+		"unsubscribedBody": "Vous ne recevrez plus par e-mail le rapport de dépenses de cet espace de travail. Les propriétaires et administrateurs voient toujours les dépenses sur la page d’utilisation.",
+		"unsubscribe": "Se désabonner",
+		"unsubscribing": "Désabonnement…",
+		"subscribe": "Se réabonner",
+		"subscribing": "Réabonnement…",
+		"unsubscribed": "Vous êtes désabonné.",
+		"subscribed": "Vous êtes de nouveau abonné.",
+		"error": "Cela n’a pas fonctionné. Veuillez réessayer.",
+		"invalidTitle": "Ce lien ne fonctionne pas",
+		"invalidBody": "Vérifiez que le lien a été copié en entier. Vous pouvez aussi modifier les réglages du rapport de dépenses dans Paramètres → Notifications.",
+		"unavailable": "Cette page n’est pas disponible pour le moment. Veuillez réessayer plus tard."
 	}
 }

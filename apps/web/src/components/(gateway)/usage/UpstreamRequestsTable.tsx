@@ -1,5 +1,6 @@
 "use client";
 
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import * as React from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle2, KeyRound, XCircle } from "lucide-react";
@@ -54,10 +55,8 @@ function maskedKeyPrefix(prefix: string | null | undefined, hiddenLabel: string)
 	return value ? `${value}••••••••` : hiddenLabel;
 }
 
-function formatMilliseconds(value: number | null, locale: string): string {
-	return typeof value === "number" && Number.isFinite(value)
-		? new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short", maximumFractionDigits: 0 }).format(value)
-		: "—";
+function formatSeconds(value: number | null, locale: string): string {
+	return formatLatency(value, locale) ?? "—";
 }
 
 function metadataNumber(value: unknown, key: string): number | null {
@@ -86,7 +85,7 @@ function formatThroughput(row: UsageUpstreamRequestRow, locale: string): string 
 	const value = throughputForRow(row);
 	return value === null
 		? "—"
-		: new Intl.NumberFormat(locale, { maximumFractionDigits: value >= 100 ? 0 : 1 }).format(value) + " tok/s";
+		: formatTps(value, locale) ?? "—";
 }
 
 function attemptLabel(
@@ -313,7 +312,7 @@ export default function UpstreamRequestsTable({
 						case "attempts":
 							return row.totalAttempts;
 						case "latency":
-							return formatMilliseconds(row.request_latency_ms ?? null, locale);
+							return formatSeconds(row.request_latency_ms ?? null, locale);
 					}
 				}}
 			/>
@@ -395,14 +394,14 @@ export default function UpstreamRequestsTable({
 									/>
 									<DetailField
 										label={t("strings.Latency" as never)}
-										value={formatMilliseconds(
+										value={formatSeconds(
 											inspected.latency_ms ?? inspected.duration_ms,
 											locale,
 										)}
 									/>
 									<DetailField
 										label={t("strings.upstreamTotalTime" as never)}
-										value={formatMilliseconds(inspected.total_ms, locale)}
+										value={formatSeconds(inspected.total_ms, locale)}
 									/>
 									<DetailField label={t("strings.Outcome" as never)} value={inspected.outcome} />
 									<DetailField
@@ -449,7 +448,7 @@ export default function UpstreamRequestsTable({
 														{attempt.status_code ?? attempt.outcome}
 													</TableCell>
 													<TableCell>
-														{formatMilliseconds(
+														{formatSeconds(
 															attempt.latency_ms ?? attempt.duration_ms, locale,
 														)}
 													</TableCell>

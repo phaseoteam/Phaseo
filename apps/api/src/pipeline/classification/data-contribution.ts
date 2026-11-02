@@ -1,8 +1,9 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { redactSensitiveInfoForStorage } from "@/pipeline/before/sensitiveInfo";
+import { isMediaBytesField, REDACTED_BASE64, redactMediaString, stripMediaBytes } from "@/pipeline/privacy/media-bytes";
 
 export const DATA_CONTRIBUTION_POLICY_VERSION = "2026-07-26-v2";
-export const DATA_CONTRIBUTION_REDACTION_VERSION = "2026-07-26-v1";
+export const DATA_CONTRIBUTION_REDACTION_VERSION = "2026-10-29-v2";
 export const DATA_CONTRIBUTION_DEFAULT_SAMPLE_RATE_BPS = 10000;
 export const DATA_CONTRIBUTION_DEFAULT_CLASSIFIER_SAMPLE_RATE_BPS = 1000;
 const DEFAULT_RETENTION_DAYS = 30;
@@ -92,12 +93,12 @@ function replaceAndCount(
 }
 
 function redactString(value: string, context: SanitizationContext): string {
-	if (value.startsWith("data:") && value.length > 256) {
+	// Contributions keep no image, audio or file bytes (see media-bytes.ts).
+	let redacted = redactMediaString(value, () => {
 		context.redactionCount += 1;
-		return "[REDACTED_DATA_URL]";
-	}
-	let redacted = replaceAndCount(
-		value,
+	});
+	redacted = replaceAndCount(
+		redacted,
 		/\b(?:phaseo_v\d+_(?:sk|mk)_|sk-|pk-|rk-|sess-)[A-Za-z0-9_-]{12,}\b/g,
 		"[REDACTED_SECRET]",
 		context,
@@ -150,15 +151,21 @@ function sanitize(value: unknown, context: SanitizationContext, depth = 0): unkn
 	if (typeof value === "string") return redactString(value, context);
 	if (Array.isArray(value)) return value.map((entry) => sanitize(entry, context, depth + 1));
 	if (!value || typeof value !== "object") return value ?? null;
+	const record = value as Record<string, unknown>;
 	return Object.fromEntries(
-		Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+		Object.entries(record).map(([key, entry]) => [
 			key,
 			/(?:api[_-]?key|authorization|cookie|password|private[_-]?key|secret|token|user[_-]?id|session[_-]?id)$/i.test(key) || key.toLowerCase() === "user"
 				? (() => {
 					context.redactionCount += 1;
 					return "[REDACTED]";
 				})()
-				: sanitize(entry, context, depth + 1),
+				: typeof entry === "string" && entry && isMediaBytesField(key, record)
+					? (() => {
+						context.redactionCount += 1;
+						return REDACTED_BASE64;
+					})()
+					: sanitize(entry, context, depth + 1),
 		]),
 	);
 }
@@ -168,7 +175,8 @@ export function sanitizeDataContributionPayload(value: unknown): {
 	redactionCount: number;
 } {
 	const context = { redactionCount: 0 };
-	return { value: sanitize(value, context), redactionCount: context.redactionCount };
+	// stripMediaBytes also reaches media inside serialised JSON strings.
+	return { value: sanitize(stripMediaBytes(value), context), redactionCount: context.redactionCount };
 }
 
 export async function pruneExpiredDataContributions(limit = 250): Promise<{ deleted: number; failed: number }> {

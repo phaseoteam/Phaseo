@@ -4,7 +4,7 @@ import type { PullRequestView } from "../../../shared/pullRequestView";
 import { parsePullRequestReference } from "../../../shared/pullRequestView";
 import { useOptionalWorkspace } from "../../app/workspace";
 import { ActorAvatar, pullRequestStatePresentation } from "./presentation";
-import { relativeTime } from "./pullRequestLogic";
+import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { useProjectRepository } from "./useProjectRepository";
 
 /** The open chat's project (or the new chat's), whose repository decides which pull request links can be read. */
@@ -32,7 +32,7 @@ function PreviewBody({ projectId, number }: { projectId: string; number: number 
 		</div>
 		<p className="mt-1 text-sm leading-snug font-medium text-pretty text-foreground">{view.title}</p>
 		<div className="mt-2 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-			<ActorAvatar actor={view.authorActor} className="size-4" /><span className="min-w-0 truncate">{author}</span><span aria-hidden>·</span><span className="shrink-0">opened {relativeTime(view.createdAt)}</span>
+			<ActorAvatar actor={view.authorActor} className="size-4" /><span className="min-w-0 truncate">{author}</span><span aria-hidden>·</span><span className="shrink-0">opened {formatRelativeTime(view.createdAt)}</span>
 		</div>
 	</div>;
 }

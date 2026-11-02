@@ -5726,10 +5726,9 @@ paths:
       summary: Create a spend rule
       description: >-
         Creates a spend rule and sets its notification destinations. Every
-        metric is accepted; rules returned with evaluated false are saved and
-        fire from a later release. Blocking is best effort and acts minutes
-        after the threshold; use key limits and workspace budgets for exact
-        caps. A workspace can have 50 spend rules.
+        metric is evaluated. Blocking is best effort and acts minutes after the
+        threshold; use key limits and workspace budgets for exact caps. A
+        workspace can have 50 spend rules.
       requestBody:
         required: true
         content:
@@ -15339,9 +15338,10 @@ components:
         - image_url
       additionalProperties: false
       description: >-
-        Inline base64 image. Hosted URLs and file IDs are unsupported. A request
-        supports at most 128 images across all messages; individual providers
-        can impose lower limits.
+        Inline base64 image, or an HTTPS image URL on Amazon S3, Google Cloud
+        Storage or Azure Blob Storage (Base Labs models only). File IDs are
+        unsupported. A request supports at most 128 images across all messages;
+        individual providers can impose lower limits.
       properties:
         type:
           type: string
@@ -15350,7 +15350,7 @@ components:
         image_url:
           type: string
           maxLength: 1073741824
-          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+          pattern: ^(data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}|https://\S+)$
         detail:
           type: string
           nullable: true
@@ -25268,8 +25268,9 @@ components:
         spend: spend reached threshold_amount. budget_percent: spend reached
         threshold_percents of the base. forecast: spend projected to the period
         end reaches the threshold. spike: spend over the last window_hours is at
-        least spike_multiplier times the usual level and at least spike_floor.
-        balance: the workspace balance or runway falls below the threshold.
+        least spike_multiplier times the median of the same window over the
+        previous 7 days, and at least spike_floor. balance: the workspace
+        balance or runway falls below the threshold.
       enum:
         - spend
         - budget_percent
@@ -25363,8 +25364,8 @@ components:
         evaluated:
           type: boolean
           description: >-
-            False for rules the evaluator does not handle yet (spike rules).
-            They are saved and fire from a later release.
+            Whether the evaluator handles the rule's metric, period and base.
+            Every rule the API accepts is evaluated.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -25382,8 +25383,9 @@ components:
           maximum: 720
           nullable: true
           description: >-
-            Hours in a rolling window: the spike window for spike rules and the
-            burn-rate lookback for balance rules. Null for calendar periods.
+            Hours in a rolling window: the spike window for spike rules (at most
+            56, so that 3 windows fit in the previous 7 days) and the burn-rate
+            lookback for balance rules. Null for calendar periods.
         time_zone:
           type: string
           maxLength: 64
@@ -25525,8 +25527,9 @@ components:
           maximum: 720
           nullable: true
           description: >-
-            Hours in a rolling window: the spike window for spike rules and the
-            burn-rate lookback for balance rules. Null for calendar periods.
+            Hours in a rolling window: the spike window for spike rules (at most
+            56, so that 3 windows fit in the previous 7 days) and the burn-rate
+            lookback for balance rules. Null for calendar periods.
         time_zone:
           type: string
           maxLength: 64
@@ -25680,7 +25683,9 @@ components:
         period. Forecast rules have a forecast object, and their thresholds are
         measured against the projection. Balance rules have the burn-rate window
         as period, the available balance as value and a balance object. Spike
-        rules have period, value and alert null.
+        rules have their window as period, the spend over it as value, the
+        median of the same window over the previous 7 days as base, the point
+        they fire at as next_threshold and a spike object.
       required:
         - rule_id
         - metric
@@ -25705,6 +25710,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -25716,8 +25722,8 @@ components:
         evaluated:
           type: boolean
           description: >-
-            False for rules the evaluator does not handle yet (spike rules).
-            They are saved and fire from a later release.
+            Whether the evaluator handles the rule's metric, period and base.
+            Every rule the API accepts is evaluated.
         computed_at:
           type: string
           format: date-time
@@ -25975,6 +25981,83 @@ components:
               description: >-
                 Auto Top-Up is on and working, so a drop is recorded without an
                 alert.
+        spike:
+          type: object
+          nullable: true
+          description: >-
+            Spike rules only: spend over the last window_hours against the
+            median of the same window over the previous 7 days, as the evaluator
+            sees it. Null for other rules.
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: >-
+                The median of the same window over the previous 7 days: the same
+                hours on each of the 7 days before for windows under 24 hours,
+                else the non-overlapping windows before it that fit in 7 days.
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: >-
+                Spend over the window divided by the baseline. Null when the
+                baseline is 0, when only the floor applies.
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: >-
+                What spend over the window must reach to fire: the larger of
+                spike_multiplier times the baseline and the floor.
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: How many windows the baseline has. A rule needs at least 3.
+            active_windows:
+              type: integer
+              description: Baseline windows in which the workspace spent anything.
+            history_ready:
+              type: boolean
+              description: >-
+                False until the workspace has spent in at least 3 baseline
+                windows. The rule does not fire before then.
+            spiking:
+              type: boolean
+              description: Whether the rule would fire now, before the cooldown.
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: When the cooldown after the last alert ends, if it has not yet.
         alert:
           type: object
           nullable: true
@@ -26535,10 +26618,11 @@ components:
     WorkspaceSpendAttribution:
       type: string
       description: >-
-        How spend rules count a person's spend toward departments when their key
-        has no department of its own: all counts it toward every department they
-        belong to; primary counts it toward their primary department only. A
-        key's own department always wins.
+        How spend rules, department budgets and department rate limits count a
+        person's requests toward departments when their key has no department of
+        its own: all counts them toward every department they belong to; primary
+        counts them toward their primary department only. A key's own department
+        and a member's directory override always win.
       enum:
         - all
         - primary
@@ -26550,16 +26634,41 @@ components:
         zone of their own, and for spend reports. Defaults to UTC. Enforced key
         limits and workspace budgets always use UTC.
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: >-
+        How often workspace owners get a spend report email, and admins too when
+        report_include_admins is on: off, daily (09:00 for the day before),
+        weekly (Monday 09:00 for the previous Monday-to-Sunday week) or monthly
+        (the 1st at 09:00 for the previous month), in the billing time zone.
+        Periods without spend are skipped. Workspace spend_report routes get one
+        summary per report. Defaults to weekly.
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: >-
+        Also email the spend report to workspace admins, not only owners.
+        Defaults to false. Anyone can unsubscribe from the link in the email.
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -26651,6 +26760,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -27583,44 +27696,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: >-
-        Deprecated. Guardrails do not enforce request or spend limits; use API
-        key limits or workspace budgets instead.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -27690,8 +27765,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -27789,54 +27862,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: >-
-            Deprecated. Guardrails do not enforce request or spend limits; use
-            API key limits or workspace budgets instead.
         created_at:
           type: string
           format: date-time
@@ -27948,54 +27973,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: >-
-                Deprecated. Guardrails do not enforce request or spend limits;
-                use API key limits or workspace budgets instead.
             created_at:
               type: string
               format: date-time

@@ -49,5 +49,21 @@
 		"working": "Wird abgemeldet…",
 		"done": "Du bist abgemeldet.",
 		"error": "Das hat nicht geklappt. Bitte versuche es noch einmal."
+	},
+	"spendReports": {
+		"metaTitle": "E-Mails mit Ausgabenberichten",
+		"title": "Ausgabenberichte per E-Mail für {workspace}",
+		"subscribedBody": "Du erhältst den Ausgabenbericht dieses Workspace per E-Mail. Die Abmeldung stoppt nur diese Berichte: Berichte anderer Workspaces, Warnungen sowie Konto- und Abrechnungs-E-Mails kommen weiterhin.",
+		"unsubscribedBody": "Du erhältst den Ausgabenbericht dieses Workspace nicht mehr per E-Mail. Inhaber und Admins sehen die Ausgaben weiterhin auf der Nutzungsseite.",
+		"unsubscribe": "Abmelden",
+		"unsubscribing": "Wird abgemeldet…",
+		"subscribe": "Wieder anmelden",
+		"subscribing": "Wird angemeldet…",
+		"unsubscribed": "Du bist abgemeldet.",
+		"subscribed": "Du bist wieder angemeldet.",
+		"error": "Das hat nicht funktioniert. Bitte versuche es erneut.",
+		"invalidTitle": "Dieser Link funktioniert nicht",
+		"invalidBody": "Prüfe, ob der ganze Link kopiert wurde. Du kannst die Einstellungen für Ausgabenberichte auch unter Einstellungen → Benachrichtigungen ändern.",
+		"unavailable": "Diese Seite ist gerade nicht verfügbar. Bitte versuche es später erneut."
 	}
 }

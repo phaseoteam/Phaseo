@@ -25,7 +25,7 @@ describe("GeographyUsage", () => {
 		expect(html).toContain("Share");
 		expect(html).toContain("100.0%");
 		expect(html).toContain("95.0%");
-		expect(html).toContain("245 ms");
+		expect(html).toContain("0.25 s");
 		expect(html).toContain("$1.25");
 		expect(html).not.toContain("US$1.25");
 		expect(html).toContain("/flags/gb.svg");

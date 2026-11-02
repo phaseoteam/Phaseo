@@ -216,6 +216,45 @@ describe("rate limit plan publication", () => {
 		expect(withoutDepartments).not.toHaveProperty("keyDepartments");
 	});
 
+	it("counts a member toward their primary department only when the workspace attributes to the primary one", async () => {
+		const grant = (user: string, department: string, extra: Record<string, unknown> = {}) =>
+			({ workspace_id: WS, user_id: user, department_id: department, source_type: "manual", is_primary: false, created_at: "2026-10-01T00:00:00Z", ...extra });
+		mocks.tables = {
+			workspace_rate_limit_policies: [policy(STRICT, "Strict", 2), policy(LOOSE, "Loose", 100)],
+			workspace_rate_limit_policy_assignments: [
+				assignment(STRICT, "department", { department_id: "dept-sales" }),
+				assignment(LOOSE, "department", { department_id: "dept-legal" }),
+			],
+			keys: [],
+			workspace_department_grants: [
+				grant("user-flagged", "dept-sales"),
+				grant("user-flagged", "dept-legal", { is_primary: true }),
+				// Manual beats SCIM, then the oldest grant wins.
+				grant("user-manual", "dept-legal", { source_type: "scim_group", created_at: "2026-09-01T00:00:00Z" }),
+				grant("user-manual", "dept-sales"),
+				grant("user-oldest", "dept-legal", { created_at: "2026-10-02T00:00:00Z" }),
+				grant("user-oldest", "dept-sales"),
+				// The primary department has no policy, so this member counts toward none.
+				grant("user-elsewhere", "dept-ops", { is_primary: true }),
+				grant("user-elsewhere", "dept-sales"),
+			],
+			workspace_member_overrides: [],
+			workspace_settings: [{ workspace_id: WS, department_spend_attribution: "primary" }],
+		};
+		expect((await buildRateLimitPlan(WS)).memberDepartments).toEqual({
+			"user-flagged": ["dept-legal"],
+			"user-manual": ["dept-sales"],
+			"user-oldest": ["dept-sales"],
+		});
+		mocks.tables.workspace_settings = [{ workspace_id: WS, department_spend_attribution: "all" }];
+		expect((await buildRateLimitPlan(WS)).memberDepartments).toEqual({
+			"user-flagged": ["dept-legal", "dept-sales"],
+			"user-manual": ["dept-legal", "dept-sales"],
+			"user-oldest": ["dept-legal", "dept-sales"],
+			"user-elsewhere": ["dept-sales"],
+		});
+	});
+
 	it("writes the plan to KV, and deletes the key once the workspace has no assignments", async () => {
 		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2)];
 		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "key", { key_id: "key-1" })];

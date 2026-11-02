@@ -16,6 +16,7 @@ import {
 	useMessageScroller,
 } from "@shadcn/react/message-scroller";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { formatLatency, formatUsdCost } from "@phaseo/app-kit/format";
 import { Streamdown } from "streamdown";
 import { ChatAnswerContent } from "./openui/ChatAnswerContent";
 import { OPENUI_FORMAT } from "./openui/openuiHelpers";
@@ -206,42 +207,8 @@ function GeneratingResponseIndicator() {
 }
 
 function formatGenerationDuration(value: unknown): string | null {
-	if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-		return null;
-	}
-	if (value < 1000) {
-		return `${Math.round(value)} ms`;
-	}
-	const seconds = value / 1000;
-	if (seconds < 10) {
-		return `${seconds.toFixed(2).replace(/\.?0+$/, "")} s`;
-	}
-	if (seconds < 60) {
-		return `${seconds.toFixed(1).replace(/\.0$/, "")} s`;
-	}
-	const minutes = seconds / 60;
-	if (minutes < 10) {
-		return `${minutes.toFixed(2).replace(/\.?0+$/, "")} min`;
-	}
-	return `${minutes.toFixed(1).replace(/\.0$/, "")} min`;
-}
-
-function formatUsdCost(value: unknown): string | null {
-	const amount =
-		typeof value === "number"
-			? value
-			: typeof value === "string"
-				? Number.parseFloat(value)
-				: NaN;
-	if (!Number.isFinite(amount) || amount < 0) return null;
-	if (amount === 0) return "$0";
-	if (amount >= 0.01) {
-		return `$${amount.toFixed(4).replace(/\.?0+$/, "")}`;
-	}
-	if (amount >= 0.00001) {
-		return `$${amount.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")}`;
-	}
-	return `$${amount.toFixed(9).replace(/0+$/, "").replace(/\.$/, "")}`;
+	if (typeof value !== "number" || value < 0) return null;
+	return formatLatency(value);
 }
 
 function formatMessageSentAt(value: string): string | null {

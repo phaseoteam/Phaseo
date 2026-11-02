@@ -6,7 +6,7 @@ import { View } from "react-native";
 import { LegendItem, LineChart } from "@/components/charts";
 import { Button, OptionSheet, Text, useMenu, useToneColor, type ViewRef } from "@/components/ui";
 import { getModelPerformance, getModelPerformanceColos, type ModelPerformance } from "@/lib/api/models";
-import { formatMs, formatShortDate } from "@/lib/format";
+import { formatSeconds, formatShortDate, formatSpeed } from "@/lib/format";
 import { EmptyBox, PageSection } from "./parts";
 import { averageUptime, formatPercentile, hasPerformanceHistory, PERCENTILES, performanceView, RANGE_DAYS, showsLeastStableProvider, TREND_METRICS, trendSeries, uptimeHours, type RangeDays, type TrendMetric } from "./performance";
 import type { SectionId } from "./sections";
@@ -33,9 +33,9 @@ export function usePerformance(modelId: string, options: { range?: RangeDays; co
 
 function formatValue(metric: TrendMetric, value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return "—";
-  if (metric === "throughput") return `${value >= 100 ? Math.round(value) : Number(value.toFixed(1))} tok/s`;
+  if (metric === "throughput") return formatSpeed(value);
   if (metric === "cachedInput") return `${value.toFixed(1)}%`;
-  return formatMs(value);
+  return formatSeconds(value);
 }
 
 const timeLabel = (resolution: "hour" | "day") => (time: number) => {

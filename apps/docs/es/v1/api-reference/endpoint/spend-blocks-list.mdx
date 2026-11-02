@@ -1,0 +1,9 @@
+---
+title: "Listar bloqueos de gasto"
+sidebarTitle: "Listar bloqueos"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml GET /spend-blocks"
+description: "Lista los bloqueos de reglas de gasto que están rechazando solicitudes."
+---
+
+Requiere `spend_rules:read`. Los llamadores OAuth deben ser propietarios o administradores del espacio de trabajo. Añade `include_lifted=true` para incluir los bloqueos levantados. Los bloqueos se aplican en la medida de lo posible; consulta [bloquear solicitudes](../../guides/spend-alerts.mdx#block-requests).

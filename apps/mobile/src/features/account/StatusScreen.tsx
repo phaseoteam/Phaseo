@@ -2,7 +2,7 @@ import { ExternalLink } from "lucide-react-native";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { Button, EmptyState, ErrorState, Header, LoadingState, ReadableWidth, Row, Screen, Section, Text, useToneColor } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
-import { formatRelativeDay } from "@/lib/format";
+import { formatDateParts } from "@/lib/format";
 import { openWeb } from "@/lib/web";
 import { useStatus } from "./queries";
 
@@ -53,7 +53,7 @@ export function StatusScreen() {
                         <StatusDot state={incident.impactState ?? "degraded"} />
                         <Text variant="label" className="flex-1">{incident.name}</Text>
                       </View>
-                      <Text variant="caption">{[incident.impact, incident.status ? incident.status.replace(/_/g, " ") : null, incident.updatedAt ? `updated ${formatRelativeDay(incident.updatedAt).toLowerCase()} at ${time.format(Date.parse(incident.updatedAt))}` : null].filter(Boolean).join(" · ")}</Text>
+                      <Text variant="caption">{[incident.impact, incident.status ? incident.status.replace(/_/g, " ") : null, incident.updatedAt ? `updated ${formatDateParts(incident.updatedAt, { timeZone: "UTC", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} UTC` : null].filter(Boolean).join(" · ")}</Text>
                       {incident.message ? <Text variant="small">{incident.message}</Text> : null}
                     </View>
                   ))}

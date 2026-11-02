@@ -25,6 +25,7 @@ import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
+import { FactoryPage } from "./factory/FactoryPage";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -64,12 +65,13 @@ function useShortcuts() {
 }
 
 function Main() {
-	const { selectedId, compareId, compareGroups, settings, scheduled, pullRequestsPage, inboxPage, usagePage } = useWorkspace();
+	const { selectedId, compareId, compareGroups, settings, scheduled, pullRequestsPage, inboxPage, usagePage, mode, codeView } = useWorkspace();
 	if (settings) return <SettingsPage />;
 	if (inboxPage) return <Inbox />;
 	if (usagePage) return <Usage />;
 	if (scheduled) return <ScheduledTasks />;
 	if (pullRequestsPage) return <PullRequestsPage />;
+	if (mode === "code" && codeView === "factory") return <FactoryPage />;
 	const group = compareGroups.find(value => value.id === compareId);
 	if (group) return <CompareView key={group.id} group={group} />;
 	// One ChatView across chats: its task cache and composer editor survive switching, so nothing flickers.
