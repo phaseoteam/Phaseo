@@ -43,7 +43,7 @@ Se o modelo da solicitação não estiver disponível no Chat, o chat usará seu
 ## Como o chat continua
 
 - A solicitação é aberta como um novo chat com seu próprio ID de sessão, salvo no seu navegador como qualquer outro chat. Os turnos seguintes não entram na sessão original em Logs.
-- Mensagens que você não editou são enviadas na forma original, então chamadas de ferramenta, resultados de ferramenta, imagens, áudio e arquivos são mantidos no próximo turno. Mensagens editadas e novas são enviadas como texto, como em qualquer chat.
+- Mensagens que você não editou são enviadas na forma original, então chamadas de ferramenta, resultados de ferramenta e URLs de imagens são mantidos no próximo turno. Mensagens editadas e novas são enviadas como texto, como em qualquer chat.
 - Você pode trocar de modelo, comparar vários modelos lado a lado, ramificar ou editar, como em qualquer chat.
 - Os turnos seguintes são executados no seu workspace ativo e cobrados como qualquer outra solicitação do Chat.
 
@@ -52,6 +52,7 @@ Se o modelo da solicitação não estiver disponível no Chat, o chat usará seu
 O Chat lista tudo o que não conseguiu levar junto antes de você continuar:
 
 - Turnos mantidos pelo provedor por meio de `previous_response_id` ou de um ID de conversa. Apenas os turnos da própria solicitação são armazenados.
+- Imagens, áudio e arquivos enviados inline. Os logs de E/S nunca guardam seus bytes. Imagens enviadas por URL são mantidas.
 - Anexos enviados por ID de arquivo ou referência remota em vez de inline.
 - Respostas que falharam, foram interrompidas ou ofereceram várias opções (apenas a primeira é mantida).
 - Chamadas de ferramenta que nunca receberam um resultado. Elas são enviadas como texto.
