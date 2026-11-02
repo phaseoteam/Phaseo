@@ -73,6 +73,7 @@ export function recordProviderRound(
 		if (reported !== null && reported > 0 && reported <= roundMs) ctx.meta.provider_ttft_ms = Math.round(reported);
 		return;
 	}
+	ctx.meta.firstProviderOutputAtMs = firstOutputAtMs;
 	const ttftMs = Math.max(1, Math.round(firstOutputAtMs - dispatchAtMs));
 	ctx.meta.provider_ttft_ms = ttftMs;
 	ctx.meta.latency_ms = ttftMs;

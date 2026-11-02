@@ -1503,8 +1503,13 @@ async function runTextGeneratePipelineInner(
 			} else {
 				delete pre.ctx.meta.latency_ms;
 			}
-			// The client's first output is the synthetic stream, sent now.
-			pre.ctx.meta.gateway_ttft_ms = Math.max(1, endToEndMs);
+			// A live sink forwards each round's output as it arrives, so the client saw
+			// the first one then. Otherwise its first output is the synthetic stream, sent now.
+			const firstLiveOutputAtMs = liveSink ? pre.ctx.meta.firstProviderOutputAtMs : undefined;
+			pre.ctx.meta.gateway_ttft_ms =
+				typeof firstLiveOutputAtMs === "number" && typeof pre.ctx.meta.startedAtMs === "number"
+					? Math.max(1, Math.round(firstLiveOutputAtMs - pre.ctx.meta.startedAtMs))
+					: Math.max(1, endToEndMs);
 			pre.ctx.meta.preserve_stream_timing = true;
 
 			const stream = buildSyntheticServerToolStream({

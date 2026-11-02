@@ -124,6 +124,7 @@ export type RequestMeta = {
     preserve_stream_timing?: boolean; // Internal: stream is synthetic and already has authoritative timing
     providerRoundsMs?: number;    // Internal: provider time of the rounds read to the end so far (recordProviderRound)
     providerRoundsFailoverMs?: number; // Internal: failover time of those rounds
+    firstProviderOutputAtMs?: number; // Internal: epoch ms of the first generated output read from a provider
     downstreamDisconnected?: boolean; // Client closed the response while the gateway continued draining upstream
     streamCancellationSupport?: "supported" | "unsupported" | "unknown";
     streamProviderBillingOnCancel?: "stops" | "unknown";

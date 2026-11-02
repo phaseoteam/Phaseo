@@ -868,7 +868,8 @@ describe("runTextGeneratePipeline server tools", () => {
 			generation_ms: 1500,
 			provider_ttft_ms: 500,
 			latency_ms: 500,
-			gateway_ttft_ms: 3000,
+			// The live sink forwarded round 1's first output at 1500.
+			gateway_ttft_ms: 1500,
 			failover_ms: 0,
 		});
 	});
