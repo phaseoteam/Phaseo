@@ -142,6 +142,8 @@ export type ErrorProject = {
 	githubRepo: string | null;
 	createdAt: string;
 	lastEventAt: string | null;
+	/** The source map upload token's prefix, or null when none was made. */
+	uploadKeyPrefix?: string | null;
 };
 
 export type ErrorGroup = {
@@ -162,6 +164,10 @@ export type ErrorGroup = {
 	workItemId: string | null;
 	workItemNumber: number | null;
 	resolvedAt: string | null;
+	/** People affected (counted by a hash of the app's user id). */
+	usersCount?: number;
+	firstRelease?: string | null;
+	resolvedInRelease?: string | null;
 };
 
 export type GithubRepo = {
@@ -215,6 +221,16 @@ export type WorkAgentRunsResponse = { runs: AgentRun[] };
 
 /** The browser and server error event shared by the capture script and ingest. */
 export type WorkErrorFrame = { function?: string; file?: string; line?: number; column?: number; inApp?: boolean };
+/** A frame with its original position, when the release's source map covers it. */
+export type WorkMappedFrame = WorkErrorFrame & { original?: { file: string; line: number; column: number; function?: string } };
+
+export const ERROR_RULE_ACTIONS = ["ignore", "assign"] as const;
+export const ERROR_RULE_FIELDS = ["message", "type", "file", "environment"] as const;
+export type ErrorRuleAction = (typeof ERROR_RULE_ACTIONS)[number];
+export type ErrorRuleField = (typeof ERROR_RULE_FIELDS)[number];
+export type ErrorRule = { id: string; action: ErrorRuleAction; field: ErrorRuleField; pattern: string; assigneeUserId: string | null; enabled: boolean; createdAt: string };
+export type ErrorSourcemap = { id: string; release: string; file: string; sizeBytes: number; createdAt: string };
+export type ErrorRelease = { version: string; firstSeenAt: string; lastSeenAt: string; eventCount: number; newGroups: number };
 
 // Batch 2: projects, cycles, relations, views, settings, notifications, reply drafts and insights.
 

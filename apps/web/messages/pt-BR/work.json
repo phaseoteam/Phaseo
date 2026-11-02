@@ -365,7 +365,11 @@
 			"open": "Aberto",
 			"resolved": "Resolvido",
 			"ignored": "Ignorado"
-		}
+		},
+		"people": "Pessoas",
+		"firstRelease": "Primeira versão",
+		"resolvedIn": "Resolvido em",
+		"sourceMapped": "Mapeado para o seu código-fonte com os source maps desta versão. A posição minificada aparece abaixo de cada linha."
 	},
 	"settings": {
 		"title": "Configurações de trabalho",
@@ -395,7 +399,8 @@
 			"script": "Tag script para o navegador",
 			"fetch": "Enviar de um servidor",
 			"githubRepo": "Repositório do GitHub para novas issues",
-			"lastEvent": "Último evento {time}"
+			"lastEvent": "Último evento {time}",
+			"node": "Servidor Node.js"
 		},
 		"github": {
 			"title": "Repositórios do GitHub",
@@ -442,6 +447,44 @@
 			"emailDigest": "Receber minhas notificações por e-mail",
 			"emailDigestHint": "Notificações não lidas chegam em um único e-mail curto, no máximo a cada 10 minutos. O que você ler aqui antes não é enviado.",
 			"emailUnavailable": "O e-mail do Work ainda não está ativado no Phaseo. Sua escolha fica salva para quando estiver."
+		},
+		"errorTools": {
+			"loading": "Carregando…",
+			"loadFailed": "Não foi possível carregar as ferramentas deste projeto. Tente de novo em instantes.",
+			"unknownPerson": "Alguém que não está mais aqui",
+			"sourcemapsTitle": "Source maps",
+			"sourcemapsHint": "Envie os source maps do seu build para cada versão e os stack traces mostram seus arquivos e linhas originais. Os envios usam um token separado: a chave do projeto nas suas páginas é pública.",
+			"sourcemapsUnavailable": "O armazenamento de source maps ainda não está configurado neste servidor Phaseo, então os envios estão sendo recusados por enquanto.",
+			"uploadKey": "Token de envio",
+			"uploadExample": "Enviar pela CI",
+			"createUploadKey": "Criar token de envio",
+			"replaceUploadKey": "Substituir token de envio",
+			"rulesTitle": "Regras",
+			"rulesHint": "Descarte erros que não importam ou atribua novos itens de erro a uma pessoa. Qualquer parte do texto conta, sem diferenciar maiúsculas.",
+			"ruleIgnore": "Ignorar quando {field} contém “{pattern}”",
+			"ruleAssign": "Atribuir a {person} quando {field} contém “{pattern}”",
+			"action": "Ação",
+			"field": "Campo",
+			"pattern": "Texto a procurar",
+			"patternPlaceholder": "ResizeObserver loop",
+			"assignee": "Atribuir a",
+			"addRule": "Adicionar regra",
+			"releasesTitle": "Versões recentes",
+			"release": "Versão",
+			"events": "Eventos",
+			"newErrors": "Erros novos",
+			"lastSeen": "Visto por último",
+			"noReleases": "Nenhuma versão informada ainda. Envie uma versão com cada erro para vê-las aqui.",
+			"actions": {
+				"ignore": "Ignorar",
+				"assign": "Atribuir"
+			},
+			"fields": {
+				"message": "a mensagem",
+				"type": "o tipo de erro",
+				"file": "o arquivo",
+				"environment": "o ambiente"
+			}
 		}
 	},
 	"sla": {

@@ -365,7 +365,11 @@
 			"open": "खुली",
 			"resolved": "हल हुई",
 			"ignored": "अनदेखी"
-		}
+		},
+		"people": "लोग",
+		"firstRelease": "पहली रिलीज़",
+		"resolvedIn": "इसमें ठीक हुआ",
+		"sourceMapped": "इस रिलीज़ के source maps से आपके मूल कोड पर मैप किया गया। हर पंक्ति के नीचे minified जगह दी गई है।"
 	},
 	"settings": {
 		"title": "काम की सेटिंग्स",
@@ -395,7 +399,8 @@
 			"script": "ब्राउज़र के लिए script टैग",
 			"fetch": "सर्वर से भेजें",
 			"githubRepo": "नए issue के लिए GitHub रिपॉज़िटरी",
-			"lastEvent": "आख़िरी इवेंट {time}"
+			"lastEvent": "आख़िरी इवेंट {time}",
+			"node": "Node.js सर्वर"
 		},
 		"github": {
 			"title": "GitHub रिपॉज़िटरी",
@@ -442,6 +447,44 @@
 			"emailDigest": "मेरी सूचनाएँ मुझे ईमेल करें",
 			"emailDigestHint": "बिना पढ़ी सूचनाएँ एक छोटे ईमेल में आती हैं, ज़्यादा से ज़्यादा हर 10 मिनट में। जो आप यहाँ पहले पढ़ लेते हैं, वह ईमेल नहीं होता।",
 			"emailUnavailable": "Phaseo पर Work ईमेल अभी चालू नहीं है। आपकी पसंद तब के लिए सहेजी रहती है।"
+		},
+		"errorTools": {
+			"loading": "लोड हो रहा है…",
+			"loadFailed": "इस प्रोजेक्ट के टूल लोड नहीं हो सके। थोड़ी देर में फिर कोशिश करें।",
+			"unknownPerson": "कोई जो अब यहाँ नहीं है",
+			"sourcemapsTitle": "Source maps",
+			"sourcemapsHint": "हर रिलीज़ के लिए अपने बिल्ड के source maps अपलोड करें, तब stack traces आपकी मूल फ़ाइलें और पंक्तियाँ दिखाएँगे। अपलोड के लिए अलग टोकन लगता है: आपके पेजों में प्रोजेक्ट की कुंजी सार्वजनिक होती है।",
+			"sourcemapsUnavailable": "इस Phaseo सर्वर पर source maps का स्टोरेज अभी सेट नहीं है, इसलिए अभी अपलोड स्वीकार नहीं होते।",
+			"uploadKey": "अपलोड टोकन",
+			"uploadExample": "CI से अपलोड करें",
+			"createUploadKey": "अपलोड टोकन बनाएँ",
+			"replaceUploadKey": "अपलोड टोकन बदलें",
+			"rulesTitle": "नियम",
+			"rulesHint": "जिन errors की आपको परवाह नहीं, उन्हें हटा दें, या नए error आइटम किसी व्यक्ति को सौंपें। टेक्स्ट का कोई भी हिस्सा मेल खा सकता है, बड़े-छोटे अक्षरों का फ़र्क नहीं पड़ता।",
+			"ruleIgnore": "जब {field} में “{pattern}” हो, तो अनदेखा करें",
+			"ruleAssign": "जब {field} में “{pattern}” हो, तो {person} को सौंपें",
+			"action": "कार्रवाई",
+			"field": "फ़ील्ड",
+			"pattern": "मिलाने के लिए टेक्स्ट",
+			"patternPlaceholder": "ResizeObserver loop",
+			"assignee": "इन्हें सौंपें",
+			"addRule": "नियम जोड़ें",
+			"releasesTitle": "हाल की रिलीज़",
+			"release": "रिलीज़",
+			"events": "इवेंट",
+			"newErrors": "नए errors",
+			"lastSeen": "आख़िरी बार देखा गया",
+			"noReleases": "अभी तक कोई रिलीज़ रिपोर्ट नहीं हुई। उन्हें यहाँ देखने के लिए हर error के साथ रिलीज़ भेजें।",
+			"actions": {
+				"ignore": "अनदेखा करें",
+				"assign": "सौंपें"
+			},
+			"fields": {
+				"message": "संदेश",
+				"type": "error का प्रकार",
+				"file": "फ़ाइल",
+				"environment": "एनवायरनमेंट"
+			}
 		}
 	},
 	"sla": {

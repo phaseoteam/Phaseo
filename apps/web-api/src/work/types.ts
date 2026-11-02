@@ -180,6 +180,7 @@ export type ErrorProjectRow = {
 	created_by: string | null;
 	created_at: string;
 	last_event_at: string | null;
+	upload_key_prefix?: string | null;
 };
 
 export type ErrorGroupRow = {
@@ -201,6 +202,10 @@ export type ErrorGroupRow = {
 	work_item_id: string | null;
 	resolved_at: string | null;
 	spike_alerted_at?: string | null;
+	/** bigint: people affected (hashed ids). */
+	users_count?: number | string;
+	first_release?: string | null;
+	resolved_in_release?: string | null;
 };
 
 export type GithubRepoRow = {
@@ -250,6 +255,10 @@ export type RecordErrorEventResult = {
 	hour_count?: number;
 	/** True at most once every 6 hours per group: at least 10 events this hour and 5x the previous day's hourly average. */
 	spiking?: boolean;
+	users_count?: number;
+	first_release?: string | null;
+	/** The release the group was last resolved in; with reopened, the error regressed after that release. */
+	resolved_in_release?: string | null;
 };
 
 export type WorkProjectRow = {
@@ -476,6 +485,8 @@ export type ErrorProject = {
 	githubRepo: string | null;
 	createdAt: string;
 	lastEventAt: string | null;
+	/** The source map upload token's prefix, or null when none was made. */
+	uploadKeyPrefix: string | null;
 };
 
 export type ErrorGroup = {
@@ -496,6 +507,9 @@ export type ErrorGroup = {
 	workItemId: string | null;
 	workItemNumber: number | null;
 	resolvedAt: string | null;
+	usersCount: number;
+	firstRelease: string | null;
+	resolvedInRelease: string | null;
 };
 
 export type GithubRepo = {

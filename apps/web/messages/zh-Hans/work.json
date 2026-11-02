@@ -365,7 +365,11 @@
 			"open": "未解决",
 			"resolved": "已解决",
 			"ignored": "已忽略"
-		}
+		},
+		"people": "受影响人数",
+		"firstRelease": "首次出现的版本",
+		"resolvedIn": "解决于版本",
+		"sourceMapped": "已用此版本的 source map 映射到你的源码，每行下方是压缩后的位置。"
 	},
 	"settings": {
 		"title": "工作设置",
@@ -395,7 +399,8 @@
 			"script": "浏览器 script 标签",
 			"fetch": "从服务器发送",
 			"githubRepo": "用于新 Issue 的 GitHub 仓库",
-			"lastEvent": "最近事件：{time}"
+			"lastEvent": "最近事件：{time}",
+			"node": "Node.js 服务器"
 		},
 		"github": {
 			"title": "GitHub 仓库",
@@ -442,6 +447,44 @@
 			"emailDigest": "通过邮件接收我的通知",
 			"emailDigestHint": "未读通知会合并成一封简短的邮件，最多每 10 分钟一封。你先在这里读过的不会再发邮件。",
 			"emailUnavailable": "Phaseo 尚未开启 Work 邮件。你的选择会保留，开启后生效。"
+		},
+		"errorTools": {
+			"loading": "正在加载…",
+			"loadFailed": "无法加载此项目的工具，请稍后再试。",
+			"unknownPerson": "已不在此处的成员",
+			"sourcemapsTitle": "Source map",
+			"sourcemapsHint": "为每个版本上传构建产生的 source map，堆栈信息就会显示你的原始文件和行号。上传使用单独的令牌，因为页面中的项目密钥是公开的。",
+			"sourcemapsUnavailable": "此 Phaseo 服务器尚未配置 source map 存储，因此目前会拒绝上传。",
+			"uploadKey": "上传令牌",
+			"uploadExample": "从 CI 上传",
+			"createUploadKey": "创建上传令牌",
+			"replaceUploadKey": "替换上传令牌",
+			"rulesTitle": "规则",
+			"rulesHint": "丢弃你不关心的错误，或把新的错误事项分配给某人。只要包含该文本即算匹配，不区分大小写。",
+			"ruleIgnore": "当{field}包含“{pattern}”时忽略",
+			"ruleAssign": "当{field}包含“{pattern}”时分配给 {person}",
+			"action": "操作",
+			"field": "字段",
+			"pattern": "要匹配的文本",
+			"patternPlaceholder": "ResizeObserver loop",
+			"assignee": "分配给",
+			"addRule": "添加规则",
+			"releasesTitle": "最近的版本",
+			"release": "版本",
+			"events": "事件",
+			"newErrors": "新错误",
+			"lastSeen": "最后出现",
+			"noReleases": "尚未报告任何版本。随每个错误发送版本号，即可在这里看到。",
+			"actions": {
+				"ignore": "忽略",
+				"assign": "分配"
+			},
+			"fields": {
+				"message": "消息",
+				"type": "错误类型",
+				"file": "文件",
+				"environment": "环境"
+			}
 		}
 	},
 	"sla": {

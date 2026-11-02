@@ -365,7 +365,11 @@
 			"open": "Open",
 			"resolved": "Resolved",
 			"ignored": "Ignored"
-		}
+		},
+		"people": "People",
+		"firstRelease": "First release",
+		"resolvedIn": "Resolved in",
+		"sourceMapped": "Mapped to your source with this release's source maps. The minified location is below each line."
 	},
 	"settings": {
 		"title": "Work settings",
@@ -395,7 +399,8 @@
 			"script": "Browser script tag",
 			"fetch": "Send from a server",
 			"githubRepo": "GitHub repo for new issues",
-			"lastEvent": "Last event {time}"
+			"lastEvent": "Last event {time}",
+			"node": "Node.js server"
 		},
 		"github": {
 			"title": "GitHub repos",
@@ -442,6 +447,44 @@
 			"emailDigest": "Email me about my notifications",
 			"emailDigestHint": "Unread notifications come in one short email, at most every 10 minutes. Anything you read here first isn't emailed.",
 			"emailUnavailable": "Work email isn't turned on for Phaseo yet. Your choice is kept for when it is."
+		},
+		"errorTools": {
+			"loading": "Loading…",
+			"loadFailed": "This project's tools couldn't be loaded. Try again in a moment.",
+			"unknownPerson": "Someone no longer here",
+			"sourcemapsTitle": "Source maps",
+			"sourcemapsHint": "Upload your build's source maps for each release, and stack traces show your original files and lines. Uploads use a separate token: the project key in your pages is public.",
+			"sourcemapsUnavailable": "Source map storage isn't set up on this Phaseo server yet, so uploads are turned down for now.",
+			"uploadKey": "Upload token",
+			"uploadExample": "Upload from CI",
+			"createUploadKey": "Create upload token",
+			"replaceUploadKey": "Replace upload token",
+			"rulesTitle": "Rules",
+			"rulesHint": "Drop errors you don't care about, or give new error items to a person. A match is any part of the text, ignoring case.",
+			"ruleIgnore": "Ignore when the {field} contains “{pattern}”",
+			"ruleAssign": "Assign to {person} when the {field} contains “{pattern}”",
+			"action": "Action",
+			"field": "Field",
+			"pattern": "Text to match",
+			"patternPlaceholder": "ResizeObserver loop",
+			"assignee": "Assign to",
+			"addRule": "Add rule",
+			"releasesTitle": "Recent releases",
+			"release": "Release",
+			"events": "Events",
+			"newErrors": "New errors",
+			"lastSeen": "Last seen",
+			"noReleases": "No releases reported yet. Send a release with each error to see them here.",
+			"actions": {
+				"ignore": "Ignore",
+				"assign": "Assign"
+			},
+			"fields": {
+				"message": "message",
+				"type": "error type",
+				"file": "file",
+				"environment": "environment"
+			}
 		}
 	},
 	"sla": {

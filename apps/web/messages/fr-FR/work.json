@@ -365,7 +365,11 @@
 			"open": "Ouverte",
 			"resolved": "Résolue",
 			"ignored": "Ignorée"
-		}
+		},
+		"people": "Personnes",
+		"firstRelease": "Première version",
+		"resolvedIn": "Résolu dans",
+		"sourceMapped": "Rapporté à votre code source grâce aux source maps de cette version. L’emplacement minifié figure sous chaque ligne."
 	},
 	"settings": {
 		"title": "Paramètres du suivi",
@@ -395,7 +399,8 @@
 			"script": "Balise script pour le navigateur",
 			"fetch": "Envoyer depuis un serveur",
 			"githubRepo": "Dépôt GitHub pour les nouvelles issues",
-			"lastEvent": "Dernier événement {time}"
+			"lastEvent": "Dernier événement {time}",
+			"node": "Serveur Node.js"
 		},
 		"github": {
 			"title": "Dépôts GitHub",
@@ -442,6 +447,44 @@
 			"emailDigest": "M’envoyer mes notifications par e-mail",
 			"emailDigestHint": "Les notifications non lues arrivent dans un seul e-mail court, au plus toutes les 10 minutes. Ce que vous lisez ici avant n’est pas envoyé.",
 			"emailUnavailable": "Les e-mails de Work ne sont pas encore activés sur Phaseo. Votre choix est conservé pour plus tard."
+		},
+		"errorTools": {
+			"loading": "Chargement…",
+			"loadFailed": "Les outils de ce projet n’ont pas pu être chargés. Réessayez dans un instant.",
+			"unknownPerson": "Une personne qui n’est plus là",
+			"sourcemapsTitle": "Source maps",
+			"sourcemapsHint": "Envoyez les source maps de votre build pour chaque version, et les traces de pile montreront vos fichiers et lignes d’origine. Les envois utilisent un jeton distinct : la clé du projet dans vos pages est publique.",
+			"sourcemapsUnavailable": "Le stockage des source maps n’est pas encore configuré sur ce serveur Phaseo, les envois sont donc refusés pour l’instant.",
+			"uploadKey": "Jeton d’envoi",
+			"uploadExample": "Envoyer depuis la CI",
+			"createUploadKey": "Créer un jeton d’envoi",
+			"replaceUploadKey": "Remplacer le jeton d’envoi",
+			"rulesTitle": "Règles",
+			"rulesHint": "Écartez les erreurs qui ne vous intéressent pas, ou attribuez les nouveaux éléments d’erreur à une personne. Toute partie du texte correspond, sans tenir compte de la casse.",
+			"ruleIgnore": "Ignorer quand {field} contient « {pattern} »",
+			"ruleAssign": "Attribuer à {person} quand {field} contient « {pattern} »",
+			"action": "Action",
+			"field": "Champ",
+			"pattern": "Texte à rechercher",
+			"patternPlaceholder": "ResizeObserver loop",
+			"assignee": "Attribuer à",
+			"addRule": "Ajouter une règle",
+			"releasesTitle": "Versions récentes",
+			"release": "Version",
+			"events": "Événements",
+			"newErrors": "Nouvelles erreurs",
+			"lastSeen": "Vu pour la dernière fois",
+			"noReleases": "Aucune version signalée pour l’instant. Envoyez une version avec chaque erreur pour les voir ici.",
+			"actions": {
+				"ignore": "Ignorer",
+				"assign": "Attribuer"
+			},
+			"fields": {
+				"message": "le message",
+				"type": "le type d’erreur",
+				"file": "le fichier",
+				"environment": "l’environnement"
+			}
 		}
 	},
 	"sla": {

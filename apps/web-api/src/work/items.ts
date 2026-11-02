@@ -222,6 +222,7 @@ export function formatErrorProject(row: ErrorProjectRow): ErrorProject {
 		githubRepo: row.github_repo,
 		createdAt: row.created_at,
 		lastEventAt: row.last_event_at,
+		uploadKeyPrefix: row.upload_key_prefix ?? null,
 	};
 }
 
@@ -244,6 +245,9 @@ export function formatErrorGroup(row: ErrorGroupRow & { project?: { name?: strin
 		workItemId: row.work_item_id,
 		workItemNumber: row.item?.number ?? null,
 		resolvedAt: row.resolved_at,
+		usersCount: toNumber(row.users_count ?? 0),
+		firstRelease: row.first_release ?? null,
+		resolvedInRelease: row.resolved_in_release ?? null,
 	};
 }
 

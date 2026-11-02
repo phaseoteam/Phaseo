@@ -1,11 +1,18 @@
 "use client";
 
-import { useId, useState, type FormEvent, type ReactNode } from "react";
-import { FileCode2, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { ChevronDown, ChevronRight, FileCode2, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
 	createErrorProject,
+	createErrorRule,
+	createErrorUploadKey,
 	createIntakeForm,
+	deleteErrorRule,
+	deleteErrorSourcemap,
+	getErrorProjectTools,
+	listWorkMembers,
+	setErrorRuleEnabled,
 	deleteErrorProject,
 	deleteGithubRepo,
 	deleteIntakeForm,
@@ -21,10 +28,11 @@ import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { normaliseGithubRepo } from "@/lib/work/format";
-import { errorFetchExample, errorScriptTag, intakeCurlExample, intakeFormHtml } from "@/lib/work/snippets";
-import { DEFAULT_WORK_SETTINGS, type ErrorProject, type GithubRepo, type IntakeForm, type WorkMemberSettingsResponse, type WorkSettings } from "@/lib/work/types";
+import { errorFetchExample, errorNodeExample, errorScriptTag, intakeCurlExample, intakeFormHtml, sourcemapUploadExample } from "@/lib/work/snippets";
+import { DEFAULT_WORK_SETTINGS, ERROR_RULE_ACTIONS, ERROR_RULE_FIELDS, type ErrorProject, type ErrorRelease, type ErrorRule, type ErrorRuleAction, type ErrorRuleField, type ErrorSourcemap, type GithubRepo, type IntakeForm, type WorkMember, type WorkMemberSettingsResponse, type WorkSettings } from "@/lib/work/types";
 import { useWorkAction } from "./useWorkAction";
 import { CopyBlock, PriorityIcon, TimeAgo, useRelativeTime, useWorkCopy } from "./WorkBits";
 
@@ -183,6 +191,7 @@ function ErrorProjectsSection({ projects }: { projects: ErrorProject[] }) {
 	const [name, setName] = useState("");
 	const [autoTriage, setAutoTriage] = useState(true);
 	const [revealed, setRevealed] = useState<string | null>(null);
+	const [open, setOpen] = useState<string | null>(null);
 	const create = async (event: FormEvent) => {
 		event.preventDefault();
 		if (!name.trim()) return;
@@ -196,14 +205,19 @@ function ErrorProjectsSection({ projects }: { projects: ErrorProject[] }) {
 					<CopyBlock label={t("projects.key")} value={revealed} />
 					<CopyBlock label={t("projects.script")} value={errorScriptTag(revealed)} multiline />
 					<CopyBlock label={t("projects.fetch")} value={errorFetchExample(revealed)} multiline />
+					<CopyBlock label={t("projects.node")} value={errorNodeExample(revealed)} multiline />
 				</Revealed>
 			) : null}
 			{projects.length ? (
 				<ul className="divide-y rounded-md border">
 					{projects.map((project) => (
-						<li key={project.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5">
+						<li key={project.id} className="space-y-2 px-3 py-2.5">
+							<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 							<div className="min-w-0 flex-1">
-								<p className="truncate text-sm font-medium">{project.name}</p>
+								<button type="button" aria-expanded={open === project.id} onClick={() => setOpen(open === project.id ? null : project.id)} className="flex items-center gap-1 truncate text-left text-sm font-medium hover:underline">
+									{open === project.id ? <ChevronDown className="size-3.5 shrink-0" aria-hidden="true" /> : <ChevronRight className="size-3.5 shrink-0" aria-hidden="true" />}
+									{project.name}
+								</button>
 								<p className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
 									<span className="font-mono">{project.keyPrefix}…</span>
 									<span>{project.lastEventAt ? t("projects.lastEvent", { time: relative(project.lastEventAt) }) : t("neverUsed")}</span>
@@ -213,6 +227,8 @@ function ErrorProjectsSection({ projects }: { projects: ErrorProject[] }) {
 							<ToggleCell label={tCommon("enabled")} checked={project.enabled} disabled={busy !== null} onChange={(enabled) => perform("enabled", () => updateErrorProject(project.id, { enabled }))} />
 							<ToggleCell label={tCommon("autoTriage")} checked={project.autoTriage} disabled={busy !== null} onChange={(value) => perform("auto", () => updateErrorProject(project.id, { autoTriage: value }))} />
 							<DeleteButton name={project.name} disabled={busy !== null} onDelete={() => perform("delete", () => deleteErrorProject(project.id))} />
+							</div>
+							{open === project.id ? <ErrorProjectTools project={project} /> : null}
 						</li>
 					))}
 				</ul>
@@ -227,6 +243,157 @@ function ErrorProjectsSection({ projects }: { projects: ErrorProject[] }) {
 			</form>
 		</Section>
 	);
+}
+
+/** Per error project: the source map upload token, rules, recent releases and uploaded source maps. Loaded when opened. */
+function ErrorProjectTools({ project }: { project: ErrorProject }) {
+	const t = useTranslations("Work.settings.errorTools");
+	const tCommon = useTranslations("Work.common");
+	const relative = useRelativeTime();
+	const { perform, busy } = useWorkAction();
+	const id = useId();
+	const [tools, setTools] = useState<{ rules: ErrorRule[]; releases: ErrorRelease[]; sourcemaps: ErrorSourcemap[]; sourcemapsAvailable: boolean } | null>(null);
+	const [members, setMembers] = useState<WorkMember[]>([]);
+	const [failed, setFailed] = useState(false);
+	const [uploadKey, setUploadKey] = useState<string | null>(null);
+	const [draft, setDraft] = useState<{ action: ErrorRuleAction; field: ErrorRuleField; pattern: string; assigneeUserId: string }>({ action: "ignore", field: "message", pattern: "", assigneeUserId: "" });
+
+	const load = useCallback(async () => {
+		const [result, people] = await Promise.all([getErrorProjectTools(project.id), listWorkMembers()]);
+		if (result.ok) { setTools({ rules: result.rules, releases: result.releases, sourcemaps: result.sourcemaps, sourcemapsAvailable: result.sourcemapsAvailable }); setFailed(false); } else setFailed(true);
+		if (people.ok) setMembers(people.members);
+	}, [project.id]);
+	useEffect(() => { void load(); }, [load]);
+
+	const act = async (key: string, task: () => Promise<{ ok: boolean }>) => {
+		const result = await perform(key, task as never, { refresh: false });
+		if ((result as { ok: boolean }).ok) await load();
+		return result as { ok: boolean };
+	};
+	const makeKey = async () => {
+		const result = await perform("upload-key", () => createErrorUploadKey(project.id));
+		if (result.ok) setUploadKey(result.uploadKey);
+	};
+	const addRule = async (event: FormEvent) => {
+		event.preventDefault();
+		if (!draft.pattern.trim() || (draft.action === "assign" && !draft.assigneeUserId)) return;
+		const result = await act("rule", () => createErrorRule(project.id, { action: draft.action, field: draft.field, pattern: draft.pattern.trim(), assigneeUserId: draft.action === "assign" ? draft.assigneeUserId : null }));
+		if (result.ok) setDraft({ ...draft, pattern: "" });
+	};
+	const memberLabel = (userId: string | null) => {
+		const member = members.find((entry) => entry.userId === userId);
+		return member?.name ?? member?.email ?? t("unknownPerson");
+	};
+
+	if (failed) return <Callout tone="critical">{t("loadFailed")}</Callout>;
+	if (!tools) return <p className="text-xs text-muted-foreground">{t("loading")}</p>;
+	return (
+		<div className="space-y-5 border-t pt-3">
+			<div className="space-y-2">
+				<p className="text-sm font-medium">{t("sourcemapsTitle")}</p>
+				<p className="text-xs text-muted-foreground">{t("sourcemapsHint")}</p>
+				{tools.sourcemapsAvailable ? null : <Callout tone="info">{t("sourcemapsUnavailable")}</Callout>}
+				{uploadKey ? (
+					<Revealed onClose={() => setUploadKey(null)}>
+						<CopyBlock label={t("uploadKey")} value={uploadKey} />
+						<CopyBlock label={t("uploadExample")} value={sourcemapUploadExample(uploadKey)} multiline />
+					</Revealed>
+				) : null}
+				<div className="flex flex-wrap items-center gap-3">
+					{project.uploadKeyPrefix ? <span className="font-mono text-xs text-muted-foreground">{project.uploadKeyPrefix}…</span> : null}
+					<Button type="button" size="xs" variant="outline" disabled={busy !== null} onClick={makeKey}>{project.uploadKeyPrefix ? t("replaceUploadKey") : t("createUploadKey")}</Button>
+				</div>
+				{tools.sourcemaps.length ? (
+					<ul className="divide-y rounded-md border text-xs">
+						{tools.sourcemaps.map((map) => (
+							<li key={map.id} className="flex items-center gap-3 px-3 py-1.5">
+								<span className="font-mono">{map.release}</span>
+								<span className="min-w-0 flex-1 truncate font-mono text-muted-foreground">{map.file}</span>
+								<span className="tabular-nums text-muted-foreground">{formatBytes(map.sizeBytes)}</span>
+								<span className="text-muted-foreground">{relative(map.createdAt)}</span>
+								<DeleteButton name={`${map.release} ${map.file}`} disabled={busy !== null} onDelete={() => void act("map", () => deleteErrorSourcemap(project.id, map.id))} />
+							</li>
+						))}
+					</ul>
+				) : null}
+			</div>
+
+			<div className="space-y-2">
+				<p className="text-sm font-medium">{t("rulesTitle")}</p>
+				<p className="text-xs text-muted-foreground">{t("rulesHint")}</p>
+				{tools.rules.length ? (
+					<ul className="divide-y rounded-md border text-xs">
+						{tools.rules.map((rule) => (
+							<li key={rule.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5">
+								<span className="min-w-0 flex-1">
+									{rule.action === "ignore"
+										? t("ruleIgnore", { field: t(`fields.${rule.field}`), pattern: rule.pattern })
+										: t("ruleAssign", { field: t(`fields.${rule.field}`), pattern: rule.pattern, person: memberLabel(rule.assigneeUserId) })}
+								</span>
+								<ToggleCell label={tCommon("enabled")} checked={rule.enabled} disabled={busy !== null} onChange={(enabled) => void act("rule-toggle", () => setErrorRuleEnabled(rule.id, enabled))} />
+								<DeleteButton name={rule.pattern} disabled={busy !== null} onDelete={() => void act("rule-delete", () => deleteErrorRule(rule.id))} />
+							</li>
+						))}
+					</ul>
+				) : null}
+				<form onSubmit={addRule} className="flex flex-wrap items-end gap-2">
+					<Select value={draft.action} onValueChange={(value) => setDraft({ ...draft, action: value as ErrorRuleAction })}>
+						<SelectTrigger size="sm" aria-label={t("action")} className="w-32 rounded-md"><SelectValue /></SelectTrigger>
+						<SelectContent>{ERROR_RULE_ACTIONS.map((action) => <SelectItem key={action} value={action}>{t(`actions.${action}`)}</SelectItem>)}</SelectContent>
+					</Select>
+					<Select value={draft.field} onValueChange={(value) => setDraft({ ...draft, field: value as ErrorRuleField })}>
+						<SelectTrigger size="sm" aria-label={t("field")} className="w-36 rounded-md"><SelectValue /></SelectTrigger>
+						<SelectContent>{ERROR_RULE_FIELDS.map((field) => <SelectItem key={field} value={field}>{t(`fields.${field}`)}</SelectItem>)}</SelectContent>
+					</Select>
+					<div className="min-w-40 flex-1 space-y-1">
+						<Label htmlFor={`${id}-pattern`} className="sr-only">{t("pattern")}</Label>
+						<Input id={`${id}-pattern`} value={draft.pattern} maxLength={200} placeholder={t("patternPlaceholder")} onChange={(event) => setDraft({ ...draft, pattern: event.target.value })} className="h-8 rounded-md text-sm" />
+					</div>
+					{draft.action === "assign" ? (
+						<Select value={draft.assigneeUserId} onValueChange={(value) => setDraft({ ...draft, assigneeUserId: value })}>
+							<SelectTrigger size="sm" aria-label={t("assignee")} className="w-44 rounded-md"><SelectValue placeholder={t("assignee")} /></SelectTrigger>
+							<SelectContent>{members.map((member) => <SelectItem key={member.userId} value={member.userId}>{member.name ?? member.email ?? member.userId}</SelectItem>)}</SelectContent>
+						</Select>
+					) : null}
+					<Button type="submit" size="sm" disabled={busy !== null || !draft.pattern.trim() || (draft.action === "assign" && !draft.assigneeUserId)}>{t("addRule")}</Button>
+				</form>
+			</div>
+
+			<div className="space-y-2">
+				<p className="text-sm font-medium">{t("releasesTitle")}</p>
+				{tools.releases.length ? (
+					<div className="overflow-x-auto rounded-md border">
+						<table className="w-full text-xs">
+							<thead className="border-b text-left text-muted-foreground">
+								<tr>
+									<th className="px-3 py-1.5 font-normal">{t("release")}</th>
+									<th className="px-3 py-1.5 text-right font-normal">{t("events")}</th>
+									<th className="px-3 py-1.5 text-right font-normal">{t("newErrors")}</th>
+									<th className="px-3 py-1.5 font-normal">{t("lastSeen")}</th>
+								</tr>
+							</thead>
+							<tbody className="divide-y">
+								{tools.releases.map((release) => (
+									<tr key={release.version}>
+										<td className="px-3 py-1.5 font-mono">{release.version}</td>
+										<td className="px-3 py-1.5 text-right tabular-nums">{release.eventCount}</td>
+										<td className="px-3 py-1.5 text-right tabular-nums">{release.newGroups}</td>
+										<td className="px-3 py-1.5 text-muted-foreground">{relative(release.lastSeenAt)}</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				) : <p className="text-xs text-muted-foreground">{t("noReleases")}</p>}
+			</div>
+		</div>
+	);
+}
+
+function formatBytes(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function SetupSteps() {

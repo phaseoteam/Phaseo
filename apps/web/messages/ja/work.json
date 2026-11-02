@@ -365,7 +365,11 @@
 			"open": "未解決",
 			"resolved": "解決済み",
 			"ignored": "無視"
-		}
+		},
+		"people": "影響を受けた人",
+		"firstRelease": "最初のリリース",
+		"resolvedIn": "解決したリリース",
+		"sourceMapped": "このリリースのソースマップで元のソースに対応付けています。各行の下に圧縮後の位置を示します。"
 	},
 	"settings": {
 		"title": "作業の設定",
@@ -395,7 +399,8 @@
 			"script": "ブラウザー用の script タグ",
 			"fetch": "サーバーから送信",
 			"githubRepo": "新しい Issue 用の GitHub リポジトリ",
-			"lastEvent": "最終イベント {time}"
+			"lastEvent": "最終イベント {time}",
+			"node": "Node.js サーバー"
 		},
 		"github": {
 			"title": "GitHub リポジトリ",
@@ -442,6 +447,44 @@
 			"emailDigest": "通知をメールで受け取る",
 			"emailDigestHint": "未読の通知を短いメール1通にまとめて、最短でも10分ごとにお送りします。先にここで読んだ通知はメールされません。",
 			"emailUnavailable": "Phaseo では Work のメールがまだ有効になっていません。選択内容は有効になったときのために保存されます。"
+		},
+		"errorTools": {
+			"loading": "読み込み中…",
+			"loadFailed": "このプロジェクトのツールを読み込めませんでした。しばらくしてからもう一度お試しください。",
+			"unknownPerson": "現在はいないメンバー",
+			"sourcemapsTitle": "ソースマップ",
+			"sourcemapsHint": "リリースごとにビルドのソースマップをアップロードすると、スタックトレースに元のファイルと行が表示されます。アップロードには別のトークンを使います。ページ内のプロジェクトキーは公開されているためです。",
+			"sourcemapsUnavailable": "この Phaseo サーバーではソースマップの保存先がまだ設定されていないため、現在はアップロードを受け付けていません。",
+			"uploadKey": "アップロードトークン",
+			"uploadExample": "CI からアップロード",
+			"createUploadKey": "アップロードトークンを作成",
+			"replaceUploadKey": "アップロードトークンを置き換え",
+			"rulesTitle": "ルール",
+			"rulesHint": "不要なエラーを除外したり、新しいエラーアイテムを特定の人に割り当てたりします。大文字と小文字を区別せず、テキストの一部が一致すれば対象になります。",
+			"ruleIgnore": "{field}に「{pattern}」が含まれる場合は無視",
+			"ruleAssign": "{field}に「{pattern}」が含まれる場合は {person} に割り当て",
+			"action": "アクション",
+			"field": "項目",
+			"pattern": "一致させるテキスト",
+			"patternPlaceholder": "ResizeObserver loop",
+			"assignee": "割り当て先",
+			"addRule": "ルールを追加",
+			"releasesTitle": "最近のリリース",
+			"release": "リリース",
+			"events": "イベント",
+			"newErrors": "新しいエラー",
+			"lastSeen": "最終検出",
+			"noReleases": "まだリリースは報告されていません。各エラーと一緒にリリースを送ると、ここに表示されます。",
+			"actions": {
+				"ignore": "無視",
+				"assign": "割り当て"
+			},
+			"fields": {
+				"message": "メッセージ",
+				"type": "エラーの種類",
+				"file": "ファイル",
+				"environment": "環境"
+			}
 		}
 	},
 	"sla": {

@@ -412,6 +412,8 @@ CREATE TABLE "public"."work_error_projects" (
   "name"         text                     NOT NULL,
   "key_hash"     text                     NOT NULL,
   "key_prefix"   text                     NOT NULL,
+  "upload_key_hash"   text,
+  "upload_key_prefix" text,
   "enabled"      boolean                  NOT NULL DEFAULT true,
   "auto_triage"  boolean                  NOT NULL DEFAULT true,
   "github_repo"  text,
@@ -433,6 +435,9 @@ CREATE INDEX work_error_projects_created_by_idx ON public.work_error_projects US
   WHERE (created_by IS NOT NULL);
 
 CREATE INDEX work_error_projects_workspace_id_idx ON public.work_error_projects USING btree (workspace_id);
+
+CREATE UNIQUE INDEX work_error_projects_upload_key_hash_key ON public.work_error_projects USING btree (upload_key_hash)
+  WHERE (upload_key_hash IS NOT NULL);
 
 CREATE POLICY "deny_direct_client_access" ON "public"."work_error_projects"
   AS RESTRICTIVE
@@ -467,6 +472,9 @@ CREATE TABLE "public"."work_error_groups" (
   "work_item_id"   uuid,
   "resolved_at"    timestamp with time zone,
   "spike_alerted_at" timestamp with time zone,
+  "users_count"    bigint                   NOT NULL DEFAULT 0,
+  "first_release"  text,
+  "resolved_in_release" text,
   CONSTRAINT "work_error_groups_last_event_object_check" CHECK ((jsonb_typeof(last_event) = 'object'::text)),
   CONSTRAINT "work_error_groups_pkey" PRIMARY KEY (id),
   CONSTRAINT "work_error_groups_project_fingerprint_key" UNIQUE (project_id, fingerprint),
@@ -935,6 +943,138 @@ GRANT INSERT, SELECT, UPDATE ON TABLE "public"."work_member_settings" TO "servic
 
 REVOKE ALL ON TABLE "public"."work_member_settings" FROM "anon", "authenticated";
 
+CREATE TABLE "public"."work_error_group_users" (
+  "group_id"      uuid                     NOT NULL,
+  "user_hash"     text                     NOT NULL,
+  "first_seen_at" timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_error_group_users_hash_check" CHECK ((char_length(user_hash) = 32)),
+  CONSTRAINT "work_error_group_users_group_id_fkey" FOREIGN KEY (group_id) REFERENCES public.work_error_groups(id) ON DELETE CASCADE,
+  CONSTRAINT "work_error_group_users_pkey" PRIMARY KEY (group_id, user_hash)
+);
+
+ALTER TABLE "public"."work_error_group_users"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_error_group_users"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_error_group_users" IS 'People an error group affected, as a hash of the app''s user id salted with the project id (never the id itself). Written by public.record_work_error_event.';
+
+REVOKE ALL ON TABLE "public"."work_error_group_users" FROM "service_role";
+
+GRANT DELETE, SELECT ON TABLE "public"."work_error_group_users" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_error_group_users" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_error_releases" (
+  "project_id"    uuid                     NOT NULL,
+  "version"       text                     NOT NULL,
+  "first_seen_at" timestamp with time zone NOT NULL DEFAULT now(),
+  "last_seen_at"  timestamp with time zone NOT NULL DEFAULT now(),
+  "event_count"   bigint                   NOT NULL DEFAULT 0,
+  "new_groups"    integer                  NOT NULL DEFAULT 0,
+  CONSTRAINT "work_error_releases_version_length_check" CHECK ((char_length(version) <= 200)),
+  CONSTRAINT "work_error_releases_project_id_fkey" FOREIGN KEY (project_id) REFERENCES public.work_error_projects(id) ON DELETE CASCADE,
+  CONSTRAINT "work_error_releases_pkey" PRIMARY KEY (project_id, version)
+);
+
+ALTER TABLE "public"."work_error_releases"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_error_releases"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_error_releases" IS 'Releases an error project has reported: events and new error groups per release. Written by public.record_work_error_event.';
+
+REVOKE ALL ON TABLE "public"."work_error_releases" FROM "service_role";
+
+GRANT DELETE, SELECT ON TABLE "public"."work_error_releases" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_error_releases" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_error_rules" (
+  "id"               uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id"     uuid                     NOT NULL,
+  "project_id"       uuid                     NOT NULL,
+  "action"           text                     NOT NULL,
+  "field"            text                     NOT NULL,
+  "pattern"          text                     NOT NULL,
+  "assignee_user_id" uuid,
+  "enabled"          boolean                  NOT NULL DEFAULT true,
+  "created_by"       uuid,
+  "created_at"       timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_error_rules_action_check" CHECK ((action = ANY (ARRAY['ignore'::text, 'assign'::text]))),
+  CONSTRAINT "work_error_rules_field_check" CHECK ((field = ANY (ARRAY['message'::text, 'type'::text, 'file'::text, 'environment'::text]))),
+  CONSTRAINT "work_error_rules_pattern_length_check" CHECK (((char_length(pattern) >= 1) AND (char_length(pattern) <= 200))),
+  CONSTRAINT "work_error_rules_assignee_check" CHECK (((action = 'assign'::text) = (assignee_user_id IS NOT NULL))),
+  CONSTRAINT "work_error_rules_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_error_rules_assignee_user_id_fkey" FOREIGN KEY (assignee_user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT "work_error_rules_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_error_rules_project_id_fkey" FOREIGN KEY (project_id) REFERENCES public.work_error_projects(id) ON DELETE CASCADE,
+  CONSTRAINT "work_error_rules_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_error_rules"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_error_rules"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_error_rules" IS 'Rules for an error project: drop events whose message, type, file or environment contains a pattern (ignore), or assign new error items to a member (assign).';
+
+REVOKE ALL ON TABLE "public"."work_error_rules" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_error_rules" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_error_rules" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_error_sourcemaps" (
+  "id"           uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id" uuid                     NOT NULL,
+  "project_id"   uuid                     NOT NULL,
+  "release"      text                     NOT NULL,
+  "file"         text                     NOT NULL,
+  "object_key"   text                     NOT NULL,
+  "size_bytes"   integer                  NOT NULL,
+  "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_error_sourcemaps_release_length_check" CHECK ((char_length(release) <= 200)),
+  CONSTRAINT "work_error_sourcemaps_file_length_check" CHECK (((char_length(file) >= 1) AND (char_length(file) <= 300))),
+  CONSTRAINT "work_error_sourcemaps_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_error_sourcemaps_project_release_file_key" UNIQUE (project_id, release, file),
+  CONSTRAINT "work_error_sourcemaps_project_id_fkey" FOREIGN KEY (project_id) REFERENCES public.work_error_projects(id) ON DELETE CASCADE,
+  CONSTRAINT "work_error_sourcemaps_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_error_sourcemaps"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_error_sourcemaps"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_error_sourcemaps" IS 'Source maps uploaded for an error project release. The map itself is in R2 (WORK_SOURCEMAPS) under object_key; file is the minified file''s name as stack frames show it.';
+
+REVOKE ALL ON TABLE "public"."work_error_sourcemaps" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_error_sourcemaps" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_error_sourcemaps" FROM "anon", "authenticated";
+
 CREATE OR REPLACE FUNCTION public.create_work_item (
   p_workspace_id uuid,
   p_title        text,
@@ -1014,7 +1154,8 @@ CREATE OR REPLACE FUNCTION public.record_work_error_event (
   p_release        text DEFAULT NULL::text,
   p_environment    text DEFAULT NULL::text,
   p_event          jsonb DEFAULT '{}'::jsonb,
-  p_seen_at        timestamp with time zone DEFAULT now()
+  p_seen_at        timestamp with time zone DEFAULT now(),
+  p_user_hash      text DEFAULT NULL::text
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -1024,7 +1165,7 @@ CREATE OR REPLACE FUNCTION public.record_work_error_event (
 -- Counts one error event against its group, creating the group on first sight. A resolved group
 -- that sees a new event is reopened; an ignored group stays ignored. Returns
 -- { group_id, workspace_id, is_new, reopened, status, work_item_id, event_count, auto_triage,
--- github_repo, hour_count, spiking }, or null when the
+-- github_repo, hour_count, spiking, users_count, first_release, resolved_in_release }, or null when the
 -- project is unknown or disabled. The caller decides whether a new or reopened group gets a work item.
 declare
   v_project public.work_error_projects;
@@ -1034,6 +1175,8 @@ declare
   v_hour_count integer;
   v_baseline numeric;
   v_spiking boolean;
+  v_new_user boolean := false;
+  v_release text := nullif(left(p_release, 200), '');
 begin
   select * into v_project from public.work_error_projects project
   where project.id = p_project_id and project.enabled;
@@ -1047,11 +1190,11 @@ begin
 
   insert into public.work_error_groups as error_group (
     workspace_id, project_id, fingerprint, exception_type, message, culprit, status, event_count,
-    first_seen_at, last_seen_at, last_release, last_environment, last_event
+    first_seen_at, last_seen_at, last_release, last_environment, last_event, first_release
   ) values (
     v_project.workspace_id, p_project_id, p_fingerprint, left(p_exception_type, 200), left(coalesce(p_message, ''), 2000),
-    left(p_culprit, 500), 'open', 1, p_seen_at, p_seen_at, left(p_release, 200), left(p_environment, 100),
-    coalesce(p_event, '{}'::jsonb)
+    left(p_culprit, 500), 'open', 1, p_seen_at, p_seen_at, v_release, left(p_environment, 100),
+    coalesce(p_event, '{}'::jsonb), v_release
   )
   on conflict (project_id, fingerprint) do update set
     event_count = error_group.event_count + 1,
@@ -1059,11 +1202,33 @@ begin
     message = excluded.message,
     culprit = coalesce(excluded.culprit, error_group.culprit),
     last_release = coalesce(excluded.last_release, error_group.last_release),
+    first_release = coalesce(error_group.first_release, excluded.first_release),
     last_environment = coalesce(excluded.last_environment, error_group.last_environment),
     last_event = excluded.last_event,
     status = case when error_group.status = 'resolved' then 'open' else error_group.status end,
     resolved_at = case when error_group.status = 'resolved' then null else error_group.resolved_at end
   returning * into v_group;
+
+  if p_user_hash is not null and char_length(p_user_hash) = 32 then
+    insert into public.work_error_group_users (group_id, user_hash, first_seen_at)
+    values (v_group.id, p_user_hash, p_seen_at)
+    on conflict (group_id, user_hash) do nothing;
+    v_new_user := found;
+    if v_new_user then
+      update public.work_error_groups error_group set users_count = error_group.users_count + 1
+      where error_group.id = v_group.id
+      returning * into v_group;
+    end if;
+  end if;
+
+  if v_release is not null then
+    insert into public.work_error_releases as release_row (project_id, version, first_seen_at, last_seen_at, event_count, new_groups)
+    values (p_project_id, v_release, p_seen_at, p_seen_at, 1, case when v_is_new then 1 else 0 end)
+    on conflict (project_id, version) do update set
+      last_seen_at = greatest(release_row.last_seen_at, excluded.last_seen_at),
+      event_count = release_row.event_count + 1,
+      new_groups = release_row.new_groups + excluded.new_groups;
+  end if;
 
   insert into public.work_error_group_hours as bucket (group_id, hour, event_count)
   values (v_group.id, date_trunc('hour', p_seen_at), 1)
@@ -1097,18 +1262,21 @@ begin
     'auto_triage', v_project.auto_triage,
     'github_repo', v_project.github_repo,
     'hour_count', v_hour_count,
-    'spiking', v_spiking
+    'spiking', v_spiking,
+    'users_count', v_group.users_count,
+    'first_release', v_group.first_release,
+    'resolved_in_release', v_group.resolved_in_release
   );
 end;
 $function$;
 
-COMMENT ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone) IS 'Counts one error event against its group (creating or reopening it). Service role only; called by the web-api error ingest route.';
+COMMENT ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone, text) IS 'Counts one error event against its group (creating or reopening it). Service role only; called by the web-api error ingest route.';
 
-REVOKE ALL ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone, text) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone) FROM "anon", "authenticated";
+REVOKE ALL ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone, text) FROM "anon", "authenticated";
 
-GRANT EXECUTE ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone) TO "service_role";
+GRANT EXECUTE ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone, text) TO "service_role";
 
 CREATE OR REPLACE FUNCTION public.work_insights (
   p_workspace_id uuid,

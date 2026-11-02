@@ -2,6 +2,8 @@ import { Hono, type Context } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { ingestErrorEvents, loadErrorProject, MAX_ERROR_BYTES, parseErrorPayload } from "@/work/errorIngest";
+import { parseSourcemapTarget, SOURCEMAP_COLUMNS, sourcemapObjectKey } from "@/work/errorTools";
+import { MAX_SOURCEMAP_BYTES, SourceMapReader } from "@/work/sourcemap";
 import { ERRORS_SCRIPT, ERRORS_SCRIPT_CACHE_SECONDS } from "@/work/errorsScript";
 import { handleBridgeEvent, loadGithubRepoLink, MAX_GITHUB_BYTES, parseBridgePayload } from "@/work/githubBridge";
 import { onWorkItemDone } from "@/work/support";
@@ -11,7 +13,9 @@ import { hashWorkToken, isWorkToken, type WorkTokenKind } from "@/work/tokens";
 // Public work tracker endpoints, mounted at /api/_web/work. There is no user session: the token in
 // the path is the credential. Its shape is checked before any database lookup, then its SHA-256
 // hash is looked up. Asks and errors accept cross-origin posts from any site (public forms and
-// browser apps); the GitHub bridge is called by the repository's Actions workflow.
+// browser apps); the GitHub bridge is called by the repository's Actions workflow. Source maps are
+// uploaded from a build (CI) with the project's secret upload token (pws_) as a bearer token,
+// never the ingest key, which is public in the app's pages.
 export const publicWorkRouter = new Hono<{ Bindings: Env }>();
 
 type WorkContext = Context<{ Bindings: Env }>;
@@ -161,6 +165,48 @@ publicWorkRouter.post("/errors/:key", async (c) => {
 	} catch (error) {
 		console.error("[work] error ingest failed", { message: error instanceof Error ? error.message : String(error) });
 		return c.json({ error: "ingest_failed" }, 500, PUBLIC_POST_HEADERS);
+	}
+});
+
+/**
+ * POST /sourcemaps?release=<release>&file=<minified file name>, Authorization: Bearer pws_..., body:
+ * the source map JSON (at most 10 MB). Replaces any map for the same release and file.
+ */
+publicWorkRouter.post("/sourcemaps", async (c) => {
+	const token = (c.req.header("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+	if (!isWorkToken("uploads", token)) return c.json({ error: "unauthorized" }, 401, NO_STORE);
+	const tokenHash = await hashWorkToken(token);
+	const limited = await rateLimited(c, "uploads", tokenHash, NO_STORE);
+	if (limited) return limited;
+	const target = parseSourcemapTarget(c.req.query("release"), c.req.query("file"));
+	if (target.ok === false) return c.json({ error: "invalid_target", message: target.message }, 400, NO_STORE);
+	const bucket = c.env.WORK_SOURCEMAPS;
+	if (!bucket) return c.json({ error: "sourcemaps_unavailable", message: "Source maps aren't set up on this server yet" }, 503, NO_STORE);
+	const body = await readBody(c, MAX_SOURCEMAP_BYTES, NO_STORE);
+	if ("response" in body) return body.response;
+	if (!SourceMapReader.parse(body.text)) return c.json({ error: "invalid_sourcemap", message: "Send a version 3 source map (index maps aren't supported)" }, 400, NO_STORE);
+	try {
+		const client = getDataClient(c.env);
+		const { data: project, error } = await client.from("work_error_projects").select("id,workspace_id,enabled").eq("upload_key_hash", tokenHash).maybeSingle();
+		if (error) throw new Error(error.message);
+		if (!project?.enabled) return c.json({ error: "unauthorized" }, 401, NO_STORE);
+		const objectKey = await sourcemapObjectKey(project.id, target.release, target.file);
+		const size = new TextEncoder().encode(body.text).byteLength;
+		await bucket.put(objectKey, body.text, { httpMetadata: { contentType: "application/json" } });
+		const saved = await client.from("work_error_sourcemaps").upsert({
+			workspace_id: project.workspace_id,
+			project_id: project.id,
+			release: target.release,
+			file: target.file,
+			object_key: objectKey,
+			size_bytes: size,
+			created_at: new Date().toISOString(),
+		}, { onConflict: "project_id,release,file" }).select(SOURCEMAP_COLUMNS).maybeSingle();
+		if (saved.error) throw new Error(saved.error.message);
+		return c.json({ ok: true, release: target.release, file: target.file, sizeBytes: size }, 200, NO_STORE);
+	} catch (error) {
+		console.error("[work] source map upload failed", { message: error instanceof Error ? error.message : String(error) });
+		return c.json({ error: "upload_failed" }, 500, NO_STORE);
 	}
 });
 

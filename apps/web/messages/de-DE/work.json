@@ -365,7 +365,11 @@
 			"open": "Offen",
 			"resolved": "Behoben",
 			"ignored": "Ignoriert"
-		}
+		},
+		"people": "Personen",
+		"firstRelease": "Erstes Release",
+		"resolvedIn": "Behoben in",
+		"sourceMapped": "Mit den Source Maps dieses Releases auf deinen Quellcode abgebildet. Die minifizierte Stelle steht unter jeder Zeile."
 	},
 	"settings": {
 		"title": "Arbeitseinstellungen",
@@ -395,7 +399,8 @@
 			"script": "Script-Tag für den Browser",
 			"fetch": "Von einem Server senden",
 			"githubRepo": "GitHub-Repo für neue Issues",
-			"lastEvent": "Letztes Ereignis {time}"
+			"lastEvent": "Letztes Ereignis {time}",
+			"node": "Node.js-Server"
 		},
 		"github": {
 			"title": "GitHub-Repos",
@@ -442,6 +447,44 @@
 			"emailDigest": "Mir meine Benachrichtigungen per E-Mail senden",
 			"emailDigestHint": "Ungelesene Benachrichtigungen kommen gesammelt in einer kurzen E-Mail, höchstens alle 10 Minuten. Was du hier zuerst liest, wird nicht gemailt.",
 			"emailUnavailable": "E-Mails aus Work sind bei Phaseo noch nicht eingeschaltet. Deine Wahl bleibt für später gespeichert."
+		},
+		"errorTools": {
+			"loading": "Wird geladen …",
+			"loadFailed": "Die Werkzeuge dieses Projekts konnten nicht geladen werden. Versuche es gleich noch einmal.",
+			"unknownPerson": "Jemand, der nicht mehr hier ist",
+			"sourcemapsTitle": "Source Maps",
+			"sourcemapsHint": "Lade die Source Maps deines Builds für jedes Release hoch, dann zeigen Stacktraces deine ursprünglichen Dateien und Zeilen. Uploads nutzen ein eigenes Token: Der Projektschlüssel in deinen Seiten ist öffentlich.",
+			"sourcemapsUnavailable": "Der Speicher für Source Maps ist auf diesem Phaseo-Server noch nicht eingerichtet, Uploads werden vorerst abgelehnt.",
+			"uploadKey": "Upload-Token",
+			"uploadExample": "Aus der CI hochladen",
+			"createUploadKey": "Upload-Token erstellen",
+			"replaceUploadKey": "Upload-Token ersetzen",
+			"rulesTitle": "Regeln",
+			"rulesHint": "Verwirf Fehler, die dich nicht interessieren, oder weise neue Fehler-Items einer Person zu. Ein Treffer ist jeder Teil des Texts, ohne Groß- und Kleinschreibung.",
+			"ruleIgnore": "Ignorieren, wenn {field} „{pattern}“ enthält",
+			"ruleAssign": "{person} zuweisen, wenn {field} „{pattern}“ enthält",
+			"action": "Aktion",
+			"field": "Feld",
+			"pattern": "Zu suchender Text",
+			"patternPlaceholder": "ResizeObserver loop",
+			"assignee": "Zuweisen an",
+			"addRule": "Regel hinzufügen",
+			"releasesTitle": "Letzte Releases",
+			"release": "Release",
+			"events": "Ereignisse",
+			"newErrors": "Neue Fehler",
+			"lastSeen": "Zuletzt gesehen",
+			"noReleases": "Noch keine Releases gemeldet. Sende mit jedem Fehler ein Release, um sie hier zu sehen.",
+			"actions": {
+				"ignore": "Ignorieren",
+				"assign": "Zuweisen"
+			},
+			"fields": {
+				"message": "Nachricht",
+				"type": "Fehlertyp",
+				"file": "Datei",
+				"environment": "Umgebung"
+			}
 		}
 	},
 	"sla": {

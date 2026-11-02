@@ -29,6 +29,11 @@ import type {
 	WorkViewFilters,
 	WorkViewLayout,
 	WorkMemberSettingsResponse,
+	ErrorRelease,
+	ErrorRule,
+	ErrorRuleAction,
+	ErrorRuleField,
+	ErrorSourcemap,
 } from "@/lib/work/types";
 
 export type WorkActionError = { ok: false; status: number | null; code: string | null; message: string | null };
@@ -318,6 +323,41 @@ export async function deleteWorkView(viewId: string) {
 
 export async function saveWorkSettings(settings: WorkSettings) {
 	return run(() => send<{ settings: WorkSettings }>("PUT", "settings", settings));
+}
+
+// Error project tools: source map upload token, rules, releases and source maps
+
+/** Makes (or replaces) the project's source map upload token; the token is returned once. */
+export async function createErrorUploadKey(projectId: string) {
+	return run(() => send<{ project: ErrorProject; uploadKey: string }>("POST", `error-projects/${id(projectId)}/upload-key`));
+}
+
+/** The project's rules, recent releases and source maps, read together. */
+export async function getErrorProjectTools(projectId: string) {
+	return run(async () => {
+		const [rules, releases, maps] = await Promise.all([
+			get<{ rules: ErrorRule[] }>(`error-projects/${id(projectId)}/rules`),
+			get<{ releases: ErrorRelease[] }>(`error-projects/${id(projectId)}/releases?limit=10`),
+			get<{ sourcemaps: ErrorSourcemap[]; available: boolean }>(`error-projects/${id(projectId)}/sourcemaps?limit=50`),
+		]);
+		return { rules: rules.rules, releases: releases.releases, sourcemaps: maps.sourcemaps, sourcemapsAvailable: maps.available };
+	});
+}
+
+export async function createErrorRule(projectId: string, input: { action: ErrorRuleAction; field: ErrorRuleField; pattern: string; assigneeUserId?: string | null }) {
+	return run(() => send<{ rule: ErrorRule }>("POST", `error-projects/${id(projectId)}/rules`, input));
+}
+
+export async function setErrorRuleEnabled(ruleId: string, enabled: boolean) {
+	return run(() => send<{ rule: ErrorRule }>("PATCH", `error-rules/${id(ruleId)}`, { enabled }));
+}
+
+export async function deleteErrorRule(ruleId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `error-rules/${id(ruleId)}`));
+}
+
+export async function deleteErrorSourcemap(projectId: string, mapId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `error-projects/${id(projectId)}/sourcemaps/${id(mapId)}`));
 }
 
 // Notifications

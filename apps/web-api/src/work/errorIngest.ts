@@ -4,8 +4,11 @@
 // a new item for a new group, or the group's existing item reopened with an error event. The
 // triage agent then sorts it in the background. When the RPC reports a spike, spikes.ts writes the
 // spike event and notifications (or creates the group's item, priority 2, when it has none).
+// The project's rules can drop an event (ignore) or assign a new item (assign). An event's user id
+// is hashed with the project id for the people-affected count and never stored.
 
 import type { Env } from "@/env";
+import { applyRules, cleanUserId, hashErrorUser, loadErrorRules } from "./errorTools";
 import { culpritFor, fingerprintError } from "./fingerprint";
 import { addWorkItemEvent, createWorkItem, isClosedState, loadWorkItemById, updateWorkItem, type DataClient } from "./items";
 import { handleErrorSpike, SPIKE_ITEM_PRIORITY } from "./spikes";
@@ -37,6 +40,8 @@ export type ErrorEvent = {
 	timestamp?: string;
 	tags?: Record<string, string>;
 	extra?: Record<string, unknown>;
+	/** The app's id or email for the person who hit the error. Hashed for counting, never stored. */
+	user?: string;
 };
 
 /** An event after cleaning: frames always present, timestamp always set. */
@@ -107,6 +112,9 @@ export function cleanErrorEvent(value: unknown, now = Date.now()): CleanErrorEve
 	if (tags) event.tags = tags;
 	const extra = cleanExtra(raw.extra);
 	if (extra) event.extra = extra;
+	// `user` is an id or email, or { id } as some SDKs send it.
+	const user = cleanUserId(raw.user && typeof raw.user === "object" ? (raw.user as { id?: unknown }).id : raw.user);
+	if (user) event.user = user;
 	return event;
 }
 
@@ -171,6 +179,7 @@ async function openItemForGroup(args: {
 	culprit: string | null;
 	waitUntil: (promise: Promise<unknown>) => void;
 	priority?: number;
+	assigneeUserId?: string | null;
 }): Promise<string> {
 	const { env, client, project, result, event, culprit, waitUntil } = args;
 	const workspaceId = result.workspace_id;
@@ -185,7 +194,7 @@ async function openItemForGroup(args: {
 				workItemId: item.id,
 				kind: "error",
 				authorKind: "system",
-				body: result.reopened ? "The error came back after it was resolved." : "The error was seen again.",
+				body: regressionNote(result, event),
 				data: { groupId: result.group_id, eventCount: result.event_count, release: event.release ?? null },
 			});
 			if (reopened.state === "triage") triageInBackground(env, client, workspaceId, item.id, waitUntil);
@@ -202,6 +211,7 @@ async function openItemForGroup(args: {
 		source: "error",
 		authorKind: "system",
 		errorGroupId: result.group_id,
+		...(args.assigneeUserId ? { assigneeUserId: args.assigneeUserId } : {}),
 		githubRepo: result.github_repo ?? project.github_repo ?? null,
 	});
 	// Only claim the group if no other request has given it an item in the meantime.
@@ -214,6 +224,15 @@ async function openItemForGroup(args: {
 	return item.id;
 }
 
+/** What the item's event says when a group is seen again: a regression names the releases. */
+export function regressionNote(result: Pick<RecordErrorEventResult, "reopened" | "resolved_in_release">, event: Pick<CleanErrorEvent, "release">): string {
+	if (!result.reopened) return "The error was seen again.";
+	if (result.resolved_in_release && event.release && event.release !== result.resolved_in_release) {
+		return `The error came back in release ${event.release} after it was resolved in ${result.resolved_in_release}.`;
+	}
+	return "The error came back after it was resolved.";
+}
+
 /** Records the events and returns the ids of the groups they went to. */
 export async function ingestErrorEvents(args: {
 	env: Env;
@@ -224,7 +243,12 @@ export async function ingestErrorEvents(args: {
 }): Promise<string[]> {
 	const { env, client, project, events, waitUntil } = args;
 	const groups: string[] = [];
+	const rules = await loadErrorRules(client, project.id);
 	for (const event of events) {
+		const ruling = applyRules(rules, event);
+		if (ruling.ignore) continue;
+		const { user, ...stored } = event;
+		const userHash = user ? await hashErrorUser(project.id, user) : null;
 		const fingerprint = await fingerprintError(event);
 		const culprit = culpritFor(event.frames);
 		const { data, error } = await client.rpc("record_work_error_event", {
@@ -235,8 +259,9 @@ export async function ingestErrorEvents(args: {
 			p_culprit: culprit,
 			p_release: event.release ?? null,
 			p_environment: event.environment ?? null,
-			p_event: event,
+			p_event: stored,
 			p_seen_at: event.timestamp,
+			p_user_hash: userHash,
 		});
 		if (error) throw new Error(`record_work_error_event failed: ${error.message}`);
 		const result = data as RecordErrorEventResult | null;
@@ -245,7 +270,7 @@ export async function ingestErrorEvents(args: {
 		let itemId = result.work_item_id;
 		if ((result.is_new || result.reopened) && result.auto_triage && result.status !== "ignored") {
 			try {
-				itemId = await openItemForGroup({ env, client, project, result, event, culprit, waitUntil });
+				itemId = await openItemForGroup({ env, client, project, result, event: stored, culprit, waitUntil, assigneeUserId: ruling.assigneeUserId });
 			} catch (itemError) {
 				console.error("[work] error item failed", { groupId: result.group_id, message: String(itemError) });
 			}
@@ -256,7 +281,7 @@ export async function ingestErrorEvents(args: {
 				client,
 				result: { ...result, work_item_id: itemId },
 				errorLabel: (firstLine ? `${event.type}: ${firstLine}` : event.type).slice(0, 300),
-				createItem: () => openItemForGroup({ env, client, project, result: { ...result, work_item_id: null }, event, culprit, waitUntil, priority: SPIKE_ITEM_PRIORITY }),
+				createItem: () => openItemForGroup({ env, client, project, result: { ...result, work_item_id: null }, event: stored, culprit, waitUntil, priority: SPIKE_ITEM_PRIORITY, assigneeUserId: ruling.assigneeUserId }),
 			});
 		}
 	}

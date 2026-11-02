@@ -53,8 +53,45 @@ export function errorFetchExample(key: string, origin?: string): string {
 		`    stack: error.stack,`,
 		`    release: process.env.RELEASE,`,
 		`    environment: process.env.NODE_ENV,`,
+		`    user: currentUser?.id, // optional: counts people affected; only a hash is kept`,
 		`    timestamp: new Date().toISOString(),`,
 		`  }),`,
 		`});`,
+	].join("\n");
+}
+
+/** A Node.js server: report uncaught errors (then exit, as Node would) and unhandled rejections. */
+export function errorNodeExample(key: string, origin?: string): string {
+	return [
+		`const PHASEO_ERRORS = ${JSON.stringify(errorIngestUrl(key, origin))};`,
+		`function reportError(error) {`,
+		`  const err = error instanceof Error ? error : new Error(String(error));`,
+		`  return fetch(PHASEO_ERRORS, {`,
+		`    method: "POST",`,
+		`    headers: { "content-type": "application/json" },`,
+		`    body: JSON.stringify({ type: err.name, message: err.message, stack: err.stack, release: process.env.RELEASE, environment: process.env.NODE_ENV }),`,
+		`  }).catch(() => {});`,
+		`}`,
+		`process.on("uncaughtException", (error) => { reportError(error).finally(() => process.exit(1)); });`,
+		`process.on("unhandledRejection", (reason) => { reportError(reason); });`,
+	].join("\n");
+}
+
+export function sourcemapUploadUrl(origin = WORK_PUBLIC_ORIGIN): string {
+	return `${origin}/api/_web/work/sourcemaps`;
+}
+
+/** Uploads every .map in a build folder for a release, from CI. The token goes in a CI secret. */
+export function sourcemapUploadExample(token: string, origin?: string): string {
+	return [
+		`# In CI after the build. Keep the token in a secret (PHASEO_SOURCEMAP_TOKEN).`,
+		`export PHASEO_SOURCEMAP_TOKEN=${shellQuote(token)}`,
+		`RELEASE="$(git rev-parse --short HEAD)"   # the same release your app reports`,
+		`for map in dist/assets/*.js.map; do`,
+		`  file="$(basename "$map" .map)"`,
+		`  curl -sS --fail -X POST "${sourcemapUploadUrl(origin)}?release=$RELEASE&file=$file" \\`,
+		`    -H "authorization: Bearer $PHASEO_SOURCEMAP_TOKEN" \\`,
+		`    -H "content-type: application/json" --data-binary "@$map"`,
+		`done`,
 	].join("\n");
 }

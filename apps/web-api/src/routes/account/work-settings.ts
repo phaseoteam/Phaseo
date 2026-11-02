@@ -15,6 +15,18 @@ import {
 	loadWorkItemById,
 	updateWorkItem,
 } from "@/work/items";
+import {
+	ERROR_RULE_COLUMNS,
+	formatErrorRelease,
+	formatErrorRule,
+	formatSourcemap,
+	mapGroupFrames,
+	MAX_RULES_PER_PROJECT,
+	parseRuleInput,
+	SOURCEMAP_COLUMNS,
+	type ErrorRuleRow,
+	type SourcemapRow,
+} from "@/work/errorTools";
 import { newWorkToken } from "@/work/tokens";
 import { stripPersonalData } from "@/work/triage";
 import { ERROR_GROUP_STATUSES, type ErrorGroupRow, type ErrorProjectRow, type GithubRepoRow, type IntakeFormRow, type WorkItemRow } from "@/work/types";
@@ -38,7 +50,7 @@ import {
 // display prefixes are stored. A repository's GitHub token is stored encrypted and never returned.
 
 const INTAKE_FORM_COLUMNS = "id,workspace_id,name,token_prefix,enabled,auto_triage,created_by,created_at,last_used_at";
-const ERROR_PROJECT_COLUMNS = "id,workspace_id,name,key_prefix,enabled,auto_triage,github_repo,created_by,created_at,last_event_at";
+const ERROR_PROJECT_COLUMNS = "id,workspace_id,name,key_prefix,enabled,auto_triage,github_repo,created_by,created_at,last_event_at,upload_key_prefix";
 const GITHUB_REPO_COLUMNS = "id,workspace_id,repo,bridge_token_prefix,github_token_ciphertext,sync_issues,created_by,created_at,last_event_at";
 const ERROR_GROUP_SELECT = "*,project:work_error_projects(name),item:work_items(number)";
 const MAX_GITHUB_TOKEN_CHARS = 500;
@@ -260,7 +272,14 @@ accountWorkSettingsRouter.get("/errors/:id", async (c) => {
 	if ("response" in access) return access.response;
 	const loaded = await loadGroup(c, access.context);
 	if ("response" in loaded) return loaded.response;
-	return json(c, { group: formatErrorGroup(loaded.group) });
+	const { group } = loaded;
+	let mappedFrames = null;
+	try {
+		mappedFrames = await mapGroupFrames({ client: access.context.client, bucket: c.env.WORK_SOURCEMAPS, projectId: group.project_id, release: group.last_release, lastEvent: group.last_event ?? {} });
+	} catch (error) {
+		console.error("[work] source map lookup failed", { groupId: group.id, message: error instanceof Error ? error.message : String(error) });
+	}
+	return json(c, { group: formatErrorGroup(group), mappedFrames });
 });
 
 accountWorkSettingsRouter.patch("/errors/:id", async (c) => {
@@ -271,9 +290,12 @@ accountWorkSettingsRouter.patch("/errors/:id", async (c) => {
 	if (!(ERROR_GROUP_STATUSES as readonly unknown[]).includes(body.status)) return badRequest(c, "status must be open, resolved or ignored");
 	const id = pathUuid(c, "id");
 	if (!id) return badRequest(c, "An error group id is required");
+	const loaded = await loadGroup(c, context);
+	if ("response" in loaded) return loaded.response;
 	const { data, error } = await context.client.from("work_error_groups").update({
 		status: body.status,
 		resolved_at: body.status === "resolved" ? new Date().toISOString() : null,
+		...(body.status === "resolved" ? { resolved_in_release: loaded.group.last_release ?? null } : {}),
 	}).eq("workspace_id", context.workspaceId).eq("id", id).select(ERROR_GROUP_SELECT).maybeSingle();
 	if (error) return unavailable(c, "work_settings_write_failed");
 	if (!data) return notFound(c, "Error group not found");
@@ -445,5 +467,155 @@ accountWorkSettingsRouter.delete("/github-repos/:id", async (c) => {
 		.eq("workspace_id", context.workspaceId).eq("id", id).select("id").maybeSingle();
 	if (error) return unavailable(c, "work_settings_write_failed");
 	if (!data) return notFound(c, "Repository not found");
+	return json(c, { id, deleted: true });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Error projects: source map upload token, source maps, releases, rules
+// ---------------------------------------------------------------------------------------------
+
+async function loadErrorProjectId(c: any, context: { client: any; workspaceId: string }): Promise<{ id: string } | { response: Response }> {
+	const id = pathUuid(c, "id");
+	if (!id) return { response: badRequest(c, "An error project id is required") };
+	const { data, error } = await context.client.from("work_error_projects").select("id").eq("workspace_id", context.workspaceId).eq("id", id).maybeSingle();
+	if (error) return { response: unavailable(c) };
+	if (!data) return { response: notFound(c, "Error project not found") };
+	return { id };
+}
+
+/** Makes (or replaces) the project's source map upload token. The token is returned once. */
+accountWorkSettingsRouter.post("/error-projects/:id/upload-key", async (c) => {
+	const body = await readBody(c);
+	const access = await workAccess(c, body.workspaceId);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const project = await loadErrorProjectId(c, context);
+	if ("response" in project) return project.response;
+	const key = await newWorkToken("uploads");
+	const { data, error } = await context.client.from("work_error_projects").update({ upload_key_hash: key.hash, upload_key_prefix: key.prefix })
+		.eq("workspace_id", context.workspaceId).eq("id", project.id).select(ERROR_PROJECT_COLUMNS).maybeSingle();
+	if (error || !data) return writeError(c, error);
+	return json(c, { project: formatErrorProject(data as unknown as ErrorProjectRow), uploadKey: key.token }, 201);
+});
+
+accountWorkSettingsRouter.get("/error-projects/:id/sourcemaps", async (c) => {
+	const access = await accessFromQuery(c);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const project = await loadErrorProjectId(c, context);
+	if ("response" in project) return project.response;
+	let query = context.client.from("work_error_sourcemaps").select(SOURCEMAP_COLUMNS).eq("workspace_id", context.workspaceId).eq("project_id", project.id);
+	const release = c.req.query("release")?.trim();
+	if (release) query = query.eq("release", release.slice(0, 200));
+	const { data, error } = await query.order("created_at", { ascending: false }).limit(clampLimit(c.req.query("limit"), 100, 200));
+	if (error) return unavailable(c);
+	return json(c, { sourcemaps: ((data ?? []) as SourcemapRow[]).map(formatSourcemap), available: Boolean(c.env.WORK_SOURCEMAPS) });
+});
+
+accountWorkSettingsRouter.delete("/error-projects/:id/sourcemaps/:mapId", async (c) => {
+	const body = await readBody(c);
+	const access = await workAccess(c, body.workspaceId ?? c.req.query("workspaceId"));
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const project = await loadErrorProjectId(c, context);
+	if ("response" in project) return project.response;
+	const mapId = pathUuid(c, "mapId");
+	if (!mapId) return badRequest(c, "A source map id is required");
+	const { data, error } = await context.client.from("work_error_sourcemaps").delete()
+		.eq("workspace_id", context.workspaceId).eq("project_id", project.id).eq("id", mapId).select("id,object_key").maybeSingle();
+	if (error) return unavailable(c, "work_settings_write_failed");
+	if (!data) return notFound(c, "Source map not found");
+	if (c.env.WORK_SOURCEMAPS) {
+		try {
+			await c.env.WORK_SOURCEMAPS.delete(String(data.object_key));
+		} catch (deleteError) {
+			console.error("[work] source map object not deleted", { mapId, message: deleteError instanceof Error ? deleteError.message : String(deleteError) });
+		}
+	}
+	return json(c, { id: mapId, deleted: true });
+});
+
+accountWorkSettingsRouter.get("/error-projects/:id/releases", async (c) => {
+	const access = await accessFromQuery(c);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const project = await loadErrorProjectId(c, context);
+	if ("response" in project) return project.response;
+	const { data, error } = await context.client.from("work_error_releases").select("version,first_seen_at,last_seen_at,event_count,new_groups")
+		.eq("project_id", project.id).order("last_seen_at", { ascending: false }).limit(clampLimit(c.req.query("limit"), 30, 100));
+	if (error) return unavailable(c);
+	return json(c, { releases: (data ?? []).map((row: any) => formatErrorRelease(row)) });
+});
+
+accountWorkSettingsRouter.get("/error-projects/:id/rules", async (c) => {
+	const access = await accessFromQuery(c);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const project = await loadErrorProjectId(c, context);
+	if ("response" in project) return project.response;
+	const { data, error } = await context.client.from("work_error_rules").select(ERROR_RULE_COLUMNS)
+		.eq("workspace_id", context.workspaceId).eq("project_id", project.id).order("created_at", { ascending: true }).limit(MAX_RULES_PER_PROJECT);
+	if (error) return unavailable(c);
+	return json(c, { rules: ((data ?? []) as ErrorRuleRow[]).map(formatErrorRule) });
+});
+
+accountWorkSettingsRouter.post("/error-projects/:id/rules", async (c) => {
+	const body = await readBody(c);
+	const access = await workAccess(c, body.workspaceId);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const project = await loadErrorProjectId(c, context);
+	if ("response" in project) return project.response;
+	const parsed = parseRuleInput(body);
+	if (parsed.ok === false) return badRequest(c, parsed.message);
+	if (parsed.value.assigneeUserId) {
+		const member = await context.client.from("workspace_members").select("user_id").eq("workspace_id", context.workspaceId).eq("user_id", parsed.value.assigneeUserId).maybeSingle();
+		if (member.error) return unavailable(c);
+		if (!member.data) return badRequest(c, "The assignee isn't a member of this workspace");
+	}
+	const count = await context.client.from("work_error_rules").select("id", { count: "exact", head: true }).eq("project_id", project.id);
+	if (count.error) return unavailable(c);
+	if ((count.count ?? 0) >= MAX_RULES_PER_PROJECT) return badRequest(c, `A project can have at most ${MAX_RULES_PER_PROJECT} rules`);
+	const { data, error } = await context.client.from("work_error_rules").insert({
+		workspace_id: context.workspaceId,
+		project_id: project.id,
+		action: parsed.value.action,
+		field: parsed.value.field,
+		pattern: parsed.value.pattern,
+		assignee_user_id: parsed.value.assigneeUserId,
+		created_by: context.user.id,
+	}).select(ERROR_RULE_COLUMNS).maybeSingle();
+	if (error || !data) return writeError(c, error);
+	return json(c, { rule: formatErrorRule(data as ErrorRuleRow) }, 201);
+});
+
+accountWorkSettingsRouter.patch("/error-rules/:id", async (c) => {
+	const body = await readBody(c);
+	const access = await workAccess(c, body.workspaceId);
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const id = pathUuid(c, "id");
+	if (!id) return badRequest(c, "A rule id is required");
+	const enabled = optionalBoolean(body, "enabled");
+	if (enabled.ok === false) return badRequest(c, enabled.message);
+	if (enabled.value === undefined) return badRequest(c, "Send enabled: true or false");
+	const { data, error } = await context.client.from("work_error_rules").update({ enabled: enabled.value })
+		.eq("workspace_id", context.workspaceId).eq("id", id).select(ERROR_RULE_COLUMNS).maybeSingle();
+	if (error) return unavailable(c, "work_settings_write_failed");
+	if (!data) return notFound(c, "Rule not found");
+	return json(c, { rule: formatErrorRule(data as ErrorRuleRow) });
+});
+
+accountWorkSettingsRouter.delete("/error-rules/:id", async (c) => {
+	const body = await readBody(c);
+	const access = await workAccess(c, body.workspaceId ?? c.req.query("workspaceId"));
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const id = pathUuid(c, "id");
+	if (!id) return badRequest(c, "A rule id is required");
+	const { data, error } = await context.client.from("work_error_rules").delete()
+		.eq("workspace_id", context.workspaceId).eq("id", id).select("id").maybeSingle();
+	if (error) return unavailable(c, "work_settings_write_failed");
+	if (!data) return notFound(c, "Rule not found");
 	return json(c, { id, deleted: true });
 });

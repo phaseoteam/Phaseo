@@ -21,6 +21,8 @@ const WORKSPACE = "11111111-1111-1111-1111-111111111111";
 const FORM_TOKEN = `pwf_${"a".repeat(43)}`;
 const ERROR_KEY = `pwe_${"b".repeat(43)}`;
 const GITHUB_TOKEN = `pwg_${"c".repeat(43)}`;
+const UPLOAD_TOKEN = `pws_${"d".repeat(43)}`;
+const MAP = JSON.stringify({ version: 3, sources: ["src/app.ts"], names: [], mappings: "AAAA" });
 
 function useFake(handler: FakeHandler) {
 	mocks.fake = fakeDataClient(handler);
@@ -200,5 +202,44 @@ describe("public work routes", () => {
 		it("rejects payloads that aren't bridge events", async () => {
 			expect((await post(`/github/${GITHUB_TOKEN}`, JSON.stringify({ event: "push" }))).status).toBe(400);
 		});
+	});
+});
+
+describe("source map uploads", () => {
+	const upload = (query: string, body: string, headers: Record<string, string> = { authorization: `Bearer ${UPLOAD_TOKEN}` }, bindings: Partial<Env> = {}) =>
+		post(`/sourcemaps${query}`, body, headers, bindings);
+
+	it("needs the upload token, never the public ingest key", async () => {
+		useFake(() => undefined);
+		expect((await upload("?release=1&file=app.js", MAP, { authorization: `Bearer ${ERROR_KEY}` })).status).toBe(401);
+		expect((await upload("?release=1&file=app.js", MAP, {})).status).toBe(401);
+	});
+
+	it("answers 503 until the bucket is bound, and refuses bad targets and maps", async () => {
+		useFake(() => undefined);
+		expect((await upload("?release=1&file=app.js", MAP)).status).toBe(503);
+		const bucket = { put: vi.fn(), get: vi.fn(), delete: vi.fn() };
+		expect((await upload("?release=1&file=app.css", MAP, undefined, { WORK_SOURCEMAPS: bucket as any })).status).toBe(400);
+		expect((await upload("?release=1&file=app.js", "{\"version\":2}", undefined, { WORK_SOURCEMAPS: bucket as any })).status).toBe(400);
+		expect(bucket.put).not.toHaveBeenCalled();
+	});
+
+	it("stores the map in R2 under a hashed key and records it for the release", async () => {
+		const tokenHash = await hashWorkToken(UPLOAD_TOKEN);
+		const fake = useFake((query) => {
+			if (query.table === "work_error_projects") return { data: { id: "project-1", workspace_id: WORKSPACE, enabled: true }, error: null };
+			if (query.table === "work_error_sourcemaps") return { data: { id: "m1" }, error: null };
+			return undefined;
+		});
+		const bucket = { put: vi.fn(async () => ({})), get: vi.fn(), delete: vi.fn() };
+		const response = await upload("?release=2.1.0&file=https://cdn.test/app.9f.js", MAP, undefined, { WORK_SOURCEMAPS: bucket as any });
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ ok: true, release: "2.1.0", file: "app.9f.js" });
+		const lookup = fake.queries.find((query) => query.table === "work_error_projects")!;
+		expect(lookup.filters).toContainEqual(["eq", "upload_key_hash", tokenHash]);
+		const [key] = bucket.put.mock.calls[0] as unknown as [string];
+		expect(key).toMatch(/^work-sourcemaps\/project-1\/[0-9a-f]{32}\.map$/);
+		const saved = fake.queries.find((query) => query.table === "work_error_sourcemaps")!;
+		expect(saved.payload).toMatchObject({ project_id: "project-1", release: "2.1.0", file: "app.9f.js", object_key: key });
 	});
 });

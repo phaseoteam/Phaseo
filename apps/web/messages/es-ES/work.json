@@ -365,7 +365,11 @@
 			"open": "Abierto",
 			"resolved": "Resuelto",
 			"ignored": "Ignorado"
-		}
+		},
+		"people": "Personas",
+		"firstRelease": "Primera versión",
+		"resolvedIn": "Resuelto en",
+		"sourceMapped": "Asignado a tu código fuente con los source maps de esta versión. La ubicación minificada aparece bajo cada línea."
 	},
 	"settings": {
 		"title": "Ajustes de trabajo",
@@ -395,7 +399,8 @@
 			"script": "Etiqueta script para el navegador",
 			"fetch": "Enviar desde un servidor",
 			"githubRepo": "Repositorio de GitHub para issues nuevos",
-			"lastEvent": "Último evento {time}"
+			"lastEvent": "Último evento {time}",
+			"node": "Servidor Node.js"
 		},
 		"github": {
 			"title": "Repositorios de GitHub",
@@ -442,6 +447,44 @@
 			"emailDigest": "Enviarme mis notificaciones por correo",
 			"emailDigestHint": "Las notificaciones sin leer llegan en un solo correo breve, como mucho cada 10 minutos. Lo que leas aquí antes no se envía.",
 			"emailUnavailable": "El correo de Work aún no está activado en Phaseo. Tu elección se guarda para cuando lo esté."
+		},
+		"errorTools": {
+			"loading": "Cargando…",
+			"loadFailed": "No se pudieron cargar las herramientas de este proyecto. Vuelve a intentarlo en un momento.",
+			"unknownPerson": "Alguien que ya no está",
+			"sourcemapsTitle": "Source maps",
+			"sourcemapsHint": "Sube los source maps de tu build para cada versión y las trazas mostrarán tus archivos y líneas originales. Las subidas usan un token aparte: la clave del proyecto en tus páginas es pública.",
+			"sourcemapsUnavailable": "El almacenamiento de source maps aún no está configurado en este servidor de Phaseo, así que por ahora se rechazan las subidas.",
+			"uploadKey": "Token de subida",
+			"uploadExample": "Subir desde CI",
+			"createUploadKey": "Crear token de subida",
+			"replaceUploadKey": "Sustituir token de subida",
+			"rulesTitle": "Reglas",
+			"rulesHint": "Descarta errores que no te interesan o asigna los nuevos elementos de error a una persona. Coincide cualquier parte del texto, sin distinguir mayúsculas.",
+			"ruleIgnore": "Ignorar cuando {field} contiene «{pattern}»",
+			"ruleAssign": "Asignar a {person} cuando {field} contiene «{pattern}»",
+			"action": "Acción",
+			"field": "Campo",
+			"pattern": "Texto que buscar",
+			"patternPlaceholder": "ResizeObserver loop",
+			"assignee": "Asignar a",
+			"addRule": "Añadir regla",
+			"releasesTitle": "Versiones recientes",
+			"release": "Versión",
+			"events": "Eventos",
+			"newErrors": "Errores nuevos",
+			"lastSeen": "Visto por última vez",
+			"noReleases": "Aún no se ha informado de ninguna versión. Envía una versión con cada error para verlas aquí.",
+			"actions": {
+				"ignore": "Ignorar",
+				"assign": "Asignar"
+			},
+			"fields": {
+				"message": "el mensaje",
+				"type": "el tipo de error",
+				"file": "el archivo",
+				"environment": "el entorno"
+			}
 		}
 	},
 	"sla": {

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { frameLocation, sampleFrames, sampleText } from "@/lib/work/format";
-import { ERROR_GROUP_STATUSES, type ErrorGroup, type ErrorGroupStatus, type ErrorProject } from "@/lib/work/types";
+import { ERROR_GROUP_STATUSES, type ErrorGroup, type ErrorGroupStatus, type ErrorProject, type WorkMappedFrame } from "@/lib/work/types";
 import { useWorkAction } from "./useWorkAction";
 import { TimeAgo } from "./WorkBits";
 
@@ -62,6 +62,7 @@ export function ErrorsView({ status, projectId, groups, projects }: { status: Er
 							<tr>
 								<th className="px-3 py-2 font-normal">{t("error")}</th>
 								<th className="px-3 py-2 text-right font-normal">{t("events")}</th>
+								<th className="px-3 py-2 text-right font-normal">{t("people")}</th>
 								<th className="px-3 py-2 font-normal">{t("firstSeen")}</th>
 								<th className="px-3 py-2 font-normal">{t("lastSeen")}</th>
 								<th className="px-3 py-2 font-normal">{t("project")}</th>
@@ -80,6 +81,7 @@ export function ErrorsView({ status, projectId, groups, projects }: { status: Er
 										{group.culprit ? <span className="block truncate font-mono text-xs text-muted-foreground">{group.culprit}</span> : null}
 									</td>
 									<td className="px-3 py-2 text-right tabular-nums">{group.eventCount}</td>
+									<td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{group.usersCount ?? 0}</td>
 									<td className="px-3 py-2 text-xs text-muted-foreground"><TimeAgo value={group.firstSeenAt} /></td>
 									<td className="px-3 py-2 text-xs text-muted-foreground"><TimeAgo value={group.lastSeenAt} /></td>
 									<td className="px-3 py-2 text-xs text-muted-foreground">{group.projectName ?? projects.find((project) => project.id === group.projectId)?.name ?? "—"}</td>
@@ -123,21 +125,24 @@ export function ErrorGroupActions({ group, compact = false }: { group: ErrorGrou
 	);
 }
 
-export function ErrorGroupDetail({ group, projectName }: { group: ErrorGroup; projectName: string | null }) {
+export function ErrorGroupDetail({ group, projectName, mappedFrames = null }: { group: ErrorGroup; projectName: string | null; mappedFrames?: WorkMappedFrame[] | null }) {
 	const t = useTranslations("Work.errors");
-	const frames = sampleFrames(group.lastEvent);
+	const frames: WorkMappedFrame[] = mappedFrames ?? sampleFrames(group.lastEvent);
 	const url = sampleText(group.lastEvent, "url");
 	const userAgent = sampleText(group.lastEvent, "userAgent");
 	const rows: Array<[string, ReactNode]> = [
 		[t("status"), t(`statuses.${group.status}`)],
 		[t("events"), <span key="count" className="tabular-nums">{group.eventCount}</span>],
+		[t("people"), <span key="people" className="tabular-nums">{group.usersCount ?? 0}</span>],
 		[t("firstSeen"), <TimeAgo key="first" value={group.firstSeenAt} />],
 		[t("lastSeen"), <TimeAgo key="last" value={group.lastSeenAt} />],
 		[t("project"), projectName ?? "—"],
 		[t("release"), group.lastRelease ?? "—"],
+		[t("firstRelease"), group.firstRelease ?? "—"],
 		[t("environment"), group.lastEnvironment ?? "—"],
 		[t("item"), group.workItemNumber ? <Link key="item" href={`/work/${group.workItemNumber}`} className="font-mono hover:underline">#{group.workItemNumber}</Link> : "—"],
 	];
+	if (group.resolvedInRelease) rows.push([t("resolvedIn"), <span key="resolved" className="font-mono text-xs">{group.resolvedInRelease}</span>]);
 	if (url) rows.push([t("url"), <span key="url" className="font-mono text-xs break-all">{url}</span>]);
 	if (userAgent) rows.push([t("userAgent"), <span key="ua" className="text-xs break-all">{userAgent}</span>]);
 	rows.push([t("fingerprint"), <span key="fp" className="font-mono text-xs break-all">{group.fingerprint}</span>]);
@@ -166,12 +171,16 @@ export function ErrorGroupDetail({ group, projectName }: { group: ErrorGroup; pr
 			</dl>
 			<section aria-labelledby="error-stack" className="space-y-2">
 				<h3 id="error-stack" className="text-sm font-medium">{t("stack")}</h3>
+				{mappedFrames ? <p className="text-xs text-muted-foreground">{t("sourceMapped")}</p> : null}
 				{frames.length ? (
 					<ol className="divide-y rounded-md border font-mono text-xs">
 						{frames.map((frame, index) => (
 							<li key={index} className={cn("flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-1.5", frame.inApp === false && "text-muted-foreground")}>
-								<span className="font-medium">{frame.function ?? "?"}</span>
-								<span className="min-w-0 flex-1 break-all text-muted-foreground">{frameLocation(frame)}</span>
+								<span className="font-medium">{frame.original?.function ?? frame.function ?? "?"}</span>
+								<span className="min-w-0 flex-1 break-all text-muted-foreground">
+									{frame.original ? <span className="text-foreground">{`${frame.original.file}:${frame.original.line}:${frame.original.column}`}</span> : frameLocation(frame)}
+									{frame.original ? <span className="block text-[11px]">{frameLocation(frame)}</span> : null}
+								</span>
 								{frame.inApp ? <span className="font-sans text-[11px] text-sky-700 dark:text-sky-300">{t("inApp")}</span> : null}
 							</li>
 						))}

@@ -4,6 +4,8 @@ CREATE TABLE "public"."work_error_projects" (
   "name"         text                     NOT NULL,
   "key_hash"     text                     NOT NULL,
   "key_prefix"   text                     NOT NULL,
+  "upload_key_hash"   text,
+  "upload_key_prefix" text,
   "enabled"      boolean                  NOT NULL DEFAULT true,
   "auto_triage"  boolean                  NOT NULL DEFAULT true,
   "github_repo"  text,
@@ -25,6 +27,9 @@ CREATE INDEX work_error_projects_created_by_idx ON public.work_error_projects US
   WHERE (created_by IS NOT NULL);
 
 CREATE INDEX work_error_projects_workspace_id_idx ON public.work_error_projects USING btree (workspace_id);
+
+CREATE UNIQUE INDEX work_error_projects_upload_key_hash_key ON public.work_error_projects USING btree (upload_key_hash)
+  WHERE (upload_key_hash IS NOT NULL);
 
 CREATE POLICY "deny_direct_client_access" ON "public"."work_error_projects"
   AS RESTRICTIVE
