@@ -8,6 +8,7 @@ import { accountSettingsRouter } from "@/routes/account/settings";
 import { accountModelsRouter } from "@/routes/account/models";
 import { accountChatIssuesRouter } from "@/routes/account/chat-issues";
 import { accountPrivateModelsRouter } from "@/routes/account/private-models";
+import { accountWorkRouter } from "@/routes/account/work";
 
 export const accountRouter = new Hono<{ Bindings: Env }>();
 
@@ -18,6 +19,8 @@ accountRouter.route("/models", accountModelsRouter);
 accountRouter.route("/chat", accountChatIssuesRouter);
 // Workspace-private catalogue and management surface.
 accountRouter.route("/private-models", accountPrivateModelsRouter);
+// Work tracker (internal prototype): items, customers, requests, errors and GitHub repos.
+accountRouter.route("/work", accountWorkRouter);
 
 accountRouter.get("/session", async (c) => {
   const user = await requireUser(c.req.raw, c.env);
