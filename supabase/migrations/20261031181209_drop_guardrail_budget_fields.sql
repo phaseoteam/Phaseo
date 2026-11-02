@@ -14,6 +14,9 @@
 
 SET local check_function_bodies = off;
 
+-- Hold the table from the check through the drop, so no value can be written in between.
+LOCK TABLE public.workspace_guardrails IN ACCESS EXCLUSIVE MODE;
+
 DO $$
 DECLARE
   v_set integer;
