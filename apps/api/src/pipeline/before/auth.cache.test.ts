@@ -20,6 +20,7 @@ const runtime = vi.hoisted(() => {
     const backgroundTasks: Promise<unknown>[] = [];
     const dbRow = { value: null as KeyRow | null };
     const updatePayloads: Array<Record<string, unknown>> = [];
+    const updateFilters: Array<Array<[string, unknown]>> = [];
 
     const maybeSingle = vi.fn(async () => ({
         data: dbRow.value,
@@ -72,9 +73,17 @@ const runtime = vi.hoisted(() => {
                 }),
                 update: (payload: Record<string, unknown>) => {
                     updatePayloads.push(payload);
-                    return {
-                    eq: updateEq,
+                    const filters: Array<[string, unknown]> = [];
+                    updateFilters.push(filters);
+                    const chain = {
+                        eq: (column: string, value: unknown) => {
+                            filters.push([column, value]);
+                            void updateEq();
+                            return chain;
+                        },
+                        then: (resolve: (value: { error: null }) => unknown) => resolve({ error: null }),
                     };
+                    return chain;
                 },
             };
         }),
@@ -91,6 +100,7 @@ const runtime = vi.hoisted(() => {
         cache,
         supabase,
         updatePayloads,
+        updateFilters,
         bindings: {
 			PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64),
             SUPABASE_URL: "https://example.supabase.co",
@@ -173,6 +183,7 @@ describe("authenticate hot-path caching", () => {
         runtime.backgroundTasks.length = 0;
         runtime.dbRow.value = null;
         runtime.updatePayloads.length = 0;
+        runtime.updateFilters.length = 0;
 		runtime.bindings.KEY_PEPPER_ACTIVE = "pepper_test_value";
         runtime.bindings.KEY_PEPPER_PREVIOUS = undefined;
         runtime.cache.get.mockClear();
@@ -343,6 +354,34 @@ describe("authenticate hot-path caching", () => {
             expect.objectContaining({ hash: migratedHash }),
         );
     });
+
+	it("migrates a delegated key's hash only if a refresh hasn't replaced its secret meanwhile", async () => {
+		runtime.bindings.KEY_PEPPER_ACTIVE = "pepper_active";
+		runtime.bindings.KEY_PEPPER_PREVIOUS = "pepper_previous";
+		const kid = "KIDOAUTHPEPPER";
+		const secret = "secret_oauth_previous_pepper";
+		const hash = createHmac("sha256", runtime.bindings.KEY_PEPPER_PREVIOUS).update(secret).digest("hex");
+		runtime.dbRow.value = {
+			id: "key_oauth_pepper",
+			workspace_id: "team_oauth",
+			status: "active",
+			hash,
+			key_kind: "oauth_delegated",
+			oauth_user_id: "user_oauth",
+			oauth_client_id: "client_oauth",
+			oauth_scopes: ["gateway:access", "models:read"],
+		};
+
+		const { authenticate } = await import("./auth");
+		const result = await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: false });
+		await flushBackground();
+
+		expect(result).toMatchObject({ ok: true, authMethod: "oauth" });
+		const migratedHash = createHmac("sha256", runtime.bindings.KEY_PEPPER_ACTIVE).update(secret).digest("hex");
+		const index = runtime.updatePayloads.findIndex((payload) => payload.hash === migratedHash);
+		expect(index).toBeGreaterThanOrEqual(0);
+		expect(runtime.updateFilters[index]).toEqual([["id", "key_oauth_pepper"], ["hash", hash]]);
+	});
 
 	it("does not accept a cached OAuth-managed key after it is revoked", async () => {
 		const kid = "KIDOAUTHREVOKE";

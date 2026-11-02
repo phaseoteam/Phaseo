@@ -503,9 +503,9 @@ oauthRouter.post(
 			application_type: applicationType,
 			redirect_uris: safeRedirectUris,
 			response_types: ["code"],
-			// Dynamic clients receive resource-bound delegated access keys rather
-			// than refresh-token families, so register only the grant we issue.
-			grant_types: ["authorization_code"],
+			// Dynamic clients receive resource-bound delegated access keys with a
+			// refresh token that renews the same key.
+			grant_types: ["authorization_code", "refresh_token"],
 			token_endpoint_auth_method: "none",
 			scope: grantedScopes.join(" "),
 		}, 201, { "Cache-Control": "no-store" });
@@ -989,15 +989,28 @@ oauthRouter.post(
 				return oauthError("invalid_scope", "Management scopes are only available on tokens bound to the Phaseo MCP");
 			}
 			// The CLI retains refreshable sessions for `login`, logout, and token
-			// renewal. Third-party PKCE clients receive durable user-funded keys.
-			const tokens = isFirstPartyCliClient(client.id)
-				? await issueTokenPairForGrant(
+			// renewal. Third-party PKCE clients receive a user-funded delegated key
+			// and a refresh token that renews that same key.
+			if (isFirstPartyCliClient(client.id)) {
+				const tokens = await issueTokenPairForGrant(
 					{ type: "authorization_code", id: String(data.id) },
 					tokenInput,
-				)
-				: await issueOAuthManagedKeyForAuthorizationCode(String(data.id), tokenInput, { clientName: client.name ?? null });
-			if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
-			return json(tokens, 200, { "Cache-Control": "no-store" });
+				);
+				if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
+				return json(tokens, 200, { "Cache-Control": "no-store" });
+			}
+			const grant = await issueOAuthManagedKeyForAuthorizationCode(String(data.id), tokenInput, { clientName: client.name ?? null });
+			if (grant.ok === false) {
+				if (grant.reason === "key_inactive") {
+					// Signing in again never turns a key an owner or admin paused back on.
+					return oauthError(
+						"invalid_grant",
+						"This app's API key in the workspace is paused. Turn it back on in Settings > API Keys, then sign in again.",
+					);
+				}
+				return oauthError("invalid_grant", "Authorization code is invalid or expired");
+			}
+			return json(grant.tokens, 200, { "Cache-Control": "no-store" });
 		}
 
 		if (grantType === "refresh_token") {
@@ -1157,7 +1170,14 @@ oauthRouter.post(
 			return invalidBodyError(error);
 		}
 		const token = String(body.token ?? "").trim();
-		if (token) await revokeToken(token);
+		if (token) {
+			try {
+				await revokeToken(token);
+			} catch (error) {
+				// Never report a revocation that may not have happened as done.
+				return oauthStorageError("oauth.revoke", error);
+			}
+		}
 		return new Response(null, noStore(200));
 	}),
 );

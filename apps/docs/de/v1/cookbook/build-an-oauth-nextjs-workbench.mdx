@@ -119,11 +119,28 @@ Die Workbench-Seite bietet mehr als Chat:
 
 So eignet sie sich für Onboarding, Qualitätssicherung und interne Fehlerbehebung, bevor du eine ausgefeiltere Nutzeroberfläche entwickelst.
 
+## Token-Laufzeiten
+
+Wenn sich jemand anmeldet, gibt der Token-Endpunkt (`https://api.phaseo.app/oauth/token`) zwei Tokens zurück:
+
+| Token | Gültig | Verwendung |
+| --- | --- | --- |
+| `access_token` | 7 Tage (`expires_in`) | Sende es als `Authorization: Bearer` bei Gateway-Anfragen. Es verbraucht Guthaben im Workspace, den die Person gewählt hat. |
+| `refresh_token` | 90 Tage ab der letzten Verwendung | Sende es mit `grant_type=refresh_token`, um ein neues Paar zu erhalten. |
+
+- Jede Aktualisierung liefert ein neues Zugriffstoken und ein neues Refresh-Token. Speichere beide und verwirf die alten: Das alte Zugriffstoken funktioniert sofort nicht mehr, und das alte Refresh-Token lässt sich nicht erneut verwenden.
+- Du kannst auch nach Ablauf des Zugriffstokens aktualisieren, solange das Refresh-Token noch gültig ist.
+- Wird ein Refresh-Token ein zweites Mal verwendet, endet die Anmeldung. Phaseo behandelt es als geleaktes Token und widerruft das Zugriffstoken und alle Refresh-Tokens dieser Anmeldung, sodass sich die Person erneut anmelden muss.
+- Eine Aktualisierung fügt nie Scopes hinzu. Sie behält die Scopes, die die Person genehmigt hat, abzüglich derer, die sie inzwischen entfernt hat.
+- Die Aktualisierung schlägt fehl, sobald die Person deine App widerruft, ihren Schlüssel widerruft oder deaktiviert, einen Scope entfernt, den der Schlüssel braucht (etwa `gateway:access`), oder den Workspace verlässt. Wird `gateway:access` entfernt, wird auch der Schlüssel widerrufen, sodass sein Zugriffstoken sofort nicht mehr funktioniert. Wird der Scope später wieder erteilt, wird das Refresh-Token dadurch nicht wieder gültig. Lass sie sich dann erneut anmelden.
+- Eine erneute Anmeldung erneuert denselben Schlüssel, statt einen weiteren anzulegen. Du erhältst ein neues Zugriffstoken und ein neues Refresh-Token, die bisherigen funktionieren nicht mehr, und der Schlüssel behält seine Limits und die Ausgaben dieses Monats. Das Refresh-Token einer früheren Anmeldung wird einfach abgelehnt, und es an den Token- oder Widerrufs-Endpunkt zu senden, beendet die neue Anmeldung nicht. Ist der Schlüssel pausiert, gibt der Token-Endpunkt stattdessen `invalid_grant` zurück, bis jemand den Schlüssel unter **Einstellungen → API-Schlüssel** wieder aktiviert. Die Erneuerung funktioniert nur, solange der Schlüssel nicht widerrufen ist: Nach einer Abmeldung oder einem anderen Widerruf legt eine Anmeldung einen neuen Schlüssel an, dessen Limits und Ausgaben neu beginnen.
+- Zum Abmelden sende das Refresh-Token an `https://api.phaseo.app/oauth/revoke`. Das widerruft den Schlüssel und alle Refresh-Tokens der Anmeldung, auch eines, das eine Aktualisierung kurz zuvor ausgestellt hat.
+
 ## Voraussetzungen
 
-- - Node.js und ein unterstützter Paketmanager
-- - ein OAuth-Client mit konfigurierter lokaler Callback-URL
-- - ein starkes Sitzungsgeheimnis
+- Node.js und ein unterstützter Paketmanager
+- ein OAuth-Client mit konfigurierter lokaler Callback-URL
+- ein starkes Sitzungsgeheimnis
 
 ## Beispiel ausführen
 
@@ -193,9 +210,9 @@ bun run dev
 
 ## Das Beispiel anpassen
 
-- - kürze die Proxy-Allowlist auf die Endpoints, die dein Produkt wirklich benötigt
-- - behalte die Workbench intern und entwickle darauf eine übersichtlichere Nutzeroberfläche
-- - ersetze den allgemeinen Tester durch produktspezifische Abläufe, sobald die Integration stabil ist
+- kürze die Proxy-Allowlist auf die Endpoints, die dein Produkt wirklich benötigt
+- behalte die Workbench intern und entwickle darauf eine übersichtlichere Nutzeroberfläche
+- ersetze den allgemeinen Tester durch produktspezifische Abläufe, sobald die Integration stabil ist
 
 ## Verwandte Anleitungen
 

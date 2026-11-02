@@ -28,6 +28,23 @@ CREATE INDEX oauth_authorizations_validation_idx ON public.oauth_authorizations 
 CREATE INDEX oauth_authorizations_workspace_id_idx ON public.oauth_authorizations USING btree (workspace_id)
   WHERE (revoked_at IS NULL);
 
+CREATE TRIGGER revoke_oauth_delegated_refresh_on_scope_loss
+  AFTER UPDATE OF scopes ON public.oauth_authorizations
+  FOR EACH ROW
+  WHEN ((old.scopes IS DISTINCT FROM new.scopes))
+  EXECUTE FUNCTION public.revoke_oauth_delegated_refresh_on_scope_loss();
+
+CREATE TRIGGER revoke_oauth_grant_on_authorization_delete
+  AFTER DELETE ON public.oauth_authorizations
+  FOR EACH ROW
+  EXECUTE FUNCTION public.revoke_oauth_grant_on_authorization_revoke();
+
+CREATE TRIGGER revoke_oauth_grant_on_authorization_revoke
+  AFTER UPDATE OF revoked_at ON public.oauth_authorizations
+  FOR EACH ROW
+  WHEN (((old.revoked_at IS NULL) AND (new.revoked_at IS NOT NULL)))
+  EXECUTE FUNCTION public.revoke_oauth_grant_on_authorization_revoke();
+
 CREATE POLICY "oauth_authorizations_delete_own" ON "public"."oauth_authorizations"
   FOR DELETE
   TO "authenticated"
