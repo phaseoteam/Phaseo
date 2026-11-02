@@ -7,10 +7,11 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_EXCEPTION_SUMMARY_LENGTH = 500;
 
 // Error messages can embed URLs with query values, emails or keys; keep only what triage needs.
+// A query ends at whitespace or a quote; trailing punctuation before that stays in the text.
 function redact(text: string): string {
 	return text
 		.replace(/\s+/g, " ")
-		.replace(/((?:\bhttps?:\/\/|(?<![\w/.])\/)[^\s?#"'<>]*)[?#][^\s"'<>]*?(?=[:.,;)]?(?:\s|$))/gi, "$1")
+		.replace(/((?:\bhttps?:\/\/|(?<![\w/.])\/)[^\s?#"'<>`]*)[?#][^\s"'<>`]*?(?=[:.,;)\]]*(?:[\s"'<>`]|$))/gi, "$1")
 		.replace(/[^\s@<>()"'`]+@[^\s@<>()"'`]+\.[A-Za-z]{2,}/g, "[email]")
 		.replace(/(?=[\w-]*\d)(?=[\w-]*[A-Za-z])[\w-]{24,}/g, "[redacted]")
 		.trim();
@@ -25,11 +26,16 @@ function optional<T extends z.ZodType>(schema: T) {
 	return z.preprocess((value) => (value === null || value === "" ? undefined : value), schema.optional());
 }
 
+// Exception text is cut rather than rejected, so a long message never loses the incident.
+function clipped(maxLength: number) {
+	return z.string().trim().transform((text) => text.slice(0, maxLength));
+}
+
 const IncidentSchema = z.object({
 	source: z.enum(["axiom", "posthog"]),
 	action: z.enum(["open", "resolved", "repeated"]).default("open"),
 	fingerprint: z.string().trim().min(1).max(500),
-	title: z.string().trim().min(1).max(2_000).transform((title) => truncate(redact(title), MAX_TITLE_LENGTH)),
+	title: clipped(2_000).pipe(z.string().min(1)).transform((title) => truncate(redact(title), MAX_TITLE_LENGTH)),
 	description: optional(z.string().trim().max(10_000)),
 	severity: z.enum(["urgent", "high", "medium", "low"]).default("medium"),
 	environment: optional(z.string().trim().max(100)),
@@ -37,8 +43,8 @@ const IncidentSchema = z.object({
 	replay_url: optional(z.string().url().max(2_000)),
 	release: optional(z.string().trim().max(300)),
 	route: optional(z.string().trim().max(1_000).transform((route) => route.split(/[?#]/)[0])),
-	exception_type: optional(z.string().trim().max(200)),
-	exception_message: optional(z.string().trim().max(10_000)),
+	exception_type: optional(clipped(200)),
+	exception_message: optional(clipped(2_000)),
 	request_ids: z.preprocess((value) => value ?? undefined, z.array(z.string().trim().min(1).max(200)).max(20).default([])),
 	occurrences: optional(z.number().int().nonnegative()),
 	affected_users: optional(z.number().int().nonnegative()),

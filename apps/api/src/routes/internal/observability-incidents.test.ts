@@ -264,6 +264,32 @@ describe("PostHog producer contract", () => {
 		expect(description).not.toMatch(/jane@|sk-live|token=|Open session replay/);
 	});
 
+	it("strips query values from quoted and bracketed URLs", () => {
+		const { redact } = observabilityIncidentInternals;
+		expect(redact(`Failed to fetch "https://example.com/api?token=secret"`)).toBe(`Failed to fetch "https://example.com/api"`);
+		expect(redact("Failed to fetch 'https://example.com/api?token=secret', retrying")).toBe("Failed to fetch 'https://example.com/api', retrying");
+		expect(redact("Loading `/settings/keys?token=secret` failed")).toBe("Loading `/settings/keys` failed");
+		expect(redact("Blocked (https://example.com/api?token=secret).")).toBe("Blocked (https://example.com/api).");
+		expect(redact("Bad query https://example.com/api?q=(a)b&token=secret end")).toBe("Bad query https://example.com/api end");
+	});
+
+	it("accepts exceptions longer than the stored limits instead of dropping the incident", () => {
+		const longMessage = `Unexpected token in JSON ${"x".repeat(12_000)}`;
+		const parsed = observabilityIncidentInternals.IncidentSchema.parse({
+			source: "posthog",
+			fingerprint: "a".repeat(128),
+			title: `SyntaxError on /chat: ${longMessage}`,
+			source_url: "https://eu.posthog.com/project/81404/error_tracking",
+			exception_type: `SyntaxError${"y".repeat(500)}`,
+			exception_message: longMessage,
+		});
+
+		expect(parsed.title).toHaveLength(200);
+		expect(parsed.title.startsWith("SyntaxError on /chat: Unexpected token in JSON")).toBe(true);
+		expect(parsed.exception_type).toHaveLength(200);
+		expect(observabilityIncidentInternals.incidentDescription(parsed)).toContain("Unexpected token in JSON");
+	});
+
 	it("keeps short identifiers and long names readable", () => {
 		expect(observabilityIncidentInternals.redact("Minified React error #467; visit https://react.dev/errors/467 for useSyncExternalStoreWithSelector"))
 			.toBe("Minified React error #467; visit https://react.dev/errors/467 for useSyncExternalStoreWithSelector");
