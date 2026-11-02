@@ -10,6 +10,8 @@ steps. Run each statement separately on a window of a few days.
    cost should have a charge of the same amount. `not_linked` rows were written
    before the link existed or were billed through wallet reservations (batch,
    realtime); reconcile those through their reservations.
+   `charge_shared_by_rows` means two rows carry one charge key, which step 1
+   reports as `charge_linked_to_multiple_rows`; that charge counts once.
 3. **Customer-side totals for the provider comparison.** Requests, meter
    quantities and charged nanos per provider, executed model, UTC day and price
    meter, from the pricing lines stored on each request.

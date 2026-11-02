@@ -41,6 +41,9 @@ try {
     ['req_mismatch', 'bill_mismatch', true, 700, 'openai', [line('input_text_tokens', 700, 700)]],
     // Written before the link existed.
     ['req_unlinked', null, true, 100, 'openai', [line('input_text_tokens', 100, 100)]],
+    // Two rows carrying one charge key: the charge must still count once.
+    ['req_dup_a', 'bill_dup', true, 300, 'groq', [line('input_text_tokens', 300, 300)]],
+    ['req_dup_b', 'bill_dup', true, 300, 'groq', [line('input_text_tokens', 300, 300)]],
   ];
   for (const [requestId, billingId, success, cost, provider, lines] of rows) {
     await db.query(
@@ -49,7 +52,7 @@ try {
       [ws, requestId, billingId, provider, success, cost, JSON.stringify(lines)],
     );
   }
-  for (const [billingId, cost] of [['bill_fallback', 12345], ['bill_plain', 500], ['bill_mismatch', 800], ['bill_orphan', 900]]) {
+  for (const [billingId, cost] of [['bill_fallback', 12345], ['bill_plain', 500], ['bill_mismatch', 800], ['bill_orphan', 900], ['bill_dup', 300]]) {
     await db.query(
       `insert into public.gateway_request_charges values ($1, $2, $3, 'applied', '2026-11-03 10:00:04+00')`,
       [ws, billingId, cost],
@@ -63,16 +66,22 @@ try {
 
   const byOutcome = (result) => Object.fromEntries(result.rows.map((row) => [row.outcome, row]));
   const chargeOutcomes = byOutcome(charges);
-  assert.deepEqual(Object.keys(chargeOutcomes).sort(), ['amount_mismatch', 'charge_without_request_row', 'matched']);
+  assert.deepEqual(Object.keys(chargeOutcomes).sort(),
+    ['amount_mismatch', 'charge_linked_to_multiple_rows', 'charge_without_request_row', 'matched']);
   assert.equal(Number(chargeOutcomes.matched.charges), 2);
   assert.equal(Number(chargeOutcomes.matched.charged_nanos), 12845);
   assert.equal(Number(chargeOutcomes.amount_mismatch.charged_nanos), 800);
   assert.equal(Number(chargeOutcomes.charge_without_request_row.charged_nanos), 900);
+  assert.equal(Number(chargeOutcomes.charge_linked_to_multiple_rows.charges), 1);
+  assert.equal(Number(chargeOutcomes.charge_linked_to_multiple_rows.charged_nanos), 300);
 
   const paidOutcomes = byOutcome(paid);
-  assert.deepEqual(Object.keys(paidOutcomes).sort(), ['amount_mismatch', 'charged', 'not_linked']);
+  assert.deepEqual(Object.keys(paidOutcomes).sort(), ['amount_mismatch', 'charge_shared_by_rows', 'charged', 'not_linked']);
   assert.equal(Number(paidOutcomes.charged.request_rows), 2);
   assert.equal(Number(paidOutcomes.not_linked.request_rows), 1);
+  assert.equal(Number(paidOutcomes.charge_shared_by_rows.request_rows), 2);
+  assert.equal(Number(paidOutcomes.charge_shared_by_rows.request_cost_nanos), 600);
+  assert.equal(Number(paidOutcomes.charge_shared_by_rows.charged_nanos), 300);
 
   const anthropicOutput = providerTotals.rows.find((row) => row.provider === 'anthropic' && row.meter === 'output_text_tokens');
   assert.equal(Number(anthropicOutput.quantity), 50);
