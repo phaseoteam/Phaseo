@@ -5,6 +5,9 @@ export const CHAT_MANAGED_KEY_NAME = "__chat_route_managed_key__";
 /** The Slack agent's key, one per installation, created when the agent is installed. */
 export const SLACK_AGENT_MANAGED_KEY_NAME = "__slack_agent_managed_key__";
 
+/** The work tracker's triage agent key, one per workspace, created the first time a member runs triage. */
+export const WORK_AGENT_MANAGED_KEY_NAME = "__work_agent_managed_key__";
+
 export function isManagedKeyName(name: unknown): boolean {
-	return name === CHAT_MANAGED_KEY_NAME || name === SLACK_AGENT_MANAGED_KEY_NAME;
+	return name === CHAT_MANAGED_KEY_NAME || name === SLACK_AGENT_MANAGED_KEY_NAME || name === WORK_AGENT_MANAGED_KEY_NAME;
 }
