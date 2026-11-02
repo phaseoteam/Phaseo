@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { AudioLines, Binary, CircleCheck, FileText, Image as ImageIcon, Minus, Type, Video, type LucideIcon } from "lucide-react";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 import { cn } from "@/lib/utils";
 import { CompareGrid, CompareNoteRow, CompareRow, CompareSection, MODEL_COLOURS, useCompareGrid, type CompareCell } from "./CompareGrid";
 import { bestIndices, distinctDigits, priceRow, timeValue, visibleOnPhone, type Direction, type VerdictReason, type Verdicts } from "./compareViewMath";
@@ -43,7 +44,7 @@ function hasModality(types: string[], key: string): boolean {
 	return lower.includes(key);
 }
 
-/** One icon per modality, lit when the model supports it, like a row of indicator lights. */
+/** One icon per modality, lit in the models-page filter colours when the model supports it. */
 function ModalityIcons({ types, format }: { types: string[]; format: CompareFormat }) {
 	// Embedding vectors only get an icon when a model outputs them, so ordinary rows stay at five.
 	const icons = hasModality(types, "embeddings") ? [...MODALITY_ICONS, ["embeddings", Binary] as [string, LucideIcon]] : MODALITY_ICONS;
@@ -56,7 +57,7 @@ function ModalityIcons({ types, format }: { types: string[]; format: CompareForm
 				return (
 					<span
 						key={key}
-						className={cn("inline-flex size-6 items-center justify-center rounded-md", on ? "bg-sky-500/10 text-sky-600 dark:text-sky-400" : "text-muted-foreground/30")}
+						className={cn("inline-flex size-6 items-center justify-center rounded-md", on ? getModalityTone(key).sidebarIconSelectedClassName : "text-muted-foreground/30")}
 						aria-hidden
 					>
 						<Icon className="size-3.5" />
