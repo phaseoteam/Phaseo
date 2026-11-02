@@ -10,6 +10,7 @@
 
 import {
 	addWorkItemEvent,
+	bumpWorkItemActivity,
 	createWorkItem,
 	isClosedState,
 	normalizeLabels,
@@ -43,7 +44,8 @@ export type BridgePayload = {
 	run: BridgeRun | null;
 };
 
-export type BridgeOutcome = { handled: string; itemIds: string[] };
+/** doneItemIds: items this event moved to done, so the caller can run the done hooks (reply drafts). */
+export type BridgeOutcome = { handled: string; itemIds: string[]; doneItemIds?: string[] };
 
 type RepoLink = Pick<GithubRepoRow, "id" | "workspace_id" | "repo" | "sync_issues">;
 
@@ -212,9 +214,10 @@ async function handleIssue(client: DataClient, link: RepoLink, payload: BridgePa
 
 	if (action === "closed" || action === "reopened") {
 		if (!item) return { handled: "no_item", itemIds: [] };
-		if (action === "closed" && !isClosedState(item.state)) await updateWorkItem(client, item, { state: "done" }, actor);
+		const closing = action === "closed" && !isClosedState(item.state);
+		if (closing) await updateWorkItem(client, item, { state: "done" }, actor);
 		if (action === "reopened" && isClosedState(item.state)) await updateWorkItem(client, item, { state: "todo" }, actor);
-		return { handled: action, itemIds: [item.id] };
+		return { handled: action, itemIds: [item.id], ...(closing ? { doneItemIds: [item.id] } : {}) };
 	}
 
 	if (action !== "opened" && action !== "edited" && action !== "labeled") return { handled: "ignored", itemIds: [] };
@@ -265,6 +268,7 @@ async function handleComment(client: DataClient, link: RepoLink, payload: Bridge
 		body: comment.body,
 		data: { url: comment.html_url, issueNumber: issue.number },
 	});
+	await bumpWorkItemActivity(client, link.workspace_id, item.id);
 	return { handled: "comment", itemIds: [item.id] };
 }
 
@@ -274,6 +278,7 @@ async function handlePullRequest(client: DataClient, link: RepoLink, payload: Br
 	if (!pull || !pull.html_url || !["opened", "edited", "closed"].includes(action)) return { handled: "ignored", itemIds: [] };
 	const numbers = linkedIssueNumbers(`${pull.title}\n${pull.body}`, link.repo).filter((number) => number !== pull.number);
 	const itemIds: string[] = [];
+	const doneItemIds: string[] = [];
 	for (const number of numbers) {
 		const item = await findIssueItem(client, link, number);
 		if (!item) continue;
@@ -287,7 +292,10 @@ async function handlePullRequest(client: DataClient, link: RepoLink, payload: Br
 			await updateWorkItem(client, current, { state: "in_review" }, actor);
 		}
 		if (action === "closed" && pull.merged) {
-			if (!isClosedState(current.state)) current = await updateWorkItem(client, current, { state: "done" }, actor);
+			if (!isClosedState(current.state)) {
+				current = await updateWorkItem(client, current, { state: "done" }, actor);
+				doneItemIds.push(item.id);
+			}
 			await addWorkItemEvent(client, {
 				workspaceId: link.workspace_id,
 				workItemId: item.id,
@@ -298,7 +306,7 @@ async function handlePullRequest(client: DataClient, link: RepoLink, payload: Br
 			});
 		}
 	}
-	return { handled: itemIds.length ? `pull_request_${action}` : "no_item", itemIds };
+	return { handled: itemIds.length ? `pull_request_${action}` : "no_item", itemIds, ...(doneItemIds.length ? { doneItemIds } : {}) };
 }
 
 const FINISHED: readonly AgentRunStatus[] = ["succeeded", "failed", "cancelled"];
@@ -372,6 +380,7 @@ async function handleAgentRun(client: DataClient, link: RepoLink, payload: Bridg
 				: "The engineer agent run failed.",
 			data: { status: run.status, runUrl: run.run_url, prUrl: run.pr_url, model: run.model },
 		});
+		await bumpWorkItemActivity(client, link.workspace_id, item.id);
 	}
 	return { handled: `agent_run_${run.status}`, itemIds: [item.id] };
 }

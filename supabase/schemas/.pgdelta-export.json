@@ -940,6 +940,7 @@
     "public/functions/create_work_item.sql",
     "public/functions/record_work_error_event.sql",
     "public/functions/work_insights.sql",
+    "public/functions/work_cycle_estimates.sql",
     "_cluster/event_triggers.sql",
     "_cluster/default_privileges.sql",
     "public/default_privileges.sql",
@@ -1882,6 +1883,7 @@
     "public/tables/work_subscriptions.sql",
     "public/tables/work_notifications.sql",
     "public/tables/work_reply_drafts.sql",
-    "public/functions/work_insights.sql"
+    "public/functions/work_insights.sql",
+    "public/functions/work_cycle_estimates.sql"
   ]
 }

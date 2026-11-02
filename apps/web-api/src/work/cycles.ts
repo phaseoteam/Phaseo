@@ -31,32 +31,29 @@ export function formatWorkCycle(row: WorkCycleRow, counts: ItemCounts = { itemCo
 }
 
 /**
- * The sum of estimates for a cycle's items (all but cancelled, or done only), computed by the
- * database with an aggregate select. Null when the database refuses the aggregate (PostgREST
- * aggregates switched off), so callers show the counts without the sums.
+ * A cycle's estimate totals from public.work_cycle_estimates: scope (every item but cancelled) and
+ * completed (done items). Both null when the database call fails, so callers show the counts alone.
  */
-export async function sumCycleEstimate(client: DataClient, workspaceId: string, cycleId: string, doneOnly: boolean): Promise<number | null> {
+export async function cycleEstimates(client: DataClient, workspaceId: string, cycleId: string): Promise<{ scope: number | null; completed: number | null }> {
 	try {
-		let query = client.from("work_items").select("total:estimate.sum()").eq("workspace_id", workspaceId).eq("cycle_id", cycleId);
-		query = doneOnly ? query.eq("state", "done") : query.neq("state", "cancelled");
-		const { data, error } = await query;
-		if (error) return null;
-		const row = (Array.isArray(data) ? data[0] : data) as { total?: unknown } | null | undefined;
-		const total = Number(row?.total ?? 0);
-		return Number.isFinite(total) ? total : null;
+		const { data, error } = await client.rpc("work_cycle_estimates", { p_workspace_id: workspaceId, p_cycle_id: cycleId });
+		if (error || !data || typeof data !== "object") return { scope: null, completed: null };
+		const totals = data as { scope?: unknown; completed?: unknown };
+		const scope = Number(totals.scope);
+		const completed = Number(totals.completed);
+		return { scope: Number.isFinite(scope) ? scope : null, completed: Number.isFinite(completed) ? completed : null };
 	} catch {
-		return null;
+		return { scope: null, completed: null };
 	}
 }
 
-/** A cycle with its counts and estimate sums (two count queries and two sum queries). */
+/** A cycle with its counts and estimate totals (two count queries and one database function). */
 export async function describeCycle(client: DataClient, row: WorkCycleRow): Promise<WorkCycle> {
-	const [counts, scope, completed] = await Promise.all([
+	const [counts, estimates] = await Promise.all([
 		itemCounts(client, row.workspace_id, "cycle_id", row.id),
-		sumCycleEstimate(client, row.workspace_id, row.id, false),
-		sumCycleEstimate(client, row.workspace_id, row.id, true),
+		cycleEstimates(client, row.workspace_id, row.id),
 	]);
-	return formatWorkCycle(row, counts, { scope, completed });
+	return formatWorkCycle(row, counts, estimates);
 }
 
 export async function loadWorkCycle(client: DataClient, workspaceId: string, id: string): Promise<WorkCycleRow | null> {

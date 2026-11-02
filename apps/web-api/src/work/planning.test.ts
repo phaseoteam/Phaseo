@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { insertCycle, parseCycleInput, sumCycleEstimate } from "./cycles";
+import { insertCycle, parseCycleInput, cycleEstimates } from "./cycles";
 import { fakeDataClient, hasFilter } from "./fakeDataClient.testing";
 import { formatWorkInsights, insightsRange } from "./insights";
 import { formatWorkProject, isIsoDate, parseProjectInput } from "./projects";
@@ -48,18 +48,17 @@ describe("cycles", () => {
 		expect(fake.queries.filter((query) => query.op === "insert").map((query) => (query.payload as any).number)).toEqual([5, 6]);
 	});
 
-	it("sums estimates in the database, excluding cancelled items or counting done only", async () => {
-		const fake = fakeDataClient(() => ({ data: [{ total: 13 }], error: null }));
-		expect(await sumCycleEstimate(fake.client, "ws", "c", false)).toBe(13);
-		expect(fake.queries[0]!.columns).toBe("total:estimate.sum()");
-		expect(hasFilter(fake.queries[0]!, "neq", "state", "cancelled")).toBe(true);
-		await sumCycleEstimate(fake.client, "ws", "c", true);
-		expect(hasFilter(fake.queries[1]!, "eq", "state", "done")).toBe(true);
+	it("reads estimate totals from the database function", async () => {
+		const fake = fakeDataClient(() => ({ data: null, error: null }));
+		fake.onRpc(() => ({ data: { scope: 13, completed: 5 }, error: null }));
+		expect(await cycleEstimates(fake.client, "ws", "c")).toEqual({ scope: 13, completed: 5 });
+		expect(fake.rpcCalls[0]).toEqual({ name: "work_cycle_estimates", args: { p_workspace_id: "ws", p_cycle_id: "c" } });
 	});
 
-	it("returns null instead of adding up rows when the database refuses the sum", async () => {
-		const fake = fakeDataClient(() => ({ data: null, error: { message: "aggregates disabled" } }));
-		expect(await sumCycleEstimate(fake.client, "ws", "c", false)).toBeNull();
+	it("returns null totals instead of adding up rows when the function fails", async () => {
+		const fake = fakeDataClient(() => ({ data: null, error: null }));
+		fake.onRpc(() => ({ data: null, error: { message: "boom" } }));
+		expect(await cycleEstimates(fake.client, "ws", "c")).toEqual({ scope: null, completed: null });
 	});
 });
 

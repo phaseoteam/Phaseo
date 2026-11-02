@@ -166,8 +166,10 @@ describe("handleBridgeEvent", () => {
 		]);
 
 		const merged = setup(itemRow({ state: "in_review", github_pr_url: "https://github.com/acme/shop/pull/40" }));
-		await handleBridgeEvent(merged.fake.client, link, pr("closed", true));
+		const outcome = await handleBridgeEvent(merged.fake.client, link, pr("closed", true));
 		expect(merged.updates()).toEqual([expect.objectContaining({ state: "done" })]);
+		// The route runs the done hooks (reply drafts) for these.
+		expect(outcome.doneItemIds).toHaveLength(1);
 		expect(merged.events().at(-1)).toMatchObject({ kind: "github", body: "Pull request #40 merged" });
 	});
 

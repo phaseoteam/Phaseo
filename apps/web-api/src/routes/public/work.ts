@@ -4,6 +4,7 @@ import type { Env } from "@/env";
 import { ingestErrorEvents, loadErrorProject, MAX_ERROR_BYTES, parseErrorPayload } from "@/work/errorIngest";
 import { ERRORS_SCRIPT, ERRORS_SCRIPT_CACHE_SECONDS } from "@/work/errorsScript";
 import { handleBridgeEvent, loadGithubRepoLink, MAX_GITHUB_BYTES, parseBridgePayload } from "@/work/githubBridge";
+import { onWorkItemDone } from "@/work/support";
 import { loadIntakeForm, MAX_ASK_BYTES, parseAskRequest, recordAsk } from "@/work/intake";
 import { hashWorkToken, isWorkToken, type WorkTokenKind } from "@/work/tokens";
 
@@ -186,6 +187,10 @@ publicWorkRouter.post("/github/:token", async (c) => {
 		if (!link) return c.json({ error: "not_found" }, 404, NO_STORE);
 		if (payload.repo.toLowerCase() !== link.repo.toLowerCase()) return c.json({ error: "repo_mismatch" }, 403, NO_STORE);
 		const outcome = await handleBridgeEvent(client, link, payload);
+		// A closed issue or merged pull request finished these items: draft replies to the customers who asked.
+		for (const itemId of outcome.doneItemIds ?? []) {
+			backgroundRunner(c)(onWorkItemDone({ env: c.env, client, workspaceId: link.workspace_id, itemId, waitUntil: backgroundRunner(c) }));
+		}
 		backgroundRunner(c)(Promise.resolve(
 			client.from("work_github_repos").update({ last_event_at: new Date().toISOString() }).eq("id", link.id),
 		));
