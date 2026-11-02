@@ -490,6 +490,7 @@
 				"earlier_history_missing": "Diese Anfrage hat eine frühere Antwort per ID fortgesetzt, daher fehlen die Züge davor.",
 				"unsupported_content": "Einige Inhalte konnten nicht angezeigt werden und wurden weggelassen.",
 				"attachment_reference": "Einige Anhänge wurden per ID referenziert und nicht mit der Anfrage gespeichert.",
+				"media_not_stored": "Bilder, Audio und Dateien werden nicht in I/O-Logs gespeichert und fehlen daher.",
 				"no_response": "Die protokollierte Antwort fehlt oder ist fehlgeschlagen, daher endet der Chat mit der Anfrage.",
 				"response_truncated": "Die protokollierte Antwort wurde abgeschnitten.",
 				"extra_choices": "Nur die erste der Antwortvarianten wird übernommen.",
