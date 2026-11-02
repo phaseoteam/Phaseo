@@ -36,7 +36,7 @@ const SLACK_TS = /^\d{1,12}\.\d{1,8}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const encoder = new TextEncoder();
 
-function hexToBytes(hex: string): Uint8Array | null {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> | null {
 	if (!/^[0-9a-f]{64}$/i.test(hex)) return null;
 	const bytes = new Uint8Array(32);
 	for (let index = 0; index < 32; index += 1) bytes[index] = parseInt(hex.slice(index * 2, index * 2 + 2), 16);
