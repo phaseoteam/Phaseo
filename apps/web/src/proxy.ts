@@ -14,6 +14,7 @@ const SESSION_MIDDLEWARE_PAGE_ROOTS = [
 	"/gateway",
 	"/onboarding",
 	"/internal",
+	"/work",
 	"/chat",
 	"/oauth/consent",
 	"/activate",
