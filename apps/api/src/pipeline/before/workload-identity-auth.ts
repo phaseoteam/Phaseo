@@ -28,8 +28,8 @@ const TOKEN_L1_TTL_MS = 30_000;
 const TOKEN_L1_MAX_ENTRIES = 5_000;
 // New policies' issuers are picked up within this window.
 const ISSUERS_L1_TTL_MS = 60_000;
-// Bounds the owner values a custom-issuer token can look policies up by.
-const MAX_CUSTOM_OWNER_CANDIDATES = 64;
+// Owner values per policy query; the 8 KB token cap bounds how many there are in total.
+const OWNER_IDS_PER_QUERY = 50;
 const MAX_OWNER_ID_LENGTH = 256;
 export const WORKLOAD_IDENTITY_WORKSPACE_HEADER = "x-phaseo-workspace";
 
@@ -146,17 +146,20 @@ async function loadConfiguredIssuers(nowMs: number): Promise<ReadonlySet<string>
  * checked when matching.
  */
 async function loadCandidatePolicies(issuer: string, ownerIds: string[]): Promise<CandidatePolicy[] | "db_error"> {
-	const cacheKey = `${issuer}\n${ownerIds.join("\n")}`;
+	const cacheKey = JSON.stringify([issuer, ownerIds]);
 	const cached = policyL1.get(cacheKey);
 	if (cached && cached.expiresAt > Date.now()) return cached.policies;
-	const { data, error } = await getSupabaseAdmin()
+	// Chunked so a custom-issuer token with many claims keeps each request URL small.
+	const chunks: string[][] = [];
+	for (let start = 0; start < ownerIds.length; start += OWNER_IDS_PER_QUERY) chunks.push(ownerIds.slice(start, start + OWNER_IDS_PER_QUERY));
+	const results = await Promise.all(chunks.map((chunk) => getSupabaseAdmin()
 		.from("workload_identity_policies")
 		.select("id,workspace_id,key_id,provider,issuer,pinned_claim,pinned_owner_id,claim_conditions,max_token_lifetime_seconds,status,keys(id,kid,workspace_id,status,key_kind,expires_at,ip_allowlist,created_by)")
 		.eq("issuer", issuer)
 		.eq("status", "active")
-		.in("pinned_owner_id", ownerIds);
-	if (error) return "db_error";
-	const policies = ((data ?? []) as unknown as PolicyRow[])
+		.in("pinned_owner_id", chunk)));
+	if (results.some((result) => result.error)) return "db_error";
+	const policies = results.flatMap((result) => (result.data ?? []) as unknown as PolicyRow[])
 		.map(toCandidate)
 		.filter((policy): policy is CandidatePolicy => policy !== null);
 	setBounded(policyL1, cacheKey, { policies, expiresAt: Date.now() + POLICY_L1_TTL_MS }, POLICY_L1_MAX_ENTRIES);
@@ -181,7 +184,6 @@ function possibleOwnerIds(provider: WorkloadIdentityProvider, claims: Record<str
 		const ownerId = claimAsString(value);
 		// pinned_owner_id is at most 256 characters, so longer values cannot match.
 		if (ownerId && ownerId.length <= MAX_OWNER_ID_LENGTH) values.add(ownerId);
-		if (values.size >= MAX_CUSTOM_OWNER_CANDIDATES) break;
 	}
 	return [...values].sort();
 }

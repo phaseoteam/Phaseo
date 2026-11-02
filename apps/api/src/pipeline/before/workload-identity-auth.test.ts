@@ -23,7 +23,9 @@ const runtime = vi.hoisted(() => {
 			filters.push([column, value]);
 			if (filters.length === 3) {
 				state.policyQueries.push(filters);
-				return Promise.resolve({ data: state.policyError ? null : state.policyRows, error: state.policyError });
+				// Like the database, only rows whose owner is in the requested list come back.
+				const rows = state.policyRows.filter((row) => !Array.isArray(value) || value.includes(row.pinned_owner_id));
+				return Promise.resolve({ data: state.policyError ? null : rows, error: state.policyError });
 			}
 			return chain;
 		};
@@ -245,6 +247,21 @@ describe("authenticate with workload identity tokens", () => {
 		})];
 		const withoutPinnedClaim = await signTestToken(signer, claims({ iss: CUSTOM_ISSUER, "kubernetes.io/cluster": "prod" }));
 		expect(await authenticate(request(withoutPinnedClaim))).toEqual({ ok: false, reason: "workload_identity_no_matching_policy" });
+	});
+
+	it("considers every claim value of a custom token as the owner, in chunked lookups", async () => {
+		runtime.state.issuers = [ISSUER, CUSTOM_ISSUER];
+		extraDocuments = {
+			[`${CUSTOM_ISSUER}/.well-known/openid-configuration`]: { issuer: CUSTOM_ISSUER, jwks_uri: `${CUSTOM_ISSUER}/keys` },
+			[`${CUSTOM_ISSUER}/keys`]: { keys: [signer.publicJwk] },
+		};
+		runtime.state.policyRows = [policyRow({ provider: "custom", issuer: CUSTOM_ISSUER, pinned_claim: "zz_owner", pinned_owner_id: "owner-last", claim_conditions: {} })];
+		const extra = Object.fromEntries(Array.from({ length: 70 }, (_, i) => [`claim_${i}`, `value-${i}`]));
+		const token = await signTestToken(signer, claims({ iss: CUSTOM_ISSUER, ...extra, zz_owner: "owner-last" }));
+		expect(await authenticate(request(token))).toMatchObject({ ok: true, apiKeyId: "key_1" });
+		const owners = runtime.state.policyQueries.flatMap((filters) => filters[2][1] as string[]);
+		expect(runtime.state.policyQueries.length).toBeGreaterThan(1);
+		expect(owners).toContain("owner-last");
 	});
 
 	it("never fetches keys for an issuer no active policy names", async () => {
