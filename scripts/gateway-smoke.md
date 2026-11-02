@@ -41,7 +41,8 @@ never includes keys, the prompt, response content or error messages.
    `GATEWAY_SMOKE_LOW_CREDIT_API_KEY`.
 5. A GitHub environment `gateway-smoke` with required reviewers, holding the
    three secrets, and the variable `GATEWAY_SMOKE_MODEL`: a cheap paid model
-   with a stable route, not a free variant.
+   with a stable route, not a free variant and not a reasoning model (hidden
+   reasoning tokens would spend the 16-token cap).
 
 Smoke requests send `X-Title: Phaseo gateway smoke`, so the app attribution
 identifies them in logs and reporting.
