@@ -1,14 +1,14 @@
 /** @jest-environment jsdom */
 import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { ANALYTICS_CONSENT_EVENT } from "@/lib/cookieConsent";
 import { useModelsLayoutExperiment } from "./useModelsLayoutExperiment";
 
-let consent = false;
+let consent: "accepted" | "denied" | null = null;
 const logEvent = jest.fn();
 const captureProductEvent = jest.fn();
 
-jest.mock("@/lib/clientErrorReporting", () => ({ isAnalyticsCaptureAllowed: () => consent }));
+jest.mock("@/lib/clientErrorReporting", () => ({ isAnalyticsCaptureAllowed: () => consent === "accepted" }));
+jest.mock("@/lib/cookieConsent", () => ({ ANALYTICS_CONSENT_EVENT: "phaseo:analytics-consent", readAnalyticsConsent: () => consent }));
 jest.mock("@/lib/productAnalytics", () => ({ captureProductEvent: (...args: unknown[]) => captureProductEvent(...args) }));
 jest.mock("@/lib/statsig/shared", () => ({
 	buildAnonymousStatsigUser: (stableID: string) => ({ customIDs: { stableID } }),
@@ -46,13 +46,31 @@ it("sends events tracked before consent once the visitor accepts on the same pag
 		await act(async () => { await Promise.resolve(); });
 		expect(logEvent).not.toHaveBeenCalled();
 
-		consent = true;
-		await act(async () => { window.dispatchEvent(new CustomEvent(ANALYTICS_CONSENT_EVENT, { detail: "accepted" })); });
+		consent = "accepted";
+		await act(async () => { window.dispatchEvent(new CustomEvent("phaseo:analytics-consent", { detail: consent })); });
 
 		expect(logEvent).toHaveBeenCalledTimes(1);
 		expect(logEvent.mock.calls[0][0]).toBe("models_layout_first_rows");
 		expect(logEvent.mock.calls[0][1]).toBe(120);
 		expect(captureProductEvent).toHaveBeenCalledWith("models_layout_first_rows", expect.objectContaining({ variant: "list" }));
+	} finally {
+		act(() => root.unmount());
+	}
+});
+
+it("discards events from before a decline even if the visitor accepts later", async () => {
+	consent = null;
+	logEvent.mockClear();
+	const node = document.createElement("div");
+	const root = createRoot(node);
+	try {
+		await act(async () => root.render(<Probe />));
+		await act(async () => { await Promise.resolve(); });
+		consent = "denied";
+		await act(async () => { window.dispatchEvent(new CustomEvent("phaseo:analytics-consent", { detail: consent })); });
+		consent = "accepted";
+		await act(async () => { window.dispatchEvent(new CustomEvent("phaseo:analytics-consent", { detail: consent })); });
+		expect(logEvent).not.toHaveBeenCalled();
 	} finally {
 		act(() => root.unmount());
 	}

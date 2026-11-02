@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { StatsigClient } from "@statsig/js-client";
 import { useReportWebVitals } from "next/web-vitals";
 import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
-import { ANALYTICS_CONSENT_EVENT } from "@/lib/cookieConsent";
+import { ANALYTICS_CONSENT_EVENT, readAnalyticsConsent } from "@/lib/cookieConsent";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { buildAnonymousStatsigUser, readStableIdCookie, writeStableIdCookie } from "@/lib/statsig/shared";
 import { MODELS_LAYOUT_EXPERIMENT, selectModelsLayout, type ModelsLayout } from "./modelsLayoutExperiment";
@@ -22,8 +22,8 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 	const pendingVitals = useRef<EventProperties[]>([]);
 	const vitalSink = useRef<((properties: EventProperties) => void) | null>(null);
 	const vitalsActive = useRef(false);
-	// Events from before analytics consent (first rows, early vitals) wait here and
-	// are only sent if the visitor accepts on this page; nothing leaves the browser first.
+	// Events from before the visitor has chosen (first rows, early vitals) wait here and
+	// are only sent if they accept on this page; a decline discards them for good.
 	const awaitingConsent = useRef<{ event: LayoutEvent; properties: EventProperties }[]>([]);
 
 	useEffect(() => {
@@ -95,7 +95,9 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 	const track = useCallback((event: LayoutEvent, properties: EventProperties = {}) => {
 		if (!enabled || !assignment) return;
 		if (!isAnalyticsCaptureAllowed()) {
-			if (awaitingConsent.current.length < 50) awaitingConsent.current.push({ event, properties });
+			if (readAnalyticsConsent() === null && awaitingConsent.current.length < 50) {
+				awaitingConsent.current.push({ event, properties });
+			}
 			return;
 		}
 		const metadata = { experiment: MODELS_LAYOUT_EXPERIMENT, variant: assignment.variant, in_experiment: assignment.inExperiment ?? false, ...properties };
@@ -123,6 +125,7 @@ export function useModelsLayoutExperiment(enabled: boolean) {
 	useEffect(() => {
 		if (!assignment) return;
 		const flush = () => {
+			if (readAnalyticsConsent() === "denied") awaitingConsent.current.length = 0;
 			if (!isAnalyticsCaptureAllowed()) return;
 			for (const pending of awaitingConsent.current.splice(0)) track(pending.event, pending.properties);
 		};
