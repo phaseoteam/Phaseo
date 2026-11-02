@@ -15,6 +15,7 @@ CREATE TABLE "public"."work_error_groups" (
   "last_event"     jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "work_item_id"   uuid,
   "resolved_at"    timestamp with time zone,
+  "spike_alerted_at" timestamp with time zone,
   CONSTRAINT "work_error_groups_last_event_object_check" CHECK ((jsonb_typeof(last_event) = 'object'::text)),
   CONSTRAINT "work_error_groups_pkey" PRIMARY KEY (id),
   CONSTRAINT "work_error_groups_project_fingerprint_key" UNIQUE (project_id, fingerprint),

@@ -16,7 +16,8 @@ CREATE OR REPLACE FUNCTION public.create_work_item (
   AS $function$
 -- Creates a work item with the workspace's next number and its "created" timeline event, in one
 -- transaction. p_fields may set labels (text array), assignee_user_id, assignee_agent,
--- error_group_id, github_repo, github_issue_number, github_issue_url and due_at; other keys are
+-- error_group_id, github_repo, github_issue_number, github_issue_url, due_at, project_id, cycle_id,
+-- parent_id, estimate and sla_due_at; other keys are
 -- ignored. Numbers are never reused, even when items are deleted.
 declare
   v_number integer;
@@ -30,7 +31,7 @@ begin
   insert into public.work_items (
     workspace_id, number, title, description, state, priority, source, labels,
     assignee_user_id, assignee_agent, error_group_id, github_repo, github_issue_number,
-    github_issue_url, due_at, created_by
+    github_issue_url, due_at, project_id, cycle_id, parent_id, estimate, sla_due_at, created_by
   ) values (
     p_workspace_id, v_number, p_title, coalesce(p_description, ''), coalesce(p_state, 'triage'),
     coalesce(p_priority, 0), coalesce(p_source, 'manual'),
@@ -42,6 +43,11 @@ begin
     nullif(p_fields ->> 'github_issue_number', '')::integer,
     nullif(p_fields ->> 'github_issue_url', ''),
     nullif(p_fields ->> 'due_at', '')::timestamp with time zone,
+    nullif(p_fields ->> 'project_id', '')::uuid,
+    nullif(p_fields ->> 'cycle_id', '')::uuid,
+    nullif(p_fields ->> 'parent_id', '')::uuid,
+    nullif(p_fields ->> 'estimate', '')::smallint,
+    nullif(p_fields ->> 'sla_due_at', '')::timestamp with time zone,
     p_created_by
   )
   returning * into v_item;

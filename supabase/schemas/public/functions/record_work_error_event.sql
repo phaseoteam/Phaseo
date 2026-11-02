@@ -16,13 +16,17 @@ CREATE OR REPLACE FUNCTION public.record_work_error_event (
   AS $function$
 -- Counts one error event against its group, creating the group on first sight. A resolved group
 -- that sees a new event is reopened; an ignored group stays ignored. Returns
--- { group_id, workspace_id, is_new, reopened, status, work_item_id, event_count }, or null when the
+-- { group_id, workspace_id, is_new, reopened, status, work_item_id, event_count, auto_triage,
+-- github_repo, hour_count, spiking }, or null when the
 -- project is unknown or disabled. The caller decides whether a new or reopened group gets a work item.
 declare
   v_project public.work_error_projects;
   v_group public.work_error_groups;
   v_previous_status text;
   v_is_new boolean;
+  v_hour_count integer;
+  v_baseline numeric;
+  v_spiking boolean;
 begin
   select * into v_project from public.work_error_projects project
   where project.id = p_project_id and project.enabled;
@@ -54,6 +58,24 @@ begin
     resolved_at = case when error_group.status = 'resolved' then null else error_group.resolved_at end
   returning * into v_group;
 
+  insert into public.work_error_group_hours as bucket (group_id, hour, event_count)
+  values (v_group.id, date_trunc('hour', p_seen_at), 1)
+  on conflict (group_id, hour) do update set event_count = bucket.event_count + 1
+  returning bucket.event_count into v_hour_count;
+
+  -- A spike: at least 10 events this hour and five times the average of the previous 24 hours
+  -- (hours without events count as zero). Alerted at most once every 6 hours per group.
+  select coalesce(sum(bucket.event_count), 0)::numeric / 24 into v_baseline
+  from public.work_error_group_hours bucket
+  where bucket.group_id = v_group.id
+    and bucket.hour >= date_trunc('hour', p_seen_at) - interval '24 hours'
+    and bucket.hour < date_trunc('hour', p_seen_at);
+  v_spiking := v_group.status <> 'ignored' and v_hour_count >= 10 and v_hour_count >= 5 * v_baseline
+    and (v_group.spike_alerted_at is null or v_group.spike_alerted_at < p_seen_at - interval '6 hours');
+  if v_spiking then
+    update public.work_error_groups error_group set spike_alerted_at = p_seen_at where error_group.id = v_group.id;
+  end if;
+
   update public.work_error_projects project set last_event_at = p_seen_at
   where project.id = p_project_id and (project.last_event_at is null or project.last_event_at < p_seen_at - interval '1 minute');
 
@@ -66,7 +88,9 @@ begin
     'work_item_id', v_group.work_item_id,
     'event_count', v_group.event_count,
     'auto_triage', v_project.auto_triage,
-    'github_repo', v_project.github_repo
+    'github_repo', v_project.github_repo,
+    'hour_count', v_hour_count,
+    'spiking', v_spiking
   );
 end;
 $function$;

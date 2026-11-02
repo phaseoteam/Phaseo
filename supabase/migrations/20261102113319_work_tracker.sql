@@ -8,6 +8,86 @@
 -- available where this was authored. It matches the definitions in schemas/.
 SET local check_function_bodies = off;
 
+CREATE TABLE "public"."work_projects" (
+  "id"             uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id"   uuid                     NOT NULL,
+  "name"           text                     NOT NULL,
+  "description"    text                     NOT NULL DEFAULT ''::text,
+  "state"          text                     NOT NULL DEFAULT 'planned'::text,
+  "lead_user_id"   uuid,
+  "target_date"    date,
+  "created_by"     uuid,
+  "created_at"     timestamp with time zone NOT NULL DEFAULT now(),
+  "updated_at"     timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_projects_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_projects_description_length_check" CHECK ((char_length(description) <= 20000)),
+  CONSTRAINT "work_projects_lead_user_id_fkey" FOREIGN KEY (lead_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_projects_name_length_check" CHECK (((char_length(name) >= 1) AND (char_length(name) <= 120))),
+  CONSTRAINT "work_projects_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_projects_state_check" CHECK ((state = ANY (ARRAY['planned'::text, 'active'::text, 'paused'::text, 'completed'::text, 'cancelled'::text]))),
+  CONSTRAINT "work_projects_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_projects"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_projects_created_by_idx ON public.work_projects USING btree (created_by)
+  WHERE (created_by IS NOT NULL);
+
+CREATE INDEX work_projects_lead_user_id_idx ON public.work_projects USING btree (lead_user_id)
+  WHERE (lead_user_id IS NOT NULL);
+
+CREATE INDEX work_projects_workspace_state_idx ON public.work_projects USING btree (workspace_id, state, updated_at DESC);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_projects"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_projects" IS 'Projects in the work tracker: a named body of work with a lead, a target date and a state. Work items belong to at most one project.';
+
+REVOKE ALL ON TABLE "public"."work_projects" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_projects" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_projects" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_cycles" (
+  "id"           uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id" uuid                     NOT NULL,
+  "number"       integer                  NOT NULL,
+  "name"         text,
+  "starts_on"    date                     NOT NULL,
+  "ends_on"      date                     NOT NULL,
+  "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_cycles_dates_check" CHECK ((ends_on > starts_on)),
+  CONSTRAINT "work_cycles_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_cycles_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  CONSTRAINT "work_cycles_workspace_id_number_key" UNIQUE (workspace_id, number)
+);
+
+ALTER TABLE "public"."work_cycles"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_cycles_workspace_dates_idx ON public.work_cycles USING btree (workspace_id, starts_on DESC);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_cycles"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_cycles" IS 'Time-boxed cycles (sprints), numbered per workspace. Work items are planned into at most one cycle.';
+
+REVOKE ALL ON TABLE "public"."work_cycles" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_cycles" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_cycles" FROM "anon", "authenticated";
+
 CREATE TABLE "public"."work_items" (
   "id"                  uuid                     NOT NULL DEFAULT gen_random_uuid(),
   "workspace_id"        uuid                     NOT NULL,
@@ -28,6 +108,12 @@ CREATE TABLE "public"."work_items" (
   "github_pr_url"       text,
   "triage_summary"      text,
   "due_at"              timestamp with time zone,
+  "project_id"          uuid,
+  "cycle_id"            uuid,
+  "parent_id"           uuid,
+  "estimate"            smallint,
+  "sla_due_at"          timestamp with time zone,
+  "last_activity_at"    timestamp with time zone NOT NULL DEFAULT now(),
   "created_by"          uuid,
   "created_at"          timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"          timestamp with time zone NOT NULL DEFAULT now(),
@@ -36,11 +122,16 @@ CREATE TABLE "public"."work_items" (
   CONSTRAINT "work_items_assignee_user_id_fkey" FOREIGN KEY (assignee_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "work_items_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "work_items_description_length_check" CHECK ((char_length(description) <= 100000)),
+  CONSTRAINT "work_items_cycle_id_fkey" FOREIGN KEY (cycle_id) REFERENCES public.work_cycles(id) ON DELETE SET NULL,
   CONSTRAINT "work_items_duplicate_of_fkey" FOREIGN KEY (duplicate_of) REFERENCES public.work_items(id) ON DELETE SET NULL,
+  CONSTRAINT "work_items_estimate_check" CHECK (((estimate IS NULL) OR ((estimate >= 0) AND (estimate <= 21)))),
   CONSTRAINT "work_items_github_repo_check" CHECK (((github_repo IS NULL) OR (github_repo ~ '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'::text))),
   CONSTRAINT "work_items_labels_check" CHECK ((cardinality(labels) <= 20)),
+  CONSTRAINT "work_items_parent_id_check" CHECK (((parent_id IS NULL) OR (parent_id <> id))),
+  CONSTRAINT "work_items_parent_id_fkey" FOREIGN KEY (parent_id) REFERENCES public.work_items(id) ON DELETE SET NULL,
   CONSTRAINT "work_items_pkey" PRIMARY KEY (id),
   CONSTRAINT "work_items_priority_check" CHECK (((priority >= 0) AND (priority <= 4))),
+  CONSTRAINT "work_items_project_id_fkey" FOREIGN KEY (project_id) REFERENCES public.work_projects(id) ON DELETE SET NULL,
   CONSTRAINT "work_items_source_check" CHECK ((source = ANY (ARRAY['manual'::text, 'ask'::text, 'error'::text, 'github'::text, 'slack'::text, 'gateway'::text, 'agent'::text]))),
   CONSTRAINT "work_items_state_check" CHECK ((state = ANY (ARRAY['triage'::text, 'backlog'::text, 'todo'::text, 'in_progress'::text, 'in_review'::text, 'done'::text, 'cancelled'::text]))),
   CONSTRAINT "work_items_title_length_check" CHECK (((char_length(title) >= 1) AND (char_length(title) <= 300))),
@@ -66,6 +157,18 @@ CREATE INDEX work_items_error_group_id_idx ON public.work_items USING btree (err
 CREATE UNIQUE INDEX work_items_github_issue_key ON public.work_items USING btree (workspace_id, github_repo, github_issue_number)
   WHERE (github_issue_number IS NOT NULL);
 
+CREATE INDEX work_items_cycle_id_idx ON public.work_items USING btree (cycle_id)
+  WHERE (cycle_id IS NOT NULL);
+
+CREATE INDEX work_items_parent_id_idx ON public.work_items USING btree (parent_id)
+  WHERE (parent_id IS NOT NULL);
+
+CREATE INDEX work_items_project_id_idx ON public.work_items USING btree (project_id)
+  WHERE (project_id IS NOT NULL);
+
+CREATE INDEX work_items_open_activity_idx ON public.work_items USING btree (workspace_id, last_activity_at)
+  WHERE (closed_at IS NULL);
+
 CREATE INDEX work_items_workspace_state_updated_idx ON public.work_items USING btree (workspace_id, state, updated_at DESC);
 
 CREATE POLICY "deny_direct_client_access" ON "public"."work_items"
@@ -76,6 +179,10 @@ CREATE POLICY "deny_direct_client_access" ON "public"."work_items"
   WITH CHECK (false);
 
 COMMENT ON TABLE "public"."work_items" IS 'Work items for the Phaseo work tracker: one row per issue, ask, error or request that people or agents work on. Numbered per workspace (public.create_work_item). Service role only; reached through web-api account routes after a membership check.';
+
+COMMENT ON COLUMN "public"."work_items"."sla_due_at" IS 'When the item should be resolved under the workspace SLA for its priority (work_settings.sla_hours), set by web-api when the item is created or its priority changes. Null when no SLA applies.';
+
+COMMENT ON COLUMN "public"."work_items"."last_activity_at" IS 'The last comment, state change, GitHub activity or agent run. Stalled-item follow-ups compare it with work_settings.stall_days.';
 
 COMMENT ON COLUMN "public"."work_items"."priority" IS '0 no priority, 1 urgent, 2 high, 3 medium, 4 low.';
 
@@ -129,7 +236,7 @@ CREATE TABLE "public"."work_item_events" (
   CONSTRAINT "work_item_events_author_user_id_fkey" FOREIGN KEY (author_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "work_item_events_body_length_check" CHECK ((char_length(body) <= 100000)),
   CONSTRAINT "work_item_events_data_object_check" CHECK ((jsonb_typeof(data) = 'object'::text)),
-  CONSTRAINT "work_item_events_kind_check" CHECK ((kind = ANY (ARRAY['created'::text, 'comment'::text, 'state'::text, 'priority'::text, 'assignee'::text, 'link'::text, 'triage'::text, 'agent_run'::text, 'customer_request'::text, 'github'::text, 'error'::text]))),
+  CONSTRAINT "work_item_events_kind_check" CHECK ((kind = ANY (ARRAY['created'::text, 'comment'::text, 'state'::text, 'priority'::text, 'assignee'::text, 'link'::text, 'triage'::text, 'agent_run'::text, 'customer_request'::text, 'github'::text, 'error'::text, 'project'::text, 'cycle'::text, 'parent'::text, 'relation'::text, 'estimate'::text, 'reply'::text, 'sla'::text, 'stalled'::text]))),
   CONSTRAINT "work_item_events_pkey" PRIMARY KEY (id),
   CONSTRAINT "work_item_events_work_item_id_fkey" FOREIGN KEY (work_item_id) REFERENCES public.work_items(id) ON DELETE CASCADE,
   CONSTRAINT "work_item_events_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
@@ -359,6 +466,7 @@ CREATE TABLE "public"."work_error_groups" (
   "last_event"     jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "work_item_id"   uuid,
   "resolved_at"    timestamp with time zone,
+  "spike_alerted_at" timestamp with time zone,
   CONSTRAINT "work_error_groups_last_event_object_check" CHECK ((jsonb_typeof(last_event) = 'object'::text)),
   CONSTRAINT "work_error_groups_pkey" PRIMARY KEY (id),
   CONSTRAINT "work_error_groups_project_fingerprint_key" UNIQUE (project_id, fingerprint),
@@ -483,6 +591,286 @@ GRANT INSERT, SELECT, UPDATE ON TABLE "public"."work_agent_runs" TO "service_rol
 
 REVOKE ALL ON TABLE "public"."work_agent_runs" FROM "anon", "authenticated";
 
+CREATE TABLE "public"."work_error_group_hours" (
+  "group_id"     uuid                     NOT NULL,
+  "hour"         timestamp with time zone NOT NULL,
+  "event_count"  integer                  NOT NULL DEFAULT 0,
+  CONSTRAINT "work_error_group_hours_group_id_fkey" FOREIGN KEY (group_id) REFERENCES public.work_error_groups(id) ON DELETE CASCADE,
+  CONSTRAINT "work_error_group_hours_pkey" PRIMARY KEY (group_id, hour)
+);
+
+ALTER TABLE "public"."work_error_group_hours"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_error_group_hours"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_error_group_hours" IS 'Events per error group per UTC hour, for the error chart and spike detection. Written by public.record_work_error_event; rows older than 30 days can be pruned.';
+
+REVOKE ALL ON TABLE "public"."work_error_group_hours" FROM "service_role";
+
+GRANT DELETE, SELECT ON TABLE "public"."work_error_group_hours" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_error_group_hours" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_item_relations" (
+  "id"              uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id"    uuid                     NOT NULL,
+  "item_id"         uuid                     NOT NULL,
+  "related_item_id" uuid                     NOT NULL,
+  "kind"            text                     NOT NULL,
+  "created_by"      uuid,
+  "created_at"      timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_item_relations_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_item_relations_distinct_check" CHECK ((item_id <> related_item_id)),
+  CONSTRAINT "work_item_relations_item_id_fkey" FOREIGN KEY (item_id) REFERENCES public.work_items(id) ON DELETE CASCADE,
+  CONSTRAINT "work_item_relations_kind_check" CHECK ((kind = ANY (ARRAY['blocks'::text, 'related'::text]))),
+  CONSTRAINT "work_item_relations_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_item_relations_related_item_id_fkey" FOREIGN KEY (related_item_id) REFERENCES public.work_items(id) ON DELETE CASCADE,
+  CONSTRAINT "work_item_relations_unique_key" UNIQUE (item_id, related_item_id, kind),
+  CONSTRAINT "work_item_relations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_item_relations"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_item_relations_created_by_idx ON public.work_item_relations USING btree (created_by)
+  WHERE (created_by IS NOT NULL);
+
+CREATE INDEX work_item_relations_related_item_id_idx ON public.work_item_relations USING btree (related_item_id);
+
+CREATE INDEX work_item_relations_workspace_id_idx ON public.work_item_relations USING btree (workspace_id);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_item_relations"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_item_relations" IS 'Links between work items: item_id blocks related_item_id, or the two are related (stored once, read both ways).';
+
+REVOKE ALL ON TABLE "public"."work_item_relations" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT ON TABLE "public"."work_item_relations" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_item_relations" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_views" (
+  "id"            uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id"  uuid                     NOT NULL,
+  "owner_user_id" uuid,
+  "name"          text                     NOT NULL,
+  "filters"       jsonb                    NOT NULL DEFAULT '{}'::jsonb,
+  "layout"        text                     NOT NULL DEFAULT 'list'::text,
+  "position"      integer                  NOT NULL DEFAULT 0,
+  "created_at"    timestamp with time zone NOT NULL DEFAULT now(),
+  "updated_at"    timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_views_filters_object_check" CHECK ((jsonb_typeof(filters) = 'object'::text)),
+  CONSTRAINT "work_views_layout_check" CHECK ((layout = ANY (ARRAY['list'::text, 'board'::text]))),
+  CONSTRAINT "work_views_name_length_check" CHECK (((char_length(name) >= 1) AND (char_length(name) <= 80))),
+  CONSTRAINT "work_views_owner_user_id_fkey" FOREIGN KEY (owner_user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT "work_views_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_views_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_views"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_views_owner_user_id_idx ON public.work_views USING btree (owner_user_id)
+  WHERE (owner_user_id IS NOT NULL);
+
+CREATE INDEX work_views_workspace_position_idx ON public.work_views USING btree (workspace_id, position);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_views"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_views" IS 'Saved views of work items: filters (state, source, assignee, label, project, cycle, priority, text) and a list or board layout. owner_user_id null means shared with the workspace.';
+
+REVOKE ALL ON TABLE "public"."work_views" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_views" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_views" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_settings" (
+  "workspace_id"           uuid                     NOT NULL,
+  "sla_hours"              jsonb                    NOT NULL DEFAULT '{"1": 4, "2": 24, "3": 72, "4": 168}'::jsonb,
+  "stall_days"             integer                  NOT NULL DEFAULT 7,
+  "ambient_enabled"        boolean                  NOT NULL DEFAULT false,
+  "support_drafts_enabled" boolean                  NOT NULL DEFAULT true,
+  "updated_by"             uuid,
+  "updated_at"             timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_settings_pkey" PRIMARY KEY (workspace_id),
+  CONSTRAINT "work_settings_sla_hours_object_check" CHECK ((jsonb_typeof(sla_hours) = 'object'::text)),
+  CONSTRAINT "work_settings_stall_days_check" CHECK (((stall_days >= 1) AND (stall_days <= 90))),
+  CONSTRAINT "work_settings_updated_by_fkey" FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_settings_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_settings"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_settings_updated_by_idx ON public.work_settings USING btree (updated_by)
+  WHERE (updated_by IS NOT NULL);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_settings"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_settings" IS 'Work tracker settings per workspace: SLA hours by priority (keys "1" to "4"), the days without activity after which an open item counts as stalled, whether the ambient agent follows up on stalled items (off by default), and whether the support agent drafts replies to customers when their item is done. A missing row means the defaults.';
+
+REVOKE ALL ON TABLE "public"."work_settings" FROM "service_role";
+
+GRANT INSERT, SELECT, UPDATE ON TABLE "public"."work_settings" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_settings" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_subscriptions" (
+  "work_item_id" uuid                     NOT NULL,
+  "user_id"      uuid                     NOT NULL,
+  "workspace_id" uuid                     NOT NULL,
+  "reason"       text                     NOT NULL DEFAULT 'manual'::text,
+  "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_subscriptions_pkey" PRIMARY KEY (work_item_id, user_id),
+  CONSTRAINT "work_subscriptions_reason_check" CHECK ((reason = ANY (ARRAY['creator'::text, 'assignee'::text, 'commenter'::text, 'mention'::text, 'manual'::text]))),
+  CONSTRAINT "work_subscriptions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT "work_subscriptions_work_item_id_fkey" FOREIGN KEY (work_item_id) REFERENCES public.work_items(id) ON DELETE CASCADE,
+  CONSTRAINT "work_subscriptions_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_subscriptions"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_subscriptions_user_id_idx ON public.work_subscriptions USING btree (user_id);
+
+CREATE INDEX work_subscriptions_workspace_id_idx ON public.work_subscriptions USING btree (workspace_id);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_subscriptions"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_subscriptions" IS 'People following a work item, who get its notifications. Added automatically for the creator, assignee, commenters and people mentioned; removable by unsubscribing.';
+
+REVOKE ALL ON TABLE "public"."work_subscriptions" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_subscriptions" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_subscriptions" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_notifications" (
+  "id"           uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id" uuid                     NOT NULL,
+  "user_id"      uuid                     NOT NULL,
+  "work_item_id" uuid,
+  "kind"         text                     NOT NULL,
+  "actor_name"   text,
+  "body"         text                     NOT NULL DEFAULT ''::text,
+  "read_at"      timestamp with time zone,
+  "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_notifications_body_length_check" CHECK ((char_length(body) <= 2000)),
+  CONSTRAINT "work_notifications_kind_check" CHECK ((kind = ANY (ARRAY['assigned'::text, 'comment'::text, 'mention'::text, 'state'::text, 'sla'::text, 'stalled'::text, 'error_spike'::text, 'agent'::text, 'reply_draft'::text]))),
+  CONSTRAINT "work_notifications_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_notifications_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT "work_notifications_work_item_id_fkey" FOREIGN KEY (work_item_id) REFERENCES public.work_items(id) ON DELETE CASCADE,
+  CONSTRAINT "work_notifications_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_notifications"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX work_notifications_user_unread_idx ON public.work_notifications USING btree (user_id, workspace_id, created_at DESC)
+  WHERE (read_at IS NULL);
+
+CREATE INDEX work_notifications_user_created_idx ON public.work_notifications USING btree (user_id, workspace_id, created_at DESC);
+
+CREATE INDEX work_notifications_work_item_id_idx ON public.work_notifications USING btree (work_item_id)
+  WHERE (work_item_id IS NOT NULL);
+
+CREATE INDEX work_notifications_workspace_id_idx ON public.work_notifications USING btree (workspace_id);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_notifications"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_notifications" IS 'A person''s work inbox: assignments, comments, mentions, state changes, SLA warnings, stalled items, error spikes, agent results and reply drafts waiting for review.';
+
+REVOKE ALL ON TABLE "public"."work_notifications" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."work_notifications" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_notifications" FROM "anon", "authenticated";
+
+CREATE TABLE "public"."work_reply_drafts" (
+  "id"           uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id" uuid                     NOT NULL,
+  "work_item_id" uuid                     NOT NULL,
+  "request_id"   uuid                     NOT NULL,
+  "subject"      text                     NOT NULL DEFAULT ''::text,
+  "body"         text                     NOT NULL,
+  "status"       text                     NOT NULL DEFAULT 'draft'::text,
+  "model"        text,
+  "cost_nanos"   bigint                   NOT NULL DEFAULT 0,
+  "sent_to"      text,
+  "sent_by"      uuid,
+  "sent_at"      timestamp with time zone,
+  "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  "updated_at"   timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "work_reply_drafts_body_length_check" CHECK (((char_length(body) >= 1) AND (char_length(body) <= 20000))),
+  CONSTRAINT "work_reply_drafts_cost_nanos_check" CHECK ((cost_nanos >= 0)),
+  CONSTRAINT "work_reply_drafts_pkey" PRIMARY KEY (id),
+  CONSTRAINT "work_reply_drafts_request_id_fkey" FOREIGN KEY (request_id) REFERENCES public.work_customer_requests(id) ON DELETE CASCADE,
+  CONSTRAINT "work_reply_drafts_sent_by_fkey" FOREIGN KEY (sent_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "work_reply_drafts_status_check" CHECK ((status = ANY (ARRAY['draft'::text, 'sent'::text, 'discarded'::text]))),
+  CONSTRAINT "work_reply_drafts_work_item_id_fkey" FOREIGN KEY (work_item_id) REFERENCES public.work_items(id) ON DELETE CASCADE,
+  CONSTRAINT "work_reply_drafts_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."work_reply_drafts"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE UNIQUE INDEX work_reply_drafts_open_request_key ON public.work_reply_drafts USING btree (request_id)
+  WHERE (status = 'draft'::text);
+
+CREATE INDEX work_reply_drafts_sent_by_idx ON public.work_reply_drafts USING btree (sent_by)
+  WHERE (sent_by IS NOT NULL);
+
+CREATE INDEX work_reply_drafts_work_item_id_idx ON public.work_reply_drafts USING btree (work_item_id);
+
+CREATE INDEX work_reply_drafts_workspace_status_idx ON public.work_reply_drafts USING btree (workspace_id, status, created_at DESC);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."work_reply_drafts"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+COMMENT ON TABLE "public"."work_reply_drafts" IS 'Replies to customers written by the support agent when their item is done. A person reviews, edits and sends each one; nothing is sent automatically. At most one open draft per request.';
+
+REVOKE ALL ON TABLE "public"."work_reply_drafts" FROM "service_role";
+
+GRANT INSERT, SELECT, UPDATE ON TABLE "public"."work_reply_drafts" TO "service_role";
+
+REVOKE ALL ON TABLE "public"."work_reply_drafts" FROM "anon", "authenticated";
+
 CREATE OR REPLACE FUNCTION public.create_work_item (
   p_workspace_id uuid,
   p_title        text,
@@ -501,7 +889,8 @@ CREATE OR REPLACE FUNCTION public.create_work_item (
   AS $function$
 -- Creates a work item with the workspace's next number and its "created" timeline event, in one
 -- transaction. p_fields may set labels (text array), assignee_user_id, assignee_agent,
--- error_group_id, github_repo, github_issue_number, github_issue_url and due_at; other keys are
+-- error_group_id, github_repo, github_issue_number, github_issue_url, due_at, project_id, cycle_id,
+-- parent_id, estimate and sla_due_at; other keys are
 -- ignored. Numbers are never reused, even when items are deleted.
 declare
   v_number integer;
@@ -515,7 +904,7 @@ begin
   insert into public.work_items (
     workspace_id, number, title, description, state, priority, source, labels,
     assignee_user_id, assignee_agent, error_group_id, github_repo, github_issue_number,
-    github_issue_url, due_at, created_by
+    github_issue_url, due_at, project_id, cycle_id, parent_id, estimate, sla_due_at, created_by
   ) values (
     p_workspace_id, v_number, p_title, coalesce(p_description, ''), coalesce(p_state, 'triage'),
     coalesce(p_priority, 0), coalesce(p_source, 'manual'),
@@ -527,6 +916,11 @@ begin
     nullif(p_fields ->> 'github_issue_number', '')::integer,
     nullif(p_fields ->> 'github_issue_url', ''),
     nullif(p_fields ->> 'due_at', '')::timestamp with time zone,
+    nullif(p_fields ->> 'project_id', '')::uuid,
+    nullif(p_fields ->> 'cycle_id', '')::uuid,
+    nullif(p_fields ->> 'parent_id', '')::uuid,
+    nullif(p_fields ->> 'estimate', '')::smallint,
+    nullif(p_fields ->> 'sla_due_at', '')::timestamp with time zone,
     p_created_by
   )
   returning * into v_item;
@@ -565,13 +959,17 @@ CREATE OR REPLACE FUNCTION public.record_work_error_event (
   AS $function$
 -- Counts one error event against its group, creating the group on first sight. A resolved group
 -- that sees a new event is reopened; an ignored group stays ignored. Returns
--- { group_id, workspace_id, is_new, reopened, status, work_item_id, event_count }, or null when the
+-- { group_id, workspace_id, is_new, reopened, status, work_item_id, event_count, auto_triage,
+-- github_repo, hour_count, spiking }, or null when the
 -- project is unknown or disabled. The caller decides whether a new or reopened group gets a work item.
 declare
   v_project public.work_error_projects;
   v_group public.work_error_groups;
   v_previous_status text;
   v_is_new boolean;
+  v_hour_count integer;
+  v_baseline numeric;
+  v_spiking boolean;
 begin
   select * into v_project from public.work_error_projects project
   where project.id = p_project_id and project.enabled;
@@ -603,6 +1001,24 @@ begin
     resolved_at = case when error_group.status = 'resolved' then null else error_group.resolved_at end
   returning * into v_group;
 
+  insert into public.work_error_group_hours as bucket (group_id, hour, event_count)
+  values (v_group.id, date_trunc('hour', p_seen_at), 1)
+  on conflict (group_id, hour) do update set event_count = bucket.event_count + 1
+  returning bucket.event_count into v_hour_count;
+
+  -- A spike: at least 10 events this hour and five times the average of the previous 24 hours
+  -- (hours without events count as zero). Alerted at most once every 6 hours per group.
+  select coalesce(sum(bucket.event_count), 0)::numeric / 24 into v_baseline
+  from public.work_error_group_hours bucket
+  where bucket.group_id = v_group.id
+    and bucket.hour >= date_trunc('hour', p_seen_at) - interval '24 hours'
+    and bucket.hour < date_trunc('hour', p_seen_at);
+  v_spiking := v_group.status <> 'ignored' and v_hour_count >= 10 and v_hour_count >= 5 * v_baseline
+    and (v_group.spike_alerted_at is null or v_group.spike_alerted_at < p_seen_at - interval '6 hours');
+  if v_spiking then
+    update public.work_error_groups error_group set spike_alerted_at = p_seen_at where error_group.id = v_group.id;
+  end if;
+
   update public.work_error_projects project set last_event_at = p_seen_at
   where project.id = p_project_id and (project.last_event_at is null or project.last_event_at < p_seen_at - interval '1 minute');
 
@@ -615,7 +1031,9 @@ begin
     'work_item_id', v_group.work_item_id,
     'event_count', v_group.event_count,
     'auto_triage', v_project.auto_triage,
-    'github_repo', v_project.github_repo
+    'github_repo', v_project.github_repo,
+    'hour_count', v_hour_count,
+    'spiking', v_spiking
   );
 end;
 $function$;
@@ -627,3 +1045,73 @@ REVOKE ALL ON FUNCTION public.record_work_error_event(uuid, text, text, text, te
 REVOKE ALL ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone) FROM "anon", "authenticated";
 
 GRANT EXECUTE ON FUNCTION public.record_work_error_event(uuid, text, text, text, text, text, text, jsonb, timestamp with time zone) TO "service_role";
+
+CREATE OR REPLACE FUNCTION public.work_insights (
+  p_workspace_id uuid,
+  p_from         timestamp with time zone,
+  p_to           timestamp with time zone
+)
+  RETURNS jsonb
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+-- The work tracker's insights for one workspace and period, aggregated here so callers never add
+-- up rows: items created and closed per UTC day (created split by source), open items by state and
+-- by priority, open items past their SLA, stalled open items (no activity for the workspace's
+-- stall_days), the median and 90th percentile hours from creation to close, and agent runs by agent
+-- with their cost. Days without items are omitted.
+with settings as (
+  select coalesce((select stall_days from public.work_settings where workspace_id = p_workspace_id), 7) as stall_days
+),
+created as (
+  select date_trunc('day', item.created_at at time zone 'UTC')::date as day, item.source, count(*)::integer as items
+  from public.work_items item
+  where item.workspace_id = p_workspace_id and item.created_at >= p_from and item.created_at < p_to
+  group by 1, 2
+),
+closed as (
+  select date_trunc('day', item.closed_at at time zone 'UTC')::date as day, count(*)::integer as items,
+    count(*) filter (where item.state = 'done')::integer as done
+  from public.work_items item
+  where item.workspace_id = p_workspace_id and item.closed_at >= p_from and item.closed_at < p_to
+  group by 1
+),
+open_items as (
+  select item.state, item.priority, item.sla_due_at, item.last_activity_at
+  from public.work_items item
+  where item.workspace_id = p_workspace_id and item.closed_at is null and item.state not in ('done', 'cancelled')
+),
+durations as (
+  select extract(epoch from (item.closed_at - item.created_at)) / 3600 as hours
+  from public.work_items item
+  where item.workspace_id = p_workspace_id and item.state = 'done' and item.closed_at >= p_from and item.closed_at < p_to
+),
+runs as (
+  select run.agent, count(*)::integer as runs, count(*) filter (where run.status = 'succeeded')::integer as succeeded,
+    coalesce(sum(run.cost_nanos), 0)::bigint as cost_nanos
+  from public.work_agent_runs run
+  where run.workspace_id = p_workspace_id and run.created_at >= p_from and run.created_at < p_to
+  group by 1
+)
+select jsonb_build_object(
+  'created', coalesce((select jsonb_agg(jsonb_build_object('day', day, 'source', source, 'items', items) order by day, source) from created), '[]'::jsonb),
+  'closed', coalesce((select jsonb_agg(jsonb_build_object('day', day, 'items', items, 'done', done) order by day) from closed), '[]'::jsonb),
+  'open_by_state', coalesce((select jsonb_object_agg(state, items) from (select state, count(*)::integer as items from open_items group by 1) by_state), '{}'::jsonb),
+  'open_by_priority', coalesce((select jsonb_object_agg(priority::text, items) from (select priority, count(*)::integer as items from open_items group by 1) by_priority), '{}'::jsonb),
+  'open_past_sla', (select count(*)::integer from open_items where sla_due_at is not null and sla_due_at < now()),
+  'open_stalled', (select count(*)::integer from open_items, settings where last_activity_at < now() - make_interval(days => settings.stall_days)),
+  'close_hours_p50', (select round((percentile_cont(0.5) within group (order by hours))::numeric, 1) from durations),
+  'close_hours_p90', (select round((percentile_cont(0.9) within group (order by hours))::numeric, 1) from durations),
+  'runs', coalesce((select jsonb_agg(jsonb_build_object('agent', agent, 'runs', runs, 'succeeded', succeeded, 'cost_nanos', cost_nanos) order by agent) from runs), '[]'::jsonb)
+);
+$function$;
+
+COMMENT ON FUNCTION public.work_insights(uuid, timestamp with time zone, timestamp with time zone) IS 'Aggregated work tracker insights for a workspace and period. Service role only; called by the web-api insights route after a membership check.';
+
+REVOKE ALL ON FUNCTION public.work_insights(uuid, timestamp with time zone, timestamp with time zone) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION public.work_insights(uuid, timestamp with time zone, timestamp with time zone) FROM "anon", "authenticated";
+
+GRANT EXECUTE ON FUNCTION public.work_insights(uuid, timestamp with time zone, timestamp with time zone) TO "service_role";
