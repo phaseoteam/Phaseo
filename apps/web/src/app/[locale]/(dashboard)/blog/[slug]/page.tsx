@@ -20,7 +20,8 @@ import {
 } from "@/lib/content/blogToc";
 import { blogShareImage } from "@/lib/content/blogShareImage";
 import { canPreviewFutureBlogPosts } from "@/lib/flags/blogPreview";
-import { buildMetadata } from "@/lib/seo";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { absoluteUrl, buildMetadata, SITE_NAME } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { getTranslations } from "next-intl/server";
 import type { PublicLocale } from "@/i18n/routing";
@@ -64,10 +65,16 @@ export async function generateMetadata(
 
 	const shareImage = blogShareImage(post);
 	return buildMetadata({
-		title: `${post.title} | ${t("title")}`,
+		title: `${post.seoTitle ?? post.title} | ${t("title")}`,
 		description: post.description,
 		path,
-		keywords: [t("title"), ...post.tags],
+		keywords: [t("title"), ...post.keywords, ...post.tags],
+		openGraph: {
+			type: "article",
+			publishedTime: post.publishedAt,
+			...(post.updatedAt ? { modifiedTime: post.updatedAt } : {}),
+			tags: post.tags,
+		},
 		...(shareImage
 			? {
 					imagePath: shareImage.path,
@@ -129,6 +136,40 @@ export default async function AnnouncementPostPage({
 		},
 		components: announcementMdxComponents,
 	});
+	if (post.faq.length) {
+		tocItems.push({ id: "faq", label: t("faqTitle"), level: 2 });
+	}
+
+	const postUrl = absoluteUrl(`/blog/${slug}`);
+	const structuredData = [
+		{
+			"@context": "https://schema.org",
+			"@type": "BlogPosting",
+			headline: post.title,
+			description: post.description,
+			datePublished: post.publishedAt,
+			dateModified: post.updatedAt ?? post.publishedAt,
+			mainEntityOfPage: postUrl,
+			image: absoluteUrl(blogShareImage(post)?.path ?? "/og.png"),
+			keywords: [...post.keywords, ...post.tags].join(", "),
+			inLanguage: post.contentLocale,
+			author: { "@type": "Organization", name: post.author ?? SITE_NAME },
+			publisher: { "@type": "Organization", name: SITE_NAME, url: absoluteUrl("/") },
+		},
+		...(post.faq.length
+			? [
+					{
+						"@context": "https://schema.org",
+						"@type": "FAQPage",
+						mainEntity: post.faq.map((item) => ({
+							"@type": "Question",
+							name: item.question,
+							acceptedAnswer: { "@type": "Answer", text: item.answer },
+						})),
+					},
+				]
+			: []),
+	];
 
 	return (
 		<div className="container mx-auto mt-8 mb-20 max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -194,6 +235,29 @@ export default async function AnnouncementPostPage({
 						</div>
 					) : null}
 					<div>{content}</div>
+					{post.faq.length ? (
+						<section aria-labelledby="faq">
+							<h2
+								id="faq"
+								className="mt-10 scroll-mt-24 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
+							>
+								{t("faqTitle")}
+							</h2>
+							<dl className="mt-6 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+								{post.faq.map((item) => (
+									<div key={item.question} className="py-5">
+										<dt className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
+											{item.question}
+										</dt>
+										<dd className="mt-2 text-base leading-7 text-zinc-700 dark:text-zinc-300">
+											{item.answer}
+										</dd>
+									</div>
+								))}
+							</dl>
+						</section>
+					) : null}
+					<JsonLdScript id="blog-post-schema" data={structuredData} />
 				</article>
 			</div>
 		</div>

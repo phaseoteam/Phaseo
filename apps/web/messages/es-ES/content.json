@@ -50,7 +50,8 @@
 		"fromJournal": "Del blog",
 		"journalDescription": "Novedades de producto, guías y notas de lanzamiento.",
 		"viewAllPosts": "Ver todas las publicaciones",
-		"englishBodyNotice": "Este contenido editorial está disponible actualmente en inglés. La interfaz está traducida; se muestra el artículo original para conservar su significado."
+		"englishBodyNotice": "Este contenido editorial está disponible actualmente en inglés. La interfaz está traducida; se muestra el artículo original para conservar su significado.",
+		"faqTitle": "Preguntas frecuentes"
 	},
 	"roadmap": {
 		"title": "Hoja de ruta de Phaseo",
