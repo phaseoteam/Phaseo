@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, BarChart3, FileStack, FolderKanban, Inbox, IterationCw, MessageSquare, Settings, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, FileStack, FileText, FolderKanban, GanttChart, Inbox, IterationCw, MessageSquare, Settings, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,9 @@ import { NotificationBell } from "./WorkNotifications";
 const SECTIONS = [
 	{ href: "/work", key: "inbox", icon: Inbox },
 	{ href: "/work/projects", key: "projects", icon: FolderKanban },
+	{ href: "/work/roadmap", key: "roadmap", icon: GanttChart },
 	{ href: "/work/cycles", key: "cycles", icon: IterationCw },
+	{ href: "/work/docs", key: "docs", icon: FileText },
 	{ href: "/work/requests", key: "requests", icon: MessageSquare },
 	{ href: "/work/customers", key: "customers", icon: Users },
 	{ href: "/work/errors", key: "errors", icon: AlertTriangle },

@@ -10,7 +10,9 @@
 		"projects": "项目",
 		"cycles": "周期",
 		"insights": "洞察",
-		"templates": "模板"
+		"templates": "模板",
+		"docs": "文档",
+		"roadmap": "路线图"
 	},
 	"common": {
 		"save": "保存",
@@ -567,7 +569,12 @@
 		"deleteConfirm": "删除 {name}？其中的条目会保留，但不再属于任何项目。",
 		"items": "条目",
 		"noItems": "此项目还没有条目。",
-		"health": "健康状况"
+		"health": "健康状况",
+		"startDate": "开始日期",
+		"initiative": "举措",
+		"noInitiative": "无举措",
+		"documents": "文档",
+		"noDocuments": "此项目中还没有文档。"
 	},
 	"cycles": {
 		"title": "周期",
@@ -854,5 +861,56 @@
 		"done": "已导入 {created, plural, other {# 个条目}}。",
 		"stopped": "导入 {created, plural, other {# 个条目}}后已停止。请重新导入其余条目。",
 		"failedPart": "导入 {created, plural, other {# 个条目}}后已停止：{error}"
+	},
+	"docs": {
+		"title": "文档",
+		"description": "用 Markdown 编写的规范、计划和笔记。将文档放入项目后，也可以在项目中找到它。",
+		"empty": "还没有文档。",
+		"new": "新建文档",
+		"untitled": "未命名",
+		"titleLabel": "标题",
+		"project": "项目",
+		"noProject": "无项目",
+		"editedBy": "最后编辑者",
+		"mode": "编辑器模式",
+		"modes": {
+			"write": "编写",
+			"preview": "预览"
+		},
+		"body": "文档",
+		"bodyPlaceholder": "使用 Markdown 编写：# 标题、- 列表、**粗体**、[链接](https://…)",
+		"emptyBody": "还没有内容。",
+		"unsaved": "未保存的更改",
+		"conflict": "你编辑期间，其他人保存了此文档。请复制你的更改，重新加载页面，然后再次添加。",
+		"deleteConfirm": "删除 {title}？此操作无法撤销。"
+	},
+	"roadmap": {
+		"title": "路线图",
+		"description": "按举措分组的项目时间线。条形从每个项目的开始日期延伸到目标日期，颜色表示其最新健康状况。",
+		"newInitiative": "新建举措",
+		"editInitiative": "编辑举措",
+		"editNamed": "编辑 {name}",
+		"initiativeDescription": "多个项目共同努力实现的目标。请在每个项目的设置中选择它。",
+		"name": "名称",
+		"goal": "目标",
+		"state": "状态",
+		"targetDate": "目标日期",
+		"target": "目标 {date}",
+		"states": {
+			"planned": "计划中",
+			"active": "进行中",
+			"completed": "已完成",
+			"cancelled": "已取消"
+		},
+		"project": "项目",
+		"noInitiative": "其他项目",
+		"noProjects": "此举措中还没有项目。",
+		"noTarget": "无目标日期",
+		"empty": "还没有项目或举措。",
+		"barLabel": "{name}，{start} 至 {end}，已完成 {progress}%",
+		"legend": "条形颜色表示健康状况：",
+		"today": "今天",
+		"undatedHint": "{count, plural, other {# 个项目}}没有目标日期，因此未显示在时间线上。",
+		"deleteConfirm": "删除举措“{name}”？其中的项目会保留。"
 	}
 }

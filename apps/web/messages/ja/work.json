@@ -10,7 +10,9 @@
 		"projects": "プロジェクト",
 		"cycles": "サイクル",
 		"insights": "インサイト",
-		"templates": "テンプレート"
+		"templates": "テンプレート",
+		"docs": "ドキュメント",
+		"roadmap": "ロードマップ"
 	},
 	"common": {
 		"save": "保存",
@@ -567,7 +569,12 @@
 		"deleteConfirm": "{name} を削除しますか？項目はプロジェクトなしで残ります。",
 		"items": "項目",
 		"noItems": "このプロジェクトにはまだ項目がありません。",
-		"health": "状況"
+		"health": "状況",
+		"startDate": "開始日",
+		"initiative": "イニシアチブ",
+		"noInitiative": "イニシアチブなし",
+		"documents": "ドキュメント",
+		"noDocuments": "このプロジェクトにはまだドキュメントがありません。"
 	},
 	"cycles": {
 		"title": "サイクル",
@@ -854,5 +861,56 @@
 		"done": "{created, plural, other {# 件の項目}}をインポートしました。",
 		"stopped": "{created, plural, other {# 件の項目}}をインポートした時点で停止しました。残りをもう一度インポートしてください。",
 		"failedPart": "{created, plural, other {# 件の項目}}をインポートした時点で停止しました: {error}"
+	},
+	"docs": {
+		"title": "ドキュメント",
+		"description": "仕様、計画、メモを Markdown で書けます。プロジェクトに追加すると、そこからも見つけられます。",
+		"empty": "ドキュメントはまだありません。",
+		"new": "新規ドキュメント",
+		"untitled": "無題",
+		"titleLabel": "タイトル",
+		"project": "プロジェクト",
+		"noProject": "プロジェクトなし",
+		"editedBy": "最終編集者",
+		"mode": "エディターモード",
+		"modes": {
+			"write": "編集",
+			"preview": "プレビュー"
+		},
+		"body": "ドキュメント",
+		"bodyPlaceholder": "Markdown で書けます: # 見出し、- リスト、**太字**、[リンク](https://…)",
+		"emptyBody": "まだ何も書かれていません。",
+		"unsaved": "未保存の変更",
+		"conflict": "編集中に他のユーザーがこのドキュメントを保存しました。変更内容をコピーしてページを再読み込みし、もう一度追加してください。",
+		"deleteConfirm": "{title} を削除しますか？この操作は元に戻せません。"
+	},
+	"roadmap": {
+		"title": "ロードマップ",
+		"description": "プロジェクトをイニシアチブごとにタイムライン上に表示します。バーは各プロジェクトの開始日から目標日までを示し、最新のヘルスに応じて色分けされます。",
+		"newInitiative": "新規イニシアチブ",
+		"editInitiative": "イニシアチブを編集",
+		"editNamed": "{name} を編集",
+		"initiativeDescription": "複数のプロジェクトが目指す目標です。各プロジェクトの設定で選択してください。",
+		"name": "名前",
+		"goal": "目標",
+		"state": "状態",
+		"targetDate": "目標日",
+		"target": "目標日 {date}",
+		"states": {
+			"planned": "計画中",
+			"active": "進行中",
+			"completed": "完了",
+			"cancelled": "中止"
+		},
+		"project": "プロジェクト",
+		"noInitiative": "その他のプロジェクト",
+		"noProjects": "このイニシアチブにはまだプロジェクトがありません。",
+		"noTarget": "目標日なし",
+		"empty": "プロジェクトやイニシアチブはまだありません。",
+		"barLabel": "{name}、{start}〜{end}、{progress}% 完了",
+		"legend": "バーの色はヘルスを示します:",
+		"today": "今日",
+		"undatedHint": "{count, plural, other {# 件のプロジェクト}}に目標日がないため、タイムラインに表示されていません。",
+		"deleteConfirm": "イニシアチブ「{name}」を削除しますか？プロジェクトは残ります。"
 	}
 }

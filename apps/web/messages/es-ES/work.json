@@ -10,7 +10,9 @@
 		"projects": "Proyectos",
 		"cycles": "Ciclos",
 		"insights": "Análisis",
-		"templates": "Plantillas"
+		"templates": "Plantillas",
+		"docs": "Documentos",
+		"roadmap": "Hoja de ruta"
 	},
 	"common": {
 		"save": "Guardar",
@@ -567,7 +569,12 @@
 		"deleteConfirm": "¿Eliminar {name}? Sus elementos se conservan, sin proyecto.",
 		"items": "Elementos",
 		"noItems": "Este proyecto aún no tiene elementos.",
-		"health": "Estado"
+		"health": "Estado",
+		"startDate": "Fecha de inicio",
+		"initiative": "Iniciativa",
+		"noInitiative": "Sin iniciativa",
+		"documents": "Documentos",
+		"noDocuments": "Aún no hay documentos en este proyecto."
 	},
 	"cycles": {
 		"title": "Ciclos",
@@ -854,5 +861,56 @@
 		"done": "{created, plural, one {Se importó # elemento} other {Se importaron # elementos}}.",
 		"stopped": "La importación se detuvo tras {created, plural, one {# elemento} other {# elementos}}. Vuelve a intentarlo con el resto.",
 		"failedPart": "La importación se detuvo tras {created, plural, one {# elemento} other {# elementos}}: {error}"
+	},
+	"docs": {
+		"title": "Documentos",
+		"description": "Especificaciones, planes y notas escritos en Markdown. Añade uno a un proyecto para encontrarlo también allí.",
+		"empty": "Aún no hay documentos.",
+		"new": "Nuevo documento",
+		"untitled": "Sin título",
+		"titleLabel": "Título",
+		"project": "Proyecto",
+		"noProject": "Sin proyecto",
+		"editedBy": "Última edición por",
+		"mode": "Modo del editor",
+		"modes": {
+			"write": "Escribir",
+			"preview": "Vista previa"
+		},
+		"body": "Documento",
+		"bodyPlaceholder": "Escribe en Markdown: # encabezados, - listas, **negrita**, [enlaces](https://…)",
+		"emptyBody": "Aún no hay nada escrito.",
+		"unsaved": "Cambios sin guardar",
+		"conflict": "Otra persona guardó este documento mientras lo editabas. Copia tus cambios, recarga la página y vuelve a añadirlos.",
+		"deleteConfirm": "¿Eliminar {title}? Esta acción no se puede deshacer."
+	},
+	"roadmap": {
+		"title": "Hoja de ruta",
+		"description": "Proyectos en una cronología, agrupados por iniciativa. Las barras van desde el inicio de cada proyecto hasta su fecha objetivo, con el color de su estado de salud más reciente.",
+		"newInitiative": "Nueva iniciativa",
+		"editInitiative": "Editar iniciativa",
+		"editNamed": "Editar {name}",
+		"initiativeDescription": "Un objetivo hacia el que trabajan varios proyectos. Elígelo en los ajustes de cada proyecto.",
+		"name": "Nombre",
+		"goal": "Objetivo",
+		"state": "Estado",
+		"targetDate": "Fecha objetivo",
+		"target": "objetivo: {date}",
+		"states": {
+			"planned": "Planificado",
+			"active": "Activo",
+			"completed": "Completado",
+			"cancelled": "Cancelado"
+		},
+		"project": "Proyecto",
+		"noInitiative": "Otros proyectos",
+		"noProjects": "Aún no hay proyectos en esta iniciativa.",
+		"noTarget": "Sin fecha objetivo",
+		"empty": "Aún no hay proyectos ni iniciativas.",
+		"barLabel": "{name}, del {start} al {end}, {progress} % completado",
+		"legend": "El color de la barra indica el estado de salud:",
+		"today": "Hoy",
+		"undatedHint": "{count, plural, one {# proyecto no tiene} other {# proyectos no tienen}} fecha objetivo, así que no {count, plural, one {aparece} other {aparecen}} en la cronología.",
+		"deleteConfirm": "¿Eliminar la iniciativa {name}? Sus proyectos se conservan."
 	}
 }

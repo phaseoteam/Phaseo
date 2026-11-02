@@ -273,6 +273,8 @@ export type WorkProjectRow = {
 	lead_user_id: string | null;
 	/** A date (YYYY-MM-DD). */
 	target_date: string | null;
+	start_date?: string | null;
+	initiative_id?: string | null;
 	created_by: string | null;
 	created_at: string;
 	updated_at: string;
@@ -554,6 +556,8 @@ export type WorkProject = {
 	state: WorkProjectState;
 	leadUserId: string | null;
 	targetDate: string | null;
+	startDate: string | null;
+	initiativeId: string | null;
 	itemCount: number;
 	doneCount: number;
 	/** doneCount / itemCount, 0 to 1 (0 when the project has no items). */

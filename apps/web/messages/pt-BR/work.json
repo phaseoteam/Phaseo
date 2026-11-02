@@ -10,7 +10,9 @@
 		"projects": "Projetos",
 		"cycles": "Ciclos",
 		"insights": "Análises",
-		"templates": "Modelos"
+		"templates": "Modelos",
+		"docs": "Documentos",
+		"roadmap": "Roadmap"
 	},
 	"common": {
 		"save": "Salvar",
@@ -567,7 +569,12 @@
 		"deleteConfirm": "Excluir {name}? Os itens continuam, sem projeto.",
 		"items": "Itens",
 		"noItems": "Este projeto ainda não tem itens.",
-		"health": "Status"
+		"health": "Status",
+		"startDate": "Data de início",
+		"initiative": "Iniciativa",
+		"noInitiative": "Sem iniciativa",
+		"documents": "Documentos",
+		"noDocuments": "Ainda não há documentos neste projeto."
 	},
 	"cycles": {
 		"title": "Ciclos",
@@ -854,5 +861,56 @@
 		"done": "{created, plural, one {# item importado} other {# itens importados}}.",
 		"stopped": "A importação parou após {created, plural, one {# item} other {# itens}}. Tente importar o restante novamente.",
 		"failedPart": "A importação parou após {created, plural, one {# item} other {# itens}}: {error}"
+	},
+	"docs": {
+		"title": "Documentos",
+		"description": "Especificações, planos e notas escritos em Markdown. Coloque um em um projeto para encontrá-lo lá também.",
+		"empty": "Ainda não há documentos.",
+		"new": "Novo documento",
+		"untitled": "Sem título",
+		"titleLabel": "Título",
+		"project": "Projeto",
+		"noProject": "Sem projeto",
+		"editedBy": "Última edição por",
+		"mode": "Modo do editor",
+		"modes": {
+			"write": "Escrever",
+			"preview": "Visualizar"
+		},
+		"body": "Documento",
+		"bodyPlaceholder": "Escreva em Markdown: # títulos, - listas, **negrito**, [links](https://…)",
+		"emptyBody": "Nada escrito ainda.",
+		"unsaved": "Alterações não salvas",
+		"conflict": "Outra pessoa salvou este documento enquanto você editava. Copie suas alterações, recarregue a página e adicione-as novamente.",
+		"deleteConfirm": "Excluir {title}? Essa ação não pode ser desfeita."
+	},
+	"roadmap": {
+		"title": "Roadmap",
+		"description": "Projetos em uma linha do tempo, agrupados por iniciativa. As barras vão do início de cada projeto até a data-alvo, coloridas de acordo com a saúde mais recente.",
+		"newInitiative": "Nova iniciativa",
+		"editInitiative": "Editar iniciativa",
+		"editNamed": "Editar {name}",
+		"initiativeDescription": "Uma meta para a qual vários projetos trabalham. Escolha-a nas configurações de cada projeto.",
+		"name": "Nome",
+		"goal": "Meta",
+		"state": "Status",
+		"targetDate": "Data-alvo",
+		"target": "data-alvo: {date}",
+		"states": {
+			"planned": "Planejado",
+			"active": "Ativo",
+			"completed": "Concluído",
+			"cancelled": "Cancelado"
+		},
+		"project": "Projeto",
+		"noInitiative": "Outros projetos",
+		"noProjects": "Ainda não há projetos nesta iniciativa.",
+		"noTarget": "Sem data-alvo",
+		"empty": "Ainda não há projetos nem iniciativas.",
+		"barLabel": "{name}, de {start} a {end}, {progress}% concluído",
+		"legend": "A cor da barra mostra a saúde:",
+		"today": "Hoje",
+		"undatedHint": "{count, plural, one {# projeto não tem} other {# projetos não têm}} data-alvo, então não {count, plural, one {aparece} other {aparecem}} na linha do tempo.",
+		"deleteConfirm": "Excluir a iniciativa {name}? Os projetos dela serão mantidos."
 	}
 }

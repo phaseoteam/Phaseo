@@ -10,7 +10,9 @@
 		"projects": "Projets",
 		"cycles": "Cycles",
 		"insights": "Analyses",
-		"templates": "Modèles"
+		"templates": "Modèles",
+		"docs": "Documents",
+		"roadmap": "Feuille de route"
 	},
 	"common": {
 		"save": "Enregistrer",
@@ -567,7 +569,12 @@
 		"deleteConfirm": "Supprimer {name} ? Ses éléments sont conservés, sans projet.",
 		"items": "Éléments",
 		"noItems": "Aucun élément dans ce projet pour l’instant.",
-		"health": "État"
+		"health": "État",
+		"startDate": "Date de début",
+		"initiative": "Initiative",
+		"noInitiative": "Aucune initiative",
+		"documents": "Documents",
+		"noDocuments": "Aucun document dans ce projet pour l’instant."
 	},
 	"cycles": {
 		"title": "Cycles",
@@ -854,5 +861,56 @@
 		"done": "{created, plural, one {# élément importé} other {# éléments importés}}.",
 		"stopped": "L’import s’est arrêté après {created, plural, one {# élément} other {# éléments}}. Réessayez pour le reste.",
 		"failedPart": "L’import s’est arrêté après {created, plural, one {# élément} other {# éléments}} : {error}"
+	},
+	"docs": {
+		"title": "Documents",
+		"description": "Spécifications, plans et notes, rédigés en Markdown. Ajoutez-en un à un projet pour le retrouver aussi là-bas.",
+		"empty": "Aucun document pour l’instant.",
+		"new": "Nouveau document",
+		"untitled": "Sans titre",
+		"titleLabel": "Titre",
+		"project": "Projet",
+		"noProject": "Aucun projet",
+		"editedBy": "Dernière modification par",
+		"mode": "Mode de l’éditeur",
+		"modes": {
+			"write": "Écrire",
+			"preview": "Aperçu"
+		},
+		"body": "Document",
+		"bodyPlaceholder": "Écrivez en Markdown : # titres, - listes, **gras**, [liens](https://…)",
+		"emptyBody": "Rien n’a encore été écrit.",
+		"unsaved": "Modifications non enregistrées",
+		"conflict": "Quelqu’un d’autre a enregistré ce document pendant que vous le modifiiez. Copiez vos modifications, rechargez la page, puis ajoutez-les de nouveau.",
+		"deleteConfirm": "Supprimer {title} ? Cette action est irréversible."
+	},
+	"roadmap": {
+		"title": "Feuille de route",
+		"description": "Les projets sur une chronologie, regroupés par initiative. Les barres vont du début de chaque projet à sa date cible, colorées selon son dernier état de santé.",
+		"newInitiative": "Nouvelle initiative",
+		"editInitiative": "Modifier l’initiative",
+		"editNamed": "Modifier {name}",
+		"initiativeDescription": "Un objectif vers lequel travaillent plusieurs projets. Sélectionnez-le dans les paramètres de chaque projet.",
+		"name": "Nom",
+		"goal": "Objectif",
+		"state": "État",
+		"targetDate": "Date cible",
+		"target": "cible : {date}",
+		"states": {
+			"planned": "Prévu",
+			"active": "Actif",
+			"completed": "Terminé",
+			"cancelled": "Annulé"
+		},
+		"project": "Projet",
+		"noInitiative": "Autres projets",
+		"noProjects": "Aucun projet dans cette initiative pour l’instant.",
+		"noTarget": "Aucune date cible",
+		"empty": "Aucun projet ni aucune initiative pour l’instant.",
+		"barLabel": "{name}, du {start} au {end}, {progress} % terminé",
+		"legend": "La couleur de la barre indique l’état de santé :",
+		"today": "Aujourd’hui",
+		"undatedHint": "{count, plural, one {# projet n’a} other {# projets n’ont}} pas de date cible et {count, plural, one {n’apparaît donc pas} other {n’apparaissent donc pas}} sur la chronologie.",
+		"deleteConfirm": "Supprimer l’initiative {name} ? Ses projets sont conservés."
 	}
 }

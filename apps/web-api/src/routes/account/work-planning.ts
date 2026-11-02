@@ -92,6 +92,11 @@ accountWorkPlanningRouter.post("/projects", async (c) => {
 	if ("response" in access) return access.response;
 	const { context } = access;
 	const parsed = parseProjectInput(body, true);
+	if ("value" in parsed && parsed.value.initiativeId) {
+		const initiative = await context.client.from("work_initiatives").select("id").eq("workspace_id", context.workspaceId).eq("id", parsed.value.initiativeId).maybeSingle();
+		if (initiative.error) return unavailable(c);
+		if (!initiative.data) return badRequest(c, "initiativeId must be an initiative in this workspace");
+	}
 	if (parsed.ok === false) return badRequest(c, parsed.message);
 	if (parsed.value.leadUserId && !await isWorkspaceMember(context, parsed.value.leadUserId)) return badRequest(c, "leadUserId must be a member of the workspace");
 	const { data, error } = await context.client.from("work_projects").insert({
@@ -127,6 +132,11 @@ accountWorkPlanningRouter.patch("/projects/:id", async (c) => {
 	const id = pathUuid(c, "id");
 	if (!id) return badRequest(c, "A project id is required");
 	const parsed = parseProjectInput(body, false);
+	if ("value" in parsed && parsed.value.initiativeId) {
+		const initiative = await context.client.from("work_initiatives").select("id").eq("workspace_id", context.workspaceId).eq("id", parsed.value.initiativeId).maybeSingle();
+		if (initiative.error) return unavailable(c);
+		if (!initiative.data) return badRequest(c, "initiativeId must be an initiative in this workspace");
+	}
 	if (parsed.ok === false) return badRequest(c, parsed.message);
 	if (parsed.value.leadUserId && !await isWorkspaceMember(context, parsed.value.leadUserId)) return badRequest(c, "leadUserId must be a member of the workspace");
 	const patch = projectRowPatch(parsed.value);

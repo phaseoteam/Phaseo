@@ -241,6 +241,15 @@ export type ReactionEmoji = (typeof REACTION_EMOJI)[number];
 export type ReactionCount = { emoji: ReactionEmoji; count: number; mine: boolean };
 export const REACTION_GLYPHS: Record<ReactionEmoji, string> = { "+1": "👍", "-1": "👎", heart: "❤️", tada: "🎉", eyes: "👀", rocket: "🚀" };
 
+// Documents, initiatives and the roadmap.
+
+export type WorkDocument = { id: string; projectId: string | null; title: string; body?: string; createdBy: string | null; updatedBy: string | null; createdAt: string; updatedAt: string };
+export const INITIATIVE_STATES = ["planned", "active", "completed", "cancelled"] as const;
+export type InitiativeState = (typeof INITIATIVE_STATES)[number];
+export type WorkInitiative = { id: string; name: string; description: string; state: InitiativeState; targetDate: string | null; createdBy: string | null; createdAt: string; updatedAt: string };
+export type RoadmapProject = WorkProject & { health: ProjectHealth | null };
+export type WorkRoadmapResponse = { initiatives: WorkInitiative[]; projects: RoadmapProject[] };
+
 // Public API keys and webhooks.
 
 export type WorkApiKey = { id: string; name: string; keyPrefix: string; access: "read" | "write"; createdBy: string | null; createdAt: string; lastUsedAt: string | null; revokedAt: string | null };
@@ -281,6 +290,9 @@ export type WorkProject = {
 	progress: number;
 	createdAt: string;
 	updatedAt: string;
+	/** yyyy-mm-dd, for the roadmap. */
+	startDate?: string | null;
+	initiativeId?: string | null;
 };
 
 export type WorkCycle = {

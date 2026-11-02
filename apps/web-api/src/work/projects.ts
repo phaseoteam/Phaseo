@@ -6,7 +6,7 @@ import { WORK_PROJECT_STATES, type WorkProject, type WorkProjectRow, type WorkPr
 
 type DataClient = ReturnType<typeof getDataClient>;
 
-export const PROJECT_COLUMNS = "id,workspace_id,name,description,state,lead_user_id,target_date,created_by,created_at,updated_at";
+export const PROJECT_COLUMNS = "id,workspace_id,name,description,state,lead_user_id,target_date,start_date,initiative_id,created_by,created_at,updated_at";
 export const MAX_PROJECT_NAME = 120;
 export const MAX_PROJECT_DESCRIPTION = 20_000;
 export const MAX_PROJECTS_LISTED = 50;
@@ -33,6 +33,8 @@ export function formatWorkProject(row: WorkProjectRow, counts: ItemCounts = { it
 		state: row.state,
 		leadUserId: row.lead_user_id,
 		targetDate: row.target_date,
+		startDate: row.start_date ?? null,
+		initiativeId: row.initiative_id ?? null,
 		itemCount: counts.itemCount,
 		doneCount: counts.doneCount,
 		progress: progressShare(counts),
@@ -78,6 +80,8 @@ export type ProjectInput = {
 	state?: WorkProjectState;
 	leadUserId?: string | null;
 	targetDate?: string | null;
+	startDate?: string | null;
+	initiativeId?: string | null;
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -108,6 +112,14 @@ export function parseProjectInput(body: Record<string, unknown>, creating: boole
 		if (body.targetDate !== null && body.targetDate !== "" && !isIsoDate(body.targetDate)) return { ok: false, message: "targetDate must be a date (YYYY-MM-DD) or null" };
 		value.targetDate = body.targetDate ? String(body.targetDate) : null;
 	}
+	if (body.startDate !== undefined) {
+		if (body.startDate !== null && body.startDate !== "" && !isIsoDate(body.startDate)) return { ok: false, message: "startDate must be a date (YYYY-MM-DD) or null" };
+		value.startDate = body.startDate ? String(body.startDate) : null;
+	}
+	if (body.initiativeId !== undefined) {
+		if (body.initiativeId !== null && (typeof body.initiativeId !== "string" || !UUID.test(body.initiativeId))) return { ok: false, message: "initiativeId must be an initiative id or null" };
+		value.initiativeId = body.initiativeId === null ? null : String(body.initiativeId).toLowerCase();
+	}
 	return { ok: true, value };
 }
 
@@ -118,5 +130,7 @@ export function projectRowPatch(input: ProjectInput): Record<string, unknown> {
 	if (input.state !== undefined) patch.state = input.state;
 	if (input.leadUserId !== undefined) patch.lead_user_id = input.leadUserId;
 	if (input.targetDate !== undefined) patch.target_date = input.targetDate;
+	if (input.startDate !== undefined) patch.start_date = input.startDate;
+	if (input.initiativeId !== undefined) patch.initiative_id = input.initiativeId;
 	return patch;
 }

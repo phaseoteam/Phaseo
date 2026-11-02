@@ -26,7 +26,7 @@ export function HealthLabel({ health }: { health: ProjectHealth }) {
 	const t = useTranslations("Work.projectUpdates");
 	return (
 		<span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap", HEALTH_TONE[health])}>
-			<span aria-hidden="true" className="size-1.5 rounded-[2px] bg-current" />
+			<span aria-hidden="true" className="size-1.5 rounded-md bg-current" />
 			{t(`health.${health}`)}
 		</span>
 	);

@@ -13,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { slaStatus } from "@/lib/work/sla";
-import { WORK_PROJECT_STATES, type ProjectHealthMap, type ProjectUpdate, type WorkCycle, type WorkItem, type WorkMember, type WorkMilestone, type WorkProject, type WorkProjectState } from "@/lib/work/types";
+import { WORK_PROJECT_STATES, type ProjectHealthMap, type ProjectUpdate, type WorkCycle, type WorkDocument, type WorkInitiative, type WorkItem, type WorkMember, type WorkMilestone, type WorkProject, type WorkProjectState } from "@/lib/work/types";
 import { CreateItemDialog } from "./CreateItemDialog";
+import { DocumentList, NewDocumentButton } from "./DocsView";
 import { HealthLabel, ProjectMilestones, ProjectUpdates } from "./ProjectExtras";
 import { useWorkAction } from "./useWorkAction";
 import { WorkBoard } from "./WorkBoard";
@@ -38,7 +39,7 @@ const PROJECT_STATE_TONE: Record<WorkProjectState, string> = {
 	cancelled: "text-muted-foreground line-through",
 };
 
-export function ProjectsView({ projects, members, health = {} }: { projects: WorkProject[]; members: WorkMember[]; health?: ProjectHealthMap }) {
+export function ProjectsView({ projects, members, health = {}, initiatives = [] }: { projects: WorkProject[]; members: WorkMember[]; health?: ProjectHealthMap; initiatives?: WorkInitiative[] }) {
 	const t = useTranslations("Work.projects");
 	const formatDay = useDayFormat();
 	const [editing, setEditing] = useState<WorkProject | "new" | null>(null);
@@ -84,12 +85,12 @@ export function ProjectsView({ projects, members, health = {} }: { projects: Wor
 					</table>
 				</div>
 			) : <p className="rounded-md border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">{t("empty")}</p>}
-			{editing ? <ProjectDialog project={editing === "new" ? null : editing} members={members} onClose={() => setEditing(null)} /> : null}
+			{editing ? <ProjectDialog project={editing === "new" ? null : editing} members={members} initiatives={initiatives} onClose={() => setEditing(null)} /> : null}
 		</div>
 	);
 }
 
-export function ProjectDialog({ project, members, onClose }: { project: WorkProject | null; members: WorkMember[]; onClose: () => void }) {
+export function ProjectDialog({ project, members, initiatives = [], onClose }: { project: WorkProject | null; members: WorkMember[]; initiatives?: WorkInitiative[]; onClose: () => void }) {
 	const t = useTranslations("Work.projects");
 	const tCommon = useTranslations("Work.common");
 	const tPeople = useTranslations("Work.people");
@@ -102,6 +103,8 @@ export function ProjectDialog({ project, members, onClose }: { project: WorkProj
 		state: project?.state ?? ("planned" as WorkProjectState),
 		lead: project?.leadUserId ?? "none",
 		targetDate: project?.targetDate?.slice(0, 10) ?? "",
+		startDate: project?.startDate?.slice(0, 10) ?? "",
+		initiative: project?.initiativeId ?? "none",
 	});
 	const [error, setError] = useState<string | null>(null);
 	const [confirmDelete, setConfirmDelete] = useState(false);
@@ -115,6 +118,8 @@ export function ProjectDialog({ project, members, onClose }: { project: WorkProj
 			state: draft.state,
 			leadUserId: draft.lead === "none" ? null : draft.lead,
 			targetDate: draft.targetDate || null,
+			startDate: draft.startDate || null,
+			initiativeId: draft.initiative === "none" ? null : draft.initiative,
 		};
 		const result = await perform("project", () => (project ? updateWorkProject(project.id, input) : createWorkProject(input)));
 		if (result.ok) onClose();
@@ -164,6 +169,22 @@ export function ProjectDialog({ project, members, onClose }: { project: WorkProj
 							<Input id={`${id}-target`} type="date" value={draft.targetDate} onChange={(event) => setDraft({ ...draft, targetDate: event.target.value })} className="rounded-md" />
 						</div>
 					</div>
+					<div className="grid gap-3 sm:grid-cols-2">
+						<div className="space-y-1.5">
+							<Label htmlFor={`${id}-start`}>{t("startDate")}</Label>
+							<Input id={`${id}-start`} type="date" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} className="rounded-md" />
+						</div>
+						<div className="space-y-1.5">
+							<Label>{t("initiative")}</Label>
+							<Select value={draft.initiative} onValueChange={(value) => setDraft({ ...draft, initiative: value })}>
+								<SelectTrigger aria-label={t("initiative")} className="w-full rounded-md"><SelectValue>{initiatives.find((initiative) => initiative.id === draft.initiative)?.name ?? t("noInitiative")}</SelectValue></SelectTrigger>
+								<SelectContent>
+									<SelectItem value="none">{t("noInitiative")}</SelectItem>
+									{initiatives.map((initiative) => <SelectItem key={initiative.id} value={initiative.id}>{initiative.name}</SelectItem>)}
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
 					{error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
 					{confirmDelete ? (
 						<div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/40 px-3 py-2 text-sm">
@@ -187,7 +208,7 @@ export function ProjectDialog({ project, members, onClose }: { project: WorkProj
 	);
 }
 
-export function ProjectDetail({ project, items, members, projects, cycles, layout, milestones = [], updates = [], currentUserId = null, canManageAll = false }: { project: WorkProject; items: WorkItem[]; members: WorkMember[]; projects: WorkProject[]; cycles: WorkCycle[]; layout: "list" | "board"; milestones?: WorkMilestone[]; updates?: ProjectUpdate[]; currentUserId?: string | null; canManageAll?: boolean }) {
+export function ProjectDetail({ project, items, members, projects, cycles, layout, milestones = [], updates = [], currentUserId = null, canManageAll = false, documents = [], initiatives = [] }: { project: WorkProject; items: WorkItem[]; members: WorkMember[]; projects: WorkProject[]; cycles: WorkCycle[]; layout: "list" | "board"; milestones?: WorkMilestone[]; updates?: ProjectUpdate[]; currentUserId?: string | null; canManageAll?: boolean; documents?: WorkDocument[]; initiatives?: WorkInitiative[] }) {
 	const t = useTranslations("Work.projects");
 	const tInbox = useTranslations("Work.inbox");
 	const tViews = useTranslations("Work.views");
@@ -246,8 +267,15 @@ export function ProjectDetail({ project, items, members, projects, cycles, layou
 					</ul>
 				)) : <p className="rounded-md border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">{t("noItems")}</p>}
 			</section>
+			<section aria-labelledby="work-project-docs" className="space-y-2">
+				<div className="flex items-center justify-between gap-2">
+					<h3 id="work-project-docs" className="text-sm font-medium">{t("documents")}</h3>
+					<NewDocumentButton projectId={project.id} size="xs" />
+				</div>
+				<DocumentList documents={documents} projects={projects} emptyText={t("noDocuments")} />
+			</section>
 			<ProjectUpdates projectId={project.id} updates={updates} members={members} currentUserId={currentUserId} canManageAll={canManageAll} />
-			{editing ? <ProjectDialog project={project} members={members} onClose={() => setEditing(false)} /> : null}
+			{editing ? <ProjectDialog project={project} members={members} initiatives={initiatives} onClose={() => setEditing(false)} /> : null}
 			<CreateItemDialog open={creating} onOpenChange={setCreating} members={members} projects={projects} cycles={cycles} projectId={project.id} />
 		</div>
 	);

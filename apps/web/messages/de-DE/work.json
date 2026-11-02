@@ -10,7 +10,9 @@
 		"projects": "Projekte",
 		"cycles": "Zyklen",
 		"insights": "Auswertungen",
-		"templates": "Vorlagen"
+		"templates": "Vorlagen",
+		"docs": "Dokumente",
+		"roadmap": "Roadmap"
 	},
 	"common": {
 		"save": "Speichern",
@@ -567,7 +569,12 @@
 		"deleteConfirm": "{name} löschen? Die Einträge bleiben erhalten, ohne Projekt.",
 		"items": "Einträge",
 		"noItems": "Noch keine Einträge in diesem Projekt.",
-		"health": "Zustand"
+		"health": "Zustand",
+		"startDate": "Startdatum",
+		"initiative": "Initiative",
+		"noInitiative": "Keine Initiative",
+		"documents": "Dokumente",
+		"noDocuments": "Noch keine Dokumente in diesem Projekt."
 	},
 	"cycles": {
 		"title": "Zyklen",
@@ -854,5 +861,56 @@
 		"done": "{created, plural, one {# Eintrag} other {# Einträge}} importiert.",
 		"stopped": "Der Import wurde nach {created, plural, one {# Eintrag} other {# Einträgen}} angehalten. Versuche den Rest erneut.",
 		"failedPart": "Der Import wurde nach {created, plural, one {# Eintrag} other {# Einträgen}} angehalten: {error}"
+	},
+	"docs": {
+		"title": "Dokumente",
+		"description": "Spezifikationen, Pläne und Notizen in Markdown. Ordne ein Dokument einem Projekt zu, um es auch dort zu finden.",
+		"empty": "Noch keine Dokumente.",
+		"new": "Neues Dokument",
+		"untitled": "Ohne Titel",
+		"titleLabel": "Titel",
+		"project": "Projekt",
+		"noProject": "Kein Projekt",
+		"editedBy": "Zuletzt bearbeitet von",
+		"mode": "Editormodus",
+		"modes": {
+			"write": "Schreiben",
+			"preview": "Vorschau"
+		},
+		"body": "Dokument",
+		"bodyPlaceholder": "In Markdown schreiben: # Überschriften, - Listen, **fett**, [Links](https://…)",
+		"emptyBody": "Noch nichts geschrieben.",
+		"unsaved": "Ungespeicherte Änderungen",
+		"conflict": "Jemand anderes hat dieses Dokument gespeichert, während du es bearbeitet hast. Kopiere deine Änderungen, lade die Seite neu und füge sie dann wieder ein.",
+		"deleteConfirm": "{title} löschen? Das kann nicht rückgängig gemacht werden."
+	},
+	"roadmap": {
+		"title": "Roadmap",
+		"description": "Projekte auf einer Zeitachse, gruppiert nach Initiative. Die Balken reichen vom Start jedes Projekts bis zu seinem Zieldatum und sind nach seinem neuesten Zustand eingefärbt.",
+		"newInitiative": "Neue Initiative",
+		"editInitiative": "Initiative bearbeiten",
+		"editNamed": "{name} bearbeiten",
+		"initiativeDescription": "Ein Ziel, auf das mehrere Projekte hinarbeiten. Wähle es in den Einstellungen jedes Projekts aus.",
+		"name": "Name",
+		"goal": "Ziel",
+		"state": "Status",
+		"targetDate": "Zieldatum",
+		"target": "Ziel {date}",
+		"states": {
+			"planned": "Geplant",
+			"active": "Aktiv",
+			"completed": "Abgeschlossen",
+			"cancelled": "Abgebrochen"
+		},
+		"project": "Projekt",
+		"noInitiative": "Andere Projekte",
+		"noProjects": "Noch keine Projekte in dieser Initiative.",
+		"noTarget": "Kein Zieldatum",
+		"empty": "Noch keine Projekte oder Initiativen.",
+		"barLabel": "{name}, {start} bis {end}, {progress} % erledigt",
+		"legend": "Die Balkenfarbe zeigt den Zustand:",
+		"today": "Heute",
+		"undatedHint": "{count, plural, one {# Projekt hat} other {# Projekte haben}} kein Zieldatum und {count, plural, one {erscheint} other {erscheinen}} daher nicht auf der Zeitachse.",
+		"deleteConfirm": "Initiative {name} löschen? Ihre Projekte bleiben erhalten."
 	}
 }

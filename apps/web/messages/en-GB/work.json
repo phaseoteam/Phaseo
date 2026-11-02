@@ -10,7 +10,9 @@
 		"projects": "Projects",
 		"cycles": "Cycles",
 		"insights": "Insights",
-		"templates": "Templates"
+		"templates": "Templates",
+		"docs": "Docs",
+		"roadmap": "Roadmap"
 	},
 	"common": {
 		"save": "Save",
@@ -567,7 +569,12 @@
 		"deleteConfirm": "Delete {name}? Its items stay, without a project.",
 		"items": "Items",
 		"noItems": "No items in this project yet.",
-		"health": "Health"
+		"health": "Health",
+		"startDate": "Start date",
+		"initiative": "Initiative",
+		"noInitiative": "No initiative",
+		"documents": "Documents",
+		"noDocuments": "No documents in this project yet."
 	},
 	"cycles": {
 		"title": "Cycles",
@@ -854,5 +861,56 @@
 		"done": "Imported {created, plural, one {# item} other {# items}}.",
 		"stopped": "The import stopped after {created, plural, one {# item} other {# items}}. Try the rest again.",
 		"failedPart": "The import stopped after {created, plural, one {# item} other {# items}}: {error}"
+	},
+	"docs": {
+		"title": "Docs",
+		"description": "Specs, plans and notes, written in Markdown. Put one in a project to find it there too.",
+		"empty": "No documents yet.",
+		"new": "New document",
+		"untitled": "Untitled",
+		"titleLabel": "Title",
+		"project": "Project",
+		"noProject": "No project",
+		"editedBy": "Last edited by",
+		"mode": "Editor mode",
+		"modes": {
+			"write": "Write",
+			"preview": "Preview"
+		},
+		"body": "Document",
+		"bodyPlaceholder": "Write in Markdown: # headings, - lists, **bold**, [links](https://…)",
+		"emptyBody": "Nothing written yet.",
+		"unsaved": "Unsaved changes",
+		"conflict": "Someone else saved this document while you were editing. Copy your changes, reload the page, then add them again.",
+		"deleteConfirm": "Delete {title}? This can't be undone."
+	},
+	"roadmap": {
+		"title": "Roadmap",
+		"description": "Projects on a timeline, grouped by initiative. Bars run from each project's start to its target date, coloured by its latest health.",
+		"newInitiative": "New initiative",
+		"editInitiative": "Edit initiative",
+		"editNamed": "Edit {name}",
+		"initiativeDescription": "A goal several projects work towards. Pick it in each project's settings.",
+		"name": "Name",
+		"goal": "Goal",
+		"state": "State",
+		"targetDate": "Target date",
+		"target": "target {date}",
+		"states": {
+			"planned": "Planned",
+			"active": "Active",
+			"completed": "Completed",
+			"cancelled": "Cancelled"
+		},
+		"project": "Project",
+		"noInitiative": "Other projects",
+		"noProjects": "No projects in this initiative yet.",
+		"noTarget": "No target date",
+		"empty": "No projects or initiatives yet.",
+		"barLabel": "{name}, {start} to {end}, {progress}% done",
+		"legend": "Bar colour shows health:",
+		"today": "Today",
+		"undatedHint": "{count, plural, one {# project has} other {# projects have}} no target date, so {count, plural, one {it isn't} other {they aren't}} on the timeline.",
+		"deleteConfirm": "Delete the {name} initiative? Its projects stay."
 	}
 }

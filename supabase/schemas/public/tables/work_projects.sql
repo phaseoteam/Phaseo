@@ -6,6 +6,8 @@ CREATE TABLE "public"."work_projects" (
   "state"          text                     NOT NULL DEFAULT 'planned'::text,
   "lead_user_id"   uuid,
   "target_date"    date,
+  "start_date"     date,
+  "initiative_id"  uuid,
   "created_by"     uuid,
   "created_at"     timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"     timestamp with time zone NOT NULL DEFAULT now(),

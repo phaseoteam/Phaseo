@@ -44,6 +44,9 @@ import type {
 	WorkTemplate,
 	WorkApiKey,
 	WorkWebhook,
+	WorkDocument,
+	WorkInitiative,
+	InitiativeState,
 } from "@/lib/work/types";
 
 export type WorkActionError = { ok: false; status: number | null; code: string | null; message: string | null };
@@ -276,7 +279,7 @@ export async function listWorkMembers() {
 
 // Projects
 
-export type WorkProjectInput = { name: string; description?: string; state?: WorkProjectState; leadUserId?: string | null; targetDate?: string | null };
+export type WorkProjectInput = { name: string; description?: string; state?: WorkProjectState; leadUserId?: string | null; targetDate?: string | null; startDate?: string | null; initiativeId?: string | null };
 
 export async function createWorkProject(input: WorkProjectInput) {
 	return run(() => send<{ project: WorkProject }>("POST", "projects", input));
@@ -455,6 +458,32 @@ export async function updateWorkWebhook(webhookId: string, input: { enabled?: bo
 
 export async function deleteWorkWebhook(webhookId: string) {
 	return run(() => send<Record<string, unknown>>("DELETE", `webhooks/${id(webhookId)}`));
+}
+
+// Documents and initiatives
+
+export async function createWorkDocument(input: { title: string; body?: string; projectId?: string | null }) {
+	return run(() => send<{ document: WorkDocument }>("POST", "documents", input));
+}
+
+export async function saveWorkDocument(documentId: string, input: { title?: string; body?: string; projectId?: string | null; baseUpdatedAt?: string }) {
+	return run(() => send<{ document: WorkDocument }>("PATCH", `documents/${id(documentId)}`, input));
+}
+
+export async function deleteWorkDocument(documentId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `documents/${id(documentId)}`));
+}
+
+export async function createWorkInitiative(input: { name: string; description?: string; state?: InitiativeState; targetDate?: string | null }) {
+	return run(() => send<{ initiative: WorkInitiative }>("POST", "initiatives", input));
+}
+
+export async function updateWorkInitiative(initiativeId: string, input: { name?: string; description?: string; state?: InitiativeState; targetDate?: string | null }) {
+	return run(() => send<{ initiative: WorkInitiative }>("PATCH", `initiatives/${id(initiativeId)}`, input));
+}
+
+export async function deleteWorkInitiative(initiativeId: string) {
+	return run(() => send<Record<string, unknown>>("DELETE", `initiatives/${id(initiativeId)}`));
 }
 
 // Import
